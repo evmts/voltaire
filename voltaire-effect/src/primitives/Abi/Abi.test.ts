@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Abi } from "@tevm/voltaire/Abi";
+import { Hex } from "@tevm/voltaire";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -17,6 +18,7 @@ const erc20Abi = Abi([
 	{
 		type: "function",
 		name: "transfer",
+		stateMutability: "nonpayable",
 		inputs: [
 			{ name: "to", type: "address" },
 			{ name: "amount", type: "uint256" },
@@ -26,6 +28,7 @@ const erc20Abi = Abi([
 	{
 		type: "function",
 		name: "balanceOf",
+		stateMutability: "view",
 		inputs: [{ name: "account", type: "address" }],
 		outputs: [{ type: "uint256" }],
 	},
@@ -46,6 +49,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "submitOrder",
+		stateMutability: "nonpayable",
 		inputs: [
 			{
 				name: "order",
@@ -64,6 +68,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "submitNestedOrder",
+		stateMutability: "nonpayable",
 		inputs: [
 			{
 				name: "order",
@@ -88,6 +93,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "batchTransfer",
+		stateMutability: "nonpayable",
 		inputs: [
 			{ name: "recipients", type: "address[]" },
 			{ name: "amounts", type: "uint256[]" },
@@ -98,6 +104,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "setCoordinates",
+		stateMutability: "nonpayable",
 		inputs: [{ name: "coords", type: "uint256[3]" }],
 		outputs: [],
 	},
@@ -105,6 +112,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "processData",
+		stateMutability: "nonpayable",
 		inputs: [
 			{ name: "rawData", type: "bytes" },
 			{ name: "message", type: "string" },
@@ -115,6 +123,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "setHash",
+		stateMutability: "nonpayable",
 		inputs: [{ name: "hash", type: "bytes32" }],
 		outputs: [],
 	},
@@ -122,12 +131,14 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "setValue",
+		stateMutability: "nonpayable",
 		inputs: [{ name: "value", type: "uint256" }],
 		outputs: [],
 	},
 	{
 		type: "function",
 		name: "setValue",
+		stateMutability: "nonpayable",
 		inputs: [
 			{ name: "key", type: "bytes32" },
 			{ name: "value", type: "uint256" },
@@ -173,6 +184,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "ping",
+		stateMutability: "nonpayable",
 		inputs: [],
 		outputs: [],
 	},
@@ -180,6 +192,7 @@ const complexAbi = Abi([
 	{
 		type: "function",
 		name: "submitOrders",
+		stateMutability: "nonpayable",
 		inputs: [
 			{
 				name: "orders",
@@ -501,14 +514,14 @@ describe("decodeFunctionData", () => {
 
 	it("fails on invalid selector", async () => {
 		const exit = await Effect.runPromiseExit(
-			decodeFunctionData(erc20Abi, "0xdeadbeef" as `0x${string}`),
+			decodeFunctionData(erc20Abi, Hex("0xdeadbeef")),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
 
 	it("fails on calldata too short", async () => {
 		const exit = await Effect.runPromiseExit(
-			decodeFunctionData(erc20Abi, "0x12" as `0x${string}`),
+			decodeFunctionData(erc20Abi, Hex("0x12")),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
@@ -516,7 +529,7 @@ describe("decodeFunctionData", () => {
 	it("fails on malformed data (truncated params)", async () => {
 		// Valid selector but truncated params
 		const exit = await Effect.runPromiseExit(
-			decodeFunctionData(erc20Abi, "0xa9059cbb0000" as `0x${string}`),
+			decodeFunctionData(erc20Abi, Hex("0xa9059cbb0000")),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
@@ -563,7 +576,7 @@ describe("decodeFunctionData", () => {
 describe("decodeFunctionResult", () => {
 	it("decodes uint256 result", async () => {
 		const data =
-			"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as `0x${string}`;
+			Hex("0x0000000000000000000000000000000000000000000000000de0b6b3a7640000");
 		const decoded = await Effect.runPromise(
 			decodeFunctionResult(erc20Abi, "balanceOf", data),
 		);
@@ -572,7 +585,7 @@ describe("decodeFunctionResult", () => {
 
 	it("decodes bool true result", async () => {
 		const data =
-			"0x0000000000000000000000000000000000000000000000000000000000000001" as `0x${string}`;
+			Hex("0x0000000000000000000000000000000000000000000000000000000000000001");
 		const decoded = await Effect.runPromise(
 			decodeFunctionResult(erc20Abi, "transfer", data),
 		);
@@ -581,7 +594,7 @@ describe("decodeFunctionResult", () => {
 
 	it("decodes bool false result", async () => {
 		const data =
-			"0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+			Hex("0x0000000000000000000000000000000000000000000000000000000000000000");
 		const decoded = await Effect.runPromise(
 			decodeFunctionResult(erc20Abi, "transfer", data),
 		);
@@ -593,7 +606,7 @@ describe("decodeFunctionResult", () => {
 			decodeFunctionResult(
 				erc20Abi,
 				"unknownFunction",
-				"0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
+				Hex("0x0000000000000000000000000000000000000000000000000000000000000000"),
 			),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
@@ -602,7 +615,7 @@ describe("decodeFunctionResult", () => {
 	it("fails with invalid result data", async () => {
 		// Too short for uint256
 		const exit = await Effect.runPromiseExit(
-			decodeFunctionResult(erc20Abi, "balanceOf", "0x123" as `0x${string}`),
+			decodeFunctionResult(erc20Abi, "balanceOf", Hex("0x123")),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
@@ -665,15 +678,18 @@ describe("encodeEventLog", () => {
 describe("decodeEventLog", () => {
 	it("decodes Transfer event log", async () => {
 		// Use known topic hashes for Transfer event
-		const transferTopicHash =
-			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType;
-		const fromTopic =
-			"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType;
-		const toTopic =
-			"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType;
+		const transferTopicHash = Hex(
+			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+		);
+		const fromTopic = Hex(
+			"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
+		const toTopic = Hex(
+			"0x0000000000000000000000001234567890123456789012345678901234567890",
+		);
 
 		const value = 1000000000000000000n;
-		const data = `0x${value.toString(16).padStart(64, "0")}` as `0x${string}`;
+		const data = Hex(`0x${value.toString(16).padStart(64, "0")}`);
 		const decoded = await Effect.runPromise(
 			decodeEventLog(erc20Abi, {
 				data,
@@ -687,9 +703,9 @@ describe("decodeEventLog", () => {
 	it("fails for unknown event signature", async () => {
 		const exit = await Effect.runPromiseExit(
 			decodeEventLog(erc20Abi, {
-				data: "0x" as `0x${string}`,
+				data: Hex("0x"),
 				topics: [
-					"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" as `0x${string}`,
+					Hex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				],
 			}),
 		);
@@ -699,7 +715,7 @@ describe("decodeEventLog", () => {
 	it("fails with empty topics", async () => {
 		const exit = await Effect.runPromiseExit(
 			decodeEventLog(erc20Abi, {
-				data: "0x" as `0x${string}`,
+				data: Hex("0x"),
 				topics: [],
 			}),
 		);
@@ -707,15 +723,16 @@ describe("decodeEventLog", () => {
 	});
 
 	it("fails with malformed log data", async () => {
-		const transferTopicHash =
-			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType;
+		const transferTopicHash = Hex(
+			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+		);
 		const exit = await Effect.runPromiseExit(
 			decodeEventLog(erc20Abi, {
-				data: "0x123" as `0x${string}`, // Invalid - not 32-byte aligned
+				data: Hex("0x123"), // Invalid - not 32-byte aligned
 				topics: [
 					transferTopicHash,
-					"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType,
-					"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType,
+					Hex("0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3"),
+					Hex("0x0000000000000000000000001234567890123456789012345678901234567890"),
 				],
 			}),
 		);
@@ -804,7 +821,7 @@ describe("decodeError", () => {
 
 	it("fails for unknown error", async () => {
 		const exit = await Effect.runPromiseExit(
-			decodeError(complexAbi, "UnknownError", "0x12345678" as `0x${string}`),
+			decodeError(complexAbi, "UnknownError", Hex("0x12345678")),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
