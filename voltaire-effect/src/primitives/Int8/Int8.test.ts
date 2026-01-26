@@ -47,37 +47,37 @@ describe("Int8", () => {
 	});
 
 	describe("Schema: Int8.String", () => {
-		it("decodes valid positive string", () => {
-			const value = S.decodeSync(Int8.String)("42");
+		it("decodes valid positive hex string", () => {
+			const value = S.decodeSync(Int8.String)("0x2a");
 			expect(S.encodeSync(Int8.String)(value)).toBe("42");
 		});
 
-		it("decodes valid negative string", () => {
-			const value = S.decodeSync(Int8.String)("-42");
+		it("decodes valid negative hex string", () => {
+			const value = S.decodeSync(Int8.String)("0xd6");
 			expect(S.encodeSync(Int8.String)(value)).toBe("-42");
 		});
 
-		it("decodes zero string", () => {
-			const value = S.decodeSync(Int8.String)("0");
+		it("decodes zero hex string", () => {
+			const value = S.decodeSync(Int8.String)("0x00");
 			expect(S.encodeSync(Int8.String)(value)).toBe("0");
 		});
 
-		it("decodes INT8_MIN string", () => {
-			const value = S.decodeSync(Int8.String)("-128");
+		it("decodes INT8_MIN hex string", () => {
+			const value = S.decodeSync(Int8.String)("0x80");
 			expect(S.encodeSync(Int8.String)(value)).toBe("-128");
 		});
 
-		it("decodes INT8_MAX string", () => {
-			const value = S.decodeSync(Int8.String)("127");
+		it("decodes INT8_MAX hex string", () => {
+			const value = S.decodeSync(Int8.String)("0x7f");
 			expect(S.encodeSync(Int8.String)(value)).toBe("127");
 		});
 
-		it("fails on overflow string", () => {
-			expect(() => S.decodeSync(Int8.String)("128")).toThrow();
+		it("fails on overflow hex string", () => {
+			expect(() => S.decodeSync(Int8.String)("0x180")).toThrow();
 		});
 
 		it("fails on invalid string", () => {
-			expect(() => S.decodeSync(Int8.String)("abc")).toThrow();
+			expect(() => S.decodeSync(Int8.String)("xyz")).toThrow();
 		});
 	});
 

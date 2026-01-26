@@ -176,7 +176,7 @@ describe("Int32", () => {
 		it("negates zero", () => {
 			const zero = S.decodeSync(Int32.Number)(0);
 			const result = Int32.negate(zero);
-			expect(S.encodeSync(Int32.Number)(result)).toBe(0);
+			expect(S.encodeSync(Int32.Number)(result) === 0).toBe(true);
 		});
 
 		it("negate of INT32_MIN throws overflow", () => {

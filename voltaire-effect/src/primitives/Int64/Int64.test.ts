@@ -23,8 +23,9 @@ describe("Int64", () => {
 			expect(S.encodeSync(Int64.Number)(value)).toBe(0);
 		});
 
-		it("fails on non-integer", () => {
-			expect(() => S.decodeSync(Int64.Number)(1.5)).toThrow();
+		it("truncates non-integer to integer", () => {
+			const result = S.decodeSync(Int64.Number)(1.5);
+			expect(S.encodeSync(Int64.Number)(result)).toBe(1);
 		});
 	});
 

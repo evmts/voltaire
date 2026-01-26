@@ -157,18 +157,16 @@ describe("Uint16", () => {
 			expect(Uint16.toNumber(result)).toBe(10000);
 		});
 
-		it("wraps on overflow (65535 + 1)", () => {
+		it("throws on overflow (65535 + 1)", () => {
 			const max = S.decodeSync(Uint16.Number)(UINT16_MAX);
 			const one = S.decodeSync(Uint16.Number)(1);
-			const result = Uint16.plus(max, one);
-			expect(Uint16.toNumber(result)).toBe(0);
+			expect(() => Uint16.plus(max, one)).toThrow();
 		});
 
-		it("wraps on large overflow (65535 + 2)", () => {
+		it("throws on large overflow (65535 + 2)", () => {
 			const max = S.decodeSync(Uint16.Number)(UINT16_MAX);
 			const two = S.decodeSync(Uint16.Number)(2);
-			const result = Uint16.plus(max, two);
-			expect(Uint16.toNumber(result)).toBe(1);
+			expect(() => Uint16.plus(max, two)).toThrow();
 		});
 	});
 
@@ -187,18 +185,16 @@ describe("Uint16", () => {
 			expect(Uint16.toNumber(result)).toBe(10000);
 		});
 
-		it("wraps on underflow (0 - 1)", () => {
+		it("throws on underflow (0 - 1)", () => {
 			const zero = S.decodeSync(Uint16.Number)(0);
 			const one = S.decodeSync(Uint16.Number)(1);
-			const result = Uint16.minus(zero, one);
-			expect(Uint16.toNumber(result)).toBe(UINT16_MAX);
+			expect(() => Uint16.minus(zero, one)).toThrow();
 		});
 
-		it("wraps on large underflow (0 - 2)", () => {
+		it("throws on large underflow (0 - 2)", () => {
 			const zero = S.decodeSync(Uint16.Number)(0);
 			const two = S.decodeSync(Uint16.Number)(2);
-			const result = Uint16.minus(zero, two);
-			expect(Uint16.toNumber(result)).toBe(65534);
+			expect(() => Uint16.minus(zero, two)).toThrow();
 		});
 	});
 
@@ -224,11 +220,10 @@ describe("Uint16", () => {
 			expect(Uint16.toNumber(result)).toBe(10000);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const a = S.decodeSync(Uint16.Number)(32768);
 			const b = S.decodeSync(Uint16.Number)(2);
-			const result = Uint16.times(a, b);
-			expect(Uint16.toNumber(result)).toBe(0);
+			expect(() => Uint16.times(a, b)).toThrow();
 		});
 	});
 
@@ -302,10 +297,9 @@ describe("Uint16", () => {
 	});
 
 	describe("Edge cases", () => {
-		it("MAX + MAX wraps correctly", () => {
+		it("MAX + MAX throws", () => {
 			const max = S.decodeSync(Uint16.Number)(UINT16_MAX);
-			const result = Uint16.plus(max, max);
-			expect(Uint16.toNumber(result)).toBe(65534);
+			expect(() => Uint16.plus(max, max)).toThrow();
 		});
 
 		it("alternating operations", () => {

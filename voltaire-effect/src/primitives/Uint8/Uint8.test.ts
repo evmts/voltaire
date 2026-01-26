@@ -162,18 +162,16 @@ describe("Uint8", () => {
 			expect(Uint8.toNumber(result)).toBe(100);
 		});
 
-		it("wraps on overflow (255 + 1)", () => {
+		it("throws on overflow (255 + 1)", () => {
 			const max = S.decodeSync(Uint8.Number)(UINT8_MAX);
 			const one = S.decodeSync(Uint8.Number)(1);
-			const result = Uint8.plus(max, one);
-			expect(Uint8.toNumber(result)).toBe(0);
+			expect(() => Uint8.plus(max, one)).toThrow();
 		});
 
-		it("wraps on large overflow (255 + 2)", () => {
+		it("throws on large overflow (255 + 2)", () => {
 			const max = S.decodeSync(Uint8.Number)(UINT8_MAX);
 			const two = S.decodeSync(Uint8.Number)(2);
-			const result = Uint8.plus(max, two);
-			expect(Uint8.toNumber(result)).toBe(1);
+			expect(() => Uint8.plus(max, two)).toThrow();
 		});
 	});
 
@@ -192,18 +190,16 @@ describe("Uint8", () => {
 			expect(Uint8.toNumber(result)).toBe(100);
 		});
 
-		it("wraps on underflow (0 - 1)", () => {
+		it("throws on underflow (0 - 1)", () => {
 			const zero = S.decodeSync(Uint8.Number)(0);
 			const one = S.decodeSync(Uint8.Number)(1);
-			const result = Uint8.minus(zero, one);
-			expect(Uint8.toNumber(result)).toBe(UINT8_MAX);
+			expect(() => Uint8.minus(zero, one)).toThrow();
 		});
 
-		it("wraps on large underflow (0 - 2)", () => {
+		it("throws on large underflow (0 - 2)", () => {
 			const zero = S.decodeSync(Uint8.Number)(0);
 			const two = S.decodeSync(Uint8.Number)(2);
-			const result = Uint8.minus(zero, two);
-			expect(Uint8.toNumber(result)).toBe(254);
+			expect(() => Uint8.minus(zero, two)).toThrow();
 		});
 	});
 
@@ -229,11 +225,10 @@ describe("Uint8", () => {
 			expect(Uint8.toNumber(result)).toBe(100);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow", () => {
 			const a = S.decodeSync(Uint8.Number)(128);
 			const b = S.decodeSync(Uint8.Number)(2);
-			const result = Uint8.times(a, b);
-			expect(Uint8.toNumber(result)).toBe(0);
+			expect(() => Uint8.times(a, b)).toThrow();
 		});
 	});
 
@@ -307,16 +302,14 @@ describe("Uint8", () => {
 	});
 
 	describe("Edge cases", () => {
-		it("MAX + MAX wraps correctly", () => {
+		it("MAX + MAX throws", () => {
 			const max = S.decodeSync(Uint8.Number)(UINT8_MAX);
-			const result = Uint8.plus(max, max);
-			expect(Uint8.toNumber(result)).toBe(254);
+			expect(() => Uint8.plus(max, max)).toThrow();
 		});
 
-		it("MAX * MAX wraps correctly", () => {
+		it("MAX * MAX throws", () => {
 			const max = S.decodeSync(Uint8.Number)(UINT8_MAX);
-			const result = Uint8.times(max, max);
-			expect(Uint8.toNumber(result)).toBe(1);
+			expect(() => Uint8.times(max, max)).toThrow();
 		});
 
 		it("alternating operations", () => {
