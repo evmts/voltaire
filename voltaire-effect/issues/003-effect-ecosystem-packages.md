@@ -1,21 +1,33 @@
 # Effect Ecosystem Packages for voltaire-effect
 
-**Priority**: P1
-**Status**: In Progress
+**Priority**: P2 (remaining)
+**Status**: ✅ MOSTLY COMPLETE  
 **Created**: 2026-01-25
 **Updated**: 2026-01-26
+
+## Summary
+
+Core packages adopted. Remaining work is optimization (Effect.Cache, Effect.Request).
 
 ## Implementation Status
 
 | Package | Status | Notes |
 |---------|--------|-------|
-| `@effect/platform` | ✅ Added | Added as dependency |
-| `@effect/platform-node` | ✅ Added | Added as optional/dev dependency |
-| `@effect/platform-browser` | ✅ Added | Added as optional dependency |
-| `@effect/platform-bun` | ✅ Added | Added as optional dependency |
-| `@effect/vitest` | ✅ Added | Migrated 86 test files to use `it.effect` |
-| `effect/Redacted` | ✅ Used | LocalAccount wraps private keys |
+| `@effect/platform` | ✅ Done | HttpTransport + WebSocketTransport use it |
+| `@effect/platform-node` | ✅ Done | Added as optional/dev dependency |
+| `@effect/platform-browser` | ✅ Done | Added as optional dependency |
+| `@effect/platform-bun` | ✅ Done | Added as optional dependency |
+| `@effect/vitest` | ✅ Done | Migrated 86 test files to use `it.effect` |
+| `effect/Redacted` | ✅ Done | LocalAccount wraps private keys |
 | Transport rewrite | ✅ Done | HttpTransport + WebSocketTransport now use @effect/platform |
+
+## Remaining (P2 - nice to have)
+| Package | Priority | Notes |
+|---------|----------|-------|
+| `effect/Cache` | P2 | Replace MemoryCache for auto-lookup |
+| `effect/Request` | P2 | RPC batching/dedup (currently manual BatchScheduler) |
+| `effect/Config` | P3 | Replace hardcoded transport config |
+| `@effect/experimental` | P3 | RateLimiter, PersistedCache |
 
 ## Summary
 

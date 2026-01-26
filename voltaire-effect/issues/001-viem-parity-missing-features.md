@@ -11,23 +11,28 @@ updated: 2026-01-26
 </metadata>
 
 <executive_summary>
-Comprehensive gap analysis comparing viem's client architecture against voltaire-effect. This master document consolidates findings from 30+ reviews (078-092, VIEM-COMPARISON-SUMMARY) into actionable implementation categories.
+Comprehensive gap analysis comparing viem's client architecture against voltaire-effect. This master document consolidates findings from 30+ reviews into actionable implementation categories.
 
-**Key Stats:**
-- EIP compliance: ~60% → target 90%
-- RPC methods: ~65% → target 95%
-- Wallet actions: ~50% → target 90%
+**Current Coverage (estimated after 2026-01-26 updates):**
+- EIP compliance: ~70% → target 90%
+- RPC methods: ~70% → target 95%
+- Wallet actions: ~55% → target 90%
 - L2 support: ~30% → target 80%
-- Signature utilities: ~20% → target 90%
+- Signature utilities: ~30% → target 90%
 
-**Progress update (2026-01-26)**:
-- ✅ Transaction types (EIP-2930/4844/7702) implemented in Signer + Transaction schemas/serializer.
-- ✅ Multicall implemented (`services/Multicall` + Provider action).
-- ✅ JSON-RPC batching implemented in `HttpTransport` (`BatchScheduler`, `batch` option).
-- ✅ Transport layer migrated to `@effect/platform` (HTTP + WebSocket).
-- ✅ NonceManager now scoped by chainId with concurrency-safe `SynchronizedRef`.
-- ✅ ERC721/1155 missing encoders added (ERC20 view encoders still missing).
-- ⚠️ Stats above not remeasured after these changes.
+**Completed ✅:**
+- Transaction types (EIP-2930/4844/7702) in Signer + Transaction schemas
+- Multicall (`services/Multicall` + Provider action)
+- JSON-RPC batching (`BatchScheduler` + `HttpTransport` batch option)
+- Transport layer migrated to `@effect/platform` (HTTP + WebSocket)
+- NonceManager chainId scoping + `SynchronizedRef` concurrency
+- ERC721/1155 encoders
+- FallbackTransport retry with Schedule + SynchronizedRef state
+
+**Priority Gaps:**
+- P0: Receipt/Block schema EIP gaps (093, 094)
+- P1: ABI test coverage (082), HDWallet security (085)
+- P2: Effect.Request batching, Effect.Config, remaining error patterns
 
 **Naming Convention:** We use ethers-style naming:
 - `ProviderService` / `Provider` = viem's PublicClient (read-only)

@@ -1,9 +1,20 @@
 # Effect-Idiomatic Patterns for Client Extensibility
 
-**Priority**: High
-**Status**: Reference
+**Priority**: Reference Doc
+**Status**: ✅ MOSTLY ADOPTED  
 **Created**: 2026-01-25
 **Updated**: 2026-01-26
+
+## Adoption Summary
+
+| Pattern | Status |
+|---------|--------|
+| Service Composition (Layer) | ✅ Adopted |
+| @effect/platform transports | ✅ Adopted |
+| Ref/SynchronizedRef state | ✅ Adopted |
+| Effect.Request batching | ⚠️ Not yet (using manual BatchScheduler) |
+| FiberRef configuration | ⚠️ Not yet |
+| Effect.Config | ⚠️ Not yet |
 
 ## Naming Convention
 

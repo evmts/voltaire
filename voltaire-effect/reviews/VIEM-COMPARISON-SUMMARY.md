@@ -4,18 +4,20 @@
 **Updated**: 2026-01-26
 **Author**: Analysis based on viem WalletClient and Account abstractions
 
-## Related Reviews (actual files in repo)
+## Related Reviews (current files)
 
-- [010-add-transport-batching.md](./010-add-transport-batching.md) - JSON-RPC batching
-- [040-fix-websocket-transport-effect-run-sync.md](./040-fix-websocket-transport-effect-run-sync.md) - WebSocket transport migration
-- [081-jsonrpc-review.md](./081-jsonrpc-review.md) - JSON-RPC module issues
-- [082-abi-primitives-review.md](./082-abi-primitives-review.md) - ABI encoding/decoding gaps
-- [083-nonce-manager-gaps.md](./083-nonce-manager-gaps.md) - Nonce manager gaps (partially fixed)
-- [085-effect-patterns-improvements.md](./085-effect-patterns-improvements.md) - Effect idioms
-- [093-receipt-eventlog-review.md](./093-receipt-eventlog-review.md) - Receipt/EventLog schemas
-- [094-block-primitives-review.md](./094-block-primitives-review.md) - Block schemas
+| Review | Focus | Status |
+|--------|-------|--------|
+| [081-jsonrpc-review.md](./081-jsonrpc-review.md) | JSON-RPC module | Open |
+| [082-abi-primitives-review.md](./082-abi-primitives-review.md) | ABI encode/decode | Open (no tests) |
+| [083-nonce-manager-gaps.md](./083-nonce-manager-gaps.md) | NonceManager | ✅ Core fixed |
+| [085-effect-patterns-improvements.md](./085-effect-patterns-improvements.md) | Effect idioms | Partial |
+| [093-receipt-eventlog-review.md](./093-receipt-eventlog-review.md) | Receipt/EventLog | P0 Open |
+| [094-block-primitives-review.md](./094-block-primitives-review.md) | Block schemas | P1 Open |
 
-_Note_: Prior references to `078-092` viem analysis files are not present in this repo snapshot.
+**Completed & Deleted:**
+- ~~010-add-transport-batching.md~~ - ✅ BatchScheduler implemented
+- ~~040-fix-websocket-transport-effect-run-sync.md~~ - ✅ @effect/platform Socket
 
 ## Executive Summary
 

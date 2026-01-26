@@ -3,6 +3,7 @@
 <issue>
 <metadata>
   <priority>P3</priority>
+  <status>OPEN</status>
   <category>api-consistency</category>
   <complexity>medium</complexity>
   <estimated_effort>2 hours</estimated_effort>

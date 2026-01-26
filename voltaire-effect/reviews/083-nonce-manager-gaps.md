@@ -2,8 +2,21 @@
 
 **Date**: 2026-01-25
 **Updated**: 2026-01-26
-**Priority**: High
-**Category**: Missing Features / Architecture
+**Status**: ✅ CORE FIXED / P2 REMAINING  
+**Priority**: P2 (remaining features)
+
+## Summary
+
+Core issues fixed: chainId scoping + SynchronizedRef for concurrency. Remaining gaps are enhancements.
+
+## Completed ✅
+- `chainId` in key: Keys are now `${chainId}:${address}`
+- Concurrency: `SynchronizedRef.modifyEffect` for atomic consume/increment
+
+## Remaining (P2 - nice to have)
+- LRU cache for previous nonces (memory leak prevention)
+- Custom sources (pluggable NonceManagerSourceService)
+- Account integration (optional nonceManager on LocalAccount)
 
 ## Overview
 

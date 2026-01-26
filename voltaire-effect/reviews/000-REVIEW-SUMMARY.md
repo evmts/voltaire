@@ -207,25 +207,25 @@ See reviews 040, 041, 042, 073, 076-078, 084 for migration patterns (now applied
 
 ## Reviews Index (Current Files)
 
-| File | Focus | Status |
-|------|-------|--------|
-| 010-add-transport-batching.md | JSON-RPC batching | Partial (tests skipped) |
-| 033-fix-fallback-transport-schedule-bug.md | FallbackTransport retry | Mostly fixed |
-| 040-fix-websocket-transport-effect-run-sync.md | WebSocket transport migration | Implemented (tests skipped) |
-| 053-fix-contract-verify-signature-silent-catch.md | verifySignature error handling | Partial (upstream still returns false) |
-| 058-fix-hex-effect-wrapping-inconsistency.md | Hex API consistency | Open |
-| 063-add-missing-erc20-view-encoders.md | ERC20 view helpers | Open |
-| 067-fix-jsonrpc-duplicate-id-counter.md | JSON-RPC id counters | Open |
-| 068-add-jsonrpc-ethereum-error-codes.md | JSON-RPC error codes | Partial |
-| 080-use-effect-error-patterns.md | Error idioms | Open |
-| 081-jsonrpc-review.md | JSON-RPC schemas | Open |
-| 081-use-effect-config-patterns.md | Effect.Config adoption | Open |
-| 082-abi-primitives-review.md | ABI encode/decode | Open |
-| 083-nonce-manager-gaps.md | NonceManager features | Partial (chainId + concurrency fixed) |
-| 085-effect-patterns-improvements.md | Effect idioms | Open |
-| 085-hdwallet-keystore-review.md | HDWallet/Keystore | Partial |
-| 093-receipt-eventlog-review.md | Receipt/EventLog schemas | Open |
-| 094-block-primitives-review.md | Block schemas | Open |
-| VIEM-COMPARISON-SUMMARY.md | Viem parity overview | Summary |
+| File | Focus | Priority | Status |
+|------|-------|----------|--------|
+| 053-fix-contract-verify-signature-silent-catch.md | verifySignature error handling | P3 | ✅ Mostly complete |
+| 058-fix-hex-effect-wrapping-inconsistency.md | Hex API consistency | P3 | Open |
+| 063-add-missing-erc20-view-encoders.md | ERC20 view helpers | P3 | Open |
+| 067-fix-jsonrpc-duplicate-id-counter.md | JSON-RPC id counters | P3 | Open |
+| 068-add-jsonrpc-ethereum-error-codes.md | JSON-RPC error codes | P2 | Partial |
+| 080-use-effect-error-patterns.md | Error idioms | P2 | Open |
+| 081-jsonrpc-review.md | JSON-RPC schemas | P2 | Open |
+| 081-use-effect-config-patterns.md | Effect.Config adoption | P2 | Open |
+| 082-abi-primitives-review.md | ABI encode/decode | P1 | Open (no tests) |
+| 083-nonce-manager-gaps.md | NonceManager features | P2 | ✅ Core fixed |
+| 085-effect-patterns-improvements.md | Effect idioms | P2 | Partial |
+| 085-hdwallet-keystore-review.md | HDWallet/Keystore | P1 | Partial (security gaps) |
+| 093-receipt-eventlog-review.md | Receipt/EventLog schemas | P0 | Open (EIP gaps) |
+| 094-block-primitives-review.md | Block schemas | P1 | Open |
+| VIEM-COMPARISON-SUMMARY.md | Viem parity overview | - | Summary |
 
-_Note_: The prior summary referenced review files `074-105`, which are not present in this repo snapshot.
+### Deleted (Completed)
+- ~~010-add-transport-batching.md~~ - ✅ BatchScheduler + HttpTransport batch option implemented
+- ~~033-fix-fallback-transport-schedule-bug.md~~ - ✅ Schedule.spaced + SynchronizedRef implemented
+- ~~040-fix-websocket-transport-effect-run-sync.md~~ - ✅ @effect/platform Socket implemented

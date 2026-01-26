@@ -3,6 +3,7 @@
 <issue>
 <metadata>
 priority: P0
+status: OPEN - CRITICAL
 category: deep-review
 files: [
   voltaire-effect/src/primitives/Receipt/ReceiptSchema.ts,
@@ -14,7 +15,7 @@ files: [
 ]
 reviews: [059-fix-receipt-pre-byzantium-status.md]
 updated: 2026-01-26
-status: open
+summary: Receipt schema missing EIP-1559/4844 fields, pre-Byzantium handling broken
 </metadata>
 
 <module_overview>

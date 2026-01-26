@@ -2,7 +2,8 @@
 
 <issue>
 <metadata>
-priority: P1-P2
+priority: P1
+status: OPEN
 files: [
   "voltaire-effect/src/primitives/Block/BlockSchema.ts",
   "voltaire-effect/src/primitives/Block/Rpc.ts",
@@ -19,7 +20,7 @@ files: [
 ]
 reviews: []
 updated: 2026-01-26
-status: open
+summary: RPC encode not implemented, shallow validation, zero test coverage
 </metadata>
 
 <module_overview>
