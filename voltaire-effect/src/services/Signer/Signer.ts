@@ -44,6 +44,9 @@ import { ProviderService } from "../Provider/index.js";
 import { TransportService } from "../Transport/index.js";
 import {
 	type CallsStatus,
+	type ChainConfig,
+	type Permission,
+	type PermissionRequest,
 	type SendCallsParams,
 	SignerError,
 	SignerService,
@@ -51,6 +54,7 @@ import {
 	type TransactionRequest,
 	type WalletCapabilities,
 } from "./SignerService.js";
+import { prepareAuthorization as prepareAuthorizationAction } from "./actions/prepareAuthorization.js";
 
 const INTERNAL_CODE_BUNDLE_PENDING = -40003;
 
@@ -426,6 +430,8 @@ const SignerLive: Layer.Layer<
 						),
 					),
 
+			prepareAuthorization: (params) => prepareAuthorizationAction(params),
+
 			sendTransaction: (tx) =>
 				Effect.gen(function* () {
 					const signed = yield* signTransaction(tx);
@@ -457,6 +463,21 @@ const SignerLive: Layer.Layer<
 					),
 				),
 
+			getAddresses: () =>
+				transport.request<string[]>("eth_accounts").pipe(
+					Effect.map((addresses) =>
+						addresses.map((addr) => Address(addr) as AddressType),
+					),
+					Effect.mapError(
+						(e) =>
+							new SignerError(
+								{ action: "getAddresses" },
+								`Failed to get addresses: ${e.message}`,
+								{ cause: e, code: e.code },
+							),
+					),
+				),
+
 			requestAddresses: () =>
 				transport.request<string[]>("eth_requestAccounts").pipe(
 					Effect.map((addresses) =>
@@ -472,6 +493,72 @@ const SignerLive: Layer.Layer<
 					),
 				),
 
+			getPermissions: () =>
+				transport.request<Permission[]>("wallet_getPermissions").pipe(
+					Effect.mapError(
+						(e) =>
+							new SignerError(
+								{ action: "getPermissions" },
+								`Failed to get permissions: ${e.message}`,
+								{ cause: e, code: e.code },
+							),
+					),
+				),
+
+			requestPermissions: (permissions: PermissionRequest) =>
+				transport
+					.request<Permission[]>("wallet_requestPermissions", [permissions])
+					.pipe(
+						Effect.mapError(
+							(e) =>
+								new SignerError(
+									{ action: "requestPermissions", permissions },
+									`Failed to request permissions: ${e.message}`,
+									{ cause: e, code: e.code },
+								),
+						),
+					),
+
+			addChain: (chain: ChainConfig) => {
+				const chainIdHex = `0x${chain.id.toString(16)}`;
+				const rpcUrls = chain.rpcUrls.default.http;
+				const blockExplorerUrls = chain.blockExplorers?.default.url
+					? [chain.blockExplorers.default.url]
+					: undefined;
+
+				return transport
+					.request<void>("wallet_addEthereumChain", [
+						{
+							chainId: chainIdHex,
+							chainName: chain.name,
+							nativeCurrency: {
+								name: chain.nativeCurrency.name,
+								symbol: chain.nativeCurrency.symbol,
+								decimals: chain.nativeCurrency.decimals,
+							},
+							rpcUrls,
+							blockExplorerUrls,
+						},
+					])
+					.pipe(
+						Effect.mapError((e) => {
+							const isUserRejected = e.code === 4001;
+							const message = isUserRejected
+								? "User rejected the request"
+								: `Failed to add chain: ${e.message}`;
+							return new SignerError(
+								{ action: "addChain", chain },
+								message,
+								{
+									cause: e,
+									code: e.code,
+									context: isUserRejected ? { userRejected: true } : undefined,
+								},
+							);
+						}),
+					);
+			},
+
 			switchChain: (chainId) =>
 				transport
 					.request<void>("wallet_switchEthereumChain", [
@@ -479,12 +566,23 @@ const SignerLive: Layer.Layer<
 					])
 					.pipe(
 						Effect.mapError(
-							(e) =>
-								new SignerError(
+							(e) => {
+								const isUserRejected = e.code === 4001;
+								const message = isUserRejected
+									? "User rejected the request"
+									: `Failed to switch chain: ${e.message}`;
+								return new SignerError(
 									{ action: "switchChain", chainId },
-									`Failed to switch chain: ${e.message}`,
-									{ cause: e, code: e.code },
-								),
+									message,
+									{
+										cause: e,
+										code: e.code,
+										context: isUserRejected
+											? { userRejected: true }
+											: undefined,
+									},
+								);
+							},
 						),
 					),
 

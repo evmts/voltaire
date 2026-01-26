@@ -18,7 +18,7 @@ export {
 } from "./writeContract.js";
 
 // Wallet management actions (EIP-3085, EIP-747, EIP-2255)
-export { addChain, type Chain, type NativeCurrency } from "./addChain.js";
+export { addChain, type ChainConfig, type NativeCurrency } from "./addChain.js";
 export { switchChain } from "./switchChain.js";
 export {
 	watchAsset,
@@ -41,8 +41,8 @@ export { getAddresses } from "./getAddresses.js";
 export {
 	prepareAuthorization,
 	type PrepareAuthorizationParams,
-	type Authorization,
 } from "./prepareAuthorization.js";
+export type { Authorization, UnsignedAuthorization } from "../../Account/index.js";
 export {
 	signAuthorization,
 	type SignAuthorizationParams,

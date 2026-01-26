@@ -14,7 +14,6 @@ import {
 
 const mockGrantedPermissions: Permission[] = [
 	{
-		date: 1609459200000,
 		invoker: "https://example.com",
 		parentCapability: "eth_accounts",
 		caveats: [

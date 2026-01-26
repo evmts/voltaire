@@ -110,5 +110,9 @@ describe("switchChain", () => {
 		);
 
 		expect(result._tag).toBe("Failure");
+		if (result._tag === "Failure") {
+			expect(String(result.cause)).toContain("User rejected the request");
+			expect(result.cause.error.code).toBe(4001);
+		}
 	});
 });

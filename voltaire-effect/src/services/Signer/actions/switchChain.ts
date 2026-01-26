@@ -42,12 +42,21 @@ export const switchChain = (
 			])
 			.pipe(
 				Effect.mapError(
-					(e) =>
-						new SignerError(
+					(e) => {
+						const isUserRejected = e.code === 4001;
+						const message = isUserRejected
+							? "User rejected the request"
+							: `Failed to switch chain: ${e.message}`;
+						return new SignerError(
 							{ action: "switchChain", chainId },
-							`Failed to switch chain: ${e.message}`,
-							{ cause: e, code: e.code },
-						),
+							message,
+							{
+								cause: e,
+								code: e.code,
+								context: isUserRejected ? { userRejected: true } : undefined,
+							},
+						);
+					},
 				),
 			);
 	});

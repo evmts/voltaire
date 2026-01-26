@@ -1,4 +1,4 @@
-import type { BrandedAddress, BrandedSignature } from "@tevm/voltaire";
+import type { BrandedAddress, BrandedHex, BrandedSignature } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { describe, expect, it } from "@effect/vitest";
@@ -8,6 +8,7 @@ import { ProviderService, type ProviderShape } from "../../Provider/index.js";
 import { prepareAuthorization } from "./prepareAuthorization.js";
 
 type AddressType = BrandedAddress.AddressType;
+type HexType = BrandedHex.HexType;
 type SignatureType = BrandedSignature.SignatureType;
 
 const mockAddress = new Uint8Array(20).fill(0xab) as AddressType;
@@ -15,11 +16,12 @@ const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
+const mockPublicKey = ("0x04" + "00".repeat(64)) as HexType;
 
 const mockAccount: AccountShape = {
 	address: mockAddress,
 	type: "local",
-	publicKey: new Uint8Array(65).fill(0x04),
+	publicKey: mockPublicKey,
 	signMessage: () => Effect.succeed(mockSignature),
 	sign: () => Effect.succeed(mockSignature),
 	signTransaction: () => Effect.succeed(mockSignature),
@@ -122,6 +124,34 @@ describe("prepareAuthorization", () => {
 
 		expect(capturedBlockTag).toBe("pending");
 		expect(result.nonce).toBe(10n);
+	});
+
+	it("uses provided nonce without fetching", async () => {
+		let getNonceCalled = false;
+		const providerWithCapture: ProviderShape = {
+			...mockProvider,
+			getTransactionCount: () => {
+				getNonceCalled = true;
+				return Effect.succeed(10n);
+			},
+		};
+
+		const customLayers = Layer.mergeAll(
+			TestAccountLayer,
+			Layer.succeed(ProviderService, providerWithCapture),
+		);
+
+		const program = prepareAuthorization({
+			contractAddress: "0x1234567890123456789012345678901234567890",
+			nonce: 42n,
+		});
+
+		const result = await Effect.runPromise(
+			Effect.provide(program, customLayers),
+		);
+
+		expect(result.nonce).toBe(42n);
+		expect(getNonceCalled).toBe(false);
 	});
 
 	it("converts AddressType contract address to hex", async () => {

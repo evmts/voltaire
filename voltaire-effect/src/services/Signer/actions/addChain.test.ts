@@ -6,9 +6,9 @@ import {
 	type TransportShape,
 } from "../../Transport/TransportService.js";
 import { TransportError } from "../../Transport/TransportError.js";
-import { addChain, type Chain } from "./addChain.js";
+import { addChain, type ChainConfig } from "./addChain.js";
 
-const polygonChain: Chain = {
+const polygonChain: ChainConfig = {
 	id: 137,
 	name: "Polygon",
 	nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
@@ -18,7 +18,7 @@ const polygonChain: Chain = {
 	},
 };
 
-const minimalChain: Chain = {
+const minimalChain: ChainConfig = {
 	id: 42161,
 	name: "Arbitrum",
 	nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
@@ -98,7 +98,7 @@ describe("addChain", () => {
 
 		const TestLayer = Layer.succeed(TransportService, mockTransport);
 
-		const mainnetChain: Chain = {
+		const mainnetChain: ChainConfig = {
 			id: 1,
 			name: "Ethereum",
 			nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
@@ -111,7 +111,7 @@ describe("addChain", () => {
 		expect(params.chainId).toBe("0x1");
 	});
 
-	it("handles transport errors", async () => {
+	it("handles user rejection errors", async () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
@@ -129,7 +129,27 @@ describe("addChain", () => {
 
 		expect(result._tag).toBe("Failure");
 		if (result._tag === "Failure") {
+			expect(String(result.cause)).toContain("User rejected the request");
+			expect(result.cause.error.code).toBe(4001);
+		}
+	});
+
+	it("handles non-rejection transport errors", async () => {
+		const mockTransport: TransportShape = {
+			request: <T>(): Effect.Effect<T, never> =>
+				Effect.fail(new TransportError("RPC error", { code: -32000 })) as never,
+		};
+
+		const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+		const result = await Effect.runPromiseExit(
+			Effect.provide(addChain(polygonChain), TestLayer),
+		);
+
+		expect(result._tag).toBe("Failure");
+		if (result._tag === "Failure") {
 			expect(String(result.cause)).toContain("Failed to add chain");
+			expect(result.cause.error.code).toBe(-32000);
 		}
 	});
 });

@@ -32,6 +32,10 @@ import type { HashType } from "@tevm/voltaire/Hash";
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";
 import type * as Effect from "effect/Effect";
+import type {
+	AuthorizationInput,
+	UnsignedAuthorization,
+} from "../Account/AccountService.js";
 
 type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;
@@ -45,6 +49,81 @@ type EventLogType = EventLog.EventLogType;
  * Matches ProviderService.AddressInput for consistency.
  */
 export type AddressInput = AddressType | `0x${string}`;
+
+/**
+ * Caveat applied to a permission.
+ *
+ * @since 0.0.1
+ */
+export interface Caveat {
+	/** Caveat type */
+	readonly type: string;
+	/** Caveat value */
+	readonly value: unknown;
+}
+
+/**
+ * Wallet permission object per EIP-2255.
+ *
+ * @since 0.0.1
+ */
+export interface Permission {
+	/** Parent capability (e.g., "eth_accounts") */
+	readonly parentCapability: string;
+	/** Invoker (origin) that was granted the permission */
+	readonly invoker: string;
+	/** Optional caveats restricting the permission */
+	readonly caveats?: readonly Caveat[];
+}
+
+/**
+ * Permission request object.
+ *
+ * @since 0.0.1
+ */
+export interface PermissionRequest {
+	/** The permission being requested (e.g., "eth_accounts") */
+	readonly [permission: string]: Record<string, unknown>;
+}
+
+/**
+ * Native currency configuration for a chain.
+ *
+ * @since 0.0.1
+ */
+export interface NativeCurrency {
+	/** Currency name (e.g., "Ether") */
+	readonly name: string;
+	/** Currency symbol (e.g., "ETH") */
+	readonly symbol: string;
+	/** Currency decimals (typically 18) */
+	readonly decimals: number;
+}
+
+/**
+ * Chain configuration for wallet_addEthereumChain (EIP-3085).
+ *
+ * @since 0.0.1
+ */
+export interface ChainConfig {
+	/** Chain ID as a number */
+	readonly id: number;
+	/** Human-readable chain name */
+	readonly name: string;
+	/** Native currency configuration */
+	readonly nativeCurrency: NativeCurrency;
+	/** RPC URL endpoints */
+	readonly rpcUrls: {
+		readonly default: { readonly http: readonly string[] };
+	};
+	/** Block explorer URLs (optional) */
+	readonly blockExplorers?: {
+		readonly default: {
+			readonly name: string;
+			readonly url: string;
+		};
+	};
+}
 
 /**
  * Error thrown when a signer operation fails.
@@ -181,18 +260,22 @@ export type TransactionRequest = {
 	readonly kzgProofs?: readonly `0x${string}`[];
 
 	/** EIP-7702: Authorization list for set code transactions */
-	readonly authorizationList?: readonly {
-		chainId: bigint;
-		address: `0x${string}`;
-		nonce: bigint;
-		/** Signature parity (0/1). Use `v` (27/28) if preferred. */
-		yParity?: number;
-		/** Signature recovery id (27/28 or 0/1). */
-		v?: number;
-		r: `0x${string}`;
-		s: `0x${string}`;
-	}[];
+	readonly authorizationList?: readonly AuthorizationInput[];
 };
+
+/**
+ * Parameters for preparing an EIP-7702 authorization.
+ *
+ * @since 0.0.1
+ */
+export interface PrepareAuthorizationParams {
+	/** Address of the contract to delegate to */
+	readonly contractAddress: `0x${string}` | AddressType;
+	/** Chain ID where the authorization is valid */
+	readonly chainId?: bigint;
+	/** Nonce of the authorizing account (fetched if not provided) */
+	readonly nonce?: bigint;
+}
 
 /**
  * Parameters for EIP-5792 wallet_sendCalls.
@@ -298,6 +381,15 @@ export type SignerShape = {
 	) => Effect.Effect<SignatureType, SignerError>;
 
 	/**
+	 * Prepares an EIP-7702 authorization tuple.
+	 * @param params - Authorization parameters
+	 * @returns Unsigned authorization ready for signing
+	 */
+	readonly prepareAuthorization: (
+		params: PrepareAuthorizationParams,
+	) => Effect.Effect<UnsignedAuthorization, SignerError>;
+
+	/**
 	 * Signs and broadcasts a transaction.
 	 * @param tx - Transaction parameters
 	 * @returns Transaction hash
@@ -316,10 +408,37 @@ export type SignerShape = {
 	) => Effect.Effect<HashType, SignerError>;
 
 	/**
+	 * Gets wallet addresses without prompting (eth_accounts).
+	 * @returns Array of connected addresses
+	 */
+	readonly getAddresses: () => Effect.Effect<AddressType[], SignerError>;
+
+	/**
 	 * Requests wallet addresses (triggers wallet popup in browser).
 	 * @returns Array of connected addresses
 	 */
 	readonly requestAddresses: () => Effect.Effect<AddressType[], SignerError>;
+
+	/**
+	 * Gets the current permissions granted to the dapp (EIP-2255).
+	 * @returns Array of granted permissions
+	 */
+	readonly getPermissions: () => Effect.Effect<Permission[], SignerError>;
+
+	/**
+	 * Requests specific permissions from the wallet (EIP-2255).
+	 * @param permissions - Object with permission names as keys
+	 * @returns Array of granted permissions
+	 */
+	readonly requestPermissions: (
+		permissions: PermissionRequest,
+	) => Effect.Effect<Permission[], SignerError>;
+
+	/**
+	 * Requests the wallet to add a new chain (EIP-3085).
+	 * @param chain - Chain configuration to add
+	 */
+	readonly addChain: (chain: ChainConfig) => Effect.Effect<void, SignerError>;
 
 	/**
 	 * Requests wallet to switch to a different chain.
@@ -379,7 +498,7 @@ export type SignerShape = {
  * - Transaction signing (signTransaction)
  * - Typed data signing (signTypedData - EIP-712)
  * - Transaction sending (sendTransaction, sendRawTransaction)
- * - Wallet interaction (requestAddresses, switchChain)
+ * - Wallet interaction (getAddresses, requestAddresses, getPermissions, requestPermissions, addChain, switchChain)
  *
  * Requires:
  * - AccountService - For cryptographic signing

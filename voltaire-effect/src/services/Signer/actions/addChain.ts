@@ -6,48 +6,14 @@
  */
 
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
+import {
+	SignerError,
+	type ChainConfig,
+	type NativeCurrency,
+} from "../SignerService.js";
 import { TransportService } from "../../Transport/index.js";
 
-/**
- * Native currency configuration for a chain.
- *
- * @since 0.0.1
- */
-export interface NativeCurrency {
-	/** Currency name (e.g., "Ether") */
-	readonly name: string;
-	/** Currency symbol (e.g., "ETH") */
-	readonly symbol: string;
-	/** Currency decimals (typically 18) */
-	readonly decimals: number;
-}
-
-/**
- * Chain configuration for adding to a wallet.
- * Based on EIP-3085 specification.
- *
- * @since 0.0.1
- */
-export interface Chain {
-	/** Chain ID as a number */
-	readonly id: number;
-	/** Human-readable chain name */
-	readonly name: string;
-	/** Native currency configuration */
-	readonly nativeCurrency: NativeCurrency;
-	/** RPC URL endpoints */
-	readonly rpcUrls: {
-		readonly default: { readonly http: readonly string[] };
-	};
-	/** Block explorer URLs (optional) */
-	readonly blockExplorers?: {
-		readonly default: {
-			readonly name: string;
-			readonly url: string;
-		};
-	};
-}
+export type { ChainConfig, NativeCurrency };
 
 /**
  * Requests the wallet to add a new chain (EIP-3085).
@@ -73,7 +39,7 @@ export interface Chain {
  * @since 0.0.1
  */
 export const addChain = (
-	chain: Chain,
+	chain: ChainConfig,
 ): Effect.Effect<void, SignerError, TransportService> =>
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
@@ -100,12 +66,21 @@ export const addChain = (
 			])
 			.pipe(
 				Effect.mapError(
-					(e) =>
-						new SignerError(
+					(e) => {
+						const isUserRejected = e.code === 4001;
+						const message = isUserRejected
+							? "User rejected the request"
+							: `Failed to add chain: ${e.message}`;
+						return new SignerError(
 							{ action: "addChain", chain },
-							`Failed to add chain: ${e.message}`,
-							{ cause: e, code: e.code },
-						),
+							message,
+							{
+								cause: e,
+								code: e.code,
+								context: isUserRejected ? { userRejected: true } : undefined,
+							},
+						);
+					},
 				),
 			);
 	});

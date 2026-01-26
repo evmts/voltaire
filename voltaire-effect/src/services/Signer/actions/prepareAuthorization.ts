@@ -7,37 +7,11 @@
 
 import { Address, type BrandedAddress } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
+import { SignerError, type PrepareAuthorizationParams } from "../SignerService.js";
 import { ProviderService } from "../../Provider/index.js";
-import { AccountService } from "../../Account/index.js";
+import { AccountService, type UnsignedAuthorization } from "../../Account/index.js";
 
 type AddressType = BrandedAddress.AddressType;
-
-/**
- * Parameters for preparing an EIP-7702 authorization.
- *
- * @since 0.0.1
- */
-export interface PrepareAuthorizationParams {
-	/** Address of the contract to delegate to */
-	readonly contractAddress: `0x${string}` | AddressType;
-	/** Chain ID where the authorization is valid */
-	readonly chainId?: bigint;
-}
-
-/**
- * Unsigned EIP-7702 authorization tuple.
- *
- * @since 0.0.1
- */
-export interface Authorization {
-	/** Chain ID where the authorization is valid */
-	readonly chainId: bigint;
-	/** Address of the contract to delegate to (hex string) */
-	readonly address: `0x${string}`;
-	/** Nonce of the authorizing account */
-	readonly nonce: bigint;
-}
 
 /**
  * Prepares an EIP-7702 authorization for signing.
@@ -74,7 +48,7 @@ export interface Authorization {
 export const prepareAuthorization = (
 	params: PrepareAuthorizationParams,
 ): Effect.Effect<
-	Authorization,
+	UnsignedAuthorization,
 	SignerError,
 	ProviderService | AccountService
 > =>
@@ -86,7 +60,9 @@ export const prepareAuthorization = (
 			params.chainId ?? BigInt(yield* provider.getChainId());
 
 		const addressHex = Address.toHex(account.address as AddressType);
-		const nonce = yield* provider.getTransactionCount(addressHex, "pending");
+		const nonce =
+			params.nonce ??
+			(yield* provider.getTransactionCount(addressHex, "pending"));
 
 		const contractAddressHex =
 			typeof params.contractAddress === "string"

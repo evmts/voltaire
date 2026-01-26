@@ -85,7 +85,7 @@ export {
 	type DeployContractResult,
 	// Wallet management actions
 	addChain,
-	type Chain,
+	type ChainConfig,
 	type NativeCurrency,
 	switchChain,
 	watchAsset,
@@ -102,6 +102,7 @@ export {
 	prepareAuthorization,
 	type PrepareAuthorizationParams,
 	type Authorization,
+	type UnsignedAuthorization,
 	signAuthorization,
 	type SignAuthorizationParams,
 	type SignedAuthorization,

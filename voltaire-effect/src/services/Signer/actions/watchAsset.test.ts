@@ -22,8 +22,6 @@ const minimalAsset: WatchAssetParams = {
 	type: "ERC20",
 	options: {
 		address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-		symbol: "USDT",
-		decimals: 6,
 	},
 };
 
@@ -71,7 +69,7 @@ describe("watchAsset", () => {
 		);
 	});
 
-	it("works without image", async () => {
+	it("works without optional metadata", async () => {
 		let capturedParams: unknown[] | undefined;
 
 		const mockTransport: TransportShape = {
@@ -88,8 +86,10 @@ describe("watchAsset", () => {
 		);
 
 		const params = capturedParams![0] as {
-			options: { image?: string };
+			options: { symbol?: string; decimals?: number; image?: string };
 		};
+		expect(params.options.symbol).toBeUndefined();
+		expect(params.options.decimals).toBeUndefined();
 		expect(params.options.image).toBeUndefined();
 	});
 
@@ -107,11 +107,31 @@ describe("watchAsset", () => {
 		expect(result).toBe(false);
 	});
 
+	it("returns false when user rejects with an error", async () => {
+		const mockTransport: TransportShape = {
+			request: <T>(): Effect.Effect<T, never> =>
+				Effect.fail(
+					new TransportError({
+						code: 4001,
+						message: "User rejected the request",
+					}),
+				) as never,
+		};
+
+		const TestLayer = Layer.succeed(TransportService, mockTransport);
+
+		const result = await Effect.runPromise(
+			Effect.provide(watchAsset(usdcAsset), TestLayer),
+		);
+
+		expect(result).toBe(false);
+	});
+
 	it("handles transport errors", async () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError("User rejected the request", { code: 4001 }),
+					new TransportError({ code: -32603, message: "Internal error" }),
 				) as never,
 		};
 
@@ -131,7 +151,10 @@ describe("watchAsset", () => {
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>
 				Effect.fail(
-					new TransportError("Asset type not supported", { code: -32602 }),
+					new TransportError({
+						code: -32602,
+						message: "Asset type not supported",
+					}),
 				) as never,
 		};
 

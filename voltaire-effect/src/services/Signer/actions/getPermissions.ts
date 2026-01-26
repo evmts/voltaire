@@ -6,36 +6,9 @@
  */
 
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
+import { SignerError, type Permission } from "../SignerService.js";
 import { TransportService } from "../../Transport/index.js";
-
-/**
- * Caveat applied to a permission.
- *
- * @since 0.0.1
- */
-export interface Caveat {
-	/** Caveat type */
-	readonly type: string;
-	/** Caveat value */
-	readonly value: unknown;
-}
-
-/**
- * Wallet permission object per EIP-2255.
- *
- * @since 0.0.1
- */
-export interface Permission {
-	/** Unix timestamp when permission was granted */
-	readonly date: number;
-	/** Invoker (origin) that was granted the permission */
-	readonly invoker: string;
-	/** Parent capability (always "wallet_api" for root) */
-	readonly parentCapability: string;
-	/** Optional caveats restricting the permission */
-	readonly caveats?: readonly Caveat[];
-}
+export type { Caveat, Permission } from "../SignerService.js";
 
 /**
  * Gets the current permissions granted to the dapp (EIP-2255).

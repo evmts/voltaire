@@ -17,10 +17,10 @@ import { TransportService } from "../../Transport/index.js";
 export interface WatchAssetOptions {
 	/** Contract address of the token */
 	readonly address: `0x${string}`;
-	/** Token symbol (e.g., "USDC") */
-	readonly symbol: string;
-	/** Token decimals */
-	readonly decimals: number;
+	/** Token symbol (optional, e.g., "USDC") */
+	readonly symbol?: string;
+	/** Token decimals (optional) */
+	readonly decimals?: number;
 	/** Optional URL to the token image */
 	readonly image?: string;
 }
@@ -40,7 +40,7 @@ export type WatchAssetType = "ERC20";
 export interface WatchAssetParams {
 	/** Asset type (typically "ERC20") */
 	readonly type: WatchAssetType;
-	/** Asset options including address, symbol, decimals */
+	/** Asset options including address and optional metadata */
 	readonly options: WatchAssetOptions;
 }
 
@@ -89,13 +89,22 @@ export const watchAsset = (
 				},
 			])
 			.pipe(
-				Effect.mapError(
-					(e) =>
+				Effect.catchAll((e) => {
+					const error = e as { code?: number; message?: unknown };
+					const message =
+						typeof error.message === "string"
+							? error.message.toLowerCase()
+							: undefined;
+					if (error.code === 4001 || message?.includes("user rejected")) {
+						return Effect.succeed(false);
+					}
+					return Effect.fail(
 						new SignerError(
 							{ action: "watchAsset", asset },
-							`Failed to watch asset: ${e.message}`,
-							{ cause: e, code: e.code },
+							`Failed to watch asset: ${String(error.message)}`,
+							{ cause: e, code: error.code },
 						),
-				),
+					);
+				}),
 			);
 	});

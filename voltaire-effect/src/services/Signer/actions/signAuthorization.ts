@@ -11,6 +11,7 @@ import { SignerError } from "../SignerService.js";
 import { ProviderService } from "../../Provider/index.js";
 import {
 	AccountService,
+	type UnsignedAuthorization,
 	type SignedAuthorization,
 } from "../../Account/index.js";
 
@@ -21,14 +22,16 @@ type AddressType = BrandedAddress.AddressType;
  *
  * @since 0.0.1
  */
-export interface SignAuthorizationParams {
-	/** Address of the contract to delegate to */
-	readonly contractAddress: `0x${string}` | AddressType;
-	/** Chain ID where the authorization is valid */
-	readonly chainId?: bigint;
-	/** Nonce of the authorizing account (fetched if not provided) */
-	readonly nonce?: bigint;
-}
+export type SignAuthorizationParams =
+	| {
+			/** Address of the contract to delegate to */
+			readonly contractAddress: `0x${string}` | AddressType;
+			/** Chain ID where the authorization is valid */
+			readonly chainId?: bigint;
+			/** Nonce of the authorizing account (fetched if not provided) */
+			readonly nonce?: bigint;
+	  }
+	| UnsignedAuthorization;
 
 /**
  * Signs an EIP-7702 authorization tuple.
@@ -83,27 +86,29 @@ export const signAuthorization = (
 				"pending",
 			));
 
+		const contractAddress =
+			"address" in params ? params.address : params.contractAddress;
 		const contractAddressHex =
-			typeof params.contractAddress === "string"
-				? params.contractAddress
-				: Address.toHex(params.contractAddress as AddressType);
+			typeof contractAddress === "string"
+				? contractAddress
+				: Address.toHex(contractAddress as AddressType);
 
-		const unsigned = {
-			chainId,
-			address: contractAddressHex as `0x${string}`,
-			nonce,
-		};
-
-		return yield* account.signAuthorization(unsigned).pipe(
-			Effect.mapError(
-				(e) =>
-					new SignerError(
-						{ action: "signAuthorization", params },
-						`Failed to sign authorization: ${e.message}`,
-						{ cause: e, code: e.code },
-					),
-			),
-		);
+		return yield* account
+			.signAuthorization({
+				contractAddress: contractAddressHex as `0x${string}`,
+				chainId,
+				nonce,
+			})
+			.pipe(
+				Effect.mapError(
+					(e) =>
+						new SignerError(
+							{ action: "signAuthorization", params },
+							`Failed to sign authorization: ${e.message}`,
+							{ cause: e, code: e.code },
+						),
+				),
+			);
 	}).pipe(
 		Effect.mapError((e) => {
 			if (e instanceof SignerError) return e;

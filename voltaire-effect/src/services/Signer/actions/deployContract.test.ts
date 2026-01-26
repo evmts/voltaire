@@ -27,6 +27,7 @@ const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
+const mockPublicKey = ("0x04" + "00".repeat(64)) as HexType;
 const mockTxHashHex =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const mockTxHash: HashType = Hash.fromHex(mockTxHashHex);
@@ -75,7 +76,7 @@ let capturedTx: unknown;
 const mockAccount: AccountShape = {
 	address: mockAddress,
 	type: "local",
-	publicKey: new Uint8Array(65).fill(0x04),
+	publicKey: mockPublicKey,
 	signMessage: () => Effect.succeed(mockSignature),
 	sign: () => Effect.succeed(mockSignature),
 	signTransaction: (tx) => {

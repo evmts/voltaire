@@ -6,19 +6,12 @@
  */
 
 import * as Effect from "effect/Effect";
-import { SignerError } from "../SignerService.js";
+import {
+	SignerError,
+	type Permission,
+	type PermissionRequest,
+} from "../SignerService.js";
 import { TransportService } from "../../Transport/index.js";
-import type { Permission, Caveat } from "./getPermissions.js";
-
-/**
- * Permission request object.
- *
- * @since 0.0.1
- */
-export interface PermissionRequest {
-	/** The permission being requested (e.g., "eth_accounts") */
-	readonly [permission: string]: Record<string, unknown>;
-}
 
 /**
  * Requests specific permissions from the wallet (EIP-2255).
@@ -66,4 +59,4 @@ export const requestPermissions = (
 			);
 	});
 
-export type { Permission, Caveat };
+export type { Permission, Caveat, PermissionRequest } from "../SignerService.js";

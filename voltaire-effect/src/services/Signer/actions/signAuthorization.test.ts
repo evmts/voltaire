@@ -1,13 +1,17 @@
-import type { BrandedAddress, BrandedSignature } from "@tevm/voltaire";
+import type { BrandedAddress, BrandedHex, BrandedSignature } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { describe, expect, it } from "@effect/vitest";
-import type { AccountShape, UnsignedAuthorization } from "../../Account/AccountService.js";
+import type {
+	AccountShape,
+	SignAuthorizationParams,
+} from "../../Account/AccountService.js";
 import { AccountService, AccountError } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
 import { signAuthorization } from "./signAuthorization.js";
 
 type AddressType = BrandedAddress.AddressType;
+type HexType = BrandedHex.HexType;
 type SignatureType = BrandedSignature.SignatureType;
 
 const mockAddress = new Uint8Array(20).fill(0xab) as AddressType;
@@ -15,6 +19,7 @@ const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
+const mockPublicKey = ("0x04" + "00".repeat(64)) as HexType;
 
 const mockSignedAuth = {
 	chainId: 1n,
@@ -25,22 +30,23 @@ const mockSignedAuth = {
 	s: ("0x" + "cd".repeat(32)) as `0x${string}`,
 };
 
-let capturedAuthorization: UnsignedAuthorization | undefined;
+let capturedAuthorization: SignAuthorizationParams | undefined;
 
 const mockAccount: AccountShape = {
 	address: mockAddress,
 	type: "local",
-	publicKey: new Uint8Array(65).fill(0x04),
+	publicKey: mockPublicKey,
 	signMessage: () => Effect.succeed(mockSignature),
 	sign: () => Effect.succeed(mockSignature),
 	signTransaction: () => Effect.succeed(mockSignature),
 	signTypedData: () => Effect.succeed(mockSignature),
 	signAuthorization: (auth) => {
 		capturedAuthorization = auth;
+		const nonce = auth.nonce ?? 0n;
 		return Effect.succeed({
 			...mockSignedAuth,
 			chainId: auth.chainId,
-			nonce: auth.nonce,
+			nonce,
 		});
 	},
 	clearKey: () => Effect.void,
@@ -143,7 +149,7 @@ describe("signAuthorization", () => {
 
 		expect(capturedAuthorization).toEqual({
 			chainId: 10n,
-			address: "0xabcdef0123456789abcdef0123456789abcdef01",
+			contractAddress: "0xabcdef0123456789abcdef0123456789abcdef01",
 			nonce: 100n,
 		});
 	});
@@ -156,7 +162,7 @@ describe("signAuthorization", () => {
 
 		await Effect.runPromise(Effect.provide(program, TestLayers));
 
-		expect(capturedAuthorization?.address.toLowerCase()).toBe(
+		expect(capturedAuthorization?.contractAddress.toLowerCase()).toBe(
 			"0x1212121212121212121212121212121212121212",
 		);
 	});

@@ -10,7 +10,6 @@ import { getPermissions, type Permission } from "./getPermissions.js";
 
 const mockPermissions: Permission[] = [
 	{
-		date: 1609459200000,
 		invoker: "https://example.com",
 		parentCapability: "eth_accounts",
 		caveats: [
@@ -58,18 +57,16 @@ describe("getPermissions", () => {
 	});
 
 	it("returns multiple permissions", async () => {
-		const multiplePermissions: Permission[] = [
-			{
-				date: 1609459200000,
-				invoker: "https://example.com",
-				parentCapability: "eth_accounts",
-			},
-			{
-				date: 1609459200000,
-				invoker: "https://example.com",
-				parentCapability: "eth_chainId",
-			},
-		];
+	const multiplePermissions: Permission[] = [
+		{
+			invoker: "https://example.com",
+			parentCapability: "eth_accounts",
+		},
+		{
+			invoker: "https://example.com",
+			parentCapability: "eth_chainId",
+		},
+	];
 
 		const mockTransport: TransportShape = {
 			request: <T>(): Effect.Effect<T, never> =>

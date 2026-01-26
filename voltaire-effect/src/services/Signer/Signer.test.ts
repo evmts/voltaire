@@ -18,13 +18,20 @@ import { AccountService } from "../Account/index.js";
 import { ProviderService, type ProviderShape } from "../Provider/index.js";
 import { TransportService, type TransportShape } from "../Transport/index.js";
 import { Signer } from "./Signer.js";
-import { SignerError, SignerService } from "./SignerService.js";
+import {
+	type ChainConfig,
+	SignerError,
+	SignerService,
+	type Permission,
+	type PermissionRequest,
+} from "./SignerService.js";
 
 const mockAddress = new Uint8Array(20).fill(0xab) as AddressType;
 const mockSignature = Object.assign(new Uint8Array(65).fill(0x12), {
 	algorithm: "secp256k1" as const,
 	v: 27,
 }) as SignatureType;
+const mockPublicKey = ("0x04" + "00".repeat(64)) as HexType;
 const mockTxHashHex =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const mockTxHash: HashType = Hash.fromHex(mockTxHashHex);
@@ -32,7 +39,7 @@ const mockTxHash: HashType = Hash.fromHex(mockTxHashHex);
 const mockAccount: AccountShape = {
 	address: mockAddress,
 	type: "local",
-	publicKey: new Uint8Array(65).fill(0x04), // Mock uncompressed public key
+	publicKey: mockPublicKey, // Mock uncompressed public key
 	signMessage: () => Effect.succeed(mockSignature),
 	sign: () => Effect.succeed(mockSignature),
 	signTransaction: () => Effect.succeed(mockSignature),
@@ -463,6 +470,188 @@ describe("SignerService", () => {
 			expect(result).toHaveLength(1);
 			expect(result[0]).toBeInstanceOf(Uint8Array);
 			expect(result[0].length).toBe(20);
+		});
+	});
+
+	describe("getAddresses", () => {
+		it("requests eth_accounts and converts to AddressType", async () => {
+			let capturedMethod: string | undefined;
+			const mockHexAddresses = ["0xabababababababababababababababababababab"];
+			const transportWithAddresses: TransportShape = {
+				request: <T>(method: string): Effect.Effect<T, never> => {
+					capturedMethod = method;
+					return Effect.succeed(mockHexAddresses as T);
+				},
+			};
+
+			const customTransportLayer = Layer.succeed(
+				TransportService,
+				transportWithAddresses,
+			);
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				TestProviderLayer,
+				customTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.getAddresses();
+			});
+
+			const result = await Effect.runPromise(
+				Effect.provide(program, customSignerLayer),
+			);
+
+			expect(capturedMethod).toBe("eth_accounts");
+			expect(result).toHaveLength(1);
+			expect(result[0]).toBeInstanceOf(Uint8Array);
+			expect(result[0].length).toBe(20);
+		});
+	});
+
+	describe("getPermissions", () => {
+		it("requests wallet_getPermissions and returns permissions", async () => {
+			let capturedMethod: string | undefined;
+			const mockPermissions: Permission[] = [
+				{
+					parentCapability: "eth_accounts",
+					invoker: "https://example.com",
+					caveats: [],
+				},
+			];
+			const transportWithPermissions: TransportShape = {
+				request: <T>(method: string): Effect.Effect<T, never> => {
+					capturedMethod = method;
+					return Effect.succeed(mockPermissions as T);
+				},
+			};
+
+			const customTransportLayer = Layer.succeed(
+				TransportService,
+				transportWithPermissions,
+			);
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				TestProviderLayer,
+				customTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.getPermissions();
+			});
+
+			const result = await Effect.runPromise(
+				Effect.provide(program, customSignerLayer),
+			);
+
+			expect(capturedMethod).toBe("wallet_getPermissions");
+			expect(result).toEqual(mockPermissions);
+		});
+	});
+
+	describe("requestPermissions", () => {
+		it("requests wallet_requestPermissions with params", async () => {
+			let capturedMethod: string | undefined;
+			let capturedParams: unknown[] | undefined;
+			const mockPermissions: Permission[] = [
+				{
+					parentCapability: "eth_accounts",
+					invoker: "https://example.com",
+					caveats: [],
+				},
+			];
+			const transportWithPermissions: TransportShape = {
+				request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+					capturedMethod = method;
+					capturedParams = params;
+					return Effect.succeed(mockPermissions as T);
+				},
+			};
+
+			const customTransportLayer = Layer.succeed(
+				TransportService,
+				transportWithPermissions,
+			);
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				TestProviderLayer,
+				customTransportLayer,
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const permissionRequest: PermissionRequest = { eth_accounts: {} };
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.requestPermissions(permissionRequest);
+			});
+
+			const result = await Effect.runPromise(
+				Effect.provide(program, customSignerLayer),
+			);
+
+			expect(capturedMethod).toBe("wallet_requestPermissions");
+			expect(capturedParams).toEqual([permissionRequest]);
+			expect(result).toEqual(mockPermissions);
+		});
+	});
+
+	describe("addChain", () => {
+		it("sends wallet_addEthereumChain with correct params", async () => {
+			let capturedMethod: string | undefined;
+			let capturedParams: unknown[] | undefined;
+
+			const transportWithCapture: TransportShape = {
+				request: <T>(method: string, params?: unknown[]): Effect.Effect<T, never> => {
+					capturedMethod = method;
+					capturedParams = params;
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const customLayers = Layer.mergeAll(
+				TestAccountLayer,
+				TestProviderLayer,
+				Layer.succeed(TransportService, transportWithCapture),
+			);
+			const customSignerLayer = Layer.provide(Signer.Live, customLayers);
+
+			const polygonChain: ChainConfig = {
+				id: 137,
+				name: "Polygon",
+				nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
+				rpcUrls: { default: { http: ["https://polygon-rpc.com"] } },
+				blockExplorers: {
+					default: { name: "Polygonscan", url: "https://polygonscan.com" },
+				},
+			};
+
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				yield* signer.addChain(polygonChain);
+			});
+
+			await Effect.runPromise(Effect.provide(program, customSignerLayer));
+
+			expect(capturedMethod).toBe("wallet_addEthereumChain");
+			expect(capturedParams).toBeDefined();
+
+			const params = capturedParams![0] as {
+				chainId: string;
+				chainName: string;
+				nativeCurrency: { name: string; symbol: string; decimals: number };
+				rpcUrls: string[];
+				blockExplorerUrls?: string[];
+			};
+
+			expect(params.chainId).toBe("0x89");
+			expect(params.chainName).toBe("Polygon");
+			expect(params.rpcUrls).toEqual(["https://polygon-rpc.com"]);
+			expect(params.blockExplorerUrls).toEqual(["https://polygonscan.com"]);
 		});
 	});
 
