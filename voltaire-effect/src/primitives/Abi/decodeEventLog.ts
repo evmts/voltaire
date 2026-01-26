@@ -8,6 +8,7 @@
  */
 
 import {
+	type Abi,
 	type AbiDecodingError,
 	AbiDecodingError as AbiDecodingErrorClass,
 	type AbiItemNotFoundError,
@@ -30,6 +31,12 @@ const isAbiError = (e: unknown): e is AbiErrorType =>
  * @internal
  */
 type AbiInput = readonly ItemType[];
+
+/**
+ * Internal helper to cast AbiInput to Abi.
+ * @internal
+ */
+const toAbi = (input: AbiInput): Abi => input as unknown as Abi;
 
 /**
  * Input structure for decoding event logs.
@@ -147,7 +154,7 @@ export const decodeEventLog = (
 	AbiItemNotFoundError | AbiDecodingError
 > =>
 	Effect.try({
-		try: () => decodeLog(abi, log),
+		try: () => decodeLog(toAbi(abi), log),
 		catch: (e) =>
 			isAbiError(e)
 				? e

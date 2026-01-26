@@ -7,14 +7,15 @@ describe("formatWithArgs", () => {
 		it.effect("formats transfer with args", () =>
 			Effect.gen(function* () {
 				const fn = {
-					type: "function" as const,
+					type: "function",
 					name: "transfer",
+					stateMutability: "nonpayable",
 					inputs: [
 						{ name: "to", type: "address" },
 						{ name: "amount", type: "uint256" },
 					],
 					outputs: [{ type: "bool" }],
-				};
+				} as const;
 				const formatted = yield* formatWithArgs(fn, [
 					"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 					1000n,
@@ -30,11 +31,12 @@ describe("formatWithArgs", () => {
 		it.effect("formats function with no args", () =>
 			Effect.gen(function* () {
 				const fn = {
-					type: "function" as const,
+					type: "function",
 					name: "totalSupply",
+					stateMutability: "view",
 					inputs: [],
 					outputs: [{ type: "uint256" }],
-				};
+				} as const;
 				const formatted = yield* formatWithArgs(fn, []);
 				expect(formatted).toContain("totalSupply");
 			}),
@@ -43,14 +45,15 @@ describe("formatWithArgs", () => {
 		it.effect("formats with bigint args", () =>
 			Effect.gen(function* () {
 				const fn = {
-					type: "function" as const,
+					type: "function",
 					name: "transfer",
+					stateMutability: "nonpayable",
 					inputs: [
 						{ name: "to", type: "address" },
 						{ name: "amount", type: "uint256" },
 					],
 					outputs: [{ type: "bool" }],
-				};
+				} as const;
 				const formatted = yield* formatWithArgs(fn, [
 					"0x1234567890123456789012345678901234567890",
 					1000000000000000000n,
@@ -64,14 +67,14 @@ describe("formatWithArgs", () => {
 		it.effect("formats event with args", () =>
 			Effect.gen(function* () {
 				const evt = {
-					type: "event" as const,
+					type: "event",
 					name: "Transfer",
 					inputs: [
 						{ name: "from", type: "address", indexed: true },
 						{ name: "to", type: "address", indexed: true },
 						{ name: "value", type: "uint256", indexed: false },
 					],
-				};
+				} as const;
 				const formatted = yield* formatWithArgs(evt, [
 					"0x1111111111111111111111111111111111111111",
 					"0x2222222222222222222222222222222222222222",
@@ -86,11 +89,12 @@ describe("formatWithArgs", () => {
 		it.effect("never fails", () =>
 			Effect.gen(function* () {
 				const fn = {
-					type: "function" as const,
+					type: "function",
 					name: "test",
+					stateMutability: "nonpayable",
 					inputs: [],
 					outputs: [],
-				};
+				} as const;
 				const formatted = yield* formatWithArgs(fn, []);
 				expect(formatted).toContain("test");
 			}),

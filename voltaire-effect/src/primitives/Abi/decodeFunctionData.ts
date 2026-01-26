@@ -7,6 +7,7 @@
  */
 
 import {
+	type Abi,
 	type AbiDecodingError,
 	type AbiInvalidSelectorError,
 	type AbiItemNotFoundError,
@@ -21,6 +22,12 @@ import * as Effect from "effect/Effect";
  * @internal
  */
 type AbiInput = readonly ItemType[];
+
+/**
+ * Internal helper to cast AbiInput to Abi.
+ * @internal
+ */
+const toAbi = (input: AbiInput): Abi => input as unknown as Abi;
 
 /**
  * Decodes function call data using the provided ABI.
@@ -103,7 +110,7 @@ export const decodeFunctionData = (
 	AbiItemNotFoundError | AbiInvalidSelectorError | AbiDecodingError
 > =>
 	Effect.try({
-		try: () => decodeFunction(abi, data),
+		try: () => decodeFunction(toAbi(abi), data),
 		catch: (e) =>
 			e as AbiItemNotFoundError | AbiInvalidSelectorError | AbiDecodingError,
 	});

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { decodeError } from "./decodeError.js";
@@ -99,14 +100,14 @@ describe("decodeError", () => {
 	describe("error cases", () => {
 		it("fails for unknown error", async () => {
 			const exit = await Effect.runPromiseExit(
-				decodeError(customAbi, "UnknownError", "0x00000000" as `0x${string}`),
+				decodeError(customAbi, "UnknownError", Hex("0x00000000")),
 			);
 			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
 		it("fails with empty ABI", async () => {
 			const exit = await Effect.runPromiseExit(
-				decodeError([], "InsufficientBalance", "0x00000000" as `0x${string}`),
+				decodeError([], "InsufficientBalance", Hex("0x00000000")),
 			);
 			expect(Exit.isFailure(exit)).toBe(true);
 		});

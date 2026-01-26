@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { decodeFunctionResult } from "./decodeFunctionResult.js";
@@ -8,12 +9,14 @@ const erc20Abi = [
 	{
 		type: "function",
 		name: "balanceOf",
+		stateMutability: "view",
 		inputs: [{ name: "account", type: "address" }],
 		outputs: [{ type: "uint256" }],
 	},
 	{
 		type: "function",
 		name: "transfer",
+		stateMutability: "nonpayable",
 		inputs: [
 			{ name: "to", type: "address" },
 			{ name: "amount", type: "uint256" },
@@ -23,12 +26,14 @@ const erc20Abi = [
 	{
 		type: "function",
 		name: "decimals",
+		stateMutability: "view",
 		inputs: [],
 		outputs: [{ type: "uint8" }],
 	},
 	{
 		type: "function",
 		name: "name",
+		stateMutability: "view",
 		inputs: [],
 		outputs: [{ type: "string" }],
 	},
@@ -127,8 +132,9 @@ describe("decodeFunctionResult", () => {
 	describe("raw hex decoding", () => {
 		it.effect("decodes known uint256 hex", () =>
 			Effect.gen(function* () {
-				const data =
-					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as `0x${string}`;
+				const data = Hex(
+					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+				);
 				const decoded = yield* decodeFunctionResult(
 					erc20Abi,
 					"balanceOf",
@@ -140,8 +146,9 @@ describe("decodeFunctionResult", () => {
 
 		it.effect("decodes true bool hex", () =>
 			Effect.gen(function* () {
-				const data =
-					"0x0000000000000000000000000000000000000000000000000000000000000001" as `0x${string}`;
+				const data = Hex(
+					"0x0000000000000000000000000000000000000000000000000000000000000001",
+				);
 				const decoded = yield* decodeFunctionResult(erc20Abi, "transfer", data);
 				expect(decoded[0]).toBe(true);
 			}),
@@ -149,8 +156,9 @@ describe("decodeFunctionResult", () => {
 
 		it.effect("decodes false bool hex", () =>
 			Effect.gen(function* () {
-				const data =
-					"0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+				const data = Hex(
+					"0x0000000000000000000000000000000000000000000000000000000000000000",
+				);
 				const decoded = yield* decodeFunctionResult(erc20Abi, "transfer", data);
 				expect(decoded[0]).toBe(false);
 			}),
@@ -163,7 +171,9 @@ describe("decodeFunctionResult", () => {
 				decodeFunctionResult(
 					erc20Abi,
 					"unknownFunction",
-					"0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
+					Hex(
+						"0x0000000000000000000000000000000000000000000000000000000000000000",
+					),
 				),
 			);
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -174,7 +184,9 @@ describe("decodeFunctionResult", () => {
 				decodeFunctionResult(
 					[],
 					"balanceOf",
-					"0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
+					Hex(
+						"0x0000000000000000000000000000000000000000000000000000000000000000",
+					),
 				),
 			);
 			expect(Exit.isFailure(exit)).toBe(true);

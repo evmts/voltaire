@@ -7,6 +7,7 @@
  */
 
 import {
+	type Abi,
 	type AbiEncodingError,
 	type AbiItemNotFoundError,
 	encodeFunction,
@@ -20,6 +21,12 @@ import * as Effect from "effect/Effect";
  * @internal
  */
 type AbiInput = readonly ItemType[];
+
+/**
+ * Internal helper to cast AbiInput to Abi.
+ * @internal
+ */
+const toAbi = (input: AbiInput): Abi => input as unknown as Abi;
 
 /**
  * Encodes function call data using the provided ABI.
@@ -112,6 +119,6 @@ export const encodeFunctionData = (
 	args: readonly unknown[],
 ): Effect.Effect<HexType, AbiItemNotFoundError | AbiEncodingError> =>
 	Effect.try({
-		try: () => encodeFunction(abi, functionName, args),
+		try: () => encodeFunction(toAbi(abi), functionName, args),
 		catch: (e) => e as AbiItemNotFoundError | AbiEncodingError,
 	});

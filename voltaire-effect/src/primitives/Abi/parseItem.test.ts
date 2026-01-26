@@ -18,7 +18,9 @@ describe("parseItem", () => {
 				});
 				const item = yield* parseItem(jsonString);
 				expect(item.type).toBe("function");
-				expect(item.name).toBe("transfer");
+				if (item.type === "function") {
+					expect(item.name).toBe("transfer");
+				}
 			}),
 		);
 
@@ -35,7 +37,9 @@ describe("parseItem", () => {
 				});
 				const item = yield* parseItem(jsonString);
 				expect(item.type).toBe("event");
-				expect(item.name).toBe("Transfer");
+				if (item.type === "event") {
+					expect(item.name).toBe("Transfer");
+				}
 			}),
 		);
 
@@ -48,7 +52,9 @@ describe("parseItem", () => {
 				});
 				const item = yield* parseItem(jsonString);
 				expect(item.type).toBe("error");
-				expect(item.name).toBe("InsufficientBalance");
+				if (item.type === "error") {
+					expect(item.name).toBe("InsufficientBalance");
+				}
 			}),
 		);
 

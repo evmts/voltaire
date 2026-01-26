@@ -37,3 +37,17 @@ export { getSelector } from "./getSelector.js";
 // Parsing
 export { AbiParseError, parse } from "./parse.js";
 export { AbiItemParseError, parseItem } from "./parseItem.js";
+export {
+	AbiSchema,
+	AbiTypeSchema,
+	ConstructorSchema,
+	ErrorSchema,
+	EventSchema,
+	FallbackSchema,
+	fromArray,
+	FunctionSchema,
+	ItemSchema,
+	ParameterSchema,
+	ReceiveSchema,
+	StateMutabilitySchema,
+} from "./AbiSchema.js";

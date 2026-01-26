@@ -274,7 +274,9 @@ describe("parseItem", () => {
 			),
 		);
 		expect(item.type).toBe("function");
-		expect(item.name).toBe("transfer");
+		if (item.type === "function") {
+			expect(item.name).toBe("transfer");
+		}
 	});
 
 	it("parses valid event item", async () => {

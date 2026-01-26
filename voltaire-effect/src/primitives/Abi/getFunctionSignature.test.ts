@@ -10,6 +10,7 @@ describe("getFunctionSignature", () => {
 				const fn = {
 					type: "function",
 					name: "transfer",
+					stateMutability: "nonpayable",
 					inputs: [
 						{ name: "to", type: "address" },
 						{ name: "amount", type: "uint256" },
@@ -26,6 +27,7 @@ describe("getFunctionSignature", () => {
 				const fn = {
 					type: "function",
 					name: "balanceOf",
+					stateMutability: "view",
 					inputs: [{ name: "account", type: "address" }],
 					outputs: [{ type: "uint256" }],
 				} as AbiFunction.FunctionType;
@@ -39,6 +41,7 @@ describe("getFunctionSignature", () => {
 				const fn = {
 					type: "function",
 					name: "totalSupply",
+					stateMutability: "view",
 					inputs: [],
 					outputs: [{ type: "uint256" }],
 				} as AbiFunction.FunctionType;
@@ -52,6 +55,7 @@ describe("getFunctionSignature", () => {
 				const fn = {
 					type: "function",
 					name: "transferFrom",
+					stateMutability: "nonpayable",
 					inputs: [
 						{ name: "from", type: "address" },
 						{ name: "to", type: "address" },
@@ -71,6 +75,7 @@ describe("getFunctionSignature", () => {
 				const fn = {
 					type: "function",
 					name: "test",
+					stateMutability: "nonpayable",
 					inputs: [],
 					outputs: [],
 				} as AbiFunction.FunctionType;
