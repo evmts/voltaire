@@ -124,14 +124,14 @@ describe("parseItem", () => {
 
 	describe("AbiItemParseError", () => {
 		it("has correct _tag", () => {
-			const error = new AbiItemParseError("test error");
+			const error = new AbiItemParseError({ message: "test error" });
 			expect(error._tag).toBe("AbiItemParseError");
 			expect(error.name).toBe("AbiItemParseError");
 		});
 
 		it("preserves cause", () => {
 			const cause = new Error("original error");
-			const error = new AbiItemParseError("wrapped error", { cause });
+			const error = new AbiItemParseError({ message: "wrapped error", cause });
 			expect(error.cause).toBe(cause);
 		});
 	});

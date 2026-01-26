@@ -2,10 +2,14 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import { describe, expect, it } from "@effect/vitest";
 import { parse, AbiParseError } from "./parse.js";
+import { parseItem, AbiItemParseError } from "./parseItem.js";
 import { encodeFunctionData } from "./encodeFunctionData.js";
 import { decodeFunctionData } from "./decodeFunctionData.js";
+import { decodeFunctionResult } from "./decodeFunctionResult.js";
 import { decodeEventLog } from "./decodeEventLog.js";
 import { encodeEventLog } from "./encodeEventLog.js";
+import { encodeError } from "./encodeError.js";
+import { decodeError } from "./decodeError.js";
 import type { HexType } from "@tevm/voltaire/Hex";
 import { Abi } from "@tevm/voltaire/Abi";
 
@@ -36,6 +40,164 @@ const erc20Abi = Abi([
 	},
 ]);
 
+// ABI with complex types for edge case testing
+const complexAbi = Abi([
+	// Tuple types
+	{
+		type: "function",
+		name: "submitOrder",
+		inputs: [
+			{
+				name: "order",
+				type: "tuple",
+				components: [
+					{ name: "maker", type: "address" },
+					{ name: "taker", type: "address" },
+					{ name: "amount", type: "uint256" },
+					{ name: "price", type: "uint256" },
+				],
+			},
+		],
+		outputs: [{ type: "bytes32" }],
+	},
+	// Nested tuple
+	{
+		type: "function",
+		name: "submitNestedOrder",
+		inputs: [
+			{
+				name: "order",
+				type: "tuple",
+				components: [
+					{ name: "id", type: "uint256" },
+					{
+						name: "details",
+						type: "tuple",
+						components: [
+							{ name: "from", type: "address" },
+							{ name: "to", type: "address" },
+							{ name: "value", type: "uint256" },
+						],
+					},
+				],
+			},
+		],
+		outputs: [{ type: "bool" }],
+	},
+	// Dynamic array
+	{
+		type: "function",
+		name: "batchTransfer",
+		inputs: [
+			{ name: "recipients", type: "address[]" },
+			{ name: "amounts", type: "uint256[]" },
+		],
+		outputs: [{ type: "bool" }],
+	},
+	// Fixed-size array
+	{
+		type: "function",
+		name: "setCoordinates",
+		inputs: [{ name: "coords", type: "uint256[3]" }],
+		outputs: [],
+	},
+	// bytes vs string
+	{
+		type: "function",
+		name: "processData",
+		inputs: [
+			{ name: "rawData", type: "bytes" },
+			{ name: "message", type: "string" },
+		],
+		outputs: [{ type: "bytes32" }],
+	},
+	// bytes32 fixed
+	{
+		type: "function",
+		name: "setHash",
+		inputs: [{ name: "hash", type: "bytes32" }],
+		outputs: [],
+	},
+	// Overloaded functions (same name, different params)
+	{
+		type: "function",
+		name: "setValue",
+		inputs: [{ name: "value", type: "uint256" }],
+		outputs: [],
+	},
+	{
+		type: "function",
+		name: "setValue",
+		inputs: [
+			{ name: "key", type: "bytes32" },
+			{ name: "value", type: "uint256" },
+		],
+		outputs: [],
+	},
+	// Event with non-indexed params only
+	{
+		type: "event",
+		name: "DataStored",
+		inputs: [
+			{ name: "key", type: "bytes32", indexed: false },
+			{ name: "value", type: "uint256", indexed: false },
+		],
+	},
+	// Event with mixed indexed/non-indexed
+	{
+		type: "event",
+		name: "OrderCreated",
+		inputs: [
+			{ name: "orderId", type: "bytes32", indexed: true },
+			{ name: "maker", type: "address", indexed: true },
+			{ name: "amount", type: "uint256", indexed: false },
+			{ name: "price", type: "uint256", indexed: false },
+		],
+	},
+	// Error with complex params
+	{
+		type: "error",
+		name: "OrderFailed",
+		inputs: [
+			{ name: "orderId", type: "bytes32" },
+			{ name: "reason", type: "string" },
+		],
+	},
+	// Error with no params
+	{
+		type: "error",
+		name: "Paused",
+		inputs: [],
+	},
+	// Function with empty inputs and outputs
+	{
+		type: "function",
+		name: "ping",
+		inputs: [],
+		outputs: [],
+	},
+	// Tuple array
+	{
+		type: "function",
+		name: "submitOrders",
+		inputs: [
+			{
+				name: "orders",
+				type: "tuple[]",
+				components: [
+					{ name: "id", type: "uint256" },
+					{ name: "amount", type: "uint256" },
+				],
+			},
+		],
+		outputs: [{ type: "uint256" }],
+	},
+]);
+
+// ============================================================================
+// parse tests
+// ============================================================================
+
 describe("parse", () => {
 	it("parses valid JSON ABI string", async () => {
 		const jsonString = JSON.stringify(erc20Abi);
@@ -58,7 +220,104 @@ describe("parse", () => {
 		expect(Array.isArray(abi)).toBe(true);
 		expect(abi.length).toBe(0);
 	});
+
+	it("fails on non-array JSON", async () => {
+		const exit = await Effect.runPromiseExit(parse('{"type": "function"}'));
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("parses ABI with all item types", async () => {
+		const fullAbi = JSON.stringify([
+			{ type: "function", name: "test", inputs: [], outputs: [] },
+			{
+				type: "event",
+				name: "Test",
+				inputs: [{ name: "x", type: "uint256", indexed: false }],
+			},
+			{ type: "error", name: "TestError", inputs: [] },
+			{ type: "constructor", inputs: [] },
+			{ type: "fallback" },
+			{ type: "receive" },
+		]);
+		const abi = await Effect.runPromise(parse(fullAbi));
+		expect(abi.length).toBe(6);
+	});
 });
+
+// ============================================================================
+// parseItem tests
+// ============================================================================
+
+describe("parseItem", () => {
+	it("parses valid function item", async () => {
+		const item = await Effect.runPromise(
+			parseItem(
+				JSON.stringify({
+					type: "function",
+					name: "transfer",
+					inputs: [{ name: "to", type: "address" }],
+					outputs: [{ type: "bool" }],
+				}),
+			),
+		);
+		expect(item.type).toBe("function");
+		expect(item.name).toBe("transfer");
+	});
+
+	it("parses valid event item", async () => {
+		const item = await Effect.runPromise(
+			parseItem(
+				JSON.stringify({
+					type: "event",
+					name: "Transfer",
+					inputs: [{ name: "from", type: "address", indexed: true }],
+				}),
+			),
+		);
+		expect(item.type).toBe("event");
+	});
+
+	it("parses valid error item", async () => {
+		const item = await Effect.runPromise(
+			parseItem(
+				JSON.stringify({
+					type: "error",
+					name: "Unauthorized",
+					inputs: [],
+				}),
+			),
+		);
+		expect(item.type).toBe("error");
+	});
+
+	it("fails on invalid JSON", async () => {
+		const exit = await Effect.runPromiseExit(parseItem("not json"));
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("fails on array input", async () => {
+		const exit = await Effect.runPromiseExit(parseItem("[]"));
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("fails on missing type field", async () => {
+		const exit = await Effect.runPromiseExit(
+			parseItem(JSON.stringify({ name: "test" })),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("fails on invalid type field", async () => {
+		const exit = await Effect.runPromiseExit(
+			parseItem(JSON.stringify({ type: "invalid", name: "test" })),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+});
+
+// ============================================================================
+// encodeFunctionData tests
+// ============================================================================
 
 describe("encodeFunctionData", () => {
 	const transferSelector = "0xa9059cbb";
@@ -90,7 +349,136 @@ describe("encodeFunctionData", () => {
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
+
+	describe("tuple types", () => {
+		it("encodes tuple parameter", async () => {
+			// Tuples are encoded as arrays in positional order
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "submitOrder", [
+					[
+						"0x1111111111111111111111111111111111111111", // maker
+						"0x2222222222222222222222222222222222222222", // taker
+						1000n, // amount
+						500n, // price
+					],
+				]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+			expect(calldata.length).toBeGreaterThan(10);
+		});
+
+		it("encodes nested tuple parameter", async () => {
+			// Nested tuples are nested arrays
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "submitNestedOrder", [
+					[
+						1n, // id
+						[
+							// details tuple
+							"0x1111111111111111111111111111111111111111", // from
+							"0x2222222222222222222222222222222222222222", // to
+							1000n, // value
+						],
+					],
+				]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+	});
+
+	describe("array types", () => {
+		it("encodes dynamic array parameters", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "batchTransfer", [
+					[
+						"0x1111111111111111111111111111111111111111",
+						"0x2222222222222222222222222222222222222222",
+					],
+					[100n, 200n],
+				]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("encodes empty dynamic arrays", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "batchTransfer", [[], []]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("encodes fixed-size array", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "setCoordinates", [[1n, 2n, 3n]]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("encodes tuple array", async () => {
+			// Array of tuples - each tuple is an array
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "submitOrders", [
+					[
+						[1n, 100n], // tuple 1: [id, amount]
+						[2n, 200n], // tuple 2: [id, amount]
+					],
+				]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+	});
+
+	describe("bytes vs string types", () => {
+		it("encodes bytes and string parameters", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", [
+					"0xdeadbeef",
+					"Hello, World!",
+				]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("encodes bytes32 parameter", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "setHash", [
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+			// 4 bytes selector + 32 bytes hash = 72 chars + 2 for 0x
+			expect(calldata.length).toBe(74);
+		});
+
+		it("encodes empty bytes", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", ["0x", ""]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("encodes empty string", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", ["0x00", ""]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+	});
+
+	describe("function with no inputs", () => {
+		it("encodes function with empty inputs", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "ping", []),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+			expect(calldata.length).toBe(10); // just selector
+		});
+	});
 });
+
+// ============================================================================
+// decodeFunctionData tests
+// ============================================================================
 
 describe("decodeFunctionData", () => {
 	it("decodes known calldata correctly", async () => {
@@ -124,7 +512,105 @@ describe("decodeFunctionData", () => {
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
+
+	it("fails on malformed data (truncated params)", async () => {
+		// Valid selector but truncated params
+		const exit = await Effect.runPromiseExit(
+			decodeFunctionData(erc20Abi, "0xa9059cbb0000" as `0x${string}`),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	describe("round-trip complex types", () => {
+		it("round-trips tuple parameter", async () => {
+			const order = [
+				"0x1111111111111111111111111111111111111111", // maker
+				"0x2222222222222222222222222222222222222222", // taker
+				1000n, // amount
+				500n, // price
+			];
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "submitOrder", [order]),
+			);
+			const decoded = await Effect.runPromise(
+				decodeFunctionData(complexAbi, calldata),
+			);
+			expect(decoded.name).toBe("submitOrder");
+		});
+
+		it("round-trips dynamic arrays", async () => {
+			const recipients = [
+				"0x1111111111111111111111111111111111111111",
+				"0x2222222222222222222222222222222222222222",
+			];
+			const amounts = [100n, 200n];
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "batchTransfer", [recipients, amounts]),
+			);
+			const decoded = await Effect.runPromise(
+				decodeFunctionData(complexAbi, calldata),
+			);
+			expect(decoded.name).toBe("batchTransfer");
+			expect(decoded.params.length).toBe(2);
+		});
+	});
 });
+
+// ============================================================================
+// decodeFunctionResult tests
+// ============================================================================
+
+describe("decodeFunctionResult", () => {
+	it("decodes uint256 result", async () => {
+		const data =
+			"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as `0x${string}`;
+		const decoded = await Effect.runPromise(
+			decodeFunctionResult(erc20Abi, "balanceOf", data),
+		);
+		expect(decoded[0]).toBe(1000000000000000000n);
+	});
+
+	it("decodes bool true result", async () => {
+		const data =
+			"0x0000000000000000000000000000000000000000000000000000000000000001" as `0x${string}`;
+		const decoded = await Effect.runPromise(
+			decodeFunctionResult(erc20Abi, "transfer", data),
+		);
+		expect(decoded[0]).toBe(true);
+	});
+
+	it("decodes bool false result", async () => {
+		const data =
+			"0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+		const decoded = await Effect.runPromise(
+			decodeFunctionResult(erc20Abi, "transfer", data),
+		);
+		expect(decoded[0]).toBe(false);
+	});
+
+	it("fails for unknown function", async () => {
+		const exit = await Effect.runPromiseExit(
+			decodeFunctionResult(
+				erc20Abi,
+				"unknownFunction",
+				"0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
+			),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("fails with invalid result data", async () => {
+		// Too short for uint256
+		const exit = await Effect.runPromiseExit(
+			decodeFunctionResult(erc20Abi, "balanceOf", "0x123" as `0x${string}`),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+});
+
+// ============================================================================
+// encodeEventLog tests
+// ============================================================================
 
 describe("encodeEventLog", () => {
 	it("encodes Transfer event topics", async () => {
@@ -149,24 +635,50 @@ describe("encodeEventLog", () => {
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
+
+	describe("indexed vs non-indexed params", () => {
+		it("encodes event with only non-indexed params", async () => {
+			const topics = await Effect.runPromise(
+				encodeEventLog(complexAbi, "DataStored", []),
+			);
+			// Only topic0 (event signature)
+			expect(topics.length).toBe(1);
+		});
+
+		it("encodes event with mixed indexed/non-indexed", async () => {
+			const topics = await Effect.runPromise(
+				encodeEventLog(complexAbi, "OrderCreated", [
+					"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					"0x1111111111111111111111111111111111111111",
+				]),
+			);
+			// topic0 (signature) + 2 indexed params
+			expect(topics.length).toBe(3);
+		});
+	});
 });
+
+// ============================================================================
+// decodeEventLog tests
+// ============================================================================
 
 describe("decodeEventLog", () => {
 	it("decodes Transfer event log", async () => {
-		const topics = await Effect.runPromise(
-			encodeEventLog(erc20Abi, "Transfer", [
-				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
-				"0x1234567890123456789012345678901234567890",
-			]),
-		);
-		const nonNullTopics = topics.filter(
-			(topic): topic is HexType => topic !== null,
-		);
-		expect(nonNullTopics.length).toBe(topics.length);
+		// Use known topic hashes for Transfer event
+		const transferTopicHash =
+			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType;
+		const fromTopic =
+			"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType;
+		const toTopic =
+			"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType;
+
 		const value = 1000000000000000000n;
 		const data = `0x${value.toString(16).padStart(64, "0")}` as `0x${string}`;
 		const decoded = await Effect.runPromise(
-			decodeEventLog(erc20Abi, { data, topics: nonNullTopics }),
+			decodeEventLog(erc20Abi, {
+				data,
+				topics: [transferTopicHash, fromTopic, toTopic],
+			}),
 		);
 		expect(decoded.event).toBe("Transfer");
 		expect(decoded.params.value).toBe(value);
@@ -182,5 +694,245 @@ describe("decodeEventLog", () => {
 			}),
 		);
 		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("fails with empty topics", async () => {
+		const exit = await Effect.runPromiseExit(
+			decodeEventLog(erc20Abi, {
+				data: "0x" as `0x${string}`,
+				topics: [],
+			}),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("fails with malformed log data", async () => {
+		const transferTopicHash =
+			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType;
+		const exit = await Effect.runPromiseExit(
+			decodeEventLog(erc20Abi, {
+				data: "0x123" as `0x${string}`, // Invalid - not 32-byte aligned
+				topics: [
+					transferTopicHash,
+					"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType,
+					"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType,
+				],
+			}),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+});
+
+// ============================================================================
+// encodeError tests
+// ============================================================================
+
+describe("encodeError", () => {
+	it("encodes error with complex params", async () => {
+		const encoded = await Effect.runPromise(
+			encodeError(complexAbi, "OrderFailed", [
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"Insufficient funds",
+			]),
+		);
+		expect(encoded.startsWith("0x")).toBe(true);
+		expect(encoded.length).toBeGreaterThan(10);
+	});
+
+	it("encodes error with no params", async () => {
+		const encoded = await Effect.runPromise(
+			encodeError(complexAbi, "Paused", []),
+		);
+		expect(encoded.startsWith("0x")).toBe(true);
+		expect(encoded.length).toBe(10); // just selector
+	});
+
+	it("fails for unknown error", async () => {
+		const exit = await Effect.runPromiseExit(
+			encodeError(complexAbi, "UnknownError", []),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+
+	it("fails with wrong param types", async () => {
+		const exit = await Effect.runPromiseExit(
+			encodeError(complexAbi, "OrderFailed", [123, 456]), // wrong types
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+});
+
+// ============================================================================
+// decodeError tests
+// ============================================================================
+
+describe("decodeError", () => {
+	it("round-trips error with complex params", async () => {
+		const orderId =
+			"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+		const reason = "Insufficient funds";
+		const encoded = await Effect.runPromise(
+			encodeError(complexAbi, "OrderFailed", [orderId, reason]),
+		);
+		const decoded = await Effect.runPromise(
+			decodeError(complexAbi, "OrderFailed", encoded),
+		);
+		// decoded[0] is bytes32 which may be returned as Uint8Array or hex string
+		const decodedOrderId = decoded[0];
+		if (decodedOrderId instanceof Uint8Array) {
+			const hexOrderId =
+				"0x" +
+				Array.from(decodedOrderId)
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("");
+			expect(hexOrderId.toLowerCase()).toBe(orderId.toLowerCase());
+		} else {
+			expect(String(decodedOrderId).toLowerCase()).toBe(orderId.toLowerCase());
+		}
+		expect(decoded[1]).toBe(reason);
+	});
+
+	it("round-trips error with no params", async () => {
+		const encoded = await Effect.runPromise(
+			encodeError(complexAbi, "Paused", []),
+		);
+		const decoded = await Effect.runPromise(
+			decodeError(complexAbi, "Paused", encoded),
+		);
+		expect(decoded.length).toBe(0);
+	});
+
+	it("fails for unknown error", async () => {
+		const exit = await Effect.runPromiseExit(
+			decodeError(complexAbi, "UnknownError", "0x12345678" as `0x${string}`),
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+	});
+});
+
+// ============================================================================
+// Error type verification tests
+// ============================================================================
+
+describe("error type verification", () => {
+	describe("AbiParseError", () => {
+		it("has correct _tag", () => {
+			// Data.TaggedError takes an object with message property
+			const error = new AbiParseError({ message: "test error" });
+			expect(error._tag).toBe("AbiParseError");
+		});
+
+		it("preserves cause in props", () => {
+			const cause = new Error("original error");
+			const error = new AbiParseError({
+				message: "wrapped error",
+				cause,
+			});
+			// Data.TaggedError stores cause in the error object properties
+			expect(error.cause).toBe(cause);
+		});
+
+		it("contains descriptive message in props", () => {
+			const error = new AbiParseError({ message: "Failed to parse ABI" });
+			expect(error.message).toBe("Failed to parse ABI");
+		});
+	});
+
+	describe("AbiItemParseError", () => {
+		it("has correct _tag", () => {
+			const error = new AbiItemParseError({ message: "test error" });
+			expect(error._tag).toBe("AbiItemParseError");
+		});
+
+		it("preserves cause in props", () => {
+			const cause = new Error("original error");
+			const error = new AbiItemParseError({
+				message: "wrapped error",
+				cause,
+			});
+			expect(error.cause).toBe(cause);
+		});
+	});
+});
+
+// ============================================================================
+// Edge cases
+// ============================================================================
+
+describe("edge cases", () => {
+	describe("empty inputs/outputs", () => {
+		it("handles function with no inputs or outputs", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "ping", []),
+			);
+			expect(calldata.length).toBe(10); // 0x + 8 hex chars for 4-byte selector
+		});
+	});
+
+	describe("maximum values", () => {
+		it("encodes max uint256 value", async () => {
+			const maxUint256 = 2n ** 256n - 1n;
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(erc20Abi, "transfer", [
+					"0x1111111111111111111111111111111111111111",
+					maxUint256,
+				]),
+			);
+			expect(calldata).toContain("f".repeat(64));
+		});
+
+		it("encodes zero values", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(erc20Abi, "transfer", [
+					"0x0000000000000000000000000000000000000000",
+					0n,
+				]),
+			);
+			expect(calldata).toContain("0".repeat(64));
+		});
+	});
+
+	describe("special characters in strings", () => {
+		it("handles unicode in string params", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", [
+					"0xdeadbeef",
+					"Hello \u4e16\u754c!",
+				]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("handles empty string", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", ["0x", ""]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("handles long string", async () => {
+			const longString = "a".repeat(1000);
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", ["0x", longString]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+	});
+
+	describe("bytes handling", () => {
+		it("handles empty bytes", async () => {
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", ["0x", "test"]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
+
+		it("handles large bytes", async () => {
+			const largeBytes = "0x" + "ab".repeat(500);
+			const calldata = await Effect.runPromise(
+				encodeFunctionData(complexAbi, "processData", [largeBytes, "test"]),
+			);
+			expect(calldata.startsWith("0x")).toBe(true);
+		});
 	});
 });

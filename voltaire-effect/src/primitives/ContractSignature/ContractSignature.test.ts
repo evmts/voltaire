@@ -74,10 +74,10 @@ describe("verifySignature", () => {
 	});
 
 	it("SignatureVerificationError is catchable with Effect.catchTag", async () => {
-		const error = new ContractSignature.SignatureVerificationError(
-			{ address: "0x123", hash: new Uint8Array(32) },
-			"test error",
-		);
+		const error = new ContractSignature.SignatureVerificationError({
+			input: { address: "0x123", hash: new Uint8Array(32) },
+			message: "test error",
+		});
 
 		const program = Effect.fail(error).pipe(
 			Effect.catchTag("SignatureVerificationError", (e) =>
@@ -90,18 +90,18 @@ describe("verifySignature", () => {
 	});
 
 	it("InvalidSignatureFormatError has correct _tag", () => {
-		const error = new ContractSignature.InvalidSignatureFormatError(
-			"bad format",
-		);
+		const error = new ContractSignature.InvalidSignatureFormatError({
+			message: "bad format",
+		});
 		expect(error._tag).toBe("InvalidSignatureFormatError");
 		expect(error.name).toBe("InvalidSignatureFormatError");
 	});
 
 	it("SignatureVerificationError has correct _tag", () => {
-		const error = new ContractSignature.SignatureVerificationError(
-			{ address: "0x123", hash: new Uint8Array(32) },
-			"verification failed",
-		);
+		const error = new ContractSignature.SignatureVerificationError({
+			input: { address: "0x123", hash: new Uint8Array(32) },
+			message: "verification failed",
+		});
 		expect(error._tag).toBe("SignatureVerificationError");
 		expect(error.name).toBe("SignatureVerificationError");
 	});

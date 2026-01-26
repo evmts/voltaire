@@ -83,14 +83,14 @@ describe("parse", () => {
 
 	describe("AbiParseError", () => {
 		it("has correct _tag", () => {
-			const error = new AbiParseError("test error");
+			const error = new AbiParseError({ message: "test error" });
 			expect(error._tag).toBe("AbiParseError");
 			expect(error.name).toBe("AbiParseError");
 		});
 
 		it("preserves cause", () => {
 			const cause = new Error("original error");
-			const error = new AbiParseError("wrapped error", { cause });
+			const error = new AbiParseError({ message: "wrapped error", cause });
 			expect(error.cause).toBe(cause);
 		});
 	});

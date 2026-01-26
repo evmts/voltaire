@@ -9,6 +9,8 @@ import { describe, expect, it } from "vitest";
 import { BlockSchema } from "./BlockSchema.js";
 import { Rpc } from "./Rpc.js";
 
+type BlockType = Block.BlockType;
+
 /**
  * Creates a valid block header for testing.
  */
@@ -65,25 +67,25 @@ describe("BlockSchema", () => {
 
 	it("rejects block with invalid header (string)", () => {
 		const block = createValidBlock();
-		const invalid = { ...block, header: "garbage" };
+		const invalid = { ...block, header: "garbage" } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with invalid header (null)", () => {
 		const block = createValidBlock();
-		const invalid = { ...block, header: null };
+		const invalid = { ...block, header: null } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with invalid body (null)", () => {
 		const block = createValidBlock();
-		const invalid = { ...block, body: null };
+		const invalid = { ...block, body: null } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with wrong hash length", () => {
 		const block = createValidBlock();
-		const invalid = { ...block, hash: new Uint8Array(16) };
+		const invalid = { ...block, hash: new Uint8Array(16) } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
@@ -93,63 +95,63 @@ describe("BlockSchema", () => {
 			parentHash: Uint8Array;
 			[key: string]: unknown;
 		};
-		const invalid = { ...block, header: headerWithoutParentHash };
+		const invalid = { ...block, header: headerWithoutParentHash } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with wrong parentHash length", () => {
 		const block = createValidBlock();
 		const invalidHeader = { ...block.header, parentHash: new Uint8Array(16) };
-		const invalid = { ...block, header: invalidHeader };
+		const invalid = { ...block, header: invalidHeader } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with wrong beneficiary length", () => {
 		const block = createValidBlock();
 		const invalidHeader = { ...block.header, beneficiary: new Uint8Array(32) };
-		const invalid = { ...block, header: invalidHeader };
+		const invalid = { ...block, header: invalidHeader } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with wrong logsBloom length", () => {
 		const block = createValidBlock();
 		const invalidHeader = { ...block.header, logsBloom: new Uint8Array(128) };
-		const invalid = { ...block, header: invalidHeader };
+		const invalid = { ...block, header: invalidHeader } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with wrong nonce length", () => {
 		const block = createValidBlock();
 		const invalidHeader = { ...block.header, nonce: new Uint8Array(4) };
-		const invalid = { ...block, header: invalidHeader };
+		const invalid = { ...block, header: invalidHeader } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with non-bigint number", () => {
 		const block = createValidBlock();
 		const invalidHeader = { ...block.header, number: 12345 };
-		const invalid = { ...block, header: invalidHeader };
+		const invalid = { ...block, header: invalidHeader } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with non-array transactions", () => {
 		const block = createValidBlock();
 		const invalidBody = { ...block.body, transactions: "not-an-array" };
-		const invalid = { ...block, body: invalidBody };
+		const invalid = { ...block, body: invalidBody } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects block with non-array ommers", () => {
 		const block = createValidBlock();
 		const invalidBody = { ...block.body, ommers: {} };
-		const invalid = { ...block, body: invalidBody };
+		const invalid = { ...block, body: invalidBody } as unknown as BlockType;
 		expect(() => S.decodeSync(BlockSchema)(invalid)).toThrow();
 	});
 
 	it("rejects non-object input", () => {
-		expect(() => S.decodeSync(BlockSchema)("not-an-object")).toThrow();
-		expect(() => S.decodeSync(BlockSchema)(null)).toThrow();
-		expect(() => S.decodeSync(BlockSchema)(undefined)).toThrow();
+		expect(() => S.decodeSync(BlockSchema)("not-an-object" as unknown as BlockType)).toThrow();
+		expect(() => S.decodeSync(BlockSchema)(null as unknown as BlockType)).toThrow();
+		expect(() => S.decodeSync(BlockSchema)(undefined as unknown as BlockType)).toThrow();
 	});
 });
 
@@ -290,5 +292,74 @@ describe("Block.Rpc", () => {
 			parentHash: "0x" + "cd".repeat(32),
 		};
 		expect(() => S.decodeSync(Rpc)(invalid as never)).toThrow();
+	});
+
+	it("decodes pre-London block (no baseFeePerGas)", () => {
+		const preLondonRpc = {
+			hash: "0x" + "ab".repeat(32),
+			size: "0x3e8",
+			parentHash: "0x" + "cd".repeat(32),
+			sha3Uncles: "0x" + "de".repeat(32),
+			miner: "0x" + "ef".repeat(20),
+			stateRoot: "0x" + "11".repeat(32),
+			transactionsRoot: "0x" + "22".repeat(32),
+			receiptsRoot: "0x" + "33".repeat(32),
+			logsBloom: "0x" + "00".repeat(256),
+			difficulty: "0x2d79883d2000",
+			number: "0xc5d488",
+			gasLimit: "0x1c9c380",
+			gasUsed: "0xbebc20",
+			timestamp: "0x60c7a2bb",
+			extraData: "0x6e616e6f706f6f6c2e6f7267",
+			mixHash: "0x" + "44".repeat(32),
+			nonce: "0x0db95e41b7970000",
+			transactions: [],
+		};
+		const block = S.decodeSync(Rpc)(preLondonRpc);
+		expect(block.header.baseFeePerGas).toBeUndefined();
+		expect(block.header.difficulty).toBe(50000000000000n);
+	});
+
+	it("encodes block with optional EIP-4844 fields", () => {
+		const header = BlockHeader.from({
+			parentHash: "0x" + "ab".repeat(32),
+			ommersHash: "0x" + "cd".repeat(32),
+			beneficiary: "0x" + "ef".repeat(20),
+			stateRoot: "0x" + "11".repeat(32),
+			transactionsRoot: "0x" + "22".repeat(32),
+			receiptsRoot: "0x" + "33".repeat(32),
+			logsBloom: new Uint8Array(256).fill(0),
+			difficulty: 0n,
+			number: 19000000n,
+			gasLimit: 30000000n,
+			gasUsed: 21000n,
+			timestamp: 1710000000n,
+			extraData: new Uint8Array(0),
+			mixHash: "0x" + "44".repeat(32),
+			nonce: new Uint8Array(8).fill(0),
+			baseFeePerGas: 1000000000n,
+			withdrawalsRoot: "0x" + "55".repeat(32),
+			blobGasUsed: 131072n,
+			excessBlobGas: 0n,
+			parentBeaconBlockRoot: "0x" + "77".repeat(32),
+		});
+
+		const body = BlockBody.from({
+			transactions: [],
+			ommers: [],
+			withdrawals: [],
+		});
+
+		const block = Block.from({
+			header,
+			body,
+			hash: "0x" + "88".repeat(32),
+			size: 500n,
+		});
+
+		const rpc = S.encodeSync(Rpc)(block);
+		expect(rpc.blobGasUsed).toBe("0x20000");
+		expect(rpc.excessBlobGas).toBe("0x0");
+		expect(rpc.parentBeaconBlockRoot).toBe("0x" + "77".repeat(32));
 	});
 });
