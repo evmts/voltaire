@@ -14,11 +14,11 @@ updated: 2026-01-26
 Comprehensive gap analysis comparing viem's client architecture against voltaire-effect. This master document consolidates findings from 30+ reviews into actionable implementation categories.
 
 **Current Coverage (estimated after 2026-01-26 updates):**
-- EIP compliance: ~70% → target 90%
-- RPC methods: ~70% → target 95%
-- Wallet actions: ~55% → target 90%
+- EIP compliance: ~85% → target 90%
+- RPC methods: ~85% → target 95%
+- Wallet actions: ~90% → target 90% ✅
 - L2 support: ~30% → target 80%
-- Signature utilities: ~30% → target 90%
+- Signature utilities: ~95% → target 90% ✅
 
 **Completed ✅:**
 - Transaction types (EIP-2930/4844/7702) in Signer + Transaction schemas
@@ -26,13 +26,20 @@ Comprehensive gap analysis comparing viem's client architecture against voltaire
 - JSON-RPC batching (`BatchScheduler` + `HttpTransport` batch option)
 - Transport layer migrated to `@effect/platform` (HTTP + WebSocket)
 - NonceManager chainId scoping + `SynchronizedRef` concurrency
-- ERC721/1155 encoders
+- ERC721/1155/ERC20 encoders (all view encoders complete)
 - FallbackTransport retry with Schedule + SynchronizedRef state
+- Signer wallet actions (addChain, switchChain, watchAsset, permissions, signAuthorization, prepareAuthorization, deployContract)
+- Provider simulation (stateOverride, blockOverrides in call, simulateContract, getBlobBaseFee)
+- ENS support (getEnsAddress, getEnsName, getEnsText, getEnsAvatar, getEnsResolver)
+- Signature utilities (verifyMessage, verifyTypedData, verifyHash, recoverAddress, hashMessage, constantTimeEqual)
 
-**Priority Gaps:**
-- P0: Receipt/Block schema EIP gaps (093, 094)
-- P1: ABI test coverage (082), HDWallet security (085)
-- P2: Effect.Request batching, Effect.Config, remaining error patterns
+**Priority Gaps (remaining):**
+- P1: Chain formatters for L2s (OP Stack, Arbitrum, Celo)
+- P1: watchEvent / watchContractEvent subscriptions
+- P2: filter-based subscriptions (eth_newFilter)
+- P2: Effect.Request batching, Effect.Config
+- P2: HD derivation options, sign({ hash }) on Account
+- P3: SIWE support, getProof, getTransactionConfirmations
 
 **Naming Convention:** We use ethers-style naming:
 - `ProviderService` / `Provider` = viem's PublicClient (read-only)
@@ -192,19 +199,19 @@ const CeloProvider = Provider.pipe(Layer.provide(CeloChainFormatter))
 <priority>P0</priority>
 <gaps>
 **Simulation:**
-- No `stateOverride` in call/estimateGas
-- No `simulateCalls` with asset changes
-- No `blockOverrides` support
+- ✅ `stateOverride` in call/estimateGas (implemented)
+- ✅ `simulateCalls` / simulateContract (implemented)
+- ✅ `blockOverrides` in call (implemented, missing in estimateGas)
 
 **Contract:**
-- No `simulateContract` (call + ABI decode)
+- ✅ `simulateContract` (implemented)
 - ✅ `multicall` implemented (Multicall3)
-- No `Contract.estimateGas` per method
-- No `deployContract` helper
+- ✅ `Contract.estimateGas` (implemented, needs index export)
+- ✅ `deployContract` helper (implemented)
 
 **ENS:**
-- No `getEnsAddress` / `getEnsName` / `getEnsResolver`
-- No `getEnsAvatar` / `getEnsText`
+- ✅ `getEnsAddress` / `getEnsName` / `getEnsResolver` (implemented)
+- ✅ `getEnsAvatar` / `getEnsText` (implemented)
 
 **Subscriptions:**
 - No `watchEvent` / `watchContractEvent`
@@ -213,7 +220,7 @@ const CeloProvider = Provider.pipe(Layer.provide(CeloChainFormatter))
 
 **Misc:**
 - No `getProof` (eth_getProof for Merkle proofs)
-- No `getBlobBaseFee` (EIP-4844)
+- ✅ `getBlobBaseFee` (implemented)
 - No `getTransactionConfirmations`
 </gaps>
 <viem_ref>
@@ -261,19 +268,19 @@ Contract.estimateGas(contract, "transfer", [to, amount])
 <priority>P1</priority>
 <gaps>
 **EIP-7702:**
-- No `signAuthorization` (code delegation)
-- No `prepareAuthorization`
+- ✅ `signAuthorization` (implemented)
+- ✅ `prepareAuthorization` (implemented)
 
 **Wallet Management:**
-- No `addChain` (EIP-3085)
-- No `switchChain`
-- No `watchAsset` (EIP-747)
-- No `getPermissions` / `requestPermissions` (EIP-2255)
+- ✅ `addChain` (EIP-3085) (implemented)
+- ✅ `switchChain` (implemented)
+- ✅ `watchAsset` (EIP-747) (implemented)
+- ✅ `getPermissions` / `requestPermissions` (EIP-2255) (implemented)
 - No `getAddresses` (non-prompting)
 
 **Contract:**
 - No `writeContract` with simulation
-- No `deployContract` helper
+- ✅ `deployContract` helper (implemented)
 </gaps>
 <viem_ref>
 - `src/actions/wallet/*.ts` - Wallet actions
@@ -351,10 +358,10 @@ const LocalAccount = (privateKey: Hex) =>
 <category name="Signature Utilities">
 <priority>P1</priority>
 <gaps>
-- No `verifyMessage` / `verifyTypedData` / `verifyHash`
-- No `recoverAddress` / `recoverMessageAddress`
-- No `hashMessage` / `hashTypedData` exports
-- Non-constant-time signature verification (security)
+- ✅ `verifyMessage` / `verifyTypedData` / `verifyHash` (implemented)
+- ✅ `recoverAddress` / `recoverMessageAddress` (implemented)
+- ✅ `hashMessage` / `hashTypedData` exports (implemented)
+- ✅ Constant-time signature verification (constantTimeEqual.ts)
 </gaps>
 <viem_ref>
 - `src/utils/signature/*.ts` - Signature utilities
@@ -394,9 +401,9 @@ const constantTimeEqual = (a: Uint8Array, b: Uint8Array): boolean => {
 <category name="Nonce Management">
 <priority>P0</priority>
 <gaps>
-- Race condition: plain Map causes duplicate nonces (review 080)
-- No chainId in nonce key (multi-chain collision)
-- No atomic increment operation
+- ✅ Race condition fixed (SynchronizedRef)
+- ✅ chainId in nonce key (implemented)
+- ✅ Atomic increment operation (SynchronizedRef.modifyEffect)
 </gaps>
 <viem_ref>
 - `src/accounts/utils/nonceManager.ts`

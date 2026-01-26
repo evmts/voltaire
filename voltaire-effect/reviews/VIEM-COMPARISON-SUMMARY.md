@@ -171,13 +171,13 @@ voltaire-effect should NOT be a 1:1 port of viem. Instead:
 
 | Category | Current | Target |
 |----------|---------|--------|
-| EIP compliance | ~60% | 90% |
-| RPC methods | ~65% | 95% |
-| Wallet actions | ~50% | 90% |
+| EIP compliance | ~85% | 90% |
+| RPC methods | ~85% | 95% |
+| Wallet actions | ~90% ✅ | 90% |
 | L2 support | ~30% | 80% |
-| Account types | ~40% | 80% |
-| Signature utilities | ~20% | 90% |
-| Simulation | ~10% | 80% |
+| Account types | ~60% | 80% |
+| Signature utilities | ~95% ✅ | 90% |
+| Simulation | ~85% | 80% ✅ |
 | Event subscriptions | ~30% | 80% |
 
 ### Test Coverage Needs
