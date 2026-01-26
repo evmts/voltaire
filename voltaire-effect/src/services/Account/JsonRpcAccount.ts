@@ -36,6 +36,8 @@ import { TransportService } from "../Transport/index.js";
 import {
 	AccountError,
 	AccountService,
+	type SignAuthorizationParams,
+	type UnsignedAuthorization,
 	type UnsignedTransaction,
 } from "./AccountService.js";
 
@@ -66,6 +68,23 @@ const toParity = (input: { yParity?: number; v?: number }): number => {
 		return input.v % 2;
 	}
 	return 0;
+};
+
+const toUnsignedAuthorization = (
+	authorization: UnsignedAuthorization | SignAuthorizationParams,
+): UnsignedAuthorization => {
+	if (authorization.nonce === undefined) {
+		throw new Error("Authorization nonce is required");
+	}
+	const address =
+		"contractAddress" in authorization
+			? authorization.contractAddress
+			: authorization.address;
+	return {
+		chainId: authorization.chainId,
+		address,
+		nonce: authorization.nonce,
+	};
 };
 
 /**
@@ -272,8 +291,9 @@ export const JsonRpcAccount = (address: AddressType) =>
 						),
 
 				signAuthorization: (authorization) =>
-					transport
-						.request<{
+					Effect.gen(function* () {
+						const unsigned = toUnsignedAuthorization(authorization);
+						const result = yield* transport.request<{
 							chainId: string;
 							address: string;
 							nonce: string;
@@ -282,35 +302,30 @@ export const JsonRpcAccount = (address: AddressType) =>
 							s: string;
 						}>("wallet_signAuthorization", [
 							{
-								chainId: bigintToHex(authorization.chainId),
-								address:
-									typeof authorization.address === "string"
-										? authorization.address
-										: Address.toHex(authorization.address),
-								nonce: bigintToHex(authorization.nonce),
+								chainId: bigintToHex(unsigned.chainId),
+								address: toAddressHex(unsigned.address),
+								nonce: bigintToHex(unsigned.nonce),
 							},
-						])
-						.pipe(
-							Effect.map((result) => ({
-								chainId: authorization.chainId,
-								address:
-									typeof authorization.address === "string"
-										? authorization.address
-										: (Address.toHex(authorization.address) as `0x${string}`),
-								nonce: authorization.nonce,
-								yParity: Number.parseInt(result.yParity, 16),
-								r: result.r as `0x${string}`,
-								s: result.s as `0x${string}`,
-							})),
-							Effect.mapError(
-								(e) =>
-									new AccountError(
-										{ action: "signAuthorization", authorization },
-										"Failed to sign authorization via JSON-RPC",
-										{ cause: e instanceof Error ? e : undefined },
-									),
-							),
+						]);
+
+						return {
+							chainId: unsigned.chainId,
+							address: toAddressHex(unsigned.address),
+							nonce: unsigned.nonce,
+							yParity: Number.parseInt(result.yParity, 16),
+							r: result.r as `0x${string}`,
+							s: result.s as `0x${string}`,
+						};
+					}).pipe(
+						Effect.mapError(
+							(e) =>
+								new AccountError(
+									{ action: "signAuthorization", authorization },
+									"Failed to sign authorization via JSON-RPC",
+									{ cause: e instanceof Error ? e : undefined },
+								),
 						),
+					),
 			});
 		}),
 	);

@@ -2,12 +2,15 @@ import {
 	Address,
 	type BrandedAddress,
 	type BrandedHex,
+	Signature,
 	TypedData,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { describe, expect, it } from "@effect/vitest";
 import { CryptoTest } from "../../crypto/CryptoTest.js";
+import { KeccakLive } from "../../crypto/Keccak256/index.js";
+import { Secp256k1Live } from "../../crypto/Secp256k1/index.js";
 import { TransportError, TransportService } from "../Transport/index.js";
 import {
 	AccountError,
@@ -23,21 +26,26 @@ type TypedDataType = TypedData.TypedDataType;
 
 const TEST_PRIVATE_KEY =
 	"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as HexType;
-const _TEST_ADDRESS = Address.fromHex(
-	"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-);
+const TEST_PUBLIC_KEY =
+	"0x048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5" as HexType;
+const TEST_ADDRESS_HEX =
+	"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" as const;
+const TEST_HASH =
+	"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
+const TEST_HASH_SIGNATURE =
+	"0x73eebf81a611136662d65778960c853fdcaf6eca86793ed9cabc30f2195937af78a07e601627da5b4cc80c0ab35f6894da19b4a01759d90c101d9c9dd1c6745d1b" as HexType;
+const CryptoLiveLayer = Layer.mergeAll(KeccakLive, Secp256k1Live);
 
 describe("AccountService", () => {
 	describe("LocalAccount", () => {
 		it.effect("derives address from private key", () =>
 			Effect.gen(function* () {
 				const account = yield* AccountService;
-				const address = account.address;
-				expect(address).toBeDefined();
-				expect(address.length).toBe(20);
+				const addressHex = Address.toHex(account.address);
+				expect(addressHex).toBe(TEST_ADDRESS_HEX);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
-				Effect.provide(CryptoTest),
+				Effect.provide(CryptoLiveLayer),
 			)
 		);
 
@@ -56,28 +64,24 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const publicKey = account.publicKey;
 				expect(publicKey).toBeDefined();
-				expect(publicKey).toBeInstanceOf(Uint8Array);
-				expect(publicKey!.length).toBe(65);
-				// First byte is 0x04 for uncompressed public key
-				expect(publicKey![0]).toBe(0x04);
+				expect(publicKey).toBe(TEST_PUBLIC_KEY);
+				expect(publicKey!.length).toBe(TEST_PUBLIC_KEY.length);
+				expect(publicKey!.startsWith("0x04")).toBe(true);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
-				Effect.provide(CryptoTest),
+				Effect.provide(CryptoLiveLayer),
 			)
 		);
 
 		it.effect("signs raw hash with sign({ hash })", () =>
 			Effect.gen(function* () {
-				// keccak256("hello") = 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
-				const hash =
-					"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
 				const account = yield* AccountService;
-				const signature = yield* account.sign({ hash });
+				const signature = yield* account.sign({ hash: TEST_HASH });
 				expect(signature).toBeDefined();
-				expect(signature.length).toBe(65);
+				expect(Signature.toHex(signature)).toBe(TEST_HASH_SIGNATURE);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
-				Effect.provide(CryptoTest),
+				Effect.provide(CryptoLiveLayer),
 			)
 		);
 
@@ -101,9 +105,7 @@ describe("AccountService", () => {
 			Effect.gen(function* () {
 				const account = yield* AccountService;
 				// Ensure we can sign before clearing
-				const hash =
-					"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
-				const sigBefore = yield* account.sign({ hash });
+				const sigBefore = yield* account.sign({ hash: TEST_HASH });
 				expect(sigBefore).toBeDefined();
 
 				// Clear the key
@@ -230,7 +232,7 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const signature = yield* account.signTypedData(typedData);
 				expect(signature).toBeDefined();
-				expect(signature.length).toBe(65);
+				expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
@@ -270,7 +272,7 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const signature = yield* account.signTypedData(typedData);
 				expect(signature).toBeDefined();
-				expect(signature.length).toBe(65);
+				expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
@@ -306,7 +308,7 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const signature = yield* account.signTypedData(typedData);
 				expect(signature).toBeDefined();
-				expect(signature.length).toBe(65);
+				expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
@@ -359,7 +361,7 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const signature = yield* account.signTypedData(typedData);
 				expect(signature).toBeDefined();
-				expect(signature.length).toBe(65);
+				expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
@@ -411,7 +413,7 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const signature = yield* account.signTypedData(typedData);
 				expect(signature).toBeDefined();
-				expect(signature.length).toBe(65);
+				expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
@@ -459,7 +461,7 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const signature = yield* account.signTypedData(typedData);
 				expect(signature).toBeDefined();
-				expect(signature.length).toBe(65);
+				expect(Signature.toHex(signature)).toMatch(/^0x[0-9a-f]{130}$/);
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
@@ -543,10 +545,8 @@ describe("AccountService", () => {
 
 		it.effect("delegates sign({ hash }) to eth_sign", () =>
 			Effect.gen(function* () {
-				const hash =
-					"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
 				const account = yield* AccountService;
-				const signature = yield* account.sign({ hash });
+				const signature = yield* account.sign({ hash: TEST_HASH });
 				expect(signature).toBeDefined();
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),

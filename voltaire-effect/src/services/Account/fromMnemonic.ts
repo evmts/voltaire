@@ -20,19 +20,27 @@ import {
 	Hex,
 } from "@tevm/voltaire";
 import * as Bip39 from "@tevm/voltaire/Bip39";
-import { HDWallet } from "@tevm/voltaire/HDWallet";
+import { HDWallet, type ExtendedKeyType } from "@tevm/voltaire/HDWallet";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { KeccakService } from "../../crypto/Keccak256/index.js";
-import { Secp256k1Service } from "../../crypto/Secp256k1/index.js";
+import {
+	KeccakService,
+	type KeccakServiceShape,
+} from "../../crypto/Keccak256/index.js";
+import {
+	Secp256k1Service,
+	type Secp256k1ServiceShape,
+} from "../../crypto/Secp256k1/index.js";
 import { AccountService } from "./AccountService.js";
-import { LocalAccount } from "./LocalAccount.js";
+import { createLocalAccount } from "./LocalAccount.js";
 
 type HexType = BrandedHex.HexType;
 
 export interface MnemonicAccountOptions {
 	readonly account?: number;
 	readonly index?: number;
+	readonly addressIndex?: number;
+	readonly path?: string;
 	readonly passphrase?: string;
 }
 
@@ -41,7 +49,8 @@ export interface MnemonicAccountOptions {
  *
  * @description
  * Derives a private key from the mnemonic using BIP-44 derivation path
- * `m/44'/60'/{account}'/0/{index}` and creates a LocalAccount.
+ * `m/44'/60'/{account}'/0/{addressIndex}` (default) or a custom `path`
+ * and creates a LocalAccount.
  *
  * IMPORTANT: This function requires native FFI and only works in native
  * environments (Node.js/Bun). The WASM bundle does not support HD wallet.
@@ -49,7 +58,9 @@ export interface MnemonicAccountOptions {
  * @param mnemonic - BIP-39 mnemonic phrase (12-24 words)
  * @param options - Derivation options
  * @param options.account - Account index (default: 0)
- * @param options.index - Address index (default: 0)
+ * @param options.index - Address index (default: 0) (legacy alias)
+ * @param options.addressIndex - Address index (default: 0)
+ * @param options.path - Custom derivation path (overrides account/index)
  * @param options.passphrase - Optional BIP-39 passphrase
  * @returns Layer providing AccountService
  *
@@ -80,7 +91,7 @@ export interface MnemonicAccountOptions {
  * const account0 = MnemonicAccount(mnemonic)
  *
  * // Second address in first account (m/44'/60'/0'/0/1)
- * const account0Index1 = MnemonicAccount(mnemonic, { index: 1 })
+ * const account0Index1 = MnemonicAccount(mnemonic, { addressIndex: 1 })
  *
  * // Second account (m/44'/60'/1'/0/0)
  * const account1 = MnemonicAccount(mnemonic, { account: 1 })
@@ -102,6 +113,60 @@ export class HDWalletDerivationError extends Error {
 	}
 }
 
+const createHdAccount = (
+	hdKey: ExtendedKeyType,
+	deps: {
+		readonly secp256k1: Secp256k1ServiceShape;
+		readonly keccak: KeccakServiceShape;
+	},
+) =>
+	Effect.gen(function* () {
+		const privateKey = yield* Effect.try({
+			try: () => HDWallet.getPrivateKey(hdKey),
+			catch: (e) =>
+				new HDWalletDerivationError("Failed to extract private key", {
+					cause: e,
+				}),
+		});
+
+		if (!privateKey) {
+			return yield* Effect.fail(
+				new HDWalletDerivationError("Failed to derive private key from HD key"),
+			);
+		}
+
+		const account = yield* createLocalAccount(
+			Hex.fromBytes(privateKey) as HexType,
+			deps,
+		);
+
+		const extendedPublicKey = yield* Effect.try({
+			try: () => HDWallet.toExtendedPublicKey(hdKey),
+			catch: (e) =>
+				new HDWalletDerivationError(
+					"Failed to export extended public key",
+					{ cause: e },
+				),
+		});
+
+		return {
+			...account,
+			hdKey: extendedPublicKey,
+			deriveChild: (index: number) =>
+				Effect.gen(function* () {
+					const childKey = yield* Effect.try({
+						try: () => HDWallet.deriveChild(hdKey, index),
+						catch: (e) =>
+							new HDWalletDerivationError(
+								`Failed to derive child at index ${index}`,
+								{ cause: e },
+							),
+					});
+					return yield* createHdAccount(childKey, deps);
+				}),
+		};
+	});
+
 export const MnemonicAccount = (
 	mnemonic: string,
 	options?: MnemonicAccountOptions,
@@ -110,11 +175,17 @@ export const MnemonicAccount = (
 	Error | HDWalletDerivationError,
 	Secp256k1Service | KeccakService
 > =>
-	Layer.unwrapEffect(
+	Layer.scoped(
+		AccountService,
 		Effect.gen(function* () {
+			const secp256k1 = yield* Secp256k1Service;
+			const keccak = yield* KeccakService;
+
 			const accountIndex = options?.account ?? 0;
-			const addressIndex = options?.index ?? 0;
+			const addressIndex = options?.addressIndex ?? options?.index ?? 0;
 			const passphrase = options?.passphrase ?? "";
+			const path =
+				options?.path ?? `m/44'/60'/${accountIndex}'/0/${addressIndex}`;
 
 			if (!Bip39.validateMnemonic(mnemonic)) {
 				return yield* Effect.fail(new Error("Invalid mnemonic phrase"));
@@ -133,31 +204,19 @@ export const MnemonicAccount = (
 			});
 
 			const derived = yield* Effect.try({
-				try: () => HDWallet.deriveEthereum(root, accountIndex, addressIndex),
+				try: () => HDWallet.derivePath(root, path),
 				catch: (e) =>
 					new HDWalletDerivationError(
-						`Failed to derive path m/44'/60'/${accountIndex}'/0/${addressIndex}`,
+						`Failed to derive path ${path}`,
 						{ cause: e },
 					),
 			});
 
-			const privateKey = yield* Effect.try({
-				try: () => HDWallet.getPrivateKey(derived),
-				catch: (e) =>
-					new HDWalletDerivationError("Failed to extract private key", {
-						cause: e,
-					}),
-			});
+			const account = yield* Effect.acquireRelease(
+				createHdAccount(derived, { secp256k1, keccak }),
+				(derivedAccount) => derivedAccount.clearKey(),
+			);
 
-			if (!privateKey) {
-				return yield* Effect.fail(
-					new HDWalletDerivationError(
-						"Failed to derive private key from mnemonic",
-					),
-				);
-			}
-
-			const privateKeyHex = Hex.fromBytes(privateKey) as HexType;
-			return LocalAccount(privateKeyHex);
+			return account;
 		}),
 	);

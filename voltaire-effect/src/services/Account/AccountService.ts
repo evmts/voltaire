@@ -82,6 +82,51 @@ export type SignedAuthorization = {
 };
 
 /**
+ * Signed EIP-7702 authorization tuple.
+ *
+ * @description
+ * Alias for SignedAuthorization to align with EIP-7702 terminology.
+ *
+ * @since 0.0.1
+ */
+export type Authorization = SignedAuthorization;
+
+/**
+ * Authorization input type for transactions.
+ *
+ * @description
+ * Allows yParity or v to be provided when including authorizations
+ * in a transaction payload.
+ *
+ * @since 0.0.1
+ */
+export type AuthorizationInput = Omit<Authorization, "yParity"> & {
+	/** Signature parity (0/1). */
+	readonly yParity?: number;
+	/** Signature recovery id (27/28 or 0/1). */
+	readonly v?: number;
+};
+
+/**
+ * Parameters for signing an EIP-7702 authorization tuple.
+ *
+ * @description
+ * Uses contractAddress naming to align with viem and wallet APIs.
+ * If nonce is not provided, use SignerService.prepareAuthorization
+ * to fetch it before signing.
+ *
+ * @since 0.0.1
+ */
+export type SignAuthorizationParams = {
+	/** Address of the contract to delegate to */
+	readonly contractAddress: AddressInput;
+	/** Chain ID where the authorization is valid */
+	readonly chainId: bigint;
+	/** Nonce of the authorizing account */
+	readonly nonce?: bigint;
+};
+
+/**
  * Error thrown when an account operation fails.
  *
  * @description
@@ -238,15 +283,7 @@ export type UnsignedTransaction = {
 	/** EIP-4844: KZG proofs for blobs (sidecar) */
 	readonly kzgProofs?: readonly `0x${string}`[];
 	/** EIP-7702: Authorization list for set code transactions */
-	readonly authorizationList?: readonly {
-		chainId: bigint;
-		address: `0x${string}`;
-		nonce: bigint;
-		yParity?: number;
-		v?: number;
-		r: `0x${string}`;
-		s: `0x${string}`;
-	}[];
+	readonly authorizationList?: readonly AuthorizationInput[];
 };
 
 /**
@@ -267,10 +304,16 @@ export type AccountShape = {
 	readonly type: "local" | "json-rpc" | "hardware";
 
 	/**
-	 * The account's public key (65 bytes uncompressed).
+	 * The account's public key as a hex string (65 bytes uncompressed, 0x04 prefix).
 	 * Only available for local accounts. Returns undefined for json-rpc/hardware.
 	 */
-	readonly publicKey: Uint8Array | undefined;
+	readonly publicKey: HexType | undefined;
+
+	/**
+	 * Extended public key (xpub...) for HD accounts.
+	 * Only available for mnemonic-derived accounts.
+	 */
+	readonly hdKey?: string;
 
 	/**
 	 * Signs a message using EIP-191 personal_sign.
@@ -320,12 +363,15 @@ export type AccountShape = {
 	 * Per EIP-7702, the signing hash is: keccak256(MAGIC || rlp([chain_id, address, nonce]))
 	 * where MAGIC = 0x05.
 	 *
-	 * @param authorization - The authorization to sign
+	 * @param authorization - The authorization to sign. Accepts either an unsigned
+	 * tuple ({ chainId, address, nonce }) or params using contractAddress naming
+	 * ({ contractAddress, chainId, nonce? }). Nonce must be provided by the caller
+	 * for local accounts.
 	 * @returns Signed authorization with r, s, yParity
 	 */
 	readonly signAuthorization: (
-		authorization: UnsignedAuthorization,
-	) => Effect.Effect<SignedAuthorization, AccountError>;
+		authorization: UnsignedAuthorization | SignAuthorizationParams,
+	) => Effect.Effect<Authorization, AccountError>;
 
 	/**
 	 * Securely zeros out the private key bytes in memory.
@@ -334,6 +380,14 @@ export type AccountShape = {
 	 * @returns Effect that completes when key is cleared
 	 */
 	readonly clearKey: () => Effect.Effect<void>;
+
+	/**
+	 * Derive a child account by index from the current HD account.
+	 * Only available for mnemonic-derived accounts.
+	 */
+	readonly deriveChild?: (
+		index: number,
+	) => Effect.Effect<AccountShape, Error>;
 };
 
 /**
