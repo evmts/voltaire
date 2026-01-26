@@ -1,5 +1,11 @@
+import { equalsConstantTime } from "../Bytes/equalsConstantTime.js";
+
 /**
- * Check if two signatures are equal
+ * Check if two signatures are equal using constant-time comparison
+ *
+ * Uses constant-time comparison to prevent timing attacks when comparing
+ * signature data. The algorithm and v value comparisons are also timing-safe
+ * as they branch on fixed, public metadata.
  *
  * @param {import('./SignatureType.js').SignatureType} a - First signature
  * @param {import('./SignatureType.js').SignatureType} b - Second signature
@@ -11,26 +17,16 @@
  * ```
  */
 export function equals(a, b) {
-	// Check algorithm match
+	// Check algorithm match (safe - algorithm is public metadata)
 	if (a.algorithm !== b.algorithm) {
 		return false;
 	}
 
-	// Check v for secp256k1
+	// Check v for secp256k1 (safe - v is public metadata)
 	if (a.algorithm === "secp256k1" && a.v !== b.v) {
 		return false;
 	}
 
-	// Check bytes
-	if (a.length !== b.length) {
-		return false;
-	}
-
-	for (let i = 0; i < a.length; i++) {
-		if (a[i] !== b[i]) {
-			return false;
-		}
-	}
-
-	return true;
+	// Use constant-time comparison for the actual signature bytes
+	return equalsConstantTime(a, b);
 }

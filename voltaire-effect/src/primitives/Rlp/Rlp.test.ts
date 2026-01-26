@@ -906,8 +906,9 @@ describe("Rlp mixed content lists", () => {
 		];
 
 		const encoded = Effect.runSync(Rlp.encode(alternating));
+		// Total content: 1 (single byte) + 2 ([2]) + 1 (single byte) + 2 ([4]) = 6 bytes
 		expect(encoded).toEqual(new Uint8Array([
-			0xc8, // list of 8 bytes
+			0xc6, // list of 6 bytes
 			0x01, // 1
 			0xc1, 0x02, // [2]
 			0x03, // 3

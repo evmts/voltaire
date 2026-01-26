@@ -141,6 +141,26 @@ export const JsonRpcAccount = (address: AddressType) =>
 			return AccountService.of({
 				address,
 				type: "json-rpc" as const,
+				publicKey: undefined, // Not available for JSON-RPC accounts
+
+				clearKey: () => Effect.void, // No-op for JSON-RPC accounts
+
+				sign: (params: { hash: HexType }) =>
+					transport
+						.request<HexType>("eth_sign", [Address.toHex(address), params.hash])
+						.pipe(
+							Effect.map(
+								(sigHex) => Signature.fromHex(sigHex) as SignatureType,
+							),
+							Effect.mapError(
+								(e) =>
+									new AccountError(
+										{ action: "sign", hash: params.hash },
+										"Failed to sign hash via JSON-RPC",
+										{ cause: e instanceof Error ? e : undefined },
+									),
+							),
+						),
 
 				signMessage: (message: HexType) =>
 					transport
@@ -246,6 +266,47 @@ export const JsonRpcAccount = (address: AddressType) =>
 									new AccountError(
 										{ action: "signTypedData", typedData },
 										"Failed to sign typed data via JSON-RPC",
+										{ cause: e instanceof Error ? e : undefined },
+									),
+							),
+						),
+
+				signAuthorization: (authorization) =>
+					transport
+						.request<{
+							chainId: string;
+							address: string;
+							nonce: string;
+							yParity: string;
+							r: string;
+							s: string;
+						}>("wallet_signAuthorization", [
+							{
+								chainId: bigintToHex(authorization.chainId),
+								address:
+									typeof authorization.address === "string"
+										? authorization.address
+										: Address.toHex(authorization.address),
+								nonce: bigintToHex(authorization.nonce),
+							},
+						])
+						.pipe(
+							Effect.map((result) => ({
+								chainId: authorization.chainId,
+								address:
+									typeof authorization.address === "string"
+										? authorization.address
+										: (Address.toHex(authorization.address) as `0x${string}`),
+								nonce: authorization.nonce,
+								yParity: Number.parseInt(result.yParity, 16),
+								r: result.r as `0x${string}`,
+								s: result.s as `0x${string}`,
+							})),
+							Effect.mapError(
+								(e) =>
+									new AccountError(
+										{ action: "signAuthorization", authorization },
+										"Failed to sign authorization via JSON-RPC",
 										{ cause: e instanceof Error ? e : undefined },
 									),
 							),

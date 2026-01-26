@@ -482,7 +482,8 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 
 			const privateKey = yield* acquirePrivateKey(privateKeyHex);
 			const redactedPrivateKey = privateKey.redacted;
-			
+			const privateKeyBytes = privateKey.bytes;
+
 			const publicKey = Secp256k1.derivePublicKey(
 				Redacted.value(redactedPrivateKey) as unknown as Parameters<
 					typeof Secp256k1.derivePublicKey
@@ -496,6 +497,38 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 			return AccountService.of({
 				address,
 				type: "local" as const,
+				publicKey,
+
+				clearKey: () => zeroOutKeyBytes(privateKeyBytes),
+
+				sign: (params: { hash: HexType }) =>
+					Effect.gen(function* () {
+						const hashBytes = Hex.toBytes(params.hash);
+						if (hashBytes.length !== 32) {
+							return yield* Effect.fail(
+								new AccountError(
+									{ action: "sign", hash: params.hash },
+									`Hash must be 32 bytes, got ${hashBytes.length}`,
+								),
+							);
+						}
+						const sig = yield* secp256k1.sign(
+							hashBytes as unknown as HashType,
+							Redacted.value(redactedPrivateKey),
+						);
+						return sig as unknown as SignatureType;
+					}).pipe(
+						Effect.mapError(
+							(e) =>
+								e instanceof AccountError
+									? e
+									: new AccountError(
+											{ action: "sign", hash: params.hash },
+											"Failed to sign hash",
+											{ cause: e instanceof Error ? e : undefined },
+										),
+						),
+					),
 
 				signMessage: (message: HexType) =>
 					Effect.gen(function* () {
@@ -676,6 +709,137 @@ export const LocalAccount = (privateKeyHex: HexType) =>
 								),
 						),
 					),
+
+				signAuthorization: (authorization) =>
+					Effect.gen(function* () {
+						// EIP-7702: hash = keccak256(0x05 || rlp([chainId, address, nonce]))
+						const rlpItems: Uint8Array[] = [];
+
+						// Encode chainId as RLP
+						const chainIdBytes = bigintToBytes(authorization.chainId);
+						rlpItems.push(rlpEncodeItem(chainIdBytes));
+
+						// Encode address (20 bytes)
+						const addressBytes =
+							typeof authorization.address === "string"
+								? Hex.toBytes(authorization.address as HexType)
+								: Address.toBytes(authorization.address as AddressType);
+						rlpItems.push(rlpEncodeItem(addressBytes));
+
+						// Encode nonce as RLP
+						const nonceBytes = bigintToBytes(authorization.nonce);
+						rlpItems.push(rlpEncodeItem(nonceBytes));
+
+						// Create RLP list
+						const rlpList = rlpEncodeList(rlpItems);
+
+						// Prepend MAGIC byte 0x05
+						const preimage = new Uint8Array(1 + rlpList.length);
+						preimage[0] = 0x05;
+						preimage.set(rlpList, 1);
+
+						// Hash and sign
+						const hash = yield* keccak.hash(preimage);
+						const sig = yield* secp256k1.sign(
+							hash as unknown as HashType,
+							Redacted.value(redactedPrivateKey),
+						);
+
+						// Extract r, s, yParity from signature
+						const sigBytes = sig as unknown as Uint8Array;
+						const r = Hex.fromBytes(sigBytes.slice(0, 32));
+						const s = Hex.fromBytes(sigBytes.slice(32, 64));
+						const yParity = sigBytes[64] >= 27 ? sigBytes[64] - 27 : sigBytes[64];
+
+						return {
+							chainId: authorization.chainId,
+							address:
+								typeof authorization.address === "string"
+									? authorization.address
+									: (Address.toHex(authorization.address) as `0x${string}`),
+							nonce: authorization.nonce,
+							yParity,
+							r: r as `0x${string}`,
+							s: s as `0x${string}`,
+						};
+					}).pipe(
+						Effect.mapError(
+							(e) =>
+								new AccountError(
+									{ action: "signAuthorization" },
+									"Failed to sign authorization",
+									{ cause: e instanceof Error ? e : undefined },
+								),
+						),
+					),
 			});
 		}),
 	);
+
+/**
+ * Converts a bigint to minimal big-endian bytes (no leading zeros).
+ * @internal
+ */
+function bigintToBytes(value: bigint): Uint8Array {
+	if (value === 0n) return new Uint8Array(0);
+	let hex = value.toString(16);
+	if (hex.length % 2) hex = "0" + hex;
+	const bytes = new Uint8Array(hex.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+}
+
+/**
+ * RLP encodes a single item (bytes).
+ * @internal
+ */
+function rlpEncodeItem(bytes: Uint8Array): Uint8Array {
+	if (bytes.length === 0) {
+		return new Uint8Array([0x80]);
+	}
+	if (bytes.length === 1 && bytes[0] < 0x80) {
+		return bytes;
+	}
+	if (bytes.length <= 55) {
+		const result = new Uint8Array(1 + bytes.length);
+		result[0] = 0x80 + bytes.length;
+		result.set(bytes, 1);
+		return result;
+	}
+	const lenBytes = bigintToBytes(BigInt(bytes.length));
+	const result = new Uint8Array(1 + lenBytes.length + bytes.length);
+	result[0] = 0xb7 + lenBytes.length;
+	result.set(lenBytes, 1);
+	result.set(bytes, 1 + lenBytes.length);
+	return result;
+}
+
+/**
+ * RLP encodes a list of already-encoded items.
+ * @internal
+ */
+function rlpEncodeList(items: Uint8Array[]): Uint8Array {
+	const totalLen = items.reduce((sum, item) => sum + item.length, 0);
+	if (totalLen <= 55) {
+		const result = new Uint8Array(1 + totalLen);
+		result[0] = 0xc0 + totalLen;
+		let offset = 1;
+		for (const item of items) {
+			result.set(item, offset);
+			offset += item.length;
+		}
+		return result;
+	}
+	const lenBytes = bigintToBytes(BigInt(totalLen));
+	const result = new Uint8Array(1 + lenBytes.length + totalLen);
+	result[0] = 0xf7 + lenBytes.length;
+	result.set(lenBytes, 1);
+	let offset = 1 + lenBytes.length;
+	for (const item of items) {
+		result.set(item, offset);
+		offset += item.length;
+	}
+	return result;
+}

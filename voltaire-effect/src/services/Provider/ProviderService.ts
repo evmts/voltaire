@@ -309,6 +309,7 @@ export type GetBlockArgs =
 			/** Whether to include full transaction objects */
 			includeTransactions?: boolean;
 			blockHash?: never;
+			blockNumber?: never;
 	  }
 	| {
 			/** Block hash to query */
@@ -316,6 +317,15 @@ export type GetBlockArgs =
 			/** Whether to include full transaction objects */
 			includeTransactions?: boolean;
 			blockTag?: never;
+			blockNumber?: never;
+	  }
+	| {
+			/** Block number as bigint */
+			blockNumber: bigint;
+			/** Whether to include full transaction objects */
+			includeTransactions?: boolean;
+			blockTag?: never;
+			blockHash?: never;
 	  };
 
 /**
@@ -628,6 +638,107 @@ export interface FeeHistoryType {
 }
 
 /**
+ * Storage proof for a single slot.
+ *
+ * @since 0.0.1
+ */
+export interface StorageProofType {
+	/** Storage slot key (hex) */
+	key: string;
+	/** Value at slot (hex) */
+	value: string;
+	/** Merkle proof nodes (array of hex) */
+	proof: string[];
+}
+
+/**
+ * Account proof result from eth_getProof.
+ *
+ * @description
+ * Contains the Merkle-Patricia proof for an account and optional storage slots.
+ * Useful for stateless verification and light client implementations.
+ *
+ * @since 0.0.1
+ */
+export interface ProofType {
+	/** Account address */
+	address: string;
+	/** Merkle proof nodes for account (array of hex) */
+	accountProof: string[];
+	/** Account balance (hex) */
+	balance: string;
+	/** Account code hash */
+	codeHash: string;
+	/** Account nonce (hex) */
+	nonce: string;
+	/** Storage trie root hash */
+	storageHash: string;
+	/** Storage proofs for requested slots */
+	storageProof: StorageProofType[];
+}
+
+/**
+ * Uncle block type (partial block without transactions).
+ *
+ * @since 0.0.1
+ */
+export interface UncleBlockType {
+	/** Block number (hex) - null for pending blocks */
+	number: string | null;
+	/** Block hash - null for pending blocks */
+	hash: string | null;
+	/** Parent block hash */
+	parentHash: string;
+	/** Proof-of-work nonce */
+	nonce: string;
+	/** Hash of uncle blocks */
+	sha3Uncles: string;
+	/** Bloom filter for logs */
+	logsBloom: string;
+	/** Merkle root of transactions */
+	transactionsRoot: string;
+	/** Merkle root of state trie */
+	stateRoot: string;
+	/** Merkle root of receipts */
+	receiptsRoot: string;
+	/** Block miner/validator address */
+	miner: string;
+	/** Block difficulty (legacy PoW) */
+	difficulty: string;
+	/** Cumulative difficulty (legacy PoW) */
+	totalDifficulty: string;
+	/** Extra data included by miner */
+	extraData: string;
+	/** Block size in bytes (hex) */
+	size: string;
+	/** Maximum gas allowed in block (hex) */
+	gasLimit: string;
+	/** Total gas used by transactions (hex) */
+	gasUsed: string;
+	/** Block timestamp (hex, unix seconds) */
+	timestamp: string;
+	/** Uncle block hashes */
+	uncles: string[];
+}
+
+/**
+ * Arguments for getUncle - either by block tag or block hash.
+ *
+ * @since 0.0.1
+ */
+export type GetUncleArgs =
+	| {
+			/** Block tag (latest, earliest, pending, safe, finalized, or hex number) */
+			blockTag?: BlockTag;
+			blockHash?: never;
+	  }
+	| {
+			/** Block hash to query */
+			blockHash: HashInput;
+			blockTag?: never;
+	  };
+
+/**
  * Shape of the provider service.
  *
  * @description
@@ -726,6 +837,27 @@ export type ProviderShape = {
 	readonly backfillBlocks: <TInclude extends BlockInclude = "header">(
 		options: BackfillOptions<TInclude>,
 	) => Stream.Stream<BlocksEvent<TInclude>, ProviderError>;
+	/** Sends a signed raw transaction */
+	readonly sendRawTransaction: (
+		signedTx: HexType | `0x${string}`,
+	) => Effect.Effect<`0x${string}`, ProviderError>;
+	/** Gets an uncle block by block identifier and index */
+	readonly getUncle: (
+		args: GetUncleArgs,
+		uncleIndex: `0x${string}`,
+	) => Effect.Effect<UncleBlockType, ProviderError>;
+	/** Gets Merkle-Patricia proof for an account and storage slots */
+	readonly getProof: (
+		address: AddressInput,
+		storageKeys: (HashInput | `0x${string}`)[],
+		blockTag?: BlockTag,
+	) => Effect.Effect<ProofType, ProviderError>;
+	/** Gets the blob base fee (EIP-4844) */
+	readonly getBlobBaseFee: () => Effect.Effect<bigint, ProviderError>;
+	/** Gets the number of confirmations for a transaction */
+	readonly getTransactionConfirmations: (
+		hash: HashInput,
+	) => Effect.Effect<bigint, ProviderError>;
 };
 
 /**

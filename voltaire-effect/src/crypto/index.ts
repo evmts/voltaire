@@ -214,3 +214,22 @@ export {
 	type X25519ServiceShape,
 	X25519Test,
 } from "./X25519/index.js";
+
+// Signature verification utilities
+export {
+	AddressDerivationError,
+	constantTimeEqual,
+	hashMessage,
+	recoverAddress,
+	RecoverError,
+	recoverMessageAddress,
+	type SignatureError,
+	type SignatureInput,
+	verifyHash,
+	VerifyError,
+	verifyMessage,
+	verifyTypedData as verifyTypedDataSignature,
+} from "./Signature/index.js";
+
+// Hash utilities (re-exports for convenience)
+export { hashMessage as hashPersonalMessage } from "./Hash/index.js";

@@ -1,0 +1,237 @@
+import * as Effect from "effect/Effect";
+import * as Ref from "effect/Ref";
+import { describe, expect, it, vi } from "@effect/vitest";
+import {
+	CustomTransport,
+	CustomTransportFromFn,
+	TransportError,
+	TransportService,
+} from "./index.js";
+
+describe("CustomTransport", () => {
+	it("wraps an EIP-1193 provider", async () => {
+		const mockProvider = {
+			request: vi.fn().mockResolvedValue("0x123"),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_blockNumber", []);
+		}).pipe(Effect.provide(CustomTransport({ provider: mockProvider })));
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("0x123");
+		expect(mockProvider.request).toHaveBeenCalledWith({
+			method: "eth_blockNumber",
+			params: [],
+		});
+	});
+
+	it("accepts provider directly without config wrapper", async () => {
+		const mockProvider = {
+			request: vi.fn().mockResolvedValue("0x456"),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_chainId", []);
+		}).pipe(Effect.provide(CustomTransport(mockProvider)));
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("0x456");
+	});
+
+	it("handles provider errors with code and message", async () => {
+		const mockProvider = {
+			request: vi.fn().mockRejectedValue({
+				code: 4001,
+				message: "User rejected",
+			}),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_requestAccounts", []);
+		}).pipe(Effect.provide(CustomTransport({ provider: mockProvider })));
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(exit._tag).toBe("Failure");
+		if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+			const error = exit.cause.error as TransportError;
+			expect(error.code).toBe(4001);
+			expect(error.message).toBe("User rejected");
+		}
+	});
+
+	it("handles generic errors", async () => {
+		const mockProvider = {
+			request: vi.fn().mockRejectedValue(new Error("Network error")),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_blockNumber", []);
+		}).pipe(Effect.provide(CustomTransport({ provider: mockProvider })));
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(exit._tag).toBe("Failure");
+		if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+			const error = exit.cause.error as TransportError;
+			expect(error.message).toContain("Network error");
+		}
+	});
+
+	it("calls onRequest interceptor", async () => {
+		const onRequest = vi.fn();
+		const mockProvider = {
+			request: vi.fn().mockResolvedValue("0x1"),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_blockNumber", []);
+		}).pipe(
+			Effect.provide(
+				CustomTransport({
+					provider: mockProvider,
+					onRequest,
+				}),
+			),
+		);
+
+		await Effect.runPromise(program);
+		expect(onRequest).toHaveBeenCalledWith("eth_blockNumber", []);
+	});
+
+	it("calls onResponse interceptor", async () => {
+		const onResponse = vi.fn();
+		const mockProvider = {
+			request: vi.fn().mockResolvedValue("0x100"),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_blockNumber", []);
+		}).pipe(
+			Effect.provide(
+				CustomTransport({
+					provider: mockProvider,
+					onResponse,
+				}),
+			),
+		);
+
+		await Effect.runPromise(program);
+		expect(onResponse).toHaveBeenCalledWith("eth_blockNumber", "0x100");
+	});
+
+	it("calls onError interceptor", async () => {
+		const onError = vi.fn();
+		const mockProvider = {
+			request: vi.fn().mockRejectedValue({
+				code: -32603,
+				message: "Internal error",
+			}),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_call", []);
+		}).pipe(
+			Effect.provide(
+				CustomTransport({
+					provider: mockProvider,
+					onError,
+				}),
+			),
+		);
+
+		await Effect.runPromiseExit(program);
+		expect(onError).toHaveBeenCalled();
+		const [method, error] = onError.mock.calls[0];
+		expect(method).toBe("eth_call");
+		expect(error).toBeInstanceOf(TransportError);
+	});
+
+	it("handles request timeout", async () => {
+		const mockProvider = {
+			request: vi.fn().mockImplementation(() => new Promise(() => {})),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_blockNumber", []);
+		}).pipe(
+			Effect.provide(
+				CustomTransport({
+					provider: mockProvider,
+					timeout: 50,
+				}),
+			),
+		);
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(exit._tag).toBe("Failure");
+		if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+			const error = exit.cause.error as TransportError;
+			expect(error.message).toContain("timeout");
+		}
+	});
+
+	it("preserves error data field", async () => {
+		const mockProvider = {
+			request: vi.fn().mockRejectedValue({
+				code: -32000,
+				message: "execution reverted",
+				data: "0x08c379a0...",
+			}),
+		};
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_call", []);
+		}).pipe(Effect.provide(CustomTransport({ provider: mockProvider })));
+
+		const exit = await Effect.runPromiseExit(program);
+		expect(exit._tag).toBe("Failure");
+		if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+			const error = exit.cause.error as TransportError;
+			expect(error.data).toBe("0x08c379a0...");
+		}
+	});
+});
+
+describe("CustomTransportFromFn", () => {
+	it("creates transport from request function", async () => {
+		const requestFn = vi.fn().mockResolvedValue("0x999");
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_blockNumber", []);
+		}).pipe(Effect.provide(CustomTransportFromFn(requestFn)));
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("0x999");
+		expect(requestFn).toHaveBeenCalledWith({
+			method: "eth_blockNumber",
+			params: [],
+		});
+	});
+
+	it("passes options through", async () => {
+		const onRequest = vi.fn();
+		const requestFn = vi.fn().mockResolvedValue("0x1");
+
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+			return yield* transport.request<string>("eth_chainId", []);
+		}).pipe(
+			Effect.provide(
+				CustomTransportFromFn(requestFn, { onRequest, timeout: 60000 }),
+			),
+		);
+
+		await Effect.runPromise(program);
+		expect(onRequest).toHaveBeenCalledWith("eth_chainId", []);
+	});
+});

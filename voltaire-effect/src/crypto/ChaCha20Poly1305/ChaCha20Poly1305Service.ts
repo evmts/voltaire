@@ -57,7 +57,7 @@ export interface ChaCha20Poly1305ServiceShape {
 		key: Uint8Array,
 		nonce: Uint8Array,
 		additionalData?: Uint8Array,
-	) => Effect.Effect<Uint8Array>;
+	) => Effect.Effect<Uint8Array, InvalidKeyError | InvalidNonceError>;
 	/**
 	 * Decrypts ciphertext using ChaCha20-Poly1305.
 	 * @param ciphertext - Encrypted data with appended auth tag
@@ -71,7 +71,7 @@ export interface ChaCha20Poly1305ServiceShape {
 		key: Uint8Array,
 		nonce: Uint8Array,
 		additionalData?: Uint8Array,
-	) => Effect.Effect<Uint8Array>;
+	) => Effect.Effect<Uint8Array, InvalidKeyError | InvalidNonceError>;
 	/**
 	 * Generates a cryptographically random 256-bit key.
 	 * @returns Effect containing 32-byte random key

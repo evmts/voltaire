@@ -267,6 +267,12 @@ export type AccountShape = {
 	readonly type: "local" | "json-rpc" | "hardware";
 
 	/**
+	 * The account's public key (65 bytes uncompressed).
+	 * Only available for local accounts. Returns undefined for json-rpc/hardware.
+	 */
+	readonly publicKey: Uint8Array | undefined;
+
+	/**
 	 * Signs a message using EIP-191 personal_sign.
 	 * @param message - The message to sign (hex-encoded)
 	 * @returns Signature
@@ -274,6 +280,17 @@ export type AccountShape = {
 	readonly signMessage: (
 		message: HexType,
 	) => Effect.Effect<SignatureType, AccountError>;
+
+	/**
+	 * Signs a raw 32-byte hash directly without any prefix.
+	 * Use this for signing pre-computed hashes (e.g., EIP-712 hashes).
+	 * @param params - Object containing the hash to sign
+	 * @param params.hash - The 32-byte hash as hex
+	 * @returns Signature
+	 */
+	readonly sign: (params: {
+		hash: HexType;
+	}) => Effect.Effect<SignatureType, AccountError>;
 
 	/**
 	 * Signs an unsigned transaction.
@@ -309,6 +326,14 @@ export type AccountShape = {
 	readonly signAuthorization: (
 		authorization: UnsignedAuthorization,
 	) => Effect.Effect<SignedAuthorization, AccountError>;
+
+	/**
+	 * Securely zeros out the private key bytes in memory.
+	 * Call this when done with the account to prevent key leakage.
+	 * Only effective for local accounts. No-op for json-rpc/hardware.
+	 * @returns Effect that completes when key is cleared
+	 */
+	readonly clearKey: () => Effect.Effect<void>;
 };
 
 /**

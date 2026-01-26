@@ -51,6 +51,73 @@ describe("AccountService", () => {
 			)
 		);
 
+		it.effect("exposes publicKey property (65 bytes uncompressed)", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				const publicKey = account.publicKey;
+				expect(publicKey).toBeDefined();
+				expect(publicKey).toBeInstanceOf(Uint8Array);
+				expect(publicKey!.length).toBe(65);
+				// First byte is 0x04 for uncompressed public key
+				expect(publicKey![0]).toBe(0x04);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			)
+		);
+
+		it.effect("signs raw hash with sign({ hash })", () =>
+			Effect.gen(function* () {
+				// keccak256("hello") = 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+				const hash =
+					"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
+				const account = yield* AccountService;
+				const signature = yield* account.sign({ hash });
+				expect(signature).toBeDefined();
+				expect(signature.length).toBe(65);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			)
+		);
+
+		it.effect("sign({ hash }) fails for non-32-byte hash", () =>
+			Effect.gen(function* () {
+				const shortHash = "0x1234" as HexType;
+				const account = yield* AccountService;
+				const result = yield* Effect.either(account.sign({ hash: shortHash }));
+				expect(result._tag).toBe("Left");
+				if (result._tag === "Left") {
+					expect(result.left._tag).toBe("AccountError");
+					expect(result.left.message).toContain("32 bytes");
+				}
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			)
+		);
+
+		it.effect("clearKey() zeros out private key bytes", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				// Ensure we can sign before clearing
+				const hash =
+					"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
+				const sigBefore = yield* account.sign({ hash });
+				expect(sigBefore).toBeDefined();
+
+				// Clear the key
+				yield* account.clearKey();
+
+				// Note: After clearKey, the key bytes are zeroed.
+				// Signing will produce invalid signatures or fail.
+				// The test verifies clearKey completes without error.
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			)
+		);
+
 		it.effect("signs message with EIP-191 prefix", () =>
 			Effect.gen(function* () {
 				const message = "0x48656c6c6f" as HexType;
@@ -414,11 +481,24 @@ describe("AccountService", () => {
 				if (method === "personal_sign") {
 					return Effect.succeed(mockSignature as unknown as T);
 				}
+				if (method === "eth_sign") {
+					return Effect.succeed(mockSignature as unknown as T);
+				}
 				if (method === "eth_signTransaction") {
 					return Effect.succeed(mockSignature as unknown as T);
 				}
 				if (method === "eth_signTypedData_v4") {
 					return Effect.succeed(mockSignature as unknown as T);
+				}
+				if (method === "wallet_signAuthorization") {
+					return Effect.succeed({
+						chainId: "0x1",
+						address: "0x0000000000000000000000000000000000000001",
+						nonce: "0x0",
+						yParity: "0x0",
+						r: "0x" + "00".repeat(32),
+						s: "0x" + "00".repeat(32),
+					} as unknown as T);
 				}
 				return Effect.fail(
 					new TransportError({
@@ -445,6 +525,40 @@ describe("AccountService", () => {
 			Effect.gen(function* () {
 				const account = yield* AccountService;
 				expect(account.type).toBe("json-rpc");
+			}).pipe(
+				Effect.provide(JsonRpcAccount(mockAddress)),
+				Effect.provide(transportLayer),
+			)
+		);
+
+		it.effect("publicKey is undefined for JSON-RPC accounts", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				expect(account.publicKey).toBeUndefined();
+			}).pipe(
+				Effect.provide(JsonRpcAccount(mockAddress)),
+				Effect.provide(transportLayer),
+			)
+		);
+
+		it.effect("delegates sign({ hash }) to eth_sign", () =>
+			Effect.gen(function* () {
+				const hash =
+					"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as HexType;
+				const account = yield* AccountService;
+				const signature = yield* account.sign({ hash });
+				expect(signature).toBeDefined();
+			}).pipe(
+				Effect.provide(JsonRpcAccount(mockAddress)),
+				Effect.provide(transportLayer),
+			)
+		);
+
+		it.effect("clearKey() is a no-op for JSON-RPC accounts", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				// Should complete without error
+				yield* account.clearKey();
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),

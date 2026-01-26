@@ -54,12 +54,24 @@ let capturedTx: unknown;
 const mockAccount: AccountShape = {
 	address: mockAddress,
 	type: "local",
+	publicKey: new Uint8Array(65).fill(0x04),
 	signMessage: () => Effect.succeed(mockSignature),
+	sign: () => Effect.succeed(mockSignature),
 	signTransaction: (tx) => {
 		capturedTx = tx;
 		return Effect.succeed(mockSignature);
 	},
 	signTypedData: () => Effect.succeed(mockSignature),
+	signAuthorization: () =>
+		Effect.succeed({
+			chainId: 1n,
+			address: "0x0000000000000000000000000000000000000001" as `0x${string}`,
+			nonce: 0n,
+			yParity: 0,
+			r: ("0x" + "00".repeat(32)) as `0x${string}`,
+			s: ("0x" + "00".repeat(32)) as `0x${string}`,
+		}),
+	clearKey: () => Effect.void,
 };
 
 const mockProvider: ProviderShape = {

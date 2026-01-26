@@ -1312,6 +1312,47 @@ describe("ProviderService", () => {
 		});
 	});
 
+	describe("getTransactionConfirmations", () => {
+		it("returns confirmations for mined transaction", async () => {
+			const mockReceipt = {
+				transactionHash: "0xabc",
+				blockNumber: "0x64", // block 100
+				status: "0x1",
+			};
+			const transport = mockTransportWithCapture({
+				eth_getTransactionReceipt: () => mockReceipt,
+				eth_blockNumber: () => "0x69", // block 105
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getTransactionConfirmations("0xabc");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(6n); // 105 - 100 + 1 = 6 confirmations
+		});
+
+		it("returns 0 for pending transaction", async () => {
+			const transport = mockTransportWithCapture({
+				eth_getTransactionReceipt: () => null,
+				eth_blockNumber: () => "0x64",
+			});
+			const layer = Provider.pipe(Layer.provide(transport));
+
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const provider = yield* ProviderService;
+					return yield* provider.getTransactionConfirmations("0xabc");
+				}).pipe(Effect.provide(layer)),
+			);
+
+			expect(result).toBe(0n);
+		});
+	});
+
 	describe("concurrent requests", () => {
 		it("handles multiple concurrent getBalance calls", async () => {
 			let callCount = 0;
@@ -1380,18 +1421,18 @@ describe("ProviderService", () => {
 			expect(result).toBe("0x");
 		});
 
-		it("handles null transaction receipt (pending)", async () => {
+		it("fails when transaction receipt is null (pending)", async () => {
 			const transport = mockTransport({ eth_getTransactionReceipt: null });
 			const layer = Provider.pipe(Layer.provide(transport));
 
-			const result = await Effect.runPromise(
+			const exit = await Effect.runPromiseExit(
 				Effect.gen(function* () {
 					const provider = yield* ProviderService;
 					return yield* provider.getTransactionReceipt("0xabc");
 				}).pipe(Effect.provide(layer)),
 			);
 
-			expect(result).toBeNull();
+			expect(Exit.isFailure(exit)).toBe(true);
 		});
 
 		it("handles empty logs array", async () => {

@@ -49,14 +49,17 @@ import {
 	type CallRequest,
 	type FeeHistoryType,
 	type GetBlockArgs,
+	type GetUncleArgs,
 	type HashInput,
 	type LogFilter,
 	type LogType,
+	type ProofType,
 	ProviderError,
 	ProviderService,
 	type ReceiptType,
 	type StateOverride,
 	type TransactionType,
+	type UncleBlockType,
 } from "./ProviderService.js";
 
 /**
@@ -343,9 +346,15 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					const method = args?.blockHash
 						? "eth_getBlockByHash"
 						: "eth_getBlockByNumber";
-					const params = args?.blockHash
-						? [toHashHex(args.blockHash), args?.includeTransactions ?? false]
-						: [args?.blockTag ?? "latest", args?.includeTransactions ?? false];
+					let blockId: string;
+					if (args?.blockHash) {
+						blockId = toHashHex(args.blockHash);
+					} else if (args?.blockNumber !== undefined) {
+						blockId = `0x${args.blockNumber.toString(16)}`;
+					} else {
+						blockId = args?.blockTag ?? "latest";
+					}
+					const params = [blockId, args?.includeTransactions ?? false];
 					return request<BlockType | null>(method, params).pipe(
 						Effect.flatMap((block) =>
 							block
@@ -573,7 +582,8 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 									),
 							}),
 						),
-					),
+					);
+				},
 
 				createAccessList: (tx: CallRequest) =>
 					request<AccessListType>("eth_createAccessList", [
@@ -748,6 +758,73 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 							);
 						}),
 					),
+
+				sendRawTransaction: (signedTx: `0x${string}`) =>
+					request<`0x${string}`>("eth_sendRawTransaction", [signedTx]),
+
+				getUncle: (args: GetUncleArgs, uncleIndex: `0x${string}`) => {
+					const method = args.blockHash
+						? "eth_getUncleByBlockHashAndIndex"
+						: "eth_getUncleByBlockNumberAndIndex";
+					const params = args.blockHash
+						? [toHashHex(args.blockHash), uncleIndex]
+						: [args.blockTag ?? "latest", uncleIndex];
+					return request<UncleBlockType | null>(method, params).pipe(
+						Effect.flatMap((uncle) =>
+							uncle
+								? Effect.succeed(uncle)
+								: Effect.fail(
+										new ProviderError(args, "Uncle block not found"),
+									),
+						),
+					);
+				},
+
+				getProof: (
+					address: AddressInput,
+					storageKeys: (`0x${string}`)[],
+					blockTag: BlockTag = "latest",
+				) =>
+					request<ProofType>("eth_getProof", [
+						toAddressHex(address),
+						storageKeys.map((key) =>
+							typeof key === "string" ? key : toHashHex(key),
+						),
+						blockTag,
+					]),
+
+				getBlobBaseFee: () =>
+					request<string>("eth_blobBaseFee").pipe(
+						Effect.flatMap((hex) =>
+							Effect.try({
+								try: () => BigInt(hex),
+								catch: (e) =>
+									new ProviderError(
+										{ method: "eth_blobBaseFee", response: hex },
+										`Invalid hex response from RPC: ${hex}`,
+										{ cause: e instanceof Error ? e : undefined },
+									),
+							}),
+						),
+					),
+
+				getTransactionConfirmations: (hash: HashInput) =>
+					Effect.gen(function* () {
+						const receipt = yield* request<ReceiptType | null>(
+							"eth_getTransactionReceipt",
+							[toHashHex(hash)],
+						);
+						if (!receipt) {
+							return 0n;
+						}
+						const currentBlock = yield* request<string>("eth_blockNumber");
+						const receiptBlock = BigInt(receipt.blockNumber);
+						const current = BigInt(currentBlock);
+						if (current < receiptBlock) {
+							return 0n;
+						}
+						return current - receiptBlock + 1n;
+					}),
 			};
 		}),
 	);

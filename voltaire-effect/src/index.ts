@@ -218,3 +218,6 @@ export {
 	type WatchStreamOptions,
 } from "./contract/index.js";
 export * as Stream from "./stream/index.js";
+
+// Utils - unit parsing/formatting
+export * as Unit from "./utils/Unit/index.js";

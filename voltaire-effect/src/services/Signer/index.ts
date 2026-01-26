@@ -77,9 +77,32 @@ export {
 } from "./SignerService.js";
 
 export {
+	// Contract actions
 	writeContract,
 	type WriteContractParams,
 	deployContract,
 	type DeployContractParams,
 	type DeployContractResult,
+	// Wallet management actions
+	addChain,
+	type Chain,
+	type NativeCurrency,
+	switchChain,
+	watchAsset,
+	type WatchAssetParams,
+	type WatchAssetOptions,
+	type WatchAssetType,
+	getPermissions,
+	type Permission,
+	type Caveat,
+	requestPermissions,
+	type PermissionRequest,
+	getAddresses,
+	// EIP-7702 Authorization actions
+	prepareAuthorization,
+	type PrepareAuthorizationParams,
+	type Authorization,
+	signAuthorization,
+	type SignAuthorizationParams,
+	type SignedAuthorization,
 } from "./actions/index.js";

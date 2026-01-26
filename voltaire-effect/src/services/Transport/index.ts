@@ -72,3 +72,69 @@ export {
 	WebSocketTransportFromConfigGlobal,
 	type WebSocketTransportConfigType,
 } from "./WebSocketTransportConfig.js";
+
+// New transport implementations
+export { IpcTransport, type IpcTransportConfig } from "./IpcTransport.js";
+export {
+	CustomTransport,
+	CustomTransportFromFn,
+	type CustomTransportConfig,
+	type EIP1193Provider,
+} from "./CustomTransport.js";
+
+// Interceptors and deduplication
+export {
+	onRequestRef,
+	onResponseRef,
+	onErrorRef,
+	withRequestInterceptor,
+	withResponseInterceptor,
+	withErrorInterceptor,
+	withInterceptors,
+	InterceptedTransport,
+	DeduplicatedTransport,
+	type RpcRequest as InterceptorRpcRequest,
+	type RpcResponse,
+	type RpcError,
+	type RequestInterceptor,
+	type ResponseInterceptor,
+	type ErrorInterceptor,
+	type DeduplicationConfig,
+} from "./TransportInterceptor.js";
+
+// RPC request types and helpers
+export {
+	GetBlockNumber,
+	GetChainId,
+	GetGasPrice,
+	GetBalance,
+	GetTransactionCount,
+	GetCode,
+	GetStorageAt,
+	Call,
+	EstimateGas,
+	GetBlockByNumber,
+	GetBlockByHash,
+	GetTransactionByHash,
+	GetTransactionReceipt,
+	GetLogs,
+	SendRawTransaction,
+	GetFeeHistory,
+	GenericRpcRequest,
+	toJsonRpc,
+	type RpcRequest,
+	type BlockTag,
+	type CallParams,
+	type LogFilter,
+} from "./RpcRequest.js";
+export { rpcRequest, rpc } from "./RpcResolver.js";
+
+// Unified config
+export {
+	TransportConfig,
+	TransportFromConfig,
+	TransportFromConfigFetch,
+	QuickConfig,
+	ConfigProvider,
+	type TransportConfigType,
+} from "./TransportConfig.js";

@@ -5,6 +5,7 @@
  */
 import * as Effect from "effect/Effect";
 import { ChaCha20Poly1305Service } from "./ChaCha20Poly1305Service.js";
+import type { InvalidKeyError, InvalidNonceError } from "./errors.js";
 
 /**
  * Encrypts plaintext using ChaCha20-Poly1305.
@@ -40,7 +41,7 @@ export const encrypt = (
 	key: Uint8Array,
 	nonce: Uint8Array,
 	additionalData?: Uint8Array,
-): Effect.Effect<Uint8Array, never, ChaCha20Poly1305Service> =>
+): Effect.Effect<Uint8Array, InvalidKeyError | InvalidNonceError, ChaCha20Poly1305Service> =>
 	Effect.gen(function* () {
 		const service = yield* ChaCha20Poly1305Service;
 		return yield* service.encrypt(plaintext, key, nonce, additionalData);
@@ -81,7 +82,7 @@ export const decrypt = (
 	key: Uint8Array,
 	nonce: Uint8Array,
 	additionalData?: Uint8Array,
-): Effect.Effect<Uint8Array, never, ChaCha20Poly1305Service> =>
+): Effect.Effect<Uint8Array, InvalidKeyError | InvalidNonceError, ChaCha20Poly1305Service> =>
 	Effect.gen(function* () {
 		const service = yield* ChaCha20Poly1305Service;
 		return yield* service.decrypt(ciphertext, key, nonce, additionalData);

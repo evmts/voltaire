@@ -89,10 +89,27 @@ export interface MnemonicAccountOptions {
  * @see {@link LocalAccount} - The underlying account implementation
  * @see {@link AccountService} - The service interface
  */
+/**
+ * Error class for HD wallet derivation failures.
+ *
+ * @since 0.0.1
+ */
+export class HDWalletDerivationError extends Error {
+	readonly _tag = "HDWalletDerivationError";
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message, options);
+		this.name = "HDWalletDerivationError";
+	}
+}
+
 export const MnemonicAccount = (
 	mnemonic: string,
 	options?: MnemonicAccountOptions,
-): Layer.Layer<AccountService, Error, Secp256k1Service | KeccakService> =>
+): Layer.Layer<
+	AccountService,
+	Error | HDWalletDerivationError,
+	Secp256k1Service | KeccakService
+> =>
 	Layer.unwrapEffect(
 		Effect.gen(function* () {
 			const accountIndex = options?.account ?? 0;
@@ -107,13 +124,36 @@ export const MnemonicAccount = (
 				Bip39.mnemonicToSeed(mnemonic, passphrase),
 			);
 
-			const root = HDWallet.fromSeed(seed);
-			const derived = HDWallet.deriveEthereum(root, accountIndex, addressIndex);
-			const privateKey = HDWallet.getPrivateKey(derived);
+			const root = yield* Effect.try({
+				try: () => HDWallet.fromSeed(seed),
+				catch: (e) =>
+					new HDWalletDerivationError("Failed to create root HD wallet", {
+						cause: e,
+					}),
+			});
+
+			const derived = yield* Effect.try({
+				try: () => HDWallet.deriveEthereum(root, accountIndex, addressIndex),
+				catch: (e) =>
+					new HDWalletDerivationError(
+						`Failed to derive path m/44'/60'/${accountIndex}'/0/${addressIndex}`,
+						{ cause: e },
+					),
+			});
+
+			const privateKey = yield* Effect.try({
+				try: () => HDWallet.getPrivateKey(derived),
+				catch: (e) =>
+					new HDWalletDerivationError("Failed to extract private key", {
+						cause: e,
+					}),
+			});
 
 			if (!privateKey) {
 				return yield* Effect.fail(
-					new Error("Failed to derive private key from mnemonic"),
+					new HDWalletDerivationError(
+						"Failed to derive private key from mnemonic",
+					),
 				);
 			}
 

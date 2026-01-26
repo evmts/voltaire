@@ -54,14 +54,18 @@ export {
 	type FeeHistoryType,
 	type GetBlockArgs,
 	type GetBlockTransactionCountArgs,
+	type GetUncleArgs,
 	type HashInput,
 	type LogFilter,
 	type LogType,
+	type ProofType,
 	ProviderError,
 	ProviderService,
 	type ProviderShape,
 	type ReceiptType,
+	type StorageProofType,
 	type TransactionType,
+	type UncleBlockType,
 } from "./ProviderService.js";
 // Re-export block streaming types for convenience
 export type {

@@ -1,0 +1,343 @@
+import * as Effect from "effect/Effect";
+import { describe, expect, it } from "@effect/vitest";
+import {
+	formatEther,
+	formatGwei,
+	formatUnits,
+	parseEther,
+	parseGwei,
+	parseUnits,
+	UnitError,
+} from "./index.js";
+
+describe("Unit", () => {
+	describe("parseUnits", () => {
+		it("parses integer value", async () => {
+			const result = await Effect.runPromise(parseUnits("1", 18));
+			expect(result).toBe(1000000000000000000n);
+		});
+
+		it("parses decimal value", async () => {
+			const result = await Effect.runPromise(parseUnits("1.5", 18));
+			expect(result).toBe(1500000000000000000n);
+		});
+
+		it("parses value with leading zeros in decimal", async () => {
+			const result = await Effect.runPromise(parseUnits("1.005", 18));
+			expect(result).toBe(1005000000000000000n);
+		});
+
+		it("parses zero", async () => {
+			const result = await Effect.runPromise(parseUnits("0", 18));
+			expect(result).toBe(0n);
+		});
+
+		it("parses value with trailing zeros in decimal", async () => {
+			const result = await Effect.runPromise(parseUnits("1.500", 18));
+			expect(result).toBe(1500000000000000000n);
+		});
+
+		it("truncates excess decimal places", async () => {
+			const result = await Effect.runPromise(
+				parseUnits("1.123456789012345678901234567890", 18),
+			);
+			expect(result).toBe(1123456789012345678n);
+		});
+
+		it("parses negative value", async () => {
+			const result = await Effect.runPromise(parseUnits("-1.5", 18));
+			expect(result).toBe(-1500000000000000000n);
+		});
+
+		it("parses value with 6 decimals (USDC)", async () => {
+			const result = await Effect.runPromise(parseUnits("100.50", 6));
+			expect(result).toBe(100500000n);
+		});
+
+		it("parses value with 8 decimals (WBTC)", async () => {
+			const result = await Effect.runPromise(parseUnits("0.00000001", 8));
+			expect(result).toBe(1n);
+		});
+
+		it("parses value with 0 decimals", async () => {
+			const result = await Effect.runPromise(parseUnits("123", 0));
+			expect(result).toBe(123n);
+		});
+
+		it("parses decimal-only value", async () => {
+			const result = await Effect.runPromise(parseUnits(".5", 18));
+			expect(result).toBe(500000000000000000n);
+		});
+
+		it("handles whitespace", async () => {
+			const result = await Effect.runPromise(parseUnits("  1.5  ", 18));
+			expect(result).toBe(1500000000000000000n);
+		});
+
+		it("fails on empty string", async () => {
+			const result = await Effect.runPromiseExit(parseUnits("", 18));
+			expect(result._tag).toBe("Failure");
+		});
+
+		it("fails on whitespace-only string", async () => {
+			const result = await Effect.runPromiseExit(parseUnits("   ", 18));
+			expect(result._tag).toBe("Failure");
+		});
+
+		it("fails on multiple decimal points", async () => {
+			const result = await Effect.runPromiseExit(parseUnits("1.2.3", 18));
+			expect(result._tag).toBe("Failure");
+		});
+
+		it("fails on non-numeric characters", async () => {
+			const result = await Effect.runPromiseExit(parseUnits("1.5abc", 18));
+			expect(result._tag).toBe("Failure");
+		});
+
+		it("returns UnitError on failure", async () => {
+			const result = await Effect.runPromiseExit(parseUnits("invalid", 18));
+			if (result._tag === "Failure") {
+				const error = result.cause;
+				expect(error._tag).toBe("Fail");
+			}
+		});
+	});
+
+	describe("formatUnits", () => {
+		it("formats integer value", async () => {
+			const result = await Effect.runPromise(
+				formatUnits(1000000000000000000n, 18),
+			);
+			expect(result).toBe("1");
+		});
+
+		it("formats decimal value", async () => {
+			const result = await Effect.runPromise(
+				formatUnits(1500000000000000000n, 18),
+			);
+			expect(result).toBe("1.5");
+		});
+
+		it("formats value with leading zeros in decimal", async () => {
+			const result = await Effect.runPromise(
+				formatUnits(1005000000000000000n, 18),
+			);
+			expect(result).toBe("1.005");
+		});
+
+		it("formats zero", async () => {
+			const result = await Effect.runPromise(formatUnits(0n, 18));
+			expect(result).toBe("0");
+		});
+
+		it("formats small value (less than 1)", async () => {
+			const result = await Effect.runPromise(
+				formatUnits(500000000000000000n, 18),
+			);
+			expect(result).toBe("0.5");
+		});
+
+		it("formats very small value", async () => {
+			const result = await Effect.runPromise(formatUnits(1n, 18));
+			expect(result).toBe("0.000000000000000001");
+		});
+
+		it("formats negative value", async () => {
+			const result = await Effect.runPromise(
+				formatUnits(-1500000000000000000n, 18),
+			);
+			expect(result).toBe("-1.5");
+		});
+
+		it("formats value with 6 decimals (USDC)", async () => {
+			const result = await Effect.runPromise(formatUnits(100500000n, 6));
+			expect(result).toBe("100.5");
+		});
+
+		it("formats value with 8 decimals (WBTC)", async () => {
+			const result = await Effect.runPromise(formatUnits(1n, 8));
+			expect(result).toBe("0.00000001");
+		});
+
+		it("formats value with 0 decimals", async () => {
+			const result = await Effect.runPromise(formatUnits(123n, 0));
+			expect(result).toBe("123");
+		});
+
+		it("removes trailing zeros", async () => {
+			const result = await Effect.runPromise(
+				formatUnits(1000000000000000000n, 18),
+			);
+			expect(result).toBe("1");
+			expect(result).not.toContain(".");
+		});
+
+		it("fails on negative decimals", async () => {
+			const result = await Effect.runPromiseExit(formatUnits(100n, -1));
+			expect(result._tag).toBe("Failure");
+		});
+	});
+
+	describe("parseEther", () => {
+		it("parses 1 ETH", async () => {
+			const result = await Effect.runPromise(parseEther("1"));
+			expect(result).toBe(1000000000000000000n);
+		});
+
+		it("parses 1.5 ETH", async () => {
+			const result = await Effect.runPromise(parseEther("1.5"));
+			expect(result).toBe(1500000000000000000n);
+		});
+
+		it("parses 0.001 ETH (1 finney)", async () => {
+			const result = await Effect.runPromise(parseEther("0.001"));
+			expect(result).toBe(1000000000000000n);
+		});
+
+		it("parses 0.000000001 ETH (1 gwei)", async () => {
+			const result = await Effect.runPromise(parseEther("0.000000001"));
+			expect(result).toBe(1000000000n);
+		});
+
+		it("parses 0.000000000000000001 ETH (1 wei)", async () => {
+			const result = await Effect.runPromise(
+				parseEther("0.000000000000000001"),
+			);
+			expect(result).toBe(1n);
+		});
+
+		it("parses large value", async () => {
+			const result = await Effect.runPromise(parseEther("1000000"));
+			expect(result).toBe(1000000000000000000000000n);
+		});
+	});
+
+	describe("formatEther", () => {
+		it("formats 1 ETH", async () => {
+			const result = await Effect.runPromise(
+				formatEther(1000000000000000000n),
+			);
+			expect(result).toBe("1");
+		});
+
+		it("formats 1.5 ETH", async () => {
+			const result = await Effect.runPromise(
+				formatEther(1500000000000000000n),
+			);
+			expect(result).toBe("1.5");
+		});
+
+		it("formats 1 wei", async () => {
+			const result = await Effect.runPromise(formatEther(1n));
+			expect(result).toBe("0.000000000000000001");
+		});
+
+		it("formats 1 gwei", async () => {
+			const result = await Effect.runPromise(formatEther(1000000000n));
+			expect(result).toBe("0.000000001");
+		});
+
+		it("formats large value", async () => {
+			const result = await Effect.runPromise(
+				formatEther(1000000000000000000000000n),
+			);
+			expect(result).toBe("1000000");
+		});
+	});
+
+	describe("parseGwei", () => {
+		it("parses 1 gwei", async () => {
+			const result = await Effect.runPromise(parseGwei("1"));
+			expect(result).toBe(1000000000n);
+		});
+
+		it("parses 20.5 gwei", async () => {
+			const result = await Effect.runPromise(parseGwei("20.5"));
+			expect(result).toBe(20500000000n);
+		});
+
+		it("parses 0.000000001 gwei (1 wei)", async () => {
+			const result = await Effect.runPromise(parseGwei("0.000000001"));
+			expect(result).toBe(1n);
+		});
+
+		it("parses standard gas price", async () => {
+			const result = await Effect.runPromise(parseGwei("30"));
+			expect(result).toBe(30000000000n);
+		});
+	});
+
+	describe("formatGwei", () => {
+		it("formats 1 gwei", async () => {
+			const result = await Effect.runPromise(formatGwei(1000000000n));
+			expect(result).toBe("1");
+		});
+
+		it("formats 20.5 gwei", async () => {
+			const result = await Effect.runPromise(formatGwei(20500000000n));
+			expect(result).toBe("20.5");
+		});
+
+		it("formats 1 wei", async () => {
+			const result = await Effect.runPromise(formatGwei(1n));
+			expect(result).toBe("0.000000001");
+		});
+
+		it("formats standard gas price", async () => {
+			const result = await Effect.runPromise(formatGwei(30000000000n));
+			expect(result).toBe("30");
+		});
+	});
+
+	describe("roundtrip tests", () => {
+		it("parseEther -> formatEther roundtrip", async () => {
+			const original = "123.456789012345678";
+			const wei = await Effect.runPromise(parseEther(original));
+			const formatted = await Effect.runPromise(formatEther(wei));
+			expect(formatted).toBe("123.456789012345678");
+		});
+
+		it("parseGwei -> formatGwei roundtrip", async () => {
+			const original = "20.123456789";
+			const wei = await Effect.runPromise(parseGwei(original));
+			const formatted = await Effect.runPromise(formatGwei(wei));
+			expect(formatted).toBe("20.123456789");
+		});
+
+		it("formatEther -> parseEther roundtrip", async () => {
+			const original = 1234567890123456789n;
+			const formatted = await Effect.runPromise(formatEther(original));
+			const parsed = await Effect.runPromise(parseEther(formatted));
+			expect(parsed).toBe(original);
+		});
+
+		it("formatGwei -> parseGwei roundtrip", async () => {
+			const original = 12345678901n;
+			const formatted = await Effect.runPromise(formatGwei(original));
+			const parsed = await Effect.runPromise(parseGwei(formatted));
+			expect(parsed).toBe(original);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles max safe integer equivalent", async () => {
+			const result = await Effect.runPromise(
+				parseEther("9007199254740991"),
+			);
+			expect(result).toBe(9007199254740991000000000000000000n);
+		});
+
+		it("handles very large values", async () => {
+			const large = "115792089237316195423570985008687907853269984665640564039457";
+			const result = await Effect.runPromise(parseUnits(large, 0));
+			expect(result).toBe(BigInt(large));
+		});
+
+		it("handles value with all decimal places used", async () => {
+			const result = await Effect.runPromise(
+				parseEther("1.123456789012345678"),
+			);
+			expect(result).toBe(1123456789012345678n);
+		});
+	});
+});
