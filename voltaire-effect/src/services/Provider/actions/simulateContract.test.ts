@@ -1,7 +1,7 @@
 import { Address, Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@effect/vitest";
 import { ProviderService, type ProviderShape } from "../ProviderService.js";
 import { simulateContract } from "./simulateContract.js";
 
