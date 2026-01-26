@@ -6,7 +6,9 @@ import { describe, expect, it } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as S from "effect/Schema";
 import * as Stream from "effect/Stream";
+import { EventSchema } from "../primitives/Abi/AbiSchema.js";
 import {
 	TransportError,
 	TransportService,
@@ -16,7 +18,7 @@ import { EventStream } from "./EventStream.js";
 import { EventStreamError } from "./EventStreamError.js";
 import { EventStreamService } from "./EventStreamService.js";
 
-const transferEvent = {
+const transferEvent = S.decodeUnknownSync(EventSchema)({
 	type: "event",
 	name: "Transfer",
 	inputs: [
@@ -24,9 +26,9 @@ const transferEvent = {
 		{ name: "to", type: "address", indexed: true },
 		{ name: "value", type: "uint256", indexed: false },
 	],
-} as const;
+});
 
-const approvalEvent = {
+const approvalEvent = S.decodeUnknownSync(EventSchema)({
 	type: "event",
 	name: "Approval",
 	inputs: [
@@ -34,7 +36,7 @@ const approvalEvent = {
 		{ name: "spender", type: "address", indexed: true },
 		{ name: "value", type: "uint256", indexed: false },
 	],
-} as const;
+});
 
 describe("EventStreamService", () => {
 	describe("EventStreamError", () => {

@@ -8,8 +8,10 @@ import type { HashType } from "@tevm/voltaire/Hash";
 import * as Hash from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as S from "effect/Schema";
 import type { AccountShape } from "../../Account/AccountService.js";
 import { AccountService } from "../../Account/index.js";
+import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
 import {
 	TransportService,
@@ -32,7 +34,7 @@ const mockTxHashHex =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const mockTxHash: HashType = Hash.fromHex(mockTxHashHex);
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
@@ -53,7 +55,7 @@ const erc20Abi = [
 		outputs: [{ type: "bool" }],
 		stateMutability: "nonpayable",
 	},
-] as const;
+]);
 
 let capturedTx: unknown;
 

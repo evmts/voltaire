@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { BrandedAbi, Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as S from "effect/Schema";
+import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
 import { ProviderService } from "../ProviderService.js";
 import { multicall as _multicall } from "./multicall.js";
 
@@ -16,7 +18,7 @@ const multicall = (params: {
 
 type HexType = `0x${string}`;
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "balanceOf",
@@ -31,7 +33,7 @@ const erc20Abi = [
 		inputs: [],
 		outputs: [{ name: "", type: "uint256" }],
 	},
-] as const;
+]);
 
 const mockProvider = {
 	call: vi.fn(),

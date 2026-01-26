@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { Address, BrandedAbi } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as S from "effect/Schema";
+import { fromArray } from "../../primitives/Abi/AbiSchema.js";
 import { ProviderService } from "../Provider/index.js";
 import { Contract } from "./Contract.js";
 
@@ -9,7 +11,7 @@ type HexType = `0x${string}`;
 
 const testAddress = Address("0x6B175474E89094C44Da98b954EecdEfaE6E286AB");
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
@@ -27,7 +29,7 @@ const erc20Abi = [
 		inputs: [],
 		outputs: [],
 	},
-] as const;
+]);
 
 const mockProvider = {
 	estimateGas: vi.fn(),

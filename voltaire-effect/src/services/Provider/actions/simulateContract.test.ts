@@ -2,10 +2,12 @@ import { describe, expect, it } from "@effect/vitest";
 import { Address, Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as S from "effect/Schema";
+import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
 import { ProviderService, type ProviderShape } from "../ProviderService.js";
 import { simulateContract } from "./simulateContract.js";
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "transfer",
@@ -23,7 +25,7 @@ const erc20Abi = [
 		outputs: [{ type: "uint256" }],
 		stateMutability: "view",
 	},
-] as const;
+]);
 
 const createMockProvider = (
 	callResult: `0x${string}`,

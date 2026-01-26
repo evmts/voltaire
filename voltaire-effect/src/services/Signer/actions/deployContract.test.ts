@@ -8,8 +8,10 @@ import type { HashType } from "@tevm/voltaire/Hash";
 import * as Hash from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as S from "effect/Schema";
 import type { AccountShape } from "../../Account/AccountService.js";
 import { AccountService } from "../../Account/index.js";
+import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
 import {
 	TransportService,
@@ -35,7 +37,7 @@ const mockContractAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
 
 const simpleBytecode = "0x608060405234801561001057600080fd5b50";
 
-const abiWithConstructor = [
+const abiWithConstructor = S.decodeUnknownSync(fromArray)([
 	{
 		type: "constructor",
 		inputs: [
@@ -51,9 +53,9 @@ const abiWithConstructor = [
 		outputs: [{ type: "uint256" }],
 		stateMutability: "view",
 	},
-] as const;
+]);
 
-const abiWithoutConstructor = [
+const abiWithoutConstructor = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "getValue",
@@ -61,15 +63,15 @@ const abiWithoutConstructor = [
 		outputs: [{ type: "uint256" }],
 		stateMutability: "view",
 	},
-] as const;
+]);
 
-const abiPayableConstructor = [
+const abiPayableConstructor = S.decodeUnknownSync(fromArray)([
 	{
 		type: "constructor",
 		inputs: [{ name: "initialValue", type: "uint256" }],
 		stateMutability: "payable",
 	},
-] as const;
+]);
 
 let capturedTx: unknown;
 

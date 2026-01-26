@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as S from "effect/Schema";
+import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
 import { ProviderService } from "../ProviderService.js";
 import { readContract } from "./readContract.js";
 
 type HexType = `0x${string}`;
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "balanceOf",
@@ -46,9 +48,9 @@ const erc20Abi = [
 		],
 		outputs: [{ name: "", type: "uint256" }],
 	},
-] as const;
+]);
 
-const pairAbi = [
+const pairAbi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "getReserves",
@@ -67,9 +69,9 @@ const pairAbi = [
 		inputs: [],
 		outputs: [{ name: "", type: "address" }],
 	},
-] as const;
+]);
 
-const extendedAbi = [
+const extendedAbi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "owner",
@@ -123,9 +125,9 @@ const extendedAbi = [
 		inputs: [{ name: "data", type: "bytes" }],
 		outputs: [],
 	},
-] as const;
+]);
 
-const complexAbi = [
+const complexAbi = S.decodeUnknownSync(fromArray)([
 	{
 		type: "function",
 		name: "getPositions",
@@ -149,7 +151,7 @@ const complexAbi = [
 			{ name: "nonce", type: "uint256" },
 		],
 	},
-] as const;
+]);
 
 const mockProvider = {
 	call: vi.fn(),
