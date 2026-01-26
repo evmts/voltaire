@@ -16,7 +16,7 @@ import type {
  *
  * @example
  * ```typescript
- * import { LedgerWallet } from './wallet/hardware'
+ * import { LedgerWallet } from '@tevm/voltaire/native'
  *
  * const ledger = new LedgerWallet();
  * await ledger.connect();

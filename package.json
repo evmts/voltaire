@@ -413,11 +413,6 @@
 			"import": "./dist/wallet/index.js",
 			"require": "./dist/wallet/index.cjs"
 		},
-		"./wallet/hardware": {
-			"types": "./types/wallet/hardware/index.d.ts",
-			"import": "./dist/wallet/hardware/index.js",
-			"require": "./dist/wallet/hardware/index.cjs"
-		},
 		"./AesGcm": {
 			"types": "./types/crypto/AesGcm/index.d.ts",
 			"import": "./dist/crypto/AesGcm/index.js",
@@ -750,10 +745,22 @@
 		"vitest": "4.0.16"
 	},
 	"peerDependencies": {
-		"abitype": "^1.1.1"
+		"abitype": "^1.1.1",
+		"@ledgerhq/hw-app-eth": "^6.38.4",
+		"@ledgerhq/hw-transport-webusb": "^6.29.4",
+		"@trezor/connect-web": "^9.7.1"
 	},
 	"peerDependenciesMeta": {
 		"abitype": {
+			"optional": true
+		},
+		"@ledgerhq/hw-app-eth": {
+			"optional": true
+		},
+		"@ledgerhq/hw-transport-webusb": {
+			"optional": true
+		},
+		"@trezor/connect-web": {
 			"optional": true
 		}
 	},
@@ -765,14 +772,11 @@
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.11.1",
 		"@codesandbox/sandpack-react": "^2.20.0",
-		"@ledgerhq/hw-app-eth": "^6.38.4",
-		"@ledgerhq/hw-transport-webusb": "^6.29.4",
 		"@noble/ciphers": "^2.1.1",
 		"@scure/bip32": "^2.0.1",
 		"@scure/bip39": "^2.0.1",
 		"@shazow/whatsabi": "^0.25.0",
 		"@tevm/chains": "^0.0.1",
-		"@trezor/connect-web": "^9.7.1",
 		"modern-monaco": "^0.3.6"
 	},
 	"packageManager": "pnpm@10.26.2+sha512.0e308ff2005fc7410366f154f625f6631ab2b16b1d2e70238444dd6ae9d630a8482d92a451144debc492416896ed16f7b114a86ec68b8404b2443869e68ffda6"

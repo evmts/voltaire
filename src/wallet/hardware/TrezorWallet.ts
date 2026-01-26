@@ -15,7 +15,7 @@ import type {
  *
  * @example
  * ```typescript
- * import { TrezorWallet } from './wallet/hardware'
+ * import { TrezorWallet } from '@tevm/voltaire/native'
  *
  * const trezor = new TrezorWallet({
  *   manifest: {

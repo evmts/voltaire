@@ -425,3 +425,16 @@ export * as block from "../block/index.js";
 export * as contract from "../contract/index.js";
 export * as transaction from "../transaction/index.js";
 export * as stream from "../stream/index.js";
+
+// ============================================================================
+// Wallet utilities (native-only hardware wallets)
+// ============================================================================
+
+export * as wallet from "../wallet/index.js";
+export {
+	LedgerWallet,
+	TrezorWallet,
+	createLedger,
+	createTrezor,
+} from "../wallet/hardware/index.js";
+export type { HardwareWallet } from "../wallet/hardware/HardwareWallet.js";
