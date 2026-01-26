@@ -22,6 +22,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
@@ -53,9 +54,9 @@ export interface FallbackTransportOptions {
 }
 
 interface TransportInstance {
-	transport: Layer.Layer<TransportService>;
-	failures: number;
-	latency: number;
+	readonly transport: Layer.Layer<TransportService>;
+	readonly failuresRef: Ref.Ref<number>;
+	readonly latencyRef: Ref.Ref<number>;
 }
 
 /**
@@ -128,66 +129,90 @@ export const FallbackTransport = (
 		Schedule.intersect(Schedule.recurs(retryLimit)),
 	);
 
-	const instances: TransportInstance[] = transports.map((t) => ({
-		transport: t,
-		failures: 0,
-		latency: Number.POSITIVE_INFINITY,
-	}));
+	return Layer.scoped(
+		TransportService,
+		Effect.gen(function* () {
+			const instances: TransportInstance[] = yield* Effect.all(
+				transports.map((transport) =>
+					Effect.gen(function* () {
+						const failuresRef = yield* Ref.make(0);
+						const latencyRef = yield* Ref.make(Number.POSITIVE_INFINITY);
+						return { transport, failuresRef, latencyRef };
+					}),
+				),
+			);
 
-	const getOrderedInstances = (): TransportInstance[] => {
-		const available = instances.filter((i) => i.failures < retryCount);
-		if (shouldRank) {
-			return [...available].sort((a, b) => a.latency - b.latency);
-		}
-		return available;
-	};
-
-	return Layer.succeed(TransportService, {
-		request: <T>(
-			method: string,
-			params: unknown[] = [],
-		): Effect.Effect<T, TransportError> =>
-			Effect.gen(function* () {
-				const ordered = getOrderedInstances();
-
-				if (ordered.length === 0) {
-					for (const instance of instances) {
-						instance.failures = 0;
-					}
-					ordered.push(...getOrderedInstances());
-				}
-
-				for (const instance of ordered) {
-					const result = yield* Effect.gen(function* () {
-						const start = Date.now();
-						const transport = yield* TransportService;
-						const value = yield* transport.request<T>(method, params);
-						instance.latency = Date.now() - start;
-						instance.failures = 0;
-						return value;
-					}).pipe(
-						Effect.provide(instance.transport),
-						Effect.tapError(() =>
-							Effect.sync(() => {
-								instance.failures++;
-							}),
-						),
-						Effect.retry(retrySchedule),
-						Effect.map((value) => Option.some(value)),
-						Effect.catchAll(() => Effect.succeed(Option.none<T>())),
-					);
-
-					if (Option.isSome(result)) {
-						return result.value;
-					}
-				}
-
-				return yield* Effect.fail(
-					new TransportError(
-						{ code: -32603, message: "All transports failed" },
-						`All ${transports.length} transports failed after retries`,
+			const getOrderedInstances = Effect.gen(function* () {
+				const withState = yield* Effect.all(
+					instances.map((instance) =>
+						Effect.gen(function* () {
+							const failures = yield* Ref.get(instance.failuresRef);
+							const latency = yield* Ref.get(instance.latencyRef);
+							return { instance, failures, latency };
+						}),
 					),
 				);
-			}),
-	});
+				const available = withState.filter((state) => state.failures < retryCount);
+				if (shouldRank) {
+					return [...available].sort((a, b) => a.latency - b.latency);
+				}
+				return available;
+			});
+
+			const resetAllFailures = Effect.all(
+				instances.map((instance) => Ref.set(instance.failuresRef, 0)),
+				{ discard: true },
+			);
+
+			return {
+				request: <T>(
+					method: string,
+					params: unknown[] = [],
+				): Effect.Effect<T, TransportError> =>
+					Effect.gen(function* () {
+						let ordered = yield* getOrderedInstances;
+
+						if (ordered.length === 0) {
+							yield* resetAllFailures;
+							ordered = yield* getOrderedInstances;
+						}
+
+						for (const { instance } of ordered) {
+							const result = yield* Effect.gen(function* () {
+								const start = Date.now();
+								const transport = yield* TransportService;
+								const value = yield* transport.request<T>(method, params);
+								yield* Effect.all(
+									[
+										Ref.set(instance.latencyRef, Date.now() - start),
+										Ref.set(instance.failuresRef, 0),
+									],
+									{ discard: true },
+								);
+								return value;
+							}).pipe(
+								Effect.provide(instance.transport),
+								Effect.tapError(() =>
+									Ref.update(instance.failuresRef, (failures) => failures + 1),
+								),
+								Effect.retry(retrySchedule),
+								Effect.map((value) => Option.some(value)),
+								Effect.catchAll(() => Effect.succeed(Option.none<T>())),
+							);
+
+							if (Option.isSome(result)) {
+								return result.value;
+							}
+						}
+
+						return yield* Effect.fail(
+							new TransportError(
+								{ code: -32603, message: "All transports failed" },
+								`All ${transports.length} transports failed after retries`,
+							),
+						);
+					}),
+			};
+		}),
+	);
 };
