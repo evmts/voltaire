@@ -23,7 +23,10 @@ jobs:
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      
+
+      - name: Build @tevm/voltaire types
+        run: pnpm build:types
+
       - name: Typecheck
         run: pnpm --filter voltaire-effect typecheck
       

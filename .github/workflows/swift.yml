@@ -40,6 +40,11 @@ jobs:
         env:
           CARGO_TARGET_DIR: target
 
+      - name: Build libwally-core dependency
+        run: |
+          cd lib/libwally-core
+          zig build install
+
       - name: Build Zig native artifacts
         run: zig build build-ts-native
 

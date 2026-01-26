@@ -695,7 +695,7 @@ pub fn build(b: *std.Build) void {
         addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 
         // Cross-platform native builds for distribution
-        addCrossPlatformNativeBuilds(b, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+        addCrossPlatformNativeBuilds(b, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
     }
 
     // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
@@ -1354,6 +1354,8 @@ fn addCrossPlatformNativeBuilds(
     b: *std.Build,
     primitives_mod: *std.Build.Module,
     crypto_mod: *std.Build.Module,
+    state_manager_mod: *std.Build.Module,
+    blockchain_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
     rust_crypto_lib_path: std.Build.LazyPath,
@@ -1400,6 +1402,8 @@ fn addCrossPlatformNativeBuilds(
         });
         native_lib.root_module.addImport("primitives", primitives_mod);
         native_lib.root_module.addImport("crypto", crypto_mod);
+        native_lib.root_module.addImport("state-manager", state_manager_mod);
+        native_lib.root_module.addImport("blockchain", blockchain_mod);
         native_lib.linkLibrary(c_kzg_lib);
         native_lib.linkLibrary(blst_lib);
         native_lib.addObjectFile(rust_crypto_lib_path);

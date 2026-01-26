@@ -82,6 +82,12 @@ jobs:
         env:
           CARGO_TARGET_DIR: target
 
+      - name: Build libwally-core dependency
+        run: |
+          cd lib/libwally-core
+          zig build
+          ls -la zig-out/lib/
+
       - name: Build native library
         run: zig build build-native-${{ matrix.platform }}
 
