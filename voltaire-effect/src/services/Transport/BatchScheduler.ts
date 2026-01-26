@@ -8,10 +8,19 @@
  * Provides request batching to combine multiple JSON-RPC requests into a single
  * HTTP call. Reduces network overhead and improves performance when making
  * many concurrent requests.
+ *
+ * Uses Effect patterns for proper structured concurrency - no Effect.runSync
+ * or Effect.runPromise escape hatches.
  */
 
+import * as Chunk from "effect/Chunk";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
+import * as Option from "effect/Option";
+import * as Queue from "effect/Queue";
+import * as Ref from "effect/Ref";
+import type * as Scope from "effect/Scope";
 
 /**
  * Configuration options for batch scheduling.
@@ -54,102 +63,206 @@ interface PendingRequest {
 }
 
 /**
+ * Batch scheduler interface.
+ */
+export interface BatchScheduler {
+	schedule: <T>(method: string, params?: unknown[]) => Effect.Effect<T, Error>;
+}
+
+/**
  * Creates a batch scheduler that queues requests and sends them together.
+ *
+ * Uses Effect patterns for proper structured concurrency:
+ * - Queue for pending requests
+ * - Ref for ID counter
+ * - Atomic flushing gate
+ * - Proper cleanup on shutdown/interruption
  *
  * @param send - Function to send a batch of requests
  * @param options - Batch configuration
- * @returns Object with schedule function for adding requests
+ * @returns Scoped Effect that produces a BatchScheduler
  *
  * @since 0.0.1
  *
  * @example
  * ```typescript
- * const scheduler = createBatchScheduler(
- *   (requests) => sendBatchRequest(url, requests),
- *   { batchSize: 50, wait: 10 }
- * );
+ * const program = Effect.gen(function* () {
+ *   const scheduler = yield* createBatchScheduler(
+ *     (requests) => sendBatchRequest(url, requests),
+ *     { batchSize: 50, wait: 10 }
+ *   );
  *
- * const result = await Effect.runPromise(scheduler.schedule('eth_blockNumber'));
+ *   const result = yield* scheduler.schedule('eth_blockNumber');
+ *   return result;
+ * }).pipe(Effect.scoped);
  * ```
  */
 export const createBatchScheduler = <E extends Error>(
-	send: (
-		requests: JsonRpcRequest[],
-	) => Effect.Effect<JsonRpcBatchResponse[], E>,
+	send: (requests: JsonRpcRequest[]) => Effect.Effect<JsonRpcBatchResponse[], E>,
 	options: BatchOptions = {},
-) => {
-	const batchSize = options.batchSize ?? 100;
-	const wait = options.wait ?? 0;
+): Effect.Effect<BatchScheduler, never, Scope.Scope> =>
+	Effect.gen(function* () {
+		const batchSize = options.batchSize ?? 100;
+		const wait = options.wait ?? 0;
 
-	let pending: PendingRequest[] = [];
-	let flushTimer: ReturnType<typeof setTimeout> | null = null;
-	let nextId = 1;
+		const pendingQueue = yield* Queue.unbounded<PendingRequest>();
+		const idRef = yield* Ref.make(1);
+		const flushingRef = yield* Ref.make(false);
+		const flushFiberRef = yield* Ref.make<Option.Option<Fiber.RuntimeFiber<void, never>>>(Option.none());
 
-	const flush = async (): Promise<void> => {
-		flushTimer = null;
-		
-		while (pending.length > 0) {
-			const batch = pending.splice(0, batchSize);
-			if (batch.length === 0) return;
+		const failBatch = (batch: readonly PendingRequest[], error: Error): Effect.Effect<void> =>
+			Effect.forEach(batch, (req) => Deferred.fail(req.deferred, error), { discard: true });
 
-			const requests = batch.map((p) => ({
-				id: p.id,
-				method: p.method,
-				params: p.params,
-			}));
+		const completeBatch = (
+			batch: readonly PendingRequest[],
+			responses: readonly JsonRpcBatchResponse[],
+		): Effect.Effect<void> =>
+			Effect.gen(function* () {
+				const byId = new Map(batch.map((r) => [r.id, r] as const));
+				const completed = new Set<number>();
 
-			try {
-				const responses = await Effect.runPromise(send(requests));
-
-				for (const response of responses) {
-					const req = batch.find((p) => p.id === response.id);
+				for (const resp of responses) {
+					const req = byId.get(resp.id);
 					if (!req) continue;
-
-					if (response.error) {
-						Effect.runSync(
-							Deferred.fail(req.deferred, new Error(response.error.message)),
-						);
+					completed.add(resp.id);
+					if (resp.error) {
+						yield* Deferred.fail(req.deferred, new Error(resp.error.message));
 					} else {
-						Effect.runSync(Deferred.succeed(req.deferred, response.result));
+						yield* Deferred.succeed(req.deferred, resp.result);
 					}
 				}
-			} catch (e) {
-				const error = e instanceof Error ? e : new Error(String(e));
-				for (const p of batch) {
-					Effect.runSync(Deferred.fail(p.deferred, error));
+
+				for (const req of batch) {
+					if (!completed.has(req.id)) {
+						yield* Deferred.fail(
+							req.deferred,
+							new Error(`Missing JSON-RPC response for id ${req.id}`),
+						);
+					}
+				}
+			});
+
+		const processBatch = (batch: readonly PendingRequest[]): Effect.Effect<void> =>
+			Effect.uninterruptibleMask((restore) =>
+				Effect.gen(function* () {
+					const requests = batch.map((p) => ({
+						id: p.id,
+						method: p.method,
+						params: p.params,
+					}));
+
+					const result = yield* restore(send(requests)).pipe(
+						Effect.either,
+					);
+
+					if (result._tag === "Left") {
+						const error =
+							result.left instanceof Error
+								? result.left
+								: new Error(String(result.left));
+						yield* failBatch(batch, error);
+					} else {
+						yield* completeBatch(batch, result.right);
+					}
+				}).pipe(
+					Effect.onInterrupt(() => failBatch(batch, new Error("Batch send interrupted"))),
+				),
+			);
+
+		const flush: Effect.Effect<void> = Effect.gen(function* () {
+			const acquired = yield* Ref.modify(flushingRef, (b) =>
+				b ? [false, true] as const : [true, true] as const,
+			);
+			if (!acquired) return;
+
+			try {
+				let pending = yield* Queue.takeAll(pendingQueue);
+
+				while (!Chunk.isEmpty(pending)) {
+					const pendingArray = Chunk.toReadonlyArray(pending);
+					const [batchArray, overflowArray] = [
+						pendingArray.slice(0, batchSize),
+						pendingArray.slice(batchSize),
+					];
+
+					for (const req of overflowArray) {
+						yield* Queue.offer(pendingQueue, req);
+					}
+
+					yield* processBatch(batchArray);
+
+					pending = yield* Queue.takeAll(pendingQueue);
+				}
+			} finally {
+				yield* Ref.set(flushingRef, false);
+			}
+		});
+
+		const scheduleFlush: Effect.Effect<void> = Effect.gen(function* () {
+			const size = yield* Queue.size(pendingQueue);
+			if (size > 0) {
+				if (wait > 0) {
+					yield* Effect.sleep(wait);
+				} else {
+					yield* Effect.yieldNow();
+				}
+				yield* flush;
+			}
+		});
+
+		const triggerFlush: Effect.Effect<void> = Effect.gen(function* () {
+			const size = yield* Queue.size(pendingQueue);
+
+			if (size >= batchSize) {
+				yield* Ref.modify(flushFiberRef, (opt) => {
+					if (Option.isSome(opt)) {
+						Effect.runFork(Fiber.interrupt(opt.value));
+					}
+					return [undefined, Option.none()] as const;
+				});
+				yield* flush;
+			} else {
+				const currentFiber = yield* Ref.get(flushFiberRef);
+				if (Option.isNone(currentFiber)) {
+					const fiber = yield* Effect.fork(scheduleFlush);
+					yield* Ref.set(flushFiberRef, Option.some(fiber));
 				}
 			}
-		}
-	};
+		});
 
-	const scheduleFlush = (): void => {
-		if (pending.length >= batchSize) {
-			if (flushTimer) {
-				clearTimeout(flushTimer);
-				flushTimer = null;
-			}
-			flush();
-			return;
-		}
-
-		if (!flushTimer) {
-			flushTimer = setTimeout(() => flush(), wait);
-		}
-	};
-
-	return {
-		schedule: <T>(
-			method: string,
-			params?: unknown[],
-		): Effect.Effect<T, Error> =>
+		yield* Effect.addFinalizer(() =>
 			Effect.gen(function* () {
-				const id = nextId++;
-				const deferred = yield* Deferred.make<unknown, Error>();
+				const remaining = yield* Queue.takeAll(pendingQueue);
+				yield* Queue.shutdown(pendingQueue);
 
-				pending.push({ id, method, params, deferred });
-				scheduleFlush();
+				for (const req of Chunk.toReadonlyArray(remaining)) {
+					yield* Deferred.fail(req.deferred, new Error("BatchScheduler shutdown"));
+				}
 
-				return (yield* Deferred.await(deferred)) as T;
+				const fiber = yield* Ref.get(flushFiberRef);
+				if (Option.isSome(fiber)) {
+					yield* Fiber.interrupt(fiber.value);
+				}
 			}),
-	};
-};
+		);
+
+		return {
+			schedule: <T>(method: string, params?: unknown[]): Effect.Effect<T, Error> =>
+				Effect.gen(function* () {
+					const id = yield* Ref.getAndUpdate(idRef, (n) => n + 1);
+					const deferred = yield* Deferred.make<unknown, Error>();
+
+					const offered = yield* Queue.offer(pendingQueue, { id, method, params, deferred }).pipe(
+						Effect.either,
+					);
+
+					if (offered._tag === "Left") {
+						return yield* Effect.fail(new Error("BatchScheduler is shutdown"));
+					}
+
+					yield* triggerFlush;
+
+					return (yield* Deferred.await(deferred)) as T;
+				}),
+		};
+	});

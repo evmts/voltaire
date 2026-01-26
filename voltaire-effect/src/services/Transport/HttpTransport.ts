@@ -19,6 +19,9 @@
  * @see {@link BrowserTransport} - Alternative for browser wallet interaction
  */
 
+import { FetchHttpClient } from "@effect/platform";
+import * as HttpClient from "@effect/platform/HttpClient";
+import * as HttpClientRequest from "@effect/platform/HttpClientRequest";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -50,7 +53,7 @@ import { TransportService } from "./TransportService.js";
  * }
  * ```
  */
-interface HttpTransportConfig {
+export interface HttpTransportConfig {
 	/** The JSON-RPC endpoint URL (must be HTTPS for production) */
 	url: string;
 	/** Optional custom headers to include in requests (e.g., API keys) */
@@ -89,8 +92,8 @@ interface JsonRpcResponse<T> {
  *
  * @description
  * Provides an HTTP-based implementation of the TransportService. Supports
- * automatic retries, timeouts, and custom headers. Uses the Fetch API
- * internally for cross-platform compatibility.
+ * automatic retries, timeouts, and custom headers. Uses @effect/platform
+ * HttpClient for cross-platform compatibility.
  *
  * The transport automatically:
  * - Retries failed requests (configurable)
@@ -99,7 +102,7 @@ interface JsonRpcResponse<T> {
  * - Handles network errors gracefully
  *
  * @param options - URL string or configuration object
- * @returns Layer providing TransportService
+ * @returns Layer providing TransportService, requires HttpClient.HttpClient
  *
  * @throws {TransportError} When the request fails after all retries
  * @throws {TransportError} When the request times out
@@ -110,6 +113,7 @@ interface JsonRpcResponse<T> {
  * @example Simple URL configuration
  * ```typescript
  * import { Effect } from 'effect'
+ * import { FetchHttpClient } from '@effect/platform'
  * import { HttpTransport, TransportService } from 'voltaire-effect/services'
  *
  * const transport = HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY')
@@ -117,12 +121,16 @@ interface JsonRpcResponse<T> {
  * const program = Effect.gen(function* () {
  *   const t = yield* TransportService
  *   return yield* t.request<string>('eth_blockNumber')
- * }).pipe(Effect.provide(transport))
+ * }).pipe(
+ *   Effect.provide(transport),
+ *   Effect.provide(FetchHttpClient.layer)
+ * )
  * ```
  *
  * @example Full configuration with retries and timeout
  * ```typescript
  * import { Effect } from 'effect'
+ * import { FetchHttpClient } from '@effect/platform'
  * import { HttpTransport, Provider, ProviderService } from 'voltaire-effect/services'
  *
  * const transport = HttpTransport({
@@ -141,7 +149,8 @@ interface JsonRpcResponse<T> {
  *   return yield* client.getBlockNumber()
  * }).pipe(
  *   Effect.provide(Provider),
- *   Effect.provide(transport)
+ *   Effect.provide(transport),
+ *   Effect.provide(FetchHttpClient.layer)
  * )
  *
  * await Effect.runPromise(program)
@@ -150,6 +159,7 @@ interface JsonRpcResponse<T> {
  * @example Error handling
  * ```typescript
  * import { Effect } from 'effect'
+ * import { FetchHttpClient } from '@effect/platform'
  * import { HttpTransport, TransportService, TransportError } from 'voltaire-effect/services'
  *
  * const program = Effect.gen(function* () {
@@ -160,7 +170,8 @@ interface JsonRpcResponse<T> {
  *     console.error(`Request failed: ${error.message} (code: ${error.code})`)
  *     return Effect.succeed('0x0')
  *   }),
- *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+ *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY')),
+ *   Effect.provide(FetchHttpClient.layer)
  * )
  * ```
  *
@@ -170,10 +181,16 @@ interface JsonRpcResponse<T> {
  */
 export const HttpTransport = (
 	options: HttpTransportConfig | string,
-): Layer.Layer<TransportService> => {
+): Layer.Layer<TransportService, never, HttpClient.HttpClient> => {
 	const config =
 		typeof options === "string"
-			? { url: options, timeout: 30000, retries: 3, retryDelay: 1000, batch: undefined as BatchOptions | undefined }
+			? {
+					url: options,
+					timeout: 30000,
+					retries: 3,
+					retryDelay: 1000,
+					batch: undefined as BatchOptions | undefined,
+				}
 			: {
 					url: options.url,
 					headers: options.headers,
@@ -194,65 +211,82 @@ export const HttpTransport = (
 		);
 	};
 
-	const doFetch = <T>(
-		body: string,
-		headers: Record<string, string>,
-		rpcMethod?: string,
-	): Effect.Effect<T, TransportError> =>
-		Effect.acquireRelease(
-			Effect.sync(() => new AbortController()),
-			(controller) => Effect.sync(() => controller.abort()),
-		).pipe(
-			Effect.flatMap((controller) =>
-				Effect.tryPromise({
-					try: () =>
-						fetch(config.url, {
-							method: "POST",
-							headers,
-							body,
-							signal: controller.signal,
-						}),
-					catch: (e) => toTransportError(e, `Request to ${config.url}${rpcMethod ? ` (${rpcMethod})` : ""} failed`),
-				}),
-			),
-			Effect.flatMap((response) =>
-				response.ok
-					? Effect.tryPromise({
-							try: () => response.json() as Promise<JsonRpcResponse<T>>,
-							catch: (e) => toTransportError(e, `Failed to parse response from ${config.url}${rpcMethod ? ` (${rpcMethod})` : ""}`),
-						})
-					: Effect.fail(
-							new TransportError({
-								code: -32603,
-								message: `HTTP ${response.status}: ${response.statusText} (url: ${config.url}${rpcMethod ? `, method: ${rpcMethod}` : ""})`,
-							}),
-						),
-			),
-			Effect.flatMap((json) =>
-				json.error
-					? Effect.fail(
-							new TransportError({
-								code: json.error.code,
-								message: json.error.message,
-								data: json.error.data,
-							}),
-						)
-					: Effect.succeed(json.result as T),
-			),
-			Effect.timeoutFail({
-				duration: Duration.millis(config.timeout),
-				onTimeout: () =>
-					new TransportError({
-						code: -32603,
-						message: `Request timeout after ${config.timeout}ms (url: ${config.url}${rpcMethod ? `, method: ${rpcMethod}` : ""})`,
-					}),
-			}),
-			Effect.scoped,
-		);
-
 	const retrySchedule = Schedule.recurs(config.retries).pipe(
 		Schedule.intersect(Schedule.spaced(Duration.millis(config.retryDelay))),
 	);
+
+	const doRequest = <T>(
+		httpClient: HttpClient.HttpClient,
+		body: string,
+		rpcMethod?: string,
+	): Effect.Effect<T, TransportError> => {
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+			...config.headers,
+		};
+
+		const request = HttpClientRequest.post(config.url).pipe(
+			HttpClientRequest.setHeaders(headers),
+			HttpClientRequest.bodyUnsafeJson(JSON.parse(body)),
+		);
+
+		return Effect.scoped(
+			httpClient.execute(request).pipe(
+				Effect.timeout(Duration.millis(config.timeout)),
+				Effect.flatMap((response) => {
+					if (response.status >= 200 && response.status < 300) {
+						return Effect.map(
+							response.json,
+							(json) => json as JsonRpcResponse<T>,
+						).pipe(
+							Effect.mapError((e) =>
+								toTransportError(
+									e,
+									`Failed to parse JSON response from ${config.url}${rpcMethod ? ` (${rpcMethod})` : ""}`,
+								),
+							),
+						);
+					}
+					return Effect.fail(
+						new TransportError({
+							code: -32603,
+							message: `HTTP ${response.status} (url: ${config.url}${rpcMethod ? `, method: ${rpcMethod}` : ""})`,
+						}),
+					);
+				}),
+				Effect.flatMap((json: JsonRpcResponse<T>) =>
+					json.error
+						? Effect.fail(
+								new TransportError({
+									code: json.error.code,
+									message: json.error.message,
+									data: json.error.data,
+								}),
+							)
+						: Effect.succeed(json.result as T),
+				),
+			),
+		).pipe(
+			Effect.catchAllDefect((defect) =>
+				Effect.fail(
+					toTransportError(
+						defect,
+						`Request to ${config.url}${rpcMethod ? ` (${rpcMethod})` : ""} failed`,
+					),
+				),
+			),
+			Effect.catchAll((e) => {
+				if (e instanceof TransportError) return Effect.fail(e);
+				return Effect.fail(
+					toTransportError(
+						e,
+						`Request to ${config.url}${rpcMethod ? ` (${rpcMethod})` : ""} failed`,
+					),
+				);
+			}),
+			Effect.retry(retrySchedule),
+		);
+	};
 
 	interface JsonRpcBatchResponse {
 		id: number;
@@ -260,89 +294,109 @@ export const HttpTransport = (
 		error?: { code: number; message: string; data?: unknown };
 	}
 
-	const sendBatch = (
-		requests: Array<{ id: number; method: string; params?: unknown[] }>,
-	): Effect.Effect<JsonRpcBatchResponse[], TransportError> => {
-		const body = JSON.stringify(
-			requests.map((r) => ({
+	const sendBatch =
+		(httpClient: HttpClient.HttpClient) =>
+		(
+			requests: Array<{ id: number; method: string; params?: unknown[] }>,
+		): Effect.Effect<JsonRpcBatchResponse[], TransportError> => {
+			const batchBody = requests.map((r) => ({
 				jsonrpc: "2.0",
 				id: r.id,
 				method: r.method,
 				params: r.params ?? [],
-			})),
-		);
-		const headers: Record<string, string> = {
-			"Content-Type": "application/json",
-			...config.headers,
-		};
-		const methods = requests.map((r) => r.method).join(", ");
+			}));
+			const headers: Record<string, string> = {
+				"Content-Type": "application/json",
+				...config.headers,
+			};
+			const methods = requests.map((r) => r.method).join(", ");
 
-		return Effect.acquireRelease(
-			Effect.sync(() => new AbortController()),
-			(controller) => Effect.sync(() => controller.abort()),
-		).pipe(
-			Effect.flatMap((controller) =>
-				Effect.tryPromise({
-					try: () =>
-						fetch(config.url, {
-							method: "POST",
-							headers,
-							body,
-							signal: controller.signal,
-						}),
-					catch: (e) => toTransportError(e, `Batch request to ${config.url} failed [${methods}]`),
-				}),
-			),
-			Effect.flatMap((response) =>
-				response.ok
-					? Effect.tryPromise({
-							try: () => response.json() as Promise<JsonRpcBatchResponse[]>,
-							catch: (e) => toTransportError(e, `Failed to parse batch response from ${config.url}`),
-						})
-					: Effect.fail(
+			const request = HttpClientRequest.post(config.url).pipe(
+				HttpClientRequest.setHeaders(headers),
+				HttpClientRequest.bodyUnsafeJson(batchBody),
+			);
+
+			return Effect.scoped(
+				httpClient.execute(request).pipe(
+					Effect.timeout(Duration.millis(config.timeout)),
+					Effect.flatMap((response) => {
+						if (response.status >= 200 && response.status < 300) {
+							return Effect.map(
+								response.json,
+								(json) => json as JsonRpcBatchResponse[],
+							).pipe(
+								Effect.mapError((e) =>
+									toTransportError(
+										e,
+										`Failed to parse batch JSON response from ${config.url}`,
+									),
+								),
+							);
+						}
+						return Effect.fail(
 							new TransportError({
 								code: -32603,
-								message: `HTTP ${response.status}: ${response.statusText} (url: ${config.url}, methods: [${methods}])`,
+								message: `HTTP ${response.status} (url: ${config.url}, methods: [${methods}])`,
 							}),
-						),
-			),
-			Effect.timeoutFail({
-				duration: Duration.millis(config.timeout),
-				onTimeout: () =>
-					new TransportError({
-						code: -32603,
-						message: `Batch request timeout after ${config.timeout}ms (url: ${config.url}, methods: [${methods}])`,
-					}),
-			}),
-			Effect.retry(retrySchedule),
-			Effect.scoped,
-		);
-	};
-
-	if (config.batch) {
-		const scheduler = createBatchScheduler(sendBatch, config.batch);
-
-		return Layer.succeed(TransportService, {
-			request: <T>(
-				method: string,
-				params: unknown[] = [],
-			): Effect.Effect<T, TransportError> =>
-				scheduler.schedule<T>(method, params).pipe(
-					Effect.mapError((e) => {
-						if (e instanceof TransportError) return e;
-						return new TransportError(
-							{ code: -32603, message: `${method} failed: ${e.message}` },
-							`${method} failed: ${e.message}`,
-							{ cause: e },
 						);
 					}),
 				),
-		});
+			).pipe(
+				Effect.catchAllDefect((defect) =>
+					Effect.fail(
+						toTransportError(
+							defect,
+							`Batch request to ${config.url} failed [${methods}]`,
+						),
+					),
+				),
+				Effect.catchAll((e) => {
+					if (e instanceof TransportError) return Effect.fail(e);
+					return Effect.fail(
+						toTransportError(
+							e,
+							`Batch request to ${config.url} failed [${methods}]`,
+						),
+					);
+				}),
+				Effect.retry(retrySchedule),
+			);
+		};
+
+	if (config.batch) {
+		return Layer.scoped(
+			TransportService,
+			Effect.gen(function* () {
+				const httpClient = yield* HttpClient.HttpClient;
+				const scheduler = yield* createBatchScheduler(
+					sendBatch(httpClient),
+					config.batch!,
+				);
+
+				return {
+					request: <T>(
+						method: string,
+						params: unknown[] = [],
+					): Effect.Effect<T, TransportError> =>
+						scheduler.schedule<T>(method, params).pipe(
+							Effect.mapError((e) => {
+								if (e instanceof TransportError) return e;
+								return new TransportError(
+									{ code: -32603, message: `${method} failed: ${e.message}` },
+									`${method} failed: ${e.message}`,
+									{ cause: e },
+								);
+							}),
+						),
+				};
+			}),
+		);
 	}
 
 	return Layer.effect(
 		TransportService,
 		Effect.gen(function* () {
+			const httpClient = yield* HttpClient.HttpClient;
 			const requestIdRef = yield* Ref.make(0);
 
 			return TransportService.of({
@@ -354,16 +408,45 @@ export const HttpTransport = (
 						Effect.map((id) =>
 							JSON.stringify({ jsonrpc: "2.0", id, method, params }),
 						),
-						Effect.flatMap((body) => {
-							const headers: Record<string, string> = {
-								"Content-Type": "application/json",
-								...config.headers,
-							};
-							return doFetch<T>(body, headers, method);
-						}),
-						Effect.retry(retrySchedule),
+						Effect.flatMap((body) => doRequest<T>(httpClient, body, method)),
 					),
 			});
 		}),
 	);
 };
+
+/**
+ * Creates an HTTP transport layer with FetchHttpClient bundled.
+ *
+ * @description
+ * Convenience function that creates an HttpTransport with FetchHttpClient
+ * already provided. This is useful for most use cases where you want to use
+ * the standard fetch-based HTTP client without explicitly providing it.
+ *
+ * For Node.js, you may prefer using `HttpTransport` with `NodeHttpClient.layer`
+ * for better performance with keepalive connections.
+ *
+ * @param options - URL string or configuration object
+ * @returns Layer providing TransportService with no additional requirements
+ *
+ * @since 0.0.1
+ *
+ * @example
+ * ```typescript
+ * import { Effect } from 'effect'
+ * import { HttpTransportFetch, TransportService } from 'voltaire-effect/services'
+ *
+ * const transport = HttpTransportFetch('https://mainnet.infura.io/v3/YOUR_KEY')
+ *
+ * const program = Effect.gen(function* () {
+ *   const t = yield* TransportService
+ *   return yield* t.request<string>('eth_blockNumber')
+ * }).pipe(Effect.provide(transport))
+ *
+ * await Effect.runPromise(program)
+ * ```
+ */
+export const HttpTransportFetch = (
+	options: HttpTransportConfig | string,
+): Layer.Layer<TransportService> =>
+	Layer.provide(HttpTransport(options), FetchHttpClient.layer);
