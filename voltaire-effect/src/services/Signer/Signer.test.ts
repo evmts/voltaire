@@ -71,6 +71,12 @@ const mockProvider: ProviderShape = {
 	estimateGas: () => Effect.succeed(21000n),
 	createAccessList: () => Effect.succeed({ accessList: [], gasUsed: "0x0" }),
 	getLogs: () => Effect.succeed([]),
+	createEventFilter: () => Effect.succeed("0x1" as any),
+	createBlockFilter: () => Effect.succeed("0x1" as any),
+	createPendingTransactionFilter: () => Effect.succeed("0x1" as any),
+	getFilterChanges: () => Effect.succeed([]),
+	getFilterLogs: () => Effect.succeed([]),
+	uninstallFilter: () => Effect.succeed(true),
 	getChainId: () => Effect.succeed(1),
 	getGasPrice: () => Effect.succeed(20000000000n),
 	getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
@@ -147,6 +153,23 @@ describe("SignerService", () => {
 			);
 
 			expect(Hash.equals(result, mockTxHash)).toBe(true);
+		});
+
+		it("prepares EIP-7702 authorization", async () => {
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* signer.prepareAuthorization({
+					contractAddress: "0x1234567890123456789012345678901234567890",
+				});
+			});
+
+			const result = await Effect.runPromise(
+				Effect.provide(program, TestSignerLayer),
+			);
+
+			expect(result.chainId).toBe(1n);
+			expect(result.nonce).toBe(5n);
+			expect(result.address).toBe("0x1234567890123456789012345678901234567890");
 		});
 	});
 

@@ -187,6 +187,48 @@ describe("AccountService", () => {
 			)
 		);
 
+		it.effect("signs EIP-7702 authorization", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				const authorization = yield* account.signAuthorization({
+					contractAddress: "0x000000000000000000000000000000000000dead",
+					chainId: 1n,
+					nonce: 7n,
+				});
+
+				expect(authorization.chainId).toBe(1n);
+				expect(authorization.nonce).toBe(7n);
+				expect(authorization.address).toBe(
+					"0x000000000000000000000000000000000000dead",
+				);
+				expect(authorization.yParity === 0 || authorization.yParity === 1).toBe(
+					true,
+				);
+				expect(authorization.r).toMatch(/^0x[0-9a-fA-F]{64}$/);
+				expect(authorization.s).toMatch(/^0x[0-9a-fA-F]{64}$/);
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			)
+		);
+
+		it.effect("signAuthorization fails when nonce is missing", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				const result = yield* Effect.either(
+					account.signAuthorization({
+						contractAddress:
+							"0x000000000000000000000000000000000000dead",
+						chainId: 1n,
+					}),
+				);
+				expect(result._tag).toBe("Left");
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			)
+		);
+
 		it.effect("signs typed data with nested struct types (Mail containing Person)", () =>
 			Effect.gen(function* () {
 				const typedData = TypedData.from({
