@@ -22,8 +22,8 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
+import * as SynchronizedRef from "effect/SynchronizedRef";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 
@@ -53,11 +53,22 @@ export interface FallbackTransportOptions {
 	retryDelay?: number;
 }
 
+interface TransportState {
+	readonly failures: number;
+	readonly latency: number;
+}
+
 interface TransportInstance {
 	readonly transport: Layer.Layer<TransportService>;
-	readonly failuresRef: Ref.Ref<number>;
-	readonly latencyRef: Ref.Ref<number>;
+	readonly stateRef: SynchronizedRef.SynchronizedRef<TransportState>;
 }
+
+const makeRetrySchedule = (retryCount: number, retryDelay: number) => {
+	const retryLimit = Math.max(retryCount - 1, 0);
+	return Schedule.spaced(Duration.millis(retryDelay)).pipe(
+		Schedule.intersect(Schedule.recurs(retryLimit)),
+	);
+};
 
 /**
  * Creates a fallback transport that automatically switches between transports on failure.
@@ -123,11 +134,7 @@ export const FallbackTransport = (
 	const retryCount = options.retryCount ?? 3;
 	const retryDelay = options.retryDelay ?? 150;
 	const shouldRank = options.rank ?? false;
-	const retryLimit = Math.max(retryCount - 1, 0);
-
-	const retrySchedule = Schedule.spaced(Duration.millis(retryDelay)).pipe(
-		Schedule.intersect(Schedule.recurs(retryLimit)),
-	);
+	const retrySchedule = makeRetrySchedule(retryCount, retryDelay);
 
 	return Layer.scoped(
 		TransportService,
@@ -135,9 +142,11 @@ export const FallbackTransport = (
 			const instances: TransportInstance[] = yield* Effect.all(
 				transports.map((transport) =>
 					Effect.gen(function* () {
-						const failuresRef = yield* Ref.make(0);
-						const latencyRef = yield* Ref.make(Number.POSITIVE_INFINITY);
-						return { transport, failuresRef, latencyRef };
+						const stateRef = yield* SynchronizedRef.make<TransportState>({
+							failures: 0,
+							latency: Number.POSITIVE_INFINITY,
+						});
+						return { transport, stateRef };
 					}),
 				),
 			);
@@ -146,9 +155,8 @@ export const FallbackTransport = (
 				const withState = yield* Effect.all(
 					instances.map((instance) =>
 						Effect.gen(function* () {
-							const failures = yield* Ref.get(instance.failuresRef);
-							const latency = yield* Ref.get(instance.latencyRef);
-							return { instance, failures, latency };
+							const state = yield* SynchronizedRef.get(instance.stateRef);
+							return { instance, failures: state.failures, latency: state.latency };
 						}),
 					),
 				);
@@ -160,7 +168,12 @@ export const FallbackTransport = (
 			});
 
 			const resetAllFailures = Effect.all(
-				instances.map((instance) => Ref.set(instance.failuresRef, 0)),
+				instances.map((instance) =>
+					SynchronizedRef.update(instance.stateRef, (state) => ({
+						...state,
+						failures: 0,
+					})),
+				),
 				{ discard: true },
 			);
 
@@ -179,21 +192,24 @@ export const FallbackTransport = (
 
 						for (const { instance } of ordered) {
 							const result = yield* Effect.gen(function* () {
-								const start = Date.now();
 								const transport = yield* TransportService;
-								const value = yield* transport.request<T>(method, params);
-								yield* Effect.all(
-									[
-										Ref.set(instance.latencyRef, Date.now() - start),
-										Ref.set(instance.failuresRef, 0),
-									],
-									{ discard: true },
-								);
+								const [duration, value] = yield* transport
+									.request<T>(method, params)
+									.pipe(Effect.timed);
+								const latency = Duration.toMillis(duration);
+								yield* SynchronizedRef.update(instance.stateRef, (state) => ({
+									...state,
+									failures: 0,
+									latency,
+								}));
 								return value;
 							}).pipe(
 								Effect.provide(instance.transport),
 								Effect.tapError(() =>
-									Ref.update(instance.failuresRef, (failures) => failures + 1),
+									SynchronizedRef.update(instance.stateRef, (state) => ({
+										...state,
+										failures: state.failures + 1,
+									})),
 								),
 								Effect.retry(retrySchedule),
 								Effect.map((value) => Option.some(value)),
