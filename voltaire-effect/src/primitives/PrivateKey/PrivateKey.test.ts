@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
 import * as PrivateKey from "./index.js";
 
 const validHex = `0x${"ab".repeat(32)}`;
@@ -269,6 +270,14 @@ describe("cryptographic operations", () => {
 			const publicKey = Secp256k1.derivePublicKey(pk);
 			expect(publicKey).toBeInstanceOf(Uint8Array);
 			expect(publicKey.length).toBe(64);
+		});
+
+		it("derives public key via core PrivateKey.toPublicKey", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(3));
+			const hex = S.encodeSync(PrivateKey.Hex)(pk);
+			const publicKey = CorePrivateKey.toPublicKey(hex);
+			const expected = Secp256k1.derivePublicKey(pk);
+			expect([...publicKey]).toEqual([...expected]);
 		});
 
 		it("produces consistent public key for same private key", () => {

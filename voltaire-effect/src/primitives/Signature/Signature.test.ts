@@ -413,6 +413,25 @@ describe("pure functions", () => {
 	});
 });
 
+describe("Signature sign/verify/recover + serialize/deserialize", () => {
+	it("signs, serializes, deserializes, verifies, and recovers", () => {
+		const messageHash = new Uint8Array(32).fill(0x42);
+		const privateKey = new Uint8Array(32).fill(1);
+		const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+		const secpSig = Secp256k1.sign(messageHash, privateKey);
+		const sig = BaseSignature.fromSecp256k1(secpSig.r, secpSig.s, secpSig.v);
+
+		const hex = S.encodeSync(Signature.Hex)(sig);
+		const decoded = S.decodeSync(Signature.Hex)(hex);
+
+		expect(BaseSignature.verify(decoded, messageHash, publicKey)).toBe(true);
+
+		const recovered = Secp256k1.recoverPublicKey(secpSig, messageHash);
+		expect([...recovered]).toEqual([...publicKey]);
+	});
+});
+
 describe("edge cases", () => {
 	it("handles all-zeros signature", () => {
 		const zeroBytes = new Uint8Array(64);

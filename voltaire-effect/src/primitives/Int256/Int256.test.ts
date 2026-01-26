@@ -92,12 +92,27 @@ describe("Int256", () => {
 		});
 	});
 
+	describe("BrandedInt256 conversion", () => {
+		it("round-trips fromBigInt/toBigInt", () => {
+			const value = 1234567890123456789n;
+			const branded = BrandedInt256.from(value);
+			expect(BrandedInt256.toBigInt(branded)).toBe(value);
+		});
+	});
+
 	describe("Arithmetic: add (via BrandedInt256.plus)", () => {
 		it("adds two positive values", () => {
 			const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n);
 			const b = S.decodeSync(Int256.BigInt)(5000000000000000000000000000000000000000n);
 			const result = BrandedInt256.plus(a, b);
 			expect(S.encodeSync(Int256.BigInt)(result)).toBe(15000000000000000000000000000000000000000n);
+		});
+
+		it("adds using Int256.add", () => {
+			const a = S.decodeSync(Int256.BigInt)(12345n);
+			const b = S.decodeSync(Int256.BigInt)(67890n);
+			const result = Int256.add(a, b);
+			expect(S.encodeSync(Int256.BigInt)(result)).toBe(80235n);
 		});
 
 		it("adds positive and negative", () => {

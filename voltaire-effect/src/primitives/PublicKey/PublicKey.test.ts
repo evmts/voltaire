@@ -3,6 +3,8 @@ import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Signature from "@tevm/voltaire/Signature";
+import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
+import { PublicKey as CorePublicKey } from "@tevm/voltaire/PublicKey";
 import * as PublicKey from "./index.js";
 
 const validUncompressedHex = `0x${"ab".repeat(64)}`;
@@ -265,6 +267,24 @@ describe("PublicKey.toAddress", () => {
 			expect([...addr1]).not.toEqual([...addr2]);
 		}),
 	);
+});
+
+describe("PublicKey core primitives", () => {
+	it("derives public key from private key", () => {
+		const privateKey = CorePrivateKey.fromBytes(new Uint8Array(32).fill(7));
+		const derived = CorePublicKey.fromPrivateKey(privateKey);
+		const expected = Secp256k1.derivePublicKey(privateKey);
+		expect([...derived]).toEqual([...expected]);
+	});
+
+	it("compresses and decompresses public keys", () => {
+		const privateKey = CorePrivateKey.fromBytes(new Uint8Array(32).fill(9));
+		const uncompressed = CorePublicKey.fromPrivateKey(privateKey);
+		const compressed = CorePublicKey.compress(uncompressed);
+		expect(compressed.length).toBe(33);
+		const decompressed = CorePublicKey.decompress(compressed);
+		expect([...decompressed]).toEqual([...uncompressed]);
+	});
 });
 
 describe("PublicKey.verify", () => {

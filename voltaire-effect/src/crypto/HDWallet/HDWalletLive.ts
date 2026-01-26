@@ -4,7 +4,6 @@
  * @since 0.0.1
  */
 
-import { HDWallet } from "@tevm/voltaire/HDWallet";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { wordsToMnemonic } from "../Bip39/utils.js";
@@ -16,7 +15,20 @@ import {
 	mapToHDWalletError,
 } from "./errors.js";
 
-const HARDENED_OFFSET = HDWallet.HARDENED_OFFSET;
+import type { HDWallet as HDWalletApi } from "@tevm/voltaire/HDWallet";
+
+type HDWalletModule = { HDWallet: HDWalletApi };
+
+let hdWalletModulePromise: Promise<HDWalletModule> | undefined;
+
+const loadHdWallet = (): Promise<HDWalletModule> => {
+	if (!hdWalletModulePromise) {
+		hdWalletModulePromise = import("@tevm/voltaire/HDWallet");
+	}
+	return hdWalletModulePromise;
+};
+
+const HARDENED_OFFSET = 0x80000000;
 const MAX_NORMAL_INDEX = 0x7fffffff;
 const MAX_HARDENED_INDEX = HARDENED_OFFSET + MAX_NORMAL_INDEX;
 
@@ -32,6 +44,7 @@ const formatPath = (indices: readonly number[]): string => {
 };
 
 const normalizePath = (
+	HDWallet: HDWalletApi,
 	path: string | HDPath,
 ): { pathString: string; indices: number[] } => {
 	if (typeof path === "string") {
@@ -95,92 +108,102 @@ const normalizePath = (
  * @since 0.0.1
  * @see {@link HDWalletTest} for unit testing
  */
-export const HDWalletLive = Layer.succeed(HDWalletService, {
-	derive: (node, path) =>
-		Effect.try({
-			try: () => {
-				const { pathString, indices } = normalizePath(path);
-				const hardenedIndex = indices.find(
-					(index) => index >= HARDENED_OFFSET,
-				);
-				if (
-					hardenedIndex !== undefined &&
-					!HDWallet.canDeriveHardened(
-						node as ReturnType<typeof HDWallet.fromSeed>,
-					)
-				) {
-					throw new HardenedDerivationError({
-						path: pathString,
-						index: hardenedIndex - HARDENED_OFFSET,
-						message: `Cannot derive hardened index ${
-							hardenedIndex - HARDENED_OFFSET
-						}' from public key`,
-					});
-				}
-
-				let currentNode = node as ReturnType<typeof HDWallet.fromSeed>;
-				for (const index of indices) {
-					currentNode = HDWallet.deriveChild(currentNode, index);
-				}
-
-				return currentNode as HDNode;
-			},
-			catch: (error) => {
-				if (error instanceof InvalidPathError) return error;
-				if (error instanceof HardenedDerivationError) return error;
-				const pathString =
-					typeof path === "string" ? path : formatPath(path);
-				return mapToHDWalletError(error, { path: pathString });
-			},
-		}),
-	generateMnemonic: (strength = 128) =>
-		Effect.promise(() => HDWallet.generateMnemonic(strength as never)).pipe(
-			Effect.map((words) => wordsToMnemonic(words)),
-		),
-	fromSeed: (seed) =>
-		Effect.try({
-			try: () => {
-				if (seed.length < 16 || seed.length > 64) {
-					throw new InvalidSeedError({
-						seedLength: seed.length,
-						message: `Seed must be 16-64 bytes, got ${seed.length}`,
-					});
-				}
-				return HDWallet.fromSeed(seed) as HDNode;
-			},
-			catch: (error) => {
-				if (error instanceof InvalidSeedError) return error;
-				return mapToHDWalletError(error, { seedLength: seed.length });
-			},
-		}),
-	fromMnemonic: (mnemonic, passphrase) => {
-		let seedLength: number | undefined;
-		return Effect.tryPromise({
-			try: async () => {
-				const seed = await HDWallet.mnemonicToSeed(mnemonic, passphrase);
-				seedLength = seed.length;
-				if (seed.length < 16 || seed.length > 64) {
-					throw new InvalidSeedError({
-						seedLength: seed.length,
-						message: `Seed must be 16-64 bytes, got ${seed.length}`,
-					});
-				}
-				return HDWallet.fromSeed(seed) as HDNode;
-			},
-			catch: (error) => mapToHDWalletError(error, { seedLength }),
-		});
-	},
-	mnemonicToSeed: (mnemonic) =>
-		Effect.tryPromise({
-			try: () => HDWallet.mnemonicToSeed(mnemonic),
+export const HDWalletLive = Layer.effect(
+	HDWalletService,
+	Effect.gen(function* () {
+		const { HDWallet } = yield* Effect.tryPromise({
+			try: () => loadHdWallet(),
 			catch: (error) => mapToHDWalletError(error, {}),
-		}),
-	getPrivateKey: (node) =>
-		Effect.sync(() =>
-			HDWallet.getPrivateKey(node as ReturnType<typeof HDWallet.fromSeed>),
-		),
-	getPublicKey: (node) =>
-		Effect.sync(() =>
-			HDWallet.getPublicKey(node as ReturnType<typeof HDWallet.fromSeed>),
-		),
-});
+		});
+
+		return {
+			derive: (node, path) =>
+				Effect.try({
+					try: () => {
+						const { pathString, indices } = normalizePath(HDWallet, path);
+						const hardenedIndex = indices.find(
+							(index) => index >= HARDENED_OFFSET,
+						);
+						if (
+							hardenedIndex !== undefined &&
+							!HDWallet.canDeriveHardened(
+								node as ReturnType<typeof HDWallet.fromSeed>,
+							)
+						) {
+							throw new HardenedDerivationError({
+								path: pathString,
+								index: hardenedIndex - HARDENED_OFFSET,
+								message: `Cannot derive hardened index ${
+									hardenedIndex - HARDENED_OFFSET
+								}' from public key`,
+							});
+						}
+
+						let currentNode = node as ReturnType<typeof HDWallet.fromSeed>;
+						for (const index of indices) {
+							currentNode = HDWallet.deriveChild(currentNode, index);
+						}
+
+						return currentNode as HDNode;
+					},
+					catch: (error) => {
+						if (error instanceof InvalidPathError) return error;
+						if (error instanceof HardenedDerivationError) return error;
+						const pathString =
+							typeof path === "string" ? path : formatPath(path);
+						return mapToHDWalletError(error, { path: pathString });
+					},
+				}),
+			generateMnemonic: (strength = 128) =>
+				Effect.promise(() => HDWallet.generateMnemonic(strength as never)).pipe(
+					Effect.map((words) => wordsToMnemonic(words)),
+				),
+			fromSeed: (seed) =>
+				Effect.try({
+					try: () => {
+						if (seed.length < 16 || seed.length > 64) {
+							throw new InvalidSeedError({
+								seedLength: seed.length,
+								message: `Seed must be 16-64 bytes, got ${seed.length}`,
+							});
+						}
+						return HDWallet.fromSeed(seed) as HDNode;
+					},
+					catch: (error) => {
+						if (error instanceof InvalidSeedError) return error;
+						return mapToHDWalletError(error, { seedLength: seed.length });
+					},
+				}),
+			fromMnemonic: (mnemonic, passphrase) => {
+				let seedLength: number | undefined;
+				return Effect.tryPromise({
+					try: async () => {
+						const seed = await HDWallet.mnemonicToSeed(mnemonic, passphrase);
+						seedLength = seed.length;
+						if (seed.length < 16 || seed.length > 64) {
+							throw new InvalidSeedError({
+								seedLength: seed.length,
+								message: `Seed must be 16-64 bytes, got ${seed.length}`,
+							});
+						}
+						return HDWallet.fromSeed(seed) as HDNode;
+					},
+					catch: (error) => mapToHDWalletError(error, { seedLength }),
+				});
+			},
+			mnemonicToSeed: (mnemonic) =>
+				Effect.tryPromise({
+					try: () => HDWallet.mnemonicToSeed(mnemonic),
+					catch: (error) => mapToHDWalletError(error, {}),
+				}),
+			getPrivateKey: (node) =>
+				Effect.sync(() =>
+					HDWallet.getPrivateKey(node as ReturnType<typeof HDWallet.fromSeed>),
+				),
+			getPublicKey: (node) =>
+				Effect.sync(() =>
+					HDWallet.getPublicKey(node as ReturnType<typeof HDWallet.fromSeed>),
+				),
+		};
+	}),
+);
