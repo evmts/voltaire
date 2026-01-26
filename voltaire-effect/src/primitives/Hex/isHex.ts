@@ -6,7 +6,6 @@
  */
 
 import { Hex as VoltaireHex } from "@tevm/voltaire/Hex";
-import * as Effect from "effect/Effect";
 
 /**
  * Check if a string is a valid hex format.
@@ -17,19 +16,17 @@ import * as Effect from "effect/Effect";
  * is infallible.
  *
  * @param {string} value - String to check
- * @returns {Effect.Effect<boolean, never>} Effect that always succeeds with boolean result
+ * @returns {boolean} true if the value is a valid hex string
  *
  * @example
  * ```ts
  * import * as Hex from 'voltaire-effect/primitives/Hex'
- * import * as Effect from 'effect/Effect'
  *
- * const valid = await Effect.runPromise(Hex.isHex('0x1234'))   // true
- * const noPrefix = await Effect.runPromise(Hex.isHex('1234')) // false
- * const invalid = await Effect.runPromise(Hex.isHex('0xZZZZ')) // false
+ * Hex.isHex('0x1234')   // true
+ * Hex.isHex('1234')     // false
+ * Hex.isHex('0xZZZZ')   // false
  * ```
  *
  * @since 0.0.1
  */
-export const isHex = (value: string): Effect.Effect<boolean, never> =>
-	Effect.succeed(VoltaireHex.isHex(value));
+export const isHex = (value: string): boolean => VoltaireHex.isHex(value);

@@ -6,9 +6,12 @@
 
 import type { PublicKeyType } from "@tevm/voltaire/PublicKey";
 import * as Effect from "effect/Effect";
+import { constantTimeEqual } from "../../crypto/utils/constantTimeEqual.js";
 
 /**
- * Checks if two public keys are equal.
+ * Checks if two public keys are equal using constant-time comparison.
+ *
+ * Uses constant-time comparison to prevent timing attacks.
  *
  * @param a - First public key
  * @param b - Second public key
@@ -24,11 +27,4 @@ import * as Effect from "effect/Effect";
 export const equals = (
 	a: PublicKeyType,
 	b: PublicKeyType,
-): Effect.Effect<boolean> =>
-	Effect.sync(() => {
-		if (a.length !== b.length) return false;
-		for (let i = 0; i < a.length; i++) {
-			if (a[i] !== b[i]) return false;
-		}
-		return true;
-	});
+): Effect.Effect<boolean> => Effect.sync(() => constantTimeEqual(a, b));

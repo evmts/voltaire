@@ -6,7 +6,6 @@
  */
 
 import { type HexType, Hex as VoltaireHex } from "@tevm/voltaire/Hex";
-import * as Effect from "effect/Effect";
 
 /**
  * Check if two hex strings are equal (case-insensitive).
@@ -17,21 +16,17 @@ import * as Effect from "effect/Effect";
  *
  * @param {HexType} hex - First hex string
  * @param {HexType} other - Second hex string to compare
- * @returns {Effect.Effect<boolean, never>} Effect that always succeeds with boolean result
+ * @returns {boolean} true if the hex strings are equal
  *
  * @example
  * ```ts
  * import * as Hex from 'voltaire-effect/primitives/Hex'
- * import * as Effect from 'effect/Effect'
  *
- * const isEqual = await Effect.runPromise(Hex.equals('0xABCD', '0xabcd')) // true
- * const notEqual = await Effect.runPromise(Hex.equals('0x1234', '0x5678')) // false
+ * Hex.equals('0xABCD', '0xabcd') // true
+ * Hex.equals('0x1234', '0x5678') // false
  * ```
  *
  * @since 0.0.1
  */
-export const equals = (
-	hex: HexType,
-	other: HexType,
-): Effect.Effect<boolean, never> =>
-	Effect.succeed(VoltaireHex.equals(hex, other));
+export const equals = (hex: HexType, other: HexType): boolean =>
+	VoltaireHex.equals(hex, other);

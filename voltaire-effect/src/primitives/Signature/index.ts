@@ -69,6 +69,7 @@
  */
 
 // Schemas
+export { SignatureTypeSchema } from "./SignatureSchema.js";
 export { Hex } from "./Hex.js";
 export { Bytes } from "./Bytes.js";
 export { Compact } from "./Compact.js";

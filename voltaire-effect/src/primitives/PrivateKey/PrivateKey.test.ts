@@ -1,6 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as PrivateKey from "./index.js";
 
 const validHex = `0x${"ab".repeat(32)}`;
@@ -258,5 +259,128 @@ describe("edge cases", () => {
 		const pk = S.decodeSync(PrivateKey.Bytes)(bytes);
 		const encoded = S.encodeSync(PrivateKey.Bytes)(pk);
 		expect([...encoded]).toEqual([...bytes]);
+	});
+});
+
+describe("cryptographic operations", () => {
+	describe("deriving public key", () => {
+		it("derives public key from private key", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const publicKey = Secp256k1.derivePublicKey(pk);
+			expect(publicKey).toBeInstanceOf(Uint8Array);
+			expect(publicKey.length).toBe(64);
+		});
+
+		it("produces consistent public key for same private key", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const pub1 = Secp256k1.derivePublicKey(pk);
+			const pub2 = Secp256k1.derivePublicKey(pk);
+			expect([...pub1]).toEqual([...pub2]);
+		});
+
+		it("produces different public keys for different private keys", () => {
+			const pk1 = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const pk2 = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(2));
+			const pub1 = Secp256k1.derivePublicKey(pk1);
+			const pub2 = Secp256k1.derivePublicKey(pk2);
+			expect([...pub1]).not.toEqual([...pub2]);
+		});
+
+		it("works with generated random key", async () => {
+			const pk = await Effect.runPromise(PrivateKey.random());
+			const publicKey = Secp256k1.derivePublicKey(pk);
+			expect(publicKey.length).toBe(64);
+		});
+	});
+
+	describe("signing messages", () => {
+		const messageHash = new Uint8Array(32).fill(0x42);
+
+		it("signs message with private key", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const signature = Secp256k1.sign(messageHash, pk);
+			expect(signature).toBeInstanceOf(Uint8Array);
+			expect(signature.length).toBe(65);
+		});
+
+		it("produces deterministic signatures (RFC 6979)", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const sig1 = Secp256k1.sign(messageHash, pk);
+			const sig2 = Secp256k1.sign(messageHash, pk);
+			expect([...sig1]).toEqual([...sig2]);
+		});
+
+		it("produces different signatures for different messages", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const msg1 = new Uint8Array(32).fill(0x11);
+			const msg2 = new Uint8Array(32).fill(0x22);
+			const sig1 = Secp256k1.sign(msg1, pk);
+			const sig2 = Secp256k1.sign(msg2, pk);
+			expect([...sig1]).not.toEqual([...sig2]);
+		});
+
+		it("signature can be verified against derived public key", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const publicKey = Secp256k1.derivePublicKey(pk);
+			const signature = Secp256k1.sign(messageHash, pk);
+			const isValid = Secp256k1.verify(signature, messageHash, publicKey);
+			expect(isValid).toBe(true);
+		});
+
+		it("signature fails verification with wrong public key", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const otherPk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(2));
+			const otherPublicKey = Secp256k1.derivePublicKey(otherPk);
+			const signature = Secp256k1.sign(messageHash, pk);
+			const isValid = Secp256k1.verify(signature, messageHash, otherPublicKey);
+			expect(isValid).toBe(false);
+		});
+	});
+
+	describe("public key recovery", () => {
+		it("recovers public key from signature", () => {
+			const pk = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1));
+			const publicKey = Secp256k1.derivePublicKey(pk);
+			const messageHash = new Uint8Array(32).fill(0x42);
+			const signature = Secp256k1.sign(messageHash, pk);
+			const recoveredPubKey = Secp256k1.recoverPublicKey(signature, messageHash);
+			expect([...recoveredPubKey]).toEqual([...publicKey]);
+		});
+	});
+});
+
+describe("secp256k1 curve constraints", () => {
+	it("rejects zero private key", () => {
+		const zeroKey = new Uint8Array(32);
+		expect(() => Secp256k1.derivePublicKey(zeroKey as any)).toThrow();
+	});
+
+	it("rejects key >= curve order", () => {
+		const curveOrder = Secp256k1.CURVE_ORDER;
+		const overflowKey = new Uint8Array(32);
+		let temp = curveOrder;
+		for (let i = 31; i >= 0; i--) {
+			overflowKey[i] = Number(temp & 0xffn);
+			temp >>= 8n;
+		}
+		expect(() => Secp256k1.derivePublicKey(overflowKey as any)).toThrow();
+	});
+
+	it("accepts valid key near curve order", () => {
+		const nearCurveOrder = new Uint8Array(32);
+		let temp = Secp256k1.CURVE_ORDER - 1n;
+		for (let i = 31; i >= 0; i--) {
+			nearCurveOrder[i] = Number(temp & 0xffn);
+			temp >>= 8n;
+		}
+		const pubKey = Secp256k1.derivePublicKey(nearCurveOrder as any);
+		expect(pubKey.length).toBe(64);
+	});
+
+	it("accepts minimum valid key (1)", () => {
+		const minKey = new Uint8Array(32);
+		minKey[31] = 1;
+		const pubKey = Secp256k1.derivePublicKey(minKey as any);
+		expect(pubKey.length).toBe(64);
 	});
 });

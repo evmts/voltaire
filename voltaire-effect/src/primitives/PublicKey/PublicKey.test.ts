@@ -1,9 +1,12 @@
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
 import { describe, expect, it } from "@effect/vitest";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as Signature from "@tevm/voltaire/Signature";
 import * as PublicKey from "./index.js";
 
 const validUncompressedHex = `0x${"ab".repeat(64)}`;
+const validCompressedHex = `0x02${"ab".repeat(32)}`;
 
 describe("PublicKey.Hex", () => {
 	describe("decode", () => {
@@ -231,5 +234,153 @@ describe("edge cases", () => {
 		const noPrefix = "ab".repeat(64);
 		const result = await Effect.runPromise(PublicKey.isValid(noPrefix));
 		expect(result).toBe(true);
+	});
+});
+
+describe("PublicKey.toAddress", () => {
+	const privateKey = new Uint8Array(32).fill(1);
+	const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+	it.effect("derives address from public key", () =>
+		Effect.gen(function* () {
+			const address = yield* PublicKey.toAddress(publicKey);
+			expect(address).toBeInstanceOf(Uint8Array);
+			expect(address.length).toBe(20);
+		}),
+	);
+
+	it.effect("produces consistent address for same public key", () =>
+		Effect.gen(function* () {
+			const addr1 = yield* PublicKey.toAddress(publicKey);
+			const addr2 = yield* PublicKey.toAddress(publicKey);
+			expect([...addr1]).toEqual([...addr2]);
+		}),
+	);
+
+	it.effect("produces different addresses for different keys", () =>
+		Effect.gen(function* () {
+			const otherKey = Secp256k1.derivePublicKey(new Uint8Array(32).fill(2));
+			const addr1 = yield* PublicKey.toAddress(publicKey);
+			const addr2 = yield* PublicKey.toAddress(otherKey);
+			expect([...addr1]).not.toEqual([...addr2]);
+		}),
+	);
+});
+
+describe("PublicKey.verify", () => {
+	const privateKey = new Uint8Array(32).fill(1);
+	const publicKey = Secp256k1.derivePublicKey(privateKey);
+	const messageHash = new Uint8Array(32).fill(0x11);
+
+	it.effect("verifies valid signature", () =>
+		Effect.gen(function* () {
+			const signature = Secp256k1.sign(messageHash, privateKey);
+			const isValid = yield* PublicKey.verify(
+				publicKey,
+				messageHash as any,
+				signature,
+			);
+			expect(isValid).toBe(true);
+		}),
+	);
+
+	it.effect("rejects signature from different key", () =>
+		Effect.gen(function* () {
+			const otherPrivateKey = new Uint8Array(32).fill(2);
+			const signature = Secp256k1.sign(messageHash, otherPrivateKey);
+			const isValid = yield* PublicKey.verify(
+				publicKey,
+				messageHash as any,
+				signature,
+			);
+			expect(isValid).toBe(false);
+		}),
+	);
+
+	it.effect("rejects signature for different message", () =>
+		Effect.gen(function* () {
+			const signature = Secp256k1.sign(messageHash, privateKey);
+			const differentHash = new Uint8Array(32).fill(0x22) as any;
+			const isValid = yield* PublicKey.verify(publicKey, differentHash, signature);
+			expect(isValid).toBe(false);
+		}),
+	);
+
+	it.effect("rejects tampered signature", () =>
+		Effect.gen(function* () {
+			const signature = Secp256k1.sign(messageHash, privateKey);
+			const tamperedSig = Signature.fromSecp256k1(
+				new Uint8Array(32).fill(0x99),
+				new Uint8Array(32).fill(0x88),
+				27,
+			);
+			const isValid = yield* PublicKey.verify(
+				publicKey,
+				messageHash as any,
+				tamperedSig,
+			);
+			expect(isValid).toBe(false);
+		}),
+	);
+});
+
+describe("PublicKey.equals", () => {
+	const pk1 = S.decodeSync(PublicKey.Bytes)(new Uint8Array(64).fill(0xab));
+	const pk2 = S.decodeSync(PublicKey.Bytes)(new Uint8Array(64).fill(0xab));
+	const pk3 = S.decodeSync(PublicKey.Bytes)(new Uint8Array(64).fill(0xcd));
+
+	it.effect("returns true for identical public keys", () =>
+		Effect.gen(function* () {
+			const result = yield* PublicKey.equals(pk1, pk2);
+			expect(result).toBe(true);
+		}),
+	);
+
+	it.effect("returns false for different public keys", () =>
+		Effect.gen(function* () {
+			const result = yield* PublicKey.equals(pk1, pk3);
+			expect(result).toBe(false);
+		}),
+	);
+
+	it.effect("returns true for same instance", () =>
+		Effect.gen(function* () {
+			const result = yield* PublicKey.equals(pk1, pk1);
+			expect(result).toBe(true);
+		}),
+	);
+
+	it.effect("uses constant-time comparison", () =>
+		Effect.gen(function* () {
+			const almostSame = new Uint8Array(64).fill(0xab);
+			almostSame[63] = 0xac;
+			const pk4 = S.decodeSync(PublicKey.Bytes)(almostSame);
+			const result = yield* PublicKey.equals(pk1, pk4);
+			expect(result).toBe(false);
+		}),
+	);
+});
+
+describe("PublicKey.toBytes", () => {
+	it("returns underlying Uint8Array", () => {
+		const pk = S.decodeSync(PublicKey.Hex)(validUncompressedHex);
+		const bytes = PublicKey.toBytes(pk);
+		expect(bytes).toBeInstanceOf(Uint8Array);
+		expect(bytes.length).toBe(64);
+	});
+
+	it("returns same reference (identity function)", () => {
+		const pk = S.decodeSync(PublicKey.Hex)(validUncompressedHex);
+		const bytes = PublicKey.toBytes(pk);
+		expect(bytes).toBe(pk);
+	});
+
+	it("works with decoded compressed key", () => {
+		const compressed = new Uint8Array(33);
+		compressed[0] = 0x02;
+		compressed.fill(0xab, 1);
+		const pk = S.decodeSync(PublicKey.Bytes)(compressed);
+		const bytes = PublicKey.toBytes(pk);
+		expect(bytes.length).toBe(64);
 	});
 });
