@@ -10,4 +10,8 @@ export type {
 	DerivedRpcSchema,
 	RpcSchemaOverride,
 } from "./DerivedRpcSchema.js";
-export type { VoltaireRpcSchema } from "./VoltaireRpcSchema.js";
+export type {
+	BlockOverrides,
+	StateOverride,
+	VoltaireRpcSchema,
+} from "./VoltaireRpcSchema.js";

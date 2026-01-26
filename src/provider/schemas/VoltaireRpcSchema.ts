@@ -12,6 +12,31 @@ import type { ReceiptType } from "../../primitives/Receipt/ReceiptType.js";
 import type { Any as TransactionType } from "../../primitives/Transaction/types.js";
 
 /**
+ * State override mapping for eth_call / eth_estimateGas
+ */
+export type StateOverride = Record<
+	string,
+	{
+		balance?: string;
+		nonce?: string;
+		code?: string;
+		state?: Record<string, string>;
+		stateDiff?: Record<string, string>;
+	}
+>;
+
+/**
+ * Block overrides for eth_call / eth_estimateGas
+ */
+export type BlockOverrides = {
+	number?: string;
+	time?: string;
+	gasLimit?: string;
+	baseFee?: string;
+	blobBaseFee?: string;
+};
+
+/**
  * Voltaire's default RPC schema
  *
  * Combines all JSON-RPC methods from:
@@ -67,6 +92,8 @@ export type VoltaireRpcSchema = readonly [
 				data?: string;
 			},
 			string,
+			StateOverride?,
+			BlockOverrides?,
 		];
 		ReturnType: string;
 	},
@@ -113,6 +140,8 @@ export type VoltaireRpcSchema = readonly [
 				data?: string;
 			},
 			string?,
+			StateOverride?,
+			BlockOverrides?,
 		];
 		ReturnType: string;
 	},

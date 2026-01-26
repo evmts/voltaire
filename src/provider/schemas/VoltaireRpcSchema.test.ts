@@ -51,6 +51,23 @@ describe("VoltaireRpcSchema type tests", () => {
 					data?: string;
 				},
 				string,
+				Record<
+					string,
+					{
+						balance?: string;
+						nonce?: string;
+						code?: string;
+						state?: Record<string, string>;
+						stateDiff?: Record<string, string>;
+					}
+				>?,
+				{
+					number?: string;
+					time?: string;
+					gasLimit?: string;
+					baseFee?: string;
+					blobBaseFee?: string;
+				}?,
 			]
 		>();
 	});
