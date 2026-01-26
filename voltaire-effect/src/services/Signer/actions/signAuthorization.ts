@@ -20,6 +20,10 @@ type AddressType = BrandedAddress.AddressType;
 /**
  * Parameters for signing an EIP-7702 authorization.
  *
+ * @description
+ * Accepts either contractAddress params (with optional chainId/nonce) or a
+ * prepared unsigned authorization tuple from prepareAuthorization.
+ *
  * @since 0.0.1
  */
 export type SignAuthorizationParams =
