@@ -50,7 +50,7 @@ export async function readContract(client, parameters) {
 	} = parameters;
 
 	// Create ABI instance and encode function call
-	const abi = Abi.Abi(abiItems);
+	const abi = Abi(abiItems);
 	const calldata = abi.encode(functionName, args);
 	const calldataHex = Hex.fromBytes(calldata);
 

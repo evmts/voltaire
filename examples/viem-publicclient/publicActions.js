@@ -19,6 +19,7 @@ import { getStorageAt } from "./actions/getStorageAt.js";
 import { getTransaction } from "./actions/getTransaction.js";
 import { getTransactionCount } from "./actions/getTransactionCount.js";
 import { getTransactionReceipt } from "./actions/getTransactionReceipt.js";
+import { simulateContract } from "./actions/simulateContract.js";
 
 /**
  * @typedef {import('./PublicClientType.js').Client} Client
@@ -46,5 +47,6 @@ export function publicActions(client) {
 		getStorageAt: (args) => getStorageAt(client, args),
 		getTransactionCount: (args) => getTransactionCount(client, args),
 		getGasPrice: () => getGasPrice(client),
+		simulateContract: (args) => simulateContract(client, args),
 	};
 }

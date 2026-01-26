@@ -6,7 +6,7 @@
  * @module examples/viem-publicclient
  */
 
-import type { AddressType, HexType } from "@tevm/voltaire";
+import type { AddressType, HexType, Item } from "@tevm/voltaire";
 
 // ============================================================================
 // Block Tag Types
@@ -21,6 +21,45 @@ export type BlockTag = "latest" | "earliest" | "pending" | "safe" | "finalized";
  * Block identifier - either number or tag
  */
 export type BlockIdentifier = bigint | BlockTag;
+
+// ============================================================================
+// Override Types
+// ============================================================================
+
+/**
+ * State override mapping for eth_call / eth_estimateGas
+ */
+export type StateOverride = Record<
+	string,
+	{
+		/** Account balance override */
+		balance?: bigint;
+		/** Account nonce override */
+		nonce?: bigint;
+		/** Account bytecode override */
+		code?: HexType | string | Uint8Array;
+		/** Storage override (full replacement) */
+		state?: Record<string, HexType | string | Uint8Array>;
+		/** Storage override (diff) */
+		stateDiff?: Record<string, HexType | string | Uint8Array>;
+	}
+>;
+
+/**
+ * Block overrides for eth_call / eth_estimateGas
+ */
+export interface BlockOverrides {
+	/** Block number override */
+	number?: bigint;
+	/** Block timestamp override */
+	time?: bigint;
+	/** Block gas limit override */
+	gasLimit?: bigint;
+	/** Block base fee override */
+	baseFee?: bigint;
+	/** Block blob base fee override */
+	blobBaseFee?: bigint;
+}
 
 // ============================================================================
 // Chain Types
@@ -260,6 +299,10 @@ export interface CallParameters {
 	blockNumber?: bigint;
 	/** Block tag */
 	blockTag?: BlockTag;
+	/** State overrides */
+	stateOverride?: StateOverride;
+	/** Block overrides */
+	blockOverrides?: BlockOverrides;
 }
 
 /**
@@ -286,7 +329,43 @@ export interface EstimateGasParameters {
 	blockNumber?: bigint;
 	/** Block tag */
 	blockTag?: BlockTag;
+	/** State overrides */
+	stateOverride?: StateOverride;
+	/** Block overrides */
+	blockOverrides?: BlockOverrides;
 }
+
+/**
+ * simulateContract parameters
+ */
+export type SimulateContractParameters = {
+	/** Contract ABI */
+	abi: readonly Item[];
+	/** Contract address */
+	address: AddressType | string;
+	/** Function name to call */
+	functionName: string;
+	/** Function arguments */
+	args?: readonly unknown[];
+	/** Optional data suffix */
+	dataSuffix?: `0x${string}`;
+} & Omit<CallParameters, "data" | "to">;
+
+/**
+ * simulateContract return type
+ */
+export type SimulateContractReturnType = {
+	/** Decoded result */
+	result: unknown;
+	/** Request object (can be passed to writeContract) */
+	request: {
+		abi: readonly Item[];
+		address: string;
+		args: readonly unknown[];
+		dataSuffix?: `0x${string}`;
+		functionName: string;
+	} & Omit<CallParameters, "data" | "to">;
+};
 
 /**
  * getTransaction parameters
@@ -505,6 +584,10 @@ export interface PublicActions {
 	call: (args: CallParameters) => Promise<CallResult>;
 	/** Estimate gas for transaction */
 	estimateGas: (args: EstimateGasParameters) => Promise<bigint>;
+	/** Simulate contract call and decode result */
+	simulateContract: (
+		args: SimulateContractParameters,
+	) => Promise<SimulateContractReturnType>;
 	/** Get transaction by hash */
 	getTransaction: (args: GetTransactionParameters) => Promise<Transaction>;
 	/** Get transaction receipt */

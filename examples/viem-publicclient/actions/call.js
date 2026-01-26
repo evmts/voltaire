@@ -6,7 +6,11 @@
  * @module examples/viem-publicclient/actions/call
  */
 
-import { normalizeAddress, numberToHex } from "../utils/encoding.js";
+import { normalizeAddress, numberToHex, toHex } from "../utils/encoding.js";
+import {
+	formatBlockOverrides,
+	formatStateOverride,
+} from "../utils/overrides.js";
 
 /**
  * @typedef {import('../PublicClientType.js').Client} Client
@@ -42,6 +46,8 @@ export async function call(client, params) {
 		maxPriorityFeePerGas,
 		blockNumber,
 		blockTag = "latest",
+		stateOverride,
+		blockOverrides,
 	} = params;
 
 	const blockNumberHex =
@@ -52,13 +58,7 @@ export async function call(client, params) {
 
 	if (account) request.from = normalizeAddress(account);
 	if (to) request.to = normalizeAddress(to);
-	if (data)
-		request.data =
-			typeof data === "string"
-				? data
-				: `0x${Array.from(data)
-						.map((b) => b.toString(16).padStart(2, "0"))
-						.join("")}`;
+	if (data) request.data = toHex(data);
 	if (typeof value === "bigint") request.value = numberToHex(value);
 	if (typeof gas === "bigint") request.gas = numberToHex(gas);
 	if (typeof gasPrice === "bigint") request.gasPrice = numberToHex(gasPrice);
@@ -67,9 +67,26 @@ export async function call(client, params) {
 	if (typeof maxPriorityFeePerGas === "bigint")
 		request.maxPriorityFeePerGas = numberToHex(maxPriorityFeePerGas);
 
+	const rpcStateOverride = formatStateOverride(stateOverride);
+	const rpcBlockOverrides = formatBlockOverrides(blockOverrides);
+
+	const params_ = (() => {
+		const base = [request, blockNumberHex ?? blockTag];
+		if (rpcStateOverride && rpcBlockOverrides) {
+			return [...base, rpcStateOverride, rpcBlockOverrides];
+		}
+		if (rpcStateOverride) {
+			return [...base, rpcStateOverride];
+		}
+		if (rpcBlockOverrides) {
+			return [...base, {}, rpcBlockOverrides];
+		}
+		return base;
+	})();
+
 	const response = await client.request({
 		method: "eth_call",
-		params: [request, blockNumberHex ?? blockTag],
+		params: params_,
 	});
 
 	if (response === "0x") {

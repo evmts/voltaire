@@ -57,6 +57,7 @@ export {
 	getStorageAt,
 	getTransactionCount,
 	getGasPrice,
+	simulateContract,
 } from "./actions/index.js";
 
 // Chain definitions
@@ -106,6 +107,8 @@ export type {
 	GetBlockParameters,
 	CallParameters,
 	EstimateGasParameters,
+	SimulateContractParameters,
+	SimulateContractReturnType,
 	GetTransactionParameters,
 	GetTransactionReceiptParameters,
 	GetLogsParameters,
@@ -120,6 +123,8 @@ export type {
 	AccessListItem,
 	Withdrawal,
 	CallResult,
+	StateOverride,
+	BlockOverrides,
 	// Public client types
 	PublicActions,
 	PublicClient,

@@ -19,3 +19,4 @@ export { getCode } from "./getCode.js";
 export { getStorageAt } from "./getStorageAt.js";
 export { getTransactionCount } from "./getTransactionCount.js";
 export { getGasPrice } from "./getGasPrice.js";
+export { simulateContract } from "./simulateContract.js";

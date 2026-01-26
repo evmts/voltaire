@@ -72,7 +72,7 @@ export async function simulateContract(client, parameters) {
 		: undefined;
 
 	// Create ABI instance and encode function call
-	const abi = Abi.Abi(abiItems);
+	const abi = Abi(abiItems);
 	const calldata = abi.encode(functionName, args);
 	let calldataHex = Hex.fromBytes(calldata);
 

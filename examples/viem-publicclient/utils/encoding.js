@@ -17,6 +17,21 @@ export function numberToHex(value) {
 }
 
 /**
+ * Convert hex string or Uint8Array to hex string
+ *
+ * @param {string | Uint8Array} value - Value to convert
+ * @returns {string} Hex string with 0x prefix
+ */
+export function toHex(value) {
+	if (typeof value === "string") {
+		return value;
+	}
+	return `0x${Array.from(value)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
+}
+
+/**
  * Convert hex string to bigint
  *
  * @param {string} hex - Hex string (with or without 0x prefix)

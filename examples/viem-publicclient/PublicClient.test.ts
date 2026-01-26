@@ -325,6 +325,165 @@ describe("PublicClient", () => {
 
 			expect(result.data).toBeUndefined();
 		});
+
+		it("should include stateOverride and blockOverrides in request params", async () => {
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					jsonrpc: "2.0",
+					id: 1,
+					result: "0x",
+				}),
+			});
+
+			const client = createPublicClient({
+				chain: mainnet,
+				transport: http("https://eth.example.com"),
+			});
+
+			const stateOverride = {
+				"0x0000000000000000000000000000000000000001": {
+					balance: 1n,
+					nonce: 2n,
+					code: "0x1234",
+					state: {
+						"0x00": "0x01",
+					},
+				},
+			};
+
+			const blockOverrides = {
+				number: 5n,
+				time: 10n,
+				gasLimit: 15n,
+				baseFee: 20n,
+				blobBaseFee: 25n,
+			};
+
+			await client.call({
+				to: "0x0000000000000000000000000000000000000002",
+				data: "0x",
+				stateOverride,
+				blockOverrides,
+			});
+
+			const body = JSON.parse(
+				/** @type {string} */ (mockFetch.mock.calls[0][1]?.body),
+			);
+
+			expect(body.params).toEqual([
+				{
+					to: "0x0000000000000000000000000000000000000002",
+					data: "0x",
+				},
+				"latest",
+				{
+					"0x0000000000000000000000000000000000000001": {
+						balance: "0x1",
+						nonce: "0x2",
+						code: "0x1234",
+						state: { "0x00": "0x01" },
+					},
+				},
+				{
+					number: "0x5",
+					time: "0xa",
+					gasLimit: "0xf",
+					baseFee: "0x14",
+					blobBaseFee: "0x19",
+				},
+			]);
+		});
+	});
+
+	describe("estimateGas", () => {
+		it("should include blockOverrides without stateOverride", async () => {
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					jsonrpc: "2.0",
+					id: 1,
+					result: "0x5208",
+				}),
+			});
+
+			const client = createPublicClient({
+				chain: mainnet,
+				transport: http("https://eth.example.com"),
+			});
+
+			const gas = await client.estimateGas({
+				to: "0x0000000000000000000000000000000000000002",
+				blockTag: "pending",
+				blockOverrides: { number: 1n },
+			});
+
+			expect(gas).toBe(21000n);
+
+			const body = JSON.parse(
+				/** @type {string} */ (mockFetch.mock.calls[0][1]?.body),
+			);
+
+			expect(body.params).toEqual([
+				{
+					to: "0x0000000000000000000000000000000000000002",
+				},
+				"pending",
+				{},
+				{ number: "0x1" },
+			]);
+		});
+	});
+
+	describe("simulateContract", () => {
+		it("should call eth_call and decode result", async () => {
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					jsonrpc: "2.0",
+					id: 1,
+					result:
+						"0x0000000000000000000000000000000000000000000000000000000000000001",
+				}),
+			});
+
+			const client = createPublicClient({
+				chain: mainnet,
+				transport: http("https://eth.example.com"),
+			});
+
+			const abi = [
+				{
+					type: "function",
+					name: "transfer",
+					stateMutability: "nonpayable",
+					inputs: [
+						{ name: "to", type: "address" },
+						{ name: "amount", type: "uint256" },
+					],
+					outputs: [{ name: "", type: "bool" }],
+				},
+			];
+
+			const { result, request } = await client.simulateContract({
+				address: "0x0000000000000000000000000000000000000002",
+				abi,
+				functionName: "transfer",
+				args: ["0x0000000000000000000000000000000000000003", 1000n],
+				account: "0x0000000000000000000000000000000000000004",
+			});
+
+			expect(result).toBe(true);
+			expect(request.abi).toHaveLength(1);
+			expect(request.functionName).toBe("transfer");
+
+			const body = JSON.parse(
+				/** @type {string} */ (mockFetch.mock.calls[0][1]?.body),
+			);
+
+			expect(body.method).toBe("eth_call");
+			expect(body.params[0].data).toMatch(/^0xa9059cbb/);
+		});
 	});
 
 	describe("getBlock", () => {
