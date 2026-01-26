@@ -186,9 +186,11 @@ const normalizeSignature = (
  */
 export const createSiweMessage = (params: CreateSiweMessageParams): string => {
 	const address = normalizeAddress(params.address);
-	const domain = params.scheme
-		? `${params.scheme}://${params.domain}`
-		: params.domain;
+	const domainHasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(params.domain);
+	const domain =
+		params.scheme && !domainHasScheme
+			? `${params.scheme}://${params.domain}`
+			: params.domain;
 	const message: SiweMessage = {
 		domain,
 		address,
@@ -222,7 +224,11 @@ export const createSiweMessage = (params: CreateSiweMessageParams): string => {
 export const parseSiweMessage = (
 	message: string,
 ): Effect.Effect<SiweMessage, ParseError> =>
-	Schema.decode(SiweStringSchema)(message);
+	Schema.decode(SiweStringSchema)(message).pipe(
+		Effect.flatMap((parsed) =>
+			Schema.decode(MessageStruct)(parsed).pipe(Effect.as(parsed)),
+		),
+	);
 
 /**
  * Verifies a SIWE message and signature.
@@ -289,7 +295,10 @@ export const verifySiweMessage = (
 			}
 		}
 
-		const validation = validate(parsed, params.time ? { now: params.time } : undefined);
+		const validation = validate(
+			parsed,
+			params.time ? { now: params.time } : undefined,
+		);
 		if (!validation.valid) {
 			return yield* Effect.fail(
 				VerifyError.of(validation.error.message, { cause: validation.error }),
