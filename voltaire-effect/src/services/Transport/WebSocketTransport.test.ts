@@ -206,8 +206,12 @@ describe("WebSocketTransport", () => {
 				if (sockets[0] && pendingRequests.length >= 2) {
 					const req1 = pendingRequests.find(
 						(r) => r.method === "eth_blockNumber",
-					)!;
-					const req2 = pendingRequests.find((r) => r.method === "eth_chainId")!;
+					);
+					const req2 = pendingRequests.find((r) => r.method === "eth_chainId");
+
+					if (!req1 || !req2) {
+						throw new Error("Expected to find both pending requests");
+					}
 
 					sockets[0].emitMessage(
 						JSON.stringify({ jsonrpc: "2.0", id: req2.id, result: "0x1" }),

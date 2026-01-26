@@ -50,7 +50,6 @@ describe("toAccount", () => {
 
 	it.effect("exposes custom signers and normalizes signatures", () =>
 		Effect.gen(function* () {
-
 			const account = yield* AccountService;
 			expect(account.type).toBe("hardware");
 			expect(Address.toHex(account.address)).toBe(TEST_ADDRESS);

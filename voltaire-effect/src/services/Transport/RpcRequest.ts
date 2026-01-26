@@ -60,13 +60,17 @@ export interface LogFilter {
  * Get block number request.
  * @since 0.0.1
  */
-export class GetBlockNumber extends Data.TaggedClass("GetBlockNumber")<{}> {}
+export class GetBlockNumber extends Data.TaggedClass("GetBlockNumber")<
+	Record<string, never>
+> {}
 
 /**
  * Get chain ID request.
  * @since 0.0.1
  */
-export class GetChainId extends Data.TaggedClass("GetChainId")<{}> {}
+export class GetChainId extends Data.TaggedClass("GetChainId")<
+	Record<string, never>
+> {}
 
 /**
  * Get gas price request.
