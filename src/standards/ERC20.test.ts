@@ -176,4 +176,90 @@ describe("ERC20", () => {
 			expect(ERC20.decodeBool(data)).toBe(false);
 		});
 	});
+
+	describe("decodeTotalSupplyResult", () => {
+		it("decodes uint256 total supply", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000";
+			expect(ERC20.decodeTotalSupplyResult(data)).toBe(1000000000000000000n);
+		});
+
+		it("decodes zero supply", () => {
+			const data = "0x" + "00".repeat(32);
+			expect(ERC20.decodeTotalSupplyResult(data)).toBe(0n);
+		});
+
+		it("decodes max uint256", () => {
+			const data = "0x" + "ff".repeat(32);
+			expect(ERC20.decodeTotalSupplyResult(data)).toBe(2n ** 256n - 1n);
+		});
+	});
+
+	describe("decodeNameResult", () => {
+		it("decodes string name", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"000000000000000000000000000000000000000000000000000000000000000a" +
+				"5465737420546f6b656e00000000000000000000000000000000000000000000";
+			expect(ERC20.decodeNameResult(data)).toBe("Test Token");
+		});
+
+		it("decodes empty string", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000000";
+			expect(ERC20.decodeNameResult(data)).toBe("");
+		});
+
+		it("decodes Tether USD", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"000000000000000000000000000000000000000000000000000000000000000a" +
+				"5465746865722055534400000000000000000000000000000000000000000000";
+			expect(ERC20.decodeNameResult(data)).toBe("Tether USD");
+		});
+	});
+
+	describe("decodeSymbolResult", () => {
+		it("decodes string symbol", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000003" +
+				"5453540000000000000000000000000000000000000000000000000000000000";
+			expect(ERC20.decodeSymbolResult(data)).toBe("TST");
+		});
+
+		it("decodes USDC symbol", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000004" +
+				"5553444300000000000000000000000000000000000000000000000000000000";
+			expect(ERC20.decodeSymbolResult(data)).toBe("USDC");
+		});
+	});
+
+	describe("decodeDecimalsResult", () => {
+		it("decodes 18 decimals (standard)", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000012";
+			expect(ERC20.decodeDecimalsResult(data)).toBe(18);
+		});
+
+		it("decodes 6 decimals (USDC)", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000006";
+			expect(ERC20.decodeDecimalsResult(data)).toBe(6);
+		});
+
+		it("decodes 8 decimals (WBTC)", () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000008";
+			expect(ERC20.decodeDecimalsResult(data)).toBe(8);
+		});
+
+		it("decodes 0 decimals", () => {
+			const data = "0x" + "00".repeat(32);
+			expect(ERC20.decodeDecimalsResult(data)).toBe(0);
+		});
+	});
 });

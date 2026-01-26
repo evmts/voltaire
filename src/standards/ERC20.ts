@@ -251,3 +251,31 @@ export function decodeString(data: string): string {
 	}
 	return new TextDecoder().decode(bytes);
 }
+
+/**
+ * Decode totalSupply() return value (uint256)
+ */
+export function decodeTotalSupplyResult(data: string): Uint256Type {
+	return decodeUint256(data);
+}
+
+/**
+ * Decode name() return value (string)
+ */
+export function decodeNameResult(data: string): string {
+	return decodeString(data);
+}
+
+/**
+ * Decode symbol() return value (string)
+ */
+export function decodeSymbolResult(data: string): string {
+	return decodeString(data);
+}
+
+/**
+ * Decode decimals() return value (uint8)
+ */
+export function decodeDecimalsResult(data: string): number {
+	return decodeDecimals(data);
+}

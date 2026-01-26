@@ -199,4 +199,102 @@ describe("ERC20", () => {
 			expect(result).toBe("Hello");
 		});
 	});
+
+	describe("decodeTotalSupplyResult", () => {
+		it("decodes uint256 total supply", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000";
+			const result = await Effect.runPromise(ERC20.decodeTotalSupplyResult(data));
+			expect(result).toBe(1000000000000000000n);
+		});
+
+		it("decodes zero supply", async () => {
+			const data = "0x" + "00".repeat(32);
+			const result = await Effect.runPromise(ERC20.decodeTotalSupplyResult(data));
+			expect(result).toBe(0n);
+		});
+
+		it("decodes max uint256", async () => {
+			const data = "0x" + "ff".repeat(32);
+			const result = await Effect.runPromise(ERC20.decodeTotalSupplyResult(data));
+			expect(result).toBe(2n ** 256n - 1n);
+		});
+	});
+
+	describe("decodeNameResult", () => {
+		it("decodes string name", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"000000000000000000000000000000000000000000000000000000000000000a" +
+				"5465737420546f6b656e00000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(ERC20.decodeNameResult(data));
+			expect(result).toBe("Test Token");
+		});
+
+		it("decodes empty string", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(ERC20.decodeNameResult(data));
+			expect(result).toBe("");
+		});
+
+		it("decodes Tether USD", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"000000000000000000000000000000000000000000000000000000000000000a" +
+				"5465746865722055534400000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(ERC20.decodeNameResult(data));
+			expect(result).toBe("Tether USD");
+		});
+	});
+
+	describe("decodeSymbolResult", () => {
+		it("decodes string symbol", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000003" +
+				"5453540000000000000000000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(ERC20.decodeSymbolResult(data));
+			expect(result).toBe("TST");
+		});
+
+		it("decodes USDC symbol", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000004" +
+				"5553444300000000000000000000000000000000000000000000000000000000";
+			const result = await Effect.runPromise(ERC20.decodeSymbolResult(data));
+			expect(result).toBe("USDC");
+		});
+	});
+
+	describe("decodeDecimalsResult", () => {
+		it("decodes 18 decimals (standard)", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000012";
+			const result = await Effect.runPromise(ERC20.decodeDecimalsResult(data));
+			expect(result).toBe(18);
+		});
+
+		it("decodes 6 decimals (USDC)", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000006";
+			const result = await Effect.runPromise(ERC20.decodeDecimalsResult(data));
+			expect(result).toBe(6);
+		});
+
+		it("decodes 8 decimals (WBTC)", async () => {
+			const data =
+				"0x0000000000000000000000000000000000000000000000000000000000000008";
+			const result = await Effect.runPromise(ERC20.decodeDecimalsResult(data));
+			expect(result).toBe(8);
+		});
+
+		it("decodes 0 decimals", async () => {
+			const data = "0x" + "00".repeat(32);
+			const result = await Effect.runPromise(ERC20.decodeDecimalsResult(data));
+			expect(result).toBe(0);
+		});
+	});
 });

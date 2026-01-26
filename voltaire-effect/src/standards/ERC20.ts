@@ -220,3 +220,55 @@ export const decodeString = (
 				cause: e,
 			}),
 	});
+
+export const decodeTotalSupplyResult = (
+	data: string,
+): Effect.Effect<Uint256Type, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.decodeTotalSupplyResult(data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.decodeTotalSupplyResult",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeNameResult = (
+	data: string,
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.decodeNameResult(data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.decodeNameResult",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeSymbolResult = (
+	data: string,
+): Effect.Effect<string, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.decodeSymbolResult(data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.decodeSymbolResult",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
+
+export const decodeDecimalsResult = (
+	data: string,
+): Effect.Effect<number, StandardsError> =>
+	Effect.try({
+		try: () => ERC20Impl.decodeDecimalsResult(data),
+		catch: (e) =>
+			new StandardsError({
+				operation: "ERC20.decodeDecimalsResult",
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
+	});
