@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tests for TransactionStreamService.
+ * @fileoverview Tests for TransactionStream helpers.
  */
 
 import { describe, expect, it } from "@effect/vitest";
@@ -11,11 +11,10 @@ import {
 	TransportService,
 	type TransportShape,
 } from "../services/Transport/index.js";
-import { TransactionStream } from "./TransactionStream.js";
+import { makeTransactionStream } from "./TransactionStream.js";
 import { TransactionStreamError } from "./TransactionStreamError.js";
-import { TransactionStreamService } from "./TransactionStreamService.js";
 
-describe("TransactionStreamService", () => {
+describe("TransactionStream", () => {
 	describe("TransactionStreamError", () => {
 		it("creates error with message", () => {
 			const error = new TransactionStreamError("test error");
@@ -77,8 +76,8 @@ describe("TransactionStreamService", () => {
 		});
 	});
 
-	describe("TransactionStream layer", () => {
-		it("provides TransactionStreamService from TransportService", async () => {
+	describe("makeTransactionStream", () => {
+		it("provides transaction streaming from TransportService", async () => {
 			const mockTransport: TransportShape = {
 				request: <T>(
 					_method: string,
@@ -87,20 +86,16 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				expect(txStream.watchPending).toBeDefined();
 				expect(txStream.watchConfirmed).toBeDefined();
 				expect(txStream.track).toBeDefined();
 				expect(typeof txStream.watchPending).toBe("function");
 				expect(typeof txStream.watchConfirmed).toBe("function");
 				expect(typeof txStream.track).toBe("function");
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -114,16 +109,12 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.watchPending();
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -137,16 +128,12 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.watchConfirmed({ confirmations: 3 });
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -160,18 +147,14 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				);
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -185,18 +168,14 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.watchPending({
 					filter: { to: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" },
 				});
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -210,18 +189,14 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream1 = txStream.watchConfirmed({ confirmations: 1 });
 				const stream12 = txStream.watchConfirmed({ confirmations: 12 });
 				expect(stream1).toBeDefined();
 				expect(stream12).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -235,19 +210,15 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 6 },
 				);
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -261,17 +232,13 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const hashBytes = new Uint8Array(32).fill(0x12);
 				const stream = txStream.track(hashBytes);
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -293,18 +260,14 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 				);
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			const result = await Effect.runPromiseExit(program);
 			expect(result._tag).toBe("Failure");
@@ -321,13 +284,9 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream1 = txStream.watchPending();
 				const stream2 = txStream.watchConfirmed();
 				const stream3 = txStream.track(
@@ -336,7 +295,7 @@ describe("TransactionStreamService", () => {
 				expect(stream1).toBeDefined();
 				expect(stream2).toBeDefined();
 				expect(stream3).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -347,11 +306,11 @@ describe("TransactionStreamService", () => {
 			const {
 				TransactionStream,
 				TransactionStreamError,
-				TransactionStreamService,
+				makeTransactionStream,
 			} = await import("./index.js");
 			expect(TransactionStream).toBeDefined();
 			expect(TransactionStreamError).toBeDefined();
-			expect(TransactionStreamService).toBeDefined();
+			expect(makeTransactionStream).toBeDefined();
 		});
 	});
 
@@ -405,20 +364,16 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 0 },
 				);
 				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
 				expect(events.length).toBeGreaterThan(0);
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -470,20 +425,16 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 1 },
 				);
 				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
 				expect(events.length).toBeGreaterThan(0);
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -539,20 +490,16 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 12, pollingInterval: 1 },
 				);
 				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
 				expect(events.length).toBe(1);
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -612,13 +559,9 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 1, pollingInterval: 1 },
@@ -626,7 +569,7 @@ describe("TransactionStreamService", () => {
 				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
 				expect(events.length).toBe(1);
 				expect(receiptCallCount).toBeGreaterThan(2);
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -688,20 +631,16 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 1, pollingInterval: 1 },
 				);
 				const events = yield* Stream.take(stream, 1).pipe(Stream.runCollect);
 				expect(events.length).toBe(1);
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -747,18 +686,14 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.watchPending({
 					filter: { to: targetAddress },
 				});
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -798,13 +733,9 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 1, pollingInterval: 1 },
@@ -814,7 +745,7 @@ describe("TransactionStreamService", () => {
 				const eventArray = Array.from(events);
 				expect(eventArray[0].type).toBe("pending");
 				expect(eventArray[1].type).toBe("dropped");
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -868,13 +799,9 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 1 },
@@ -886,7 +813,7 @@ describe("TransactionStreamService", () => {
 				if (event.type === "confirmed") {
 					expect(event.transaction.receipt.status).toBe(1);
 				}
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -938,13 +865,9 @@ describe("TransactionStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestTransactionStreamLayer = Layer.provide(
-				TransactionStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const txStream = yield* TransactionStreamService;
+				const txStream = yield* makeTransactionStream();
 				const stream = txStream.track(
 					"0x1234567890123456789012345678901234567890123456789012345678901234",
 					{ confirmations: 1 },
@@ -956,7 +879,7 @@ describe("TransactionStreamService", () => {
 				if (event.type === "confirmed") {
 					expect(event.transaction.receipt.status).toBe(0);
 				}
-			}).pipe(Effect.provide(TestTransactionStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});

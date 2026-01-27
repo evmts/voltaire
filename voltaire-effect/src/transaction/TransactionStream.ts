@@ -103,7 +103,7 @@ export const makeTransactionStream = (): Effect.Effect<
  * @example
  * ```typescript
  * import { Effect, Stream } from 'effect';
- * import { makeTransactionStream, HttpTransport } from 'voltaire-effect';
+ * import { makeTransactionStream, HttpTransport } from 'voltaire-effect/services';
  *
  * const program = Effect.gen(function* () {
  *   const txStream = yield* makeTransactionStream();
