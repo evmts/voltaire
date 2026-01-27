@@ -8,6 +8,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll } from "vitest";
 
+console.log("debug: setup loaded");
+
 const wasmPath = resolve(import.meta.dirname, "../wasm/primitives.wasm");
 
 if (existsSync(wasmPath)) {

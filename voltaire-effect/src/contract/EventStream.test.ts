@@ -89,8 +89,8 @@ describe("EventStream", () => {
 		});
 	});
 
-	describe("EventStream layer", () => {
-		it("provides EventStream from TransportService", async () => {
+	describe("makeEventStream", () => {
+		it("provides event streaming from TransportService", async () => {
 			const mockTransport: TransportShape = {
 				request: <T>(
 					_method: string,
