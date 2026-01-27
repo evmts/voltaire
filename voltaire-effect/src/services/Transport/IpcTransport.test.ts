@@ -1,4 +1,4 @@
-import { NodeFileSystem } from "@effect/platform-node";
+import * as FileSystem from "@effect/platform/FileSystem";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -79,7 +79,7 @@ describe("IpcTransport", () => {
 							reconnect: false,
 							socketFactory,
 						}),
-						NodeFileSystem.layer,
+						FileSystem.layerNoop(),
 					),
 				),
 				Effect.scoped,
@@ -93,10 +93,13 @@ describe("IpcTransport", () => {
 
 	describe("timeout handling", () => {
 		it("fails with timeout when no response received", async () => {
-			const { socketFactory } = makeMockIpcSocket();
+			const { socketFactory, sockets } = makeMockIpcSocket();
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
+				while (sockets.length === 0) {
+					yield* Effect.sleep(1);
+				}
 				return yield* transport.request<string>("eth_blockNumber");
 			}).pipe(
 				Effect.provide(
@@ -107,7 +110,7 @@ describe("IpcTransport", () => {
 							reconnect: false,
 							socketFactory,
 						}),
-						NodeFileSystem.layer,
+						FileSystem.layerNoop(),
 					),
 				),
 				Effect.scoped,
@@ -124,7 +127,7 @@ describe("IpcTransport", () => {
 
 	describe("JSON-RPC error handling", () => {
 		it("propagates error code, message, and data", async () => {
-			const { socketFactory } = makeMockIpcSocket({
+			const { socketFactory, sockets } = makeMockIpcSocket({
 				onWrite: (socket, data) => {
 					const req = JSON.parse(String(data).trim()) as { id: number };
 					queueMicrotask(() => {
@@ -143,6 +146,9 @@ describe("IpcTransport", () => {
 
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
+				while (sockets.length === 0) {
+					yield* Effect.sleep(1);
+				}
 				return yield* transport.request<string>("eth_getBalance", ["0x123"]);
 			}).pipe(
 				Effect.provide(
@@ -152,7 +158,7 @@ describe("IpcTransport", () => {
 							reconnect: false,
 							socketFactory,
 						}),
-						NodeFileSystem.layer,
+						FileSystem.layerNoop(),
 					),
 				),
 				Effect.scoped,
@@ -203,7 +209,7 @@ describe("IpcTransport", () => {
 							reconnect: { maxAttempts: 3, delay: 20, maxDelay: 50 },
 							socketFactory,
 						}),
-						NodeFileSystem.layer,
+						FileSystem.layerNoop(),
 					),
 				),
 				Effect.scoped,
