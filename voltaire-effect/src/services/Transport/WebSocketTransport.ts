@@ -403,7 +403,7 @@ export const WebSocketTransport = (
 							new TransportError({
 								code: -32603,
 								message: `WebSocket connection failed: ${String(e)}`,
-						}),
+							}),
 					),
 				);
 
@@ -474,23 +474,25 @@ export const WebSocketTransport = (
 					});
 
 				const socketFiber = yield* Effect.forkIn(
-					socket.runRaw((data) => processMessage(data)).pipe(
-						Effect.matchCauseEffect({
-							onFailure: (cause) => {
-								if (Cause.isInterrupted(cause)) {
-									return Effect.failCause(cause);
-								}
-								const failure = Option.getOrUndefined(
-									Cause.failureOption(cause),
-								);
-								const message = failure
-									? `WebSocket closed: ${String(failure)}`
-									: "WebSocket closed";
-								return handleDisconnect(message);
-							},
-							onSuccess: () => handleDisconnect("WebSocket closed"),
-						}),
-					),
+					socket
+						.runRaw((data) => processMessage(data))
+						.pipe(
+							Effect.matchCauseEffect({
+								onFailure: (cause) => {
+									if (Cause.isInterrupted(cause)) {
+										return Effect.failCause(cause);
+									}
+									const failure = Option.getOrUndefined(
+										Cause.failureOption(cause),
+									);
+									const message = failure
+										? `WebSocket closed: ${String(failure)}`
+										: "WebSocket closed";
+									return handleDisconnect(message);
+								},
+								onSuccess: () => handleDisconnect("WebSocket closed"),
+							}),
+						),
 					parentScope,
 				);
 
