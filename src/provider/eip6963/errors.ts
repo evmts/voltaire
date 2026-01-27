@@ -15,14 +15,14 @@ export class EIP6963Error extends PrimitiveError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code ?? -32000,
+			code: options?.code ?? "EIP6963_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath || "/jsonrpc-provider/eip6963",
 			cause: options?.cause,
@@ -39,7 +39,7 @@ export class UnsupportedEnvironmentError extends EIP6963Error {
 
 	constructor(platform: string) {
 		super(`EIP6963 requires browser. Detected: ${platform}`, {
-			code: -32000,
+			code: "UNSUPPORTED_ENVIRONMENT",
 			context: { platform },
 		});
 		this.name = "UnsupportedEnvironmentError";
@@ -55,7 +55,7 @@ export class InvalidUuidError extends EIP6963Error {
 
 	constructor(uuid: string) {
 		super(`Invalid uuid: expected UUIDv4 format, got "${uuid}"`, {
-			code: -32602,
+			code: "INVALID_UUID",
 			context: { uuid },
 		});
 		this.name = "InvalidUuidError";
@@ -73,7 +73,7 @@ export class InvalidRdnsError extends EIP6963Error {
 		super(
 			`Invalid rdns: expected reverse DNS format (e.g., "io.metamask"), got "${rdns}"`,
 			{
-				code: -32602,
+				code: "INVALID_RDNS",
 				context: { rdns },
 			},
 		);
@@ -93,7 +93,7 @@ export class InvalidIconError extends EIP6963Error {
 		super(
 			`Invalid icon: expected data URI (data:image/...), got "${preview}"`,
 			{
-				code: -32602,
+				code: "INVALID_ICON",
 				context: { icon: preview },
 			},
 		);
@@ -110,7 +110,7 @@ export class MissingFieldError extends EIP6963Error {
 
 	constructor(objectType: string, field: string) {
 		super(`${objectType} missing required field: ${field}`, {
-			code: -32602,
+			code: "MISSING_FIELD",
 			context: { objectType, field },
 		});
 		this.name = "MissingFieldError";
@@ -126,7 +126,7 @@ export class InvalidFieldError extends EIP6963Error {
 
 	constructor(objectType: string, field: string, reason: string) {
 		super(`${objectType}.${field} ${reason}`, {
-			code: -32602,
+			code: "INVALID_FIELD",
 			context: { objectType, field, reason },
 		});
 		this.name = "InvalidFieldError";
@@ -140,7 +140,7 @@ export class InvalidFieldError extends EIP6963Error {
 export class InvalidProviderError extends EIP6963Error {
 	constructor() {
 		super("Invalid provider: expected EIP1193 provider with request() method", {
-			code: -32602,
+			code: "INVALID_PROVIDER",
 		});
 		this.name = "InvalidProviderError";
 	}
@@ -154,7 +154,7 @@ export class InvalidArgumentError extends EIP6963Error {
 
 	constructor(functionName: string, expected: string, got: string) {
 		super(`${functionName}() requires ${expected}, got ${got}`, {
-			code: -32602,
+			code: "INVALID_ARGUMENT",
 			context: { functionName, expected, got },
 		});
 		this.name = "InvalidArgumentError";
@@ -168,7 +168,7 @@ export class InvalidArgumentError extends EIP6963Error {
 export class NotImplementedError extends EIP6963Error {
 	constructor(methodName: string) {
 		super(`EIP6963.${methodName} is not yet implemented`, {
-			code: -32000,
+			code: "NOT_IMPLEMENTED",
 			context: { methodName },
 		});
 		this.name = "NotImplementedError";

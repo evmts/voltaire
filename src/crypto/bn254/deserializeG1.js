@@ -19,7 +19,7 @@ import * as G1 from "./G1/index.js";
 export function deserializeG1(bytes) {
 	if (bytes.length !== 64) {
 		throw new Bn254Error("Invalid G1 point serialization length", {
-			code: -32602,
+			code: "INVALID_LENGTH",
 			context: { received: bytes.length, expected: 64, curve: "G1" },
 			docsPath: "/crypto/bn254#serialization",
 		});

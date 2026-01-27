@@ -20,7 +20,6 @@ import * as G2 from "./G2/index.js";
 export function deserializeG2(bytes) {
 	if (bytes.length !== 128) {
 		throw new Bn254Error("Invalid G2 point serialization length", {
-			code: -32602,
 			context: { received: bytes.length, expected: 128, curve: "G2" },
 			docsPath: "/crypto/bn254#serialization",
 		});
