@@ -1,15 +1,15 @@
 /**
- * @fileoverview Multicall aggregate3 helper for batching contract reads.
+ * @fileoverview Multicall aggregate3 functions for batching contract reads.
  *
  * @module Multicall
  * @since 0.0.1
  *
  * @description
- * Provides a low-level multicall function for batching multiple contract reads
- * into a single RPC call using the Multicall3 contract. This helper depends on
- * TransportService (no dedicated Multicall service layer required).
+ * Provides effectful functions for batching multiple contract reads into a single
+ * RPC call using the Multicall3 contract. These functions depend on TransportService
+ * but are not a service themselves - just Effect functions with dependencies.
  *
- * @see {@link TransportService} - Required for JSON-RPC calls
+ * @see {@link TransportService} - Required dependency for JSON-RPC calls
  */
 
 import { decodeParameters, encodeParameters } from "@tevm/voltaire/Abi";

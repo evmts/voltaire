@@ -238,7 +238,7 @@ export {
 	type KzgShape,
 	NoopKzg,
 } from "./Kzg/index.js";
-// Multicall exports
+// Multicall functions (not a service - just Effect functions depending on TransportService)
 export {
 	aggregate3,
 	BalanceResolver,

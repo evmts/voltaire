@@ -21,7 +21,7 @@ import {
 	aggregate3,
 	type MulticallCall,
 	MulticallError,
-} from "./MulticallService.js";
+} from "./Multicall.js";
 
 const BALANCE_OF_ABI = [
 	{

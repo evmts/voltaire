@@ -1,12 +1,17 @@
 /**
- * @fileoverview Contract module exports for type-safe smart contract interactions.
+ * @fileoverview Contract factory for type-safe smart contract interactions.
  *
  * @module Contract
  * @since 0.0.1
  *
  * @description
- * This module provides the Contract factory for creating type-safe bindings
- * to deployed smart contracts based on their ABI.
+ * This module provides the `Contract` factory function for creating type-safe
+ * bindings to deployed smart contracts based on their ABI.
+ *
+ * **Note:** `Contract()` is a factory function, NOT a `Context.Tag` service.
+ * It returns an Effect that yields a `ContractInstance` with `.read`, `.write`,
+ * `.simulate`, and `.getEvents` methods. The factory depends on `ProviderService`
+ * for read operations, and write operations additionally require `SignerService`.
  *
  * Main exports:
  * - {@link Contract} - Factory function to create contract instances
@@ -32,6 +37,7 @@
  * const erc20Abi = [...] as const
  *
  * const program = Effect.gen(function* () {
+ *   // Contract() is a factory - yields a contract instance, not a service
  *   const token = yield* Contract(tokenAddress, erc20Abi)
  *   const balance = yield* token.read.balanceOf(userAddress)
  *   return balance
@@ -41,7 +47,7 @@
  * )
  * ```
  *
- * @see {@link ProviderService} - Required for contract operations
+ * @see {@link ProviderService} - Required for all contract operations
  * @see {@link SignerService} - Required for write operations
  */
 

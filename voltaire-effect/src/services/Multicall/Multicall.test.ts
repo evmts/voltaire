@@ -15,7 +15,7 @@ import {
 	type MulticallCall,
 	MulticallError,
 	type MulticallResult,
-} from "./MulticallService.js";
+} from "./Multicall.js";
 
 type HexType = `0x${string}`;
 
