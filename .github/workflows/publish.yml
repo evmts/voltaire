@@ -1,3 +1,32 @@
+# =============================================================================
+# PUBLISH WORKFLOW
+# =============================================================================
+# HOW TO PUBLISH A NEW VERSION:
+#
+# 1. Bump version in BOTH package.json files:
+#    - npm version patch --no-git-tag-version  (in root)
+#    - cd voltaire-effect && npm version <same-version> --no-git-tag-version
+#
+# 2. Commit the version bump:
+#    - git add package.json voltaire-effect/package.json
+#    - git commit -m "chore: bump version to X.Y.Z"
+#
+# 3. Create and push the tag:
+#    - git tag vX.Y.Z
+#    - git push && git push origin vX.Y.Z
+#
+# If a tag already exists on remote and needs to be replaced:
+#    - git push origin --delete vX.Y.Z
+#    - git tag -d vX.Y.Z && git tag vX.Y.Z
+#    - git push origin vX.Y.Z
+#
+# The workflow will:
+#   1. Run validation tests (sharded across 8 runners)
+#   2. Publish @tevm/voltaire to npm
+#   3. Publish voltaire-effect to npm (depends on step 2)
+#   4. Create GitHub release with auto-generated changelog
+# =============================================================================
+
 name: Publish
 
 on:
