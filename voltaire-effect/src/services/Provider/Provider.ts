@@ -735,11 +735,11 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 									Schedule.intersect(
 										Schedule.recurUpTo(Duration.millis(timeout)),
 									),
-										Schedule.whileInput(
-											(e) =>
-												(e as ProviderReceiptPendingError)._tag ===
-												"ProviderReceiptPendingError",
-										),
+									Schedule.whileInput(
+										(e) =>
+											(e as ProviderReceiptPendingError)._tag ===
+											"ProviderReceiptPendingError",
+									),
 								),
 							),
 							Effect.timeoutFail({
@@ -787,11 +787,11 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 									Schedule.intersect(
 										Schedule.recurUpTo(Duration.millis(timeout)),
 									),
-										Schedule.whileInput(
-											(e) =>
-												(e as ProviderConfirmationsPendingError)._tag ===
-												"ProviderConfirmationsPendingError",
-										),
+									Schedule.whileInput(
+										(e) =>
+											(e as ProviderConfirmationsPendingError)._tag ===
+											"ProviderConfirmationsPendingError",
+									),
 								),
 							),
 							Effect.timeoutFail({
