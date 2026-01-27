@@ -3,6 +3,12 @@ title: Multicall
 description: Batch multiple contract reads into a single RPC call using Multicall3
 ---
 
+<Note>
+  Multicall is not a service - it provides effectful functions (`aggregate3`, `BalanceResolver`) 
+  that depend on `TransportService`. Unlike services which use `Context.Tag`, these are simply 
+  Effect functions you call directly.
+</Note>
+
 ## Quick Start
 
 ```typescript
@@ -172,9 +178,9 @@ const resultsWithRetry = yield* aggregate3(calls).pipe(
 const freshResults = yield* aggregate3(calls).pipe(withoutCache)
 ```
 
-## Transport Dependency
+## TransportService Dependency
 
-`aggregate3` depends only on `TransportService`:
+`aggregate3` is an Effect function (not a service) that depends on `TransportService`:
 
 ```typescript
 import { Effect } from 'effect'
@@ -186,6 +192,8 @@ const program = aggregate3([{ target, callData }]).pipe(
 ```
 
 ## Function Signature
+
+`aggregate3` is an Effect function, not a service method:
 
 ```typescript
 const aggregate3: (
@@ -203,6 +211,6 @@ The helper uses the Multicall3 contract deployed at `0xcA11bde05977b363116702886
 
 - [Multicall Example](/examples/multicall) — Complete multicall examples
 - [Provider Service](/services/provider) — Higher-level `multicall` action
-- [Contract Service](/services/contract) — Type-safe contract interactions
+- [Contract Factory](/services/contract) — Type-safe contract interactions
 - [Recipes](/recipes) — Batch balance checking pattern
 - [Multicall3](https://github.com/mds1/multicall) — Multicall3 contract documentation

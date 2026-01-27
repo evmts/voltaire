@@ -1,7 +1,9 @@
 ---
-title: Contract Service
+title: Contract Factory
 description: Type-safe contract interaction with Effect.ts
 ---
+
+`Contract()` is a **factory function** that returns a type-safe contract instance. It is **not** a `Context.Tag` service—instead it depends on `ProviderService` (and optionally `SignerService` for writes).
 
 ## Quick Start
 
@@ -19,6 +21,7 @@ const erc20Abi = [
 ] as const
 
 const program = Effect.gen(function* () {
+  // Contract() is a factory that yields a contract instance
   const dai = yield* Contract(daiAddress, erc20Abi)
   const balance = yield* dai.read.balanceOf(userAddress)
   return balance
