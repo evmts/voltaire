@@ -30,12 +30,14 @@
  */
 
 import * as Socket from "@effect/platform/Socket";
+import * as Cause from "effect/Cause";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
 import * as Scope from "effect/Scope";
@@ -237,6 +239,7 @@ export const WebSocketTransport = (
 			const pendingRef = yield* Ref.make<
 				Map<number | string, Deferred.Deferred<JsonRpcResponse<unknown>, never>>
 			>(new Map());
+			const parentScope = yield* Effect.scope;
 			const writerRef = yield* Ref.make<
 				| ((
 						chunk: Uint8Array | string | Socket.CloseEvent,
@@ -244,6 +247,7 @@ export const WebSocketTransport = (
 				| null
 			>(null);
 			const isReconnectingRef = yield* Ref.make(false);
+			const reconnectFailureRef = yield* Ref.make<TransportError | null>(null);
 			const queueRef = yield* Ref.make<QueuedRequest[]>([]);
 			const isClosedRef = yield* Ref.make(false);
 			const keepAliveFiberRef = yield* Ref.make<Fiber.Fiber<
@@ -258,6 +262,8 @@ export const WebSocketTransport = (
 
 			const processMessage = (data: string | Uint8Array) =>
 				Effect.gen(function* () {
+					yield* Ref.set(reconnectAttemptsRef, 0);
+					yield* Ref.set(reconnectFailureRef, null);
 					const text =
 						typeof data === "string" ? data : new TextDecoder().decode(data);
 					let message: JsonRpcResponse<unknown>;
@@ -383,6 +389,7 @@ export const WebSocketTransport = (
 					);
 				}
 
+				yield* Ref.set(reconnectFailureRef, null);
 				const socket = yield* Socket.makeWebSocket(config.url, {
 					protocols: config.protocols
 						? Array.isArray(config.protocols)
@@ -396,13 +403,11 @@ export const WebSocketTransport = (
 							new TransportError({
 								code: -32603,
 								message: `WebSocket connection failed: ${String(e)}`,
-							}),
+						}),
 					),
 				);
 
-				const scope = yield* Effect.scope;
-
-				const writer = yield* Scope.extend(socket.writer, scope).pipe(
+				const writer = yield* Scope.extend(socket.writer, parentScope).pipe(
 					Effect.mapError(
 						() =>
 							new TransportError({
@@ -414,89 +419,110 @@ export const WebSocketTransport = (
 
 				yield* Ref.set(writerRef, writer);
 
-				yield* Ref.set(reconnectAttemptsRef, 0);
 				yield* Ref.set(isReconnectingRef, false);
 				yield* startKeepAlive;
 				yield* flushQueue;
 
-				const socketFiber = yield* Effect.fork(
-					socket
-						.runRaw((data) => processMessage(data))
-						.pipe(
-							Effect.catchAll((socketError) =>
-								Effect.gen(function* () {
-									yield* stopKeepAlive;
-									yield* Ref.set(writerRef, null);
+				const handleDisconnect = (message: string) =>
+					Effect.gen(function* () {
+						const attempts = yield* Ref.get(reconnectAttemptsRef);
+						yield* stopKeepAlive;
+						yield* Ref.set(writerRef, null);
 
-									const closed = yield* Ref.get(isClosedRef);
-									if (closed) {
-										yield* failAllPending(
-											new TransportError({
-												code: -32603,
-												message: "WebSocket closed",
-											}),
-										);
-										return;
-									}
-
-									if (reconnectEnabled) {
-										const attempts = yield* Ref.get(reconnectAttemptsRef);
-										if (attempts < reconnectOpts.maxAttempts) {
-											yield* Ref.set(isReconnectingRef, true);
-
-											const delay = Math.min(
-												reconnectOpts.delay *
-													reconnectOpts.multiplier ** attempts,
-												reconnectOpts.maxDelay,
-											);
-
-											yield* Ref.update(reconnectAttemptsRef, (n) => n + 1);
-
-											yield* Effect.sleep(Duration.millis(delay));
-											yield* Effect.scoped(connect).pipe(Effect.ignore);
-										} else {
-											yield* failAllPending(
-												new TransportError({
-													code: -32603,
-													message: `WebSocket reconnection failed after ${reconnectOpts.maxAttempts} attempts`,
-												}),
-											);
-										}
-									} else {
-										yield* failAllPending(
-											new TransportError({
-												code: -32603,
-												message: `WebSocket closed: ${String(socketError)}`,
-											}),
-										);
-									}
+						const closed = yield* Ref.get(isClosedRef);
+						if (closed) {
+							yield* failAllPending(
+								new TransportError({
+									code: -32603,
+									message: "WebSocket closed",
 								}),
-							),
-						),
+							);
+							return;
+						}
+
+						if (reconnectEnabled) {
+							if (attempts < reconnectOpts.maxAttempts) {
+								yield* Ref.set(isReconnectingRef, true);
+								yield* Ref.set(reconnectFailureRef, null);
+
+								const delay = Math.min(
+									reconnectOpts.delay * reconnectOpts.multiplier ** attempts,
+									reconnectOpts.maxDelay,
+								);
+
+								yield* Ref.update(reconnectAttemptsRef, (n) => n + 1);
+
+								yield* Effect.sleep(Duration.millis(delay));
+								yield* connect.pipe(Effect.ignore);
+							} else {
+								const error = new TransportError({
+									code: -32603,
+									message: `WebSocket reconnection failed after ${reconnectOpts.maxAttempts} attempts`,
+								});
+								yield* Ref.set(isReconnectingRef, false);
+								yield* Ref.set(reconnectFailureRef, error);
+								yield* failAllPending(error);
+							}
+						} else {
+							yield* failAllPending(
+								new TransportError({
+									code: -32603,
+									message,
+								}),
+							);
+						}
+					});
+
+				const socketFiber = yield* Effect.forkIn(
+					socket.runRaw((data) => processMessage(data)).pipe(
+						Effect.matchCauseEffect({
+							onFailure: (cause) => {
+								if (Cause.isInterrupted(cause)) {
+									return Effect.failCause(cause);
+								}
+								const failure = Option.getOrUndefined(
+									Cause.failureOption(cause),
+								);
+								const message = failure
+									? `WebSocket closed: ${String(failure)}`
+									: "WebSocket closed";
+								return handleDisconnect(message);
+							},
+							onSuccess: () => handleDisconnect("WebSocket closed"),
+						}),
+					),
+					parentScope,
 				);
 
 				yield* Ref.set(socketFiberRef, socketFiber);
 			});
 
-			yield* Effect.scoped(connect);
+			yield* connect;
 
 			yield* Effect.addFinalizer(() =>
 				Effect.gen(function* () {
 					yield* Ref.set(isClosedRef, true);
 					yield* stopKeepAlive;
-
-					const socketFiber = yield* Ref.get(socketFiberRef);
-					if (socketFiber) {
-						yield* Fiber.interrupt(socketFiber);
-					}
-
 					const writer = yield* Ref.get(writerRef);
 					if (writer) {
 						yield* writer(new Socket.CloseEvent(1000, "Normal closure")).pipe(
+							Effect.interruptible,
+							Effect.timeout(Duration.seconds(1)),
+							Effect.catchTag("TimeoutException", () => Effect.void),
 							Effect.ignore,
 						);
 					}
 
+					const socketFiber = yield* Ref.get(socketFiberRef);
+					if (socketFiber) {
+						yield* Fiber.interrupt(socketFiber).pipe(
+							Effect.interruptible,
+							Effect.timeout(Duration.seconds(1)),
+							Effect.catchTag("TimeoutException", () => Effect.void),
+							Effect.ignore,
+						);
+						yield* Ref.set(socketFiberRef, null);
+					}
 					yield* failAllPending(
 						new TransportError({
 							code: -32603,
@@ -513,11 +539,26 @@ export const WebSocketTransport = (
 						const tracingEnabled = yield* FiberRef.get(tracingRef);
 						const timeout = timeoutOverride ?? Duration.millis(config.timeout);
 						const timeoutMs = Duration.toMillis(timeout);
+						const reconnectFailure = yield* Ref.get(reconnectFailureRef);
 						const writer = yield* Ref.get(writerRef);
 						const isReconnecting = yield* Ref.get(isReconnectingRef);
+						const isClosed = yield* Ref.get(isClosedRef);
 
 						if (tracingEnabled) {
 							yield* Effect.logDebug(`rpc ${method} -> ${config.url}`);
+						}
+
+						if (isClosed) {
+							return yield* Effect.fail(
+								new TransportError({
+									code: -32603,
+									message: "WebSocket transport is closed",
+								}),
+							);
+						}
+
+						if (reconnectFailure) {
+							return yield* Effect.fail(reconnectFailure);
 						}
 
 						if (!writer || isReconnecting) {
@@ -599,12 +640,22 @@ export const WebSocketTransport = (
 						});
 
 						yield* writer(request).pipe(
-							Effect.mapError(
-								() =>
+							Effect.timeout(timeout),
+							Effect.catchTag("TimeoutException", () =>
+								Effect.fail(
 									new TransportError({
 										code: -32603,
-										message: "Failed to send WebSocket message",
+										message: "WebSocket not connected",
 									}),
+								),
+							),
+							Effect.mapError((error) =>
+								error instanceof TransportError
+									? error
+									: new TransportError({
+											code: -32603,
+											message: "Failed to send WebSocket message",
+										}),
 							),
 						);
 

@@ -232,7 +232,9 @@ const formatTransactionRequest = (
 	const formatted: RpcTransactionObject = {};
 	formatted.from = toAddressHex(tx.from);
 	if (tx.to !== undefined) {
-		formatted.to = tx.to === null ? null : toAddressHex(tx.to);
+		if (tx.to !== null) {
+			formatted.to = toAddressHex(tx.to);
+		}
 	}
 	if (tx.data) formatted.data = tx.data;
 	if (tx.value !== undefined) formatted.value = `0x${tx.value.toString(16)}`;
@@ -733,9 +735,11 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 									Schedule.intersect(
 										Schedule.recurUpTo(Duration.millis(timeout)),
 									),
-									Schedule.whileInput(
-										(e) => e._tag === "ProviderReceiptPendingError",
-									),
+										Schedule.whileInput(
+											(e) =>
+												(e as ProviderReceiptPendingError)._tag ===
+												"ProviderReceiptPendingError",
+										),
 								),
 							),
 							Effect.timeoutFail({
@@ -783,9 +787,11 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 									Schedule.intersect(
 										Schedule.recurUpTo(Duration.millis(timeout)),
 									),
-									Schedule.whileInput(
-										(e) => e._tag === "ProviderConfirmationsPendingError",
-									),
+										Schedule.whileInput(
+											(e) =>
+												(e as ProviderConfirmationsPendingError)._tag ===
+												"ProviderConfirmationsPendingError",
+										),
 								),
 							),
 							Effect.timeoutFail({

@@ -12,7 +12,10 @@ import {
 import { calculateBlobGasPrice, estimateBlobGas } from "./getBlobBaseFee.js";
 import { Provider } from "./Provider.js";
 import {
+	ProviderNotFoundError,
+	ProviderResponseError,
 	ProviderService,
+	ProviderTimeoutError,
 	type ProviderValidationError,
 } from "./ProviderService.js";
 
@@ -958,6 +961,10 @@ describe("ProviderService", () => {
 			if (Exit.isFailure(exit)) {
 				const cause = exit.cause;
 				expect(cause._tag).toBe("Fail");
+				if (cause._tag === "Fail") {
+					expect(cause.error).toBeInstanceOf(ProviderTimeoutError);
+					expect(cause.error._tag).toBe("ProviderTimeoutError");
+				}
 			}
 		});
 
@@ -1000,6 +1007,10 @@ describe("ProviderService", () => {
 			if (Exit.isFailure(exit)) {
 				const cause = exit.cause;
 				expect(cause._tag).toBe("Fail");
+				if (cause._tag === "Fail") {
+					expect(cause.error).toBeInstanceOf(ProviderTimeoutError);
+					expect(cause.error._tag).toBe("ProviderTimeoutError");
+				}
 			}
 		});
 
@@ -1461,6 +1472,10 @@ describe("ProviderService", () => {
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(ProviderResponseError);
+				expect(exit.cause.error._tag).toBe("ProviderResponseError");
+			}
 		});
 	});
 
@@ -1601,6 +1616,10 @@ describe("ProviderService", () => {
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
+			if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(ProviderNotFoundError);
+				expect(exit.cause.error._tag).toBe("ProviderNotFoundError");
+			}
 		});
 
 		it("handles empty logs array", async () => {

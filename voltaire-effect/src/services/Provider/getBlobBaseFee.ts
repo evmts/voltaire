@@ -23,7 +23,10 @@ import {
 
 const METHOD_NOT_FOUND = -32601;
 
-const parseHexToBigInt = (method: string, hex: string) =>
+const parseHexToBigInt = (
+	method: string,
+	hex: string,
+): Effect.Effect<bigint, ProviderResponseError> =>
 	Effect.try({
 		try: () => BigInt(hex),
 		catch: (error) =>
@@ -34,7 +37,9 @@ const parseHexToBigInt = (method: string, hex: string) =>
 			),
 	});
 
-const blobBaseFeeFromBlock = (block: BlockType) => {
+const blobBaseFeeFromBlock = (
+	block: BlockType,
+): Effect.Effect<bigint, ProviderResponseError> => {
 	if (block.excessBlobGas === undefined || block.excessBlobGas === null) {
 		return Effect.fail(
 			new ProviderResponseError(
@@ -112,7 +117,10 @@ export const getBlobBaseFee = (): Effect.Effect<
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
 
-		const request = <T>(method: string, params?: unknown[]) =>
+		const request = <T>(
+			method: string,
+			params?: unknown[],
+		): Effect.Effect<T, TransportError> =>
 			transport.request<T>(method, params).pipe(
 				Effect.mapError(
 					(error) =>
@@ -123,18 +131,24 @@ export const getBlobBaseFee = (): Effect.Effect<
 				),
 			);
 
-		const fromRpc = request<string>("eth_blobBaseFee").pipe(
+		const fromRpc: Effect.Effect<
+			bigint,
+			TransportError | ProviderResponseError
+		> = request<string>("eth_blobBaseFee").pipe(
 			Effect.flatMap((hex) => parseHexToBigInt("eth_blobBaseFee", hex)),
 		);
 
-		const fromBlock = request<BlockType | null>("eth_getBlockByNumber", [
+		const fromBlock: Effect.Effect<
+			bigint,
+			TransportError | ProviderResponseError | ProviderNotFoundError
+		> = request<BlockType | null>("eth_getBlockByNumber", [
 			"latest",
 			false,
 		]).pipe(
 			Effect.flatMap((block) =>
 				block
 					? blobBaseFeeFromBlock(block)
-					: Effect.fail(
+					: Effect.fail<ProviderResponseError | ProviderNotFoundError>(
 							new ProviderNotFoundError(
 								{ method: "eth_getBlockByNumber", params: ["latest", false] },
 								"Block not found",
@@ -144,9 +158,13 @@ export const getBlobBaseFee = (): Effect.Effect<
 			),
 		);
 
-		return yield* fromRpc.pipe(
-			Effect.catchTag("TransportError", (error) =>
-				error.code === METHOD_NOT_FOUND ? fromBlock : Effect.fail(error),
+		const result: Effect.Effect<bigint, GetBlobBaseFeeError> = fromRpc.pipe(
+			Effect.catchTag(
+				"TransportError",
+				(error): Effect.Effect<bigint, GetBlobBaseFeeError> =>
+					error.code === METHOD_NOT_FOUND ? fromBlock : Effect.fail(error),
 			),
 		);
+
+		return yield* result;
 	});

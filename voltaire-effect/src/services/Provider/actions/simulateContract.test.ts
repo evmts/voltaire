@@ -4,6 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as S from "effect/Schema";
 import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
+import { TransportError } from "../../Transport/TransportService.js";
 import { ProviderService, type ProviderShape } from "../ProviderService.js";
 import { simulateContract } from "./simulateContract.js";
 
@@ -264,11 +265,13 @@ describe("simulateContract", () => {
 				getTransactionReceipt: () => Effect.succeed({} as any),
 				waitForTransactionReceipt: () => Effect.succeed({} as any),
 				call: () =>
-					Effect.fail({
-						message: "execution reverted",
-						code: 3,
-						data: revertData,
-					} as any),
+					Effect.fail(
+						new TransportError({
+							code: 3,
+							message: "execution reverted",
+							data: revertData,
+						}),
+					),
 				estimateGas: () => Effect.succeed(21000n),
 				createAccessList: () =>
 					Effect.succeed({ accessList: [], gasUsed: "0x0" }),
@@ -309,7 +312,11 @@ describe("simulateContract", () => {
 				args: ["0xabcdef0123456789abcdef0123456789abcdef01", 1000n],
 			}).pipe(Effect.provide(provider));
 
-			await expect(Effect.runPromise(program)).rejects.toThrow();
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates transport errors", async () => {
@@ -325,10 +332,12 @@ describe("simulateContract", () => {
 				getTransactionReceipt: () => Effect.succeed({} as any),
 				waitForTransactionReceipt: () => Effect.succeed({} as any),
 				call: () =>
-					Effect.fail({
-						message: "network error: connection refused",
-						code: -32603,
-					} as any),
+					Effect.fail(
+						new TransportError({
+							code: -32603,
+							message: "network error: connection refused",
+						}),
+					),
 				estimateGas: () => Effect.succeed(21000n),
 				createAccessList: () =>
 					Effect.succeed({ accessList: [], gasUsed: "0x0" }),
@@ -369,7 +378,11 @@ describe("simulateContract", () => {
 				args: ["0xabcdef0123456789abcdef0123456789abcdef01", 1000n],
 			}).pipe(Effect.provide(provider));
 
-			await expect(Effect.runPromise(program)).rejects.toThrow();
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates timeout errors", async () => {
@@ -385,10 +398,12 @@ describe("simulateContract", () => {
 				getTransactionReceipt: () => Effect.succeed({} as any),
 				waitForTransactionReceipt: () => Effect.succeed({} as any),
 				call: () =>
-					Effect.fail({
-						message: "request timeout",
-						code: -32000,
-					} as any),
+					Effect.fail(
+						new TransportError({
+							code: -32000,
+							message: "request timeout",
+						}),
+					),
 				estimateGas: () => Effect.succeed(21000n),
 				createAccessList: () =>
 					Effect.succeed({ accessList: [], gasUsed: "0x0" }),
@@ -429,7 +444,11 @@ describe("simulateContract", () => {
 				args: ["0xabcdef0123456789abcdef0123456789abcdef01", 1000n],
 			}).pipe(Effect.provide(provider));
 
-			await expect(Effect.runPromise(program)).rejects.toThrow();
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 	});
 });

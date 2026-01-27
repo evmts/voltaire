@@ -481,11 +481,13 @@ describe("readContract", () => {
 				"0000000000000000000000000000000000000000000000000000000000000012" +
 				"496e73756666696369656e742062616c616e63650000000000000000000000";
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "execution reverted",
-					code: 3,
-					data: revertData,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: 3,
+						message: "execution reverted",
+						data: revertData,
+					}),
+				),
 			);
 
 			const program = readContract({
@@ -500,16 +502,21 @@ describe("readContract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("handles contract revert with custom error", async () => {
 			const customErrorSelector = "0xcf479181";
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "execution reverted",
-					code: 3,
-					data: customErrorSelector,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: 3,
+						message: "execution reverted",
+						data: customErrorSelector,
+					}),
+				),
 			);
 
 			const program = readContract({
@@ -524,14 +531,19 @@ describe("readContract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates transport errors", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "network error: connection refused",
-					code: -32603,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: -32603,
+						message: "network error: connection refused",
+					}),
+				),
 			);
 
 			const program = readContract({
@@ -546,14 +558,19 @@ describe("readContract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates timeout errors", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "request timeout",
-					code: -32000,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: -32000,
+						message: "request timeout",
+					}),
+				),
 			);
 
 			const program = readContract({
@@ -568,14 +585,19 @@ describe("readContract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates rate limit errors", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "rate limit exceeded",
-					code: 429,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: 429,
+						message: "rate limit exceeded",
+					}),
+				),
 			);
 
 			const program = readContract({
@@ -590,6 +612,9 @@ describe("readContract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("handles empty return data (0x) for function expecting outputs", async () => {

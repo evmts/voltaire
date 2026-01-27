@@ -4,7 +4,8 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as S from "effect/Schema";
 import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
-import { ProviderService } from "../ProviderService.js";
+import { TransportError } from "../../Transport/TransportService.js";
+import { ProviderResponseError, ProviderService } from "../ProviderService.js";
 import { multicall as _multicall } from "./multicall.js";
 
 // Type-relaxed wrapper for tests - the production multicall has strict typing
@@ -233,6 +234,11 @@ describe("multicall", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(ProviderResponseError);
+				expect(exit.cause.error._tag).toBe("ProviderResponseError");
+				expect(exit.cause.error.message).toContain("Call 1 failed");
+			}
 		});
 
 		it("returns unwrapped results when allowFailure is false", async () => {
@@ -566,19 +572,27 @@ describe("multicall", () => {
 				allowFailure: false,
 			});
 
-			await expect(
-				Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer))),
-			).rejects.toThrow("Call 1 failed");
+			const exit = await Effect.runPromiseExit(
+				program.pipe(Effect.provide(MockProviderLayer)),
+			);
+
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(ProviderResponseError);
+				expect(exit.cause.error.message).toContain("Call 1 failed");
+			}
 		});
 	});
 
 	describe("transport error propagation", () => {
 		it("propagates transport errors", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "network error: connection refused",
-					code: -32603,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: -32603,
+						message: "network error: connection refused",
+					}),
+				),
 			);
 
 			const program = multicall({
@@ -597,14 +611,20 @@ describe("multicall", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(TransportError);
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates timeout errors", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "request timeout",
-					code: -32000,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: -32000,
+						message: "request timeout",
+					}),
+				),
 			);
 
 			const program = multicall({
@@ -623,14 +643,20 @@ describe("multicall", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(TransportError);
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates rate limit errors", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "rate limit exceeded",
-					code: 429,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: 429,
+						message: "rate limit exceeded",
+					}),
+				),
 			);
 
 			const program = multicall({
@@ -649,14 +675,20 @@ describe("multicall", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(TransportError);
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
 		it("propagates Multicall3 contract not deployed error", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({
-					message: "execution reverted",
-					code: -32000,
-				}),
+				Effect.fail(
+					new TransportError({
+						code: -32000,
+						message: "execution reverted",
+					}),
+				),
 			);
 
 			const program = multicall({
@@ -675,6 +707,10 @@ describe("multicall", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(TransportError);
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 	});
 });
