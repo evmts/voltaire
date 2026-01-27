@@ -5,7 +5,8 @@
  * @returns {Promise<boolean>} True if valid
  */
 export async function validateMnemonic(mnemonic) {
-	const { libwally } = await import("./ffi.js");
+	const { getLibwally } = await import("./ffi.js");
+	const libwally = await getLibwally();
 
 	const mnemonicStr =
 		typeof mnemonic === "string" ? mnemonic : mnemonic.join(" ");

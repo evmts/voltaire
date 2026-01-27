@@ -9,8 +9,9 @@ import { DerivationError } from "./errors.js";
  * @throws {DerivationError} If child key derivation fails
  */
 export async function derive(node, path) {
-	const { libwally } = await import("./ffi.js");
+	const { getLibwally } = await import("./ffi.js");
 	const { parsePath } = await import("./parsePath.js");
+	const libwally = await getLibwally();
 
 	const pathArray = typeof path === "string" ? parsePath(path) : path;
 	const pathBuf = new Uint8Array(pathArray.length * 4);

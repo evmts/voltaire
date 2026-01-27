@@ -9,7 +9,8 @@ import { InvalidMnemonicError } from "./errors.js";
  * @throws {InvalidMnemonicError} If mnemonic conversion fails
  */
 export async function mnemonicToSeed(mnemonic, password) {
-	const { libwally } = await import("./ffi.js");
+	const { getLibwally } = await import("./ffi.js");
+	const libwally = await getLibwally();
 
 	const mnemonicStr =
 		typeof mnemonic === "string" ? mnemonic : mnemonic.join(" ");

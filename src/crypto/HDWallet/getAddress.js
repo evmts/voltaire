@@ -8,7 +8,8 @@ import { HDWalletError } from "./errors.js";
  * @throws {HDWalletError} If address derivation fails
  */
 export async function getAddress(node) {
-	const { libwally } = await import("./ffi.js");
+	const { getLibwally } = await import("./ffi.js");
+	const libwally = await getLibwally();
 
 	const address = new Uint8Array(20);
 	const result = libwally.hdwallet_get_address(node.handle, address);

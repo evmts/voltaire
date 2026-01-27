@@ -16,7 +16,8 @@ export async function generateMnemonic(strength = 128) {
 		});
 	}
 
-	const { libwally } = await import("./ffi.js");
+	const { getLibwally } = await import("./ffi.js");
+	const libwally = await getLibwally();
 
 	const entropyLen = strength / 8;
 	const entropy = new Uint8Array(entropyLen);

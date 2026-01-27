@@ -27,7 +27,7 @@ export class Bn254Error extends CryptoError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
@@ -62,7 +62,7 @@ export class Bn254InvalidPointError extends Bn254Error {
 	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
@@ -97,7 +97,7 @@ export class Bn254SubgroupCheckError extends Bn254Error {
 	/**
 	 * @param {string} message - Error message
 	 * @param {Object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Underlying error
