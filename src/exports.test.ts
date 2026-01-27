@@ -41,6 +41,8 @@ function bundleContainsFFI(bundlePath: string): {
 	const hasFfiNapi =
 		content.includes("from 'ffi-napi'") ||
 		content.includes('from "ffi-napi"') ||
+		content.includes("import('ffi-napi')") ||
+		content.includes('import("ffi-napi")') ||
 		content.includes("require('ffi-napi')") ||
 		content.includes('require("ffi-napi")');
 
@@ -48,6 +50,8 @@ function bundleContainsFFI(bundlePath: string): {
 	const hasRefNapi =
 		content.includes("from 'ref-napi'") ||
 		content.includes('from "ref-napi"') ||
+		content.includes("import('ref-napi')") ||
+		content.includes('import("ref-napi")') ||
 		content.includes("require('ref-napi')") ||
 		content.includes('require("ref-napi")');
 
