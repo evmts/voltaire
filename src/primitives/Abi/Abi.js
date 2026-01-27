@@ -19,6 +19,7 @@ import { formatWithArgs } from "./formatWithArgs.js";
 import * as FunctionNs from "./function/index.js";
 import { getItem } from "./getItem.js";
 import * as ItemNs from "./Item/index.js";
+import { Parameter } from "./parameter/index.js";
 import { parseLogs } from "./parseLogs.js";
 
 /**
@@ -76,6 +77,7 @@ Abi.Event = EventNs.Event;
 Abi.Error = ErrorNs.Error;
 Abi.Constructor = ConstructorNs;
 Abi.Item = ItemNs;
+Abi.Parameter = Parameter;
 
 // Set up Abi.prototype to inherit from Array.prototype
 Object.setPrototypeOf(Abi.prototype, Array.prototype);
