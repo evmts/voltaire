@@ -725,22 +725,6 @@ These require native compilation (Rust/C libs) which varies by platform.
 
 ---
 
-## Open Questions Summary
-
-1. **Schema.declare**: Right for Uint8Array branded types, or use `Schema.transform`?
-2. **Context.Tag pattern**: `class extends Context.Tag(...)` vs `Context.GenericTag`?
-3. **Layer composition**: `Layer.mergeAll` for 15+ services?
-4. **TaggedError constructors**: Custom constructors vs factory functions?
-5. **Large services**: One ProviderService with 50+ methods vs smaller focused services?
-6. **Runtime.runPromise**: Correct for bridging to async iterators?
-7. **FiberRef.unsafeMake**: Module-level for default configs?
-8. **Effect.try**: vs `Effect.sync` + `Effect.catchAll`?
-9. **@effect/platform**: Should we use HttpClient everywhere or allow fetch fallback?
-10. **RequestResolver**: Is our batching pattern idiomatic?
-11. **acquireRelease**: Right pattern for secure key zeroing?
-
----
-
 ## Services Overview
 
 ### Crypto Services
