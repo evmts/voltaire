@@ -51,6 +51,10 @@ const getTokenBalance = (token: string, user: string) => Effect.gen(function* ()
 )
 ```
 
+<Warning>
+Production note: avoid `Number(balance)` for arbitrary ERC-20 balances. Use bigint-safe formatting (e.g., Formatter or Denomination helpers).
+</Warning>
+
 ## Approve and Transfer ERC-20
 
 ```typescript
@@ -253,6 +257,10 @@ const blockNum = await Effect.runPromise(
 )
 ```
 
+<Note>
+Production note: the `Effect.Effect<A, any, any>` cast erases error typing. Prefer a typed error union when you want compile-time guarantees.
+</Note>
+
 ## Retry With Exponential Backoff
 
 ```typescript
@@ -308,6 +316,10 @@ const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, bu
     Effect.provide(HttpTransport('https://eth.llamarpc.com'))
   )
 ```
+
+<Note>
+Production note: `Number(estimate)` is fine for small gas limits; use bigint-safe math if you need exactness.
+</Note>
 
 ## See Also
 

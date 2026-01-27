@@ -38,6 +38,10 @@ HttpTransport({
 })
 ```
 
+<Note>
+`timeout` accepts any Effect `DurationInput` (strings, numbers in ms, or `Duration`). Use strings for readability.
+</Note>
+
 ## Per-Request Overrides
 
 Use FiberRef-based helpers for scoped overrides:

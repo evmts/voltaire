@@ -166,18 +166,18 @@ voltaire-effect defines these error types:
 
 | Error | Tag | Source |
 |-------|-----|--------|
-| `ParseError` | `ParseError` | Schema decode failures |
-| `SignerError` | `SignerError` | Transaction signing failures |
-| `TransportError` | `TransportError` | Network/HTTP failures |
-| `ProviderResponseError` | `ProviderResponseError` | Invalid provider response |
-| `ProviderNotFoundError` | `ProviderNotFoundError` | Missing block/tx/receipt |
-| `ProviderValidationError` | `ProviderValidationError` | Invalid input to provider method |
-| `ProviderTimeoutError` | `ProviderTimeoutError` | Provider operation timed out |
-| `ProviderStreamError` | `ProviderStreamError` | Provider stream failures |
-| `ProviderReceiptPendingError` | `ProviderReceiptPendingError` | Receipt not available yet |
-| `ProviderConfirmationsPendingError` | `ProviderConfirmationsPendingError` | Confirmations not met |
-| `BlockStreamError` | `BlockStreamError` | Block streaming failures |
-| `CryptoError` | `CryptoError` | Cryptographic operation failures |
+| ParseError | ParseError | Schema decode failures |
+| SignerError | SignerError | Transaction signing failures |
+| TransportError | TransportError | Network/HTTP failures |
+| ProviderResponseError | ProviderResponseError | Invalid provider response |
+| ProviderNotFoundError | ProviderNotFoundError | Missing block/tx/receipt |
+| ProviderValidationError | ProviderValidationError | Invalid input to provider method |
+| ProviderTimeoutError | ProviderTimeoutError | Provider operation timed out |
+| ProviderStreamError | ProviderStreamError | Provider stream failures |
+| ProviderReceiptPendingError | ProviderReceiptPendingError | Receipt not available yet |
+| ProviderConfirmationsPendingError | ProviderConfirmationsPendingError | Confirmations not met |
+| BlockStreamError | BlockStreamError | Block streaming failures |
+| CryptoError | CryptoError | Cryptographic operation failures |
 
 Provider methods expose method-specific error unions (e.g. `GetBalanceError`, `GetBlockError`) that combine `TransportError` with relevant provider errors.
 

@@ -135,7 +135,7 @@ const checksummed = await Effect.runPromise(
 // Increase timeout
 HttpTransport({
   url: 'https://eth.llamarpc.com',
-  timeout: 60000  // 60 seconds
+  timeout: 60_000  // 60 seconds (ms)
 })
 
 // Add retry
