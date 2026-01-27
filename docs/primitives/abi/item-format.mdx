@@ -1,15 +1,30 @@
 ---
-title: Abi.Item.format
-description: Format ABI item to human-readable signature string
+title: Item.format
+description: Format a single ABI item to a human-readable string
 ---
 
+## Overview
 
-<Tabs>
+`Item.format` formats a single ABI item (function/event/error/etc.) as a readable signature string.
 
-</Tabs>
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const fn = {
+  type: 'function',
+  name: 'balanceOf',
+  inputs: [{ type: 'address', name: 'owner' }],
+  outputs: [{ type: 'uint256' }],
+  stateMutability: 'view'
+} as const;
+
+const formatted = Abi.Item.format(fn);
+// "function balanceOf(address owner) returns (uint256) view"
+```
 
 ## See Also
 
-- [Item.formatWithArgs](/primitives/abi/item-format-with-args) - Format with concrete argument values
-- [format](/primitives/abi/format) - Format full ABI
-- [Function.getSignature](/primitives/abi/function-get-signature) - Get function signature
+- [Abi.format](/primitives/abi/format) - Top-level formatter
+- [Item.formatWithArgs](/primitives/abi/item-format-with-args) - Format with arguments

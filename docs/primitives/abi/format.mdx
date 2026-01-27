@@ -7,67 +7,65 @@ description: Format ABI item to human-readable signature string
   Run ABI examples in the interactive playground
 </Card>
 
+## Overview
 
-<Tabs>
+`Abi.format` renders ABI items as human-readable strings. It includes parameter names, return types (for functions), and state mutability when relevant.
 
-</Tabs>
-
-## Usage Examples
-
-### Format Function
+## Quick Start
 
 ```typescript
-import * as Abi from 'tevm/Abi'
+import { Abi } from '@tevm/voltaire/Abi';
 
 const fn = {
-  type: "function",
-  name: "balanceOf",
-  inputs: [{ type: "address", name: "owner" }],
-  outputs: [{ type: "uint256", name: "balance" }]
-}
+  type: 'function',
+  name: 'balanceOf',
+  inputs: [{ type: 'address', name: 'owner' }],
+  outputs: [{ type: 'uint256', name: 'balance' }],
+  stateMutability: 'view'
+} as const;
 
-console.log(Abi.format(fn))
-// "function balanceOf(address owner) returns (uint256 balance)"
+const formatted = Abi.format(fn);
+// "function balanceOf(address owner) returns (uint256) view"
 ```
 
-### Format Event
+## Formatting Events and Errors
 
 ```typescript
-import * as Abi from 'tevm/Abi'
-
 const event = {
-  type: "event",
-  name: "Transfer",
+  type: 'event',
+  name: 'Transfer',
   inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value" }
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
   ]
-}
-
-console.log(Abi.format(event))
-// "event Transfer(address indexed from, address indexed to, uint256 value)"
-```
-
-### Format Error
-
-```typescript
-import * as Abi from 'tevm/Abi'
+} as const;
 
 const error = {
-  type: "error",
-  name: "InsufficientBalance",
+  type: 'error',
+  name: 'InsufficientBalance',
   inputs: [
-    { type: "uint256", name: "balance" },
-    { type: "uint256", name: "required" }
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
   ]
-}
+} as const;
 
-console.log(Abi.format(error))
+Abi.format(event);
+// "event Transfer(address indexed from, address indexed to, uint256 value)"
+
+Abi.format(error);
 // "error InsufficientBalance(uint256 balance, uint256 required)"
+```
+
+## Format All Items in an ABI
+
+```typescript
+const abi = Abi([fn, event, error] as const);
+const formatted = abi.format();
+// ["function ...", "event ...", "error ..."]
 ```
 
 ## See Also
 
-- [formatWithArgs](/primitives/abi/format-with-args) - Format with argument values
-- [getSignature](/primitives/abi/function/get-signature) - Get canonical signature (no names)
+- [formatWithArgs](/primitives/abi/format-with-args) - Format with concrete argument values
+- [Item.format](/primitives/abi/item-format) - Item namespace formatter

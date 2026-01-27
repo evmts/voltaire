@@ -1,70 +1,36 @@
 ---
 title: Event.getSignature
-description: Get canonical event signature string for hashing
+description: Get canonical signature string for an event
 ---
 
-<Tabs>
+## Overview
 
-</Tabs>
+`Event.getSignature` returns the canonical event signature string used to compute topic0.
 
-## Usage Examples
-
-### Computing Event Selector
+## Quick Start
 
 ```typescript
-import { Event } from 'tevm'
-import { Keccak256 } from 'tevm'
+import { Abi } from '@tevm/voltaire/Abi';
 
-const transferEvent = new Event({
-  type: "event",
-  name: "Transfer",
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
   inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value" }
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
   ]
-})
+} as const;
 
-// Get signature
-const signature = transferEvent.getSignature()
+const signature = Abi.Event.getSignature(Transfer);
 // "Transfer(address,address,uint256)"
-
-// Hash to get selector (topic 0)
-const selector = Keccak256.hash(signature)
-console.log(selector)
-// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 ```
 
-### Signature Ignores Parameter Names
+## Canonical Types
 
-```typescript
-import { Event } from 'tevm'
-
-const event1 = new Event({
-  type: "event",
-  name: "Transfer",
-  inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value" }
-  ]
-})
-
-const event2 = new Event({
-  type: "event",
-  name: "Transfer",
-  inputs: [
-    { type: "address", name: "sender", indexed: true },
-    { type: "address", name: "recipient", indexed: true },
-    { type: "uint256", name: "amount" }
-  ]
-})
-
-// Same signature despite different names
-console.log(event1.getSignature() === event2.getSignature())  // true
-```
+Signatures require canonical type names (`uint256`, `int256`, `bytes32`, etc.). Parameter names and `indexed` flags are ignored.
 
 ## See Also
 
-- [getSelector](/primitives/abi/event/get-selector) - Get event selector hash
-- [encodeTopics](/primitives/abi/event/encode-topics) - Encode indexed parameters
+- [getSelector](/primitives/abi/event/get-selector) - Compute topic0
+- [Selectors](/primitives/abi/selectors) - Signature rules
