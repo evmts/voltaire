@@ -6,6 +6,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
 const wasmPath = resolve(import.meta.dirname, "../wasm/primitives.wasm");
 
 if (existsSync(wasmPath)) {
