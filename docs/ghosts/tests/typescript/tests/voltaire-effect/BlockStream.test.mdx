@@ -34,7 +34,7 @@ The makeBlockStream factory returns an object with backfill and watch methods.
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { makeBlockStream } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services/BlockStream'
 import { TransportService, type TransportShape } from 'voltaire-effect'
 
 const mockTransport: TransportShape = {
@@ -59,7 +59,7 @@ makeBlockStream creates a block stream from a TransportService.
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { makeBlockStream } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services/BlockStream'
 import { TransportService, type TransportShape } from 'voltaire-effect'
 
 const mockTransport: TransportShape = {
@@ -82,7 +82,7 @@ The backfill method creates a stream for fetching historical blocks.
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { makeBlockStream } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services/BlockStream'
 import { TransportService, type TransportShape } from 'voltaire-effect'
 
 const mockBlock = {
@@ -114,7 +114,7 @@ The watch method creates a stream for monitoring new blocks.
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { makeBlockStream } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services/BlockStream'
 import { TransportService, type TransportShape } from 'voltaire-effect'
 
 const mockTransport: TransportShape = {
@@ -137,7 +137,7 @@ The polling mechanism can recover from transient network errors.
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { makeBlockStream } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services/BlockStream'
 import { TransportError, TransportService, type TransportShape } from 'voltaire-effect'
 
 let callCount = 0

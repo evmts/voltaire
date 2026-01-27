@@ -1,0 +1,152 @@
+---
+title: X25519 Tests
+description: Test examples for X25519 showing key exchange and shared secret computation.
+---
+
+## Generate a Key Pair
+
+Generates a random X25519 key pair for key exchange.
+
+```typescript
+import { Effect } from 'effect'
+import * as X25519Effect from 'voltaire-effect/crypto/X25519'
+
+const program = Effect.gen(function* () {
+  const result = yield* X25519Effect.generateKeyPair()
+  // result.secretKey is Uint8Array of length 32
+  // result.publicKey is Uint8Array of length 32
+})
+```
+
+## Generate Different Key Pairs
+
+Each call to generateKeyPair produces a unique key pair.
+
+```typescript
+import { Effect } from 'effect'
+import * as X25519Effect from 'voltaire-effect/crypto/X25519'
+
+const program = Effect.gen(function* () {
+  const kp1 = yield* X25519Effect.generateKeyPair()
+  const kp2 = yield* X25519Effect.generateKeyPair()
+  // kp1.secretKey !== kp2.secretKey
+  // kp1.publicKey !== kp2.publicKey
+})
+```
+
+## Derive Public Key
+
+Derives the public key from a secret key.
+
+```typescript
+import { Effect } from 'effect'
+import * as X25519Effect from 'voltaire-effect/crypto/X25519'
+import * as VoltaireX25519 from '@tevm/voltaire/X25519'
+
+const testSeed = new Uint8Array(32).fill(0x42)
+const testKeypair = VoltaireX25519.keypairFromSeed(testSeed)
+
+const program = Effect.gen(function* () {
+  const result = yield* X25519Effect.getPublicKey(testKeypair.secretKey)
+  // result equals testKeypair.publicKey
+})
+```
+
+## Compute Shared Secret
+
+Computes a shared secret between two parties using Diffie-Hellman.
+
+```typescript
+import { Effect } from 'effect'
+import * as X25519Effect from 'voltaire-effect/crypto/X25519'
+import * as VoltaireX25519 from '@tevm/voltaire/X25519'
+
+const program = Effect.gen(function* () {
+  const seed1 = new Uint8Array(32).fill(0x11)
+  const seed2 = new Uint8Array(32).fill(0x22)
+  const alice = VoltaireX25519.keypairFromSeed(seed1)
+  const bob = VoltaireX25519.keypairFromSeed(seed2)
+  
+  const sharedAlice = yield* X25519Effect.computeSecret(alice.secretKey, bob.publicKey)
+  const sharedBob = yield* X25519Effect.computeSecret(bob.secretKey, alice.publicKey)
+  
+  // sharedAlice is Uint8Array of length 32
+  // sharedAlice equals sharedBob
+})
+```
+
+## Service Layer Usage
+
+Uses the X25519Service with dependency injection.
+
+```typescript
+import { Effect } from 'effect'
+import { X25519Service, X25519Live } from 'voltaire-effect/crypto/X25519'
+import * as VoltaireX25519 from '@tevm/voltaire/X25519'
+
+const program = Effect.gen(function* () {
+  const seed1 = new Uint8Array(32).fill(0x33)
+  const seed2 = new Uint8Array(32).fill(0x44)
+  const alice = VoltaireX25519.keypairFromSeed(seed1)
+  const bob = VoltaireX25519.keypairFromSeed(seed2)
+  
+  const x = yield* X25519Service
+  const sharedAlice = yield* x.computeSecret(alice.secretKey, bob.publicKey)
+  const sharedBob = yield* x.computeSecret(bob.secretKey, alice.publicKey)
+  // sharedAlice equals sharedBob
+}).pipe(Effect.provide(X25519Live))
+```
+
+## Test Layer for Mocking
+
+Uses the X25519Test layer for testing with mock implementations.
+
+```typescript
+import { Effect } from 'effect'
+import { X25519Service, X25519Test } from 'voltaire-effect/crypto/X25519'
+
+const program = Effect.gen(function* () {
+  const x = yield* X25519Service
+  const result = yield* x.generateKeyPair()
+  // result.secretKey is zero-filled Uint8Array of length 32
+  // result.publicKey is zero-filled Uint8Array of length 32
+}).pipe(Effect.provide(X25519Test))
+```
+
+## Mock Public Key Derivation
+
+Test layer returns zero-filled mock public keys.
+
+```typescript
+import { Effect } from 'effect'
+import { X25519Service, X25519Test } from 'voltaire-effect/crypto/X25519'
+import * as VoltaireX25519 from '@tevm/voltaire/X25519'
+
+const testSeed = new Uint8Array(32).fill(0x42)
+const testKeypair = VoltaireX25519.keypairFromSeed(testSeed)
+
+const program = Effect.gen(function* () {
+  const x = yield* X25519Service
+  const result = yield* x.getPublicKey(testKeypair.secretKey)
+  // result is zero-filled Uint8Array of length 32
+}).pipe(Effect.provide(X25519Test))
+```
+
+## Mock Shared Secret
+
+Test layer returns zero-filled mock shared secrets.
+
+```typescript
+import { Effect } from 'effect'
+import { X25519Service, X25519Test } from 'voltaire-effect/crypto/X25519'
+import * as VoltaireX25519 from '@tevm/voltaire/X25519'
+
+const testSeed = new Uint8Array(32).fill(0x42)
+const testKeypair = VoltaireX25519.keypairFromSeed(testSeed)
+
+const program = Effect.gen(function* () {
+  const x = yield* X25519Service
+  const result = yield* x.computeSecret(testKeypair.secretKey, testKeypair.publicKey)
+  // result is zero-filled Uint8Array of length 32
+}).pipe(Effect.provide(X25519Test))
+```

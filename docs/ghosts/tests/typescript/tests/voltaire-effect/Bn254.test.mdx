@@ -1,0 +1,136 @@
+---
+title: Bn254 Tests
+description: Test examples for BN254 elliptic curve operations including G1/G2 generators, point arithmetic, and pairing checks.
+---
+
+## G1 Generator Point
+
+Retrieves the G1 generator point.
+
+```typescript
+import { Effect } from 'effect'
+import { Bn254Service, Bn254Live } from 'voltaire-effect/crypto/Bn254'
+
+const program = Effect.gen(function* () {
+  const bn254 = yield* Bn254Service
+  const g1 = yield* bn254.g1Generator()
+  // g1 has x, y, z properties as bigints
+}).pipe(Effect.provide(Bn254Live))
+```
+
+## G2 Generator Point
+
+Retrieves the G2 generator point.
+
+```typescript
+import { Effect } from 'effect'
+import { Bn254Service, Bn254Live } from 'voltaire-effect/crypto/Bn254'
+
+const program = Effect.gen(function* () {
+  const bn254 = yield* Bn254Service
+  const g2 = yield* bn254.g2Generator()
+  // g2 has x, y, z properties
+}).pipe(Effect.provide(Bn254Live))
+```
+
+## G1 Point Addition
+
+Adds two G1 points together.
+
+```typescript
+import { Effect } from 'effect'
+import { Bn254Service, Bn254Live } from 'voltaire-effect/crypto/Bn254'
+
+const program = Effect.gen(function* () {
+  const bn254 = yield* Bn254Service
+  const g1 = yield* bn254.g1Generator()
+  const result = yield* bn254.g1Add(g1, g1)
+  // result is g1 + g1 = 2*g1
+}).pipe(Effect.provide(Bn254Live))
+```
+
+## G1 Scalar Multiplication
+
+Multiplies a G1 point by a scalar.
+
+```typescript
+import { Effect } from 'effect'
+import { Bn254Service, Bn254Live } from 'voltaire-effect/crypto/Bn254'
+
+const program = Effect.gen(function* () {
+  const bn254 = yield* Bn254Service
+  const g1 = yield* bn254.g1Generator()
+  const result = yield* bn254.g1Mul(g1, 5n)
+  // result is 5 * g1
+}).pipe(Effect.provide(Bn254Live))
+```
+
+## Pairing Check
+
+Performs a bilinear pairing check.
+
+```typescript
+import { Effect } from 'effect'
+import { Bn254Service, Bn254Live } from 'voltaire-effect/crypto/Bn254'
+
+const program = Effect.gen(function* () {
+  const bn254 = yield* Bn254Service
+  const g1 = yield* bn254.g1Generator()
+  const g2 = yield* bn254.g2Generator()
+  const negG1 = yield* bn254.g1Mul(g1, -1n)
+  
+  // Check e(g1, g2) * e(-g1, g2) = 1
+  const result = yield* bn254.pairingCheck([
+    [g1, g2],
+    [negG1, g2]
+  ])
+  // result is true if pairing check passes
+}).pipe(Effect.provide(Bn254Live))
+```
+
+## Convenience Functions
+
+Uses convenience functions for BN254 operations.
+
+```typescript
+import { Effect } from 'effect'
+import {
+  Bn254Live,
+  g1Generator,
+  g2Generator,
+  g1Add,
+  g1Mul,
+  pairingCheck
+} from 'voltaire-effect/crypto/Bn254'
+
+const program = Effect.gen(function* () {
+  const g1 = yield* g1Generator()
+  const g2 = yield* g2Generator()
+  
+  const sum = yield* g1Add(g1, g1)
+  const scaled = yield* g1Mul(g1, 3n)
+  
+  const checkResult = yield* pairingCheck([[g1, g2]])
+}).pipe(Effect.provide(Bn254Live))
+```
+
+## Test Layer
+
+Uses deterministic test layer for predictable results.
+
+```typescript
+import { Effect } from 'effect'
+import { Bn254Service, Bn254Test } from 'voltaire-effect/crypto/Bn254'
+
+const program = Effect.gen(function* () {
+  const bn254 = yield* Bn254Service
+  const g1 = yield* bn254.g1Generator()
+  // Returns mock G1 point
+  
+  const g2 = yield* bn254.g2Generator()
+  // Returns mock G2 point
+  
+  const result = yield* bn254.pairingCheck([[g1, g2]])
+  // Always returns true in test layer
+}).pipe(Effect.provide(Bn254Test))
+```
