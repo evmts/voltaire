@@ -11,7 +11,7 @@ import { CacheService, MemoryCache } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const cache = yield* CacheService
-  yield* cache.set('balance:0x123', 1000n, 30000) // 30s TTL
+  yield* cache.set('balance:0x123', 1000n, 30_000) // 30s TTL (ms)
   const balance = yield* cache.get<bigint>('balance:0x123')
   return balance // Option.some(1000n)
 }).pipe(
@@ -27,8 +27,8 @@ In-memory LRU cache with TTL support:
 import { MemoryCache } from 'voltaire-effect'
 
 const cacheLayer = MemoryCache({
-  maxSize: 1000,        // Max entries (default: 1000)
-  defaultTtl: 5 * 60 * 1000  // 5 min default TTL
+  maxSize: 1000,           // Max entries (default: 1000)
+  defaultTtl: 5 * 60_000   // 5 min default TTL (ms)
 })
 ```
 
@@ -40,8 +40,8 @@ const cache = yield* CacheService
 // Use default TTL
 yield* cache.set('key', 'value')
 
-// Override with 1 hour TTL
-yield* cache.set('key2', 'value2', 60 * 60 * 1000)
+// Override with 1 hour TTL (ms)
+yield* cache.set('key2', 'value2', 60 * 60_000)
 
 // No expiration (undefined TTL)
 yield* cache.set('key3', 'value3', undefined)
@@ -172,6 +172,23 @@ readonly clear: () => Effect.Effect<void>
 
 Removes all entries from the cache.
 
+## withoutCache
+
+For RPC requests using LookupCacheService internally, disable caching per-request:
+
+```typescript
+import { Effect } from 'effect'
+import { ProviderService, withoutCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  
+  // Force fresh fetch, bypassing any request cache
+  const blockNum = yield* provider.getBlockNumber().pipe(withoutCache)
+  return blockNum
+})
+```
+
 ## Layer Composition
 
 ```typescript
@@ -196,7 +213,7 @@ const program = Effect.gen(function* () {
   
   // Fetch and cache
   const blockNum = yield* provider.getBlockNumber()
-  yield* cache.set('blockNumber', blockNum, 10000)
+  yield* cache.set('blockNumber', blockNum, 10_000)
   return blockNum
 }).pipe(Effect.provide(AppLayer))
 ```

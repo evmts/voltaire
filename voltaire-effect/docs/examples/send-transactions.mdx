@@ -10,8 +10,8 @@ All signing operations require crypto services. See [Crypto Overview](/crypto/in
 ## Simple ETH Transfer
 
 ```typescript
-import { Effect } from 'effect'
-import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
+import { Effect, Schedule } from 'effect'
+import { SignerService, Signer, LocalAccount, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
@@ -24,10 +24,15 @@ const program = Effect.gen(function* () {
     value: 1000000000000000000n
   })
 }).pipe(
+  withTimeout('30 seconds'),
   Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
   Effect.provide(Secp256k1Live),
   Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({
+    url: 'https://eth.llamarpc.com',
+    timeout: '30 seconds',
+    retrySchedule: Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(3))
+  }))
 )
 ```
 
@@ -46,7 +51,7 @@ const program = Effect.gen(function* () {
   Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
   Effect.provide(Secp256k1Live),
   Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -60,7 +65,7 @@ const program = Effect.gen(function* () {
   Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
   Effect.provide(Secp256k1Live),
   Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -95,7 +100,7 @@ const program = Effect.gen(function* () {
   Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
   Effect.provide(Secp256k1Live),
   Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -126,14 +131,14 @@ const program = Effect.gen(function* () {
   const provider = yield* ProviderService
   
   const txHash = yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
-  const receipt = yield* provider.waitForTransactionReceipt(txHash, { confirmations: 3 })
+  const receipt = yield* provider.waitForTransactionReceipt(txHash, { confirmations: 3, timeout: '60 seconds' })
   
   return { hash: txHash, status: receipt.status, blockNumber: receipt.blockNumber }
 }).pipe(
   Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
   Effect.provide(Secp256k1Live),
   Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -154,7 +159,7 @@ const program = Effect.gen(function* () {
 ## See Also
 
 - [Signer Service](/services/signer) — Complete SignerService API
-- [Provider Service](/services/provider) — Read-only blockchain operations
+- [Provider Service](/services/provider) — JSON-RPC provider operations
 - [Contract Interactions](/examples/contract-interactions) — Write to smart contracts
 - [HD Wallet Guide](/guides/hd-wallet) — Create wallets from mnemonic
 - [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) — Fee market change specification

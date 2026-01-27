@@ -159,6 +159,29 @@ const safeBalance = batch.request(new EthGetBalance({ address, blockTag: 'latest
 )
 ```
 
+## Configuration
+
+Use FiberRef helpers for per-request timeout and retry:
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { RpcBatchService, RpcBatch, EthBlockNumber, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const batch = yield* RpcBatchService
+  
+  // Fast timeout for time-sensitive requests
+  const blockNumber = yield* batch.request(new EthBlockNumber({})).pipe(
+    withTimeout('5 seconds')
+  )
+  
+  // Retry with backoff for unreliable endpoints
+  const balance = yield* batch.request(new EthGetBalance({ address: '0x...', blockTag: 'latest' })).pipe(
+    withRetrySchedule(Schedule.recurs(2))
+  )
+})
+```
+
 ## Layer Composition
 
 `RpcBatch` requires `TransportService`:

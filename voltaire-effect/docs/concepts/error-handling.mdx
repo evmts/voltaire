@@ -80,14 +80,19 @@ Services can define their own error types:
 
 ```typescript
 import * as Effect from 'effect/Effect'
-import { ProviderService } from 'voltaire-effect'
+import { ProviderService, withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
+  // Per-request timeout override
   const block = yield* provider.getBlock({ blockTag: "latest" })
+    .pipe(withTimeout("5 seconds"))
   return block
 }).pipe(
   Effect.catchTag("ProviderNotFoundError", (e) => 
+    Effect.succeed(null)
+  ),
+  Effect.catchTag("ProviderTimeoutError", (e) =>
     Effect.succeed(null)
   )
 )
@@ -110,6 +115,25 @@ const program = Effect.gen(function* () {
 ```
 
 Handle each error type explicitly or let them propagate.
+
+## Retry with Schedule
+
+Use Effect Schedule for retry behavior:
+
+```typescript
+import * as Schedule from 'effect/Schedule'
+import { withRetrySchedule } from 'voltaire-effect'
+
+// Exponential backoff with jitter
+const retrySchedule = Schedule.exponential("500 millis").pipe(
+  Schedule.jittered,
+  Schedule.recurs(5)
+)
+
+provider.getBalance(addr).pipe(
+  withRetrySchedule(retrySchedule)
+)
+```
 
 ## Compared to Base Voltaire
 

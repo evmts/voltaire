@@ -145,6 +145,33 @@ const results = yield* aggregate3(
 )
 ```
 
+## Request Configuration
+
+Use Effect-native helpers for timeout and retry:
+
+```typescript
+import { withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+import { Schedule } from 'effect'
+
+// Multicall with timeout
+const results = yield* aggregate3(calls).pipe(
+  withTimeout("10 seconds")
+)
+
+// Retry with exponential backoff
+const resultsWithRetry = yield* aggregate3(calls).pipe(
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(5))
+    )
+  )
+)
+
+// Bypass cache for fresh data
+const freshResults = yield* aggregate3(calls).pipe(withoutCache)
+```
+
 ## Transport Dependency
 
 `aggregate3` depends only on `TransportService`:

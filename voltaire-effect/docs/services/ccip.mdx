@@ -13,7 +13,7 @@ const program = Effect.gen(function* () {
   const ccip = yield* CcipService
   return yield* ccip.request({
     sender: '0x1234567890123456789012345678901234567890',
-    urls: ['https://gateway.example.com/{sender}/{data}'],
+    urls: ['https://ccip.ens.domains/{sender}/{data}'],
     callData: '0xabcdef',
     callbackSelector: '0x12345678',
     extraData: '0x'

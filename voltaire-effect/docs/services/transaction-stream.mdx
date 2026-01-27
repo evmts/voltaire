@@ -6,18 +6,17 @@ description: Effect-native transaction streaming and tracking
 ## Quick Start
 
 ```typescript
-import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect'
+import { makeTransactionStream, HttpTransport } from 'voltaire-effect/services'
 import { Effect, Stream } from 'effect'
 
 const program = Effect.gen(function* () {
-  const txStream = yield* TransactionStreamService
+  const txStream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     txStream.watchConfirmed({ confirmations: 3 }),
     (event) => Effect.log(`Confirmed: ${event.transaction.hash}`)
   )
 }).pipe(
-  Effect.provide(TransactionStream),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
@@ -28,7 +27,7 @@ Monitor the mempool for pending transactions:
 
 ```typescript
 const program = Effect.gen(function* () {
-  const txStream = yield* TransactionStreamService
+  const txStream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     txStream.watchPending({ filter: { to: usdcAddress } }),
@@ -43,7 +42,7 @@ Watch for transactions that reach a confirmation threshold:
 
 ```typescript
 const program = Effect.gen(function* () {
-  const txStream = yield* TransactionStreamService
+  const txStream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     txStream.watchConfirmed({ 
@@ -61,7 +60,7 @@ Track a transaction through its full lifecycle (pending → confirmed/dropped):
 
 ```typescript
 const program = Effect.gen(function* () {
-  const txStream = yield* TransactionStreamService
+  const txStream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     txStream.track(txHash, { confirmations: 3 }),
@@ -83,26 +82,48 @@ const program = Effect.gen(function* () {
 ```typescript
 interface WatchPendingOptions {
   filter?: TransactionFilter     // Filter by from/to address
-  pollingInterval?: number       // Poll interval ms
 }
 
 interface WatchConfirmedOptions {
   filter?: TransactionFilter     // Filter by from/to address
   confirmations?: number         // Required confirmations (default: 1)
-  pollingInterval?: number       // Poll interval ms
 }
 
 interface TrackOptions {
   confirmations?: number         // Required confirmations (default: 1)
-  timeout?: number               // Max time to wait ms
-  pollingInterval?: number       // Poll interval ms
 }
+```
+
+## Request Configuration
+
+Use Effect-native helpers for timeout and retry:
+
+```typescript
+import { withTimeout, withRetrySchedule } from 'voltaire-effect'
+import { Schedule } from 'effect'
+
+// Track with 30 second timeout
+const tracked = txStream.track(txHash, { confirmations: 3 }).pipe(
+  Stream.timeout("30 seconds")
+)
+
+// Custom retry schedule for pending watch
+const pendingWithRetry = txStream
+  .watchPending({ filter: { to: usdcAddress } })
+  .pipe(
+    Stream.retry(
+      Schedule.exponential("1 second").pipe(
+        Schedule.jittered,
+        Schedule.compose(Schedule.recurs(3))
+      )
+    )
+  )
 ```
 
 ## Error Handling
 
 ```typescript
-import { TransactionStreamError } from 'voltaire-effect'
+import { TransactionStreamError } from 'voltaire-effect/services'
 
 program.pipe(
   Effect.catchTag("TransactionStreamError", (e) =>
@@ -111,40 +132,23 @@ program.pipe(
 )
 ```
 
-## Service Interface
+## Stream Shape
 
 ```typescript
-class TransactionStreamService extends Context.Tag("TransactionStreamService")<
-  TransactionStreamService,
-  {
-    readonly watchPending: (
-      options?: WatchPendingOptions
-    ) => Stream.Stream<PendingTransactionEvent, TransactionStreamError>
-    
-    readonly watchConfirmed: (
-      options?: WatchConfirmedOptions
-    ) => Stream.Stream<ConfirmedTransactionEvent, TransactionStreamError>
-    
-    readonly track: (
-      txHash: Uint8Array | string,
-      options?: TrackOptions
-    ) => Stream.Stream<TransactionStreamEvent, TransactionStreamError>
-  }
->() {}
+import { makeTransactionStream, type TransactionStreamShape } from 'voltaire-effect/services'
+
+const txStream: TransactionStreamShape = yield* makeTransactionStream()
 ```
 
-## Layer Dependencies
+## Dependencies
 
 ```
-TransactionStream ─── requires ──→ TransportService
+makeTransactionStream ─── requires ──→ TransportService
 ```
 
 ```typescript
-// Compose layers
-const AppLayer = TransactionStream.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
 // Use with program
-Effect.runPromise(program.pipe(Effect.provide(AppLayer)))
+Effect.runPromise(program.pipe(
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+))
 ```

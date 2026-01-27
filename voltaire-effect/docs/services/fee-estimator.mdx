@@ -92,6 +92,26 @@ Common error causes:
 - Network/RPC failures
 - Pre-EIP-1559 chains (no `baseFeePerGas` in block)
 
+## FiberRef Helpers
+
+Use `withTimeout` and `withRetrySchedule` for per-request overrides:
+
+```typescript
+import { Effect, Schedule, Duration } from 'effect'
+import { FeeEstimatorService, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  
+  // Fast timeout for fee estimation
+  const fees = yield* feeEstimator.estimateFeesPerGas('eip1559').pipe(
+    withTimeout("2 seconds"),
+    withRetrySchedule(Schedule.recurs(2))
+  )
+  return fees
+})
+```
+
 ## Layer Composition
 
 `DefaultFeeEstimator` requires `ProviderService`:

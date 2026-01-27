@@ -53,22 +53,32 @@ Effect.catchTag("ParseError", (e) => ...)
 [Effect Services](https://effect.website/docs/requirements-management/services/) for stateful resources.
 
 ```typescript
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
-import { Effect } from 'effect'
+import { ProviderService, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+import { Effect, Schedule } from 'effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
-  return yield* provider.getBlock("latest")
+  return yield* provider.getBlock("latest").pipe(withTimeout("5 seconds"))
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport("https://eth.llamarpc.com"))
+  Effect.provide(HttpTransport({
+    url: "https://eth.llamarpc.com",
+    timeout: "30 seconds",
+    retrySchedule: Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(3))
+    )
+  }))
 )
 ```
 
 **Available**: 
-- `ProviderService` / `Provider` - Read-only chain queries
+- `ProviderService` / `Provider` - JSON-RPC provider (blocks, txs, logs, call, simulate, optional account ops)
+- `ProviderAccountService` - Node account ops (eth_accounts, eth_coinbase, eth_sign*)
 - `SignerService` / `Signer` - Signs & sends transactions
-- `AccountService` - Local or JSON-RPC accounts
+- `AccountService` - Local or JSON-RPC account abstraction for signing
+- `DebugService` / `Debug` - debug_* tracing and raw data access
+- `EngineApiService` / `EngineApi` - engine_* consensus/execution RPCs
 - `TransportService` - HTTP, WebSocket, Browser transports
 - `CryptoLive` / `CryptoTest` - All crypto services bundled
 
@@ -103,5 +113,5 @@ const program = Effect.gen(function* () {
 - [Effect Services](https://effect.website/docs/requirements-management/services/) — Official Effect docs on services
 - [Effect Schema](https://effect.website/docs/schema/introduction/) — Official Effect docs on schemas
 - [Dependency Injection](/concepts/dependency-injection) — How voltaire-effect uses services
-- [Provider Service](/services/provider) — Read-only blockchain operations
+- [Provider Service](/services/provider) — JSON-RPC provider operations
 - [Signer Service](/services/signer) — Transaction signing and sending

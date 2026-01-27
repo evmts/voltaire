@@ -171,6 +171,9 @@ const watchLive = Effect.gen(function* () {
 Start from historical events and seamlessly transition to live:
 
 ```typescript
+import { Effect, Stream } from 'effect'
+import { Contract, Provider, ProviderService, HttpTransport, makeBlockStream } from 'voltaire-effect'
+
 const historicalToLive = (startBlock: bigint) =>
   Effect.gen(function* () {
     const blockStream = yield* makeBlockStream()
@@ -299,10 +302,11 @@ const program = Effect.gen(function* () {
 
 ## Error Handling
 
-Handle common event query errors:
+Handle common event query errors with Effect Schedule:
 
 ```typescript
-import { ContractEventError } from 'voltaire-effect'
+import { Effect, Schedule } from 'effect'
+import { ContractEventError, withRetrySchedule } from 'voltaire-effect'
 
 const robustQuery = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
@@ -312,7 +316,13 @@ const robustQuery = Effect.gen(function* () {
     toBlock: 18010000n
   })
 }).pipe(
-  Effect.retry({ times: 3 }),
+  // Use Effect Schedule for retries
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(3))
+    )
+  ),
   Effect.catchTag('ContractEventError', (e) => {
     if (e.message.includes('block range')) {
       return Effect.log('Block range too large, reduce chunk size')

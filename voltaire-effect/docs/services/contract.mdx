@@ -73,6 +73,36 @@ contract.write.transfer(to, amount)  // ✅ write method
 contract.write.balanceOf(address)    // ❌ balanceOf is view
 ```
 
+## Request Configuration
+
+Use Effect-native helpers for per-request timeout and retry:
+
+```typescript
+import { withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
+import { Schedule } from 'effect'
+
+// Read with custom timeout
+const balance = yield* token.read.balanceOf(user).pipe(
+  withTimeout("5 seconds")
+)
+
+// Write with retry on transient errors
+const txHash = yield* token.write.transfer(recipient, 100n).pipe(
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(3))
+    )
+  )
+)
+
+// Bypass cache for fresh data
+const freshBalance = yield* token.read.balanceOf(user).pipe(withoutCache)
+
+// Enable tracing for debugging
+const debugBalance = yield* token.read.balanceOf(user).pipe(withTracing())
+```
+
 ## Error Handling
 
 ```typescript

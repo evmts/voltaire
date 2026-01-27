@@ -122,6 +122,36 @@ const getBalance = Effect.gen(function* () {
 const balance = await Effect.runPromise(getBalance)
 ```
 
+## Timeout & Retry
+
+Per-request overrides and transport configuration use Effect-native Duration and Schedule:
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+// Per-request timeout
+provider.getBalance(addr).pipe(withTimeout("5 seconds"))
+
+// Per-request retry schedule
+provider.getBalance(addr).pipe(
+  withRetrySchedule(Schedule.exponential("500 millis").pipe(
+    Schedule.jittered,
+    Schedule.compose(Schedule.recurs(3))
+  ))
+)
+
+// Transport-level defaults
+HttpTransport({
+  url: 'https://eth.llamarpc.com',
+  timeout: '30 seconds',
+  retrySchedule: Schedule.exponential('500 millis').pipe(
+    Schedule.jittered,
+    Schedule.compose(Schedule.recurs(5))
+  )
+})
+```
+
 ## Next Steps
 
 <CardGroup cols={2}>

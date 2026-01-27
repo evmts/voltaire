@@ -101,7 +101,7 @@ Passphrases add plausible deniability: the same mnemonic with different passphra
 import { Effect } from 'effect'
 import { Bip39Service, Bip39Live, Secp256k1Service, Secp256k1Live, 
          KeccakService, KeccakLive } from 'voltaire-effect/crypto'
-import { HDWallet, Address } from '@tevm/voltaire/native'
+import { HDWallet, Address } from 'voltaire-effect/native'
 
 const createWallet = Effect.gen(function* () {
   const bip39 = yield* Bip39Service

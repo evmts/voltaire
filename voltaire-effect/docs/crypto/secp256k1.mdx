@@ -119,7 +119,7 @@ const signEthereumMessage = (message: string, privateKey: Uint8Array) =>
 ## Derive Address From Private Key
 
 ```typescript
-import { Address } from '@tevm/voltaire'
+import { Address } from 'voltaire-effect'
 
 const privateKeyToAddress = (privateKey: Uint8Array) =>
   Effect.gen(function* () {

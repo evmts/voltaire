@@ -93,6 +93,26 @@ program.pipe(
 )
 ```
 
+## FiberRef Helpers
+
+Use `withTimeout` and `withRetrySchedule` for per-request overrides:
+
+```typescript
+import { Effect, Schedule, Duration } from 'effect'
+import { NonceManagerService, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const nonceManager = yield* NonceManagerService
+  
+  // Fast nonce fetch with retry
+  const nonce = yield* nonceManager.consume('0x1234...', 1).pipe(
+    withTimeout("3 seconds"),
+    withRetrySchedule(Schedule.recurs(2))
+  )
+  return nonce
+})
+```
+
 ## Layer Composition
 
 ```typescript

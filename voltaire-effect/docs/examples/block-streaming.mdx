@@ -223,9 +223,10 @@ const historicalToLive = Effect.gen(function* () {
 Gracefully stop streaming:
 
 ```typescript
-import { Fiber, Duration } from 'effect'
+import { Effect, Stream, Fiber } from 'effect'
+import { makeBlockStream, HttpTransport, withTimeout } from 'voltaire-effect/services'
 
-const withTimeout = Effect.gen(function* () {
+const withTimeoutExample = Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()
 
   // Run for 30 seconds then stop
@@ -236,10 +237,19 @@ const withTimeout = Effect.gen(function* () {
     )
   )
 
-  yield* Effect.sleep(Duration.seconds(30))
+  yield* Effect.sleep("30 seconds")
   yield* Fiber.interrupt(fiber)
   yield* Effect.log('Stopped watching')
 })
+
+// Or use withTimeout helper for per-request timeouts
+const program = Effect.gen(function* () {
+  const blockStream = yield* makeBlockStream()
+  // ...
+}).pipe(
+  withTimeout("30 seconds"),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 ```
 
 ## Error Handling

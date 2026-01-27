@@ -159,6 +159,32 @@ const customStack = Layer.mergeAll(
 )
 ```
 
+## Configuration with FiberRef Helpers
+
+Presets work with FiberRef helpers for per-request configuration:
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { ProviderService, MainnetFullProvider, withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const provider = yield* ProviderService
+  
+  // Fast timeout for time-sensitive operations
+  const blockNumber = yield* provider.getBlockNumber().pipe(
+    withTimeout('5 seconds')
+  )
+  
+  // Skip cache for fresh data
+  const freshBalance = yield* provider.getBalance('0x...').pipe(withoutCache)
+  
+  // Custom retry for flaky endpoints
+  const chainId = yield* provider.getChainId().pipe(
+    withRetrySchedule(Schedule.recurs(3))
+  )
+}).pipe(Effect.provide(MainnetFullProvider('https://eth.llamarpc.com')))
+```
+
 ## Testing with Presets
 
 Replace transport for testing:

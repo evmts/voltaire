@@ -133,7 +133,9 @@ await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 Core services for Ethereum operations:
 
 - `/services/transport` - HTTP, WebSocket, Browser transports for JSON-RPC
-- `/services/provider` - Read-only blockchain operations: getBlock, getBalance, getLogs, call, estimateGas, readContract, multicall, simulateContract
+- `/services/provider` - JSON-RPC provider (blocks, txs, logs, call, estimateGas, simulations, optional account ops, subscriptions)
+- `/services/debug` - debug_* tracing, raw blocks/txs, storage inspection
+- `/services/engine-api` - engine_* consensus and execution client methods
 - `/services/signer` - Transaction signing and sending: EIP-191, EIP-712, EIP-1559, EIP-4844, EIP-7702
 - `/services/account` - Local and JSON-RPC account abstraction
 - `/services/contract` - Type-safe contract read/write/simulate/getEvents
@@ -153,6 +155,8 @@ Core services for Ethereum operations:
 - `/services/transaction-serializer` - Transaction RLP serialization
 - `/services/kzg` - KZG commitment utilities (EIP-4844)
 - `/services/presets` - Pre-composed layer configurations
+
+ProviderService composes BlocksService, ProviderAccountService, TransactionService, SimulationService, EventsService, NetworkService, and StreamingService so you can depend on narrower tags when needed.
 
 ### Primitives
 
@@ -413,6 +417,8 @@ import * as Uint from 'voltaire-effect/primitives/Uint'
 // Services
 import { 
   ProviderService, Provider, 
+  DebugService, Debug,
+  EngineApiService, EngineApi,
   SignerService, Signer, 
   Contract,
   HttpTransport, WebSocketTransport, BrowserTransport,

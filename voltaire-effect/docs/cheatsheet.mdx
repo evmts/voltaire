@@ -8,6 +8,10 @@ Quick reference for common voltaire-effect patterns. See [Getting Started](/gett
 ## Install
 
 <CodeGroup>
+```bash bun
+bun add voltaire-effect @tevm/voltaire effect
+```
+
 ```bash pnpm
 pnpm add voltaire-effect @tevm/voltaire effect
 ```
@@ -20,10 +24,10 @@ npm install voltaire-effect @tevm/voltaire effect
 ## Import Pattern
 
 ```typescript
-import { Effect, Layer } from 'effect'
+import { Effect, Layer, Schedule } from 'effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { ProviderService, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
 ```
 
 ## Decode → Use → Provide
@@ -146,12 +150,21 @@ yield* Effect.all(operations, { concurrency: 5 })
 ## Retry & Timeout
 
 ```typescript
-import { Schedule, Duration } from 'effect'
+import { Effect, Schedule } from 'effect'
+import { withTimeout, withRetrySchedule } from 'voltaire-effect'
 
-program.pipe(
-  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(3))),
-  Effect.timeout(Duration.seconds(10)),
-  Effect.catchTag('TimeoutException', () => Effect.succeed(null))
+// Per-request overrides (preferred)
+provider.getBalance(addr).pipe(withTimeout("5 seconds"))
+provider.getBalance(addr).pipe(withRetrySchedule(Schedule.recurs(1)))
+
+// Exponential backoff with jitter
+provider.getBalance(addr).pipe(
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(5))
+    )
+  )
 )
 ```
 
@@ -166,6 +179,16 @@ yield* Stream.runForEach(
   blockStream.watch({ include: 'transactions' }),
   (event) => Effect.log(`Block ${event.blocks[0]?.header.number}`)
 )
+```
+
+## Debug / Engine APIs
+
+```typescript
+const debug = yield* DebugService
+const trace = yield* debug.traceTransaction('0x...')
+
+const engine = yield* EngineApiService
+const caps = yield* engine.exchangeCapabilities(['engine_newPayloadV3'])
 ```
 
 ## Testing
@@ -197,11 +220,20 @@ const program = Effect.gen(function* () {
 ## Transport Options
 
 ```typescript
+import { Schedule } from 'effect'
+
 // HTTP
 HttpTransport('https://eth.llamarpc.com')
 
-// HTTP with options
-HttpTransport({ url: '...', timeout: 60000, retries: 5 })
+// HTTP with Duration timeout and Schedule retries
+HttpTransport({
+  url: '...',
+  timeout: '60 seconds',
+  retrySchedule: Schedule.exponential('500 millis').pipe(
+    Schedule.jittered,
+    Schedule.compose(Schedule.recurs(5))
+  )
+})
 
 // HTTP with batching
 HttpTransport({ url: '...', batch: { batchSize: 50, wait: 10 } })

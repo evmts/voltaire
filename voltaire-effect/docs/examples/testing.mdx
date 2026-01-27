@@ -6,8 +6,8 @@ description: Mock services for unit tests
 ## Mock Transport
 
 ```typescript
-import { Effect } from 'effect'
-import { ProviderService, Provider, TestTransport } from 'voltaire-effect'
+import { Effect, Schedule } from 'effect'
+import { ProviderService, Provider, TestTransport, withTimeout, withoutCache } from 'voltaire-effect'
 import { describe, it, expect } from 'vitest'
 
 describe('Provider', () => {
@@ -16,6 +16,7 @@ describe('Provider', () => {
       const client = yield* ProviderService
       return yield* client.getBlockNumber()
     }).pipe(
+      withTimeout('5 seconds'),
       Effect.provide(Provider),
       Effect.provide(TestTransport({ eth_blockNumber: () => '0x1234' }))
     )
@@ -44,7 +45,7 @@ const program = Effect.gen(function* () {
     client.getBalance('0xRich...', 'latest'),
     client.getBlock({ blockTag: 'latest' })
   ])
-}).pipe(Effect.provide(Provider), Effect.provide(mockTransport))
+}).pipe(withoutCache, Effect.provide(Provider), Effect.provide(mockTransport))
 ```
 
 ## Test Contract Reads
@@ -142,7 +143,7 @@ const testProgram = program.pipe(Effect.provide(CryptoTest))
 ## Integration Test (Anvil)
 
 ```typescript
-import { Layer } from 'effect'
+import { Layer, Schedule } from 'effect'
 import { SignerService, Signer, LocalAccount, HttpTransport } from 'voltaire-effect'
 import { Hex } from '@tevm/voltaire'
 
@@ -150,7 +151,11 @@ const TestLayer = Layer.mergeAll(
   Provider,
   Signer.Live,
   LocalAccount(Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')),
-  HttpTransport('http://localhost:8545')
+  HttpTransport({
+    url: 'http://localhost:8545',
+    timeout: '10 seconds',
+    retrySchedule: Schedule.recurs(1)
+  })
 )
 
 it('sends transaction', async () => {
@@ -160,7 +165,7 @@ it('sends transaction', async () => {
     
     const before = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
     const txHash = yield* signer.sendTransaction({ to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', value: 1000000000000000000n })
-    yield* client.waitForTransactionReceipt(txHash, { confirmations: 1 })
+    yield* client.waitForTransactionReceipt(txHash, { confirmations: 1, timeout: '30 seconds' })
     const after = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
     
     return after - before

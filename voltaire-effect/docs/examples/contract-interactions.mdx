@@ -10,8 +10,8 @@ This page shows common contract patterns. See [Contract Service](/services/contr
 ## Read Contract
 
 ```typescript
-import { Effect } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+import { Effect, Duration, Schedule } from 'effect'
+import { Contract, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
@@ -129,6 +129,8 @@ const routerAbi = [
   ], outputs: [{ type: 'uint256[]' }], stateMutability: 'view' }
 ] as const
 
+const myAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+
 const program = Effect.gen(function* () {
   const router = yield* Contract('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', routerAbi)
   const path = ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2']
@@ -149,8 +151,31 @@ const program = Effect.gen(function* () {
 ## See Also
 
 - [Contract Service](/services/contract) — Complete Contract API
-- [Provider Service](/services/provider) — Read-only operations and `readContract`
+- [Provider Service](/services/provider) — JSON-RPC operations and `readContract`
 - [Multicall](/examples/multicall) — Batch multiple contract reads
 - [ERC Standards](/standards) — ERC-20, ERC-721, ERC-1155 utilities
 - [Event Streaming](/examples/event-streaming) — Real-time event watching
 - [Voltaire ABI](https://voltaire.tevm.sh/primitives/abi) — ABI encoding/decoding
+
+## Timeouts and Retries
+
+Use Effect-idiomatic helpers for timeouts and retries:
+
+```typescript
+const resilientRead = Effect.gen(function* () {
+  const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
+  return yield* token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+}).pipe(
+  // Timeout with Duration string or Duration.seconds(5)
+  withTimeout("5 seconds"),
+  // Retry with Effect Schedule
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(3))
+    )
+  ),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+```

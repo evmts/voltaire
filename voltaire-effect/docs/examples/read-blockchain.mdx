@@ -6,15 +6,18 @@ description: Query blocks, balances, transactions and logs
 ## Get Block Number
 
 ```typescript
-import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { Effect, Duration, Schedule } from 'effect'
+import { ProviderService, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({
+    url: 'https://eth.llamarpc.com',
+    timeout: '30 seconds'
+  }))
 )
 
 const blockNumber = await Effect.runPromise(program)
@@ -27,8 +30,9 @@ const program = Effect.gen(function* () {
   const client = yield* ProviderService
   return yield* client.getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
 }).pipe(
+  withTimeout('5 seconds'),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -41,7 +45,7 @@ const program = Effect.gen(function* () {
   return { number: block.number, hash: block.hash, txCount: block.transactions.length }
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -61,7 +65,7 @@ const program = Effect.gen(function* () {
   return logs.map(log => ({ from: log.topics[1], to: log.topics[2], blockNumber: log.blockNumber }))
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -70,10 +74,10 @@ const program = Effect.gen(function* () {
 ```typescript
 const program = Effect.gen(function* () {
   const client = yield* ProviderService
-  return yield* client.waitForTransactionReceipt('0x1234...', { confirmations: 3, timeout: 60000 })
+  return yield* client.waitForTransactionReceipt('0x1234...', { confirmations: 3, timeout: '60 seconds' })
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -89,7 +93,7 @@ const program = Effect.gen(function* () {
   })
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
@@ -105,13 +109,16 @@ const program = Effect.gen(function* () {
   ])
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 
-## Parallel Queries
+## Parallel Queries with Retry
 
 ```typescript
+import { Schedule } from 'effect'
+import { withRetrySchedule } from 'voltaire-effect'
+
 const addresses = [
   '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
   '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
@@ -125,8 +132,9 @@ const program = Effect.gen(function* () {
     { concurrency: 'unbounded' }
   )
 }).pipe(
+  withRetrySchedule(Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(5))),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 ```
 

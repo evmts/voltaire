@@ -169,6 +169,46 @@ pipe(
 )
 ```
 
+## Duration & Retry
+
+Effect uses human-readable duration strings:
+
+```typescript
+import * as Duration from 'effect/Duration'
+import * as Schedule from 'effect/Schedule'
+
+// Duration strings
+"30 seconds"
+"5 minutes"
+Duration.seconds(30)
+
+// Retry with exponential backoff
+Schedule.exponential("500 millis").pipe(
+  Schedule.jittered,
+  Schedule.recurs(5)
+)
+```
+
+## Per-Request Configuration
+
+Use FiberRef-based helpers for scoped overrides:
+
+```typescript
+import { withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+import * as Schedule from 'effect/Schedule'
+
+// Override timeout for single request
+provider.getBalance(addr).pipe(withTimeout("5 seconds"))
+
+// Custom retry schedule
+provider.getBlock(blockNumber).pipe(
+  withRetrySchedule(Schedule.recurs(1))
+)
+
+// Disable caching for fresh data
+provider.getBlockNumber().pipe(withoutCache)
+```
+
 ## Running Effects
 
 ```typescript

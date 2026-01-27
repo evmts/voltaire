@@ -6,19 +6,20 @@ description: Composable error handling patterns
 ## Catch Specific Errors
 
 ```typescript
-import { Effect } from 'effect'
-import { ProviderResponseError, ProviderService, Provider, HttpTransport, TransportError } from 'voltaire-effect'
+import { Effect, Schedule } from 'effect'
+import { ProviderResponseError, ProviderService, Provider, HttpTransport, TransportError, withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const client = yield* ProviderService
   return yield* client.getBalance('0x...', 'latest')
 }).pipe(
+  withTimeout('5 seconds'),
   Effect.catchTags({
     TransportError: () => Effect.succeed(0n),
     ProviderResponseError: () => Effect.succeed(0n)
   }),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
 )
 ```
 
@@ -40,7 +41,7 @@ const program = Effect.gen(function* () {
   Effect.provide(Signer.Live),
   Effect.provide(LocalAccount(privateKey)),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://...'))
+  Effect.provide(HttpTransport({ url: 'https://...' }))
 )
 ```
 
@@ -48,30 +49,32 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Effect, Schedule } from 'effect'
+import { withRetrySchedule } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
-  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.compose(Schedule.recurs(3)))),
+  withRetrySchedule(Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(5))),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
 )
 ```
 
 ## Timeout
 
 ```typescript
-import { Effect, Duration } from 'effect'
+import { Effect } from 'effect'
+import { withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const client = yield* ProviderService
   return yield* client.getBlock({ blockTag: 'latest', includeTransactions: true })
 }).pipe(
-  Effect.timeout(Duration.seconds(10)),
+  withTimeout('10 seconds'),
   Effect.catchTag('TimeoutException', () => Effect.succeed(null)),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
 )
 ```
 
@@ -82,8 +85,9 @@ const primary = Effect.gen(function* () {
   const client = yield* ProviderService
   return yield* client.getBlockNumber()
 }).pipe(
+  withTimeout('3 seconds'),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
 )
 
 const backup = Effect.gen(function* () {
@@ -91,7 +95,7 @@ const backup = Effect.gen(function* () {
   return yield* client.getBlockNumber()
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 
 const program = primary.pipe(Effect.orElse(() => backup))
@@ -113,7 +117,7 @@ const program = Effect.gen(function* () {
   return { address, balance: Option.getOrElse(balance, () => 0n) }
 }).pipe(
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
 )
 ```
 
@@ -127,6 +131,9 @@ class InsufficientBalance extends Data.TaggedError('InsufficientBalance')<{
   readonly available: bigint
 }> {}
 
+const address = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+const requiredAmount = 1_000_000_000_000_000_000n  // 1 ETH
+
 const program = Effect.gen(function* () {
   const client = yield* ProviderService
   const balance = yield* client.getBalance(address, 'latest')
@@ -138,7 +145,7 @@ const program = Effect.gen(function* () {
 }).pipe(
   Effect.catchTag('InsufficientBalance', (e) => Effect.succeed(e.available)),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
 )
 ```
 

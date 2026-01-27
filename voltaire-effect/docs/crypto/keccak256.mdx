@@ -67,7 +67,7 @@ await Effect.runPromise(getEventTopic('Transfer(address,address,uint256)'))
 
 ```typescript
 import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
-import { Address } from '@tevm/voltaire'
+import { Address } from 'voltaire-effect'
 import { Effect } from 'effect'
 
 const publicKeyToAddress = (publicKey: Uint8Array) => Effect.gen(function* () {

@@ -7,10 +7,16 @@ description: Quick reference for all voltaire-effect exports
 
 <CardGroup cols={2}>
   <Card title="ProviderService" icon="database" href="/services/provider">
-    Read blockchain: blocks, balances, logs, call, estimateGas
+    JSON-RPC provider: blocks, txs, logs, calls, simulations
+  </Card>
+  <Card title="DebugService" icon="bug" href="/services/debug">
+    debug_* tracing, raw blocks, storage inspection
   </Card>
   <Card title="SignerService" icon="key" href="/services/signer">
     Sign messages and transactions, send transactions
+  </Card>
+  <Card title="EngineApiService" icon="server" href="/services/engine-api">
+    engine_* consensus and execution client methods
   </Card>
   <Card title="TransportService" icon="network-wired" href="/services/transport">
     HTTP, WebSocket, Browser transports for JSON-RPC
@@ -24,24 +30,35 @@ description: Quick reference for all voltaire-effect exports
 
 ```typescript
 import {
-  // Core services
+  // Provider services
   ProviderService, Provider,
+  BlocksService, Blocks,
+  ProviderAccountService, ProviderAccount,
+  TransactionService, Transaction,
+  SimulationService, Simulation,
+  EventsService, Events,
+  NetworkService, Network,
+  StreamingService, Streaming,
+  DebugService, Debug,
+  EngineApiService, EngineApi,
+
+  // Signer and account
   SignerService, Signer,
-  TransportService, HttpTransport, WebSocketTransport, BrowserTransport,
-  
-  // Account types
   AccountService, LocalAccount, JsonRpcAccount,
-  
+
+  // Transport
+  TransportService, HttpTransport, WebSocketTransport, BrowserTransport,
+
   // Contract
   Contract,
-  
+
   // Utilities
   readContract, multicall, simulateContract,
-  
+
   // Streaming
   makeBlockStream, BlockStreamService, BlockStream,
-  TransactionStreamService, TransactionStream,
-  
+  makeTransactionStream, TransactionStreamService, TransactionStream,
+
   // Errors
   TransportError,
   ProviderResponseError, ProviderNotFoundError, ProviderValidationError,
@@ -152,7 +169,7 @@ Provider methods expose method-specific error unions like `GetBalanceError`, `Ge
 
 ## Layer Composition Patterns
 
-### Read-only Provider
+### Provider Layer
 
 ```typescript
 const ProviderLayer = Provider.pipe(

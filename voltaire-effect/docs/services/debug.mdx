@@ -1,0 +1,135 @@
+---
+title: Debug Service
+description: debug_* JSON-RPC tracing and raw data access
+---
+
+## Overview
+
+`DebugService` exposes node-specific `debug_*` JSON-RPC methods for tracing, raw blocks/txs, and storage inspection. Most public RPC endpoints disable these methods; use a local node or a trusted provider that enables the debug namespace.
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { DebugService, Debug, HttpTransport } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const debug = yield* DebugService
+  return yield* debug.traceTransaction('0x...')
+}).pipe(
+  Effect.provide(Debug),
+  Effect.provide(HttpTransport('http://localhost:8545'))
+)
+```
+
+## Tracing
+
+```typescript
+const trace = yield* debug.traceTransaction('0x...')
+
+const callTrace = yield* debug.traceCall(
+  { to: '0x...', data: '0x...' },
+  'latest',
+  { tracer: 'callTracer' }
+)
+
+const blockTrace = yield* debug.traceBlockByNumber('0x1234')
+const blockTraceByHash = yield* debug.traceBlockByHash('0x...')
+```
+
+## Raw Blocks & Transactions
+
+```typescript
+const rawBlock = yield* debug.getRawBlock('latest')
+const rawHeader = yield* debug.getRawHeader('0x1234')
+const rawReceipts = yield* debug.getRawReceipts('0x1234')
+const rawTx = yield* debug.getRawTransaction('0x...')
+```
+
+## Storage Range
+
+```typescript
+const storageRange = yield* debug.storageRangeAt(
+  '0xblockHash',
+  0,
+  '0xcontractAddress',
+  '0x0000000000000000000000000000000000000000000000000000000000000000',
+  256
+)
+```
+
+## Configuration
+
+Use FiberRef helpers for per-request timeout and retry configuration:
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { DebugService, Debug, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const debug = yield* DebugService
+  
+  // Custom timeout for slow trace operations
+  const trace = yield* debug.traceTransaction('0x...').pipe(
+    withTimeout('60 seconds')
+  )
+  
+  // Custom retry with exponential backoff
+  const rawBlock = yield* debug.getRawBlock('latest').pipe(
+    withRetrySchedule(
+      Schedule.exponential('500 millis').pipe(
+        Schedule.compose(Schedule.recurs(3))
+      )
+    )
+  )
+})
+```
+
+## Error Handling
+
+All methods raise `TransportError` when the node rejects the request or the network fails.
+
+```typescript
+import { TransportError } from 'voltaire-effect'
+
+program.pipe(
+  Effect.catchTag('TransportError', (e) =>
+    Effect.log(`Debug RPC failed: ${e.message}`)
+  )
+)
+```
+
+## Service Interface
+
+```typescript
+type DebugShape = {
+  readonly traceTransaction: (hash: HashInput, config?: Record<string, unknown>) => Effect.Effect<unknown, TransportError>
+  readonly traceCall: (tx: CallRequest, blockTag?: BlockTag, config?: Record<string, unknown>) => Effect.Effect<unknown, TransportError>
+  readonly traceBlockByNumber: (blockTag: BlockTag | bigint, config?: Record<string, unknown>) => Effect.Effect<unknown, TransportError>
+  readonly traceBlockByHash: (blockHash: HashInput, config?: Record<string, unknown>) => Effect.Effect<unknown, TransportError>
+  readonly getBadBlocks: () => Effect.Effect<unknown, TransportError>
+  readonly getRawBlock: (blockId: BlockTag | HashInput | bigint) => Effect.Effect<`0x${string}`, TransportError>
+  readonly getRawHeader: (blockId: BlockTag | HashInput | bigint) => Effect.Effect<`0x${string}`, TransportError>
+  readonly getRawReceipts: (blockId: BlockTag | HashInput | bigint) => Effect.Effect<`0x${string}`[], TransportError>
+  readonly getRawTransaction: (hash: HashInput) => Effect.Effect<`0x${string}`, TransportError>
+  readonly storageRangeAt: (
+    blockHash: HashInput,
+    txIndex: TransactionIndexInput,
+    address: AddressInput,
+    startKey: HashInput | `0x${string}`,
+    maxResults: number
+  ) => Effect.Effect<unknown, TransportError>
+}
+```
+
+## Dependencies
+
+```
+Debug --- requires --> TransportService
+```
+
+## See Also
+
+- [Provider Service](/services/provider) - Core JSON-RPC provider operations
+- [Raw Provider Service](/services/raw-providers) - Low-level request access
+- [Troubleshooting](/troubleshooting) - Debugging Effect programs

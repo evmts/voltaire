@@ -91,20 +91,17 @@ const approveAndTransfer = (
 ## Wait For Transaction With Timeout
 
 ```typescript
-import { Effect, Duration } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { Effect } from 'effect'
+import { ProviderService, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 
-const waitForTx = (txHash: string, confirmations = 1, timeoutSec = 120) => 
+const waitForTx = (txHash: string, confirmations = 1, timeout = "120 seconds") => 
   Effect.gen(function* () {
     const provider = yield* ProviderService
-    return yield* provider.waitForTransactionReceipt(txHash, { 
-      confirmations, 
-      timeout: timeoutSec * 1000 
-    })
+    return yield* provider.waitForTransactionReceipt(txHash, { confirmations })
   }).pipe(
-    Effect.timeout(Duration.seconds(timeoutSec)),
+    withTimeout(timeout),
     Effect.catchTag('TimeoutException', () => 
-      Effect.fail(new Error(`Transaction ${txHash} not confirmed in ${timeoutSec}s`))
+      Effect.fail(new Error(`Transaction ${txHash} not confirmed`))
     ),
     Effect.provide(Provider),
     Effect.provide(HttpTransport('https://eth.llamarpc.com'))
@@ -260,17 +257,18 @@ const blockNum = await Effect.runPromise(
 
 ```typescript
 import { Effect, Schedule } from 'effect'
+import { withRetrySchedule } from 'voltaire-effect'
 
-const retryConfig = Schedule.exponential('100 millis').pipe(
-  Schedule.compose(Schedule.recurs(5)),
-  Schedule.jittered
+// Per-request retry schedule
+const withExponentialRetry = withRetrySchedule(
+  Schedule.exponential('500 millis').pipe(
+    Schedule.jittered,
+    Schedule.compose(Schedule.recurs(5))
+  )
 )
 
-const robustCall = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  effect.pipe(
-    Effect.retry(retryConfig),
-    Effect.catchAll(e => Effect.fail(new Error(`Failed after retries: ${e}`)))
-  )
+// Usage
+provider.getBalance(addr).pipe(withExponentialRetry)
 ```
 
 ## Stream Recent Blocks

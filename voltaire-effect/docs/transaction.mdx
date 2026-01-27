@@ -9,30 +9,29 @@ The `TransactionStream` module provides Effect-native transaction streaming for 
 
 ## Overview
 
-TransactionStreamService wraps voltaire core's TransactionStream with Effect Stream integration, enabling:
+makeTransactionStream wraps voltaire core's TransactionStream with Effect Stream integration, enabling:
 
 - **Pending transactions**: Watch mempool for new transactions
 - **Confirmed transactions**: Stream transactions with confirmation requirements
 - **Transaction tracking**: Follow a specific transaction through its lifecycle
 
-## TransactionStreamService
+## makeTransactionStream
 
-The service provides three streaming methods, each returning an Effect Stream:
+The stream provides three streaming methods, each returning an Effect Stream:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect';
+import { makeTransactionStream, HttpTransport } from 'voltaire-effect/services';
 
 const program = Effect.gen(function* () {
-  const txStream = yield* TransactionStreamService;
+  const txStream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     txStream.watchConfirmed({ confirmations: 3 }),
     (event) => Effect.log(`Confirmed: ${event.transaction.hash}`)
   );
 }).pipe(
-  Effect.provide(TransactionStream),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+    Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 );
 ```
 
@@ -42,10 +41,10 @@ Stream pending transactions from the mempool with optional filtering:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect';
+import { makeTransactionStream } from 'voltaire-effect/services';
 
 const watchPending = Effect.gen(function* () {
-  const stream = yield* TransactionStreamService;
+  const stream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     stream.watchPending({ filter: { to: usdcAddress } }),
@@ -60,10 +59,10 @@ Watch for transactions that meet confirmation requirements:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect';
+import { makeTransactionStream } from 'voltaire-effect/services';
 
 const watchConfirmed = Effect.gen(function* () {
-  const stream = yield* TransactionStreamService;
+  const stream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     stream.watchConfirmed({ 
@@ -81,10 +80,10 @@ Track a transaction through pending, confirmed, and dropped states:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect';
+import { makeTransactionStream } from 'voltaire-effect/services';
 
 const trackTransaction = (txHash: string) => Effect.gen(function* () {
-  const stream = yield* TransactionStreamService;
+  const stream = yield* makeTransactionStream()
   
   yield* Stream.runForEach(
     stream.track(txHash, { confirmations: 3 }),
@@ -107,7 +106,7 @@ Transaction stream operations can fail with `TransactionStreamError`:
 
 ```typescript
 import { Effect, pipe } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect';
+import { makeTransactionStream } from 'voltaire-effect/services';
 
 const program = pipe(
   watchConfirmedTransactions(),
@@ -128,7 +127,7 @@ const program = pipe(
 Thrown when any transaction stream operation fails:
 
 ```typescript
-import { TransactionStreamError } from 'voltaire-effect/transaction';
+import { TransactionStreamError } from 'voltaire-effect/services';
 
 const error = new TransactionStreamError("Connection lost", {
   cause: new Error("WebSocket disconnected"),
@@ -144,11 +143,11 @@ TransactionStream's confirmation tracking internally uses BlockStream for monito
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect';
+import { makeTransactionStream, HttpTransport } from 'voltaire-effect/services';
 
 // Confirmations are tracked via internal BlockStream integration
 const program = Effect.gen(function* () {
-  const txStream = yield* TransactionStreamService;
+  const txStream = yield* makeTransactionStream()
   
   // Wait for 12 confirmations (common for high-value transactions)
   yield* Stream.runForEach(
@@ -156,35 +155,36 @@ const program = Effect.gen(function* () {
     (event) => Effect.log(`Safe confirmation: ${event.transaction.hash}`)
   );
 }).pipe(
-  Effect.provide(TransactionStream),
-  Effect.provide(HttpTransport('https://...'))
+    Effect.provide(HttpTransport('https://...'))
 );
 ```
 
 ## Layer Composition
 
-TransactionStream requires TransportService:
+makeTransactionStream requires TransportService:
 
 ```typescript
-import { Layer } from 'effect';
-import { TransactionStream, HttpTransport, WebSocketTransport } from 'voltaire-effect';
+import { Effect } from 'effect';
+import { makeTransactionStream, HttpTransport, WebSocketTransport } from 'voltaire-effect/services';
 
 // HTTP transport
-const httpLayer = TransactionStream.pipe(
-  Layer.provide(HttpTransport('https://mainnet.infura.io/v3/KEY'))
-);
+const httpProgram = Effect.gen(function* () {
+  const txStream = yield* makeTransactionStream()
+  // ...
+}).pipe(Effect.provide(HttpTransport('https://mainnet.infura.io/v3/KEY')));
 
 // WebSocket transport (better for real-time pending txs)
-const wsLayer = TransactionStream.pipe(
-  Layer.provide(WebSocketTransport('wss://mainnet.infura.io/ws/v3/KEY'))
-);
+const wsProgram = Effect.gen(function* () {
+  const txStream = yield* makeTransactionStream()
+  // ...
+}).pipe(Effect.provide(WebSocketTransport('wss://mainnet.infura.io/ws/v3/KEY')));
 ```
 
 ## See Also
 
-- [TransactionStream Service](/services/transaction-stream) — Service API reference
+- [Transaction Stream](/services/transaction-stream) — API reference
 - [Stream Errors](/stream) — Common stream error types
-- [BlockStream Service](/services/block-stream) — Block streaming with reorg detection
+- [Block Streaming](/services/block-stream) — Block streaming with reorg detection
 - [Send Transactions Example](/examples/send-transactions) — Transaction signing and sending
 - [Provider Service](/services/provider) — `waitForTransactionReceipt` for simple confirmation
 - [Voltaire Transaction](https://voltaire.tevm.sh/primitives/transaction) — Core transaction documentation

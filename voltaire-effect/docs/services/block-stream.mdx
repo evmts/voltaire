@@ -140,17 +140,41 @@ const program = Effect.gen(function* () {
 interface WatchOptions<T extends BlockInclude> {
   include?: T                    // Content level (default: 'header')
   fromBlock?: bigint             // Start from block (default: current)
-  pollingInterval?: number       // Poll interval ms (default: 1000)
-  maxQueuedBlocks?: number       // Max blocks when catching up (default: 50)
 }
 
 interface BackfillOptions<T extends BlockInclude> {
   fromBlock: bigint              // Start block (required)
   toBlock: bigint                // End block (required)
   include?: T                    // Content level (default: 'header')
-  chunkSize?: number             // Initial chunk size (default: 100)
-  minChunkSize?: number          // Min chunk after reduction (default: 10)
 }
+```
+
+## Request Configuration
+
+Use Effect-native helpers for per-request timeout and retry:
+
+```typescript
+import { withTimeout, withRetrySchedule } from 'voltaire-effect'
+import { Schedule } from 'effect'
+
+// Custom timeout for slow RPCs
+const program = blockStream.watch().pipe(
+  Stream.mapEffect((event) =>
+    processEvent(event).pipe(withTimeout("30 seconds"))
+  )
+)
+
+// Custom retry with exponential backoff
+const backfillWithRetry = blockStream
+  .backfill({ fromBlock: 18000000n, toBlock: 18000100n })
+  .pipe(
+    Stream.retry(
+      Schedule.exponential("500 millis").pipe(
+        Schedule.jittered,
+        Schedule.compose(Schedule.recurs(5))
+      )
+    )
+  )
 ```
 
 ## Error Handling

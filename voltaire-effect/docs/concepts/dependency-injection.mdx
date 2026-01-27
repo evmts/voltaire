@@ -99,6 +99,30 @@ Effect.provide(program, ProviderTest)
 
 Business logic unchanged. Only the provided layer differs.
 
+## Per-Request Configuration
+
+FiberRef-based helpers provide scoped overrides without changing services:
+
+```typescript
+import { withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
+import * as Schedule from 'effect/Schedule'
+
+// Default config from service
+const balance = yield* provider.getBalance(addr)
+
+// Per-request overrides (scoped to this fiber only)
+const fastBalance = yield* provider.getBalance(addr).pipe(
+  withTimeout("5 seconds"),
+  withRetrySchedule(Schedule.recurs(1))
+)
+
+// Disable cache for fresh data
+const fresh = yield* provider.getBlockNumber().pipe(withoutCache)
+
+// Enable tracing for debugging
+const traced = yield* provider.getBlock(123).pipe(withTracing(true))
+```
+
 ## Why Services?
 
 **Tree-shaking** - Crypto not imported until provided. If you never use checksums, `KeccakLive` is not in your bundle.

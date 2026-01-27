@@ -19,9 +19,9 @@ With Multicall3, you batch them into **1 RPC call**.
 ## Basic Usage: Check 10 Balances
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Duration, Schedule } from 'effect'
 import * as ERC20 from 'voltaire-effect/standards/ERC20'
-import { aggregate3, HttpTransport } from 'voltaire-effect'
+import { aggregate3, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
 import type { MulticallCall } from 'voltaire-effect'
 
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -86,7 +86,7 @@ Query multiple tokens for a single wallet:
 const tokens = [
   { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const, decimals: 6 },
   { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' as const, decimals: 6 },
-  { symbol: 'DAI', address: '0x6B175474E89094C44Da98b954EesDeCD5E0c7D9' as const, decimals: 18 },
+  { symbol: 'DAI', address: '0x6B175474E89094C44Da98b954EeadeCD5E0c7D9' as const, decimals: 18 },
   { symbol: 'WETH', address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as const, decimals: 18 },
   { symbol: 'LINK', address: '0x514910771AF9Ca656af840dff83E8264EcF986CA' as const, decimals: 18 }
 ]
@@ -152,10 +152,11 @@ const program = Effect.gen(function* () {
 
 ## Error Handling
 
-Handle both batch-level and per-call failures:
+Handle both batch-level and per-call failures with Effect Schedule:
 
 ```typescript
-import { aggregate3, HttpTransport, MulticallError } from 'voltaire-effect'
+import { Effect, Schedule } from 'effect'
+import { aggregate3, HttpTransport, MulticallError, withRetrySchedule, withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const results = yield* aggregate3([
@@ -175,6 +176,15 @@ const program = Effect.gen(function* () {
   
   return processed
 }).pipe(
+  // Timeout with Duration string format
+  withTimeout("30 seconds"),
+  // Retry with Effect Schedule
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(3))
+    )
+  ),
   Effect.catchTag('MulticallError', (error) => {
     // Batch-level failure (e.g., Multicall3 contract unavailable)
     console.error('Multicall failed:', error.message)

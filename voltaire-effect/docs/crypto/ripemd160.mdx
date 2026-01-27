@@ -27,7 +27,7 @@ const hash160 = Effect.gen(function* () {
   const sha256 = yield* SHA256Service
   const ripemd = yield* Ripemd160Service
   return yield* ripemd.hash(yield* sha256.hash(publicKeyBytes))
-})
+}).pipe(Effect.provide(CryptoLive))
 ```
 
 ## Testing

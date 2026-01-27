@@ -3,8 +3,8 @@ import { Layer } from 'effect'
 import { Provider, Signer, HttpTransport, LocalAccount } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
-// Read-only layer
-const ReadLayer = Provider.pipe(
+// Provider layer
+const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 

@@ -68,6 +68,8 @@
             "pages": [
               "services/transport",
               "services/provider",
+              "services/debug",
+              "services/engine-api",
               "services/signer",
               "services/account",
               "services/contract",
@@ -91,7 +93,7 @@
               "transaction",
               "block",
               "blockchain",
-              "contract",
+              "event-stream",
               "jsonrpc",
               "jsonrpc-schemas"
             ]

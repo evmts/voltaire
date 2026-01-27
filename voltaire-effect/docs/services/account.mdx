@@ -3,11 +3,15 @@ title: Account Service
 description: Cryptographic signing operations with Effect.ts
 ---
 
+<Info>
+AccountService is for local or wallet signing. For node account RPCs like `eth_accounts`, `eth_coinbase`, or `eth_sign*`, use `ProviderAccountService` (or `ProviderService`).
+</Info>
+
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
-import { AccountService, LocalAccount } from 'voltaire-effect'
+import { Effect, Schedule } from 'effect'
+import { AccountService, LocalAccount, withTimeout } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
@@ -15,7 +19,11 @@ const privateKey = Hex.fromHex('0xac0974bec...')
 
 const program = Effect.gen(function* () {
   const account = yield* AccountService
-  const signature = yield* account.signMessage(Hex.fromString('Hello!'))
+  
+  // Per-request timeout for signing (useful for hardware wallets)
+  const signature = yield* account.signMessage(Hex.fromString('Hello!')).pipe(
+    withTimeout('10 seconds')
+  )
   return signature
 }).pipe(
   Effect.provide(LocalAccount(privateKey)),
@@ -27,11 +35,15 @@ const program = Effect.gen(function* () {
 ## Browser Wallet
 
 ```typescript
-import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
+import { JsonRpcAccount, BrowserTransport, withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const account = yield* AccountService
-  const signature = yield* account.signMessage(messageHex) // triggers popup
+  
+  // Longer timeout for user interaction
+  const signature = yield* account.signMessage(messageHex).pipe(
+    withTimeout('2 minutes')
+  )
   return signature
 }).pipe(
   Effect.provide(JsonRpcAccount(userAddress)),
@@ -170,6 +182,7 @@ type AccountShape = {
 ## See Also
 
 - [Signer Service](/services/signer) — Higher-level signing with auto-fill (nonce, gas, chainId)
+- [Provider Service](/services/provider) — JSON-RPC account operations (eth_accounts, eth_sign*)
 - [HD Wallet Guide](/guides/hd-wallet) — BIP-39 mnemonic wallet integration
 - [Wallet Creation Example](/examples/wallet-creation) — Generate and restore wallets
 - [EIP-712](/crypto/eip712) — Typed data signing details
