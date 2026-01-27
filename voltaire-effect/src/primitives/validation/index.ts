@@ -1,4 +1,8 @@
-export { assertNonNegative, assertNonZero, assertPositive } from "./assertCommon.js";
+export {
+	assertNonNegative,
+	assertNonZero,
+	assertPositive,
+} from "./assertCommon.js";
 export { assertInRange, assertInRangeBigInt } from "./assertInRange.js";
 export {
 	assertInt8,

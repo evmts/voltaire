@@ -12,10 +12,10 @@ export {
 	isZero,
 	merkleRoot,
 	random,
+	SIZE,
 	slice,
 	toBytes,
 	toHex,
 	toString,
-	SIZE,
 	ZERO,
 } from "@tevm/voltaire/Hash";
