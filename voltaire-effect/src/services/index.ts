@@ -79,6 +79,7 @@ export {
 } from "../blockchain/index.js";
 // TransactionStream exports
 export {
+	makeTransactionStream,
 	TransactionStream,
 	TransactionStreamError,
 	TransactionStreamService,
@@ -105,9 +106,9 @@ export {
 export {
 	BlockStream,
 	BlockStreamError,
-	makeBlockStream,
 	BlockStreamService,
 	type BlockStreamShape,
+	makeBlockStream,
 } from "./BlockStream/index.js";
 // Cache exports
 export {
@@ -176,6 +177,19 @@ export {
 	type DecodedEvent,
 	type EventFilter,
 } from "./Contract/index.js";
+// Debug exports
+export {
+	Debug,
+	DebugService,
+	type DebugShape,
+	type DebugTraceConfig,
+} from "./Debug/index.js";
+// Engine API exports
+export {
+	EngineApi,
+	EngineApiService,
+	type EngineApiShape,
+} from "./EngineApi/index.js";
 // ENS exports
 export {
 	DefaultEns,
@@ -244,7 +258,13 @@ export {
 // Provider exports
 export {
 	type AccessListType,
+	Account as ProviderAccount,
+	AccountService as ProviderAccountService,
+	type AccountShape as ProviderAccountShape,
 	type BackfillBlocksError,
+	Blocks,
+	BlocksService,
+	type BlocksShape,
 	type BlockTag as ProviderBlockTag,
 	type BlockType,
 	type CallError,
@@ -255,6 +275,9 @@ export {
 	type CreatePendingTransactionFilterError,
 	type EstimateGasError,
 	type EventFilter as ProviderEventFilter,
+	Events,
+	EventsService,
+	type EventsShape,
 	type FeeHistoryType,
 	type FilterChanges as ProviderFilterChanges,
 	type FilterId as ProviderFilterId,
@@ -280,6 +303,9 @@ export {
 	type GetUncleError,
 	type LogFilter as ProviderLogFilter,
 	type LogType,
+	Network,
+	NetworkService,
+	type NetworkShape,
 	Provider,
 	ProviderConfirmationsPendingError,
 	type ProviderError,
@@ -293,53 +319,28 @@ export {
 	ProviderValidationError,
 	type ReceiptType,
 	type SendRawTransactionError,
+	type SimulateV1BlockResult,
+	type SimulateV1CallResult,
+	type SimulateV1Payload,
+	type SimulateV1Result,
+	type SimulateV2Payload,
+	type SimulateV2Result,
+	Simulation,
+	SimulationService,
+	type SimulationShape,
+	Streaming,
+	StreamingService,
+	type StreamingShape,
+	type SyncingStatus,
+	Transaction,
+	TransactionService,
+	type TransactionShape,
 	type TransactionType,
 	type UninstallFilterError,
 	type WaitForTransactionReceiptError,
 	type WatchBlocksError,
-	Blocks,
-	BlocksService,
-	type BlocksShape,
-	Account as ProviderAccount,
-	AccountService as ProviderAccountService,
-	type AccountShape as ProviderAccountShape,
-	Transaction,
-	TransactionService,
-	type TransactionShape,
-	Simulation,
-	SimulationService,
-	type SimulationShape,
-	type SimulateV1Payload,
-	type SimulateV1Result,
-	type SimulateV1BlockResult,
-	type SimulateV1CallResult,
-	type SimulateV2Payload,
-	type SimulateV2Result,
-	Events,
-	EventsService,
-	type EventsShape,
-	Network,
-	NetworkService,
-	type NetworkShape,
-	type SyncingStatus,
 	type WorkResult,
-	Streaming,
-	StreamingService,
-	type StreamingShape,
 } from "./Provider/index.js";
-// Debug exports
-export {
-	Debug,
-	DebugService,
-	type DebugShape,
-	type DebugTraceConfig,
-} from "./Debug/index.js";
-// Engine API exports
-export {
-	EngineApi,
-	EngineApiService,
-	type EngineApiShape,
-} from "./EngineApi/index.js";
 // Preset exports (layer composition helpers)
 export {
 	ArbitrumProvider,

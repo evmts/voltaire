@@ -7,7 +7,7 @@ import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 import { createBatchScheduler } from "./BatchScheduler.js";
 import { HttpTransport } from "./HttpTransport.js";
-import { TransportError, TransportService } from "./TransportService.js";
+import { type TransportError, TransportService } from "./TransportService.js";
 
 const createMockHttpClientLayer = (
 	fetchMock: ReturnType<typeof vi.fn>,

@@ -7,7 +7,6 @@
 
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { TransportService } from "../Transport/TransportService.js";
 import type {
 	AddressInput,
 	BlockTag,
@@ -15,6 +14,7 @@ import type {
 	HashInput,
 	TransactionIndexInput,
 } from "../Provider/ProviderService.js";
+import { TransportService } from "../Transport/TransportService.js";
 import { DebugService } from "./DebugService.js";
 
 const bytesToHex = (bytes: Uint8Array): `0x${string}` => {
@@ -107,16 +107,8 @@ export const Debug: Layer.Layer<DebugService, never, TransportService> =
 						toBlockId(blockId),
 					]),
 				getRawTransaction: (hash) =>
-					request<`0x${string}`>("debug_getRawTransaction", [
-						toHashHex(hash),
-					]),
-				storageRangeAt: (
-					blockHash,
-					txIndex,
-					address,
-					startKey,
-					maxResults,
-				) =>
+					request<`0x${string}`>("debug_getRawTransaction", [toHashHex(hash)]),
+				storageRangeAt: (blockHash, txIndex, address, startKey, maxResults) =>
 					request<unknown>("debug_storageRangeAt", [
 						toHashHex(blockHash),
 						toIndexHex(txIndex),

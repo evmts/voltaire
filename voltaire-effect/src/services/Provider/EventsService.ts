@@ -29,13 +29,18 @@ import type {
  */
 export type EventsShape = {
 	/** Gets logs matching the filter */
-	readonly getLogs: (filter: LogFilter) => Effect.Effect<LogType[], GetLogsError>;
+	readonly getLogs: (
+		filter: LogFilter,
+	) => Effect.Effect<LogType[], GetLogsError>;
 	/** Creates an event filter (eth_newFilter) */
 	readonly createEventFilter: (
 		filter?: EventFilter,
 	) => Effect.Effect<FilterId, CreateEventFilterError>;
 	/** Creates a new block filter (eth_newBlockFilter) */
-	readonly createBlockFilter: () => Effect.Effect<FilterId, CreateBlockFilterError>;
+	readonly createBlockFilter: () => Effect.Effect<
+		FilterId,
+		CreateBlockFilterError
+	>;
 	/** Creates a pending transaction filter (eth_newPendingTransactionFilter) */
 	readonly createPendingTransactionFilter: () => Effect.Effect<
 		FilterId,

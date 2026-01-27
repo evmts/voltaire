@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tests for EventStreamService.
+ * @fileoverview Tests for EventStream helpers.
  */
 
 import { describe, expect, it } from "@effect/vitest";
@@ -14,9 +14,8 @@ import {
 	TransportService,
 	type TransportShape,
 } from "../services/Transport/index.js";
-import { EventStream } from "./EventStream.js";
+import { makeEventStream } from "./EventStream.js";
 import { EventStreamError } from "./EventStreamError.js";
-import { EventStreamService } from "./EventStreamService.js";
 
 // Cast to any to satisfy EventType constraint - schema returns EventItem which has
 // ParameterInternal[] but EventType expects Parameter[] with AbiType
@@ -40,7 +39,7 @@ const approvalEvent = S.decodeUnknownSync(EventSchema)({
 	],
 }) as any;
 
-describe("EventStreamService", () => {
+describe("EventStream", () => {
 	describe("EventStreamError", () => {
 		it("creates error with message", () => {
 			const error = new EventStreamError("test error");
@@ -91,7 +90,7 @@ describe("EventStreamService", () => {
 	});
 
 	describe("EventStream layer", () => {
-		it("provides EventStreamService from TransportService", async () => {
+		it("provides EventStream from TransportService", async () => {
 			const mockTransport: TransportShape = {
 				request: <T>(
 					_method: string,
@@ -100,18 +99,14 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				expect(eventStream.backfill).toBeDefined();
 				expect(eventStream.watch).toBeDefined();
 				expect(typeof eventStream.backfill).toBe("function");
 				expect(typeof eventStream.watch).toBe("function");
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -135,13 +130,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -151,7 +142,7 @@ describe("EventStreamService", () => {
 				expect(stream).toBeDefined();
 				const results = yield* Stream.runCollect(stream);
 				expect(Array.from(results)).toEqual([]);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 			expect(blockNumberCalls).toBeGreaterThan(0);
@@ -192,13 +183,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -211,7 +198,7 @@ describe("EventStreamService", () => {
 				expect(arr[0]?.log.eventName).toBe("Transfer");
 				expect(arr[0]?.log.blockNumber).toBeDefined();
 				expect(arr[0]?.metadata.chainHead).toBe(0x1234567n);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -233,19 +220,15 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.watch({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
 				});
 				expect(stream).toBeDefined();
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -267,13 +250,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -282,7 +261,7 @@ describe("EventStreamService", () => {
 				});
 				const results = yield* Stream.runCollect(stream);
 				expect(Array.from(results)).toEqual([]);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -324,13 +303,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -343,7 +318,7 @@ describe("EventStreamService", () => {
 				const results = yield* Stream.runCollect(stream);
 				const arr = Array.from(results);
 				expect(arr.length).toBe(1);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 			expect(getLogsParams).toBeDefined();
@@ -373,13 +348,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -387,7 +358,7 @@ describe("EventStreamService", () => {
 					toBlock: 100n,
 				});
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			const result = await Effect.runPromiseExit(program);
 			expect(result._tag).toBe("Failure");
@@ -426,13 +397,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -440,7 +407,7 @@ describe("EventStreamService", () => {
 					toBlock: 100n,
 				});
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			const result = await Effect.runPromiseExit(program);
 			expect(result._tag).toBeDefined();
@@ -467,13 +434,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -481,7 +444,7 @@ describe("EventStreamService", () => {
 					toBlock: 20n,
 				});
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 			expect(requestCount).toBeGreaterThan(0);
@@ -504,13 +467,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 
 				const stream1 = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
@@ -533,7 +492,7 @@ describe("EventStreamService", () => {
 
 				expect(Array.from(results1)).toEqual([]);
 				expect(Array.from(results2)).toEqual([]);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -541,11 +500,12 @@ describe("EventStreamService", () => {
 
 	describe("exports", () => {
 		it("exports from index", async () => {
-			const { EventStream, EventStreamError, EventStreamService } =
-				await import("./index.js");
+			const { EventStream, EventStreamError, makeEventStream } = await import(
+				"./index.js"
+			);
 			expect(EventStream).toBeDefined();
 			expect(EventStreamError).toBeDefined();
-			expect(EventStreamService).toBeDefined();
+			expect(makeEventStream).toBeDefined();
 		});
 	});
 
@@ -585,13 +545,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -603,7 +559,7 @@ describe("EventStreamService", () => {
 				expect(arr.length).toBe(1);
 				expect(arr[0]?.log.eventName).toBe("Transfer");
 				expect(arr[0]?.log.blockNumber).toBeDefined();
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -644,13 +600,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -658,7 +610,7 @@ describe("EventStreamService", () => {
 					toBlock: 100n,
 				});
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			const result = await Effect.runPromiseExit(program);
 			expect(result._tag).toBe("Failure");
@@ -683,13 +635,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -698,7 +646,7 @@ describe("EventStreamService", () => {
 				});
 				const results = yield* Stream.runCollect(stream);
 				expect(Array.from(results)).toEqual([]);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 		});
@@ -724,13 +672,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -738,7 +682,7 @@ describe("EventStreamService", () => {
 					toBlock: 200n,
 				});
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			const result = await Effect.runPromiseExit(program);
 			expect(result._tag).toBe("Failure");
@@ -766,13 +710,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -780,7 +720,7 @@ describe("EventStreamService", () => {
 					toBlock: 100n,
 				});
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			const result = await Effect.runPromiseExit(program);
 			expect(result._tag).toBe("Failure");
@@ -807,13 +747,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					event: transferEvent,
@@ -822,7 +758,7 @@ describe("EventStreamService", () => {
 				});
 				const results = yield* Stream.runCollect(stream);
 				expect(Array.from(results)).toEqual([]);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			await Effect.runPromise(program);
 			expect(getLogsCalled).toBe(true);
@@ -847,13 +783,9 @@ describe("EventStreamService", () => {
 			};
 
 			const TestTransportLayer = Layer.succeed(TransportService, mockTransport);
-			const TestEventStreamLayer = Layer.provide(
-				EventStream,
-				TestTransportLayer,
-			);
 
 			const program = Effect.gen(function* () {
-				const eventStream = yield* EventStreamService;
+				const eventStream = yield* makeEventStream();
 				const stream = eventStream.backfill({
 					address: "invalid-address" as `0x${string}`,
 					event: transferEvent,
@@ -861,7 +793,7 @@ describe("EventStreamService", () => {
 					toBlock: 20n,
 				});
 				yield* Stream.runCollect(stream);
-			}).pipe(Effect.provide(TestEventStreamLayer));
+			}).pipe(Effect.provide(TestTransportLayer));
 
 			const result = await Effect.runPromiseExit(program);
 			expect(result._tag).toBe("Failure");

@@ -1,6 +1,6 @@
 ---
 title: EventStream Tests
-description: Test examples for EventStreamService showing backfill, watch, and event decoding functionality.
+description: Test examples for makeEventStream showing backfill, watch, and event decoding functionality.
 ---
 
 ## EventStreamError Construction
@@ -9,7 +9,7 @@ Creates EventStreamError with various options.
 
 ```typescript
 import { describe, expect, it } from "@effect/vitest"
-import { EventStreamError } from "voltaire-effect/contract/EventStreamError"
+import { EventStreamError } from "voltaire-effect"
 
 describe("EventStreamError", () => {
   it("creates error with message", () => {
@@ -35,35 +35,33 @@ describe("EventStreamError", () => {
 })
 ```
 
-## EventStream Layer
+## makeEventStream
 
-Provides EventStreamService from TransportService.
+Provides event streaming from TransportService.
 
 ```typescript
 import { describe, expect, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { TransportService } from "voltaire-effect"
-import { EventStream } from "voltaire-effect/contract/EventStream"
-import { EventStreamService } from "voltaire-effect/contract/EventStreamService"
+import { makeEventStream } from "voltaire-effect"
 
 describe("EventStream layer", () => {
-  it("provides EventStreamService from TransportService", async () => {
+  it("provides makeEventStream from TransportService", async () => {
     const mockTransport = {
       request: <T>(_method: string, _params?: unknown[]) =>
         Effect.succeed("0x1" as T),
     }
 
     const TestTransportLayer = Layer.succeed(TransportService, mockTransport)
-    const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer)
 
     const program = Effect.gen(function* () {
-      const eventStream = yield* EventStreamService
+      const eventStream = yield* makeEventStream()
       expect(eventStream.backfill).toBeDefined()
       expect(eventStream.watch).toBeDefined()
       expect(typeof eventStream.backfill).toBe("function")
       expect(typeof eventStream.watch).toBe("function")
-    }).pipe(Effect.provide(TestEventStreamLayer))
+    }).pipe(Effect.provide(TestTransportLayer))
 
     await Effect.runPromise(program)
   })
@@ -81,8 +79,7 @@ import * as Layer from "effect/Layer"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { TransportService } from "voltaire-effect"
-import { EventStream } from "voltaire-effect/contract/EventStream"
-import { EventStreamService } from "voltaire-effect/contract/EventStreamService"
+import { makeEventStream } from "voltaire-effect"
 import { EventSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
 
 const transferEvent = S.decodeUnknownSync(EventSchema)({
@@ -110,10 +107,9 @@ describe("backfill", () => {
     }
 
     const TestTransportLayer = Layer.succeed(TransportService, mockTransport)
-    const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer)
 
     const program = Effect.gen(function* () {
-      const eventStream = yield* EventStreamService
+      const eventStream = yield* makeEventStream()
       const stream = eventStream.backfill({
         address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         event: transferEvent,
@@ -123,7 +119,7 @@ describe("backfill", () => {
       expect(stream).toBeDefined()
       const results = yield* Stream.runCollect(stream)
       expect(Array.from(results)).toEqual([])
-    }).pipe(Effect.provide(TestEventStreamLayer))
+    }).pipe(Effect.provide(TestTransportLayer))
 
     await Effect.runPromise(program)
   })
@@ -141,8 +137,7 @@ import * as Layer from "effect/Layer"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { TransportService } from "voltaire-effect"
-import { EventStream } from "voltaire-effect/contract/EventStream"
-import { EventStreamService } from "voltaire-effect/contract/EventStreamService"
+import { makeEventStream } from "voltaire-effect"
 import { EventSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
 
 const transferEvent = S.decodeUnknownSync(EventSchema)({
@@ -186,10 +181,9 @@ describe("backfill yields decoded events", () => {
     }
 
     const TestTransportLayer = Layer.succeed(TransportService, mockTransport)
-    const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer)
 
     const program = Effect.gen(function* () {
-      const eventStream = yield* EventStreamService
+      const eventStream = yield* makeEventStream()
       const stream = eventStream.backfill({
         address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         event: transferEvent,
@@ -202,7 +196,7 @@ describe("backfill yields decoded events", () => {
       expect(arr[0]?.log.eventName).toBe("Transfer")
       expect(arr[0]?.log.blockNumber).toBeDefined()
       expect(arr[0]?.metadata.chainHead).toBe(0x1234567n)
-    }).pipe(Effect.provide(TestEventStreamLayer))
+    }).pipe(Effect.provide(TestTransportLayer))
 
     await Effect.runPromise(program)
   })
@@ -220,8 +214,7 @@ import * as Layer from "effect/Layer"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { TransportError, TransportService } from "voltaire-effect"
-import { EventStream } from "voltaire-effect/contract/EventStream"
-import { EventStreamService } from "voltaire-effect/contract/EventStreamService"
+import { makeEventStream } from "voltaire-effect"
 import { EventSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
 
 const transferEvent = S.decodeUnknownSync(EventSchema)({
@@ -248,10 +241,9 @@ describe("transport error propagation", () => {
     }
 
     const TestTransportLayer = Layer.succeed(TransportService, mockTransport)
-    const TestEventStreamLayer = Layer.provide(EventStream, TestTransportLayer)
 
     const program = Effect.gen(function* () {
-      const eventStream = yield* EventStreamService
+      const eventStream = yield* makeEventStream()
       const stream = eventStream.backfill({
         address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         event: transferEvent,
@@ -259,7 +251,7 @@ describe("transport error propagation", () => {
         toBlock: 200n,
       })
       yield* Stream.runCollect(stream)
-    }).pipe(Effect.provide(TestEventStreamLayer))
+    }).pipe(Effect.provide(TestTransportLayer))
 
     const result = await Effect.runPromiseExit(program)
     expect(result._tag).toBe("Failure")

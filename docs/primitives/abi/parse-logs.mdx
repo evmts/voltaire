@@ -7,57 +7,94 @@ description: Parse multiple event logs using full ABI
   Run ABI examples in the interactive playground
 </Card>
 
+## Overview
 
-<Tabs>
+`Abi.parseLogs` decodes a list of log entries using a full ABI. It matches non-anonymous events by `topic0` and decodes indexed and non-indexed parameters. Logs that do not match any event are skipped.
 
-</Tabs>
-
-## Usage Examples
-
-### Parse All Contract Events
+## Quick Start
 
 ```typescript
-import * as Abi from 'tevm/Abi'
+import { Abi } from '@tevm/voltaire/Abi';
 
-const abi = [...] // Full ERC20 ABI
+const abi = Abi([
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value' }
+    ]
+  },
+  {
+    type: 'event',
+    name: 'Approval',
+    inputs: [
+      { type: 'address', name: 'owner', indexed: true },
+      { type: 'address', name: 'spender', indexed: true },
+      { type: 'uint256', name: 'value' }
+    ]
+  }
+] as const);
 
-const logs = await provider.getLogs({
-  address: tokenAddress,
-  fromBlock: startBlock,
-  toBlock: endBlock
-})
+// const logs = await provider.getLogs({ address: tokenAddress });
+const decoded = abi.parseLogs(logs);
 
-const decoded = Abi.parseLogs(abi, logs)
-
-// Process decoded events
 for (const log of decoded) {
-  if (log.eventName === "Transfer") {
-    console.log(`Transfer: ${log.args.value} from ${log.args.from} to ${log.args.to}`)
-  } else if (log.eventName === "Approval") {
-    console.log(`Approval: ${log.args.value} from ${log.args.owner} to ${log.args.spender}`)
+  if (log.eventName === 'Transfer') {
+    console.log('Transfer', log.args);
   }
 }
 ```
 
-### Filter Specific Event Type
+## Hex or Bytes Input
+
+`parseLogs` accepts both hex strings and byte arrays:
 
 ```typescript
-import * as Abi from 'tevm/Abi'
+const logs = [
+  {
+    data: '0x...',
+    topics: ['0x...', '0x...', '0x...']
+  }
+];
 
-const abi = [...]
-const logs = await provider.getLogs({ address: contractAddress })
-
-const decoded = Abi.parseLogs(abi, logs)
-
-// Get only Transfer events
-const transfers = decoded.filter(log => log.eventName === "Transfer")
-
-for (const transfer of transfers) {
-  console.log(transfer.args)
-}
+const decoded = abi.parseLogs(logs);
 ```
+
+## Anonymous Events
+
+Anonymous events omit `topic0`. `parseLogs` can decode them only when there is a **unique** anonymous event with the same number of indexed parameters.
+
+```typescript
+const Anonymous = {
+  type: 'event',
+  name: 'Anonymous',
+  anonymous: true,
+  inputs: [
+    { type: 'address', name: 'who', indexed: true }
+  ]
+} as const;
+```
+
+If multiple anonymous events share the same indexed count, `parseLogs` cannot disambiguate and will skip them.
+
+## Decode a Single Event
+
+If you already know the event definition, decode directly:
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const decoded = Abi.Event.decodeLog(Transfer, log.data, log.topics);
+```
+
+## Dynamic Indexed Parameters
+
+Dynamic indexed parameters (like `string` or `bytes`) are stored as **keccak256 hashes** in topics. You can compare them, but you cannot recover the original value from the topic alone.
 
 ## See Also
 
-- [Event.decodeLog](/primitives/abi/event/decode-log) - Decode single log with event definition
-- [getItem](/primitives/abi/get-item) - Find specific event in ABI
+- [Event.decodeLog](/primitives/abi/event-decode-log) - Decode a single log
+- [Event.encodeTopics](/primitives/abi/event-encode-topics) - Build topics for filters
+- [getItem](/primitives/abi/get-item) - Find event definitions in an ABI

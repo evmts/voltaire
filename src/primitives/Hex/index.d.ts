@@ -22,7 +22,6 @@ export { slice } from "./slice.js";
 export { toBigInt } from "./toBigInt.js";
 export { toBoolean } from "./toBoolean.js";
 export { toNumber } from "./toNumber.js";
-// biome-ignore lint/suspicious/noShadowRestrictedNames: toString is intentional API name
 export { toString } from "./toString.js";
 export { trim } from "./trim.js";
 export { validate } from "./validate.js";

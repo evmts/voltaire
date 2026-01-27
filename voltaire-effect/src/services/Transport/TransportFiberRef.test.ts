@@ -13,7 +13,7 @@ import {
 	withRetrySchedule,
 	withTimeout,
 } from "./index.js";
-import { TransportError } from "./TransportService.js";
+import type { TransportError } from "./TransportService.js";
 
 const createMockHttpClientLayer = (
 	fetchMock: ReturnType<typeof vi.fn>,

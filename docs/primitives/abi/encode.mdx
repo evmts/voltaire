@@ -1,6 +1,6 @@
 ---
 title: Abi.encode
-description: Generic ABI encoding for any item type
+description: Encode function calldata using a full ABI
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
@@ -96,7 +96,10 @@ const fn = abi.find(
     Abi.Function.getSignature(item) === signature
 );
 
-const data = Abi.Function.encodeParams(fn, [address, 1n]);
+const data = Abi.Function.encodeParams(fn, [
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
+  1n
+]);
 ```
 
 ## Error Handling

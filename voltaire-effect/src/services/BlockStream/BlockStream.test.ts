@@ -430,8 +430,9 @@ describe("BlockStream", () => {
 
 	describe("exports", () => {
 		it("exports from index", async () => {
-			const { BlockStream, BlockStreamError, makeBlockStream } =
-				await import("./index.js");
+			const { BlockStream, BlockStreamError, makeBlockStream } = await import(
+				"./index.js"
+			);
 			expect(BlockStream).toBeDefined();
 			expect(BlockStreamError).toBeDefined();
 			expect(makeBlockStream).toBeDefined();

@@ -15,7 +15,7 @@ import * as Effect from "effect/Effect";
 import * as Request from "effect/Request";
 import * as RequestResolver from "effect/RequestResolver";
 import type { AddressInput, BlockTag } from "../Provider/ProviderService.js";
-import { TransportService } from "../Transport/TransportService.js";
+import type { TransportService } from "../Transport/TransportService.js";
 import type { GetBalance } from "./GetBalance.js";
 import {
 	aggregate3,

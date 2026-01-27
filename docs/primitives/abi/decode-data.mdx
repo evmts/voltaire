@@ -63,6 +63,7 @@ try {
 If you already know the function and only have parameters (no selector), decode with `Abi.Function.decodeParams` or `Abi.decodeParameters`:
 
 ```typescript
+const transferFn = abi.getFunction('transfer');
 const args = Abi.Function.decodeParams(transferFn, calldata);
 // or
 const params = Abi.decodeParameters(transferFn.inputs, calldata.slice(4));

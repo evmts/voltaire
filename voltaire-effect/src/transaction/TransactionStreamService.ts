@@ -36,7 +36,7 @@ export type TransactionStreamShape = {
 	 * @example
 	 * ```typescript
 	 * const program = Effect.gen(function* () {
-	 *   const stream = yield* TransactionStreamService;
+	 *   const stream = yield* makeTransactionStream();
 	 *   yield* Stream.runForEach(
 	 *     stream.watchPending({ filter: { to: usdcAddress } }),
 	 *     (event) => Effect.log(`Pending: ${event.transaction.hash}`)
@@ -54,7 +54,7 @@ export type TransactionStreamShape = {
 	 * @example
 	 * ```typescript
 	 * const program = Effect.gen(function* () {
-	 *   const stream = yield* TransactionStreamService;
+	 *   const stream = yield* makeTransactionStream();
 	 *   yield* Stream.runForEach(
 	 *     stream.watchConfirmed({ filter: { from: myAddress }, confirmations: 3 }),
 	 *     (event) => Effect.log(`Confirmed: ${event.transaction.hash}`)
@@ -72,7 +72,7 @@ export type TransactionStreamShape = {
 	 * @example
 	 * ```typescript
 	 * const program = Effect.gen(function* () {
-	 *   const stream = yield* TransactionStreamService;
+	 *   const stream = yield* makeTransactionStream();
 	 *   yield* Stream.runForEach(
 	 *     stream.track(txHash, { confirmations: 3 }),
 	 *     (event) => {
@@ -102,18 +102,17 @@ export type TransactionStreamShape = {
  * @example
  * ```typescript
  * import { Effect, Stream } from 'effect';
- * import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect';
+ * import { makeTransactionStream, HttpTransport } from 'voltaire-effect';
  *
  * const program = Effect.gen(function* () {
- *   const txStream = yield* TransactionStreamService;
+ *   const txStream = yield* makeTransactionStream();
  *
  *   yield* Stream.runForEach(
  *     txStream.watchConfirmed({ confirmations: 3 }),
  *     (event) => Effect.log(`Confirmed: ${event.transaction.hash}`)
  *   );
  * }).pipe(
- *   Effect.provide(TransactionStream),
- *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+ *    *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
  * );
  * ```
  */

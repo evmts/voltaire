@@ -28,6 +28,7 @@ import { EventStreamError } from "./EventStreamError.js";
 import {
 	type BackfillStreamOptions,
 	EventStreamService,
+	type EventStreamShape,
 	type WatchStreamOptions,
 } from "./EventStreamService.js";
 
@@ -47,38 +48,13 @@ const fromAsyncGenerator = <T>(
 	);
 
 /**
- * Live implementation of EventStreamService.
- *
- * @since 0.3.0
- *
- * @example
- * ```typescript
- * import { Effect, Stream } from 'effect';
- * import { EventStreamService, EventStream, HttpTransport } from 'voltaire-effect/contract';
- *
- * const program = Effect.gen(function* () {
- *   const eventStream = yield* EventStreamService;
- *   yield* Stream.runForEach(
- *     eventStream.backfill({
- *       address: '0x...',
- *       event: transferEvent,
- *       fromBlock: 18000000n,
- *       toBlock: 18001000n
- *     }),
- *     ({ log }) => Effect.log(`Event: ${log.eventName}`)
- *   );
- * }).pipe(
- *   Effect.provide(EventStream),
- *   Effect.provide(HttpTransport('https://...'))
- * );
- * ```
+ * Build an EventStream directly from TransportService without a service layer.
  */
-export const EventStream: Layer.Layer<
-	EventStreamService,
+export const makeEventStream = (): Effect.Effect<
+	EventStreamShape,
 	never,
 	TransportService
-> = Layer.effect(
-	EventStreamService,
+> =>
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
 		const runtime = yield* Effect.runtime();
@@ -127,5 +103,36 @@ export const EventStream: Layer.Layer<
 				);
 			},
 		};
-	}),
-);
+	});
+
+/**
+ * Live implementation of EventStreamService.
+ *
+ * @since 0.3.0
+ *
+ * @example
+ * ```typescript
+ * import { Effect, Stream } from 'effect';
+ * import { makeEventStream, HttpTransport } from 'voltaire-effect';
+ *
+ * const program = Effect.gen(function* () {
+ *   const eventStream = yield* makeEventStream();
+ *   yield* Stream.runForEach(
+ *     eventStream.backfill({
+ *       address: '0x...',
+ *       event: transferEvent,
+ *       fromBlock: 18000000n,
+ *       toBlock: 18001000n
+ *     }),
+ *     ({ log }) => Effect.log(`Event: ${log.eventName}`)
+ *   );
+ * }).pipe(
+ *   Effect.provide(HttpTransport('https://...'))
+ * );
+ * ```
+ */
+export const EventStream: Layer.Layer<
+	EventStreamService,
+	never,
+	TransportService
+> = Layer.effect(EventStreamService, makeEventStream());

@@ -5,8 +5,8 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as S from "effect/Schema";
 import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
-import { ProviderService } from "../ProviderService.js";
 import { TransportError } from "../../Transport/TransportService.js";
+import { ProviderService } from "../ProviderService.js";
 import { readContract } from "./readContract.js";
 
 type HexType = `0x${string}`;

@@ -35,9 +35,10 @@ import * as Stream from "effect/Stream";
 import { TransportError } from "../Transport/TransportError.js";
 import { TransportService } from "../Transport/TransportService.js";
 import { getBlobBaseFee as getBlobBaseFeeEffect } from "./getBlobBaseFee.js";
+import type { SyncingStatus, WorkResult } from "./NetworkService.js";
 import {
-	type AccessListType,
 	type AccessListInput,
+	type AccessListType,
 	type AddressInput,
 	type BackfillBlocksError,
 	type BlockOverrides,
@@ -56,7 +57,6 @@ import {
 	type LogFilter,
 	type LogType,
 	type ProofType,
-	type RpcTransactionRequest,
 	ProviderConfirmationsPendingError,
 	ProviderNotFoundError,
 	ProviderReceiptPendingError,
@@ -66,6 +66,7 @@ import {
 	ProviderTimeoutError,
 	ProviderValidationError,
 	type ReceiptType,
+	type RpcTransactionRequest,
 	type StateOverride,
 	type TransactionIndexInput,
 	type TransactionType,
@@ -78,7 +79,6 @@ import type {
 	SimulateV2Payload,
 	SimulateV2Result,
 } from "./SimulationService.js";
-import type { SyncingStatus, WorkResult } from "./NetworkService.js";
 
 /**
  * Converts a Uint8Array to hex string.
@@ -628,10 +628,10 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					blockHash: HashInput,
 					index: TransactionIndexInput,
 				) =>
-					request<TransactionType | null>("eth_getTransactionByBlockHashAndIndex", [
-						toHashHex(blockHash),
-						toIndexHex(index),
-					]).pipe(
+					request<TransactionType | null>(
+						"eth_getTransactionByBlockHashAndIndex",
+						[toHashHex(blockHash), toIndexHex(index)],
+					).pipe(
 						Effect.flatMap((tx) =>
 							tx
 								? Effect.succeed(tx)
@@ -858,7 +858,8 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					payload: SimulateV2Payload,
 					blockTag?: BlockTag,
 				) => {
-					const params = blockTag === undefined ? [payload] : [payload, blockTag];
+					const params =
+						blockTag === undefined ? [payload] : [payload, blockTag];
 					return request<TResult>("eth_simulateV2", params);
 				},
 

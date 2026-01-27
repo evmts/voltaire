@@ -229,7 +229,7 @@ setTimeout(() => contract.removeAllListeners(), 60000)
 
 ```typescript
 import { Effect, Stream, Fiber, Duration } from 'effect'
-import { EventStreamService, EventStream, HttpTransport } from 'voltaire-effect'
+import { makeEventStream, HttpTransport } from 'voltaire-effect'
 
 const transferEvent = {
   type: 'event',
@@ -242,7 +242,7 @@ const transferEvent = {
 } as const
 
 const program = Effect.gen(function* () {
-  const eventStream = yield* EventStreamService
+  const eventStream = yield* makeEventStream()
 
   const fiber = yield* Effect.fork(
     Stream.runForEach(
@@ -255,8 +255,7 @@ const program = Effect.gen(function* () {
   yield* Effect.sleep(Duration.seconds(60))
   yield* Fiber.interrupt(fiber)
 }).pipe(
-  Effect.provide(EventStream),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 

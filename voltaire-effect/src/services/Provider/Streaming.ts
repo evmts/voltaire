@@ -15,19 +15,16 @@ import { StreamingService } from "./StreamingService.js";
  *
  * @since 0.3.0
  */
-export const Streaming: Layer.Layer<
-	StreamingService,
-	never,
-	ProviderService
-> = Layer.effect(
-	StreamingService,
-	Effect.gen(function* () {
-		const provider = yield* ProviderService;
-		return {
-			watchBlocks: provider.watchBlocks,
-			backfillBlocks: provider.backfillBlocks,
-			subscribe: provider.subscribe,
-			unsubscribe: provider.unsubscribe,
-		};
-	}),
-);
+export const Streaming: Layer.Layer<StreamingService, never, ProviderService> =
+	Layer.effect(
+		StreamingService,
+		Effect.gen(function* () {
+			const provider = yield* ProviderService;
+			return {
+				watchBlocks: provider.watchBlocks,
+				backfillBlocks: provider.backfillBlocks,
+				subscribe: provider.subscribe,
+				unsubscribe: provider.unsubscribe,
+			};
+		}),
+	);

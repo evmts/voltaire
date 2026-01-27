@@ -33,7 +33,6 @@ export function equalsConstantTime(a, b) {
 	// XOR all bytes and accumulate - no early exit
 	let result = 0;
 	for (let i = 0; i < a.length; i++) {
-		// biome-ignore lint: index is always valid due to length check above
 		result |= /** @type {number} */ (a[i]) ^ /** @type {number} */ (b[i]);
 	}
 

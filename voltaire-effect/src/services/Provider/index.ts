@@ -55,6 +55,8 @@ export type {
 	BlocksEvent,
 	WatchOptions,
 } from "@tevm/voltaire/block";
+export { Account } from "./Account.js";
+export { AccountService, type AccountShape } from "./AccountService.js";
 export {
 	type ContractCall,
 	type MulticallParams,
@@ -70,6 +72,10 @@ export {
 	type ReadContractParams,
 	readContract,
 } from "./actions/readContract.js";
+export { Blocks } from "./Blocks.js";
+export { BlocksService, type BlocksShape } from "./BlocksService.js";
+export { Events } from "./Events.js";
+export { EventsService, type EventsShape } from "./EventsService.js";
 export {
 	createBlockFilter,
 	createEventFilter,
@@ -83,35 +89,14 @@ export {
 	estimateBlobGas,
 	getBlobBaseFee,
 } from "./getBlobBaseFee.js";
-export { Provider } from "./Provider.js";
-export { Blocks } from "./Blocks.js";
-export { Account } from "./Account.js";
-export { Transaction } from "./Transaction.js";
-export { Simulation } from "./Simulation.js";
-export { Events } from "./Events.js";
 export { Network } from "./Network.js";
-export { Streaming } from "./Streaming.js";
-export { BlocksService, type BlocksShape } from "./BlocksService.js";
-export { AccountService, type AccountShape } from "./AccountService.js";
-export { TransactionService, type TransactionShape } from "./TransactionService.js";
-export {
-	SimulationService,
-	type SimulationShape,
-	type SimulateV1Payload,
-	type SimulateV1Result,
-	type SimulateV1BlockResult,
-	type SimulateV1CallResult,
-	type SimulateV2Payload,
-	type SimulateV2Result,
-} from "./SimulationService.js";
-export { EventsService, type EventsShape } from "./EventsService.js";
 export {
 	NetworkService,
 	type NetworkShape,
 	type SyncingStatus,
 	type WorkResult,
 } from "./NetworkService.js";
-export { StreamingService, type StreamingShape } from "./StreamingService.js";
+export { Provider } from "./Provider.js";
 export {
 	type AccessListInput,
 	type AccessListType,
@@ -130,51 +115,47 @@ export {
 	type FeeHistoryType,
 	type FilterChanges,
 	type FilterId,
+	type GetAccountsError,
 	type GetBalanceError,
 	type GetBlobBaseFeeError,
 	type GetBlockArgs,
 	type GetBlockError,
+	type GetBlockNumberError,
 	type GetBlockReceiptsArgs,
 	type GetBlockReceiptsError,
-	type GetBlockNumberError,
 	type GetBlockTransactionCountArgs,
 	type GetBlockTransactionCountError,
 	type GetChainIdError,
-	type GetAccountsError,
-	type GetCoinbaseError,
-	type GetSyncingError,
-	type NetVersionError,
-	type GetProtocolVersionError,
-	type GetMiningError,
-	type GetHashrateError,
-	type GetWorkError,
-	type SubmitWorkError,
-	type SubmitHashrateError,
 	type GetCodeError,
+	type GetCoinbaseError,
 	type GetFeeHistoryError,
 	type GetFilterChangesError,
 	type GetFilterLogsError,
 	type GetGasPriceError,
+	type GetHashrateError,
 	type GetLogsError,
 	type GetMaxPriorityFeePerGasError,
+	type GetMiningError,
 	type GetProofError,
+	type GetProtocolVersionError,
 	type GetStorageAtError,
+	type GetSyncingError,
+	type GetTransactionByBlockHashAndIndexError,
+	type GetTransactionByBlockNumberAndIndexError,
 	type GetTransactionConfirmationsError,
 	type GetTransactionCountError,
 	type GetTransactionError,
-	type GetTransactionByBlockHashAndIndexError,
-	type GetTransactionByBlockNumberAndIndexError,
 	type GetTransactionReceiptError,
 	type GetUncleArgs,
 	type GetUncleCountArgs,
 	type GetUncleCountError,
 	type GetUncleError,
+	type GetWorkError,
 	type HashInput,
 	type LogFilter,
 	type LogType,
+	type NetVersionError,
 	type ProofType,
-	type RpcTransactionRequest,
-	type TransactionIndexInput,
 	ProviderConfirmationsPendingError,
 	type ProviderError,
 	ProviderNotFoundError,
@@ -186,21 +167,38 @@ export {
 	ProviderTimeoutError,
 	ProviderValidationError,
 	type ReceiptType,
+	type RpcTransactionRequest,
 	type SendRawTransactionError,
 	type SendTransactionError,
 	type SignError,
 	type SignTransactionError,
 	type SimulateV1Error,
 	type SimulateV2Error,
-	type SubscribeError,
 	type StorageProofType,
+	type SubmitHashrateError,
+	type SubmitWorkError,
+	type SubscribeError,
+	type TransactionIndexInput,
 	type TransactionType,
 	type UncleBlockType,
-	type UnsubscribeError,
 	type UninstallFilterError,
+	type UnsubscribeError,
 	type WaitForTransactionReceiptError,
 	type WatchBlocksError,
 } from "./ProviderService.js";
+export { Simulation } from "./Simulation.js";
+export {
+	type SimulateV1BlockResult,
+	type SimulateV1CallResult,
+	type SimulateV1Payload,
+	type SimulateV1Result,
+	type SimulateV2Payload,
+	type SimulateV2Result,
+	SimulationService,
+	type SimulationShape,
+} from "./SimulationService.js";
+export { Streaming } from "./Streaming.js";
+export { StreamingService, type StreamingShape } from "./StreamingService.js";
 export {
 	type AssetChange,
 	type SimulateCallsError,
@@ -208,3 +206,8 @@ export {
 	type SimulationResult,
 	simulateCalls,
 } from "./simulateCalls.js";
+export { Transaction } from "./Transaction.js";
+export {
+	TransactionService,
+	type TransactionShape,
+} from "./TransactionService.js";

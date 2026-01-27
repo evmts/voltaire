@@ -15,7 +15,7 @@ description: Effect-native contract event streaming with backfill and watch supp
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { EventStreamService, EventStream, HttpTransport } from 'voltaire-effect/contract'
+import { makeEventStream, HttpTransport } from 'voltaire-effect'
 
 const transferEvent = {
   type: 'event',
@@ -28,7 +28,7 @@ const transferEvent = {
 } as const
 
 const program = Effect.gen(function* () {
-  const eventStream = yield* EventStreamService
+  const eventStream = yield* makeEventStream()
 
   // Backfill historical Transfer events
   yield* Stream.runForEach(
@@ -41,8 +41,7 @@ const program = Effect.gen(function* () {
     ({ log, metadata }) => Effect.log(`Transfer: ${log.args.value} at block ${log.blockNumber}`)
   )
 }).pipe(
-  Effect.provide(EventStream),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
 
@@ -123,7 +122,7 @@ interface EventStreamResult<TEvent> {
 ## Error Handling
 
 ```typescript
-import { EventStreamError } from 'voltaire-effect/contract'
+import { EventStreamError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('EventStreamError', (e) => 
@@ -155,16 +154,15 @@ const stream = eventStream.backfill({
 ## Layer Composition
 
 ```typescript
-import { EventStream, EventStreamService, HttpTransport } from 'voltaire-effect'
+import { Effect } from 'effect'
+import { makeEventStream, HttpTransport } from 'voltaire-effect'
 
-// Compose layers
-const AppLayer = EventStream.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+// Reusable transport layer
+const AppLayer = HttpTransport('https://eth.llamarpc.com')
 
 // Use in program
 const program = Effect.gen(function* () {
-  const eventStream = yield* EventStreamService
+  const eventStream = yield* makeEventStream()
   // ...
 }).pipe(Effect.provide(AppLayer))
 ```

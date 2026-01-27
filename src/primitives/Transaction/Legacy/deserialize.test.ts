@@ -20,8 +20,7 @@ describe("TransactionLegacy.deserialize", () => {
 		};
 
 		// biome-ignore lint/suspicious/noExplicitAny: branded type cast
-		const serialized = // biome-ignore lint/suspicious/noExplicitAny: branded type cast
-			TransactionLegacy.serialize.call(original as any);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.type).toBe(original.type);

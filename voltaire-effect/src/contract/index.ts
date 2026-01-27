@@ -10,10 +10,10 @@
  * @example
  * ```typescript
  * import { Effect, Stream } from 'effect';
- * import { EventStreamService, EventStream, HttpTransport } from 'voltaire-effect/contract';
+ * import { makeEventStream, HttpTransport } from 'voltaire-effect';
  *
  * const program = Effect.gen(function* () {
- *   const stream = yield* EventStreamService;
+ *   const stream = yield* makeEventStream();
  *   yield* Stream.runForEach(
  *     stream.backfill({
  *       address: '0x...',
@@ -24,13 +24,12 @@
  *     ({ log }) => Effect.log(`Event: ${log.eventName}`)
  *   );
  * }).pipe(
- *   Effect.provide(EventStream),
  *   Effect.provide(HttpTransport('https://...'))
  * );
  * ```
  */
 
-export { EventStream } from "./EventStream.js";
+export { EventStream, makeEventStream } from "./EventStream.js";
 export { EventStreamError } from "./EventStreamError.js";
 export {
 	type BackfillStreamOptions,

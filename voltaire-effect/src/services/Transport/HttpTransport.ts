@@ -539,8 +539,7 @@ export const HttpTransport = (
 						const retryScheduleOverride = yield* FiberRef.get(retryScheduleRef);
 						const tracingEnabled = yield* FiberRef.get(tracingRef);
 						const timeout = timeoutOverride ?? Duration.decode(config.timeout);
-						const retrySchedule =
-							retryScheduleOverride ?? config.retrySchedule;
+						const retrySchedule = retryScheduleOverride ?? config.retrySchedule;
 						const request = yield* applyRequestHooks({ method, params });
 						const startTime = Date.now();
 						const id = yield* nextId;

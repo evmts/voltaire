@@ -41,8 +41,12 @@ const encodeAggregate3Result = (results: Aggregate3ResultEntry[]): HexType => {
 		returnData: Hex.toBytes(result.returnData),
 	}));
 
-	// biome-ignore lint/suspicious/noExplicitAny: ABI encoding requires dynamic type casting
-	const encoded = encodeParameters(AGGREGATE3_OUTPUT_PARAMS as any, [tuples] as any);
+	const encoded = encodeParameters(
+		// biome-ignore lint/suspicious/noExplicitAny: ABI encoding requires dynamic type casting
+		AGGREGATE3_OUTPUT_PARAMS as any,
+		// biome-ignore lint/suspicious/noExplicitAny: ABI encoding requires dynamic type casting
+		[tuples] as any,
+	);
 	return Hex.fromBytes(encoded) as HexType;
 };
 
@@ -162,9 +166,7 @@ describe("multicall aggregate3", () => {
 					capturedMethod = method;
 					capturedParams = params;
 					return Effect.succeed(
-						encodeAggregate3Result([
-							{ success: true, returnData: "0x" },
-						]),
+						encodeAggregate3Result([{ success: true, returnData: "0x" }]),
 					);
 				});
 
@@ -313,7 +315,7 @@ describe("multicall aggregate3", () => {
 		it.effect("handles very large batch of calls", () =>
 			Effect.gen(function* () {
 				let capturedData: string | undefined;
-				const request = vi.fn((method: string, params?: unknown[]) => {
+				const request = vi.fn((_method: string, params?: unknown[]) => {
 					const [callParams] = (params ?? []) as [
 						{ to?: string; data?: string },
 					];
@@ -330,10 +332,8 @@ describe("multicall aggregate3", () => {
 				const largeBatch: MulticallCall[] = Array.from(
 					{ length: 100 },
 					(_, i) => ({
-						target:
-							`0x${(i + 1).toString(16).padStart(40, "0")}` as HexType,
-						callData:
-							`0x${(i + 1).toString(16).padStart(8, "0")}` as HexType,
+						target: `0x${(i + 1).toString(16).padStart(40, "0")}` as HexType,
+						callData: `0x${(i + 1).toString(16).padStart(8, "0")}` as HexType,
 						allowFailure: true,
 					}),
 				);
@@ -373,8 +373,9 @@ describe("multicall aggregate3", () => {
 
 	describe("exports", () => {
 		it("exports from index", async () => {
-			const { aggregate3, MulticallError, MULTICALL3_ADDRESS } =
-				await import("./index.js");
+			const { aggregate3, MulticallError, MULTICALL3_ADDRESS } = await import(
+				"./index.js"
+			);
 			expect(aggregate3).toBeDefined();
 			expect(MulticallError).toBeDefined();
 			expect(MULTICALL3_ADDRESS).toBeDefined();

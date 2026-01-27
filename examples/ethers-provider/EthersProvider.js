@@ -7,7 +7,8 @@
  * @module examples/ethers-provider
  */
 
-import { Address, BatchQueue, poll, retryWithBackoff } from "@tevm/voltaire";
+import { Address } from "@tevm/voltaire";
+import { BatchQueue, poll, retryWithBackoff } from "@tevm/voltaire/utils";
 
 /**
  * @typedef {import('./EthersProviderTypes.js').EthersProviderOptions} EthersProviderOptions

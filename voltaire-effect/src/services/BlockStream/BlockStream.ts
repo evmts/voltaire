@@ -23,7 +23,10 @@ import * as Runtime from "effect/Runtime";
 import * as Stream from "effect/Stream";
 import { TransportService } from "../Transport/TransportService.js";
 import { BlockStreamError } from "./BlockStreamError.js";
-import { BlockStreamService, type BlockStreamShape } from "./BlockStreamService.js";
+import {
+	BlockStreamService,
+	type BlockStreamShape,
+} from "./BlockStreamService.js";
 
 /**
  * Wraps an AsyncGenerator as an Effect Stream with cleanup on interruption.
@@ -119,7 +122,4 @@ export const BlockStream: Layer.Layer<
 	BlockStreamService,
 	never,
 	TransportService
-> = Layer.effect(
-	BlockStreamService,
-	makeBlockStream(),
-);
+> = Layer.effect(BlockStreamService, makeBlockStream());

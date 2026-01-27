@@ -137,9 +137,10 @@ const encodeAggregate3 = (calls: readonly MulticallCall[]): `0x${string}` => {
 		callData: call.callData,
 	}));
 
-	// biome-ignore lint/suspicious/noExplicitAny: ABI encoding requires dynamic type casting
 	const encoded = encodeParameters(
+		// biome-ignore lint/suspicious/noExplicitAny: ABI encoding requires dynamic type casting
 		AGGREGATE3_INPUT_PARAMS as any,
+		// biome-ignore lint/suspicious/noExplicitAny: ABI encoding requires dynamic type casting
 		[tuples] as any,
 	);
 
@@ -198,7 +199,11 @@ export const aggregate3 = (
 	calls: readonly MulticallCall[],
 	blockTag?: BlockTag,
 	multicallAddress: `0x${string}` = MULTICALL3_ADDRESS,
-): Effect.Effect<readonly MulticallResult[], MulticallError, TransportService> =>
+): Effect.Effect<
+	readonly MulticallResult[],
+	MulticallError,
+	TransportService
+> =>
 	Effect.gen(function* () {
 		if (calls.length === 0) {
 			return [] as readonly MulticallResult[];

@@ -52,7 +52,7 @@ export type EventStreamShape = {
 	 * @example
 	 * ```typescript
 	 * const program = Effect.gen(function* () {
-	 *   const stream = yield* EventStreamService;
+	 *   const stream = yield* makeEventStream();
 	 *   yield* Stream.runForEach(
 	 *     stream.backfill({
 	 *       address: '0x...',
@@ -75,7 +75,7 @@ export type EventStreamShape = {
 	 * @example
 	 * ```typescript
 	 * const program = Effect.gen(function* () {
-	 *   const stream = yield* EventStreamService;
+	 *   const stream = yield* makeEventStream();
 	 *   yield* Stream.runForEach(
 	 *     stream.watch({
 	 *       address: '0x...',
@@ -99,10 +99,10 @@ export type EventStreamShape = {
  * @example
  * ```typescript
  * import { Effect, Stream } from 'effect';
- * import { EventStreamService, EventStream, HttpTransport } from 'voltaire-effect/contract';
+ * import { makeEventStream, HttpTransport } from 'voltaire-effect';
  *
  * const program = Effect.gen(function* () {
- *   const eventStream = yield* EventStreamService;
+ *   const eventStream = yield* makeEventStream();
  *
  *   yield* Stream.runForEach(
  *     eventStream.backfill({
@@ -114,8 +114,7 @@ export type EventStreamShape = {
  *     ({ log }) => Effect.log(`Transfer: ${log.args.value}`)
  *   );
  * }).pipe(
- *   Effect.provide(EventStream),
- *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+ *    *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
  * );
  * ```
  */

@@ -6,4 +6,8 @@
  */
 
 export { Debug } from "./Debug.js";
-export { DebugService, type DebugShape, type DebugTraceConfig } from "./DebugService.js";
+export {
+	DebugService,
+	type DebugShape,
+	type DebugTraceConfig,
+} from "./DebugService.js";

@@ -7,7 +7,6 @@
 
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
-import type { TransportError } from "../Transport/TransportError.js";
 import type {
 	AddressInput,
 	BlockTag,
@@ -15,6 +14,7 @@ import type {
 	HashInput,
 	TransactionIndexInput,
 } from "../Provider/ProviderService.js";
+import type { TransportError } from "../Transport/TransportError.js";
 
 /**
  * Debug trace configuration object.

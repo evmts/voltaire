@@ -61,9 +61,9 @@ export const timeoutRef: FiberRef.FiberRef<Duration.Duration | undefined> =
  */
 export const retryScheduleRef: FiberRef.FiberRef<
 	Schedule.Schedule<unknown, TransportError> | undefined
-> = FiberRef.unsafeMake<
-	Schedule.Schedule<unknown, TransportError> | undefined
->(undefined);
+> = FiberRef.unsafeMake<Schedule.Schedule<unknown, TransportError> | undefined>(
+	undefined,
+);
 
 /**
  * FiberRef to enable/disable request deduplication cache.

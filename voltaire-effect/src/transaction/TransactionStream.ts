@@ -24,7 +24,10 @@ import * as Runtime from "effect/Runtime";
 import * as Stream from "effect/Stream";
 import { TransportService } from "../services/Transport/TransportService.js";
 import { TransactionStreamError } from "./TransactionStreamError.js";
-import { TransactionStreamService } from "./TransactionStreamService.js";
+import {
+	TransactionStreamService,
+	type TransactionStreamShape,
+} from "./TransactionStreamService.js";
 
 /**
  * Wraps an AsyncGenerator as an Effect Stream.
@@ -42,33 +45,13 @@ const fromAsyncGenerator = <T>(
 	);
 
 /**
- * Live implementation of TransactionStreamService.
- *
- * @since 0.2.13
- *
- * @example
- * ```typescript
- * import { Effect, Stream } from 'effect';
- * import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect';
- *
- * const program = Effect.gen(function* () {
- *   const txStream = yield* TransactionStreamService;
- *   yield* Stream.runForEach(
- *     txStream.watchConfirmed({ confirmations: 3 }),
- *     (event) => Effect.log(`Confirmed: ${event.transaction.hash}`)
- *   );
- * }).pipe(
- *   Effect.provide(TransactionStream),
- *   Effect.provide(HttpTransport('https://...'))
- * );
- * ```
+ * Build a TransactionStream directly from TransportService without a service layer.
  */
-export const TransactionStream: Layer.Layer<
-	TransactionStreamService,
+export const makeTransactionStream = (): Effect.Effect<
+	TransactionStreamShape,
 	never,
 	TransportService
-> = Layer.effect(
-	TransactionStreamService,
+> =>
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
 		const runtime = yield* Effect.runtime();
@@ -110,5 +93,31 @@ export const TransactionStream: Layer.Layer<
 					coreStream.track(txHash as `0x${string}`, options),
 				),
 		};
-	}),
-);
+	});
+
+/**
+ * Live implementation of TransactionStreamService.
+ *
+ * @since 0.2.13
+ *
+ * @example
+ * ```typescript
+ * import { Effect, Stream } from 'effect';
+ * import { makeTransactionStream, HttpTransport } from 'voltaire-effect';
+ *
+ * const program = Effect.gen(function* () {
+ *   const txStream = yield* makeTransactionStream();
+ *   yield* Stream.runForEach(
+ *     txStream.watchConfirmed({ confirmations: 3 }),
+ *     (event) => Effect.log(`Confirmed: ${event.transaction.hash}`)
+ *   );
+ * }).pipe(
+ *   Effect.provide(HttpTransport('https://...'))
+ * );
+ * ```
+ */
+export const TransactionStream: Layer.Layer<
+	TransactionStreamService,
+	never,
+	TransportService
+> = Layer.effect(TransactionStreamService, makeTransactionStream());

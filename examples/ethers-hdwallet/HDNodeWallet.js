@@ -16,7 +16,8 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { HDWallet, Keccak256, Address } from "@tevm/voltaire";
+import { Keccak256, Address } from "@tevm/voltaire";
+import { HDWallet } from "@tevm/voltaire/HDWallet";
 import { Mnemonic } from "./Mnemonic.js";
 import {
 	InvalidExtendedKeyError,

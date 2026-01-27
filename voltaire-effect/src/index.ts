@@ -40,6 +40,7 @@ export {
 	EventStreamError,
 	EventStreamService,
 	type EventStreamShape,
+	makeEventStream,
 	type WatchStreamOptions,
 } from "./contract/index.js";
 // Crypto - namespace exports
