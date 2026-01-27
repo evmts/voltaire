@@ -1,48 +1,62 @@
 ---
 title: Abi.getItem
-description: Find ABI item by name and type from ABI array
+description: Find an ABI item by name and type
 ---
 
-<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
-  Run ABI examples in the interactive playground
-</Card>
+## Overview
 
+`Abi.getItem` finds the first matching ABI item by name, optionally filtered by item type. It returns `undefined` when no match is found.
 
-<Tabs>
-
-</Tabs>
-
-## Usage Examples
-
-### Find and Use Function
+## Quick Start
 
 ```typescript
-import * as Abi from 'tevm/Abi'
+import { Abi } from '@tevm/voltaire/Abi';
 
-const abi = [...] // Full contract ABI
+const abi = Abi([
+  {
+    type: 'function',
+    name: 'transfer',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool' }]
+  },
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value' }
+    ]
+  }
+] as const);
 
-const transferFn = Abi.getItem(abi, "transfer", "function")
-
-if (transferFn && transferFn.type === "function") {
-  const calldata = Abi.Function.encodeParams(transferFn, [to, amount])
-  await provider.call({ to: contractAddress, data: calldata })
-}
+const transferFn = Abi.getItem(abi, 'transfer', 'function');
+const transferEvent = Abi.getItem(abi, 'Transfer', 'event');
 ```
 
-### Error Handling
+## Using the Abi Instance
 
 ```typescript
-import * as Abi from 'tevm/Abi'
+const transferFn = abi.getItem('transfer', 'function');
+```
 
-const abi = [...]
+## Overloaded Functions
 
-const item = Abi.getItem(abi, "nonExistent", "function")
-if (!item) {
-  throw new Error("Function not found in ABI")
-}
+If your ABI has overloads, match by signature:
+
+```typescript
+const signature = 'foo(address,uint256)';
+const fn = abi.find(
+  (item) =>
+    item.type === 'function' &&
+    Abi.Function.getSignature(item) === signature
+);
 ```
 
 ## See Also
 
-- [encode](/primitives/abi/encode) - Encode using ABI item
-- [decode](/primitives/abi/decode) - Decode using ABI item
+- [Item.getItem](/primitives/abi/item-get-item) - Item namespace version
+- [Function.getSignature](/primitives/abi/function/get-signature) - Build canonical signatures

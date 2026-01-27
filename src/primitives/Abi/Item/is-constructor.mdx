@@ -1,15 +1,29 @@
 ---
-title: Abi.Item.isConstructor
-description: Type guard to check if ABI item is a constructor
+title: Item.isConstructor
+description: Type guard for constructor ABI items
 ---
 
+## Overview
 
-<Tabs>
+`Item.isConstructor` checks whether an ABI item is a constructor definition.
 
-</Tabs>
+## Example
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const item = {
+  type: 'constructor',
+  stateMutability: 'nonpayable',
+  inputs: [{ type: 'string', name: 'name' }]
+} as const;
+
+if (Abi.Item.isConstructor(item)) {
+  const params = Abi.Constructor.encodeParams(item, ['MyToken']);
+}
+```
 
 ## See Also
 
-- [Item.isFunction](/primitives/abi/item-is-function) - Check if item is function
-- [Item.isFallback](/primitives/abi/item-is-fallback) - Check if item is fallback
-- [ABI Types](/primitives/abi/types) - ABI type definitions
+- [Item.isFunction](/primitives/abi/item-is-function)
+- [Constructor.encodeParams](/primitives/abi/constructor/encode-params)

@@ -1,15 +1,31 @@
 ---
 title: Abi.Error.GetSelector
-description: Factory for creating error selector getter with custom keccak256 implementation
+description: Build a selector function with a custom keccak256 implementation
 ---
 
+## Overview
 
-<Tabs>
+`Error.GetSelector` builds a selector function using a custom `keccak256String` implementation. Use this for alternate runtimes or WASM/native hashing.
 
-</Tabs>
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const getSelector = Abi.Error.GetSelector({
+  keccak256String: (value) => myKeccak256String(value)
+});
+
+const error = {
+  type: 'error',
+  name: 'Unauthorized',
+  inputs: []
+} as const;
+
+const selector = getSelector(error);
+```
 
 ## See Also
 
-- [Error.getSelector](/primitives/abi/error-get-selector) - Get error selector (default keccak256)
-- [Function.GetSelector](/primitives/abi/function-get-selector-factory) - Function selector factory
-- [Event.GetSelector](/primitives/abi/event-get-selector-factory) - Event selector factory
+- [getSelector](/primitives/abi/error/get-selector) - Default selector implementation
+- [getSignature](/primitives/abi/error/get-signature) - Error signature string

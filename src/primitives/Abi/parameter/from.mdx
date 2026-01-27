@@ -1,46 +1,37 @@
 ---
 title: Parameter.from
-description: Create parameter definition from type string
+description: Create a branded ABI parameter definition
 ---
 
-<Tabs>
+## Overview
 
-</Tabs>
+`Parameter.from` is a lightweight helper that brands a parameter object for TypeScript type inference. It does **not** validate types at runtime.
 
-## Usage Examples
-
-### Build Function Definition
+## Quick Start
 
 ```typescript
-import * as Parameter from 'tevm/Abi/parameter'
+import * as Parameter from '@tevm/voltaire/Abi/parameter';
 
-const transferFn = {
-  type: "function",
-  name: "transfer",
-  inputs: [
-    Parameter("address", "to"),
-    Parameter("uint256", "amount")
-  ],
-  outputs: [
-    Parameter("bool", "success")
-  ]
-}
+const amount = Parameter.from({ type: 'uint256', name: 'amount' });
+const owner = Parameter.from({ type: 'address', name: 'owner' });
 ```
 
-### Complex Types
+## Tuples and Components
 
 ```typescript
-import * as Parameter from 'tevm/Abi/parameter'
+import * as Parameter from '@tevm/voltaire/Abi/parameter';
 
-// Array types
-const addressesParam = Parameter("address[]", "recipients")
-const fixedArrayParam = Parameter("uint256[3]", "values")
-
-// Bytes types
-const bytesParam = Parameter("bytes", "data")
-const bytes32Param = Parameter("bytes32", "hash")
+const position = Parameter.from({
+  type: 'tuple',
+  name: 'position',
+  components: [
+    { type: 'uint256', name: 'amount' },
+    { type: 'uint256', name: 'shares' }
+  ]
+});
 ```
 
 ## See Also
 
-- [encode](/primitives/abi/parameter/encode) - Encode parameter value
+- [Parameter.encode](/primitives/abi/parameter/encode) - Encoding note for single parameters
+- [ABI Types](/primitives/abi/types) - Parameter shape reference

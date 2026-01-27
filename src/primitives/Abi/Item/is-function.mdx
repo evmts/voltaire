@@ -1,15 +1,30 @@
 ---
-title: Abi.Item.isFunction
-description: Type guard to check if ABI item is a function
+title: Item.isFunction
+description: Type guard for function ABI items
 ---
 
+## Overview
 
-<Tabs>
+`Item.isFunction` checks whether an ABI item is a function and narrows the type in TypeScript.
 
-</Tabs>
+## Example
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const item = {
+  type: 'function',
+  name: 'balanceOf',
+  inputs: [{ type: 'address', name: 'owner' }],
+  outputs: [{ type: 'uint256' }]
+} as const;
+
+if (Abi.Item.isFunction(item)) {
+  const selector = Abi.Function.getSelector(item);
+}
+```
 
 ## See Also
 
-- [Item.isEvent](/primitives/abi/item-is-event) - Check if item is event
-- [Item.isError](/primitives/abi/item-is-error) - Check if item is error
-- [ABI Types](/primitives/abi/types) - ABI type definitions
+- [Item.isEvent](/primitives/abi/item-is-event)
+- [Item.isError](/primitives/abi/item-is-error)

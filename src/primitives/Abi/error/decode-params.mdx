@@ -1,54 +1,45 @@
 ---
 title: Error.decodeParams
-description: Decode custom error parameters from revert data
+description: Decode custom error data from revert payload
 ---
 
-<Tabs>
+## Overview
 
-</Tabs>
+`Error.decodeParams` decodes **custom error revert data** and validates the selector. Pass the full error data (selector + params).
 
-## Usage Examples
-
-### Handling Contract Errors
+## Quick Start
 
 ```typescript
-import { AbiError } from 'tevm'
+import { Abi } from '@tevm/voltaire/Abi';
 
-const errors = [
-  new AbiError({
-    type: "error",
-    name: "InsufficientBalance",
-    inputs: [
-      { type: "uint256", name: "balance" },
-      { type: "uint256", name: "required" }
-    ]
-  }),
-  new AbiError({
-    type: "error",
-    name: "Unauthorized",
-    inputs: [{ type: "address", name: "caller" }]
-  })
-]
+const InsufficientBalance = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
 
-// Create error registry
-const errorRegistry = new Map(
-  errors.map(e => [e.getSelector(), e])
-)
-
-try {
-  await contract.call()
-} catch (error) {
-  const selector = error.data.slice(0, 10)
-  const abiError = errorRegistry.get(selector)
-
-  if (abiError) {
-    const params = abiError.decodeParams(error.data)
-    console.log(`Error: ${abiError.name}`, params)
-  }
-}
+const revertData = Abi.Error.encodeParams(InsufficientBalance, [100n, 1000n]);
+const decoded = Abi.Error.decodeParams(InsufficientBalance, revertData);
+// [100n, 1000n]
 ```
+
+## Decode Without Selector
+
+If you already sliced the selector, decode just the parameters:
+
+```typescript
+const params = Abi.decodeParameters(InsufficientBalance.inputs, revertData.slice(4));
+```
+
+## Error Handling
+
+- `AbiDecodingError` when data is too short or malformed
+- `AbiInvalidSelectorError` when the selector does not match the error definition
 
 ## See Also
 
 - [encodeParams](/primitives/abi/error/encode-params) - Encode error data
-- [getSelector](/primitives/abi/error/get-selector) - Get error selector
+- [getSelector](/primitives/abi/error/get-selector) - Compute error selector
