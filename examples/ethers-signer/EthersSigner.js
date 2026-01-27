@@ -5,15 +5,15 @@
  * @module EthersSigner
  */
 
-import { secp256k1 } from "@noble/curves/secp256k1";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import {
 	Address,
 	EIP712,
 	Keccak256,
-	PrivateKey,
 	Secp256k1,
 	SignedData,
 } from "@tevm/voltaire";
+import { PrivateKey } from "@tevm/voltaire/PrivateKey";
 
 import {
 	AddressMismatchError,
@@ -521,7 +521,8 @@ export class EthersSigner {
 		const { from: _from, ...txWithoutFrom } = pop;
 
 		// Import transaction serialization
-		const { TransactionEIP1559 } = await import("@tevm/voltaire");
+		const { EIP1559, Legacy } = await import("@tevm/voltaire/Transaction");
+		const { TransactionEIP1559 } = EIP1559;
 
 		let signingHash;
 		let signedTx;
@@ -561,7 +562,7 @@ export class EthersSigner {
 		}
 
 		// Legacy transaction
-		const { TransactionLegacy: LegacyTx } = await import("@tevm/voltaire");
+		const { TransactionLegacy: LegacyTx } = Legacy;
 
 		const unsignedTx = {
 			type: 0,

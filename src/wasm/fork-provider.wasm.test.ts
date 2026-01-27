@@ -1,6 +1,9 @@
+import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { promisify } from "node:util";
+import { beforeAll, describe, expect, it } from "vitest";
 import { ForkProvider } from "../provider/ForkProvider.js";
 import type { Provider } from "../provider/Provider.js";
 import type { RequestArguments } from "../provider/types.js";
@@ -81,16 +84,32 @@ class MockEip1193Provider implements Provider {
 const toArrayBuffer = (buffer: Buffer): ArrayBuffer =>
 	buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 
+const execFileAsync = promisify(execFile);
+
 describe("ForkProvider (WASM)", () => {
+	const repoRoot = resolve(import.meta.dirname, "../..");
+	const stateManagerPath = resolve(repoRoot, "wasm/state-manager.wasm");
+	const blockchainPath = resolve(repoRoot, "wasm/blockchain.wasm");
+
+	const ensureForkWasm = async () => {
+		if (existsSync(stateManagerPath) && existsSync(blockchainPath)) {
+			return;
+		}
+
+		await execFileAsync("zig", ["build", "build-ts-wasm"], { cwd: repoRoot });
+
+		if (!existsSync(stateManagerPath) || !existsSync(blockchainPath)) {
+			throw new Error(
+				"Missing fork WASM artifacts after zig build build-ts-wasm",
+			);
+		}
+	};
+
+	beforeAll(async () => {
+		await ensureForkWasm();
+	});
+
 	it("reads forked state and blocks via injected EIP-1193 provider", async () => {
-		const stateManagerPath = resolve(
-			import.meta.dirname,
-			"../../wasm/state-manager.wasm",
-		);
-		const blockchainPath = resolve(
-			import.meta.dirname,
-			"../../wasm/blockchain.wasm",
-		);
 
 		const [stateManagerBytes, blockchainBytes] = await Promise.all([
 			readFile(stateManagerPath),
@@ -150,9 +169,7 @@ describe("ForkProvider (WASM)", () => {
 			true,
 		);
 		expect(
-			mockProvider.calls.some(
-				(call) => call.method === "eth_getBlockByNumber",
-			),
+			mockProvider.calls.some((call) => call.method === "eth_getBlockByNumber"),
 		).toBe(true);
 	});
 });
