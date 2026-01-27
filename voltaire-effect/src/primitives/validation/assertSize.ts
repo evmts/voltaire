@@ -6,7 +6,7 @@ export function assertSize(
 	name = "data",
 ): void {
 	const actualSize = getSize(data);
-	if (actualSize != expectedSize) {
+	if (actualSize !== expectedSize) {
 		throw new InvalidSizeError(
 			`${name} must be ${expectedSize} bytes, got ${actualSize}`,
 			{
@@ -60,7 +60,7 @@ function getSize(data: Uint8Array | string): number {
 	if (data instanceof Uint8Array) {
 		return data.length;
 	}
-	if (typeof data == "string") {
+	if (typeof data === "string") {
 		const hex = data.startsWith("0x") ? data.slice(2) : data;
 		return Math.floor(hex.length / 2);
 	}
