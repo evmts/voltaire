@@ -33,4 +33,5 @@ export * as Function from "./function/index.js";
 export * as Item from "./Item/index.js";
 // Re-export ERC standards
 export { Interface } from "./interface/index.js";
+export { Parameter } from "./parameter/index.js";
 export { parseLogs } from "./parseLogs.js";

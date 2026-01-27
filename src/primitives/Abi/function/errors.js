@@ -11,14 +11,14 @@ export class FunctionEncodingError extends AbiEncodingError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Original error
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "FUNCTION_ENCODING_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/abi/function",
 			cause: options?.cause,
@@ -34,14 +34,14 @@ export class FunctionDecodingError extends AbiDecodingError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Original error
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "FUNCTION_DECODING_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath || "/primitives/abi/function",
 			cause: options?.cause,
@@ -57,7 +57,7 @@ export class FunctionInvalidSelectorError extends AbiInvalidSelectorError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} options - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} options.value - Actual selector value
 	 * @param {string} options.expected - Expected selector value
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -66,7 +66,7 @@ export class FunctionInvalidSelectorError extends AbiInvalidSelectorError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "FUNCTION_INVALID_SELECTOR",
 			value: options.value,
 			expected: options.expected,
 			context: options?.context,

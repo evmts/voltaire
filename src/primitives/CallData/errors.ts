@@ -19,7 +19,7 @@ export class InvalidCallDataLengthError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -28,7 +28,7 @@ export class InvalidCallDataLengthError extends InvalidLengthError {
 		},
 	) {
 		super(message, {
-			code: options?.code ?? -32602,
+			code: options?.code ?? "INVALID_CALLDATA_LENGTH",
 			value: options?.value,
 			expected: options?.expected ?? "at least 4 bytes",
 			context: options?.context,
@@ -54,7 +54,7 @@ export class InvalidHexFormatError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -89,7 +89,7 @@ export class InvalidValueError extends ValidationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -124,7 +124,7 @@ export class AbiItemNotFoundError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -159,7 +159,7 @@ export class InvalidSignatureError extends InvalidFormatError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;
@@ -194,7 +194,7 @@ export class ParameterCountMismatchError extends InvalidLengthError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			value?: unknown;
 			expected?: string;
 			context?: Record<string, unknown>;

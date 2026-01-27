@@ -23,7 +23,7 @@ export class AbiEncodingError extends EncodingError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: number;
+	 *   code?: number | string;
 	 *   context?: Record<string, unknown>;
 	 *   docsPath?: string;
 	 *   cause?: Error;
@@ -56,7 +56,7 @@ export class AbiDecodingError extends DecodingError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: number;
+	 *   code?: number | string;
 	 *   context?: Record<string, unknown>;
 	 *   docsPath?: string;
 	 *   cause?: Error;
@@ -89,7 +89,7 @@ export class AbiParameterMismatchError extends InvalidLengthError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: number;
+	 *   code?: number | string;
 	 *   value: unknown;
 	 *   expected: string;
 	 *   context?: Record<string, unknown>;
@@ -126,7 +126,7 @@ export class AbiItemNotFoundError extends InvalidFormatError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: number;
+	 *   code?: number | string;
 	 *   value: unknown;
 	 *   expected: string;
 	 *   context?: Record<string, unknown>;
@@ -163,7 +163,7 @@ export class AbiInvalidSelectorError extends InvalidFormatError {
 	/**
 	 * @param {string} message
 	 * @param {{
-	 *   code?: number;
+	 *   code?: number | string;
 	 *   value: unknown;
 	 *   expected: string;
 	 *   context?: Record<string, unknown>;

@@ -89,9 +89,7 @@ export function VerifySignature({
 				if (signature instanceof Uint8Array) {
 					// Assume 65-byte signature: r (32) + s (32) + v (1)
 					if (signature.length !== 65) {
-						throw new InvalidSignatureFormatError(
-							`Invalid signature length: expected 65 bytes, got ${signature.length}`,
-						);
+						return false;
 					}
 					sigComponents = {
 						r: signature.slice(0, 32),
@@ -124,9 +122,9 @@ export function VerifySignature({
 					: concatSignature(signature);
 			return await isValidSignature(provider, address, hash, signatureBytes);
 		} catch (error) {
-			// InvalidSignatureFormatError indicates malformed input - re-throw
+			// InvalidSignatureFormatError indicates malformed input - treat as invalid signature
 			if (error instanceof InvalidSignatureFormatError) {
-				throw error;
+				return false;
 			}
 			// Network/provider errors should propagate
 			if (

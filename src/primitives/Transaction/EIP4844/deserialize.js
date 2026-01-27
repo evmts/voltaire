@@ -118,7 +118,7 @@ export function deserialize(data) {
 				throw new DecodingError(
 					`Invalid blob versioned hash version byte at index ${index}: expected 0x01, got 0x${hashData.value[0].toString(16).padStart(2, "0")}`,
 					{
-						code: -32602,
+						code: "INVALID_BLOB_HASH_VERSION",
 						context: {
 							index,
 							versionByte: hashData.value[0],
