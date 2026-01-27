@@ -59,7 +59,7 @@ importers:
         version: 12.0.0(size-limit@12.0.0(jiti@2.6.1))
       '@size-limit/webpack':
         specifier: ^12.0.0
-        version: 12.0.0(esbuild@0.27.2)(size-limit@12.0.0(jiti@2.6.1))
+        version: 12.0.0(size-limit@12.0.0(jiti@2.6.1))
       '@tevm/tsconfig':
         specifier: ^1.0.0-next.142
         version: 1.0.0-next.142
@@ -5783,6 +5783,7 @@ packages:
   tar@6.1.15:
     resolution: {integrity: sha512-/zKt9UyngnxIT/EAGYuxaMYgOIJiP81ab9ZfkILq4oNLPFX50qyYmu7jRj9qeXoxmJHjGlbH0+cm2uy1WCs10A==}
     engines: {node: '>=10'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   terser-webpack-plugin@5.3.16:
     resolution: {integrity: sha512-h9oBFCWrq78NyWWVcSwZarJkZ01c2AyGrzs1crmHZO3QUg9D61Wu4NPjBy69n7JqylFF5y+CsUZYmYEIZ3mR+Q==}
@@ -8515,11 +8516,11 @@ snapshots:
       '@size-limit/file': 12.0.0(size-limit@12.0.0(jiti@2.6.1))
       size-limit: 12.0.0(jiti@2.6.1)
 
-  '@size-limit/webpack@12.0.0(esbuild@0.27.2)(size-limit@12.0.0(jiti@2.6.1))':
+  '@size-limit/webpack@12.0.0(size-limit@12.0.0(jiti@2.6.1))':
     dependencies:
       nanoid: 5.1.6
       size-limit: 12.0.0(jiti@2.6.1)
-      webpack: 5.104.1(esbuild@0.27.2)
+      webpack: 5.104.1
     transitivePeerDependencies:
       - '@swc/core'
       - esbuild
@@ -13458,16 +13459,14 @@ snapshots:
       mkdirp: 1.0.4
       yallist: 4.0.0
 
-  terser-webpack-plugin@5.3.16(esbuild@0.27.2)(webpack@5.104.1(esbuild@0.27.2)):
+  terser-webpack-plugin@5.3.16(webpack@5.104.1):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       serialize-javascript: 6.0.2
       terser: 5.44.1
-      webpack: 5.104.1(esbuild@0.27.2)
-    optionalDependencies:
-      esbuild: 0.27.2
+      webpack: 5.104.1
 
   terser@5.44.1:
     dependencies:
@@ -14060,7 +14059,7 @@ snapshots:
 
   webpack-sources@3.3.3: {}
 
-  webpack@5.104.1(esbuild@0.27.2):
+  webpack@5.104.1:
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.8
@@ -14084,7 +14083,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.0
-      terser-webpack-plugin: 5.3.16(esbuild@0.27.2)(webpack@5.104.1(esbuild@0.27.2))
+      terser-webpack-plugin: 5.3.16(webpack@5.104.1)
       watchpack: 2.5.0
       webpack-sources: 3.3.3
     transitivePeerDependencies:
