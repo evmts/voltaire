@@ -1,15 +1,39 @@
 ---
 title: Abi.Event.EncodeTopics
-description: Factory for creating topic encoder with custom keccak256 implementation
+description: Build a topic encoder with custom keccak256 implementations
 ---
 
+## Overview
 
-<Tabs>
+`Event.EncodeTopics` returns a topic encoder using custom hash functions. Use this when you want to supply a different keccak implementation (native/WASM/custom).
 
-</Tabs>
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const encodeTopics = Abi.Event.EncodeTopics({
+  keccak256: (data) => myKeccak256(data),
+  keccak256String: (value) => myKeccak256String(value)
+});
+
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
+  ]
+} as const;
+
+const topics = encodeTopics(Transfer, {
+  from: '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
+  to: '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4'
+});
+```
 
 ## See Also
 
-- [Event.encodeTopics](/primitives/abi/event-encode-topics) - Encode event topics (default keccak256)
-- [Event.GetSelector](/primitives/abi/event-get-selector-factory) - Event selector factory
-- [Function.GetSelector](/primitives/abi/function-get-selector-factory) - Function selector factory
+- [encodeTopics](/primitives/abi/event/encode-topics) - Default topic encoder
+- [getSelector](/primitives/abi/event/get-selector) - Event selector

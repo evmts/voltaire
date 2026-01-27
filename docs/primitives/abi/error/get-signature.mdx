@@ -1,13 +1,35 @@
 ---
 title: Error.getSignature
-description: Get canonical error signature string
+description: Get canonical signature string for a custom error
 ---
 
-<Tabs>
+## Overview
 
-</Tabs>
+`Error.getSignature` returns the canonical error signature used to derive selectors.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const InsufficientBalance = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
+
+const signature = Abi.Error.getSignature(InsufficientBalance);
+// "InsufficientBalance(uint256,uint256)"
+```
+
+## Canonical Types
+
+Signatures require canonical type names (e.g. `uint256` instead of `uint`). Tuple inputs expand to their component types.
 
 ## See Also
 
-- [getSelector](/primitives/abi/error/get-selector) - Get error selector
-- [encodeParams](/primitives/abi/error/encode-params) - Encode error data
+- [getSelector](/primitives/abi/error/get-selector) - Compute error selector
+- [Selectors](/primitives/abi/selectors) - Signature and selector rules

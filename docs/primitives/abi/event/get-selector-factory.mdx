@@ -1,15 +1,35 @@
 ---
 title: Abi.Event.GetSelector
-description: Factory for creating event selector getter with custom keccak256 implementation
+description: Build an event selector function with a custom keccak256 implementation
 ---
 
+## Overview
 
-<Tabs>
+`Event.GetSelector` builds a selector function that uses a custom `keccak256String`. Use this to swap in native/WASM hashing.
 
-</Tabs>
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const getSelector = Abi.Event.GetSelector({
+  keccak256String: (value) => myKeccak256String(value)
+});
+
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
+  ]
+} as const;
+
+const topic0 = getSelector(Transfer);
+```
 
 ## See Also
 
-- [Event.getSelector](/primitives/abi/event-get-selector) - Get event selector (default keccak256)
-- [Function.GetSelector](/primitives/abi/function-get-selector-factory) - Function selector factory
-- [Event.EncodeTopics](/primitives/abi/event-encode-topics-factory) - Topic encoder factory
+- [getSelector](/primitives/abi/event/get-selector) - Default selector implementation
+- [getSignature](/primitives/abi/event/get-signature) - Event signature

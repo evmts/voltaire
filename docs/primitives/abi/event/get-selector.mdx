@@ -1,112 +1,67 @@
 ---
 title: Event.getSelector
-description: Get event signature hash (topic 0) for event filtering
+description: Compute the 32-byte selector (topic0) for an event
 ---
 
-<Tabs>
+## Overview
 
-</Tabs>
+`Event.getSelector` returns the keccak256 hash of the event signature. This value is used as `topic0` for non-anonymous events.
 
-## Usage Examples
-
-### Event Filtering
+## Quick Start
 
 ```typescript
-import { Event } from 'tevm'
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
 
-const transferEvent = new Event({
-  type: "event",
-  name: "Transfer",
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
   inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value", indexed: false }
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
   ]
-})
+} as const;
 
-// Get logs for Transfer events
+const topic0 = Abi.Event.getSelector(Transfer);
+const topicHex = Hex.fromBytes(topic0);
+```
+
+## Use in Log Filters
+
+```typescript
 const logs = await provider.getLogs({
   address: tokenAddress,
-  topics: [transferEvent.getSelector()],
-  fromBlock: 'latest'
-})
+  topics: [Hex.fromBytes(Abi.Event.getSelector(Transfer))]
+});
 ```
 
-### Multiple Event Types
+## Multiple Event Types
 
 ```typescript
-import { Event } from 'tevm'
-
-const transferEvent = new Event({
-  type: "event",
-  name: "Transfer",
+const Approval = {
+  type: 'event',
+  name: 'Approval',
   inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value" }
+    { type: 'address', name: 'owner', indexed: true },
+    { type: 'address', name: 'spender', indexed: true },
+    { type: 'uint256', name: 'value' }
   ]
-})
+} as const;
 
-const approvalEvent = new Event({
-  type: "event",
-  name: "Approval",
-  inputs: [
-    { type: "address", name: "owner", indexed: true },
-    { type: "address", name: "spender", indexed: true },
-    { type: "uint256", name: "value" }
-  ]
-})
+const topics = [[
+  Hex.fromBytes(Abi.Event.getSelector(Transfer)),
+  Hex.fromBytes(Abi.Event.getSelector(Approval))
+]];
 
-// Filter for either event type
-const logs = await provider.getLogs({
-  address: tokenAddress,
-  topics: [[
-    transferEvent.getSelector(),
-    approvalEvent.getSelector()
-  ]]
-})
+const logs = await provider.getLogs({ address: tokenAddress, topics });
 ```
 
-### Event Registry
+## Anonymous Events
 
-```typescript
-import { Event } from 'tevm'
-
-const events = [
-  new Event({
-    type: "event",
-    name: "Transfer",
-    inputs: [
-      { type: "address", name: "from", indexed: true },
-      { type: "address", name: "to", indexed: true },
-      { type: "uint256", name: "value" }
-    ]
-  }),
-  new Event({
-    type: "event",
-    name: "Approval",
-    inputs: [
-      { type: "address", name: "owner", indexed: true },
-      { type: "address", name: "spender", indexed: true },
-      { type: "uint256", name: "value" }
-    ]
-  })
-]
-
-// Create selector → event mapping
-const registry = new Map(
-  events.map(e => [e.getSelector(), e])
-)
-
-// Look up event by selector
-function findEvent(log) {
-  const selector = log.topics[0]
-  return registry.get(selector)
-}
-```
+Anonymous events do not include `topic0`. You should not filter on a selector for anonymous events.
 
 ## See Also
 
-- [getSignature](/primitives/abi/event/get-signature) - Get event signature string
-- [encodeTopics](/primitives/abi/event/encode-topics) - Encode indexed parameters
-- [decodeLog](/primitives/abi/event/decode-log) - Decode event log data
+- [getSignature](/primitives/abi/event/get-signature) - Event signature string
+- [encodeTopics](/primitives/abi/event/encode-topics) - Build topic arrays

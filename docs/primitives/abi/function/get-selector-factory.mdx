@@ -1,15 +1,35 @@
 ---
 title: Abi.Function.GetSelector
-description: Factory for creating selector getter with custom keccak256 implementation
+description: Build a function selector helper with a custom keccak256 implementation
 ---
 
+## Overview
 
-<Tabs>
+`Function.GetSelector` creates a selector function using a custom `keccak256String`. Use this for alternative hashing backends (native/WASM/custom).
 
-</Tabs>
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const getSelector = Abi.Function.GetSelector({
+  keccak256String: (value) => myKeccak256String(value)
+});
+
+const transfer = {
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'amount' }
+  ],
+  outputs: [{ type: 'bool' }]
+} as const;
+
+const selector = getSelector(transfer);
+```
 
 ## See Also
 
-- [Function.getSelector](/primitives/abi/function-get-selector) - Get function selector (default keccak256)
-- [Event.GetSelector](/primitives/abi/event-get-selector-factory) - Event selector factory
-- [Error.GetSelector](/primitives/abi/error-get-selector-factory) - Error selector factory
+- [getSelector](/primitives/abi/function/get-selector) - Default selector implementation
+- [getSignature](/primitives/abi/function/get-signature) - Function signature string

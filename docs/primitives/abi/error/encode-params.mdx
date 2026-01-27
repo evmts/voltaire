@@ -1,13 +1,49 @@
 ---
 title: Error.encodeParams
-description: Encode custom error parameters for contract reverts
+description: Encode custom error data with selector prefix
 ---
 
-<Tabs>
+## Overview
 
-</Tabs>
+`Error.encodeParams` returns the full revert payload for a custom error: **selector + encoded parameters**. This is the same format emitted by the EVM on `revert` with a custom error.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
+
+const InsufficientBalance = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
+
+const data = Abi.Error.encodeParams(InsufficientBalance, [100n, 1000n]);
+const hex = Hex.fromBytes(data);
+// 0x<selector><encoded params>
+```
+
+## Use in Tests
+
+```typescript
+// Simulate a revert payload
+const revertData = Abi.Error.encodeParams(InsufficientBalance, [100n, 1000n]);
+
+// Later decode it
+const decoded = Abi.Error.decodeParams(InsufficientBalance, revertData);
+// [100n, 1000n]
+```
+
+## Error Handling
+
+Invalid values throw `AbiEncodingError`.
 
 ## See Also
 
 - [decodeParams](/primitives/abi/error/decode-params) - Decode error data
-- [getSelector](/primitives/abi/error/get-selector) - Get error selector
+- [getSelector](/primitives/abi/error/get-selector) - Compute error selector
+- [Encoding](/primitives/abi/encoding) - ABI encoding rules

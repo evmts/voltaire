@@ -1,78 +1,55 @@
 ---
 title: Event.decodeLog
-description: Decode event log data and topics back to parameter values
+description: Decode event log data and topics into typed arguments
 ---
 
-<Tabs>
+## Overview
 
-</Tabs>
+`Event.decodeLog` decodes a single log entry using a specific event definition. It validates `topic0` for non-anonymous events and combines indexed topics with non-indexed data.
 
-## Usage Examples
-
-### Parse Transfer Events
+## Quick Start
 
 ```typescript
-import { Event } from 'tevm'
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
 
-const transferEvent = new Event({
-  type: "event",
-  name: "Transfer",
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
   inputs: [
-    { type: "address", name: "from", indexed: true },
-    { type: "address", name: "to", indexed: true },
-    { type: "uint256", name: "value" }
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
   ]
-})
+} as const;
 
-// Get logs from blockchain
-const logs = await provider.getLogs({
-  address: tokenAddress,
-  topics: [transferEvent.getSelector()]
-})
+const log = {
+  data: '0x00000000000000000000000000000000000000000000000000000000000003e8',
+  topics: [
+    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e',
+    '0x0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc4'
+  ]
+};
 
-// Decode each log
-const transfers = logs.map(log =>
-  transferEvent.decodeLog(log.data, log.topics)
-)
-
-console.log(transfers)
-// [
-//   { from: "0x...", to: "0x...", value: 1000n },
-//   { from: "0x...", to: "0x...", value: 2000n }
-// ]
+const decoded = Abi.Event.decodeLog(
+  Transfer,
+  Hex.toBytes(log.data),
+  log.topics.map(Hex.toBytes)
+);
+// { from: '0x742d...', to: '0x5b38...', value: 1000n }
 ```
 
-### Complex Event Types
+## Dynamic Indexed Parameters
 
-```typescript
-import { Event } from 'tevm'
+When an indexed parameter is dynamic (`string`, `bytes`, dynamic arrays), the topic contains **keccak256(value)**. The original value cannot be reconstructed from the topic alone.
 
-const swapEvent = new Event({
-  type: "event",
-  name: "Swap",
-  inputs: [
-    { type: "address", name: "sender", indexed: true },
-    { type: "uint256", name: "amount0In" },
-    { type: "uint256", name: "amount1In" },
-    { type: "uint256", name: "amount0Out" },
-    { type: "uint256", name: "amount1Out" },
-    { type: "address", name: "to", indexed: true }
-  ]
-})
+## Error Handling
 
-const decoded = swapEvent.decodeLog(log.data, log.topics)
-console.log({
-  sender: decoded.sender,
-  amount0In: decoded.amount0In,
-  amount1In: decoded.amount1In,
-  amount0Out: decoded.amount0Out,
-  amount1Out: decoded.amount1Out,
-  to: decoded.to
-})
-```
+- `AbiDecodingError` when topics are missing or data is malformed
+- `AbiInvalidSelectorError` when `topic0` does not match the event
 
 ## See Also
 
-- [encodeTopics](/primitives/abi/event/encode-topics) - Encode indexed parameters
-- [getSelector](/primitives/abi/event/get-selector) - Get event selector
-- [parseLogs](/primitives/abi/parse-logs) - Parse multiple logs with ABI
+- [parseLogs](/primitives/abi/parse-logs) - Decode many logs with a full ABI
+- [encodeTopics](/primitives/abi/event/encode-topics) - Build topics for filters
