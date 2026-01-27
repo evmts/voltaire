@@ -1,0 +1,53 @@
+---
+title: CallData Tests
+description: Test examples for CallData showing transaction call data encoding and decoding.
+---
+
+## Decode hex string
+
+Decodes call data from a hex string with function selector.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as CallData from 'voltaire-effect/primitives/CallData'
+
+const result = S.decodeSync(CallData.Hex)('0xa9059cbb000000000000000000000000')
+expect(typeof result).toBe('string')
+expect(result.startsWith('0x')).toBe(true)
+```
+
+## Handle empty hex string
+
+Decodes empty call data (0x).
+
+```typescript
+import * as S from 'effect/Schema'
+import * as CallData from 'voltaire-effect/primitives/CallData'
+
+const result = S.decodeSync(CallData.Hex)('0x')
+expect(result).toBe('0x')
+```
+
+## Encode to hex string
+
+Encodes call data back to hex string format.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as CallData from 'voltaire-effect/primitives/CallData'
+
+const data = S.decodeSync(CallData.Hex)('0xa9059cbb')
+const hex = S.encodeSync(CallData.Hex)(data)
+expect(hex).toBe('0xa9059cbb')
+```
+
+## Return empty call data
+
+Creates empty call data using the helper function.
+
+```typescript
+import * as CallData from 'voltaire-effect/primitives/CallData'
+
+const result = CallData.empty()
+expect(result).toBe('0x')
+```

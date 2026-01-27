@@ -1,0 +1,106 @@
+---
+title: Selector Tests
+description: Test examples for Selector showing 4-byte function selector parsing, encoding, and computation from function signatures.
+---
+
+## Parse Hex Selector
+
+Parses 4-byte function selector from hex string.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as Selector from "voltaire-effect/primitives/Selector"
+
+const result = S.decodeSync(Selector.Hex)("0xa9059cbb")
+expect(result.length).toBe(4)
+```
+
+## Encode to Hex
+
+Encodes selector to lowercase hex with 0x prefix.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Selector from "voltaire-effect/primitives/Selector"
+
+const selector = S.decodeSync(Selector.Hex)("0xA9059CBB")
+const hex = S.encodeSync(Selector.Hex)(selector)
+expect(hex).toBe("0xa9059cbb")
+```
+
+## Parse from Bytes
+
+Parses selector from 4-byte Uint8Array.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Selector from "voltaire-effect/primitives/Selector"
+
+const input = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
+const result = S.decodeSync(Selector.Bytes)(input)
+expect(result.length).toBe(4)
+expect([...result]).toEqual([...input])
+```
+
+## Compute from Function Signature
+
+Computes selector by hashing function signature with Keccak256 and taking first 4 bytes.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Selector from "voltaire-effect/primitives/Selector"
+
+// ERC20 transfer
+const transfer = S.decodeSync(Selector.Signature)("transfer(address,uint256)")
+expect(S.encodeSync(Selector.Hex)(transfer)).toBe("0xa9059cbb")
+
+// ERC20 balanceOf
+const balanceOf = S.decodeSync(Selector.Signature)("balanceOf(address)")
+expect(S.encodeSync(Selector.Hex)(balanceOf)).toBe("0x70a08231")
+
+// ERC20 approve
+const approve = S.decodeSync(Selector.Signature)("approve(address,uint256)")
+expect(S.encodeSync(Selector.Hex)(approve)).toBe("0x095ea7b3")
+
+// ERC20 transferFrom
+const transferFrom = S.decodeSync(Selector.Signature)("transferFrom(address,address,uint256)")
+expect(S.encodeSync(Selector.Hex)(transferFrom)).toBe("0x23b872dd")
+
+// totalSupply (no params)
+const totalSupply = S.decodeSync(Selector.Signature)("totalSupply()")
+expect(S.encodeSync(Selector.Hex)(totalSupply)).toBe("0x18160ddd")
+```
+
+## Compare Selectors
+
+Compares two selectors for equality.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Selector from "voltaire-effect/primitives/Selector"
+
+const a = S.decodeSync(Selector.Hex)("0xa9059cbb")
+const b = S.decodeSync(Selector.Signature)("transfer(address,uint256)")
+expect(Selector.equals(a, b)).toBe(true)
+
+const c = S.decodeSync(Selector.Hex)("0x70a08231")
+expect(Selector.equals(a, c)).toBe(false)
+```
+
+## Handle Complex Function Signatures
+
+Handles functions with arrays and tuples.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Selector from "voltaire-effect/primitives/Selector"
+
+// Array params
+const batchTransfer = S.decodeSync(Selector.Signature)("batchTransfer(address[],uint256[])")
+expect(batchTransfer.length).toBe(4)
+
+// Tuple params
+const execute = S.decodeSync(Selector.Signature)("execute((address,uint256,bytes))")
+expect(execute.length).toBe(4)
+```

@@ -9,7 +9,7 @@ Use `MainnetProvider` for the simplest setup:
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, MainnetProvider } from 'voltaire-effect/services'
+import { ProviderService, MainnetProvider } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -33,7 +33,7 @@ import {
   OptimismProvider,
   ArbitrumProvider,
   BaseProvider
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 const getBlockNumber = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -72,7 +72,7 @@ import {
   NonceManagerService,
   CacheService,
   MainnetFullProvider 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -105,18 +105,20 @@ import { Effect } from 'effect'
 import { 
   ProviderService,
   ChainService,
+  ContractsService,
   OptimismProvider
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
   const chain = yield* ChainService
+  const contracts = yield* ContractsService
   
   // Chain config is pre-populated
   console.log(`Chain: ${chain.name}`)          // "Optimism"
   console.log(`Chain ID: ${chain.id}`)          // 10
   console.log(`Block time: ${chain.blockTime}`) // 2000ms
-  console.log(`Multicall3: ${chain.contracts?.multicall3?.address}`)
+  console.log(`Multicall3: ${contracts.multicall3?.address}`)
   
   const block = yield* provider.getBlockNumber()
   return block
@@ -139,7 +141,7 @@ import {
   DefaultFeeEstimator,
   DefaultNonceManager,
   MemoryCache
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 // Mock transport
 const MockTransport = Layer.succeed(TransportService, {
@@ -179,7 +181,7 @@ For networks without a preset:
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, createProvider } from 'voltaire-effect/services'
+import { ProviderService, createProvider } from 'voltaire-effect'
 
 // Any EVM-compatible network
 const fantomProvider = createProvider('https://rpc.ftm.tools')
@@ -212,7 +214,7 @@ import {
   HttpTransport,
   mainnet,
   DefaultFormatter
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 // Custom layer with only what you need
 const MinimalProvider = Layer.mergeAll(

@@ -7,7 +7,7 @@ description: Blockchain network configuration with Effect.ts
 
 ```typescript
 import { Effect } from 'effect'
-import { ChainService, mainnet } from 'voltaire-effect/services'
+import { ChainService, mainnet } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const chain = yield* ChainService
@@ -21,7 +21,7 @@ const program = Effect.gen(function* () {
 voltaire-effect provides Layer configurations for common networks:
 
 ```typescript
-import { mainnet, sepolia, optimism, arbitrum, base, polygon } from 'voltaire-effect/services'
+import { mainnet, sepolia, optimism, arbitrum, base, polygon } from 'voltaire-effect'
 
 // Ethereum Mainnet (id: 1)
 Effect.provide(mainnet)
@@ -54,22 +54,21 @@ interface ChainConfig {
     readonly decimals: number            // Usually 18
   }
   readonly blockTime: number             // Average block time in ms
-  readonly rpcUrls: {
-    readonly default: { readonly http: readonly string[] }
-  }
-  readonly blockExplorers?: {
-    readonly default: {
-      readonly name: string
-      readonly url: string
-      readonly apiUrl?: string
-    }
-  }
-  readonly contracts?: {
-    readonly multicall3?: ChainContract
-    readonly ensRegistry?: ChainContract
-    readonly ensUniversalResolver?: ChainContract
-  }
   readonly testnet?: boolean
+}
+
+interface BlockExplorerConfig {
+  readonly default?: {
+    readonly name: string
+    readonly url: string
+    readonly apiUrl?: string
+  }
+}
+
+interface ContractsConfig {
+  readonly multicall3?: ChainContract
+  readonly ensRegistry?: ChainContract
+  readonly ensUniversalResolver?: ChainContract
 }
 
 interface ChainContract {
@@ -78,28 +77,54 @@ interface ChainContract {
 }
 ```
 
+Block explorer metadata and contract deployments are provided by
+`BlockExplorerService` and `ContractsService` respectively.
+
+## RPC URLs
+
+RPC endpoints are exported as a separate map keyed by chain ID:
+
+```typescript
+import { rpcUrlsByChainId } from 'voltaire-effect'
+
+const mainnetRpcUrls = rpcUrlsByChainId[1]
+// mainnetRpcUrls.default.http[0] -> "https://eth.merkle.io"
+```
+
 ## Custom Chain Creation
 
-Create custom chain configurations using `Layer.succeed`:
+Create custom chain configurations using `Layer.mergeAll`:
 
 ```typescript
 import { Layer } from 'effect'
-import { ChainService, ChainConfig } from 'voltaire-effect/services'
+import {
+  BlockExplorerService,
+  ChainConfig,
+  ChainService,
+  ContractsService
+} from 'voltaire-effect'
 
-const myChain = Layer.succeed(ChainService, {
-  id: 12345,
-  name: 'My Chain',
-  nativeCurrency: { name: 'Token', symbol: 'TKN', decimals: 18 },
-  blockTime: 2000,
-  rpcUrls: { default: { http: ['https://rpc.mychain.io'] } },
-  contracts: {
+const myChain = Layer.mergeAll(
+  Layer.succeed(ChainService, {
+    id: 12345,
+    name: 'My Chain',
+    nativeCurrency: { name: 'Token', symbol: 'TKN', decimals: 18 },
+    blockTime: 2000
+  } satisfies ChainConfig),
+  Layer.succeed(BlockExplorerService, {
+    default: { name: 'My Explorer', url: 'https://explorer.mychain.io' }
+  }),
+  Layer.succeed(ContractsService, {
     multicall3: {
       address: '0xcA11bde05977b3631167028862bE2a173976CA11',
       blockCreated: 1
     }
-  }
-} satisfies ChainConfig)
+  })
+)
 ```
+
+Only provide the services you need; `BlockExplorerService` and `ContractsService`
+are optional for custom chains.
 
 ## Usage with Other Services
 
@@ -107,20 +132,22 @@ Chain configuration is used by other services for chain-specific behavior:
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { 
-  ChainService, 
-  ProviderService, 
-  Provider, 
+import {
+  ChainService,
+  ContractsService,
+  ProviderService,
+  Provider,
   HttpTransport,
-  mainnet 
-} from 'voltaire-effect/services'
+  mainnet
+} from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const chain = yield* ChainService
+  const contracts = yield* ContractsService
   const provider = yield* ProviderService
   
   // Use chain-specific data
-  const multicall = chain.contracts?.multicall3?.address
+  const multicall = contracts.multicall3?.address
   const blockNumber = yield* provider.getBlockNumber()
   
   return { chain: chain.name, multicall, blockNumber }
@@ -139,5 +166,17 @@ const program = Effect.gen(function* () {
 class ChainService extends Context.Tag("ChainService")<
   ChainService,
   ChainConfig
+>() {}
+
+// BlockExplorerService provides block explorer metadata
+class BlockExplorerService extends Context.Tag("BlockExplorerService")<
+  BlockExplorerService,
+  BlockExplorerConfig
+>() {}
+
+// ContractsService provides well-known contract deployments
+class ContractsService extends Context.Tag("ContractsService")<
+  ContractsService,
+  ContractsConfig
 >() {}
 ```

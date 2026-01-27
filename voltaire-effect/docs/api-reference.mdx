@@ -39,13 +39,17 @@ import {
   readContract, multicall, simulateContract,
   
   // Streaming
-  BlockStreamService, BlockStream,
+  makeBlockStream, BlockStreamService, BlockStream,
   TransactionStreamService, TransactionStream,
   
   // Errors
-  ProviderError, SignerError, TransportError,
-  ContractCallError, ContractWriteError
-} from 'voltaire-effect/services'
+  TransportError,
+  ProviderResponseError, ProviderNotFoundError, ProviderValidationError,
+  ProviderTimeoutError, ProviderStreamError,
+  ProviderReceiptPendingError, ProviderConfirmationsPendingError,
+  GetBalanceError, GetBlockError, WaitForTransactionReceiptError,
+  SignerError, ContractCallError, ContractWriteError
+} from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 ```
 
@@ -131,12 +135,20 @@ import * as Either from 'effect/Either'
 | Error | Tag | Where |
 |-------|-----|-------|
 | `ParseError` | `ParseError` | Schema decode |
-| `ProviderError` | `ProviderError` | Provider methods |
 | `SignerError` | `SignerError` | Signer methods |
 | `TransportError` | `TransportError` | Transport requests |
+| `ProviderResponseError` | `ProviderResponseError` | Invalid provider response |
+| `ProviderNotFoundError` | `ProviderNotFoundError` | Missing block/tx/receipt |
+| `ProviderValidationError` | `ProviderValidationError` | Invalid provider inputs |
+| `ProviderTimeoutError` | `ProviderTimeoutError` | Provider timeouts |
+| `ProviderStreamError` | `ProviderStreamError` | Provider stream failures |
+| `ProviderReceiptPendingError` | `ProviderReceiptPendingError` | Receipt not available yet |
+| `ProviderConfirmationsPendingError` | `ProviderConfirmationsPendingError` | Confirmations not met |
 | `ContractCallError` | `ContractCallError` | Contract reads |
 | `ContractWriteError` | `ContractWriteError` | Contract writes |
 | `CryptoError` | `CryptoError` | Crypto operations |
+
+Provider methods expose method-specific error unions like `GetBalanceError`, `GetBlockError`, and `WaitForTransactionReceiptError`.
 
 ## Layer Composition Patterns
 

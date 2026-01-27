@@ -86,8 +86,9 @@ export { String as EventSignatureSchema };
  * @returns hex string
  * @since 0.1.0
  */
-export const toHex = (sig: EventSignatureType): string =>
-	EventSignature.toHex(sig);
+export const toHex = (
+	sig: EventSignatureType,
+): ReturnType<typeof EventSignature.toHex> => EventSignature.toHex(sig);
 
 /**
  * Compares two event signatures for equality.

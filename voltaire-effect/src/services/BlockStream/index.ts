@@ -10,22 +10,21 @@
  * @example
  * ```typescript
  * import { Effect, Stream } from 'effect';
- * import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect/services';
+ * import { makeBlockStream, HttpTransport } from 'voltaire-effect/services';
  *
  * const program = Effect.gen(function* () {
- *   const stream = yield* BlockStreamService;
+ *   const stream = yield* makeBlockStream();
  *   yield* Stream.runForEach(
  *     stream.watch({ include: 'transactions' }),
  *     (event) => Effect.log(`Event: ${event.type}`)
  *   );
  * }).pipe(
- *   Effect.provide(BlockStream),
  *   Effect.provide(HttpTransport('https://...'))
  * );
  * ```
  */
 
-export { BlockStream } from "./BlockStream.js";
+export { BlockStream, makeBlockStream } from "./BlockStream.js";
 export { BlockStreamError } from "./BlockStreamError.js";
 export {
 	BlockStreamService,

@@ -54,10 +54,10 @@
  * Address.isValidChecksum(str) // boolean
  * Address.clone(addr)      // AddressType
  * Address.toBytes(addr)    // Uint8Array
- * Address.toU256(addr)     // bigint
+ * Address.toU256(addr)     // Uint256Type (U256)
  * Address.toShortHex(addr) // string (e.g., "0x742d...51e3")
- * Address.toLowercase(addr) // string
- * Address.toUppercase(addr) // string
+ * Address.toLowercase(addr) // Lowercase address hex
+ * Address.toUppercase(addr) // Uppercase address hex
  * Address.toAbiEncoded(addr) // Uint8Array (32 bytes)
  * ```
  *

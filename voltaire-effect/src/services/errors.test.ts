@@ -26,7 +26,10 @@ import {
 } from "./Contract/ContractTypes.js";
 import { KzgError } from "./Kzg/KzgService.js";
 import { Provider } from "./Provider/Provider.js";
-import { ProviderError, ProviderService } from "./Provider/ProviderService.js";
+import {
+	ProviderResponseError,
+	ProviderService,
+} from "./Provider/ProviderService.js";
 import { SignerError } from "./Signer/SignerService.js";
 import {
 	DeserializeError,
@@ -65,15 +68,15 @@ describe("Error constructor standardization", () => {
 			expect(error.data).toBe("0x1234");
 		});
 
-		it("ProviderError has _tag, input, message, cause", () => {
+		it("ProviderResponseError has _tag, input, message, cause", () => {
 			const input = { method: "eth_getBalance", params: ["0x123"] };
 			const cause = new Error("network timeout");
-			const error = new ProviderError(input, "Failed to get balance", {
+			const error = new ProviderResponseError(input, "Failed to get balance", {
 				cause,
 			});
 
-			expect(error._tag).toBe("ProviderError");
-			expect(error.name).toBe("ProviderError");
+			expect(error._tag).toBe("ProviderResponseError");
+			expect(error.name).toBe("ProviderResponseError");
 			expect(error.input).toEqual(input);
 			expect(error.message).toContain("Failed to get balance");
 			expect(error.cause).toBe(cause);
@@ -172,8 +175,8 @@ describe("Error constructor standardization", () => {
 			expect(error.cause).toBeUndefined();
 		});
 
-		it("ProviderError works without cause", () => {
-			const error = new ProviderError("0xhash", "Transaction timeout");
+		it("ProviderResponseError works without cause", () => {
+			const error = new ProviderResponseError("0xhash", "Transaction timeout");
 
 			expect(error.input).toBe("0xhash");
 			expect(error.message).toBe("Transaction timeout");
@@ -208,7 +211,7 @@ describe("Error constructor standardization", () => {
 			expect(new TransportError({ code: 1, message: "x" }, "x")).toBeInstanceOf(
 				Error,
 			);
-			expect(new ProviderError({}, "x")).toBeInstanceOf(Error);
+			expect(new ProviderResponseError({}, "x")).toBeInstanceOf(Error);
 			expect(new AccountError({}, "x")).toBeInstanceOf(Error);
 			expect(new SignerError({}, "x")).toBeInstanceOf(Error);
 			expect(new ContractError({}, "x")).toBeInstanceOf(Error);
@@ -235,16 +238,20 @@ describe("Error constructor standardization", () => {
 
 		it("errors can derive message from cause", () => {
 			const cause = new Error("Original error");
-			const error = new ProviderError({ method: "eth_call" }, undefined, {
-				cause,
-			});
+			const error = new ProviderResponseError(
+				{ method: "eth_call" },
+				undefined,
+				{
+					cause,
+				},
+			);
 
 			expect(error.message).toContain("Original error");
 		});
 	});
 
 	describe("Error code propagation", () => {
-		it("ProviderError preserves TransportError code", async () => {
+		it("Provider surfaces TransportError on failure", async () => {
 			const transport = Layer.succeed(TransportService, {
 				request: <T>(_method: string, _params?: unknown[]) =>
 					Effect.fail(
@@ -264,29 +271,27 @@ describe("Error constructor standardization", () => {
 			if (Exit.isFailure(exit)) {
 				const cause = exit.cause;
 				if (cause._tag === "Fail") {
-					const error = cause.error as ProviderError;
-					expect(error._tag).toBe("ProviderError");
-					expect(error.cause).toBeInstanceOf(TransportError);
-					expect((error.cause as TransportError).code).toBe(-32603);
+					const error = cause.error as TransportError;
+					expect(error._tag).toBe("TransportError");
+					expect(error.code).toBe(-32603);
 				}
 			}
 		});
 
-		it("SignerError preserves ProviderError code", () => {
-			const providerError = new ProviderError(
-				{ method: "eth_estimateGas" },
-				"Execution reverted",
-				{ code: -32000 },
-			);
+		it("SignerError preserves transport error code via cause", () => {
+			const transportError = new TransportError({
+				code: -32000,
+				message: "Execution reverted",
+			});
 			const signerError = new SignerError(
 				{ to: "0x123", value: 1000n },
 				"Transaction failed",
-				{ cause: providerError },
+				{ cause: transportError, code: transportError.code },
 			);
 
 			expect(signerError._tag).toBe("SignerError");
-			expect(signerError.cause).toBe(providerError);
-			expect((signerError.cause as ProviderError).code).toBe(-32000);
+			expect(signerError.cause).toBe(transportError);
+			expect((signerError.cause as TransportError).code).toBe(-32000);
 		});
 
 		it("TransportError code is accessible on wrapped errors", () => {
@@ -294,7 +299,7 @@ describe("Error constructor standardization", () => {
 				code: -32601,
 				message: "Method not found",
 			});
-			const providerError = new ProviderError(
+			const providerError = new ProviderResponseError(
 				{ method: "unknown_method" },
 				"RPC call failed",
 				{ cause: transportError },
@@ -306,9 +311,12 @@ describe("Error constructor standardization", () => {
 			);
 
 			expect(signerError.cause).toBe(providerError);
-			expect((signerError.cause as ProviderError).cause).toBe(transportError);
+			expect((signerError.cause as ProviderResponseError).cause).toBe(
+				transportError,
+			);
 			expect(
-				((signerError.cause as ProviderError).cause as TransportError).code,
+				((signerError.cause as ProviderResponseError).cause as TransportError)
+					.code,
 			).toBe(-32601);
 		});
 	});
@@ -441,14 +449,14 @@ describe("Error constructor standardization", () => {
 			expect(result).toBe("caught: -32601");
 		});
 
-		it("ProviderError is catchable with Effect.catchTag", async () => {
-			const error = new ProviderError(
+		it("ProviderResponseError is catchable with Effect.catchTag", async () => {
+			const error = new ProviderResponseError(
 				{ method: "eth_call" },
 				"Provider failed",
 			);
 
 			const program = Effect.fail(error).pipe(
-				Effect.catchTag("ProviderError", (e) =>
+				Effect.catchTag("ProviderResponseError", (e) =>
 					Effect.succeed(`caught: ${e.message}`),
 				),
 			);

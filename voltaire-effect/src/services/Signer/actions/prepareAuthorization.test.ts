@@ -9,6 +9,7 @@ import * as Layer from "effect/Layer";
 import type { AccountShape } from "../../Account/AccountService.js";
 import { AccountService } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
+import { TransportError } from "../../Transport/TransportService.js";
 import { prepareAuthorization } from "./prepareAuthorization.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -179,11 +180,12 @@ describe("prepareAuthorization", () => {
 	});
 
 	it("handles provider errors", async () => {
-		const { ProviderError } = await import("../../Provider/index.js");
-
 		const providerWithError: ProviderShape = {
 			...mockProvider,
-			getChainId: () => Effect.fail(new ProviderError({}, "Network error")),
+			getChainId: () =>
+				Effect.fail(
+					new TransportError({ code: -32000, message: "Network error" }),
+				),
 		};
 
 		const customLayers = Layer.mergeAll(

@@ -1,0 +1,109 @@
+---
+title: findError Tests
+description: Test examples for finding error definitions from ABI by name with Option semantics.
+---
+
+## Finds InsufficientBalance error
+
+Returns error definition when found.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import * as Abi from "voltaire-effect/primitives/Abi"
+
+const customAbi = S.decodeUnknownSync(Abi.fromArray)([
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    type: "error",
+    name: "InsufficientBalance",
+    inputs: [
+      { name: "available", type: "uint256" },
+      { name: "required", type: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "Unauthorized",
+    inputs: [{ name: "caller", type: "address" }],
+  },
+  {
+    type: "error",
+    name: "InvalidAmount",
+    inputs: [],
+  },
+])
+
+it.effect("finds InsufficientBalance error", () =>
+  Effect.gen(function* () {
+    const err = yield* Abi.findError(customAbi, "InsufficientBalance")
+    expect(err).not.toBeUndefined()
+    expect(err?.name).toBe("InsufficientBalance")
+    expect(err?.inputs.length).toBe(2)
+  }),
+)
+```
+
+## Finds error with no inputs
+
+Returns error definition even when it has no inputs.
+
+```typescript
+it.effect("finds error with no inputs", () =>
+  Effect.gen(function* () {
+    const err = yield* Abi.findError(customAbi, "InvalidAmount")
+    expect(err).not.toBeUndefined()
+    expect(err?.name).toBe("InvalidAmount")
+    expect(err?.inputs.length).toBe(0)
+  }),
+)
+```
+
+## Returns undefined for unknown error
+
+Returns undefined instead of failing.
+
+```typescript
+it.effect("returns undefined for unknown error", () =>
+  Effect.gen(function* () {
+    const err = yield* Abi.findError(customAbi, "UnknownError")
+    expect(err).toBeUndefined()
+  }),
+)
+```
+
+## Returns undefined for function name
+
+Only matches error types, not functions.
+
+```typescript
+it.effect("returns undefined for function name", () =>
+  Effect.gen(function* () {
+    const err = yield* Abi.findError(customAbi, "transfer")
+    expect(err).toBeUndefined()
+  }),
+)
+```
+
+## Is infallible
+
+Never fails for any input.
+
+```typescript
+it.effect("never fails", () =>
+  Effect.gen(function* () {
+    const err = yield* Abi.findError(customAbi, "nonexistent")
+    expect(err).toBeUndefined()
+  }),
+)
+```

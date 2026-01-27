@@ -1,0 +1,105 @@
+---
+title: findFunction Tests
+description: Test examples for findFunction showing ABI function lookup by name.
+---
+
+## Find Function by Name
+
+Finds function definition in ABI by name.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { fromArray } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { findFunction } from "voltaire-effect/primitives/Abi/findFunction"
+
+const erc20Abi = S.decodeUnknownSync(fromArray)([
+  {
+    type: "function",
+    name: "transfer",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+  },
+])
+
+const fn = await Effect.runPromise(findFunction(erc20Abi, "transfer"))
+expect(fn).not.toBeUndefined()
+expect(fn?.name).toBe("transfer")
+expect(fn?.inputs.length).toBe(2)
+```
+
+## Find View Function
+
+Finds view function and verifies stateMutability.
+
+```typescript
+import * as Effect from "effect/Effect"
+import { findFunction } from "voltaire-effect/primitives/Abi/findFunction"
+
+const fn = await Effect.runPromise(findFunction(erc20Abi, "balanceOf"))
+expect(fn).not.toBeUndefined()
+expect(fn?.name).toBe("balanceOf")
+expect(fn?.stateMutability).toBe("view")
+```
+
+## Return Undefined for Unknown Function
+
+Returns undefined when function name not found.
+
+```typescript
+import * as Effect from "effect/Effect"
+import { findFunction } from "voltaire-effect/primitives/Abi/findFunction"
+
+const fn = await Effect.runPromise(findFunction(erc20Abi, "unknownFunction"))
+expect(fn).toBeUndefined()
+```
+
+## Return Undefined for Event Name
+
+Returns undefined when searching for event name (only finds functions).
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { fromArray } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { findFunction } from "voltaire-effect/primitives/Abi/findFunction"
+
+const abi = S.decodeUnknownSync(fromArray)([
+  {
+    type: "event",
+    name: "Transfer",
+    inputs: [
+      { name: "from", type: "address", indexed: true },
+      { name: "to", type: "address", indexed: true },
+      { name: "value", type: "uint256", indexed: false },
+    ],
+  },
+])
+
+const fn = await Effect.runPromise(findFunction(abi, "Transfer"))
+expect(fn).toBeUndefined()
+```
+
+## Handle Empty ABI
+
+Returns undefined for empty ABI array.
+
+```typescript
+import * as Effect from "effect/Effect"
+import { findFunction } from "voltaire-effect/primitives/Abi/findFunction"
+
+const fn = await Effect.runPromise(findFunction([], "transfer"))
+expect(fn).toBeUndefined()
+```

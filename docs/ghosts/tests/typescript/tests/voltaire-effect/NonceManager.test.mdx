@@ -1,0 +1,250 @@
+---
+title: NonceManager Tests
+description: Test examples for NonceManagerService showing get, consume, increment, reset, and concurrent usage.
+---
+
+## NonceError Construction
+
+Creates NonceError with message and address.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import { NonceError } from "voltaire-effect"
+
+describe("NonceManagerService", () => {
+  describe("NonceError", () => {
+    it("creates error with message and address", () => {
+      const error = new NonceError({
+        address: "0x1234",
+        message: "test error",
+      })
+      expect(error.message).toBe("test error")
+      expect(error.address).toBe("0x1234")
+      expect(error._tag).toBe("NonceError")
+    })
+
+    it("creates error with cause", () => {
+      const cause = new Error("underlying")
+      const error = new NonceError({
+        address: "0x1234",
+        message: "Nonce fetch failed",
+        cause,
+      })
+      expect(error.cause).toBe(cause)
+    })
+  })
+})
+```
+
+## Get Nonce
+
+Returns on-chain nonce with delta applied.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { DefaultNonceManager } from "voltaire-effect"
+import { NonceManagerService } from "voltaire-effect"
+
+describe("DefaultNonceManager", () => {
+  describe("get", () => {
+    it.effect("returns on-chain nonce when delta is 0", () =>
+      Effect.gen(function* () {
+        const nonceManager = yield* NonceManagerService
+        const result = yield* nonceManager.get(
+          "0x1234567890123456789012345678901234567890",
+          1
+        )
+        expect(result).toBe(10)
+      }).pipe(
+        Effect.provide(DefaultNonceManager),
+        Effect.provide(
+          Layer.succeed(ProviderService, {
+            getTransactionCount: () => Effect.succeed(10n),
+            // ... other provider methods
+          } as any)
+        )
+      )
+    )
+  })
+})
+```
+
+## Consume Nonce
+
+Returns current nonce and increments delta.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { DefaultNonceManager } from "voltaire-effect"
+import { NonceManagerService } from "voltaire-effect"
+
+describe("consume", () => {
+  it.effect("returns current nonce and increments delta", () =>
+    Effect.gen(function* () {
+      const nonceManager = yield* NonceManagerService
+      const addr = "0x1234567890123456789012345678901234567890"
+      const n1 = yield* nonceManager.consume(addr, 1)
+      const n2 = yield* nonceManager.consume(addr, 1)
+      const n3 = yield* nonceManager.consume(addr, 1)
+      expect([n1, n2, n3]).toEqual([5, 6, 7])
+    }).pipe(
+      Effect.provide(DefaultNonceManager),
+      Effect.provide(
+        Layer.succeed(ProviderService, {
+          getTransactionCount: () => Effect.succeed(5n),
+          // ... other provider methods
+        } as any)
+      )
+    )
+  )
+
+  it.effect("tracks delta per address", () =>
+    Effect.gen(function* () {
+      const nonceManager = yield* NonceManagerService
+      const addr1 = "0x1111111111111111111111111111111111111111"
+      const addr2 = "0x2222222222222222222222222222222222222222"
+
+      const a1n1 = yield* nonceManager.consume(addr1, 1)
+      const a2n1 = yield* nonceManager.consume(addr2, 1)
+      const a1n2 = yield* nonceManager.consume(addr1, 1)
+      const a2n2 = yield* nonceManager.consume(addr2, 1)
+
+      expect(a1n1).toBe(10)
+      expect(a1n2).toBe(11)
+      expect(a2n1).toBe(10)
+      expect(a2n2).toBe(11)
+    }).pipe(
+      Effect.provide(DefaultNonceManager),
+      Effect.provide(
+        Layer.succeed(ProviderService, {
+          getTransactionCount: () => Effect.succeed(10n),
+          // ... other provider methods
+        } as any)
+      )
+    )
+  )
+})
+```
+
+## Reset Nonce Delta
+
+Clears delta for address.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { DefaultNonceManager } from "voltaire-effect"
+import { NonceManagerService } from "voltaire-effect"
+
+describe("reset", () => {
+  it.effect("clears delta for address", () =>
+    Effect.gen(function* () {
+      const nonceManager = yield* NonceManagerService
+      const addr = "0x1234567890123456789012345678901234567890"
+
+      yield* nonceManager.consume(addr, 1)
+      yield* nonceManager.consume(addr, 1)
+      yield* nonceManager.consume(addr, 1)
+
+      yield* nonceManager.reset(addr, 1)
+
+      const result = yield* nonceManager.get(addr, 1)
+      expect(result).toBe(5)
+    }).pipe(
+      Effect.provide(DefaultNonceManager),
+      Effect.provide(
+        Layer.succeed(ProviderService, {
+          getTransactionCount: () => Effect.succeed(5n),
+          // ... other provider methods
+        } as any)
+      )
+    )
+  )
+})
+```
+
+## Case Insensitivity
+
+Treats addresses with different cases as same.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { DefaultNonceManager } from "voltaire-effect"
+import { NonceManagerService } from "voltaire-effect"
+
+describe("case insensitivity", () => {
+  it.effect("treats addresses with different cases as same", () =>
+    Effect.gen(function* () {
+      const nonceManager = yield* NonceManagerService
+
+      const n1 = yield* nonceManager.consume("0xabcd1234567890123456789012345678901234ab", 1)
+      const n2 = yield* nonceManager.consume("0xABCD1234567890123456789012345678901234AB", 1)
+      const n3 = yield* nonceManager.consume("0xAbCd1234567890123456789012345678901234Ab", 1)
+
+      expect([n1, n2, n3]).toEqual([5, 6, 7])
+    }).pipe(
+      Effect.provide(DefaultNonceManager),
+      Effect.provide(
+        Layer.succeed(ProviderService, {
+          getTransactionCount: () => Effect.succeed(5n),
+          // ... other provider methods
+        } as any)
+      )
+    )
+  )
+})
+```
+
+## Concurrent Usage
+
+Handles concurrent consumes without race conditions.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { DefaultNonceManager } from "voltaire-effect"
+import { NonceManagerService } from "voltaire-effect"
+
+describe("concurrent usage", () => {
+  it.effect("handles concurrent consumes correctly", () =>
+    Effect.gen(function* () {
+      const nonceManager = yield* NonceManagerService
+      const addr = "0x1234567890123456789012345678901234567890"
+
+      const results = yield* Effect.all(
+        [
+          nonceManager.consume(addr, 1),
+          nonceManager.consume(addr, 1),
+          nonceManager.consume(addr, 1),
+          nonceManager.consume(addr, 1),
+          nonceManager.consume(addr, 1),
+        ],
+        { concurrency: 5 }
+      )
+
+      expect(results.sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4])
+    }).pipe(
+      Effect.provide(DefaultNonceManager),
+      Effect.provide(
+        Layer.succeed(ProviderService, {
+          getTransactionCount: () => Effect.succeed(0n),
+          // ... other provider methods
+        } as any)
+      )
+    )
+  )
+})
+```

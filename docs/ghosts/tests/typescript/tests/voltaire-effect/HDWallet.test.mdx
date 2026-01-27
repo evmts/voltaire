@@ -1,0 +1,213 @@
+---
+title: HDWallet Tests
+description: Test examples for hierarchical deterministic wallet derivation and key management.
+---
+
+## HDWalletTest generateMnemonic returns 12-word mnemonic
+
+Shows mnemonic generation with 128-bit entropy.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import { HDWalletService, HDWalletTest } from "voltaire-effect/crypto/HDWallet";
+
+it.effect("generateMnemonic returns 12-word mnemonic", () =>
+  Effect.gen(function* () {
+    const hdwallet = yield* HDWalletService;
+    const result = yield* hdwallet.generateMnemonic(128);
+    expect(typeof result).toBe("string");
+    expect(result.split(" ").length).toBe(12);
+  }).pipe(Effect.provide(HDWalletTest)),
+);
+```
+
+## HDWalletTest fromSeed returns HDNode
+
+Demonstrates creating a master node from a seed.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { HDWalletService, HDWalletTest } from "voltaire-effect/crypto/HDWallet";
+
+it.effect("fromSeed returns HDNode", () =>
+  Effect.gen(function* () {
+    const hdwallet = yield* HDWalletService;
+    const result = yield* hdwallet.fromSeed(new Uint8Array(64));
+    expect(result).toBeDefined();
+  }).pipe(Effect.provide(HDWalletTest)),
+);
+```
+
+## HDWalletTest derive returns HDNode
+
+Shows BIP-44 path derivation for Ethereum.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { HDWalletService, HDWalletTest } from "voltaire-effect/crypto/HDWallet";
+
+it.effect("derive returns HDNode", () =>
+  Effect.gen(function* () {
+    const hdwallet = yield* HDWalletService;
+    const node = yield* hdwallet.fromSeed(new Uint8Array(64));
+    const result = yield* hdwallet.derive(node, "m/44'/60'/0'/0/0");
+    expect(result).toBeDefined();
+  }).pipe(Effect.provide(HDWalletTest)),
+);
+```
+
+## mnemonicToSeed returns 64-byte seed
+
+Demonstrates converting mnemonic words to seed bytes.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { HDWalletService, HDWalletTest } from "voltaire-effect/crypto/HDWallet";
+
+it.effect("mnemonicToSeed returns 64-byte seed", () =>
+  Effect.gen(function* () {
+    const hdwallet = yield* HDWalletService;
+    const result = yield* hdwallet.mnemonicToSeed([
+      "abandon", "abandon", "abandon", "abandon",
+      "abandon", "abandon", "abandon", "abandon",
+      "abandon", "abandon", "abandon", "about",
+    ]);
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result.length).toBe(64);
+  }).pipe(Effect.provide(HDWalletTest)),
+);
+```
+
+## getPrivateKey and getPublicKey
+
+Shows extracting keys from derived nodes.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { HDWalletService, HDWalletTest } from "voltaire-effect/crypto/HDWallet";
+
+it.effect("getPrivateKey returns 32-byte key", () =>
+  Effect.gen(function* () {
+    const hdwallet = yield* HDWalletService;
+    const node = yield* hdwallet.fromSeed(new Uint8Array(64));
+    const result = yield* hdwallet.getPrivateKey(node);
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result?.length).toBe(32);
+  }).pipe(Effect.provide(HDWalletTest)),
+);
+
+it.effect("getPublicKey returns 33-byte key", () =>
+  Effect.gen(function* () {
+    const hdwallet = yield* HDWalletService;
+    const node = yield* hdwallet.fromSeed(new Uint8Array(64));
+    const result = yield* hdwallet.getPublicKey(node);
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result?.length).toBe(33);
+  }).pipe(Effect.provide(HDWalletTest)),
+);
+```
+
+## Error types have unique tags
+
+Demonstrates distinct error types for different failure modes.
+
+```typescript
+import {
+  HardenedDerivationError,
+  InvalidKeyError,
+  InvalidPathError,
+  InvalidSeedError,
+} from "voltaire-effect/crypto/HDWallet";
+
+const tags = new Set([
+  new InvalidPathError({ path: "", message: "" })._tag,
+  new InvalidSeedError({ seedLength: 0, message: "" })._tag,
+  new HardenedDerivationError({ path: "", index: 0, message: "" })._tag,
+  new InvalidKeyError({ message: "" })._tag,
+]);
+expect(tags.size).toBe(4);
+```
+
+## InvalidPathError is catchable with Effect.catchTag
+
+Shows catching specific error types.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { HDWalletLive, HDWalletService } from "voltaire-effect/crypto/HDWallet";
+
+const program = Effect.gen(function* () {
+  const hdwallet = yield* HDWalletService;
+  const master = yield* hdwallet.fromSeed(new Uint8Array(32).fill(0x42));
+  return yield* hdwallet.derive(master, "invalid/path");
+}).pipe(
+  Effect.provide(HDWalletLive),
+  Effect.catchTag("InvalidPathError", (error) =>
+    Effect.succeed(`caught: ${error.path}`),
+  ),
+);
+
+const result = await Effect.runPromise(program);
+expect(result).toBe("caught: invalid/path");
+```
+
+## withPrivateKey zeroes key after use
+
+Demonstrates secure key cleanup after use.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { fromSeed, withPrivateKey } from "voltaire-effect/crypto/HDWallet";
+import { HDWalletLive } from "voltaire-effect/crypto/HDWallet";
+
+it.effect("zeroes private key after use", () =>
+  Effect.gen(function* () {
+    const master = yield* fromSeed(new Uint8Array(32).fill(0x42));
+    let capturedKey: Uint8Array | null = null;
+
+    yield* withPrivateKey(master, (key) =>
+      Effect.sync(() => {
+        capturedKey = key;
+        expect(key.some((b) => b !== 0)).toBe(true);
+      }),
+    );
+
+    expect(capturedKey).not.toBeNull();
+    expect((capturedKey as Uint8Array).every((b) => b === 0)).toBe(true);
+  }).pipe(Effect.provide(HDWalletLive)),
+);
+```
+
+## withSeed zeroes seed after use
+
+Shows secure seed cleanup after use.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { withSeed } from "voltaire-effect/crypto/HDWallet";
+import { HDWalletLive } from "voltaire-effect/crypto/HDWallet";
+
+const mnemonic = [
+  "abandon", "abandon", "abandon", "abandon",
+  "abandon", "abandon", "abandon", "abandon",
+  "abandon", "abandon", "abandon", "about",
+];
+
+it.effect("zeroes seed after use", () =>
+  Effect.gen(function* () {
+    let capturedSeed: Uint8Array | null = null;
+
+    yield* withSeed(mnemonic, (seed) =>
+      Effect.sync(() => {
+        capturedSeed = seed;
+        expect(seed.length).toBe(64);
+        expect(seed.some((b) => b !== 0)).toBe(true);
+      }),
+    );
+
+    expect(capturedSeed).not.toBeNull();
+    expect((capturedSeed as Uint8Array).every((b) => b === 0)).toBe(true);
+  }).pipe(Effect.provide(HDWalletLive)),
+);
+```

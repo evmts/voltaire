@@ -1,0 +1,125 @@
+---
+title: EventLog Tests
+description: Test examples for EventLog showing event log validation with topics and data for LOG0-LOG4 opcodes.
+---
+
+## Validate Event Log Structure
+
+Validates event log with address, topics, data, and optional block info.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Schema from "effect/Schema"
+import * as EventLog from "voltaire-effect/primitives/EventLog"
+
+const input = {
+  address: "0x1234567890123456789012345678901234567890",
+  topics: [`0x${"ab".repeat(32)}`, `0x${"cd".repeat(32)}`],
+  data: new Uint8Array(32).fill(0xff),
+  blockNumber: 12345678n,
+  logIndex: 0,
+}
+
+const result = Schema.decodeSync(EventLog.Rpc)(input)
+expect(result.address).toBeInstanceOf(Uint8Array)
+expect(result.topics.length).toBe(2)
+expect(result.data).toBeInstanceOf(Uint8Array)
+```
+
+## Accept LOG0 (0 topics)
+
+Validates anonymous events with no topics.
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventLog from "voltaire-effect/primitives/EventLog"
+
+const input = {
+  address: "0x1234567890123456789012345678901234567890",
+  topics: [],
+  data: new Uint8Array(0),
+}
+
+const result = Schema.decodeSync(EventLog.Rpc)(input)
+expect(result.topics.length).toBe(0)
+```
+
+## Accept LOG1 (1 topic)
+
+Validates events with single topic (event signature only).
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventLog from "voltaire-effect/primitives/EventLog"
+
+const input = {
+  address: "0x1234567890123456789012345678901234567890",
+  topics: [`0x${"ab".repeat(32)}`],
+  data: new Uint8Array(0),
+}
+
+const result = Schema.decodeSync(EventLog.Rpc)(input)
+expect(result.topics.length).toBe(1)
+```
+
+## Accept LOG3 (3 topics)
+
+Validates events with 3 topics (signature + 2 indexed params).
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventLog from "voltaire-effect/primitives/EventLog"
+
+const input = {
+  address: "0x1234567890123456789012345678901234567890",
+  topics: [
+    `0x${"ab".repeat(32)}`,
+    `0x${"cd".repeat(32)}`,
+    `0x${"ef".repeat(32)}`,
+  ],
+  data: new Uint8Array(0),
+}
+
+const result = Schema.decodeSync(EventLog.Rpc)(input)
+expect(result.topics.length).toBe(3)
+```
+
+## Accept LOG4 (4 topics)
+
+Validates events with maximum 4 topics (signature + 3 indexed params).
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventLog from "voltaire-effect/primitives/EventLog"
+
+const input = {
+  address: "0x1234567890123456789012345678901234567890",
+  topics: [
+    `0x${"ab".repeat(32)}`,
+    `0x${"cd".repeat(32)}`,
+    `0x${"ef".repeat(32)}`,
+    `0x${"12".repeat(32)}`,
+  ],
+  data: new Uint8Array(0),
+}
+
+const result = Schema.decodeSync(EventLog.Rpc)(input)
+expect(result.topics.length).toBe(4)
+```
+
+## Reject More Than 4 Topics
+
+Rejects logs with more than 4 topics (EVM limit).
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventLog from "voltaire-effect/primitives/EventLog"
+
+const input = {
+  address: "0x1234567890123456789012345678901234567890",
+  topics: Array.from({ length: 5 }, () => `0x${"ab".repeat(32)}`),
+  data: new Uint8Array(0),
+}
+
+expect(() => Schema.decodeSync(EventLog.Rpc)(input)).toThrow()
+```

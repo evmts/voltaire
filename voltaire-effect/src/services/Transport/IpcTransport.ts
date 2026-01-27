@@ -581,17 +581,17 @@ export const IpcTransport = (
 			const awaitResponse = <T>(
 				deferred: Deferred.Deferred<JsonRpcResponse<T>, never>,
 				onTimeout: Effect.Effect<void>,
-				timeoutMs: number,
+				timeout: Duration.Duration,
 			) =>
 				Deferred.await(deferred).pipe(
-					Effect.timeout(Duration.millis(timeoutMs)),
+					Effect.timeout(timeout),
 					Effect.catchTag("TimeoutException", () =>
 						Effect.gen(function* () {
 							yield* onTimeout;
 							return yield* Effect.fail(
 								new TransportError({
 									code: -32603,
-									message: `Request timeout after ${timeoutMs}ms`,
+									message: `Request timeout after ${Duration.toMillis(timeout)}ms`,
 								}),
 							);
 						}),
@@ -603,7 +603,8 @@ export const IpcTransport = (
 					Effect.gen(function* () {
 						const timeoutOverride = yield* FiberRef.get(timeoutRef);
 						const tracingEnabled = yield* FiberRef.get(tracingRef);
-						const timeoutMs = timeoutOverride ?? config.timeout ?? 30000;
+						const timeout =
+							timeoutOverride ?? Duration.millis(config.timeout ?? 30000);
 						const closed = yield* Ref.get(isClosedRef);
 						if (closed) {
 							return yield* Effect.fail(
@@ -661,7 +662,7 @@ export const IpcTransport = (
 									],
 									{ discard: true },
 								),
-								timeoutMs,
+								timeout,
 							);
 
 							if (response.error) {
@@ -710,7 +711,7 @@ export const IpcTransport = (
 								next.delete(id);
 								return next;
 							}),
-							timeoutMs,
+							timeout,
 						);
 
 						if (response.error) {

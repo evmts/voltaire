@@ -1,0 +1,248 @@
+---
+title: Rlp Tests
+description: Test examples for RLP encoding and decoding showing Ethereum's Recursive Length Prefix serialization.
+---
+
+## Encode Single Byte
+
+Encodes single bytes < 0x80 as themselves, >= 0x80 with prefix.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+// Single byte < 0x80: encoded as itself
+const low = Effect.runSync(Rlp.encode(new Uint8Array([0x7f])))
+expect(low).toEqual(new Uint8Array([0x7f]))
+
+// Single byte 0x00: encoded as itself
+const zero = Effect.runSync(Rlp.encode(new Uint8Array([0x00])))
+expect(zero).toEqual(new Uint8Array([0x00]))
+
+// Single byte >= 0x80: needs prefix
+const high = Effect.runSync(Rlp.encode(new Uint8Array([0x80])))
+expect(high).toEqual(new Uint8Array([0x81, 0x80]))
+```
+
+## Encode Short Bytes
+
+Encodes 0-55 bytes with length prefix 0x80 + length.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+// Empty bytes: 0x80
+const empty = Effect.runSync(Rlp.encode(new Uint8Array(0)))
+expect(empty).toEqual(new Uint8Array([0x80]))
+
+// 2 bytes: 0x82 prefix
+const two = Effect.runSync(Rlp.encode(new Uint8Array([0x01, 0x02])))
+expect(two).toEqual(new Uint8Array([0x82, 0x01, 0x02]))
+
+// 55 bytes: 0xb7 prefix (max short string)
+const data55 = new Uint8Array(55).fill(0xab)
+const encoded55 = Effect.runSync(Rlp.encode(data55))
+expect(encoded55[0]).toBe(0xb7)
+expect(encoded55.length).toBe(56)
+```
+
+## Encode Long Bytes
+
+Encodes > 55 bytes with length-of-length prefix.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+// 56 bytes: 0xb8 prefix + 1 byte length
+const data56 = new Uint8Array(56).fill(0xab)
+const encoded56 = Effect.runSync(Rlp.encode(data56))
+expect(encoded56[0]).toBe(0xb8)
+expect(encoded56[1]).toBe(56)
+expect(encoded56.length).toBe(58)
+
+// 256 bytes: 0xb9 prefix + 2 byte length
+const data256 = new Uint8Array(256).fill(0xab)
+const encoded256 = Effect.runSync(Rlp.encode(data256))
+expect(encoded256[0]).toBe(0xb9)
+expect(encoded256[1]).toBe(0x01)
+expect(encoded256[2]).toBe(0x00)
+```
+
+## Encode Lists
+
+Encodes lists with 0xc0 base prefix.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+// Empty list: 0xc0
+const emptyList = Effect.runSync(Rlp.encode([]))
+expect(emptyList).toEqual(new Uint8Array([0xc0]))
+
+// List with single byte item
+const single = Effect.runSync(Rlp.encode([new Uint8Array([0x01])]))
+expect(single).toEqual(new Uint8Array([0xc1, 0x01]))
+
+// List with multiple items
+const multi = Effect.runSync(
+  Rlp.encode([new Uint8Array([0x01]), new Uint8Array([0x02])])
+)
+expect(multi).toEqual(new Uint8Array([0xc2, 0x01, 0x02]))
+```
+
+## Encode Nested Lists
+
+Encodes nested list structures.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+type Encodable = Uint8Array | Encodable[]
+
+// Nested list: [[1]]
+const nested: Encodable = [[new Uint8Array([0x01])]]
+const encoded = Effect.runSync(Rlp.encode(nested))
+expect(encoded).toEqual(new Uint8Array([0xc2, 0xc1, 0x01]))
+
+// Deeply nested empty: [[[[]]]]
+const deep: Encodable = [[[[]]]]
+const encodedDeep = Effect.runSync(Rlp.encode(deep))
+expect(encodedDeep).toEqual(new Uint8Array([0xc3, 0xc2, 0xc1, 0xc0]))
+```
+
+## Decode Single Byte
+
+Decodes single byte values.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+const decoded = Effect.runSync(Rlp.decode(new Uint8Array([0x7f])))
+expect(decoded.data).toEqual({ type: "bytes", value: new Uint8Array([0x7f]) })
+expect(decoded.remainder.length).toBe(0)
+```
+
+## Decode Bytes
+
+Decodes byte strings of various lengths.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+// Empty bytes
+const empty = Effect.runSync(Rlp.decode(new Uint8Array([0x80])))
+expect(empty.data).toEqual({ type: "bytes", value: new Uint8Array(0) })
+
+// Short bytes
+const short = Effect.runSync(Rlp.decode(new Uint8Array([0x82, 0x01, 0x02])))
+expect(short.data).toEqual({ type: "bytes", value: new Uint8Array([0x01, 0x02]) })
+```
+
+## Decode Lists
+
+Decodes list structures.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+// Empty list
+const empty = Effect.runSync(Rlp.decode(new Uint8Array([0xc0])))
+expect(empty.data).toEqual({ type: "list", value: [] })
+
+// List with items
+const items = Effect.runSync(Rlp.decode(new Uint8Array([0xc2, 0x01, 0x02])))
+expect(items.data).toEqual({
+  type: "list",
+  value: [
+    { type: "bytes", value: new Uint8Array([0x01]) },
+    { type: "bytes", value: new Uint8Array([0x02]) },
+  ],
+})
+```
+
+## Round-Trip Encoding
+
+Encodes, decodes, and re-encodes to verify correctness.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+const original = new Uint8Array([0x01, 0x02, 0x03, 0x04, 0x05])
+const encoded = Effect.runSync(Rlp.encode(original))
+const { data } = Effect.runSync(Rlp.decode(encoded))
+const reEncoded = Effect.runSync(Rlp.encode(data))
+expect(reEncoded).toEqual(encoded)
+```
+
+## Encode Transaction Structure
+
+Encodes legacy Ethereum transaction as RLP list.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+type Encodable = Uint8Array | Encodable[]
+
+const fromHex = (hex: string): Uint8Array => {
+  const h = hex.startsWith("0x") ? hex.slice(2) : hex
+  const bytes = new Uint8Array(h.length / 2)
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Number.parseInt(h.slice(i * 2, i * 2 + 2), 16)
+  }
+  return bytes
+}
+
+const fromInt = (n: number): Uint8Array => {
+  if (n === 0) return new Uint8Array(0)
+  const hex = n.toString(16)
+  const padded = hex.length % 2 === 0 ? hex : `0${hex}`
+  return fromHex(padded)
+}
+
+// [nonce, gasPrice, gasLimit, to, value, data, v, r, s]
+const tx: Encodable = [
+  fromInt(0),              // nonce
+  fromInt(20000000000),    // gasPrice (20 gwei)
+  fromInt(21000),          // gasLimit
+  fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"), // to
+  fromInt(1000000000000000000), // value (1 ETH)
+  new Uint8Array(0),       // data
+  fromInt(27),             // v
+  fromHex(`0x${"ab".repeat(32)}`), // r
+  fromHex(`0x${"cd".repeat(32)}`), // s
+]
+
+const encoded = Effect.runSync(Rlp.encode(tx))
+const { data } = Effect.runSync(Rlp.decode(encoded))
+expect(data.type).toBe("list")
+if (data.type === "list") {
+  expect(data.value.length).toBe(9)
+}
+```
+
+## Reject Invalid RLP
+
+Rejects truncated or malformed RLP data.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as Rlp from "voltaire-effect/primitives/Rlp"
+
+// Truncated input
+const truncated = new Uint8Array([0x82, 0x01])
+await expect(Effect.runPromise(Rlp.decode(truncated))).rejects.toThrow()
+
+// Non-canonical encoding
+const nonCanonical = new Uint8Array([0xb8, 0x00]) // empty data claiming long format
+await expect(Effect.runPromise(Rlp.decode(nonCanonical))).rejects.toThrow()
+```

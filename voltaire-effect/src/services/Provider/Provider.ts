@@ -25,25 +25,21 @@ import {
 	BlockStream as CoreBlockStream,
 	type WatchOptions,
 } from "@tevm/voltaire/block";
+import type { HexType } from "@tevm/voltaire/Hex";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Runtime from "effect/Runtime";
 import * as Schedule from "effect/Schedule";
 import * as Stream from "effect/Stream";
+import { TransportError } from "../Transport/TransportError.js";
 import { TransportService } from "../Transport/TransportService.js";
-
-/**
- * Internal error codes for retry logic.
- * Using codes outside typical JSON-RPC ranges (-32000 to -32099) to avoid conflicts.
- */
-const INTERNAL_CODE_PENDING = -40001;
-const INTERNAL_CODE_WAITING_CONFIRMATIONS = -40002;
-
 import { getBlobBaseFee as getBlobBaseFeeEffect } from "./getBlobBaseFee.js";
 import {
 	type AccessListType,
+	type AccessListInput,
 	type AddressInput,
+	type BackfillBlocksError,
 	type BlockOverrides,
 	type BlockTag,
 	type BlockType,
@@ -53,18 +49,36 @@ import {
 	type FilterChanges,
 	type FilterId,
 	type GetBlockArgs,
+	type GetBlockReceiptsArgs,
 	type GetUncleArgs,
+	type GetUncleCountArgs,
 	type HashInput,
 	type LogFilter,
 	type LogType,
 	type ProofType,
-	ProviderError,
+	type RpcTransactionRequest,
+	ProviderConfirmationsPendingError,
+	ProviderNotFoundError,
+	ProviderReceiptPendingError,
+	ProviderResponseError,
 	ProviderService,
+	ProviderStreamError,
+	ProviderTimeoutError,
+	ProviderValidationError,
 	type ReceiptType,
 	type StateOverride,
+	type TransactionIndexInput,
 	type TransactionType,
 	type UncleBlockType,
+	type WatchBlocksError,
 } from "./ProviderService.js";
+import type {
+	SimulateV1Payload,
+	SimulateV1Result,
+	SimulateV2Payload,
+	SimulateV2Result,
+} from "./SimulationService.js";
+import type { SyncingStatus, WorkResult } from "./NetworkService.js";
 
 /**
  * Converts a Uint8Array to hex string.
@@ -94,6 +108,24 @@ const toHashHex = (input: HashInput): `0x${string}` => {
 	if (typeof input === "string") return input as `0x${string}`;
 	return bytesToHex(input) as `0x${string}`;
 };
+
+/**
+ * Parses a hex quantity into bigint with consistent provider error handling.
+ */
+const parseHexToBigInt = (input: {
+	method: string;
+	response: string;
+	params?: unknown[];
+}) =>
+	Effect.try({
+		try: () => BigInt(input.response),
+		catch: (error) =>
+			new ProviderResponseError(
+				input,
+				`Invalid hex response from RPC: ${input.response}`,
+				{ cause: error instanceof Error ? error : undefined },
+			),
+	});
 
 type LogFilterParams = {
 	address?: AddressInput | AddressInput[];
@@ -152,6 +184,20 @@ type RpcCallObject = {
 	nonce?: `0x${string}`;
 };
 
+type RpcAccessList = Array<{
+	address: `0x${string}`;
+	storageKeys: Array<`0x${string}`>;
+}>;
+
+type RpcTransactionObject = RpcCallObject & {
+	to?: `0x${string}` | null;
+	accessList?: RpcAccessList;
+	chainId?: `0x${string}`;
+	type?: `0x${string}`;
+	maxFeePerBlobGas?: `0x${string}`;
+	blobVersionedHashes?: readonly `0x${string}`[];
+};
+
 /**
  * Formats a CallRequest for JSON-RPC submission.
  *
@@ -173,6 +219,73 @@ const formatCallRequest = (tx: CallRequest): RpcCallObject => {
 	if (tx.gas !== undefined) formatted.gas = `0x${tx.gas.toString(16)}`;
 	return formatted;
 };
+
+const formatAccessList = (accessList: AccessListInput): RpcAccessList =>
+	accessList.map((entry) => ({
+		address: toAddressHex(entry.address),
+		storageKeys: entry.storageKeys,
+	}));
+
+const formatTransactionRequest = (
+	tx: RpcTransactionRequest,
+): RpcTransactionObject => {
+	const formatted: RpcTransactionObject = {};
+	formatted.from = toAddressHex(tx.from);
+	if (tx.to !== undefined) {
+		formatted.to = tx.to === null ? null : toAddressHex(tx.to);
+	}
+	if (tx.data) formatted.data = tx.data;
+	if (tx.value !== undefined) formatted.value = `0x${tx.value.toString(16)}`;
+	if (tx.gas !== undefined) formatted.gas = `0x${tx.gas.toString(16)}`;
+	if (tx.gasPrice !== undefined) {
+		formatted.gasPrice = `0x${tx.gasPrice.toString(16)}`;
+	}
+	if (tx.maxFeePerGas !== undefined) {
+		formatted.maxFeePerGas = `0x${tx.maxFeePerGas.toString(16)}`;
+	}
+	if (tx.maxPriorityFeePerGas !== undefined) {
+		formatted.maxPriorityFeePerGas = `0x${tx.maxPriorityFeePerGas.toString(16)}`;
+	}
+	if (tx.nonce !== undefined) {
+		formatted.nonce = `0x${tx.nonce.toString(16)}`;
+	}
+	if (tx.accessList !== undefined) {
+		formatted.accessList = formatAccessList(tx.accessList);
+	}
+	if (tx.chainId !== undefined) {
+		formatted.chainId = `0x${tx.chainId.toString(16)}`;
+	}
+	if (tx.type !== undefined) {
+		formatted.type = `0x${tx.type.toString(16)}`;
+	}
+	if (tx.maxFeePerBlobGas !== undefined) {
+		formatted.maxFeePerBlobGas = `0x${tx.maxFeePerBlobGas.toString(16)}`;
+	}
+	if (tx.blobVersionedHashes !== undefined) {
+		formatted.blobVersionedHashes = tx.blobVersionedHashes;
+	}
+	return formatted;
+};
+
+const toIndexHex = (index: TransactionIndexInput): `0x${string}` => {
+	if (typeof index === "string") return index as `0x${string}`;
+	const value = typeof index === "number" ? BigInt(index) : index;
+	return `0x${value.toString(16)}` as `0x${string}`;
+};
+
+const formatSimulateV1Payload = (payload: SimulateV1Payload) => ({
+	...payload,
+	blockStateCalls: payload.blockStateCalls.map((block) => ({
+		...block,
+		blockOverrides: block.blockOverrides
+			? formatBlockOverrides(block.blockOverrides)
+			: undefined,
+		stateOverrides: block.stateOverrides
+			? formatStateOverride(block.stateOverrides)
+			: undefined,
+		calls: block.calls.map(formatCallRequest),
+	})),
+});
 
 /**
  * RPC state override object for eth_call.
@@ -283,7 +396,7 @@ const formatBlockOverrides = (
  * This layer:
  * - Converts method parameters to JSON-RPC format
  * - Handles response parsing (hex to bigint, etc.)
- * - Maps transport errors to ProviderError
+ * - Surfaces TransportError and provider-specific errors
  *
  * Requires TransportService in context.
  *
@@ -362,10 +475,9 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 			const request = <T>(method: string, params?: unknown[]) =>
 				transport.request<T>(method, params).pipe(
 					Effect.mapError(
-						(e) =>
-							new ProviderError({ method, params }, e.message, {
-								cause: e,
-								code: e.code,
+						(error) =>
+							new TransportError(error.input, error.message, {
+								cause: error,
 								context: { method, params },
 							}),
 					),
@@ -375,15 +487,7 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 				getBlockNumber: () =>
 					request<string>("eth_blockNumber").pipe(
 						Effect.flatMap((hex) =>
-							Effect.try({
-								try: () => BigInt(hex),
-								catch: (e) =>
-									new ProviderError(
-										{ method: "eth_blockNumber", response: hex },
-										`Invalid hex response from RPC: ${hex}`,
-										{ cause: e instanceof Error ? e : undefined },
-									),
-							}),
+							parseHexToBigInt({ method: "eth_blockNumber", response: hex }),
 						),
 					),
 
@@ -404,7 +508,39 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						Effect.flatMap((block) =>
 							block
 								? Effect.succeed(block)
-								: Effect.fail(new ProviderError(args ?? {}, "Block not found")),
+								: Effect.fail(
+										new ProviderNotFoundError(
+											{ method, params, args },
+											"Block not found",
+											{ resource: "block" },
+										),
+									),
+						),
+					);
+				},
+
+				getBlockReceipts: (args?: GetBlockReceiptsArgs) => {
+					const method = "eth_getBlockReceipts";
+					let blockId: string;
+					if (args?.blockHash) {
+						blockId = toHashHex(args.blockHash);
+					} else if (args?.blockNumber !== undefined) {
+						blockId = `0x${args.blockNumber.toString(16)}`;
+					} else {
+						blockId = args?.blockTag ?? "latest";
+					}
+					const params = [blockId];
+					return request<ReceiptType[] | null>(method, params).pipe(
+						Effect.flatMap((receipts) =>
+							receipts
+								? Effect.succeed(receipts)
+								: Effect.fail(
+										new ProviderNotFoundError(
+											{ method, params, args },
+											"Block receipts not found",
+											{ resource: "blockReceipts" },
+										),
+									),
 						),
 					);
 				},
@@ -417,7 +553,9 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						? [toHashHex(args.blockHash)]
 						: [args.blockTag ?? "latest"];
 					return request<string>(method, params).pipe(
-						Effect.map((hex) => BigInt(hex)),
+						Effect.flatMap((hex) =>
+							parseHexToBigInt({ method, params, response: hex }),
+						),
 					);
 				},
 
@@ -425,7 +563,15 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					request<string>("eth_getBalance", [
 						toAddressHex(address),
 						blockTag,
-					]).pipe(Effect.map((hex) => BigInt(hex))),
+					]).pipe(
+						Effect.flatMap((hex) =>
+							parseHexToBigInt({
+								method: "eth_getBalance",
+								params: [toAddressHex(address), blockTag],
+								response: hex,
+							}),
+						),
+					),
 
 				getTransactionCount: (
 					address: AddressInput,
@@ -434,7 +580,15 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					request<string>("eth_getTransactionCount", [
 						toAddressHex(address),
 						blockTag,
-					]).pipe(Effect.map((hex) => BigInt(hex))),
+					]).pipe(
+						Effect.flatMap((hex) =>
+							parseHexToBigInt({
+								method: "eth_getTransactionCount",
+								params: [toAddressHex(address), blockTag],
+								response: hex,
+							}),
+						),
+					),
 
 				getCode: (address: AddressInput, blockTag: BlockTag = "latest") =>
 					request<`0x${string}`>("eth_getCode", [
@@ -461,10 +615,61 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 							tx
 								? Effect.succeed(tx)
 								: Effect.fail(
-										new ProviderError({ hash }, "Transaction not found"),
+										new ProviderNotFoundError(
+											{ hash },
+											"Transaction not found",
+											{ resource: "transaction" },
+										),
 									),
 						),
 					),
+
+				getTransactionByBlockHashAndIndex: (
+					blockHash: HashInput,
+					index: TransactionIndexInput,
+				) =>
+					request<TransactionType | null>("eth_getTransactionByBlockHashAndIndex", [
+						toHashHex(blockHash),
+						toIndexHex(index),
+					]).pipe(
+						Effect.flatMap((tx) =>
+							tx
+								? Effect.succeed(tx)
+								: Effect.fail(
+										new ProviderNotFoundError(
+											{ blockHash, index },
+											"Transaction not found",
+											{ resource: "transaction" },
+										),
+									),
+						),
+					),
+
+				getTransactionByBlockNumberAndIndex: (
+					blockTag: BlockTag | bigint,
+					index: TransactionIndexInput,
+				) => {
+					const blockRef =
+						typeof blockTag === "bigint"
+							? (`0x${blockTag.toString(16)}` as const)
+							: blockTag;
+					return request<TransactionType | null>(
+						"eth_getTransactionByBlockNumberAndIndex",
+						[blockRef, toIndexHex(index)],
+					).pipe(
+						Effect.flatMap((tx) =>
+							tx
+								? Effect.succeed(tx)
+								: Effect.fail(
+										new ProviderNotFoundError(
+											{ blockTag, index },
+											"Transaction not found",
+											{ resource: "transaction" },
+										),
+									),
+						),
+					);
+				},
 
 				getTransactionReceipt: (hash: HashInput) =>
 					request<ReceiptType | null>("eth_getTransactionReceipt", [
@@ -474,9 +679,10 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 							receipt
 								? Effect.succeed(receipt)
 								: Effect.fail(
-										new ProviderError(
+										new ProviderNotFoundError(
 											{ hash },
 											"Transaction receipt not found (pending or unknown)",
+											{ resource: "receipt" },
 										),
 									),
 						),
@@ -495,7 +701,7 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						const pollingInterval = opts?.pollingInterval ?? 1000;
 						if (confirmations < 1) {
 							return yield* Effect.fail(
-								new ProviderError(
+								new ProviderValidationError(
 									{ hash, confirmations },
 									"Confirmations must be at least 1",
 								),
@@ -513,9 +719,10 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 								receipt
 									? Effect.succeed(receipt)
 									: Effect.fail(
-											new ProviderError({ hash }, "Transaction pending", {
-												code: INTERNAL_CODE_PENDING,
-											}),
+											new ProviderReceiptPendingError(
+												{ hash },
+												"Transaction pending",
+											),
 										),
 							),
 						);
@@ -527,16 +734,17 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 										Schedule.recurUpTo(Duration.millis(timeout)),
 									),
 									Schedule.whileInput(
-										(e: ProviderError) => e.code === INTERNAL_CODE_PENDING,
+										(e) => e._tag === "ProviderReceiptPendingError",
 									),
 								),
 							),
 							Effect.timeoutFail({
 								duration: Duration.millis(timeout),
 								onTimeout: () =>
-									new ProviderError(
+									new ProviderTimeoutError(
 										{ hash, timeout },
 										"Timeout waiting for transaction receipt",
+										{ timeoutMs: timeout },
 									),
 							}),
 						);
@@ -545,20 +753,26 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 							return receipt;
 						}
 
-						const receiptBlockNumber = BigInt(receipt.blockNumber);
+						const receiptBlockNumber = yield* parseHexToBigInt({
+							method: "eth_getTransactionReceipt",
+							params: [hashHex],
+							response: receipt.blockNumber,
+						});
 						const targetBlock = receiptBlockNumber + BigInt(confirmations - 1);
 
 						const pollConfirmations = Effect.gen(function* () {
 							const currentBlockHex = yield* request<string>("eth_blockNumber");
-							const currentBlock = BigInt(currentBlockHex);
+							const currentBlock = yield* parseHexToBigInt({
+								method: "eth_blockNumber",
+								response: currentBlockHex,
+							});
 							if (currentBlock >= targetBlock) {
 								return receipt;
 							}
 							return yield* Effect.fail(
-								new ProviderError(
+								new ProviderConfirmationsPendingError(
 									{ hash, currentBlock, targetBlock },
 									"Waiting for confirmations",
-									{ code: INTERNAL_CODE_WAITING_CONFIRMATIONS },
 								),
 							);
 						});
@@ -570,17 +784,17 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 										Schedule.recurUpTo(Duration.millis(timeout)),
 									),
 									Schedule.whileInput(
-										(e: ProviderError) =>
-											e.code === INTERNAL_CODE_WAITING_CONFIRMATIONS,
+										(e) => e._tag === "ProviderConfirmationsPendingError",
 									),
 								),
 							),
 							Effect.timeoutFail({
 								duration: Duration.millis(timeout),
 								onTimeout: () =>
-									new ProviderError(
+									new ProviderTimeoutError(
 										{ hash, timeout },
 										"Timeout waiting for confirmations",
+										{ timeoutMs: timeout },
 									),
 							}),
 						);
@@ -617,14 +831,10 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					}
 					return request<string>("eth_estimateGas", params).pipe(
 						Effect.flatMap((hex) =>
-							Effect.try({
-								try: () => BigInt(hex),
-								catch: (e) =>
-									new ProviderError(
-										{ method: "eth_estimateGas", response: hex },
-										`Invalid hex response from RPC: ${hex}`,
-										{ cause: e instanceof Error ? e : undefined },
-									),
+							parseHexToBigInt({
+								method: "eth_estimateGas",
+								params,
+								response: hex,
 							}),
 						),
 					);
@@ -634,6 +844,23 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					request<AccessListType>("eth_createAccessList", [
 						formatCallRequest(tx),
 					]),
+
+				simulateV1: (
+					payload: SimulateV1Payload,
+					blockTag: BlockTag = "latest",
+				) =>
+					request<SimulateV1Result>("eth_simulateV1", [
+						formatSimulateV1Payload(payload),
+						blockTag,
+					]),
+
+				simulateV2: <TResult = SimulateV2Result>(
+					payload: SimulateV2Payload,
+					blockTag?: BlockTag,
+				) => {
+					const params = blockTag === undefined ? [payload] : [payload, blockTag];
+					return request<TResult>("eth_simulateV2", params);
+				},
 
 				getLogs: (filter: LogFilter) => {
 					const params = formatLogFilterParams(filter);
@@ -655,46 +882,36 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 
 				getChainId: () =>
 					request<string>("eth_chainId").pipe(
-						Effect.flatMap((hex) => {
-							const value = BigInt(hex);
-							if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
-								return Effect.fail(
-									new ProviderError(
-										{ method: "eth_chainId" },
-										`Chain ID ${value} exceeds safe integer range`,
-									),
-								);
-							}
-							return Effect.succeed(Number(value));
-						}),
+						Effect.flatMap((hex) =>
+							parseHexToBigInt({ method: "eth_chainId", response: hex }).pipe(
+								Effect.flatMap((value) => {
+									if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+										return Effect.fail(
+											new ProviderValidationError(
+												{ method: "eth_chainId", value },
+												`Chain ID ${value} exceeds safe integer range`,
+											),
+										);
+									}
+									return Effect.succeed(Number(value));
+								}),
+							),
+						),
 					),
 
 				getGasPrice: () =>
 					request<string>("eth_gasPrice").pipe(
 						Effect.flatMap((hex) =>
-							Effect.try({
-								try: () => BigInt(hex),
-								catch: (e) =>
-									new ProviderError(
-										{ method: "eth_gasPrice", response: hex },
-										`Invalid hex response from RPC: ${hex}`,
-										{ cause: e instanceof Error ? e : undefined },
-									),
-							}),
+							parseHexToBigInt({ method: "eth_gasPrice", response: hex }),
 						),
 					),
 
 				getMaxPriorityFeePerGas: () =>
 					request<string>("eth_maxPriorityFeePerGas").pipe(
 						Effect.flatMap((hex) =>
-							Effect.try({
-								try: () => BigInt(hex),
-								catch: (e) =>
-									new ProviderError(
-										{ method: "eth_maxPriorityFeePerGas", response: hex },
-										`Invalid hex response from RPC: ${hex}`,
-										{ cause: e instanceof Error ? e : undefined },
-									),
+							parseHexToBigInt({
+								method: "eth_maxPriorityFeePerGas",
+								response: hex,
 							}),
 						),
 					),
@@ -707,7 +924,7 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 					Effect.gen(function* () {
 						if (!Number.isInteger(blockCount) || blockCount < 1) {
 							return yield* Effect.fail(
-								new ProviderError(
+								new ProviderValidationError(
 									{ blockCount },
 									"blockCount must be a positive integer",
 								),
@@ -716,7 +933,7 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						for (const p of rewardPercentiles) {
 							if (p < 0 || p > 100) {
 								return yield* Effect.fail(
-									new ProviderError(
+									new ProviderValidationError(
 										{ rewardPercentiles },
 										"rewardPercentiles values must be between 0 and 100",
 									),
@@ -726,7 +943,7 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						for (let i = 1; i < rewardPercentiles.length; i++) {
 							if (rewardPercentiles[i] < rewardPercentiles[i - 1]) {
 								return yield* Effect.fail(
-									new ProviderError(
+									new ProviderValidationError(
 										{ rewardPercentiles },
 										"rewardPercentiles should be sorted in ascending order",
 									),
@@ -740,9 +957,39 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						]);
 					}),
 
+				getSyncing: () => request<SyncingStatus>("eth_syncing"),
+
+				getAccounts: () => request<`0x${string}`[]>("eth_accounts"),
+
+				getCoinbase: () => request<`0x${string}`>("eth_coinbase"),
+
+				netVersion: () => request<string>("net_version"),
+
+				getProtocolVersion: () => request<string>("eth_protocolVersion"),
+
+				getMining: () => request<boolean>("eth_mining"),
+
+				getHashrate: () =>
+					request<string>("eth_hashrate").pipe(
+						Effect.flatMap((hex) =>
+							parseHexToBigInt({ method: "eth_hashrate", response: hex }),
+						),
+					),
+
+				getWork: () => request<WorkResult>("eth_getWork"),
+
+				submitWork: (
+					nonce: `0x${string}`,
+					powHash: `0x${string}`,
+					mixDigest: `0x${string}`,
+				) => request<boolean>("eth_submitWork", [nonce, powHash, mixDigest]),
+
+				submitHashrate: (hashrate: `0x${string}`, id: `0x${string}`) =>
+					request<boolean>("eth_submitHashrate", [hashrate, id]),
+
 				watchBlocks: <TInclude extends BlockInclude = "header">(
 					options?: WatchOptions<TInclude>,
-				): Stream.Stream<BlockStreamEvent<TInclude>, ProviderError> =>
+				): Stream.Stream<BlockStreamEvent<TInclude>, WatchBlocksError> =>
 					Stream.unwrap(
 						Effect.gen(function* () {
 							const runtime = yield* Effect.runtime<never>();
@@ -764,20 +1011,22 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 							return Stream.fromAsyncIterable(
 								{ [Symbol.asyncIterator]: () => coreStream.watch(options) },
 								(error) =>
-									new ProviderError(
-										{ method: "watchBlocks", options },
-										error instanceof Error
-											? error.message
-											: "BlockStream error",
-										{ cause: error instanceof Error ? error : undefined },
-									),
+									error instanceof TransportError
+										? error
+										: new ProviderStreamError(
+												{ method: "watchBlocks", options },
+												error instanceof Error
+													? error.message
+													: "BlockStream error",
+												{ cause: error instanceof Error ? error : undefined },
+											),
 							);
 						}),
 					),
 
 				backfillBlocks: <TInclude extends BlockInclude = "header">(
 					options: BackfillOptions<TInclude>,
-				): Stream.Stream<BlocksEvent<TInclude>, ProviderError> =>
+				): Stream.Stream<BlocksEvent<TInclude>, BackfillBlocksError> =>
 					Stream.unwrap(
 						Effect.gen(function* () {
 							const runtime = yield* Effect.runtime<never>();
@@ -799,19 +1048,40 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 							return Stream.fromAsyncIterable(
 								{ [Symbol.asyncIterator]: () => coreStream.backfill(options) },
 								(error) =>
-									new ProviderError(
-										{ method: "backfillBlocks", options },
-										error instanceof Error
-											? error.message
-											: "BlockStream error",
-										{ cause: error instanceof Error ? error : undefined },
-									),
+									error instanceof TransportError
+										? error
+										: new ProviderStreamError(
+												{ method: "backfillBlocks", options },
+												error instanceof Error
+													? error.message
+													: "BlockStream error",
+												{ cause: error instanceof Error ? error : undefined },
+											),
 							);
 						}),
 					),
 
-				sendRawTransaction: (signedTx: `0x${string}`) =>
+				subscribe: (subscription: string, params: readonly unknown[] = []) =>
+					request<`0x${string}`>("eth_subscribe", [subscription, ...params]),
+
+				unsubscribe: (subscriptionId: `0x${string}`) =>
+					request<boolean>("eth_unsubscribe", [subscriptionId]),
+
+				sendRawTransaction: (signedTx: HexType | `0x${string}`) =>
 					request<`0x${string}`>("eth_sendRawTransaction", [signedTx]),
+
+				sendTransaction: (tx: RpcTransactionRequest) =>
+					request<`0x${string}`>("eth_sendTransaction", [
+						formatTransactionRequest(tx),
+					]),
+
+				sign: (address: AddressInput, message: HexType | `0x${string}`) =>
+					request<`0x${string}`>("eth_sign", [toAddressHex(address), message]),
+
+				signTransaction: (tx: RpcTransactionRequest) =>
+					request<unknown>("eth_signTransaction", [
+						formatTransactionRequest(tx),
+					]),
 
 				getUncle: (args: GetUncleArgs, uncleIndex: `0x${string}`) => {
 					const method = args.blockHash
@@ -824,7 +1094,27 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 						Effect.flatMap((uncle) =>
 							uncle
 								? Effect.succeed(uncle)
-								: Effect.fail(new ProviderError(args, "Uncle block not found")),
+								: Effect.fail(
+										new ProviderNotFoundError(
+											{ args, method, params },
+											"Uncle block not found",
+											{ resource: "uncle" },
+										),
+									),
+						),
+					);
+				},
+
+				getUncleCount: (args: GetUncleCountArgs) => {
+					const method = args.blockHash
+						? "eth_getUncleCountByBlockHash"
+						: "eth_getUncleCountByBlockNumber";
+					const params = args.blockHash
+						? [toHashHex(args.blockHash)]
+						: [args.blockTag ?? "latest"];
+					return request<string>(method, params).pipe(
+						Effect.flatMap((hex) =>
+							parseHexToBigInt({ method, params, response: hex }),
 						),
 					);
 				},
@@ -857,8 +1147,15 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 							return 0n;
 						}
 						const currentBlock = yield* request<string>("eth_blockNumber");
-						const receiptBlock = BigInt(receipt.blockNumber);
-						const current = BigInt(currentBlock);
+						const receiptBlock = yield* parseHexToBigInt({
+							method: "eth_getTransactionReceipt",
+							params: [toHashHex(hash)],
+							response: receipt.blockNumber,
+						});
+						const current = yield* parseHexToBigInt({
+							method: "eth_blockNumber",
+							response: currentBlock,
+						});
 						if (current < receiptBlock) {
 							return 0n;
 						}

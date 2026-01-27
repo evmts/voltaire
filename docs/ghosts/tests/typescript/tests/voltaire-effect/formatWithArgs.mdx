@@ -1,0 +1,119 @@
+---
+title: formatWithArgs Tests
+description: Test examples for formatWithArgs showing ABI function and event formatting with argument values.
+---
+
+## Format Function with Arguments
+
+Formats function call with provided argument values.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { FunctionSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { formatWithArgs } from "voltaire-effect/primitives/Abi/formatWithArgs"
+
+const fn = S.decodeUnknownSync(FunctionSchema)({
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" },
+  ],
+  outputs: [{ type: "bool" }],
+})
+
+const formatted = await Effect.runPromise(
+  formatWithArgs(fn, [
+    "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+    1000n,
+  ])
+)
+expect(formatted).toContain("transfer")
+expect(formatted).toContain("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+expect(formatted).toContain("1000")
+```
+
+## Format Function with No Arguments
+
+Formats function call with empty argument list.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { FunctionSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { formatWithArgs } from "voltaire-effect/primitives/Abi/formatWithArgs"
+
+const fn = S.decodeUnknownSync(FunctionSchema)({
+  type: "function",
+  name: "totalSupply",
+  stateMutability: "view",
+  inputs: [],
+  outputs: [{ type: "uint256" }],
+})
+
+const formatted = await Effect.runPromise(formatWithArgs(fn, []))
+expect(formatted).toContain("totalSupply")
+```
+
+## Format with BigInt Arguments
+
+Formats function call with large bigint values.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { FunctionSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { formatWithArgs } from "voltaire-effect/primitives/Abi/formatWithArgs"
+
+const fn = S.decodeUnknownSync(FunctionSchema)({
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" },
+  ],
+  outputs: [{ type: "bool" }],
+})
+
+const formatted = await Effect.runPromise(
+  formatWithArgs(fn, [
+    "0x1234567890123456789012345678901234567890",
+    1000000000000000000n, // 1 ETH in wei
+  ])
+)
+expect(formatted).toContain("1000000000000000000")
+```
+
+## Format Event with Arguments
+
+Formats event with indexed and non-indexed parameters.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { EventSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { formatWithArgs } from "voltaire-effect/primitives/Abi/formatWithArgs"
+
+const evt = S.decodeUnknownSync(EventSchema)({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { name: "from", type: "address", indexed: true },
+    { name: "to", type: "address", indexed: true },
+    { name: "value", type: "uint256", indexed: false },
+  ],
+})
+
+const formatted = await Effect.runPromise(
+  formatWithArgs(evt, [
+    "0x1111111111111111111111111111111111111111",
+    "0x2222222222222222222222222222222222222222",
+    500n,
+  ])
+)
+expect(formatted).toContain("Transfer")
+```

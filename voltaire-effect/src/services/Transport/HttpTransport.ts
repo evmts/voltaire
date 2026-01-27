@@ -30,7 +30,7 @@ import * as FiberRef from "effect/FiberRef";
 import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 import { type BatchOptions, createBatchScheduler } from "./BatchScheduler.js";
-import { retryCountRef, timeoutRef, tracingRef } from "./config.js";
+import { retryScheduleRef, timeoutRef, tracingRef } from "./config.js";
 import { nextId } from "./IdGenerator.js";
 import { TransportError } from "./TransportError.js";
 import {
@@ -48,18 +48,32 @@ import { TransportService } from "./TransportService.js";
  * Allows customization of the HTTP transport behavior including timeouts,
  * retry logic, and custom headers.
  *
+ * Uses Effect-native types:
+ * - `timeout`: Effect Duration (e.g., `"30 seconds"`, `Duration.seconds(30)`)
+ * - `retrySchedule`: Effect Schedule for retry behavior with exponential backoff, jitter, etc.
+ *
  * @since 0.0.1
  *
- * @example
+ * @example Simple configuration
  * ```typescript
  * const config: HttpTransportConfig = {
  *   url: 'https://mainnet.infura.io/v3/YOUR_KEY',
- *   timeout: 60000,      // 60 second timeout
- *   retries: 5,          // 5 retry attempts
- *   retryDelay: 2000,    // 2 seconds between retries
- *   headers: {
- *     'X-API-Key': 'your-api-key'
- *   }
+ *   timeout: '60 seconds',
+ *   headers: { 'X-API-Key': 'your-api-key' }
+ * }
+ * ```
+ *
+ * @example Custom retry schedule with exponential backoff and jitter
+ * ```typescript
+ * import { Schedule } from 'effect'
+ *
+ * const config: HttpTransportConfig = {
+ *   url: 'https://mainnet.infura.io/v3/YOUR_KEY',
+ *   timeout: '30 seconds',
+ *   retrySchedule: Schedule.exponential('500 millis').pipe(
+ *     Schedule.jittered,
+ *     Schedule.compose(Schedule.recurs(5))
+ *   )
  * }
  * ```
  */
@@ -76,12 +90,19 @@ export interface HttpTransportConfig {
 	onRequest?: (request: RpcRequest) => Effect.Effect<RpcRequest>;
 	/** Optional response hook (can modify result) */
 	onResponse?: <T>(response: RpcResponse<T>) => Effect.Effect<RpcResponse<T>>;
-	/** Request timeout in milliseconds (default: 30000) */
-	timeout?: number;
-	/** Number of retry attempts on failure (default: 3) */
-	retries?: number;
-	/** Delay between retries in milliseconds (default: 1000) */
-	retryDelay?: number;
+	/**
+	 * Request timeout. Accepts Effect Duration input.
+	 * @default "30 seconds"
+	 * @example "60 seconds", Duration.minutes(1), 30000
+	 */
+	timeout?: Duration.DurationInput;
+	/**
+	 * Retry schedule for failed requests. Uses Effect Schedule for full control
+	 * over retry behavior including exponential backoff, jitter, and max attempts.
+	 * @default Schedule.exponential("1 second") | Schedule.jittered | Schedule.recurs(3)
+	 * @example Schedule.exponential("500 millis").pipe(Schedule.jittered, Schedule.recurs(5))
+	 */
+	retrySchedule?: Schedule.Schedule<unknown, TransportError>;
 	/** Enable request batching */
 	batch?: BatchOptions;
 }
@@ -145,17 +166,19 @@ interface JsonRpcResponse<T> {
  * )
  * ```
  *
- * @example Full configuration with retries and timeout
+ * @example Full configuration with Duration timeout and Schedule retries
  * ```typescript
- * import { Effect } from 'effect'
+ * import { Effect, Schedule } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
  * import { HttpTransport, Provider, ProviderService } from 'voltaire-effect/services'
  *
  * const transport = HttpTransport({
  *   url: 'https://mainnet.infura.io/v3/YOUR_KEY',
- *   timeout: 60000,     // 60 second timeout
- *   retries: 5,         // 5 retry attempts
- *   retryDelay: 2000,   // 2 seconds between retries
+ *   timeout: '60 seconds',
+ *   retrySchedule: Schedule.exponential('500 millis').pipe(
+ *     Schedule.jittered,
+ *     Schedule.compose(Schedule.recurs(5))
+ *   ),
  *   headers: {
  *     'Authorization': 'Bearer YOUR_TOKEN',
  *     'X-Custom-Header': 'value'
@@ -197,6 +220,16 @@ interface JsonRpcResponse<T> {
  * @see {@link TransportError} - Error type thrown on failure
  * @see {@link WebSocketTransport} - For real-time subscriptions
  */
+/**
+ * Default retry schedule: exponential backoff starting at 1s, with jitter, max 3 retries.
+ * @internal
+ */
+const defaultRetrySchedule: Schedule.Schedule<unknown, TransportError> =
+	Schedule.exponential("1 second").pipe(
+		Schedule.jittered,
+		Schedule.intersect(Schedule.recurs(3)),
+	) as Schedule.Schedule<unknown, TransportError>;
+
 export const HttpTransport = (
 	options: HttpTransportConfig | string,
 ): Layer.Layer<TransportService, never, HttpClient.HttpClient> => {
@@ -209,9 +242,8 @@ export const HttpTransport = (
 					fetch: undefined,
 					onRequest: undefined,
 					onResponse: undefined,
-					timeout: 30000,
-					retries: 3,
-					retryDelay: 1000,
+					timeout: Duration.seconds(30),
+					retrySchedule: defaultRetrySchedule,
 					batch: undefined as BatchOptions | undefined,
 				}
 			: {
@@ -221,9 +253,8 @@ export const HttpTransport = (
 					fetch: options.fetch,
 					onRequest: options.onRequest,
 					onResponse: options.onResponse,
-					timeout: options.timeout ?? 30000,
-					retries: options.retries ?? 3,
-					retryDelay: options.retryDelay ?? 1000,
+					timeout: options.timeout ?? Duration.seconds(30),
+					retrySchedule: options.retrySchedule ?? defaultRetrySchedule,
 					batch: options.batch,
 				};
 
@@ -242,13 +273,6 @@ export const HttpTransport = (
 			},
 		);
 	};
-
-	const makeRetrySchedule = (
-		retries: number,
-	): Schedule.Schedule<number, TransportError> =>
-		Schedule.recurs(retries).pipe(
-			Schedule.addDelay(() => Duration.millis(config.retryDelay)),
-		) as Schedule.Schedule<number, TransportError>;
 
 	const applyRequestHooks = (request: RpcRequest): Effect.Effect<RpcRequest> =>
 		Effect.gen(function* () {
@@ -294,8 +318,8 @@ export const HttpTransport = (
 	const doRequest = <T>(
 		httpClient: HttpClient.HttpClient,
 		body: string,
-		timeoutMs: number,
-		retrySchedule: Schedule.Schedule<number, TransportError>,
+		timeout: Duration.Duration,
+		retrySchedule: Schedule.Schedule<unknown, TransportError>,
 		rpcMethod?: string,
 	): Effect.Effect<T, TransportError> => {
 		const headers: Record<string, string> = {
@@ -310,7 +334,7 @@ export const HttpTransport = (
 
 		return Effect.scoped(
 			applyFetchOptions(httpClient.execute(request)).pipe(
-				Effect.timeout(Duration.millis(timeoutMs)),
+				Effect.timeout(timeout),
 				Effect.flatMap((response) => {
 					if (response.status >= 200 && response.status < 300) {
 						return Effect.map(
@@ -379,12 +403,10 @@ export const HttpTransport = (
 		): Effect.Effect<JsonRpcBatchResponse[], TransportError> =>
 			Effect.gen(function* () {
 				const timeoutOverride = yield* FiberRef.get(timeoutRef);
-				const retryOverride = yield* FiberRef.get(retryCountRef);
+				const retryScheduleOverride = yield* FiberRef.get(retryScheduleRef);
 				const tracingEnabled = yield* FiberRef.get(tracingRef);
-				const timeoutMs = timeoutOverride ?? config.timeout;
-				const retrySchedule = makeRetrySchedule(
-					retryOverride ?? config.retries,
-				);
+				const timeout = timeoutOverride ?? Duration.decode(config.timeout);
+				const retrySchedule = retryScheduleOverride ?? config.retrySchedule;
 
 				if (tracingEnabled) {
 					yield* Effect.logDebug(
@@ -411,7 +433,7 @@ export const HttpTransport = (
 
 				return yield* Effect.scoped(
 					applyFetchOptions(httpClient.execute(request)).pipe(
-						Effect.timeout(Duration.millis(timeoutMs)),
+						Effect.timeout(timeout),
 						Effect.flatMap((response) => {
 							if (response.status >= 200 && response.status < 300) {
 								return Effect.map(
@@ -514,12 +536,11 @@ export const HttpTransport = (
 				): Effect.Effect<T, TransportError> =>
 					Effect.gen(function* () {
 						const timeoutOverride = yield* FiberRef.get(timeoutRef);
-						const retryOverride = yield* FiberRef.get(retryCountRef);
+						const retryScheduleOverride = yield* FiberRef.get(retryScheduleRef);
 						const tracingEnabled = yield* FiberRef.get(tracingRef);
-						const timeoutMs = timeoutOverride ?? config.timeout;
-						const retrySchedule = makeRetrySchedule(
-							retryOverride ?? config.retries,
-						);
+						const timeout = timeoutOverride ?? Duration.decode(config.timeout);
+						const retrySchedule =
+							retryScheduleOverride ?? config.retrySchedule;
 						const request = yield* applyRequestHooks({ method, params });
 						const startTime = Date.now();
 						const id = yield* nextId;
@@ -535,7 +556,7 @@ export const HttpTransport = (
 						const result = yield* doRequest<T>(
 							httpClient,
 							body,
-							timeoutMs,
+							timeout,
 							retrySchedule,
 							request.method,
 						);

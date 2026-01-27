@@ -16,7 +16,7 @@ export class InvalidBlockHashLengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid BlockHash length", {
-			code: -32602,
+			code: "INVALID_BLOCK_HASH_LENGTH",
 			value: options?.value,
 			expected: options?.expected || "32 bytes",
 			context: options?.context,
@@ -43,7 +43,7 @@ export class InvalidBlockHashFormatError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid BlockHash format", {
-			code: -32602,
+			code: "INVALID_BLOCK_HASH_FORMAT",
 			value: options?.value,
 			expected: options?.expected || "valid hex string",
 			context: options?.context,

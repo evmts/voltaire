@@ -236,7 +236,7 @@ export const CustomTransport = (
 			: (options ?? {})
 	) as CustomTransportConfig;
 
-	const baseTimeout = config.timeout ?? 30000;
+	const baseTimeout = Duration.millis(config.timeout ?? 30000);
 
 	return Layer.succeed(TransportService, {
 		request: <T>(
@@ -246,7 +246,8 @@ export const CustomTransport = (
 			return Effect.gen(function* () {
 				const timeoutOverride = yield* FiberRef.get(timeoutRef);
 				const tracingEnabled = yield* FiberRef.get(tracingRef);
-				const timeoutMs = timeoutOverride ?? baseTimeout;
+				const timeout = timeoutOverride ?? baseTimeout;
+				const timeoutMs = Duration.toMillis(timeout);
 				// Call request interceptor
 				const provider = config.provider ?? resolveInjectedProvider();
 				if (!provider) {
@@ -276,7 +277,7 @@ export const CustomTransport = (
 				});
 
 				const result = yield* resultEffect.pipe(
-					Effect.timeout(Duration.millis(timeoutMs)),
+					Effect.timeout(timeout),
 					Effect.catchTag("TimeoutException", () =>
 						Effect.fail(
 							new TransportError({

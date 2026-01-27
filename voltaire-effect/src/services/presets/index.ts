@@ -27,8 +27,10 @@ import * as Layer from "effect/Layer";
 import { type CacheService, MemoryCache } from "../Cache/index.js";
 import {
 	arbitrum,
+	type BlockExplorerService,
 	base,
 	type ChainService,
+	type ContractsService,
 	mainnet,
 	optimism,
 	polygon,
@@ -126,7 +128,9 @@ export type ComposedServices =
 	| FeeEstimatorService
 	| NonceManagerService
 	| CacheService
-	| ChainService;
+	| ChainService
+	| BlockExplorerService
+	| ContractsService;
 
 /**
  * Creates a fully composed Optimism provider with all services.

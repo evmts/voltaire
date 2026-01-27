@@ -1,0 +1,134 @@
+---
+title: parseItem Tests
+description: Test examples for parsing single ABI items from JSON strings.
+---
+
+## Parses function item
+
+Parses JSON string into function ABI item.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Abi from "voltaire-effect/primitives/Abi"
+
+it.effect("parses function item", () =>
+  Effect.gen(function* () {
+    const jsonString = JSON.stringify({
+      type: "function",
+      name: "transfer",
+      inputs: [
+        { name: "to", type: "address" },
+        { name: "amount", type: "uint256" },
+      ],
+      outputs: [{ type: "bool" }],
+    })
+    const item = yield* Abi.parseItem(jsonString)
+    expect(item.type).toBe("function")
+    if (item.type === "function") {
+      expect(item.name).toBe("transfer")
+    }
+  }),
+)
+```
+
+## Parses event item
+
+Parses JSON string into event ABI item.
+
+```typescript
+it.effect("parses event item", () =>
+  Effect.gen(function* () {
+    const jsonString = JSON.stringify({
+      type: "event",
+      name: "Transfer",
+      inputs: [
+        { name: "from", type: "address", indexed: true },
+        { name: "to", type: "address", indexed: true },
+        { name: "value", type: "uint256", indexed: false },
+      ],
+    })
+    const item = yield* Abi.parseItem(jsonString)
+    expect(item.type).toBe("event")
+    if (item.type === "event") {
+      expect(item.name).toBe("Transfer")
+    }
+  }),
+)
+```
+
+## Parses error item
+
+Parses JSON string into error ABI item.
+
+```typescript
+it.effect("parses error item", () =>
+  Effect.gen(function* () {
+    const jsonString = JSON.stringify({
+      type: "error",
+      name: "InsufficientBalance",
+      inputs: [{ name: "available", type: "uint256" }],
+    })
+    const item = yield* Abi.parseItem(jsonString)
+    expect(item.type).toBe("error")
+    if (item.type === "error") {
+      expect(item.name).toBe("InsufficientBalance")
+    }
+  }),
+)
+```
+
+## Parses constructor item
+
+Parses JSON string into constructor ABI item.
+
+```typescript
+it.effect("parses constructor item", () =>
+  Effect.gen(function* () {
+    const jsonString = JSON.stringify({
+      type: "constructor",
+      inputs: [{ name: "initialSupply", type: "uint256" }],
+    })
+    const item = yield* Abi.parseItem(jsonString)
+    expect(item.type).toBe("constructor")
+  }),
+)
+```
+
+## Fails on invalid JSON
+
+Returns failure for malformed JSON.
+
+```typescript
+import * as Exit from "effect/Exit"
+
+it("fails on invalid JSON", async () => {
+  const exit = await Effect.runPromiseExit(Abi.parseItem("not valid json"))
+  expect(Exit.isFailure(exit)).toBe(true)
+})
+```
+
+## Fails on missing type
+
+Returns failure when type field is missing.
+
+```typescript
+it("fails on missing type", async () => {
+  const exit = await Effect.runPromiseExit(
+    Abi.parseItem(JSON.stringify({ name: "test" })),
+  )
+  expect(Exit.isFailure(exit)).toBe(true)
+})
+```
+
+## AbiItemParseError has correct _tag
+
+Error type is properly tagged for pattern matching.
+
+```typescript
+it("has correct _tag", () => {
+  const error = new Abi.AbiItemParseError({ message: "test error" })
+  expect(error._tag).toBe("AbiItemParseError")
+  expect(error.name).toBe("AbiItemParseError")
+})
+```

@@ -6,7 +6,8 @@
  *
  * @description
  * Re-exports all predefined chain configurations as Effect Layers.
- * Each chain provides a ChainService with network-specific metadata.
+ * Each chain provides ChainService, BlockExplorerService, and ContractsService
+ * with network-specific metadata.
  *
  * @example
  * ```typescript
@@ -14,9 +15,34 @@
  * ```
  */
 
-export { arbitrum, arbitrumConfig } from "./arbitrum.js";
-export { base, baseConfig } from "./base.js";
-export { mainnet, mainnetConfig } from "./mainnet.js";
-export { optimism, optimismConfig } from "./optimism.js";
-export { polygon, polygonConfig } from "./polygon.js";
-export { sepolia, sepoliaConfig } from "./sepolia.js";
+export {
+	arbitrum,
+	arbitrumBlockExplorers,
+	arbitrumConfig,
+	arbitrumContracts,
+} from "./arbitrum.js";
+export { base, baseBlockExplorers, baseConfig, baseContracts } from "./base.js";
+export {
+	mainnet,
+	mainnetBlockExplorers,
+	mainnetConfig,
+	mainnetContracts,
+} from "./mainnet.js";
+export {
+	optimism,
+	optimismBlockExplorers,
+	optimismConfig,
+	optimismContracts,
+} from "./optimism.js";
+export {
+	polygon,
+	polygonBlockExplorers,
+	polygonConfig,
+	polygonContracts,
+} from "./polygon.js";
+export {
+	sepolia,
+	sepoliaBlockExplorers,
+	sepoliaConfig,
+	sepoliaContracts,
+} from "./sepolia.js";

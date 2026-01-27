@@ -1,0 +1,45 @@
+---
+title: FunctionSignature Tests
+description: Test examples for FunctionSignature showing function signature parsing with name, signature string, and selector extraction.
+---
+
+## Parse Function Signature String
+
+Parses function signature and extracts name, signature, and 4-byte selector.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Schema from "effect/Schema"
+import * as FunctionSignature from "voltaire-effect/primitives/FunctionSignature"
+
+const sig = Schema.decodeSync(FunctionSignature.String)("transfer(address,uint256)")
+expect(sig.name).toBe("transfer")
+expect(sig.signature).toBe("transfer(address,uint256)")
+expect(sig.selector).toBeInstanceOf(Uint8Array)
+expect(sig.selector.length).toBe(4)
+```
+
+## Parse balanceOf Signature
+
+Parses ERC20 balanceOf function signature.
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as FunctionSignature from "voltaire-effect/primitives/FunctionSignature"
+
+const sig = Schema.decodeSync(FunctionSignature.String)("balanceOf(address)")
+expect(sig.name).toBe("balanceOf")
+```
+
+## Encode Back to String
+
+Encodes parsed signature back to signature string.
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as FunctionSignature from "voltaire-effect/primitives/FunctionSignature"
+
+const sig = Schema.decodeSync(FunctionSignature.String)("transfer(address,uint256)")
+const str = Schema.encodeSync(FunctionSignature.String)(sig)
+expect(str).toBe("transfer(address,uint256)")
+```

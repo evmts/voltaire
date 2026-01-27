@@ -21,8 +21,8 @@ With Multicall3, you batch them into **1 RPC call**.
 ```typescript
 import { Effect } from 'effect'
 import * as ERC20 from 'voltaire-effect/standards/ERC20'
-import { MulticallService, DefaultMulticall, Provider, HttpTransport } from 'voltaire-effect/services'
-import type { MulticallCall } from 'voltaire-effect/services'
+import { aggregate3, HttpTransport } from 'voltaire-effect'
+import type { MulticallCall } from 'voltaire-effect'
 
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 const addresses = [
@@ -39,8 +39,6 @@ const addresses = [
 ]
 
 const program = Effect.gen(function* () {
-  const multicall = yield* MulticallService
-  
   // Build calls with encoded balanceOf calldata
   const calls: MulticallCall[] = yield* Effect.all(
     addresses.map(addr => 
@@ -56,7 +54,7 @@ const program = Effect.gen(function* () {
   )
   
   // Single RPC call for all 10 balances
-  const results = yield* multicall.aggregate3(calls)
+  const results = yield* aggregate3(calls)
   
   // Process results
   const balances = yield* Effect.all(
@@ -73,8 +71,6 @@ const program = Effect.gen(function* () {
   
   return balances
 }).pipe(
-  Effect.provide(DefaultMulticall),
-  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
@@ -97,8 +93,6 @@ const tokens = [
 const wallet = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 const program = Effect.gen(function* () {
-  const multicall = yield* MulticallService
-  
   const calls: MulticallCall[] = yield* Effect.all(
     tokens.map(token =>
       Effect.map(
@@ -112,7 +106,7 @@ const program = Effect.gen(function* () {
     )
   )
   
-  const results = yield* multicall.aggregate3(calls)
+  const results = yield* aggregate3(calls)
   
   // Build portfolio with error handling
   const portfolio = yield* Effect.all(
@@ -152,8 +146,6 @@ const program = Effect.gen(function* () {
   
   return { portfolio, totalUSD }
 }).pipe(
-  Effect.provide(DefaultMulticall),
-  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
@@ -163,12 +155,10 @@ const program = Effect.gen(function* () {
 Handle both batch-level and per-call failures:
 
 ```typescript
-import { MulticallError } from 'voltaire-effect/services'
+import { aggregate3, HttpTransport, MulticallError } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const multicall = yield* MulticallService
-  
-  const results = yield* multicall.aggregate3([
+  const results = yield* aggregate3([
     { target: USDC, callData: yield* ERC20.encodeBalanceOf(wallet), allowFailure: true },
     { target: '0xDEAD...', callData: '0x70a08231...', allowFailure: true }, // Bad contract
     { target: USDC, callData: yield* ERC20.encodeBalanceOf(wallet2), allowFailure: false }
@@ -193,8 +183,6 @@ const program = Effect.gen(function* () {
     }
     return Effect.succeed([])
   }),
-  Effect.provide(DefaultMulticall),
-  Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
@@ -230,7 +218,7 @@ Multicall3 is deployed at `0xcA11bde05977b3631167028862bE2a173976CA11` on:
 
 ## See Also
 
-- [Multicall Service](/services/multicall) — Full MulticallService API
+- [Multicall](/services/multicall) — Full Multicall API
 - [Provider Service](/services/provider) — readContract and simulateContract utilities
 - [ERC Standards](/standards) — ERC-20/721/1155 encoding utilities
 - [Contract Interactions](/examples/contract-interactions) — Single contract reads/writes

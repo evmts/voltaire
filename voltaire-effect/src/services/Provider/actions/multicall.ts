@@ -17,8 +17,10 @@ import * as Effect from "effect/Effect";
 import {
 	type AddressInput,
 	type BlockTag,
-	ProviderError,
+	type CallError,
+	ProviderResponseError,
 	ProviderService,
+	ProviderValidationError,
 } from "../ProviderService.js";
 import type { Abi } from "./readContract.js";
 
@@ -138,6 +140,14 @@ export type MulticallResults<
 		: ContractCallResult<TContracts[Index]>;
 };
 
+/**
+ * Error union for multicall.
+ */
+export type MulticallError =
+	| CallError
+	| ProviderResponseError
+	| ProviderValidationError;
+
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
 const MULTICALL3_ABI = [
@@ -200,7 +210,7 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 	params: MulticallParams<TContracts>,
 ): Effect.Effect<
 	MulticallResults<TContracts>,
-	ProviderError,
+	MulticallError,
 	ProviderService
 > =>
 	Effect.gen(function* () {
@@ -235,31 +245,30 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 				[calls],
 			);
 
-			const result = yield* provider
-				.call({ to: MULTICALL3_ADDRESS, data }, params.blockTag)
-				.pipe(
-					Effect.mapError(
-						(e) =>
-							new ProviderError(
-								{
-									contracts: params.contracts.length,
-									blockTag: params.blockTag,
-								},
-								e.message,
-								{ cause: e, code: e.code },
-							),
-					),
-				);
+			const result = yield* provider.call(
+				{ to: MULTICALL3_ADDRESS, data },
+				params.blockTag,
+			);
 
 			const decoded = decodeAggregate3(result as `0x${string}`);
 
-			decoded.forEach((entry, index) => {
+			for (let index = 0; index < decoded.length; index++) {
+				const entry = decoded[index];
 				if (!entry.success) {
 					if (!allowFailure) {
-						throw new Error(`Call ${start + index} failed`);
+						return yield* Effect.fail(
+							new ProviderResponseError(
+								{
+									batch: start,
+									index: start + index,
+									blockTag: params.blockTag,
+								},
+								`Call ${start + index} failed`,
+							),
+						);
 					}
 					results.push(null);
-					return;
+					continue;
 				}
 
 				const contract = batch[index];
@@ -271,8 +280,11 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 				) as BrandedAbi.Function.FunctionType | undefined;
 
 				if (!fn) {
-					throw new Error(
-						`Function "${contract.functionName}" not found in ABI`,
+					return yield* Effect.fail(
+						new ProviderValidationError(
+							{ functionName: contract.functionName },
+							`Function "${contract.functionName}" not found in ABI`,
+						),
 					);
 				}
 
@@ -285,7 +297,7 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 					fn.outputs.length === 1 ? decodedResult[0] : decodedResult;
 
 				results.push(value);
-			});
+			}
 		}
 
 		return results as MulticallResults<TContracts>;

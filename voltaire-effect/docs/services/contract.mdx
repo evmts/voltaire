@@ -6,7 +6,7 @@ description: Type-safe contract interaction with Effect.ts
 ## Quick Start
 
 ```typescript
-import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 import { Effect } from 'effect'
 
 const erc20Abi = [
@@ -76,7 +76,7 @@ contract.write.balanceOf(address)    // ❌ balanceOf is view
 ## Error Handling
 
 ```typescript
-import { ContractCallError, ContractWriteError } from 'voltaire-effect/services'
+import { ContractCallError, ContractWriteError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('ContractCallError', (e) => Effect.succeed({ error: e.message })),
@@ -90,7 +90,7 @@ Complete workflow with writes:
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 

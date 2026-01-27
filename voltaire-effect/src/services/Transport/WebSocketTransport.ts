@@ -511,7 +511,9 @@ export const WebSocketTransport = (
 					Effect.gen(function* () {
 						const timeoutOverride = yield* FiberRef.get(timeoutRef);
 						const tracingEnabled = yield* FiberRef.get(tracingRef);
-						const timeoutMs = timeoutOverride ?? config.timeout;
+						const timeout =
+							timeoutOverride ?? Duration.millis(config.timeout);
+						const timeoutMs = Duration.toMillis(timeout);
 						const writer = yield* Ref.get(writerRef);
 						const isReconnecting = yield* Ref.get(isReconnectingRef);
 
@@ -541,7 +543,7 @@ export const WebSocketTransport = (
 								]);
 
 								const response = yield* Deferred.await(deferred).pipe(
-									Effect.timeout(Duration.millis(timeoutMs)),
+									Effect.timeout(timeout),
 									Effect.catchTag("TimeoutException", () =>
 										Effect.gen(function* () {
 											yield* Ref.update(queueRef, (q) =>
@@ -608,7 +610,7 @@ export const WebSocketTransport = (
 						);
 
 						const response = yield* Deferred.await(deferred).pipe(
-							Effect.timeout(Duration.millis(timeoutMs)),
+							Effect.timeout(timeout),
 							Effect.catchTag("TimeoutException", () =>
 								Effect.gen(function* () {
 									yield* Ref.update(pendingRef, (p) => {

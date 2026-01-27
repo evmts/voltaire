@@ -11,7 +11,7 @@ This page shows common contract patterns. See [Contract Service](/services/contr
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
@@ -35,7 +35,7 @@ const program = Effect.gen(function* () {
 ## Write Contract
 
 ```typescript
-import { Signer, LocalAccount } from 'voltaire-effect/services'
+import { Signer, LocalAccount } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
@@ -93,7 +93,7 @@ const program = Effect.gen(function* () {
 A full workflow: read token info, transfer, wait for confirmation, verify balance change:
 
 ```typescript
-import { ProviderService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)

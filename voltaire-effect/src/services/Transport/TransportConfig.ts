@@ -18,6 +18,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Schedule from "effect/Schedule";
 import * as Secret from "effect/Secret";
 import { HttpTransport } from "./HttpTransport.js";
 import type {
@@ -69,9 +70,11 @@ export const TransportConfig = Config.all({
 	timeout: Config.duration("timeout").pipe(
 		Config.withDefault(Duration.seconds(30)),
 	),
-	retries: Config.integer("retries").pipe(Config.withDefault(3)),
-	retryDelay: Config.duration("retryDelay").pipe(
+	retryBaseDelay: Config.duration("retryBaseDelay").pipe(
 		Config.withDefault(Duration.seconds(1)),
+	),
+	retryMaxAttempts: Config.integer("retryMaxAttempts").pipe(
+		Config.withDefault(3),
 	),
 	apiKey: Config.secret("apiKey").pipe(Config.option),
 	onRequest: Config.succeed<RequestInterceptor | undefined>(undefined),
@@ -163,11 +166,16 @@ export const TransportFromConfig: Layer.Layer<
 			// but that requires additional dependencies (Socket.WebSocketConstructor)
 		}
 
+		// Build retry schedule from config: exponential backoff with jitter
+		const retrySchedule = Schedule.exponential(config.retryBaseDelay).pipe(
+			Schedule.jittered,
+			Schedule.intersect(Schedule.recurs(config.retryMaxAttempts)),
+		);
+
 		return HttpTransport({
 			url: config.url,
-			timeout: Duration.toMillis(config.timeout),
-			retries: config.retries,
-			retryDelay: Duration.toMillis(config.retryDelay),
+			timeout: config.timeout,
+			retrySchedule,
 			headers,
 			onRequest: config.onRequest,
 			onResponse: config.onResponse,
@@ -206,12 +214,17 @@ export const TransportFromConfigFetch: Layer.Layer<
 			() => import("@effect/platform"),
 		);
 
+		// Build retry schedule from config: exponential backoff with jitter
+		const retrySchedule = Schedule.exponential(config.retryBaseDelay).pipe(
+			Schedule.jittered,
+			Schedule.intersect(Schedule.recurs(config.retryMaxAttempts)),
+		);
+
 		return Layer.provide(
 			HttpTransport({
 				url: config.url,
-				timeout: Duration.toMillis(config.timeout),
-				retries: config.retries,
-				retryDelay: Duration.toMillis(config.retryDelay),
+				timeout: config.timeout,
+				retrySchedule,
 				headers,
 				onRequest: config.onRequest,
 				onResponse: config.onResponse,

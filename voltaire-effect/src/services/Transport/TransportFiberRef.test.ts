@@ -4,14 +4,16 @@ import type * as HttpClientResponse from "@effect/platform/HttpClientResponse";
 import { describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Schedule from "effect/Schedule";
 import {
 	DeduplicatedTransport,
 	HttpTransport,
 	TransportService,
 	withoutCache,
-	withRetries,
+	withRetrySchedule,
 	withTimeout,
 } from "./index.js";
+import { TransportError } from "./TransportService.js";
 
 const createMockHttpClientLayer = (
 	fetchMock: ReturnType<typeof vi.fn>,
@@ -69,7 +71,7 @@ describe("Transport FiberRef overrides", () => {
 					transport.request<string>("eth_chainId", []).pipe(Effect.either),
 					transport
 						.request<string>("eth_chainId", [])
-						.pipe(withTimeout(50), Effect.either),
+						.pipe(withTimeout("50 millis"), Effect.either),
 				],
 				{ concurrency: "unbounded" },
 			);
@@ -78,8 +80,11 @@ describe("Transport FiberRef overrides", () => {
 			Effect.provide(
 				createMockHttpTransport(fetchMock, {
 					url: "https://eth.example.com",
-					timeout: 5,
-					retries: 0,
+					timeout: "5 millis",
+					retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+						unknown,
+						TransportError
+					>,
 				}),
 			),
 		);
@@ -89,7 +94,7 @@ describe("Transport FiberRef overrides", () => {
 		expect(overrideResult._tag).toBe("Right");
 	});
 
-	it("overrides retry count per request", async () => {
+	it("overrides retry schedule per request", async () => {
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValueOnce({
@@ -109,11 +114,16 @@ describe("Transport FiberRef overrides", () => {
 			const transport = yield* TransportService;
 			return yield* transport.request<string>("eth_chainId", []);
 		}).pipe(
-			withRetries(1),
+			withRetrySchedule(
+				Schedule.recurs(1) as Schedule.Schedule<unknown, TransportError>,
+			),
 			Effect.provide(
 				createMockHttpTransport(fetchMock, {
 					url: "https://eth.example.com",
-					retries: 0,
+					retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+						unknown,
+						TransportError
+					>,
 				}),
 			),
 		);

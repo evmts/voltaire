@@ -1,0 +1,233 @@
+---
+title: TransactionSerializer Tests
+description: Test examples for TransactionSerializerService showing serialize, deserialize, and getSigningPayload.
+---
+
+## Serialize Transaction
+
+Serializes a valid transaction to bytes.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import { Address, Hex } from "voltaire-effect/primitives"
+import * as Effect from "effect/Effect"
+import { DefaultTransactionSerializer } from "voltaire-effect"
+import { TransactionSerializerService } from "voltaire-effect"
+
+const EIP1559_TX = {
+  type: 2 as const,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 20000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gasLimit: 21000n,
+  to: Address.from("0x1234567890123456789012345678901234567890"),
+  value: 1000000000000000000n,
+  data: Hex.toBytes("0x"),
+  accessList: [] as const,
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+}
+
+describe("TransactionSerializerService", () => {
+  describe("serialize", () => {
+    it.effect("returns Uint8Array for valid transaction", () =>
+      Effect.gen(function* () {
+        const serializer = yield* TransactionSerializerService
+        const result = yield* serializer.serialize(EIP1559_TX)
+        expect(result).toBeInstanceOf(Uint8Array)
+        expect(result.length).toBeGreaterThan(0)
+      }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+    )
+  })
+})
+```
+
+## Serialize Error Handling
+
+Returns SerializeError for invalid transaction shape.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
+import { DefaultTransactionSerializer } from "voltaire-effect"
+import {
+  SerializeError,
+  TransactionSerializerService,
+} from "voltaire-effect"
+
+describe("serialize error handling", () => {
+  it.effect("returns SerializeError for invalid transaction shape", () =>
+    Effect.gen(function* () {
+      const serializer = yield* TransactionSerializerService
+      const invalidTx = { invalid: "transaction" }
+      const exit = yield* Effect.exit(serializer.serialize(invalidTx))
+      expect(Exit.isFailure(exit)).toBe(true)
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === "Fail" ? exit.cause.error : null
+        expect(error).toBeInstanceOf(SerializeError)
+        expect((error as SerializeError)._tag).toBe("SerializeError")
+      }
+    }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+  )
+
+  it.effect("can catch SerializeError by tag", () =>
+    Effect.gen(function* () {
+      const serializer = yield* TransactionSerializerService
+      const result = yield* serializer
+        .serialize({})
+        .pipe(
+          Effect.catchTag("SerializeError", (e) =>
+            Effect.succeed(`caught: ${e._tag}`)
+          )
+        )
+      expect(result).toBe("caught: SerializeError")
+    }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+  )
+})
+```
+
+## Deserialize Transaction
+
+Deserializes bytes back to transaction object.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import { Address, Hex } from "voltaire-effect/primitives"
+import * as Effect from "effect/Effect"
+import { DefaultTransactionSerializer } from "voltaire-effect"
+import { TransactionSerializerService } from "voltaire-effect"
+
+const EIP1559_TX = {
+  type: 2 as const,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 20000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gasLimit: 21000n,
+  to: Address.from("0x1234567890123456789012345678901234567890"),
+  value: 1000000000000000000n,
+  data: Hex.toBytes("0x"),
+  accessList: [] as const,
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+}
+
+describe("deserialize", () => {
+  it.effect("returns transaction object for valid bytes", () =>
+    Effect.gen(function* () {
+      const serializer = yield* TransactionSerializerService
+      const bytes = yield* serializer.serialize(EIP1559_TX)
+      const result = yield* serializer.deserialize(bytes)
+      expect(result).toBeDefined()
+      expect(typeof result).toBe("object")
+    }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+  )
+})
+```
+
+## GetSigningPayload
+
+Returns the 32-byte signing hash for a transaction.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import { Address, Hex } from "voltaire-effect/primitives"
+import * as Effect from "effect/Effect"
+import { DefaultTransactionSerializer } from "voltaire-effect"
+import { TransactionSerializerService } from "voltaire-effect"
+
+const EIP1559_TX = {
+  type: 2 as const,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 20000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gasLimit: 21000n,
+  to: Address.from("0x1234567890123456789012345678901234567890"),
+  value: 1000000000000000000n,
+  data: Hex.toBytes("0x"),
+  accessList: [] as const,
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+}
+
+describe("getSigningPayload", () => {
+  it.effect("returns 32-byte hash", () =>
+    Effect.gen(function* () {
+      const serializer = yield* TransactionSerializerService
+      const result = yield* serializer.getSigningPayload(EIP1559_TX)
+      expect(result).toBeInstanceOf(Uint8Array)
+      expect(result.length).toBe(32)
+    }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+  )
+
+  it.effect("is deterministic - same tx produces same hash", () =>
+    Effect.gen(function* () {
+      const serializer = yield* TransactionSerializerService
+      const hash1 = yield* serializer.getSigningPayload(EIP1559_TX)
+      const hash2 = yield* serializer.getSigningPayload(EIP1559_TX)
+      expect(hash1).toEqual(hash2)
+    }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+  )
+
+  it.effect("different tx produces different hash", () =>
+    Effect.gen(function* () {
+      const serializer = yield* TransactionSerializerService
+      const modifiedTx = { ...EIP1559_TX, nonce: 1n }
+      const hash1 = yield* serializer.getSigningPayload(EIP1559_TX)
+      const hash2 = yield* serializer.getSigningPayload(modifiedTx)
+      expect(hash1).not.toEqual(hash2)
+    }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+  )
+})
+```
+
+## Round-Trip
+
+Serialize then deserialize preserves key fields.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import { Address, Hex } from "voltaire-effect/primitives"
+import * as Effect from "effect/Effect"
+import { DefaultTransactionSerializer } from "voltaire-effect"
+import { TransactionSerializerService } from "voltaire-effect"
+
+const EIP1559_TX = {
+  type: 2 as const,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 20000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gasLimit: 21000n,
+  to: Address.from("0x1234567890123456789012345678901234567890"),
+  value: 1000000000000000000n,
+  data: Hex.toBytes("0x"),
+  accessList: [] as const,
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+}
+
+describe("round-trip", () => {
+  it.effect("serialize -> deserialize preserves key fields", () =>
+    Effect.gen(function* () {
+      const serializer = yield* TransactionSerializerService
+      const bytes = yield* serializer.serialize(EIP1559_TX)
+      const decoded = (yield* serializer.deserialize(bytes)) as Record<string, unknown>
+      expect(decoded.type).toBe(EIP1559_TX.type)
+      expect(decoded.chainId).toBe(EIP1559_TX.chainId)
+      expect(decoded.nonce).toBe(EIP1559_TX.nonce)
+      expect(decoded.maxFeePerGas).toBe(EIP1559_TX.maxFeePerGas)
+      expect(decoded.maxPriorityFeePerGas).toBe(EIP1559_TX.maxPriorityFeePerGas)
+      expect(decoded.gasLimit).toBe(EIP1559_TX.gasLimit)
+      expect(decoded.value).toBe(EIP1559_TX.value)
+    }).pipe(Effect.provide(DefaultTransactionSerializer.Live))
+  )
+})
+```

@@ -53,7 +53,7 @@ Create test layers that return controlled values:
 ```typescript
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { ProviderService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect'
 
 const ProviderTest = Layer.succeed(ProviderService, {
   getBlock: (tag) => Effect.succeed({
@@ -186,7 +186,7 @@ Use live layers for integration tests:
 
 ```typescript
 import * as Layer from 'effect/Layer'
-import { HttpTransport, Provider, ProviderService } from 'voltaire-effect/services'
+import { HttpTransport, Provider, ProviderService } from 'voltaire-effect'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
 const IntegrationLayer = Layer.mergeAll(

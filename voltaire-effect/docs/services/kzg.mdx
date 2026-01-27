@@ -7,7 +7,7 @@ description: KZG polynomial commitments for EIP-4844 blob transactions
 
 ```typescript
 import { Effect } from 'effect'
-import { KzgService, DefaultKzg } from 'voltaire-effect/services'
+import { KzgService, DefaultKzg } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const kzg = yield* KzgService
@@ -66,7 +66,7 @@ const isValid = yield* kzg.verifyProof(
 The live implementation using `@tevm/voltaire/Kzg`:
 
 ```typescript
-import { DefaultKzg } from 'voltaire-effect/services'
+import { DefaultKzg } from 'voltaire-effect'
 
 const program = myEffect.pipe(Effect.provide(DefaultKzg))
 ```
@@ -76,7 +76,7 @@ const program = myEffect.pipe(Effect.provide(DefaultKzg))
 A stub implementation that always fails (for environments without KZG support):
 
 ```typescript
-import { NoopKzg } from 'voltaire-effect/services'
+import { NoopKzg } from 'voltaire-effect'
 
 const program = myEffect.pipe(Effect.provide(NoopKzg))
 // All operations will fail with KzgError
@@ -93,7 +93,7 @@ import {
   TransactionSerializerService,
   DefaultKzg,
   DefaultTransactionSerializer 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import { keccak256 } from 'voltaire'
 
 const createBlobTx = Effect.gen(function* () {
@@ -135,7 +135,7 @@ const createBlobTx = Effect.gen(function* () {
 ## Error Handling
 
 ```typescript
-import { KzgError } from 'voltaire-effect/services'
+import { KzgError } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const kzg = yield* KzgService

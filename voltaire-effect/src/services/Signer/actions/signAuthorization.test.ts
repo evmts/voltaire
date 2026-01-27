@@ -14,6 +14,7 @@ import type {
 } from "../../Account/AccountService.js";
 import { AccountError, AccountService } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
+import { TransportError } from "../../Transport/TransportService.js";
 import { signAuthorization } from "./signAuthorization.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -227,11 +228,12 @@ describe("signAuthorization", () => {
 	});
 
 	it("handles provider errors when fetching chain ID", async () => {
-		const { ProviderError } = await import("../../Provider/index.js");
-
 		const providerWithError: ProviderShape = {
 			...mockProvider,
-			getChainId: () => Effect.fail(new ProviderError({}, "Network error")),
+			getChainId: () =>
+				Effect.fail(
+					new TransportError({ code: -32000, message: "Network error" }),
+				),
 		};
 
 		const customLayers = Layer.mergeAll(
@@ -251,12 +253,12 @@ describe("signAuthorization", () => {
 	});
 
 	it("handles provider errors when fetching nonce", async () => {
-		const { ProviderError } = await import("../../Provider/index.js");
-
 		const providerWithError: ProviderShape = {
 			...mockProvider,
 			getTransactionCount: () =>
-				Effect.fail(new ProviderError({}, "RPC timeout")),
+				Effect.fail(
+					new TransportError({ code: -32000, message: "RPC timeout" }),
+				),
 		};
 
 		const customLayers = Layer.mergeAll(

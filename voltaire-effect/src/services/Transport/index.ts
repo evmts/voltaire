@@ -50,11 +50,11 @@ export {
 // FiberRef-scoped transport config overrides
 export {
 	cacheEnabledRef,
-	retryCountRef,
+	retryScheduleRef,
 	timeoutRef,
 	tracingRef,
 	withoutCache,
-	withRetries,
+	withRetrySchedule,
 	withTimeout,
 	withTracing,
 } from "./config.js";

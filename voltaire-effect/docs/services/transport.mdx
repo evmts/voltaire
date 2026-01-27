@@ -6,7 +6,7 @@ description: Effect-based JSON-RPC transport for Ethereum
 ## Quick Start
 
 ```typescript
-import { TransportService, HttpTransport } from 'voltaire-effect/services'
+import { TransportService, HttpTransport } from 'voltaire-effect'
 import { Effect } from 'effect'
 
 const program = Effect.gen(function* () {
@@ -39,7 +39,7 @@ HttpTransport({
 Combine multiple JSON-RPC requests into a single HTTP call for better performance.
 
 ```typescript
-import { HttpTransport, TransportService } from 'voltaire-effect/services'
+import { HttpTransport, TransportService } from 'voltaire-effect'
 import { Effect } from 'effect'
 
 const transport = HttpTransport({
@@ -72,7 +72,7 @@ const program = Effect.gen(function* () {
 ## WebSocketTransport
 
 ```typescript
-import { WebSocketTransport } from 'voltaire-effect/services'
+import { WebSocketTransport } from 'voltaire-effect'
 
 program.pipe(
   Effect.provide(WebSocketTransport('wss://eth.example.com'))
@@ -84,7 +84,7 @@ program.pipe(
 Uses `window.ethereum` ([EIP-1193](https://eips.ethereum.org/EIPS/eip-1193)).
 
 ```typescript
-import { BrowserTransport } from 'voltaire-effect/services'
+import { BrowserTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const transport = yield* TransportService
@@ -98,7 +98,7 @@ const program = Effect.gen(function* () {
 ## Testing
 
 ```typescript
-import { TestTransport, TransportError } from 'voltaire-effect/services'
+import { TestTransport, TransportError } from 'voltaire-effect'
 
 const mockResponses = new Map([
   ['eth_blockNumber', '0x1234'],
@@ -116,7 +116,7 @@ const errorResponses = new Map([
 ## Error Handling
 
 ```typescript
-import { TransportError } from 'voltaire-effect/services'
+import { TransportError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag("TransportError", (e) => 

@@ -7,7 +7,7 @@ description: EIP-3668 offchain lookup for ENS resolution and gateway data retrie
 
 ```typescript
 import { Effect } from 'effect'
-import { CcipService, DefaultCcip } from 'voltaire-effect/services'
+import { CcipService, DefaultCcip } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const ccip = yield* CcipService
@@ -57,7 +57,7 @@ URL templating per EIP-3668:
 ## Error Handling
 
 ```typescript
-import { CcipError } from 'voltaire-effect/services'
+import { CcipError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('CcipError', (e) => {
@@ -78,7 +78,7 @@ program.pipe(
 Disable offchain lookups for testing or sandboxed environments:
 
 ```typescript
-import { NoopCcip } from 'voltaire-effect/services'
+import { NoopCcip } from 'voltaire-effect'
 
 const testProgram = program.pipe(
   Effect.provide(NoopCcip)  // Always fails with "CCIP disabled"
@@ -91,7 +91,7 @@ const testProgram = program.pipe(
 
 ```typescript
 import * as Layer from 'effect/Layer'
-import { DefaultCcip, Provider, HttpTransport } from 'voltaire-effect/services'
+import { DefaultCcip, Provider, HttpTransport } from 'voltaire-effect'
 
 // Compose with other services
 const AppLayer = Layer.mergeAll(

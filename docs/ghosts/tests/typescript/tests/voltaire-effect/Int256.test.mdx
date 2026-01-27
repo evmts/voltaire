@@ -1,0 +1,273 @@
+---
+title: Int256 Tests
+description: Test examples for Int256 schema showing signed 256-bit integer operations with EVM-compatible wrapping arithmetic.
+---
+
+## Schema: Number decoding
+
+Demonstrates decoding numbers into branded Int256.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+it("decodes valid positive number", () => {
+  const value = S.decodeSync(Int256.Number)(1000000000)
+  expect(S.encodeSync(Int256.Number)(value)).toBe(1000000000)
+})
+
+it("decodes valid negative number", () => {
+  const value = S.decodeSync(Int256.Number)(-1000000000)
+  expect(S.encodeSync(Int256.Number)(value)).toBe(-1000000000)
+})
+
+it("fails on non-integer", () => {
+  expect(() => S.decodeSync(Int256.Number)(1.5)).toThrow()
+})
+```
+
+## Schema: String with large values
+
+Demonstrates string parsing for values beyond JavaScript number range.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+it("decodes valid positive string", () => {
+  const value = S.decodeSync(Int256.String)(
+    "12345678901234567890123456789012345678901234567890",
+  )
+  expect(S.encodeSync(Int256.String)(value)).toBe(
+    "12345678901234567890123456789012345678901234567890",
+  )
+})
+
+it("decodes valid negative string", () => {
+  const value = S.decodeSync(Int256.String)(
+    "-12345678901234567890123456789012345678901234567890",
+  )
+  expect(S.encodeSync(Int256.String)(value)).toBe(
+    "-12345678901234567890123456789012345678901234567890",
+  )
+})
+```
+
+## Schema: BigInt with boundary validation
+
+Demonstrates BigInt decoding with Int256 range validation.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+const INT256_MIN = -(2n ** 255n)
+const INT256_MAX = 2n ** 255n - 1n
+
+it("decodes INT256_MIN bigint", () => {
+  const value = S.decodeSync(Int256.BigInt)(INT256_MIN)
+  expect(S.encodeSync(Int256.BigInt)(value)).toBe(INT256_MIN)
+})
+
+it("decodes INT256_MAX bigint", () => {
+  const value = S.decodeSync(Int256.BigInt)(INT256_MAX)
+  expect(S.encodeSync(Int256.BigInt)(value)).toBe(INT256_MAX)
+})
+
+it("fails on overflow bigint", () => {
+  expect(() => S.decodeSync(Int256.BigInt)(INT256_MAX + 1n)).toThrow()
+})
+
+it("fails on underflow bigint", () => {
+  expect(() => S.decodeSync(Int256.BigInt)(INT256_MIN - 1n)).toThrow()
+})
+```
+
+## Arithmetic: Addition with wrapping
+
+Demonstrates EVM-style wrapping on overflow.
+
+```typescript
+import { BrandedInt256 } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+const INT256_MIN = -(2n ** 255n)
+const INT256_MAX = 2n ** 255n - 1n
+
+it("adds two positive values", () => {
+  const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n)
+  const b = S.decodeSync(Int256.BigInt)(5000000000000000000000000000000000000000n)
+  const result = BrandedInt256.plus(a, b)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+    15000000000000000000000000000000000000000n,
+  )
+})
+
+it("wraps on overflow", () => {
+  const max = S.decodeSync(Int256.BigInt)(INT256_MAX)
+  const one = S.decodeSync(Int256.BigInt)(1n)
+  const result = BrandedInt256.plus(max, one)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MIN)
+})
+
+it("wraps on underflow", () => {
+  const min = S.decodeSync(Int256.BigInt)(INT256_MIN)
+  const negOne = S.decodeSync(Int256.BigInt)(-1n)
+  const result = BrandedInt256.plus(min, negOne)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MAX)
+})
+```
+
+## Arithmetic: Subtraction, multiplication, division
+
+Demonstrates other arithmetic operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+it("subtracts two values", () => {
+  const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n)
+  const b = S.decodeSync(Int256.BigInt)(5000000000000000000000000000000000000000n)
+  const result = Int256.sub(a, b)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+    5000000000000000000000000000000000000000n,
+  )
+})
+
+it("multiplies two positive values", () => {
+  const a = S.decodeSync(Int256.BigInt)(100000000000000000000n)
+  const b = S.decodeSync(Int256.BigInt)(100000000000000000000n)
+  const result = Int256.mul(a, b)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+    10000000000000000000000000000000000000000n,
+  )
+})
+
+it("truncates toward zero (negative)", () => {
+  const a = S.decodeSync(Int256.BigInt)(-7n)
+  const b = S.decodeSync(Int256.BigInt)(3n)
+  const result = Int256.div(a, b)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(-2n)
+})
+```
+
+## Sign handling: negate, abs, isNegative
+
+Demonstrates sign manipulation operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+const INT256_MIN = -(2n ** 255n)
+
+it("negates positive value", () => {
+  const a = S.decodeSync(Int256.BigInt)(10000000000000000000000000000000000000000n)
+  const result = Int256.negate(a)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+    -10000000000000000000000000000000000000000n,
+  )
+})
+
+it("abs of negative value", () => {
+  const a = S.decodeSync(Int256.BigInt)(-10000000000000000000000000000000000000000n)
+  const result = Int256.abs(a)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(
+    10000000000000000000000000000000000000000n,
+  )
+})
+
+it("negate of INT256_MIN wraps", () => {
+  const min = S.decodeSync(Int256.BigInt)(INT256_MIN)
+  const result = Int256.negate(min)
+  expect(S.encodeSync(Int256.BigInt)(result)).toBe(INT256_MIN)
+})
+
+it("abs of INT256_MIN throws overflow", () => {
+  const min = S.decodeSync(Int256.BigInt)(INT256_MIN)
+  expect(() => Int256.abs(min)).toThrow()
+})
+
+it("returns true for negative", () => {
+  const a = S.decodeSync(Int256.BigInt)(-10000000000000000000000000000000000000000n)
+  expect(Int256.isNegative(a)).toBe(true)
+})
+```
+
+## Comparison: compare
+
+Demonstrates comparison operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+const INT256_MIN = -(2n ** 255n)
+const INT256_MAX = 2n ** 255n - 1n
+
+it("returns -1 when a < b", () => {
+  const a = S.decodeSync(Int256.BigInt)(100n)
+  const b = S.decodeSync(Int256.BigInt)(200n)
+  expect(Int256.compare(a, b)).toBe(-1)
+})
+
+it("handles extreme values", () => {
+  const min = S.decodeSync(Int256.BigInt)(INT256_MIN)
+  const max = S.decodeSync(Int256.BigInt)(INT256_MAX)
+  expect(Int256.compare(min, max)).toBe(-1)
+  expect(Int256.compare(max, min)).toBe(1)
+})
+```
+
+## Utility: isZero
+
+Demonstrates zero check utility.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+it("returns true for zero", () => {
+  const zero = S.decodeSync(Int256.BigInt)(0n)
+  expect(Int256.isZero(zero)).toBe(true)
+})
+
+it("returns false for positive", () => {
+  const a = S.decodeSync(Int256.BigInt)(1n)
+  expect(Int256.isZero(a)).toBe(false)
+})
+```
+
+## Constants
+
+Demonstrates accessing Int256 constant values.
+
+```typescript
+import * as Int256 from "voltaire-effect/primitives/Int256"
+
+const INT256_MIN = -(2n ** 255n)
+const INT256_MAX = 2n ** 255n - 1n
+
+it("MIN equals -(2^255)", () => {
+  expect(Int256.MIN).toBe(INT256_MIN)
+})
+
+it("MAX equals 2^255 - 1", () => {
+  expect(Int256.MAX).toBe(INT256_MAX)
+})
+
+it("ZERO equals 0n", () => {
+  expect(Int256.ZERO).toBe(0n)
+})
+
+it("ONE equals 1n", () => {
+  expect(Int256.ONE).toBe(1n)
+})
+
+it("NEG_ONE equals -1n", () => {
+  expect(Int256.NEG_ONE).toBe(-1n)
+})
+```

@@ -6,7 +6,12 @@
  */
 
 import * as Layer from "effect/Layer";
+import {
+	type BlockExplorerConfig,
+	BlockExplorerService,
+} from "../BlockExplorerService.js";
 import { type ChainConfig, ChainService } from "../ChainService.js";
+import { type ContractsConfig, ContractsService } from "../ContractsService.js";
 
 /**
  * Optimism (OP Mainnet) configuration.
@@ -18,26 +23,35 @@ export const optimismConfig: ChainConfig = {
 	name: "OP Mainnet",
 	nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 	blockTime: 2_000,
-	rpcUrls: {
-		default: { http: ["https://mainnet.optimism.io"] },
-	},
-	blockExplorers: {
-		default: {
-			name: "Optimism Explorer",
-			url: "https://optimistic.etherscan.io",
-			apiUrl: "https://api-optimistic.etherscan.io/api",
-		},
-	},
-	contracts: {
-		multicall3: {
-			address: "0xca11bde05977b3631167028862be2a173976ca11",
-			blockCreated: 4_286_263,
-		},
+};
+
+/**
+ * Optimism block explorer configuration.
+ *
+ * @since 0.0.1
+ */
+export const optimismBlockExplorers: BlockExplorerConfig = {
+	default: {
+		name: "Optimism Explorer",
+		url: "https://optimistic.etherscan.io",
+		apiUrl: "https://api-optimistic.etherscan.io/api",
 	},
 };
 
 /**
- * Optimism L2 Layer for ChainService.
+ * Optimism contract deployments.
+ *
+ * @since 0.0.1
+ */
+export const optimismContracts: ContractsConfig = {
+	multicall3: {
+		address: "0xca11bde05977b3631167028862be2a173976ca11",
+		blockCreated: 4_286_263,
+	},
+};
+
+/**
+ * Optimism L2 Layer for chain metadata, explorers, and contracts.
  *
  * @since 0.0.1
  *
@@ -52,4 +66,8 @@ export const optimismConfig: ChainConfig = {
  * }).pipe(Effect.provide(optimism))
  * ```
  */
-export const optimism = Layer.succeed(ChainService, optimismConfig);
+export const optimism = Layer.mergeAll(
+	Layer.succeed(ChainService, optimismConfig),
+	Layer.succeed(BlockExplorerService, optimismBlockExplorers),
+	Layer.succeed(ContractsService, optimismContracts),
+);

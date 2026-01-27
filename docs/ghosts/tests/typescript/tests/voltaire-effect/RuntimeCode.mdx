@@ -1,0 +1,68 @@
+---
+title: RuntimeCode Tests
+description: Test examples for RuntimeCode showing deployed contract bytecode parsing and encoding.
+---
+
+## Decode from Hex
+
+Decodes deployed contract bytecode from hex string.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as RuntimeCode from "voltaire-effect/primitives/RuntimeCode"
+
+const result = S.decodeSync(RuntimeCode.Hex)("0x6080604052")
+expect(result).toBeInstanceOf(Uint8Array)
+```
+
+## Handle Empty Bytecode
+
+Handles empty bytecode (0x).
+
+```typescript
+import * as S from "effect/Schema"
+import * as RuntimeCode from "voltaire-effect/primitives/RuntimeCode"
+
+const result = S.decodeSync(RuntimeCode.Hex)("0x")
+expect(result.length).toBe(0)
+```
+
+## Encode to Hex
+
+Encodes bytecode back to hex string.
+
+```typescript
+import * as S from "effect/Schema"
+import * as RuntimeCode from "voltaire-effect/primitives/RuntimeCode"
+
+const code = S.decodeSync(RuntimeCode.Hex)("0x6080604052")
+const hex = S.encodeSync(RuntimeCode.Hex)(code)
+expect(hex).toBe("0x6080604052")
+```
+
+## Decode from Bytes
+
+Decodes from Uint8Array.
+
+```typescript
+import * as S from "effect/Schema"
+import * as RuntimeCode from "voltaire-effect/primitives/RuntimeCode"
+
+const input = new Uint8Array([0x60, 0x80, 0x60, 0x40])
+const result = S.decodeSync(RuntimeCode.Bytes)(input)
+expect([...result]).toEqual([...input])
+```
+
+## Encode to Bytes
+
+Encodes to Uint8Array.
+
+```typescript
+import * as S from "effect/Schema"
+import * as RuntimeCode from "voltaire-effect/primitives/RuntimeCode"
+
+const code = S.decodeSync(RuntimeCode.Hex)("0x6001")
+const bytes = S.encodeSync(RuntimeCode.Bytes)(code)
+expect(bytes).toBeInstanceOf(Uint8Array)
+```

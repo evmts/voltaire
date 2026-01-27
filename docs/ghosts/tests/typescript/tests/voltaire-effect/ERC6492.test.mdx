@@ -1,0 +1,148 @@
+---
+title: ERC6492 Tests
+description: Test examples for ERC-6492 signature wrapping/unwrapping for counterfactual contracts.
+---
+
+## Wraps and unwraps signatures
+
+Demonstrates wrapping a signature with factory deployment data and unwrapping it.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest";
+import { Address } from "@tevm/voltaire/Address";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
+import { unwrapSignature, wrapSignature } from "voltaire-effect/crypto/ERC6492";
+
+const ERC6492_SUFFIX = "6492649264926492649264926492649264926492649264926492649264926492";
+const factoryAddress = "0x000000000000000000000000000000000000dead" as const;
+const factoryData = "0x1234" as const;
+const innerSignature = `0x${"11".repeat(65)}` as `0x${string}`;
+
+it.effect("wraps and unwraps signatures", () =>
+  Effect.gen(function* () {
+    const wrapped = yield* wrapSignature({
+      signature: innerSignature,
+      factoryAddress,
+      factoryData,
+    });
+
+    expect(wrapped.endsWith(ERC6492_SUFFIX)).toBe(true);
+
+    const unwrapped = yield* unwrapSignature(wrapped);
+    expect(unwrapped).not.toBeNull();
+    if (!unwrapped) return;
+
+    expect(Address.toHex(unwrapped.factoryAddress)).toBe(factoryAddress);
+    expect(Hex.toBytes(unwrapped.factoryData)).toEqual(Hex.toBytes(factoryData));
+    expect(Hex.toBytes(unwrapped.signature)).toEqual(Hex.toBytes(innerSignature));
+  }),
+);
+```
+
+## Returns null for non-wrapped signatures
+
+Shows that regular signatures are not mistakenly unwrapped.
+
+```typescript
+import * as Effect from "effect/Effect";
+import { unwrapSignature } from "voltaire-effect/crypto/ERC6492";
+
+const innerSignature = `0x${"11".repeat(65)}` as `0x${string}`;
+
+it.effect("returns null for non-wrapped signatures", () =>
+  Effect.gen(function* () {
+    const unwrapped = yield* unwrapSignature(innerSignature);
+    expect(unwrapped).toBeNull();
+  }),
+);
+```
+
+## Verifies using deployless validator
+
+Demonstrates signature verification using a deployless contract call.
+
+```typescript
+import { encodeParameters } from "@tevm/voltaire/Abi";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
+import { verifySignature } from "voltaire-effect/crypto/ERC6492";
+
+const signer = "0x000000000000000000000000000000000000babe" as const;
+const messageHash = `0x${"22".repeat(32)}` as `0x${string}`;
+const innerSignature = `0x${"11".repeat(65)}` as `0x${string}`;
+
+const VALIDATOR_PARAMS = [
+  { type: "address", name: "signer" },
+  { type: "bytes32", name: "hash" },
+  { type: "bytes", name: "signature" },
+] as const;
+
+it.effect("verifies using deployless validator", () =>
+  Effect.gen(function* () {
+    const calls: Array<{ data?: string }> = [];
+    const provider = {
+      call: (tx: { data?: `0x${string}` }) =>
+        Effect.sync(() => {
+          calls.push(tx);
+          return "0x01" as `0x${string}`;
+        }),
+    } as any;
+
+    const result = yield* verifySignature({
+      address: signer,
+      message: messageHash,
+      signature: innerSignature,
+      provider,
+    });
+
+    expect(result).toBe(true);
+    expect(calls.length).toBe(1);
+    const callData = calls[0]?.data ?? "";
+    const encodedParams = Hex.fromBytes(
+      encodeParameters(VALIDATOR_PARAMS as any, [signer, messageHash, innerSignature] as any),
+    );
+    expect(callData.endsWith(encodedParams.slice(2))).toBe(true);
+  }),
+);
+```
+
+## Surfaces revert reason from validator
+
+Shows how validation errors are surfaced with revert data.
+
+```typescript
+import { encodeParameters } from "@tevm/voltaire/Abi";
+import * as Hex from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import { VerifyError } from "voltaire-effect/crypto/Signature";
+import { verifySignature } from "voltaire-effect/crypto/ERC6492";
+
+it.effect("surfaces revert reason from validator", () =>
+  Effect.gen(function* () {
+    const revertData = Hex.fromBytes(
+      encodeParameters([{ type: "string" }] as const, ["boom"] as any),
+    );
+    const provider = {
+      call: () => Effect.succeed(`0x08c379a0${revertData.slice(2)}` as `0x${string}`),
+    } as any;
+
+    const exit = yield* Effect.exit(
+      verifySignature({
+        address: signer,
+        message: messageHash,
+        signature: innerSignature,
+        provider,
+      }),
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+      const error = exit.cause.error as VerifyError;
+      expect(error).toBeInstanceOf(VerifyError);
+      expect(error.message).toContain("boom");
+    }
+  }),
+);
+```

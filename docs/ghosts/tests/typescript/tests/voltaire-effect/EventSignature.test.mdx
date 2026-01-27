@@ -1,0 +1,84 @@
+---
+title: EventSignature Tests
+description: Test examples for EventSignature schema showing event signature parsing from definitions and hex strings.
+---
+
+## Parses from event definition string
+
+Demonstrates parsing event signature from Solidity-style definition.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Schema from "effect/Schema"
+import * as EventSignature from "voltaire-effect/primitives/EventSignature"
+
+it("parses from event definition string", () => {
+  const sig = Schema.decodeSync(EventSignature.String)(
+    "Transfer(address,address,uint256)",
+  )
+  expect(sig).toBeInstanceOf(Uint8Array)
+  expect(sig.length).toBe(32)
+})
+```
+
+## Parses from hex string
+
+Demonstrates parsing event signature from raw hex.
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventSignature from "voltaire-effect/primitives/EventSignature"
+
+it("parses from hex string", () => {
+  const sig = Schema.decodeSync(EventSignature.String)(
+    `0x${"ab".repeat(32)}`,
+  )
+  expect(sig).toBeInstanceOf(Uint8Array)
+  expect(sig.length).toBe(32)
+})
+```
+
+## Encodes to hex string
+
+Demonstrates encoding event signature back to hex.
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventSignature from "voltaire-effect/primitives/EventSignature"
+
+it("encodes to hex string", () => {
+  const sig = Schema.decodeSync(EventSignature.String)(
+    "Transfer(address,address,uint256)",
+  )
+  const hex = Schema.encodeSync(EventSignature.String)(sig)
+  expect(hex.startsWith("0x")).toBe(true)
+  expect(hex.length).toBe(66)
+})
+```
+
+## Pure functions: toHex and equals
+
+Demonstrates utility functions for event signatures.
+
+```typescript
+import * as Schema from "effect/Schema"
+import * as EventSignature from "voltaire-effect/primitives/EventSignature"
+
+it("toHex converts to hex", () => {
+  const sig = Schema.decodeSync(EventSignature.String)(
+    "Transfer(address,address,uint256)",
+  )
+  const hex = EventSignature.toHex(sig)
+  expect(hex.startsWith("0x")).toBe(true)
+})
+
+it("equals compares signatures", () => {
+  const a = Schema.decodeSync(EventSignature.String)(
+    "Transfer(address,address,uint256)",
+  )
+  const b = Schema.decodeSync(EventSignature.String)(
+    "Transfer(address,address,uint256)",
+  )
+  expect(EventSignature.equals(a, b)).toBe(true)
+})
+```

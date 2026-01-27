@@ -4,9 +4,10 @@ import type * as HttpClientResponse from "@effect/platform/HttpClientResponse";
 import { describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Schedule from "effect/Schedule";
 import { createBatchScheduler } from "./BatchScheduler.js";
 import { HttpTransport } from "./HttpTransport.js";
-import { TransportService } from "./TransportService.js";
+import { TransportError, TransportService } from "./TransportService.js";
 
 const createMockHttpClientLayer = (
 	fetchMock: ReturnType<typeof vi.fn>,
@@ -98,7 +99,10 @@ describe("IdGenerator", () => {
 			Effect.provide(
 				createMockHttpTransport(fetchMock, {
 					url: "https://eth.example.com",
-					retries: 0,
+					retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+						unknown,
+						TransportError
+					>,
 				}),
 			),
 			Effect.scoped,

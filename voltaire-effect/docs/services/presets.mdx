@@ -7,7 +7,7 @@ description: Pre-composed provider layers for common configurations
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, MainnetProvider } from 'voltaire-effect/services'
+import { ProviderService, MainnetProvider } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -22,7 +22,7 @@ await Effect.runPromise(program)
 Simple provider with HTTP transport:
 
 ```typescript
-import { MainnetProvider } from 'voltaire-effect/services'
+import { MainnetProvider } from 'voltaire-effect'
 
 const provider = MainnetProvider('https://eth.llamarpc.com')
 // Provides: ProviderService
@@ -33,7 +33,7 @@ const provider = MainnetProvider('https://eth.llamarpc.com')
 Generic version for any network:
 
 ```typescript
-import { createProvider } from 'voltaire-effect/services'
+import { createProvider } from 'voltaire-effect'
 
 const arbitrumProvider = createProvider('https://arb1.arbitrum.io/rpc')
 const optimismProvider = createProvider('https://mainnet.optimism.io')
@@ -52,10 +52,11 @@ import {
   SepoliaProvider,
   PolygonProvider,
   MainnetFullProvider
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 // Each provides: ProviderService, FormatterService, TransactionSerializerService,
-//                FeeEstimatorService, NonceManagerService, CacheService, ChainService
+//                FeeEstimatorService, NonceManagerService, CacheService,
+//                ChainService, BlockExplorerService, ContractsService
 
 const op = OptimismProvider('https://mainnet.optimism.io')
 const arb = ArbitrumProvider('https://arb1.arbitrum.io/rpc')
@@ -77,7 +78,7 @@ import {
   FeeEstimatorService,
   NonceManagerService,
   MainnetFullProvider 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -111,6 +112,8 @@ type ComposedServices =
   | NonceManagerService
   | CacheService
   | ChainService
+  | BlockExplorerService
+  | ContractsService
 ```
 
 ## When to Use Presets vs Manual Composition
@@ -143,7 +146,7 @@ import {
   DefaultFormatter,
   DefaultTransactionSerializer,
   mainnet 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 
 // Manual: full control
 const customStack = Layer.mergeAll(
@@ -162,7 +165,7 @@ Replace transport for testing:
 
 ```typescript
 import { Layer } from 'effect'
-import { Provider, ProviderService } from 'voltaire-effect/services'
+import { Provider, ProviderService } from 'voltaire-effect'
 
 const MockTransport = Layer.succeed(TransportService, {
   request: (method, params) => Effect.succeed(mockResponses[method])

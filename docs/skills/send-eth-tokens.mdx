@@ -134,8 +134,10 @@ The Contract module provides type-safe token transfers:
 
 ```typescript
 import { Contract } from '@voltaire/contract';
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: 'function',
     name: 'transfer',
@@ -169,7 +171,7 @@ const erc20Abi = [
       { type: 'uint256', name: 'value', indexed: false }
     ]
   }
-] as const;
+]);
 
 // Create contract instance
 const usdc = Contract({

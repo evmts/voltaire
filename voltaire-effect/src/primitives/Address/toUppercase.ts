@@ -23,5 +23,6 @@ import { Address, type AddressType } from "@tevm/voltaire/Address";
  *
  * @since 0.1.0
  */
-export const toUppercase = (addr: AddressType): string =>
-	Address.toUppercase(addr);
+export const toUppercase = (
+	addr: AddressType,
+): ReturnType<typeof Address.toUppercase> => Address.toUppercase(addr);

@@ -12,8 +12,14 @@ import {
 } from "@tevm/voltaire/Blob";
 import { BlobBaseFee } from "@tevm/voltaire/FeeMarket";
 import * as Effect from "effect/Effect";
+import { TransportError } from "../Transport/TransportError.js";
 import { TransportService } from "../Transport/TransportService.js";
-import { type BlockType, ProviderError } from "./ProviderService.js";
+import {
+	type BlockType,
+	type GetBlobBaseFeeError,
+	ProviderNotFoundError,
+	ProviderResponseError,
+} from "./ProviderService.js";
 
 const METHOD_NOT_FOUND = -32601;
 
@@ -21,7 +27,7 @@ const parseHexToBigInt = (method: string, hex: string) =>
 	Effect.try({
 		try: () => BigInt(hex),
 		catch: (error) =>
-			new ProviderError(
+			new ProviderResponseError(
 				{ method, response: hex },
 				`Invalid hex response from RPC: ${hex}`,
 				{ cause: error instanceof Error ? error : undefined },
@@ -31,7 +37,7 @@ const parseHexToBigInt = (method: string, hex: string) =>
 const blobBaseFeeFromBlock = (block: BlockType) => {
 	if (block.excessBlobGas === undefined || block.excessBlobGas === null) {
 		return Effect.fail(
-			new ProviderError(
+			new ProviderResponseError(
 				{ method: "eth_getBlockByNumber", blockNumber: block.number },
 				"Blob base fee not available for pre-Dencun blocks",
 			),
@@ -100,7 +106,7 @@ export const calculateBlobGasPrice = (
  */
 export const getBlobBaseFee = (): Effect.Effect<
 	bigint,
-	ProviderError,
+	GetBlobBaseFeeError,
 	TransportService
 > =>
 	Effect.gen(function* () {
@@ -110,9 +116,8 @@ export const getBlobBaseFee = (): Effect.Effect<
 			transport.request<T>(method, params).pipe(
 				Effect.mapError(
 					(error) =>
-						new ProviderError({ method, params }, error.message, {
+						new TransportError(error.input, error.message, {
 							cause: error,
-							code: error.code,
 							context: { method, params },
 						}),
 				),
@@ -130,16 +135,17 @@ export const getBlobBaseFee = (): Effect.Effect<
 				block
 					? blobBaseFeeFromBlock(block)
 					: Effect.fail(
-							new ProviderError(
+							new ProviderNotFoundError(
 								{ method: "eth_getBlockByNumber", params: ["latest", false] },
 								"Block not found",
+								{ resource: "block" },
 							),
 						),
 			),
 		);
 
 		return yield* fromRpc.pipe(
-			Effect.catchTag("ProviderError", (error) =>
+			Effect.catchTag("TransportError", (error) =>
 				error.code === METHOD_NOT_FOUND ? fromBlock : Effect.fail(error),
 			),
 		);

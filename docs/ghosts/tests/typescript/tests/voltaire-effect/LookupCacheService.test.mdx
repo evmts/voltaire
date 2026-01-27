@@ -1,0 +1,184 @@
+---
+title: LookupCacheService Tests
+description: Test examples for LookupCacheService showing automatic cache population with lookup functions.
+---
+
+## LookupCacheService computes value on cache miss
+
+The cache automatically calls the lookup function when a key is not found.
+
+```typescript
+import { Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Ref from 'effect/Ref'
+import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
+
+const StringCache = LookupCacheService<string, string, never>()
+
+const program = Effect.gen(function* () {
+  const callCount = yield* Ref.make(0)
+
+  const layer = makeLookupCache(StringCache, {
+    capacity: 100,
+    timeToLive: Duration.minutes(5),
+    lookup: (key) =>
+      Effect.gen(function* () {
+        yield* Ref.update(callCount, (n) => n + 1)
+        return `value-for-${key}`
+      }),
+  })
+
+  const result = yield* Effect.gen(function* () {
+    const cache = yield* StringCache
+    return yield* cache.get("key1")
+  }).pipe(Effect.provide(layer))
+
+  const count = yield* Ref.get(callCount)
+
+  expect(result).toBe("value-for-key1")
+  expect(count).toBe(1)
+})
+```
+
+## LookupCacheService returns cached value on subsequent calls
+
+Subsequent calls return the cached value without calling the lookup function again.
+
+```typescript
+import { Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Ref from 'effect/Ref'
+import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
+
+const StringCache = LookupCacheService<string, string, never>()
+
+const program = Effect.gen(function* () {
+  const callCount = yield* Ref.make(0)
+
+  const layer = makeLookupCache(StringCache, {
+    capacity: 100,
+    timeToLive: Duration.minutes(5),
+    lookup: (key) =>
+      Effect.gen(function* () {
+        yield* Ref.update(callCount, (n) => n + 1)
+        return `value-for-${key}`
+      }),
+  })
+
+  const [r1, r2] = yield* Effect.gen(function* () {
+    const cache = yield* StringCache
+    const r1 = yield* cache.get("key1")
+    const r2 = yield* cache.get("key1")
+    return [r1, r2] as const
+  }).pipe(Effect.provide(layer))
+
+  const count = yield* Ref.get(callCount)
+
+  expect(r1).toBe("value-for-key1")
+  expect(r2).toBe("value-for-key1")
+  expect(count).toBe(1) // Only called once
+})
+```
+
+## LookupCacheService getOption returns none for uncached key
+
+The getOption method returns Option.none for keys not in the cache.
+
+```typescript
+import { Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Option from 'effect/Option'
+import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
+
+const StringCache = LookupCacheService<string, string, never>()
+
+const layer = makeLookupCache(StringCache, {
+  capacity: 100,
+  timeToLive: Duration.minutes(5),
+  lookup: (key) => Effect.succeed(`value-for-${key}`),
+})
+
+const result = yield* Effect.gen(function* () {
+  const cache = yield* StringCache
+  return yield* cache.getOption("key1")
+}).pipe(Effect.provide(layer))
+
+expect(Option.isNone(result)).toBe(true)
+```
+
+## LookupCacheService invalidate removes a key
+
+The invalidate method removes a key, causing the next get to recompute.
+
+```typescript
+import { Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Ref from 'effect/Ref'
+import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
+
+const StringCache = LookupCacheService<string, string, never>()
+
+const program = Effect.gen(function* () {
+  const callCount = yield* Ref.make(0)
+
+  const layer = makeLookupCache(StringCache, {
+    capacity: 100,
+    timeToLive: Duration.minutes(5),
+    lookup: (_key) =>
+      Effect.gen(function* () {
+        yield* Ref.update(callCount, (n) => n + 1)
+        return `value-${yield* Ref.get(callCount)}`
+      }),
+  })
+
+  const [r1, r2] = yield* Effect.gen(function* () {
+    const cache = yield* StringCache
+    const r1 = yield* cache.get("key1")
+    yield* cache.invalidate("key1")
+    const r2 = yield* cache.get("key1")
+    return [r1, r2] as const
+  }).pipe(Effect.provide(layer))
+
+  expect(r1).toBe("value-1")
+  expect(r2).toBe("value-2")
+})
+```
+
+## LookupCacheService expires entries after TTL
+
+Cache entries are automatically expired after the time-to-live duration.
+
+```typescript
+import { Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Ref from 'effect/Ref'
+import * as TestClock from 'effect/TestClock'
+import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
+
+const StringCache = LookupCacheService<string, string, never>()
+
+const program = Effect.gen(function* () {
+  const callCount = yield* Ref.make(0)
+
+  const layer = makeLookupCache(StringCache, {
+    capacity: 100,
+    timeToLive: Duration.seconds(1),
+    lookup: () =>
+      Effect.gen(function* () {
+        yield* Ref.update(callCount, (n) => n + 1)
+        return `value-${yield* Ref.get(callCount)}`
+      }),
+  })
+
+  const [r1, r2] = yield* Effect.gen(function* () {
+    const cache = yield* StringCache
+    const r1 = yield* cache.get("key1")
+    yield* TestClock.adjust(Duration.seconds(2))
+    const r2 = yield* cache.get("key1")
+    return [r1, r2] as const
+  }).pipe(Effect.provide(layer))
+
+  expect(r1).toBe("value-1")
+  expect(r2).toBe("value-2") // Recomputed after TTL
+})
+```

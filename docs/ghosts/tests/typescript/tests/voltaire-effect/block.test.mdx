@@ -1,0 +1,245 @@
+---
+title: Block Tests
+description: Test examples for Block schema showing block structure validation, RPC format encoding/decoding, and EIP-4844 blob fields.
+---
+
+## Validates complete block
+
+Demonstrates validating a complete block structure.
+
+```typescript
+import { Block, BlockBody, BlockHeader } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import { describe, expect, it } from "vitest"
+import * as BlockSchema from "voltaire-effect/primitives/Block"
+
+function createValidBlock() {
+  const header = BlockHeader.from({
+    parentHash: `0x${"ab".repeat(32)}`,
+    ommersHash: `0x${"cd".repeat(32)}`,
+    beneficiary: `0x${"ef".repeat(20)}`,
+    stateRoot: `0x${"11".repeat(32)}`,
+    transactionsRoot: `0x${"22".repeat(32)}`,
+    receiptsRoot: `0x${"33".repeat(32)}`,
+    logsBloom: new Uint8Array(256).fill(0),
+    difficulty: 0n,
+    number: 12345n,
+    gasLimit: 30000000n,
+    gasUsed: 21000n,
+    timestamp: 1700000000n,
+    extraData: new Uint8Array(0),
+    mixHash: `0x${"44".repeat(32)}`,
+    nonce: new Uint8Array(8).fill(0),
+    baseFeePerGas: 1000000000n,
+  })
+
+  const body = BlockBody.from({
+    transactions: [],
+    ommers: [],
+  })
+
+  return Block.from({
+    header,
+    body,
+    hash: `0x${"55".repeat(32)}`,
+    size: 1000n,
+  })
+}
+
+it("validates complete block", () => {
+  const block = createValidBlock()
+  const result = S.decodeSync(BlockSchema.BlockSchema)(block)
+  expect(result.hash.length).toBe(32)
+  expect(result.header.number).toBe(12345n)
+})
+```
+
+## Rejects invalid block structure
+
+Demonstrates validation errors for malformed blocks.
+
+```typescript
+import * as S from "effect/Schema"
+import * as BlockSchema from "voltaire-effect/primitives/Block"
+
+it("rejects block with invalid header (string)", () => {
+  const block = createValidBlock()
+  const invalid = { ...block, header: "garbage" }
+  expect(() => S.decodeSync(BlockSchema.BlockSchema)(invalid)).toThrow()
+})
+
+it("rejects block with wrong hash length", () => {
+  const block = createValidBlock()
+  const invalid = { ...block, hash: new Uint8Array(16) }
+  expect(() => S.decodeSync(BlockSchema.BlockSchema)(invalid)).toThrow()
+})
+
+it("rejects block with wrong logsBloom length", () => {
+  const block = createValidBlock()
+  const invalidHeader = { ...block.header, logsBloom: new Uint8Array(128) }
+  const invalid = { ...block, header: invalidHeader }
+  expect(() => S.decodeSync(BlockSchema.BlockSchema)(invalid)).toThrow()
+})
+```
+
+## Decodes RPC block format
+
+Demonstrates decoding blocks from JSON-RPC response format.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Block from "voltaire-effect/primitives/Block"
+
+const createRpcBlock = () => ({
+  hash: `0x${"ab".repeat(32)}`,
+  size: "0x3e8",
+  parentHash: `0x${"cd".repeat(32)}`,
+  sha3Uncles: `0x${"de".repeat(32)}`,
+  miner: `0x${"ef".repeat(20)}`,
+  stateRoot: `0x${"11".repeat(32)}`,
+  transactionsRoot: `0x${"22".repeat(32)}`,
+  receiptsRoot: `0x${"33".repeat(32)}`,
+  logsBloom: `0x${"00".repeat(256)}`,
+  difficulty: "0x0",
+  number: "0x3039",
+  gasLimit: "0x1c9c380",
+  gasUsed: "0x5208",
+  timestamp: "0x65510d80",
+  extraData: "0x",
+  mixHash: `0x${"44".repeat(32)}`,
+  nonce: "0x0000000000000000",
+  baseFeePerGas: "0x3b9aca00",
+  transactions: [],
+})
+
+it("decodes RPC block", () => {
+  const rpcBlock = createRpcBlock()
+  const block = S.decodeSync(Block.Rpc)(rpcBlock)
+  expect(block.header.number).toBe(12345n)
+  expect(block.hash.length).toBe(32)
+})
+```
+
+## Decodes post-Shanghai block with withdrawals
+
+Demonstrates parsing blocks containing withdrawals.
+
+```typescript
+import { Withdrawal } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import * as Block from "voltaire-effect/primitives/Block"
+
+it("decodes post-Shanghai block with withdrawals", () => {
+  const rpcBlock = {
+    ...createRpcBlock(),
+    withdrawalsRoot: `0x${"55".repeat(32)}`,
+    withdrawals: [
+      {
+        index: "0x0",
+        validatorIndex: "0x1",
+        address: `0x${"aa".repeat(20)}`,
+        amount: "0x1000",
+      },
+    ],
+  }
+  const block = S.decodeSync(Block.Rpc)(rpcBlock)
+  expect(block.body.withdrawals?.length).toBe(1)
+})
+```
+
+## Decodes post-Cancun block with blob fields
+
+Demonstrates parsing EIP-4844 blob transaction fields.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Block from "voltaire-effect/primitives/Block"
+
+it("decodes post-Cancun block with blob fields", () => {
+  const rpcBlock = {
+    ...createRpcBlock(),
+    withdrawalsRoot: `0x${"55".repeat(32)}`,
+    withdrawals: [],
+    blobGasUsed: "0x20000",
+    excessBlobGas: "0x0",
+    parentBeaconBlockRoot: `0x${"66".repeat(32)}`,
+  }
+  const block = S.decodeSync(Block.Rpc)(rpcBlock)
+  expect(block.header.blobGasUsed).toBe(131072n)
+  expect(block.header.excessBlobGas).toBe(0n)
+})
+```
+
+## Encodes block to RPC format
+
+Demonstrates encoding blocks back to JSON-RPC format.
+
+```typescript
+import { Hex } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import * as Block from "voltaire-effect/primitives/Block"
+
+it("encodes block to RPC format", () => {
+  const block = createValidBlock()
+  const rpc = S.encodeSync(Block.Rpc)(block)
+
+  expect(rpc.hash).toBe(Hex.fromBytes(block.hash))
+  expect(rpc.number).toBe(Hex.fromBigInt(block.header.number))
+  expect(rpc.parentHash).toBe(Hex.fromBytes(block.header.parentHash))
+  expect(rpc.miner).toBe(Hex.fromBytes(block.header.beneficiary))
+})
+```
+
+## Round-trips through RPC format
+
+Demonstrates encoding and decoding preserves data.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Block from "voltaire-effect/primitives/Block"
+
+it("round-trips block through RPC format", () => {
+  const rpcBlock = createRpcBlock()
+  const block = S.decodeSync(Block.Rpc)(rpcBlock)
+  const encoded = S.encodeSync(Block.Rpc)(block)
+  const decoded = S.decodeSync(Block.Rpc)(encoded)
+  
+  expect(decoded.header.number).toBe(block.header.number)
+  expect(decoded.header.gasLimit).toBe(block.header.gasLimit)
+})
+```
+
+## Decodes pre-London block
+
+Demonstrates parsing legacy blocks without baseFeePerGas.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Block from "voltaire-effect/primitives/Block"
+
+it("decodes pre-London block (no baseFeePerGas)", () => {
+  const preLondonRpc = {
+    hash: `0x${"ab".repeat(32)}`,
+    size: "0x3e8",
+    parentHash: `0x${"cd".repeat(32)}`,
+    sha3Uncles: `0x${"de".repeat(32)}`,
+    miner: `0x${"ef".repeat(20)}`,
+    stateRoot: `0x${"11".repeat(32)}`,
+    transactionsRoot: `0x${"22".repeat(32)}`,
+    receiptsRoot: `0x${"33".repeat(32)}`,
+    logsBloom: `0x${"00".repeat(256)}`,
+    difficulty: "0x2d79883d2000",
+    number: "0xc5d488",
+    gasLimit: "0x1c9c380",
+    gasUsed: "0xbebc20",
+    timestamp: "0x60c7a2bb",
+    extraData: "0x6e616e6f706f6f6c2e6f7267",
+    mixHash: `0x${"44".repeat(32)}`,
+    nonce: "0x0db95e41b7970000",
+    transactions: [],
+  }
+  const block = S.decodeSync(Block.Rpc)(preLondonRpc)
+  expect(block.header.baseFeePerGas).toBeUndefined()
+  expect(block.header.difficulty).toBe(50000000000000n)
+})
+```

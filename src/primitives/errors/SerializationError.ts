@@ -18,14 +18,14 @@ export class SerializationError extends PrimitiveError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "SERIALIZATION_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -44,14 +44,14 @@ export class EncodingError extends SerializationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "ENCODING_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -70,14 +70,14 @@ export class DecodingError extends SerializationError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "DECODING_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

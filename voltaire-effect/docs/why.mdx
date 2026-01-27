@@ -61,7 +61,7 @@ voltaire-effect combines [Voltaire's](https://voltaire.tevm.sh) branded primitiv
 import * as Effect from 'effect/Effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-import { Provider, MainnetLayer } from 'voltaire-effect/services/Provider'
+import { Provider, MainnetLayer } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   // Decode with typed ParseError

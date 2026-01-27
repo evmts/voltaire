@@ -7,7 +7,7 @@ description: Cryptographic signing operations with Effect.ts
 
 ```typescript
 import { Effect } from 'effect'
-import { AccountService, LocalAccount } from 'voltaire-effect/services'
+import { AccountService, LocalAccount } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
@@ -27,7 +27,7 @@ const program = Effect.gen(function* () {
 ## Browser Wallet
 
 ```typescript
-import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const account = yield* AccountService
@@ -148,7 +148,7 @@ See the [HD Wallet Guide](/guides/hd-wallet) for derivation paths, passphrases, 
 ## Error Handling
 
 ```typescript
-import { AccountError } from 'voltaire-effect/services'
+import { AccountError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('AccountError', (e) => Effect.succeed({ error: e.message }))

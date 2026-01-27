@@ -13,6 +13,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
+import * as Schedule from "effect/Schedule";
 import * as TestClock from "effect/TestClock";
 import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
 import {
@@ -339,7 +340,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -362,7 +366,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -388,7 +395,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -407,7 +417,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -426,7 +439,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://nonexistent.invalid",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -445,7 +461,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -469,7 +488,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -489,7 +511,10 @@ describe("TransportService", () => {
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
 						timeout: 100,
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -527,8 +552,9 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 3,
-						retryDelay: 10,
+						retrySchedule: Schedule.spaced(Duration.millis(10)).pipe(
+							Schedule.intersect(Schedule.recurs(3)),
+						) as Schedule.Schedule<unknown, TransportError>,
 					}),
 				),
 			);
@@ -555,7 +581,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -584,7 +613,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -613,7 +645,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -646,7 +681,10 @@ describe("TransportService", () => {
 				Effect.provide(
 					createMockHttpTransport(fetchMock, {
 						url: "https://eth.example.com",
-						retries: 0,
+						retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+							unknown,
+							TransportError
+						>,
 					}),
 				),
 			);
@@ -698,7 +736,10 @@ describe("TransportService", () => {
 							createMockHttpTransport(fetchMock, {
 								url: "https://eth.example.com",
 								batch: { batchSize: 100, wait: 50 },
-								retries: 0,
+								retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+									unknown,
+									TransportError
+								>,
 							}),
 						),
 					);
@@ -751,7 +792,10 @@ describe("TransportService", () => {
 							createMockHttpTransport(fetchMock, {
 								url: "https://eth.example.com",
 								batch: { batchSize: 100, wait: 10 },
-								retries: 0,
+								retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+									unknown,
+									TransportError
+								>,
 							}),
 						),
 						Effect.scoped,

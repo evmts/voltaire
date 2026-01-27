@@ -1,0 +1,269 @@
+---
+title: RpcBatch Tests
+description: Test examples for RpcBatchService showing single requests, batching, deduplication, and error handling.
+---
+
+## Single Request Without Batching
+
+Handles single request without batching.
+
+```typescript
+import { describe, expect, it, vi } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { TransportService } from "voltaire-effect"
+import { EthBlockNumber, RpcBatch, RpcBatchService } from "voltaire-effect"
+
+describe("RpcBatch", () => {
+  describe("single requests", () => {
+    it("handles single request without batching", async () => {
+      const handler = vi.fn().mockReturnValue("0x1234")
+
+      const mockTransport = Layer.succeed(TransportService, {
+        request: <T>(method: string, params?: unknown[]) =>
+          Effect.gen(function* () {
+            const result = handler(method, params)
+            return result as T
+          }),
+      })
+
+      const program = Effect.gen(function* () {
+        const batch = yield* RpcBatchService
+        return yield* batch.request(new EthBlockNumber({}))
+      }).pipe(Effect.provide(RpcBatch), Effect.provide(mockTransport))
+
+      const result = await Effect.runPromise(program)
+      expect(result).toBe("0x1234")
+      expect(handler).toHaveBeenCalledWith("eth_blockNumber", [])
+    })
+  })
+})
+```
+
+## Batching Multiple Requests
+
+Batches multiple concurrent requests.
+
+```typescript
+import { describe, expect, it, vi } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { TransportService } from "voltaire-effect"
+import {
+  EthBlockNumber,
+  EthChainId,
+  EthGetBalance,
+  RpcBatch,
+  RpcBatchService,
+} from "voltaire-effect"
+
+describe("batching", () => {
+  it("batches multiple concurrent requests", async () => {
+    const handler = vi.fn().mockImplementation((method, params) => {
+      if (method === "__batch__") {
+        const batch = params as Array<{ id: number; method: string }>
+        return batch.map((req) => ({
+          jsonrpc: "2.0",
+          id: req.id,
+          result:
+            req.method === "eth_blockNumber"
+              ? "0x100"
+              : req.method === "eth_chainId"
+                ? "0x1"
+                : "0x50",
+        }))
+      }
+      return null
+    })
+
+    const mockTransport = Layer.succeed(TransportService, {
+      request: <T>(method: string, params?: unknown[]) =>
+        Effect.gen(function* () {
+          return handler(method, params) as T
+        }),
+    })
+
+    const program = Effect.gen(function* () {
+      const batch = yield* RpcBatchService
+      return yield* Effect.all(
+        [
+          batch.request(new EthBlockNumber({})),
+          batch.request(new EthChainId({})),
+          batch.request(new EthGetBalance({ address: "0xabc", blockTag: "latest" })),
+        ],
+        { concurrency: "unbounded" }
+      )
+    }).pipe(Effect.provide(RpcBatch), Effect.provide(mockTransport))
+
+    const [blockNumber, chainId, balance] = await Effect.runPromise(program)
+    expect(blockNumber).toBe("0x100")
+    expect(chainId).toBe("0x1")
+    expect(balance).toBe("0x50")
+    expect(handler).toHaveBeenCalledWith("__batch__", expect.any(Array))
+  })
+})
+```
+
+## Request Deduplication
+
+Deduplicates identical requests returning same result.
+
+```typescript
+import { describe, expect, it, vi } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { TransportService } from "voltaire-effect"
+import { EthGetBalance, RpcBatch, RpcBatchService } from "voltaire-effect"
+
+describe("deduplication", () => {
+  it("deduplicates identical requests", async () => {
+    const handler = vi.fn().mockImplementation((method, params) => {
+      if (method === "__batch__") {
+        const batch = params as Array<{ id: number }>
+        return batch.map((req) => ({
+          jsonrpc: "2.0",
+          id: req.id,
+          result: "0x100",
+        }))
+      }
+      return "0x100"
+    })
+
+    const mockTransport = Layer.succeed(TransportService, {
+      request: <T>(method: string, params?: unknown[]) =>
+        Effect.gen(function* () {
+          return handler(method, params) as T
+        }),
+    })
+
+    const program = Effect.gen(function* () {
+      const batch = yield* RpcBatchService
+      return yield* Effect.all(
+        [
+          batch.request(new EthGetBalance({ address: "0xabc", blockTag: "latest" })),
+          batch.request(new EthGetBalance({ address: "0xabc", blockTag: "latest" })),
+          batch.request(new EthGetBalance({ address: "0xabc", blockTag: "latest" })),
+        ],
+        { concurrency: "unbounded" }
+      )
+    }).pipe(Effect.provide(RpcBatch), Effect.provide(mockTransport))
+
+    const [r1, r2, r3] = await Effect.runPromise(program)
+    expect(r1).toBe("0x100")
+    expect(r2).toBe("0x100")
+    expect(r3).toBe("0x100")
+  })
+})
+```
+
+## Per-Request Errors in Batch
+
+Handles per-request errors in batch.
+
+```typescript
+import { describe, expect, it, vi } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { TransportService } from "voltaire-effect"
+import {
+  EthBlockNumber,
+  EthChainId,
+  EthGetBalance,
+  RpcBatch,
+  RpcBatchService,
+} from "voltaire-effect"
+
+describe("error handling", () => {
+  it("handles per-request errors in batch", async () => {
+    const handler = vi.fn().mockImplementation((method, _params) => {
+      if (method === "__batch__") {
+        return [
+          { jsonrpc: "2.0", id: 0, result: "0x100" },
+          { jsonrpc: "2.0", id: 1, error: { code: -32000, message: "execution reverted" } },
+          { jsonrpc: "2.0", id: 2, result: "0x200" },
+        ]
+      }
+      return null
+    })
+
+    const mockTransport = Layer.succeed(TransportService, {
+      request: <T>(method: string, params?: unknown[]) =>
+        Effect.gen(function* () {
+          return handler(method, params) as T
+        }),
+    })
+
+    const program = Effect.gen(function* () {
+      const batch = yield* RpcBatchService
+
+      const result1 = yield* batch.request(new EthBlockNumber({}))
+      const result2Exit = yield* Effect.either(batch.request(new EthChainId({})))
+      const result3 = yield* batch.request(new EthGetBalance({ address: "0xabc", blockTag: "latest" }))
+
+      return { result1, result2Exit, result3 }
+    }).pipe(Effect.provide(RpcBatch), Effect.provide(mockTransport))
+
+    const { result1, result2Exit, result3 } = await Effect.runPromise(program)
+    expect(result1).toBe("0x100")
+    expect(result2Exit._tag).toBe("Left")
+    expect(result3).toBe("0x200")
+  })
+})
+```
+
+## Out-of-Order Batch Responses
+
+Handles out-of-order batch responses.
+
+```typescript
+import { describe, expect, it, vi } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { TransportService } from "voltaire-effect"
+import {
+  EthBlockNumber,
+  EthChainId,
+  EthGetBalance,
+  RpcBatch,
+  RpcBatchService,
+} from "voltaire-effect"
+
+describe("out-of-order responses", () => {
+  it("handles out-of-order batch responses", async () => {
+    const handler = vi.fn().mockImplementation((method, _params) => {
+      if (method === "__batch__") {
+        return [
+          { jsonrpc: "2.0", id: 2, result: "0x300" },
+          { jsonrpc: "2.0", id: 0, result: "0x100" },
+          { jsonrpc: "2.0", id: 1, result: "0x200" },
+        ]
+      }
+      return null
+    })
+
+    const mockTransport = Layer.succeed(TransportService, {
+      request: <T>(method: string, params?: unknown[]) =>
+        Effect.gen(function* () {
+          return handler(method, params) as T
+        }),
+    })
+
+    const program = Effect.gen(function* () {
+      const batch = yield* RpcBatchService
+      return yield* Effect.all(
+        [
+          batch.request(new EthBlockNumber({})),
+          batch.request(new EthChainId({})),
+          batch.request(new EthGetBalance({ address: "0xabc", blockTag: "latest" })),
+        ],
+        { batching: true }
+      )
+    }).pipe(Effect.provide(RpcBatch), Effect.provide(mockTransport))
+
+    const [r1, r2, r3] = await Effect.runPromise(program)
+    expect(r1).toBe("0x100")
+    expect(r2).toBe("0x200")
+    expect(r3).toBe("0x300")
+  })
+})
+```

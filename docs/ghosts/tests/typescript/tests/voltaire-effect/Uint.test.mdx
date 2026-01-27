@@ -1,0 +1,215 @@
+---
+title: Uint Tests
+description: Test examples for unsigned 256-bit integer primitives with arithmetic and bitwise operations.
+---
+
+## Uint.BigInt decode and encode
+
+Demonstrates parsing and encoding bigint values with range validation.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const MAX_UINT256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
+
+const value = S.decodeSync(Uint.BigInt)(1000000000000000000n);
+expect(typeof value).toBe("bigint");
+
+const zero = S.decodeSync(Uint.BigInt)(0n);
+expect(S.encodeSync(Uint.BigInt)(zero)).toBe(0n);
+
+const max = S.decodeSync(Uint.BigInt)(MAX_UINT256);
+expect(S.encodeSync(Uint.BigInt)(max)).toBe(MAX_UINT256);
+
+// Negative values fail
+expect(() => S.decodeSync(Uint.BigInt)(-1n)).toThrow();
+
+// Overflow fails
+expect(() => S.decodeSync(Uint.BigInt)(MAX_UINT256 + 1n)).toThrow();
+```
+
+## Uint.Hex decode and encode
+
+Shows hex string parsing with and without 0x prefix.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const value = S.decodeSync(Uint.Hex)("0xde0b6b3a7640000");
+expect(S.encodeSync(Uint.BigInt)(value)).toBe(1000000000000000000n);
+
+// Without prefix
+const noPrefixValue = S.decodeSync(Uint.Hex)("de0b6b3a7640000");
+expect(S.encodeSync(Uint.BigInt)(noPrefixValue)).toBe(1000000000000000000n);
+
+// Encodes to padded 64-char hex
+const encoded = S.encodeSync(Uint.Hex)(S.decodeSync(Uint.BigInt)(255n));
+expect(encoded).toMatch(/^0x[0-9a-f]{64}$/);
+```
+
+## Uint.Number and Uint.String
+
+Demonstrates number and decimal string schemas.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+// Number
+const numValue = S.decodeSync(Uint.Number)(1000);
+expect(S.encodeSync(Uint.Number)(numValue)).toBe(1000);
+expect(() => S.decodeSync(Uint.Number)(-1)).toThrow();
+expect(() => S.decodeSync(Uint.Number)(1.5)).toThrow();
+
+// String
+const strValue = S.decodeSync(Uint.String)("1000000000000000000");
+expect(S.encodeSync(Uint.BigInt)(strValue)).toBe(1000000000000000000n);
+```
+
+## Uint.Bytes decode and encode
+
+Shows byte array to bigint conversion with big-endian encoding.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const bytes = new Uint8Array(32).fill(0);
+bytes[31] = 100;
+const value = S.decodeSync(Uint.Bytes)(bytes);
+expect(S.encodeSync(Uint.BigInt)(value)).toBe(100n);
+
+// Encodes to 32-byte array
+const encoded = S.encodeSync(Uint.Bytes)(S.decodeSync(Uint.BigInt)(100n));
+expect(encoded.length).toBe(32);
+expect(encoded[31]).toBe(100);
+```
+
+## Arithmetic: plus, minus, times
+
+Demonstrates wrapping arithmetic operations.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const MAX_UINT256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
+const a = S.decodeSync(Uint.BigInt)(100n);
+const b = S.decodeSync(Uint.BigInt)(30n);
+const zero = S.decodeSync(Uint.BigInt)(0n);
+const one = S.decodeSync(Uint.BigInt)(1n);
+const max = S.decodeSync(Uint.BigInt)(MAX_UINT256);
+
+// Addition
+expect(S.encodeSync(Uint.BigInt)(Uint.plus(a, b))).toBe(130n);
+
+// Subtraction
+expect(S.encodeSync(Uint.BigInt)(Uint.minus(a, b))).toBe(70n);
+
+// Multiplication
+expect(S.encodeSync(Uint.BigInt)(Uint.times(a, b))).toBe(3000n);
+
+// Overflow wraps
+expect(S.encodeSync(Uint.BigInt)(Uint.plus(max, one))).toBe(0n);
+
+// Underflow wraps
+expect(S.encodeSync(Uint.BigInt)(Uint.minus(zero, one))).toBe(MAX_UINT256);
+```
+
+## Comparison operations
+
+Shows equals, lessThan, greaterThan, and related comparisons.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const a = S.decodeSync(Uint.BigInt)(100n);
+const b = S.decodeSync(Uint.BigInt)(30n);
+const c = S.decodeSync(Uint.BigInt)(100n);
+
+expect(Uint.equals(a, c)).toBe(true);
+expect(Uint.notEquals(a, b)).toBe(true);
+expect(Uint.lessThan(b, a)).toBe(true);
+expect(Uint.greaterThan(a, b)).toBe(true);
+expect(Uint.lessThanOrEqual(b, a)).toBe(true);
+expect(Uint.greaterThanOrEqual(a, c)).toBe(true);
+```
+
+## Bitwise operations
+
+Demonstrates and, or, xor, not, and shift operations.
+
+```typescript
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const a = S.decodeSync(Uint.BigInt)(0b1100n);
+const b = S.decodeSync(Uint.BigInt)(0b1010n);
+
+expect(S.encodeSync(Uint.BigInt)(Uint.bitwiseAnd(a, b))).toBe(0b1000n);
+expect(S.encodeSync(Uint.BigInt)(Uint.bitwiseOr(a, b))).toBe(0b1110n);
+expect(S.encodeSync(Uint.BigInt)(Uint.bitwiseXor(a, b))).toBe(0b0110n);
+
+const val = S.decodeSync(Uint.BigInt)(1n);
+const shiftAmount = S.decodeSync(Uint.BigInt)(4n);
+expect(S.encodeSync(Uint.BigInt)(Uint.shiftLeft(val, shiftAmount))).toBe(16n);
+expect(S.encodeSync(Uint.BigInt)(Uint.shiftRight(shiftAmount, S.decodeSync(Uint.BigInt)(2n)))).toBe(1n);
+```
+
+## Utility functions: toPower, gcd, lcm
+
+Shows exponentiation and number theory functions.
+
+```typescript
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const two = S.decodeSync(Uint.BigInt)(2n);
+const ten = S.decodeSync(Uint.BigInt)(10n);
+const zero = S.decodeSync(Uint.BigInt)(0n);
+
+// toPower
+expect(S.encodeSync(Uint.BigInt)(Uint.toPower(two, ten))).toBe(1024n);
+expect(S.encodeSync(Uint.BigInt)(Uint.toPower(ten, zero))).toBe(1n);
+
+// gcd
+const a = S.decodeSync(Uint.BigInt)(12n);
+const b = S.decodeSync(Uint.BigInt)(8n);
+expect(S.encodeSync(Uint.BigInt)(Uint.gcd(a, b))).toBe(4n);
+
+// lcm
+expect(S.encodeSync(Uint.BigInt)(Uint.lcm(a, b))).toBe(24n);
+```
+
+## Bit manipulation: popCount, bitLength, leadingZeros
+
+Shows bit counting and inspection utilities.
+
+```typescript
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import * as Uint from "voltaire-effect/primitives/Uint";
+
+const MAX_UINT256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
+const max = S.decodeSync(Uint.BigInt)(MAX_UINT256);
+const zero = S.decodeSync(Uint.BigInt)(0n);
+const one = S.decodeSync(Uint.BigInt)(1n);
+
+// popCount - count set bits
+expect(Effect.runSync(Uint.popCount(max))).toBe(256);
+expect(Effect.runSync(Uint.popCount(one))).toBe(1);
+
+// bitLength
+expect(Uint.bitLength(max)).toBe(256);
+expect(Uint.bitLength(one)).toBe(1);
+expect(Uint.bitLength(zero)).toBe(0);
+
+// leadingZeros
+expect(Effect.runSync(Uint.leadingZeros(max))).toBe(0);
+expect(Effect.runSync(Uint.leadingZeros(zero))).toBe(256);
+```

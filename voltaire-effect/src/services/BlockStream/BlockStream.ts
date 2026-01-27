@@ -23,7 +23,7 @@ import * as Runtime from "effect/Runtime";
 import * as Stream from "effect/Stream";
 import { TransportService } from "../Transport/TransportService.js";
 import { BlockStreamError } from "./BlockStreamError.js";
-import { BlockStreamService } from "./BlockStreamService.js";
+import { BlockStreamService, type BlockStreamShape } from "./BlockStreamService.js";
 
 /**
  * Wraps an AsyncGenerator as an Effect Stream with cleanup on interruption.
@@ -49,33 +49,13 @@ const fromAsyncGeneratorWithCleanup = <T>(
 	);
 
 /**
- * Live implementation of BlockStreamService.
- *
- * @since 0.2.12
- *
- * @example
- * ```typescript
- * import { Effect, Stream } from 'effect';
- * import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect/services';
- *
- * const program = Effect.gen(function* () {
- *   const blockStream = yield* BlockStreamService;
- *   yield* Stream.runForEach(
- *     blockStream.watch(),
- *     (event) => Effect.log(`Event: ${event.type}`)
- *   );
- * }).pipe(
- *   Effect.provide(BlockStream),
- *   Effect.provide(HttpTransport('https://...'))
- * );
- * ```
+ * Build a BlockStream directly from TransportService without a service layer.
  */
-export const BlockStream: Layer.Layer<
-	BlockStreamService,
+export const makeBlockStream = (): Effect.Effect<
+	BlockStreamShape,
 	never,
 	TransportService
-> = Layer.effect(
-	BlockStreamService,
+> =>
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
 		const runtime = yield* Effect.runtime<never>();
@@ -112,5 +92,34 @@ export const BlockStream: Layer.Layer<
 			): Stream.Stream<BlockStreamEvent<TInclude>, BlockStreamError> =>
 				fromAsyncGeneratorWithCleanup(() => coreStream.watch(options), cleanup),
 		};
-	}),
+	});
+
+/**
+ * Live implementation of BlockStreamService.
+ *
+ * @since 0.2.12
+ *
+ * @example
+ * ```typescript
+ * import { Effect, Stream } from 'effect';
+ * import { makeBlockStream, HttpTransport } from 'voltaire-effect/services';
+ *
+ * const program = Effect.gen(function* () {
+ *   const blockStream = yield* makeBlockStream();
+ *   yield* Stream.runForEach(
+ *     blockStream.watch(),
+ *     (event) => Effect.log(`Event: ${event.type}`)
+ *   );
+ * }).pipe(
+ *   Effect.provide(HttpTransport('https://...'))
+ * );
+ * ```
+ */
+export const BlockStream: Layer.Layer<
+	BlockStreamService,
+	never,
+	TransportService
+> = Layer.effect(
+	BlockStreamService,
+	makeBlockStream(),
 );

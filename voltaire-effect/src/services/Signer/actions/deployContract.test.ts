@@ -14,6 +14,7 @@ import type { AccountShape } from "../../Account/AccountService.js";
 import { AccountService } from "../../Account/index.js";
 import { ProviderService, type ProviderShape } from "../../Provider/index.js";
 import {
+	TransportError,
 	TransportService,
 	type TransportShape,
 } from "../../Transport/index.js";
@@ -396,11 +397,15 @@ describe("deployContract", () => {
 	});
 
 	it("fails address effect when waitForTransactionReceipt fails", async () => {
-		const { ProviderError } = await import("../../Provider/index.js");
 		const providerWithReceiptError: ProviderShape = {
 			...mockProvider,
 			waitForTransactionReceipt: () =>
-				Effect.fail(new ProviderError({}, "Network connection lost")),
+				Effect.fail(
+					new TransportError({
+						code: -32000,
+						message: "Network connection lost",
+					}),
+				),
 		};
 		const ErrorProviderLayer = Layer.succeed(
 			ProviderService,

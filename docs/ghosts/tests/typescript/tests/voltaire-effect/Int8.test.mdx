@@ -1,0 +1,214 @@
+---
+title: Int8 Tests
+description: Test examples for Int8 schema showing signed 8-bit integer operations, arithmetic, and validation.
+---
+
+## Schema: Decodes valid positive number
+
+Demonstrates decoding a positive number into a branded Int8.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("decodes valid positive number", () => {
+  const value = S.decodeSync(Int8.Number)(42)
+  expect(S.encodeSync(Int8.Number)(value)).toBe(42)
+})
+```
+
+## Schema: Decodes valid negative number
+
+Demonstrates decoding a negative number within Int8 range.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("decodes valid negative number", () => {
+  const value = S.decodeSync(Int8.Number)(-42)
+  expect(S.encodeSync(Int8.Number)(value)).toBe(-42)
+})
+```
+
+## Schema: Decodes INT8_MIN and INT8_MAX
+
+Demonstrates decoding boundary values -128 and 127.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+const INT8_MIN = -128
+const INT8_MAX = 127
+
+it("decodes INT8_MIN (-128)", () => {
+  const value = S.decodeSync(Int8.Number)(INT8_MIN)
+  expect(S.encodeSync(Int8.Number)(value)).toBe(INT8_MIN)
+})
+
+it("decodes INT8_MAX (127)", () => {
+  const value = S.decodeSync(Int8.Number)(INT8_MAX)
+  expect(S.encodeSync(Int8.Number)(value)).toBe(INT8_MAX)
+})
+```
+
+## Schema: Fails on overflow
+
+Demonstrates that values outside Int8 range throw errors.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("fails on overflow (128)", () => {
+  expect(() => S.decodeSync(Int8.Number)(128)).toThrow()
+})
+
+it("fails on underflow (-129)", () => {
+  expect(() => S.decodeSync(Int8.Number)(-129)).toThrow()
+})
+```
+
+## String schema: Decodes hex strings
+
+Demonstrates decoding hex string representations of Int8 values.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("decodes valid positive hex string", () => {
+  const value = S.decodeSync(Int8.String)("0x2a")
+  expect(S.encodeSync(Int8.String)(value)).toBe("42")
+})
+
+it("decodes valid negative hex string", () => {
+  const value = S.decodeSync(Int8.String)("0xd6")
+  expect(S.encodeSync(Int8.String)(value)).toBe("-42")
+})
+```
+
+## Arithmetic: Addition with overflow check
+
+Demonstrates safe addition that throws on overflow.
+
+```typescript
+import { BrandedInt8 } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("adds two positive values", () => {
+  const a = S.decodeSync(Int8.Number)(50)
+  const b = S.decodeSync(Int8.Number)(30)
+  const result = BrandedInt8.plus(a, b)
+  expect(S.encodeSync(Int8.Number)(result)).toBe(80)
+})
+
+it("throws on overflow (127 + 1)", () => {
+  const max = S.decodeSync(Int8.Number)(127)
+  const one = S.decodeSync(Int8.Number)(1)
+  expect(() => BrandedInt8.plus(max, one)).toThrow()
+})
+```
+
+## Arithmetic: Subtraction
+
+Demonstrates Int8 subtraction operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("subtracts two positive values", () => {
+  const a = S.decodeSync(Int8.Number)(50)
+  const b = S.decodeSync(Int8.Number)(30)
+  const result = Int8.sub(a, b)
+  expect(S.encodeSync(Int8.Number)(result)).toBe(20)
+})
+```
+
+## Sign handling: negate and abs
+
+Demonstrates negation and absolute value operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("negates positive value", () => {
+  const a = S.decodeSync(Int8.Number)(42)
+  const result = Int8.negate(a)
+  expect(S.encodeSync(Int8.Number)(result)).toBe(-42)
+})
+
+it("abs of negative value", () => {
+  const a = S.decodeSync(Int8.Number)(-42)
+  const result = Int8.abs(a)
+  expect(S.encodeSync(Int8.Number)(result)).toBe(42)
+})
+
+it("negate of INT8_MIN throws overflow", () => {
+  const min = S.decodeSync(Int8.Number)(-128)
+  expect(() => Int8.negate(min)).toThrow()
+})
+```
+
+## Comparison: equals and compare
+
+Demonstrates equality and comparison operations.
+
+```typescript
+import { BrandedInt8 } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("returns true for equal positive values", () => {
+  const a = S.decodeSync(Int8.Number)(42)
+  const b = S.decodeSync(Int8.Number)(42)
+  expect(BrandedInt8.equals(a, b)).toBe(true)
+})
+
+it("returns -1 when a < b", () => {
+  const a = S.decodeSync(Int8.Number)(10)
+  const b = S.decodeSync(Int8.Number)(20)
+  expect(Int8.compare(a, b)).toBe(-1)
+})
+```
+
+## Utility: isZero and isNegative
+
+Demonstrates utility predicate functions.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("returns true for zero", () => {
+  const zero = S.decodeSync(Int8.Number)(0)
+  expect(Int8.isZero(zero)).toBe(true)
+})
+
+it("returns true for negative value", () => {
+  const a = S.decodeSync(Int8.Number)(-42)
+  expect(Int8.isNegative(a)).toBe(true)
+})
+```
+
+## Constants
+
+Demonstrates accessing Int8 constant values.
+
+```typescript
+import { BrandedInt8 } from "@tevm/voltaire"
+import * as Int8 from "voltaire-effect/primitives/Int8"
+
+it("INT8_MIN equals -128", () => {
+  expect(BrandedInt8.toNumber(Int8.INT8_MIN)).toBe(-128)
+})
+
+it("INT8_MAX equals 127", () => {
+  expect(BrandedInt8.toNumber(Int8.INT8_MAX)).toBe(127)
+})
+```

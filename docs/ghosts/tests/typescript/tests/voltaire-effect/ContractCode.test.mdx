@@ -1,0 +1,71 @@
+---
+title: ContractCode Tests
+description: Test examples for ContractCode schema showing deployed contract bytecode parsing and encoding.
+---
+
+## Decodes hex string
+
+Demonstrates decoding contract bytecode from hex string.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as ContractCode from "voltaire-effect/primitives/ContractCode"
+
+it("decodes hex string", () => {
+  const result = S.decodeSync(ContractCode.Hex)(
+    "0x608060405234801561001057600080fd5b50",
+  )
+  expect(result).toBeInstanceOf(Uint8Array)
+})
+```
+
+## Handles empty hex string
+
+Demonstrates handling of empty contract code.
+
+```typescript
+import * as S from "effect/Schema"
+import * as ContractCode from "voltaire-effect/primitives/ContractCode"
+
+it("handles empty hex string", () => {
+  const result = S.decodeSync(ContractCode.Hex)("0x")
+  expect(result.length).toBe(0)
+})
+```
+
+## Encodes to hex string
+
+Demonstrates encoding contract code back to hex.
+
+```typescript
+import * as S from "effect/Schema"
+import * as ContractCode from "voltaire-effect/primitives/ContractCode"
+
+it("encodes to hex string", () => {
+  const code = S.decodeSync(ContractCode.Hex)("0x6080604052")
+  const hex = S.encodeSync(ContractCode.Hex)(code)
+  expect(hex).toBe("0x6080604052")
+})
+```
+
+## Bytes schema
+
+Demonstrates working with contract code as raw bytes.
+
+```typescript
+import * as S from "effect/Schema"
+import * as ContractCode from "voltaire-effect/primitives/ContractCode"
+
+it("decodes Uint8Array", () => {
+  const input = new Uint8Array([0x60, 0x80, 0x60, 0x40])
+  const result = S.decodeSync(ContractCode.Bytes)(input)
+  expect([...result]).toEqual([...input])
+})
+
+it("encodes to Uint8Array", () => {
+  const code = S.decodeSync(ContractCode.Hex)("0x6001")
+  const bytes = S.encodeSync(ContractCode.Bytes)(code)
+  expect(bytes).toBeInstanceOf(Uint8Array)
+})
+```

@@ -1,0 +1,166 @@
+---
+title: AbiSchema Tests
+description: Test examples for ABI Effect schemas including function, event, error, and parameter validation.
+---
+
+## StateMutabilitySchema accepts valid values
+
+Validates Solidity state mutability values.
+
+```typescript
+import { Abi } from "voltaire/Abi"
+import * as S from "effect/Schema"
+import { describe, expect, it } from "vitest"
+import * as AbiSchema from "voltaire-effect/primitives/Abi"
+
+it("accepts valid state mutability values", () => {
+  expect(S.decodeUnknownSync(AbiSchema.StateMutabilitySchema)("pure")).toBe("pure")
+  expect(S.decodeUnknownSync(AbiSchema.StateMutabilitySchema)("view")).toBe("view")
+  expect(S.decodeUnknownSync(AbiSchema.StateMutabilitySchema)("nonpayable")).toBe("nonpayable")
+  expect(S.decodeUnknownSync(AbiSchema.StateMutabilitySchema)("payable")).toBe("payable")
+})
+
+it("rejects invalid state mutability", () => {
+  expect(() =>
+    S.decodeUnknownSync(AbiSchema.StateMutabilitySchema)("invalid"),
+  ).toThrow()
+})
+```
+
+## AbiTypeSchema accepts valid Solidity types
+
+Validates Solidity type strings.
+
+```typescript
+it("accepts valid Solidity types", () => {
+  expect(S.decodeUnknownSync(AbiSchema.AbiTypeSchema)("uint256")).toBe("uint256")
+  expect(S.decodeUnknownSync(AbiSchema.AbiTypeSchema)("address")).toBe("address")
+  expect(S.decodeUnknownSync(AbiSchema.AbiTypeSchema)("bool")).toBe("bool")
+  expect(S.decodeUnknownSync(AbiSchema.AbiTypeSchema)("bytes32")).toBe("bytes32")
+  expect(S.decodeUnknownSync(AbiSchema.AbiTypeSchema)("string")).toBe("string")
+  expect(S.decodeUnknownSync(AbiSchema.AbiTypeSchema)("uint256[]")).toBe("uint256[]")
+  expect(S.decodeUnknownSync(AbiSchema.AbiTypeSchema)("tuple")).toBe("tuple")
+})
+```
+
+## ParameterSchema parses parameters
+
+Validates function and event parameters.
+
+```typescript
+it("parses simple parameter", () => {
+  const param = S.decodeUnknownSync(AbiSchema.ParameterSchema)({
+    type: "uint256",
+    name: "amount",
+  })
+  expect(param.type).toBe("uint256")
+  expect(param.name).toBe("amount")
+})
+
+it("parses tuple parameter with components", () => {
+  const param = S.decodeUnknownSync(AbiSchema.ParameterSchema)({
+    type: "tuple",
+    name: "data",
+    components: [
+      { type: "uint256", name: "value" },
+      { type: "string", name: "message" },
+    ],
+  })
+  expect(param.type).toBe("tuple")
+  expect(param.components).toHaveLength(2)
+  expect(param.components?.[0].type).toBe("uint256")
+})
+```
+
+## FunctionSchema parses function items
+
+Validates function ABI items.
+
+```typescript
+it("parses function item", () => {
+  const fn = S.decodeUnknownSync(AbiSchema.FunctionSchema)({
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" },
+    ],
+    outputs: [{ type: "bool" }],
+  })
+  expect(fn.type).toBe("function")
+  expect(fn.name).toBe("transfer")
+  expect(fn.inputs).toHaveLength(2)
+})
+
+it("rejects function missing name", () => {
+  expect(() =>
+    S.decodeUnknownSync(AbiSchema.FunctionSchema)({
+      type: "function",
+      stateMutability: "view",
+      inputs: [],
+      outputs: [],
+    }),
+  ).toThrow()
+})
+```
+
+## EventSchema parses event items
+
+Validates event ABI items including anonymous events.
+
+```typescript
+it("parses event item", () => {
+  const evt = S.decodeUnknownSync(AbiSchema.EventSchema)({
+    type: "event",
+    name: "Transfer",
+    inputs: [
+      { type: "address", name: "from", indexed: true },
+      { type: "address", name: "to", indexed: true },
+      { type: "uint256", name: "value" },
+    ],
+  })
+  expect(evt.type).toBe("event")
+  expect(evt.name).toBe("Transfer")
+  expect(evt.inputs).toHaveLength(3)
+})
+
+it("parses anonymous event", () => {
+  const evt = S.decodeUnknownSync(AbiSchema.EventSchema)({
+    type: "event",
+    name: "Log",
+    inputs: [],
+    anonymous: true,
+  })
+  expect(evt.anonymous).toBe(true)
+})
+```
+
+## fromArray parses ABI arrays
+
+Converts raw ABI arrays to validated instances.
+
+```typescript
+it("parses ABI array into Abi instance", () => {
+  const abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+    {
+      type: "function",
+      name: "transfer",
+      stateMutability: "nonpayable",
+      inputs: [
+        { type: "address", name: "to" },
+        { type: "uint256", name: "amount" },
+      ],
+      outputs: [{ type: "bool" }],
+    },
+  ])
+  expect(Array.isArray(abi)).toBe(true)
+  expect(abi).toHaveLength(1)
+})
+
+it("rejects invalid ABI items", () => {
+  expect(() =>
+    S.decodeUnknownSync(AbiSchema.fromArray)([{ type: "invalid", name: "foo" }]),
+  ).toThrow()
+})
+```

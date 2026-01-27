@@ -6,7 +6,7 @@ description: Effect-native transaction streaming and tracking
 ## Quick Start
 
 ```typescript
-import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect/services'
+import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect'
 import { Effect, Stream } from 'effect'
 
 const program = Effect.gen(function* () {
@@ -102,7 +102,7 @@ interface TrackOptions {
 ## Error Handling
 
 ```typescript
-import { TransactionStreamError } from 'voltaire-effect/services'
+import { TransactionStreamError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag("TransactionStreamError", (e) =>

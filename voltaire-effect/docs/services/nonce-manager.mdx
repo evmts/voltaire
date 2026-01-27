@@ -7,7 +7,7 @@ description: Transaction nonce management for concurrent transactions with Effec
 
 ```typescript
 import { Effect } from 'effect'
-import { NonceManagerService, DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect/services'
+import { NonceManagerService, DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const nonceManager = yield* NonceManagerService
@@ -83,7 +83,7 @@ yield* nonceManager.reset('0x1234...', 1)
 ## Error Handling
 
 ```typescript
-import { NonceError } from 'voltaire-effect/services'
+import { NonceError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('NonceError', (e) => {
@@ -97,7 +97,7 @@ program.pipe(
 
 ```typescript
 import { Layer } from 'effect'
-import { DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect/services'
+import { DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect'
 
 const MainnetNonceManager = DefaultNonceManager.pipe(
   Layer.provideMerge(Provider),

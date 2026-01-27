@@ -1,0 +1,150 @@
+---
+title: RpcRequest Tests
+description: Test examples for typed JSON-RPC request construction and conversion for Ethereum methods.
+---
+
+## Converts GetBlockNumber
+
+Shows typed request construction for eth_blockNumber.
+
+```typescript
+import { GetBlockNumber, toJsonRpc } from "voltaire-effect";
+
+const request = new GetBlockNumber({});
+const { method, params } = toJsonRpc(request);
+expect(method).toBe("eth_blockNumber");
+expect(params).toEqual([]);
+```
+
+## Converts GetBalance
+
+Demonstrates eth_getBalance request with address and block tag.
+
+```typescript
+import { GetBalance, toJsonRpc } from "voltaire-effect";
+
+const request = new GetBalance({
+  address: "0x1234567890123456789012345678901234567890",
+  blockTag: "latest",
+});
+const { method, params } = toJsonRpc(request);
+expect(method).toBe("eth_getBalance");
+expect(params).toEqual(["0x1234567890123456789012345678901234567890", "latest"]);
+```
+
+## Converts Call
+
+Shows eth_call request construction with transaction parameters.
+
+```typescript
+import { Call, toJsonRpc } from "voltaire-effect";
+
+const request = new Call({
+  params: {
+    to: "0x1234567890123456789012345678901234567890",
+    data: "0x12345678",
+  },
+  blockTag: "latest",
+});
+const { method, params } = toJsonRpc(request);
+expect(method).toBe("eth_call");
+expect(params).toEqual([
+  { to: "0x1234567890123456789012345678901234567890", data: "0x12345678" },
+  "latest",
+]);
+```
+
+## Converts EstimateGas with blockTag
+
+Demonstrates eth_estimateGas request with optional block tag.
+
+```typescript
+import { EstimateGas, toJsonRpc } from "voltaire-effect";
+
+const request = new EstimateGas({
+  params: {
+    to: "0x1234567890123456789012345678901234567890",
+    value: "0x1000",
+  },
+  blockTag: "latest",
+});
+const { method, params } = toJsonRpc(request);
+expect(method).toBe("eth_estimateGas");
+expect(params).toEqual([
+  { to: "0x1234567890123456789012345678901234567890", value: "0x1000" },
+  "latest",
+]);
+```
+
+## Converts GetLogs
+
+Shows eth_getLogs request with filter parameters including topics.
+
+```typescript
+import { GetLogs, toJsonRpc } from "voltaire-effect";
+
+const request = new GetLogs({
+  filter: {
+    address: "0x1234567890123456789012345678901234567890",
+    topics: ["0xtopic1", null, ["0xtopic3a", "0xtopic3b"]],
+    fromBlock: "0x100",
+    toBlock: "latest",
+  },
+});
+const { method, params } = toJsonRpc(request);
+expect(method).toBe("eth_getLogs");
+expect(params).toEqual([
+  {
+    address: "0x1234567890123456789012345678901234567890",
+    topics: ["0xtopic1", null, ["0xtopic3a", "0xtopic3b"]],
+    fromBlock: "0x100",
+    toBlock: "latest",
+  },
+]);
+```
+
+## Converts GetFeeHistory
+
+Demonstrates eth_feeHistory request with block count and reward percentiles.
+
+```typescript
+import { GetFeeHistory, toJsonRpc } from "voltaire-effect";
+
+const request = new GetFeeHistory({
+  blockCount: 10,
+  newestBlock: "latest",
+  rewardPercentiles: [25, 50, 75],
+});
+const { method, params } = toJsonRpc(request);
+expect(method).toBe("eth_feeHistory");
+expect(params).toEqual(["0xa", "latest", [25, 50, 75]]);
+```
+
+## Converts GenericRpcRequest
+
+Shows custom RPC method construction for non-standard methods.
+
+```typescript
+import { GenericRpcRequest, toJsonRpc } from "voltaire-effect";
+
+const request = new GenericRpcRequest({
+  method: "custom_method",
+  params: ["arg1", 123, { key: "value" }],
+});
+const { method, params } = toJsonRpc(request);
+expect(method).toBe("custom_method");
+expect(params).toEqual(["arg1", 123, { key: "value" }]);
+```
+
+## Request equality
+
+Demonstrates structural equality for request caching and deduplication.
+
+```typescript
+import { GetBalance } from "voltaire-effect";
+
+const r1 = new GetBalance({ address: "0x123", blockTag: "latest" });
+const r2 = new GetBalance({ address: "0x123", blockTag: "latest" });
+
+expect(JSON.stringify(r1)).toBe(JSON.stringify(r2));
+```

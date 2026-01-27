@@ -16,7 +16,7 @@ export class InvalidTransactionIndexError extends InvalidRangeError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid TransactionIndex", {
-			code: -32602,
+			code: "INVALID_TRANSACTION_INDEX",
 			value: options?.value,
 			expected: options?.expected || "non-negative integer",
 			context: options?.context,

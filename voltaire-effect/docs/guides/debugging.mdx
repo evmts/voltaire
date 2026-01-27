@@ -131,7 +131,7 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { TransportService, HttpTransport } from 'voltaire-effect/services'
+import { TransportService, HttpTransport } from 'voltaire-effect'
 
 const LoggingTransport = (url: string) =>
   Layer.effect(
@@ -205,16 +205,17 @@ program.pipe(
 
 ```typescript
 import { Layer, Context } from 'effect'
+import type { GetBalanceError } from 'voltaire-effect'
 
 // TypeScript shows missing requirements
-const program: Effect.Effect<bigint, ProviderError, ProviderService>
+const program: Effect.Effect<bigint, GetBalanceError, ProviderService>
 
 // After providing layers:
 const provided = program.pipe(
   Effect.provide(Provider),
   Effect.provide(HttpTransport(url))
 )
-// Effect.Effect<bigint, ProviderError, never>
+// Effect.Effect<bigint, GetBalanceError, never>
 //                                        ↑ no more requirements
 ```
 
@@ -316,9 +317,17 @@ it('produces expected error', async () => {
 ### Mock With Specific Errors
 
 ```typescript
+import { ProviderResponseError, TransportError } from 'voltaire-effect'
+
 const FailingProvider = Layer.succeed(ProviderService, {
-  getBlockNumber: () => Effect.fail(new ProviderError('RPC timeout')),
-  getBalance: () => Effect.fail(new ProviderError('Rate limited'))
+  getBlockNumber: () =>
+    Effect.fail(
+      new ProviderResponseError({ method: 'eth_blockNumber' }, 'Invalid response')
+    ),
+  getBalance: () =>
+    Effect.fail(
+      new TransportError({ code: 429, message: 'Rate limited' })
+    )
 })
 
 const exit = await Effect.runPromiseExit(

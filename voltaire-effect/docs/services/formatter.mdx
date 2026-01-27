@@ -7,7 +7,7 @@ description: Chain-specific data transformation with Effect.ts
 
 ```typescript
 import { Effect } from 'effect'
-import { FormatterService, DefaultFormatter } from 'voltaire-effect/services'
+import { FormatterService, DefaultFormatter } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const formatter = yield* FormatterService
@@ -64,7 +64,7 @@ The default formatter is a passthrough. Create custom formatters for chain-speci
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { FormatterService, FormatError } from 'voltaire-effect/services'
+import { FormatterService, FormatError } from 'voltaire-effect'
 
 const OptimismFormatter = Layer.succeed(FormatterService, {
   formatBlock: (rpc) => Effect.succeed(rpc),
@@ -124,7 +124,7 @@ const ZkSyncFormatter = Layer.succeed(FormatterService, {
 ## Error Handling
 
 ```typescript
-import { FormatError } from 'voltaire-effect/services'
+import { FormatError } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const formatter = yield* FormatterService

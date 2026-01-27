@@ -23,5 +23,6 @@ import { Address, type AddressType } from "@tevm/voltaire/Address";
  *
  * @since 0.1.0
  */
-export const toLowercase = (addr: AddressType): string =>
-	Address.toLowercase(addr);
+export const toLowercase = (
+	addr: AddressType,
+): ReturnType<typeof Address.toLowercase> => Address.toLowercase(addr);

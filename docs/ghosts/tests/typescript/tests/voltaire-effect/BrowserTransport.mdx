@@ -1,0 +1,176 @@
+---
+title: BrowserTransport Tests
+description: Test examples for BrowserTransport showing browser wallet integration via window.ethereum.
+---
+
+## Fails with TransportError when window is undefined
+
+Demonstrates error handling when running outside a browser environment.
+
+```typescript
+import { Effect } from 'effect'
+import { BrowserTransport, TransportService, TransportError } from 'voltaire-effect'
+
+globalThis.window = undefined
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string>("eth_blockNumber")
+}).pipe(Effect.provide(BrowserTransport))
+
+const exit = await Effect.runPromiseExit(program)
+expect(exit._tag).toBe("Failure")
+if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+  expect((exit.cause.error as TransportError).code).toBe(-32603)
+  expect((exit.cause.error as TransportError).message).toContain("Browser environment required")
+}
+```
+
+## Fails with TransportError when window.ethereum is undefined
+
+Shows error handling when no wallet is installed.
+
+```typescript
+import { Effect } from 'effect'
+import { BrowserTransport, TransportService, TransportError } from 'voltaire-effect'
+
+globalThis.window = { ethereum: undefined }
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string>("eth_blockNumber")
+}).pipe(Effect.provide(BrowserTransport))
+
+const exit = await Effect.runPromiseExit(program)
+expect(exit._tag).toBe("Failure")
+if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+  expect((exit.cause.error as TransportError).message).toContain("No browser wallet found")
+}
+```
+
+## Makes request to window.ethereum
+
+Demonstrates successful request to an injected browser wallet.
+
+```typescript
+import { Effect } from 'effect'
+import { BrowserTransport, TransportService } from 'voltaire-effect'
+
+const mockRequest = vi.fn().mockResolvedValue("0x1234")
+globalThis.window = { ethereum: { request: mockRequest } }
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string>("eth_blockNumber")
+}).pipe(Effect.provide(BrowserTransport))
+
+const result = await Effect.runPromise(program)
+expect(result).toBe("0x1234")
+expect(mockRequest).toHaveBeenCalledWith({
+  method: "eth_blockNumber",
+  params: [],
+})
+```
+
+## Passes params to request
+
+Shows that request parameters are correctly forwarded.
+
+```typescript
+import { Effect } from 'effect'
+import { BrowserTransport, TransportService } from 'voltaire-effect'
+
+const mockRequest = vi.fn().mockResolvedValue("0x100")
+globalThis.window = { ethereum: { request: mockRequest } }
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string>("eth_getBalance", ["0x1234", "latest"])
+}).pipe(Effect.provide(BrowserTransport))
+
+await Effect.runPromise(program)
+expect(mockRequest).toHaveBeenCalledWith({
+  method: "eth_getBalance",
+  params: ["0x1234", "latest"],
+})
+```
+
+## Converts wallet error with code/message to TransportError
+
+Demonstrates proper conversion of wallet errors.
+
+```typescript
+import { Effect } from 'effect'
+import { BrowserTransport, TransportService, TransportError } from 'voltaire-effect'
+
+const mockRequest = vi.fn().mockRejectedValue({ code: -32602, message: "Invalid params" })
+globalThis.window = { ethereum: { request: mockRequest } }
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string>("eth_call")
+}).pipe(Effect.provide(BrowserTransport))
+
+const exit = await Effect.runPromiseExit(program)
+expect(exit._tag).toBe("Failure")
+if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+  const error = exit.cause.error as TransportError
+  expect(error.code).toBe(-32602)
+  expect(error.message).toBe("Invalid params")
+}
+```
+
+## Handles user rejection error code 4001
+
+Shows proper handling of EIP-1193 user rejection errors.
+
+```typescript
+import { Effect } from 'effect'
+import { BrowserTransport, TransportService, TransportError } from 'voltaire-effect'
+
+const mockRequest = vi.fn().mockRejectedValue({
+  code: 4001,
+  message: "User rejected the request",
+})
+globalThis.window = { ethereum: { request: mockRequest } }
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string[]>("eth_requestAccounts")
+}).pipe(Effect.provide(BrowserTransport))
+
+const exit = await Effect.runPromiseExit(program)
+expect(exit._tag).toBe("Failure")
+if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+  const error = exit.cause.error as TransportError
+  expect(error.code).toBe(4001)
+  expect(error.message).toBe("User rejected the request")
+}
+```
+
+## Handles disconnected error code 4900
+
+Demonstrates handling of wallet disconnection errors.
+
+```typescript
+import { Effect } from 'effect'
+import { BrowserTransport, TransportService, TransportError } from 'voltaire-effect'
+
+const mockRequest = vi.fn().mockRejectedValue({
+  code: 4900,
+  message: "The Provider is disconnected from all chains",
+})
+globalThis.window = { ethereum: { request: mockRequest } }
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string>("eth_chainId")
+}).pipe(Effect.provide(BrowserTransport))
+
+const exit = await Effect.runPromiseExit(program)
+expect(exit._tag).toBe("Failure")
+if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+  const error = exit.cause.error as TransportError
+  expect(error.code).toBe(4900)
+}
+```

@@ -1,0 +1,167 @@
+---
+title: Keccak256 Tests
+description: Test examples for Keccak-256 hashing with known vectors and various input sizes.
+---
+
+## Basic Hashing
+
+Hashes data using the Keccak-256 algorithm.
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const result = yield* keccak.hash(new Uint8Array([1, 2, 3]))
+  // result is a 32-byte Uint8Array
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Known Vector: Empty String
+
+Verifies correct hash for empty input.
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const bytesToHex = (bytes: Uint8Array): string => {
+  return "0x" + Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")
+}
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const result = yield* keccak.hash(new Uint8Array(0))
+  // 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Known Vector: "hello"
+
+Verifies correct hash for "hello".
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const result = yield* keccak.hash(new Uint8Array([0x68, 0x65, 0x6c, 0x6c, 0x6f]))
+  // 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Known Vector: "Hello, World!"
+
+Verifies correct hash for text input.
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const input = new TextEncoder().encode("Hello, World!")
+  const result = yield* keccak.hash(input)
+  // 0xacaf3289d7b601cbd114fb36c4d29c85bbfd5e133f14cb355c3fd8d99367964f
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Input Size Variations
+
+Handles various input sizes including block boundaries.
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  
+  // Empty
+  yield* keccak.hash(new Uint8Array(0))
+  
+  // Single byte
+  yield* keccak.hash(new Uint8Array([0x42]))
+  
+  // 64 bytes (block size)
+  yield* keccak.hash(new Uint8Array(64).fill(0x11))
+  
+  // 136 bytes (keccak-256 rate)
+  yield* keccak.hash(new Uint8Array(136).fill(0x22))
+  
+  // 1KB
+  yield* keccak.hash(new Uint8Array(1024).fill(0x44))
+  
+  // 1MB
+  yield* keccak.hash(new Uint8Array(1024 * 1024).fill(0x66))
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Determinism
+
+Produces consistent results for the same input.
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const bytesToHex = (bytes: Uint8Array): string => {
+  return "0x" + Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")
+}
+
+const program = Effect.gen(function* () {
+  const input = new Uint8Array([1, 2, 3, 4, 5])
+  const keccak = yield* KeccakService
+  const hash1 = yield* keccak.hash(input)
+  const hash2 = yield* keccak.hash(input)
+  // hash1 === hash2
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Single Bit Sensitivity
+
+Different inputs produce different hashes.
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const hash1 = yield* keccak.hash(new Uint8Array([0b00000000]))
+  const hash2 = yield* keccak.hash(new Uint8Array([0b00000001]))
+  // Single bit change produces completely different hash
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Convenience Function
+
+Uses the hash convenience function.
+
+```typescript
+import { Effect } from 'effect'
+import { hash, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const data = new Uint8Array([104, 101, 108, 108, 111])
+  const result = yield* hash(data)
+  // result is a 32-byte Uint8Array
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Test Layer
+
+Uses deterministic test layer for predictable results.
+
+```typescript
+import { Effect } from 'effect'
+import { KeccakService, KeccakTest } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const result = yield* keccak.hash(new Uint8Array([1, 2, 3]))
+  // Returns 32-byte array filled with zeros
+}).pipe(Effect.provide(KeccakTest))
+```

@@ -7,7 +7,7 @@ description: Rate limiting for RPC calls with Effect.ts
 
 ```typescript
 import { Effect } from 'effect'
-import { RateLimiterService, DefaultRateLimiter, TransportService } from 'voltaire-effect/services'
+import { RateLimiterService, DefaultRateLimiter, TransportService } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const rateLimiter = yield* RateLimiterService
@@ -78,7 +78,7 @@ const FailFastLayer = DefaultRateLimiter({
 Handle rate limit errors with `catchTag`:
 
 ```typescript
-import { RateLimitError } from 'voltaire-effect/services'
+import { RateLimitError } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const rateLimiter = yield* RateLimiterService
@@ -123,7 +123,7 @@ yield* rateLimiter.consume('eth_getLogs', 5)  // Costs 5 tokens
 Disable rate limiting for testing:
 
 ```typescript
-import { NoopRateLimiter } from 'voltaire-effect/services'
+import { NoopRateLimiter } from 'voltaire-effect'
 
 const testProgram = myEffect.pipe(
   Effect.provide(NoopRateLimiter)
@@ -136,7 +136,7 @@ Compose with other services:
 
 ```typescript
 import * as Layer from 'effect/Layer'
-import { Provider, DefaultRateLimiter, HttpTransport } from 'voltaire-effect/services'
+import { Provider, DefaultRateLimiter, HttpTransport } from 'voltaire-effect'
 
 // Build complete provider stack with rate limiting
 const RateLimitedProvider = Layer.mergeAll(
@@ -201,7 +201,7 @@ import {
   DefaultRateLimiter,
   HttpTransport,
   RateLimitError
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import * as Layer from 'effect/Layer'
 
 // Configure for Infura's 10 req/sec limit with headroom

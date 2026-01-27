@@ -1,0 +1,149 @@
+---
+title: Hex Tests
+description: Test examples for Hex showing hex string validation, encoding, and utility functions.
+---
+
+## Parse valid lowercase hex
+
+Decodes a valid lowercase hex string.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const hex = S.decodeSync(Hex.String)('0xdeadbeef')
+expect(hex).toBe('0xdeadbeef')
+```
+
+## Parse empty hex
+
+Decodes empty hex string (just 0x prefix).
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const hex = S.decodeSync(Hex.String)('0x')
+expect(hex).toBe('0x')
+```
+
+## Encode preserving case
+
+Encodes hex preserving original case.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const hex = S.decodeSync(Hex.String)('0xDEADBEEF')
+const encoded = S.encodeSync(Hex.String)(hex)
+expect(encoded).toBe('0xDEADBEEF')
+```
+
+## Parse bytes to hex
+
+Converts Uint8Array to hex string.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
+const hex = S.decodeSync(Hex.Bytes)(bytes)
+expect(hex).toBe('0xdeadbeef')
+```
+
+## Encode hex to bytes
+
+Converts hex string to Uint8Array.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const hex = S.decodeSync(Hex.String)('0xdeadbeef')
+const bytes = S.encodeSync(Hex.Bytes)(hex)
+expect(bytes).toBeInstanceOf(Uint8Array)
+expect(bytes.length).toBe(4)
+expect(bytes[0]).toBe(0xde)
+```
+
+## Check isHex for valid hex
+
+Returns true for valid hex with content.
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+expect(Hex.isHex('0x1234')).toBe(true)
+expect(Hex.isHex('0x')).toBe(false)
+expect(Hex.isHex('1234')).toBe(false)
+expect(Hex.isHex('0xZZZZ')).toBe(false)
+```
+
+## Check isSized for correct byte length
+
+Returns true when hex has expected byte size.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const hex = S.decodeSync(Hex.String)('0x1234')
+expect(Hex.isSized(hex, 2)).toBe(true)
+expect(Hex.isSized(hex, 4)).toBe(false)
+```
+
+## Create zero-filled hex
+
+Creates hex filled with zeros of specified byte size.
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+expect(Hex.zero(4)).toBe('0x00000000')
+expect(Hex.zero(0)).toBe('0x')
+expect(Hex.zero(32)).toBe(`0x${'00'.repeat(32)}`)
+```
+
+## Generate random hex
+
+Creates random hex of specified byte size.
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const result = Hex.random(32)
+expect(result.length).toBe(66)
+expect(result.startsWith('0x')).toBe(true)
+expect(result).toMatch(/^0x[0-9a-f]+$/)
+```
+
+## Compare hex equality
+
+Checks if two hex values are equal.
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const a = S.decodeSync(Hex.String)('0xdeadbeef')
+const b = S.decodeSync(Hex.String)('0xdeadbeef')
+const c = S.decodeSync(Hex.String)('0xcafebabe')
+
+expect(Hex.equals(a, b)).toBe(true)
+expect(Hex.equals(a, c)).toBe(false)
+```
+
+## Clone hex
+
+Creates a copy of a hex string (identity for strings).
+
+```typescript
+import * as S from 'effect/Schema'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const original = S.decodeSync(Hex.String)('0xdeadbeef')
+const cloned = Hex.clone(original)
+expect(cloned).toBe(original)
+```

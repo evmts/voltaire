@@ -3,10 +3,10 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import {
-	ProviderError,
 	ProviderService,
 	type ProviderShape,
 } from "../Provider/ProviderService.js";
+import { TransportError } from "../Transport/TransportService.js";
 import {
 	DefaultFeeEstimator,
 	makeFeeEstimator,
@@ -173,7 +173,12 @@ describe("FeeEstimatorService", () => {
 			it("propagates provider errors", async () => {
 				const mockProvider = createMockProvider({
 					getGasPrice: () =>
-						Effect.fail(new ProviderError({}, "Gas price unavailable")),
+						Effect.fail(
+							new TransportError({
+								code: -32000,
+								message: "Gas price unavailable",
+							}),
+						),
 				});
 
 				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);
@@ -203,7 +208,12 @@ describe("FeeEstimatorService", () => {
 			it("propagates getBlock provider error", async () => {
 				const mockProvider = createMockProvider({
 					getBlock: () =>
-						Effect.fail(new ProviderError({}, "Block fetch failed")),
+						Effect.fail(
+							new TransportError({
+								code: -32000,
+								message: "Block fetch failed",
+							}),
+						),
 					getMaxPriorityFeePerGas: () => Effect.succeed(1500000000n),
 				});
 
@@ -233,7 +243,12 @@ describe("FeeEstimatorService", () => {
 			it("propagates getMaxPriorityFeePerGas provider error", async () => {
 				const mockProvider = createMockProvider({
 					getMaxPriorityFeePerGas: () =>
-						Effect.fail(new ProviderError({}, "Priority fee unavailable")),
+						Effect.fail(
+							new TransportError({
+								code: -32000,
+								message: "Priority fee unavailable",
+							}),
+						),
 				});
 
 				const TestProviderLayer = Layer.succeed(ProviderService, mockProvider);

@@ -18,14 +18,14 @@ export class TransactionError extends PrimitiveError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "TRANSACTION_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -44,14 +44,14 @@ export class InvalidTransactionTypeError extends TransactionError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "INVALID_TRANSACTION_TYPE",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -70,14 +70,14 @@ export class InvalidSignerError extends TransactionError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "INVALID_SIGNER",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

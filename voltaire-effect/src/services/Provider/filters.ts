@@ -7,12 +7,17 @@
 
 import * as Effect from "effect/Effect";
 import {
+	type CreateBlockFilterError,
+	type CreateEventFilterError,
+	type CreatePendingTransactionFilterError,
 	type EventFilter,
 	type FilterChanges,
 	type FilterId,
+	type GetFilterChangesError,
+	type GetFilterLogsError,
 	type LogType,
-	type ProviderError,
 	ProviderService,
+	type UninstallFilterError,
 } from "./ProviderService.js";
 
 /**
@@ -20,7 +25,7 @@ import {
  */
 export const createEventFilter = (
 	filter?: EventFilter,
-): Effect.Effect<FilterId, ProviderError, ProviderService> =>
+): Effect.Effect<FilterId, CreateEventFilterError, ProviderService> =>
 	Effect.gen(function* () {
 		const provider = yield* ProviderService;
 		return yield* provider.createEventFilter(filter);
@@ -31,7 +36,7 @@ export const createEventFilter = (
  */
 export const createBlockFilter = (): Effect.Effect<
 	FilterId,
-	ProviderError,
+	CreateBlockFilterError,
 	ProviderService
 > =>
 	Effect.gen(function* () {
@@ -44,7 +49,7 @@ export const createBlockFilter = (): Effect.Effect<
  */
 export const createPendingTransactionFilter = (): Effect.Effect<
 	FilterId,
-	ProviderError,
+	CreatePendingTransactionFilterError,
 	ProviderService
 > =>
 	Effect.gen(function* () {
@@ -57,7 +62,7 @@ export const createPendingTransactionFilter = (): Effect.Effect<
  */
 export const getFilterChanges = (
 	filterId: FilterId,
-): Effect.Effect<FilterChanges, ProviderError, ProviderService> =>
+): Effect.Effect<FilterChanges, GetFilterChangesError, ProviderService> =>
 	Effect.gen(function* () {
 		const provider = yield* ProviderService;
 		return yield* provider.getFilterChanges(filterId);
@@ -68,7 +73,7 @@ export const getFilterChanges = (
  */
 export const getFilterLogs = (
 	filterId: FilterId,
-): Effect.Effect<LogType[], ProviderError, ProviderService> =>
+): Effect.Effect<LogType[], GetFilterLogsError, ProviderService> =>
 	Effect.gen(function* () {
 		const provider = yield* ProviderService;
 		return yield* provider.getFilterLogs(filterId);
@@ -79,7 +84,7 @@ export const getFilterLogs = (
  */
 export const uninstallFilter = (
 	filterId: FilterId,
-): Effect.Effect<boolean, ProviderError, ProviderService> =>
+): Effect.Effect<boolean, UninstallFilterError, ProviderService> =>
 	Effect.gen(function* () {
 		const provider = yield* ProviderService;
 		return yield* provider.uninstallFilter(filterId);

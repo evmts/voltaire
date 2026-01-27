@@ -1,0 +1,127 @@
+---
+title: signAuthorization Tests
+description: Test examples for signAuthorization showing EIP-7702 authorization signing with account service.
+---
+
+## Signs authorization with fetched chain ID and nonce
+
+Demonstrates signing an authorization by automatically fetching chain ID and nonce.
+
+```typescript
+import { Effect } from 'effect'
+import { signAuthorization } from 'voltaire-effect'
+
+const program = signAuthorization({
+  contractAddress: "0x1234567890123456789012345678901234567890",
+})
+
+const result = await Effect.runPromise(Effect.provide(program, TestLayers))
+
+expect(result.chainId).toBe(1n)
+expect(result.nonce).toBe(5n)
+expect(result.address).toBe("0x1234567890123456789012345678901234567890")
+expect(result.yParity).toBeDefined()
+expect(result.r).toMatch(/^0x[a-fA-F0-9]+$/)
+expect(result.s).toMatch(/^0x[a-fA-F0-9]+$/)
+```
+
+## Uses provided chain ID
+
+Shows overriding the fetched chain ID with a custom value for signing.
+
+```typescript
+import { Effect } from 'effect'
+import { signAuthorization } from 'voltaire-effect'
+
+const program = signAuthorization({
+  contractAddress: "0x1234567890123456789012345678901234567890",
+  chainId: 137n,
+})
+
+const result = await Effect.runPromise(Effect.provide(program, TestLayers))
+
+expect(result.chainId).toBe(137n)
+```
+
+## Uses provided nonce
+
+Demonstrates providing a custom nonce for the authorization.
+
+```typescript
+import { Effect } from 'effect'
+import { signAuthorization } from 'voltaire-effect'
+
+const program = signAuthorization({
+  contractAddress: "0x1234567890123456789012345678901234567890",
+  nonce: 42n,
+})
+
+const result = await Effect.runPromise(Effect.provide(program, TestLayers))
+
+expect(result.nonce).toBe(42n)
+```
+
+## Handles account signing errors
+
+Shows proper error handling when the account service fails to sign.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { signAuthorization } from 'voltaire-effect'
+import { AccountService, AccountError } from 'voltaire-effect'
+
+const accountWithError = {
+  ...mockAccount,
+  signAuthorization: () =>
+    Effect.fail(
+      new AccountError(
+        { action: "signAuthorization" },
+        "Hardware wallet disconnected",
+      ),
+    ),
+}
+
+const customLayers = Layer.mergeAll(
+  Layer.succeed(AccountService, accountWithError),
+  TestProviderLayer,
+)
+
+const program = signAuthorization({
+  contractAddress: "0x1234567890123456789012345678901234567890",
+})
+
+const result = await Effect.runPromiseExit(
+  Effect.provide(program, customLayers),
+)
+
+expect(result._tag).toBe("Failure")
+```
+
+## Handles provider errors when fetching chain ID
+
+Demonstrates error handling when the provider fails to fetch chain ID.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { signAuthorization } from 'voltaire-effect'
+import { ProviderService } from 'voltaire-effect'
+import { TransportError } from 'voltaire-effect'
+
+const providerWithError = {
+  ...mockProvider,
+  getChainId: () =>
+    Effect.fail(
+      new TransportError({ code: -32000, message: "Network error" }),
+    ),
+}
+
+const program = signAuthorization({
+  contractAddress: "0x1234567890123456789012345678901234567890",
+})
+
+const result = await Effect.runPromiseExit(
+  Effect.provide(program, customLayers),
+)
+
+expect(result._tag).toBe("Failure")
+```

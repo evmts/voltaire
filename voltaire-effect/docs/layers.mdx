@@ -53,7 +53,7 @@ Effect.catchTag("ParseError", (e) => ...)
 [Effect Services](https://effect.website/docs/requirements-management/services/) for stateful resources.
 
 ```typescript
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 import { Effect } from 'effect'
 
 const program = Effect.gen(function* () {
@@ -77,7 +77,7 @@ const program = Effect.gen(function* () {
 Create a Signer from existing Provider + Account:
 
 ```typescript
-import { Signer, Provider, LocalAccount, HttpTransport } from 'voltaire-effect/services'
+import { Signer, Provider, LocalAccount, HttpTransport } from 'voltaire-effect'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
 

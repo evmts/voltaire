@@ -23,6 +23,7 @@ export default defineConfig({
 			"src/mcp-evals/**",
 			"tests/mcp-evals/**",
 			"node_modules/**",
+			"**/node_modules/**",
 			// Hardware wallet tests require optional peer dependencies (@ledgerhq/*, @trezor/*)
 			"src/wallet/hardware/**",
 			// Most examples test dist/ which requires optional native deps (ffi-napi, ref-napi)

@@ -7,13 +7,14 @@
 
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
+import { TransportError } from "../Transport/TransportError.js";
 import { TransportService } from "../Transport/TransportService.js";
 import {
 	type AddressInput,
 	type BlockTag,
 	type CallRequest,
 	type LogType,
-	ProviderError,
+	ProviderResponseError,
 } from "./ProviderService.js";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
@@ -58,6 +59,11 @@ export interface SimulateCallsParams {
 	readonly account?: AddressInput;
 	readonly blockTag?: BlockTag;
 }
+
+/**
+ * Error union for simulateCalls.
+ */
+export type SimulateCallsError = TransportError | ProviderResponseError;
 
 type RawCallTrace = {
 	from?: string;
@@ -190,7 +196,7 @@ const extractCallValueTransfer = (
 
 export const simulateCalls = (
 	params: SimulateCallsParams,
-): Effect.Effect<SimulationResult[], ProviderError, TransportService> =>
+): Effect.Effect<SimulationResult[], SimulateCallsError, TransportService> =>
 	Effect.gen(function* () {
 		const transport = yield* TransportService;
 		const blockTag = params.blockTag ?? "latest";
@@ -199,9 +205,8 @@ export const simulateCalls = (
 			transport.request<T>(method, rpcParams).pipe(
 				Effect.mapError(
 					(error) =>
-						new ProviderError({ method, params: rpcParams }, error.message, {
+						new TransportError(error.input, error.message, {
 							cause: error,
-							code: error.code,
 							context: { method, params: rpcParams },
 						}),
 				),
@@ -219,7 +224,7 @@ export const simulateCalls = (
 
 		if (!Array.isArray(response) || response.length === 0) {
 			return yield* Effect.fail(
-				new ProviderError(
+				new ProviderResponseError(
 					{ method: "eth_simulateV1", response },
 					"Invalid response from eth_simulateV1",
 				),
@@ -229,7 +234,7 @@ export const simulateCalls = (
 		const blockResult = response[0];
 		if (!blockResult || !Array.isArray(blockResult.calls)) {
 			return yield* Effect.fail(
-				new ProviderError(
+				new ProviderResponseError(
 					{ method: "eth_simulateV1", response },
 					"Missing call results in eth_simulateV1 response",
 				),

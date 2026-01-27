@@ -12,8 +12,8 @@ describe("TransportConfig", () => {
 			new Map([
 				["rpc.url", "https://mainnet.infura.io/v3/KEY"],
 				["rpc.timeout", "60 seconds"],
-				["rpc.retries", "5"],
-				["rpc.retryDelay", "2 seconds"],
+				["rpc.retryMaxAttempts", "5"],
+				["rpc.retryBaseDelay", "2 seconds"],
 			]),
 		);
 
@@ -25,8 +25,8 @@ describe("TransportConfig", () => {
 		const config = await Effect.runPromise(program);
 		expect(config.url).toBe("https://mainnet.infura.io/v3/KEY");
 		expect(Duration.toMillis(config.timeout)).toBe(60000);
-		expect(config.retries).toBe(5);
-		expect(Duration.toMillis(config.retryDelay)).toBe(2000);
+		expect(config.retryMaxAttempts).toBe(5);
+		expect(Duration.toMillis(config.retryBaseDelay)).toBe(2000);
 	});
 
 	it("uses defaults for optional fields", async () => {
@@ -42,8 +42,8 @@ describe("TransportConfig", () => {
 		const config = await Effect.runPromise(program);
 		expect(config.url).toBe("https://rpc.example.com");
 		expect(Duration.toMillis(config.timeout)).toBe(30000);
-		expect(config.retries).toBe(3);
-		expect(Duration.toMillis(config.retryDelay)).toBe(1000);
+		expect(config.retryMaxAttempts).toBe(3);
+		expect(Duration.toMillis(config.retryBaseDelay)).toBe(1000);
 	});
 
 	it("validates URL scheme", async () => {

@@ -21,7 +21,7 @@ The `MnemonicAccount` function creates an account layer from a BIP-39 mnemonic:
 
 ```typescript
 import { Effect } from 'effect'
-import { AccountService } from 'voltaire-effect/services'
+import { AccountService } from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
@@ -66,7 +66,7 @@ For more control, use the core HDWallet module directly:
 ```typescript
 import { Effect, Layer } from 'effect'
 import { Bip39, HDWallet, Hex } from '@tevm/voltaire/native'
-import { LocalAccount, AccountService } from 'voltaire-effect/services'
+import { LocalAccount, AccountService } from 'voltaire-effect'
 
 const createAccountFromMnemonic = (
   mnemonic: string,
@@ -142,7 +142,7 @@ import {
   Signer, 
   Provider,
   HttpTransport 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 

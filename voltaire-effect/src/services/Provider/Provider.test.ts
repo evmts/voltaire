@@ -11,7 +11,10 @@ import {
 } from "../Transport/TransportService.js";
 import { calculateBlobGasPrice, estimateBlobGas } from "./getBlobBaseFee.js";
 import { Provider } from "./Provider.js";
-import { type ProviderError, ProviderService } from "./ProviderService.js";
+import {
+	ProviderService,
+	type ProviderValidationError,
+} from "./ProviderService.js";
 
 const mockTransport = (responses: Record<string, unknown>) =>
 	Layer.succeed(TransportService, {
@@ -772,7 +775,7 @@ describe("ProviderService", () => {
 	});
 
 	describe("error handling", () => {
-		it("wraps transport errors in ProviderError", async () => {
+		it("surfaces transport errors", async () => {
 			const transport = Layer.succeed(TransportService, {
 				request: <T>(_method: string, _params?: unknown[]) =>
 					Effect.fail(
@@ -789,9 +792,9 @@ describe("ProviderService", () => {
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
-			if (Exit.isFailure(exit)) {
-				const error = exit.cause;
-				expect(error._tag).toBe("Fail");
+			if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+				expect((exit.cause.error as TransportError).code).toBe(-32000);
 			}
 		});
 	});
@@ -1107,7 +1110,7 @@ describe("ProviderService", () => {
 			expect(Exit.isFailure(exit)).toBe(true);
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
-				expect((error as ProviderError).message).toContain(
+				expect((error as ProviderValidationError).message).toContain(
 					"blockCount must be a positive integer",
 				);
 			}
@@ -1127,7 +1130,7 @@ describe("ProviderService", () => {
 			expect(Exit.isFailure(exit)).toBe(true);
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
-				expect((error as ProviderError).message).toContain(
+				expect((error as ProviderValidationError).message).toContain(
 					"blockCount must be a positive integer",
 				);
 			}
@@ -1147,7 +1150,7 @@ describe("ProviderService", () => {
 			expect(Exit.isFailure(exit)).toBe(true);
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
-				expect((error as ProviderError).message).toContain(
+				expect((error as ProviderValidationError).message).toContain(
 					"blockCount must be a positive integer",
 				);
 			}
@@ -1167,7 +1170,7 @@ describe("ProviderService", () => {
 			expect(Exit.isFailure(exit)).toBe(true);
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
-				expect((error as ProviderError).message).toContain(
+				expect((error as ProviderValidationError).message).toContain(
 					"rewardPercentiles values must be between 0 and 100",
 				);
 			}
@@ -1187,7 +1190,7 @@ describe("ProviderService", () => {
 			expect(Exit.isFailure(exit)).toBe(true);
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
-				expect((error as ProviderError).message).toContain(
+				expect((error as ProviderValidationError).message).toContain(
 					"rewardPercentiles values must be between 0 and 100",
 				);
 			}
@@ -1207,7 +1210,7 @@ describe("ProviderService", () => {
 			expect(Exit.isFailure(exit)).toBe(true);
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
-				expect((error as ProviderError).message).toContain(
+				expect((error as ProviderValidationError).message).toContain(
 					"rewardPercentiles should be sorted in ascending order",
 				);
 			}
@@ -1235,7 +1238,7 @@ describe("ProviderService", () => {
 	});
 
 	describe("error code propagation", () => {
-		it("propagates error code from TransportError to ProviderError", async () => {
+		it("surfaces transport error codes", async () => {
 			const transport = Layer.succeed(TransportService, {
 				request: <T>(_method: string, _params?: unknown[]) =>
 					Effect.fail(
@@ -1258,8 +1261,8 @@ describe("ProviderService", () => {
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
 				expect(error).not.toBeNull();
-				expect((error as ProviderError).code).toBe(-32005);
-				expect((error as ProviderError).message).toContain(
+				expect((error as TransportError).code).toBe(-32005);
+				expect((error as TransportError).message).toContain(
 					"Rate limit exceeded",
 				);
 			}
@@ -1289,7 +1292,7 @@ describe("ProviderService", () => {
 			expect(Exit.isFailure(exit)).toBe(true);
 			if (Exit.isFailure(exit)) {
 				const error = exit.cause._tag === "Fail" ? exit.cause.error : null;
-				expect((error as ProviderError).code).toBe(-32000);
+				expect((error as TransportError).code).toBe(-32000);
 			}
 		});
 	});

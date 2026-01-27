@@ -1,0 +1,148 @@
+---
+title: ENS Resolution Tests
+description: Test examples for ENS resolution showing getEnsAddress, getEnsName, getEnsResolver, getEnsText, and getEnsAvatar.
+---
+
+## getEnsAddress - Resolves ENS name to address
+
+Demonstrates resolving an ENS name to its associated Ethereum address.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { EnsService, DefaultEns } from 'voltaire-effect'
+import { Provider } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mockResolveResponse =
+  "0x" +
+  "0000000000000000000000000000000000000000000000000000000000000040" +
+  "0000000000000000000000004976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41" +
+  "0000000000000000000000000000000000000000000000000000000000000020" +
+  "000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045"
+
+const layer = DefaultEns.pipe(
+  Layer.provide(
+    Provider.pipe(Layer.provide(mockTransportWithCapture({ eth_call: mockResolveResponse }))),
+  ),
+)
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ens = yield* EnsService
+    return yield* ens.getEnsAddress({ name: "vitalik.eth" })
+  }).pipe(Effect.provide(layer)),
+)
+
+expect(result).toBe("0xd8da6bf26964af9d7eed9e03e53415d37aa96045")
+```
+
+## getEnsAddress - Returns null for non-existent name
+
+Shows that non-existent ENS names return null instead of throwing.
+
+```typescript
+import { Effect } from 'effect'
+import { EnsService } from 'voltaire-effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ens = yield* EnsService
+    return yield* ens.getEnsAddress({ name: "nonexistent12345.eth" })
+  }).pipe(Effect.provide(layer)),
+)
+
+expect(result).toBeNull()
+```
+
+## getEnsName - Reverse resolves address to ENS name
+
+Demonstrates reverse resolution from an address to its primary ENS name.
+
+```typescript
+import { Effect } from 'effect'
+import { EnsService } from 'voltaire-effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ens = yield* EnsService
+    return yield* ens.getEnsName({
+      address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    })
+  }).pipe(Effect.provide(layer)),
+)
+
+expect(result).toBe("vitalik.eth")
+```
+
+## getEnsResolver - Gets resolver address for ENS name
+
+Shows how to get the resolver contract address for an ENS name.
+
+```typescript
+import { Effect } from 'effect'
+import { EnsService } from 'voltaire-effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ens = yield* EnsService
+    return yield* ens.getEnsResolver({ name: "vitalik.eth" })
+  }).pipe(Effect.provide(layer)),
+)
+
+expect(result).toBe("0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41")
+```
+
+## getEnsText - Gets text record for ENS name
+
+Demonstrates fetching a text record (like Twitter handle) from an ENS name.
+
+```typescript
+import { Effect } from 'effect'
+import { EnsService } from 'voltaire-effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ens = yield* EnsService
+    return yield* ens.getEnsText({
+      name: "vitalik.eth",
+      key: "com.twitter",
+    })
+  }).pipe(Effect.provide(layer)),
+)
+
+expect(result).toBe("VitalikButerin")
+```
+
+## getEnsAvatar - Gets avatar for ENS name
+
+Shows fetching the avatar URL from an ENS name's records.
+
+```typescript
+import { Effect } from 'effect'
+import { EnsService } from 'voltaire-effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const ens = yield* EnsService
+    return yield* ens.getEnsAvatar({ name: "vitalik.eth" })
+  }).pipe(Effect.provide(layer)),
+)
+
+expect(result).toBe("https://example.com/avatar.png")
+```
+
+## EnsError - Has correct properties
+
+Demonstrates the EnsError structure with tag, input, message, and cause.
+
+```typescript
+import { EnsError } from 'voltaire-effect'
+
+const error = new EnsError("test.eth", "Resolution failed")
+expect(error._tag).toBe("EnsError")
+expect(error.input).toBe("test.eth")
+expect(error.message).toBe("Resolution failed")
+
+const errorWithCause = new EnsError("test.eth", "Resolution failed", new Error("Underlying error"))
+expect(errorWithCause.cause).toBeInstanceOf(Error)
+```

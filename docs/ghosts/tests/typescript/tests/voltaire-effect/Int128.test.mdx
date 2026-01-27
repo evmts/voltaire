@@ -1,0 +1,227 @@
+---
+title: Int128 Tests
+description: Test examples for Int128 schema showing signed 128-bit integer operations with wrapping arithmetic.
+---
+
+## Schema: Number decoding
+
+Demonstrates decoding numbers into branded Int128.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+it("decodes valid positive number", () => {
+  const value = S.decodeSync(Int128.Number)(1000000000)
+  expect(S.encodeSync(Int128.Number)(value)).toBe(1000000000)
+})
+
+it("decodes valid negative number", () => {
+  const value = S.decodeSync(Int128.Number)(-1000000000)
+  expect(S.encodeSync(Int128.Number)(value)).toBe(-1000000000)
+})
+
+it("fails on non-integer", () => {
+  expect(() => S.decodeSync(Int128.Number)(1.5)).toThrow()
+})
+```
+
+## Schema: String with large values
+
+Demonstrates string parsing for large Int128 values.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+it("decodes valid positive string", () => {
+  const value = S.decodeSync(Int128.String)(
+    "170141183460469231731687303715884105727",
+  )
+  expect(S.encodeSync(Int128.String)(value)).toBe(
+    "170141183460469231731687303715884105727",
+  )
+})
+
+it("decodes valid negative string", () => {
+  const value = S.decodeSync(Int128.String)(
+    "-170141183460469231731687303715884105728",
+  )
+  expect(S.encodeSync(Int128.String)(value)).toBe(
+    "-170141183460469231731687303715884105728",
+  )
+})
+```
+
+## Schema: BigInt with boundary validation
+
+Demonstrates BigInt decoding with Int128 range validation.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+const INT128_MIN = -(2n ** 127n)
+const INT128_MAX = 2n ** 127n - 1n
+
+it("decodes INT128_MIN bigint", () => {
+  const value = S.decodeSync(Int128.BigInt)(INT128_MIN)
+  expect(S.encodeSync(Int128.BigInt)(value)).toBe(INT128_MIN)
+})
+
+it("decodes INT128_MAX bigint", () => {
+  const value = S.decodeSync(Int128.BigInt)(INT128_MAX)
+  expect(S.encodeSync(Int128.BigInt)(value)).toBe(INT128_MAX)
+})
+
+it("fails on overflow bigint", () => {
+  expect(() => S.decodeSync(Int128.BigInt)(INT128_MAX + 1n)).toThrow()
+})
+
+it("fails on underflow bigint", () => {
+  expect(() => S.decodeSync(Int128.BigInt)(INT128_MIN - 1n)).toThrow()
+})
+```
+
+## Arithmetic: Addition with wrapping
+
+Demonstrates wrapping on overflow/underflow.
+
+```typescript
+import { BrandedInt128 } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+const INT128_MIN = -(2n ** 127n)
+const INT128_MAX = 2n ** 127n - 1n
+
+it("adds two positive values", () => {
+  const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n)
+  const b = S.decodeSync(Int128.BigInt)(500000000000000000000000000000n)
+  const result = BrandedInt128.plus(a, b)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(1500000000000000000000000000000n)
+})
+
+it("wraps on overflow", () => {
+  const max = S.decodeSync(Int128.BigInt)(INT128_MAX)
+  const one = S.decodeSync(Int128.BigInt)(1n)
+  const result = BrandedInt128.plus(max, one)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(INT128_MIN)
+})
+
+it("wraps on underflow", () => {
+  const min = S.decodeSync(Int128.BigInt)(INT128_MIN)
+  const negOne = S.decodeSync(Int128.BigInt)(-1n)
+  const result = BrandedInt128.plus(min, negOne)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(INT128_MAX)
+})
+```
+
+## Arithmetic: Subtraction, multiplication, division
+
+Demonstrates other arithmetic operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+it("subtracts two values", () => {
+  const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n)
+  const b = S.decodeSync(Int128.BigInt)(500000000000000000000000000000n)
+  const result = Int128.sub(a, b)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(500000000000000000000000000000n)
+})
+
+it("multiplies two positive values", () => {
+  const a = S.decodeSync(Int128.BigInt)(1000000000000000n)
+  const b = S.decodeSync(Int128.BigInt)(1000000000000000n)
+  const result = Int128.mul(a, b)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(1000000000000000000000000000000n)
+})
+
+it("truncates toward zero (negative)", () => {
+  const a = S.decodeSync(Int128.BigInt)(-7n)
+  const b = S.decodeSync(Int128.BigInt)(3n)
+  const result = Int128.div(a, b)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(-2n)
+})
+```
+
+## Sign handling: negate, abs, isNegative
+
+Demonstrates sign manipulation operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+const INT128_MIN = -(2n ** 127n)
+
+it("negates positive value", () => {
+  const a = S.decodeSync(Int128.BigInt)(1000000000000000000000000000000n)
+  const result = Int128.negate(a)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(-1000000000000000000000000000000n)
+})
+
+it("abs of negative value", () => {
+  const a = S.decodeSync(Int128.BigInt)(-1000000000000000000000000000000n)
+  const result = Int128.abs(a)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(1000000000000000000000000000000n)
+})
+
+it("negates INT128_MIN wraps", () => {
+  const min = S.decodeSync(Int128.BigInt)(INT128_MIN)
+  const result = Int128.negate(min)
+  expect(S.encodeSync(Int128.BigInt)(result)).toBe(INT128_MIN)
+})
+
+it("abs of INT128_MIN throws overflow", () => {
+  const min = S.decodeSync(Int128.BigInt)(INT128_MIN)
+  expect(() => Int128.abs(min)).toThrow()
+})
+
+it("returns true for negative", () => {
+  const a = S.decodeSync(Int128.BigInt)(-1000000000000000000000000000000n)
+  expect(Int128.isNegative(a)).toBe(true)
+})
+```
+
+## Comparison and utility functions
+
+Demonstrates comparison and utility operations.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+it("returns -1 when a < b", () => {
+  const a = S.decodeSync(Int128.BigInt)(100n)
+  const b = S.decodeSync(Int128.BigInt)(200n)
+  expect(Int128.compare(a, b)).toBe(-1)
+})
+
+it("returns true for zero", () => {
+  const zero = S.decodeSync(Int128.BigInt)(0n)
+  expect(Int128.isZero(zero)).toBe(true)
+})
+```
+
+## Constants
+
+Demonstrates accessing Int128 constant values.
+
+```typescript
+import * as Int128 from "voltaire-effect/primitives/Int128"
+
+const INT128_MIN = -(2n ** 127n)
+const INT128_MAX = 2n ** 127n - 1n
+
+it("MIN equals -(2^127)", () => {
+  expect(Int128.MIN).toBe(INT128_MIN)
+})
+
+it("MAX equals 2^127 - 1", () => {
+  expect(Int128.MAX).toBe(INT128_MAX)
+})
+```

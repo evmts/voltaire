@@ -23,7 +23,7 @@ npm install voltaire-effect @tevm/voltaire effect
 import { Effect, Layer } from 'effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 ```
 
 ## Decode → Use → Provide
@@ -56,10 +56,11 @@ await Effect.runPromise(program)
 ```typescript
 program.pipe(
   Effect.catchTag('ParseError', (e) => Effect.succeed(fallback)),
-  Effect.catchTag('ProviderError', (e) => Effect.succeed(0n)),
+  Effect.catchTag('TransportError', (e) => Effect.succeed(0n)),
   Effect.catchTags({
     ParseError: () => ...,
-    ProviderError: () => ...,
+    TransportError: () => ...,
+    ProviderResponseError: () => ...,
   })
 )
 ```
@@ -158,8 +159,9 @@ program.pipe(
 
 ```typescript
 import { Stream } from 'effect'
+import { makeBlockStream } from 'voltaire-effect'
 
-const blockStream = yield* BlockStreamService
+const blockStream = yield* makeBlockStream()
 yield* Stream.runForEach(
   blockStream.watch({ include: 'transactions' }),
   (event) => Effect.log(`Block ${event.blocks[0]?.header.number}`)

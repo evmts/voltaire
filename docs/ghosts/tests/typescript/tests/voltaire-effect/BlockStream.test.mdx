@@ -1,0 +1,163 @@
+---
+title: BlockStream Tests
+description: Test examples for makeBlockStream showing block streaming, backfill, and error handling.
+---
+
+## BlockStreamError creates error with message
+
+BlockStreamError creates a tagged error with the correct message and tag properties.
+
+```typescript
+import { BlockStreamError } from 'voltaire-effect'
+
+const error = new BlockStreamError("test error")
+expect(error.message).toBe("test error")
+expect(error._tag).toBe("BlockStreamError")
+```
+
+## BlockStreamError creates error with cause
+
+BlockStreamError can wrap an underlying error as its cause.
+
+```typescript
+import { BlockStreamError } from 'voltaire-effect'
+
+const cause = new Error("underlying")
+const error = new BlockStreamError("test error", { cause })
+expect(error.message).toContain("test error")
+expect(error.cause).toBe(cause)
+```
+
+## makeBlockStream returns backfill/watch without a service layer
+
+The makeBlockStream factory returns an object with backfill and watch methods.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { makeBlockStream } from 'voltaire-effect'
+import { TransportService, type TransportShape } from 'voltaire-effect'
+
+const mockTransport: TransportShape = {
+  request: <T>(_method: string, _params?: unknown[]): Effect.Effect<T, never> =>
+    Effect.succeed("0x1" as T),
+}
+
+const TestTransportLayer = Layer.succeed(TransportService, mockTransport)
+
+const program = Effect.gen(function* () {
+  const blockStream = yield* makeBlockStream()
+  expect(blockStream.backfill).toBeDefined()
+  expect(blockStream.watch).toBeDefined()
+  expect(typeof blockStream.backfill).toBe("function")
+  expect(typeof blockStream.watch).toBe("function")
+}).pipe(Effect.provide(TestTransportLayer))
+```
+
+## makeBlockStream provides block streaming from TransportService
+
+makeBlockStream creates a block stream from a TransportService.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { makeBlockStream } from 'voltaire-effect'
+import { TransportService, type TransportShape } from 'voltaire-effect'
+
+const mockTransport: TransportShape = {
+  request: <T>(_method: string, _params?: unknown[]): Effect.Effect<T, never> =>
+    Effect.succeed("0x1" as T),
+}
+
+const TestTransportLayer = Layer.succeed(TransportService, mockTransport)
+
+const program = Effect.gen(function* () {
+  const blockStream = yield* makeBlockStream()
+  expect(blockStream.backfill).toBeDefined()
+  expect(blockStream.watch).toBeDefined()
+}).pipe(Effect.provide(TestTransportLayer))
+```
+
+## backfill returns a Stream
+
+The backfill method creates a stream for fetching historical blocks.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { makeBlockStream } from 'voltaire-effect'
+import { TransportService, type TransportShape } from 'voltaire-effect'
+
+const mockBlock = {
+  number: "0x64",
+  hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  timestamp: "0x60000000",
+  transactions: [],
+}
+
+const mockTransport: TransportShape = {
+  request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+    if (method === "eth_blockNumber") return Effect.succeed("0x100" as T)
+    if (method === "eth_getBlockByNumber") return Effect.succeed(mockBlock as T)
+    return Effect.succeed(null as T)
+  },
+}
+
+const program = Effect.gen(function* () {
+  const blockStream = yield* makeBlockStream()
+  const stream = blockStream.backfill({ fromBlock: 100n, toBlock: 100n })
+  expect(stream).toBeDefined()
+})
+```
+
+## watch returns a Stream
+
+The watch method creates a stream for monitoring new blocks.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { makeBlockStream } from 'voltaire-effect'
+import { TransportService, type TransportShape } from 'voltaire-effect'
+
+const mockTransport: TransportShape = {
+  request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, never> => {
+    if (method === "eth_blockNumber") return Effect.succeed("0x100" as T)
+    return Effect.succeed(null as T)
+  },
+}
+
+const program = Effect.gen(function* () {
+  const blockStream = yield* makeBlockStream()
+  const stream = blockStream.watch()
+  expect(stream).toBeDefined()
+})
+```
+
+## polling recovers after transient error
+
+The polling mechanism can recover from transient network errors.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { makeBlockStream } from 'voltaire-effect'
+import { TransportError, TransportService, type TransportShape } from 'voltaire-effect'
+
+let callCount = 0
+
+const mockTransport: TransportShape = {
+  request: <T>(method: string, _params?: unknown[]): Effect.Effect<T, TransportError> => {
+    if (method === "eth_blockNumber") {
+      callCount++
+      if (callCount === 1) {
+        return Effect.fail(new TransportError({ code: -32000, message: "Transient network error" }))
+      }
+      return Effect.succeed("0x100" as T)
+    }
+    return Effect.succeed(null as T)
+  },
+}
+
+const program = Effect.gen(function* () {
+  const blockStream = yield* makeBlockStream()
+  const stream = blockStream.watch()
+  expect(stream).toBeDefined()
+})
+```

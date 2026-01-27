@@ -1,0 +1,65 @@
+---
+title: Ripemd160 Tests
+description: Test examples for Ripemd160 showing hashing with Effect service layer.
+---
+
+## Hash Data with Live Service
+
+Hashes data using the Ripemd160 service and returns a 20-byte digest.
+
+```typescript
+import { Effect } from 'effect'
+import { Ripemd160Service, Ripemd160Live } from 'voltaire-effect/crypto/Ripemd160'
+
+const program = Effect.gen(function* () {
+  const ripemd160 = yield* Ripemd160Service
+  const result = yield* ripemd160.hash(new Uint8Array([1, 2, 3]))
+  // result is Uint8Array of length 20
+}).pipe(Effect.provide(Ripemd160Live))
+```
+
+## Known Hash Output
+
+Empty input produces a known hash prefix.
+
+```typescript
+import { Effect } from 'effect'
+import { Ripemd160Service, Ripemd160Live } from 'voltaire-effect/crypto/Ripemd160'
+
+const program = Effect.gen(function* () {
+  const ripemd160 = yield* Ripemd160Service
+  const result = yield* ripemd160.hash(new Uint8Array([]))
+  // result[0] === 0x9c
+  // result[1] === 0x11
+}).pipe(Effect.provide(Ripemd160Live))
+```
+
+## Test Layer with Mock Hash
+
+Uses the test layer which returns a zero-filled hash for testing.
+
+```typescript
+import { Effect } from 'effect'
+import { Ripemd160Service, Ripemd160Test } from 'voltaire-effect/crypto/Ripemd160'
+
+const program = Effect.gen(function* () {
+  const ripemd160 = yield* Ripemd160Service
+  const result = yield* ripemd160.hash(new Uint8Array([1, 2, 3]))
+  // result is zero-filled Uint8Array of length 20
+}).pipe(Effect.provide(Ripemd160Test))
+```
+
+## Convenience Hash Function
+
+Uses the standalone hash function with service dependency.
+
+```typescript
+import { Effect } from 'effect'
+import { hash, Ripemd160Live } from 'voltaire-effect/crypto/Ripemd160'
+
+const program = Effect.gen(function* () {
+  const data = new Uint8Array([104, 101, 108, 108, 111]) // "hello"
+  const result = yield* hash(data)
+  // result is Uint8Array of length 20
+}).pipe(Effect.provide(Ripemd160Live))
+```

@@ -7,7 +7,7 @@ description: Query blocks, balances, transactions and logs
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const client = yield* ProviderService

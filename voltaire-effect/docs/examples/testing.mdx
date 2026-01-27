@@ -7,7 +7,7 @@ description: Mock services for unit tests
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, TestTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, TestTransport } from 'voltaire-effect'
 import { describe, it, expect } from 'vitest'
 
 describe('Provider', () => {
@@ -50,7 +50,7 @@ const program = Effect.gen(function* () {
 ## Test Contract Reads
 
 ```typescript
-import { Contract } from 'voltaire-effect/services'
+import { Contract } from 'voltaire-effect'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }
@@ -94,7 +94,7 @@ it('recovers from errors', async () => {
     const client = yield* ProviderService
     return yield* client.getBalance('0x...', 'latest')
   }).pipe(
-    Effect.catchTag('ProviderError', () => Effect.succeed(0n)),
+    Effect.catchTag('TransportError', () => Effect.succeed(0n)),
     Effect.provide(Provider),
     Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Failed') } }))
   )
@@ -143,7 +143,7 @@ const testProgram = program.pipe(Effect.provide(CryptoTest))
 
 ```typescript
 import { Layer } from 'effect'
-import { SignerService, Signer, LocalAccount, HttpTransport } from 'voltaire-effect/services'
+import { SignerService, Signer, LocalAccount, HttpTransport } from 'voltaire-effect'
 import { Hex } from '@tevm/voltaire'
 
 const TestLayer = Layer.mergeAll(

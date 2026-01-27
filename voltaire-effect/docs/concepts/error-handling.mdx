@@ -80,14 +80,14 @@ Services can define their own error types:
 
 ```typescript
 import * as Effect from 'effect/Effect'
-import { ProviderService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
-  const block = yield* provider.getBlock("latest")
+  const block = yield* provider.getBlock({ blockTag: "latest" })
   return block
 }).pipe(
-  Effect.catchTag("RpcError", (e) => 
+  Effect.catchTag("ProviderNotFoundError", (e) => 
     Effect.succeed(null)
   )
 )
@@ -101,7 +101,7 @@ Errors accumulate in the type signature:
 // Effect<Address, ParseError, never>
 const addr = S.decode(Address.Hex)(input)
 
-// Effect<Block, ParseError | RpcError, ProviderService>
+// Effect<Block, ParseError | GetBalanceError, ProviderService>
 const program = Effect.gen(function* () {
   const a = yield* S.decode(Address.Hex)(input)
   const provider = yield* ProviderService
@@ -132,7 +132,7 @@ voltaire-effect makes errors typed and composable:
 // voltaire-effect - typed errors
 S.decode(Address.Hex)('invalid').pipe(
   Effect.catchTag("ParseError", handleParseError),
-  Effect.catchTag("RpcError", handleRpcError)
+  Effect.catchTag("TransportError", handleTransportError)
 )
 ```
 
@@ -143,11 +143,19 @@ voltaire-effect defines these error types:
 | Error | Tag | Source |
 |-------|-----|--------|
 | `ParseError` | `ParseError` | Schema decode failures |
-| `ProviderError` | `ProviderError` | RPC call failures |
 | `SignerError` | `SignerError` | Transaction signing failures |
 | `TransportError` | `TransportError` | Network/HTTP failures |
+| `ProviderResponseError` | `ProviderResponseError` | Invalid provider response |
+| `ProviderNotFoundError` | `ProviderNotFoundError` | Missing block/tx/receipt |
+| `ProviderValidationError` | `ProviderValidationError` | Invalid input to provider method |
+| `ProviderTimeoutError` | `ProviderTimeoutError` | Provider operation timed out |
+| `ProviderStreamError` | `ProviderStreamError` | Provider stream failures |
+| `ProviderReceiptPendingError` | `ProviderReceiptPendingError` | Receipt not available yet |
+| `ProviderConfirmationsPendingError` | `ProviderConfirmationsPendingError` | Confirmations not met |
 | `BlockStreamError` | `BlockStreamError` | Block streaming failures |
 | `CryptoError` | `CryptoError` | Cryptographic operation failures |
+
+Provider methods expose method-specific error unions (e.g. `GetBalanceError`, `GetBlockError`) that combine `TransportError` with relevant provider errors.
 
 ## See Also
 

@@ -119,7 +119,7 @@ await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 ### Concepts
 - `/concepts/branded-types` - How Voltaire branded types work with Effect Schema
 - `/concepts/data-first-api` - Data-first functional API design
-- `/concepts/error-handling` - Typed errors with ParseError, ProviderError, SignerError
+- `/concepts/error-handling` - Typed errors with ParseError, provider error unions, SignerError
 - `/concepts/dependency-injection` - Services and Layer composition
 
 ### Guides
@@ -298,7 +298,13 @@ All errors have a `_tag` field for discrimination:
 | Error | Tag | Source |
 |-------|-----|--------|
 | ParseError | `ParseError` | Schema decode failures |
-| ProviderError | `ProviderError` | JSON-RPC call failures |
+| ProviderResponseError | `ProviderResponseError` | Invalid provider response |
+| ProviderNotFoundError | `ProviderNotFoundError` | Missing block/tx/receipt |
+| ProviderValidationError | `ProviderValidationError` | Invalid provider inputs |
+| ProviderTimeoutError | `ProviderTimeoutError` | Provider timeouts |
+| ProviderStreamError | `ProviderStreamError` | Provider stream failures |
+| ProviderReceiptPendingError | `ProviderReceiptPendingError` | Receipt not available yet |
+| ProviderConfirmationsPendingError | `ProviderConfirmationsPendingError` | Confirmations not met |
 | SignerError | `SignerError` | Transaction signing failures |
 | TransportError | `TransportError` | Network/HTTP failures |
 | ContractCallError | `ContractCallError` | Contract read failures |

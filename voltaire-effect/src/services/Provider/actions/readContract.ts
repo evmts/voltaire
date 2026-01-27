@@ -25,8 +25,9 @@ import * as Effect from "effect/Effect";
 import {
 	type AddressInput,
 	type BlockTag,
-	ProviderError,
+	type CallError,
 	ProviderService,
+	ProviderValidationError,
 } from "../ProviderService.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -42,6 +43,11 @@ type AbiItem = { type: string; name?: string };
  * ABI type that can be used with readContract.
  */
 export type Abi = readonly AbiItem[];
+
+/**
+ * Error union for readContract.
+ */
+export type ReadContractError = CallError | ProviderValidationError;
 
 /**
  * Extracts function names from an ABI that are view or pure.
@@ -259,7 +265,7 @@ export const readContract = <
 	params: ReadContractParams<TAbi, TFunctionName>,
 ): Effect.Effect<
 	GetFunctionOutput<TAbi, TFunctionName>,
-	ProviderError,
+	ReadContractError,
 	ProviderService
 > =>
 	Effect.gen(function* () {
@@ -276,23 +282,10 @@ export const readContract = <
 			(params.args ?? []) as unknown[],
 		);
 
-		const result = yield* provider
-			.call({ to: addressHex, data }, params.blockTag)
-			.pipe(
-				Effect.mapError(
-					(e) =>
-						new ProviderError(
-							{
-								address: addressHex,
-								functionName: params.functionName,
-								args: params.args,
-								blockTag: params.blockTag,
-							},
-							e.message,
-							{ cause: e, code: e.code },
-						),
-				),
-			);
+		const result = yield* provider.call(
+			{ to: addressHex, data },
+			params.blockTag,
+		);
 
 		const fn = (params.abi as readonly AbiItem[]).find(
 			(item): item is BrandedAbi.Function.FunctionType =>
@@ -301,7 +294,7 @@ export const readContract = <
 
 		if (!fn) {
 			return yield* Effect.fail(
-				new ProviderError(
+				new ProviderValidationError(
 					{ functionName: params.functionName },
 					`Function "${params.functionName}" not found in ABI`,
 				),

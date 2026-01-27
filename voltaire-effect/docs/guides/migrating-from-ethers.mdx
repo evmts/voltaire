@@ -20,7 +20,7 @@ const blockNumber = await provider.getBlockNumber()
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -59,7 +59,7 @@ import {
   LocalAccount,
   Provider,
   HttpTransport 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import * as Hex from 'voltaire-effect/primitives/Hex'
 import * as S from 'effect/Schema'
 
@@ -103,7 +103,7 @@ import {
   Signer,
   Provider,
   HttpTransport
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
@@ -148,7 +148,7 @@ const balance = await contract.balanceOf(userAddress)
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const abi = [
   { 
@@ -190,7 +190,7 @@ try {
 
 ```typescript
 import { Effect } from 'effect'
-import { SignerService, SignerError, ProviderError } from 'voltaire-effect/services'
+import { SignerService, SignerError, TransportError } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -203,7 +203,7 @@ const program = Effect.gen(function* () {
     }
     return Effect.fail(e)
   }),
-  Effect.catchTag('ProviderError', (e) => {
+  Effect.catchTag('TransportError', (e) => {
     console.log('RPC error:', e.message)
     return Effect.fail(e)
   })
@@ -327,7 +327,7 @@ You can use both libraries during migration:
 ```typescript
 import { JsonRpcProvider } from 'ethers'
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 // Keep ethers for some operations
 const ethersProvider = new JsonRpcProvider('https://eth.llamarpc.com')
@@ -345,6 +345,37 @@ const program = Effect.gen(function* () {
   return { block, legacyResult }
 })
 ```
+
+## Incremental Migration with tryPromise / trySync
+
+If you are not ready to replace all ethers calls, wrap them into Effect first. Use `Effect.tryPromise` for async ethers APIs, and use `Effect.try` (sync) as a `trySync` helper for local parsing/validation.
+
+```typescript
+import { Effect } from 'effect'
+import { JsonRpcProvider } from 'ethers'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+const trySync = Effect.try
+const provider = new JsonRpcProvider(rpcUrl)
+
+export const getBalance = (address: string) =>
+  Effect.gen(function* () {
+    const addr = yield* trySync({
+      try: () => S.decodeSync(Address.Hex)(address),
+      catch: (error) => new Error(`Invalid address: ${String(error)}`)
+    })
+
+    const balance = yield* Effect.tryPromise({
+      try: () => provider.getBalance(address),
+      catch: (error) => new Error(`RPC failed: ${String(error)}`)
+    })
+
+    return { addr, balance }
+  })
+```
+
+Once the call is Effect-native, you can swap in `ProviderService` and delete the `tryPromise` wrapper.
 
 ## See Also
 

@@ -1,0 +1,110 @@
+---
+title: addChain Tests
+description: Test examples for addChain showing EIP-3085 wallet_addEthereumChain requests.
+---
+
+## Sends wallet_addEthereumChain request with correct params
+
+Demonstrates adding a new chain to the wallet with full configuration.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { addChain } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const polygonChain = {
+  id: 137,
+  name: "Polygon",
+  nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
+  rpcUrls: { default: { http: ["https://polygon-rpc.com"] } },
+  blockExplorers: {
+    default: { name: "Polygonscan", url: "https://polygonscan.com" },
+  },
+}
+
+const mockTransport = {
+  request: <T>(method: string, params?: unknown[]) => {
+    expect(method).toBe("wallet_addEthereumChain")
+    const p = params?.[0] as { chainId: string; chainName: string }
+    expect(p.chainId).toBe("0x89") // 137 in hex
+    expect(p.chainName).toBe("Polygon")
+    return Effect.succeed(null as T)
+  },
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+await Effect.runPromise(Effect.provide(addChain(polygonChain), TestLayer))
+```
+
+## Works without block explorers
+
+Shows adding a chain with minimal configuration (no block explorers).
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { addChain } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const minimalChain = {
+  id: 42161,
+  name: "Arbitrum",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["https://arb1.arbitrum.io/rpc"] } },
+}
+
+await Effect.runPromise(Effect.provide(addChain(minimalChain), TestLayer))
+```
+
+## Converts chain ID to hex correctly
+
+Demonstrates that chain IDs are properly converted to hex format.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { addChain } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mainnetChain = {
+  id: 1,
+  name: "Ethereum",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["https://eth.merkle.io"] } },
+}
+
+// Chain ID 1 becomes "0x1"
+await Effect.runPromise(Effect.provide(addChain(mainnetChain), TestLayer))
+```
+
+## Handles user rejection errors
+
+Shows proper error handling when user rejects the chain addition.
+
+```typescript
+import { Effect, Layer, Cause, Chunk, Option } from 'effect'
+import { addChain } from 'voltaire-effect'
+import { TransportService, TransportError } from 'voltaire-effect'
+
+const mockTransport = {
+  request: <T>() =>
+    Effect.fail(
+      new TransportError({
+        code: 4001,
+        message: "User rejected the request",
+      }),
+    ) as never,
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromiseExit(
+  Effect.provide(addChain(polygonChain), TestLayer),
+)
+
+expect(result._tag).toBe("Failure")
+if (result._tag === "Failure") {
+  const failures = Cause.failures(result.cause)
+  const firstFailure = Chunk.head(failures)
+  expect(Option.isSome(firstFailure) && firstFailure.value.code).toBe(4001)
+}
+```

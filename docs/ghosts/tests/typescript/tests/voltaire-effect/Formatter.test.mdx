@@ -1,0 +1,84 @@
+---
+title: Formatter Tests
+description: Test examples for FormatterService showing block, transaction, and receipt formatting.
+---
+
+## DefaultFormatter returns input unchanged
+
+Default formatter passes through input without modification.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { FormatterService } from 'voltaire-effect'
+import { DefaultFormatter } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const formatter = yield* FormatterService
+  const input = { number: '0x1', hash: '0xabc', transactions: [] }
+  const result = yield* formatter.formatBlock(input)
+  return { same: result === input }
+}).pipe(Effect.provide(DefaultFormatter))
+
+const result = await Effect.runPromise(program)
+expect(result.same).toBe(true)
+```
+
+## Format transaction preserves identity
+
+Transaction formatting preserves object reference.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { FormatterService } from 'voltaire-effect'
+import { DefaultFormatter } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const formatter = yield* FormatterService
+  const input = { hash: '0x123', from: '0xabc', to: '0xdef', value: '0x0' }
+  const result = yield* formatter.formatTransaction(input)
+  return result === input
+}).pipe(Effect.provide(DefaultFormatter))
+
+const result = await Effect.runPromise(program)
+expect(result).toBe(true)
+```
+
+## Format receipt preserves identity
+
+Receipt formatting preserves object reference.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { FormatterService } from 'voltaire-effect'
+import { DefaultFormatter } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const formatter = yield* FormatterService
+  const input = { status: '0x1', gasUsed: '0x5208', logs: [] }
+  const result = yield* formatter.formatReceipt(input)
+  return result === input
+}).pipe(Effect.provide(DefaultFormatter))
+
+const result = await Effect.runPromise(program)
+expect(result).toBe(true)
+```
+
+## Format request preserves identity
+
+Request formatting preserves object reference.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { FormatterService } from 'voltaire-effect'
+import { DefaultFormatter } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const formatter = yield* FormatterService
+  const input = { to: '0x123', data: '0x', value: '0x0' }
+  const result = yield* formatter.formatRequest(input)
+  return result === input
+}).pipe(Effect.provide(DefaultFormatter))
+
+const result = await Effect.runPromise(program)
+expect(result).toBe(true)
+```

@@ -18,14 +18,14 @@ export class CryptoError extends PrimitiveError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "CRYPTO_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -44,14 +44,14 @@ export class InvalidSignatureError extends CryptoError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "INVALID_SIGNATURE",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -70,14 +70,14 @@ export class InvalidPublicKeyError extends CryptoError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "INVALID_PUBLIC_KEY",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -96,14 +96,14 @@ export class InvalidPrivateKeyError extends CryptoError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "INVALID_PRIVATE_KEY",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

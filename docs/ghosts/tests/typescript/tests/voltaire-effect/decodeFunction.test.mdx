@@ -1,0 +1,113 @@
+---
+title: decodeFunction Tests
+description: Test examples for decoding function call data to extract name and parameters.
+---
+
+## Round-trips transfer
+
+Encodes then decodes transfer function call.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import { Hex } from "voltaire"
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import * as Abi from "voltaire-effect/primitives/Abi"
+
+const erc20Abi = S.decodeUnknownSync(Abi.fromArray)([
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+])
+
+it.effect("round-trips transfer", () =>
+  Effect.gen(function* () {
+    const to = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+    const amount = 1000000000000000000n
+    const calldata = yield* Abi.encodeFunction(erc20Abi, "transfer", [
+      to,
+      amount,
+    ])
+    const decoded = yield* Abi.decodeFunction(erc20Abi, calldata)
+    expect(decoded.name).toBe("transfer")
+    expect((decoded.params[0] as string).toLowerCase()).toBe(to.toLowerCase())
+    expect(decoded.params[1]).toBe(amount)
+  }),
+)
+```
+
+## Round-trips balanceOf
+
+Encodes then decodes single-argument view function.
+
+```typescript
+it.effect("round-trips balanceOf", () =>
+  Effect.gen(function* () {
+    const account = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+    const calldata = yield* Abi.encodeFunction(erc20Abi, "balanceOf", [account])
+    const decoded = yield* Abi.decodeFunction(erc20Abi, calldata)
+    expect(decoded.name).toBe("balanceOf")
+    expect((decoded.params[0] as string).toLowerCase()).toBe(
+      account.toLowerCase(),
+    )
+  }),
+)
+```
+
+## Fails on invalid selector
+
+Returns failure when selector doesn't match any function.
+
+```typescript
+import * as Exit from "effect/Exit"
+
+it("fails on invalid selector", async () => {
+  const exit = await Effect.runPromiseExit(
+    Abi.decodeFunction(erc20Abi, Hex("0xdeadbeef")),
+  )
+  expect(Exit.isFailure(exit)).toBe(true)
+})
+```
+
+## Fails on too short calldata
+
+Returns failure when calldata is too short.
+
+```typescript
+it("fails on too short calldata", async () => {
+  const exit = await Effect.runPromiseExit(
+    Abi.decodeFunction(erc20Abi, Hex("0x12")),
+  )
+  expect(Exit.isFailure(exit)).toBe(true)
+})
+```
+
+## Fails with empty ABI
+
+Returns failure when ABI has no functions.
+
+```typescript
+it("fails with empty ABI", async () => {
+  const exit = await Effect.runPromiseExit(
+    Abi.decodeFunction(
+      S.decodeUnknownSync(Abi.fromArray)([]),
+      Hex("0xa9059cbb0000000000000000000000000000000000000000000000000000000000000000"),
+    ),
+  )
+  expect(Exit.isFailure(exit)).toBe(true)
+})
+```

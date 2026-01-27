@@ -8,7 +8,7 @@
  * Provides Effect-wrapped utilities for fetching blockchain blocks.
  * These are standalone functions for one-off block fetches.
  *
- * For continuous block streaming with reorg detection, use BlockStreamService
+ * For continuous block streaming with reorg detection, use makeBlockStream
  * from voltaire-effect/services.
  *
  * @example

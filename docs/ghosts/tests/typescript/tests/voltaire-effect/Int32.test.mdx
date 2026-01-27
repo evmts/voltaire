@@ -1,0 +1,175 @@
+---
+title: Int32 Tests
+description: Test examples for signed 32-bit integer primitives with overflow-safe arithmetic.
+---
+
+## Schema: Int32.Number decodes valid values
+
+Demonstrates decoding and encoding Int32 values from numbers.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const value = S.decodeSync(Int32.Number)(1000000);
+expect(S.encodeSync(Int32.Number)(value)).toBe(1000000);
+
+const negative = S.decodeSync(Int32.Number)(-1000000);
+expect(S.encodeSync(Int32.Number)(negative)).toBe(-1000000);
+
+const zero = S.decodeSync(Int32.Number)(0);
+expect(S.encodeSync(Int32.Number)(zero)).toBe(0);
+```
+
+## Schema: Int32.Number boundary values
+
+Shows INT32_MIN and INT32_MAX boundary handling.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const INT32_MIN = -2147483648;
+const INT32_MAX = 2147483647;
+
+const min = S.decodeSync(Int32.Number)(INT32_MIN);
+expect(S.encodeSync(Int32.Number)(min)).toBe(INT32_MIN);
+
+const max = S.decodeSync(Int32.Number)(INT32_MAX);
+expect(S.encodeSync(Int32.Number)(max)).toBe(INT32_MAX);
+
+// Overflow/underflow throws
+expect(() => S.decodeSync(Int32.Number)(INT32_MAX + 1)).toThrow();
+expect(() => S.decodeSync(Int32.Number)(INT32_MIN - 1)).toThrow();
+```
+
+## Schema: Int32.String
+
+Demonstrates string-based Int32 encoding/decoding.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const value = S.decodeSync(Int32.String)("1000000");
+expect(S.encodeSync(Int32.String)(value)).toBe("1000000");
+
+const negative = S.decodeSync(Int32.String)("-1000000");
+expect(S.encodeSync(Int32.String)(negative)).toBe("-1000000");
+```
+
+## Schema: Int32.BigInt
+
+Shows bigint-based Int32 operations with range validation.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const value = S.decodeSync(Int32.BigInt)(1000000n);
+expect(S.encodeSync(Int32.BigInt)(value)).toBe(1000000n);
+
+// Overflow throws
+expect(() => S.decodeSync(Int32.BigInt)(BigInt(2147483647) + 1n)).toThrow();
+```
+
+## Arithmetic: add with overflow protection
+
+Demonstrates checked addition that throws on overflow.
+
+```typescript
+import { BrandedInt32 } from "@tevm/voltaire";
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const a = S.decodeSync(Int32.Number)(1000000);
+const b = S.decodeSync(Int32.Number)(500000);
+const result = BrandedInt32.plus(a, b);
+expect(S.encodeSync(Int32.Number)(result)).toBe(1500000);
+
+// Overflow throws
+const max = S.decodeSync(Int32.Number)(2147483647);
+const one = S.decodeSync(Int32.Number)(1);
+expect(() => BrandedInt32.plus(max, one)).toThrow();
+```
+
+## Arithmetic: sub, mul, div
+
+Shows subtraction, multiplication, and division operations.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const a = S.decodeSync(Int32.Number)(1000000);
+const b = S.decodeSync(Int32.Number)(500000);
+
+// Subtraction
+const subResult = Int32.sub(a, b);
+expect(S.encodeSync(Int32.Number)(subResult)).toBe(500000);
+
+// Multiplication
+const c = S.decodeSync(Int32.Number)(1000);
+const mulResult = Int32.mul(c, c);
+expect(S.encodeSync(Int32.Number)(mulResult)).toBe(1000000);
+
+// Division (truncates toward zero)
+const d = S.decodeSync(Int32.Number)(7);
+const e = S.decodeSync(Int32.Number)(3);
+const divResult = Int32.div(d, e);
+expect(S.encodeSync(Int32.Number)(divResult)).toBe(2);
+```
+
+## Sign handling: negate and abs
+
+Demonstrates negation and absolute value with overflow checks.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const positive = S.decodeSync(Int32.Number)(1000000);
+expect(S.encodeSync(Int32.Number)(Int32.negate(positive))).toBe(-1000000);
+
+const negative = S.decodeSync(Int32.Number)(-1000000);
+expect(S.encodeSync(Int32.Number)(Int32.abs(negative))).toBe(1000000);
+
+// INT32_MIN negation throws (no positive representation)
+const min = S.decodeSync(Int32.Number)(-2147483648);
+expect(() => Int32.negate(min)).toThrow();
+expect(() => Int32.abs(min)).toThrow();
+```
+
+## Comparison and utility functions
+
+Shows compare, isZero, and isNegative utilities.
+
+```typescript
+import * as S from "effect/Schema";
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+const a = S.decodeSync(Int32.Number)(100);
+const b = S.decodeSync(Int32.Number)(200);
+const zero = S.decodeSync(Int32.Number)(0);
+
+expect(Int32.compare(a, b)).toBe(-1);  // a < b
+expect(Int32.compare(b, a)).toBe(1);   // b > a
+expect(Int32.compare(a, a)).toBe(0);   // equal
+
+expect(Int32.isZero(zero)).toBe(true);
+expect(Int32.isZero(a)).toBe(false);
+
+expect(Int32.isNegative(S.decodeSync(Int32.Number)(-1))).toBe(true);
+expect(Int32.isNegative(a)).toBe(false);
+```
+
+## Constants
+
+Shows INT32_MIN and INT32_MAX constant values.
+
+```typescript
+import * as Int32 from "voltaire-effect/primitives/Int32";
+
+expect(Int32.INT32_MIN).toBe(-2147483648);
+expect(Int32.INT32_MAX).toBe(2147483647);
+```

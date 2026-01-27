@@ -7,7 +7,7 @@ description: RLP transaction encoding/decoding with Effect.ts
 
 ```typescript
 import { Effect } from 'effect'
-import { TransactionSerializerService, DefaultTransactionSerializer } from 'voltaire-effect/services'
+import { TransactionSerializerService, DefaultTransactionSerializer } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const serializer = yield* TransactionSerializerService
@@ -157,7 +157,7 @@ const eip7702Tx = {
 ## Error Handling
 
 ```typescript
-import { SerializeError, DeserializeError } from 'voltaire-effect/services'
+import { SerializeError, DeserializeError } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const serializer = yield* TransactionSerializerService

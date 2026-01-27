@@ -14,8 +14,8 @@ S.decode(Address.Hex)(input).pipe(
 program.pipe(
   Effect.catchTags({
     ParseError: () => Effect.succeed(fallback),
-    ProviderError: () => Effect.succeed(0n),
-    TransportError: (e) => Effect.log(`Network error: ${e.message}`)
+    TransportError: (e) => Effect.log(`Network error: ${e.message}`),
+    ProviderResponseError: () => Effect.succeed(0n)
   })
 )
 ```

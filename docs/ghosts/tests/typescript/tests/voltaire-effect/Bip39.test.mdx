@@ -1,0 +1,175 @@
+---
+title: Bip39 Tests
+description: Test examples for BIP-39 mnemonic generation, validation, and seed derivation.
+---
+
+## Generate 12-Word Mnemonic
+
+Generates a 12-word mnemonic from 128 bits of entropy.
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto/Bip39'
+
+const program = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const result = yield* bip39.generateMnemonic(128)
+  // result is a 12-word mnemonic string
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Generate 24-Word Mnemonic
+
+Generates a 24-word mnemonic from 256 bits of entropy.
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto/Bip39'
+
+const program = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const result = yield* bip39.generateMnemonic(256)
+  // result is a 24-word mnemonic string
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Validate Mnemonic
+
+Validates whether a mnemonic phrase is valid according to BIP-39.
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto/Bip39'
+
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+const program = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const isValid = yield* bip39.validateMnemonic(TEST_MNEMONIC)
+  // isValid is true for valid mnemonics
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Convert Mnemonic to Seed
+
+Derives a 64-byte seed from a mnemonic phrase.
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto/Bip39'
+
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+const program = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const seed = yield* bip39.mnemonicToSeed(TEST_MNEMONIC)
+  // seed is a 64-byte Uint8Array
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Convert Mnemonic to Seed with Passphrase
+
+Derives a seed with an optional passphrase for additional security.
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto/Bip39'
+
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+const program = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const seedWithPass = yield* bip39.mnemonicToSeed(TEST_MNEMONIC, "password")
+  const seedWithoutPass = yield* bip39.mnemonicToSeed(TEST_MNEMONIC)
+  // Different passphrases produce different seeds
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Get Word Count from Entropy Bits
+
+Calculates expected word count from entropy size.
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto/Bip39'
+
+const program = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const count128 = yield* bip39.getWordCount(128) // 12
+  const count256 = yield* bip39.getWordCount(256) // 24
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Convenience Functions
+
+Uses convenience functions with service dependency.
+
+```typescript
+import { Effect } from 'effect'
+import {
+  Bip39Live,
+  generateMnemonic,
+  validateMnemonic,
+  mnemonicToSeed,
+  getWordCount
+} from 'voltaire-effect/crypto/Bip39'
+
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+const program = Effect.gen(function* () {
+  const mnemonic = yield* generateMnemonic(128)
+  const isValid = yield* validateMnemonic(TEST_MNEMONIC)
+  const seed = yield* mnemonicToSeed(TEST_MNEMONIC)
+  const wordCount = yield* getWordCount(128)
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Mnemonic Utilities
+
+Pure utility functions for mnemonic manipulation.
+
+```typescript
+import {
+  mnemonicToWords,
+  wordsToMnemonic,
+  validateWordCount
+} from 'voltaire-effect/crypto/Bip39'
+
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+// Split mnemonic into words
+const words = mnemonicToWords(TEST_MNEMONIC)
+// ["abandon", "abandon", ..., "about"]
+
+// Join words into mnemonic
+const restored = wordsToMnemonic(words)
+// "abandon abandon ... about"
+
+// Validate word count (12, 15, 18, 21, 24)
+const isValid = validateWordCount(TEST_MNEMONIC) // true
+```
+
+## Test Layer
+
+Uses deterministic test layer for predictable results.
+
+```typescript
+import { Effect } from 'effect'
+import { Bip39Service, Bip39Test } from 'voltaire-effect/crypto/Bip39'
+
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+const program = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const mnemonic = yield* bip39.generateMnemonic()
+  // Returns TEST_MNEMONIC deterministically
+  const isValid = yield* bip39.validateMnemonic("anything")
+  // Always returns true in test layer
+}).pipe(Effect.provide(Bip39Test))
+```

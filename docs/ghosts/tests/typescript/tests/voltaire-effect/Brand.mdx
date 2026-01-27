@@ -1,0 +1,153 @@
+---
+title: Brand Tests
+description: Test examples for Brand showing type-safe branded primitives for Wei, Gwei, Gas, BlockNumber, ChainId, Nonce, and other Ethereum quantities.
+---
+
+## PositiveInt Brand
+
+Validates positive integers and rejects zero or negative values.
+
+```typescript
+import { describe, expect, it } from "vitest"
+import { PositiveInt, NonNegativeInt } from "voltaire-effect/primitives/Brand"
+
+expect(PositiveInt(1)).toBe(1)
+expect(PositiveInt(100)).toBe(100)
+
+expect(() => PositiveInt(0)).toThrow()
+expect(() => PositiveInt(-1)).toThrow()
+expect(() => PositiveInt(1.5)).toThrow()
+```
+
+## Option and Either Methods
+
+Brands provide option and either methods for safe parsing.
+
+```typescript
+import { PositiveInt } from "voltaire-effect/primitives/Brand"
+
+expect(PositiveInt.option(5)._tag).toBe("Some")
+expect(PositiveInt.option(-1)._tag).toBe("None")
+
+const success = PositiveInt.either(5)
+expect(success._tag).toBe("Right")
+
+const failure = PositiveInt.either(-1)
+expect(failure._tag).toBe("Left")
+```
+
+## Wei Brand
+
+Validates non-negative bigint values for Wei amounts.
+
+```typescript
+import { Wei } from "voltaire-effect/primitives/Brand"
+
+expect(Wei(1000000000000000000n)).toBe(1000000000000000000n)
+expect(Wei(0n)).toBe(0n)
+
+expect(() => Wei(-1n)).toThrow()
+```
+
+## Gwei Brand
+
+Validates non-negative bigint values for Gwei amounts.
+
+```typescript
+import { Gwei } from "voltaire-effect/primitives/Brand"
+
+expect(Gwei(20n)).toBe(20n)
+expect(Gwei(0n)).toBe(0n)
+
+expect(() => Gwei(-1n)).toThrow()
+```
+
+## Gas Brand
+
+Validates positive bigint values for gas amounts (zero not allowed).
+
+```typescript
+import { Gas } from "voltaire-effect/primitives/Brand"
+
+expect(Gas(21000n)).toBe(21000n)
+
+expect(() => Gas(0n)).toThrow()
+expect(() => Gas(-1n)).toThrow()
+```
+
+## BlockNumber Brand
+
+Validates non-negative bigint values for block numbers.
+
+```typescript
+import { BlockNumber } from "voltaire-effect/primitives/Brand"
+
+expect(BlockNumber(0n)).toBe(0n)
+expect(BlockNumber(19000000n)).toBe(19000000n)
+
+expect(() => BlockNumber(-1n)).toThrow()
+```
+
+## ChainId Brand
+
+Validates positive bigint values for chain IDs (zero not allowed).
+
+```typescript
+import { ChainId } from "voltaire-effect/primitives/Brand"
+
+expect(ChainId(1n)).toBe(1n)        // Ethereum mainnet
+expect(ChainId(11155111n)).toBe(11155111n) // Sepolia
+
+expect(() => ChainId(0n)).toThrow()
+expect(() => ChainId(-1n)).toThrow()
+```
+
+## Nonce Brand
+
+Validates non-negative bigint values for transaction nonces.
+
+```typescript
+import { Nonce } from "voltaire-effect/primitives/Brand"
+
+expect(Nonce(0n)).toBe(0n)
+expect(Nonce(42n)).toBe(42n)
+
+expect(() => Nonce(-1n)).toThrow()
+```
+
+## Nominal String Types
+
+TxHashString and AddressString brand strings without validation.
+
+```typescript
+import { TxHashString, AddressString } from "voltaire-effect/primitives/Brand"
+
+const hash = TxHashString("0xabc123")
+expect(hash).toBe("0xabc123")
+
+const addr = AddressString("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+expect(addr).toBe("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+```
+
+## Type Safety
+
+Branded types prevent accidental mixing of different quantities.
+
+```typescript
+import { Wei, Gwei, Gas } from "voltaire-effect/primitives/Brand"
+
+const wei: Wei = Wei(100n)
+const gwei: Gwei = Gwei(100n)
+
+// TypeScript error: Wei is not assignable to Gwei
+// const _wrongAssignment: Gwei = wei
+
+// Both are bigints at runtime but TypeScript distinguishes them
+expect(wei === 100n).toBe(true)
+expect(gwei === 100n).toBe(true)
+
+// Can use in arithmetic
+const gas = Gas(21000n)
+const doubled: bigint = gas * 2n
+expect(doubled).toBe(42000n)
+```

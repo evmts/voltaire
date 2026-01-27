@@ -21,7 +21,7 @@ The service provides three streaming methods, each returning an Effect Stream:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect/services';
+import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect';
 
 const program = Effect.gen(function* () {
   const txStream = yield* TransactionStreamService;
@@ -42,7 +42,7 @@ Stream pending transactions from the mempool with optional filtering:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect/services';
+import { TransactionStreamService } from 'voltaire-effect';
 
 const watchPending = Effect.gen(function* () {
   const stream = yield* TransactionStreamService;
@@ -60,7 +60,7 @@ Watch for transactions that meet confirmation requirements:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect/services';
+import { TransactionStreamService } from 'voltaire-effect';
 
 const watchConfirmed = Effect.gen(function* () {
   const stream = yield* TransactionStreamService;
@@ -81,7 +81,7 @@ Track a transaction through pending, confirmed, and dropped states:
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect/services';
+import { TransactionStreamService } from 'voltaire-effect';
 
 const trackTransaction = (txHash: string) => Effect.gen(function* () {
   const stream = yield* TransactionStreamService;
@@ -107,7 +107,7 @@ Transaction stream operations can fail with `TransactionStreamError`:
 
 ```typescript
 import { Effect, pipe } from 'effect';
-import { TransactionStreamService } from 'voltaire-effect/services';
+import { TransactionStreamService } from 'voltaire-effect';
 
 const program = pipe(
   watchConfirmedTransactions(),
@@ -144,7 +144,7 @@ TransactionStream's confirmation tracking internally uses BlockStream for monito
 
 ```typescript
 import { Effect, Stream } from 'effect';
-import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect/services';
+import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect';
 
 // Confirmations are tracked via internal BlockStream integration
 const program = Effect.gen(function* () {
@@ -167,7 +167,7 @@ TransactionStream requires TransportService:
 
 ```typescript
 import { Layer } from 'effect';
-import { TransactionStream, HttpTransport, WebSocketTransport } from 'voltaire-effect/services';
+import { TransactionStream, HttpTransport, WebSocketTransport } from 'voltaire-effect';
 
 // HTTP transport
 const httpLayer = TransactionStream.pipe(

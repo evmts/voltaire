@@ -7,7 +7,7 @@ description: Key-value caching with LRU eviction and TTL support
 
 ```typescript
 import { Effect } from 'effect'
-import { CacheService, MemoryCache } from 'voltaire-effect/services'
+import { CacheService, MemoryCache } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const cache = yield* CacheService
@@ -24,7 +24,7 @@ const program = Effect.gen(function* () {
 In-memory LRU cache with TTL support:
 
 ```typescript
-import { MemoryCache } from 'voltaire-effect/services'
+import { MemoryCache } from 'voltaire-effect'
 
 const cacheLayer = MemoryCache({
   maxSize: 1000,        // Max entries (default: 1000)
@@ -52,7 +52,7 @@ yield* cache.set('key3', 'value3', undefined)
 No-op implementation for testing or disabling cache:
 
 ```typescript
-import { NoopCache } from 'voltaire-effect/services'
+import { NoopCache } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const cache = yield* CacheService
@@ -80,7 +80,7 @@ Effect-native lookup-based caching using `effect/Cache`. Automatically computes 
 
 ```typescript
 import { Effect, Duration } from 'effect'
-import { LookupCacheService, makeLookupCache } from 'voltaire-effect/services'
+import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
 
 // Define typed cache tag
 const BlockCache = LookupCacheService<bigint, Block, RpcError>()
@@ -175,7 +175,7 @@ Removes all entries from the cache.
 
 ```typescript
 import { Layer } from 'effect'
-import { Provider, MemoryCache, HttpTransport } from 'voltaire-effect/services'
+import { Provider, MemoryCache, HttpTransport } from 'voltaire-effect'
 
 // Compose cache with provider
 const AppLayer = Layer.merge(

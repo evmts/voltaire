@@ -5,16 +5,16 @@ description: Effect-wrapped block utilities for fetching blocks, receipts, and r
 
 ## Overview
 
-The block module provides Effect-wrapped utilities for fetching blockchain blocks. These are standalone functions that work with `TransportService`, useful for one-off block fetches without needing the full `BlockStreamService`.
+The block module provides Effect-wrapped utilities for fetching blockchain blocks. These are standalone functions that work with `TransportService`, useful for one-off block fetches without needing streaming helpers.
 
-For continuous block streaming with reorg detection, use [BlockStreamService](/services/block-stream).
+For continuous block streaming with reorg detection, use [`makeBlockStream`](/services/block-stream).
 
 ## Quick Start
 
 ```typescript
 import { Effect } from 'effect'
 import * as Block from 'voltaire-effect/block'
-import { HttpTransport, TransportService } from 'voltaire-effect/services'
+import { HttpTransport, TransportService } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const block = yield* Block.fetchBlock(18000000n, 'header')
@@ -162,7 +162,7 @@ Specific error types:
 Works with any TransportService implementation:
 
 ```typescript
-import { HttpTransport, WebSocketTransport } from 'voltaire-effect/services'
+import { HttpTransport, WebSocketTransport } from 'voltaire-effect'
 
 // HTTP
 const httpProgram = program.pipe(
@@ -175,21 +175,21 @@ const wsProgram = program.pipe(
 )
 ```
 
-## Comparison with BlockStreamService
+## Comparison with makeBlockStream
 
-| Feature | Block module | BlockStreamService |
-|---------|--------------|-------------------|
+| Feature | Block module | makeBlockStream |
+|---------|--------------|-----------------|
 | One-off fetches | ✅ Ideal | Overkill |
 | Continuous streaming | ❌ Manual | ✅ Built-in |
 | Reorg detection | ❌ Manual | ✅ Automatic |
 | Backfill | ❌ Loop manually | ✅ `backfill()` |
 | Watch mode | ❌ Not supported | ✅ `watch()` |
 
-Use the block module for simple one-off fetches. Use BlockStreamService for production block indexing with reorg handling.
+Use the block module for simple one-off fetches. Use makeBlockStream for production block indexing with reorg handling.
 
 ## See Also
 
-- [BlockStream Service](/services/block-stream) — Continuous block streaming with reorg detection
+- [Block Streaming](/services/block-stream) — Continuous block streaming with reorg detection
 - [Block Streaming Example](/examples/block-streaming) — Complete streaming examples
 - [Provider Service](/services/provider) — `getBlock` method for one-off fetches
 - [Stream Errors](/stream) — Error types for streaming operations

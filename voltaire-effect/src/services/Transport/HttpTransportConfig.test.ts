@@ -13,8 +13,8 @@ describe("HttpTransportConfigSchema", () => {
 			new Map([
 				["http.url", "https://mainnet.infura.io/v3/KEY"],
 				["http.timeout", "60 seconds"],
-				["http.retries", "5"],
-				["http.retryDelay", "2 seconds"],
+				["http.retryBaseDelay", "2 seconds"],
+				["http.retryMaxAttempts", "5"],
 			]),
 		);
 
@@ -26,8 +26,8 @@ describe("HttpTransportConfigSchema", () => {
 
 		expect(result.url).toBe("https://mainnet.infura.io/v3/KEY");
 		expect(Duration.toMillis(result.timeout)).toBe(60000);
-		expect(result.retries).toBe(5);
-		expect(Duration.toMillis(result.retryDelay)).toBe(2000);
+		expect(Duration.toMillis(result.retryBaseDelay)).toBe(2000);
+		expect(result.retryMaxAttempts).toBe(5);
 		expect(HashMap.size(result.headers)).toBe(0);
 		expect(Option.isNone(result.apiKey)).toBe(true);
 	});
@@ -45,8 +45,8 @@ describe("HttpTransportConfigSchema", () => {
 
 		expect(result.url).toBe("https://eth.llamarpc.com");
 		expect(Duration.toMillis(result.timeout)).toBe(30000);
-		expect(result.retries).toBe(3);
-		expect(Duration.toMillis(result.retryDelay)).toBe(1000);
+		expect(result.retryMaxAttempts).toBe(3);
+		expect(Duration.toMillis(result.retryBaseDelay)).toBe(1000);
 	});
 
 	it("validates URL must start with http:// or https://", async () => {
@@ -137,7 +137,7 @@ describe("HttpTransportConfigSchema", () => {
 			new Map([
 				["http.url", "https://eth.llamarpc.com"],
 				["http.timeout", "1 minute"],
-				["http.retryDelay", "500 millis"],
+				["http.retryBaseDelay", "500 millis"],
 			]),
 		);
 
@@ -148,6 +148,6 @@ describe("HttpTransportConfigSchema", () => {
 		);
 
 		expect(Duration.toMillis(result.timeout)).toBe(60000);
-		expect(Duration.toMillis(result.retryDelay)).toBe(500);
+		expect(Duration.toMillis(result.retryBaseDelay)).toBe(500);
 	});
 });

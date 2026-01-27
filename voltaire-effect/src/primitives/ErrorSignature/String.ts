@@ -86,8 +86,9 @@ export { String as ErrorSignatureSchema };
  * @returns hex string
  * @since 0.1.0
  */
-export const toHex = (sig: ErrorSignatureType): string =>
-	ErrorSignature.toHex(sig);
+export const toHex = (
+	sig: ErrorSignatureType,
+): ReturnType<typeof ErrorSignature.toHex> => ErrorSignature.toHex(sig);
 
 /**
  * Compares two error signatures for equality.

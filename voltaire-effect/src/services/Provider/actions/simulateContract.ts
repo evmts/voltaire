@@ -15,9 +15,10 @@ import {
 import * as Effect from "effect/Effect";
 import {
 	type BlockTag,
+	type CallError,
 	type CallRequest,
-	ProviderError,
 	ProviderService,
+	ProviderValidationError,
 } from "../ProviderService.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -80,6 +81,11 @@ export interface SimulateContractResult<
 }
 
 /**
+ * Error union for simulateContract.
+ */
+export type SimulateContractError = CallError | ProviderValidationError;
+
+/**
  * Simulates a contract write function without sending a transaction.
  *
  * Returns both the decoded result and a prepared transaction request
@@ -118,7 +124,7 @@ export const simulateContract = <
 	params: SimulateContractParams<TAbi, TFunctionName>,
 ): Effect.Effect<
 	SimulateContractResult<TAbi, TFunctionName>,
-	ProviderError,
+	SimulateContractError,
 	ProviderService
 > =>
 	Effect.gen(function* () {
@@ -156,7 +162,7 @@ export const simulateContract = <
 
 		if (!fn) {
 			return yield* Effect.fail(
-				new ProviderError(
+				new ProviderValidationError(
 					{ functionName: params.functionName },
 					`Function "${params.functionName}" not found in ABI`,
 				),

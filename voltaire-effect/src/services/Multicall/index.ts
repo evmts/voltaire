@@ -6,12 +6,11 @@
  */
 
 export { BalanceResolver } from "./BalanceResolver.js";
-export { DefaultMulticall } from "./DefaultMulticall.js";
 export { GetBalance } from "./GetBalance.js";
 export {
+	aggregate3,
+	MULTICALL3_ADDRESS,
 	type MulticallCall,
 	MulticallError,
 	type MulticallResult,
-	MulticallService,
-	type MulticallShape,
 } from "./MulticallService.js";

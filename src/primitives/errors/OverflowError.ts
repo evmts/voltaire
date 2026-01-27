@@ -25,7 +25,7 @@ export class IntegerOverflowError extends InvalidRangeError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: bigint | number;
 			max: bigint | number;
 			type: string;
@@ -35,7 +35,7 @@ export class IntegerOverflowError extends InvalidRangeError {
 		},
 	) {
 		super(message, {
-			code: options.code,
+			code: options.code ?? "INTEGER_OVERFLOW",
 			value: options.value,
 			expected: `value <= ${options.max}`,
 			context: {
@@ -78,7 +78,7 @@ export class IntegerUnderflowError extends InvalidRangeError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: bigint | number;
 			min: bigint | number;
 			type: string;
@@ -88,7 +88,7 @@ export class IntegerUnderflowError extends InvalidRangeError {
 		},
 	) {
 		super(message, {
-			code: options.code,
+			code: options.code ?? "INTEGER_UNDERFLOW",
 			value: options.value,
 			expected: `value >= ${options.min}`,
 			context: {
@@ -131,7 +131,7 @@ export class InvalidSizeError extends InvalidRangeError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: unknown;
 			actualSize: number;
 			expectedSize: number;
@@ -141,7 +141,7 @@ export class InvalidSizeError extends InvalidRangeError {
 		},
 	) {
 		super(message, {
-			code: options.code,
+			code: options.code ?? "INVALID_SIZE",
 			value: options.value,
 			expected: `${options.expectedSize} bytes`,
 			context: {

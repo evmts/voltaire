@@ -160,15 +160,21 @@ const buildAndSignTransaction = (
 
 ```typescript
 import { Effect, Schedule, Duration } from "effect";
+import { TransportError } from "voltaire-effect";
 
 const fetchBalance = (
   provider: JsonRpcProvider,
   address: Address.Address
-): Effect.Effect<bigint, ProviderError> =>
+): Effect.Effect<bigint, TransportError> =>
   pipe(
     Effect.tryPromise({
       try: () => provider.request({ method: "eth_getBalance", params: [Address.toHex(address), "latest"] }),
-      catch: (e) => new ProviderError("Failed to fetch balance", { cause: e }),
+      catch: (e) =>
+        new TransportError(
+          { code: -32000, message: "Failed to fetch balance" },
+          undefined,
+          { cause: e }
+        ),
     }),
     Effect.map((hex) => BigInt(hex)),
     // Automatic retry with exponential backoff

@@ -5,8 +5,8 @@
  * @since 0.0.1
  *
  * @description
- * The ChainService provides chain configuration data including network ID,
- * native currency, RPC URLs, block explorers, and deployed contract addresses.
+ * The ChainService provides core chain configuration data including network ID,
+ * native currency, block time, and testnet status.
  *
  * Use one of the predefined chain layers (mainnet, sepolia, etc.) or create
  * a custom chain configuration using Layer.succeed.
@@ -18,21 +18,11 @@
 import * as Context from "effect/Context";
 
 /**
- * Contract deployment information.
- *
- * @since 0.0.1
- */
-export interface ChainContract {
-	readonly address: `0x${string}`;
-	readonly blockCreated?: number;
-}
-
-/**
  * Chain configuration data structure.
  *
  * @description
- * Contains all metadata needed to interact with a specific blockchain network.
- * Based on viem's chain definition format for compatibility.
+ * Contains core metadata needed to identify and describe a blockchain network.
+ * Aligns with viem's base chain fields for compatibility.
  *
  * @since 0.0.1
  *
@@ -42,10 +32,7 @@ export interface ChainContract {
  *   id: 1,
  *   name: 'Ethereum',
  *   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
- *   blockTime: 12000,
- *   rpcUrls: {
- *     default: { http: ['https://eth.merkle.io'] }
- *   }
+ *   blockTime: 12000
  * }
  * ```
  */
@@ -62,24 +49,6 @@ export interface ChainConfig {
 	};
 	/** Average block time in milliseconds */
 	readonly blockTime: number;
-	/** RPC endpoint URLs */
-	readonly rpcUrls: {
-		readonly default: { readonly http: readonly string[] };
-	};
-	/** Block explorer configuration */
-	readonly blockExplorers?: {
-		readonly default: {
-			readonly name: string;
-			readonly url: string;
-			readonly apiUrl?: string;
-		};
-	};
-	/** Well-known contract deployments */
-	readonly contracts?: {
-		readonly multicall3?: ChainContract;
-		readonly ensRegistry?: ChainContract;
-		readonly ensUniversalResolver?: ChainContract;
-	};
 	/** Whether this is a testnet */
 	readonly testnet?: boolean;
 }
@@ -88,8 +57,8 @@ export interface ChainConfig {
  * Chain service for blockchain network configuration.
  *
  * @description
- * Provides chain-specific configuration including network ID, RPC URLs,
- * native currency, and contract addresses.
+ * Provides chain-specific configuration including network ID, native currency,
+ * block time, and testnet flag.
  *
  * Use predefined chain layers or create custom ones:
  *
@@ -116,8 +85,7 @@ export interface ChainConfig {
  *   id: 12345,
  *   name: 'My Chain',
  *   nativeCurrency: { name: 'Token', symbol: 'TKN', decimals: 18 },
- *   blockTime: 2000,
- *   rpcUrls: { default: { http: ['https://rpc.mychain.io'] } }
+ *   blockTime: 2000
  * } satisfies ChainConfig)
  * ```
  *

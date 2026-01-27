@@ -9,10 +9,10 @@ Stream new blocks in real-time with automatic reorg handling.
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect/services'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   yield* Stream.runForEach(
     blockStream.watch({ include: 'transactions' }),
@@ -25,7 +25,6 @@ const program = Effect.gen(function* () {
     }
   )
 }).pipe(
-  Effect.provide(BlockStream),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
@@ -38,7 +37,7 @@ Fetch blocks in a range with automatic chunking for large ranges.
 
 ```typescript
 const backfillBlocks = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   let blockCount = 0
   let txCount = 0
@@ -95,7 +94,7 @@ BlockStream detects chain reorgs and provides undo/redo information:
 
 ```typescript
 const handleReorgs = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   yield* Stream.runForEach(
     blockStream.watch({ include: 'transactions' }),
@@ -134,7 +133,7 @@ Use Effect Stream operators for composable transformations:
 
 ```typescript
 const processBlocks = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   // Extract block summaries
   const summaries = blockStream.backfill({
@@ -166,7 +165,7 @@ Track progress for large backfill operations:
 
 ```typescript
 const backfillWithProgress = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   const fromBlock = 18000000n
   const toBlock = 18100000n
@@ -196,7 +195,7 @@ Seamlessly transition from historical to live streaming:
 
 ```typescript
 const historicalToLive = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   // Backfill from a known block
   const backfill = blockStream.backfill({
@@ -227,7 +226,7 @@ Gracefully stop streaming:
 import { Fiber, Duration } from 'effect'
 
 const withTimeout = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   // Run for 30 seconds then stop
   const fiber = yield* Effect.fork(
@@ -246,11 +245,11 @@ const withTimeout = Effect.gen(function* () {
 ## Error Handling
 
 ```typescript
-import { BlockStreamError } from 'voltaire-effect/services'
+import { BlockStreamError } from 'voltaire-effect'
 import * as Stream from 'voltaire-effect/stream'
 
 const robustBackfill = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
 
   yield* Stream.runForEach(
     blockStream.backfill({
@@ -273,16 +272,14 @@ const robustBackfill = Effect.gen(function* () {
 ## Layer Composition
 
 ```typescript
-import { Layer } from 'effect'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect'
 
-// Reusable layer
-const MainnetBlocks = BlockStream.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+// Reusable transport layer
+const MainnetTransport = HttpTransport('https://eth.llamarpc.com')
 
 // Use in any program
 const program = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   // ...
-}).pipe(Effect.provide(MainnetBlocks))
+}).pipe(Effect.provide(MainnetTransport))
 ```

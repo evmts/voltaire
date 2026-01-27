@@ -1,7 +1,7 @@
 # L2-Specific Formatters
 
 **Priority**: P1
-**Status**: Not Started
+**Status**: Completed
 
 ## Summary
 

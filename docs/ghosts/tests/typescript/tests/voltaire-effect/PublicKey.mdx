@@ -1,0 +1,131 @@
+---
+title: PublicKey Tests
+description: Test examples for PublicKey showing hex/bytes parsing, compression, address derivation, and signature verification.
+---
+
+## Parse Uncompressed Hex
+
+Parses 128-character uncompressed public key hex string.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as PublicKey from "voltaire-effect/primitives/PublicKey"
+
+const validUncompressedHex = `0x${"ab".repeat(64)}`
+
+const pk = S.decodeSync(PublicKey.Hex)(validUncompressedHex)
+expect(pk).toBeInstanceOf(Uint8Array)
+expect(pk.length).toBe(64)
+```
+
+## Parse Compressed Public Key
+
+Decompresses 33-byte compressed public keys with 0x02 or 0x03 prefix.
+
+```typescript
+import * as S from "effect/Schema"
+import * as PublicKey from "voltaire-effect/primitives/PublicKey"
+
+const compressed = new Uint8Array(33)
+compressed[0] = 0x02
+compressed.fill(0xab, 1)
+
+const pk = S.decodeSync(PublicKey.Bytes)(compressed)
+expect(pk.length).toBe(64) // Decompressed to 64 bytes
+```
+
+## Encode to Compressed Format
+
+Compresses public key to 33-byte format.
+
+```typescript
+import * as S from "effect/Schema"
+import * as PublicKey from "voltaire-effect/primitives/PublicKey"
+
+const pk = S.decodeSync(PublicKey.Hex)(validUncompressedHex)
+const compressed = S.encodeSync(PublicKey.Compressed)(pk)
+expect(compressed.startsWith("0x02") || compressed.startsWith("0x03")).toBe(true)
+expect(compressed.length).toBe(68) // 0x + 66 hex chars
+```
+
+## Derive Address from Public Key
+
+Derives Ethereum address by hashing public key with Keccak256 and taking last 20 bytes.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as PublicKey from "voltaire-effect/primitives/PublicKey"
+import { PrivateKey } from "@tevm/voltaire/PrivateKey"
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1"
+
+const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1))
+const publicKey = Secp256k1.derivePublicKey(privateKey)
+
+const address = await Effect.runPromise(PublicKey.toAddress(publicKey))
+expect(address).toBeInstanceOf(Uint8Array)
+expect(address.length).toBe(20)
+```
+
+## Verify Signature
+
+Verifies ECDSA signature against public key and message hash.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as PublicKey from "voltaire-effect/primitives/PublicKey"
+import * as Signature from "@tevm/voltaire/Signature"
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1"
+import { Hash } from "@tevm/voltaire"
+import { PrivateKey } from "@tevm/voltaire/PrivateKey"
+
+const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1))
+const publicKey = Secp256k1.derivePublicKey(privateKey)
+const messageHash = Hash.from(new Uint8Array(32).fill(0x11))
+
+const secp256k1Sig = Secp256k1.sign(messageHash, privateKey)
+const signature = Signature.fromSecp256k1(secp256k1Sig.r, secp256k1Sig.s, secp256k1Sig.v)
+
+const isValid = await Effect.runPromise(
+  PublicKey.verify(publicKey, messageHash, signature)
+)
+expect(isValid).toBe(true)
+```
+
+## Check if Compressed
+
+Determines if public key bytes are in compressed format.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as PublicKey from "voltaire-effect/primitives/PublicKey"
+
+const compressed = new Uint8Array(33)
+compressed[0] = 0x02
+const result = await Effect.runPromise(PublicKey.isCompressed(compressed))
+expect(result).toBe(true)
+
+const uncompressed = new Uint8Array(64)
+const result2 = await Effect.runPromise(PublicKey.isCompressed(uncompressed))
+expect(result2).toBe(false)
+```
+
+## Compare Public Keys
+
+Compares two public keys for equality using constant-time comparison.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import * as PublicKey from "voltaire-effect/primitives/PublicKey"
+
+const pk1 = S.decodeSync(PublicKey.Bytes)(new Uint8Array(64).fill(0xab))
+const pk2 = S.decodeSync(PublicKey.Bytes)(new Uint8Array(64).fill(0xab))
+const pk3 = S.decodeSync(PublicKey.Bytes)(new Uint8Array(64).fill(0xcd))
+
+const same = await Effect.runPromise(PublicKey.equals(pk1, pk2))
+expect(same).toBe(true)
+
+const different = await Effect.runPromise(PublicKey.equals(pk1, pk3))
+expect(different).toBe(false)
+```

@@ -9,7 +9,7 @@ description: Effect.ts integration for Voltaire Ethereum primitives
 import { Effect, Schedule } from 'effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-import { Provider, MainnetLayer } from 'voltaire-effect/services/Provider'
+import { Provider, MainnetLayer } from 'voltaire-effect'
 
 const getBalance = (input: string) =>
   Effect.gen(function* () {

@@ -6,6 +6,7 @@ import * as Layer from "effect/Layer";
 import * as S from "effect/Schema";
 import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
 import { ProviderService } from "../ProviderService.js";
+import { TransportError } from "../../Transport/TransportService.js";
 import { readContract } from "./readContract.js";
 
 type HexType = `0x${string}`;
@@ -396,9 +397,14 @@ describe("readContract", () => {
 	});
 
 	describe("error handling", () => {
-		it("returns ProviderError on call failure", async () => {
+		it("surfaces transport errors on call failure", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({ message: "execution reverted", code: -32000 }),
+				Effect.fail(
+					new TransportError({
+						code: -32000,
+						message: "execution reverted",
+					}),
+				),
 			);
 
 			const program = readContract({
@@ -413,11 +419,19 @@ describe("readContract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("TransportError");
+			}
 		});
 
-		it("includes context in error", async () => {
+		it("preserves transport error message", async () => {
 			mockProvider.call.mockReturnValue(
-				Effect.fail({ message: "execution reverted", code: -32000 }),
+				Effect.fail(
+					new TransportError({
+						code: -32000,
+						message: "execution reverted",
+					}),
+				),
 			);
 
 			const program = readContract({
@@ -431,9 +445,8 @@ describe("readContract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			if (exit._tag === "Failure") {
-				const cause = exit.cause;
-				expect(cause._tag).toBe("Fail");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error.message).toContain("execution reverted");
 			}
 		});
 
@@ -456,6 +469,9 @@ describe("readContract", () => {
 			);
 
 			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error._tag).toBe("ProviderValidationError");
+			}
 		});
 
 		it("handles contract revert with reason string", async () => {

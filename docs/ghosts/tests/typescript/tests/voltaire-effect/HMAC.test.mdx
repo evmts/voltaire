@@ -1,0 +1,207 @@
+---
+title: HMAC Tests
+description: Test examples for HMAC-SHA256 and HMAC-SHA512 with RFC 4231 known vectors.
+---
+
+## Compute HMAC-SHA256
+
+Computes a 32-byte HMAC using SHA-256.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const key = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+  const message = new Uint8Array([104, 101, 108, 108, 111])
+  const hmac = yield* HMACService
+  const result = yield* hmac.sha256(key, message)
+  // result is a 32-byte Uint8Array
+}).pipe(Effect.provide(HMACLive))
+```
+
+## Compute HMAC-SHA512
+
+Computes a 64-byte HMAC using SHA-512.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const key = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+  const message = new Uint8Array([104, 101, 108, 108, 111])
+  const hmac = yield* HMACService
+  const result = yield* hmac.sha512(key, message)
+  // result is a 64-byte Uint8Array
+}).pipe(Effect.provide(HMACLive))
+```
+
+## RFC 4231 Test Case 1 - HMAC-SHA256
+
+Verifies known vector with short key and data.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const bytesToHex = (bytes: Uint8Array): string => {
+  return "0x" + Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("")
+}
+
+const program = Effect.gen(function* () {
+  const testKey = new Uint8Array(20).fill(0x0b)
+  const testData = new TextEncoder().encode("Hi There")
+  const hmac = yield* HMACService
+  const result = yield* hmac.sha256(testKey, testData)
+  // 0xb0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7
+}).pipe(Effect.provide(HMACLive))
+```
+
+## RFC 4231 Test Case 2 - HMAC-SHA256
+
+Verifies known vector with key = "Jefe".
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const testKey = new TextEncoder().encode("Jefe")
+  const testData = new TextEncoder().encode("what do ya want for nothing?")
+  const hmac = yield* HMACService
+  const result = yield* hmac.sha256(testKey, testData)
+  // 0x5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843
+}).pipe(Effect.provide(HMACLive))
+```
+
+## RFC 4231 Test Case 1 - HMAC-SHA512
+
+Verifies known vector with SHA-512.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const testKey = new Uint8Array(20).fill(0x0b)
+  const testData = new TextEncoder().encode("Hi There")
+  const hmac = yield* HMACService
+  const result = yield* hmac.sha512(testKey, testData)
+  // 0x87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cde...
+}).pipe(Effect.provide(HMACLive))
+```
+
+## Key Size Variations
+
+Handles various key sizes including those larger than block size.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const message = new Uint8Array([104, 101, 108, 108, 111])
+  const hmac = yield* HMACService
+  
+  // Empty key
+  yield* hmac.sha256(new Uint8Array(0), message)
+  
+  // 32-byte key (SHA256 block size)
+  yield* hmac.sha256(new Uint8Array(32).fill(0xaa), message)
+  
+  // 64-byte key (SHA256 internal block size)
+  yield* hmac.sha256(new Uint8Array(64).fill(0xbb), message)
+  
+  // 128-byte key (longer than block size, gets hashed)
+  yield* hmac.sha256(new Uint8Array(128).fill(0xcc), message)
+}).pipe(Effect.provide(HMACLive))
+```
+
+## Message Size Variations
+
+Handles various message sizes.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const key = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+  const hmac = yield* HMACService
+  
+  // Empty message
+  yield* hmac.sha256(key, new Uint8Array(0))
+  
+  // 1KB message
+  yield* hmac.sha256(key, new Uint8Array(1024).fill(0x11))
+  
+  // 64KB message
+  yield* hmac.sha256(key, new Uint8Array(65536).fill(0x22))
+}).pipe(Effect.provide(HMACLive))
+```
+
+## Convenience Functions
+
+Uses convenience functions for HMAC operations.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACLive, hmacSha256, hmacSha512 } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const key = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+  const message = new Uint8Array([104, 101, 108, 108, 111])
+  
+  const sha256Result = yield* hmacSha256(key, message)
+  const sha512Result = yield* hmacSha512(key, message)
+}).pipe(Effect.provide(HMACLive))
+```
+
+## Determinism and Sensitivity
+
+Produces consistent results and is sensitive to single bit changes.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACLive } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const key = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+  const message = new Uint8Array([104, 101, 108, 108, 111])
+  const hmac = yield* HMACService
+  
+  // Same inputs produce same output
+  const mac1 = yield* hmac.sha256(key, message)
+  const mac2 = yield* hmac.sha256(key, message)
+  // mac1 === mac2
+  
+  // Single bit change in key produces different output
+  const key1 = new Uint8Array([0b00000000, 0x02, 0x03])
+  const key2 = new Uint8Array([0b00000001, 0x02, 0x03])
+  const macA = yield* hmac.sha256(key1, message)
+  const macB = yield* hmac.sha256(key2, message)
+  // macA !== macB
+}).pipe(Effect.provide(HMACLive))
+```
+
+## Test Layer
+
+Uses deterministic test layer for predictable results.
+
+```typescript
+import { Effect } from 'effect'
+import { HMACService, HMACTest } from 'voltaire-effect/crypto/HMAC'
+
+const program = Effect.gen(function* () {
+  const key = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
+  const message = new Uint8Array([104, 101, 108, 108, 111])
+  const hmac = yield* HMACService
+  
+  const sha256Result = yield* hmac.sha256(key, message)
+  // Returns 32-byte array filled with zeros
+  
+  const sha512Result = yield* hmac.sha512(key, message)
+  // Returns 64-byte array filled with zeros
+}).pipe(Effect.provide(HMACTest))
+```

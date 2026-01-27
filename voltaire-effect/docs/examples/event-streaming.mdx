@@ -9,7 +9,7 @@ Use `Contract.getEvents` for historical event queries:
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 // USDC contract
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -126,10 +126,10 @@ Combine [BlockStream](/services/block-stream) with event queries for live watchi
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { BlockStreamService, BlockStream, Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { makeBlockStream, Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const watchLive = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
   
   let lastProcessedBlock = 0n
@@ -161,7 +161,6 @@ const watchLive = Effect.gen(function* () {
     })
   )
 }).pipe(
-  Effect.provide(BlockStream),
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
@@ -174,7 +173,7 @@ Start from historical events and seamlessly transition to live:
 ```typescript
 const historicalToLive = (startBlock: bigint) =>
   Effect.gen(function* () {
-    const blockStream = yield* BlockStreamService
+    const blockStream = yield* makeBlockStream()
     const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
     const provider = yield* ProviderService
     
@@ -219,7 +218,6 @@ const historicalToLive = (startBlock: bigint) =>
       })
     )
   }).pipe(
-    Effect.provide(BlockStream),
     Effect.provide(Provider),
     Effect.provide(HttpTransport('https://eth.llamarpc.com'))
   )
@@ -304,7 +302,7 @@ const program = Effect.gen(function* () {
 Handle common event query errors:
 
 ```typescript
-import { ProviderError } from 'voltaire-effect/services'
+import { ContractEventError } from 'voltaire-effect'
 
 const robustQuery = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
@@ -315,7 +313,7 @@ const robustQuery = Effect.gen(function* () {
   })
 }).pipe(
   Effect.retry({ times: 3 }),
-  Effect.catchTag('ProviderError', (e) => {
+  Effect.catchTag('ContractEventError', (e) => {
     if (e.message.includes('block range')) {
       return Effect.log('Block range too large, reduce chunk size')
     }
@@ -357,7 +355,7 @@ const program = Effect.gen(function* () {
 
 - [Contract Service](/services/contract) — Type-safe contract interactions
 - [Provider Service](/services/provider) — Low-level `getLogs` method
-- [BlockStream Service](/services/block-stream) — Stream blocks for live watching
+- [Block Streaming](/services/block-stream) — Stream blocks for live watching
 - [ERC Standards](/standards) — Event decoding utilities for ERC-20/721/1155
 - [Voltaire Stream](https://voltaire.tevm.sh/stream) — Core streaming documentation
 - [Effect Stream](https://effect.website/docs/stream/introduction/) — Effect Stream API

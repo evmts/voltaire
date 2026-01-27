@@ -303,7 +303,7 @@ The [ERC-165](https://eips.ethereum.org/EIPS/eip-165) standard provides a way to
 
 ```typescript
 import * as ERC165 from 'voltaire-effect/standards/ERC165'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const contract = '0x1234567890123456789012345678901234567890'
@@ -376,7 +376,7 @@ const program = Effect.gen(function* () {
 Use with the Contract service for high-level interactions:
 
 ```typescript
-import { Contract, ProviderService, Provider } from 'voltaire-effect/services'
+import { Contract, ProviderService, Provider } from 'voltaire-effect'
 import * as ERC20 from 'voltaire-effect/standards/ERC20'
 
 const program = Effect.gen(function* () {

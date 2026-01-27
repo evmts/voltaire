@@ -1,0 +1,64 @@
+---
+title: IdGenerator Tests
+description: Test examples for IdGenerator showing unique ID generation across transports.
+---
+
+## IdGenerator avoids ID collisions across transports and batch calls
+
+The ID generator ensures unique request IDs across HTTP transport and batch scheduler.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import * as HttpClient from '@effect/platform/HttpClient'
+import { createBatchScheduler } from 'voltaire-effect'
+import { HttpTransport, TransportService } from 'voltaire-effect'
+
+const httpIds: number[] = []
+const batchIds: number[] = []
+
+const fetchMock = vi.fn((request) => {
+  const body = request.body as { _tag: string; body: Uint8Array }
+  const parsed = JSON.parse(new TextDecoder().decode(body.body))
+  httpIds.push(parsed.id)
+  return Promise.resolve({
+    ok: true,
+    json: async () => ({ jsonrpc: "2.0", id: parsed.id, result: "0x1" }),
+  })
+})
+
+const sendBatch = (requests: Array<{ id: number; method: string }>) => {
+  batchIds.push(...requests.map((req) => req.id))
+  return Effect.succeed(
+    requests.map((req) => ({ id: req.id, result: req.method })),
+  )
+}
+
+const program = Effect.gen(function* () {
+  const scheduler = yield* createBatchScheduler(sendBatch, { wait: 0 })
+  const transport = yield* TransportService
+
+  const httpRequests = Array.from({ length: 5 }, () =>
+    transport.request<string>("eth_chainId", []),
+  )
+  const batchRequests = Array.from({ length: 5 }, (_, idx) =>
+    scheduler.schedule<string>(`m${idx}`),
+  )
+
+  yield* Effect.all([...httpRequests, ...batchRequests], { concurrency: "unbounded" })
+
+  return { httpIds, batchIds }
+}).pipe(
+  Effect.provide(createMockHttpTransport(fetchMock, {
+    url: "https://eth.example.com",
+    retries: 0,
+  })),
+  Effect.scoped,
+)
+
+const { httpIds: collectedHttpIds, batchIds: collectedBatchIds } =
+  await Effect.runPromise(program)
+const combined = [...collectedHttpIds, ...collectedBatchIds]
+
+// All IDs should be unique
+expect(new Set(combined).size).toBe(combined.length)
+```

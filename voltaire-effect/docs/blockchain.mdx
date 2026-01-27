@@ -7,7 +7,7 @@ description: Block storage and retrieval with Effect.ts
 
 ```typescript
 import { Effect } from 'effect'
-import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect/services'
+import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const blockchain = yield* BlockchainService
@@ -29,7 +29,7 @@ const program = Effect.gen(function* () {
 Local in-memory storage. Blocks must be added via `putBlock()`:
 
 ```typescript
-import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect/services'
+import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const blockchain = yield* BlockchainService
@@ -49,7 +49,7 @@ const program = Effect.gen(function* () {
 Fetches blocks from a remote RPC for block numbers at or below the fork point:
 
 ```typescript
-import { BlockchainService, ForkBlockchain } from 'voltaire-effect/services'
+import { BlockchainService, ForkBlockchain } from 'voltaire-effect'
 
 const forkLayer = ForkBlockchain({
   forkBlockNumber: 18000000n,
@@ -119,7 +119,7 @@ interface Block {
 ## Error Handling
 
 ```typescript
-import { BlockchainError } from 'voltaire-effect/services'
+import { BlockchainError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('BlockchainError', (e) => {

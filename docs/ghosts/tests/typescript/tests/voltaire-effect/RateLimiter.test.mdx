@@ -1,0 +1,127 @@
+---
+title: RateLimiter Tests
+description: Test examples for RateLimiterService showing rate limiting configuration and behavior.
+---
+
+## DefaultRateLimiter applies global rate limit with delay behavior
+
+The DefaultRateLimiter applies rate limits and delays requests when limits are approached.
+
+```typescript
+import { Effect } from 'effect'
+import { DefaultRateLimiter, RateLimiterService } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const rateLimiter = yield* RateLimiterService
+
+  let callCount = 0
+  const incrementEffect = Effect.sync(() => {
+    callCount++
+    return callCount
+  })
+
+  const result1 = yield* rateLimiter.withRateLimit("eth_call", incrementEffect)
+  const result2 = yield* rateLimiter.withRateLimit("eth_call", incrementEffect)
+
+  expect(result1).toBe(1)
+  expect(result2).toBe(2)
+  expect(callCount).toBe(2)
+}).pipe(
+  Effect.provide(DefaultRateLimiter({ global: { limit: 10, interval: "1 seconds" } })),
+  Effect.scoped,
+)
+```
+
+## DefaultRateLimiter applies per-method rate limits
+
+Per-method rate limits can be configured separately from global limits.
+
+```typescript
+import { Effect } from 'effect'
+import { DefaultRateLimiter, RateLimiterService } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const rateLimiter = yield* RateLimiterService
+
+  expect(rateLimiter.getLimiter("eth_call")).toBeDefined()
+  expect(rateLimiter.getLimiter("eth_getLogs")).toBeDefined()
+  expect(rateLimiter.getLimiter("eth_blockNumber")).toBeUndefined()
+  expect(rateLimiter.getGlobalLimiter()).toBeUndefined()
+}).pipe(
+  Effect.provide(
+    DefaultRateLimiter({
+      methods: {
+        eth_call: { limit: 50, interval: "1 seconds" },
+        eth_getLogs: { limit: 5, interval: "1 seconds" },
+      },
+    }),
+  ),
+  Effect.scoped,
+)
+```
+
+## DefaultRateLimiter fails immediately with fail behavior when limit exceeded
+
+With fail behavior, rate limit errors are thrown immediately when limits are exceeded.
+
+```typescript
+import { Effect } from 'effect'
+import { DefaultRateLimiter, RateLimitError, RateLimiterService } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const rateLimiter = yield* RateLimiterService
+
+  yield* rateLimiter.consume("eth_call")
+  const result = yield* rateLimiter.consume("eth_call").pipe(Effect.flip)
+
+  expect(result).toBeInstanceOf(RateLimitError)
+  expect(result.method).toBe("eth_call")
+}).pipe(
+  Effect.provide(
+    DefaultRateLimiter({
+      global: { limit: 1, interval: "1 seconds" },
+      behavior: "fail",
+    }),
+  ),
+  Effect.scoped,
+)
+```
+
+## NoopRateLimiter does not limit anything
+
+The NoopRateLimiter allows unlimited requests without any rate limiting.
+
+```typescript
+import { Effect } from 'effect'
+import { NoopRateLimiter, RateLimiterService } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const rateLimiter = yield* RateLimiterService
+
+  let callCount = 0
+  for (let i = 0; i < 100; i++) {
+    yield* rateLimiter.withRateLimit("eth_call", Effect.sync(() => callCount++))
+  }
+
+  expect(callCount).toBe(100)
+  expect(rateLimiter.getLimiter("eth_call")).toBeUndefined()
+  expect(rateLimiter.getGlobalLimiter()).toBeUndefined()
+}).pipe(Effect.provide(NoopRateLimiter))
+```
+
+## RateLimitError has correct tag
+
+RateLimitError includes the method name and can be caught using Effect.catchTag.
+
+```typescript
+import { RateLimitError } from 'voltaire-effect'
+
+const error = new RateLimitError({
+  method: "eth_call",
+  message: "Rate limit exceeded",
+})
+
+expect(error._tag).toBe("RateLimitError")
+expect(error.method).toBe("eth_call")
+expect(error.message).toBe("Rate limit exceeded")
+```

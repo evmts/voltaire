@@ -1,0 +1,138 @@
+---
+title: Blockchain Tests
+description: Test examples for BlockchainService showing block storage, retrieval, and chain management.
+---
+
+## Get block by hash returns null for non-existent
+
+Returns null when querying a block that doesn't exist.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+import { BlockchainService } from 'voltaire-effect/blockchain/BlockchainService'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    return yield* blockchain.getBlockByHash(
+      '0xdeadbeef00000000000000000000000000000000000000000000000000000000'
+    )
+  }).pipe(Effect.provide(mockBlockchain))
+)
+expect(result).toBeNull()
+```
+
+## Get block by hash returns block when exists
+
+Returns block after it has been stored.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { BlockchainService } from 'voltaire-effect/blockchain/BlockchainService'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    yield* blockchain.putBlock(block)
+    return yield* blockchain.getBlockByHash(block.hash)
+  }).pipe(Effect.provide(mockBlockchain))
+)
+expect(result).not.toBeNull()
+expect(result?.hash).toBe(block.hash)
+```
+
+## Get block by number
+
+Retrieves a block by its block number.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { BlockchainService } from 'voltaire-effect/blockchain/BlockchainService'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    yield* blockchain.putBlock(block)
+    return yield* blockchain.getBlockByNumber(42n)
+  }).pipe(Effect.provide(mockBlockchain))
+)
+expect(result?.number).toBe(42n)
+```
+
+## Get head block number
+
+Returns the highest block number after adding blocks.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { BlockchainService } from 'voltaire-effect/blockchain/BlockchainService'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    yield* blockchain.putBlock(block1)
+    yield* blockchain.putBlock(block2)
+    return yield* blockchain.getHeadBlockNumber()
+  }).pipe(Effect.provide(mockBlockchain))
+)
+expect(result).toBe(2n)
+```
+
+## Check hasBlock
+
+Returns true if block exists, false otherwise.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { BlockchainService } from 'voltaire-effect/blockchain/BlockchainService'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    yield* blockchain.putBlock(block)
+    return yield* blockchain.hasBlock(block.hash)
+  }).pipe(Effect.provide(mockBlockchain))
+)
+expect(result).toBe(true)
+```
+
+## Set canonical head fails for non-existent block
+
+Returns BlockchainError when setting head to unknown block.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
+import { BlockchainService, BlockchainError } from 'voltaire-effect/blockchain/BlockchainService'
+
+const exit = await Effect.runPromiseExit(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    return yield* blockchain.setCanonicalHead(
+      '0xdeadbeef00000000000000000000000000000000000000000000000000000000'
+    )
+  }).pipe(Effect.provide(mockBlockchain))
+)
+expect(Exit.isFailure(exit)).toBe(true)
+```
+
+## Catch errors by tag
+
+Uses Effect.catchTag to handle BlockchainError.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { BlockchainService } from 'voltaire-effect/blockchain/BlockchainService'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const blockchain = yield* BlockchainService
+    return yield* blockchain.getBlockByHash('0x...')
+  }).pipe(
+    Effect.catchTag('BlockchainError', () => Effect.succeed('caught')),
+    Effect.provide(mockBlockchain)
+  )
+)
+expect(result).toBe('caught')
+```

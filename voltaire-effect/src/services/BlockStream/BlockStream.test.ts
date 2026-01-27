@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tests for BlockStreamService.
+ * @fileoverview Tests for BlockStream streaming helpers.
  */
 
 import { describe, expect, it } from "@effect/vitest";
@@ -11,11 +11,10 @@ import {
 	TransportService,
 	type TransportShape,
 } from "../Transport/index.js";
-import { BlockStream } from "./BlockStream.js";
+import { makeBlockStream } from "./BlockStream.js";
 import { BlockStreamError } from "./BlockStreamError.js";
-import { BlockStreamService } from "./BlockStreamService.js";
 
-describe("BlockStreamService", () => {
+describe("BlockStream", () => {
 	describe("BlockStreamError", () => {
 		it("creates error with message", () => {
 			const error = new BlockStreamError("test error");
@@ -77,8 +76,8 @@ describe("BlockStreamService", () => {
 		});
 	});
 
-	describe("BlockStream layer", () => {
-		it.effect("provides BlockStreamService from TransportService", () =>
+	describe("makeBlockStream", () => {
+		it.effect("provides block streaming from TransportService", () =>
 			Effect.gen(function* () {
 				const mockTransport: TransportShape = {
 					request: <T>(
@@ -91,18 +90,14 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					expect(blockStream.backfill).toBeDefined();
 					expect(blockStream.watch).toBeDefined();
 					expect(typeof blockStream.backfill).toBe("function");
 					expect(typeof blockStream.watch).toBe("function");
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -156,19 +151,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 100n,
 						toBlock: 100n,
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -192,16 +183,12 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.watch();
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -225,16 +212,12 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.watch({ include: "transactions" });
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -258,16 +241,12 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.watch({ include: "receipts" });
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -291,20 +270,16 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 100n,
 						toBlock: 200n,
 						include: "transactions",
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -331,19 +306,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 100n,
 						toBlock: 200n,
 					});
 					yield* Stream.runCollect(stream);
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				const result = yield* Effect.exit(program);
 				expect(result._tag).toBe("Failure");
@@ -371,19 +342,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 100n,
 						toBlock: 100n,
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -409,13 +376,9 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 
 					const stream1 = blockStream.backfill({
 						fromBlock: 100n,
@@ -426,7 +389,7 @@ describe("BlockStreamService", () => {
 
 					expect(stream1).toBeDefined();
 					expect(stream2).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -450,19 +413,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 18000000n,
 						toBlock: 18001000n,
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -471,11 +430,11 @@ describe("BlockStreamService", () => {
 
 	describe("exports", () => {
 		it("exports from index", async () => {
-			const { BlockStream, BlockStreamError, BlockStreamService } =
+			const { BlockStream, BlockStreamError, makeBlockStream } =
 				await import("./index.js");
 			expect(BlockStream).toBeDefined();
 			expect(BlockStreamError).toBeDefined();
-			expect(BlockStreamService).toBeDefined();
+			expect(makeBlockStream).toBeDefined();
 		});
 	});
 
@@ -562,13 +521,9 @@ describe("BlockStreamService", () => {
 						TransportService,
 						mockTransport,
 					);
-					const TestBlockStreamLayer = Layer.provide(
-						BlockStream,
-						TestTransportLayer,
-					);
 
 					const program = Effect.gen(function* () {
-						const blockStream = yield* BlockStreamService;
+						const blockStream = yield* makeBlockStream();
 						const stream = blockStream.backfill({
 							fromBlock: 100n,
 							toBlock: 101n,
@@ -577,7 +532,7 @@ describe("BlockStreamService", () => {
 						const events = Array.from(chunks);
 						expect(events.length).toBeGreaterThan(0);
 						expect(events[0].type).toBe("blocks");
-					}).pipe(Effect.provide(TestBlockStreamLayer));
+					}).pipe(Effect.provide(TestTransportLayer));
 
 					yield* program;
 				}),
@@ -636,19 +591,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 100n,
 						toBlock: 104n,
 					});
 					yield* Stream.runCollect(stream);
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				const result = yield* Effect.exit(program);
 				expect(result._tag).toBe("Failure");
@@ -712,19 +663,15 @@ describe("BlockStreamService", () => {
 						TransportService,
 						mockTransport,
 					);
-					const TestBlockStreamLayer = Layer.provide(
-						BlockStream,
-						TestTransportLayer,
-					);
 
 					const program = Effect.gen(function* () {
-						const blockStream = yield* BlockStreamService;
+						const blockStream = yield* makeBlockStream();
 						const stream = blockStream.watch();
 						const chunks = yield* Stream.runCollect(Stream.take(stream, 1));
 						const events = Array.from(chunks);
 						expect(events.length).toBe(1);
 						expect(events[0].type).toBe("blocks");
-					}).pipe(Effect.provide(TestBlockStreamLayer));
+					}).pipe(Effect.provide(TestTransportLayer));
 
 					yield* Effect.timeout(program, "5 seconds");
 				}),
@@ -781,13 +728,9 @@ describe("BlockStreamService", () => {
 						TransportService,
 						mockTransport,
 					);
-					const TestBlockStreamLayer = Layer.provide(
-						BlockStream,
-						TestTransportLayer,
-					);
 
 					const program = Effect.gen(function* () {
-						const blockStream = yield* BlockStreamService;
+						const blockStream = yield* makeBlockStream();
 						const stream = blockStream.backfill({
 							fromBlock: 100n,
 							toBlock: 100n,
@@ -798,7 +741,7 @@ describe("BlockStreamService", () => {
 						expect(events[0].type).toBe("blocks");
 						expect(events[0].blocks.length).toBe(1);
 						expect(events[0].blocks[0].header.number).toBe(100n);
-					}).pipe(Effect.provide(TestBlockStreamLayer));
+					}).pipe(Effect.provide(TestTransportLayer));
 
 					yield* program;
 				}),
@@ -822,13 +765,9 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 200n,
 						toBlock: 100n,
@@ -836,7 +775,7 @@ describe("BlockStreamService", () => {
 					const chunks = yield* Stream.runCollect(stream);
 					const events = Array.from(chunks);
 					expect(events.length).toBe(0);
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -948,13 +887,9 @@ describe("BlockStreamService", () => {
 						TransportService,
 						mockTransport,
 					);
-					const TestBlockStreamLayer = Layer.provide(
-						BlockStream,
-						TestTransportLayer,
-					);
 
 					const program = Effect.gen(function* () {
-						const blockStream = yield* BlockStreamService;
+						const blockStream = yield* makeBlockStream();
 						const stream = blockStream.backfill({
 							fromBlock: 100n,
 							toBlock: 102n,
@@ -967,7 +902,7 @@ describe("BlockStreamService", () => {
 						expect(allBlocks[0].header.number).toBe(100n);
 						expect(allBlocks[1].header.number).toBe(101n);
 						expect(allBlocks[2].header.number).toBe(102n);
-					}).pipe(Effect.provide(TestBlockStreamLayer));
+					}).pipe(Effect.provide(TestTransportLayer));
 
 					yield* program;
 				}),
@@ -1000,16 +935,12 @@ describe("BlockStreamService", () => {
 						TransportService,
 						mockTransport,
 					);
-					const TestBlockStreamLayer = Layer.provide(
-						BlockStream,
-						TestTransportLayer,
-					);
 
 					const program = Effect.gen(function* () {
-						const blockStream = yield* BlockStreamService;
+						const blockStream = yield* makeBlockStream();
 						const stream = blockStream.watch();
 						yield* Stream.runCollect(stream);
-					}).pipe(Effect.provide(TestBlockStreamLayer));
+					}).pipe(Effect.provide(TestTransportLayer));
 
 					const result = yield* Effect.exit(program);
 					expect(result._tag).toBe("Failure");
@@ -1064,19 +995,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 100n,
 						toBlock: 100n,
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -1103,19 +1030,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: largeBlockNumber,
 						toBlock: largeBlockNumber,
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -1150,16 +1073,12 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.watch();
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -1183,16 +1102,12 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.watch();
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -1246,19 +1161,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 0n,
 						toBlock: 0n,
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),
@@ -1317,19 +1228,15 @@ describe("BlockStreamService", () => {
 					TransportService,
 					mockTransport,
 				);
-				const TestBlockStreamLayer = Layer.provide(
-					BlockStream,
-					TestTransportLayer,
-				);
 
 				const program = Effect.gen(function* () {
-					const blockStream = yield* BlockStreamService;
+					const blockStream = yield* makeBlockStream();
 					const stream = blockStream.backfill({
 						fromBlock: 100n,
 						toBlock: 102n,
 					});
 					expect(stream).toBeDefined();
-				}).pipe(Effect.provide(TestBlockStreamLayer));
+				}).pipe(Effect.provide(TestTransportLayer));
 
 				yield* program;
 			}),

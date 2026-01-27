@@ -1,0 +1,145 @@
+---
+title: HttpTransportConfig Tests
+description: Test examples for HTTP transport configuration schema with Effect Config providers.
+---
+
+## Reads config from Map provider
+
+Demonstrates reading full HTTP transport config from an Effect ConfigProvider.
+
+```typescript
+import * as ConfigProvider from "effect/ConfigProvider";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import { HttpTransportConfigSchema } from "voltaire-effect";
+
+const configProvider = ConfigProvider.fromMap(
+  new Map([
+    ["http.url", "https://mainnet.infura.io/v3/KEY"],
+    ["http.timeout", "60 seconds"],
+    ["http.retries", "5"],
+    ["http.retryDelay", "2 seconds"],
+  ]),
+);
+
+const result = await Effect.runPromise(
+  HttpTransportConfigSchema.pipe(
+    Effect.provide(Layer.setConfigProvider(configProvider)),
+  ),
+);
+
+expect(result.url).toBe("https://mainnet.infura.io/v3/KEY");
+expect(Duration.toMillis(result.timeout)).toBe(60000);
+expect(result.retries).toBe(5);
+expect(Duration.toMillis(result.retryDelay)).toBe(2000);
+```
+
+## Uses defaults when optional values not provided
+
+Shows default values for timeout, retries, and retryDelay when not specified.
+
+```typescript
+import * as ConfigProvider from "effect/ConfigProvider";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import { HttpTransportConfigSchema } from "voltaire-effect";
+
+const configProvider = ConfigProvider.fromMap(
+  new Map([["http.url", "https://eth.llamarpc.com"]]),
+);
+
+const result = await Effect.runPromise(
+  HttpTransportConfigSchema.pipe(
+    Effect.provide(Layer.setConfigProvider(configProvider)),
+  ),
+);
+
+expect(Duration.toMillis(result.timeout)).toBe(30000);  // 30 seconds default
+expect(result.retries).toBe(3);                          // 3 retries default
+expect(Duration.toMillis(result.retryDelay)).toBe(1000); // 1 second default
+```
+
+## Validates URL must start with http:// or https://
+
+Demonstrates URL validation rejecting invalid protocols.
+
+```typescript
+import * as ConfigProvider from "effect/ConfigProvider";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import { HttpTransportConfigSchema } from "voltaire-effect";
+
+const configProvider = ConfigProvider.fromMap(
+  new Map([["http.url", "invalid-url"]]),
+);
+
+const result = await Effect.runPromiseExit(
+  HttpTransportConfigSchema.pipe(
+    Effect.provide(Layer.setConfigProvider(configProvider)),
+  ),
+);
+
+expect(result._tag).toBe("Failure");
+```
+
+## Reads headers from nested config
+
+Shows how to configure custom HTTP headers via nested config keys.
+
+```typescript
+import * as ConfigProvider from "effect/ConfigProvider";
+import * as Effect from "effect/Effect";
+import * as HashMap from "effect/HashMap";
+import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import { HttpTransportConfigSchema } from "voltaire-effect";
+
+const configProvider = ConfigProvider.fromMap(
+  new Map([
+    ["http.url", "https://eth.llamarpc.com"],
+    ["http.headers.X-API-Key", "my-api-key"],
+    ["http.headers.X-Custom", "custom-value"],
+  ]),
+);
+
+const result = await Effect.runPromise(
+  HttpTransportConfigSchema.pipe(
+    Effect.provide(Layer.setConfigProvider(configProvider)),
+  ),
+);
+
+expect(HashMap.size(result.headers)).toBe(2);
+expect(HashMap.get(result.headers, "X-API-Key")).toEqual(Option.some("my-api-key"));
+```
+
+## Parses duration formats correctly
+
+Demonstrates various duration format parsing for timeout and retry delay.
+
+```typescript
+import * as ConfigProvider from "effect/ConfigProvider";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import { HttpTransportConfigSchema } from "voltaire-effect";
+
+const configProvider = ConfigProvider.fromMap(
+  new Map([
+    ["http.url", "https://eth.llamarpc.com"],
+    ["http.timeout", "1 minute"],
+    ["http.retryDelay", "500 millis"],
+  ]),
+);
+
+const result = await Effect.runPromise(
+  HttpTransportConfigSchema.pipe(
+    Effect.provide(Layer.setConfigProvider(configProvider)),
+  ),
+);
+
+expect(Duration.toMillis(result.timeout)).toBe(60000);
+expect(Duration.toMillis(result.retryDelay)).toBe(500);
+```

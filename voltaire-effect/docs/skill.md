@@ -23,7 +23,7 @@ pnpm add voltaire-effect @tevm/voltaire effect
 ### Read Blockchain Data
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -46,7 +46,7 @@ const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251
 
 ### Send Transaction
 ```typescript
-import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
+import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -61,7 +61,7 @@ const program = Effect.gen(function* () {
 
 ### Read Contract
 ```typescript
-import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)

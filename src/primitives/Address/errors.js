@@ -14,7 +14,7 @@ export class InvalidHexFormatError extends InvalidFormatError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected format
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -23,7 +23,7 @@ export class InvalidHexFormatError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid hex format for address", {
-			code: options?.code ?? -32602,
+			code: options?.code ?? "INVALID_HEX_FORMAT",
 			value: options?.value,
 			expected: options?.expected || "0x-prefixed hex string",
 			context: options?.context,
@@ -44,7 +44,7 @@ export class InvalidHexStringError extends InvalidFormatError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected format
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -53,7 +53,7 @@ export class InvalidHexStringError extends InvalidFormatError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid hex string", {
-			code: options?.code ?? -32602,
+			code: options?.code ?? "INVALID_HEX_STRING",
 			value: options?.value,
 			expected:
 				options?.expected || "Valid hexadecimal characters (0-9, a-f, A-F)",
@@ -75,7 +75,7 @@ export class InvalidAddressLengthError extends InvalidLengthError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected length
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -84,7 +84,7 @@ export class InvalidAddressLengthError extends InvalidLengthError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid address length", {
-			code: options?.code ?? -32602,
+			code: options?.code ?? "INVALID_ADDRESS_LENGTH",
 			value: options?.value,
 			expected: options?.expected || "20 bytes",
 			context: options?.context,
@@ -105,7 +105,7 @@ export class InvalidValueError extends ValidationError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected value
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -114,7 +114,7 @@ export class InvalidValueError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code ?? -32602,
+			code: options?.code ?? "INVALID_VALUE",
 			value: options?.value,
 			expected: options?.expected || "Valid value",
 			context: options?.context,
@@ -135,14 +135,14 @@ export class NotImplementedError extends PrimitiveError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {Record<string, unknown>} [options.context] - Additional context
 	 * @param {string} [options.docsPath] - Documentation path
 	 * @param {Error} [options.cause] - Root cause error
 	 */
 	constructor(message, options) {
 		super(message || "Not implemented", {
-			code: options?.code ?? -32000,
+			code: options?.code ?? "NOT_IMPLEMENTED",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,
@@ -160,7 +160,7 @@ export class InvalidAddressError extends ValidationError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected format
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -169,7 +169,7 @@ export class InvalidAddressError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid address", {
-			code: options?.code ?? -32602,
+			code: options?.code ?? "INVALID_ADDRESS",
 			value: options?.value,
 			expected: options?.expected || "Valid Ethereum address",
 			context: options?.context,
@@ -190,7 +190,7 @@ export class InvalidAbiEncodedPaddingError extends ValidationError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected format
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -201,7 +201,7 @@ export class InvalidAbiEncodedPaddingError extends ValidationError {
 		super(
 			message || "ABI-encoded address has non-zero padding in first 12 bytes",
 			{
-				code: options?.code ?? -32602,
+				code: options?.code ?? "INVALID_ABI_ENCODED_PADDING",
 				value: options?.value,
 				expected: options?.expected || "First 12 bytes must be zero",
 				context: options?.context,
@@ -224,7 +224,7 @@ export class InvalidChecksumError extends ValidationError {
 	/**
 	 * @param {string} [message] - Error message
 	 * @param {object} [options] - Error options
-	 * @param {number} [options.code] - Error code
+	 * @param {string | number} [options.code] - Error code
 	 * @param {unknown} [options.value] - Invalid value
 	 * @param {string} [options.expected] - Expected checksum
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -233,7 +233,7 @@ export class InvalidChecksumError extends ValidationError {
 	 */
 	constructor(message, options) {
 		super(message || "Invalid checksum", {
-			code: options?.code ?? -32602,
+			code: options?.code ?? "INVALID_CHECKSUM",
 			value: options?.value,
 			expected: options?.expected || "Valid EIP-55 checksum",
 			context: options?.context,

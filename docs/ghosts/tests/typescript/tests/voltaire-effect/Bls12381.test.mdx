@@ -1,0 +1,147 @@
+---
+title: Bls12381 Tests
+description: Test examples for BLS12-381 showing signing, verification, and signature aggregation.
+---
+
+## Sign a Message
+
+Signs a message with a BLS12-381 private key, returning a 48-byte signature.
+
+```typescript
+import { Effect } from 'effect'
+import * as Bls12381Effect from 'voltaire-effect/crypto/Bls12381'
+import * as VoltaireBls12381 from '@tevm/voltaire/Bls12381'
+
+const testPrivateKey = VoltaireBls12381.randomPrivateKey()
+const testMessage = new TextEncoder().encode('Hello, Ethereum!')
+
+const program = Effect.gen(function* () {
+  const result = yield* Bls12381Effect.sign(testMessage, testPrivateKey)
+  // result is Uint8Array of length 48
+})
+```
+
+## Deterministic Signatures
+
+BLS signatures are deterministic for the same message and key.
+
+```typescript
+import { Effect } from 'effect'
+import * as Bls12381Effect from 'voltaire-effect/crypto/Bls12381'
+import * as VoltaireBls12381 from '@tevm/voltaire/Bls12381'
+
+const testPrivateKey = VoltaireBls12381.randomPrivateKey()
+const testMessage = new TextEncoder().encode('Hello, Ethereum!')
+
+const program = Effect.gen(function* () {
+  const sig1 = yield* Bls12381Effect.sign(testMessage, testPrivateKey)
+  const sig2 = yield* Bls12381Effect.sign(testMessage, testPrivateKey)
+  // sig1 and sig2 are equal
+})
+```
+
+## Verify a Signature
+
+Verifies a BLS signature against a message and public key.
+
+```typescript
+import { Effect } from 'effect'
+import * as Bls12381Effect from 'voltaire-effect/crypto/Bls12381'
+import * as VoltaireBls12381 from '@tevm/voltaire/Bls12381'
+
+const testPrivateKey = VoltaireBls12381.randomPrivateKey()
+const testPublicKey = VoltaireBls12381.derivePublicKey(testPrivateKey)
+const testMessage = new TextEncoder().encode('Hello, Ethereum!')
+
+const program = Effect.gen(function* () {
+  const signature = yield* Bls12381Effect.sign(testMessage, testPrivateKey)
+  const isValid = yield* Bls12381Effect.verify(signature, testMessage, testPublicKey)
+  // isValid is true
+})
+```
+
+## Aggregate Signatures
+
+Aggregates multiple BLS signatures into a single signature.
+
+```typescript
+import { Effect } from 'effect'
+import * as Bls12381Effect from 'voltaire-effect/crypto/Bls12381'
+import * as VoltaireBls12381 from '@tevm/voltaire/Bls12381'
+
+const testMessage = new TextEncoder().encode('Hello, Ethereum!')
+
+const program = Effect.gen(function* () {
+  const pk1 = VoltaireBls12381.randomPrivateKey()
+  const pk2 = VoltaireBls12381.randomPrivateKey()
+  const sig1 = yield* Bls12381Effect.sign(testMessage, pk1)
+  const sig2 = yield* Bls12381Effect.sign(testMessage, pk2)
+  
+  const aggSig = yield* Bls12381Effect.aggregate([sig1, sig2])
+  // aggSig is Uint8Array of length 48
+})
+```
+
+## Service Layer Usage
+
+Uses the Bls12381Service with dependency injection.
+
+```typescript
+import { Effect } from 'effect'
+import { Bls12381Service, Bls12381Live } from 'voltaire-effect/crypto/Bls12381'
+import * as VoltaireBls12381 from '@tevm/voltaire/Bls12381'
+
+const testPrivateKey = VoltaireBls12381.randomPrivateKey()
+const testPublicKey = VoltaireBls12381.derivePublicKey(testPrivateKey)
+const testMessage = new TextEncoder().encode('Hello, Ethereum!')
+
+const program = Effect.gen(function* () {
+  const bls = yield* Bls12381Service
+  const sig = yield* bls.sign(testMessage, testPrivateKey)
+  const result = yield* bls.verify(sig, testMessage, testPublicKey)
+  // result is true
+}).pipe(Effect.provide(Bls12381Live))
+```
+
+## Aggregation is Commutative
+
+Signature aggregation order does not affect the result.
+
+```typescript
+import { Effect } from 'effect'
+import * as Bls12381Effect from 'voltaire-effect/crypto/Bls12381'
+import * as VoltaireBls12381 from '@tevm/voltaire/Bls12381'
+
+const testMessage = new TextEncoder().encode('Hello, Ethereum!')
+
+const program = Effect.gen(function* () {
+  const pk1 = VoltaireBls12381.randomPrivateKey()
+  const pk2 = VoltaireBls12381.randomPrivateKey()
+  const sig1 = yield* Bls12381Effect.sign(testMessage, pk1)
+  const sig2 = yield* Bls12381Effect.sign(testMessage, pk2)
+  
+  const aggSig1 = yield* Bls12381Effect.aggregate([sig1, sig2])
+  const aggSig2 = yield* Bls12381Effect.aggregate([sig2, sig1])
+  // aggSig1 and aggSig2 are equal
+})
+```
+
+## Full Sign-Verify Round Trip
+
+Demonstrates a complete signing and verification flow.
+
+```typescript
+import { Effect } from 'effect'
+import * as Bls12381Effect from 'voltaire-effect/crypto/Bls12381'
+import * as VoltaireBls12381 from '@tevm/voltaire/Bls12381'
+
+const program = Effect.gen(function* () {
+  const privateKey = VoltaireBls12381.randomPrivateKey()
+  const publicKey = VoltaireBls12381.derivePublicKey(privateKey)
+  const message = new TextEncoder().encode('Round trip test')
+  
+  const signature = yield* Bls12381Effect.sign(message, privateKey)
+  const isValid = yield* Bls12381Effect.verify(signature, message, publicKey)
+  // isValid is true
+})
+```

@@ -10,7 +10,7 @@ Create a new wallet from scratch with a fresh mnemonic:
 ```typescript
 import { Effect } from 'effect'
 import { Bip39, HDWallet, Hex, Address as A } from '@tevm/voltaire/native'
-import { LocalAccount, AccountService, SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect/services'
+import { LocalAccount, AccountService, SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive, Secp256k1Service, KeccakService } from 'voltaire-effect/crypto'
 
 const generateWallet = Effect.gen(function* () {
@@ -59,7 +59,7 @@ Restore an existing wallet using its mnemonic phrase:
 
 ```typescript
 import { Effect } from 'effect'
-import { AccountService } from 'voltaire-effect/services'
+import { AccountService } from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
@@ -86,7 +86,7 @@ Generate multiple addresses from a single mnemonic:
 
 ```typescript
 import { Effect } from 'effect'
-import { AccountService } from 'voltaire-effect/services'
+import { AccountService } from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
@@ -128,7 +128,7 @@ import {
   ProviderService,
   Provider, 
   HttpTransport 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 

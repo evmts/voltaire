@@ -1,0 +1,142 @@
+---
+title: FeeEstimator Tests
+description: Test examples for FeeEstimatorService showing gas fee estimation for legacy and EIP-1559 transactions.
+---
+
+## FeeEstimationError creates error with message
+
+FeeEstimationError includes a message and optional cause.
+
+```typescript
+import { FeeEstimationError } from 'voltaire-effect'
+
+const error = new FeeEstimationError({ message: "test error" })
+expect(error.message).toBe("test error")
+expect(error._tag).toBe("FeeEstimationError")
+
+const cause = new Error("underlying")
+const errorWithCause = new FeeEstimationError({ message: "Fee estimation failed", cause })
+expect(errorWithCause.cause).toBe(cause)
+```
+
+## DefaultFeeEstimator returns gas price for legacy type
+
+Legacy fee estimation returns a single gasPrice value.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { DefaultFeeEstimator, FeeEstimatorService } from 'voltaire-effect'
+import { ProviderService } from 'voltaire-effect'
+
+const mockProvider = createMockProvider({
+  getGasPrice: () => Effect.succeed(25000000000n),
+})
+
+const TestProviderLayer = Layer.succeed(ProviderService, mockProvider)
+const TestFeeEstimatorLayer = DefaultFeeEstimator.pipe(Layer.provide(TestProviderLayer))
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  return yield* feeEstimator.estimateFeesPerGas("legacy")
+}).pipe(
+  Effect.provide(TestFeeEstimatorLayer),
+  Effect.provide(TestProviderLayer),
+)
+
+const result = await Effect.runPromise(program)
+expect(result.gasPrice).toBe(25000000000n)
+```
+
+## DefaultFeeEstimator returns maxFeePerGas and maxPriorityFeePerGas for EIP-1559
+
+EIP-1559 fee estimation returns both maxFeePerGas and maxPriorityFeePerGas.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { DefaultFeeEstimator, FeeEstimatorService, type FeeValuesEIP1559 } from 'voltaire-effect'
+import { ProviderService } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  return yield* feeEstimator.estimateFeesPerGas("eip1559")
+}).pipe(
+  Effect.provide(TestFeeEstimatorLayer),
+  Effect.provide(TestProviderLayer),
+)
+
+const result = await Effect.runPromise(program) as FeeValuesEIP1559
+expect(result.maxFeePerGas).toBeDefined()
+expect(result.maxPriorityFeePerGas).toBeDefined()
+```
+
+## DefaultFeeEstimator fails when gas price exceeds reasonable bounds
+
+Sanity checks prevent returning unreasonably high gas prices.
+
+```typescript
+import { Effect, Exit, Layer } from 'effect'
+import { DefaultFeeEstimator, FeeEstimatorService } from 'voltaire-effect'
+
+const MAX_REASONABLE_GAS_PRICE_WEI = 1_000_000_000_000_000_000n
+const excessiveGasPrice = MAX_REASONABLE_GAS_PRICE_WEI + 1n
+
+const mockProvider = createMockProvider({
+  getGasPrice: () => Effect.succeed(excessiveGasPrice),
+})
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  return yield* feeEstimator.estimateFeesPerGas("legacy")
+})
+
+const exit = await Effect.runPromiseExit(program)
+expect(Exit.isFailure(exit)).toBe(true)
+```
+
+## DefaultFeeEstimator fails for pre-EIP-1559 chain
+
+EIP-1559 estimation fails when the chain doesn't support it.
+
+```typescript
+import { Effect, Exit, Layer } from 'effect'
+import { DefaultFeeEstimator, FeeEstimatorService } from 'voltaire-effect'
+
+const mockProvider = createMockProvider({
+  getBlock: () => Effect.succeed({
+    number: "0x112a880",
+    // No baseFeePerGas field - pre-EIP-1559 block
+  }),
+})
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  return yield* feeEstimator.estimateFeesPerGas("eip1559")
+})
+
+const exit = await Effect.runPromiseExit(program)
+expect(Exit.isFailure(exit)).toBe(true)
+if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+  expect(exit.cause.error.message).toContain("pre-EIP-1559")
+}
+```
+
+## makeFeeEstimator creates fee estimator with custom multiplier
+
+Custom base fee multipliers can be configured for aggressive or conservative fee estimation.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { makeFeeEstimator, FeeEstimatorService } from 'voltaire-effect'
+import { ProviderService } from 'voltaire-effect'
+
+const CustomFeeEstimator = makeFeeEstimator(1.5)
+const TestFeeEstimatorLayer = CustomFeeEstimator.pipe(Layer.provide(TestProviderLayer))
+
+const program = Effect.gen(function* () {
+  const feeEstimator = yield* FeeEstimatorService
+  return feeEstimator.baseFeeMultiplier
+}).pipe(Effect.provide(TestFeeEstimatorLayer))
+
+const result = await Effect.runPromise(program)
+expect(result).toBe(1.5)
+```

@@ -1,0 +1,217 @@
+---
+title: FallbackTransport Tests
+description: Test examples for FallbackTransport showing multi-transport failover, retry behavior, and ranking.
+---
+
+## Empty transports array fails layer
+
+Demonstrates that FallbackTransport requires at least one transport.
+
+```typescript
+import { Effect } from 'effect'
+import { FallbackTransport, TransportService, TransportError } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  return yield* transport.request<string>("eth_blockNumber")
+}).pipe(Effect.provide(FallbackTransport([])))
+
+const exit = await Effect.runPromiseExit(program)
+expect(exit._tag).toBe("Failure")
+```
+
+## Works with single transport
+
+Shows basic usage with a single transport layer.
+
+```typescript
+import { Effect } from 'effect'
+import { FallbackTransport, TestTransport, TransportService } from 'voltaire-effect'
+
+const transport = FallbackTransport([
+  TestTransport({ eth_blockNumber: "0x1234" }),
+])
+
+const program = Effect.gen(function* () {
+  const t = yield* TransportService
+  return yield* t.request<string>("eth_blockNumber")
+}).pipe(Effect.provide(transport))
+
+const result = await Effect.runPromise(program)
+expect(result).toBe("0x1234")
+```
+
+## Falls back to second transport when first fails
+
+Demonstrates automatic failover to the next transport on error.
+
+```typescript
+import { Effect } from 'effect'
+import { FallbackTransport, TestTransport, TransportService, TransportError } from 'voltaire-effect'
+
+const transport = FallbackTransport(
+  [
+    TestTransport({
+      eth_blockNumber: new TransportError({
+        code: -32603,
+        message: "First failed",
+      }),
+    }),
+    TestTransport({ eth_blockNumber: "0x5678" }),
+  ],
+  { retryCount: 1 },
+)
+
+const program = Effect.gen(function* () {
+  const t = yield* TransportService
+  return yield* t.request<string>("eth_blockNumber")
+}).pipe(Effect.provide(transport))
+
+const result = await Effect.runPromise(program)
+expect(result).toBe("0x5678")
+```
+
+## Falls back through multiple transports
+
+Shows cascading failover through multiple failed transports.
+
+```typescript
+import { Effect } from 'effect'
+import { FallbackTransport, TestTransport, TransportService, TransportError } from 'voltaire-effect'
+
+const transport = FallbackTransport(
+  [
+    TestTransport({
+      eth_blockNumber: new TransportError({ code: -32603, message: "First failed" }),
+    }),
+    TestTransport({
+      eth_blockNumber: new TransportError({ code: -32603, message: "Second failed" }),
+    }),
+    TestTransport({ eth_blockNumber: "0x9999" }),
+  ],
+  { retryCount: 1 },
+)
+
+const result = await Effect.runPromise(program)
+expect(result).toBe("0x9999")
+```
+
+## Fails when all transports fail
+
+Demonstrates error aggregation when all transports are exhausted.
+
+```typescript
+import { Effect } from 'effect'
+import { FallbackTransport, TestTransport, TransportService, TransportError } from 'voltaire-effect'
+
+const transport = FallbackTransport(
+  [
+    TestTransport({
+      eth_blockNumber: new TransportError({ code: -32603, message: "First failed" }),
+    }),
+    TestTransport({
+      eth_blockNumber: new TransportError({ code: -32603, message: "Second failed" }),
+    }),
+  ],
+  { retryCount: 1 },
+)
+
+const exit = await Effect.runPromiseExit(program)
+expect(exit._tag).toBe("Failure")
+if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+  expect((exit.cause.error as TransportError).message).toContain("All 2 transports failed")
+}
+```
+
+## Retries specified number of times before fallback
+
+Shows that each transport is retried before moving to the next.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { FallbackTransport, TestTransport, TransportService, TransportError } from 'voltaire-effect'
+
+let callCount = 0
+const failingTransport = Layer.succeed(TransportService, {
+  request: <T>() => {
+    callCount++
+    return Effect.fail(new TransportError({ code: -32603, message: "Failed" }))
+  },
+})
+
+const transport = FallbackTransport(
+  [failingTransport, TestTransport({ eth_blockNumber: "0x1234" })],
+  { retryCount: 3, retryDelay: 1 },
+)
+
+await Effect.runPromise(program)
+expect(callCount).toBe(3)
+```
+
+## Transport can recover after previous failures
+
+Demonstrates that transports can succeed after initial failures.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { FallbackTransport, TransportService, TransportError } from 'voltaire-effect'
+
+let callCount = 0
+const recoveringTransport = Layer.succeed(TransportService, {
+  request: <T>() => {
+    callCount++
+    if (callCount <= 2) {
+      return Effect.fail(new TransportError({ code: -32603, message: "Failing" }))
+    }
+    return Effect.succeed("0x9999" as T)
+  },
+})
+
+const transport = FallbackTransport([recoveringTransport], {
+  retryCount: 3,
+  retryDelay: 1,
+})
+
+const result = await Effect.runPromise(program)
+expect(result).toBe("0x9999")
+expect(callCount).toBe(3)
+```
+
+## Enables rank option for latency-based ordering
+
+Shows enabling transport ranking based on response latency.
+
+```typescript
+import { Effect } from 'effect'
+import { FallbackTransport, TestTransport, TransportService } from 'voltaire-effect'
+
+const transport = FallbackTransport(
+  [TestTransport({ eth_blockNumber: "0x1234" })],
+  { rank: true },
+)
+
+const result = await Effect.runPromise(program)
+expect(result).toBe("0x1234")
+```
+
+## Handles concurrent requests to fallback
+
+Demonstrates thread-safe handling of concurrent requests.
+
+```typescript
+import { Effect } from 'effect'
+import { FallbackTransport, TransportService } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const t = yield* TransportService
+  const results = yield* Effect.all([
+    t.request<string>("eth_blockNumber"),
+    t.request<string>("eth_blockNumber"),
+    t.request<string>("eth_blockNumber"),
+  ])
+  return results
+}).pipe(Effect.provide(transport))
+
+const results = await Effect.runPromise(program)
+expect(results).toHaveLength(3)
+```

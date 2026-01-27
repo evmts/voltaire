@@ -7,13 +7,16 @@ description: Composable error handling patterns
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderResponseError, ProviderService, Provider, HttpTransport, TransportError } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const client = yield* ProviderService
   return yield* client.getBalance('0x...', 'latest')
 }).pipe(
-  Effect.catchTag('ProviderError', () => Effect.succeed(0n)),
+  Effect.catchTags({
+    TransportError: () => Effect.succeed(0n),
+    ProviderResponseError: () => Effect.succeed(0n)
+  }),
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
 )
@@ -22,7 +25,7 @@ const program = Effect.gen(function* () {
 ## Handle Multiple Error Types
 
 ```typescript
-import { Contract, ContractCallError, ContractWriteError, Signer, LocalAccount } from 'voltaire-effect/services'
+import { Contract, ContractCallError, ContractWriteError, Signer, LocalAccount } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)

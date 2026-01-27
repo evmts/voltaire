@@ -15,11 +15,12 @@ import * as Effect from "effect/Effect";
 import * as Request from "effect/Request";
 import * as RequestResolver from "effect/RequestResolver";
 import type { AddressInput, BlockTag } from "../Provider/ProviderService.js";
+import { TransportService } from "../Transport/TransportService.js";
 import type { GetBalance } from "./GetBalance.js";
 import {
+	aggregate3,
 	type MulticallCall,
 	MulticallError,
-	MulticallService,
 } from "./MulticallService.js";
 
 const BALANCE_OF_ABI = [
@@ -70,12 +71,10 @@ type BalanceEntry = {
  */
 export const BalanceResolver: RequestResolver.RequestResolver<
 	GetBalance,
-	MulticallService
+	TransportService
 > = RequestResolver.makeBatched((requests: readonly GetBalance[]) =>
 	Effect.gen(function* () {
 		if (requests.length === 0) return;
-
-		const multicall = yield* MulticallService;
 		const groups = new Map<BlockTag, BalanceEntry[]>();
 
 		for (const [index, request] of requests.entries()) {
@@ -118,9 +117,7 @@ export const BalanceResolver: RequestResolver.RequestResolver<
 
 					if (calls.length === 0) return;
 
-					const results = yield* Effect.either(
-						multicall.aggregate3(calls, blockTag),
-					);
+					const results = yield* Effect.either(aggregate3(calls, blockTag));
 
 					if (results._tag === "Left") {
 						yield* Effect.forEach(

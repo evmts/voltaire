@@ -9,11 +9,11 @@ Read the [official Effect documentation](https://effect.website/docs/getting-sta
 
 ## Core Concepts
 
-[Effect](https://effect.website) is a TypeScript library for building reliable software. Three things matter:
+[Effect](https://effect.website) is a TypeScript library for building reliable software. Three things matter the most in Voltaire-Effect:
 
-1. **Effect** - A description of a computation that may fail or require dependencies
-2. **Schema** - Runtime validation that produces typed values
-3. **Services** - Dependency injection without magic
+1. **Effect** - A description of a computation that may fail or require dependencies. Effects are similar to promises but more strongly typed and lazily executed.
+2. **Schema** - Runtime validation that produces typed values. Similar to Zod but for Effect.
+3. **Services** - Dependency injection without magic. Similar to React Context. In Voltaire we use this to inject providers, signers, chains and contracts into your programs.
 
 ## Effect Type
 
@@ -34,6 +34,10 @@ const program: Effect.Effect<string, Error, never> = Effect.succeed("hello")
 // Run it
 const result = await Effect.runPromise(program)
 ```
+
+<Tip>
+As a best practice you should only run runPromise or runSync at the very top of your program. It is an antipattern to use it within your program as it breaks Effects composability.
+</Tip>
 
 ## Generator Syntax
 

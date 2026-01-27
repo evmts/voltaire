@@ -1,0 +1,184 @@
+---
+title: Signature Tests
+description: Test examples for Signature showing ECDSA signature parsing, encoding, verification, and format conversions (hex, bytes, compact, DER, RPC, tuple).
+---
+
+## Parse Hex Signature
+
+Parses 64-byte or 65-byte signatures from hex strings.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const validR = "ab".repeat(32)
+const validS = "cd".repeat(32)
+const validSig65 = `0x${validR}${validS}1b`
+const validSig64 = `0x${validR}${validS}`
+
+const sig65 = S.decodeSync(Signature.Hex)(validSig65)
+expect(sig65).toBeInstanceOf(Uint8Array)
+expect(sig65.length).toBeGreaterThanOrEqual(64)
+
+const sig64 = S.decodeSync(Signature.Hex)(validSig64)
+expect(sig64.length).toBe(64)
+```
+
+## Parse Bytes Signature
+
+Parses signature from 64-byte or 65-byte Uint8Array.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const bytes65 = new Uint8Array(65).fill(0xab)
+bytes65[64] = 27
+const sig = S.decodeSync(Signature.Bytes)(bytes65)
+expect(sig.length).toBeGreaterThanOrEqual(64)
+```
+
+## EIP-2098 Compact Format
+
+Encodes to 64-byte compact format with yParity encoded in high bit of s.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const lowR = "11".repeat(32)
+const lowS = "22".repeat(32)
+const sig = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}1c`)
+
+const compact = S.encodeSync(Signature.Compact)(sig)
+expect(compact).toBeInstanceOf(Uint8Array)
+expect(compact.length).toBe(64)
+
+// Round-trip preserves yParity
+const decoded = S.decodeSync(Signature.Compact)(compact)
+const [yParity] = S.encodeSync(Signature.Tuple)(decoded)
+expect(yParity).toBe(1)
+```
+
+## DER Format
+
+Parses and encodes DER-encoded signatures.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const validDER = new Uint8Array([
+  0x30, 0x44, 0x02, 0x20,
+  ...new Uint8Array(32).fill(0x01),
+  0x02, 0x20,
+  ...new Uint8Array(32).fill(0x02),
+])
+
+const sig = S.decodeSync(Signature.DER)(validDER)
+expect(sig).toBeInstanceOf(Uint8Array)
+
+const encoded = S.encodeSync(Signature.DER)(sig)
+expect(encoded[0]).toBe(0x30)
+```
+
+## RPC Format
+
+Parses and encodes JSON-RPC signature format with r, s, and v/yParity.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const validR = "ab".repeat(32)
+const validS = "cd".repeat(32)
+
+// Parse with yParity
+const sig = S.decodeSync(Signature.Rpc)({
+  r: `0x${validR}`,
+  s: `0x${validS}`,
+  yParity: "0x0",
+})
+expect(sig).toBeInstanceOf(Uint8Array)
+
+// Parse with v value
+const sigV = S.decodeSync(Signature.Rpc)({
+  r: `0x${validR}`,
+  s: `0x${validS}`,
+  v: 27,
+})
+expect(sigV).toBeInstanceOf(Uint8Array)
+```
+
+## Tuple Format
+
+Parses and encodes [yParity, r, s] tuple format.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const r = new Uint8Array(32).fill(0xab)
+const s = new Uint8Array(32).fill(0xcd)
+
+const sig = S.decodeSync(Signature.Tuple)([0, r, s])
+expect(sig).toBeInstanceOf(Uint8Array)
+
+const tuple = S.encodeSync(Signature.Tuple)(sig)
+expect(Array.isArray(tuple)).toBe(true)
+expect(tuple.length).toBe(3)
+expect(typeof tuple[0]).toBe("number")
+```
+
+## Sign and Verify Round-Trip
+
+Signs a message, serializes, deserializes, and verifies the signature.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+import * as BaseSignature from "@tevm/voltaire/Signature"
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1"
+import { Hash } from "@tevm/voltaire"
+import { PrivateKey } from "@tevm/voltaire/PrivateKey"
+
+const messageHash = Hash.from(new Uint8Array(32).fill(0x42))
+const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1))
+const publicKey = Secp256k1.derivePublicKey(privateKey)
+
+const secpSig = Secp256k1.sign(messageHash, privateKey)
+const sig = BaseSignature.fromSecp256k1(secpSig.r, secpSig.s, secpSig.v)
+
+const hex = S.encodeSync(Signature.Hex)(sig)
+const decoded = S.decodeSync(Signature.Hex)(hex)
+
+expect(BaseSignature.verify(decoded, messageHash, publicKey)).toBe(true)
+```
+
+## Normalize Signature
+
+Normalizes non-canonical signatures to low-s form.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const sig = S.decodeSync(Signature.Hex)(`0x${"ab".repeat(32)}${"cd".repeat(32)}1b`)
+const normalized = Signature.normalize(sig)
+expect(Signature.isCanonical(normalized)).toBe(true)
+```
+
+## Convert to Compact
+
+Extracts 64-byte compact representation without recovery byte.
+
+```typescript
+import * as S from "effect/Schema"
+import * as Signature from "voltaire-effect/primitives/Signature"
+
+const sig = S.decodeSync(Signature.Hex)(`0x${"ab".repeat(32)}${"cd".repeat(32)}1b`)
+const compact = Signature.toCompact(sig)
+expect(compact).toBeInstanceOf(Uint8Array)
+expect(compact.length).toBe(64)
+```

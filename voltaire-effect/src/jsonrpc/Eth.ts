@@ -146,6 +146,10 @@ export const SimulateV1Request = (
 	calls: unknown[],
 	blockTag: string = "latest",
 ) => makeRequest("eth_simulateV1", [calls, blockTag]);
+export const SimulateV2Request = (
+	payload: unknown,
+	blockTag: string = "latest",
+) => makeRequest("eth_simulateV2", [payload, blockTag]);
 export const SyncingRequest = () => makeRequest("eth_syncing");
 export const UninstallFilterRequest = (filterId: string) =>
 	makeRequest("eth_uninstallFilter", [filterId]);
@@ -206,6 +210,7 @@ export const Eth = {
 	SignRequest,
 	SignTransactionRequest,
 	SimulateV1Request,
+	SimulateV2Request,
 	SyncingRequest,
 	UninstallFilterRequest,
 	SubscribeRequest,

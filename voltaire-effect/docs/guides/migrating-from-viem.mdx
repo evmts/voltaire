@@ -108,7 +108,7 @@ const blockNumber = await provider.getBlockNumber()
 
 // voltaire-effect
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -135,7 +135,7 @@ const balance = await client.readContract({
 
 // voltaire-effect
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 import * as Abi from 'voltaire-effect/primitives/Abi'
 
 const program = Effect.gen(function* () {
@@ -174,7 +174,7 @@ import {
   LocalAccount,
   Provider,
   HttpTransport 
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const program = Effect.gen(function* () {
@@ -209,7 +209,7 @@ const unwatch = client.watchEvent({
 
 // voltaire-effect
 import { Stream } from 'effect'
-import { ProviderService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect'
 
 const watchTransfers = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -237,7 +237,7 @@ pnpm add voltaire-effect effect
 ```typescript
 // src/layers.ts
 import { Layer } from 'effect'
-import { Provider, HttpTransport } from 'voltaire-effect/services'
+import { Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 export const MainLayer = Layer.mergeAll(
@@ -292,7 +292,7 @@ export const getTokenBalanceSafe = (token: AddressType, user: AddressType) =>
 ```typescript
 // src/layers.test.ts
 import { Layer } from 'effect'
-import { ProviderService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect'
 
 export const MockProvider = Layer.succeed(ProviderService, {
   getBlockNumber: () => Effect.succeed(12345n),
@@ -390,6 +390,37 @@ const MainLayer = Signer.Live.pipe(
 | `privateKeyToAccount` | `LocalAccount(key)` |
 | `getAddress(str)` | `S.decodeSync(Address.Hex)(str)` |
 | `parseEther('1')` | `1000000000000000000n` |
+
+## Incremental Migration with tryPromise / trySync
+
+You can keep viem in place and wrap it so it composes with Effect. Use `Effect.tryPromise` for existing async APIs, and use `Effect.try` (sync) as a `trySync` helper for local parsing/validation.
+
+```typescript
+import { Effect } from 'effect'
+import { createPublicClient, http } from 'viem'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+const client = createPublicClient({ transport: http(rpcUrl) })
+const trySync = Effect.try
+
+export const getBalance = (address: string) =>
+  Effect.gen(function* () {
+    const addr = yield* trySync({
+      try: () => S.decodeSync(Address.Hex)(address),
+      catch: (error) => new Error(`Invalid address: ${String(error)}`)
+    })
+
+    const balance = yield* Effect.tryPromise({
+      try: () => client.getBalance({ address }),
+      catch: (error) => new Error(`RPC failed: ${String(error)}`)
+    })
+
+    return { addr, balance }
+  })
+```
+
+Once you are ready, replace the viem call with `ProviderService` and remove the `tryPromise` wrapper.
 
 ## See Also
 

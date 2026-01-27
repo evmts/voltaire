@@ -1,0 +1,76 @@
+---
+title: constantTimeEqual Tests
+description: Test examples for constant-time byte array comparison to prevent timing attacks.
+---
+
+## Returns true for identical arrays
+
+Shows that identical arrays are detected as equal.
+
+```typescript
+import { constantTimeEqual } from "voltaire-effect/crypto/utils";
+
+const a = new Uint8Array([1, 2, 3, 4]);
+const b = new Uint8Array([1, 2, 3, 4]);
+expect(constantTimeEqual(a, b)).toBe(true);
+```
+
+## Returns false for different arrays
+
+Demonstrates detection of differing content.
+
+```typescript
+import { constantTimeEqual } from "voltaire-effect/crypto/utils";
+
+const a = new Uint8Array([1, 2, 3, 4]);
+const b = new Uint8Array([1, 2, 3, 5]);
+expect(constantTimeEqual(a, b)).toBe(false);
+```
+
+## Returns false for different lengths
+
+Shows that length differences are detected.
+
+```typescript
+import { constantTimeEqual } from "voltaire-effect/crypto/utils";
+
+const a = new Uint8Array([1, 2, 3]);
+const b = new Uint8Array([1, 2, 3, 4]);
+expect(constantTimeEqual(a, b)).toBe(false);
+```
+
+## Returns true for empty arrays
+
+Demonstrates that empty arrays are equal.
+
+```typescript
+import { constantTimeEqual } from "voltaire-effect/crypto/utils";
+
+const a = new Uint8Array([]);
+const b = new Uint8Array([]);
+expect(constantTimeEqual(a, b)).toBe(true);
+```
+
+## Returns false when first byte differs
+
+Shows detection of differences at array start.
+
+```typescript
+import { constantTimeEqual } from "voltaire-effect/crypto/utils";
+
+const a = new Uint8Array([0, 2, 3, 4]);
+const b = new Uint8Array([1, 2, 3, 4]);
+expect(constantTimeEqual(a, b)).toBe(false);
+```
+
+## Returns false when last byte differs
+
+Shows detection of differences at array end.
+
+```typescript
+import { constantTimeEqual } from "voltaire-effect/crypto/utils";
+
+const a = new Uint8Array([1, 2, 3, 4]);
+const b = new Uint8Array([1, 2, 3, 0]);
+expect(constantTimeEqual(a, b)).toBe(false);
+```

@@ -1,16 +1,18 @@
 /**
- * @fileoverview Provider service definition for read-only blockchain operations.
+ * @fileoverview Provider service definition for blockchain JSON-RPC operations.
  *
  * @module ProviderService
  * @since 0.0.1
  *
  * @description
  * The ProviderService provides a high-level interface for querying Ethereum
- * blockchain data. It abstracts away the underlying JSON-RPC details and provides
- * type-safe methods for common operations like getting balances, blocks, and transactions.
+ * blockchain data and invoking optional node-exposed signing/transaction
+ * submission methods. It abstracts away the underlying JSON-RPC details and
+ * provides type-safe methods for common operations like getting balances,
+ * blocks, and transactions.
  *
- * All methods are read-only and do not require signing or wallet access.
- * For write operations (sending transactions), use SignerService.
+ * Most methods are read-only and do not require wallet access. For wallet-backed
+ * signing and transaction composition, use SignerService.
  *
  * The service requires a TransportService to be provided for actual RPC communication.
  *
@@ -20,19 +22,18 @@
  */
 
 import type { AddressType } from "@tevm/voltaire/Address";
-import type {
-	BackfillOptions,
-	BlockInclude,
-	BlockStreamEvent,
-	BlocksEvent,
-	WatchOptions,
-} from "@tevm/voltaire/block";
 import type { HashType } from "@tevm/voltaire/Hash";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";
-import type * as Effect from "effect/Effect";
-import type * as Stream from "effect/Stream";
+import type { TransportError } from "../Transport/TransportError.js";
+import type { AccountShape } from "./AccountService.js";
+import type { BlocksShape } from "./BlocksService.js";
+import type { EventsShape } from "./EventsService.js";
+import type { NetworkShape } from "./NetworkService.js";
+import type { SimulationShape } from "./SimulationService.js";
+import type { StreamingShape } from "./StreamingService.js";
+import type { TransactionShape } from "./TransactionService.js";
 
 /**
  * Address input type that accepts both branded AddressType and plain hex strings.
@@ -46,6 +47,11 @@ export type AddressInput = AddressType | `0x${string}`;
 export type HashInput = HashType | `0x${string}`;
 
 /**
+ * Transaction index input type for block transaction lookups.
+ */
+export type TransactionIndexInput = number | bigint | `0x${string}`;
+
+/**
  * Filter identifier returned by eth_newFilter methods.
  *
  * @since 0.0.1
@@ -53,103 +59,308 @@ export type HashInput = HashType | `0x${string}`;
 export type FilterId = `0x${string}`;
 
 /**
- * Error thrown when a provider operation fails.
- *
- * @description
- * Contains the original input and optional cause for debugging.
- * All ProviderService methods may fail with this error type.
- *
- * Common failure reasons:
- * - Network connectivity issues
- * - Invalid parameters (bad address, block not found)
- * - RPC node errors
- * - Rate limiting
+ * Error thrown when the provider returns an invalid or unexpected response.
  *
  * @since 0.0.1
- *
- * @example Creating a ProviderError
- * ```typescript
- * const error = new ProviderError(
- *   { method: 'eth_getBalance', params: ['0x...'] },
- *   'Failed to fetch balance',
- *   originalError
- * )
- *
- * console.log(error.input)   // { method: 'eth_getBalance', params: ['0x...'] }
- * console.log(error.message) // 'Failed to fetch balance'
- * console.log(error.cause)   // originalError
- * ```
- *
- * @example Handling ProviderError in Effect
- * ```typescript
- * import { Effect } from 'effect'
- * import { ProviderService, ProviderError } from 'voltaire-effect/services'
- *
- * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   return yield* provider.getBalance('0x...')
- * }).pipe(
- *   Effect.catchTag('ProviderError', (error) => {
- *     console.error('Failed:', error.message, 'Input:', error.input)
- *     return Effect.succeed(0n)
- *   })
- * )
- * ```
  */
-export class ProviderError extends Data.TaggedError("ProviderError")<{
-	/**
-	 * The original input that caused the error.
-	 */
+export class ProviderResponseError extends Data.TaggedError(
+	"ProviderResponseError",
+)<{
 	readonly input: unknown;
-
-	/**
-	 * Human-readable error message.
-	 */
 	readonly message: string;
-
-	/**
-	 * JSON-RPC error code (propagated from transport).
-	 * May be undefined if the error originated outside JSON-RPC.
-	 */
-	readonly code?: number;
-
-	/**
-	 * Optional underlying cause.
-	 */
 	readonly cause?: unknown;
-
-	/**
-	 * Optional context for debugging.
-	 */
 	readonly context?: Record<string, unknown>;
 }> {
-	/**
-	 * Creates a new ProviderError.
-	 *
-	 * @param input - The original input that caused the error (method, params, etc.)
-	 * @param message - Human-readable error message (optional, defaults to cause message)
-	 * @param options - Optional error options
-	 * @param options.code - JSON-RPC error code
-	 * @param options.cause - Underlying error that caused this failure
-	 */
 	constructor(
 		input: unknown,
 		message?: string,
-		options?: {
-			code?: number;
-			context?: Record<string, unknown>;
-			cause?: Error;
-		},
+		options?: { cause?: unknown; context?: Record<string, unknown> },
 	) {
 		super({
 			input,
-			message: message ?? options?.cause?.message ?? "Provider error",
-			code: options?.code,
+			message:
+				message ??
+				(options?.cause instanceof Error ? options.cause.message : undefined) ??
+				"Invalid provider response",
 			cause: options?.cause,
 			context: options?.context,
 		});
 	}
 }
+
+/**
+ * Error thrown when a requested resource is missing (block, tx, receipt, etc.).
+ *
+ * @since 0.0.1
+ */
+export class ProviderNotFoundError extends Data.TaggedError(
+	"ProviderNotFoundError",
+)<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly resource?: string;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(
+		input: unknown,
+		message?: string,
+		options?: {
+			resource?: string;
+			cause?: unknown;
+			context?: Record<string, unknown>;
+		},
+	) {
+		super({
+			input,
+			message: message ?? "Resource not found",
+			resource: options?.resource,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+/**
+ * Error thrown when inputs fail validation before an RPC call is made.
+ *
+ * @since 0.0.1
+ */
+export class ProviderValidationError extends Data.TaggedError(
+	"ProviderValidationError",
+)<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(
+		input: unknown,
+		message?: string,
+		options?: { cause?: unknown; context?: Record<string, unknown> },
+	) {
+		super({
+			input,
+			message:
+				message ??
+				(options?.cause instanceof Error ? options.cause.message : undefined) ??
+				"Invalid provider input",
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+/**
+ * Error thrown when waiting for a result exceeds a timeout.
+ *
+ * @since 0.0.1
+ */
+export class ProviderTimeoutError extends Data.TaggedError(
+	"ProviderTimeoutError",
+)<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly timeoutMs?: number;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(
+		input: unknown,
+		message?: string,
+		options?: {
+			timeoutMs?: number;
+			cause?: unknown;
+			context?: Record<string, unknown>;
+		},
+	) {
+		super({
+			input,
+			message: message ?? "Provider operation timed out",
+			timeoutMs: options?.timeoutMs,
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+/**
+ * Error thrown by provider streams (watch/backfill).
+ *
+ * @since 0.0.1
+ */
+export class ProviderStreamError extends Data.TaggedError(
+	"ProviderStreamError",
+)<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(
+		input: unknown,
+		message?: string,
+		options?: { cause?: unknown; context?: Record<string, unknown> },
+	) {
+		super({
+			input,
+			message:
+				message ??
+				(options?.cause instanceof Error ? options.cause.message : undefined) ??
+				"Provider stream error",
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+/**
+ * Error used internally while waiting for a transaction receipt.
+ *
+ * @since 0.0.1
+ */
+export class ProviderReceiptPendingError extends Data.TaggedError(
+	"ProviderReceiptPendingError",
+)<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(
+		input: unknown,
+		message?: string,
+		options?: { cause?: unknown; context?: Record<string, unknown> },
+	) {
+		super({
+			input,
+			message: message ?? "Transaction pending",
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+/**
+ * Error used internally while waiting for confirmation depth.
+ *
+ * @since 0.0.1
+ */
+export class ProviderConfirmationsPendingError extends Data.TaggedError(
+	"ProviderConfirmationsPendingError",
+)<{
+	readonly input: unknown;
+	readonly message: string;
+	readonly cause?: unknown;
+	readonly context?: Record<string, unknown>;
+}> {
+	constructor(
+		input: unknown,
+		message?: string,
+		options?: { cause?: unknown; context?: Record<string, unknown> },
+	) {
+		super({
+			input,
+			message: message ?? "Waiting for confirmations",
+			cause: options?.cause,
+			context: options?.context,
+		});
+	}
+}
+
+/**
+ * Union of all provider-specific errors (excludes TransportError).
+ *
+ * @since 0.0.1
+ */
+export type ProviderError =
+	| ProviderResponseError
+	| ProviderNotFoundError
+	| ProviderValidationError
+	| ProviderTimeoutError
+	| ProviderStreamError
+	| ProviderReceiptPendingError
+	| ProviderConfirmationsPendingError;
+
+/**
+ * Error unions for ProviderService methods.
+ *
+ * @since 0.0.1
+ */
+export type GetBlockNumberError = TransportError | ProviderResponseError;
+export type GetBlockError = TransportError | ProviderNotFoundError;
+export type GetBlockTransactionCountError =
+	| TransportError
+	| ProviderResponseError;
+export type GetBalanceError = TransportError | ProviderResponseError;
+export type GetTransactionCountError = TransportError | ProviderResponseError;
+export type GetCodeError = TransportError;
+export type GetStorageAtError = TransportError;
+export type GetTransactionError = TransportError | ProviderNotFoundError;
+export type GetTransactionReceiptError = TransportError | ProviderNotFoundError;
+export type WaitForTransactionReceiptError =
+	| TransportError
+	| ProviderValidationError
+	| ProviderTimeoutError
+	| ProviderResponseError
+	| ProviderReceiptPendingError
+	| ProviderConfirmationsPendingError;
+export type CallError = TransportError;
+export type EstimateGasError = TransportError | ProviderResponseError;
+export type CreateAccessListError = TransportError;
+export type GetLogsError = TransportError;
+export type CreateEventFilterError = TransportError;
+export type CreateBlockFilterError = TransportError;
+export type CreatePendingTransactionFilterError = TransportError;
+export type GetFilterChangesError = TransportError;
+export type GetFilterLogsError = TransportError;
+export type UninstallFilterError = TransportError;
+export type GetChainIdError =
+	| TransportError
+	| ProviderResponseError
+	| ProviderValidationError;
+export type GetGasPriceError = TransportError | ProviderResponseError;
+export type GetMaxPriorityFeePerGasError =
+	| TransportError
+	| ProviderResponseError;
+export type GetFeeHistoryError = TransportError | ProviderValidationError;
+export type WatchBlocksError = TransportError | ProviderStreamError;
+export type BackfillBlocksError = TransportError | ProviderStreamError;
+export type SendRawTransactionError = TransportError;
+export type GetUncleError = TransportError | ProviderNotFoundError;
+export type GetProofError = TransportError;
+export type GetBlobBaseFeeError =
+	| TransportError
+	| ProviderResponseError
+	| ProviderNotFoundError;
+export type GetTransactionConfirmationsError =
+	| TransportError
+	| ProviderResponseError;
+export type GetBlockReceiptsError = TransportError | ProviderNotFoundError;
+export type GetUncleCountError = TransportError | ProviderResponseError;
+export type GetTransactionByBlockHashAndIndexError =
+	| TransportError
+	| ProviderNotFoundError;
+export type GetTransactionByBlockNumberAndIndexError =
+	| TransportError
+	| ProviderNotFoundError;
+export type SendTransactionError = TransportError;
+export type SignError = TransportError;
+export type SignTransactionError = TransportError;
+export type SimulateV1Error = TransportError;
+export type SimulateV2Error = TransportError;
+export type GetSyncingError = TransportError;
+export type GetAccountsError = TransportError;
+export type GetCoinbaseError = TransportError;
+export type NetVersionError = TransportError;
+export type SubscribeError = TransportError;
+export type UnsubscribeError = TransportError;
+export type GetProtocolVersionError = TransportError;
+export type GetMiningError = TransportError;
+export type GetHashrateError = TransportError | ProviderResponseError;
+export type GetWorkError = TransportError;
+export type SubmitWorkError = TransportError;
+export type SubmitHashrateError = TransportError;
 
 /**
  * Block identifier for Ethereum RPC calls.
@@ -302,6 +513,36 @@ export interface CallRequest {
 }
 
 /**
+ * JSON-RPC transaction request for eth_sendTransaction / eth_signTransaction.
+ *
+ * @since 0.3.0
+ */
+export type RpcTransactionRequest = Omit<CallRequest, "from" | "to"> & {
+	/** Sender address (required for eth_sendTransaction / eth_signTransaction) */
+	readonly from: AddressInput;
+	/** Recipient address (null/undefined for contract deployment) */
+	readonly to?: AddressInput | null;
+	/** Gas price for legacy/EIP-2930 transactions */
+	readonly gasPrice?: bigint;
+	/** Max fee per gas for EIP-1559+ transactions */
+	readonly maxFeePerGas?: bigint;
+	/** Max priority fee per gas for EIP-1559+ transactions */
+	readonly maxPriorityFeePerGas?: bigint;
+	/** Transaction nonce */
+	readonly nonce?: bigint;
+	/** Optional access list (EIP-2930+) */
+	readonly accessList?: AccessListInput;
+	/** Optional chain id */
+	readonly chainId?: bigint;
+	/** Explicit transaction type (0-4) */
+	readonly type?: 0 | 1 | 2 | 3 | 4;
+	/** Max fee per blob gas (EIP-4844) */
+	readonly maxFeePerBlobGas?: bigint;
+	/** Blob versioned hashes (EIP-4844) */
+	readonly blobVersionedHashes?: readonly `0x${string}`[];
+};
+
+/**
  * Arguments for getBlock - discriminated union to prevent invalid combinations.
  *
  * @description
@@ -331,6 +572,31 @@ export type GetBlockArgs =
 			blockNumber: bigint;
 			/** Whether to include full transaction objects */
 			includeTransactions?: boolean;
+			blockTag?: never;
+			blockHash?: never;
+	  };
+
+/**
+ * Arguments for getBlockReceipts - block identifier only.
+ *
+ * @since 0.3.0
+ */
+export type GetBlockReceiptsArgs =
+	| {
+			/** Block tag (latest, earliest, pending, safe, finalized, or hex number) */
+			blockTag?: BlockTag;
+			blockHash?: never;
+			blockNumber?: never;
+	  }
+	| {
+			/** Block hash to query */
+			blockHash: HashInput;
+			blockTag?: never;
+			blockNumber?: never;
+	  }
+	| {
+			/** Block number as bigint */
+			blockNumber: bigint;
 			blockTag?: never;
 			blockHash?: never;
 	  };
@@ -654,6 +920,16 @@ export interface AccessListType {
 }
 
 /**
+ * Access list input for EIP-2930+ transactions.
+ *
+ * @since 0.3.0
+ */
+export type AccessListInput = Array<{
+	address: AddressInput;
+	storageKeys: Array<`0x${string}`>;
+}>;
+
+/**
  * Fee history result from eth_feeHistory.
  *
  * @description
@@ -775,149 +1051,40 @@ export type GetUncleArgs =
 	  };
 
 /**
+ * Arguments for getUncleCount - either by block tag or block hash.
+ *
+ * @since 0.3.0
+ */
+export type GetUncleCountArgs =
+	| {
+			/** Block tag (latest, earliest, pending, safe, finalized, or hex number) */
+			blockTag?: BlockTag;
+			blockHash?: never;
+	  }
+	| {
+			/** Block hash to query */
+			blockHash: HashInput;
+			blockTag?: never;
+	  };
+
+/**
  * Shape of the provider service.
  *
  * @description
- * Defines all read-only blockchain operations available through ProviderService.
- * Each method returns an Effect that may fail with ProviderError.
+ * Composition of the focused provider services (blocks, accounts, transactions,
+ * simulation, events, network, streaming). Each method returns an Effect that may
+ * fail with a method-specific error union (see the Get*Error type aliases), plus
+ * TransportError for RPC failures.
  *
  * @since 0.0.1
  */
-export type ProviderShape = {
-	/** Gets the current block number */
-	readonly getBlockNumber: () => Effect.Effect<bigint, ProviderError>;
-	/** Gets a block by tag or hash */
-	readonly getBlock: (
-		args?: GetBlockArgs,
-	) => Effect.Effect<BlockType, ProviderError>;
-	/** Gets the transaction count in a block */
-	readonly getBlockTransactionCount: (
-		args: GetBlockTransactionCountArgs,
-	) => Effect.Effect<bigint, ProviderError>;
-	/** Gets the balance of an address */
-	readonly getBalance: (
-		address: AddressInput,
-		blockTag?: BlockTag,
-	) => Effect.Effect<bigint, ProviderError>;
-	/** Gets the transaction count (nonce) for an address */
-	readonly getTransactionCount: (
-		address: AddressInput,
-		blockTag?: BlockTag,
-	) => Effect.Effect<bigint, ProviderError>;
-	/** Gets the bytecode at an address */
-	readonly getCode: (
-		address: AddressInput,
-		blockTag?: BlockTag,
-	) => Effect.Effect<HexType | `0x${string}`, ProviderError>;
-	/** Gets storage at a specific slot */
-	readonly getStorageAt: (
-		address: AddressInput,
-		slot: HashInput,
-		blockTag?: BlockTag,
-	) => Effect.Effect<HexType | `0x${string}`, ProviderError>;
-	/** Gets a transaction by hash */
-	readonly getTransaction: (
-		hash: HashInput,
-	) => Effect.Effect<TransactionType, ProviderError>;
-	/** Gets a transaction receipt */
-	readonly getTransactionReceipt: (
-		hash: HashInput,
-	) => Effect.Effect<ReceiptType, ProviderError>;
-	/** Waits for a transaction to be confirmed */
-	readonly waitForTransactionReceipt: (
-		hash: HashInput,
-		opts?: {
-			confirmations?: number;
-			timeout?: number;
-			pollingInterval?: number;
-		},
-	) => Effect.Effect<ReceiptType, ProviderError>;
-	/** Executes a call without sending a transaction */
-	readonly call: (
-		tx: CallRequest,
-		blockTag?: BlockTag,
-		stateOverride?: StateOverride,
-		blockOverrides?: BlockOverrides,
-	) => Effect.Effect<HexType | `0x${string}`, ProviderError>;
-	/** Estimates gas for a transaction */
-	readonly estimateGas: (
-		tx: CallRequest,
-		blockTag?: BlockTag,
-		stateOverride?: StateOverride,
-	) => Effect.Effect<bigint, ProviderError>;
-	/** Creates an access list for a transaction */
-	readonly createAccessList: (
-		tx: CallRequest,
-	) => Effect.Effect<AccessListType, ProviderError>;
-	/** Gets logs matching the filter */
-	readonly getLogs: (
-		filter: LogFilter,
-	) => Effect.Effect<LogType[], ProviderError>;
-	/** Creates an event filter (eth_newFilter) */
-	readonly createEventFilter: (
-		filter?: EventFilter,
-	) => Effect.Effect<FilterId, ProviderError>;
-	/** Creates a new block filter (eth_newBlockFilter) */
-	readonly createBlockFilter: () => Effect.Effect<FilterId, ProviderError>;
-	/** Creates a pending transaction filter (eth_newPendingTransactionFilter) */
-	readonly createPendingTransactionFilter: () => Effect.Effect<
-		FilterId,
-		ProviderError
-	>;
-	/** Gets changes since last poll for a filter (eth_getFilterChanges) */
-	readonly getFilterChanges: (
-		filterId: FilterId,
-	) => Effect.Effect<FilterChanges, ProviderError>;
-	/** Gets all logs for a filter (eth_getFilterLogs) */
-	readonly getFilterLogs: (
-		filterId: FilterId,
-	) => Effect.Effect<LogType[], ProviderError>;
-	/** Uninstalls a filter (eth_uninstallFilter) */
-	readonly uninstallFilter: (
-		filterId: FilterId,
-	) => Effect.Effect<boolean, ProviderError>;
-	/** Gets the chain ID */
-	readonly getChainId: () => Effect.Effect<number, ProviderError>;
-	/** Gets the current gas price */
-	readonly getGasPrice: () => Effect.Effect<bigint, ProviderError>;
-	/** Gets the max priority fee per gas (EIP-1559) */
-	readonly getMaxPriorityFeePerGas: () => Effect.Effect<bigint, ProviderError>;
-	/** Gets fee history for gas estimation */
-	readonly getFeeHistory: (
-		blockCount: number,
-		newestBlock: BlockTag,
-		rewardPercentiles: number[],
-	) => Effect.Effect<FeeHistoryType, ProviderError>;
-	/** Watch for new blocks with reorg detection */
-	readonly watchBlocks: <TInclude extends BlockInclude = "header">(
-		options?: WatchOptions<TInclude>,
-	) => Stream.Stream<BlockStreamEvent<TInclude>, ProviderError>;
-	/** Backfill historical blocks */
-	readonly backfillBlocks: <TInclude extends BlockInclude = "header">(
-		options: BackfillOptions<TInclude>,
-	) => Stream.Stream<BlocksEvent<TInclude>, ProviderError>;
-	/** Sends a signed raw transaction */
-	readonly sendRawTransaction: (
-		signedTx: HexType | `0x${string}`,
-	) => Effect.Effect<`0x${string}`, ProviderError>;
-	/** Gets an uncle block by block identifier and index */
-	readonly getUncle: (
-		args: GetUncleArgs,
-		uncleIndex: `0x${string}`,
-	) => Effect.Effect<UncleBlockType, ProviderError>;
-	/** Gets Merkle-Patricia proof for an account and storage slots */
-	readonly getProof: (
-		address: AddressInput,
-		storageKeys: (HashInput | `0x${string}`)[],
-		blockTag?: BlockTag,
-	) => Effect.Effect<ProofType, ProviderError>;
-	/** Gets the blob base fee (EIP-4844) */
-	readonly getBlobBaseFee: () => Effect.Effect<bigint, ProviderError>;
-	/** Gets the number of confirmations for a transaction */
-	readonly getTransactionConfirmations: (
-		hash: HashInput,
-	) => Effect.Effect<bigint, ProviderError>;
-};
+export type ProviderShape = BlocksShape &
+	AccountShape &
+	TransactionShape &
+	SimulationShape &
+	EventsShape &
+	NetworkShape &
+	StreamingShape;
 
 /**
  * Provider service for read-only blockchain operations.
@@ -1041,7 +1208,8 @@ export type ProviderShape = {
  *
  * @see {@link Provider} - The live implementation layer
  * @see {@link ProviderShape} - The service interface shape
- * @see {@link ProviderError} - Error type for failed operations
+ * @see {@link ProviderError} - Union of provider-specific errors
+ * @see {@link TransportError} - Underlying transport failures
  * @see {@link TransportService} - Required dependency for RPC communication
  */
 export class ProviderService extends Context.Tag("ProviderService")<

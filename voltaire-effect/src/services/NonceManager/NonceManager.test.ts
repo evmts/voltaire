@@ -3,10 +3,10 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import {
-	ProviderError,
 	ProviderService,
 	type ProviderShape,
 } from "../Provider/ProviderService.js";
+import { TransportError } from "../Transport/TransportService.js";
 import { DefaultNonceManager } from "./DefaultNonceManager.js";
 import { NonceError, NonceManagerService } from "./NonceManagerService.js";
 
@@ -125,7 +125,9 @@ describe("NonceManagerService", () => {
 				Effect.gen(function* () {
 					const mockProvider = createMockProvider({
 						getTransactionCount: () =>
-							Effect.fail(new ProviderError({}, "RPC failed")),
+							Effect.fail(
+								new TransportError({ code: -32000, message: "RPC failed" }),
+							),
 					});
 
 					const TestProviderLayer = Layer.succeed(

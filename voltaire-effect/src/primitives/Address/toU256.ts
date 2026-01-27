@@ -5,12 +5,13 @@
  */
 
 import { Address, type AddressType } from "@tevm/voltaire/Address";
+import { Uint256, type Type as Uint256Type } from "@tevm/voltaire/Uint";
 
 /**
- * Converts an Address to a bigint (U256).
+ * Converts an Address to a Uint256.
  *
  * @param addr - The address to convert
- * @returns The bigint representation of the address
+ * @returns The Uint256 representation of the address
  *
  * @example
  * ```typescript
@@ -23,4 +24,5 @@ import { Address, type AddressType } from "@tevm/voltaire/Address";
  *
  * @since 0.1.0
  */
-export const toU256 = (addr: AddressType): bigint => Address.toU256(addr);
+export const toU256 = (addr: AddressType): Uint256Type =>
+	Uint256.fromBigInt(Address.toU256(addr));

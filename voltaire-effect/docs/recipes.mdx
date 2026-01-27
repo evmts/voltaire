@@ -13,7 +13,7 @@ These recipes assume you have installed `voltaire-effect @tevm/voltaire effect`.
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const isContract = (address: string) => Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -29,7 +29,7 @@ const isContract = (address: string) => Effect.gen(function* () {
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
@@ -55,7 +55,7 @@ const getTokenBalance = (token: string, user: string) => Effect.gen(function* ()
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const approveAndTransfer = (
@@ -92,7 +92,7 @@ const approveAndTransfer = (
 
 ```typescript
 import { Effect, Duration } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const waitForTx = (txHash: string, confirmations = 1, timeoutSec = 120) => 
   Effect.gen(function* () {
@@ -115,7 +115,7 @@ const waitForTx = (txHash: string, confirmations = 1, timeoutSec = 120) =>
 
 ```typescript
 import { Effect } from 'effect'
-import { multicall, Provider, HttpTransport } from 'voltaire-effect/services'
+import { multicall, Provider, HttpTransport } from 'voltaire-effect'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
@@ -218,7 +218,7 @@ const decodeRawTx = (rawTx: string) => Effect.gen(function* () {
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const providers = [
   'https://eth.llamarpc.com',
@@ -277,10 +277,10 @@ const robustCall = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect/services'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect'
 
 const streamBlocks = (count: number) => Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   
   const blocks = yield* Stream.runCollect(
     blockStream.watch({ include: 'header' }).pipe(
@@ -290,7 +290,6 @@ const streamBlocks = (count: number) => Effect.gen(function* () {
   
   return blocks.toArray()
 }).pipe(
-  Effect.provide(BlockStream),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
@@ -299,7 +298,7 @@ const streamBlocks = (count: number) => Effect.gen(function* () {
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, buffer = 1.2) =>
   Effect.gen(function* () {
@@ -319,7 +318,7 @@ const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, bu
 - [Troubleshooting](/troubleshooting) — Common issues and solutions
 - [Provider Service](/services/provider) — All provider methods
 - [Signer Service](/services/signer) — Transaction signing
-- [Multicall Service](/services/multicall) — Batch RPC calls
+- [Multicall](/services/multicall) — Batch RPC calls
 - [ERC Standards](/standards) — Token standard utilities
 - [Effect Documentation](https://effect.website/docs/getting-started/introduction/) — Official Effect.ts docs
 
@@ -327,7 +326,7 @@ const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, bu
 
 ```typescript
 import { Effect } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const erc721Abi = [
   { type: 'function', name: 'ownerOf', inputs: [{ name: 'tokenId', type: 'uint256' }], 

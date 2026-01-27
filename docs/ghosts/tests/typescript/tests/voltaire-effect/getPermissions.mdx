@@ -1,0 +1,122 @@
+---
+title: getPermissions Tests
+description: Test examples for getPermissions showing EIP-2255 wallet_getPermissions queries.
+---
+
+## Sends wallet_getPermissions request
+
+Demonstrates querying the wallet for currently granted permissions.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getPermissions } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mockPermissions = [
+  {
+    invoker: "https://example.com",
+    parentCapability: "eth_accounts",
+    caveats: [
+      {
+        type: "restrictReturnedAccounts",
+        value: ["0x1234567890123456789012345678901234567890"],
+      },
+    ],
+  },
+]
+
+const mockTransport = {
+  request: <T>(method: string) => {
+    expect(method).toBe("wallet_getPermissions")
+    return Effect.succeed(mockPermissions as T)
+  },
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromise(
+  Effect.provide(getPermissions(), TestLayer),
+)
+
+expect(result).toEqual(mockPermissions)
+```
+
+## Returns empty array when no permissions granted
+
+Shows the response when no permissions have been granted.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getPermissions } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mockTransport = {
+  request: <T>() => Effect.succeed([] as T),
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromise(
+  Effect.provide(getPermissions(), TestLayer),
+)
+
+expect(result).toEqual([])
+```
+
+## Returns multiple permissions
+
+Demonstrates handling multiple granted permissions.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getPermissions } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const multiplePermissions = [
+  {
+    invoker: "https://example.com",
+    parentCapability: "eth_accounts",
+  },
+  {
+    invoker: "https://example.com",
+    parentCapability: "eth_chainId",
+  },
+]
+
+const mockTransport = {
+  request: <T>() => Effect.succeed(multiplePermissions as T),
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromise(
+  Effect.provide(getPermissions(), TestLayer),
+)
+
+expect(result).toHaveLength(2)
+```
+
+## Handles transport errors
+
+Shows proper error handling when the wallet doesn't support the method.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getPermissions } from 'voltaire-effect'
+import { TransportService, TransportError } from 'voltaire-effect'
+
+const mockTransport = {
+  request: <T>() =>
+    Effect.fail(
+      new TransportError({ code: -32601, message: "Method not supported" }),
+    ) as never,
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromiseExit(
+  Effect.provide(getPermissions(), TestLayer),
+)
+
+expect(result._tag).toBe("Failure")
+```

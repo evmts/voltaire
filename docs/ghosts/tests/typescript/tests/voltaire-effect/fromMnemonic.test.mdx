@@ -1,0 +1,110 @@
+---
+title: MnemonicAccount Tests
+description: Test examples for MnemonicAccount showing BIP-39 mnemonic derivation and HD wallet functionality.
+---
+
+## Derive default address from BIP-39 mnemonic
+
+Creates an account from a mnemonic using the default derivation path.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { Address } from 'voltaire'
+import { AccountService } from 'voltaire-effect'
+import { MnemonicAccount } from 'voltaire-effect'
+
+const TEST_MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  return {
+    address: Address.toHex(account.address),
+    hdKey: account.hdKey,
+  }
+}).pipe(
+  Effect.provide(MnemonicAccount(TEST_MNEMONIC)),
+  Effect.provide(Secp256k1Live),
+  Effect.provide(KeccakLive)
+)
+
+const result = await Effect.runPromise(program)
+expect(result.address).toBe('0x9858effd232b4033e47d90003d41ec34ecaeda94')
+expect(result.hdKey?.startsWith('xpub')).toBe(true)
+```
+
+## Support custom derivation paths
+
+Creates an account with a custom HD derivation path.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { Address } from 'voltaire'
+import { AccountService } from 'voltaire-effect'
+import { MnemonicAccount } from 'voltaire-effect'
+
+const defaultAccount = await Effect.runPromise(
+  Effect.gen(function* () {
+    return yield* AccountService
+  }).pipe(Effect.provide(MnemonicAccount(TEST_MNEMONIC)))
+)
+
+const customAccount = await Effect.runPromise(
+  Effect.gen(function* () {
+    return yield* AccountService
+  }).pipe(Effect.provide(MnemonicAccount(TEST_MNEMONIC, { path: "m/44'/60'/0'/0/0" })))
+)
+
+expect(Address.toHex(customAccount.address)).toBe(Address.toHex(defaultAccount.address))
+```
+
+## Derive child accounts
+
+Derives child accounts from the base account.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { Address } from 'voltaire'
+import { AccountService } from 'voltaire-effect'
+import { MnemonicAccount } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const base = yield* AccountService
+  if (!base.deriveChild) throw new Error('deriveChild should be defined')
+  
+  const child = yield* base.deriveChild(1)
+  return Address.toHex(child.address)
+}).pipe(Effect.provide(MnemonicAccount(TEST_MNEMONIC)))
+
+const childAddress = await Effect.runPromise(program)
+
+// Compare with direct addressIndex derivation
+const directAccount = await Effect.runPromise(
+  Effect.gen(function* () {
+    return yield* AccountService
+  }).pipe(Effect.provide(MnemonicAccount(TEST_MNEMONIC, { addressIndex: 1 })))
+)
+
+expect(childAddress).toBe(Address.toHex(directAccount.address))
+```
+
+## Support hardened child derivation
+
+Derives hardened child accounts using the hardened offset.
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { HDWallet } from 'voltaire/native'
+import { AccountService } from 'voltaire-effect'
+import { MnemonicAccount } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const base = yield* AccountService
+  if (!base.deriveChild) throw new Error('deriveChild should be defined')
+  
+  const hardened = yield* base.deriveChild(HDWallet.HARDENED_OFFSET)
+  return hardened.hdKey
+}).pipe(Effect.provide(MnemonicAccount(TEST_MNEMONIC)))
+
+const hdKey = await Effect.runPromise(program)
+expect(hdKey?.startsWith('xpub')).toBe(true)
+```

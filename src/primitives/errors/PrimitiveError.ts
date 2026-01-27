@@ -17,14 +17,14 @@ export class PrimitiveError extends AbstractError {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;
 		},
 	) {
 		super(message, {
-			code: options?.code,
+			code: options?.code ?? "PRIMITIVE_ERROR",
 			context: options?.context,
 			docsPath: options?.docsPath,
 			cause: options?.cause,

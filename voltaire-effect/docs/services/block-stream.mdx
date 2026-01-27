@@ -6,11 +6,11 @@ description: Effect-native block streaming with reorg support
 ## Quick Start
 
 ```typescript
-import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect/services'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect'
 import { Effect, Stream } from 'effect'
 
 const program = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   
   yield* Stream.runForEach(
     blockStream.watch({ include: 'transactions' }),
@@ -22,7 +22,6 @@ const program = Effect.gen(function* () {
     }
   )
 }).pipe(
-  Effect.provide(BlockStream),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 ```
@@ -33,7 +32,7 @@ Fetch blocks in a range with dynamic chunking:
 
 ```typescript
 const program = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   
   yield* Stream.runForEach(
     blockStream.backfill({
@@ -57,7 +56,7 @@ Poll for new blocks with reorg detection:
 
 ```typescript
 const program = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   
   yield* Stream.runForEach(
     blockStream.watch({ include: 'transactions' }),
@@ -117,7 +116,7 @@ Use Effect Scope for clean cancellation:
 import { Scope } from 'effect'
 
 const program = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   
   // Take first 10 blocks then stop
   yield* Stream.take(10)(
@@ -127,7 +126,7 @@ const program = Effect.gen(function* () {
 
 // Or with manual scope
 const program = Effect.gen(function* () {
-  const blockStream = yield* BlockStreamService
+  const blockStream = yield* makeBlockStream()
   const scope = yield* Scope.make()
   
   // Stream will stop when scope closes
@@ -157,7 +156,7 @@ interface BackfillOptions<T extends BlockInclude> {
 ## Error Handling
 
 ```typescript
-import { BlockStreamError } from 'voltaire-effect/services'
+import { BlockStreamError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag("BlockStreamError", (e) =>
@@ -166,35 +165,23 @@ program.pipe(
 )
 ```
 
-## Service Interface
+## Stream Shape
 
 ```typescript
-class BlockStreamService extends Context.Tag("BlockStreamService")<
-  BlockStreamService,
-  {
-    readonly backfill: <T extends BlockInclude>(
-      options: BackfillOptions<T>
-    ) => Stream.Stream<BlocksEvent<T>, BlockStreamError>
-    
-    readonly watch: <T extends BlockInclude>(
-      options?: WatchOptions<T>
-    ) => Stream.Stream<BlockStreamEvent<T>, BlockStreamError>
-  }
->() {}
+import { makeBlockStream, type BlockStreamShape } from 'voltaire-effect'
+
+const blockStream: BlockStreamShape = yield* makeBlockStream()
 ```
 
-## Layer Dependencies
+## Dependencies
 
 ```
-BlockStream ─── requires ──→ TransportService
+makeBlockStream ─── requires ──→ TransportService
 ```
 
 ```typescript
-// Compose layers
-const AppLayer = BlockStream.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
 // Use with program
-Effect.runPromise(program.pipe(Effect.provide(AppLayer)))
+Effect.runPromise(program.pipe(
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+))
 ```

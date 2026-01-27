@@ -1,21 +1,36 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import { BlockExplorerService } from "./BlockExplorerService.js";
 import { type ChainConfig, ChainService } from "./ChainService.js";
+import { ContractsService } from "./ContractsService.js";
 import {
 	arbitrum,
+	arbitrumBlockExplorers,
 	arbitrumConfig,
+	arbitrumContracts,
 	base,
+	baseBlockExplorers,
 	baseConfig,
+	baseContracts,
 	mainnet,
+	mainnetBlockExplorers,
 	mainnetConfig,
+	mainnetContracts,
 	optimism,
+	optimismBlockExplorers,
 	optimismConfig,
+	optimismContracts,
 	polygon,
+	polygonBlockExplorers,
 	polygonConfig,
+	polygonContracts,
 	sepolia,
+	sepoliaBlockExplorers,
 	sepoliaConfig,
+	sepoliaContracts,
 } from "./chains/index.js";
+import { rpcUrlsByChainId } from "./rpcUrls.js";
 
 describe("ChainService", () => {
 	describe("mainnet", () => {
@@ -46,19 +61,19 @@ describe("ChainService", () => {
 
 		it.effect("provides multicall3 contract address", () =>
 			Effect.gen(function* () {
-				const chain = yield* ChainService;
-				expect(chain.contracts?.multicall3?.address).toBe(
+				const contracts = yield* ContractsService;
+				expect(contracts.multicall3?.address).toBe(
 					"0xca11bde05977b3631167028862be2a173976ca11",
 				);
-				expect(chain.contracts?.multicall3?.blockCreated).toBe(14_353_601);
+				expect(contracts.multicall3?.blockCreated).toBe(14_353_601);
 			}).pipe(Effect.provide(mainnet)),
 		);
 
 		it.effect("provides block explorer", () =>
 			Effect.gen(function* () {
-				const chain = yield* ChainService;
-				expect(chain.blockExplorers?.default?.name).toBe("Etherscan");
-				expect(chain.blockExplorers?.default?.url).toBe("https://etherscan.io");
+				const explorers = yield* BlockExplorerService;
+				expect(explorers.default?.name).toBe("Etherscan");
+				expect(explorers.default?.url).toBe("https://etherscan.io");
 			}).pipe(Effect.provide(mainnet)),
 		);
 
@@ -108,10 +123,8 @@ describe("ChainService", () => {
 		});
 
 		it("provides Arbiscan explorer", () => {
-			expect(arbitrumConfig.blockExplorers?.default.name).toBe("Arbiscan");
-			expect(arbitrumConfig.blockExplorers?.default.url).toBe(
-				"https://arbiscan.io",
-			);
+			expect(arbitrumBlockExplorers.default?.name).toBe("Arbiscan");
+			expect(arbitrumBlockExplorers.default?.url).toBe("https://arbiscan.io");
 		});
 	});
 
@@ -128,7 +141,7 @@ describe("ChainService", () => {
 		});
 
 		it("has multicall3 contract", () => {
-			expect(baseConfig.contracts?.multicall3?.address).toBe(
+			expect(baseContracts.multicall3?.address).toBe(
 				"0xca11bde05977b3631167028862be2a173976ca11",
 			);
 		});
@@ -147,9 +160,7 @@ describe("ChainService", () => {
 		});
 
 		it("has multicall3 contract", () => {
-			expect(optimismConfig.contracts?.multicall3?.blockCreated).toBe(
-				4_286_263,
-			);
+			expect(optimismContracts.multicall3?.blockCreated).toBe(4_286_263);
 		});
 	});
 
@@ -170,7 +181,7 @@ describe("ChainService", () => {
 		});
 
 		it("has PolygonScan explorer", () => {
-			expect(polygonConfig.blockExplorers?.default.name).toBe("PolygonScan");
+			expect(polygonBlockExplorers.default?.name).toBe("PolygonScan");
 		});
 	});
 
@@ -182,7 +193,6 @@ describe("ChainService", () => {
 					name: "Custom Chain",
 					nativeCurrency: { name: "Custom", symbol: "CUST", decimals: 18 },
 					blockTime: 1_000,
-					rpcUrls: { default: { http: ["https://rpc.custom.io"] } },
 				};
 
 				const customChain = Layer.succeed(ChainService, customConfig);
@@ -232,17 +242,17 @@ describe("ChainService", () => {
 
 	describe("all chains have multicall3", () => {
 		const chains = [
-			{ name: "mainnet", config: mainnetConfig },
-			{ name: "sepolia", config: sepoliaConfig },
-			{ name: "arbitrum", config: arbitrumConfig },
-			{ name: "base", config: baseConfig },
-			{ name: "optimism", config: optimismConfig },
-			{ name: "polygon", config: polygonConfig },
+			{ name: "mainnet", contracts: mainnetContracts },
+			{ name: "sepolia", contracts: sepoliaContracts },
+			{ name: "arbitrum", contracts: arbitrumContracts },
+			{ name: "base", contracts: baseContracts },
+			{ name: "optimism", contracts: optimismContracts },
+			{ name: "polygon", contracts: polygonContracts },
 		];
 
-		for (const { name, config } of chains) {
+		for (const { name, contracts } of chains) {
 			it(`${name} has multicall3 at standard address`, () => {
-				expect(config.contracts?.multicall3?.address.toLowerCase()).toBe(
+				expect(contracts.multicall3?.address.toLowerCase()).toBe(
 					"0xca11bde05977b3631167028862be2a173976ca11",
 				);
 			});
@@ -251,17 +261,35 @@ describe("ChainService", () => {
 
 	describe("all chains have valid block explorers", () => {
 		const chains = [
-			{ name: "mainnet", config: mainnetConfig },
-			{ name: "sepolia", config: sepoliaConfig },
-			{ name: "arbitrum", config: arbitrumConfig },
-			{ name: "base", config: baseConfig },
-			{ name: "optimism", config: optimismConfig },
-			{ name: "polygon", config: polygonConfig },
+			{ name: "mainnet", explorers: mainnetBlockExplorers },
+			{ name: "sepolia", explorers: sepoliaBlockExplorers },
+			{ name: "arbitrum", explorers: arbitrumBlockExplorers },
+			{ name: "base", explorers: baseBlockExplorers },
+			{ name: "optimism", explorers: optimismBlockExplorers },
+			{ name: "polygon", explorers: polygonBlockExplorers },
 		];
 
-		for (const { name, config } of chains) {
+		for (const { name, explorers } of chains) {
 			it(`${name} has block explorer with valid URL`, () => {
-				expect(config.blockExplorers?.default.url).toMatch(/^https:\/\//);
+				expect(explorers.default?.url).toMatch(/^https:\/\//);
+			});
+		}
+	});
+
+	describe("rpcUrlsByChainId", () => {
+		const chains = [
+			{ name: "mainnet", id: mainnetConfig.id },
+			{ name: "sepolia", id: sepoliaConfig.id },
+			{ name: "arbitrum", id: arbitrumConfig.id },
+			{ name: "base", id: baseConfig.id },
+			{ name: "optimism", id: optimismConfig.id },
+			{ name: "polygon", id: polygonConfig.id },
+		];
+
+		for (const { name, id } of chains) {
+			it(`${name} has default RPC URL`, () => {
+				const rpcUrls = rpcUrlsByChainId[id];
+				expect(rpcUrls?.default.http[0]).toMatch(/^https:\/\//);
 			});
 		}
 	});

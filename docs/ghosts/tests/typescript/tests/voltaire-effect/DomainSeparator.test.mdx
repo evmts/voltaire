@@ -1,0 +1,82 @@
+---
+title: DomainSeparator Tests
+description: Test examples for EIP-712 domain separator schemas and utilities.
+---
+
+## Decodes valid hex string
+
+Decodes 32-byte hex string to DomainSeparator.
+
+```typescript
+import { describe, expect, it } from "vitest"
+import * as Schema from "effect/Schema"
+import * as DomainSeparator from "voltaire-effect/primitives/DomainSeparator"
+
+it("decodes valid hex string", () => {
+  const hex = `0x${"ab".repeat(32)}`
+  const result = Schema.decodeSync(DomainSeparator.Hex)(hex)
+  expect(result).toBeInstanceOf(Uint8Array)
+  expect(result.length).toBe(32)
+})
+```
+
+## Fails for wrong hex length
+
+Rejects hex strings that aren't exactly 32 bytes.
+
+```typescript
+it("fails for wrong hex length", () => {
+  const hex = `0x${"ab".repeat(16)}`
+  expect(() => Schema.decodeSync(DomainSeparator.Hex)(hex)).toThrow()
+})
+```
+
+## Encodes back to hex
+
+Round-trips domain separator through hex encoding.
+
+```typescript
+it("encodes back to hex", () => {
+  const hex = `0x${"ab".repeat(32)}`
+  const decoded = Schema.decodeSync(DomainSeparator.Hex)(hex)
+  const encoded = Schema.encodeSync(DomainSeparator.Hex)(decoded)
+  expect(encoded).toBe(hex)
+})
+```
+
+## Decodes 32-byte Uint8Array
+
+Decodes raw bytes to DomainSeparator.
+
+```typescript
+it("decodes 32-byte Uint8Array", () => {
+  const bytes = new Uint8Array(32).fill(0xab)
+  const result = Schema.decodeSync(DomainSeparator.Bytes)(bytes)
+  expect(result).toBeInstanceOf(Uint8Array)
+  expect(result.length).toBe(32)
+})
+```
+
+## Equals returns true for equal separators
+
+Compares domain separators for equality.
+
+```typescript
+it("equals returns true for equal separators", () => {
+  const a = Schema.decodeSync(DomainSeparator.Hex)(`0x${"ab".repeat(32)}`)
+  const b = Schema.decodeSync(DomainSeparator.Hex)(`0x${"ab".repeat(32)}`)
+  expect(DomainSeparator.equals(a, b)).toBe(true)
+})
+```
+
+## Equals returns false for different separators
+
+Detects differences between domain separators.
+
+```typescript
+it("equals returns false for different separators", () => {
+  const a = Schema.decodeSync(DomainSeparator.Hex)(`0x${"ab".repeat(32)}`)
+  const b = Schema.decodeSync(DomainSeparator.Hex)(`0x${"cd".repeat(32)}`)
+  expect(DomainSeparator.equals(a, b)).toBe(false)
+})
+```

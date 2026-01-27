@@ -1,0 +1,92 @@
+---
+title: getErrorSignature Tests
+description: Test examples for getErrorSignature showing ABI error signature generation.
+---
+
+## Get Error Signature with Inputs
+
+Generates error signature string from ABI error definition.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { ErrorSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { getErrorSignature } from "voltaire-effect/primitives/Abi/getErrorSignature"
+
+const err = S.decodeUnknownSync(ErrorSchema)({
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { name: "available", type: "uint256" },
+    { name: "required", type: "uint256" },
+  ],
+})
+
+const sig = await Effect.runPromise(getErrorSignature(err))
+expect(sig).toBe("InsufficientBalance(uint256,uint256)")
+```
+
+## Get Error Signature with Address Input
+
+Generates signature for errors with address parameters.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { ErrorSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { getErrorSignature } from "voltaire-effect/primitives/Abi/getErrorSignature"
+
+const err = S.decodeUnknownSync(ErrorSchema)({
+  type: "error",
+  name: "Unauthorized",
+  inputs: [{ name: "caller", type: "address" }],
+})
+
+const sig = await Effect.runPromise(getErrorSignature(err))
+expect(sig).toBe("Unauthorized(address)")
+```
+
+## Get Error Signature with No Inputs
+
+Generates signature for errors without parameters.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { ErrorSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { getErrorSignature } from "voltaire-effect/primitives/Abi/getErrorSignature"
+
+const err = S.decodeUnknownSync(ErrorSchema)({
+  type: "error",
+  name: "InvalidAmount",
+  inputs: [],
+})
+
+const sig = await Effect.runPromise(getErrorSignature(err))
+expect(sig).toBe("InvalidAmount()")
+```
+
+## Get Error Signature with Multiple Types
+
+Generates signature for errors with multiple parameter types.
+
+```typescript
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { ErrorSchema } from "voltaire-effect/primitives/Abi/AbiSchema"
+import { getErrorSignature } from "voltaire-effect/primitives/Abi/getErrorSignature"
+
+const err = S.decodeUnknownSync(ErrorSchema)({
+  type: "error",
+  name: "TransferFailed",
+  inputs: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" },
+  ],
+})
+
+const sig = await Effect.runPromise(getErrorSignature(err))
+expect(sig).toBe("TransferFailed(address,address,uint256)")
+```

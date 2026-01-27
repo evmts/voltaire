@@ -14,7 +14,11 @@ import {
 import { Constructor } from "@tevm/voltaire/Abi";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as Effect from "effect/Effect";
-import { ProviderError, ProviderService } from "../../Provider/index.js";
+import {
+	ProviderResponseError,
+	ProviderService,
+	type WaitForTransactionReceiptError,
+} from "../../Provider/index.js";
 import { type SignerError, SignerService } from "../SignerService.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -61,7 +65,11 @@ export interface DeployContractResult {
 	/** Transaction hash of the deployment */
 	readonly hash: HashType;
 	/** Effect that resolves to the deployed contract address after confirmation */
-	readonly address: Effect.Effect<AddressType, ProviderError, ProviderService>;
+	readonly address: Effect.Effect<
+		AddressType,
+		WaitForTransactionReceiptError,
+		ProviderService
+	>;
 }
 
 /**
@@ -138,17 +146,20 @@ export const deployContract = <TAbi extends Abi>(
 			nonce: params.nonce,
 		});
 
-		const address: Effect.Effect<AddressType, ProviderError, ProviderService> =
-			Effect.gen(function* () {
-				const provider = yield* ProviderService;
-				const receipt = yield* provider.waitForTransactionReceipt(hash);
-				if (!receipt.contractAddress) {
-					return yield* Effect.fail(
-						new ProviderError({ hash }, "No contract address in receipt"),
-					);
-				}
-				return Address.fromHex(receipt.contractAddress);
-			});
+		const address: Effect.Effect<
+			AddressType,
+			WaitForTransactionReceiptError,
+			ProviderService
+		> = Effect.gen(function* () {
+			const provider = yield* ProviderService;
+			const receipt = yield* provider.waitForTransactionReceipt(hash);
+			if (!receipt.contractAddress) {
+				return yield* Effect.fail(
+					new ProviderResponseError({ hash }, "No contract address in receipt"),
+				);
+			}
+			return Address.fromHex(receipt.contractAddress);
+		});
 
 		return { hash, address };
 	});

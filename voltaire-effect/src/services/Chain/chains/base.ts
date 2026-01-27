@@ -6,7 +6,12 @@
  */
 
 import * as Layer from "effect/Layer";
+import {
+	type BlockExplorerConfig,
+	BlockExplorerService,
+} from "../BlockExplorerService.js";
 import { type ChainConfig, ChainService } from "../ChainService.js";
+import { type ContractsConfig, ContractsService } from "../ContractsService.js";
 
 /**
  * Base L2 configuration.
@@ -18,26 +23,35 @@ export const baseConfig: ChainConfig = {
 	name: "Base",
 	nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 	blockTime: 2_000,
-	rpcUrls: {
-		default: { http: ["https://mainnet.base.org"] },
-	},
-	blockExplorers: {
-		default: {
-			name: "Basescan",
-			url: "https://basescan.org",
-			apiUrl: "https://api.basescan.org/api",
-		},
-	},
-	contracts: {
-		multicall3: {
-			address: "0xca11bde05977b3631167028862be2a173976ca11",
-			blockCreated: 5_022,
-		},
+};
+
+/**
+ * Base block explorer configuration.
+ *
+ * @since 0.0.1
+ */
+export const baseBlockExplorers: BlockExplorerConfig = {
+	default: {
+		name: "Basescan",
+		url: "https://basescan.org",
+		apiUrl: "https://api.basescan.org/api",
 	},
 };
 
 /**
- * Base L2 Layer for ChainService.
+ * Base contract deployments.
+ *
+ * @since 0.0.1
+ */
+export const baseContracts: ContractsConfig = {
+	multicall3: {
+		address: "0xca11bde05977b3631167028862be2a173976ca11",
+		blockCreated: 5_022,
+	},
+};
+
+/**
+ * Base L2 Layer for chain metadata, explorers, and contracts.
  *
  * @since 0.0.1
  *
@@ -52,4 +66,8 @@ export const baseConfig: ChainConfig = {
  * }).pipe(Effect.provide(base))
  * ```
  */
-export const base = Layer.succeed(ChainService, baseConfig);
+export const base = Layer.mergeAll(
+	Layer.succeed(ChainService, baseConfig),
+	Layer.succeed(BlockExplorerService, baseBlockExplorers),
+	Layer.succeed(ContractsService, baseContracts),
+);

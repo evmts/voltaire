@@ -1,0 +1,137 @@
+---
+title: TransactionStreamError Tests
+description: Test examples for transaction stream error construction and common scenarios.
+---
+
+## Creates error with message
+
+Shows basic error construction with message and tags.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const error = new TransactionStreamError("Transaction stream failed");
+expect(error.message).toBe("Transaction stream failed");
+expect(error.name).toBe("TransactionStreamError");
+expect(error._tag).toBe("TransactionStreamError");
+```
+
+## Creates error with cause
+
+Demonstrates wrapping underlying errors.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const originalError = new Error("Network timeout");
+const error = new TransactionStreamError("Transaction polling failed", {
+  cause: originalError,
+});
+expect(error.cause).toBe(originalError);
+```
+
+## Creates error with context
+
+Shows attaching context metadata to errors.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const context = {
+  txHash: "0xabc123",
+  confirmations: 3,
+  targetConfirmations: 12,
+};
+const error = new TransactionStreamError("Confirmation timeout", { context });
+expect((error as any).context).toEqual(context);
+```
+
+## Creates error with both cause and context
+
+Demonstrates full error construction with all options.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const originalError = new Error("RPC error");
+const context = { method: "eth_getTransactionReceipt" };
+const error = new TransactionStreamError("Receipt fetch failed", {
+  cause: originalError,
+  context,
+});
+expect(error.cause).toBe(originalError);
+expect((error as any).context).toEqual(context);
+```
+
+## Is instanceof Error
+
+Verifies proper Error inheritance.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const error = new TransactionStreamError("Error");
+expect(error instanceof Error).toBe(true);
+expect(error instanceof TransactionStreamError).toBe(true);
+```
+
+## Has stack trace
+
+Shows that errors have proper stack traces.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const error = new TransactionStreamError("Error");
+expect(error.stack).toBeDefined();
+expect(error.stack).toContain("TransactionStreamError");
+```
+
+## Represents transaction dropped/replaced error
+
+Common scenario: transaction was dropped or replaced.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const error = new TransactionStreamError("Transaction was dropped or replaced", {
+  context: {
+    originalTxHash: "0x111",
+    replacementTxHash: "0x222",
+  },
+});
+expect(error.message).toContain("dropped or replaced");
+```
+
+## Represents confirmation timeout error
+
+Common scenario: waiting for confirmations timed out.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const error = new TransactionStreamError("Transaction confirmation timeout", {
+  context: {
+    txHash: "0xabc",
+    waitedBlocks: 100,
+    targetConfirmations: 12,
+  },
+});
+expect(error.message).toContain("timeout");
+```
+
+## Represents reverted transaction error
+
+Common scenario: transaction reverted on-chain.
+
+```typescript
+import { TransactionStreamError } from "voltaire-effect/transaction";
+
+const error = new TransactionStreamError("Transaction reverted", {
+  context: {
+    txHash: "0xdef",
+    revertReason: "ERC20: transfer amount exceeds balance",
+  },
+});
+expect(error.message).toBe("Transaction reverted");
+```

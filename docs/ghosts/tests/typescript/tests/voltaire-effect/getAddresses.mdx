@@ -1,0 +1,144 @@
+---
+title: getAddresses Tests
+description: Test examples for getAddresses showing eth_accounts queries with address type conversion.
+---
+
+## Sends eth_accounts request and returns addresses
+
+Demonstrates querying connected accounts and converting to AddressType.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { Address } from '@tevm/voltaire'
+import { getAddresses } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mockAddresses = [
+  "0x1234567890123456789012345678901234567890",
+  "0xabababababababababababababababababababab",
+]
+
+const mockTransport = {
+  request: <T>(method: string) => {
+    expect(method).toBe("eth_accounts")
+    return Effect.succeed(mockAddresses as T)
+  },
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromise(
+  Effect.provide(getAddresses(), TestLayer),
+)
+
+expect(result).toHaveLength(2)
+expect(result[0]).toBeInstanceOf(Uint8Array)
+expect(result[0]?.length).toBe(20)
+```
+
+## Returns empty array when no addresses authorized
+
+Shows the response when no accounts are connected.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getAddresses } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mockTransport = {
+  request: <T>() => Effect.succeed([] as T),
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromise(
+  Effect.provide(getAddresses(), TestLayer),
+)
+
+expect(result).toEqual([])
+```
+
+## Converts hex strings to AddressType
+
+Demonstrates that hex address strings are converted to branded AddressType.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { Address } from '@tevm/voltaire'
+import { getAddresses } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mockAddresses = ["0x1234567890123456789012345678901234567890"]
+
+const mockTransport = {
+  request: <T>() => Effect.succeed(mockAddresses as T),
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromise(
+  Effect.provide(getAddresses(), TestLayer),
+)
+
+expect(result).toHaveLength(1)
+const addressHex = Address.toHex(result[0]!)
+expect(addressHex.toLowerCase()).toBe(
+  "0x1234567890123456789012345678901234567890",
+)
+```
+
+## Handles transport errors
+
+Shows proper error handling when the request fails.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getAddresses } from 'voltaire-effect'
+import { TransportService, TransportError } from 'voltaire-effect'
+
+const mockTransport = {
+  request: <T>() =>
+    Effect.fail(
+      new TransportError({ code: -32000, message: "Not connected" }),
+    ) as never,
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromiseExit(
+  Effect.provide(getAddresses(), TestLayer),
+)
+
+expect(result._tag).toBe("Failure")
+```
+
+## Handles multiple addresses with checksums
+
+Shows that both checksummed and lowercase addresses are handled correctly.
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getAddresses } from 'voltaire-effect'
+import { TransportService } from 'voltaire-effect'
+
+const mockAddresses = [
+  "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", // checksummed
+  "0xab5801a7d398351b8be11c439e05c5b3259aec9b", // lowercase
+]
+
+const mockTransport = {
+  request: <T>() => Effect.succeed(mockAddresses as T),
+}
+
+const TestLayer = Layer.succeed(TransportService, mockTransport)
+
+const result = await Effect.runPromise(
+  Effect.provide(getAddresses(), TestLayer),
+)
+
+expect(result).toHaveLength(2)
+result.forEach((addr) => {
+  expect(addr).toBeInstanceOf(Uint8Array)
+  expect(addr.length).toBe(20)
+})
+```

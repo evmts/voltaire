@@ -10,7 +10,7 @@ import { Effect } from 'effect'
 import { 
   SignerService, Signer, Provider, LocalAccount,
   HttpTransport, Secp256k1Live, KeccakLive
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
@@ -47,7 +47,7 @@ const signer = Signer.fromProvider(Provider, LocalAccount(privateKey))
 Compose a Signer from existing Provider and Account layers:
 
 ```typescript
-import { Signer, Provider, LocalAccount, JsonRpcAccount } from 'voltaire-effect/services'
+import { Signer, Provider, LocalAccount, JsonRpcAccount } from 'voltaire-effect'
 
 // With local account (private key signing)
 const localSigner = Signer.fromProvider(Provider, LocalAccount(privateKey))
@@ -105,7 +105,7 @@ const Signer = {
 ## Browser Wallet
 
 ```typescript
-import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -254,7 +254,7 @@ Nonces are fetched using `getTransactionCount('pending')` to correctly account f
 ## Error Handling
 
 ```typescript
-import { SignerError } from 'voltaire-effect/services'
+import { SignerError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('SignerError', (e) => {

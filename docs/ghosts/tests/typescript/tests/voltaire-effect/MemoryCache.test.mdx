@@ -1,0 +1,178 @@
+---
+title: MemoryCache Tests
+description: Test examples for MemoryCache showing in-memory caching with TTL and LRU eviction.
+---
+
+## MemoryCache sets and gets a value
+
+Basic set and get operations work as expected.
+
+```typescript
+import { Effect } from 'effect'
+import * as Option from 'effect/Option'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set("key", "value")
+  const result = yield* cache.get("key")
+  expect(Option.isSome(result)).toBe(true)
+  expect(Option.getOrThrow(result)).toBe("value")
+}).pipe(Effect.provide(MemoryCache()))
+```
+
+## MemoryCache returns none for missing key
+
+Getting a key that doesn't exist returns Option.none.
+
+```typescript
+import { Effect } from 'effect'
+import * as Option from 'effect/Option'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  const result = yield* cache.get("missing")
+  expect(Option.isNone(result)).toBe(true)
+}).pipe(Effect.provide(MemoryCache()))
+```
+
+## MemoryCache deletes a key
+
+The delete operation removes a key and returns true if it existed.
+
+```typescript
+import { Effect } from 'effect'
+import * as Option from 'effect/Option'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set("key", "value")
+  const deleted = yield* cache.delete("key")
+  const result = yield* cache.get("key")
+  expect(deleted).toBe(true)
+  expect(Option.isNone(result)).toBe(true)
+}).pipe(Effect.provide(MemoryCache()))
+```
+
+## MemoryCache clears all entries
+
+The clear operation removes all cached entries.
+
+```typescript
+import { Effect } from 'effect'
+import * as Option from 'effect/Option'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set("key1", "value1")
+  yield* cache.set("key2", "value2")
+  yield* cache.clear()
+  const r1 = yield* cache.get("key1")
+  const r2 = yield* cache.get("key2")
+  expect(Option.isNone(r1)).toBe(true)
+  expect(Option.isNone(r2)).toBe(true)
+}).pipe(Effect.provide(MemoryCache()))
+```
+
+## MemoryCache expires entries after TTL
+
+Entries are automatically expired after the specified TTL.
+
+```typescript
+import { Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Option from 'effect/Option'
+import * as TestClock from 'effect/TestClock'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set("key", "value", 1000) // 1 second TTL
+
+  const before = yield* cache.get("key")
+  yield* TestClock.adjust(Duration.millis(1001))
+  const after = yield* cache.get("key")
+
+  expect(Option.isSome(before)).toBe(true)
+  expect(Option.isNone(after)).toBe(true)
+}).pipe(Effect.provide(MemoryCache()))
+```
+
+## MemoryCache uses default TTL when not specified
+
+A default TTL can be configured for all entries.
+
+```typescript
+import { Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Option from 'effect/Option'
+import * as TestClock from 'effect/TestClock'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set("key", "value") // Uses default TTL
+
+  const before = yield* cache.get("key")
+  yield* TestClock.adjust(Duration.millis(501))
+  const after = yield* cache.get("key")
+
+  expect(Option.isSome(before)).toBe(true)
+  expect(Option.isNone(after)).toBe(true)
+}).pipe(Effect.provide(MemoryCache({ defaultTtl: 500 })))
+```
+
+## MemoryCache evicts oldest entry when max size exceeded
+
+LRU eviction removes the least recently used entry when the cache is full.
+
+```typescript
+import { Effect } from 'effect'
+import * as Option from 'effect/Option'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set("key1", "value1")
+  yield* cache.set("key2", "value2")
+  yield* cache.set("key3", "value3") // Evicts key1
+
+  const r1 = yield* cache.get("key1")
+  const r2 = yield* cache.get("key2")
+  const r3 = yield* cache.get("key3")
+
+  expect(Option.isNone(r1)).toBe(true) // Evicted
+  expect(Option.isSome(r2)).toBe(true)
+  expect(Option.isSome(r3)).toBe(true)
+}).pipe(Effect.provide(MemoryCache({ maxSize: 2 })))
+```
+
+## MemoryCache updates LRU order on get
+
+Accessing an entry updates its position in the LRU order.
+
+```typescript
+import { Effect } from 'effect'
+import * as Option from 'effect/Option'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set("key1", "value1")
+  yield* cache.set("key2", "value2")
+  
+  yield* cache.get("key1") // Access key1, making it recently used
+  yield* cache.set("key3", "value3") // Evicts key2 (least recently used)
+
+  const r1 = yield* cache.get("key1")
+  const r2 = yield* cache.get("key2")
+  const r3 = yield* cache.get("key3")
+
+  expect(Option.isSome(r1)).toBe(true) // Still present
+  expect(Option.isNone(r2)).toBe(true) // Evicted
+  expect(Option.isSome(r3)).toBe(true)
+}).pipe(Effect.provide(MemoryCache({ maxSize: 2 })))
+```

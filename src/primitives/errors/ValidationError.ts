@@ -22,7 +22,7 @@ export class ValidationError extends PrimitiveError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -31,7 +31,7 @@ export class ValidationError extends PrimitiveError {
 		},
 	) {
 		super(message, {
-			code: options.code,
+			code: options.code ?? "VALIDATION_ERROR",
 			context: options.context,
 			docsPath: options.docsPath,
 			cause: options.cause,
@@ -52,7 +52,7 @@ export class InvalidFormatError extends ValidationError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -60,7 +60,7 @@ export class InvalidFormatError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code });
+		super(message, { ...options, code: options.code ?? "INVALID_FORMAT" });
 		this.name = "InvalidFormatError";
 	}
 }
@@ -75,7 +75,7 @@ export class InvalidLengthError extends ValidationError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -83,7 +83,7 @@ export class InvalidLengthError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code });
+		super(message, { ...options, code: options.code ?? "INVALID_LENGTH" });
 		this.name = "InvalidLengthError";
 	}
 }
@@ -98,7 +98,7 @@ export class InvalidRangeError extends ValidationError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -106,7 +106,7 @@ export class InvalidRangeError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code });
+		super(message, { ...options, code: options.code ?? "INVALID_RANGE" });
 		this.name = "InvalidRangeError";
 	}
 }
@@ -121,7 +121,7 @@ export class InvalidChecksumError extends ValidationError {
 	constructor(
 		message: string,
 		options: {
-			code?: number;
+			code?: number | string;
 			value: unknown;
 			expected: string;
 			context?: Record<string, unknown>;
@@ -129,7 +129,7 @@ export class InvalidChecksumError extends ValidationError {
 			cause?: Error;
 		},
 	) {
-		super(message, { ...options, code: options.code });
+		super(message, { ...options, code: options.code ?? "INVALID_CHECKSUM" });
 		this.name = "InvalidChecksumError";
 	}
 }

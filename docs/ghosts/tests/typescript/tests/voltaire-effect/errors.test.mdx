@@ -1,0 +1,140 @@
+---
+title: Service Errors Tests
+description: Test examples for standardized error shapes across voltaire-effect services.
+---
+
+## TransportError has _tag, input, message, cause
+
+All service errors follow a consistent shape with _tag, input, message, and optional cause.
+
+```typescript
+import { TransportError } from 'voltaire-effect'
+
+const input = { code: -32603, message: "Internal error", data: { extra: "info" } }
+const cause = new Error("underlying")
+const error = new TransportError(input, "Transport failed", { cause })
+
+expect(error._tag).toBe("TransportError")
+expect(error.name).toBe("TransportError")
+expect(error.input).toEqual(input)
+expect(error.message).toContain("Transport failed")
+expect(error.cause).toBe(cause)
+```
+
+## TransportError preserves code and data from input
+
+Error code and data are accessible from the error object.
+
+```typescript
+import { TransportError } from 'voltaire-effect'
+
+const input = { code: -32601, message: "Method not found", data: "0x1234" }
+const error = new TransportError(input, "RPC error")
+
+expect(error.code).toBe(-32601)
+expect(error.data).toBe("0x1234")
+```
+
+## ContractCallError is catchable with Effect.catchTag
+
+All error types can be caught using Effect.catchTag with their _tag.
+
+```typescript
+import { Effect } from 'effect'
+import { ContractCallError } from 'voltaire-effect'
+
+const callError = new ContractCallError({}, "call failed")
+const writeError = new ContractWriteError({}, "write failed")
+const eventError = new ContractEventError({}, "event failed")
+
+const handleError = (error: ContractCallError | ContractWriteError | ContractEventError) =>
+  Effect.fail(error).pipe(
+    Effect.catchTag("ContractCallError", (e) => Effect.succeed(`call: ${e.message}`)),
+    Effect.catchTag("ContractWriteError", (e) => Effect.succeed(`write: ${e.message}`)),
+    Effect.catchTag("ContractEventError", (e) => Effect.succeed(`event: ${e.message}`)),
+  )
+
+expect(await Effect.runPromise(handleError(callError))).toBe("call: call failed")
+expect(await Effect.runPromise(handleError(writeError))).toBe("write: write failed")
+expect(await Effect.runPromise(handleError(eventError))).toBe("event: event failed")
+```
+
+## All errors extend Error
+
+All service errors are proper Error instances.
+
+```typescript
+import { TransportError } from 'voltaire-effect'
+import { ProviderResponseError } from 'voltaire-effect'
+import { AccountError } from 'voltaire-effect'
+import { SignerError } from 'voltaire-effect'
+import { ContractError, ContractCallError, ContractWriteError, ContractEventError } from 'voltaire-effect'
+
+expect(new TransportError({ code: 1, message: "x" }, "x")).toBeInstanceOf(Error)
+expect(new ProviderResponseError({}, "x")).toBeInstanceOf(Error)
+expect(new AccountError({}, "x")).toBeInstanceOf(Error)
+expect(new SignerError({}, "x")).toBeInstanceOf(Error)
+expect(new ContractError({}, "x")).toBeInstanceOf(Error)
+expect(new ContractCallError({}, "x")).toBeInstanceOf(Error)
+expect(new ContractWriteError({}, "x")).toBeInstanceOf(Error)
+expect(new ContractEventError({}, "x")).toBeInstanceOf(Error)
+```
+
+## AbiEncodeError has _tag, functionName, args, message, cause
+
+ABI encoding errors include the function name and arguments that caused the error.
+
+```typescript
+import { AbiEncodeError } from 'voltaire-effect'
+
+const cause = new Error("encode failed")
+const error = new AbiEncodeError({
+  functionName: "transfer",
+  args: ["0x123", 100n],
+  message: "Failed to encode function",
+  cause,
+})
+
+expect(error._tag).toBe("AbiEncodeError")
+expect(error.functionName).toBe("transfer")
+expect(error.args).toEqual(["0x123", 100n])
+expect(error.message).toBe("Failed to encode function")
+expect(error.cause).toBe(cause)
+```
+
+## CcipError has _tag, urls, message, cause
+
+CCIP errors include the gateway URLs that were attempted.
+
+```typescript
+import { CcipError } from 'voltaire-effect'
+
+const urls = ["https://example.com/gateway"]
+const cause = new Error("fetch failed")
+const error = new CcipError({ urls, message: "CCIP lookup failed", cause })
+
+expect(error._tag).toBe("CcipError")
+expect(error.urls).toEqual(urls)
+expect(error.message).toBe("CCIP lookup failed")
+expect(error.cause).toBe(cause)
+```
+
+## KzgError has _tag, operation, message, cause
+
+KZG errors include the operation that failed.
+
+```typescript
+import { KzgError } from 'voltaire-effect'
+
+const cause = new Error("kzg failed")
+const error = new KzgError({
+  operation: "blobToCommitment",
+  message: "Failed to compute commitment",
+  cause,
+})
+
+expect(error._tag).toBe("KzgError")
+expect(error.operation).toBe("blobToCommitment")
+expect(error.message).toBe("Failed to compute commitment")
+expect(error.cause).toBe(cause)
+```

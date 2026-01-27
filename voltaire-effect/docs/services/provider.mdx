@@ -3,13 +3,13 @@ title: Provider Service
 description: Read-only blockchain operations with Effect.ts
 ---
 
-The Provider service wraps [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) methods with typed errors and Effect composition.
+The Provider service wraps [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) methods with typed error unions and Effect composition.
 
 ## Quick Start
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -76,7 +76,7 @@ const confirmed = yield* provider.waitForTransactionReceipt('0x...', {
 Type-safe contract reads without creating a Contract instance:
 
 ```typescript
-import { readContract } from 'voltaire-effect/services'
+import { readContract } from 'voltaire-effect'
 
 const erc20Abi = [
   {
@@ -153,7 +153,7 @@ const gas = yield* provider.estimateGas({
 Batches multiple contract reads into a single RPC call using the Multicall3 contract at `0xcA11bde05977b3631167028862bE2a173976CA11`. Reduces network overhead by 10-100x.
 
 ```typescript
-import { multicall } from 'voltaire-effect/services'
+import { multicall } from 'voltaire-effect'
 
 const erc20Abi = [
   {
@@ -227,7 +227,7 @@ const results = yield* multicall({
 Simulates a contract write function before sending. Returns both the decoded result and a prepared transaction request.
 
 ```typescript
-import { simulateContract } from 'voltaire-effect/services'
+import { simulateContract } from 'voltaire-effect'
 
 const { result, request } = yield* simulateContract({
   address: tokenAddress,
@@ -269,7 +269,7 @@ simulateContract is essential for validating writes before spending gas:
 
 ```typescript
 import { Effect } from 'effect'
-import { simulateContract, ProviderError } from 'voltaire-effect/services'
+import { simulateContract, ProviderValidationError, TransportError } from 'voltaire-effect'
 
 const safeTransfer = Effect.gen(function* () {
   const { result, request } = yield* simulateContract({
@@ -286,9 +286,11 @@ const safeTransfer = Effect.gen(function* () {
   
   return request
 }).pipe(
-  Effect.catchTag('ProviderError', (e) => {
-    // Contract reverted - extract revert reason
-    return Effect.fail(new Error(`Simulation failed: ${e.message}`))
+  Effect.catchTags({
+    ProviderValidationError: (e) =>
+      Effect.fail(new Error(`Invalid ABI or function: ${e.message}`)),
+    TransportError: (e) =>
+      Effect.fail(new Error(`Simulation failed: ${e.message}`))
   })
 )
 ```
@@ -315,48 +317,60 @@ const feeHistory = yield* provider.getFeeHistory(10, 'latest', [25, 50, 75])
 ## Error Handling
 
 ```typescript
-import { ProviderError } from 'voltaire-effect/services'
+import { ProviderNotFoundError, ProviderResponseError, TransportError } from 'voltaire-effect'
 
 program.pipe(
-  Effect.catchTag('ProviderError', (e) => {
-    console.error('RPC failed:', e.message)
-    return Effect.succeed(0n)
+  Effect.catchTags({
+    TransportError: (e) => {
+      console.error('RPC failed:', e.message)
+      return Effect.succeed(0n)
+    },
+    ProviderResponseError: (e) => {
+      console.error('Unexpected response:', e.message)
+      return Effect.succeed(0n)
+    },
+    ProviderNotFoundError: (e) => {
+      console.error('Missing resource:', e.message)
+      return Effect.succeed(0n)
+    }
   })
 )
 ```
 
 ## Service Interface
 
+Each method has a method-specific error alias (for example `GetBlockNumberError`), which unions `TransportError` with relevant provider errors.
+
 ```typescript
 type AddressInput = AddressType | `0x${string}`
 type HashInput = HashType | `0x${string}`
 
 type ProviderShape = {
-  readonly getBlockNumber: () => Effect.Effect<bigint, ProviderError>
-  readonly getBlock: (args?: GetBlockArgs) => Effect.Effect<BlockType, ProviderError>
-  readonly getBlockTransactionCount: (args: GetBlockTransactionCountArgs) => Effect.Effect<bigint, ProviderError>
-  readonly getBalance: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
-  readonly getTransactionCount: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, ProviderError>
-  readonly getCode: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, ProviderError>
-  readonly getStorageAt: (address: AddressInput, slot: HashInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, ProviderError>
-  readonly getTransaction: (hash: HashInput) => Effect.Effect<TransactionType, ProviderError>
-  readonly getTransactionReceipt: (hash: HashInput) => Effect.Effect<ReceiptType, ProviderError>
+  readonly getBlockNumber: () => Effect.Effect<bigint, GetBlockNumberError>
+  readonly getBlock: (args?: GetBlockArgs) => Effect.Effect<BlockType, GetBlockError>
+  readonly getBlockTransactionCount: (args: GetBlockTransactionCountArgs) => Effect.Effect<bigint, GetBlockTransactionCountError>
+  readonly getBalance: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, GetBalanceError>
+  readonly getTransactionCount: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<bigint, GetTransactionCountError>
+  readonly getCode: (address: AddressInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, GetCodeError>
+  readonly getStorageAt: (address: AddressInput, slot: HashInput, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, GetStorageAtError>
+  readonly getTransaction: (hash: HashInput) => Effect.Effect<TransactionType, GetTransactionError>
+  readonly getTransactionReceipt: (hash: HashInput) => Effect.Effect<ReceiptType, GetTransactionReceiptError>
   readonly waitForTransactionReceipt: (hash: HashInput, opts?: { 
     confirmations?: number
     timeout?: number 
-  }) => Effect.Effect<ReceiptType, ProviderError>
-  readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, ProviderError>
-  readonly estimateGas: (tx: CallRequest) => Effect.Effect<bigint, ProviderError>
-  readonly createAccessList: (tx: CallRequest) => Effect.Effect<AccessListType, ProviderError>
-  readonly getLogs: (filter: LogFilter) => Effect.Effect<LogType[], ProviderError>
-  readonly getChainId: () => Effect.Effect<number, ProviderError>
-  readonly getGasPrice: () => Effect.Effect<bigint, ProviderError>
-  readonly getMaxPriorityFeePerGas: () => Effect.Effect<bigint, ProviderError>
+  }) => Effect.Effect<ReceiptType, WaitForTransactionReceiptError>
+  readonly call: (tx: CallRequest, blockTag?: BlockTag) => Effect.Effect<HexType | `0x${string}`, CallError>
+  readonly estimateGas: (tx: CallRequest) => Effect.Effect<bigint, EstimateGasError>
+  readonly createAccessList: (tx: CallRequest) => Effect.Effect<AccessListType, CreateAccessListError>
+  readonly getLogs: (filter: LogFilter) => Effect.Effect<LogType[], GetLogsError>
+  readonly getChainId: () => Effect.Effect<number, GetChainIdError>
+  readonly getGasPrice: () => Effect.Effect<bigint, GetGasPriceError>
+  readonly getMaxPriorityFeePerGas: () => Effect.Effect<bigint, GetMaxPriorityFeePerGasError>
   readonly getFeeHistory: (
     blockCount: number, 
     newestBlock: BlockTag, 
     rewardPercentiles: number[]
-  ) => Effect.Effect<FeeHistoryType, ProviderError>
+  ) => Effect.Effect<FeeHistoryType, GetFeeHistoryError>
 }
 
 // Block identifier - named tag or hex block number
@@ -410,7 +424,7 @@ interface TransactionType {
 Use Layer composition for L2-specific features:
 
 ```typescript
-import { OpStackActionsService, OpStackActions } from 'voltaire-effect/services'
+import { OpStackActionsService, OpStackActions } from 'voltaire-effect'
 
 // Compose OP Stack extension with base Provider
 const OpStackProvider = Layer.merge(Provider, OpStackActions)
@@ -433,6 +447,6 @@ const program = Effect.gen(function* () {
 
 - [Transport Service](/services/transport) — HTTP/WebSocket transport layer
 - [Signer Service](/services/signer) — Transaction signing and sending
-- [Multicall Service](/services/multicall) — Batch multiple calls
+- [Multicall](/services/multicall) — Batch multiple calls
 - [Read Blockchain Example](/examples/read-blockchain) — Common read patterns
 - [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) — JSON-RPC specification

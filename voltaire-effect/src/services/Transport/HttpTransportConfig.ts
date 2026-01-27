@@ -9,13 +9,17 @@
  * Supports reading configuration from environment variables with validation,
  * defaults, and secret handling for API keys.
  *
+ * Uses Effect-native types:
+ * - `timeout`: Effect Duration (e.g., `"30 seconds"`)
+ * - Creates exponential backoff retry schedule from config values
+ *
  * @example Environment variable configuration
  * ```typescript
  * // Set environment variables:
  * // HTTP_URL=https://mainnet.infura.io/v3/YOUR_KEY
- * // HTTP_TIMEOUT=60s
- * // HTTP_RETRIES=5
- * // HTTP_RETRY_DELAY=2s
+ * // HTTP_TIMEOUT=60 seconds
+ * // HTTP_RETRY_BASE_DELAY=1 second
+ * // HTTP_RETRY_MAX_ATTEMPTS=5
  * // HTTP_HEADERS_X_API_KEY=your-api-key
  *
  * import { Effect, Layer, ConfigProvider } from 'effect'
@@ -42,6 +46,7 @@ import * as Effect from "effect/Effect";
 import * as HashMap from "effect/HashMap";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Schedule from "effect/Schedule";
 import * as Secret from "effect/Secret";
 import { HttpTransport } from "./HttpTransport.js";
 import type { TransportService } from "./TransportService.js";
@@ -55,11 +60,14 @@ import type { TransportService } from "./TransportService.js";
  *
  * Environment variables (when using ConfigProvider.fromEnv()):
  * - `HTTP_URL` - Required. JSON-RPC endpoint URL
- * - `HTTP_TIMEOUT` - Optional. Request timeout (e.g., "30s", "1m"). Default: 30s
- * - `HTTP_RETRIES` - Optional. Number of retry attempts. Default: 3
- * - `HTTP_RETRY_DELAY` - Optional. Delay between retries. Default: 1s
+ * - `HTTP_TIMEOUT` - Optional. Request timeout (e.g., "30 seconds"). Default: 30 seconds
+ * - `HTTP_RETRY_BASE_DELAY` - Optional. Base delay for exponential backoff. Default: 1 second
+ * - `HTTP_RETRY_MAX_ATTEMPTS` - Optional. Max retry attempts. Default: 3
  * - `HTTP_HEADERS_*` - Optional. Custom headers (e.g., HTTP_HEADERS_X_API_KEY=value)
  * - `HTTP_API_KEY` - Optional. API key (stored as Secret, auto-redacted in logs)
+ *
+ * The retry schedule uses exponential backoff with jitter based on `retryBaseDelay`
+ * and `retryMaxAttempts`.
  *
  * @since 0.0.1
  *
@@ -87,9 +95,11 @@ export const HttpTransportConfigSchema = Config.all({
 	timeout: Config.duration("timeout").pipe(
 		Config.withDefault(Duration.seconds(30)),
 	),
-	retries: Config.integer("retries").pipe(Config.withDefault(3)),
-	retryDelay: Config.duration("retryDelay").pipe(
+	retryBaseDelay: Config.duration("retryBaseDelay").pipe(
 		Config.withDefault(Duration.seconds(1)),
+	),
+	retryMaxAttempts: Config.integer("retryMaxAttempts").pipe(
+		Config.withDefault(3),
 	),
 	headers: Config.hashMap(Config.string(), "headers").pipe(
 		Config.withDefault(HashMap.empty()),
@@ -142,8 +152,9 @@ export type HttpTransportConfigType = Config.Config.Success<
  *
  * const configProvider = ConfigProvider.fromMap(new Map([
  *   ['http.url', 'https://mainnet.infura.io/v3/KEY'],
- *   ['http.timeout', '60s'],
- *   ['http.retries', '5'],
+ *   ['http.timeout', '60 seconds'],
+ *   ['http.retryBaseDelay', '500 millis'],
+ *   ['http.retryMaxAttempts', '5'],
  * ]))
  *
  * const program = Effect.gen(function* () {
@@ -177,12 +188,17 @@ export const HttpTransportFromConfig: Layer.Layer<
 			}),
 		});
 
+		// Build retry schedule from config: exponential backoff with jitter
+		const retrySchedule = Schedule.exponential(config.retryBaseDelay).pipe(
+			Schedule.jittered,
+			Schedule.intersect(Schedule.recurs(config.retryMaxAttempts)),
+		);
+
 		// Return the HttpTransport layer with resolved config
 		return HttpTransport({
 			url: config.url,
-			timeout: Duration.toMillis(config.timeout),
-			retries: config.retries,
-			retryDelay: Duration.toMillis(config.retryDelay),
+			timeout: config.timeout,
+			retrySchedule,
 			headers: Object.keys(headers).length > 0 ? headers : undefined,
 		});
 	}),
@@ -230,6 +246,12 @@ export const HttpTransportFromConfigFetch: Layer.Layer<
 			}),
 		});
 
+		// Build retry schedule from config: exponential backoff with jitter
+		const retrySchedule = Schedule.exponential(config.retryBaseDelay).pipe(
+			Schedule.jittered,
+			Schedule.intersect(Schedule.recurs(config.retryMaxAttempts)),
+		);
+
 		// Import FetchHttpClient dynamically to avoid circular deps
 		const { FetchHttpClient } = yield* Effect.promise(
 			() => import("@effect/platform"),
@@ -238,9 +260,8 @@ export const HttpTransportFromConfigFetch: Layer.Layer<
 		return Layer.provide(
 			HttpTransport({
 				url: config.url,
-				timeout: Duration.toMillis(config.timeout),
-				retries: config.retries,
-				retryDelay: Duration.toMillis(config.retryDelay),
+				timeout: config.timeout,
+				retrySchedule,
 				headers: Object.keys(headers).length > 0 ? headers : undefined,
 			}),
 			FetchHttpClient.layer,

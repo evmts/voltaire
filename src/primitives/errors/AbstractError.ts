@@ -47,9 +47,9 @@ export abstract class AbstractError extends Error {
 	/**
 	 * JSON-RPC style error code for programmatic handling
 	 * @see https://www.jsonrpc.org/specification#error_object
-	 * @example -32600 (Invalid Request), -32602 (Invalid params)
+	 * @example -32600 (Invalid Request), -32602 (Invalid params), "INVALID_FORMAT"
 	 */
-	code: number;
+	code: number | string;
 
 	/**
 	 * Additional context metadata for debugging
@@ -71,7 +71,7 @@ export abstract class AbstractError extends Error {
 	constructor(
 		message: string,
 		options?: {
-			code?: number;
+			code?: number | string;
 			context?: Record<string, unknown>;
 			docsPath?: string;
 			cause?: Error;

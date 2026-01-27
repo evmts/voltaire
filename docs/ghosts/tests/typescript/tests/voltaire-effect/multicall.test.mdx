@@ -1,0 +1,223 @@
+---
+title: Multicall Tests
+description: Test examples for MulticallService showing aggregate3 batching, error handling, and result decoding.
+---
+
+## MulticallError Construction
+
+Creates MulticallError with message, failed calls, and cause.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import { MulticallError } from "voltaire-effect"
+
+describe("MulticallService", () => {
+  describe("MulticallError", () => {
+    it("creates error with message", () => {
+      const error = new MulticallError({ message: "test error" })
+      expect(error.message).toBe("test error")
+      expect(error._tag).toBe("MulticallError")
+    })
+
+    it("creates error with failed calls", () => {
+      const error = new MulticallError({
+        message: "Some calls failed",
+        failedCalls: [0, 2, 4],
+      })
+      expect(error.failedCalls).toEqual([0, 2, 4])
+    })
+
+    it("creates error with cause", () => {
+      const cause = new Error("underlying")
+      const error = new MulticallError({
+        message: "Multicall failed",
+        cause,
+      })
+      expect(error.cause).toBe(cause)
+    })
+  })
+})
+```
+
+## MulticallCall Interface
+
+Demonstrates the MulticallCall type structure.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import type { MulticallCall } from "voltaire-effect"
+
+describe("MulticallCall interface", () => {
+  it("accepts minimal call", () => {
+    const call: MulticallCall = {
+      target: "0x1234567890123456789012345678901234567890",
+      callData: "0x1234",
+    }
+    expect(call.target).toBe("0x1234567890123456789012345678901234567890")
+    expect(call.callData).toBe("0x1234")
+    expect(call.allowFailure).toBeUndefined()
+  })
+
+  it("accepts call with allowFailure", () => {
+    const call: MulticallCall = {
+      target: "0x1234567890123456789012345678901234567890",
+      callData: "0x1234",
+      allowFailure: true,
+    }
+    expect(call.allowFailure).toBe(true)
+  })
+})
+```
+
+## MulticallResult Interface
+
+Demonstrates the MulticallResult type structure.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import type { MulticallResult } from "voltaire-effect"
+
+describe("MulticallResult interface", () => {
+  it("represents successful result", () => {
+    const result: MulticallResult = {
+      success: true,
+      returnData: "0x00000000000000000000000000000000000000000000000000000000000000ff",
+    }
+    expect(result.success).toBe(true)
+  })
+
+  it("represents failed result", () => {
+    const result: MulticallResult = {
+      success: false,
+      returnData: "0x",
+    }
+    expect(result.success).toBe(false)
+  })
+})
+```
+
+## Empty Calls Array
+
+Returns empty array for empty calls without RPC call.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { DefaultMulticall } from "voltaire-effect"
+import { MulticallService } from "voltaire-effect"
+
+describe("empty calls", () => {
+  it.effect("returns empty array for empty calls", () =>
+    Effect.gen(function* () {
+      let callCount = 0
+      const mockProvider = {
+        call: () => {
+          callCount++
+          return Effect.succeed("0x" as const)
+        },
+        // ... other provider methods
+      } as any
+
+      const TestProviderLayer = Layer.succeed(ProviderService, mockProvider)
+      const TestMulticallLayer = DefaultMulticall.pipe(Layer.provide(TestProviderLayer))
+
+      const program = Effect.gen(function* () {
+        const multicall = yield* MulticallService
+        return yield* multicall.aggregate3([])
+      }).pipe(Effect.provide(TestMulticallLayer))
+
+      const result = yield* program
+      expect(result).toEqual([])
+      expect(callCount).toBe(0)
+    })
+  )
+})
+```
+
+## Provider Error Propagation
+
+Propagates provider errors as MulticallError.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { TransportError } from "voltaire-effect"
+import { DefaultMulticall } from "voltaire-effect"
+import { MulticallService } from "voltaire-effect"
+
+describe("error propagation", () => {
+  it.effect("propagates provider errors as MulticallError", () =>
+    Effect.gen(function* () {
+      const mockProvider = {
+        call: () => Effect.fail(new TransportError({ code: -32000, message: "RPC failed" })),
+        // ... other provider methods
+      } as any
+
+      const TestProviderLayer = Layer.succeed(ProviderService, mockProvider)
+      const TestMulticallLayer = DefaultMulticall.pipe(Layer.provide(TestProviderLayer))
+
+      const program = Effect.gen(function* () {
+        const multicall = yield* MulticallService
+        return yield* multicall.aggregate3([
+          { target: "0x1234567890123456789012345678901234567890", callData: "0x1234" },
+        ])
+      }).pipe(Effect.provide(TestMulticallLayer))
+
+      const exit = yield* Effect.exit(program)
+      expect(Exit.isFailure(exit)).toBe(true)
+      if (Exit.isFailure(exit) && exit.cause._tag === "Fail") {
+        expect(exit.cause.error._tag).toBe("MulticallError")
+        expect(exit.cause.error.message).toContain("Multicall3 call failed")
+      }
+    })
+  )
+})
+```
+
+## Partial Success Handling
+
+Handles partial success when some calls fail.
+
+```typescript
+import { describe, expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { ProviderService } from "voltaire-effect"
+import { DefaultMulticall } from "voltaire-effect"
+import { MulticallService } from "voltaire-effect"
+
+describe("partial success", () => {
+  it.effect("handles partial success (some calls fail, some succeed)", () =>
+    Effect.gen(function* () {
+      const mockProvider = {
+        call: () =>
+          Effect.succeed(
+            "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000" as const
+          ),
+        // ... other provider methods
+      } as any
+
+      const TestProviderLayer = Layer.succeed(ProviderService, mockProvider)
+      const TestMulticallLayer = DefaultMulticall.pipe(Layer.provide(TestProviderLayer))
+
+      const program = Effect.gen(function* () {
+        const multicall = yield* MulticallService
+        return yield* multicall.aggregate3([
+          { target: "0x1234567890123456789012345678901234567890", callData: "0x1234", allowFailure: true },
+          { target: "0x1234567890123456789012345678901234567890", callData: "0x5678", allowFailure: true },
+        ])
+      }).pipe(Effect.provide(TestMulticallLayer))
+
+      const result = yield* program
+      expect(result.length).toBe(2)
+      expect(result[0]?.success).toBe(true)
+      expect(result[1]?.success).toBe(false)
+    })
+  )
+})
+```

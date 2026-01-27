@@ -1,11 +1,18 @@
 import * as Brand from "effect/Brand";
+import * as ParseResult from "effect/ParseResult";
 import * as Schema from "effect/Schema";
+import { clone as _clone } from "./clone.js";
 import { equals as _equals } from "./equals.js";
 import { fromBytes as _fromBytes } from "./fromBytes.js";
 import type { HexType } from "./HexType.js";
 import { isHex as _isHex } from "./isHex.js";
+import { isSized as _isSized } from "./isSized.js";
+import { random as _random } from "./random.js";
 import { toBytes as _toBytes } from "./toBytes.js";
 import { validate as _validate } from "./validate.js";
+import { zero as _zero } from "./zero.js";
+
+export type { HexType } from "./HexType.js";
 
 export type HexBrand = string & Brand.Brand<"Hex">;
 
@@ -13,6 +20,55 @@ export const HexBrand = Brand.refined<HexBrand>(
 	(s): s is string & Brand.Brand<"Hex"> => typeof s === "string" && _isHex(s),
 	(s) => Brand.error(`Expected 0x-prefixed hex string, got ${typeof s}`),
 );
+
+const HexTypeSchema = Schema.declare<HexType>(
+	(u): u is HexType => {
+		if (typeof u !== "string") return false;
+		try {
+			_validate(u);
+			return true;
+		} catch {
+			return false;
+		}
+	},
+	{ identifier: "Hex" },
+);
+
+export const String: Schema.Schema<HexType, string> = Schema.transformOrFail(
+	Schema.String,
+	HexTypeSchema,
+	{
+		strict: true,
+		decode: (s, _options, ast) => {
+			try {
+				return ParseResult.succeed(_validate(s));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, s, (e as Error).message),
+				);
+			}
+		},
+		encode: (h) => ParseResult.succeed(h),
+	},
+).annotations({ identifier: "Hex.String" });
+
+export const Bytes: Schema.Schema<HexType, Uint8Array> = Schema.transformOrFail(
+	Schema.Uint8ArrayFromSelf,
+	HexTypeSchema,
+	{
+		strict: true,
+		decode: (bytes) => ParseResult.succeed(_fromBytes(bytes)),
+		encode: (h, _options, ast) => {
+			try {
+				return ParseResult.succeed(_toBytes(h));
+			} catch (e) {
+				return ParseResult.fail(
+					new ParseResult.Type(ast, h, (e as Error).message),
+				);
+			}
+		},
+	},
+).annotations({ identifier: "Hex.Bytes" });
 
 export class HexSchema extends Schema.Class<HexSchema>("Hex")({
 	value: Schema.String.pipe(
@@ -78,3 +134,10 @@ export const HexFromUnknown = Schema.transform(
 		encode: (h) => h.hex,
 	},
 );
+
+export const clone = _clone;
+export const equals = _equals;
+export const isHex = _isHex;
+export const isSized = _isSized;
+export const random = _random;
+export const zero = _zero;

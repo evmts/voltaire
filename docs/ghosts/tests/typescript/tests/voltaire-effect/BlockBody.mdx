@@ -1,0 +1,164 @@
+---
+title: BlockBody Tests
+description: Test examples for BlockBody showing block body validation with transactions, ommers, and post-Shanghai withdrawals.
+---
+
+## Validate Block Body
+
+Validates block body with transactions and ommers arrays.
+
+```typescript
+import { describe, expect, it } from "vitest"
+import { BlockBody } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import { BlockBodySchema } from "voltaire-effect/primitives/BlockBody/BlockBodySchema"
+
+const body = BlockBody.from({
+  transactions: [],
+  ommers: [],
+})
+
+const result = S.decodeSync(BlockBodySchema)(body)
+expect(result.transactions).toEqual([])
+expect(result.ommers).toEqual([])
+```
+
+## Validate Block with Withdrawals
+
+Validates post-Shanghai block body with withdrawals array.
+
+```typescript
+import { BlockBody, Withdrawal } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import { BlockBodySchema } from "voltaire-effect/primitives/BlockBody/BlockBodySchema"
+
+const body = BlockBody.from({
+  transactions: [],
+  ommers: [],
+  withdrawals: [
+    Withdrawal.from({
+      index: 0n,
+      validatorIndex: 1n,
+      address: new Uint8Array(20).fill(0xaa),
+      amount: 1000000000n,
+    }),
+  ],
+})
+
+const result = S.decodeSync(BlockBodySchema)(body)
+expect(result.withdrawals?.length).toBe(1)
+```
+
+## Validate Empty Withdrawals
+
+Validates block body with empty withdrawals array (post-Shanghai, no withdrawals).
+
+```typescript
+import { BlockBody } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import { BlockBodySchema } from "voltaire-effect/primitives/BlockBody/BlockBodySchema"
+
+const body = BlockBody.from({
+  transactions: [],
+  ommers: [],
+  withdrawals: [],
+})
+
+const result = S.decodeSync(BlockBodySchema)(body)
+expect(result.withdrawals).toEqual([])
+```
+
+## Reject Invalid Block Body
+
+Rejects block bodies with missing or invalid fields.
+
+```typescript
+import * as S from "effect/Schema"
+import { BlockBodySchema } from "voltaire-effect/primitives/BlockBody/BlockBodySchema"
+
+// Missing transactions
+expect(() => S.decodeSync(BlockBodySchema)({ ommers: [] })).toThrow()
+
+// Missing ommers
+expect(() => S.decodeSync(BlockBodySchema)({ transactions: [] })).toThrow()
+
+// Non-array transactions
+expect(() => 
+  S.decodeSync(BlockBodySchema)({ transactions: "not-array", ommers: [] })
+).toThrow()
+```
+
+## Validate Multiple Withdrawals
+
+Validates block body with multiple withdrawal entries.
+
+```typescript
+import { BlockBody, Withdrawal } from "@tevm/voltaire"
+import * as S from "effect/Schema"
+import { BlockBodySchema } from "voltaire-effect/primitives/BlockBody/BlockBodySchema"
+
+const body = BlockBody.from({
+  transactions: [],
+  ommers: [],
+  withdrawals: [
+    Withdrawal.from({
+      index: 0n,
+      validatorIndex: 1n,
+      address: new Uint8Array(20).fill(0xaa),
+      amount: 100n,
+    }),
+    Withdrawal.from({
+      index: 1n,
+      validatorIndex: 2n,
+      address: new Uint8Array(20).fill(0xbb),
+      amount: 200n,
+    }),
+    Withdrawal.from({
+      index: 2n,
+      validatorIndex: 3n,
+      address: new Uint8Array(20).fill(0xcc),
+      amount: 300n,
+    }),
+  ],
+})
+
+const result = S.decodeSync(BlockBodySchema)(body)
+expect(result.withdrawals?.length).toBe(3)
+```
+
+## Reject Invalid Withdrawal
+
+Rejects withdrawals with invalid fields.
+
+```typescript
+import * as S from "effect/Schema"
+import { BlockBodySchema } from "voltaire-effect/primitives/BlockBody/BlockBodySchema"
+
+// Wrong address length
+expect(() => 
+  S.decodeSync(BlockBodySchema)({
+    transactions: [],
+    ommers: [],
+    withdrawals: [{
+      index: 0n,
+      validatorIndex: 1n,
+      address: new Uint8Array(32).fill(0xaa), // 32 bytes instead of 20
+      amount: 1000000000n,
+    }],
+  })
+).toThrow()
+
+// Non-bigint amount
+expect(() => 
+  S.decodeSync(BlockBodySchema)({
+    transactions: [],
+    ommers: [],
+    withdrawals: [{
+      index: 0n,
+      validatorIndex: 1n,
+      address: new Uint8Array(20).fill(0xaa),
+      amount: 1000000000, // number instead of bigint
+    }],
+  })
+).toThrow()
+```

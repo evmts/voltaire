@@ -13,7 +13,7 @@ Direct access to the underlying transport for EIP-1193 requests:
 
 ```typescript
 import { Effect } from 'effect'
-import { RawProviderService, RawProviderTransport, HttpTransport } from 'voltaire-effect/services'
+import { RawProviderService, RawProviderTransport, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const raw = yield* RawProviderService
@@ -73,7 +73,7 @@ const program = Effect.gen(function* () {
 All requests produce `TransportError` on failure:
 
 ```typescript
-import { TransportError } from 'voltaire-effect/services'
+import { TransportError } from 'voltaire-effect'
 
 program.pipe(
   Effect.catchTag('TransportError', (e) => {
@@ -89,7 +89,7 @@ program.pipe(
 
 ```typescript
 import * as Layer from 'effect/Layer'
-import { RawProviderTransport, HttpTransport } from 'voltaire-effect/services'
+import { RawProviderTransport, HttpTransport } from 'voltaire-effect'
 
 const RawLayer = RawProviderTransport.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
@@ -120,10 +120,10 @@ When using Bun, you can import native provider transports that wrap voltaire's p
 
 ```typescript
 // Available only with Bun runtime
-import { HttpProviderTransport } from 'voltaire-effect/services/RawProvider/HttpProviderTransport.js'
-import { WebSocketProviderTransport } from 'voltaire-effect/services/RawProvider/WebSocketProviderTransport.js'
-import { ForkProviderTransport } from 'voltaire-effect/services/RawProvider/ForkProviderTransport.js'
-import { InMemoryProviderTransport } from 'voltaire-effect/services/RawProvider/InMemoryProviderTransport.js'
+import { HttpProviderTransport } from 'voltaire-effect'
+import { WebSocketProviderTransport } from 'voltaire-effect'
+import { ForkProviderTransport } from 'voltaire-effect'
+import { InMemoryProviderTransport } from 'voltaire-effect'
 ```
 
 These transports wrap voltaire's native EIP-1193 provider implementations.

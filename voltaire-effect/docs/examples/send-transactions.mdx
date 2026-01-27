@@ -11,7 +11,7 @@ All signing operations require crypto services. See [Crypto Overview](/crypto/in
 
 ```typescript
 import { Effect } from 'effect'
-import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
+import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
@@ -102,7 +102,7 @@ const program = Effect.gen(function* () {
 ## Browser Wallet (MetaMask)
 
 ```typescript
-import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -119,7 +119,7 @@ const program = Effect.gen(function* () {
 ## Send and Wait
 
 ```typescript
-import { ProviderService } from 'voltaire-effect/services'
+import { ProviderService } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService

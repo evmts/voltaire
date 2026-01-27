@@ -5,13 +5,17 @@
  * @since 0.0.1
  *
  * @description
- * This module provides the chain service for blockchain network configuration.
- * It includes the service definition, chain configs, and Layer implementations.
+ * This module provides chain metadata services and configuration for
+ * blockchain network configuration. It includes service definitions,
+ * chain configs, RPC URL maps, and Layer implementations.
  *
  * Main exports:
- * - {@link ChainService} - The service tag/interface
+ * - {@link ChainService} - The chain metadata service
+ * - {@link BlockExplorerService} - Block explorer metadata service
+ * - {@link ContractsService} - Well-known contract deployments service
  * - {@link ChainConfig} - Chain configuration type
  * - {@link ChainContract} - Contract deployment info type
+ * - {@link rpcUrlsByChainId} - RPC URL map keyed by chain ID
  *
  * Chain exports:
  * - {@link mainnet} - Ethereum mainnet
@@ -35,22 +39,39 @@
  */
 
 export {
-	type ChainConfig,
+	type BlockExplorerConfig,
+	BlockExplorerService,
+} from "./BlockExplorerService.js";
+export { type ChainConfig, ChainService } from "./ChainService.js";
+export {
 	type ChainContract,
-	ChainService,
-} from "./ChainService.js";
-
+	type ContractsConfig,
+	ContractsService,
+} from "./ContractsService.js";
 export {
 	arbitrum,
+	arbitrumBlockExplorers,
 	arbitrumConfig,
+	arbitrumContracts,
 	base,
+	baseBlockExplorers,
 	baseConfig,
+	baseContracts,
 	mainnet,
+	mainnetBlockExplorers,
 	mainnetConfig,
+	mainnetContracts,
 	optimism,
+	optimismBlockExplorers,
 	optimismConfig,
+	optimismContracts,
 	polygon,
+	polygonBlockExplorers,
 	polygonConfig,
+	polygonContracts,
 	sepolia,
+	sepoliaBlockExplorers,
 	sepoliaConfig,
+	sepoliaContracts,
 } from "./chains/index.js";
+export { type RpcUrlsConfig, rpcUrlsByChainId } from "./rpcUrls.js";
