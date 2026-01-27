@@ -1,17 +1,75 @@
 ---
 title: Abi.decodeData
-description: Decode ABI data without selector prefix
+description: Decode function calldata by selector
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
   Run ABI examples in the interactive playground
 </Card>
 
+## Overview
 
-<Tabs>
+`Abi.decodeData` inspects calldata, matches the selector to a function in your ABI, and decodes the arguments. Use this when you have raw transaction calldata and want to recover the called function and parameters.
 
-</Tabs>
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
+
+const abi = Abi([
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool' }]
+  }
+] as const);
+
+const calldata = Hex.toBytes(
+  '0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e' +
+  '00000000000000000000000000000000000000000000000000000000000003e8'
+);
+
+const decoded = abi.decodeData(calldata);
+// { functionName: 'transfer', args: ['0x742d35...', 1000n] }
+```
+
+## Unknown Selectors
+
+If the selector does not match any function in the ABI, `Abi.decodeData` throws `AbiItemNotFoundError`.
+
+```typescript
+import { Abi, AbiItemNotFoundError, AbiInvalidSelectorError } from '@tevm/voltaire/Abi';
+
+try {
+  abi.decodeData(calldata);
+} catch (error) {
+  if (error instanceof AbiInvalidSelectorError) {
+    console.error('Calldata too short to contain a selector');
+  }
+  if (error instanceof AbiItemNotFoundError) {
+    console.error('Unknown function selector');
+  }
+}
+```
+
+## Decode Parameters Without Selector
+
+If you already know the function and only have parameters (no selector), decode with `Abi.Function.decodeParams` or `Abi.decodeParameters`:
+
+```typescript
+const args = Abi.Function.decodeParams(transferFn, calldata);
+// or
+const params = Abi.decodeParameters(transferFn.inputs, calldata.slice(4));
+```
 
 ## See Also
 
-- [decode](/primitives/abi/decode) - Decode with selector
+- [decode](/primitives/abi/decode) - Decode function return values
+- [Function.decodeParams](/primitives/abi/function-decode-params) - Decode calldata for a known function
+- [Encoding](/primitives/abi/encoding) - ABI encoding rules

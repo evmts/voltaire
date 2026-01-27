@@ -57,7 +57,7 @@ export class FunctionInvalidSelectorError extends AbiInvalidSelectorError {
 	/**
 	 * @param {string} message - Error message
 	 * @param {object} options - Error options
-	 * @param {string | number} [options.code] - Error code
+	 * @param {number} [options.code] - Error code
 	 * @param {unknown} options.value - Actual selector value
 	 * @param {string} options.expected - Expected selector value
 	 * @param {Record<string, unknown>} [options.context] - Additional context
@@ -66,7 +66,7 @@ export class FunctionInvalidSelectorError extends AbiInvalidSelectorError {
 	 */
 	constructor(message, options) {
 		super(message, {
-			code: options?.code ?? "FUNCTION_INVALID_SELECTOR",
+			code: options?.code,
 			value: options.value,
 			expected: options.expected,
 			context: options?.context,
