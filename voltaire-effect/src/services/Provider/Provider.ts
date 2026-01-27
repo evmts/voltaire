@@ -405,7 +405,7 @@ const formatBlockOverrides = (
  * @example Basic usage
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, HttpTransport } from 'voltaire-effect/services'
+ * import { Provider, ProviderService, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService
@@ -426,7 +426,7 @@ const formatBlockOverrides = (
  *   Provider,
  *   ProviderService,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * // Create a composed layer for reuse
  * const MainnetProvider = Provider.pipe(
@@ -442,7 +442,7 @@ const formatBlockOverrides = (
  * @example Testing with TestTransport
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, TestTransport } from 'voltaire-effect/services'
+ * import { Provider, ProviderService, TestTransport } from 'voltaire-effect'
  *
  * const testTransport = TestTransport({
  *   'eth_blockNumber': '0x1234',

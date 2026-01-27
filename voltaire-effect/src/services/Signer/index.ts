@@ -27,7 +27,7 @@
  *   LocalAccount,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService
@@ -46,7 +46,7 @@
  * @example Using Signer.fromPrivateKey
  * ```typescript
  * import { Effect } from 'effect'
- * import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const signerLayer = Signer.fromPrivateKey(privateKey, Provider)
  *

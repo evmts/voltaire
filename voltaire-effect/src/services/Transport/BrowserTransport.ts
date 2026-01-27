@@ -80,7 +80,7 @@ declare global {
  * @example Basic usage
  * ```typescript
  * import { Effect } from 'effect'
- * import { BrowserTransport, TransportService } from 'voltaire-effect/services'
+ * import { BrowserTransport, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -94,7 +94,7 @@ declare global {
  * @example With Provider for blockchain queries
  * ```typescript
  * import { Effect } from 'effect'
- * import { BrowserTransport, Provider, ProviderService } from 'voltaire-effect/services'
+ * import { BrowserTransport, Provider, ProviderService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const client = yield* ProviderService
@@ -112,7 +112,7 @@ declare global {
  * @example Requesting wallet connection
  * ```typescript
  * import { Effect } from 'effect'
- * import { BrowserTransport, TransportService } from 'voltaire-effect/services'
+ * import { BrowserTransport, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -136,7 +136,7 @@ declare global {
  * @example Error handling for missing wallet
  * ```typescript
  * import { Effect } from 'effect'
- * import { BrowserTransport, TransportService, TransportError } from 'voltaire-effect/services'
+ * import { BrowserTransport, TransportService, TransportError } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService

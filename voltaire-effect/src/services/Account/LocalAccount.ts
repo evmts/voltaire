@@ -467,7 +467,7 @@ function encodeValue(
  *   LocalAccount,
  *   Secp256k1Live,
  *   KeccakLive
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  * import { Hex } from '@tevm/voltaire'
  *
  * const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
@@ -497,7 +497,7 @@ function encodeValue(
  *   HttpTransport,
  *   Secp256k1Live,
  *   KeccakLive
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService

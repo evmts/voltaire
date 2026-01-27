@@ -75,7 +75,7 @@ export type CacheShape = {
  * @example Basic usage with MemoryCache
  * ```typescript
  * import { Effect } from 'effect'
- * import { CacheService, MemoryCache } from 'voltaire-effect/services'
+ * import { CacheService, MemoryCache } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const cache = yield* CacheService

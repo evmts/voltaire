@@ -34,7 +34,7 @@ import { CacheService } from "./CacheService.js";
  * @example Testing without cache
  * ```typescript
  * import { Effect } from 'effect'
- * import { CacheService, NoopCache } from 'voltaire-effect/services'
+ * import { CacheService, NoopCache } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const cache = yield* CacheService
@@ -50,7 +50,7 @@ import { CacheService } from "./CacheService.js";
  * @example Disabling cache conditionally
  * ```typescript
  * import { Effect, Layer } from 'effect'
- * import { CacheService, MemoryCache, NoopCache } from 'voltaire-effect/services'
+ * import { CacheService, MemoryCache, NoopCache } from 'voltaire-effect'
  *
  * const cacheLayer = process.env.DISABLE_CACHE
  *   ? NoopCache

@@ -25,7 +25,7 @@ import { RawProviderService } from "./RawProviderService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { RawProviderService, RawProviderTransport, InMemoryProviderTransport } from 'voltaire-effect/services'
+ * import { RawProviderService, RawProviderTransport, InMemoryProviderTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const raw = yield* RawProviderService

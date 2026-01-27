@@ -24,7 +24,7 @@
  * @example Using LocalAccount
  * ```typescript
  * import { Effect } from 'effect'
- * import { AccountService, LocalAccount } from 'voltaire-effect/services'
+ * import { AccountService, LocalAccount } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const account = yield* AccountService
@@ -35,7 +35,7 @@
  * @example Using JsonRpcAccount
  * ```typescript
  * import { Effect } from 'effect'
- * import { AccountService, JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+ * import { AccountService, JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const account = yield* AccountService

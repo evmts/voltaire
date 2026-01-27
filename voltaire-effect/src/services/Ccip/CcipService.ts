@@ -80,7 +80,7 @@ export type CcipShape = {
  * @example Basic usage with DefaultCcip
  * ```typescript
  * import { Effect } from 'effect'
- * import { CcipService, DefaultCcip } from 'voltaire-effect/services'
+ * import { CcipService, DefaultCcip } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const ccip = yield* CcipService

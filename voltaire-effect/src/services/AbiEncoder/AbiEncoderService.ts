@@ -120,7 +120,7 @@ export type AbiEncoderShape = {
  * @example Basic usage
  * ```typescript
  * import { Effect } from 'effect'
- * import { AbiEncoderService, DefaultAbiEncoder } from 'voltaire-effect/services'
+ * import { AbiEncoderService, DefaultAbiEncoder } from 'voltaire-effect'
  *
  * const abi = [
  *   { type: 'function', name: 'balanceOf', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }

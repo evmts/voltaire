@@ -62,7 +62,7 @@ export const mainnetContracts: ContractsConfig = {
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { ChainService, mainnet } from 'voltaire-effect/services/Chain'
+ * import { ChainService, mainnet } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const chain = yield* ChainService

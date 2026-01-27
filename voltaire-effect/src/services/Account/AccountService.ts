@@ -157,7 +157,7 @@ export type SignAuthorizationParams = {
  * @example Handling AccountError in Effect
  * ```typescript
  * import { Effect } from 'effect'
- * import { AccountService, AccountError } from 'voltaire-effect/services'
+ * import { AccountService, AccountError } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const account = yield* AccountService
@@ -408,7 +408,7 @@ export type AccountShape = {
  *   LocalAccount,
  *   Secp256k1Live,
  *   KeccakLive
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  * import { Hex } from '@tevm/voltaire'
  *
  * const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
@@ -428,7 +428,7 @@ export type AccountShape = {
  * @example Using JsonRpcAccount for browser wallet
  * ```typescript
  * import { Effect } from 'effect'
- * import { AccountService, JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+ * import { AccountService, JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const account = yield* AccountService

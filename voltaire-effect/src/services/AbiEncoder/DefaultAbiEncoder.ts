@@ -64,7 +64,7 @@ function findFunction(
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { AbiEncoderService, DefaultAbiEncoder } from 'voltaire-effect/services'
+ * import { AbiEncoderService, DefaultAbiEncoder } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const encoder = yield* AbiEncoderService

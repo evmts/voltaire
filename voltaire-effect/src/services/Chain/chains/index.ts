@@ -11,7 +11,7 @@
  *
  * @example
  * ```typescript
- * import { mainnet, sepolia, optimism } from 'voltaire-effect/services/Chain/chains'
+ * import { mainnet, sepolia, optimism } from 'voltaire-effect'
  * ```
  */
 

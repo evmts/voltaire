@@ -5,11 +5,11 @@
  * @since 0.3.0
  */
 
-import type { AddressInput } from "@tevm/voltaire/Address";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type { TransportError } from "../Transport/TransportError.js";
 import type {
+	AddressInput,
 	BlockTag,
 	CallRequest,
 	HashInput,

@@ -99,7 +99,7 @@ export type LookupCacheShape<Key, Value, Error = never> = {
  * @example Creating a typed lookup cache
  * ```typescript
  * import { Effect } from 'effect'
- * import { LookupCacheService, makeLookupCache } from 'voltaire-effect/services'
+ * import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
  *
  * // Define a cache for user lookups
  * const UserCache = LookupCacheService<string, User, UserNotFoundError>()
@@ -157,7 +157,7 @@ export interface LookupCacheOptions<Key, Value, Error, R> {
  * @example RPC result caching
  * ```typescript
  * import { Effect, Duration } from 'effect'
- * import { makeLookupCache, LookupCacheService } from 'voltaire-effect/services'
+ * import { makeLookupCache, LookupCacheService } from 'voltaire-effect'
  *
  * // Define the cache service tag
  * const BlockCache = LookupCacheService<bigint, Block, RpcError>()

@@ -713,7 +713,7 @@ const SignerLive: Layer.Layer<
  * @example Basic usage with separate layers
  * ```typescript
  * import { Effect } from 'effect'
- * import { Signer, SignerService, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { Signer, SignerService, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService
@@ -729,7 +729,7 @@ const SignerLive: Layer.Layer<
  * @example Using fromProvider for composed layers
  * ```typescript
  * import { Effect } from 'effect'
- * import { Signer, SignerService, LocalAccount, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { Signer, SignerService, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const transport = HttpTransport('https://...')
  * const signerLayer = Signer.fromProvider(Provider, LocalAccount(privateKey))
@@ -746,7 +746,7 @@ const SignerLive: Layer.Layer<
  * @example Using fromPrivateKey for quick setup
  * ```typescript
  * import { Effect } from 'effect'
- * import { Signer, SignerService, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { Signer, SignerService, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const transport = HttpTransport('https://...')
  * const signerLayer = Signer.fromPrivateKey(privateKey, Provider)

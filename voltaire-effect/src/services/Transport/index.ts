@@ -24,7 +24,7 @@
  *   HttpTransport,
  *   Provider,
  *   ProviderService
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const client = yield* ProviderService

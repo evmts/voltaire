@@ -21,7 +21,7 @@
  * // WS_KEEP_ALIVE=30s
  *
  * import { Effect, Layer, ConfigProvider } from 'effect'
- * import { WebSocketTransportFromConfig, TransportService } from 'voltaire-effect/services'
+ * import { WebSocketTransportFromConfig, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -87,7 +87,7 @@ const ReconnectConfigSchema = Config.all({
  * @example
  * ```typescript
  * import { Effect, ConfigProvider, Layer } from 'effect'
- * import { WebSocketTransportConfigSchema } from 'voltaire-effect/services'
+ * import { WebSocketTransportConfigSchema } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const config = yield* WebSocketTransportConfigSchema
@@ -137,7 +137,7 @@ export type WebSocketTransportConfigType = Config.Config.Success<
  * @example Environment variables
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
- * import { WebSocketTransportFromConfig, TransportService, WebSocketConstructorGlobal } from 'voltaire-effect/services'
+ * import { WebSocketTransportFromConfig, TransportService, WebSocketConstructorGlobal } from 'voltaire-effect'
  *
  * // Set: WS_URL=wss://mainnet.infura.io/ws/v3/KEY
  *
@@ -155,7 +155,7 @@ export type WebSocketTransportConfigType = Config.Config.Success<
  * @example Programmatic config
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
- * import { WebSocketTransportFromConfig, TransportService, WebSocketConstructorGlobal } from 'voltaire-effect/services'
+ * import { WebSocketTransportFromConfig, TransportService, WebSocketConstructorGlobal } from 'voltaire-effect'
  *
  * const configProvider = ConfigProvider.fromMap(new Map([
  *   ['ws.url', 'wss://mainnet.infura.io/ws/v3/KEY'],
@@ -229,7 +229,7 @@ export const WebSocketTransportFromConfig: Layer.Layer<
  * @example
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
- * import { WebSocketTransportFromConfigGlobal, TransportService } from 'voltaire-effect/services'
+ * import { WebSocketTransportFromConfigGlobal, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService

@@ -78,7 +78,7 @@ export type TransportShape = {
  * @example Basic usage with HttpTransport
  * ```typescript
  * import { Effect, Layer } from 'effect'
- * import { TransportService, HttpTransport } from 'voltaire-effect/services'
+ * import { TransportService, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -97,7 +97,7 @@ export type TransportShape = {
  * @example Using with WebSocket for subscriptions
  * ```typescript
  * import { Effect } from 'effect'
- * import { TransportService, WebSocketTransport } from 'voltaire-effect/services'
+ * import { TransportService, WebSocketTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService

@@ -177,7 +177,7 @@ export const makeRateLimiter = (config: RateLimiterConfig) =>
  * @example Basic global limit
  * ```typescript
  * import { Effect } from 'effect'
- * import { DefaultRateLimiter, RateLimiterService } from 'voltaire-effect/services'
+ * import { DefaultRateLimiter, RateLimiterService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const rateLimiter = yield* RateLimiterService

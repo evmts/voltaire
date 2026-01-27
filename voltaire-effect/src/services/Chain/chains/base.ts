@@ -58,7 +58,7 @@ export const baseContracts: ContractsConfig = {
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { ChainService, base } from 'voltaire-effect/services/Chain'
+ * import { ChainService, base } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const chain = yield* ChainService

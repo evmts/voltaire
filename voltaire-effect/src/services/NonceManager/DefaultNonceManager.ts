@@ -42,7 +42,7 @@ import { NonceError, NonceManagerService } from "./NonceManagerService.js";
  *   NonceManagerService,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const nonceManager = yield* NonceManagerService
@@ -62,7 +62,7 @@ import { NonceError, NonceManagerService } from "./NonceManagerService.js";
  *   DefaultNonceManager,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * // Create a composed layer
  * const MainnetNonceManager = DefaultNonceManager.pipe(

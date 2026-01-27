@@ -68,7 +68,7 @@ export interface MnemonicAccountOptions {
  * @example Basic usage
  * ```typescript
  * import { Effect, Layer } from 'effect'
- * import { AccountService } from 'voltaire-effect/services'
+ * import { AccountService } from 'voltaire-effect'
  * import { MnemonicAccount } from 'voltaire-effect/native'
  * import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
  *

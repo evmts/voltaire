@@ -79,7 +79,7 @@ export type BlockStreamShape = {
  * @example
  * ```typescript
  * import { Effect, Stream } from 'effect';
- * import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect/services';
+ * import { BlockStreamService, BlockStream, HttpTransport } from 'voltaire-effect';
  *
  * const program = Effect.gen(function* () {
  *   const blockStream = yield* BlockStreamService;

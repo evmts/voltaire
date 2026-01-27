@@ -24,7 +24,7 @@ import { BlockError } from "./BlockError.js";
  * ```typescript
  * import { Effect } from 'effect'
  * import * as Block from 'voltaire-effect/block'
- * import { HttpTransport } from 'voltaire-effect/services'
+ * import { HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const block = { hash: '0x...', transactions: ['0x...'] }

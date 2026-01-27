@@ -16,7 +16,7 @@
  * @example
  * ```typescript
  * import { Effect, Schedule } from "effect"
- * import { withTimeout, withRetrySchedule } from "voltaire-effect/services"
+ * import { withTimeout, withRetrySchedule } from "voltaire-effect"
  *
  * // Default timeout is 30s with exponential backoff retries
  * const balance = yield* provider.getBalance(addr)

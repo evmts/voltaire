@@ -305,7 +305,7 @@ export const makeRpcResolver = (transport: {
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { RpcBatchService, RpcBatch, EthBlockNumber, EthGetBalance } from 'voltaire-effect/services'
+ * import { RpcBatchService, RpcBatch, EthBlockNumber, EthGetBalance } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const batch = yield* RpcBatchService

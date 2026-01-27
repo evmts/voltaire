@@ -43,7 +43,7 @@ export type RawProviderShape = {
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { RawProviderService, InMemoryProviderTransport } from 'voltaire-effect/services'
+ * import { RawProviderService, InMemoryProviderTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const raw = yield* RawProviderService

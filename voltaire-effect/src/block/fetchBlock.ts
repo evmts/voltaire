@@ -26,7 +26,7 @@ import { createFetchBlockReceipts } from "./fetchBlockReceipts.js";
  * ```typescript
  * import { Effect } from 'effect'
  * import * as Block from 'voltaire-effect/block'
- * import { HttpTransport } from 'voltaire-effect/services'
+ * import { HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const block = yield* Block.fetchBlock(18000000n, 'header')

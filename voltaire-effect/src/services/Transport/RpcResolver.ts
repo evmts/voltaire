@@ -54,7 +54,7 @@ import { TransportService } from "./TransportService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { rpcRequest, GetBlockNumber, GetBalance } from 'voltaire-effect/services'
+ * import { rpcRequest, GetBlockNumber, GetBalance } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   // Single request
@@ -90,7 +90,7 @@ export const rpcRequest = <T = unknown>(
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { rpc, HttpTransport } from 'voltaire-effect/services'
+ * import { rpc, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const blockNumber = yield* rpc.getBlockNumber()

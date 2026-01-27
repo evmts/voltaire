@@ -49,7 +49,7 @@ const fromAsyncGenerator = <T>(
  * @example
  * ```typescript
  * import { Effect, Stream } from 'effect';
- * import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect/services';
+ * import { TransactionStreamService, TransactionStream, HttpTransport } from 'voltaire-effect';
  *
  * const program = Effect.gen(function* () {
  *   const txStream = yield* TransactionStreamService;

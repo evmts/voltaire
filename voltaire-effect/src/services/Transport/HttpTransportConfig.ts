@@ -23,7 +23,7 @@
  * // HTTP_HEADERS_X_API_KEY=your-api-key
  *
  * import { Effect, Layer, ConfigProvider } from 'effect'
- * import { HttpTransportFromConfig } from 'voltaire-effect/services'
+ * import { HttpTransportFromConfig } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -74,7 +74,7 @@ import type { TransportService } from "./TransportService.js";
  * @example
  * ```typescript
  * import { Effect, ConfigProvider, Layer } from 'effect'
- * import { HttpTransportConfigSchema } from 'voltaire-effect/services'
+ * import { HttpTransportConfigSchema } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const config = yield* HttpTransportConfigSchema
@@ -130,7 +130,7 @@ export type HttpTransportConfigType = Config.Config.Success<
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { HttpTransportFromConfig, TransportService } from 'voltaire-effect/services'
+ * import { HttpTransportFromConfig, TransportService } from 'voltaire-effect'
  *
  * // Set: HTTP_URL=https://mainnet.infura.io/v3/KEY
  *
@@ -148,7 +148,7 @@ export type HttpTransportConfigType = Config.Config.Success<
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { HttpTransportFromConfig, TransportService } from 'voltaire-effect/services'
+ * import { HttpTransportFromConfig, TransportService } from 'voltaire-effect'
  *
  * const configProvider = ConfigProvider.fromMap(new Map([
  *   ['http.url', 'https://mainnet.infura.io/v3/KEY'],
@@ -216,7 +216,7 @@ export const HttpTransportFromConfig: Layer.Layer<
  * @example
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
- * import { HttpTransportFromConfigFetch, TransportService } from 'voltaire-effect/services'
+ * import { HttpTransportFromConfigFetch, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService

@@ -58,7 +58,7 @@ export const polygonContracts: ContractsConfig = {
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { ChainService, polygon } from 'voltaire-effect/services/Chain'
+ * import { ChainService, polygon } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const chain = yield* ChainService

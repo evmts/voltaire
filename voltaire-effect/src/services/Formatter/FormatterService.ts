@@ -39,7 +39,7 @@ import type * as Effect from "effect/Effect";
  * @example Handling FormatError in Effect
  * ```typescript
  * import { Effect } from 'effect'
- * import { FormatterService, FormatError } from 'voltaire-effect/services'
+ * import { FormatterService, FormatError } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const formatter = yield* FormatterService
@@ -102,7 +102,7 @@ export type FormatterShape = {
  * @example Using the formatter service
  * ```typescript
  * import { Effect } from 'effect'
- * import { FormatterService, DefaultFormatter } from 'voltaire-effect/services'
+ * import { FormatterService, DefaultFormatter } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const formatter = yield* FormatterService
@@ -115,7 +115,7 @@ export type FormatterShape = {
  * @example Custom chain formatter
  * ```typescript
  * import { Effect, Layer } from 'effect'
- * import { FormatterService, FormatError } from 'voltaire-effect/services'
+ * import { FormatterService, FormatError } from 'voltaire-effect'
  *
  * const OptimismFormatter = Layer.succeed(FormatterService, {
  *   formatBlock: (rpc) => Effect.succeed(rpc),

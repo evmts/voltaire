@@ -52,7 +52,7 @@
  *   ProviderService,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService
@@ -297,7 +297,49 @@ export {
 	type UninstallFilterError,
 	type WaitForTransactionReceiptError,
 	type WatchBlocksError,
+	Blocks,
+	BlocksService,
+	type BlocksShape,
+	Account as ProviderAccount,
+	AccountService as ProviderAccountService,
+	type AccountShape as ProviderAccountShape,
+	Transaction,
+	TransactionService,
+	type TransactionShape,
+	Simulation,
+	SimulationService,
+	type SimulationShape,
+	type SimulateV1Payload,
+	type SimulateV1Result,
+	type SimulateV1BlockResult,
+	type SimulateV1CallResult,
+	type SimulateV2Payload,
+	type SimulateV2Result,
+	Events,
+	EventsService,
+	type EventsShape,
+	Network,
+	NetworkService,
+	type NetworkShape,
+	type SyncingStatus,
+	type WorkResult,
+	Streaming,
+	StreamingService,
+	type StreamingShape,
 } from "./Provider/index.js";
+// Debug exports
+export {
+	Debug,
+	DebugService,
+	type DebugShape,
+	type DebugTraceConfig,
+} from "./Debug/index.js";
+// Engine API exports
+export {
+	EngineApi,
+	EngineApiService,
+	type EngineApiShape,
+} from "./EngineApi/index.js";
 // Preset exports (layer composition helpers)
 export {
 	ArbitrumProvider,

@@ -222,7 +222,7 @@ const makeDefaultFeeEstimator = (
  *   DefaultFeeEstimator,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const feeEstimator = yield* FeeEstimatorService
@@ -259,7 +259,7 @@ export const DefaultFeeEstimator: Layer.Layer<
  *   makeFeeEstimator,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * // Use 1.5x multiplier for more volatile networks
  * const CustomFeeEstimator = makeFeeEstimator(1.5)

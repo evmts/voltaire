@@ -11,8 +11,8 @@
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, HttpTransport } from 'voltaire-effect/services'
- * import { getEnsAddress, getEnsName } from 'voltaire-effect/services/Provider/ens'
+ * import { Provider, ProviderService, HttpTransport } from 'voltaire-effect'
+ * import { getEnsAddress, getEnsName } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   // Forward resolution

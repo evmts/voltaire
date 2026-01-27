@@ -165,7 +165,7 @@ const DEFAULT_RECONNECT_OPTIONS: Required<ReconnectOptions> = {
  * @example Simple URL configuration
  * ```typescript
  * import { Effect } from 'effect'
- * import { WebSocketTransport, TransportService } from 'voltaire-effect/services'
+ * import { WebSocketTransport, TransportService } from 'voltaire-effect'
  *
  * const transport = WebSocketTransport('wss://mainnet.infura.io/ws/v3/YOUR_KEY')
  *
@@ -181,7 +181,7 @@ const DEFAULT_RECONNECT_OPTIONS: Required<ReconnectOptions> = {
  * @example With reconnection and keep-alive
  * ```typescript
  * import { Effect } from 'effect'
- * import { WebSocketTransport, TransportService } from 'voltaire-effect/services'
+ * import { WebSocketTransport, TransportService } from 'voltaire-effect'
  *
  * const transport = WebSocketTransport({
  *   url: 'wss://mainnet.infura.io/ws/v3/YOUR_KEY',
@@ -654,7 +654,7 @@ export const WebSocketTransport = (
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { WebSocketTransport, WebSocketConstructorGlobal, TransportService } from 'voltaire-effect/services'
+ * import { WebSocketTransport, WebSocketConstructorGlobal, TransportService } from 'voltaire-effect'
  *
  * const transport = WebSocketTransport('wss://mainnet.infura.io/ws/v3/YOUR_KEY').pipe(
  *   Layer.provide(WebSocketConstructorGlobal)

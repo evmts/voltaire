@@ -849,7 +849,10 @@ describe("TransportService", () => {
 							createMockHttpTransport(fetchMock, {
 								url: "https://eth.example.com",
 								batch: { batchSize: 2, wait: 50 },
-								retries: 0,
+								retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+									unknown,
+									TransportError
+								>,
 							}),
 						),
 					);
@@ -890,7 +893,10 @@ describe("TransportService", () => {
 							createMockHttpTransport(fetchMock, {
 								url: "https://eth.example.com",
 								batch: { batchSize: 100, wait: 10 },
-								retries: 0,
+								retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+									unknown,
+									TransportError
+								>,
 							}),
 						),
 						Effect.scoped,
@@ -938,7 +944,10 @@ describe("TransportService", () => {
 							createMockHttpTransport(fetchMock, {
 								url: "https://eth.example.com",
 								batch: { batchSize: 100, wait: 10 },
-								retries: 0,
+								retrySchedule: Schedule.recurs(0) as Schedule.Schedule<
+									unknown,
+									TransportError
+								>,
 							}),
 						),
 						Effect.scoped,

@@ -46,7 +46,7 @@ import type { TransportService } from "./TransportService.js";
  * @example
  * ```typescript
  * import { Effect, ConfigProvider, Layer } from 'effect'
- * import { TransportConfig, TransportFromConfig } from 'voltaire-effect/services'
+ * import { TransportConfig, TransportFromConfig } from 'voltaire-effect'
  *
  * // Read from environment
  * const program = Effect.gen(function* () {
@@ -103,7 +103,7 @@ export type TransportConfigType = Config.Config.Success<typeof TransportConfig>;
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { TransportFromConfig, TransportService } from 'voltaire-effect/services'
+ * import { TransportFromConfig, TransportService } from 'voltaire-effect'
  *
  * // Set: RPC_URL=https://mainnet.infura.io/v3/KEY
  *
@@ -121,7 +121,7 @@ export type TransportConfigType = Config.Config.Success<typeof TransportConfig>;
  * ```typescript
  * import { Effect, Layer, ConfigProvider } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { TransportFromConfig, TransportService } from 'voltaire-effect/services'
+ * import { TransportFromConfig, TransportService } from 'voltaire-effect'
  *
  * const configProvider = ConfigProvider.fromMap(new Map([
  *   ['rpc.url', 'https://mainnet.infura.io/v3/KEY'],

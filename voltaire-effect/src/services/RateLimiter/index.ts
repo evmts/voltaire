@@ -22,7 +22,7 @@
  *   RateLimiterService,
  *   DefaultRateLimiter,
  *   TransportService
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const rateLimiter = yield* RateLimiterService

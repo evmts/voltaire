@@ -75,7 +75,7 @@ const toTransportError = (error: unknown): TransportError => {
  *   HttpTransport,
  *   RateLimitedTransport,
  *   TransportService
- * } from "voltaire-effect/services"
+ * } from "voltaire-effect"
  *
  * const transport = RateLimitedTransport(
  *   HttpTransport("https://eth.example.com")

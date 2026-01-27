@@ -22,7 +22,7 @@
  * @example Basic usage
  * ```typescript
  * import { Effect } from 'effect'
- * import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect/services'
+ * import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const blockchain = yield* BlockchainService

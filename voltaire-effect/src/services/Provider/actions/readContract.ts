@@ -185,7 +185,7 @@ export interface ReadContractParams<
  * @example Basic ERC-20 balance read
  * ```typescript
  * import { Effect } from 'effect'
- * import { readContract, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { readContract, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const erc20Abi = [
  *   {

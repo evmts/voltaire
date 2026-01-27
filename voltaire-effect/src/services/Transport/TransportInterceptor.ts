@@ -145,7 +145,7 @@ export const onErrorRef: FiberRef.FiberRef<ErrorInterceptor> =
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { withRequestInterceptor, TransportService } from 'voltaire-effect/services'
+ * import { withRequestInterceptor, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -180,7 +180,7 @@ export const withRequestInterceptor =
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { withResponseInterceptor, TransportService } from 'voltaire-effect/services'
+ * import { withResponseInterceptor, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -215,7 +215,7 @@ export const withResponseInterceptor =
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { withErrorInterceptor, TransportService } from 'voltaire-effect/services'
+ * import { withErrorInterceptor, TransportService } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -278,7 +278,7 @@ export const withInterceptors =
  *   InterceptedTransport,
  *   withRequestInterceptor,
  *   TransportService
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const transport = InterceptedTransport(
  *   HttpTransport('https://mainnet.infura.io/v3/KEY')
@@ -397,7 +397,7 @@ const makeCacheKey = (method: string, params: unknown[]): string =>
  *   HttpTransport,
  *   DeduplicatedTransport,
  *   TransportService
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const transport = DeduplicatedTransport(
  *   HttpTransport('https://mainnet.infura.io/v3/KEY'),

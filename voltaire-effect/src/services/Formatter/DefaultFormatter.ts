@@ -35,7 +35,7 @@ import { FormatterService } from "./FormatterService.js";
  * @example Using the default formatter
  * ```typescript
  * import { Effect } from 'effect'
- * import { FormatterService, DefaultFormatter } from 'voltaire-effect/services'
+ * import { FormatterService, DefaultFormatter } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const formatter = yield* FormatterService
@@ -47,7 +47,7 @@ import { FormatterService } from "./FormatterService.js";
  * @example Overriding with a custom formatter
  * ```typescript
  * import { Effect, Layer } from 'effect'
- * import { FormatterService } from 'voltaire-effect/services'
+ * import { FormatterService } from 'voltaire-effect'
  *
  * const MyChainFormatter = Layer.succeed(FormatterService, {
  *   formatBlock: (rpc) => Effect.succeed({

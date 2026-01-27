@@ -77,7 +77,7 @@ const TransactionSerializerLive: Layer.Layer<TransactionSerializerService> =
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { TransactionSerializerService, DefaultTransactionSerializer } from 'voltaire-effect/services'
+ * import { TransactionSerializerService, DefaultTransactionSerializer } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const serializer = yield* TransactionSerializerService

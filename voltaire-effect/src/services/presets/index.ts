@@ -11,7 +11,7 @@
  * @example Using MainnetProvider
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, MainnetProvider } from 'voltaire-effect/services'
+ * import { ProviderService, MainnetProvider } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService
@@ -67,7 +67,7 @@ import { HttpTransport } from "../Transport/index.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, MainnetProvider } from 'voltaire-effect/services'
+ * import { ProviderService, MainnetProvider } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService
@@ -100,7 +100,7 @@ export const MainnetProvider = (url: string): Layer.Layer<ProviderService> =>
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, createProvider } from 'voltaire-effect/services'
+ * import { ProviderService, createProvider } from 'voltaire-effect'
  *
  * // Works with any network
  * const arbitrumProvider = createProvider('https://arb1.arbitrum.io/rpc')

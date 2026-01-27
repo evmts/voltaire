@@ -32,7 +32,7 @@ import type { ProviderService } from "../Provider/index.js";
  * @example Handling NonceError
  * ```typescript
  * import { Effect } from 'effect'
- * import { NonceManagerService, NonceError } from 'voltaire-effect/services'
+ * import { NonceManagerService, NonceError } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const nonceManager = yield* NonceManagerService
@@ -145,7 +145,7 @@ export type NonceManagerShape = {
  *   DefaultNonceManager,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const nonceManager = yield* NonceManagerService

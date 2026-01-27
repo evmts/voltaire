@@ -43,7 +43,7 @@ const ensureTrustedSetup = Effect.sync(() => {
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { KzgService, DefaultKzg } from 'voltaire-effect/services'
+ * import { KzgService, DefaultKzg } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const kzg = yield* KzgService

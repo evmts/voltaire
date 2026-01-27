@@ -153,7 +153,7 @@ interface JsonRpcResponse<T> {
  * ```typescript
  * import { Effect } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { HttpTransport, TransportService } from 'voltaire-effect/services'
+ * import { HttpTransport, TransportService } from 'voltaire-effect'
  *
  * const transport = HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY')
  *
@@ -170,7 +170,7 @@ interface JsonRpcResponse<T> {
  * ```typescript
  * import { Effect, Schedule } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { HttpTransport, Provider, ProviderService } from 'voltaire-effect/services'
+ * import { HttpTransport, Provider, ProviderService } from 'voltaire-effect'
  *
  * const transport = HttpTransport({
  *   url: 'https://mainnet.infura.io/v3/YOUR_KEY',
@@ -201,7 +201,7 @@ interface JsonRpcResponse<T> {
  * ```typescript
  * import { Effect } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { HttpTransport, TransportService, TransportError } from 'voltaire-effect/services'
+ * import { HttpTransport, TransportService, TransportError } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService
@@ -597,7 +597,7 @@ export const HttpTransport = (
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { HttpTransportFetch, TransportService } from 'voltaire-effect/services'
+ * import { HttpTransportFetch, TransportService } from 'voltaire-effect'
  *
  * const transport = HttpTransportFetch('https://mainnet.infura.io/v3/YOUR_KEY')
  *

@@ -53,7 +53,7 @@ import * as Data from "effect/Data";
  * @example Handling transport errors in Effect
  * ```typescript
  * import { Effect } from 'effect'
- * import { TransportService, TransportError, HttpTransport } from 'voltaire-effect/services'
+ * import { TransportService, TransportError, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const transport = yield* TransportService

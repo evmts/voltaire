@@ -168,7 +168,7 @@ const makeReconnectSchedule = (options: Required<IpcReconnectOptions>) =>
  * @example Simple path configuration
  * ```typescript
  * import { Effect } from 'effect'
- * import { IpcTransport, TransportService } from 'voltaire-effect/services'
+ * import { IpcTransport, TransportService } from 'voltaire-effect'
  * import { NodeFileSystem } from '@effect/platform-node'
  *
  * const transport = IpcTransport('/home/user/.ethereum/geth.ipc')
@@ -186,7 +186,7 @@ const makeReconnectSchedule = (options: Required<IpcReconnectOptions>) =>
  * @example Full configuration
  * ```typescript
  * import { Effect } from 'effect'
- * import { IpcTransport, TransportService } from 'voltaire-effect/services'
+ * import { IpcTransport, TransportService } from 'voltaire-effect'
  * import { NodeFileSystem } from '@effect/platform-node'
  *
  * const transport = IpcTransport({

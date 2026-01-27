@@ -27,7 +27,7 @@
  * @example Creating a contract instance
  * ```typescript
  * import { Effect } from 'effect'
- * import { Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { Contract, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const erc20Abi = [...] as const
  *

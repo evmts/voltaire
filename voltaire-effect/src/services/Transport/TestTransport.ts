@@ -55,7 +55,7 @@ import { TransportService } from "./TransportService.js";
  * @example Basic mock responses
  * ```typescript
  * import { Effect } from 'effect'
- * import { TestTransport, TransportService } from 'voltaire-effect/services'
+ * import { TestTransport, TransportService } from 'voltaire-effect'
  *
  * const transport = TestTransport({
  *   'eth_blockNumber': '0x1234',
@@ -73,7 +73,7 @@ import { TransportService } from "./TransportService.js";
  * @example With Provider for testing
  * ```typescript
  * import { Effect } from 'effect'
- * import { TestTransport, Provider, ProviderService } from 'voltaire-effect/services'
+ * import { TestTransport, Provider, ProviderService } from 'voltaire-effect'
  *
  * const transport = TestTransport({
  *   'eth_blockNumber': '0x1234',
@@ -97,7 +97,7 @@ import { TransportService } from "./TransportService.js";
  * @example Simulating errors
  * ```typescript
  * import { Effect } from 'effect'
- * import { TestTransport, TransportService, TransportError } from 'voltaire-effect/services'
+ * import { TestTransport, TransportService, TransportError } from 'voltaire-effect'
  *
  * const transport = TestTransport({
  *   'eth_blockNumber': '0x1234',
@@ -131,7 +131,7 @@ import { TransportService } from "./TransportService.js";
  * @example Using Map for responses
  * ```typescript
  * import { Effect } from 'effect'
- * import { TestTransport, TransportService } from 'voltaire-effect/services'
+ * import { TestTransport, TransportService } from 'voltaire-effect'
  *
  * const responses = new Map<string, unknown>([
  *   ['eth_blockNumber', '0x1234'],

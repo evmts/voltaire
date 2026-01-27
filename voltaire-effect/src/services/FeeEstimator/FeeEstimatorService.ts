@@ -65,7 +65,7 @@ export type FeeValues = FeeValuesLegacy | FeeValuesEIP1559;
  * @example Handling FeeEstimationError
  * ```typescript
  * import { Effect } from 'effect'
- * import { FeeEstimatorService, FeeEstimationError } from 'voltaire-effect/services'
+ * import { FeeEstimatorService, FeeEstimationError } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const feeEstimator = yield* FeeEstimatorService
@@ -137,7 +137,7 @@ export type FeeEstimatorShape = {
  *   DefaultFeeEstimator,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const feeEstimator = yield* FeeEstimatorService

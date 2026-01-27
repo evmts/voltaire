@@ -29,7 +29,7 @@ import { CcipError, CcipService } from "./CcipService.js";
  * @example Disable CCIP in tests
  * ```typescript
  * import { Effect } from 'effect'
- * import { CcipService, NoopCcip } from 'voltaire-effect/services'
+ * import { CcipService, NoopCcip } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const ccip = yield* CcipService

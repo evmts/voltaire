@@ -1110,7 +1110,7 @@ export type ProviderShape = BlocksShape &
  * @example Basic usage with HttpTransport
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService
@@ -1128,7 +1128,7 @@ export type ProviderShape = BlocksShape &
  * @example Querying block and transaction data
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService
@@ -1158,7 +1158,7 @@ export type ProviderShape = BlocksShape &
  * @example Contract interaction (read-only)
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService
@@ -1186,7 +1186,7 @@ export type ProviderShape = BlocksShape &
  * @example Querying event logs
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService

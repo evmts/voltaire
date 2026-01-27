@@ -34,7 +34,7 @@ import { TransportService } from "../Transport/TransportService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, WebSocketProviderTransport } from 'voltaire-effect/services'
+ * import { Provider, ProviderService, WebSocketProviderTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const provider = yield* ProviderService

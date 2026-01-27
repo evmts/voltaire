@@ -110,7 +110,7 @@ const toUnsignedAuthorization = (
  * @example Basic usage with BrowserTransport
  * ```typescript
  * import { Effect } from 'effect'
- * import { AccountService, JsonRpcAccount, BrowserTransport } from 'voltaire-effect/services'
+ * import { AccountService, JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const account = yield* AccountService
@@ -131,7 +131,7 @@ const toUnsignedAuthorization = (
  *   JsonRpcAccount,
  *   Provider,
  *   BrowserTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const signer = yield* SignerService

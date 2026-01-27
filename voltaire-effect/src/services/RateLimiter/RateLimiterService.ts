@@ -148,7 +148,7 @@ export type RateLimiterShape = {
  * @example Basic usage with withRateLimit
  * ```typescript
  * import { Effect } from 'effect'
- * import { RateLimiterService, DefaultRateLimiter } from 'voltaire-effect/services'
+ * import { RateLimiterService, DefaultRateLimiter } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const rateLimiter = yield* RateLimiterService

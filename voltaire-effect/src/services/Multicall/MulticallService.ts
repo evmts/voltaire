@@ -182,7 +182,7 @@ const decodeAggregate3 = (data: `0x${string}`): readonly MulticallResult[] => {
  * @example Basic usage
  * ```typescript
  * import { Effect } from 'effect'
- * import { aggregate3, HttpTransport } from 'voltaire-effect/services'
+ * import { aggregate3, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   return yield* aggregate3([

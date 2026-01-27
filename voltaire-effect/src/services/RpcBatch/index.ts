@@ -24,7 +24,7 @@
  *   EthBlockNumber,
  *   EthGetBalance,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const batch = yield* RpcBatchService

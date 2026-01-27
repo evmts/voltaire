@@ -90,7 +90,7 @@ const makeRetrySchedule = (retryCount: number, retryDelay: number) => {
  * @example Basic fallback between multiple HTTP transports
  * ```typescript
  * import { Effect } from 'effect'
- * import { FallbackTransport, HttpTransport, ProviderService, Provider } from 'voltaire-effect/services'
+ * import { FallbackTransport, HttpTransport, ProviderService, Provider } from 'voltaire-effect'
  *
  * const transport = FallbackTransport([
  *   HttpTransport('https://eth.llamarpc.com'),

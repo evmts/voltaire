@@ -126,7 +126,7 @@ function createInMemoryStore() {
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect/services'
+ * import { BlockchainService, InMemoryBlockchain } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const blockchain = yield* BlockchainService
@@ -206,7 +206,7 @@ export const InMemoryBlockchain: Layer.Layer<BlockchainService, never, never> =
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { BlockchainService, ForkBlockchain } from 'voltaire-effect/services'
+ * import { BlockchainService, ForkBlockchain } from 'voltaire-effect'
  *
  * const forkLayer = ForkBlockchain({
  *   forkBlockNumber: 18000000n,

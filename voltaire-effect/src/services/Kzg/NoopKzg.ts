@@ -32,7 +32,7 @@ import { KzgError, KzgService } from "./KzgService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { KzgService, NoopKzg } from 'voltaire-effect/services'
+ * import { KzgService, NoopKzg } from 'voltaire-effect'
  *
  * // Use NoopKzg when KZG operations are not needed
  * const program = Effect.gen(function* () {

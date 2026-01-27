@@ -22,7 +22,7 @@
  *   DefaultNonceManager,
  *   Provider,
  *   HttpTransport
- * } from 'voltaire-effect/services'
+ * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const nonceManager = yield* NonceManagerService

@@ -67,7 +67,7 @@ export interface ChainConfig {
  * @example Using a predefined chain
  * ```typescript
  * import { Effect } from 'effect'
- * import { ChainService, mainnet } from 'voltaire-effect/services/Chain'
+ * import { ChainService, mainnet } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const chain = yield* ChainService
@@ -79,7 +79,7 @@ export interface ChainConfig {
  * @example Creating a custom chain
  * ```typescript
  * import { Layer } from 'effect'
- * import { ChainService, ChainConfig } from 'voltaire-effect/services/Chain'
+ * import { ChainService, ChainConfig } from 'voltaire-effect'
  *
  * const myChain = Layer.succeed(ChainService, {
  *   id: 12345,

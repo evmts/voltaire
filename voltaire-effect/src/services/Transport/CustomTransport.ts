@@ -181,7 +181,7 @@ const toTransportError = (error: unknown): TransportError => {
  * ```typescript
  * import { Effect } from 'effect'
  * import { ethers } from 'ethers'
- * import { CustomTransport, TransportService } from 'voltaire-effect/services'
+ * import { CustomTransport, TransportService } from 'voltaire-effect'
  *
  * const ethersProvider = new ethers.JsonRpcProvider('https://mainnet.infura.io/v3/KEY')
  *
@@ -196,7 +196,7 @@ const toTransportError = (error: unknown): TransportError => {
  * @example With interceptors for logging
  * ```typescript
  * import { Effect } from 'effect'
- * import { CustomTransport, TransportService } from 'voltaire-effect/services'
+ * import { CustomTransport, TransportService } from 'voltaire-effect'
  *
  * const transport = CustomTransport({
  *   provider: myProvider,
@@ -217,7 +217,7 @@ const toTransportError = (error: unknown): TransportError => {
  * ```typescript
  * import { Effect } from 'effect'
  * import Web3 from 'web3'
- * import { CustomTransport, TransportService } from 'voltaire-effect/services'
+ * import { CustomTransport, TransportService } from 'voltaire-effect'
  *
  * const web3 = new Web3('https://mainnet.infura.io/v3/KEY')
  *
@@ -327,7 +327,7 @@ export const CustomTransport = (
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { CustomTransportFromFn, TransportService } from 'voltaire-effect/services'
+ * import { CustomTransportFromFn, TransportService } from 'voltaire-effect'
  *
  * const transport = CustomTransportFromFn(
  *   async ({ method, params }) => {

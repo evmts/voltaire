@@ -17,7 +17,7 @@
  * @example Typical usage
  * ```typescript
  * import { Effect } from 'effect'
- * import { EnsService, DefaultEns, Provider, HttpTransport } from 'voltaire-effect/services'
+ * import { EnsService, DefaultEns, Provider, HttpTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
  *   const ens = yield* EnsService

@@ -9,12 +9,12 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { TransportService } from "../Transport/TransportService.js";
 import type {
+	AddressInput,
 	BlockTag,
 	CallRequest,
 	HashInput,
 	TransactionIndexInput,
 } from "../Provider/ProviderService.js";
-import type { AddressInput } from "@tevm/voltaire/Address";
 import { DebugService } from "./DebugService.js";
 
 const bytesToHex = (bytes: Uint8Array): `0x${string}` => {
