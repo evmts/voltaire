@@ -7,106 +7,211 @@ description: Understanding Function, Event, Error, and Constructor ABI item type
   Run ABI examples in the interactive playground
 </Card>
 
+<Info>
+**Conceptual guide** - For encoding rules, see [ABI Encoding](/primitives/abi/encoding).
+</Info>
 
 ## Overview
 
-ABI items represent contract interface elements. Four primary types:
-
-- **Function** - Contract methods (read/write)
-- **Event** - Log events emitted by contracts
-- **Error** - Custom error definitions (EIP-3668)
-- **Constructor** - Contract deployment parameters
-
-Each type has specific encoding rules and selector generation.
-
-## Function Type
-
-Functions define callable methods with inputs/outputs.
+ABI items describe a contract interface as JSON objects. Voltaire treats them as typed plain objects and provides helpers to encode/decode data safely.
 
 ```typescript
-type AbiFunction = {
-  type: 'function';
-  name: string;
-  inputs: AbiParameter[];
-  outputs: AbiParameter[];
-  stateMutability: 'pure' | 'view' | 'nonpayable' | 'payable';
-};
+import { Abi } from '@tevm/voltaire/Abi';
+
+const erc20Abi = Abi([
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool' }]
+  },
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value' }
+    ]
+  }
+] as const);
 ```
 
-**Selector**: First 4 bytes of `keccak256(signature)`
+## Function
 
-## Event Type
-
-Events define log structures for contract notifications.
+Functions define callable methods with inputs, outputs, and mutability.
 
 ```typescript
-type AbiEvent = {
-  type: 'event';
-  name: string;
-  inputs: AbiParameter[];
-  anonymous?: boolean;
-};
+const transfer = {
+  type: 'function',
+  name: 'transfer',
+  stateMutability: 'nonpayable',
+  inputs: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'amount' }
+  ],
+  outputs: [{ type: 'bool' }]
+} as const;
 ```
 
-**Selector**: Full 32 bytes of `keccak256(signature)` (topic0)
+Key fields:
+- `name` - function name
+- `inputs` - parameter list
+- `outputs` - return list
+- `stateMutability` - `pure | view | nonpayable | payable`
 
-## Error Type
+## Event
 
-Errors define revert reasons with typed parameters.
+Events define log structures. Indexed parameters become topics.
 
 ```typescript
-type AbiError = {
-  type: 'error';
-  name: string;
-  inputs: AbiParameter[];
-};
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
+  ],
+  anonymous: false
+} as const;
 ```
 
-**Selector**: First 4 bytes of `keccak256(signature)`
+Key fields:
+- `anonymous` - if true, no topic0 selector is emitted
+- `inputs[].indexed` - marks a parameter as a topic
 
-## Constructor Type
+## Error
 
-Constructor defines deployment parameters.
+Custom errors encode like functions and surface revert data.
 
 ```typescript
-type AbiConstructor = {
-  type: 'constructor';
-  inputs: AbiParameter[];
-  stateMutability: 'nonpayable' | 'payable';
-};
+const InsufficientBalance = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
 ```
 
-**No selector**: Constructor has no selector (called during deployment)
+## Constructor
 
-## Parameter Types
-
-All types use `AbiParameter` for inputs/outputs:
+Constructor items define deployment parameters. They have no selector.
 
 ```typescript
-type AbiParameter = {
-  name: string;
-  type: string;
-  components?: AbiParameter[]; // For tuples
-  indexed?: boolean; // Events only
-};
+const ctor = {
+  type: 'constructor',
+  stateMutability: 'nonpayable',
+  inputs: [
+    { type: 'string', name: 'name' },
+    { type: 'string', name: 'symbol' },
+    { type: 'uint8', name: 'decimals' }
+  ]
+} as const;
 ```
 
-## Type Guards
+## Fallback and Receive
 
-Use `Abi.Item.*` methods to check types:
+Fallback and receive functions are special, selector-less entries.
 
 ```typescript
-import * as Abi from 'tevm/Abi';
+const fallback = { type: 'fallback', stateMutability: 'payable' } as const;
+const receive = { type: 'receive', stateMutability: 'payable' } as const;
+```
 
-const item = abi[0];
+## Parameters and Tuples
 
-if (Abi.Item.isFunction(item)) {
-  // item is AbiFunction
+Parameters describe inputs and outputs. Use `components` for tuples (structs).
+
+```typescript
+const params = [
+  { type: 'address', name: 'owner' },
+  {
+    type: 'tuple',
+    name: 'position',
+    components: [
+      { type: 'uint256', name: 'amount' },
+      { type: 'uint256', name: 'shares' }
+    ]
+  }
+] as const;
+```
+
+Common parameter fields:
+- `type` - canonical ABI type string
+- `name` - optional parameter name
+- `components` - tuple fields
+- `indexed` - events only
+- `internalType` - optional Solidity internal type
+
+## Canonical Type Names
+
+Selectors and signatures require canonical types:
+
+- `uint` -> `uint256`
+- `int` -> `int256`
+- Use `bytesN` for fixed-size bytes
+- Use `tuple` for structs, plus `components`
+
+## Type Inference
+
+Use `as const` to enable strict inference for inputs and outputs.
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const balanceOf = {
+  type: 'function',
+  name: 'balanceOf',
+  stateMutability: 'view',
+  inputs: [{ type: 'address', name: 'account' }],
+  outputs: [{ type: 'uint256', name: 'balance' }]
+} as const;
+
+// TypeScript infers args and return values
+const encoded = Abi.Function.encodeParams(balanceOf, [
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e'
+]);
+const result = Abi.Function.decodeResult(balanceOf, returnData);
+// result is [bigint]
+```
+
+## Working With Items
+
+Use helper functions to access and validate items:
+
+```typescript
+const transferFn = erc20Abi.getFunction('transfer');
+const transferEvt = erc20Abi.getEvent('Transfer');
+
+if (Abi.Item.isFunction(transferFn)) {
+  const selector = Abi.Function.getSelector(transferFn);
 }
+```
+
+## Overloads and Ambiguity
+
+`getFunction` and `Abi.encode` match by **name**. If your ABI has overloads, select the exact item by signature:
+
+```typescript
+const signature = 'foo(address,uint256)';
+const fn = erc20Abi.find(
+  (item) =>
+    item.type === 'function' &&
+    Abi.Function.getSignature(item) === signature
+);
+
+const data = Abi.Function.encodeParams(fn, [address, 1n]);
 ```
 
 ## See Also
 
-- [Item type guards](/primitives/abi/item-is-function) - Check ABI item types
-- [Selectors](/primitives/abi/selectors) - Selector generation
-- [Encoding](/primitives/abi/encoding) - Encoding mechanics
+- [ABI Encoding](/primitives/abi/encoding)
+- [Selectors](/primitives/abi/selectors)
+- [ABI Fundamentals](/primitives/abi/fundamentals)

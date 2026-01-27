@@ -36,7 +36,6 @@ Effect.runPromise(program);
 - `voltaire-effect` - Main entry
 - `voltaire-effect/primitives` - Address, Hex, Bytes32, etc.
 - `voltaire-effect/crypto` - Keccak, secp256k1, etc.
-- `voltaire-effect/services` - Effect services/layers
 
 ## License
 

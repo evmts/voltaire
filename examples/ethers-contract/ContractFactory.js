@@ -7,7 +7,7 @@
  * @module examples/ethers-contract/ContractFactory
  */
 
-import { Abi, Constructor, Hex, TransactionHash } from "@tevm/voltaire";
+import { Abi, Hex, TransactionHash } from "@tevm/voltaire";
 import { EthersContract } from "./EthersContract.js";
 import { InvalidArgumentError, UnsupportedOperationError } from "./errors.js";
 
@@ -203,7 +203,7 @@ export function ContractFactory(options) {
 		// Encode constructor arguments
 		let data = bytecode;
 		if (constructorArgs.length > 0 && constructorFragment) {
-			const encodedArgs = Constructor.encodeParams(
+			const encodedArgs = Abi.Constructor.encodeParams(
 				constructorFragment,
 				constructorArgs,
 			);

@@ -9,11 +9,13 @@ Demonstrates calling a contract function with ABI encoding and sending the trans
 
 ```typescript
 import { Effect } from 'effect'
+import * as S from 'effect/Schema'
 import * as Hash from '@tevm/voltaire/Hash'
 import { writeContract } from 'voltaire-effect'
 import { Signer } from 'voltaire-effect'
+import * as AbiSchema from 'voltaire-effect/primitives/Abi'
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: "function",
     name: "transfer",
@@ -24,7 +26,7 @@ const erc20Abi = [
     outputs: [{ type: "bool" }],
     stateMutability: "nonpayable",
   },
-]
+])
 
 const program = writeContract({
   address: "0xabababababababababababababababababababab",

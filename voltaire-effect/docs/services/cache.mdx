@@ -81,6 +81,7 @@ Effect-native lookup-based caching using `effect/Cache`. Automatically computes 
 ```typescript
 import { Effect, Duration } from 'effect'
 import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
+import type { GetBlockError } from 'voltaire-effect/services'
 
 // Define typed cache tag
 const BlockCache = LookupCacheService<bigint, Block, GetBlockError>()

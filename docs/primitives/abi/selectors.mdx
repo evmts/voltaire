@@ -7,136 +7,147 @@ description: Function selectors, event topic hashes, and signature generation
   Run ABI examples in the interactive playground
 </Card>
 
+<Info>
+**Conceptual guide** - For encoding rules, see [ABI Encoding](/primitives/abi/encoding).
+</Info>
 
 ## Overview
 
-Selectors identify functions, events, and errors in Ethereum. Generated from human-readable signatures using keccak256 hashing.
+Selectors identify functions, events, and errors in Ethereum. They are derived from canonical signatures using keccak256.
 
-## Function Selectors
+## Quick Start
 
-Function selector: First 4 bytes of `keccak256(signature)`
+<Tabs>
+<Tab title="Function">
 
 ```typescript
-// transfer(address,uint256)
-// Signature: "transfer(address,uint256)"
-// Hash: keccak256("transfer(address,uint256)")
-// Selector: 0xa9059cbb (first 4 bytes)
+import { Abi } from '@tevm/voltaire/Abi';
 
-const selector = Abi.Function.getSelector(fn);
+const transfer = {
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'amount' }
+  ],
+  outputs: [{ type: 'bool' }]
+} as const;
+
+const selector = Abi.Function.getSelector(transfer);
+// 0xa9059cbb
 ```
 
-**Canonical form**: No spaces, canonical type names (e.g., `uint256` not `uint`)
-
-## Event Selectors
-
-Event selector: Full 32 bytes of `keccak256(signature)` (topic0)
+</Tab>
+<Tab title="Event">
 
 ```typescript
-// Transfer(address,address,uint256)
-// Signature: "Transfer(address,address,uint256)"
-// Hash: keccak256("Transfer(address,address,uint256)")
-// Selector: 0xddf252ad... (full 32 bytes)
+import { Abi } from '@tevm/voltaire/Abi';
 
-const selector = Abi.Event.getSelector(event);
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
+  ]
+} as const;
+
+const topic0 = Abi.Event.getSelector(Transfer);
+// 0xddf252ad...
 ```
 
-**Anonymous events**: No topic0 (no selector), all parameters become topics
-
-## Error Selectors
-
-Error selector: First 4 bytes of `keccak256(signature)` (same as functions)
+</Tab>
+<Tab title="Error">
 
 ```typescript
-// InsufficientBalance(uint256,uint256)
-// Selector: First 4 bytes of keccak256(signature)
+import { Abi } from '@tevm/voltaire/Abi';
 
-const selector = Abi.Error.getSelector(error);
+const InsufficientBalance = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
+
+const selector = Abi.Error.getSelector(InsufficientBalance);
+// first 4 bytes of keccak256(signature)
 ```
 
-## Signature Generation
+</Tab>
+</Tabs>
 
-Signatures represent function/event/error in canonical form.
+## Canonical Signatures
+
+Signatures are generated from the **canonical** type list:
+
+- No whitespace
+- Use full size types (`uint256`, `int256`)
+- Tuples use parentheses: `foo((uint256,address))`
+- Arrays include brackets: `foo(address[])`
 
 ```typescript
-// Function: name(param1Type,param2Type)returns(returnType)
-const sig = Abi.Function.getSignature(fn);
+const sig = Abi.Function.getSignature(transfer);
 // "transfer(address,uint256)"
-
-// Event: name(param1Type,param2Type)
-const sig = Abi.Event.getSignature(event);
-// "Transfer(address,address,uint256)"
-
-// Error: name(param1Type,param2Type)
-const sig = Abi.Error.getSignature(error);
-// "InsufficientBalance(uint256,uint256)"
 ```
 
-## Canonical Type Names
+## Event Topic0 and Anonymous Events
 
-Types must use canonical names for correct selectors:
-
-- ✅ `uint256`, `int256` (explicit size)
-- ❌ `uint`, `int` (implicit size - invalid)
-- ✅ `bytes32` (fixed-size bytes)
-- ✅ `bytes` (dynamic bytes)
-- ✅ `address` (20 bytes)
-- ✅ `bool` (1 byte)
-
-## Tuple Signatures
-
-Tuples (structs) expand into signature:
+Non-anonymous events include `topic0 = keccak256(signature)`. Anonymous events omit topic0 entirely, so all topics are indexed parameters only.
 
 ```typescript
-// struct Point { uint256 x; uint256 y; }
-// function plot(Point p)
-// Signature: "plot((uint256,uint256))"
-```
-
-## Array Signatures
-
-Arrays include brackets in signature:
-
-```typescript
-// function batch(address[] recipients)
-// Signature: "batch(address[])"
-
-// function fixed(uint256[3] values)
-// Signature: "fixed(uint256[3])"
+const anonymous = {
+  type: 'event',
+  name: 'Log',
+  anonymous: true,
+  inputs: [{ type: 'uint256', name: 'id', indexed: true }]
+} as const;
 ```
 
 ## Selector Collisions
 
-4-byte function selectors can collide (birthday paradox). ~77,000 functions → 50% collision chance.
+Function selectors are 4 bytes, so collisions are possible. You can scan an ABI for collisions:
 
-Event selectors (32 bytes) have negligible collision risk.
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
 
-## Standard Selectors
+const hasCollisions = Abi.hasSelectorCollisions(erc20Abi);
+const collisions = Abi.findSelectorCollisions(erc20Abi);
+```
 
-Common function selectors:
+Event selectors are 32 bytes and effectively collision-free.
 
+## Common Selectors
+
+ERC-20 functions:
 - `0xa9059cbb` - `transfer(address,uint256)`
 - `0x23b872dd` - `transferFrom(address,address,uint256)`
 - `0x095ea7b3` - `approve(address,uint256)`
 - `0x70a08231` - `balanceOf(address)`
 
-Common event selectors:
-
+ERC-20 events:
 - `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` - `Transfer(address,address,uint256)`
 - `0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925` - `Approval(address,address,uint256)`
 
 ## Custom Hash Functions
 
-Use factories for custom keccak256 implementations:
+Use selector factories when you need a custom keccak256 implementation:
 
 ```typescript
-import { GetSelector } from 'tevm/Abi/Function';
+import { Function } from '@tevm/voltaire/Abi';
 
-const getSelector = GetSelector(customKeccak256);
-const selector = getSelector(fn);
+const getSelector = Function.GetSelector({
+  keccak256String: (value) => myKeccak256(value)
+});
+
+const selector = getSelector(transfer);
 ```
 
 ## See Also
 
-- [Function getSelector](/primitives/abi/function-get-selector) - Get function selector
-- [Event getSelector](/primitives/abi/event-get-selector) - Get event selector
-- [Encoding](/primitives/abi/encoding) - ABI encoding mechanics
+- [Function.getSelector](/primitives/abi/function-get-selector)
+- [Event.getSelector](/primitives/abi/event-get-selector)
+- [Error.getSelector](/primitives/abi/error-get-selector)
+- [ABI Encoding](/primitives/abi/encoding)

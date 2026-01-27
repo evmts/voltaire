@@ -12,6 +12,8 @@ source: 'docs/primitives/abi/index.test.ts'
  * Validates that all code examples in the ABI documentation work correctly.
  */
 import { describe, expect, it } from "vitest";
+import * as S from "effect/Schema";
+import * as AbiSchema from "voltaire-effect/primitives/Abi";
 
 describe("Abi Documentation - index.mdx", () => {
 	describe("Function Encoding", () => {
@@ -210,7 +212,7 @@ describe("Abi Documentation - index.mdx", () => {
 		it("should get item from ABI by name and type", async () => {
 			const { Abi } = await import("../../../src/primitives/Abi/index.js");
 
-			const erc20Abi = [
+			const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 				{
 					type: "function",
 					name: "transfer",
@@ -230,7 +232,7 @@ describe("Abi Documentation - index.mdx", () => {
 						{ type: "uint256", name: "value" },
 					],
 				},
-			] as const;
+			]);
 
 			const transferFn = Abi.getItem(erc20Abi, "transfer", "function");
 			expect(transferFn?.name).toBe("transfer");

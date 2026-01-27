@@ -20,7 +20,6 @@ import {
 	Abi,
 	Address,
 	BlockNumber,
-	Event,
 	Hash,
 	Hex,
 	TransactionHash,
@@ -432,7 +431,7 @@ function buildWrappedEvent(contract, key) {
 		return {
 			fragment,
 			async getTopicFilter() {
-				const topics = Event.encodeTopics(fragment, filterObj);
+				const topics = Abi.Event.encodeTopics(fragment, filterObj);
 				return topics.map((t) => (t === null ? null : Hex.fromBytes(t)));
 			},
 		};
@@ -514,7 +513,7 @@ function createTransactionResponse(hash, tx, provider, abi) {
 				try {
 					const event = abi.getEvent(log.topics[0]);
 					if (event) {
-						const args = Event.decodeLog(
+						const args = Abi.Event.decodeLog(
 							event,
 							Hex.toBytes(log.data),
 							log.topics.map((t) => Hex.toBytes(t)),
@@ -580,7 +579,7 @@ async function getSubInfo(contract, event) {
 			if (!fragment) {
 				throw new EventNotFoundError(event);
 			}
-			const topicBytes = Event.encodeTopics(fragment, {});
+			const topicBytes = Abi.Event.encodeTopics(fragment, {});
 			topics = [topicBytes[0] ? Hex.fromBytes(topicBytes[0]) : null];
 		}
 	} else if (event && typeof event.getTopicFilter === "function") {
@@ -590,7 +589,7 @@ async function getSubInfo(contract, event) {
 	} else if (event && event.type === "event") {
 		// Event fragment directly
 		fragment = event;
-		const topicBytes = Event.encodeTopics(fragment, {});
+		const topicBytes = Abi.Event.encodeTopics(fragment, {});
 		topics = [topicBytes[0] ? Hex.fromBytes(topicBytes[0]) : null];
 	} else {
 		throw new EventNotFoundError(String(event));
@@ -837,7 +836,7 @@ export function EthersContract(options) {
 
 			if (foundFragment) {
 				try {
-					const args = Event.decodeLog(
+					const args = Abi.Event.decodeLog(
 						foundFragment,
 						Hex.toBytes(log.data),
 						log.topics.map((t) => Hex.toBytes(t)),
