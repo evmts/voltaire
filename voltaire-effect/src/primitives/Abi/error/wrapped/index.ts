@@ -1,8 +1,7 @@
+export type { WrappedErrorType } from "@tevm/voltaire/Abi";
 export {
-	WRAPPED_ERROR_SELECTOR,
 	decodeWrappedError,
 	encodeWrappedError,
+	WRAPPED_ERROR_SELECTOR,
 	WrappedError,
 } from "@tevm/voltaire/Abi";
-
-export type { WrappedErrorType } from "@tevm/voltaire/Abi";
