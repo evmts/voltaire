@@ -16,7 +16,7 @@ Requires Effect 3.x, Voltaire 0.x, and TypeScript 5.4+.
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect/services'
+import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const provider = yield* ProviderService
@@ -379,6 +379,17 @@ The signer automatically detects transaction type based on fields:
 - Simple one-off scripts
 - You prefer exceptions over typed errors
 
+## Test Examples (Ghost Docs)
+
+170 test examples are available as LLM context at `/docs/ghosts/tests/typescript/tests/voltaire-effect/`. These cover:
+
+**Primitives:** Address, Abi, Bytes, Hash, Hex, Rlp, Signature, Transaction, TypedData, Uint, and 50+ more
+**Crypto:** Keccak256, Secp256k1, Bls12381, Ed25519, P256, HDWallet, Keystore, EIP712, AesGcm, ChaCha20Poly1305, Bip39, KZG, Bn254
+**Services:** Provider, Signer, Contract, Transport, BlockStream, TransactionStream, Multicall, Cache, FeeEstimator, NonceManager
+**Standards:** ERC20, ERC721, ERC1155, ERC165
+
+Each test file shows correct imports (`voltaire-effect/primitives/Address` not `./index.js`) and one-sentence descriptions.
+
 ## Related Projects
 
 - [Voltaire](https://voltaire.tevm.sh) - Core Ethereum primitives and crypto
@@ -406,7 +417,7 @@ import {
   Contract,
   HttpTransport, WebSocketTransport, BrowserTransport,
   LocalAccount, JsonRpcAccount
-} from 'voltaire-effect/services'
+} from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 
 // Crypto
