@@ -139,16 +139,19 @@ export function SimpleContractFactory({ abi, bytecode, runner }) {
 
 ## Type Safety
 
-You can get full TypeScript inference by using `as const` on your ABI. The full reference implementation includes comprehensive types that provide autocomplete and type-checking for function arguments and return values.
+Validate your ABI with Effect Schema to catch shape errors early before wiring it into a contract. The full reference implementation includes comprehensive types that provide autocomplete and type-checking for function arguments and return values.
 
 ```typescript
-const erc20Abi = [
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
+
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: 'function',
     name: 'balanceOf',
     // ...
   },
-] as const; // <-- This is key!
+]);
 
 const usdc = EthersContract({
   target: '0x...',

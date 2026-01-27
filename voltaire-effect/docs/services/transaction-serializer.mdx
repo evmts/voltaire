@@ -22,19 +22,26 @@ const program = Effect.gen(function* () {
 Serialize a transaction to RLP-encoded bytes:
 
 ```typescript
+import * as S from 'effect/Schema'
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
+
 const serializer = yield* TransactionSerializerService
 
-const tx = {
-  type: 2,  // EIP-1559
-  chainId: 1,
+const tx = S.decodeSync(Transaction.EIP1559Schema)({
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
   nonce: 0n,
   maxPriorityFeePerGas: 1000000000n,
   maxFeePerGas: 20000000000n,
-  gas: 21000n,
+  gasLimit: 21000n,
   to: '0x1234567890123456789012345678901234567890',
   value: 1000000000000000000n,
-  data: '0x'
-}
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+})
 
 const bytes = yield* serializer.serialize(tx)
 // Returns: Uint8Array of RLP-encoded transaction
@@ -69,89 +76,119 @@ The serializer supports all Ethereum transaction types:
 ### Legacy (Type 0)
 
 ```typescript
-const legacyTx = {
-  type: 0,
+import * as S from 'effect/Schema'
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
+
+const legacyTx = S.decodeSync(Transaction.LegacySchema)({
+  type: Transaction.Type.Legacy,
   nonce: 0n,
   gasPrice: 20000000000n,
-  gas: 21000n,
+  gasLimit: 21000n,
   to: '0x...',
   value: 0n,
-  data: '0x'
-}
+  data: new Uint8Array(),
+  v: 27n,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+})
 ```
 
 ### EIP-2930 Access List (Type 1)
 
 ```typescript
-const eip2930Tx = {
-  type: 1,
-  chainId: 1,
+import * as S from 'effect/Schema'
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
+
+const eip2930Tx = S.decodeSync(Transaction.EIP2930Schema)({
+  type: Transaction.Type.EIP2930,
+  chainId: 1n,
   nonce: 0n,
   gasPrice: 20000000000n,
-  gas: 21000n,
+  gasLimit: 21000n,
   to: '0x...',
   value: 0n,
-  data: '0x',
+  data: new Uint8Array(),
   accessList: [
-    { address: '0x...', storageKeys: ['0x...'] }
-  ]
-}
+    { address: '0x...', storageKeys: [] }
+  ],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+})
 ```
 
 ### EIP-1559 Fee Market (Type 2)
 
 ```typescript
-const eip1559Tx = {
-  type: 2,
-  chainId: 1,
+import * as S from 'effect/Schema'
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
+
+const eip1559Tx = S.decodeSync(Transaction.EIP1559Schema)({
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
   nonce: 0n,
   maxPriorityFeePerGas: 1000000000n,
   maxFeePerGas: 20000000000n,
-  gas: 21000n,
+  gasLimit: 21000n,
   to: '0x...',
   value: 0n,
-  data: '0x',
-  accessList: []
-}
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+})
 ```
 
 ### EIP-4844 Blob (Type 3)
 
 ```typescript
-const eip4844Tx = {
-  type: 3,
-  chainId: 1,
+import * as S from 'effect/Schema'
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
+
+const eip4844Tx = S.decodeSync(Transaction.EIP4844Schema)({
+  type: Transaction.Type.EIP4844,
+  chainId: 1n,
   nonce: 0n,
   maxPriorityFeePerGas: 1000000000n,
   maxFeePerGas: 20000000000n,
   maxFeePerBlobGas: 1000000000n,
-  gas: 21000n,
+  gasLimit: 21000n,
   to: '0x...',
   value: 0n,
-  data: '0x',
+  data: new Uint8Array(),
   accessList: [],
-  blobVersionedHashes: ['0x01...']
-}
+  blobVersionedHashes: [new Uint8Array(32)],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+})
 ```
 
 ### EIP-7702 Set Code (Type 4)
 
 ```typescript
-const eip7702Tx = {
-  type: 4,
-  chainId: 1,
+import * as S from 'effect/Schema'
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
+
+const eip7702Tx = S.decodeSync(Transaction.EIP7702Schema)({
+  type: Transaction.Type.EIP7702,
+  chainId: 1n,
   nonce: 0n,
   maxPriorityFeePerGas: 1000000000n,
   maxFeePerGas: 20000000000n,
-  gas: 21000n,
+  gasLimit: 21000n,
   to: '0x...',
   value: 0n,
-  data: '0x',
+  data: new Uint8Array(),
   accessList: [],
   authorizationList: [
-    { chainId: 1, address: '0x...', nonce: 0n, r: '0x...', s: '0x...', yParity: 0 }
-  ]
-}
+    { chainId: 1n, address: '0x...', nonce: 0n, yParity: 0, r: new Uint8Array(32), s: new Uint8Array(32) }
+  ],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+})
 ```
 
 ## Error Handling

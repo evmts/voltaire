@@ -27,8 +27,10 @@ ERC20 tokens require explicit approval before a contract can transfer them on yo
 
 ```ts
 import { Contract } from '@tevm/voltaire/contract'
+import * as S from 'effect/Schema'
+import * as AbiSchema from 'voltaire-effect/primitives/Abi'
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: 'function',
     name: 'approve',
@@ -58,7 +60,7 @@ const erc20Abi = [
       { name: 'value', type: 'uint256', indexed: false }
     ]
   }
-] as const
+])
 
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 const UNISWAP_ROUTER = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'

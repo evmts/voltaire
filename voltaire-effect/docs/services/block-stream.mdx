@@ -6,7 +6,7 @@ description: Effect-native block streaming with reorg support
 ## Quick Start
 
 ```typescript
-import { makeBlockStream, HttpTransport } from 'voltaire-effect'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect/services'
 import { Effect, Stream } from 'effect'
 
 const program = Effect.gen(function* () {
@@ -156,7 +156,7 @@ interface BackfillOptions<T extends BlockInclude> {
 ## Error Handling
 
 ```typescript
-import { BlockStreamError } from 'voltaire-effect'
+import { BlockStreamError } from 'voltaire-effect/services'
 
 program.pipe(
   Effect.catchTag("BlockStreamError", (e) =>
@@ -168,7 +168,7 @@ program.pipe(
 ## Stream Shape
 
 ```typescript
-import { makeBlockStream, type BlockStreamShape } from 'voltaire-effect'
+import { makeBlockStream, type BlockStreamShape } from 'voltaire-effect/services'
 
 const blockStream: BlockStreamShape = yield* makeBlockStream()
 ```

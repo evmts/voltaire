@@ -277,7 +277,7 @@ const robustCall = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { makeBlockStream, HttpTransport } from 'voltaire-effect'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect/services'
 
 const streamBlocks = (count: number) => Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()

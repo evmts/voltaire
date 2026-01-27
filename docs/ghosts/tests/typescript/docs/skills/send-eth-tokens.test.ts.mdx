@@ -20,6 +20,8 @@ source: 'docs/skills/send-eth-tokens.test.ts'
  * - Denomination helpers are available at src/primitives/Denomination/
  */
 import { describe, expect, it } from "vitest";
+import * as S from "effect/Schema";
+import * as AbiSchema from "voltaire-effect/primitives/Abi";
 
 describe("Send ETH & Tokens Guide", () => {
 	it("should work with Address primitive", async () => {
@@ -142,7 +144,7 @@ describe("Send ETH & Tokens Guide", () => {
 
 	it("should work with ERC-20 ABI structure", () => {
 		// ERC-20 transfer ABI from guide
-		const erc20Abi = [
+		const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 			{
 				type: "function",
 				name: "transfer",
@@ -160,7 +162,7 @@ describe("Send ETH & Tokens Guide", () => {
 				inputs: [{ type: "address", name: "account" }],
 				outputs: [{ type: "uint256", name: "" }],
 			},
-		] as const;
+		]);
 
 		expect(erc20Abi[0].name).toBe("transfer");
 		expect(erc20Abi[1].name).toBe("balanceOf");

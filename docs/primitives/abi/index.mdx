@@ -25,6 +25,8 @@ Branded array of ABI items (functions, events, errors, constructors). Zero-overh
 <Tab title="Encode Function Call">
 ```typescript
 import * as Abi from 'tevm/Abi';
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
 // Define function ABI item
 const transferAbi = {
@@ -81,7 +83,7 @@ const decoded = Abi.Event.decodeLog(transferEvent, {
 import * as Abi from 'tevm/Abi';
 
 // ERC-20 ABI (partial)
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: 'function',
     name: 'transfer',
@@ -101,7 +103,7 @@ const erc20Abi = [
       { type: 'uint256', name: 'value' }
     ]
   }
-] as const;
+]);
 
 // Get specific item by name and type
 const transferFn = Abi.getItem(erc20Abi, 'transfer', 'function');

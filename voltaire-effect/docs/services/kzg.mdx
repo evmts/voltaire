@@ -88,6 +88,7 @@ Create a blob transaction with KZG commitments:
 
 ```typescript
 import { Effect } from 'effect'
+import * as S from 'effect/Schema'
 import { 
   KzgService, 
   TransactionSerializerService,
@@ -95,6 +96,7 @@ import {
   DefaultTransactionSerializer 
 } from 'voltaire-effect'
 import { keccak256 } from 'voltaire'
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
 
 const createBlobTx = Effect.gen(function* () {
   const kzg = yield* KzgService
@@ -110,20 +112,23 @@ const createBlobTx = Effect.gen(function* () {
   versionedHash[0] = 0x01  // Version byte
   versionedHash.set(keccak256(commitment).slice(1), 1)
   
-  const tx = {
-    type: 3,
-    chainId: 1,
+  const tx = S.decodeSync(Transaction.EIP4844Schema)({
+    type: Transaction.Type.EIP4844,
+    chainId: 1n,
     nonce: 0n,
     maxPriorityFeePerGas: 1000000000n,
     maxFeePerGas: 20000000000n,
     maxFeePerBlobGas: 1000000000n,
-    gas: 21000n,
+    gasLimit: 21000n,
     to: '0x1234567890123456789012345678901234567890',
     value: 0n,
-    data: '0x',
+    data: new Uint8Array(),
     accessList: [],
-    blobVersionedHashes: [`0x${Buffer.from(versionedHash).toString('hex')}`]
-  }
+    blobVersionedHashes: [versionedHash],
+    yParity: 0,
+    r: new Uint8Array(32),
+    s: new Uint8Array(32)
+  })
   
   return yield* serializer.serialize(tx)
 }).pipe(

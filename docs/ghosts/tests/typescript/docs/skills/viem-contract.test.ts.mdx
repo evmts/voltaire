@@ -18,11 +18,13 @@ source: 'docs/skills/viem-contract.test.ts'
  * - Abi primitive IS available for encoding/decoding
  */
 import { describe, expect, it } from "vitest";
+import * as S from "effect/Schema";
+import * as AbiSchema from "voltaire-effect/primitives/Abi";
 
 describe("Viem Contract Playbook", () => {
 	it("should define ERC-20 ABI structure", () => {
 		// From playbook: ERC-20 ABI
-		const erc20Abi = [
+		const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 			{
 				type: "function",
 				name: "balanceOf",
@@ -49,7 +51,7 @@ describe("Viem Contract Playbook", () => {
 					{ name: "value", type: "uint256", indexed: false },
 				],
 			},
-		] as const;
+		]);
 
 		expect(erc20Abi).toHaveLength(3);
 		expect(erc20Abi[0].name).toBe("balanceOf");
@@ -202,14 +204,14 @@ describe("Viem Contract Playbook", () => {
 
 	it("should define type inference from ABI", () => {
 		// From playbook: type inference
-		const erc20Abi = [
+		const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 			{
 				type: "function",
 				name: "balanceOf",
 				inputs: [{ type: "address", name: "account" }],
 				outputs: [{ type: "uint256", name: "" }],
 			},
-		] as const;
+		]);
 
 		// Type inference would provide:
 		// - balanceOf takes 1 address argument

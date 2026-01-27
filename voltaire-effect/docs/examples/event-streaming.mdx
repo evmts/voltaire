@@ -126,7 +126,7 @@ Combine [BlockStream](/services/block-stream) with event queries for live watchi
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { makeBlockStream, Contract, Provider, HttpTransport } from 'voltaire-effect'
+import { makeBlockStream, Contract, Provider, HttpTransport } from 'voltaire-effect/services'
 
 const watchLive = Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()

@@ -16,9 +16,11 @@ This guide covers subscribing to live contract events and querying historical ev
 ```typescript
 import { Contract, EventStream } from '@voltaire/contract';
 import type { TypedProvider } from '@voltaire/provider';
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
 // ERC20 ABI with Transfer and Approval events
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: 'event',
     name: 'Transfer',
@@ -37,7 +39,7 @@ const erc20Abi = [
       { type: 'uint256', name: 'value', indexed: false },
     ],
   },
-] as const;
+]);
 ```
 
 ## Creating a Contract Instance

@@ -9,7 +9,7 @@ Stream new blocks in real-time with automatic reorg handling.
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { makeBlockStream, HttpTransport } from 'voltaire-effect'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect/services'
 
 const program = Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()
@@ -245,7 +245,8 @@ const withTimeout = Effect.gen(function* () {
 ## Error Handling
 
 ```typescript
-import { BlockStreamError } from 'voltaire-effect'
+import { Effect } from 'effect'
+import { makeBlockStream, BlockStreamError } from 'voltaire-effect/services'
 import * as Stream from 'voltaire-effect/stream'
 
 const robustBackfill = Effect.gen(function* () {
@@ -272,7 +273,8 @@ const robustBackfill = Effect.gen(function* () {
 ## Layer Composition
 
 ```typescript
-import { makeBlockStream, HttpTransport } from 'voltaire-effect'
+import { Effect } from 'effect'
+import { makeBlockStream, HttpTransport } from 'voltaire-effect/services'
 
 // Reusable transport layer
 const MainnetTransport = HttpTransport('https://eth.llamarpc.com')

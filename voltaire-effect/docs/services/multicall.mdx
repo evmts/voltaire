@@ -133,6 +133,18 @@ const checkBalances = Effect.gen(function* () {
 )
 ```
 
+## Custom Multicall Address
+
+For chains where Multicall3 is deployed at a different address, pass an override:
+
+```typescript
+const results = yield* aggregate3(
+  calls,
+  'latest',
+  '0x0000000000000000000000000000000000000000'
+)
+```
+
 ## Transport Dependency
 
 `aggregate3` depends only on `TransportService`:

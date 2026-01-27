@@ -92,8 +92,8 @@ const overflow = S.decodeEither(Uint.Uint256)((2n ** 256n).toString()) // Left (
 import * as Transaction from 'voltaire-effect/primitives/Transaction'
 import * as S from 'effect/Schema'
 
-const tx = S.decodeSync(Transaction.EIP1559)({
-  type: 2,
+const tx = S.decodeSync(Transaction.EIP1559Schema)({
+  type: Transaction.Type.EIP1559,
   chainId: 1n,
   nonce: 0n,
   to: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
@@ -101,7 +101,11 @@ const tx = S.decodeSync(Transaction.EIP1559)({
   maxFeePerGas: 50000000000n,
   maxPriorityFeePerGas: 2000000000n,
   gasLimit: 21000n,
-  data: '0x'
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
 })
 ```
 

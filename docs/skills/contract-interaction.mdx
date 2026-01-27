@@ -26,9 +26,11 @@ Voltaire provides a **reference implementation** for Contract abstraction, not a
 ```typescript
 // Contract.js copied from examples/contract/ or docs
 import { Contract } from './Contract.js';
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
-// Define ABI with 'as const' for type inference
-const erc20Abi = [
+// Validate ABI with Effect Schema
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: 'function',
     name: 'name',
@@ -77,7 +79,7 @@ const erc20Abi = [
     ],
     outputs: [{ type: 'bool', name: '' }]
   }
-] as const;
+]);
 
 // Create contract instance
 const usdc = Contract({
@@ -88,7 +90,7 @@ const usdc = Contract({
 ```
 
 <Tip>
-Always use `as const` when defining ABIs. This enables TypeScript to infer exact function names and parameter types.
+Validate ABIs with the Effect schema to catch malformed items before calling into Contract helpers.
 </Tip>
 
 ## Reading Contract State
@@ -292,8 +294,10 @@ try {
 // Contract.js copied from examples/contract/ or docs
 import { Contract } from './Contract.js';
 import type { TypedProvider } from '@tevm/voltaire/provider';
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
-const erc20Abi = [
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
   {
     type: 'function',
     name: 'balanceOf',
@@ -311,7 +315,7 @@ const erc20Abi = [
     ],
     outputs: [{ type: 'bool', name: '' }]
   }
-] as const;
+]);
 
 async function transferTokens(
   provider: TypedProvider,

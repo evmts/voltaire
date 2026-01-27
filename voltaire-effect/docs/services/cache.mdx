@@ -83,7 +83,7 @@ import { Effect, Duration } from 'effect'
 import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
 
 // Define typed cache tag
-const BlockCache = LookupCacheService<bigint, Block, RpcError>()
+const BlockCache = LookupCacheService<bigint, Block, GetBlockError>()
 
 // Create layer with lookup function
 const BlockCacheLayer = makeLookupCache(BlockCache, {

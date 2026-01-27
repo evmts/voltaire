@@ -159,7 +159,7 @@ program.pipe(
 
 ```typescript
 import { Stream } from 'effect'
-import { makeBlockStream } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services'
 
 const blockStream = yield* makeBlockStream()
 yield* Stream.runForEach(

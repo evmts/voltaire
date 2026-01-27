@@ -48,10 +48,10 @@ Instead of functions that throw, functions return values that describe what can 
 
 ```typescript
 // Effect makes the error type visible
-function getBalance(address: AddressType): Effect<bigint, RpcError | NetworkError>
+function getBalance(address: AddressType): Effect<bigint, TransportError | ProviderResponseError>
 ```
 
-Now TypeScript tells you: this can fail with `RpcError` or `NetworkError`. Handle them or propagate them—the compiler tracks it.
+Now TypeScript tells you: this can fail with `TransportError` or `ProviderResponseError`. Handle them or propagate them—the compiler tracks it.
 
 ## The Solution
 
@@ -67,13 +67,13 @@ const program = Effect.gen(function* () {
   // Decode with typed ParseError
   const addr = yield* S.decode(Address.Hex)(input)
 
-  // RPC with typed RpcError | NetworkError
+  // RPC with typed TransportError | ProviderResponseError
   const provider = yield* Provider
   const balance = yield* provider.getBalance(addr)
 
   return { addr, balance }
 })
-// Effect<{addr, balance}, ParseError | RpcError | NetworkError, Provider>
+// Effect<{addr, balance}, ParseError | TransportError | ProviderResponseError, Provider>
 ```
 
 Every error is tracked. Every dependency is explicit. The signature tells you exactly what can go wrong and what the function needs to run.
@@ -88,8 +88,8 @@ Errors have a `_tag` discriminant. Pattern match exhaustively:
 program.pipe(
   Effect.catchTags({
     ParseError: (e) => Effect.succeed(defaultAddress),
-    RpcError: (e) => retryWithBackoff(program),
-    NetworkError: (e) => useFallbackProvider(program),
+    TransportError: (e) => retryWithBackoff(program),
+    ProviderResponseError: (e) => useFallbackProvider(program),
   })
 )
 ```
@@ -173,7 +173,7 @@ const transfer = (to: string, amount: string) =>
     const receipt = yield* tx.wait()
     return receipt
   })
-// Effect<Receipt, ParseError | SignerError | RpcError, Signer>
+// Effect<Receipt, ParseError | SignerError | WaitForTransactionReceiptError, Signer>
 ```
 
 ## Trade-offs

@@ -90,9 +90,13 @@ it('fetches balance', async () => {
 Mock services that fail:
 
 ```typescript
+import { TransportError } from 'voltaire-effect'
+
 const ProviderFailing = Layer.succeed(ProviderService, {
-  getBlock: () => Effect.fail({ _tag: "RpcError", message: "timeout" }),
-  getBalance: () => Effect.fail({ _tag: "RpcError", message: "timeout" })
+  getBlock: () =>
+    Effect.fail(new TransportError({ code: -32000, message: "timeout" })),
+  getBalance: () =>
+    Effect.fail(new TransportError({ code: -32000, message: "timeout" }))
 })
 
 it('handles provider errors', async () => {
@@ -100,7 +104,7 @@ it('handles provider errors', async () => {
     const provider = yield* ProviderService
     return yield* provider.getBalance(testAddress)
   }).pipe(
-    Effect.catchTag("RpcError", () => Effect.succeed(0n))
+    Effect.catchTag("TransportError", () => Effect.succeed(0n))
   )
 
   const result = await Effect.runPromise(

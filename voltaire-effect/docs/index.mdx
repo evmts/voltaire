@@ -20,7 +20,7 @@ const getBalance = (input: string) =>
     Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(3))),
     Effect.timeout('10 seconds')
   )
-// Effect<bigint, ParseError | RpcError | TimeoutException, Provider>
+// Effect<bigint, ParseError | GetBalanceError | TimeoutException, Provider>
 
 await Effect.runPromise(getBalance('0x...').pipe(Effect.provide(MainnetLayer)))
 ```
