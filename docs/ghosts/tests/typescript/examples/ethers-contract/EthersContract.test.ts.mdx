@@ -15,8 +15,6 @@ source: 'examples/ethers-contract/EthersContract.test.ts'
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as S from "effect/Schema";
-import * as AbiSchema from "voltaire-effect/primitives/Abi";
 import { ContractFactory } from "./ContractFactory.js";
 import { EthersContract } from "./EthersContract.js";
 import {
@@ -29,7 +27,7 @@ import {
 } from "./errors.js";
 
 // Test ABI - ERC20
-const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+const erc20Abi = [
 	{
 		type: "function",
 		name: "name",
@@ -114,7 +112,7 @@ const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 			{ name: "value", type: "uint256", indexed: false },
 		],
 	},
-]);
+] as const;
 
 // Mock provider
 function createMockProvider() {

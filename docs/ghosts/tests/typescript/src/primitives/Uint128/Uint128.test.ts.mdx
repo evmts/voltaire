@@ -234,6 +234,20 @@ describe("Uint128 - toBytes", () => {
 		const restored = Uint128.fromBytes(bytes);
 		expect(restored).toBe(original);
 	});
+
+	it("produces big-endian output (most significant byte first)", () => {
+		// Uint128(0x0102030405060708) should produce big-endian bytes
+		// NOT little-endian
+		const bytes = Uint128.toBytes(Uint128.from(0x0102030405060708n));
+		expect(bytes[8]).toBe(0x01);
+		expect(bytes[9]).toBe(0x02);
+		expect(bytes[10]).toBe(0x03);
+		expect(bytes[11]).toBe(0x04);
+		expect(bytes[12]).toBe(0x05);
+		expect(bytes[13]).toBe(0x06);
+		expect(bytes[14]).toBe(0x07);
+		expect(bytes[15]).toBe(0x08);
+	});
 });
 
 describe("Uint128 - toAbiEncoded", () => {

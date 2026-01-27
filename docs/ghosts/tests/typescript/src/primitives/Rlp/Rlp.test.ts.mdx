@@ -942,20 +942,16 @@ describe("Rlp real-world use cases", () => {
 
 describe("Rlp.Error types", () => {
 	it("creates encoding error with correct properties", () => {
-		const err = new Rlp.EncodingError("Test message", {
-			code: "RLP_INVALID_TYPE",
-		});
+		const err = new Rlp.EncodingError("Test message");
 		expect(err.message).toContain("Test message");
-		expect(err.code).toBe("RLP_INVALID_TYPE");
+		expect(err.code).toBe(-32000);
 		expect(err.name).toBe("RlpEncodingError");
 	});
 
 	it("creates decoding error with correct properties", () => {
-		const err = new Rlp.DecodingError("Test message", {
-			code: "RLP_INPUT_TOO_SHORT",
-		});
+		const err = new Rlp.DecodingError("Test message");
 		expect(err.message).toContain("Test message");
-		expect(err.code).toBe("RLP_INPUT_TOO_SHORT");
+		expect(err.code).toBe(-32000);
 		expect(err.name).toBe("RlpDecodingError");
 	});
 
@@ -967,7 +963,7 @@ describe("Rlp.Error types", () => {
 			expect(err).toBeInstanceOf(Rlp.DecodingError);
 			if (err instanceof RlpDecodingError) {
 				expect(err.name).toBe("RlpDecodingError");
-				expect(err.code).toBe("RLP_INPUT_TOO_SHORT");
+				expect(err.code).toBe(-32000);
 				expect(err.message).toContain("Cannot decode empty input");
 			}
 		}
@@ -977,7 +973,7 @@ describe("Rlp.Error types", () => {
 		const err = new Rlp.EncodingError("Test");
 		expect(err.name).toBe("RlpEncodingError");
 		// Verify it has properties from base error
-		expect(typeof err.code).toBe("string");
+		expect(typeof err.code).toBe("number");
 		expect(typeof err.getErrorChain).toBe("function");
 	});
 
@@ -985,7 +981,7 @@ describe("Rlp.Error types", () => {
 		const err = new Rlp.DecodingError("Test");
 		expect(err.name).toBe("RlpDecodingError");
 		// Verify it has properties from base error
-		expect(typeof err.code).toBe("string");
+		expect(typeof err.code).toBe("number");
 		expect(typeof err.getErrorChain).toBe("function");
 	});
 });

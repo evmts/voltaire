@@ -199,14 +199,16 @@ describe("Authorization.process - validation", () => {
 	const privateKey = new Uint8Array(32);
 	privateKey.fill(1);
 
-	it("throws for authorization with chainId = 0", () => {
+	it("accepts authorization with chainId = 0 per EIP-7702", () => {
 		const unsigned = {
 			chainId: 0n,
 			address: createAddress(1),
 			nonce: 0n,
 		};
 		const auth = sign(unsigned, privateKey);
-		expect(() => process(auth)).toThrow("Chain ID must be non-zero");
+		const result = process(auth);
+		expect(result.authority).toBeInstanceOf(Uint8Array);
+		expect(result.delegatedAddress).toBe(auth.address);
 	});
 
 	it("throws for invalid signature", () => {

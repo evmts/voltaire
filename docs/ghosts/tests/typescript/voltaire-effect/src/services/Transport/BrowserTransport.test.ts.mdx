@@ -1,0 +1,364 @@
+---
+title: '[TS/JS] voltaire-effect/src/services/Transport/BrowserTransport.test.ts'
+source: 'voltaire-effect/src/services/Transport/BrowserTransport.test.ts'
+---
+
+> Auto-generated from test file: voltaire-effect/src/services/Transport/BrowserTransport.test.ts
+
+```typescript
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import { BrowserTransport } from "./BrowserTransport.js";
+import { TransportError } from "./TransportError.js";
+import { TransportService } from "./TransportService.js";
+
+describe("BrowserTransport", () => {
+	let originalWindow: typeof globalThis.window;
+
+	beforeEach(() => {
+		originalWindow = globalThis.window;
+	});
+
+	afterEach(() => {
+		globalThis.window = originalWindow;
+	});
+
+	describe("missing wallet", () => {
+		it("fails with TransportError when window is undefined", async () => {
+			(globalThis as unknown as { window: undefined }).window = undefined;
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(TransportError);
+				expect((exit.cause.error as TransportError).code).toBe(-32603);
+				expect((exit.cause.error as TransportError).message).toContain(
+					"Browser environment required",
+				);
+			}
+		});
+
+		it("fails with TransportError when window.ethereum is undefined", async () => {
+			(globalThis as unknown as { window: { ethereum?: undefined } }).window = {
+				ethereum: undefined,
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect((exit.cause.error as TransportError).message).toContain(
+					"No browser wallet found",
+				);
+			}
+		});
+	});
+
+	describe("successful requests", () => {
+		it("makes request to window.ethereum", async () => {
+			const mockRequest = vi.fn().mockResolvedValue("0x1234");
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0x1234");
+			expect(mockRequest).toHaveBeenCalledWith({
+				method: "eth_blockNumber",
+				params: [],
+			});
+		});
+
+		it("passes params to request", async () => {
+			const mockRequest = vi.fn().mockResolvedValue("0x100");
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_getBalance", [
+					"0x1234",
+					"latest",
+				]);
+			}).pipe(Effect.provide(BrowserTransport));
+
+			await Effect.runPromise(program);
+			expect(mockRequest).toHaveBeenCalledWith({
+				method: "eth_getBalance",
+				params: ["0x1234", "latest"],
+			});
+		});
+	});
+
+	describe("wallet error handling", () => {
+		it("converts wallet error with code/message to TransportError", async () => {
+			const mockRequest = vi
+				.fn()
+				.mockRejectedValue({ code: -32602, message: "Invalid params" });
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(-32602);
+				expect(error.message).toBe("Invalid params");
+			}
+		});
+
+		it("converts wallet error with code/message/data to TransportError", async () => {
+			const errorData = { revertReason: "0x08c379a0..." };
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: -32000,
+				message: "execution reverted",
+				data: errorData,
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(-32000);
+				expect(error.data).toEqual(errorData);
+			}
+		});
+
+		it("handles non-Error object rejection from wallet", async () => {
+			const mockRequest = vi.fn().mockRejectedValue("string error");
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(-32603);
+				expect(error.message).toBe("Unknown error");
+			}
+		});
+
+		it("handles Error object rejection from wallet", async () => {
+			const mockRequest = vi
+				.fn()
+				.mockRejectedValue(new Error("Connection refused"));
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(-32603);
+				expect(error.message).toBe("Connection refused");
+			}
+		});
+	});
+
+	describe("EIP-1193 error codes", () => {
+		it("handles user rejection error code 4001", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4001,
+				message: "User rejected the request",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string[]>("eth_requestAccounts");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(4001);
+				expect(error.message).toBe("User rejected the request");
+			}
+		});
+
+		it("handles unauthorized error code 4100", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4100,
+				message: "The requested method and/or account has not been authorized",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_accounts");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(4100);
+			}
+		});
+
+		it("handles unsupported method error code 4200", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4200,
+				message: "The Provider does not support the requested method",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("unsupported_method");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(4200);
+			}
+		});
+
+		it("handles disconnected error code 4900", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4900,
+				message: "The Provider is disconnected from all chains",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_chainId");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(4900);
+			}
+		});
+
+		it("handles chain disconnected error code 4901", async () => {
+			const mockRequest = vi.fn().mockRejectedValue({
+				code: 4901,
+				message: "The Provider is not connected to the requested chain",
+			});
+			(
+				globalThis as unknown as {
+					window: { ethereum: { request: typeof mockRequest } };
+				}
+			).window = {
+				ethereum: { request: mockRequest },
+			};
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_sendTransaction");
+			}).pipe(Effect.provide(BrowserTransport));
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				const error = exit.cause.error as TransportError;
+				expect(error.code).toBe(4901);
+			}
+		});
+	});
+});
+
+```

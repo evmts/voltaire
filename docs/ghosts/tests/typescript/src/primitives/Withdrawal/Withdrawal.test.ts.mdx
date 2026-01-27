@@ -51,6 +51,29 @@ describe("Withdrawal", () => {
 			expect(withdrawal.address.length).toBe(20);
 		});
 
+		it("accepts uint64 max index (EIP-4895 compliance)", () => {
+			const UINT64_MAX = 18446744073709551615n;
+			const withdrawal = Withdrawal.from({
+				index: UINT64_MAX,
+				validatorIndex: 123456,
+				address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+				amount: 32000000000n,
+			});
+			expect(withdrawal.index).toBe(UINT64_MAX);
+		});
+
+		it("rejects index exceeding uint64 max", () => {
+			const UINT64_MAX = 18446744073709551615n;
+			expect(() =>
+				Withdrawal.from({
+					index: UINT64_MAX + 1n,
+					validatorIndex: 123456,
+					address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+					amount: 32000000000n,
+				}),
+			).toThrow("exceeds uint64 max");
+		});
+
 		it("rejects invalid index", () => {
 			expect(() =>
 				Withdrawal.from({

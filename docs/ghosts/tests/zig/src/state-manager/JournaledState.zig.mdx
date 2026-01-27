@@ -1,0 +1,191 @@
+---
+title: '[Zig] src/state-manager/JournaledState.zig'
+source: 'src/state-manager/JournaledState.zig'
+---
+
+> Auto-generated from Zig tests in: src/state-manager/JournaledState.zig
+
+### JournaledState - basic operations without fork
+
+```zig
+test "JournaledState - basic operations without fork" {
+    const allocator = std.testing.allocator;
+    var state = try JournaledState.init(allocator, null);
+    defer state.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account = StateCache.AccountState{
+        .nonce = 5,
+        .balance = 1000,
+        .code_hash = primitives.Hash.ZERO,
+        .storage_root = primitives.Hash.ZERO,
+    };
+
+    // Put and get account
+    try state.putAccount(addr, account);
+    const retrieved = try state.getAccount(addr);
+    try std.testing.expectEqual(@as(u64, 5), retrieved.nonce);
+    try std.testing.expectEqual(@as(u256, 1000), retrieved.balance);
+
+    // Put and get storage
+    try state.putStorage(addr, 42, 9999);
+    const value = try state.getStorage(addr, 42);
+    try std.testing.expectEqual(@as(u256, 9999), value);
+
+    // Put and get code
+    const code = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
+    try state.putCode(addr, &code);
+    const retrieved_code = try state.getCode(addr);
+    try std.testing.expectEqualSlices(u8, &code, retrieved_code);
+}
+```
+
+### JournaledState - checkpoint and revert
+
+```zig
+test "JournaledState - checkpoint and revert" {
+    const allocator = std.testing.allocator;
+    var state = try JournaledState.init(allocator, null);
+    defer state.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account1 = StateCache.AccountState{
+        .nonce = 5,
+        .balance = 1000,
+        .code_hash = primitives.Hash.ZERO,
+        .storage_root = primitives.Hash.ZERO,
+    };
+
+    // Initial state
+    try state.putAccount(addr, account1);
+    try state.putStorage(addr, 42, 100);
+
+    // Checkpoint
+    try state.checkpoint();
+
+    // Modify after checkpoint
+    const account2 = StateCache.AccountState{
+        .nonce = 10,
+        .balance = 2000,
+        .code_hash = primitives.Hash.ZERO,
+        .storage_root = primitives.Hash.ZERO,
+    };
+    try state.putAccount(addr, account2);
+    try state.putStorage(addr, 42, 200);
+
+    // Verify modified state
+    const modified_account = try state.getAccount(addr);
+    try std.testing.expectEqual(@as(u64, 10), modified_account.nonce);
+    const modified_value = try state.getStorage(addr, 42);
+    try std.testing.expectEqual(@as(u256, 200), modified_value);
+
+    // Revert
+    state.revert();
+
+    // Verify reverted state
+    const reverted_account = try state.getAccount(addr);
+    try std.testing.expectEqual(@as(u64, 5), reverted_account.nonce);
+    try std.testing.expectEqual(@as(u256, 1000), reverted_account.balance);
+    const reverted_value = try state.getStorage(addr, 42);
+    try std.testing.expectEqual(@as(u256, 100), reverted_value);
+}
+```
+
+### JournaledState - checkpoint and commit
+
+```zig
+test "JournaledState - checkpoint and commit" {
+    const allocator = std.testing.allocator;
+    var state = try JournaledState.init(allocator, null);
+    defer state.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account1 = StateCache.AccountState{
+        .nonce = 5,
+        .balance = 1000,
+        .code_hash = primitives.Hash.ZERO,
+        .storage_root = primitives.Hash.ZERO,
+    };
+
+    // Initial state
+    try state.putAccount(addr, account1);
+    try state.checkpoint();
+
+    // Modify
+    const account2 = StateCache.AccountState{
+        .nonce = 10,
+        .balance = 2000,
+        .code_hash = primitives.Hash.ZERO,
+        .storage_root = primitives.Hash.ZERO,
+    };
+    try state.putAccount(addr, account2);
+
+    // Commit
+    state.commit();
+
+    // Changes should persist
+    const committed_account = try state.getAccount(addr);
+    try std.testing.expectEqual(@as(u64, 10), committed_account.nonce);
+    try std.testing.expectEqual(@as(u256, 2000), committed_account.balance);
+}
+```
+
+### JournaledState - default values without fork
+
+```zig
+test "JournaledState - default values without fork" {
+    const allocator = std.testing.allocator;
+    var state = try JournaledState.init(allocator, null);
+    defer state.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x99} ++ [_]u8{0} ** 19 };
+
+    // Should return default values for non-existent data
+    const account = try state.getAccount(addr);
+    try std.testing.expectEqual(@as(u64, 0), account.nonce);
+    try std.testing.expectEqual(@as(u256, 0), account.balance);
+
+    const value = try state.getStorage(addr, 42);
+    try std.testing.expectEqual(@as(u256, 0), value);
+
+    const code = try state.getCode(addr);
+    try std.testing.expectEqual(@as(usize, 0), code.len);
+}
+```
+
+### JournaledState - nested checkpoints
+
+```zig
+test "JournaledState - nested checkpoints" {
+    const allocator = std.testing.allocator;
+    var state = try JournaledState.init(allocator, null);
+    defer state.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+
+    // Level 0
+    try state.putStorage(addr, 1, 100);
+
+    // Level 1
+    try state.checkpoint();
+    try state.putStorage(addr, 1, 200);
+
+    // Level 2
+    try state.checkpoint();
+    try state.putStorage(addr, 1, 300);
+
+    // Verify level 2
+    var value = try state.getStorage(addr, 1);
+    try std.testing.expectEqual(@as(u256, 300), value);
+
+    // Revert to level 1
+    state.revert();
+    value = try state.getStorage(addr, 1);
+    try std.testing.expectEqual(@as(u256, 200), value);
+
+    // Revert to level 0
+    state.revert();
+    value = try state.getStorage(addr, 1);
+    try std.testing.expectEqual(@as(u256, 100), value);
+}
+```

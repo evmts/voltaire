@@ -225,42 +225,42 @@ describe("Bytecode.wasm WASM-accelerated methods", () => {
 
 	describe("Re-exported TypeScript methods", () => {
 		it("exports all required methods", () => {
-			const requiredMethods = [
-				"analyze",
-				"analyzeBlocks",
-				"analyzeGas",
-				"analyzeStack",
-				"detectFusions",
-				"equals",
-				"extractRuntime",
-				"formatInstruction",
-				"formatInstructions",
-				"from",
-				"fromHex",
-				"getBlock",
-				"getPushSize",
-				"hash",
-				"hasMetadata",
-				"isPush",
-				"isTerminator",
-				"parseInstructions",
-				"prettyPrint",
-				"scan",
-				"size",
-				"stripMetadata",
-				"toAbi",
-				"toHex",
-				"_getNextPc",
+			const requiredMethods: Array<[string, unknown]> = [
+				["analyze", BytecodeWasm.analyze],
+				["analyzeBlocks", BytecodeWasm.analyzeBlocks],
+				["analyzeGas", BytecodeWasm.analyzeGas],
+				["analyzeStack", BytecodeWasm.analyzeStack],
+				["detectFusions", BytecodeWasm.detectFusions],
+				["equals", BytecodeWasm.equals],
+				["extractRuntime", BytecodeWasm.extractRuntime],
+				["formatInstruction", BytecodeWasm.formatInstruction],
+				["formatInstructions", BytecodeWasm.formatInstructions],
+				["from", BytecodeWasm.from],
+				["fromHex", BytecodeWasm.fromHex],
+				["getBlock", BytecodeWasm.getBlock],
+				["getPushSize", BytecodeWasm.getPushSize],
+				["hash", BytecodeWasm.hash],
+				["hasMetadata", BytecodeWasm.hasMetadata],
+				["isPush", BytecodeWasm.isPush],
+				["isTerminator", BytecodeWasm.isTerminator],
+				["parseInstructions", BytecodeWasm.parseInstructions],
+				["prettyPrint", BytecodeWasm.prettyPrint],
+				["scan", BytecodeWasm.scan],
+				["size", BytecodeWasm.size],
+				["stripMetadata", BytecodeWasm.stripMetadata],
+				["toAbi", BytecodeWasm.toAbi],
+				["toHex", BytecodeWasm.toHex],
+				["_getNextPc", BytecodeWasm._getNextPc],
 				// WASM-accelerated
-				"analyzeJumpDestinations",
-				"isBytecodeBoundary",
-				"isValidJumpDest",
-				"validate",
+				["analyzeJumpDestinations", BytecodeWasm.analyzeJumpDestinations],
+				["isBytecodeBoundary", BytecodeWasm.isBytecodeBoundary],
+				["isValidJumpDest", BytecodeWasm.isValidJumpDest],
+				["validate", BytecodeWasm.validate],
 			];
 
-			for (const method of requiredMethods) {
-				expect(BytecodeWasm).toHaveProperty(method);
-				expect(typeof BytecodeWasm[method]).not.toBe("undefined");
+			for (const [name, method] of requiredMethods) {
+				expect(BytecodeWasm).toHaveProperty(name);
+				expect(method).toBeDefined();
 			}
 		});
 

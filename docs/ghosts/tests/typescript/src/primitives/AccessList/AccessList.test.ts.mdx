@@ -725,6 +725,35 @@ describe("AccessList.from", () => {
 		expect(result[1]?.address).toEqual(addr2);
 		expect(result[2]?.address).toEqual(addr3);
 	});
+
+	it("throws for invalid storage key length (not 32 bytes)", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1, storageKeys: [new Uint8Array(31)] }] as any;
+		expect(() => from(list)).toThrow("Invalid access list item");
+	});
+
+	it("throws for storage key that is too long", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1, storageKeys: [new Uint8Array(33)] }] as any;
+		expect(() => from(list)).toThrow("Invalid access list item");
+	});
+
+	it("throws for non-Uint8Array storage key", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: addr1, storageKeys: ["0x1234"] }] as any;
+		expect(() => from(list)).toThrow("Invalid access list item");
+	});
+
+	it("throws for invalid address length", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const list = [{ address: new Uint8Array(19), storageKeys: [] }] as any;
+		expect(() => from(list)).toThrow("Invalid access list item");
+	});
+
+	it("throws for non-array input", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		expect(() => from({} as any)).toThrow("Access list must be an array");
+	});
 });
 
 // ============================================================================

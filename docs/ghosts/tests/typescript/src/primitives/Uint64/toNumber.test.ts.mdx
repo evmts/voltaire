@@ -36,10 +36,11 @@ describe("Uint64.toNumber", () => {
 	});
 
 	describe("unsafe conversions", () => {
-		it("logs warning on value exceeding Number.MAX_SAFE_INTEGER", () => {
+		it("converts value exceeding Number.MAX_SAFE_INTEGER with precision loss", () => {
 			const unsafe = from(BigInt(Number.MAX_SAFE_INTEGER) + 1n);
 			const result = toNumber(unsafe);
 			expect(typeof result).toBe("number");
+			// Note: precision is lost for values > MAX_SAFE_INTEGER
 		});
 
 		it("converts MAX with precision loss", () => {

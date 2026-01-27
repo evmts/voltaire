@@ -459,8 +459,10 @@ test "padRight - basic" {
 ```zig
 test "trimLeft - basic" {
     try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x34 }, trimLeft(&[_]u8{ 0, 0, 0x12, 0x34 }));
-    try std.testing.expectEqualSlices(u8, &[_]u8{}, trimLeft(&[_]u8{ 0, 0, 0 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{0}, trimLeft(&[_]u8{ 0, 0, 0 }));
     try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0, 0x34 }, trimLeft(&[_]u8{ 0, 0x12, 0, 0x34 }));
+    try std.testing.expectEqualSlices(u8, &[_]u8{0}, trimLeft(&[_]u8{0}));
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, trimLeft(&[_]u8{}));
 }
 ```
 

@@ -485,6 +485,47 @@ test "fakeExponential with zero numerator" {
 }
 ```
 
+### fakeExponential never returns zero (minimum is 1)
+
+```zig
+test "fakeExponential never returns zero (minimum is 1)" {
+    // Edge case: factor=0 would result in 0, but we enforce minimum of 1
+    const result = fakeExponential(0, 0, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expectEqual(@as(u64, 1), result);
+}
+```
+
+### fakeExponential with zero factor returns minimum 1
+
+```zig
+test "fakeExponential with zero factor returns minimum 1" {
+    // Even with zero factor, result should be at least 1
+    const result = fakeExponential(0, 1000, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expectEqual(@as(u64, 1), result);
+}
+```
+
+### calculateBlobGasPrice never returns zero
+
+```zig
+test "calculateBlobGasPrice never returns zero" {
+    // Edge case: even with 0 excess, minimum price is 1
+    const price = calculateBlobGasPrice(0);
+    try testing.expect(price >= 1);
+}
+```
+
+### fakeExponential handles large values without overflow
+
+```zig
+test "fakeExponential handles large values without overflow" {
+    // Test with very large excess that could cause overflow in u64
+    // Using u128 internally should prevent this
+    const result = fakeExponential(MIN_BLOB_BASE_FEE, 1000000000, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expect(result >= MIN_BLOB_BASE_FEE);
+}
+```
+
 ### fakeExponential approximation accuracy small values
 
 ```zig

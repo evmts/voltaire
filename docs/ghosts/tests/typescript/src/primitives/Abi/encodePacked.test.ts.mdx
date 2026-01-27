@@ -263,45 +263,54 @@ describe("encodePacked - arrays", () => {
 		expect(result.length).toBe(2 + 32 * 3 * 2); // "0x" + 96 bytes * 2 hex chars
 	});
 
-	it("encodes uint8[] compactly", () => {
+	it("encodes uint8[] with padded elements (per Solidity spec)", () => {
+		// Per Solidity: array elements ARE padded to 32 bytes
 		const result = encodePacked(["uint8[]"], [[0x12n, 0x34n, 0x56n]]);
-		expect(result).toMatch(/0x123456/i);
+		// 3 elements * 32 bytes each = 96 bytes = 192 hex chars + "0x"
+		expect(result.length).toBe(2 + 32 * 3 * 2);
 	});
 
-	it("encodes address[] compactly", () => {
+	it("encodes address[] with padded elements (per Solidity spec)", () => {
 		const addrs = [
 			"0x0000000000000000000000000000000000000001",
 			"0x0000000000000000000000000000000000000002",
 		] as Address[];
 		const result = encodePacked(["address[]"], [addrs]);
-		// 40 bytes total, no length prefix
-		expect(result.length).toBe(2 + 40 * 2);
+		// Per Solidity: array elements are padded to 32 bytes
+		// 2 elements * 32 bytes each = 64 bytes = 128 hex chars + "0x"
+		expect(result.length).toBe(2 + 32 * 2 * 2);
 	});
 
-	it("encodes bool[] compactly", () => {
+	it("encodes bool[] with padded elements (per Solidity spec)", () => {
+		// Per Solidity: array elements ARE padded to 32 bytes
 		const result = encodePacked(["bool[]"], [[true, false, true]]);
-		expect(result).toMatch(/0x010001/i);
+		// 3 elements * 32 bytes each = 96 bytes = 192 hex chars + "0x"
+		expect(result.length).toBe(2 + 32 * 3 * 2);
 	});
 });
 
 describe("encodePacked - fixed arrays", () => {
-	it("encodes uint256[3]", () => {
+	it("encodes uint256[3] (each element 32 bytes)", () => {
 		const result = encodePacked(["uint256[3]"], [[1n, 2n, 3n]]);
 		expect(result.length).toBe(2 + 32 * 3 * 2); // "0x" + 96 bytes
 	});
 
-	it("encodes uint8[4]", () => {
+	it("encodes uint8[4] with padded elements (per Solidity spec)", () => {
+		// Per Solidity: array elements ARE padded to 32 bytes
 		const result = encodePacked(["uint8[4]"], [[0x12n, 0x34n, 0x56n, 0x78n]]);
-		expect(result).toMatch(/0x12345678/i);
+		// 4 elements * 32 bytes each = 128 bytes = 256 hex chars + "0x"
+		expect(result.length).toBe(2 + 32 * 4 * 2);
 	});
 
-	it("encodes address[2]", () => {
+	it("encodes address[2] with padded elements (per Solidity spec)", () => {
 		const addrs = [
 			"0x0000000000000000000000000000000000000001",
 			"0x0000000000000000000000000000000000000002",
 		] as Address[];
 		const result = encodePacked(["address[2]"], [addrs]);
-		expect(result.length).toBe(2 + 40 * 2);
+		// Per Solidity: array elements are padded to 32 bytes
+		// 2 elements * 32 bytes each = 64 bytes = 128 hex chars + "0x"
+		expect(result.length).toBe(2 + 32 * 2 * 2);
 	});
 });
 
@@ -482,10 +491,11 @@ describe("encodePacked - edge cases", () => {
 		expect(typeof result).toBe("string");
 	});
 
-	it("encodes very long array", () => {
+	it("encodes very long array with padded elements", () => {
 		const arr = Array.from({ length: 1000 }, (_, i) => BigInt(i % 256));
 		const result = encodePacked(["uint8[]"], [arr]);
-		expect(result.length).toBe(2 + 1000 * 2); // "0x" + 1000 bytes
+		// Per Solidity: array elements are padded to 32 bytes
+		expect(result.length).toBe(2 + 1000 * 32 * 2); // "0x" + 1000 * 32 bytes
 	});
 });
 

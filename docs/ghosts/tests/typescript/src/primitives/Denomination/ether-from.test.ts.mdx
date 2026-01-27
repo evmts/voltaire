@@ -72,6 +72,24 @@ describe("from", () => {
 			expect(ether).toBe(large.toString());
 		});
 	});
+
+	describe("negative values", () => {
+		it("throws on negative bigint", () => {
+			expect(() => from(-1n)).toThrow("cannot be negative");
+		});
+
+		it("throws on negative number", () => {
+			expect(() => from(-1)).toThrow("cannot be negative");
+		});
+
+		it("throws on negative string", () => {
+			expect(() => from("-1")).toThrow("cannot be negative");
+		});
+
+		it("throws on negative decimal string", () => {
+			expect(() => from("-0.5")).toThrow("cannot be negative");
+		});
+	});
 });
 
 ```

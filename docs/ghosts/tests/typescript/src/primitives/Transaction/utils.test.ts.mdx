@@ -460,7 +460,7 @@ describe("Transaction Utilities", () => {
 			expect(tx.data.length).toBe(0);
 		});
 
-		test("replaceWith bumps gas price by default percentage", () => {
+		test("replaceWith bumps gas price by default 10%", () => {
 			const tx: Legacy = {
 				type: 0x00,
 				nonce: 0n,
@@ -474,7 +474,34 @@ describe("Transaction Utilities", () => {
 				s: new Uint8Array(32),
 			};
 			const newTx = Transaction.replaceWith(tx) as Legacy;
-			expect(newTx.gasPrice).toBe(20000000000n); // 10% bump rounds down with integer division
+			// 20000000000 * 110 / 100 = 22000000000
+			expect(newTx.gasPrice).toBe(22000000000n);
+		});
+
+		test("replaceWith correctly calculates sub-100% bumps for legacy tx", () => {
+			const tx: Legacy = {
+				type: 0x00,
+				nonce: 0n,
+				gasPrice: 1000n,
+				gasLimit: 21000n,
+				to: null,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: new Uint8Array(32),
+				s: new Uint8Array(32),
+			};
+			// 10% bump: 1000 * 110 / 100 = 1100
+			const newTx10 = Transaction.replaceWith(tx, {
+				bumpPercentage: 10,
+			}) as Legacy;
+			expect(newTx10.gasPrice).toBe(1100n);
+
+			// 50% bump: 1000 * 150 / 100 = 1500
+			const newTx50 = Transaction.replaceWith(tx, {
+				bumpPercentage: 50,
+			}) as Legacy;
+			expect(newTx50.gasPrice).toBe(1500n);
 		});
 
 		test("replaceWith accepts explicit gas price", () => {
@@ -515,8 +542,41 @@ describe("Transaction Utilities", () => {
 			const newTx = Transaction.replaceWith(tx, {
 				bumpPercentage: 20,
 			}) as EIP1559;
-			expect(newTx.maxFeePerGas).toBe(20000000000n); // Integer division
-			expect(newTx.maxPriorityFeePerGas).toBe(1000000000n);
+			// 20% bump: 20000000000 * 120 / 100 = 24000000000
+			expect(newTx.maxFeePerGas).toBe(24000000000n);
+			// 20% bump: 1000000000 * 120 / 100 = 1200000000
+			expect(newTx.maxPriorityFeePerGas).toBe(1200000000n);
+		});
+
+		test("replaceWith correctly calculates sub-100% bumps for EIP-1559 tx", () => {
+			const tx: EIP1559 = {
+				type: 0x02,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000n,
+				maxFeePerGas: 2000n,
+				gasLimit: 21000n,
+				to: null,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: new Uint8Array(32),
+				s: new Uint8Array(32),
+			};
+			// 10% bump
+			const newTx10 = Transaction.replaceWith(tx, {
+				bumpPercentage: 10,
+			}) as EIP1559;
+			expect(newTx10.maxFeePerGas).toBe(2200n); // 2000 * 110 / 100
+			expect(newTx10.maxPriorityFeePerGas).toBe(1100n); // 1000 * 110 / 100
+
+			// 50% bump
+			const newTx50 = Transaction.replaceWith(tx, {
+				bumpPercentage: 50,
+			}) as EIP1559;
+			expect(newTx50.maxFeePerGas).toBe(3000n); // 2000 * 150 / 100
+			expect(newTx50.maxPriorityFeePerGas).toBe(1500n); // 1000 * 150 / 100
 		});
 	});
 

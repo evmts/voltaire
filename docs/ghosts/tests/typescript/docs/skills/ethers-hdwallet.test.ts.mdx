@@ -15,9 +15,20 @@ source: 'docs/skills/ethers-hdwallet.test.ts'
  *
  * API DISCREPANCIES:
  * - HDNodeWallet is in examples/ethers-hdwallet/, not library export
- * - Bip39 and HDWallet ARE available in src/crypto/
+ * - Bip39 is available from src/crypto/index.js (works everywhere)
+ * - HDWallet requires native FFI and must be imported from src/native/index.js
  */
 import { describe, expect, it } from "vitest";
+
+// Check if native HDWallet is available
+const hasNativeHDWallet = await (async () => {
+	try {
+		const mod = await import("../../src/native/index.js");
+		return mod.HDWallet !== undefined && typeof mod.HDWallet.fromSeed === "function";
+	} catch {
+		return false;
+	}
+})();
 
 describe("Ethers HD Wallet Playbook", () => {
 	it("should work with Bip39 mnemonic generation", async () => {
@@ -69,8 +80,9 @@ describe("Ethers HD Wallet Playbook", () => {
 		expect(seedNoPass).not.toEqual(seedWithPass);
 	});
 
-	it("should work with HDWallet derivation", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should work with HDWallet derivation", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -80,8 +92,9 @@ describe("Ethers HD Wallet Playbook", () => {
 		expect(root).toBeDefined();
 	});
 
-	it("should derive Ethereum accounts with BIP-44 path", async () => {
-		const { Bip39, HDWallet } = await import("../../src/crypto/index.js");
+	it.skipIf(!hasNativeHDWallet)("should derive Ethereum accounts with BIP-44 path", async () => {
+		const { Bip39 } = await import("../../src/crypto/index.js");
+		const { HDWallet } = await import("../../src/native/index.js");
 
 		const mnemonic =
 			"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -92,9 +105,12 @@ describe("Ethers HD Wallet Playbook", () => {
 		const account0 = HDWallet.deriveEthereum(root, 0, 0);
 		const account1 = HDWallet.deriveEthereum(root, 0, 1);
 
-		expect(account0.privateKey).toBeInstanceOf(Uint8Array);
-		expect(account1.privateKey).toBeInstanceOf(Uint8Array);
-		expect(account0.privateKey).not.toEqual(account1.privateKey);
+		const privateKey0 = HDWallet.getPrivateKey(account0);
+		const privateKey1 = HDWallet.getPrivateKey(account1);
+
+		expect(privateKey0).toBeInstanceOf(Uint8Array);
+		expect(privateKey1).toBeInstanceOf(Uint8Array);
+		expect(privateKey0).not.toEqual(privateKey1);
 	});
 
 	it("should define BIP-44 path components", () => {

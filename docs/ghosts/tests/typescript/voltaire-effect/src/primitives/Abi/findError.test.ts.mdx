@@ -1,0 +1,107 @@
+---
+title: '[TS/JS] voltaire-effect/src/primitives/Abi/findError.test.ts'
+source: 'voltaire-effect/src/primitives/Abi/findError.test.ts'
+---
+
+> Auto-generated from test file: voltaire-effect/src/primitives/Abi/findError.test.ts
+
+```typescript
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
+import { findError } from "./findError.js";
+
+const customAbi = S.decodeUnknownSync(fromArray)([
+	{
+		type: "function",
+		name: "transfer",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ name: "to", type: "address" },
+			{ name: "amount", type: "uint256" },
+		],
+		outputs: [{ type: "bool" }],
+	},
+	{
+		type: "error",
+		name: "InsufficientBalance",
+		inputs: [
+			{ name: "available", type: "uint256" },
+			{ name: "required", type: "uint256" },
+		],
+	},
+	{
+		type: "error",
+		name: "Unauthorized",
+		inputs: [{ name: "caller", type: "address" }],
+	},
+	{
+		type: "error",
+		name: "InvalidAmount",
+		inputs: [],
+	},
+]);
+
+describe("findError", () => {
+	describe("success cases", () => {
+		it.effect("finds InsufficientBalance error", () =>
+			Effect.gen(function* () {
+				const err = yield* findError(customAbi, "InsufficientBalance");
+				expect(err).not.toBeUndefined();
+				expect(err?.name).toBe("InsufficientBalance");
+				expect(err?.inputs.length).toBe(2);
+			}),
+		);
+
+		it.effect("finds Unauthorized error", () =>
+			Effect.gen(function* () {
+				const err = yield* findError(customAbi, "Unauthorized");
+				expect(err).not.toBeUndefined();
+				expect(err?.name).toBe("Unauthorized");
+				expect(err?.inputs.length).toBe(1);
+			}),
+		);
+
+		it.effect("finds error with no inputs", () =>
+			Effect.gen(function* () {
+				const err = yield* findError(customAbi, "InvalidAmount");
+				expect(err).not.toBeUndefined();
+				expect(err?.name).toBe("InvalidAmount");
+				expect(err?.inputs.length).toBe(0);
+			}),
+		);
+
+		it.effect("returns undefined for unknown error", () =>
+			Effect.gen(function* () {
+				const err = yield* findError(customAbi, "UnknownError");
+				expect(err).toBeUndefined();
+			}),
+		);
+
+		it.effect("returns undefined for function name", () =>
+			Effect.gen(function* () {
+				const err = yield* findError(customAbi, "transfer");
+				expect(err).toBeUndefined();
+			}),
+		);
+
+		it.effect("returns undefined with empty ABI", () =>
+			Effect.gen(function* () {
+				const err = yield* findError([], "InsufficientBalance");
+				expect(err).toBeUndefined();
+			}),
+		);
+	});
+
+	describe("is infallible", () => {
+		it.effect("never fails", () =>
+			Effect.gen(function* () {
+				const err = yield* findError(customAbi, "nonexistent");
+				expect(err).toBeUndefined();
+			}),
+		);
+	});
+});
+
+```

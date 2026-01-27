@@ -437,6 +437,46 @@ test "aes256-gcm different nonces produce different ciphertext" {
 }
 ```
 
+### SECURITY: nonce reuse allows XOR of plaintexts to be recovered
+
+```zig
+test "SECURITY: nonce reuse allows XOR of plaintexts to be recovered" {
+    const allocator = std.testing.allocator;
+
+    const key = [_]u8{1} ** AES128_KEY_SIZE;
+    const reused_nonce = [_]u8{42} ** NONCE_SIZE; // BAD: reused nonce
+
+    const plaintext1 = "Secret message A";
+    const plaintext2 = "Secret message B";
+    const additional_data = "";
+
+    const ciphertext1 = try encrypt128(allocator, plaintext1, &key, &reused_nonce, additional_data);
+    defer allocator.free(ciphertext1);
+
+    const ciphertext2 = try encrypt128(allocator, plaintext2, &key, &reused_nonce, additional_data);
+    defer allocator.free(ciphertext2);
+
+    // XOR the ciphertext bodies (excluding the 16-byte auth tag)
+    const ct1_body = ciphertext1[0 .. ciphertext1.len - TAG_SIZE];
+    const ct2_body = ciphertext2[0 .. ciphertext2.len - TAG_SIZE];
+
+    var xor_result: [plaintext1.len]u8 = undefined;
+    for (0..plaintext1.len) |i| {
+        xor_result[i] = ct1_body[i] ^ ct2_body[i];
+    }
+
+    // XOR of plaintexts
+    var pt_xor: [plaintext1.len]u8 = undefined;
+    for (0..plaintext1.len) |i| {
+        pt_xor[i] = plaintext1[i] ^ plaintext2[i];
+    }
+
+    // With nonce reuse, XOR of ciphertexts equals XOR of plaintexts
+    // This is a COMPLETE SECURITY FAILURE - attackers can recover plaintext
+    try std.testing.expectEqualSlices(u8, &pt_xor, &xor_result);
+}
+```
+
 ### aes128-gcm NIST vector: all zeros
 
 ```zig

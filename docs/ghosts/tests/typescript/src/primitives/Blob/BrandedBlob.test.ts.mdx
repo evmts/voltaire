@@ -342,14 +342,12 @@ describe("verify", () => {
 });
 
 describe("verifyBatch", () => {
-	it("throws error from injected KZG function", () => {
+	it("returns false when injected KZG function throws", () => {
 		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
-		// With stub that throws "Not implemented", the error is wrapped
-		expect(() => verifyBatch([blob], [commitment], [proof])).toThrow(
-			"Failed to verify KZG proofs batch",
-		);
+		// With stub that throws "Not implemented", should return false instead of throwing
+		expect(verifyBatch([blob], [commitment], [proof])).toBe(false);
 	});
 
 	it("validates array lengths match", () => {
@@ -392,10 +390,8 @@ describe("verifyBatch", () => {
 			.fill(null)
 			.map(() => new Uint8Array(48) as Proof);
 
-		// With stub that throws "Not implemented", the error is wrapped
-		expect(() => verifyBatch(blobs, commitments, proofs)).toThrow(
-			"Failed to verify KZG proofs batch",
-		);
+		// With stub that throws "Not implemented", returns false instead of throwing
+		expect(verifyBatch(blobs, commitments, proofs)).toBe(false);
 	});
 });
 

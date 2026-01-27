@@ -15,11 +15,8 @@ source: 'examples/multicall/Multicall.test.ts'
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Abi } from "../../src/primitives/Abi/Abi.js";
-import * as S from "effect/Schema";
-import * as AbiSchema from "voltaire-effect/primitives/Abi";
-import * as Hex from "../../src/primitives/Hex/index.js";
-import type { TypedProvider } from "../../src/provider/TypedProvider.js";
+import { Abi, Hex } from "@tevm/voltaire";
+import type { TypedProvider } from "@tevm/voltaire";
 import { aggregate3Abi } from "./Multicall3Abi.js";
 import {
 	MULTICALL3_ADDRESS,
@@ -37,7 +34,7 @@ import {
 import { createMulticall, multicall } from "./multicall.js";
 
 // Test ERC20 ABI
-const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+const erc20Abi = [
 	{
 		type: "function",
 		name: "name",
@@ -73,7 +70,7 @@ const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 		inputs: [],
 		outputs: [{ type: "uint256", name: "" }],
 	},
-]);
+] as const;
 
 // Mock provider factory
 function createMockProvider(

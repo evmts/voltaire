@@ -19,8 +19,6 @@ source: 'docs/skills/transaction-simulation.test.ts'
  * - Abi.encodeFunction - Need to check actual API
  */
 import { describe, expect, it } from "vitest";
-import * as S from "effect/Schema";
-import * as AbiSchema from "voltaire-effect/primitives/Abi";
 
 describe("Transaction Simulation Guide", () => {
 	it("should work with RevertReason primitive", async () => {
@@ -92,7 +90,7 @@ describe("Transaction Simulation Guide", () => {
 
 	it("should define ERC-20 transfer ABI for encoding", () => {
 		// From guide: ERC-20 transfer simulation
-		const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+		const erc20Abi = [
 			{
 				type: "function",
 				name: "transfer",
@@ -102,7 +100,7 @@ describe("Transaction Simulation Guide", () => {
 				],
 				outputs: [{ type: "bool", name: "" }],
 			},
-		]);
+		] as const;
 
 		expect(erc20Abi[0].name).toBe("transfer");
 		expect(erc20Abi[0].inputs).toHaveLength(2);

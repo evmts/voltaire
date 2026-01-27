@@ -72,6 +72,24 @@ describe("from", () => {
 			expect(wei).toBe(large);
 		});
 	});
+
+	describe("negative values", () => {
+		it("throws on negative bigint", () => {
+			expect(() => from(-1n)).toThrow("cannot be negative");
+		});
+
+		it("throws on negative number", () => {
+			expect(() => from(-1)).toThrow("cannot be negative");
+		});
+
+		it("throws on negative string", () => {
+			expect(() => from("-1")).toThrow("cannot be negative");
+		});
+
+		it("throws on large negative bigint", () => {
+			expect(() => from(-1000000000000000000n)).toThrow("cannot be negative");
+		});
+	});
 });
 
 ```

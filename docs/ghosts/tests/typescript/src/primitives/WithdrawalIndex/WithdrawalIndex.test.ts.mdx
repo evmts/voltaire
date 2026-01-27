@@ -10,6 +10,13 @@ import { describe, expect, it } from "vitest";
 import * as WithdrawalIndex from "./index.js";
 
 describe("WithdrawalIndex", () => {
+	describe("UINT64_MAX", () => {
+		it("equals 2^64 - 1", () => {
+			expect(WithdrawalIndex.UINT64_MAX).toBe(18446744073709551615n);
+			expect(WithdrawalIndex.UINT64_MAX).toBe(2n ** 64n - 1n);
+		});
+	});
+
 	describe("from", () => {
 		it("creates WithdrawalIndex from bigint", () => {
 			const idx = WithdrawalIndex.from(1000000n);
@@ -29,6 +36,28 @@ describe("WithdrawalIndex", () => {
 		it("creates WithdrawalIndex from decimal string", () => {
 			const idx = WithdrawalIndex.from("1000000");
 			expect(idx).toBe(1000000n);
+		});
+
+		it("accepts uint64 max value", () => {
+			const idx = WithdrawalIndex.from(WithdrawalIndex.UINT64_MAX);
+			expect(idx).toBe(18446744073709551615n);
+		});
+
+		it("accepts uint64 max value from hex string", () => {
+			const idx = WithdrawalIndex.from("0xffffffffffffffff");
+			expect(idx).toBe(18446744073709551615n);
+		});
+
+		it("rejects value exceeding uint64 max", () => {
+			expect(() =>
+				WithdrawalIndex.from(WithdrawalIndex.UINT64_MAX + 1n),
+			).toThrow("exceeds uint64 max");
+		});
+
+		it("rejects large value exceeding uint64 max from string", () => {
+			expect(() => WithdrawalIndex.from("0x10000000000000000")).toThrow(
+				"exceeds uint64 max",
+			);
 		});
 
 		it("rejects negative number", () => {

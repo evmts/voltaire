@@ -105,6 +105,55 @@ describe("Domain", () => {
 
 			expect(DomainSeparator.equals(sep1, sep2)).toBe(true);
 		});
+
+		it("should produce different hash when domain params change (no caching)", () => {
+			// This test documents that domain separator is computed fresh each call
+			// and is NOT cached. If domain parameters change, the hash changes.
+			// See: https://github.com/fucory/voltaire/issues/146
+			const domain1 = Domain.from({
+				name: "MyDApp",
+				version: "1",
+				chainId: 1,
+			});
+			const domain2 = Domain.from({
+				name: "MyDApp",
+				version: "1",
+				chainId: 5, // Different chain
+			});
+
+			const sep1 = Domain.toHash(domain1, { keccak256: mockKeccak256 });
+			const sep2 = Domain.toHash(domain2, { keccak256: mockKeccak256 });
+
+			// Different domains produce different hashes - no stale caching
+			expect(DomainSeparator.equals(sep1, sep2)).toBe(false);
+		});
+
+		it("should recompute hash on every call (no memoization)", () => {
+			// Track how many times keccak256 is called
+			let callCount = 0;
+			const countingKeccak256 = (data: Uint8Array): Uint8Array => {
+				callCount++;
+				return mockKeccak256(data);
+			};
+
+			const domain = Domain.from({
+				name: "MyDApp",
+				version: "1",
+			});
+
+			// First call
+			Domain.toHash(domain, { keccak256: countingKeccak256 });
+			const firstCallCount = callCount;
+
+			// Second call should invoke keccak256 again (no caching)
+			Domain.toHash(domain, { keccak256: countingKeccak256 });
+			const secondCallCount = callCount;
+
+			// Each toHash call should invoke keccak256 multiple times
+			// (once for type hash, once for each string field, once for final hash)
+			expect(firstCallCount).toBeGreaterThan(0);
+			expect(secondCallCount).toBeGreaterThan(firstCallCount);
+		});
 	});
 
 	describe("encodeType", () => {

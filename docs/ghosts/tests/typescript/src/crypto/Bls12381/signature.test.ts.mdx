@@ -245,6 +245,53 @@ describe("BLS12-381 Signatures", () => {
 			const aggSig = aggregate([sig]);
 			expect(aggSig).toBeInstanceOf(Uint8Array);
 		});
+
+		it("should be commutative (order-independent) for 2 signatures", () => {
+			const message = new TextEncoder().encode("Commutativity test");
+			const pk1 = randomPrivateKey();
+			const pk2 = randomPrivateKey();
+			const sig1 = sign(message, pk1);
+			const sig2 = sign(message, pk2);
+
+			const agg12 = aggregate([sig1, sig2]);
+			const agg21 = aggregate([sig2, sig1]);
+
+			expect(agg12).toEqual(agg21);
+		});
+
+		it("should be commutative (order-independent) for 3 signatures", () => {
+			const message = new TextEncoder().encode("Three sigs");
+			const pk1 = randomPrivateKey();
+			const pk2 = randomPrivateKey();
+			const pk3 = randomPrivateKey();
+			const sig1 = sign(message, pk1);
+			const sig2 = sign(message, pk2);
+			const sig3 = sign(message, pk3);
+
+			const agg123 = aggregate([sig1, sig2, sig3]);
+			const agg321 = aggregate([sig3, sig2, sig1]);
+			const agg213 = aggregate([sig2, sig1, sig3]);
+
+			expect(agg123).toEqual(agg321);
+			expect(agg123).toEqual(agg213);
+		});
+
+		it("should produce verifiable aggregated signatures regardless of order", () => {
+			const message = new TextEncoder().encode("Verify order independence");
+			const pk1 = randomPrivateKey();
+			const pk2 = randomPrivateKey();
+			const pubKey1 = derivePublicKey(pk1);
+			const pubKey2 = derivePublicKey(pk2);
+			const sig1 = sign(message, pk1);
+			const sig2 = sign(message, pk2);
+
+			const agg12 = aggregate([sig1, sig2]);
+			const agg21 = aggregate([sig2, sig1]);
+
+			// Both orders should verify successfully
+			expect(aggregateVerify(agg12, message, [pubKey1, pubKey2])).toBe(true);
+			expect(aggregateVerify(agg21, message, [pubKey1, pubKey2])).toBe(true);
+		});
 	});
 
 	describe("aggregatePublicKeys", () => {
@@ -262,6 +309,34 @@ describe("BLS12-381 Signatures", () => {
 
 		it("should throw for empty array", () => {
 			expect(() => aggregatePublicKeys([])).toThrow(SignatureError);
+		});
+
+		it("should be commutative (order-independent) for 2 public keys", () => {
+			const pk1 = randomPrivateKey();
+			const pk2 = randomPrivateKey();
+			const pubKey1 = derivePublicKey(pk1);
+			const pubKey2 = derivePublicKey(pk2);
+
+			const agg12 = aggregatePublicKeys([pubKey1, pubKey2]);
+			const agg21 = aggregatePublicKeys([pubKey2, pubKey1]);
+
+			expect(agg12).toEqual(agg21);
+		});
+
+		it("should be commutative (order-independent) for 3 public keys", () => {
+			const pk1 = randomPrivateKey();
+			const pk2 = randomPrivateKey();
+			const pk3 = randomPrivateKey();
+			const pubKey1 = derivePublicKey(pk1);
+			const pubKey2 = derivePublicKey(pk2);
+			const pubKey3 = derivePublicKey(pk3);
+
+			const agg123 = aggregatePublicKeys([pubKey1, pubKey2, pubKey3]);
+			const agg321 = aggregatePublicKeys([pubKey3, pubKey2, pubKey1]);
+			const agg213 = aggregatePublicKeys([pubKey2, pubKey1, pubKey3]);
+
+			expect(agg123).toEqual(agg321);
+			expect(agg123).toEqual(agg213);
 		});
 	});
 

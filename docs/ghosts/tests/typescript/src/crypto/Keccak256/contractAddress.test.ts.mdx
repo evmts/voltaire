@@ -9,7 +9,83 @@ source: 'src/crypto/Keccak256/contractAddress.test.ts'
 import { describe, expect, it } from "vitest";
 import { contractAddress } from "./contractAddress.js";
 
+/**
+ * Convert hex string to Uint8Array
+ */
+function hexToBytes(hex: string): Uint8Array {
+	const h = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(h.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(h.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+}
+
+/**
+ * Convert Uint8Array to hex string
+ */
+function bytesToHex(bytes: Uint8Array): string {
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
+}
+
 describe("Keccak256.contractAddress", () => {
+	describe("known contract addresses", () => {
+		// CREATE formula: keccak256(rlp([sender, nonce]))[12:]
+		// All expected values verified against viem's getContractAddress
+
+		it("should match viem for zero address at nonce 0", () => {
+			const sender = new Uint8Array(20);
+			const result = contractAddress(sender, 0n);
+			// Verified: viem.getContractAddress({ from: '0x0...0', nonce: 0n })
+			expect(bytesToHex(result).toLowerCase()).toBe(
+				"0xbd770416a3345f91e4b34576cb804a576fa48eb1",
+			);
+		});
+
+		it("should match viem for zero address at nonce 1", () => {
+			const sender = new Uint8Array(20);
+			const result = contractAddress(sender, 1n);
+			// Verified: viem.getContractAddress({ from: '0x0...0', nonce: 1n })
+			expect(bytesToHex(result).toLowerCase()).toBe(
+				"0x5a443704dd4b594b382c22a083e2bd3090a6fef3",
+			);
+		});
+
+		it("should match viem for Vitalik address at nonce 0", () => {
+			const sender = hexToBytes("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+			const result = contractAddress(sender, 0n);
+			expect(bytesToHex(result).toLowerCase()).toBe(
+				"0x3e4ea2156166390f880071d94458efb098473311",
+			);
+		});
+
+		it("should match viem for Vitalik address at nonce 1", () => {
+			const sender = hexToBytes("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+			const result = contractAddress(sender, 1n);
+			expect(bytesToHex(result).toLowerCase()).toBe(
+				"0xdef77ece435de6ff473575472a8a87f9fd68da6f",
+			);
+		});
+
+		it("should match viem with nonce 127 (single byte RLP)", () => {
+			const sender = hexToBytes("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+			const result = contractAddress(sender, 127n);
+			expect(bytesToHex(result).toLowerCase()).toBe(
+				"0xbf3c56b436fb63ba4b444de19f0de9271d59d670",
+			);
+		});
+
+		it("should match viem with nonce 128 (2-byte RLP)", () => {
+			const sender = hexToBytes("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+			const result = contractAddress(sender, 128n);
+			expect(bytesToHex(result).toLowerCase()).toBe(
+				"0x81a9abccc2b91d702fac5e62c9faebaf000ec0c8",
+			);
+		});
+	});
+
 	describe("basic functionality", () => {
 		it("should compute contract address from sender and nonce", () => {
 			const sender = new Uint8Array(20).fill(0x12);

@@ -198,6 +198,18 @@ describe("Uint16", () => {
 				new Uint8Array([0x12, 0x34]),
 			);
 		});
+
+		it("should produce big-endian output (most significant byte first)", () => {
+			// Uint16(256) = 0x0100 should produce [0x01, 0x00] in big-endian
+			// NOT [0x00, 0x01] which would be little-endian
+			expect(Uint16.toBytes(Uint16.from(256))).toEqual(
+				new Uint8Array([0x01, 0x00]),
+			);
+			// Uint16(0x0102) should produce [0x01, 0x02]
+			expect(Uint16.toBytes(Uint16.from(0x0102))).toEqual(
+				new Uint8Array([0x01, 0x02]),
+			);
+		});
 	});
 
 	describe("toString", () => {

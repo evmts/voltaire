@@ -7,6 +7,7 @@ source: 'src/primitives/Selector/Selector.test.ts'
 
 ```typescript
 import { describe, expect, it } from "vitest";
+import * as Keccak256 from "../../crypto/Keccak256/index.js";
 import * as Selector from "./index.js";
 
 describe("Selector", () => {
@@ -95,6 +96,48 @@ describe("Selector", () => {
 			const sel1 = Selector.fromSignature("transfer(address,uint256)");
 			const sel2 = Selector.fromSignature("approve(address,uint256)");
 			expect(Selector.equals(sel1, sel2)).toBe(false);
+		});
+	});
+
+	describe("selector is first 4 bytes of keccak256 hash (issue #122)", () => {
+		it("verifies selector equals keccak256(signature)[0:4]", () => {
+			const signature = "transfer(address,uint256)";
+			const hash = Keccak256.hashString(signature);
+			const expectedSelector = hash.slice(0, 4);
+			const actualSelector = Selector.fromSignature(signature);
+
+			expect(actualSelector).toEqual(expectedSelector);
+			expect(actualSelector.length).toBe(4);
+			expect(Selector.toHex(actualSelector)).toBe("0xa9059cbb");
+		});
+
+		it("verifies approve selector matches first 4 bytes", () => {
+			const signature = "approve(address,uint256)";
+			const hash = Keccak256.hashString(signature);
+			const expectedSelector = hash.slice(0, 4);
+			const actualSelector = Selector.fromSignature(signature);
+
+			expect(actualSelector).toEqual(expectedSelector);
+			expect(Selector.toHex(actualSelector)).toBe("0x095ea7b3");
+		});
+
+		it("verifies balanceOf selector matches first 4 bytes", () => {
+			const signature = "balanceOf(address)";
+			const hash = Keccak256.hashString(signature);
+			const expectedSelector = hash.slice(0, 4);
+			const actualSelector = Selector.fromSignature(signature);
+
+			expect(actualSelector).toEqual(expectedSelector);
+			expect(Selector.toHex(actualSelector)).toBe("0x70a08231");
+		});
+
+		it("confirms selector is NOT bytes 1-4 (off-by-one would fail)", () => {
+			const signature = "transfer(address,uint256)";
+			const hash = Keccak256.hashString(signature);
+			const wrongSelector = hash.slice(1, 5); // off-by-one error
+
+			const correctSelector = Selector.fromSignature(signature);
+			expect(correctSelector).not.toEqual(wrongSelector);
 		});
 	});
 });

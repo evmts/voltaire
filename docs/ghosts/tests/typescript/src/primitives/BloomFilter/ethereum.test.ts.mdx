@@ -444,6 +444,114 @@ describe("BloomFilter - Ethereum Specification", () => {
 	});
 });
 
+describe("BloomFilter - Yellow Paper Compliance", () => {
+	describe("Keccak-256 based bit positions", () => {
+		it("uses Keccak-256 hash for bit positions per Yellow Paper", () => {
+			// Per Yellow Paper: m(x, i) = KEC(x)[i, i + 1] mod 2048
+			// This test verifies the implementation uses Keccak-256
+			const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
+			const item = new Uint8Array([0x01, 0x02, 0x03]);
+
+			BloomFilter.add(filter, item);
+
+			// Verify item is found (basic sanity check)
+			expect(BloomFilter.contains(filter, item)).toBe(true);
+
+			// Verify different item is not found (false negative check)
+			const differentItem = new Uint8Array([0x04, 0x05, 0x06]);
+			expect(BloomFilter.contains(filter, differentItem)).toBe(false);
+		});
+
+		it("produces correct bit positions for known input", () => {
+			// For an empty byte array [], keccak256 produces:
+			// 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+			// Byte pairs [0,1]=0xc5d2, [2,3]=0x4601, [4,5]=0x86f7
+			// Bit positions:
+			//   0xc5d2 % 2048 = 50642 % 2048 = 1490
+			//   0x4601 % 2048 = 17921 % 2048 = 1537
+			//   0x86f7 % 2048 = 34551 % 2048 = 1783
+			const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
+			const emptyItem = new Uint8Array(0);
+
+			BloomFilter.add(filter, emptyItem);
+
+			// Verify the specific bits are set
+			// Bit 1490: byte 186 (1490/8), bit 2 (1490%8)
+			expect((filter[186] & (1 << 2)) !== 0).toBe(true);
+			// Bit 1537: byte 192 (1537/8), bit 1 (1537%8)
+			expect((filter[192] & (1 << 1)) !== 0).toBe(true);
+			// Bit 1783: byte 222 (1783/8), bit 7 (1783%8)
+			expect((filter[222] & (1 << 7)) !== 0).toBe(true);
+		});
+
+		it("builds bloom filter compatible with real Ethereum blocks", () => {
+			// Test with ERC-20 Transfer event signature
+			// Transfer(address,address,uint256) = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+			const transferTopic = new Uint8Array([
+				0xdd, 0xf2, 0x52, 0xad, 0x1b, 0xe2, 0xc8, 0x9b, 0x69, 0xc2, 0xb0, 0x68,
+				0xfc, 0x37, 0x8d, 0xaa, 0x95, 0x2b, 0xa7, 0xf1, 0x63, 0xc4, 0xa1, 0x16,
+				0x28, 0xf5, 0x5a, 0x4d, 0xf5, 0x23, 0xb3, 0xef,
+			]);
+
+			const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
+			BloomFilter.add(filter, transferTopic);
+
+			// The bloom filter should find the Transfer topic
+			expect(BloomFilter.contains(filter, transferTopic)).toBe(true);
+
+			// And should not find unrelated topics
+			const approvalTopic = new Uint8Array([
+				0x8c, 0x5b, 0xe1, 0xe5, 0xeb, 0xec, 0x7d, 0x5b, 0xd1, 0x4f, 0x71, 0x42,
+				0x7d, 0x1e, 0x84, 0xf3, 0xdd, 0x03, 0x14, 0xc0, 0xf7, 0xb2, 0x29, 0x1e,
+				0x5b, 0x20, 0x0a, 0xc8, 0xc7, 0xc3, 0xb9, 0x25,
+			]);
+			expect(BloomFilter.contains(filter, approvalTopic)).toBe(false);
+		});
+
+		it("correctly handles address in bloom filter", () => {
+			// USDC contract address: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+			const usdcAddress = new Uint8Array([
+				0xa0, 0xb8, 0x69, 0x91, 0xc6, 0x21, 0x8b, 0x36, 0xc1, 0xd1, 0x9d, 0x4a,
+				0x2e, 0x9e, 0xb0, 0xce, 0x36, 0x06, 0xeb, 0x48,
+			]);
+
+			const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
+			BloomFilter.add(filter, usdcAddress);
+
+			expect(BloomFilter.contains(filter, usdcAddress)).toBe(true);
+
+			// Different address should not match
+			const wethAddress = new Uint8Array([
+				0xc0, 0x2a, 0xaa, 0x39, 0xb2, 0x23, 0xfe, 0x8d, 0x0a, 0x0e, 0x5c, 0x4f,
+				0x27, 0xea, 0xd9, 0x08, 0x3c, 0x75, 0x6c, 0xc2,
+			]);
+			expect(BloomFilter.contains(filter, wethAddress)).toBe(false);
+		});
+	});
+
+	describe("No false negatives guarantee", () => {
+		it("never produces false negatives for added items", () => {
+			const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
+
+			// Add many random items
+			const items: Uint8Array[] = [];
+			for (let i = 0; i < 100; i++) {
+				const item = new Uint8Array(32);
+				for (let j = 0; j < 32; j++) {
+					item[j] = Math.floor(Math.random() * 256);
+				}
+				items.push(item);
+				BloomFilter.add(filter, item);
+			}
+
+			// Every added item MUST be found
+			for (const item of items) {
+				expect(BloomFilter.contains(filter, item)).toBe(true);
+			}
+		});
+	});
+});
+
 function countSetBits(filter: Uint8Array): number {
 	let count = 0;
 	for (let i = 0; i < filter.length; i++) {

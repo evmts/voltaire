@@ -39,18 +39,18 @@ describe("Secp256k1.Signature.fromCompact", () => {
 			expect(sig.r[31]).toBe(31);
 		});
 
-		it("should extract s component correctly", () => {
+		it("should extract s component correctly and clear bit 255", () => {
 			const compact = new Uint8Array(64);
 			compact.fill(0, 0, 32);
 			for (let i = 0; i < 32; i++) {
-				compact[32 + i] = 100 + i;
+				compact[32 + i] = i; // Use 0-31 to avoid high bit
 			}
 
 			const sig = Signature.fromCompact(compact, 28);
 
-			expect(sig.s[0]).toBe(100);
-			expect(sig.s[1]).toBe(101);
-			expect(sig.s[31]).toBe(131);
+			expect(sig.s[0]).toBe(0); // bit 255 cleared
+			expect(sig.s[1]).toBe(1);
+			expect(sig.s[31]).toBe(31);
 		});
 
 		it("should accept v=27", () => {
@@ -184,14 +184,16 @@ describe("Secp256k1.Signature.fromCompact", () => {
 			expect(sig.s.every((b) => b === 0)).toBe(true);
 		});
 
-		it("should handle max values for r and s", () => {
+		it("should handle max values for r and clear bit 255 from s", () => {
 			const compact = new Uint8Array(64);
 			compact.fill(0xff, 0, 64);
 
 			const sig = Signature.fromCompact(compact, 27);
 
 			expect(sig.r.every((b) => b === 0xff)).toBe(true);
-			expect(sig.s.every((b) => b === 0xff)).toBe(true);
+			// s[0] should have bit 255 cleared (0xff -> 0x7f)
+			expect(sig.s[0]).toBe(0x7f);
+			expect(sig.s.slice(1).every((b) => b === 0xff)).toBe(true);
 		});
 
 		it("should handle large chain ID v values", () => {
@@ -234,26 +236,48 @@ describe("Secp256k1.Signature.fromCompact", () => {
 		});
 	});
 
-	describe("roundtrip with toCompact", () => {
-		it("should roundtrip correctly", () => {
+	describe("roundtrip with toCompact (EIP-2098)", () => {
+		it("should roundtrip correctly for yParity=0", () => {
+			// Use s values without high bit to avoid EIP-2098 encoding
 			const original = new Uint8Array(64);
 			for (let i = 0; i < 32; i++) {
 				original[i] = i;
 			}
 			for (let i = 0; i < 32; i++) {
-				original[32 + i] = 100 + i;
+				original[32 + i] = i; // Use 0-31 to avoid high bit
 			}
 
-			const sig = Signature.fromCompact(original, 27);
+			const sig = Signature.fromCompact(original, 27); // yParity=0
 			const reconstructed = Signature.toCompact(sig);
 
 			expect(reconstructed).toEqual(original);
 		});
 
+		it("should roundtrip correctly for yParity=1", () => {
+			// Use s values without high bit
+			const original = new Uint8Array(64);
+			for (let i = 0; i < 32; i++) {
+				original[i] = i;
+			}
+			for (let i = 0; i < 32; i++) {
+				original[32 + i] = i; // Use 0-31 to avoid high bit
+			}
+
+			const sig = Signature.fromCompact(original, 28); // yParity=1
+			const reconstructed = Signature.toCompact(sig);
+
+			// For yParity=1, bit 255 gets set in toCompact
+			expect(reconstructed[32] & 0x80).toBe(0x80);
+			// But the rest matches after clearing bit 255
+			const expected = new Uint8Array(original);
+			expected[32] |= 0x80;
+			expect(reconstructed).toEqual(expected);
+		});
+
 		it("should preserve v through roundtrip", () => {
 			const compact = new Uint8Array(64);
 			compact.fill(7, 0, 32);
-			compact.fill(13, 32, 64);
+			compact.fill(0x13, 32, 64); // Use low value
 
 			const sig = Signature.fromCompact(compact, 28);
 

@@ -130,6 +130,52 @@ describe("calculateCreate2Address", () => {
 		});
 	});
 
+	describe("salt validation in calculateCreate2Address", () => {
+		it("throws on salt size < 32 bytes", () => {
+			const sender = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
+			const salt = new Uint8Array(31) as unknown as ReturnType<typeof Hash>;
+			const initCode = Bytecode(new Uint8Array(0));
+			expect(() => calculateCreate2Address(sender, salt, initCode)).toThrow(
+				"Salt must be exactly 32 bytes",
+			);
+		});
+
+		it("throws on salt size > 32 bytes", () => {
+			const sender = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
+			const salt = new Uint8Array(33) as unknown as ReturnType<typeof Hash>;
+			const initCode = Bytecode(new Uint8Array(0));
+			expect(() => calculateCreate2Address(sender, salt, initCode)).toThrow(
+				"Salt must be exactly 32 bytes",
+			);
+		});
+
+		it("throws on empty salt", () => {
+			const sender = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
+			const salt = new Uint8Array(0) as unknown as ReturnType<typeof Hash>;
+			const initCode = Bytecode(new Uint8Array(0));
+			expect(() => calculateCreate2Address(sender, salt, initCode)).toThrow(
+				"Salt must be exactly 32 bytes",
+			);
+		});
+
+		it("throws on salt size 64 bytes", () => {
+			const sender = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
+			const salt = new Uint8Array(64) as unknown as ReturnType<typeof Hash>;
+			const initCode = Bytecode(new Uint8Array(0));
+			expect(() => calculateCreate2Address(sender, salt, initCode)).toThrow(
+				"Salt must be exactly 32 bytes",
+			);
+		});
+	});
+
 	describe("different init codes", () => {
 		it("handles empty init code", () => {
 			const sender = Address.fromHex(

@@ -417,6 +417,125 @@ describe("decodeLog", () => {
 		expect(result.c).toBe(true);
 		expect(result.d).toBeInstanceOf(Uint8Array);
 	});
+
+	it("correctly separates indexed params from topics and non-indexed from data", () => {
+		// Regression test for GitHub issue #123
+		// Indexed parameters come from topics, non-indexed from data
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		};
+
+		const selector = Hash.keccak256String("Transfer(address,address,uint256)");
+
+		// Indexed params in topics (left-padded to 32 bytes)
+		const fromTopic = new Uint8Array(32);
+		fromTopic.set([0xaa, 0xbb, 0xcc, 0xdd], 12); // Partial address
+
+		const toTopic = new Uint8Array(32);
+		toTopic.set([0x11, 0x22, 0x33, 0x44], 12); // Partial address
+
+		// Non-indexed params in data
+		const data = encodeParameters([{ type: "uint256", name: "value" }], [999n]);
+
+		const result = decodeLog(event, data, [selector, fromTopic, toTopic]);
+
+		// Verify indexed params are read from topics
+		expect(result.from).toContain("aabbccdd");
+		expect(result.to).toContain("11223344");
+
+		// Verify non-indexed param is read from data
+		expect(result.value).toBe(999n);
+	});
+
+	it("handles interleaved indexed and non-indexed parameters correctly", () => {
+		// Regression test for GitHub issue #123
+		// Parameters can be interleaved: indexed, non-indexed, indexed, non-indexed
+		const event = {
+			type: "event" as const,
+			name: "ComplexTransfer",
+			inputs: [
+				{ type: "address", name: "sender", indexed: true },
+				{ type: "uint256", name: "amount", indexed: false },
+				{ type: "address", name: "recipient", indexed: true },
+				{ type: "bytes32", name: "data", indexed: false },
+			],
+		};
+
+		const selector = Hash.keccak256String(
+			"ComplexTransfer(address,uint256,address,bytes32)",
+		);
+
+		// Topics: selector, sender, recipient (indexed only)
+		const senderTopic = new Uint8Array(32);
+		senderTopic[31] = 0x01;
+
+		const recipientTopic = new Uint8Array(32);
+		recipientTopic[31] = 0x02;
+
+		// Data: amount, data (non-indexed only, in declaration order)
+		const dataHash = hexToBytes(
+			Hex("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"),
+		);
+		const data = encodeParameters(
+			[
+				{ type: "uint256", name: "amount" },
+				{ type: "bytes32", name: "data" },
+			],
+			[12345n, dataHash],
+		);
+
+		const result = decodeLog(event, data, [
+			selector,
+			senderTopic,
+			recipientTopic,
+		]);
+
+		// Indexed params from topics in indexed order
+		expect(result.sender).toBeDefined();
+		expect(result.recipient).toBeDefined();
+
+		// Non-indexed params from data in declaration order
+		expect(result.amount).toBe(12345n);
+		expect(result.data).toEqual(dataHash);
+	});
+
+	it("does not mix up indexed topic values with data values", () => {
+		// Regression test for GitHub issue #123
+		// Ensure topic values don't leak into data decoding or vice versa
+		const event = {
+			type: "event" as const,
+			name: "MixTest",
+			inputs: [
+				{ type: "uint256", name: "indexedValue", indexed: true },
+				{ type: "uint256", name: "dataValue", indexed: false },
+			],
+		};
+
+		const selector = Hash.keccak256String("MixTest(uint256,uint256)");
+
+		// Indexed value in topic
+		const indexedTopic = new Uint8Array(32);
+		indexedTopic[31] = 100; // 100n
+
+		// Non-indexed value in data
+		const data = encodeParameters(
+			[{ type: "uint256", name: "dataValue" }],
+			[200n],
+		);
+
+		const result = decodeLog(event, data, [selector, indexedTopic]);
+
+		// These must be different - proves no mixing
+		expect(result.indexedValue).toBe(100n);
+		expect(result.dataValue).toBe(200n);
+		expect(result.indexedValue).not.toBe(result.dataValue);
+	});
 });
 
 ```

@@ -11,7 +11,7 @@ import { Hash } from "../../../primitives/Hash/index.js";
 import * as Signature from "./index.js";
 
 describe("Secp256k1.Signature.toCompact", () => {
-	describe("conversion to compact format", () => {
+	describe("EIP-2098 compact format", () => {
 		it("should convert signature to 64-byte array", () => {
 			const r = Hash.from(new Uint8Array(32).fill(1));
 			const s = Hash.from(new Uint8Array(32).fill(2));
@@ -33,27 +33,41 @@ describe("Secp256k1.Signature.toCompact", () => {
 			expect(compact.slice(0, 32).every((b) => b === 42)).toBe(true);
 		});
 
-		it("should place s in bytes 32-63", () => {
+		it("should place s in bytes 32-63 with yParity in bit 255", () => {
 			const r = Hash.from(new Uint8Array(32).fill(42));
-			const s = Hash.from(new Uint8Array(32).fill(99));
-			const sig = { r, s, v: 27 };
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
+			const sig = { r, s, v: 27 }; // yParity = 0
 
 			const compact = Signature.toCompact(sig);
 
-			expect(compact.slice(32, 64).every((b) => b === 99)).toBe(true);
+			// s[0] should be 0x55 (bit 255 clear for yParity=0)
+			expect(compact[32]).toBe(0x55);
+			expect(compact.slice(33, 64).every((b) => b === 0x55)).toBe(true);
 		});
 
-		it("should not include v in compact format", () => {
+		it("should encode yParity=0 (v=27) with bit 255 clear", () => {
 			const r = Hash.from(new Uint8Array(32).fill(1));
-			const s = Hash.from(new Uint8Array(32).fill(2));
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
 			const sig = { r, s, v: 27 };
 
 			const compact = Signature.toCompact(sig);
 
-			expect(compact.length).toBe(64);
+			expect(compact[32] & 0x80).toBe(0x00); // Bit 255 clear
+			expect(compact[32] & 0x7f).toBe(0x55); // Original s preserved
 		});
 
-		it("should produce same compact for different v values", () => {
+		it("should encode yParity=1 (v=28) with bit 255 set", () => {
+			const r = Hash.from(new Uint8Array(32).fill(1));
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
+			const sig = { r, s, v: 28 };
+
+			const compact = Signature.toCompact(sig);
+
+			expect(compact[32] & 0x80).toBe(0x80); // Bit 255 set
+			expect(compact[32] & 0x7f).toBe(0x55); // Original s preserved
+		});
+
+		it("should produce different compact for different v values (EIP-2098)", () => {
 			const r = Hash.from(new Uint8Array(32).fill(7));
 			const s = Hash.from(new Uint8Array(32).fill(13));
 			const sig27 = { r, s, v: 27 };
@@ -62,7 +76,10 @@ describe("Secp256k1.Signature.toCompact", () => {
 			const compact27 = Signature.toCompact(sig27);
 			const compact28 = Signature.toCompact(sig28);
 
-			expect(compact27).toEqual(compact28);
+			// Should differ in bit 255 of s
+			expect(compact27[32] & 0x80).toBe(0x00);
+			expect(compact28[32] & 0x80).toBe(0x80);
+			expect(compact27).not.toEqual(compact28);
 		});
 	});
 
@@ -77,7 +94,7 @@ describe("Secp256k1.Signature.toCompact", () => {
 			expect(compact.slice(0, 32).every((b) => b === 0)).toBe(true);
 		});
 
-		it("should handle all-zero s", () => {
+		it("should handle all-zero s with yParity=0", () => {
 			const r = Hash.from(new Uint8Array(32).fill(1));
 			const s = Hash.from(new Uint8Array(32));
 			const sig = { r, s, v: 27 };
@@ -87,35 +104,71 @@ describe("Secp256k1.Signature.toCompact", () => {
 			expect(compact.slice(32, 64).every((b) => b === 0)).toBe(true);
 		});
 
-		it("should handle max values for r and s", () => {
+		it("should handle all-zero s with yParity=1", () => {
+			const r = Hash.from(new Uint8Array(32).fill(1));
+			const s = Hash.from(new Uint8Array(32));
+			const sig = { r, s, v: 28 };
+
+			const compact = Signature.toCompact(sig);
+
+			// First byte of s should have bit 255 set
+			expect(compact[32]).toBe(0x80);
+			expect(compact.slice(33, 64).every((b) => b === 0)).toBe(true);
+		});
+
+		it("should handle max values for r (s will have bit 255 set based on yParity)", () => {
 			const r = Hash.from(new Uint8Array(32).fill(0xff));
-			const s = Hash.from(new Uint8Array(32).fill(0xff));
-			const sig = { r, s, v: 27 };
+			const s = Hash.from(new Uint8Array(32).fill(0x7f)); // Use 0x7f to avoid collision with yParity bit
+			const sig = { r, s, v: 27 }; // yParity = 0
 
 			const compact = Signature.toCompact(sig);
 
 			expect(compact.slice(0, 32).every((b) => b === 0xff)).toBe(true);
-			expect(compact.slice(32, 64).every((b) => b === 0xff)).toBe(true);
+			expect(compact[32]).toBe(0x7f); // Bit 255 clear for yParity=0
 		});
 
-		it("should handle v=0", () => {
+		it("should handle v=0 (yParity=0)", () => {
 			const r = Hash.from(new Uint8Array(32).fill(1));
-			const s = Hash.from(new Uint8Array(32).fill(2));
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
 			const sig = { r, s, v: 0 };
 
 			const compact = Signature.toCompact(sig);
 
 			expect(compact.length).toBe(64);
+			expect(compact[32] & 0x80).toBe(0x00); // Bit 255 clear
 		});
 
-		it("should handle EIP-155 v values", () => {
+		it("should handle v=1 (yParity=1)", () => {
 			const r = Hash.from(new Uint8Array(32).fill(1));
-			const s = Hash.from(new Uint8Array(32).fill(2));
-			const sig = { r, s, v: 37 };
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
+			const sig = { r, s, v: 1 };
 
 			const compact = Signature.toCompact(sig);
 
 			expect(compact.length).toBe(64);
+			expect(compact[32] & 0x80).toBe(0x80); // Bit 255 set
+		});
+
+		it("should handle EIP-155 v=37 (chainId=1, yParity=0)", () => {
+			const r = Hash.from(new Uint8Array(32).fill(1));
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
+			const sig = { r, s, v: 37 }; // (37-35) % 2 = 0
+
+			const compact = Signature.toCompact(sig);
+
+			expect(compact.length).toBe(64);
+			expect(compact[32] & 0x80).toBe(0x00); // Bit 255 clear
+		});
+
+		it("should handle EIP-155 v=38 (chainId=1, yParity=1)", () => {
+			const r = Hash.from(new Uint8Array(32).fill(1));
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
+			const sig = { r, s, v: 38 }; // (38-35) % 2 = 1
+
+			const compact = Signature.toCompact(sig);
+
+			expect(compact.length).toBe(64);
+			expect(compact[32] & 0x80).toBe(0x80); // Bit 255 set
 		});
 	});
 
@@ -151,32 +204,59 @@ describe("Secp256k1.Signature.toCompact", () => {
 		});
 	});
 
-	describe("roundtrip with fromCompact", () => {
-		it("should roundtrip correctly (without v)", () => {
+	describe("roundtrip with fromCompact (EIP-2098)", () => {
+		it("should roundtrip correctly with yParity=0", () => {
 			const r = Hash.from(new Uint8Array(32).fill(7));
-			const s = Hash.from(new Uint8Array(32).fill(13));
-			const original = { r, s, v: 27 };
+			const s = Hash.from(new Uint8Array(32).fill(0x13)); // Use value < 0x80
+			const original = { r, s, v: 27 }; // yParity = 0
 
 			const compact = Signature.toCompact(original);
-			const reconstructed = Signature.fromCompact(compact, 27);
+			const reconstructed = Signature.fromCompact(compact, 0); // Use yParity 0
 
 			expect(new Uint8Array(reconstructed.r)).toEqual(
 				new Uint8Array(original.r),
 			);
+			// s is unchanged for yParity=0 (bit 255 clear)
 			expect(new Uint8Array(reconstructed.s)).toEqual(
 				new Uint8Array(original.s),
 			);
+			expect(reconstructed.v).toBe(0); // yParity 0
 		});
 
-		it("should lose v information in compact format", () => {
-			const r = Hash.from(new Uint8Array(32).fill(1));
-			const s = Hash.from(new Uint8Array(32).fill(2));
-			const original = { r, s, v: 28 };
+		it("should roundtrip correctly with yParity=1 (EIP-2098 compliant)", () => {
+			const r = Hash.from(new Uint8Array(32).fill(7));
+			const s = Hash.from(new Uint8Array(32).fill(0x13)); // Use value < 0x80
+			const original = { r, s, v: 28 }; // yParity = 1
 
 			const compact = Signature.toCompact(original);
-			const reconstructed = Signature.fromCompact(compact, 27);
 
-			expect(reconstructed.v).toBe(27); // Not 28
+			// Verify yParity is encoded in bit 255 of compact
+			expect(compact[32] & 0x80).toBe(0x80);
+
+			// fromCompact clears bit 255 from s and extracts yParity
+			const reconstructed = Signature.fromCompact(compact, 1);
+
+			// r should match
+			expect(new Uint8Array(reconstructed.r)).toEqual(
+				new Uint8Array(original.r),
+			);
+			// s should match (bit 255 cleared by fromCompact)
+			expect(new Uint8Array(reconstructed.s)).toEqual(
+				new Uint8Array(original.s),
+			);
+			expect(reconstructed.v).toBe(1);
+		});
+
+		it("should preserve yParity in EIP-2098 format", () => {
+			const r = Hash.from(new Uint8Array(32).fill(1));
+			const s = Hash.from(new Uint8Array(32).fill(0x55));
+			const original = { r, s, v: 28 }; // yParity = 1
+
+			const compact = Signature.toCompact(original);
+
+			// Verify yParity is encoded in bit 255
+			expect(compact[32] & 0x80).toBe(0x80);
+			expect(compact[32] & 0x7f).toBe(0x55); // Original s value preserved
 		});
 	});
 
@@ -267,14 +347,31 @@ describe("Secp256k1.Signature.toCompact", () => {
 	});
 
 	describe("comparison with toBytes", () => {
-		it("should match first 64 bytes of toBytes", () => {
+		it("should differ from toBytes due to EIP-2098 yParity encoding for v=28", () => {
 			const r = Hash.from(new Uint8Array(32).fill(7));
-			const s = Hash.from(new Uint8Array(32).fill(13));
-			const sig = { r, s, v: 27 };
+			const s = Hash.from(new Uint8Array(32).fill(0x13));
+			const sig = { r, s, v: 28 }; // yParity = 1
 
 			const compact = Signature.toCompact(sig);
 			const bytes = Signature.toBytes(sig);
 
+			// r should match
+			expect(compact.slice(0, 32)).toEqual(bytes.slice(0, 32));
+
+			// s in compact has bit 255 set, bytes does not
+			expect(compact[32] & 0x80).toBe(0x80); // yParity encoded
+			expect(bytes[32] & 0x80).toBe(0x00); // No yParity encoding
+		});
+
+		it("should match toBytes for v=27 (yParity=0, no bit 255 modification)", () => {
+			const r = Hash.from(new Uint8Array(32).fill(7));
+			const s = Hash.from(new Uint8Array(32).fill(0x13));
+			const sig = { r, s, v: 27 }; // yParity = 0
+
+			const compact = Signature.toCompact(sig);
+			const bytes = Signature.toBytes(sig);
+
+			// For yParity=0, compact and bytes[:64] should match
 			expect(compact).toEqual(bytes.slice(0, 64));
 		});
 	});

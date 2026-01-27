@@ -14,8 +14,6 @@ source: 'examples/viem-contract/ViemContract.test.ts'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "./ViemContractTypes.js";
-import * as S from "effect/Schema";
-import * as AbiSchema from "voltaire-effect/primitives/Abi";
 import {
 	AccountNotFoundError,
 	ContractGasEstimationError,
@@ -35,7 +33,7 @@ import { watchContractEvent } from "./watchContractEvent.js";
 import { writeContract } from "./writeContract.js";
 
 // Test ABI - ERC20-like
-const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+const erc20Abi = [
 	{
 		type: "function",
 		name: "balanceOf",
@@ -95,7 +93,7 @@ const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 			{ name: "value", type: "uint256", indexed: false },
 		],
 	},
-]);
+] as const;
 
 const testAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const testAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";

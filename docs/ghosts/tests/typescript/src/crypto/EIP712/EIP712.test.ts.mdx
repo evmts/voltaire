@@ -13,6 +13,7 @@ import { EIP712 } from "./EIP712.js";
 import type { Domain, TypeDefinitions, TypedData } from "./EIP712Type.js";
 import {
 	Eip712EncodingError,
+	Eip712InvalidDomainError,
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
 } from "./errors.js";
@@ -92,6 +93,151 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const hash2 = EIP712.Domain.hash(domain2);
 
 			expect(hash1).not.toEqual(hash2);
+		});
+	});
+
+	describe("Domain Field Validation", () => {
+		it("should reject non-string name", () => {
+			const domain = { name: 123 } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'name' must be a string",
+			);
+		});
+
+		it("should reject non-string version", () => {
+			const domain = { name: "App", version: 1 } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'version' must be a string",
+			);
+		});
+
+		it("should reject invalid chainId type", () => {
+			const domain = { name: "App", chainId: "1" } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'chainId' must be a bigint, number, or Uint8Array",
+			);
+		});
+
+		it("should accept bigint chainId", () => {
+			const domain = { name: "App", chainId: 1n };
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should accept number chainId", () => {
+			const domain = { name: "App", chainId: 1 };
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should reject invalid verifyingContract type", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: 123,
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'verifyingContract' must be an address",
+			);
+		});
+
+		it("should reject wrong length verifyingContract", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: new Uint8Array(19), // 19 bytes instead of 20
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow("must be 20 bytes");
+		});
+
+		it("should accept valid 20-byte verifyingContract", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: new Uint8Array(20).fill(0xcc),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should reject invalid salt type", () => {
+			const domain = { name: "App", salt: 123 } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				"'salt' must be bytes32",
+			);
+		});
+
+		it("should reject wrong length salt", () => {
+			const domain = {
+				name: "App",
+				salt: new Uint8Array(31), // 31 bytes instead of 32
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow("must be 32 bytes");
+		});
+
+		it("should accept valid 32-byte salt", () => {
+			const domain = {
+				name: "App",
+				salt: new Uint8Array(32).fill(0xab),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should reject unknown domain fields", () => {
+			const domain = { name: "App", invalidField: "bad" } as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).toThrow(
+				Eip712InvalidDomainError,
+			);
+			expect(() => EIP712.Domain.hash(domain)).toThrow("Unknown domain field");
+		});
+
+		it("should accept Address type for verifyingContract", () => {
+			const domain = {
+				name: "App",
+				verifyingContract: Address.from(
+					"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+				),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
+		});
+
+		it("should accept Uint8Array for salt", () => {
+			const domain = {
+				name: "App",
+				salt: hexToBytes(
+					"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				),
+			} as unknown as Domain;
+
+			expect(() => EIP712.Domain.hash(domain)).not.toThrow();
 		});
 	});
 
@@ -296,6 +442,32 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			// Array encoding should be hashed
 		});
 
+		it("should encode fixed-size array (uint256[3])", () => {
+			const arr = [1n, 2n, 3n];
+			const encoded = EIP712.encodeValue("uint256[3]", arr, types);
+
+			expect(encoded.length).toBe(32);
+			// Fixed-size array encoding should also be hashed
+		});
+
+		it("should encode fixed-size bytes32 array (bytes32[10])", () => {
+			const arr = Array.from({ length: 10 }, () =>
+				new Uint8Array(32).fill(0xaa),
+			);
+			const encoded = EIP712.encodeValue("bytes32[10]", arr, types);
+
+			expect(encoded.length).toBe(32);
+		});
+
+		it("should produce same hash for equivalent fixed and dynamic arrays", () => {
+			const arr = [1n, 2n, 3n];
+			const encodedDynamic = EIP712.encodeValue("uint256[]", arr, types);
+			const encodedFixed = EIP712.encodeValue("uint256[3]", arr, types);
+
+			// Per EIP-712 spec, both array types encode the same way (hash of concatenated elements)
+			expect(encodedFixed).toEqual(encodedDynamic);
+		});
+
 		it("should encode custom struct type", () => {
 			const customTypes: TypeDefinitions = {
 				Person: [{ name: "name", type: "string" }],
@@ -326,6 +498,89 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		it("should handle int256", () => {
 			const encoded = EIP712.encodeValue("int256", 42n, types);
 			expect(encoded.length).toBe(32);
+		});
+
+		it("should reject uint8 value out of range (300)", () => {
+			try {
+				EIP712.encodeValue("uint8", 300n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject negative uint8 value", () => {
+			try {
+				EIP712.encodeValue("uint8", -1n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject int8 value out of range (128)", () => {
+			try {
+				EIP712.encodeValue("int8", 128n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject int8 value out of range (-129)", () => {
+			try {
+				EIP712.encodeValue("int8", -129n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should accept int8 at boundaries (-128 and 127)", () => {
+			const minEncoded = EIP712.encodeValue("int8", -128n, types);
+			expect(minEncoded.length).toBe(32);
+			const maxEncoded = EIP712.encodeValue("int8", 127n, types);
+			expect(maxEncoded[31]).toBe(127);
+		});
+
+		it("should accept uint16 at max boundary (65535)", () => {
+			const encoded = EIP712.encodeValue("uint16", 65535n, types);
+			expect(encoded[30]).toBe(0xff);
+			expect(encoded[31]).toBe(0xff);
+		});
+
+		it("should reject uint16 over max (65536)", () => {
+			try {
+				EIP712.encodeValue("uint16", 65536n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject uint256 negative value", () => {
+			try {
+				EIP712.encodeValue("uint256", -1n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
+		});
+
+		it("should reject uint256 over max (2^256)", () => {
+			try {
+				EIP712.encodeValue("uint256", 2n ** 256n, types);
+				expect.fail("Expected Eip712EncodingError");
+			} catch (e) {
+				expect(e).toBeInstanceOf(Eip712EncodingError);
+				expect((e as Error).message).toContain("out of range");
+			}
 		});
 	});
 
@@ -1126,6 +1381,42 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const encoded = EIP712.encodeValue("uint256[]", largeArray, types);
 
 			expect(encoded.length).toBe(32);
+		});
+
+		it("should hash typed data with fixed-size arrays", () => {
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Point: [{ name: "coordinates", type: "uint256[3]" }],
+				},
+				primaryType: "Point",
+				message: {
+					coordinates: [1n, 2n, 3n],
+				},
+			};
+
+			const hash = EIP712.hashTypedData(typedData);
+			expect(hash.length).toBe(32);
+		});
+
+		it("should hash typed data with fixed-size bytes32 array", () => {
+			const typedData: TypedData = {
+				domain: { name: "TestApp", chainId: 1n },
+				types: {
+					Merkle: [{ name: "proof", type: "bytes32[5]" }],
+				},
+				primaryType: "Merkle",
+				message: {
+					proof: Array.from({ length: 5 }, (_, i) => {
+						const b = new Uint8Array(32);
+						b[0] = i;
+						return b;
+					}),
+				},
+			};
+
+			const hash = EIP712.hashTypedData(typedData);
+			expect(hash.length).toBe(32);
 		});
 
 		it("should handle maximum uint256 value", () => {

@@ -111,3 +111,16 @@ test "decode roundtrip bool" {
     try std.testing.expectEqual(false, try decodeBool(&encoded_false));
 }
 ```
+
+### decodeBool rejects invalid values > 1
+
+```zig
+test "decodeBool rejects invalid values > 1" {
+    // SSZ spec: boolean must be exactly 0 or 1
+    const invalid_values = [_]u8{ 2, 127, 128, 255 };
+    for (invalid_values) |val| {
+        const bytes = [_]u8{val};
+        try std.testing.expectError(error.InvalidBooleanValue, decodeBool(&bytes));
+    }
+}
+```

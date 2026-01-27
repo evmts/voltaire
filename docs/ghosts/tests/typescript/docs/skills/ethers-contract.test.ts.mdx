@@ -19,13 +19,11 @@ source: 'docs/skills/ethers-contract.test.ts'
  * - Abi primitive IS available for encoding/decoding
  */
 import { describe, expect, it } from "vitest";
-import * as S from "effect/Schema";
-import * as AbiSchema from "voltaire-effect/primitives/Abi";
 
 describe("Ethers Contract Playbook", () => {
 	it("should define ERC-20 ABI with view functions", () => {
 		// From playbook: ERC-20 ABI structure
-		const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+		const erc20Abi = [
 			{
 				type: "function",
 				name: "balanceOf",
@@ -43,7 +41,7 @@ describe("Ethers Contract Playbook", () => {
 				],
 				outputs: [{ name: "", type: "bool" }],
 			},
-		]);
+		] as const;
 
 		expect(erc20Abi[0].stateMutability).toBe("view");
 		expect(erc20Abi[1].stateMutability).toBe("nonpayable");

@@ -82,7 +82,7 @@ describe("Int32", () => {
 			expect(val).toBe(-42);
 		});
 
-		it("should throw IntegerOverflowError on overflow", () => {
+		it("should throw IntegerOverflowError on overflow (bigint)", () => {
 			try {
 				Int32.from(2147483648n);
 				expect.fail("Should throw");
@@ -91,9 +91,45 @@ describe("Int32", () => {
 			}
 		});
 
-		it("should throw IntegerUnderflowError on underflow", () => {
+		it("should throw IntegerUnderflowError on underflow (bigint)", () => {
 			try {
 				Int32.from(-2147483649n);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
+		});
+
+		it("should throw IntegerOverflowError on overflow (number)", () => {
+			try {
+				Int32.from(2147483648);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
+		});
+
+		it("should throw IntegerUnderflowError on underflow (number)", () => {
+			try {
+				Int32.from(-2147483649);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
+			}
+		});
+
+		it("should throw IntegerOverflowError on overflow (string)", () => {
+			try {
+				Int32.from("2147483648");
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
+		});
+
+		it("should throw IntegerUnderflowError on underflow (string)", () => {
+			try {
+				Int32.from("-2147483649");
 				expect.fail("Should throw");
 			} catch (e) {
 				expect((e as Error).name).toBe("IntegerUnderflowError");
@@ -119,8 +155,9 @@ describe("Int32", () => {
 			expect(Int32.fromNumber(-42)).toBe(-42);
 		});
 
-		it("should truncate to 32-bit", () => {
-			expect(Int32.fromNumber(2147483647.5)).toBe(2147483647);
+		it("should truncate fractional part within range", () => {
+			expect(Int32.fromNumber(42.7)).toBe(42);
+			expect(Int32.fromNumber(-42.7)).toBe(-42);
 		});
 
 		it("should throw InvalidFormatError on NaN", () => {
@@ -130,6 +167,24 @@ describe("Int32", () => {
 			} catch (e) {
 				expect((e as Error).name).toBe("InvalidFormatError");
 				expect((e as Error).message).toContain("NaN");
+			}
+		});
+
+		it("should throw IntegerOverflowError on overflow", () => {
+			try {
+				Int32.fromNumber(2147483648);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerOverflowError");
+			}
+		});
+
+		it("should throw IntegerUnderflowError on underflow", () => {
+			try {
+				Int32.fromNumber(-2147483649);
+				expect.fail("Should throw");
+			} catch (e) {
+				expect((e as Error).name).toBe("IntegerUnderflowError");
 			}
 		});
 	});

@@ -617,12 +617,15 @@ describe("HDWallet", () => {
 			expect(HDWallet.isValidPath("m/44'/60'/a'/0/0")).toBe(false);
 		});
 
-		it("rejects extremely long paths", () => {
-			// Build a path with 1000 levels
-			const longPath = `m/${Array.from({ length: 1000 }, (_, i) => i).join("/")}`;
-			// Should handle gracefully (either accept or reject, but not crash)
-			const result = HDWallet.isValidPath(longPath);
-			expect(typeof result).toBe("boolean");
+		it("rejects paths exceeding 255 levels (BIP-32 max depth)", () => {
+			// Build a path with 256 levels (exceeds max)
+			const longPath = `m/${Array.from({ length: 256 }, (_, i) => i).join("/")}`;
+			expect(HDWallet.isValidPath(longPath)).toBe(false);
+		});
+
+		it("accepts paths at exactly 255 levels (BIP-32 max depth)", () => {
+			const maxPath = `m/${Array.from({ length: 255 }, (_, i) => i).join("/")}`;
+			expect(HDWallet.isValidPath(maxPath)).toBe(true);
 		});
 
 		it("rejects path with trailing slash", () => {
@@ -639,12 +642,10 @@ describe("HDWallet", () => {
 			expect(HDWallet.isValidPath("m /44'/60'/0'/0/0")).toBe(false);
 		});
 
-		it("rejects path with mixed hardened notation", () => {
-			// Some implementations might not allow mixing ' and h
-			const mixed = "m/0'/1h/2'";
-			const result = HDWallet.isValidPath(mixed);
-			// Should handle consistently (either accept or reject)
-			expect(typeof result).toBe("boolean");
+		it("rejects 'h' hardened notation (@scure/bip32 only supports apostrophe)", () => {
+			// @scure/bip32 doesn't support 'h' notation
+			expect(HDWallet.isValidPath("m/0'/1h/2'")).toBe(false);
+			expect(HDWallet.isValidPath("m/44h/60h/0h/0/0")).toBe(false);
 		});
 
 		it("validates single-level path", () => {
@@ -652,12 +653,42 @@ describe("HDWallet", () => {
 			expect(HDWallet.isValidPath("m/0'")).toBe(true);
 		});
 
-		it("handles root path 'm'", () => {
-			// Root path may or may not be valid depending on implementation
-			const isValid = HDWallet.isValidPath("m");
-			expect(typeof isValid).toBe("boolean");
-			// Trailing slash should definitely be invalid
+		it("rejects root path 'm' (requires at least one derivation level)", () => {
+			expect(HDWallet.isValidPath("m")).toBe(false);
 			expect(HDWallet.isValidPath("m/")).toBe(false);
+		});
+
+		it("rejects index overflow (indices must be < 2^31)", () => {
+			// 2^31 = 2147483648, exceeds max normal index
+			expect(HDWallet.isValidPath("m/2147483648")).toBe(false);
+			expect(HDWallet.isValidPath("m/2147483648'")).toBe(false);
+			// Max valid is 2^31-1 = 2147483647
+			expect(HDWallet.isValidPath("m/2147483647")).toBe(true);
+			expect(HDWallet.isValidPath("m/2147483647'")).toBe(true);
+		});
+
+		it("rejects extremely large indices that would overflow", () => {
+			expect(HDWallet.isValidPath("m/9999999999999")).toBe(false);
+			expect(HDWallet.isValidPath("m/99999999999999999999")).toBe(false);
+		});
+
+		it("validates uppercase M prefix", () => {
+			expect(HDWallet.isValidPath("M/44'/60'/0'/0/0")).toBe(true);
+		});
+
+		it("rejects negative indices", () => {
+			// Regex doesn't match negative numbers
+			expect(HDWallet.isValidPath("m/-1")).toBe(false);
+			expect(HDWallet.isValidPath("m/0/-1")).toBe(false);
+		});
+
+		it("rejects decimal indices", () => {
+			expect(HDWallet.isValidPath("m/1.5")).toBe(false);
+			expect(HDWallet.isValidPath("m/0.5'/1")).toBe(false);
+		});
+
+		it("rejects hex notation", () => {
+			expect(HDWallet.isValidPath("m/0x44'/0x60'/0'/0/0")).toBe(false);
 		});
 	});
 

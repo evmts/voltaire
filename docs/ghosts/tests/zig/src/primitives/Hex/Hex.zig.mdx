@@ -746,12 +746,34 @@ test "padRight with zero target length" {
 }
 ```
 
-### trimLeftZeros with all zeros
+### trimLeftZeros with all zeros preserves one byte
 
 ```zig
-test "trimLeftZeros with all zeros" {
+test "trimLeftZeros with all zeros preserves one byte" {
     const all_zeros = [_]u8{ 0x00, 0x00, 0x00 };
     const trimmed = trimLeftZeros(&all_zeros);
+    try testing.expectEqual(@as(usize, 1), trimmed.len);
+    try testing.expectEqual(@as(u8, 0), trimmed[0]);
+}
+```
+
+### trimLeftZeros with single zero preserves it
+
+```zig
+test "trimLeftZeros with single zero preserves it" {
+    const single_zero = [_]u8{0x00};
+    const trimmed = trimLeftZeros(&single_zero);
+    try testing.expectEqual(@as(usize, 1), trimmed.len);
+    try testing.expectEqual(@as(u8, 0), trimmed[0]);
+}
+```
+
+### trimLeftZeros with empty slice returns empty
+
+```zig
+test "trimLeftZeros with empty slice returns empty" {
+    const empty = [_]u8{};
+    const trimmed = trimLeftZeros(&empty);
     try testing.expectEqual(@as(usize, 0), trimmed.len);
 }
 ```

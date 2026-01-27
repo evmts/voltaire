@@ -888,31 +888,31 @@ describe("SIWE Error Types", () => {
 	it("InvalidSiweMessageError has correct name", () => {
 		const err = new InvalidSiweMessageError("test error");
 		expect(err.name).toBe("InvalidSiweMessageError");
-		expect(err.code).toBe("SIWE_INVALID_MESSAGE");
+		expect(err.code).toBe(-32602);
 	});
 
 	it("MissingFieldError has correct name", () => {
 		const err = new MissingFieldError("domain");
 		expect(err.name).toBe("MissingFieldError");
-		expect(err.code).toBe("SIWE_MISSING_FIELD");
+		expect(err.code).toBe(-32602);
 	});
 
 	it("InvalidFieldError has correct name", () => {
 		const err = new InvalidFieldError("chainId", "must be a number");
 		expect(err.name).toBe("InvalidFieldError");
-		expect(err.code).toBe("SIWE_INVALID_CHAINID");
+		expect(err.code).toBe(-32602);
 	});
 
 	it("InvalidNonceLengthError has correct name", () => {
 		const err = new InvalidNonceLengthError(5);
 		expect(err.name).toBe("InvalidNonceLengthError");
-		expect(err.code).toBe("SIWE_INVALID_NONCE_LENGTH");
+		expect(err.code).toBe(-32602);
 	});
 
 	it("SiweParseError has correct name", () => {
 		const err = new SiweParseError("failed to parse");
 		expect(err.name).toBe("SiweParseError");
-		expect(err.code).toBe("SIWE_PARSE_ERROR");
+		expect(err.code).toBe(-32000);
 	});
 
 	it("parse throws error with correct name on invalid input", () => {

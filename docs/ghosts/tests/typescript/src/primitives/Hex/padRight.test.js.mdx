@@ -7,6 +7,7 @@ source: 'src/primitives/Hex/padRight.test.js'
 
 ```javascript
 import { describe, expect, it } from "vitest";
+import { InvalidSizeError } from "./errors.js";
 import { padRight } from "./padRight.js";
 
 describe("Hex.padRight", () => {
@@ -217,6 +218,49 @@ describe("Hex.padRight", () => {
 		it("accepts any hex string", () => {
 			const padded = padRight("0xabc", 4);
 			expect(padded).toBe("0xabc00000");
+		});
+	});
+
+	describe("size parameter validation", () => {
+		it("throws InvalidSizeError for negative size", () => {
+			const hex = "0x1234";
+			expect(() => padRight(hex, -1)).toThrow(InvalidSizeError);
+			expect(() => padRight(hex, -1)).toThrow(/Invalid target size: -1/);
+		});
+
+		it("throws InvalidSizeError for non-integer size", () => {
+			const hex = "0x1234";
+			expect(() => padRight(hex, 1.5)).toThrow(InvalidSizeError);
+			expect(() => padRight(hex, 2.7)).toThrow(/Invalid target size: 2.7/);
+		});
+
+		it("throws InvalidSizeError for NaN", () => {
+			const hex = "0x1234";
+			expect(() => padRight(hex, NaN)).toThrow(InvalidSizeError);
+			expect(() => padRight(hex, NaN)).toThrow(/Invalid target size: NaN/);
+		});
+
+		it("throws InvalidSizeError for Infinity", () => {
+			const hex = "0x1234";
+			expect(() => padRight(hex, Infinity)).toThrow(InvalidSizeError);
+			expect(() => padRight(hex, -Infinity)).toThrow(InvalidSizeError);
+		});
+
+		it("accepts zero as valid size (returns original)", () => {
+			const hex = "0x1234";
+			expect(padRight(hex, 0)).toBe("0x1234");
+		});
+
+		it("error includes context with targetSize", () => {
+			const hex = "0x1234";
+			try {
+				padRight(hex, -5);
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidSizeError);
+				expect(/** @type {InvalidSizeError} */ (e).context).toEqual({
+					targetSize: -5,
+				});
+			}
 		});
 	});
 });

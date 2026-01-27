@@ -109,23 +109,26 @@ describe("Keccak256 WASM - Initialization", () => {
 	});
 
 	test("all functions are exported", () => {
-		const requiredFunctions = [
-			"hash",
-			"hashString",
-			"hashHex",
-			"hashMultiple",
-			"selector",
-			"topic",
-			"contractAddress",
-			"create2Address",
-			"init",
-			"isReady",
-		];
-
-		for (const fn of requiredFunctions) {
-			expect(Keccak256Wasm).toHaveProperty(fn);
-			expect(typeof Keccak256Wasm[fn]).toBe("function");
-		}
+		expect(Keccak256Wasm).toHaveProperty("hash");
+		expect(typeof Keccak256Wasm.hash).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("hashString");
+		expect(typeof Keccak256Wasm.hashString).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("hashHex");
+		expect(typeof Keccak256Wasm.hashHex).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("hashMultiple");
+		expect(typeof Keccak256Wasm.hashMultiple).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("selector");
+		expect(typeof Keccak256Wasm.selector).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("topic");
+		expect(typeof Keccak256Wasm.topic).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("contractAddress");
+		expect(typeof Keccak256Wasm.contractAddress).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("create2Address");
+		expect(typeof Keccak256Wasm.create2Address).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("init");
+		expect(typeof Keccak256Wasm.init).toBe("function");
+		expect(Keccak256Wasm).toHaveProperty("isReady");
+		expect(typeof Keccak256Wasm.isReady).toBe("function");
 	});
 });
 

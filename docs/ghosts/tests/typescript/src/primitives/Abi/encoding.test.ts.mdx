@@ -488,8 +488,10 @@ describe("Abi.encodeParameters - edge cases", () => {
 			{ type: "uint256" },
 		];
 		const values = [0n, 0n, 0n, 0n, 0n, 0n];
-		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-		const encoded = Abi.encodeParameters(types, values as any);
+		const encoded = Abi.encodeParameters(
+			types,
+			values as unknown as readonly unknown[],
+		);
 		expect(encoded.length).toBe(192);
 		expect(encoded.every((b) => b === 0)).toBe(true);
 	});
@@ -511,8 +513,7 @@ describe("Abi.encodeParameters - edge cases", () => {
 				18446744073709551615n,
 				340282366920938463463374607431768211455n,
 				115792089237316195423570985008687907853269984665640564039457584007913129639935n,
-				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-			] as any,
+			] as unknown as readonly unknown[],
 		);
 		expect(encoded.length).toBe(192);
 	});
@@ -530,10 +531,102 @@ describe("Abi.encodeParameters - edge cases", () => {
 				127n,
 				-57896044618658097711785492504343953926634992332820282019728792003956564819968n, // min int256
 				57896044618658097711785492504343953926634992332820282019728792003956564819967n, // max int256
-				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
-			] as any,
+			] as unknown as readonly unknown[],
 		);
 		expect(encoded.length).toBe(128);
+	});
+});
+
+// ============================================================================
+// Tuple + Dynamic Type Offset Tests (GitHub issues #312, #319)
+// ============================================================================
+
+describe("Abi.encodeParameters - tuple with dynamic type offset calculation", () => {
+	it("calculates correct offset for bytes after static tuple (#312)", () => {
+		// Test from issue #312: tuple + address + bytes
+		// Static tuple: 6 * 32 = 192 bytes
+		// Address: 32 bytes
+		// Offset pointer for bytes: 32 bytes
+		// Total static: 256 bytes = 0x100
+		const params = [
+			{
+				type: "tuple" as const,
+				components: [
+					{ name: "chainId", type: "uint256" as const },
+					{ name: "delegation", type: "address" as const },
+					{ name: "nonce", type: "uint256" as const },
+					{ name: "yParity", type: "uint8" as const },
+					{ name: "r", type: "uint256" as const },
+					{ name: "s", type: "uint256" as const },
+				],
+			},
+			{ name: "to", type: "address" as const },
+			{ name: "data", type: "bytes" as const },
+		] as const;
+
+		const encoded = Abi.encodeParameters(params, [
+			[
+				1n,
+				"0x0000000000000000000000000000000000000000",
+				0n,
+				0,
+				27234983749287394872n,
+				8738927498274982n,
+			],
+			"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+			"0xdeadbeef",
+		] as unknown as readonly unknown[]);
+
+		// The offset for bytes should be at position 224 (after tuple 192 + address 32)
+		// It should be 0x100 (256) = total static section size
+		const offsetView = new DataView(encoded.buffer, 224, 32);
+		const offset = offsetView.getBigUint64(24, false); // Last 8 bytes, big-endian
+		expect(offset).toBe(256n);
+	});
+
+	it("calculates correct offset for string after nested static tuple (#319)", () => {
+		// Test from issue #319: nested tuples + string
+		// Outer tuple (static because all fields are static):
+		//   Inner tuple: 3 * 32 = 96
+		//   sender (address): 32
+		//   z (uint32): 32
+		//   Total outer tuple: 160
+		// String offset pointer: 32
+		// Total static: 192 = 0xc0
+		const params = [
+			{
+				type: "tuple" as const,
+				components: [
+					{
+						type: "tuple" as const,
+						name: "foo",
+						components: [
+							{ name: "sender", type: "address" as const },
+							{ name: "x", type: "uint256" as const },
+							{ name: "y", type: "bool" as const },
+						],
+					},
+					{ name: "sender", type: "address" as const },
+					{ name: "z", type: "uint32" as const },
+				],
+			},
+			{ name: "bob", type: "string" as const },
+		] as const;
+
+		const encoded = Abi.encodeParameters(params, [
+			[
+				["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", 69420n, true],
+				"0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+				69,
+			],
+			"wagmi",
+		] as unknown as readonly unknown[]);
+
+		// The offset for string should be at position 160 (after outer tuple)
+		// It should be 0xc0 (192) = total static section size
+		const offsetView = new DataView(encoded.buffer, 160, 32);
+		const offset = offsetView.getBigUint64(24, false); // Last 8 bytes, big-endian
+		expect(offset).toBe(192n);
 	});
 });
 

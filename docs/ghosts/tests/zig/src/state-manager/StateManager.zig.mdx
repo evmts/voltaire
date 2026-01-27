@@ -1,0 +1,197 @@
+---
+title: '[Zig] src/state-manager/StateManager.zig'
+source: 'src/state-manager/StateManager.zig'
+---
+
+> Auto-generated from Zig tests in: src/state-manager/StateManager.zig
+
+### StateManager - basic state operations
+
+```zig
+test "StateManager - basic state operations" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+
+    // Set and get balance
+    try manager.setBalance(addr, 1000);
+    const balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 1000), balance);
+
+    // Set and get nonce
+    try manager.setNonce(addr, 5);
+    const nonce = try manager.getNonce(addr);
+    try std.testing.expectEqual(@as(u64, 5), nonce);
+
+    // Set and get storage
+    try manager.setStorage(addr, 42, 9999);
+    const value = try manager.getStorage(addr, 42);
+    try std.testing.expectEqual(@as(u256, 9999), value);
+
+    // Set and get code
+    const code = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
+    try manager.setCode(addr, &code);
+    const retrieved_code = try manager.getCode(addr);
+    try std.testing.expectEqualSlices(u8, &code, retrieved_code);
+}
+```
+
+### StateManager - checkpoint operations
+
+```zig
+test "StateManager - checkpoint operations" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+
+    // Initial state
+    try manager.setBalance(addr, 1000);
+    try manager.checkpoint();
+
+    // Modify
+    try manager.setBalance(addr, 2000);
+    var balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 2000), balance);
+
+    // Revert
+    manager.revert();
+    balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 1000), balance);
+}
+```
+
+### StateManager - checkpoint commit
+
+```zig
+test "StateManager - checkpoint commit" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+
+    // Initial state
+    try manager.setBalance(addr, 1000);
+    try manager.checkpoint();
+
+    // Modify
+    try manager.setBalance(addr, 2000);
+
+    // Commit
+    manager.commit();
+
+    // Changes should persist
+    const balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 2000), balance);
+}
+```
+
+### StateManager - snapshot and revert
+
+```zig
+test "StateManager - snapshot and revert" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+
+    // Initial state
+    try manager.setBalance(addr, 1000);
+
+    // Take snapshot
+    const snap_id = try manager.snapshot();
+
+    // Modify
+    try manager.setBalance(addr, 2000);
+    var balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 2000), balance);
+
+    // Revert to snapshot
+    try manager.revertToSnapshot(snap_id);
+    balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 1000), balance);
+}
+```
+
+### StateManager - multiple snapshots
+
+```zig
+test "StateManager - multiple snapshots" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+
+    // Level 0
+    try manager.setBalance(addr, 1000);
+
+    // Snapshot 1
+    const snap1 = try manager.snapshot();
+    try manager.setBalance(addr, 2000);
+
+    // Snapshot 2
+    const snap2 = try manager.snapshot();
+    try manager.setBalance(addr, 3000);
+
+    // Verify current state
+    var balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 3000), balance);
+
+    // Revert to snapshot 2
+    try manager.revertToSnapshot(snap2);
+    balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 2000), balance);
+
+    // Revert to snapshot 1
+    try manager.revertToSnapshot(snap1);
+    balance = try manager.getBalance(addr);
+    try std.testing.expectEqual(@as(u256, 1000), balance);
+}
+```
+
+### StateManager - invalid snapshot
+
+```zig
+test "StateManager - invalid snapshot" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    // Try to revert to non-existent snapshot
+    const result = manager.revertToSnapshot(999);
+    try std.testing.expectError(error.InvalidSnapshot, result);
+}
+```
+
+### StateManager - snapshot clears newer snapshots
+
+```zig
+test "StateManager - snapshot clears newer snapshots" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+
+    try manager.setBalance(addr, 1000);
+
+    const snap1 = try manager.snapshot();
+    try manager.setBalance(addr, 2000);
+
+    const snap2 = try manager.snapshot();
+    try manager.setBalance(addr, 3000);
+
+    // Revert to snap1 should clear snap2
+    try manager.revertToSnapshot(snap1);
+
+    // snap2 should no longer be valid
+    const result = manager.revertToSnapshot(snap2);
+    try std.testing.expectError(error.InvalidSnapshot, result);
+}
+```

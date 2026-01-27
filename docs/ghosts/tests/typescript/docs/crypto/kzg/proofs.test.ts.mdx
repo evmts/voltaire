@@ -107,13 +107,12 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 
 			// Ensure c-kzg's trusted setup is loaded (it's a separate instance from our KZG)
 			try {
-				// c-kzg uses embedded setup in newer versions
-				// @ts-expect-error - loadTrustedSetup may not exist in type def
-				if (typeof ckzg.loadTrustedSetup === "function" && !ckzg.loadTrustedSetup.__loaded) {
-					ckzg.loadTrustedSetup();
-				}
+				// c-kzg v4.x requires loadTrustedSetup(precompute, filePath)
+				// precompute=0 means no precomputation, filePath undefined uses default
+				// @ts-expect-error - loadTrustedSetup signature varies by version
+				ckzg.loadTrustedSetup(0);
 			} catch {
-				// Already loaded or no-op
+				// Already loaded or setup failed - continue anyway
 			}
 
 			// Actual factory API (docs show Kzg.ProofFactory)
@@ -192,6 +191,14 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		it("should verify proof using factory pattern", async () => {
 			const ckzg = await import("c-kzg");
 
+			// Ensure c-kzg's trusted setup is loaded
+			try {
+				// @ts-expect-error - loadTrustedSetup signature varies by version
+				ckzg.loadTrustedSetup(0);
+			} catch {
+				// Already loaded
+			}
+
 			// Actual factory API (docs show Kzg.VerifyFactory)
 			const verify = VerifyKzgProof({
 				verifyKzgProof: ckzg.verifyKzgProof,
@@ -251,6 +258,14 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		 */
 		it("should verify blob proof using factory pattern", async () => {
 			const ckzg = await import("c-kzg");
+
+			// Ensure c-kzg's trusted setup is loaded
+			try {
+				// @ts-expect-error - loadTrustedSetup signature varies by version
+				ckzg.loadTrustedSetup(0);
+			} catch {
+				// Already loaded
+			}
 
 			// Actual factory API
 			const verifyBlob = VerifyBlobKzgProof({
@@ -330,6 +345,14 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/proofs.mdx - KZG Proofs", async 
 		 */
 		it("should batch verify using factory pattern", async () => {
 			const ckzg = await import("c-kzg");
+
+			// Ensure c-kzg's trusted setup is loaded
+			try {
+				// @ts-expect-error - loadTrustedSetup signature varies by version
+				ckzg.loadTrustedSetup(0);
+			} catch {
+				// Already loaded
+			}
 
 			// Actual factory API
 			const verifyBatch = VerifyBlobKzgProofBatch({

@@ -99,6 +99,14 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 		it("should create commitment using factory pattern", async () => {
 			const ckzg = await import("c-kzg");
 
+			// Ensure c-kzg's trusted setup is loaded
+			try {
+				// @ts-expect-error - loadTrustedSetup signature varies by version
+				ckzg.loadTrustedSetup(0);
+			} catch {
+				// Already loaded
+			}
+
 			// Actual factory API (docs show Kzg.CommitmentFactory)
 			const Commitment = BlobToKzgCommitment({
 				blobToKzgCommitment: ckzg.blobToKzgCommitment,
@@ -113,6 +121,14 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 		it("should produce same result as standard API", async () => {
 			const ckzg = await import("c-kzg");
 
+			// Ensure c-kzg's trusted setup is loaded
+			try {
+				// @ts-expect-error - loadTrustedSetup signature varies by version
+				ckzg.loadTrustedSetup(0);
+			} catch {
+				// Already loaded
+			}
+
 			const Commitment = BlobToKzgCommitment({
 				blobToKzgCommitment: ckzg.blobToKzgCommitment,
 			});
@@ -122,7 +138,8 @@ describe.skipIf(!hasCkzg)("Factory API", () => {
 			const commitment1 = KZG.Commitment(blob);
 			const commitment2 = Commitment(blob);
 
-			expect(commitment1).toEqual(commitment2);
+			// c-kzg returns Buffer, our KZG returns Uint8Array - compare as Uint8Array
+			expect(commitment1).toEqual(new Uint8Array(commitment2));
 		});
 	});
 

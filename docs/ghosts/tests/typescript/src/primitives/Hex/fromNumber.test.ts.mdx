@@ -45,9 +45,35 @@ describe("fromNumber", () => {
 
 	it("handles max safe integer", () => {
 		const max = Number.MAX_SAFE_INTEGER;
+		expect(max).toBe(9007199254740991); // 2^53 - 1
 		const hex = fromNumber(max);
 		expect(hex).toBe("0x1fffffffffffff");
 		expect(toNumber(hex)).toBe(max);
+	});
+
+	it("handles values near max safe integer boundary", () => {
+		// 2^53 - 2
+		expect(fromNumber(9007199254740990)).toBe("0x1ffffffffffffe");
+		expect(toNumber(fromNumber(9007199254740990))).toBe(9007199254740990);
+
+		// 2^53 - 1 (MAX_SAFE_INTEGER)
+		expect(fromNumber(9007199254740991)).toBe("0x1fffffffffffff");
+		expect(toNumber(fromNumber(9007199254740991))).toBe(9007199254740991);
+	});
+
+	it("throws for numbers exceeding MAX_SAFE_INTEGER", () => {
+		// 2^53 (first unsafe integer)
+		expect(() => fromNumber(9007199254740992)).toThrow(
+			/exceeds MAX_SAFE_INTEGER/,
+		);
+
+		// Larger values
+		expect(() => fromNumber(Number.MAX_SAFE_INTEGER + 1)).toThrow(
+			/exceeds MAX_SAFE_INTEGER/,
+		);
+		expect(() => fromNumber(Number.MAX_SAFE_INTEGER + 100)).toThrow(
+			/exceeds MAX_SAFE_INTEGER/,
+		);
 	});
 
 	it("round-trip conversions", () => {

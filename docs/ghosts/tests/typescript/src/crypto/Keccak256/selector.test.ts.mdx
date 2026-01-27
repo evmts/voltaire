@@ -239,6 +239,57 @@ describe("Keccak256.selector", () => {
 		});
 	});
 
+	describe("byte boundary verification (no off-by-one)", () => {
+		it("should extract exactly bytes [0,1,2,3] from keccak256 hash", () => {
+			// transfer(address,uint256) keccak256 = 0xa9059cbb2ab09eb219583f4a59a5d0623ade346d962bcd4e46b11da047c9049b
+			const sig = "transfer(address,uint256)";
+			const fullHash = hashString(sig);
+			const sel = selector(sig);
+
+			// Verify first 4 bytes are extracted correctly
+			expect(sel[0]).toBe(fullHash[0]); // 0xa9
+			expect(sel[1]).toBe(fullHash[1]); // 0x05
+			expect(sel[2]).toBe(fullHash[2]); // 0x9c
+			expect(sel[3]).toBe(fullHash[3]); // 0xbb
+
+			// Verify byte 4 (index 4) is NOT included
+			expect(sel.length).toBe(4);
+			expect(fullHash[4]).toBe(0x2a); // 5th byte is 0x2a, should not be in selector
+		});
+
+		it("should not include byte at index 4 (off-by-one check)", () => {
+			// This test explicitly verifies there's no off-by-one error
+			// Selector = keccak256(sig)[0:4] means indices 0,1,2,3 (NOT 1,2,3,4)
+			const sig = "balanceOf(address)";
+			const fullHash = hashString(sig);
+			const sel = selector(sig);
+
+			// balanceOf(address) = 0x70a08231...
+			// Selector should be [0x70, 0xa0, 0x82, 0x31]
+			expect(Array.from(sel)).toEqual([0x70, 0xa0, 0x82, 0x31]);
+
+			// If there was an off-by-one, it would be [0xa0, 0x82, 0x31, fullHash[4]]
+			// Verify the correct bytes are used
+			expect(sel[0]).toBe(0x70); // First byte, not second
+			expect(sel[0]).not.toBe(fullHash[1]); // Would be true if off-by-one
+		});
+
+		it("should match Solidity assembly selector calculation", () => {
+			// In Solidity: bytes4(keccak256("transfer(address,uint256)"))
+			// This takes the first 4 bytes (most significant bytes) of the hash
+			// keccak256("transfer(address,uint256)") = 0xa9059cbb...
+			// bytes4 extracts 0xa9059cbb (NOT 0x059cbb2a which would be off-by-one)
+
+			const sel = selector("transfer(address,uint256)");
+
+			// Expected: 0xa9059cbb (from Solidity/ethers.js/web3.js)
+			expect(sel[0]).toBe(0xa9);
+			expect(sel[1]).toBe(0x05);
+			expect(sel[2]).toBe(0x9c);
+			expect(sel[3]).toBe(0xbb);
+		});
+	});
+
 	describe("edge cases", () => {
 		it("should handle empty function name", () => {
 			const result = selector("()");

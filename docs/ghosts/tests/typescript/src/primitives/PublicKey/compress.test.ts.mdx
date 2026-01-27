@@ -7,9 +7,70 @@ source: 'src/primitives/PublicKey/compress.test.ts'
 
 ```typescript
 import { describe, expect, test } from "vitest";
+import { InvalidLengthError } from "../errors/ValidationError.js";
 import * as PublicKey from "./index.js";
 
 describe("PublicKey.compress", () => {
+	describe("validation", () => {
+		test("throws InvalidLengthError for empty input", () => {
+			const empty = new Uint8Array(0);
+			expect(() => PublicKey.compress(empty)).toThrow(InvalidLengthError);
+			expect(() => PublicKey.compress(empty)).toThrow(
+				/expected 64 bytes, got 0/,
+			);
+		});
+
+		test("throws InvalidLengthError for 33-byte compressed key", () => {
+			const compressed = new Uint8Array(33);
+			compressed[0] = 0x02;
+			expect(() => PublicKey.compress(compressed)).toThrow(InvalidLengthError);
+			expect(() => PublicKey.compress(compressed)).toThrow(
+				/expected 64 bytes, got 33/,
+			);
+		});
+
+		test("throws InvalidLengthError for 65-byte prefixed key", () => {
+			// 65-byte format with 0x04 prefix - user should strip prefix first
+			const prefixed = new Uint8Array(65);
+			prefixed[0] = 0x04;
+			expect(() => PublicKey.compress(prefixed)).toThrow(InvalidLengthError);
+			expect(() => PublicKey.compress(prefixed)).toThrow(
+				/expected 64 bytes, got 65/,
+			);
+		});
+
+		test("throws InvalidLengthError for 32-byte input", () => {
+			const short = new Uint8Array(32);
+			expect(() => PublicKey.compress(short)).toThrow(InvalidLengthError);
+			expect(() => PublicKey.compress(short)).toThrow(
+				/expected 64 bytes, got 32/,
+			);
+		});
+
+		test("throws InvalidLengthError for 128-byte input", () => {
+			const long = new Uint8Array(128);
+			expect(() => PublicKey.compress(long)).toThrow(InvalidLengthError);
+			expect(() => PublicKey.compress(long)).toThrow(
+				/expected 64 bytes, got 128/,
+			);
+		});
+
+		test("error has correct code and docsPath", () => {
+			const invalid = new Uint8Array(10);
+			try {
+				PublicKey.compress(invalid);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect((e as InvalidLengthError).code).toBe(
+					"PUBLIC_KEY_INVALID_LENGTH",
+				);
+				expect((e as InvalidLengthError).docsPath).toBe(
+					"/primitives/public-key/compress#error-handling",
+				);
+			}
+		});
+	});
+
 	test("compresses known public key", () => {
 		// Known test vector - generator point
 		const uncompressed =

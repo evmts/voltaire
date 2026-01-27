@@ -170,6 +170,59 @@ describe("Secp256k1.recoverPublicKey", () => {
 			);
 		});
 
+		// Security: invalid v values must throw to prevent wrong address derivation
+		it("should throw InvalidSignatureError for v=2", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 2, // Invalid - only 0, 1, 27, 28 allowed
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+		});
+
+		it("should throw InvalidSignatureError for v=26", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 26, // Invalid - off by one from valid 27
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+		});
+
+		it("should throw InvalidSignatureError for v=29", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 29, // Invalid - off by one from valid 28
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+		});
+
+		it("should throw InvalidSignatureError for v=255", () => {
+			const message = Hash(sha256(new TextEncoder().encode("test")));
+			const invalidSig = {
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(1),
+				v: 255, // Invalid max u8
+			};
+
+			expect(() => recoverPublicKey(invalidSig, message)).toThrow(
+				InvalidSignatureError,
+			);
+		});
+
 		it("should throw InvalidSignatureError for all-zero r", () => {
 			const message = Hash(sha256(new TextEncoder().encode("test")));
 			const invalidSig = {

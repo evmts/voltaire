@@ -83,6 +83,7 @@ describe("ERC165", () => {
 					method: string;
 					params: unknown[];
 				}) => {
+					void params;
 					expect(method).toBe("eth_call");
 					// Mock: contract supports ERC-721
 					return "0x0000000000000000000000000000000000000000000000000000000000000001";

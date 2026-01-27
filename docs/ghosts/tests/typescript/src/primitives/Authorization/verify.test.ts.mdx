@@ -501,20 +501,23 @@ describe("Authorization.verify - zero address validation", () => {
 });
 
 // ============================================================================
-// chainId = 0 Tests
+// chainId = 0 Tests (EIP-7702 cross-chain authorization)
 // ============================================================================
 
 describe("Authorization.verify - chainId = 0", () => {
-	it("throws for chainId = 0", () => {
-		const auth: AuthorizationType = {
+	const privateKey = new Uint8Array(32);
+	privateKey.fill(1);
+
+	it("accepts chainId = 0 per EIP-7702 cross-chain authorization", () => {
+		const unsigned = {
 			chainId: 0n,
 			address: createAddress(1),
 			nonce: 0n,
-			yParity: 0,
-			r: 0x123n,
-			s: 0x456n,
 		};
-		expect(() => verify(auth)).toThrow("Chain ID must be non-zero");
+		const auth = sign(unsigned, privateKey);
+		const authority = verify(auth);
+		expect(authority).toBeInstanceOf(Uint8Array);
+		expect(authority.length).toBe(20);
 	});
 });
 
