@@ -111,9 +111,7 @@ const testVectors = [
 // Only include WASM if crypto-wasm was built (not always available in CI)
 const implementations = [
 	{ name: "Ripemd160 (Noble)", impl: Ripemd160 },
-	...(wasmExists
-		? [{ name: "Ripemd160Wasm (Zig)", impl: Ripemd160Wasm }]
-		: []),
+	...(wasmExists ? [{ name: "Ripemd160Wasm (Zig)", impl: Ripemd160Wasm }] : []),
 ];
 describe.each(implementations)("$name", ({ impl }) => {
 	describe("hash", () => {
