@@ -172,12 +172,20 @@ export {
 	type BlockTag as ContractBlockTag,
 	Contract,
 	ContractCallError,
+	type ContractDef,
 	ContractError,
 	ContractEventError,
+	type ContractFactory,
 	type ContractInstance,
+	type ContractRegistryBase,
+	type ContractRegistryConfig,
+	ContractRegistryService,
+	type ContractRegistryShape,
 	ContractWriteError,
 	type DecodedEvent,
 	type EventFilter,
+	type InferContractRegistry,
+	makeContractRegistry,
 } from "./Contract/index.js";
 // Debug exports
 export {
