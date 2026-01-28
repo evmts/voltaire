@@ -48,7 +48,7 @@
  *
  * ```typescript
  * Transaction.hash(tx)              // HashType
- * Transaction.signingHash(tx)       // HashType
+ * Transaction.getSigningHash(tx)    // HashType
  * Transaction.getSender(tx)         // AddressType
  * Transaction.getRecipient(tx)      // AddressType | null
  * Transaction.getChainId(tx)        // bigint | null
@@ -58,11 +58,44 @@
  * Transaction.detectType(bytes)     // Type
  * ```
  *
+ * ## Type Guards
+ *
+ * ```typescript
+ * Transaction.isLegacy(tx)          // tx is Legacy
+ * Transaction.isEIP1559(tx)         // tx is EIP1559
+ * Transaction.isEIP2930(tx)         // tx is EIP2930
+ * Transaction.isEIP4844(tx)         // tx is EIP4844
+ * Transaction.isEIP7702(tx)         // tx is EIP7702
+ * ```
+ *
+ * ## Effect-Returning Functions (Validation)
+ *
+ * ```typescript
+ * Transaction.assertSigned(tx)      // Effect<void, UnsignedTransactionError>
+ * Transaction.verifySignature(tx)   // Effect<boolean, InvalidSignatureError>
+ * Transaction.validateChainId(tx)   // Effect<void, InvalidChainIdError>
+ * Transaction.validateGasLimit(tx)  // Effect<void, InvalidGasLimitError>
+ * Transaction.validateGasPrice(tx)  // Effect<void, InvalidGasPriceError>
+ * Transaction.validateNonce(tx)     // Effect<void, InvalidNonceError>
+ * Transaction.validateValue(tx)     // Effect<void, InvalidValueError>
+ * ```
+ *
+ * ## Mutation (returns new transaction)
+ *
+ * ```typescript
+ * Transaction.withNonce(tx, nonce)     // Any
+ * Transaction.withGasLimit(tx, limit)  // Any
+ * Transaction.withGasPrice(tx, price)  // Any
+ * Transaction.withData(tx, data)       // Any
+ * Transaction.replaceWith(tx, opts)    // Any
+ * ```
+ *
  * @since 0.1.0
  */
 import type { AddressType } from "@tevm/voltaire/Address";
 import type { HashType } from "@tevm/voltaire/Hash";
 import * as VoltaireTransaction from "@tevm/voltaire/Transaction";
+import * as Effect from "effect/Effect";
 
 /**
  * Union type of all supported Ethereum transaction types.
@@ -148,6 +181,15 @@ export {
 	Schema,
 } from "./TransactionSchema.js";
 
+// Re-export types from voltaire
+export type {
+	AccessList,
+	AccessListItem,
+	AuthorizationList,
+	ReplaceOptions,
+	VersionedHash,
+} from "@tevm/voltaire/Transaction";
+
 // Pure functions
 
 /**
@@ -168,8 +210,13 @@ export const hash = (tx: Any): HashType => VoltaireTransaction.hash(tx);
  *
  * @since 0.1.0
  */
-export const signingHash = (tx: Any): HashType =>
+export const getSigningHash = (tx: Any): HashType =>
 	VoltaireTransaction.getSigningHash(tx);
+
+/**
+ * @deprecated Use getSigningHash instead
+ */
+export const signingHash = getSigningHash;
 
 /**
  * Recovers the sender address from the transaction signature.
@@ -287,3 +334,421 @@ export const isSigned = (tx: Any): boolean => VoltaireTransaction.isSigned(tx);
  */
 export const detectType = (data: Uint8Array): VoltaireTransaction.Type =>
 	VoltaireTransaction.detectType(data);
+
+/**
+ * Checks if transaction is a contract call.
+ *
+ * @param tx - Transaction object
+ * @returns true if to is set and data is non-empty
+ *
+ * @since 0.1.0
+ */
+export const isContractCall = (tx: Any): boolean =>
+	VoltaireTransaction.isContractCall(tx);
+
+/**
+ * Checks if transaction has an access list.
+ *
+ * @param tx - Transaction object
+ * @returns true if transaction type supports and has access list
+ *
+ * @since 0.1.0
+ */
+export const hasAccessList = (tx: Any): boolean =>
+	VoltaireTransaction.hasAccessList(tx);
+
+/**
+ * Gets the access list from transaction.
+ *
+ * @param tx - Transaction object
+ * @returns Access list (empty array for legacy transactions)
+ *
+ * @since 0.1.0
+ */
+export const getAccessList = (
+	tx: Any,
+): VoltaireTransaction.AccessList => VoltaireTransaction.getAccessList(tx);
+
+/**
+ * Gets blob count for EIP-4844 transactions.
+ *
+ * @param tx - EIP-4844 transaction
+ * @returns Number of blobs
+ *
+ * @since 0.1.0
+ */
+export const getBlobCount = (tx: EIP4844): number =>
+	VoltaireTransaction.getBlobCount(tx);
+
+/**
+ * Gets blob versioned hashes for EIP-4844 transactions.
+ *
+ * @param tx - EIP-4844 transaction
+ * @returns Array of versioned hashes
+ *
+ * @since 0.1.0
+ */
+export const getBlobVersionedHashes = (
+	tx: EIP4844,
+): readonly VoltaireTransaction.VersionedHash[] =>
+	VoltaireTransaction.getBlobVersionedHashes(tx);
+
+/**
+ * Gets authorization count for EIP-7702 transactions.
+ *
+ * @param tx - EIP-7702 transaction
+ * @returns Number of authorizations
+ *
+ * @since 0.1.0
+ */
+export const getAuthorizationCount = (tx: EIP7702): number =>
+	VoltaireTransaction.getAuthorizationCount(tx);
+
+/**
+ * Gets authorization list for EIP-7702 transactions.
+ *
+ * @param tx - EIP-7702 transaction
+ * @returns Authorization list
+ *
+ * @since 0.1.0
+ */
+export const getAuthorizations = (
+	tx: EIP7702,
+): VoltaireTransaction.AuthorizationList =>
+	VoltaireTransaction.getAuthorizations(tx);
+
+// Type Guards
+
+/**
+ * Type guard for Legacy transactions.
+ *
+ * @param tx - Transaction object
+ * @returns true if Legacy type
+ *
+ * @since 0.1.0
+ */
+export const isLegacy = (tx: Any): tx is Legacy =>
+	VoltaireTransaction.isLegacy(tx);
+
+/**
+ * Type guard for EIP-2930 transactions.
+ *
+ * @param tx - Transaction object
+ * @returns true if EIP-2930 type
+ *
+ * @since 0.1.0
+ */
+export const isEIP2930 = (tx: Any): tx is EIP2930 =>
+	VoltaireTransaction.isEIP2930(tx);
+
+/**
+ * Type guard for EIP-1559 transactions.
+ *
+ * @param tx - Transaction object
+ * @returns true if EIP-1559 type
+ *
+ * @since 0.1.0
+ */
+export const isEIP1559 = (tx: Any): tx is EIP1559 =>
+	VoltaireTransaction.isEIP1559(tx);
+
+/**
+ * Type guard for EIP-4844 transactions.
+ *
+ * @param tx - Transaction object
+ * @returns true if EIP-4844 type
+ *
+ * @since 0.1.0
+ */
+export const isEIP4844 = (tx: Any): tx is EIP4844 =>
+	VoltaireTransaction.isEIP4844(tx);
+
+/**
+ * Type guard for EIP-7702 transactions.
+ *
+ * @param tx - Transaction object
+ * @returns true if EIP-7702 type
+ *
+ * @since 0.1.0
+ */
+export const isEIP7702 = (tx: Any): tx is EIP7702 =>
+	VoltaireTransaction.isEIP7702(tx);
+
+// Mutation functions (return new transaction)
+
+/**
+ * Returns new transaction with updated nonce.
+ *
+ * @param tx - Transaction object
+ * @param nonce - New nonce value
+ * @returns New transaction with updated nonce
+ *
+ * @since 0.1.0
+ */
+export const withNonce = (tx: Any, nonce: bigint): Any =>
+	VoltaireTransaction.withNonce(tx, nonce);
+
+/**
+ * Returns new transaction with updated gas limit.
+ *
+ * @param tx - Transaction object
+ * @param gasLimit - New gas limit
+ * @returns New transaction with updated gas limit
+ *
+ * @since 0.1.0
+ */
+export const withGasLimit = (tx: Any, gasLimit: bigint): Any =>
+	VoltaireTransaction.withGasLimit(tx, gasLimit);
+
+/**
+ * Returns new transaction with updated gas price.
+ *
+ * @param tx - Transaction object
+ * @param gasPrice - New gas price
+ * @returns New transaction with updated gas price
+ *
+ * @since 0.1.0
+ */
+export const withGasPrice = (tx: Any, gasPrice: bigint): Any =>
+	VoltaireTransaction.withGasPrice(tx, gasPrice);
+
+/**
+ * Returns new transaction with updated data.
+ *
+ * @param tx - Transaction object
+ * @param data - New data
+ * @returns New transaction with updated data
+ *
+ * @since 0.1.0
+ */
+export const withData = (tx: Any, data: Uint8Array): Any =>
+	VoltaireTransaction.withData(tx, data);
+
+/**
+ * Returns new transaction with fee bump for replacement.
+ *
+ * @param tx - Transaction object
+ * @param options - Replace options (fee bump percentage)
+ * @returns New transaction suitable for replacement
+ *
+ * @since 0.1.0
+ */
+export const replaceWith = (
+	tx: Any,
+	options?: VoltaireTransaction.ReplaceOptions,
+): Any => VoltaireTransaction.replaceWith(tx, options);
+
+/**
+ * Formats transaction to human-readable string.
+ *
+ * @param tx - Transaction object
+ * @returns Formatted string representation
+ *
+ * @since 0.1.0
+ */
+export const format = (tx: Any): string => VoltaireTransaction.format(tx);
+
+// Effect-returning functions (validation)
+
+/**
+ * Error thrown when transaction is not signed.
+ *
+ * @since 0.1.0
+ */
+export class UnsignedTransactionError extends Error {
+	readonly _tag = "UnsignedTransactionError";
+	constructor(message = "Transaction is not signed") {
+		super(message);
+		this.name = "UnsignedTransactionError";
+	}
+}
+
+/**
+ * Error thrown when signature verification fails.
+ *
+ * @since 0.1.0
+ */
+export class InvalidSignatureError extends Error {
+	readonly _tag = "InvalidSignatureError";
+	constructor(message = "Invalid signature") {
+		super(message);
+		this.name = "InvalidSignatureError";
+	}
+}
+
+/**
+ * Error thrown when chain ID validation fails.
+ *
+ * @since 0.1.0
+ */
+export class InvalidChainIdError extends Error {
+	readonly _tag = "InvalidChainIdError";
+	constructor(message = "Invalid chain ID") {
+		super(message);
+		this.name = "InvalidChainIdError";
+	}
+}
+
+/**
+ * Error thrown when gas limit validation fails.
+ *
+ * @since 0.1.0
+ */
+export class InvalidGasLimitError extends Error {
+	readonly _tag = "InvalidGasLimitError";
+	constructor(message = "Invalid gas limit") {
+		super(message);
+		this.name = "InvalidGasLimitError";
+	}
+}
+
+/**
+ * Error thrown when gas price validation fails.
+ *
+ * @since 0.1.0
+ */
+export class InvalidGasPriceError extends Error {
+	readonly _tag = "InvalidGasPriceError";
+	constructor(message = "Invalid gas price") {
+		super(message);
+		this.name = "InvalidGasPriceError";
+	}
+}
+
+/**
+ * Error thrown when nonce validation fails.
+ *
+ * @since 0.1.0
+ */
+export class InvalidNonceError extends Error {
+	readonly _tag = "InvalidNonceError";
+	constructor(message = "Invalid nonce") {
+		super(message);
+		this.name = "InvalidNonceError";
+	}
+}
+
+/**
+ * Error thrown when value validation fails.
+ *
+ * @since 0.1.0
+ */
+export class InvalidValueError extends Error {
+	readonly _tag = "InvalidValueError";
+	constructor(message = "Invalid value") {
+		super(message);
+		this.name = "InvalidValueError";
+	}
+}
+
+/**
+ * Asserts transaction is signed, returning Effect that fails if not.
+ *
+ * @param tx - Transaction object
+ * @returns Effect that succeeds if signed, fails with UnsignedTransactionError otherwise
+ *
+ * @since 0.1.0
+ */
+export const assertSigned = (
+	tx: Any,
+): Effect.Effect<void, UnsignedTransactionError> =>
+	Effect.try({
+		try: () => VoltaireTransaction.assertSigned(tx),
+		catch: (e) => new UnsignedTransactionError((e as Error).message),
+	});
+
+/**
+ * Verifies transaction signature, returning Effect.
+ *
+ * @param tx - Transaction object
+ * @returns Effect with boolean result or InvalidSignatureError
+ *
+ * @since 0.1.0
+ */
+export const verifySignature = (
+	tx: Any,
+): Effect.Effect<boolean, InvalidSignatureError> =>
+	Effect.try({
+		try: () => VoltaireTransaction.verifySignature(tx),
+		catch: (e) => new InvalidSignatureError((e as Error).message),
+	});
+
+/**
+ * Validates chain ID, returning Effect that fails if invalid.
+ *
+ * @param tx - Transaction object
+ * @returns Effect that succeeds if valid, fails with InvalidChainIdError otherwise
+ *
+ * @since 0.1.0
+ */
+export const validateChainId = (
+	tx: Any,
+): Effect.Effect<void, InvalidChainIdError> =>
+	Effect.try({
+		try: () => VoltaireTransaction.validateChainId(tx),
+		catch: (e) => new InvalidChainIdError((e as Error).message),
+	});
+
+/**
+ * Validates gas limit, returning Effect that fails if invalid.
+ *
+ * @param tx - Transaction object
+ * @returns Effect that succeeds if valid, fails with InvalidGasLimitError otherwise
+ *
+ * @since 0.1.0
+ */
+export const validateGasLimit = (
+	tx: Any,
+): Effect.Effect<void, InvalidGasLimitError> =>
+	Effect.try({
+		try: () => VoltaireTransaction.validateGasLimit(tx),
+		catch: (e) => new InvalidGasLimitError((e as Error).message),
+	});
+
+/**
+ * Validates gas price, returning Effect that fails if invalid.
+ *
+ * @param tx - Transaction object
+ * @returns Effect that succeeds if valid, fails with InvalidGasPriceError otherwise
+ *
+ * @since 0.1.0
+ */
+export const validateGasPrice = (
+	tx: Any,
+): Effect.Effect<void, InvalidGasPriceError> =>
+	Effect.try({
+		try: () => VoltaireTransaction.validateGasPrice(tx),
+		catch: (e) => new InvalidGasPriceError((e as Error).message),
+	});
+
+/**
+ * Validates nonce, returning Effect that fails if invalid.
+ *
+ * @param tx - Transaction object
+ * @returns Effect that succeeds if valid, fails with InvalidNonceError otherwise
+ *
+ * @since 0.1.0
+ */
+export const validateNonce = (
+	tx: Any,
+): Effect.Effect<void, InvalidNonceError> =>
+	Effect.try({
+		try: () => VoltaireTransaction.validateNonce(tx),
+		catch: (e) => new InvalidNonceError((e as Error).message),
+	});
+
+/**
+ * Validates value, returning Effect that fails if invalid.
+ *
+ * @param tx - Transaction object
+ * @returns Effect that succeeds if valid, fails with InvalidValueError otherwise
+ *
+ * @since 0.1.0
+ */
+export const validateValue = (
+	tx: Any,
+): Effect.Effect<void, InvalidValueError> =>
+	Effect.try({
+		try: () => VoltaireTransaction.validateValue(tx),
+		catch: (e) => new InvalidValueError((e as Error).message),
+	});

@@ -70,8 +70,8 @@ export * as SHA256 from "./crypto/SHA256/index.js";
 export * as X25519 from "./crypto/X25519/index.js";
 // JSON-RPC module
 export * as JsonRpc from "./jsonrpc/index.js";
-// Abi temporarily disabled - requires @tevm/voltaire subpath exports
-// export * as Abi from "./primitives/Abi/index.js";
+// ABI encoding/decoding
+export * as Abi from "./primitives/Abi/index.js";
 export * as AccessList from "./primitives/AccessList/index.js";
 export * as AccountState from "./primitives/AccountState/index.js";
 export * as Address from "./primitives/Address/index.js";
