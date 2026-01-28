@@ -65,7 +65,9 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
 
       - name: Build WASM
-        run: zig build build-ts-wasm
+        run: |
+          zig build build-ts-wasm
+          zig build crypto-wasm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
