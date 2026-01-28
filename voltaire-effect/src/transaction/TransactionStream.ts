@@ -30,18 +30,26 @@ import {
 } from "./TransactionStreamService.js";
 
 /**
- * Wraps an AsyncGenerator as an Effect Stream.
+ * Wraps an AsyncGenerator as an Effect Stream with cleanup on interruption.
  */
-const fromAsyncGenerator = <T>(
+const fromAsyncGeneratorWithCleanup = <T>(
 	makeGenerator: () => AsyncGenerator<T>,
+	cleanup: () => void,
 ): Stream.Stream<T, TransactionStreamError> =>
-	Stream.fromAsyncIterable(
-		{ [Symbol.asyncIterator]: makeGenerator },
-		(error) =>
-			new TransactionStreamError(
-				error instanceof Error ? error.message : "TransactionStream error",
-				{ cause: error instanceof Error ? error : undefined },
+	Stream.acquireRelease(
+		Effect.sync(() => makeGenerator()),
+		() => Effect.sync(cleanup),
+	).pipe(
+		Stream.flatMap((generator) =>
+			Stream.fromAsyncIterable(
+				{ [Symbol.asyncIterator]: () => generator },
+				(error) =>
+					new TransactionStreamError(
+						error instanceof Error ? error.message : "TransactionStream error",
+						{ cause: error instanceof Error ? error : undefined },
+					),
 			),
+		),
 	);
 
 /**
@@ -74,23 +82,34 @@ export const makeTransactionStream = (): Effect.Effect<
 			provider: provider as any,
 		});
 
+		const cleanup = () => {
+			(coreStream as unknown as { destroy?: () => void }).destroy?.();
+		};
+
 		return {
 			watchPending: (
 				options?: WatchPendingOptions,
 			): Stream.Stream<PendingTransactionEvent, TransactionStreamError> =>
-				fromAsyncGenerator(() => coreStream.watchPending(options)),
+				fromAsyncGeneratorWithCleanup(
+					() => coreStream.watchPending(options),
+					cleanup,
+				),
 
 			watchConfirmed: (
 				options?: WatchConfirmedOptions,
 			): Stream.Stream<ConfirmedTransactionEvent, TransactionStreamError> =>
-				fromAsyncGenerator(() => coreStream.watchConfirmed(options)),
+				fromAsyncGeneratorWithCleanup(
+					() => coreStream.watchConfirmed(options),
+					cleanup,
+				),
 
 			track: (
 				txHash: Uint8Array | string,
 				options?: TrackOptions,
 			): Stream.Stream<TransactionStreamEvent, TransactionStreamError> =>
-				fromAsyncGenerator(() =>
-					coreStream.track(txHash as `0x${string}`, options),
+				fromAsyncGeneratorWithCleanup(
+					() => coreStream.track(txHash as `0x${string}`, options),
+					cleanup,
 				),
 		};
 	});

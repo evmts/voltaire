@@ -33,6 +33,8 @@ export interface BatchOptions {
 	batchSize?: number;
 	/** Wait time in ms before flushing batch (default: 0 - immediate microtask) */
 	wait?: number;
+	/** Maximum queue size before rejecting requests (default: 10000) */
+	maxQueueSize?: number;
 }
 
 /**
@@ -107,6 +109,7 @@ export const createBatchScheduler = <E extends Error>(
 	Effect.gen(function* () {
 		const batchSize = options.batchSize ?? 100;
 		const wait = options.wait ?? 0;
+		const maxQueueSize = options.maxQueueSize ?? 10000;
 
 		const pendingQueue = yield* Queue.unbounded<PendingRequest>();
 		const flushingRef = yield* Ref.make(false);
@@ -266,6 +269,13 @@ export const createBatchScheduler = <E extends Error>(
 				params?: unknown[],
 			): Effect.Effect<T, Error> =>
 				Effect.gen(function* () {
+					const size = yield* Queue.size(pendingQueue);
+					if (size >= maxQueueSize) {
+						return yield* Effect.fail(
+							new Error("Batch queue full - apply backpressure"),
+						);
+					}
+
 					const id = yield* nextId;
 					const deferred = yield* Deferred.make<unknown, Error>();
 

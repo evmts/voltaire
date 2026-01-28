@@ -74,7 +74,7 @@ export type NonceManagerShape = {
 	readonly get: (
 		address: string,
 		chainId: number,
-	) => Effect.Effect<number, NonceError, ProviderService>;
+	) => Effect.Effect<bigint, NonceError, ProviderService>;
 
 	/**
 	 * Gets and consumes the next nonce for an address on a specific chain.
@@ -91,7 +91,7 @@ export type NonceManagerShape = {
 	readonly consume: (
 		address: string,
 		chainId: number,
-	) => Effect.Effect<number, NonceError, ProviderService>;
+	) => Effect.Effect<bigint, NonceError, ProviderService>;
 
 	/**
 	 * Increments the local delta for an address on a specific chain.
@@ -170,9 +170,9 @@ export type NonceManagerShape = {
  *   const address = '0x1234...'
  *
  *   // Get nonces for 3 transactions
- *   const nonce1 = yield* nonceManager.consume(address) // e.g., 5
- *   const nonce2 = yield* nonceManager.consume(address) // e.g., 6
- *   const nonce3 = yield* nonceManager.consume(address) // e.g., 7
+ *   const nonce1 = yield* nonceManager.consume(address) // e.g., 5n
+ *   const nonce2 = yield* nonceManager.consume(address) // e.g., 6n
+ *   const nonce3 = yield* nonceManager.consume(address) // e.g., 7n
  *
  *   // Send transactions with these nonces...
  *

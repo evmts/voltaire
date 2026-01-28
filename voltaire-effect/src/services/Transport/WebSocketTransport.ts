@@ -97,6 +97,10 @@ interface WebSocketTransportConfig {
 	reconnect?: boolean | ReconnectOptions;
 	/** Keep-alive ping interval in ms */
 	keepAlive?: number;
+	/** Maximum queued requests during reconnection (default: 10000) */
+	maxQueuedRequests?: number;
+	/** Maximum pending requests awaiting response (default: 10000) */
+	maxPendingRequests?: number;
 }
 
 /**
@@ -218,13 +222,22 @@ export const WebSocketTransport = (
 > => {
 	const config =
 		typeof options === "string"
-			? { url: options, timeout: 30000, reconnect: false, keepAlive: undefined }
+			? {
+					url: options,
+					timeout: 30000,
+					reconnect: false,
+					keepAlive: undefined,
+					maxQueuedRequests: 10000,
+					maxPendingRequests: 10000,
+				}
 			: {
 					url: options.url,
 					protocols: options.protocols,
 					timeout: options.timeout ?? 30000,
 					reconnect: options.reconnect ?? false,
 					keepAlive: options.keepAlive,
+					maxQueuedRequests: options.maxQueuedRequests ?? 10000,
+					maxPendingRequests: options.maxPendingRequests ?? 10000,
 				};
 
 	const reconnectEnabled = config.reconnect !== false;
@@ -420,8 +433,6 @@ export const WebSocketTransport = (
 				yield* Ref.set(writerRef, writer);
 
 				yield* Ref.set(isReconnectingRef, false);
-				yield* startKeepAlive;
-				yield* flushQueue;
 
 				const handleDisconnect = (message: string) =>
 					Effect.gen(function* () {
@@ -453,7 +464,14 @@ export const WebSocketTransport = (
 								yield* Ref.update(reconnectAttemptsRef, (n) => n + 1);
 
 								yield* Effect.sleep(Duration.millis(delay));
-								yield* connect.pipe(Effect.ignore);
+								yield* connect.pipe(
+									Effect.catchAllCause((cause) =>
+										Cause.isInterrupted(cause)
+											? Effect.failCause(cause)
+											: handleDisconnect(Cause.pretty(cause)),
+									),
+									Effect.ignore,
+								);
 							} else {
 								const error = new TransportError({
 									code: -32603,
@@ -497,6 +515,9 @@ export const WebSocketTransport = (
 				);
 
 				yield* Ref.set(socketFiberRef, socketFiber);
+
+				yield* startKeepAlive;
+				yield* flushQueue;
 			});
 
 			yield* connect;
@@ -565,6 +586,16 @@ export const WebSocketTransport = (
 
 						if (!writer || isReconnecting) {
 							if (reconnectEnabled) {
+								const queue = yield* Ref.get(queueRef);
+								if (queue.length >= config.maxQueuedRequests) {
+									return yield* Effect.fail(
+										new TransportError({
+											code: -32603,
+											message: "Request queue full - apply backpressure",
+										}),
+									);
+								}
+
 								const id = yield* nextId;
 								const deferred = yield* Deferred.make<
 									JsonRpcResponse<T>,
@@ -622,11 +653,21 @@ export const WebSocketTransport = (
 							);
 						}
 
+						const pending = yield* Ref.get(pendingRef);
+						if (pending.size >= config.maxPendingRequests) {
+							return yield* Effect.fail(
+								new TransportError({
+									code: -32603,
+									message: "Pending requests limit exceeded - apply backpressure",
+								}),
+							);
+						}
+
 						const id = yield* nextId;
 						const deferred = yield* Deferred.make<JsonRpcResponse<T>, never>();
 
-						yield* Ref.update(pendingRef, (pending) => {
-							const newPending = new Map(pending);
+						yield* Ref.update(pendingRef, (p) => {
+							const newPending = new Map(p);
 							newPending.set(
 								id,
 								deferred as Deferred.Deferred<JsonRpcResponse<unknown>, never>,

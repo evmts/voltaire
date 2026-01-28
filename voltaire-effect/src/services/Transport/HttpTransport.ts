@@ -478,6 +478,68 @@ export const HttpTransport = (
 				);
 			});
 
+	const normalizeBatchRequest = (
+		entry: unknown,
+		fallbackId: number,
+	): { id: number; method: string; params?: unknown[] } => {
+		if (!entry || typeof entry !== "object") {
+			return { id: fallbackId, method: "", params: [] };
+		}
+		const record = entry as {
+			id?: unknown;
+			method?: unknown;
+			params?: unknown;
+		};
+		const id = typeof record.id === "number" ? record.id : fallbackId;
+		const method = typeof record.method === "string" ? record.method : "";
+		const params = Array.isArray(record.params) ? record.params : [];
+		return { id, method, params };
+	};
+
+	const handleExplicitBatch = (
+		httpClient: HttpClient.HttpClient,
+		rawParams: unknown[] | undefined,
+	): Effect.Effect<JsonRpcBatchResponse[], TransportError> =>
+		Effect.gen(function* () {
+			const startTime = Date.now();
+			const batchRequests = Array.isArray(rawParams)
+				? rawParams.map((entry, index) => normalizeBatchRequest(entry, index))
+				: [];
+
+			const prepared = yield* Effect.forEach(batchRequests, (request) =>
+				Effect.gen(function* () {
+					const hooked = yield* applyRequestHooks({
+						method: request.method,
+						params: request.params ?? [],
+					});
+					return {
+						id: request.id,
+						method: hooked.method,
+						params: [...hooked.params],
+					};
+				}),
+			);
+
+			const responses = yield* sendBatch(httpClient)(prepared);
+			if (responses.length === 0) return responses;
+
+			const requestById = new Map(prepared.map((req) => [req.id, req]));
+			return yield* Effect.forEach(responses, (response) =>
+				Effect.gen(function* () {
+					if (response.error) return response;
+					const request = requestById.get(response.id);
+					if (!request) return response;
+					const hooked = yield* applyResponseHooks({
+						method: request.method,
+						params: request.params ?? [],
+						result: response.result,
+						duration: Date.now() - startTime,
+					});
+					return { ...response, result: hooked.result };
+				}),
+			);
+		});
+
 	if (config.batch) {
 		return Layer.scoped(
 			TransportService,
@@ -494,6 +556,12 @@ export const HttpTransport = (
 						params: unknown[] = [],
 					): Effect.Effect<T, TransportError> =>
 						Effect.gen(function* () {
+							if (method === "__batch__") {
+								return (yield* handleExplicitBatch(
+									httpClient,
+									params,
+								)) as T;
+							}
 							const request = yield* applyRequestHooks({ method, params });
 							const startTime = Date.now();
 							const result = yield* scheduler.schedule<T>(request.method, [
@@ -535,6 +603,9 @@ export const HttpTransport = (
 					params: unknown[] = [],
 				): Effect.Effect<T, TransportError> =>
 					Effect.gen(function* () {
+						if (method === "__batch__") {
+							return (yield* handleExplicitBatch(httpClient, params)) as T;
+						}
 						const timeoutOverride = yield* FiberRef.get(timeoutRef);
 						const retryScheduleOverride = yield* FiberRef.get(retryScheduleRef);
 						const tracingEnabled = yield* FiberRef.get(tracingRef);

@@ -1015,18 +1015,28 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 								removeListener: () => {},
 							};
 							const coreStream = CoreBlockStream({ provider: provider as any });
-							return Stream.fromAsyncIterable(
-								{ [Symbol.asyncIterator]: () => coreStream.watch(options) },
-								(error) =>
-									error instanceof TransportError
-										? error
-										: new ProviderStreamError(
-												{ method: "watchBlocks", options },
-												error instanceof Error
-													? error.message
-													: "BlockStream error",
-												{ cause: error instanceof Error ? error : undefined },
-											),
+							const cleanup = () => {
+								(coreStream as unknown as { destroy?: () => void }).destroy?.();
+							};
+							return Stream.acquireRelease(
+								Effect.sync(() => coreStream.watch(options)),
+								() => Effect.sync(cleanup),
+							).pipe(
+								Stream.flatMap((generator) =>
+									Stream.fromAsyncIterable(
+										{ [Symbol.asyncIterator]: () => generator },
+										(error) =>
+											error instanceof TransportError
+												? error
+												: new ProviderStreamError(
+														{ method: "watchBlocks", options },
+														error instanceof Error
+															? error.message
+															: "BlockStream error",
+														{ cause: error instanceof Error ? error : undefined },
+													),
+									),
+								),
 							);
 						}),
 					),
@@ -1052,18 +1062,28 @@ export const Provider: Layer.Layer<ProviderService, never, TransportService> =
 								removeListener: () => {},
 							};
 							const coreStream = CoreBlockStream({ provider: provider as any });
-							return Stream.fromAsyncIterable(
-								{ [Symbol.asyncIterator]: () => coreStream.backfill(options) },
-								(error) =>
-									error instanceof TransportError
-										? error
-										: new ProviderStreamError(
-												{ method: "backfillBlocks", options },
-												error instanceof Error
-													? error.message
-													: "BlockStream error",
-												{ cause: error instanceof Error ? error : undefined },
-											),
+							const cleanup = () => {
+								(coreStream as unknown as { destroy?: () => void }).destroy?.();
+							};
+							return Stream.acquireRelease(
+								Effect.sync(() => coreStream.backfill(options)),
+								() => Effect.sync(cleanup),
+							).pipe(
+								Stream.flatMap((generator) =>
+									Stream.fromAsyncIterable(
+										{ [Symbol.asyncIterator]: () => generator },
+										(error) =>
+											error instanceof TransportError
+												? error
+												: new ProviderStreamError(
+														{ method: "backfillBlocks", options },
+														error instanceof Error
+															? error.message
+															: "BlockStream error",
+														{ cause: error instanceof Error ? error : undefined },
+													),
+									),
+								),
 							);
 						}),
 					),

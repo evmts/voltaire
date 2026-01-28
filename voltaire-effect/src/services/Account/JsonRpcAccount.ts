@@ -72,6 +72,9 @@ const toParity = (input: { yParity?: number; v?: number }): number => {
 	return 0;
 };
 
+const toError = (cause: unknown): Error =>
+	cause instanceof Error ? cause : new Error(String(cause));
+
 const toUnsignedAuthorization = (
 	authorization: UnsignedAuthorization | SignAuthorizationParams,
 ): UnsignedAuthorization => {
@@ -294,7 +297,22 @@ export const JsonRpcAccount = (address: AddressType) =>
 
 				signAuthorization: (authorization) =>
 					Effect.gen(function* () {
-						const unsigned = toUnsignedAuthorization(authorization);
+						const { unsigned, addressHex, request } = yield* Effect.try({
+							try: () => {
+								const unsigned = toUnsignedAuthorization(authorization);
+								const addressHex = toAddressHex(unsigned.address);
+								return {
+									unsigned,
+									addressHex,
+									request: {
+										chainId: bigintToHex(unsigned.chainId),
+										address: addressHex,
+										nonce: bigintToHex(unsigned.nonce),
+									},
+								};
+							},
+							catch: toError,
+						});
 						const result = yield* transport.request<{
 							chainId: string;
 							address: string;
@@ -303,16 +321,12 @@ export const JsonRpcAccount = (address: AddressType) =>
 							r: string;
 							s: string;
 						}>("wallet_signAuthorization", [
-							{
-								chainId: bigintToHex(unsigned.chainId),
-								address: toAddressHex(unsigned.address),
-								nonce: bigintToHex(unsigned.nonce),
-							},
+							request,
 						]);
 
 						return {
 							chainId: unsigned.chainId,
-							address: toAddressHex(unsigned.address),
+							address: addressHex,
 							nonce: unsigned.nonce,
 							yParity: Number.parseInt(result.yParity, 16),
 							r: result.r as `0x${string}`,

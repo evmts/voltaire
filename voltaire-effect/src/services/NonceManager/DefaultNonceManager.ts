@@ -78,7 +78,7 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 	Layer.effect(
 		NonceManagerService,
 		Effect.gen(function* () {
-			const deltaRef = yield* SynchronizedRef.make(new Map<string, number>());
+			const deltaRef = yield* SynchronizedRef.make(new Map<string, bigint>());
 
 			return {
 				get: (address: string, chainId: number) =>
@@ -100,8 +100,8 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 							);
 
 						const deltaMap = yield* SynchronizedRef.get(deltaRef);
-						const delta = deltaMap.get(key) ?? 0;
-						return Number(baseNonce) + delta;
+						const delta = deltaMap.get(key) ?? 0n;
+						return baseNonce + delta;
 					}),
 
 				consume: (address: string, chainId: number) =>
@@ -123,11 +123,11 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 									),
 								);
 
-							const delta = deltaMap.get(key) ?? 0;
-							const nonce = Number(baseNonce) + delta;
+							const delta = deltaMap.get(key) ?? 0n;
+							const nonce = baseNonce + delta;
 
 							const newMap = new Map(deltaMap);
-							newMap.set(key, delta + 1);
+							newMap.set(key, delta + 1n);
 
 							return [nonce, newMap] as const;
 						}),
@@ -136,9 +136,9 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 				increment: (address: string, chainId: number) =>
 					SynchronizedRef.update(deltaRef, (deltaMap) => {
 						const key = `${chainId}:${address.toLowerCase()}`;
-						const delta = deltaMap.get(key) ?? 0;
+						const delta = deltaMap.get(key) ?? 0n;
 						const newMap = new Map(deltaMap);
-						newMap.set(key, delta + 1);
+						newMap.set(key, delta + 1n);
 						return newMap;
 					}),
 

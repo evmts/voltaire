@@ -381,7 +381,12 @@ const SignerLive: Layer.Layer<
 				};
 
 				const signature = yield* account.signTransaction(txForSigning);
-				return serializeTransaction(fullTx, signature, txType);
+				const serialized = yield* Effect.try({
+					try: () => serializeTransaction(fullTx, signature, txType),
+					catch: (e) =>
+						e instanceof Error ? e : new Error(String(e)),
+				});
+				return serialized;
 			}).pipe(
 				Effect.mapError((e) => {
 					const code =
