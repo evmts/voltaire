@@ -32,26 +32,9 @@ export default defineConfig({
 			"tests/mcp-evals/**",
 			// Hardware wallet tests require optional peer dependencies (@ledgerhq/*, @trezor/*)
 			"src/wallet/hardware/**",
-			// Most examples test dist/ which requires optional native deps (ffi-napi, ref-napi)
-			// Exclude all examples except viem-account
-			"examples/addresses/**",
-			"examples/c/**",
-			"examples/contract/**",
-			"examples/crypto/**",
-			"examples/getting-started/**",
-			"examples/hashing/**",
-			"examples/hex-and-bytes/**",
-			"examples/precompiles/**",
-			"examples/primitives/**",
-			"examples/rlp/**",
-			"examples/signing/**",
-			"examples/swift/**",
-			"examples/swift-examples/**",
-			"examples/typescript/**",
-			"examples/viem-publicclient/**",
-			"examples/ethers-provider/**",
-			"examples/multicall/**",
-			"examples/ethers-hdwallet/**",
+			// Examples import @tevm/voltaire which isn't available during CI validation
+			// They also require optional native deps (ffi-napi, ref-napi) for dist/
+			"examples/**",
 			// Auto-generated documentation lib copies have broken imports
 			"docs/public/**",
 			"docs/zig/**",
