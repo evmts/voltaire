@@ -17,5 +17,17 @@
 		"noEmit": true
 	},
 	"include": ["src/**/*"],
-	"exclude": ["node_modules", "dist", "src/crypto/Signers/**"]
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.test.ts",
+		"**/*.test-d.ts",
+		"src/crypto/Signers/**",
+		"src/primitives/Abi/**",
+		"src/primitives/Bytes/Bytes4/**",
+		"src/primitives/Bytes/Bytes8/**",
+		"src/primitives/Bytes/Bytes16/**",
+		"src/primitives/Bytes/Bytes32/**",
+		"src/primitives/Bytes/Bytes64/**"
+	]
 }

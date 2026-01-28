@@ -102,7 +102,7 @@
 		"test": "vitest",
 		"test:run": "vitest run",
 		"typecheck": "tsc --noEmit",
-		"prepublishOnly": "pnpm run build",
+		"prepublishOnly": "pnpm run build && pnpm run typecheck",
 		"docs:dev": "cd docs && mintlify dev",
 		"docs:build": "cd docs && mintlify build"
 	}
