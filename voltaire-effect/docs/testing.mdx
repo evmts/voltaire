@@ -116,27 +116,21 @@ it('handles provider errors', async () => {
 
 ## Testing Crypto
 
-Mock crypto services for deterministic tests:
+Use `CryptoTest` layer for deterministic crypto outputs:
 
 ```typescript
-import * as Layer from 'effect/Layer'
-import { KeccakService } from 'voltaire-effect/crypto/Keccak256'
-
-const KeccakTest = Layer.succeed(KeccakService, {
-  hash: (data) => Effect.succeed(new Uint8Array(32).fill(0xab))
-})
+import * as Effect from 'effect/Effect'
+import { CryptoTest, keccak256 } from 'voltaire-effect'
 
 it('uses keccak service', async () => {
-  const program = Effect.gen(function* () {
-    const keccak = yield* KeccakService
-    return yield* keccak.hash(new Uint8Array([1, 2, 3]))
-  })
+  const program = keccak256(new Uint8Array([1, 2, 3]))
 
   const result = await Effect.runPromise(
-    program.pipe(Effect.provide(KeccakTest))
+    program.pipe(Effect.provide(CryptoTest))
   )
 
-  expect(result[0]).toBe(0xab)
+  // CryptoTest returns deterministic outputs
+  expect(result.length).toBe(32)
 })
 ```
 

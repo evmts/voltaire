@@ -142,8 +142,11 @@ const testProgram = program.pipe(Effect.provide(CryptoTest))
 ## Integration Test (Anvil)
 
 ```typescript
-import { Layer, Schedule } from 'effect'
-import { SignerService, Signer, LocalAccount, HttpTransport } from 'voltaire-effect'
+import { Effect, Layer, Schedule } from 'effect'
+import {
+  SignerService, Signer, LocalAccount, Provider, HttpTransport,
+  getBalance, waitForTransactionReceipt
+} from 'voltaire-effect'
 import { Hex } from '@tevm/voltaire'
 
 const TestLayer = Layer.mergeAll(
@@ -160,16 +163,15 @@ const TestLayer = Layer.mergeAll(
 it('sends transaction', async () => {
   const program = Effect.gen(function* () {
     const signer = yield* SignerService
-    const client = yield* ProviderService
-    
-    const before = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
+
+    const before = yield* getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
     const txHash = yield* signer.sendTransaction({ to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', value: 1000000000000000000n })
-    yield* client.waitForTransactionReceipt(txHash, { confirmations: 1, timeout: '30 seconds' })
-    const after = yield* client.getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
-    
+    yield* waitForTransactionReceipt(txHash, { confirmations: 1, timeout: '30 seconds' })
+    const after = yield* getBalance('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'latest')
+
     return after - before
   }).pipe(Effect.provide(TestLayer))
-  
+
   expect(await Effect.runPromise(program)).toBe(1000000000000000000n)
 })
 ```

@@ -9,12 +9,11 @@ Use `MainnetProvider` for the simplest setup:
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, MainnetProvider } from 'voltaire-effect'
+import { getBlockNumber, getChainId, MainnetProvider } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  const blockNumber = yield* provider.getBlockNumber()
-  const chainId = yield* provider.getChainId()
+  const blockNumber = yield* getBlockNumber()
+  const chainId = yield* getChainId()
   return { blockNumber, chainId }
 }).pipe(Effect.provide(MainnetProvider('https://eth.llamarpc.com')))
 
@@ -27,8 +26,8 @@ Switch between chains by swapping presets:
 
 ```typescript
 import { Effect } from 'effect'
-import { 
-  ProviderService, 
+import {
+  getBlockNumber as getBlockNum,
   MainnetProvider,
   OptimismProvider,
   ArbitrumProvider,
@@ -36,8 +35,7 @@ import {
 } from 'voltaire-effect'
 
 const getBlockNumber = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNum()
 })
 
 // Run on different chains
@@ -65,31 +63,30 @@ Use `MainnetFullProvider` for applications needing all services:
 
 ```typescript
 import { Effect } from 'effect'
-import { 
-  ProviderService,
+import {
+  getBlockNumber,
   ChainService,
   FeeEstimatorService,
   NonceManagerService,
   CacheService,
-  MainnetFullProvider 
+  MainnetFullProvider
 } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
   const chain = yield* ChainService
   const feeEstimator = yield* FeeEstimatorService
   const nonceManager = yield* NonceManagerService
   const cache = yield* CacheService
-  
+
   // All services available
-  const blockNumber = yield* provider.getBlockNumber()
+  const blockNumber = yield* getBlockNumber()
   const fees = yield* feeEstimator.estimate()
   const nonce = yield* nonceManager.getNextNonce('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
-  
-  return { 
+
+  return {
     chain: chain.name,
     chainId: chain.id,
-    blockNumber, 
+    blockNumber,
     fees,
     nonce
   }
@@ -102,25 +99,24 @@ Chain-specific presets include proper chain configuration:
 
 ```typescript
 import { Effect } from 'effect'
-import { 
-  ProviderService,
+import {
+  getBlockNumber,
   ChainService,
   ContractsService,
   OptimismProvider
 } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
   const chain = yield* ChainService
   const contracts = yield* ContractsService
-  
+
   // Chain config is pre-populated
   console.log(`Chain: ${chain.name}`)          // "Optimism"
   console.log(`Chain ID: ${chain.id}`)          // 10
   console.log(`Block time: ${chain.blockTime}`) // 2000ms
   console.log(`Multicall3: ${contracts.multicall3?.address}`)
-  
-  const block = yield* provider.getBlockNumber()
+
+  const block = yield* getBlockNumber()
   return block
 }).pipe(Effect.provide(OptimismProvider('https://mainnet.optimism.io')))
 ```
@@ -131,8 +127,8 @@ Replace transport for testing:
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { 
-  ProviderService, 
+import {
+  getBlockNumber,
   Provider,
   TransportService,
   mainnet,
@@ -168,8 +164,7 @@ const TestProvider = Layer.mergeAll(
 
 // Test
 const testProgram = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNumber()
 }).pipe(Effect.provide(TestProvider))
 
 await Effect.runPromise(testProgram) // 4660n
@@ -181,7 +176,7 @@ For networks without a preset:
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, createProvider } from 'voltaire-effect'
+import { getChainId, createProvider } from 'voltaire-effect'
 
 // Any EVM-compatible network
 const fantomProvider = createProvider('https://rpc.ftm.tools')
@@ -189,8 +184,7 @@ const avalancheProvider = createProvider('https://api.avax.network/ext/bc/C/rpc'
 const bscProvider = createProvider('https://bsc-dataseed.binance.org')
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getChainId()
+  return yield* getChainId()
 })
 
 // Fantom

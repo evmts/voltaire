@@ -178,13 +178,11 @@ For RPC requests using LookupCacheService internally, disable caching per-reques
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, withoutCache } from 'voltaire-effect'
+import { getBlockNumber, withoutCache } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  
   // Force fresh fetch, bypassing any request cache
-  const blockNum = yield* provider.getBlockNumber().pipe(withoutCache)
+  const blockNum = yield* getBlockNumber().pipe(withoutCache)
   return blockNum
 })
 ```
@@ -193,7 +191,7 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Layer } from 'effect'
-import { Provider, MemoryCache, HttpTransport } from 'voltaire-effect'
+import { Provider, MemoryCache, HttpTransport, getBlockNumber, CacheService } from 'voltaire-effect'
 
 // Compose cache with provider
 const AppLayer = Layer.merge(
@@ -205,14 +203,13 @@ const AppLayer = Layer.merge(
 
 const program = Effect.gen(function* () {
   const cache = yield* CacheService
-  const provider = yield* ProviderService
-  
+
   // Check cache first
   const cached = yield* cache.get<bigint>('blockNumber')
   if (Option.isSome(cached)) return cached.value
-  
+
   // Fetch and cache
-  const blockNum = yield* provider.getBlockNumber()
+  const blockNum = yield* getBlockNumber()
   yield* cache.set('blockNumber', blockNum, 10_000)
   return blockNum
 }).pipe(Effect.provide(AppLayer))
