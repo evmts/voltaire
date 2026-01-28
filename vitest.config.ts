@@ -50,6 +50,7 @@ export default defineConfig({
 			"examples/typescript/**",
 			"examples/viem-publicclient/**",
 			"examples/ethers-provider/**",
+			"examples/multicall/**",
 			// Auto-generated documentation lib copies have broken imports
 			"docs/public/**",
 			"docs/zig/**",
