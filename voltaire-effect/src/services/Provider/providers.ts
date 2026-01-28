@@ -19,7 +19,9 @@
  */
 
 import { FetchHttpClient } from "@effect/platform";
+import type * as FileSystem from "@effect/platform/FileSystem";
 import type * as HttpClient from "@effect/platform/HttpClient";
+import type * as Socket from "@effect/platform/Socket";
 import * as Layer from "effect/Layer";
 import {
 	HttpTransport,
@@ -36,6 +38,7 @@ import {
 	type IpcTransportConfig,
 } from "../Transport/IpcTransport.js";
 import { TestTransport } from "../Transport/TestTransport.js";
+import { TransportError } from "../Transport/TransportError.js";
 import { ProviderService } from "./ProviderService.js";
 import { Provider } from "./Provider.js";
 
@@ -107,7 +110,7 @@ export interface WebSocketProviderConfig {
  * real-time subscriptions (eth_subscribe) or high-frequency requests.
  *
  * @param options - URL string or WebSocketProviderConfig
- * @returns Layer providing ProviderService (scoped, requires WebSocket)
+ * @returns Layer providing ProviderService (scoped, requires WebSocketConstructor)
  *
  * @example
  * ```typescript
@@ -122,10 +125,10 @@ export interface WebSocketProviderConfig {
  */
 export const WebSocketProvider = (
 	options: WebSocketProviderConfig | string,
-): Layer.Layer<ProviderService, never, WebSocket> => {
+): Layer.Layer<ProviderService, TransportError, Socket.WebSocketConstructor> => {
 	const config = typeof options === "string" ? { url: options } : options;
 	return Provider.pipe(
-		Layer.provide(WebSocketTransport(config.url, config.reconnect)),
+		Layer.provide(WebSocketTransport({ url: config.url, reconnect: config.reconnect })),
 	);
 };
 
@@ -141,7 +144,7 @@ export const WebSocketProvider = (
  */
 export const WebSocketProviderGlobal = (
 	options: WebSocketProviderConfig | string,
-): Layer.Layer<ProviderService> =>
+): Layer.Layer<ProviderService, TransportError> =>
 	WebSocketProvider(options).pipe(Layer.provide(WebSocketConstructorGlobal));
 
 /**
@@ -175,7 +178,7 @@ export const BrowserProvider: Layer.Layer<ProviderService> = Provider.pipe(
  * Use this for local node connections (geth, erigon, etc.).
  *
  * @param options - Socket path string or IpcTransportConfig
- * @returns Layer providing ProviderService
+ * @returns Layer providing ProviderService (requires FileSystem)
  *
  * @example
  * ```typescript
@@ -189,7 +192,7 @@ export const BrowserProvider: Layer.Layer<ProviderService> = Provider.pipe(
  */
 export const IpcProvider = (
 	options: IpcTransportConfig | string,
-): Layer.Layer<ProviderService> =>
+): Layer.Layer<ProviderService, TransportError, FileSystem.FileSystem> =>
 	Provider.pipe(Layer.provide(IpcTransport(options)));
 
 /**
