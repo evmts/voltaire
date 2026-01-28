@@ -32,6 +32,8 @@ const program = Effect.gen(function* () {
   const wethBalance = yield* WETH.read.balanceOf(userAddress)
   return { usdcBalance, wethBalance }
 }).pipe(
+  Effect.retry({ times: 3 }),
+  Effect.timeout('10 seconds'),
   Effect.provide(Contracts),
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
