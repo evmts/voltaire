@@ -75,31 +75,30 @@ it('reads balance', async () => {
 ## Test Error Handling
 
 ```typescript
-import { Exit } from 'effect'
+import { Effect, Exit } from 'effect'
+import { getBalance, Provider, TestTransport } from 'voltaire-effect'
 
 it('handles RPC errors', async () => {
   const program = Effect.gen(function* () {
-    const client = yield* ProviderService
-    return yield* client.getBalance('0x...', 'latest')
+    return yield* getBalance('0x...', 'latest')
   }).pipe(
     Effect.provide(Provider),
     Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Rate limited') } }))
   )
-  
+
   const exit = await Effect.runPromiseExit(program)
   expect(Exit.isFailure(exit)).toBe(true)
 })
 
 it('recovers from errors', async () => {
   const program = Effect.gen(function* () {
-    const client = yield* ProviderService
-    return yield* client.getBalance('0x...', 'latest')
+    return yield* getBalance('0x...', 'latest')
   }).pipe(
     Effect.catchTag('TransportError', () => Effect.succeed(0n)),
     Effect.provide(Provider),
     Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Failed') } }))
   )
-  
+
   expect(await Effect.runPromise(program)).toBe(0n)
 })
 ```

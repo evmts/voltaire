@@ -85,13 +85,22 @@ Effect.runPromise(program.pipe(Effect.provide(CryptoLive)))
 Swap implementations for tests:
 
 ```typescript
-// Production
+import { getBlock, getBalance, ProviderService } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+
+// Production - use real provider
+const program = Effect.gen(function* () {
+  const balance = yield* getBalance(addr)
+  const block = yield* getBlock({ blockTag: "latest" })
+  return { balance, block }
+})
+
 Effect.provide(program, ProviderLive)
 
 // Test - mock provider
 const ProviderTest = Layer.succeed(ProviderService, {
-  getBlock: () => Effect.succeed(mockBlock),
-  getBalance: () => Effect.succeed(0n)
+  request: () => Effect.succeed(mockResponse)
 })
 
 Effect.provide(program, ProviderTest)
@@ -104,23 +113,23 @@ Business logic unchanged. Only the provided layer differs.
 FiberRef-based helpers provide scoped overrides without changing services:
 
 ```typescript
-import { withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
+import { getBalance, getBlockNumber, getBlock, withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
 import * as Schedule from 'effect/Schedule'
 
 // Default config from service
-const balance = yield* provider.getBalance(addr)
+const balance = yield* getBalance(addr)
 
 // Per-request overrides (scoped to this fiber only)
-const fastBalance = yield* provider.getBalance(addr).pipe(
+const fastBalance = yield* getBalance(addr).pipe(
   withTimeout("5 seconds"),
   withRetrySchedule(Schedule.recurs(1))
 )
 
 // Disable cache for fresh data
-const fresh = yield* provider.getBlockNumber().pipe(withoutCache)
+const fresh = yield* getBlockNumber().pipe(withoutCache)
 
 // Enable tracing for debugging
-const traced = yield* provider.getBlock(123).pipe(withTracing(true))
+const traced = yield* getBlock(123).pipe(withTracing(true))
 ```
 
 ## Why Services?

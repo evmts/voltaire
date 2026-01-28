@@ -80,16 +80,15 @@ Services can define their own error types:
 
 ```typescript
 import * as Effect from 'effect/Effect'
-import { ProviderService, withTimeout } from 'voltaire-effect'
+import { getBlock, withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
   // Per-request timeout override
-  const block = yield* provider.getBlock({ blockTag: "latest" })
+  const block = yield* getBlock({ blockTag: "latest" })
     .pipe(withTimeout("5 seconds"))
   return block
 }).pipe(
-  Effect.catchTag("ProviderNotFoundError", (e) => 
+  Effect.catchTag("ProviderNotFoundError", (e) =>
     Effect.succeed(null)
   ),
   Effect.catchTag("ProviderTimeoutError", (e) =>
@@ -103,14 +102,15 @@ const program = Effect.gen(function* () {
 Errors accumulate in the type signature:
 
 ```typescript
+import { getBalance } from 'voltaire-effect'
+
 // Effect<Address, ParseError, never>
 const addr = S.decode(Address.Hex)(input)
 
-// Effect<Block, ParseError | GetBalanceError, ProviderService>
+// Effect<bigint, ParseError | GetBalanceError, ProviderService>
 const program = Effect.gen(function* () {
   const a = yield* S.decode(Address.Hex)(input)
-  const provider = yield* ProviderService
-  return yield* provider.getBalance(a)
+  return yield* getBalance(a)
 })
 ```
 
@@ -122,7 +122,7 @@ Use Effect Schedule for retry behavior:
 
 ```typescript
 import * as Schedule from 'effect/Schedule'
-import { withRetrySchedule } from 'voltaire-effect'
+import { getBalance, withRetrySchedule } from 'voltaire-effect'
 
 // Exponential backoff with jitter
 const retrySchedule = Schedule.exponential("500 millis").pipe(
@@ -130,7 +130,7 @@ const retrySchedule = Schedule.exponential("500 millis").pipe(
   Schedule.recurs(5)
 )
 
-provider.getBalance(addr).pipe(
+getBalance(addr).pipe(
   withRetrySchedule(retrySchedule)
 )
 ```

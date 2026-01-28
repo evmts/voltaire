@@ -7,11 +7,10 @@ description: Pre-composed provider layers for common configurations
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, MainnetProvider } from 'voltaire-effect'
+import { getChainId, MainnetProvider } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getChainId()
+  return yield* getChainId()
 }).pipe(Effect.provide(MainnetProvider('https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY')))
 
 await Effect.runPromise(program)
@@ -72,29 +71,28 @@ Enhanced mainnet provider with all services:
 
 ```typescript
 import { Effect } from 'effect'
-import { 
-  ProviderService,
+import {
+  getBlockNumber,
   ChainService,
   FeeEstimatorService,
   NonceManagerService,
-  MainnetFullProvider 
+  MainnetFullProvider
 } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
   const chain = yield* ChainService
   const feeEstimator = yield* FeeEstimatorService
   const nonceManager = yield* NonceManagerService
-  
-  const blockNumber = yield* provider.getBlockNumber()
+
+  const blockNumber = yield* getBlockNumber()
   const fees = yield* feeEstimator.estimate()
   const nonce = yield* nonceManager.getNextNonce('0x...')
-  
-  return { 
-    chain: chain.name, 
-    blockNumber, 
+
+  return {
+    chain: chain.name,
+    blockNumber,
     fees,
-    nonce 
+    nonce
   }
 }).pipe(Effect.provide(MainnetFullProvider('https://eth.llamarpc.com')))
 ```
@@ -165,21 +163,19 @@ Presets work with FiberRef helpers for per-request configuration:
 
 ```typescript
 import { Effect, Schedule } from 'effect'
-import { ProviderService, MainnetFullProvider, withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+import { getBlockNumber, getBalance, getChainId, MainnetFullProvider, withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  
   // Fast timeout for time-sensitive operations
-  const blockNumber = yield* provider.getBlockNumber().pipe(
+  const blockNumber = yield* getBlockNumber().pipe(
     withTimeout('5 seconds')
   )
-  
+
   // Skip cache for fresh data
-  const freshBalance = yield* provider.getBalance('0x...').pipe(withoutCache)
-  
+  const freshBalance = yield* getBalance('0x...').pipe(withoutCache)
+
   // Custom retry for flaky endpoints
-  const chainId = yield* provider.getChainId().pipe(
+  const chainId = yield* getChainId().pipe(
     withRetrySchedule(Schedule.recurs(3))
   )
 }).pipe(Effect.provide(MainnetFullProvider('https://eth.llamarpc.com')))

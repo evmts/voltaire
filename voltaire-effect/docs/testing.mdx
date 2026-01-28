@@ -48,37 +48,37 @@ it('returns Left for invalid input', () => {
 
 ## Mocking Services
 
-Create test layers that return controlled values:
+Use `TestTransport` to mock JSON-RPC responses:
+
+```typescript
+import * as Effect from 'effect/Effect'
+import { TestTransport, Provider, getBalance } from 'voltaire-effect'
+
+const TestLayer = Provider.pipe(
+  Layer.provide(TestTransport({
+    'eth_getBalance': '0xde0b6b3a7640000', // 1 ETH in hex
+    'eth_blockNumber': '0x1234',
+    'eth_chainId': '0x1'
+  }))
+)
+```
+
+Use free functions with test layers:
 
 ```typescript
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { ProviderService } from 'voltaire-effect'
-
-const ProviderTest = Layer.succeed(ProviderService, {
-  getBlock: (tag) => Effect.succeed({
-    number: 12345n,
-    hash: '0x...',
-    transactions: []
-  }),
-  getBalance: (addr) => Effect.succeed(1000000000000000000n),
-  getTransactionCount: (addr) => Effect.succeed(5n)
-})
-```
-
-Use in tests:
-
-```typescript
-import * as Effect from 'effect/Effect'
+import { getBalance, TestTransport, Provider } from 'voltaire-effect'
 
 it('fetches balance', async () => {
-  const program = Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return yield* provider.getBalance(testAddress)
-  })
+  const program = getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+
+  const TestLayer = Provider.pipe(
+    Layer.provide(TestTransport({ 'eth_getBalance': '0xde0b6b3a7640000' }))
+  )
 
   const result = await Effect.runPromise(
-    program.pipe(Effect.provide(ProviderTest))
+    program.pipe(Effect.provide(TestLayer))
   )
 
   expect(result).toBe(1000000000000000000n)
@@ -87,28 +87,27 @@ it('fetches balance', async () => {
 
 ## Testing Error Paths
 
-Mock services that fail:
+Mock errors using `TransportError` in `TestTransport`:
 
 ```typescript
-import { TransportError } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+import { TestTransport, Provider, TransportError, getBalance } from 'voltaire-effect'
 
-const ProviderFailing = Layer.succeed(ProviderService, {
-  getBlock: () =>
-    Effect.fail(new TransportError({ code: -32000, message: "timeout" })),
-  getBalance: () =>
-    Effect.fail(new TransportError({ code: -32000, message: "timeout" }))
-})
+const FailingLayer = Provider.pipe(
+  Layer.provide(TestTransport({
+    'eth_getBalance': new TransportError({ code: -32000, message: 'timeout' }),
+    'eth_blockNumber': new TransportError({ code: -32000, message: 'timeout' })
+  }))
+)
 
 it('handles provider errors', async () => {
-  const program = Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return yield* provider.getBalance(testAddress)
-  }).pipe(
-    Effect.catchTag("TransportError", () => Effect.succeed(0n))
+  const program = getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045').pipe(
+    Effect.catchTag('TransportError', () => Effect.succeed(0n))
   )
 
   const result = await Effect.runPromise(
-    program.pipe(Effect.provide(ProviderFailing))
+    program.pipe(Effect.provide(FailingLayer))
   )
 
   expect(result).toBe(0n)
