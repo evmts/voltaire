@@ -32,6 +32,7 @@
 			"!**/benchmark",
 			"!**/docs",
 			"!**/vendor",
+			"!**/voltaire-effect",
 			"!**/worktrees",
 			"!**/tests/mcp-evals",
 			"!**/demo",
