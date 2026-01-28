@@ -1,6 +1,6 @@
 {
 	"name": "voltaire-effect",
-	"version": "0.2.23",
+	"version": "0.2.24",
 	"description": "Effect-TS integration for Voltaire Ethereum primitives library",
 	"author": "TEVM",
 	"license": "MIT",
