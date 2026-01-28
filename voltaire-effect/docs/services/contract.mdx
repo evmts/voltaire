@@ -5,6 +5,10 @@ description: Type-safe contract interaction with Effect.ts
 
 `Contract()` is a **factory function** that returns a type-safe contract instance. It is **not** a `Context.Tag` service—instead it depends on `ProviderService` (and optionally `SignerService` for writes).
 
+<Tip>
+For applications with multiple contracts, use [ContractRegistryService](/services/contract-registry) to define all your contracts once and access them as a named map.
+</Tip>
+
 ## Quick Start
 
 ```typescript
@@ -153,6 +157,7 @@ const program = Effect.gen(function* () {
 
 ## See Also
 
+- [Contract Registry](/services/contract-registry) — Pre-configured contracts as a named map
 - [Contract Interactions Example](/examples/contract-interactions) — Complete examples
 - [Provider Service](/services/provider) — `readContract` and `multicall`
 - [Signer Service](/services/signer) — Transaction signing for writes
