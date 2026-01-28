@@ -9,8 +9,7 @@ import { Effect } from 'effect'
 import {
   ContractRegistryService,
   makeContractRegistry,
-  Provider,
-  HttpTransport
+  HttpProvider
 } from 'voltaire-effect'
 
 const Contracts = makeContractRegistry({
@@ -27,8 +26,7 @@ const program = Effect.gen(function* () {
   Effect.retry({ times: 3 }),
   Effect.timeout('10 seconds'),
   Effect.provide(Contracts),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpProvider('https://eth.llamarpc.com'))
 )
 ```
 
@@ -100,15 +98,14 @@ const Contracts = makeContractRegistry({
 For one-off contracts, use `Contract()` directly:
 
 ```typescript
-import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+import { Contract, HttpProvider } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)
   const balance = yield* token.read.balanceOf(userAddress)
   return balance
 }).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(HttpProvider('https://eth.llamarpc.com'))
 )
 ```
 

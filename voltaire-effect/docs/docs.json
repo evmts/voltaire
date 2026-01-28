@@ -73,6 +73,7 @@
               "services/signer",
               "services/account",
               "services/contract",
+              "services/contract-registry",
               "services/block-stream",
               "services/transaction-stream",
               "services/cache",
