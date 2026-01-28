@@ -51,6 +51,7 @@ export default defineConfig({
 			"examples/viem-publicclient/**",
 			"examples/ethers-provider/**",
 			"examples/multicall/**",
+			"examples/ethers-hdwallet/**",
 			// Auto-generated documentation lib copies have broken imports
 			"docs/public/**",
 			"docs/zig/**",
