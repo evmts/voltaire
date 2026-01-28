@@ -153,6 +153,30 @@ describe("SignerService", () => {
 			expect(result.startsWith("0x")).toBe(true);
 		});
 
+		it("returns SignerError when EIP-4844 tx is missing to", async () => {
+			const program = Effect.gen(function* () {
+				const signer = yield* SignerService;
+				return yield* Effect.either(
+					signer.signTransaction({
+						type: 3,
+						blobVersionedHashes: [],
+					}),
+				);
+			});
+
+			const result = await Effect.runPromise(
+				Effect.provide(program, TestSignerLayer),
+			);
+
+			expect(result._tag).toBe("Left");
+			if (result._tag === "Left") {
+				expect(result.left._tag).toBe("SignerError");
+				expect(result.left.message).toContain(
+					"EIP-4844 transactions require a 'to' address",
+				);
+			}
+		});
+
 		it("signs and sends transaction", async () => {
 			const program = Effect.gen(function* () {
 				const signer = yield* SignerService;

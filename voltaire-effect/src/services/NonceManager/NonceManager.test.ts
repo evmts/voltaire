@@ -79,7 +79,7 @@ describe("NonceManagerService", () => {
 						"0x1234567890123456789012345678901234567890",
 						1,
 					);
-					expect(result).toBe(10);
+					expect(result).toBe(10n);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -87,6 +87,27 @@ describe("NonceManagerService", () => {
 							ProviderService,
 							createMockProvider({
 								getTransactionCount: () => Effect.succeed(10n),
+							}),
+						),
+					),
+				),
+			);
+
+			it.effect("preserves large nonces without precision loss", () =>
+				Effect.gen(function* () {
+					const nonceManager = yield* NonceManagerService;
+					const result = yield* nonceManager.get(
+						"0x1234567890123456789012345678901234567890",
+						1,
+					);
+					expect(result).toBe(9007199254740993n);
+				}).pipe(
+					Effect.provide(DefaultNonceManager),
+					Effect.provide(
+						Layer.succeed(
+							ProviderService,
+							createMockProvider({
+								getTransactionCount: () => Effect.succeed(9007199254740993n),
 							}),
 						),
 					),
@@ -166,7 +187,7 @@ describe("NonceManagerService", () => {
 					const n1 = yield* nonceManager.consume(addr, 1);
 					const n2 = yield* nonceManager.consume(addr, 1);
 					const n3 = yield* nonceManager.consume(addr, 1);
-					expect([n1, n2, n3]).toEqual([5, 6, 7]);
+					expect([n1, n2, n3]).toEqual([5n, 6n, 7n]);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -191,10 +212,10 @@ describe("NonceManagerService", () => {
 					const a1n2 = yield* nonceManager.consume(addr1, 1);
 					const a2n2 = yield* nonceManager.consume(addr2, 1);
 
-					expect(a1n1).toBe(10);
-					expect(a1n2).toBe(11);
-					expect(a2n1).toBe(10);
-					expect(a2n2).toBe(11);
+					expect(a1n1).toBe(10n);
+					expect(a1n2).toBe(11n);
+					expect(a2n1).toBe(10n);
+					expect(a2n2).toBe(11n);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -218,10 +239,10 @@ describe("NonceManagerService", () => {
 					const mainnet2 = yield* nonceManager.consume(addr, 1);
 					const optimism2 = yield* nonceManager.consume(addr, 10);
 
-					expect(mainnet1).toBe(10);
-					expect(mainnet2).toBe(11);
-					expect(optimism1).toBe(10);
-					expect(optimism2).toBe(11);
+					expect(mainnet1).toBe(10n);
+					expect(mainnet2).toBe(11n);
+					expect(optimism1).toBe(10n);
+					expect(optimism2).toBe(11n);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -276,7 +297,7 @@ describe("NonceManagerService", () => {
 					const result = yield* program;
 					expect(result.fetchesBefore).toBe(0);
 					expect(result.fetchesAfter).toBe(1);
-					expect(result.nonce).toBe(8);
+					expect(result.nonce).toBe(8n);
 				}),
 			);
 		});
@@ -294,7 +315,7 @@ describe("NonceManagerService", () => {
 					yield* nonceManager.reset(addr, 1);
 
 					const result = yield* nonceManager.get(addr, 1);
-					expect(result).toBe(5);
+					expect(result).toBe(5n);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -324,8 +345,8 @@ describe("NonceManagerService", () => {
 					const n1 = yield* nonceManager.get(addr1, 1);
 					const n2 = yield* nonceManager.get(addr2, 1);
 
-					expect(n1).toBe(5);
-					expect(n2).toBe(7);
+					expect(n1).toBe(5n);
+					expect(n2).toBe(7n);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -358,7 +379,7 @@ describe("NonceManagerService", () => {
 						1,
 					);
 
-					expect([n1, n2, n3]).toEqual([5, 6, 7]);
+					expect([n1, n2, n3]).toEqual([5n, 6n, 7n]);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -390,7 +411,9 @@ describe("NonceManagerService", () => {
 						{ concurrency: 5 },
 					);
 
-					expect(results.sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
+					expect(
+						results.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+					).toEqual([0n, 1n, 2n, 3n, 4n]);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(
@@ -414,8 +437,10 @@ describe("NonceManagerService", () => {
 						{ concurrency: "unbounded" },
 					);
 
-					const expected = Array.from({ length: 100 }, (_, i) => i);
-					expect(results.sort((a, b) => a - b)).toEqual(expected);
+					const expected = Array.from({ length: 100 }, (_, i) => BigInt(i));
+					expect(
+						results.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+					).toEqual(expected);
 				}).pipe(
 					Effect.provide(DefaultNonceManager),
 					Effect.provide(

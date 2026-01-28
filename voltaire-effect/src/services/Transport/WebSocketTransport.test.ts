@@ -10,6 +10,7 @@ import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import { makeMockWebSocket } from "./__testUtils__/mockWebSocket.js";
+import * as Socket from "@effect/platform/Socket";
 import { TransportError } from "./TransportError.js";
 import { TransportService } from "./TransportService.js";
 import {
@@ -74,7 +75,7 @@ describe("WebSocketTransport", () => {
 			const program = Effect.gen(function* () {
 				const transport = yield* TransportService;
 
-				yield* Effect.sleep(10);
+				yield* Effect.sleep(30);
 				if (sockets[0]) {
 					sockets[0].close();
 				}
@@ -326,6 +327,74 @@ describe("WebSocketTransport", () => {
 
 			const result = await Effect.runPromise(program);
 			expect(result).toBe("0x1");
+		});
+
+		it("retries when a reconnect attempt fails to connect", async () => {
+			const { MockWebSocket, sockets } = makeMockWebSocket({
+				onSend: (socket, data) => {
+					const req = JSON.parse(String(data));
+					if (req.method === "web3_clientVersion") return;
+					queueMicrotask(() => {
+						socket.emitMessage(
+							JSON.stringify({
+								jsonrpc: "2.0",
+								id: req.id,
+								result: `0x${socket.index + 1}`,
+							}),
+						);
+					});
+				},
+			});
+			let constructorCalls = 0;
+			class FlakyWebSocket extends MockWebSocket {
+				constructor(url: string, protocols?: string | string[]) {
+					if (constructorCalls === 1) {
+						constructorCalls += 1;
+						throw new Error("Connection refused");
+					}
+					constructorCalls += 1;
+					super(url, protocols);
+				}
+			}
+			const flakyConstructorLayer = Layer.succeed(
+				Socket.WebSocketConstructor,
+				(url: string, protocols?: string | string[]) =>
+					new FlakyWebSocket(url, protocols),
+			);
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+
+				for (let i = 0; i < 20; i += 1) {
+					if (sockets[0]?._listeners.get("close")?.size) {
+						break;
+					}
+					yield* Effect.sleep(5);
+				}
+				sockets[0]?.close();
+
+				for (let i = 0; i < 50; i += 1) {
+					if (sockets[1]?.readyState === MockWebSocket.OPEN) break;
+					yield* Effect.sleep(10);
+				}
+
+				return yield* transport.request<string>("eth_blockNumber");
+			}).pipe(
+				Effect.provide(
+					Layer.provide(
+						WebSocketTransport({
+							url: "ws://test",
+							timeout: 500,
+							reconnect: { maxAttempts: 3, delay: 50 },
+						}),
+						flakyConstructorLayer,
+					),
+				),
+				Effect.scoped,
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0x2");
 		});
 
 		it("fails immediately when not connected and reconnect disabled", async () => {

@@ -151,6 +151,32 @@ describe("AccountService", () => {
 			),
 		);
 
+		it.effect("signTransaction fails for EIP-4844 when to is missing", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				const result = yield* Effect.either(
+					account.signTransaction({
+						type: 3,
+						nonce: 0n,
+						gasLimit: 21000n,
+						chainId: 1n,
+						blobVersionedHashes: [],
+					}),
+				);
+				expect(result._tag).toBe("Left");
+				if (result._tag === "Left") {
+					expect(result.left._tag).toBe("AccountError");
+					expect(result.left.cause).toBeInstanceOf(Error);
+					expect(result.left.cause?.message).toContain(
+						"EIP-4844 transactions require a 'to' address",
+					);
+				}
+			}).pipe(
+				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
+				Effect.provide(CryptoTest),
+			),
+		);
+
 		it.effect("signs typed data (EIP-712)", () =>
 			Effect.gen(function* () {
 				const typedData = TypedData.from({
@@ -223,6 +249,13 @@ describe("AccountService", () => {
 					}),
 				);
 				expect(result._tag).toBe("Left");
+				if (result._tag === "Left") {
+					expect(result.left._tag).toBe("AccountError");
+					expect(result.left.cause).toBeInstanceOf(Error);
+					expect(result.left.cause?.message).toContain(
+						"Authorization nonce is required",
+					);
+				}
 			}).pipe(
 				Effect.provide(LocalAccount(TEST_PRIVATE_KEY)),
 				Effect.provide(CryptoTest),
@@ -673,6 +706,29 @@ describe("AccountService", () => {
 				const account = yield* AccountService;
 				const signature = yield* account.signTypedData(typedData);
 				expect(signature).toBeDefined();
+			}).pipe(
+				Effect.provide(JsonRpcAccount(mockAddress)),
+				Effect.provide(transportLayer),
+			),
+		);
+
+		it.effect("signAuthorization fails when nonce is missing", () =>
+			Effect.gen(function* () {
+				const account = yield* AccountService;
+				const result = yield* Effect.either(
+					account.signAuthorization({
+						contractAddress: "0x000000000000000000000000000000000000dead",
+						chainId: 1n,
+					}),
+				);
+				expect(result._tag).toBe("Left");
+				if (result._tag === "Left") {
+					expect(result.left._tag).toBe("AccountError");
+					expect(result.left.cause).toBeInstanceOf(Error);
+					expect(result.left.cause?.message).toContain(
+						"Authorization nonce is required",
+					);
+				}
 			}).pipe(
 				Effect.provide(JsonRpcAccount(mockAddress)),
 				Effect.provide(transportLayer),
