@@ -35,6 +35,8 @@ export default defineConfig({
 			// Examples import @tevm/voltaire which isn't available during CI validation
 			// They also require optional native deps (ffi-napi, ref-napi) for dist/
 			"examples/**",
+			// Tests that import from examples (which import @tevm/voltaire)
+			"src/ethers-provider/**",
 			// Auto-generated documentation lib copies have broken imports
 			"docs/public/**",
 			"docs/zig/**",
