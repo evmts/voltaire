@@ -432,6 +432,67 @@ url = "https://voltaire.tevm.sh/mcp"
       <div id="editor-mount-point" style={{ maxWidth: '1000px', margin: '5rem auto 0' }}></div>
     </div>
 
+    <div style={{ maxWidth: '1000px', margin: '5rem auto', padding: '0 1rem' }}>
+      <h2 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '700', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Effect.ts Integration</h2>
+      <p style={{ fontSize: '1.1rem', color: '#999', textAlign: 'center', marginBottom: '2rem' }}>
+        Type-safe contract interactions with composable, error-handled operations via <code style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>voltaire-effect</code>
+      </p>
+
+```typescript
+import { Effect } from 'effect'
+import {
+  ContractRegistryService,
+  makeContractRegistry,
+  Provider,
+  HttpTransport
+} from 'voltaire-effect'
+
+// Define your contracts once
+const Contracts = makeContractRegistry({
+  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
+  UniswapRouter: { abi: routerAbi, address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' },
+})
+
+// Compose operations with full type safety
+const getPortfolioBalances = Effect.gen(function* () {
+  const { USDC, WETH } = yield* ContractRegistryService
+
+  // Parallel contract reads
+  const [usdcBalance, wethBalance] = yield* Effect.all([
+    USDC.read.balanceOf(userAddress),
+    WETH.read.balanceOf(userAddress),
+  ])
+
+  return { usdc: usdcBalance, weth: wethBalance }
+}).pipe(
+  Effect.retry({ times: 3 }),           // Auto-retry on RPC failures
+  Effect.timeout('10 seconds'),         // Timeout protection
+  Effect.provide(Contracts),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// Execute with full error handling
+const result = await Effect.runPromise(getPortfolioBalances)
+```
+
+      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+        <a href="https://github.com/evmts/voltaire/tree/main/voltaire-effect" target="_blank" rel="noopener"
+           style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', transition: 'all 0.15s ease' }}
+           onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(230, 162, 60, 0.3)'; }}
+           onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}>
+          View voltaire-effect
+        </a>
+        <a href="https://effect.website" target="_blank" rel="noopener"
+           style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease' }}
+           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(128, 128, 128, 0.1)'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.5)'; }}
+           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(128, 128, 128, 0.3)'; }}>
+          Learn Effect.ts
+        </a>
+      </div>
+    </div>
+
     <script dangerouslySetInnerHTML={{__html: `
       // Wait for full page load and React hydration
       window.addEventListener('load', function() {
