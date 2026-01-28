@@ -256,12 +256,12 @@ export class StandardsError extends Data.TaggedError("StandardsError")<{
 
 ---
 
-## 5. Provider Service (Large Composed Service)
+## 5. Provider Service (Request-only)
 
-### Composition via Type Intersection
+### Minimal Context.Tag
 
 <Note>
-**INTERNAL**: ProviderService is a minimal, request-only Context.Tag. All operations are exposed as free functions.
+**INTERNAL**: ProviderService is request-only and intentionally minimal. All operations are exposed as free functions that call `ProviderService.request`.
 </Note>
 
 ```typescript
