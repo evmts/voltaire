@@ -80,6 +80,7 @@ export type AbiItem = {
 export type Abi = readonly AbiItem[];
 
 import type * as Effect from "effect/Effect";
+import type { ProviderService } from "../Provider/index.js";
 import type { SignerService } from "../Signer/index.js";
 
 /**
@@ -283,7 +284,7 @@ export interface ContractInstance<TAbi extends Abi> {
 	readonly getEvents: <E extends ExtractEventNames<TAbi>>(
 		eventName: E,
 		filter?: EventFilter,
-	) => Effect.Effect<DecodedEvent[], ContractEventError>;
+	) => Effect.Effect<DecodedEvent[], ContractEventError, ProviderService>;
 }
 
 type ExtractViewFunctions<TAbi extends Abi> = Extract<
@@ -374,7 +375,8 @@ type ContractReadMethods<TAbi extends Abi> = {
 				? AbiOutputToTs<O>
 				: unknown
 			: unknown,
-		ContractCallError
+		ContractCallError,
+		ProviderService
 	>;
 };
 
@@ -407,6 +409,7 @@ type ContractSimulateMethods<TAbi extends Abi> = {
 				? AbiOutputToTs<O>
 				: unknown
 			: unknown,
-		ContractCallError
+		ContractCallError,
+		ProviderService
 	>;
 };

@@ -19,6 +19,11 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { ProviderService } from "../Provider/index.js";
 import {
+	getGasPrice,
+	getBlock,
+	getMaxPriorityFeePerGas,
+} from "../Provider/functions/index.js";
+import {
 	FeeEstimationError,
 	FeeEstimatorService,
 	type FeeValues,
@@ -89,7 +94,6 @@ const makeDefaultFeeEstimator = (
 	Layer.effect(
 		FeeEstimatorService,
 		Effect.gen(function* () {
-			const provider = yield* ProviderService;
 			const multiplierNumerator = BigInt(
 				Math.round(baseFeeMultiplier * MULTIPLIER_PRECISION_NUMBER),
 			);
@@ -100,7 +104,7 @@ const makeDefaultFeeEstimator = (
 				ProviderService
 			> =>
 				Effect.gen(function* () {
-					const gasPrice = yield* provider.getGasPrice().pipe(
+					const gasPriceValue = yield* getGasPrice().pipe(
 						Effect.mapError(
 							(e) =>
 								new FeeEstimationError({
@@ -110,7 +114,7 @@ const makeDefaultFeeEstimator = (
 						),
 					);
 					const validatedGasPrice = yield* ensureReasonableGasPrice(
-						gasPrice,
+						gasPriceValue,
 						"Gas price",
 					);
 					return { gasPrice: validatedGasPrice };
@@ -123,7 +127,7 @@ const makeDefaultFeeEstimator = (
 			> =>
 				Effect.gen(function* () {
 					const [block, priorityFee] = yield* Effect.all([
-						provider.getBlock({ blockTag: "latest" }).pipe(
+						getBlock({ blockTag: "latest" }).pipe(
 							Effect.mapError(
 								(e) =>
 									new FeeEstimationError({
@@ -132,7 +136,7 @@ const makeDefaultFeeEstimator = (
 									}),
 							),
 						),
-						provider.getMaxPriorityFeePerGas().pipe(
+						getMaxPriorityFeePerGas().pipe(
 							Effect.mapError(
 								(e) =>
 									new FeeEstimationError({
@@ -185,7 +189,7 @@ const makeDefaultFeeEstimator = (
 					type === "legacy" ? estimateLegacy() : estimateEIP1559(),
 
 				getMaxPriorityFeePerGas: () =>
-					provider.getMaxPriorityFeePerGas().pipe(
+					getMaxPriorityFeePerGas().pipe(
 						Effect.mapError(
 							(e) =>
 								new FeeEstimationError({

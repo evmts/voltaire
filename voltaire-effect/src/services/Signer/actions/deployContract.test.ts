@@ -99,82 +99,115 @@ const mockAccount: AccountShape = {
 	clearKey: () => Effect.void,
 };
 
-const mockProvider: ProviderShape = {
-	getBlockNumber: () => Effect.succeed(12345n),
-	getBlock: () =>
-		Effect.succeed({
-			number: "0x1",
-			hash: "0xabc",
-			parentHash: "0x0",
-			nonce: "0x0",
-			sha3Uncles: "0x0",
-			logsBloom: "0x0",
-			transactionsRoot: "0x0",
-			stateRoot: "0x0",
-			receiptsRoot: "0x0",
-			miner: "0x0",
-			difficulty: "0x0",
-			totalDifficulty: "0x0",
-			extraData: "0x",
-			size: "0x0",
-			gasLimit: "0x0",
-			gasUsed: "0x0",
-			timestamp: "0x0",
-			transactions: [],
-			uncles: [],
-			baseFeePerGas: "0x3b9aca00",
-		}),
-	getBlockTransactionCount: () => Effect.succeed(0n),
-	getBalance: () => Effect.succeed(1000000000000000000n),
-	getTransactionCount: () => Effect.succeed(5n),
-	getCode: () => Effect.succeed("0x"),
-	getStorageAt: () => Effect.succeed("0x0"),
-	getTransaction: () => Effect.succeed({} as never),
-	getTransactionReceipt: () => Effect.succeed({} as never),
-	waitForTransactionReceipt: () =>
-		Effect.succeed({
-			transactionHash: mockTxHashHex,
-			blockNumber: "0x1",
-			blockHash: "0xabc",
-			transactionIndex: "0x0",
-			from: "0xabababababababababababababababababababab",
-			to: null,
-			contractAddress: mockContractAddress,
-			cumulativeGasUsed: "0x5208",
-			gasUsed: "0x5208",
-			logs: [],
-			logsBloom: "0x0",
-			status: "0x1",
-			effectiveGasPrice: "0x3b9aca00",
-			type: "0x2",
-		}),
-	call: () => Effect.succeed("0x"),
-	estimateGas: () => Effect.succeed(100000n),
-	createAccessList: () => Effect.succeed({ accessList: [], gasUsed: "0x0" }),
-	getLogs: () => Effect.succeed([]),
-	createEventFilter: () => Effect.succeed("0x1" as any),
-	createBlockFilter: () => Effect.succeed("0x1" as any),
-	createPendingTransactionFilter: () => Effect.succeed("0x1" as any),
-	getFilterChanges: () => Effect.succeed([]),
-	getFilterLogs: () => Effect.succeed([]),
-	uninstallFilter: () => Effect.succeed(true),
-	getChainId: () => Effect.succeed(1),
-	getGasPrice: () => Effect.succeed(20000000000n),
-	getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
-	getFeeHistory: () =>
-		Effect.succeed({ oldestBlock: "0x0", baseFeePerGas: [], gasUsedRatio: [] }),
-	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
-	getUncle: () => Effect.succeed({} as any),
-	getProof: () => Effect.succeed({} as any),
-	getBlobBaseFee: () => Effect.succeed(0n),
-	getTransactionConfirmations: () => Effect.succeed(0n),
-	watchBlocks: () => {
-		throw new Error("Not implemented in mock");
-	},
-	backfillBlocks: () => {
-		throw new Error("Not implemented in mock");
-	},
+type ReceiptOverride = {
+	transactionHash: string;
+	blockNumber: string;
+	blockHash: string;
+	transactionIndex: string;
+	from: string;
+	to: null;
+	contractAddress: string | null;
+	cumulativeGasUsed: string;
+	gasUsed: string;
+	logs: unknown[];
+	logsBloom: string;
+	status: string;
+	effectiveGasPrice: string;
+	type: string;
 };
+
+const createMockProviderWithReceipt = (
+	receiptOverride?: ReceiptOverride | "error",
+): ProviderShape => ({
+	request: <T>(method: string, _params?: unknown[]) => {
+		switch (method) {
+			case "eth_blockNumber":
+				return Effect.succeed("0x3039" as T); // 12345
+			case "eth_getBlockByNumber":
+			case "eth_getBlockByHash":
+				return Effect.succeed({
+					number: "0x1",
+					hash: "0xabc",
+					parentHash: "0x0",
+					nonce: "0x0",
+					sha3Uncles: "0x0",
+					logsBloom: "0x0",
+					transactionsRoot: "0x0",
+					stateRoot: "0x0",
+					receiptsRoot: "0x0",
+					miner: "0x0",
+					difficulty: "0x0",
+					totalDifficulty: "0x0",
+					extraData: "0x",
+					size: "0x0",
+					gasLimit: "0x0",
+					gasUsed: "0x0",
+					timestamp: "0x0",
+					transactions: [],
+					uncles: [],
+					baseFeePerGas: "0x3b9aca00",
+				} as T);
+			case "eth_getBalance":
+				return Effect.succeed("0xde0b6b3a7640000" as T); // 1 ETH
+			case "eth_getTransactionCount":
+				return Effect.succeed("0x5" as T);
+			case "eth_getCode":
+				return Effect.succeed("0x" as T);
+			case "eth_getStorageAt":
+				return Effect.succeed("0x0" as T);
+			case "eth_getTransactionReceipt":
+				if (receiptOverride === "error") {
+					return Effect.fail(
+						new TransportError({
+							code: -32000,
+							message: "Network connection lost",
+						}),
+					);
+				}
+				if (receiptOverride) {
+					return Effect.succeed(receiptOverride as T);
+				}
+				return Effect.succeed({
+					transactionHash: mockTxHashHex,
+					blockNumber: "0x1",
+					blockHash: "0xabc",
+					transactionIndex: "0x0",
+					from: "0xabababababababababababababababababababab",
+					to: null,
+					contractAddress: mockContractAddress,
+					cumulativeGasUsed: "0x5208",
+					gasUsed: "0x5208",
+					logs: [],
+					logsBloom: "0x0",
+					status: "0x1",
+					effectiveGasPrice: "0x3b9aca00",
+					type: "0x2",
+				} as T);
+			case "eth_call":
+				return Effect.succeed("0x" as T);
+			case "eth_estimateGas":
+				return Effect.succeed("0x186a0" as T); // 100000
+			case "eth_chainId":
+				return Effect.succeed("0x1" as T);
+			case "eth_gasPrice":
+				return Effect.succeed("0x4a817c800" as T); // 20 gwei
+			case "eth_maxPriorityFeePerGas":
+				return Effect.succeed("0x3b9aca00" as T); // 1 gwei
+			case "eth_feeHistory":
+				return Effect.succeed({
+					oldestBlock: "0x0",
+					baseFeePerGas: [],
+					gasUsedRatio: [],
+				} as T);
+			case "eth_sendRawTransaction":
+				return Effect.succeed("0x" as T);
+			default:
+				return Effect.succeed(null as T);
+		}
+	},
+});
+
+const mockProvider: ProviderShape = createMockProviderWithReceipt();
 
 const mockTransport: TransportShape = {
 	request: <T>(_method: string, _params?: unknown[]): Effect.Effect<T, never> =>
@@ -338,26 +371,22 @@ describe("deployContract", () => {
 	});
 
 	it("fails address effect when receipt has no contractAddress", async () => {
-		const providerWithNullAddress: ProviderShape = {
-			...mockProvider,
-			waitForTransactionReceipt: () =>
-				Effect.succeed({
-					transactionHash: mockTxHashHex,
-					blockNumber: "0x1",
-					blockHash: "0xabc",
-					transactionIndex: "0x0",
-					from: "0xabababababababababababababababababababab",
-					to: null,
-					contractAddress: null,
-					cumulativeGasUsed: "0x5208",
-					gasUsed: "0x5208",
-					logs: [],
-					logsBloom: "0x0",
-					status: "0x1",
-					effectiveGasPrice: "0x3b9aca00",
-					type: "0x2",
-				}),
-		};
+		const providerWithNullAddress = createMockProviderWithReceipt({
+			transactionHash: mockTxHashHex,
+			blockNumber: "0x1",
+			blockHash: "0xabc",
+			transactionIndex: "0x0",
+			from: "0xabababababababababababababababababababab",
+			to: null,
+			contractAddress: null,
+			cumulativeGasUsed: "0x5208",
+			gasUsed: "0x5208",
+			logs: [],
+			logsBloom: "0x0",
+			status: "0x1",
+			effectiveGasPrice: "0x3b9aca00",
+			type: "0x2",
+		});
 		const NullAddressProviderLayer = Layer.succeed(
 			ProviderService,
 			providerWithNullAddress,
@@ -397,16 +426,7 @@ describe("deployContract", () => {
 	});
 
 	it("fails address effect when waitForTransactionReceipt fails", async () => {
-		const providerWithReceiptError: ProviderShape = {
-			...mockProvider,
-			waitForTransactionReceipt: () =>
-				Effect.fail(
-					new TransportError({
-						code: -32000,
-						message: "Network connection lost",
-					}),
-				),
-		};
+		const providerWithReceiptError = createMockProviderWithReceipt("error");
 		const ErrorProviderLayer = Layer.succeed(
 			ProviderService,
 			providerWithReceiptError,

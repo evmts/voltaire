@@ -19,68 +19,74 @@ import {
 } from "./FeeEstimatorService.js";
 
 const createMockProvider = (
-	overrides: Partial<ProviderShape> = {},
-): ProviderShape => ({
-	getBlockNumber: () => Effect.succeed(18000000n),
-	getBlock: () =>
-		Effect.succeed({
-			number: "0x112a880",
-			hash: "0x1234",
-			parentHash: "0x5678",
-			nonce: "0x0",
-			sha3Uncles: "0x",
-			logsBloom: "0x",
-			transactionsRoot: "0x",
-			stateRoot: "0x",
-			receiptsRoot: "0x",
-			miner: "0x",
-			difficulty: "0x0",
-			totalDifficulty: "0x0",
-			extraData: "0x",
-			size: "0x0",
-			gasLimit: "0x1c9c380",
-			gasUsed: "0x0",
-			timestamp: "0x0",
-			transactions: [],
-			uncles: [],
-			baseFeePerGas: "0x3b9aca00",
-		}),
-	getBlockTransactionCount: () => Effect.succeed(0n),
-	getBalance: () => Effect.succeed(0n),
-	getTransactionCount: () => Effect.succeed(0n),
-	getCode: () => Effect.succeed("0x"),
-	getStorageAt: () => Effect.succeed("0x"),
-	getTransaction: () => Effect.succeed({} as any),
-	getTransactionReceipt: () => Effect.succeed({} as any),
-	waitForTransactionReceipt: () => Effect.succeed({} as any),
-	call: () => Effect.succeed("0x"),
-	estimateGas: () => Effect.succeed(21000n),
-	createAccessList: () => Effect.succeed({} as any),
-	getLogs: () => Effect.succeed([]),
-	createEventFilter: () => Effect.succeed("0x1" as any),
-	createBlockFilter: () => Effect.succeed("0x1" as any),
-	createPendingTransactionFilter: () => Effect.succeed("0x1" as any),
-	getFilterChanges: () => Effect.succeed([]),
-	getFilterLogs: () => Effect.succeed([]),
-	uninstallFilter: () => Effect.succeed(true),
-	getChainId: () => Effect.succeed(1),
-	getGasPrice: () => Effect.succeed(20000000000n),
-	getMaxPriorityFeePerGas: () => Effect.succeed(1500000000n),
-	getFeeHistory: () =>
-		Effect.succeed({
-			oldestBlock: "0x112a880",
-			baseFeePerGas: ["0x3b9aca00"],
-			gasUsedRatio: [0.5],
-		}),
-	watchBlocks: () => ({}) as any,
-	backfillBlocks: () => ({}) as any,
-	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
-	getUncle: () => Effect.succeed({} as any),
-	getProof: () => Effect.succeed({} as any),
-	getBlobBaseFee: () => Effect.succeed(0n),
-	getTransactionConfirmations: () => Effect.succeed(0n),
-	...overrides,
-});
+	overrides: {
+		getBlock?: () => Effect.Effect<unknown, TransportError>;
+		getGasPrice?: () => Effect.Effect<bigint, TransportError>;
+		getMaxPriorityFeePerGas?: () => Effect.Effect<bigint, TransportError>;
+	} = {},
+): ProviderShape => {
+	const defaultBlock = {
+		number: "0x112a880",
+		hash: "0x1234",
+		parentHash: "0x5678",
+		nonce: "0x0",
+		sha3Uncles: "0x",
+		logsBloom: "0x",
+		transactionsRoot: "0x",
+		stateRoot: "0x",
+		receiptsRoot: "0x",
+		miner: "0x",
+		difficulty: "0x0",
+		totalDifficulty: "0x0",
+		extraData: "0x",
+		size: "0x0",
+		gasLimit: "0x1c9c380",
+		gasUsed: "0x0",
+		timestamp: "0x0",
+		transactions: [],
+		uncles: [],
+		baseFeePerGas: "0x3b9aca00",
+	};
+
+	return {
+		request: <T>(method: string, _params?: unknown[]) => {
+			switch (method) {
+				case "eth_blockNumber":
+					return Effect.succeed("0x112a880" as T);
+				case "eth_getBlockByNumber":
+				case "eth_getBlockByHash":
+					if (overrides.getBlock) {
+						return overrides.getBlock() as Effect.Effect<T, TransportError>;
+					}
+					return Effect.succeed(defaultBlock as T);
+				case "eth_gasPrice":
+					if (overrides.getGasPrice) {
+						return overrides.getGasPrice().pipe(
+							Effect.map((v) => `0x${v.toString(16)}` as T),
+						);
+					}
+					return Effect.succeed("0x4a817c800" as T); // 20 gwei
+				case "eth_maxPriorityFeePerGas":
+					if (overrides.getMaxPriorityFeePerGas) {
+						return overrides.getMaxPriorityFeePerGas().pipe(
+							Effect.map((v) => `0x${v.toString(16)}` as T),
+						);
+					}
+					return Effect.succeed("0x59682f00" as T); // 1.5 gwei
+				case "eth_getTransactionCount":
+					return Effect.succeed("0x0" as T);
+				case "eth_getBalance":
+					return Effect.succeed("0x0" as T);
+				case "eth_chainId":
+					return Effect.succeed("0x1" as T);
+				default:
+					return Effect.fail(
+						new TransportError({ code: -32601, message: `Unknown method: ${method}` }),
+					);
+			}
+		},
+	};
+};
 
 const MULTIPLIER_PRECISION = 100n;
 const MULTIPLIER_PRECISION_NUMBER = 100;

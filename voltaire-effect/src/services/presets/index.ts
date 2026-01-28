@@ -11,11 +11,11 @@
  * @example Using MainnetProvider
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, MainnetProvider } from 'voltaire-effect'
+ * import { getChainId, MainnetProvider } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   return yield* provider.getChainId()
+ *   const chainId = yield* getChainId()
+ *   return chainId
  * }).pipe(Effect.provide(MainnetProvider('https://mainnet.infura.io/v3/YOUR_KEY')))
  *
  * await Effect.runPromise(program)
@@ -67,12 +67,11 @@ import { HttpTransport } from "../Transport/index.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, MainnetProvider } from 'voltaire-effect'
+ * import { getBlockNumber, getChainId, MainnetProvider } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   const blockNumber = yield* provider.getBlockNumber()
- *   const chainId = yield* provider.getChainId()
+ *   const blockNumber = yield* getBlockNumber()
+ *   const chainId = yield* getChainId()
  *   return { blockNumber, chainId }
  * }).pipe(Effect.provide(MainnetProvider('https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY')))
  *
@@ -100,15 +99,15 @@ export const MainnetProvider = (url: string): Layer.Layer<ProviderService> =>
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { ProviderService, createProvider } from 'voltaire-effect'
+ * import { getChainId, createProvider } from 'voltaire-effect'
  *
  * // Works with any network
  * const arbitrumProvider = createProvider('https://arb1.arbitrum.io/rpc')
  * const optimismProvider = createProvider('https://mainnet.optimism.io')
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   return yield* provider.getChainId()
+ *   const chainId = yield* getChainId()
+ *   return chainId
  * }).pipe(Effect.provide(arbitrumProvider))
  * ```
  */

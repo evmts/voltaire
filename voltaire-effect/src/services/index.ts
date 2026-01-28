@@ -45,18 +45,20 @@
  * Type-safe smart contract interactions.
  * - {@link Contract} - Factory to create contract instances
  *
- * @example Typical usage pattern
+ * @example Typical usage pattern (using free functions - idiomatic Effect.ts)
  * ```typescript
  * import { Effect } from 'effect'
  * import {
- *   ProviderService,
+ *   getBlockNumber,
+ *   getBalance,
  *   Provider,
  *   HttpTransport
  * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   return yield* provider.getBlockNumber()
+ *   const blockNumber = yield* getBlockNumber()
+ *   const balance = yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+ *   return { blockNumber, balance }
  * }).pipe(
  *   Effect.provide(Provider),
  *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
@@ -255,92 +257,8 @@ export {
 	NonceManagerService,
 	type NonceManagerShape,
 } from "./NonceManager/index.js";
-// Provider exports
-export {
-	type AccessListType,
-	Account as ProviderAccount,
-	AccountService as ProviderAccountService,
-	type AccountShape as ProviderAccountShape,
-	type BackfillBlocksError,
-	Blocks,
-	BlocksService,
-	type BlocksShape,
-	type BlockTag as ProviderBlockTag,
-	type BlockType,
-	type CallError,
-	type CallRequest,
-	type CreateAccessListError,
-	type CreateBlockFilterError,
-	type CreateEventFilterError,
-	type CreatePendingTransactionFilterError,
-	type EstimateGasError,
-	type EventFilter as ProviderEventFilter,
-	Events,
-	EventsService,
-	type EventsShape,
-	type FeeHistoryType,
-	type FilterChanges as ProviderFilterChanges,
-	type FilterId as ProviderFilterId,
-	type GetBalanceError,
-	type GetBlobBaseFeeError,
-	type GetBlockError,
-	type GetBlockNumberError,
-	type GetBlockTransactionCountError,
-	type GetChainIdError,
-	type GetCodeError,
-	type GetFeeHistoryError,
-	type GetFilterChangesError,
-	type GetFilterLogsError,
-	type GetGasPriceError,
-	type GetLogsError,
-	type GetMaxPriorityFeePerGasError,
-	type GetProofError,
-	type GetStorageAtError,
-	type GetTransactionConfirmationsError,
-	type GetTransactionCountError,
-	type GetTransactionError,
-	type GetTransactionReceiptError,
-	type GetUncleError,
-	type LogFilter as ProviderLogFilter,
-	type LogType,
-	Network,
-	NetworkService,
-	type NetworkShape,
-	Provider,
-	ProviderConfirmationsPendingError,
-	type ProviderError,
-	ProviderNotFoundError,
-	ProviderReceiptPendingError,
-	ProviderResponseError,
-	ProviderService,
-	type ProviderShape,
-	ProviderStreamError,
-	ProviderTimeoutError,
-	ProviderValidationError,
-	type ReceiptType,
-	type SendRawTransactionError,
-	type SimulateV1BlockResult,
-	type SimulateV1CallResult,
-	type SimulateV1Payload,
-	type SimulateV1Result,
-	type SimulateV2Payload,
-	type SimulateV2Result,
-	Simulation,
-	SimulationService,
-	type SimulationShape,
-	Streaming,
-	StreamingService,
-	type StreamingShape,
-	type SyncingStatus,
-	Transaction,
-	TransactionService,
-	type TransactionShape,
-	type TransactionType,
-	type UninstallFilterError,
-	type WaitForTransactionReceiptError,
-	type WatchBlocksError,
-	type WorkResult,
-} from "./Provider/index.js";
+// Provider exports - re-export everything from the Provider module
+export * from "./Provider/index.js";
 // Preset exports (layer composition helpers)
 export {
 	ArbitrumProvider,

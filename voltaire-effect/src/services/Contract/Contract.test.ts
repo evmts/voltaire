@@ -101,20 +101,25 @@ const erc20Abi = S.decodeUnknownSync(fromArray)([
 	},
 ]) as any;
 
+const mockCallFn = vi.fn();
+const mockGetLogsFn = vi.fn();
+const mockEstimateGasFn = vi.fn();
+
 const mockProvider = {
-	call: vi.fn(),
-	getLogs: vi.fn(),
-	getBlockNumber: vi.fn(),
-	getBalance: vi.fn(),
-	getBlock: vi.fn(),
-	getTransaction: vi.fn(),
-	getTransactionReceipt: vi.fn(),
-	getTransactionCount: vi.fn(),
-	getCode: vi.fn(),
-	getStorageAt: vi.fn(),
-	estimateGas: vi.fn(),
-	getChainId: vi.fn(),
-	getGasPrice: vi.fn(),
+	request: <T>(method: string, params?: unknown[]) => {
+		switch (method) {
+			case "eth_call":
+				return mockCallFn(params?.[0], params?.[1]) as Effect.Effect<T, never>;
+			case "eth_getLogs":
+				return mockGetLogsFn(params?.[0]) as Effect.Effect<T, never>;
+			case "eth_estimateGas":
+				return mockEstimateGasFn(params?.[0]) as Effect.Effect<T, never>;
+			case "eth_chainId":
+				return Effect.succeed("0x1" as T);
+			default:
+				return Effect.succeed(null as T);
+		}
+	},
 };
 
 const mockSigner = {
@@ -219,7 +224,7 @@ describe("Contract", () => {
 	describe("read methods", () => {
 		it("calls eth_call with encoded function data", async () => {
 			const expectedBalance = 1000000000000000000n;
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -237,12 +242,12 @@ describe("Contract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 			expect(result).toBe(expectedBalance);
 		});
 
 		it("handles view function with no args", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -258,7 +263,7 @@ describe("Contract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 			expect(typeof result).toBe("bigint");
 		});
 
@@ -268,7 +273,7 @@ describe("Contract", () => {
 			const reserve0 = 1000000000000000000n;
 			const reserve1 = 2000000000000000000n;
 			const blockTimestamp = 1234567890n;
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					("0x" +
 						reserve0.toString(16).padStart(64, "0") +
@@ -296,7 +301,7 @@ describe("Contract", () => {
 		});
 
 		it("returns ContractCallError on failure", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(new Error("execution reverted")),
 			);
 
@@ -315,7 +320,7 @@ describe("Contract", () => {
 		});
 
 		it("returns ContractCallError for malformed return data (empty 0x)", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x" as HexType));
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
@@ -336,7 +341,7 @@ describe("Contract", () => {
 		});
 
 		it("returns ContractCallError for return data too short", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x1234" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x1234" as HexType));
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
@@ -357,7 +362,7 @@ describe("Contract", () => {
 		});
 
 		it("returns ContractCallError for odd-length hex", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x123" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x123" as HexType));
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
@@ -702,7 +707,7 @@ describe("Contract", () => {
 
 	describe("simulate methods", () => {
 		it("calls eth_call without sending transaction", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000001" as HexType,
 				),
@@ -721,13 +726,13 @@ describe("Contract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 			expect(mockSigner.sendTransaction).not.toHaveBeenCalled();
 			expect(result).toBe(true);
 		});
 
 		it("handles zero-output function (sync)", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x" as HexType));
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
@@ -739,14 +744,14 @@ describe("Contract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});
 
 	describe("getEvents", () => {
 		it("fetches and decodes events", async () => {
-			mockProvider.getLogs.mockReturnValue(
+			mockGetLogsFn.mockReturnValue(
 				Effect.succeed([
 					{
 						address: testAddress,
@@ -776,13 +781,13 @@ describe("Contract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.getLogs).toHaveBeenCalled();
+			expect(mockGetLogsFn).toHaveBeenCalled();
 			expect(result.length).toBe(1);
 			expect(result[0].eventName).toBe("Transfer");
 		});
 
 		it("applies event filters", async () => {
-			mockProvider.getLogs.mockReturnValue(Effect.succeed([]));
+			mockGetLogsFn.mockReturnValue(Effect.succeed([]));
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
@@ -796,8 +801,8 @@ describe("Contract", () => {
 
 			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
-			expect(mockProvider.getLogs).toHaveBeenCalled();
-			const callArgs = mockProvider.getLogs.mock.calls[0][0];
+			expect(mockGetLogsFn).toHaveBeenCalled();
+			const callArgs = mockGetLogsFn.mock.calls[0][0];
 			expect(callArgs.address).toBe(Address.toHex(testAddress));
 		});
 
@@ -820,7 +825,7 @@ describe("Contract", () => {
 		});
 
 		it("handles fromBlock: 0n (genesis block)", async () => {
-			mockProvider.getLogs.mockReturnValue(Effect.succeed([]));
+			mockGetLogsFn.mockReturnValue(Effect.succeed([]));
 
 			const program = Effect.gen(function* () {
 				const contract = yield* Contract(testAddress, erc20Abi);
@@ -832,13 +837,13 @@ describe("Contract", () => {
 
 			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
-			expect(mockProvider.getLogs).toHaveBeenCalled();
-			const callArgs = mockProvider.getLogs.mock.calls[0][0];
+			expect(mockGetLogsFn).toHaveBeenCalled();
+			const callArgs = mockGetLogsFn.mock.calls[0][0];
 			expect(callArgs.fromBlock).toBe("0x0");
 		});
 
 		it("handles large block numbers", async () => {
-			mockProvider.getLogs.mockReturnValue(Effect.succeed([]));
+			mockGetLogsFn.mockReturnValue(Effect.succeed([]));
 
 			const largeBlockNumber = 999999999999999n;
 			const program = Effect.gen(function* () {
@@ -850,13 +855,13 @@ describe("Contract", () => {
 
 			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
-			expect(mockProvider.getLogs).toHaveBeenCalled();
-			const callArgs = mockProvider.getLogs.mock.calls[0][0];
+			expect(mockGetLogsFn).toHaveBeenCalled();
+			const callArgs = mockGetLogsFn.mock.calls[0][0];
 			expect(callArgs.fromBlock).toBe(`0x${largeBlockNumber.toString(16)}`);
 		});
 
 		it("returns ContractEventError for wrong topics length", async () => {
-			mockProvider.getLogs.mockReturnValue(
+			mockGetLogsFn.mockReturnValue(
 				Effect.succeed([
 					{
 						address: testAddress,
@@ -890,7 +895,7 @@ describe("Contract", () => {
 		});
 
 		it("returns ContractEventError for malformed topic hex", async () => {
-			mockProvider.getLogs.mockReturnValue(
+			mockGetLogsFn.mockReturnValue(
 				Effect.succeed([
 					{
 						address: testAddress,
@@ -928,7 +933,7 @@ describe("Contract", () => {
 
 	describe("error handling", () => {
 		it("decode error from read method is catchable with Effect.catchTag", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x1234" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x1234" as HexType));
 
 			const abiWithMissingFn = [
 				{
@@ -957,7 +962,7 @@ describe("Contract", () => {
 		});
 
 		it("decode error from simulate method is catchable with Effect.catchTag", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x1234" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x1234" as HexType));
 
 			const abiWithMissingFn = [
 				{

@@ -13,7 +13,7 @@ import type {
 	CallRequest,
 	HashInput,
 	TransactionIndexInput,
-} from "../Provider/ProviderService.js";
+} from "../Provider/types.js";
 import { TransportService } from "../Transport/TransportService.js";
 import { DebugService } from "./DebugService.js";
 

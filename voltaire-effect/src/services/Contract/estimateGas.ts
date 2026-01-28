@@ -7,6 +7,7 @@
 
 import { Address, BrandedAbi, type BrandedAddress } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
+import { estimateGas as estimateGasRpc } from "../Provider/functions/index.js";
 import { ProviderService } from "../Provider/index.js";
 import {
 	type Abi,
@@ -91,7 +92,6 @@ export const estimateGas = <
 	args?: WriteMethodArgs<TAbi, TFunctionName>,
 ): Effect.Effect<bigint, ContractCallError, ProviderService> =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
 		const addressHex = getAddressHex(contract.address as AddressType);
 		const abiItems = contract.abi as readonly AbiItem[];
 		const functionLabel = String(methodName);
@@ -138,26 +138,24 @@ export const estimateGas = <
 				),
 		});
 
-		return yield* provider
-			.estimateGas({
-				to: addressHex,
-				data,
-				value: options?.value,
-				gas: options?.gas,
-			})
-			.pipe(
-				Effect.mapError(
-					(e) =>
-						new ContractCallError(
-							{
-								address: addressHex,
-								method: functionLabel,
-								args: callArgs,
-								value: options?.value,
-							},
-							e.message,
-							{ cause: e },
-						),
-				),
-			);
+		return yield* estimateGasRpc({
+			to: addressHex,
+			data,
+			value: options?.value,
+			gas: options?.gas,
+		}).pipe(
+			Effect.mapError(
+				(e) =>
+					new ContractCallError(
+						{
+							address: addressHex,
+							method: functionLabel,
+							args: callArgs,
+							value: options?.value,
+						},
+						e.message,
+						{ cause: e },
+					),
+			),
+		);
 	});

@@ -38,6 +38,7 @@ import {
 	type LogFilter as ProviderLogFilter,
 	ProviderService,
 } from "../Provider/index.js";
+import { call, getLogs } from "../Provider/functions/index.js";
 import { SignerService } from "../Signer/index.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -230,7 +231,6 @@ const ContractFactory: ContractFactory = <TAbi extends Abi>(
 	abi: TAbi,
 ): Effect.Effect<ContractInstance<TAbi>, never, ProviderService> =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
 		const abiItems = abi as readonly AbiItem[];
 		const addressHex =
 			typeof address === "string"
@@ -263,23 +263,21 @@ const ContractFactory: ContractFactory = <TAbi extends Abi>(
 			(
 				read as unknown as Record<
 					string,
-					(...args: unknown[]) => Effect.Effect<unknown, ContractCallError>
+					(...args: unknown[]) => Effect.Effect<unknown, ContractCallError, ProviderService>
 				>
 			)[fn.name] = (...args: unknown[]) =>
 				Effect.gen(function* () {
 					const data = encodeArgs(abiItems, fn.name, args);
-					const result = yield* provider
-						.call({ to: addressHex, data })
-						.pipe(
-							Effect.mapError(
-								(e) =>
-									new ContractCallError(
-										{ address: addressHex, method: fn.name, args },
-										e.message,
-										{ cause: e },
-									),
-							),
-						);
+					const result = yield* call({ to: addressHex, data }).pipe(
+						Effect.mapError(
+							(e) =>
+								new ContractCallError(
+									{ address: addressHex, method: fn.name, args },
+									e.message,
+									{ cause: e },
+								),
+						),
+					);
 					return yield* decodeResultE(abiItems, fn.name, result as HexType, {
 						address: addressHex,
 						args,
@@ -350,12 +348,12 @@ const ContractFactory: ContractFactory = <TAbi extends Abi>(
 			(
 				simulate as unknown as Record<
 					string,
-					(...args: unknown[]) => Effect.Effect<unknown, ContractCallError>
+					(...args: unknown[]) => Effect.Effect<unknown, ContractCallError, ProviderService>
 				>
 			)[fn.name] = (...args: unknown[]) =>
 				Effect.gen(function* () {
 					const data = encodeArgs(abiItems, fn.name, args);
-					const result = yield* provider.call({ to: addressHex, data }).pipe(
+					const result = yield* call({ to: addressHex, data }).pipe(
 						Effect.mapError(
 							(e) =>
 								new ContractCallError(
@@ -380,7 +378,7 @@ const ContractFactory: ContractFactory = <TAbi extends Abi>(
 		const getEvents = <E extends string>(
 			eventName: E,
 			filter?: EventFilter,
-		): Effect.Effect<DecodedEvent[], ContractEventError> =>
+		): Effect.Effect<DecodedEvent[], ContractEventError, ProviderService> =>
 			Effect.gen(function* () {
 				const topic = yield* getEventTopicE(abiItems, eventName, addressHex);
 
@@ -399,18 +397,16 @@ const ContractFactory: ContractFactory = <TAbi extends Abi>(
 					toBlock: toProviderBlockTag(filter?.toBlock),
 				};
 
-				const logs = yield* provider
-					.getLogs(logFilter)
-					.pipe(
-						Effect.mapError(
-							(e) =>
-								new ContractEventError(
-									{ address: addressHex, event: eventName, filter },
-									e.message,
-									{ cause: e },
-								),
-						),
-					);
+				const logs = yield* getLogs(logFilter).pipe(
+					Effect.mapError(
+						(e) =>
+							new ContractEventError(
+								{ address: addressHex, event: eventName, filter },
+								e.message,
+								{ cause: e },
+							),
+					),
+				);
 
 				return yield* Effect.forEach(logs, (log) =>
 					decodeEventLogE(abiItems, eventName, log, addressHex),

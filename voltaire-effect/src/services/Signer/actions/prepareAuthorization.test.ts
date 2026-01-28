@@ -44,41 +44,17 @@ const mockAccount: AccountShape = {
 };
 
 const mockProvider: ProviderShape = {
-	getBlockNumber: () => Effect.succeed(12345n),
-	getBlock: () => Effect.succeed({} as never),
-	getBlockTransactionCount: () => Effect.succeed(0n),
-	getBalance: () => Effect.succeed(1000000000000000000n),
-	getTransactionCount: () => Effect.succeed(5n),
-	getCode: () => Effect.succeed("0x"),
-	getStorageAt: () => Effect.succeed("0x0"),
-	getTransaction: () => Effect.succeed({} as never),
-	getTransactionReceipt: () => Effect.succeed({} as never),
-	waitForTransactionReceipt: () => Effect.succeed({} as never),
-	call: () => Effect.succeed("0x"),
-	estimateGas: () => Effect.succeed(21000n),
-	createAccessList: () => Effect.succeed({ accessList: [], gasUsed: "0x0" }),
-	getLogs: () => Effect.succeed([]),
-	createEventFilter: () => Effect.succeed("0x1" as any),
-	createBlockFilter: () => Effect.succeed("0x1" as any),
-	createPendingTransactionFilter: () => Effect.succeed("0x1" as any),
-	getFilterChanges: () => Effect.succeed([]),
-	getFilterLogs: () => Effect.succeed([]),
-	uninstallFilter: () => Effect.succeed(true),
-	getChainId: () => Effect.succeed(1),
-	getGasPrice: () => Effect.succeed(20000000000n),
-	getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
-	getFeeHistory: () =>
-		Effect.succeed({ oldestBlock: "0x0", baseFeePerGas: [], gasUsedRatio: [] }),
-	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
-	getUncle: () => Effect.succeed({} as any),
-	getProof: () => Effect.succeed({} as any),
-	getBlobBaseFee: () => Effect.succeed(0n),
-	getTransactionConfirmations: () => Effect.succeed(0n),
-	watchBlocks: () => {
-		throw new Error("Not implemented in mock");
-	},
-	backfillBlocks: () => {
-		throw new Error("Not implemented in mock");
+	request: <T>(method: string, _params?: unknown[]) => {
+		switch (method) {
+			case "eth_chainId":
+				return Effect.succeed("0x1" as T);
+			case "eth_getTransactionCount":
+				return Effect.succeed("0x5" as T);
+			default:
+				return Effect.fail(
+					new TransportError({ code: -32601, message: `Unknown method: ${method}` }),
+				);
+		}
 	},
 };
 
@@ -114,10 +90,18 @@ describe("prepareAuthorization", () => {
 		let capturedBlockTag: string | undefined;
 
 		const providerWithCapture: ProviderShape = {
-			...mockProvider,
-			getTransactionCount: (_address, blockTag) => {
-				capturedBlockTag = blockTag as string;
-				return Effect.succeed(10n);
+			request: <T>(method: string, params?: unknown[]) => {
+				switch (method) {
+					case "eth_chainId":
+						return Effect.succeed("0x1" as T);
+					case "eth_getTransactionCount":
+						capturedBlockTag = params?.[1] as string;
+						return Effect.succeed("0xa" as T); // 10 in hex
+					default:
+						return Effect.fail(
+							new TransportError({ code: -32601, message: `Unknown method: ${method}` }),
+						);
+				}
 			},
 		};
 
@@ -141,10 +125,18 @@ describe("prepareAuthorization", () => {
 	it("uses provided nonce without fetching", async () => {
 		let getNonceCalled = false;
 		const providerWithCapture: ProviderShape = {
-			...mockProvider,
-			getTransactionCount: () => {
-				getNonceCalled = true;
-				return Effect.succeed(10n);
+			request: <T>(method: string, _params?: unknown[]) => {
+				switch (method) {
+					case "eth_chainId":
+						return Effect.succeed("0x1" as T);
+					case "eth_getTransactionCount":
+						getNonceCalled = true;
+						return Effect.succeed("0xa" as T);
+					default:
+						return Effect.fail(
+							new TransportError({ code: -32601, message: `Unknown method: ${method}` }),
+						);
+				}
 			},
 		};
 
@@ -181,11 +173,18 @@ describe("prepareAuthorization", () => {
 
 	it("handles provider errors", async () => {
 		const providerWithError: ProviderShape = {
-			...mockProvider,
-			getChainId: () =>
-				Effect.fail(
-					new TransportError({ code: -32000, message: "Network error" }),
-				),
+			request: <T>(method: string, _params?: unknown[]) => {
+				switch (method) {
+					case "eth_chainId":
+						return Effect.fail(
+							new TransportError({ code: -32000, message: "Network error" }),
+						);
+					default:
+						return Effect.fail(
+							new TransportError({ code: -32601, message: `Unknown method: ${method}` }),
+						);
+				}
+			},
 		};
 
 		const customLayers = Layer.mergeAll(

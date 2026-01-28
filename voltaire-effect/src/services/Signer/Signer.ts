@@ -39,6 +39,14 @@ type HexType = BrandedHex.HexType;
 type SignatureType = BrandedSignature.SignatureType;
 
 import { AccountService, LocalAccount } from "../Account/index.js";
+import {
+	getTransactionCount,
+	getChainId,
+	estimateGas,
+	getBlock,
+	getGasPrice,
+	getMaxPriorityFeePerGas,
+} from "../Provider/functions/index.js";
 import { ProviderService } from "../Provider/index.js";
 import { TransportService } from "../Transport/index.js";
 import { prepareAuthorization as prepareAuthorizationAction } from "./actions/prepareAuthorization.js";
@@ -292,13 +300,13 @@ const SignerLive: Layer.Layer<
 
 		const signTransaction = (
 			tx: TransactionRequest,
-		): Effect.Effect<HexType, SignerError> =>
+		): Effect.Effect<HexType, SignerError, ProviderService> =>
 			Effect.gen(function* () {
 				const addressHex = Address.toHex(account.address as AddressType);
 				const nonce =
 					tx.nonce ??
-					(yield* provider.getTransactionCount(addressHex, "pending"));
-				const chainId = tx.chainId ?? BigInt(yield* provider.getChainId());
+					(yield* getTransactionCount(addressHex, "pending"));
+				const chainId = tx.chainId ?? BigInt(yield* getChainId());
 				const toHex = tx.to
 					? typeof tx.to === "string"
 						? tx.to
@@ -312,9 +320,9 @@ const SignerLive: Layer.Layer<
 					gas: tx.gasLimit,
 				};
 				const gasLimit =
-					tx.gasLimit ?? (yield* provider.estimateGas(txForEstimate));
+					tx.gasLimit ?? (yield* estimateGas(txForEstimate));
 
-				const latestBlock = yield* provider.getBlock({ blockTag: "latest" });
+				const latestBlock = yield* getBlock({ blockTag: "latest" });
 				const baseFeePerGas = latestBlock.baseFeePerGas
 					? BigInt(latestBlock.baseFeePerGas)
 					: undefined;
@@ -330,16 +338,16 @@ const SignerLive: Layer.Layer<
 				};
 
 				if (txType === 0 || txType === 1) {
-					const gasPrice = tx.gasPrice ?? (yield* provider.getGasPrice());
-					gasParams = { gasPrice };
+					const gasPriceValue = tx.gasPrice ?? (yield* getGasPrice());
+					gasParams = { gasPrice: gasPriceValue };
 				} else {
-					const maxPriorityFeePerGas =
+					const maxPriorityFeePerGasValue =
 						tx.maxPriorityFeePerGas ??
-						(yield* provider.getMaxPriorityFeePerGas());
-					const baseFee = baseFeePerGas ?? (yield* provider.getGasPrice());
+						(yield* getMaxPriorityFeePerGas());
+					const baseFee = baseFeePerGas ?? (yield* getGasPrice());
 					const maxFeePerGas =
-						tx.maxFeePerGas ?? (baseFee * 12n) / 10n + maxPriorityFeePerGas;
-					gasParams = { maxFeePerGas, maxPriorityFeePerGas };
+						tx.maxFeePerGas ?? (baseFee * 12n) / 10n + maxPriorityFeePerGasValue;
+					gasParams = { maxFeePerGas, maxPriorityFeePerGas: maxPriorityFeePerGasValue };
 
 					if (txType === 3 && tx.maxFeePerBlobGas !== undefined) {
 						gasParams.maxFeePerBlobGas = tx.maxFeePerBlobGas;
@@ -416,7 +424,8 @@ const SignerLive: Layer.Layer<
 						),
 					),
 
-			signTransaction,
+			signTransaction: (tx) =>
+				signTransaction(tx).pipe(Effect.provideService(ProviderService, provider)),
 
 			signTypedData: (typedData) =>
 				account
@@ -454,7 +463,7 @@ const SignerLive: Layer.Layer<
 									),
 							),
 						);
-				}),
+				}).pipe(Effect.provideService(ProviderService, provider)),
 
 			sendRawTransaction: (signedTx) =>
 				transport.request<string>("eth_sendRawTransaction", [signedTx]).pipe(
@@ -608,7 +617,7 @@ const SignerLive: Layer.Layer<
 
 			sendCalls: (params) =>
 				Effect.gen(function* () {
-					const chainId = yield* provider.getChainId();
+					const chainIdValue = yield* getChainId();
 					const formattedCalls = params.calls.map((call) => ({
 						to:
 							typeof call.to === "string"
@@ -624,13 +633,14 @@ const SignerLive: Layer.Layer<
 					return yield* transport.request<string>("wallet_sendCalls", [
 						{
 							version: "1.0",
-							chainId: `0x${chainId.toString(16)}`,
+							chainId: `0x${chainIdValue.toString(16)}`,
 							from: Address.toHex(account.address as AddressType),
 							calls: formattedCalls,
 							capabilities: params.capabilities,
 						},
 					]);
 				}).pipe(
+					Effect.provideService(ProviderService, provider),
 					Effect.mapError((e) => {
 						const err = e as Error & { code?: number };
 						return new SignerError(

@@ -56,53 +56,89 @@ const mockAccount: AccountShape = {
 	clearKey: () => Effect.void,
 };
 
-const mockProvider: ProviderShape = {
-	getBlockNumber: () => Effect.succeed(12345n),
-	getBlock: () => Effect.succeed({} as never),
-	getBlockTransactionCount: () => Effect.succeed(0n),
-	getBalance: () => Effect.succeed(1000000000000000000n),
-	getTransactionCount: () => Effect.succeed(5n),
-	getCode: () => Effect.succeed("0x"),
-	getStorageAt: () => Effect.succeed("0x0"),
-	getTransaction: () => Effect.succeed({} as never),
-	getTransactionReceipt: () => Effect.succeed({} as never),
-	waitForTransactionReceipt: () => Effect.succeed({} as never),
-	call: () => Effect.succeed("0x"),
-	estimateGas: () => Effect.succeed(21000n),
-	createAccessList: () => Effect.succeed({ accessList: [], gasUsed: "0x0" }),
-	getLogs: () => Effect.succeed([]),
-	createEventFilter: () => Effect.succeed("0x1" as any),
-	createBlockFilter: () => Effect.succeed("0x1" as any),
-	createPendingTransactionFilter: () => Effect.succeed("0x1" as any),
-	getFilterChanges: () => Effect.succeed([]),
-	getFilterLogs: () => Effect.succeed([]),
-	uninstallFilter: () => Effect.succeed(true),
-	getChainId: () => Effect.succeed(1),
-	getGasPrice: () => Effect.succeed(20000000000n),
-	getMaxPriorityFeePerGas: () => Effect.succeed(1000000000n),
-	getFeeHistory: () =>
-		Effect.succeed({ oldestBlock: "0x0", baseFeePerGas: [], gasUsedRatio: [] }),
-	watchBlocks: () => {
-		throw new Error("Not implemented in mock");
-	},
-	backfillBlocks: () => {
-		throw new Error("Not implemented in mock");
-	},
-	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
-	getUncle: () => Effect.succeed({} as never),
-	getProof: () =>
-		Effect.succeed({
-			address: "0x",
-			accountProof: [],
-			balance: "0x0",
-			codeHash: "0x",
-			nonce: "0x0",
-			storageHash: "0x",
-			storageProof: [],
-		} as never),
-	getBlobBaseFee: () => Effect.succeed(1n),
-	getTransactionConfirmations: () => Effect.succeed(0n),
+type ProviderOverrides = {
+	getBlock?: unknown;
+	getTransactionCount?: (address: unknown, blockTag?: unknown) => bigint;
+	getMaxPriorityFeePerGas?: bigint;
 };
+
+const createMockProviderWithOverrides = (
+	overrides: ProviderOverrides = {},
+): ProviderShape => ({
+	request: <T>(method: string, params?: unknown[]) => {
+		switch (method) {
+			case "eth_blockNumber":
+				return Effect.succeed("0x3039" as T); // 12345
+			case "eth_getBlockByNumber":
+			case "eth_getBlockByHash":
+				if (overrides.getBlock !== undefined) {
+					return Effect.succeed(overrides.getBlock as T);
+				}
+				return Effect.succeed({
+					number: "0x1",
+					hash: "0xabc",
+					parentHash: "0x0",
+					nonce: "0x0",
+					sha3Uncles: "0x0",
+					logsBloom: "0x0",
+					transactionsRoot: "0x0",
+					stateRoot: "0x0",
+					receiptsRoot: "0x0",
+					miner: "0x0",
+					difficulty: "0x0",
+					totalDifficulty: "0x0",
+					extraData: "0x",
+					size: "0x0",
+					gasLimit: "0x0",
+					gasUsed: "0x0",
+					timestamp: "0x0",
+					transactions: [],
+					uncles: [],
+				} as T);
+			case "eth_getBalance":
+				return Effect.succeed("0xde0b6b3a7640000" as T); // 1 ETH
+			case "eth_getTransactionCount":
+				if (overrides.getTransactionCount) {
+					const nonce = overrides.getTransactionCount(params?.[0], params?.[1]);
+					return Effect.succeed(`0x${nonce.toString(16)}` as T);
+				}
+				return Effect.succeed("0x5" as T);
+			case "eth_getCode":
+				return Effect.succeed("0x" as T);
+			case "eth_getStorageAt":
+				return Effect.succeed("0x0" as T);
+			case "eth_call":
+				return Effect.succeed("0x" as T);
+			case "eth_estimateGas":
+				return Effect.succeed("0x5208" as T); // 21000
+			case "eth_chainId":
+				return Effect.succeed("0x1" as T);
+			case "eth_gasPrice":
+				return Effect.succeed("0x4a817c800" as T); // 20 gwei
+			case "eth_maxPriorityFeePerGas":
+				if (overrides.getMaxPriorityFeePerGas !== undefined) {
+					return Effect.succeed(
+						`0x${overrides.getMaxPriorityFeePerGas.toString(16)}` as T,
+					);
+				}
+				return Effect.succeed("0x3b9aca00" as T); // 1 gwei
+			case "eth_feeHistory":
+				return Effect.succeed({
+					oldestBlock: "0x0",
+					baseFeePerGas: [],
+					gasUsedRatio: [],
+				} as T);
+			case "eth_sendRawTransaction":
+				return Effect.succeed("0x" as T);
+			case "eth_blobBaseFee":
+				return Effect.succeed("0x1" as T);
+			default:
+				return Effect.succeed(null as T);
+		}
+	},
+});
+
+const mockProvider: ProviderShape = createMockProviderWithOverrides();
 
 const mockTransport: TransportShape = {
 	request: <T>(_method: string, _params?: unknown[]): Effect.Effect<T, never> =>
@@ -763,13 +799,12 @@ describe("SignerService", () => {
 	describe("nonce handling", () => {
 		it("fetches nonce with 'pending' block tag", async () => {
 			let capturedBlockTag: string | undefined;
-			const providerWithCapture: ProviderShape = {
-				...mockProvider,
+			const providerWithCapture = createMockProviderWithOverrides({
 				getTransactionCount: (_address, blockTag) => {
 					capturedBlockTag = blockTag as string;
-					return Effect.succeed(5n);
+					return 5n;
 				},
-			};
+			});
 
 			const customLayers = Layer.mergeAll(
 				TestAccountLayer,
@@ -793,13 +828,12 @@ describe("SignerService", () => {
 
 		it("uses provided nonce without fetching", async () => {
 			let fetchCalled = false;
-			const providerWithCapture: ProviderShape = {
-				...mockProvider,
+			const providerWithCapture = createMockProviderWithOverrides({
 				getTransactionCount: () => {
 					fetchCalled = true;
-					return Effect.succeed(5n);
+					return 5n;
 				},
-			};
+			});
 
 			const customLayers = Layer.mergeAll(
 				TestAccountLayer,
@@ -825,32 +859,30 @@ describe("SignerService", () => {
 
 	describe("EIP-1559 auto-detection", () => {
 		it("uses EIP-1559 when network supports it and no gas fields provided", async () => {
-			const providerWithEIP1559: ProviderShape = {
-				...mockProvider,
-				getBlock: () =>
-					Effect.succeed({
-						number: "0x1",
-						hash: "0xabc",
-						parentHash: "0x0",
-						nonce: "0x0",
-						sha3Uncles: "0x0",
-						logsBloom: "0x0",
-						transactionsRoot: "0x0",
-						stateRoot: "0x0",
-						receiptsRoot: "0x0",
-						miner: "0x0",
-						difficulty: "0x0",
-						totalDifficulty: "0x0",
-						extraData: "0x",
-						size: "0x0",
-						gasLimit: "0x0",
-						gasUsed: "0x0",
-						timestamp: "0x0",
-						transactions: [],
-						uncles: [],
-						baseFeePerGas: "0x3b9aca00", // 1 gwei - indicates EIP-1559 support
-					}),
-			};
+			const providerWithEIP1559 = createMockProviderWithOverrides({
+				getBlock: {
+					number: "0x1",
+					hash: "0xabc",
+					parentHash: "0x0",
+					nonce: "0x0",
+					sha3Uncles: "0x0",
+					logsBloom: "0x0",
+					transactionsRoot: "0x0",
+					stateRoot: "0x0",
+					receiptsRoot: "0x0",
+					miner: "0x0",
+					difficulty: "0x0",
+					totalDifficulty: "0x0",
+					extraData: "0x",
+					size: "0x0",
+					gasLimit: "0x0",
+					gasUsed: "0x0",
+					timestamp: "0x0",
+					transactions: [],
+					uncles: [],
+					baseFeePerGas: "0x3b9aca00", // 1 gwei - indicates EIP-1559 support
+				},
+			});
 
 			const customLayers = Layer.mergeAll(
 				TestAccountLayer,
@@ -876,32 +908,30 @@ describe("SignerService", () => {
 		});
 
 		it("uses legacy when network does not support EIP-1559", async () => {
-			const providerWithoutEIP1559: ProviderShape = {
-				...mockProvider,
-				getBlock: () =>
-					Effect.succeed({
-						number: "0x1",
-						hash: "0xabc",
-						parentHash: "0x0",
-						nonce: "0x0",
-						sha3Uncles: "0x0",
-						logsBloom: "0x0",
-						transactionsRoot: "0x0",
-						stateRoot: "0x0",
-						receiptsRoot: "0x0",
-						miner: "0x0",
-						difficulty: "0x0",
-						totalDifficulty: "0x0",
-						extraData: "0x",
-						size: "0x0",
-						gasLimit: "0x0",
-						gasUsed: "0x0",
-						timestamp: "0x0",
-						transactions: [],
-						uncles: [],
-						// No baseFeePerGas - pre-London
-					}),
-			};
+			const providerWithoutEIP1559 = createMockProviderWithOverrides({
+				getBlock: {
+					number: "0x1",
+					hash: "0xabc",
+					parentHash: "0x0",
+					nonce: "0x0",
+					sha3Uncles: "0x0",
+					logsBloom: "0x0",
+					transactionsRoot: "0x0",
+					stateRoot: "0x0",
+					receiptsRoot: "0x0",
+					miner: "0x0",
+					difficulty: "0x0",
+					totalDifficulty: "0x0",
+					extraData: "0x",
+					size: "0x0",
+					gasLimit: "0x0",
+					gasUsed: "0x0",
+					timestamp: "0x0",
+					transactions: [],
+					uncles: [],
+					// No baseFeePerGas - pre-London
+				},
+			});
 
 			const customLayers = Layer.mergeAll(
 				TestAccountLayer,
@@ -942,33 +972,31 @@ describe("SignerService", () => {
 				},
 			};
 
-			const providerWithEIP1559: ProviderShape = {
-				...mockProvider,
-				getBlock: () =>
-					Effect.succeed({
-						number: "0x1",
-						hash: "0xabc",
-						parentHash: "0x0",
-						nonce: "0x0",
-						sha3Uncles: "0x0",
-						logsBloom: "0x0",
-						transactionsRoot: "0x0",
-						stateRoot: "0x0",
-						receiptsRoot: "0x0",
-						miner: "0x0",
-						difficulty: "0x0",
-						totalDifficulty: "0x0",
-						extraData: "0x",
-						size: "0x0",
-						gasLimit: "0x0",
-						gasUsed: "0x0",
-						timestamp: "0x0",
-						transactions: [],
-						uncles: [],
-						baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
-					}),
-				getMaxPriorityFeePerGas: () => Effect.succeed(priorityFeeWei),
-			};
+			const providerWithEIP1559 = createMockProviderWithOverrides({
+				getBlock: {
+					number: "0x1",
+					hash: "0xabc",
+					parentHash: "0x0",
+					nonce: "0x0",
+					sha3Uncles: "0x0",
+					logsBloom: "0x0",
+					transactionsRoot: "0x0",
+					stateRoot: "0x0",
+					receiptsRoot: "0x0",
+					miner: "0x0",
+					difficulty: "0x0",
+					totalDifficulty: "0x0",
+					extraData: "0x",
+					size: "0x0",
+					gasLimit: "0x0",
+					gasUsed: "0x0",
+					timestamp: "0x0",
+					transactions: [],
+					uncles: [],
+					baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
+				},
+				getMaxPriorityFeePerGas: priorityFeeWei,
+			});
 
 			const customLayers = Layer.mergeAll(
 				Layer.succeed(AccountService, accountWithCapture),
@@ -1010,33 +1038,31 @@ describe("SignerService", () => {
 				},
 			};
 
-			const providerWithEIP1559: ProviderShape = {
-				...mockProvider,
-				getBlock: () =>
-					Effect.succeed({
-						number: "0x1",
-						hash: "0xabc",
-						parentHash: "0x0",
-						nonce: "0x0",
-						sha3Uncles: "0x0",
-						logsBloom: "0x0",
-						transactionsRoot: "0x0",
-						stateRoot: "0x0",
-						receiptsRoot: "0x0",
-						miner: "0x0",
-						difficulty: "0x0",
-						totalDifficulty: "0x0",
-						extraData: "0x",
-						size: "0x0",
-						gasLimit: "0x0",
-						gasUsed: "0x0",
-						timestamp: "0x0",
-						transactions: [],
-						uncles: [],
-						baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
-					}),
-				getMaxPriorityFeePerGas: () => Effect.succeed(priorityFeeWei),
-			};
+			const providerWithEIP1559 = createMockProviderWithOverrides({
+				getBlock: {
+					number: "0x1",
+					hash: "0xabc",
+					parentHash: "0x0",
+					nonce: "0x0",
+					sha3Uncles: "0x0",
+					logsBloom: "0x0",
+					transactionsRoot: "0x0",
+					stateRoot: "0x0",
+					receiptsRoot: "0x0",
+					miner: "0x0",
+					difficulty: "0x0",
+					totalDifficulty: "0x0",
+					extraData: "0x",
+					size: "0x0",
+					gasLimit: "0x0",
+					gasUsed: "0x0",
+					timestamp: "0x0",
+					transactions: [],
+					uncles: [],
+					baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
+				},
+				getMaxPriorityFeePerGas: priorityFeeWei,
+			});
 
 			const customLayers = Layer.mergeAll(
 				Layer.succeed(AccountService, accountWithCapture),
@@ -1077,33 +1103,31 @@ describe("SignerService", () => {
 				},
 			};
 
-			const providerWithEIP1559: ProviderShape = {
-				...mockProvider,
-				getBlock: () =>
-					Effect.succeed({
-						number: "0x1",
-						hash: "0xabc",
-						parentHash: "0x0",
-						nonce: "0x0",
-						sha3Uncles: "0x0",
-						logsBloom: "0x0",
-						transactionsRoot: "0x0",
-						stateRoot: "0x0",
-						receiptsRoot: "0x0",
-						miner: "0x0",
-						difficulty: "0x0",
-						totalDifficulty: "0x0",
-						extraData: "0x",
-						size: "0x0",
-						gasLimit: "0x0",
-						gasUsed: "0x0",
-						timestamp: "0x0",
-						transactions: [],
-						uncles: [],
-						baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
-					}),
-				getMaxPriorityFeePerGas: () => Effect.succeed(priorityFeeWei),
-			};
+			const providerWithEIP1559 = createMockProviderWithOverrides({
+				getBlock: {
+					number: "0x1",
+					hash: "0xabc",
+					parentHash: "0x0",
+					nonce: "0x0",
+					sha3Uncles: "0x0",
+					logsBloom: "0x0",
+					transactionsRoot: "0x0",
+					stateRoot: "0x0",
+					receiptsRoot: "0x0",
+					miner: "0x0",
+					difficulty: "0x0",
+					totalDifficulty: "0x0",
+					extraData: "0x",
+					size: "0x0",
+					gasLimit: "0x0",
+					gasUsed: "0x0",
+					timestamp: "0x0",
+					transactions: [],
+					uncles: [],
+					baseFeePerGas: `0x${baseFeeWei.toString(16)}`,
+				},
+				getMaxPriorityFeePerGas: priorityFeeWei,
+			});
 
 			const customLayers = Layer.mergeAll(
 				Layer.succeed(AccountService, accountWithCapture),

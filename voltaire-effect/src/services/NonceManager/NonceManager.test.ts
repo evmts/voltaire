@@ -11,40 +11,27 @@ import { DefaultNonceManager } from "./DefaultNonceManager.js";
 import { NonceError, NonceManagerService } from "./NonceManagerService.js";
 
 const createMockProvider = (
-	overrides: Partial<ProviderShape> = {},
+	overrides: {
+		getTransactionCount?: (address: unknown, blockTag?: unknown) => Effect.Effect<bigint, TransportError>;
+	} = {},
 ): ProviderShape => ({
-	getBlockNumber: () => Effect.succeed(18000000n),
-	getBlock: () => Effect.succeed({} as any),
-	getBlockTransactionCount: () => Effect.succeed(0n),
-	getBalance: () => Effect.succeed(0n),
-	getTransactionCount: () => Effect.succeed(5n),
-	getCode: () => Effect.succeed("0x"),
-	getStorageAt: () => Effect.succeed("0x"),
-	getTransaction: () => Effect.succeed({} as any),
-	getTransactionReceipt: () => Effect.succeed({} as any),
-	waitForTransactionReceipt: () => Effect.succeed({} as any),
-	call: () => Effect.succeed("0x"),
-	estimateGas: () => Effect.succeed(21000n),
-	createAccessList: () => Effect.succeed({} as any),
-	getLogs: () => Effect.succeed([]),
-	createEventFilter: () => Effect.succeed("0x1" as any),
-	createBlockFilter: () => Effect.succeed("0x1" as any),
-	createPendingTransactionFilter: () => Effect.succeed("0x1" as any),
-	getFilterChanges: () => Effect.succeed([]),
-	getFilterLogs: () => Effect.succeed([]),
-	uninstallFilter: () => Effect.succeed(true),
-	getChainId: () => Effect.succeed(1),
-	getGasPrice: () => Effect.succeed(20000000000n),
-	getMaxPriorityFeePerGas: () => Effect.succeed(1500000000n),
-	getFeeHistory: () => Effect.succeed({} as any),
-	watchBlocks: () => ({}) as any,
-	backfillBlocks: () => ({}) as any,
-	sendRawTransaction: () => Effect.succeed("0x" as `0x${string}`),
-	getUncle: () => Effect.succeed({} as any),
-	getProof: () => Effect.succeed({} as any),
-	getBlobBaseFee: () => Effect.succeed(0n),
-	getTransactionConfirmations: () => Effect.succeed(0n),
-	...overrides,
+	request: <T>(method: string, params?: unknown[]) => {
+		switch (method) {
+			case "eth_getTransactionCount":
+				if (overrides.getTransactionCount) {
+					return overrides.getTransactionCount(params?.[0], params?.[1]).pipe(
+						Effect.map((v) => `0x${v.toString(16)}` as T),
+					);
+				}
+				return Effect.succeed("0x5" as T); // default nonce = 5
+			case "eth_chainId":
+				return Effect.succeed("0x1" as T);
+			default:
+				return Effect.fail(
+					new TransportError({ code: -32601, message: `Unknown method: ${method}` }),
+				);
+		}
+	},
 });
 
 describe("NonceManagerService", () => {

@@ -13,7 +13,7 @@ import type {
 	CallRequest,
 	HashInput,
 	TransactionIndexInput,
-} from "../Provider/ProviderService.js";
+} from "../Provider/types.js";
 import type { TransportError } from "../Transport/TransportError.js";
 
 /**

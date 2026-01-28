@@ -7,7 +7,7 @@
 
 import * as Data from "effect/Data";
 import type * as Request from "effect/Request";
-import type { AddressInput, BlockTag } from "../Provider/ProviderService.js";
+import type { AddressInput, BlockTag } from "../Provider/types.js";
 import type { MulticallError } from "./Multicall.js";
 
 /**

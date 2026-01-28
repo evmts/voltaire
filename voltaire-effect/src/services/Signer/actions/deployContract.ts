@@ -19,6 +19,7 @@ import {
 	ProviderService,
 	type WaitForTransactionReceiptError,
 } from "../../Provider/index.js";
+import { waitForTransactionReceipt } from "../../Provider/functions/index.js";
 import { type SignerError, SignerService } from "../SignerService.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -151,8 +152,8 @@ export const deployContract = <TAbi extends Abi>(
 			WaitForTransactionReceiptError,
 			ProviderService
 		> = Effect.gen(function* () {
-			const provider = yield* ProviderService;
-			const receipt = yield* provider.waitForTransactionReceipt(hash);
+			const hashHex = `0x${Buffer.from(hash).toString("hex")}` as `0x${string}`;
+			const receipt = yield* waitForTransactionReceipt(hashHex);
 			if (!receipt.contractAddress) {
 				return yield* Effect.fail(
 					new ProviderResponseError({ hash }, "No contract address in receipt"),

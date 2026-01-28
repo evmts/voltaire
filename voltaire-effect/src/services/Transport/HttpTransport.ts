@@ -170,7 +170,7 @@ interface JsonRpcResponse<T> {
  * ```typescript
  * import { Effect, Schedule } from 'effect'
  * import { FetchHttpClient } from '@effect/platform'
- * import { HttpTransport, Provider, ProviderService } from 'voltaire-effect'
+ * import { HttpTransport, Provider, getBlockNumber } from 'voltaire-effect'
  *
  * const transport = HttpTransport({
  *   url: 'https://mainnet.infura.io/v3/YOUR_KEY',
@@ -186,8 +186,8 @@ interface JsonRpcResponse<T> {
  * })
  *
  * const program = Effect.gen(function* () {
- *   const client = yield* ProviderService
- *   return yield* client.getBlockNumber()
+ *   const blockNumber = yield* getBlockNumber()
+ *   return blockNumber
  * }).pipe(
  *   Effect.provide(Provider),
  *   Effect.provide(transport),

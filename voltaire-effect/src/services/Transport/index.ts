@@ -20,15 +20,14 @@
  * ```typescript
  * import { Effect } from 'effect'
  * import {
- *   TransportService,
  *   HttpTransport,
  *   Provider,
- *   ProviderService
+ *   getBlockNumber
  * } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const client = yield* ProviderService
- *   return yield* client.getBlockNumber()
+ *   const blockNumber = yield* getBlockNumber()
+ *   return blockNumber
  * }).pipe(
  *   Effect.provide(Provider),
  *   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))

@@ -12,6 +12,7 @@ import {
 	type UnsignedAuthorization,
 } from "../../Account/index.js";
 import { ProviderService } from "../../Provider/index.js";
+import { getChainId, getTransactionCount } from "../../Provider/functions/index.js";
 import {
 	type PrepareAuthorizationParams,
 	SignerError,
@@ -59,15 +60,14 @@ export const prepareAuthorization = (
 	ProviderService | AccountService
 > =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
 		const account = yield* AccountService;
 
-		const chainId = params.chainId ?? BigInt(yield* provider.getChainId());
+		const chainId = params.chainId ?? (yield* getChainId());
 
 		const addressHex = Address.toHex(account.address as AddressType);
 		const nonce =
 			params.nonce ??
-			(yield* provider.getTransactionCount(addressHex, "pending"));
+			(yield* getTransactionCount(addressHex, "pending"));
 
 		const contractAddressHex =
 			typeof params.contractAddress === "string"

@@ -35,11 +35,10 @@ import { TransportService } from "../Transport/TransportService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, ForkProviderTransport } from 'voltaire-effect'
+ * import { Provider, getBalance, ForkProviderTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   const balance = yield* provider.getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+ *   const balance = yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
  *   return balance
  * }).pipe(
  *   Effect.provide(Provider),

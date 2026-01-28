@@ -16,7 +16,7 @@ import { decodeParameters, encodeParameters } from "@tevm/voltaire/Abi";
 import * as Hex from "@tevm/voltaire/Hex";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
-import type { BlockTag } from "../Provider/ProviderService.js";
+import type { BlockTag } from "../Provider/types.js";
 import { TransportService } from "../Transport/TransportService.js";
 
 /**

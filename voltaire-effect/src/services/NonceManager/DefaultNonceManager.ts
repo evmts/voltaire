@@ -16,6 +16,7 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SynchronizedRef from "effect/SynchronizedRef";
+import { getTransactionCount } from "../Provider/functions/index.js";
 import { ProviderService } from "../Provider/index.js";
 import { NonceError, NonceManagerService } from "./NonceManagerService.js";
 
@@ -74,7 +75,7 @@ import { NonceError, NonceManagerService } from "./NonceManagerService.js";
  * @see {@link NonceManagerService} - The service interface
  * @see {@link ProviderService} - Required for fetching on-chain nonces
  */
-export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
+export const DefaultNonceManager: Layer.Layer<NonceManagerService, never, ProviderService> =
 	Layer.effect(
 		NonceManagerService,
 		Effect.gen(function* () {
@@ -83,11 +84,9 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 			return {
 				get: (address: string, chainId: number) =>
 					Effect.gen(function* () {
-						const provider = yield* ProviderService;
 						const key = `${chainId}:${address.toLowerCase()}`;
 
-						const baseNonce = yield* provider
-							.getTransactionCount(address as `0x${string}`, "pending")
+						const baseNonce = yield* getTransactionCount(address as `0x${string}`, "pending")
 							.pipe(
 								Effect.mapError(
 									(e) =>
@@ -107,11 +106,9 @@ export const DefaultNonceManager: Layer.Layer<NonceManagerService> =
 				consume: (address: string, chainId: number) =>
 					SynchronizedRef.modifyEffect(deltaRef, (deltaMap) =>
 						Effect.gen(function* () {
-							const provider = yield* ProviderService;
 							const key = `${chainId}:${address.toLowerCase()}`;
 
-							const baseNonce = yield* provider
-								.getTransactionCount(address as `0x${string}`, "pending")
+							const baseNonce = yield* getTransactionCount(address as `0x${string}`, "pending")
 								.pipe(
 									Effect.mapError(
 										(e) =>

@@ -31,11 +31,11 @@ import { TransportService } from "../Transport/TransportService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, HttpProviderTransport } from 'voltaire-effect'
+ * import { Provider, getBlockNumber, HttpProviderTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   return yield* provider.getBlockNumber()
+ *   const blockNumber = yield* getBlockNumber()
+ *   return blockNumber
  * }).pipe(
  *   Effect.provide(Provider),
  *   Effect.provide(HttpProviderTransport('https://eth.llamarpc.com'))

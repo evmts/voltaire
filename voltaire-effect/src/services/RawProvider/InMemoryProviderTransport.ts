@@ -31,11 +31,11 @@ import { TransportService } from "../Transport/TransportService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, InMemoryProviderTransport } from 'voltaire-effect'
+ * import { Provider, getBlockNumber, InMemoryProviderTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   return yield* provider.getBlockNumber()
+ *   const blockNumber = yield* getBlockNumber()
+ *   return blockNumber
  * }).pipe(
  *   Effect.provide(Provider),
  *   Effect.provide(InMemoryProviderTransport({ chainId: 1 }))

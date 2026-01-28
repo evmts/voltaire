@@ -1,7 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { Provider, ProviderService } from "../Provider/index.js";
+import {
+	Provider,
+	getBalance,
+	getBlockNumber,
+	getChainId,
+} from "../Provider/index.js";
 import { TestTransport } from "../Transport/index.js";
 import { createProvider, MainnetProvider } from "./index.js";
 
@@ -13,13 +18,8 @@ describe("presets", () => {
 					Layer.provide(TestTransport({ eth_chainId: "0x1" })),
 				);
 
-				const program = Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getChainId();
-				}).pipe(Effect.provide(testLayer));
-
-				const result = yield* program;
-				expect(result).toBe(1);
+				const result = yield* getChainId().pipe(Effect.provide(testLayer));
+				expect(result).toBe(1n);
 			}),
 		);
 
@@ -29,12 +29,7 @@ describe("presets", () => {
 					Layer.provide(TestTransport({ eth_blockNumber: "0x1234" })),
 				);
 
-				const program = Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockNumber();
-				}).pipe(Effect.provide(testLayer));
-
-				const result = yield* program;
+				const result = yield* getBlockNumber().pipe(Effect.provide(testLayer));
 				expect(result).toBe(0x1234n);
 			}),
 		);
@@ -52,13 +47,8 @@ describe("presets", () => {
 					Layer.provide(TestTransport({ eth_chainId: "0xa4b1" })),
 				);
 
-				const program = Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getChainId();
-				}).pipe(Effect.provide(testLayer));
-
-				const result = yield* program;
-				expect(result).toBe(42161);
+				const result = yield* getChainId().pipe(Effect.provide(testLayer));
+				expect(result).toBe(42161n);
 			}),
 		);
 
@@ -68,14 +58,9 @@ describe("presets", () => {
 					Layer.provide(TestTransport({ eth_getBalance: "0xde0b6b3a7640000" })),
 				);
 
-				const program = Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBalance(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(testLayer));
-
-				const result = yield* program;
+				const result = yield* getBalance(
+					"0x1234567890123456789012345678901234567890",
+				).pipe(Effect.provide(testLayer));
 				expect(result).toBe(1000000000000000000n);
 			}),
 		);

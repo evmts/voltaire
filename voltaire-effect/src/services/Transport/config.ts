@@ -16,13 +16,13 @@
  * @example
  * ```typescript
  * import { Effect, Schedule } from "effect"
- * import { withTimeout, withRetrySchedule } from "voltaire-effect"
+ * import { getBalance, withTimeout, withRetrySchedule } from "voltaire-effect"
  *
  * // Default timeout is 30s with exponential backoff retries
- * const balance = yield* provider.getBalance(addr)
+ * const balance = yield* getBalance(addr)
  *
  * // This call uses a 5s timeout and custom retry schedule
- * const fastBalance = yield* provider.getBalance(addr).pipe(
+ * const fastBalance = yield* getBalance(addr).pipe(
  *   withTimeout("5 seconds"),
  *   withRetrySchedule(Schedule.recurs(1))
  * )
@@ -91,8 +91,8 @@ export const tracingRef: FiberRef.FiberRef<boolean> =
  *
  * @example
  * ```typescript
- * provider.getBalance(addr).pipe(withTimeout("5 seconds"))
- * provider.getBalance(addr).pipe(withTimeout(Duration.seconds(5)))
+ * getBalance(addr).pipe(withTimeout("5 seconds"))
+ * getBalance(addr).pipe(withTimeout(Duration.seconds(5)))
  * ```
  */
 export const withTimeout =
@@ -108,14 +108,14 @@ export const withTimeout =
  *
  * @example Simple retry count
  * ```typescript
- * provider.getBalance(addr).pipe(
+ * getBalance(addr).pipe(
  *   withRetrySchedule(Schedule.recurs(1))
  * )
  * ```
  *
  * @example Exponential backoff with jitter
  * ```typescript
- * provider.getBalance(addr).pipe(
+ * getBalance(addr).pipe(
  *   withRetrySchedule(
  *     Schedule.exponential("500 millis").pipe(
  *       Schedule.jittered,

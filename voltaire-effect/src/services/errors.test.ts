@@ -26,10 +26,8 @@ import {
 } from "./Contract/ContractTypes.js";
 import { KzgError } from "./Kzg/KzgService.js";
 import { Provider } from "./Provider/Provider.js";
-import {
-	ProviderResponseError,
-	ProviderService,
-} from "./Provider/ProviderService.js";
+import { getBlockNumber } from "./Provider/functions/index.js";
+import { ProviderResponseError } from "./Provider/ProviderService.js";
 import { SignerError } from "./Signer/SignerService.js";
 import {
 	DeserializeError,
@@ -261,10 +259,7 @@ describe("Error constructor standardization", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockNumber();
-				}).pipe(Effect.provide(layer)),
+				getBlockNumber().pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);

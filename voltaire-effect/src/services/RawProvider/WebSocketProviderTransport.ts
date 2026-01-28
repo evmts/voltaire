@@ -34,11 +34,11 @@ import { TransportService } from "../Transport/TransportService.js";
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { Provider, ProviderService, WebSocketProviderTransport } from 'voltaire-effect'
+ * import { Provider, getBlockNumber, WebSocketProviderTransport } from 'voltaire-effect'
  *
  * const program = Effect.gen(function* () {
- *   const provider = yield* ProviderService
- *   return yield* provider.getBlockNumber()
+ *   const blockNumber = yield* getBlockNumber()
+ *   return blockNumber
  * }).pipe(
  *   Effect.provide(Provider),
  *   Effect.provide(WebSocketProviderTransport('wss://eth.llamarpc.com')),
