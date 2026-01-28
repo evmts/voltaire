@@ -58,7 +58,7 @@
 		"rules": {
 			"recommended": true,
 			"complexity": {
-				"noExcessiveCognitiveComplexity": "off",
+				"noExcessiveCognitiveComplexity": "warn",
 				"noForEach": "off",
 				"noBannedTypes": "warn"
 			},

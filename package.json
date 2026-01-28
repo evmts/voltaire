@@ -679,7 +679,7 @@
 		"format": "biome format . --write",
 		"format:check": "biome format .",
 		"lint": "biome check . --write --unsafe",
-		"lint:check": "biome check . --verbose",
+		"lint:check": "biome check . --diagnostic-level=error",
 		"lint:deps": "pnpm dlx depcheck",
 		"lint:package": "pnpm dlx publint",
 		"package:up": "pnpm up --latest",
