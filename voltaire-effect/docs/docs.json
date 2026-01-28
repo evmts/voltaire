@@ -63,38 +63,60 @@
             ]
           },
           {
-            "group": "Services",
+            "group": "Core Services",
             "icon": "server",
             "pages": [
-              "services/transport",
               "services/provider",
-              "services/debug",
-              "services/engine-api",
               "services/signer",
               "services/account",
-              "services/contract",
+              "services/contract"
+            ]
+          },
+          {
+            "group": "Advanced Services",
+            "icon": "gears",
+            "pages": [
               "services/contract-registry",
               "services/block-stream",
               "services/transaction-stream",
               "services/cache",
-              "services/multicall",
               "services/rpc-batch",
               "services/rate-limiter",
               "services/fee-estimator",
               "services/nonce-manager",
               "services/ccip",
-              "services/raw-providers",
-              "services/chain",
+              "services/debug",
+              "services/engine-api",
+                            "services/chain",
+              "services/kzg",
+              "services/presets"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "icon": "wrench",
+            "pages": [
+              "services/multicall",
               "services/abi-encoder",
               "services/formatter",
-              "services/transaction-serializer",
-              "services/kzg",
-              "services/presets",
+              "services/transaction-serializer"
+            ]
+          },
+          {
+            "group": "Data Streams",
+            "icon": "wave-pulse",
+            "pages": [
               "stream",
-              "transaction",
-              "block",
-              "blockchain",
               "event-stream",
+              "block",
+              "transaction",
+              "blockchain"
+            ]
+          },
+          {
+            "group": "JSON-RPC Reference",
+            "icon": "book",
+            "pages": [
               "jsonrpc",
               "jsonrpc-schemas"
             ]

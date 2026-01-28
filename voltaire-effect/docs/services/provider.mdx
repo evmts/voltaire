@@ -46,6 +46,136 @@ const program = Effect.gen(function* () {
 )
 ```
 
+## Transport Layer
+
+Provider requires a transport layer for network communication. Three transports are available:
+
+### HttpTransport
+
+```typescript
+import { Schedule } from 'effect'
+
+// Simple
+HttpTransport('https://eth.llamarpc.com')
+
+// With Effect Duration and Schedule
+HttpTransport({
+  url: 'https://eth.llamarpc.com',
+  headers: { 'X-Api-Key': 'secret' },
+  timeout: '60 seconds',  // Effect Duration (default: "30 seconds")
+  retrySchedule: Schedule.exponential('500 millis').pipe(
+    Schedule.jittered,
+    Schedule.compose(Schedule.recurs(5))
+  )
+})
+```
+
+<Note>
+`timeout` accepts any Effect `DurationInput` (strings, numbers in ms, or `Duration`). Use strings for readability.
+</Note>
+
+### WebSocketTransport
+
+```typescript
+import { WebSocketTransport } from 'voltaire-effect'
+
+program.pipe(
+  Effect.provide(WebSocketTransport('wss://eth.llamarpc.com'))
+)
+```
+
+### BrowserTransport
+
+Uses `window.ethereum` ([EIP-1193](https://eips.ethereum.org/EIPS/eip-1193)).
+
+```typescript
+import { BrowserTransport } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const transport = yield* TransportService
+  const accounts = yield* transport.request<string[]>('eth_accounts', [])
+  return accounts[0]
+}).pipe(
+  Effect.provide(BrowserTransport)
+)
+```
+
+### Request Batching
+
+Combine multiple JSON-RPC requests into a single HTTP call for better performance.
+
+```typescript
+import { HttpTransport, TransportService } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+const transport = HttpTransport({
+  url: 'https://eth.llamarpc.com',
+  batch: {
+    batchSize: 50,    // Max requests per batch (default: 100)
+    wait: 10          // Wait time in ms before flushing (default: 0)
+  }
+})
+
+// Requests made concurrently are automatically batched
+const program = Effect.gen(function* () {
+  const t = yield* TransportService
+  const [blockNumber, chainId, gasPrice] = yield* Effect.all([
+    t.request<string>('eth_blockNumber'),
+    t.request<string>('eth_chainId'),
+    t.request<string>('eth_gasPrice')
+  ])
+  return { blockNumber, chainId, gasPrice }
+}).pipe(Effect.provide(transport))
+```
+
+- Requests are queued and sent together when `batchSize` is reached or after `wait` ms
+- Each request in the batch is matched to its response by ID
+- If one request fails, only that request fails (others still succeed)
+
+### TestTransport
+
+```typescript
+import { TestTransport, TransportError } from 'voltaire-effect'
+
+const mockResponses = new Map([
+  ['eth_blockNumber', '0x1234'],
+  ['eth_chainId', '0x1'],
+])
+
+program.pipe(Effect.provide(TestTransport(mockResponses)))
+
+// Mock errors
+const errorResponses = new Map([
+  ['eth_call', new TransportError({ code: -32000, message: 'execution reverted' })],
+])
+```
+
+### Per-Request Overrides
+
+Use FiberRef-based helpers for scoped overrides:
+
+```typescript
+import { getBalance, getBlockNumber, withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
+import { Schedule } from 'effect'
+
+// Override timeout for a single call
+const balance = yield* getBalance(addr).pipe(
+  withTimeout('5 seconds')
+)
+
+// Custom retry schedule
+const block = yield* getBlockNumber().pipe(
+  withRetrySchedule(Schedule.recurs(1))
+)
+
+// Disable caching
+const fresh = yield* getBlockNumber().pipe(withoutCache)
+
+// Enable tracing
+const traced = yield* getBalance(addr).pipe(withTracing())
+```
+```
+
 ## Layer Composition
 
 `Provider` is a Layer that requires `TransportService`:
@@ -563,10 +693,7 @@ const program = Effect.gen(function* () {
 
 ## See Also
 
-- [Transport Service](/services/transport) — HTTP/WebSocket transport layer
-- [Debug Service](/services/debug) — debug_* RPC calls (tracing, raw blocks)
-- [Engine API Service](/services/engine-api) — engine_* RPC methods for consensus integration
 - [Signer Service](/services/signer) — Transaction signing and sending
-- [Multicall](/services/multicall) — Batch multiple calls
+- [Debug Service](/services/debug) — debug_* RPC calls (tracing, raw blocks)
 - [Read Blockchain Example](/examples/read-blockchain) — Common read patterns
 - [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) — JSON-RPC specification
