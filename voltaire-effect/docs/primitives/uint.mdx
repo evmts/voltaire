@@ -1,181 +1,211 @@
 ---
 title: Uint
-description: Unsigned integer types for Ethereum (Uint8 to Uint256)
+description: Effect wrappers for 256-bit unsigned integers
 ---
 
-Unsigned integers are fundamental to Ethereum—balances, gas, token amounts, and more. voltaire-effect provides [Effect Schema](https://effect.website/docs/schema/introduction/) validation for all fixed-size unsigned integers.
+The Uint module provides Effect-based wrappers for all 47 Uint256 operations from `@tevm/voltaire`.
 
 ```typescript
 import * as Uint from 'voltaire-effect/primitives/Uint'
+import * as Effect from 'effect/Effect'
 import * as S from 'effect/Schema'
-
-// Decode from bigint
-const value = S.decodeSync(Uint.Uint256)(1000000000000000000n)
-
-// Decode from hex string
-const fromHex = S.decodeSync(Uint.Uint256Hex)('0xde0b6b3a7640000')
 ```
-
-## Available Types
-
-| Type | Bits | Max Value |
-|------|------|-----------|
-| `Uint8` | 8 | 255 |
-| `Uint16` | 16 | 65,535 |
-| `Uint32` | 32 | 4,294,967,295 |
-| `Uint64` | 64 | 18,446,744,073,709,551,615 |
-| `Uint128` | 128 | 2¹²⁸ - 1 |
-| `Uint256` | 256 | 2²⁵⁶ - 1 |
 
 ## Schemas
 
-### From BigInt
+Parse and validate Uint256 values using Effect Schema:
+
+| Schema | Input | Output |
+|--------|-------|--------|
+| `Uint.BigInt` | bigint | Uint256Type |
+| `Uint.Number` | number | Uint256Type |
+| `Uint.Hex` | hex string | Uint256Type |
+| `Uint.String` | decimal string | Uint256Type |
+| `Uint.Bytes` | Uint8Array | Uint256Type |
 
 ```typescript
-import * as Uint from 'voltaire-effect/primitives/Uint'
-import * as S from 'effect/Schema'
+// Decode from various formats
+const fromBigInt = S.decodeSync(Uint.BigInt)(1000000000000000000n)
+const fromHex = S.decodeSync(Uint.Hex)('0xde0b6b3a7640000')
+const fromNumber = S.decodeSync(Uint.Number)(42)
 
-const gas = S.decodeSync(Uint.Uint64)(21000n)
-const balance = S.decodeSync(Uint.Uint256)(1000000000000000000n)
+// Encode back
+const hex = S.encodeSync(Uint.Hex)(fromBigInt)
+// "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000"
 ```
 
-### From Number
+## Constructors
 
-Safe conversion with overflow checking:
+Create Uint256 values with Effect-wrapped error handling:
 
 ```typescript
-const small = S.decodeSync(Uint.Uint8)(255)  // ✓
-const overflow = S.decodeSync(Uint.Uint8)(256)  // ✗ ParseError
+// from() accepts bigint, number, or string (decimal/hex)
+const a = Effect.runSync(Uint.from(100n))
+const b = Effect.runSync(Uint.from("0xff"))
+const c = Effect.runSync(Uint.from(42))
+
+// Type-specific constructors
+const fromBigInt = Effect.runSync(Uint.fromBigInt(100n))
+const fromNumber = Effect.runSync(Uint.fromNumber(42))
+const fromHex = Effect.runSync(Uint.fromHex("0xde0b6b3a7640000"))
+const fromBytes = Effect.runSync(Uint.fromBytes(new Uint8Array([0xff])))
+const fromAbi = Effect.runSync(Uint.fromAbiEncoded(abiEncodedData))
 ```
 
-### From Hex String
+### tryFrom
+
+Returns an Option instead of throwing:
 
 ```typescript
-const fromHex = S.decodeSync(Uint.Uint256Hex)('0xde0b6b3a7640000')
-// 1000000000000000000n
+import * as Option from 'effect/Option'
+
+const result = Uint.tryFrom(100n) // Some(100n)
+const invalid = Uint.tryFrom(-1n) // None
 ```
 
-### From Bytes
+## Type Guards
+
+Pure functions for type checking:
 
 ```typescript
-const fromBytes = S.decodeSync(Uint.Uint256Bytes)(
-  new Uint8Array([0x0d, 0xe0, 0xb6, 0xb3, 0xa7, 0x64, 0x00, 0x00])
-)
-```
+if (Uint.isUint256(value)) {
+  // value is Uint256Type
+}
 
-## U256 Alias
-
-For common 256-bit operations:
-
-```typescript
-import * as U256 from 'voltaire-effect/primitives/U256'
-import * as S from 'effect/Schema'
-
-const value = S.decodeSync(U256.BigInt)(1000000000000000000n)
-const hex = S.encodeSync(U256.Hex)(value)
-// "0x0de0b6b3a7640000"
-```
-
-## Encoding
-
-Encode back to hex or bytes:
-
-```typescript
-const value = S.decodeSync(Uint.Uint256)(1000000000000000000n)
-
-// To hex string
-const hex = S.encodeSync(Uint.Uint256Hex)(value)
-// "0x0de0b6b3a7640000"
-
-// To bytes
-const bytes = S.encodeSync(Uint.Uint256Bytes)(value)
-// Uint8Array(32)
-```
-
-## Validation
-
-Schemas validate range automatically:
-
-```typescript
-import * as Effect from 'effect/Effect'
-import * as S from 'effect/Schema'
-
-// Negative values fail
-S.decode(Uint.Uint256)(-1n).pipe(
-  Effect.catchTag('ParseError', (e) => {
-    console.log(e.message)  // "Value must be non-negative"
-    return Effect.succeed(0n)
-  })
-)
-
-// Overflow fails
-S.decode(Uint.Uint8)(256n).pipe(
-  Effect.catchTag('ParseError', (e) => {
-    console.log(e.message)  // "Value exceeds Uint8 max"
-    return Effect.succeed(255n)
-  })
-)
-```
-
-## Common Ethereum Values
-
-```typescript
-// 1 ETH in wei
-const oneEth = S.decodeSync(Uint.Uint256)(1000000000000000000n)
-
-// Gas limit
-const gasLimit = S.decodeSync(Uint.Uint64)(21000n)
-
-// ERC-20 amount (USDC has 6 decimals)
-const usdcAmount = S.decodeSync(Uint.Uint256)(1000000n)  // 1 USDC
-
-// Block number
-const blockNumber = S.decodeSync(Uint.Uint64)(18000000n)
+Uint.isValid(100n) // true
+Uint.isValid(-1n)  // false
 ```
 
 ## Arithmetic
 
-Use standard bigint operations:
+### Wrapping Operations (pure)
+
+These operations wrap on overflow/underflow and never fail:
 
 ```typescript
-const a = S.decodeSync(Uint.Uint256)(100n)
-const b = S.decodeSync(Uint.Uint256)(200n)
+const a = S.decodeSync(Uint.BigInt)(100n)
+const b = S.decodeSync(Uint.BigInt)(30n)
 
-const sum = a + b       // 300n
-const product = a * b   // 20000n
-const quotient = b / a  // 2n
+Uint.plus(a, b)   // 130n (wraps on overflow)
+Uint.minus(a, b)  // 70n (wraps on underflow)
+Uint.times(a, b)  // 3000n (wraps on overflow)
+Uint.toPower(a, b) // a^b (wraps on overflow)
 ```
 
-<Warning>
-JavaScript bigint arithmetic can overflow `Uint256`. Re-validate after operations if needed.
-</Warning>
+### Fallible Operations (Effect-wrapped)
 
-## Type Definitions
+Division and modulo can fail on zero divisor:
 
 ```typescript
-type Uint8Type = bigint & { readonly __tag: 'Uint8' }
-type Uint16Type = bigint & { readonly __tag: 'Uint16' }
-type Uint32Type = bigint & { readonly __tag: 'Uint32' }
-type Uint64Type = bigint & { readonly __tag: 'Uint64' }
-type Uint128Type = bigint & { readonly __tag: 'Uint128' }
-type Uint256Type = bigint & { readonly __tag: 'Uint256' }
+const quotient = Effect.runSync(Uint.dividedBy(a, b)) // 3n
+const remainder = Effect.runSync(Uint.modulo(a, b))   // 10n
+
+// Handle errors
+const result = Uint.dividedBy(a, zero).pipe(
+  Effect.catchAll((e) => Effect.succeed(fallbackValue))
+)
 ```
 
-## Individual Type Pages
+## Comparison
 
-For detailed documentation on each size:
+All comparison functions are pure:
 
-- [Uint8](/primitives/uint8)
-- [Uint16](/primitives/uint16)
-- [Uint32](/primitives/uint32)
-- [Uint64](/primitives/uint64)
-- [Uint128](/primitives/uint128)
-- [U256](/primitives/u256) — 256-bit with additional utilities
+```typescript
+Uint.equals(a, b)           // false
+Uint.notEquals(a, b)        // true
+Uint.lessThan(a, b)         // false
+Uint.lessThanOrEqual(a, b)  // false
+Uint.greaterThan(a, b)      // true
+Uint.greaterThanOrEqual(a, b) // true
+Uint.isZero(a)              // false
+```
+
+## Bitwise Operations
+
+All bitwise operations are pure:
+
+```typescript
+Uint.bitwiseAnd(a, b)       // a & b
+Uint.bitwiseOr(a, b)        // a | b
+Uint.bitwiseXor(a, b)       // a ^ b
+Uint.bitwiseNot(a)          // ~a
+Uint.shiftLeft(a, bits)     // a << bits
+Uint.shiftRight(a, bits)    // a >> bits
+```
+
+## Bit Utilities
+
+```typescript
+Uint.bitLength(a)           // number of bits needed
+Uint.leadingZeros(a)        // Effect<number>
+Uint.popCount(a)            // Effect<number> - count of 1 bits
+Uint.isPowerOf2(a)          // boolean
+```
+
+## Math Utilities
+
+```typescript
+// Pure
+Uint.gcd(a, b)              // greatest common divisor
+Uint.lcm(a, b)              // least common multiple
+Uint.clone(a)               // copy value
+
+// Effect-wrapped (variadic)
+const minVal = Effect.runSync(Uint.min(a, b, c))
+const maxVal = Effect.runSync(Uint.max(a, b, c))
+const total = Effect.runSync(Uint.sum(a, b, c))
+const prod = Effect.runSync(Uint.product(a, b, c))
+
+// Binary min/max
+const smaller = Effect.runSync(Uint.minimum(a, b))
+const larger = Effect.runSync(Uint.maximum(a, b))
+```
+
+## Converters
+
+All converters are Effect-wrapped:
+
+```typescript
+const bigint = Effect.runSync(Uint.toBigInt(a))     // bigint
+const num = Effect.runSync(Uint.toNumber(a))        // number (can fail if too large)
+const hex = Effect.runSync(Uint.toHex(a))           // "0x00...64" (padded)
+const hexShort = Effect.runSync(Uint.toHex(a, false)) // "0x64" (unpadded)
+const bytes = Effect.runSync(Uint.toBytes(a))       // Uint8Array
+const abi = Effect.runSync(Uint.toAbiEncoded(a))    // 32-byte Uint8Array
+const str = Effect.runSync(Uint.toString(a))        // decimal string
+const strHex = Effect.runSync(Uint.toString(a, 16)) // hex string (no prefix)
+```
+
+## Complete API Reference
+
+### Schemas (5)
+`BigInt`, `Bytes`, `Hex`, `Number`, `String`
+
+### Constructors (7)
+`from`, `fromAbiEncoded`, `fromBigInt`, `fromBytes`, `fromHex`, `fromNumber`, `tryFrom`
+
+### Type Guards (2)
+`isUint256`, `isValid`
+
+### Bit Utilities (4)
+`bitLength`, `isPowerOf2`, `leadingZeros`, `popCount`
+
+### Bitwise (6)
+`bitwiseAnd`, `bitwiseNot`, `bitwiseOr`, `bitwiseXor`, `shiftLeft`, `shiftRight`
+
+### Comparison (7)
+`equals`, `greaterThan`, `greaterThanOrEqual`, `isZero`, `lessThan`, `lessThanOrEqual`, `notEquals`
+
+### Arithmetic (6)
+`dividedBy`, `minus`, `modulo`, `plus`, `times`, `toPower`
+
+### Math (9)
+`clone`, `gcd`, `lcm`, `max`, `maximum`, `min`, `minimum`, `product`, `sum`
+
+### Converters (6)
+`toAbiEncoded`, `toBigInt`, `toBytes`, `toHex`, `toNumber`, `toString`
 
 ## See Also
 
-- [Hex](/primitives/hex) — Hex string encoding
-- [Gas](/primitives/gas) — Gas-related types
-- [Balance](/primitives/balance) — Account balance type
 - [Voltaire Uint](https://voltaire.tevm.sh/primitives/uint) — Core Uint documentation
-- [Effect Schema](https://effect.website/docs/schema/introduction/) — Effect Schema validation
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Schema validation

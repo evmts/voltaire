@@ -4,47 +4,115 @@ description: Effect-based cryptographic signature schemas for secp256k1, P-256, 
 ---
 
 ```typescript
-import { Signature, PrivateKey, PublicKey } from 'voltaire-effect'
+import { Signature } from 'voltaire-effect'
+import * as S from 'effect/Schema'
+import { Effect } from 'effect'
+```
+
+## Schemas
+
+| Schema | Input | Output | Description |
+|--------|-------|--------|-------------|
+| `Signature.Hex` | hex string | SignatureType | 64/65-byte signature as hex |
+| `Signature.Bytes` | Uint8Array | SignatureType | Raw signature bytes |
+| `Signature.Compact` | Uint8Array | SignatureType | EIP-2098 compact format |
+| `Signature.DER` | Uint8Array | SignatureType | DER encoding |
+| `Signature.Rpc` | {r, s, yParity?, v?} | SignatureType | Ethereum RPC format |
+| `Signature.Tuple` | [yParity, r, s] | SignatureType | Tuple format |
+
+```typescript
+// Decode hex signature
+const sig = S.decodeSync(Signature.Hex)('0x' + 'ab'.repeat(32) + 'cd'.repeat(32) + '1b')
+
+// Encode to different formats
+const hex = S.encodeSync(Signature.Hex)(sig)
+const compact = S.encodeSync(Signature.Compact)(sig)
+const rpc = S.encodeSync(Signature.Rpc)(sig)
+const tuple = S.encodeSync(Signature.Tuple)(sig)
+```
+
+## Pure Functions
+
+| Function | Description |
+|----------|-------------|
+| `equals(a, b)` | Compare two signatures |
+| `is(value)` | Type guard for SignatureType |
+| `isSignature(value)` | Alias for `is` |
+| `isCanonical(sig)` | Check if s ≤ n/2 |
+| `getAlgorithm(sig)` | Get algorithm: 'secp256k1' \| 'p256' \| 'ed25519' |
+| `getR(sig)` | Get 32-byte R component |
+| `getS(sig)` | Get 32-byte S component |
+| `getV(sig)` | Get recovery value (27, 28, or undefined) |
+| `normalize(sig)` | Normalize to canonical form |
+| `toBytes(sig)` | Convert to raw bytes |
+| `toCompact(sig)` | Convert to EIP-2098 compact |
+| `toDER(sig)` | Convert to DER encoding |
+| `toHex(sig)` | Convert to hex string |
+| `toRpc(sig)` | Convert to RPC format |
+| `toTuple(sig)` | Convert to [yParity, r, s] tuple |
+| `verify(sig, hash, pubkey)` | Verify signature |
+
+```typescript
+import { Signature } from 'voltaire-effect'
+
+Signature.getAlgorithm(sig)  // 'secp256k1'
+Signature.getR(sig)          // Uint8Array (32 bytes)
+Signature.getS(sig)          // Uint8Array (32 bytes)
+Signature.getV(sig)          // 27 | 28 | undefined
+Signature.isCanonical(sig)   // true
+Signature.verify(sig, messageHash, publicKey)  // true
+```
+
+## Effect-wrapped Functions
+
+Parsing operations that can fail return `Effect<SignatureType, Error>`:
+
+```typescript
+import { Signature } from 'voltaire-effect'
 import { Effect } from 'effect'
 
+// Parse with Effect error handling
 const sig = Effect.runSync(Signature.fromHex('0x...'))
+
+// Or handle errors
+Effect.runSync(
+  Effect.catchAll(Signature.fromHex('invalid'), (e) =>
+    Effect.succeed(fallbackSig)
+  )
+)
 ```
 
-## Signature
+| Function | Description |
+|----------|-------------|
+| `from(input)` | Parse from hex, bytes, or RPC object |
+| `fromHex(hex)` | Parse from hex string |
+| `fromBytes(bytes)` | Parse from raw bytes |
+| `fromCompact(bytes)` | Parse from EIP-2098 compact |
+| `fromDER(bytes)` | Parse from DER encoding |
+| `fromRpc(rpc, chainId?)` | Parse from RPC format |
+| `fromTuple(tuple, chainId?)` | Parse from [yParity, r, s] |
 
-**SignatureSchema** — Decodes 65-byte hex signature (r + s + v).
+## Constructor Functions
 
-**SignatureFromBytesSchema** — Decodes from raw bytes.
-
-**from / fromHex / fromBytes** — Creates signature with Effect error handling.
-
-## PrivateKey
-
-**PrivateKeySchema** — Decodes 32-byte hex private key.
+For known-valid inputs, use pure constructors:
 
 ```typescript
-import { PrivateKey } from 'voltaire-effect'
-import * as Schema from 'effect/Schema'
+import { Signature } from 'voltaire-effect'
 
-const key = Schema.decodeSync(PrivateKey.PrivateKeySchema)('0x...')
+const secp = Signature.fromSecp256k1(r, s, 27)
+const p256 = Signature.fromP256(r, s)
+const ed = Signature.fromEd25519(sigBytes)
 ```
 
-**from / fromBytes** — Creates private key.
+## Errors
 
-## PublicKey
+Re-exported from `@tevm/voltaire/Signature`:
 
-**PublicKeySchema** — Uncompressed public key (65 bytes: `0x04` + x + y).
-
-**CompressedPublicKeySchema** — Compressed public key (33 bytes: `0x02`/`0x03` + x).
-
-```typescript
-import { PublicKey } from 'voltaire-effect'
-
-PublicKey.from('0x04...')
-PublicKey.fromPrivateKey(privateKey)
-PublicKey.compress(uncompressedKey)
-PublicKey.decompress(compressedKey)
-```
+- `InvalidAlgorithmError`
+- `InvalidDERError`
+- `InvalidSignatureFormatError`
+- `InvalidSignatureLengthError`
+- `NonCanonicalSignatureError`
 
 ## See Also
 

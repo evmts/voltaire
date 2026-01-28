@@ -55,20 +55,49 @@ const checksummed = await Effect.runPromise(
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 ```
 
+## Constructors (Effect-wrapped)
+
+These functions return `Effect` to handle potential errors gracefully.
+
+```typescript
+// From various input types
+Address.from(value)           // Effect<AddressType, AddressError>
+Address.fromHex(hex)          // Effect<AddressType, HexError>
+Address.fromBytes(bytes)      // Effect<AddressType, LengthError>
+Address.fromNumber(n)         // Effect<AddressType, ValueError>
+Address.fromBase64(str)       // Effect<AddressType, LengthError>
+Address.fromAbiEncoded(bytes) // Effect<AddressType, AbiError>
+Address.fromPublicKey(pk)     // Effect<AddressType, ValueError>
+Address.fromPrivateKey(sk)    // Effect<AddressType, ValueError>
+Address.zero()                // AddressType (pure, never fails)
+```
+
+### Example: Parsing User Input
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as Effect from 'effect/Effect'
+
+const parseAddress = (input: string) =>
+  Address.from(input).pipe(
+    Effect.catchAll((error) =>
+      Effect.fail(new Error(`Invalid address: ${error.message}`))
+    )
+  )
+
+// Run the effect
+const result = await Effect.runPromise(parseAddress('0x742d35cc6634c0532925a3b844bc9e7595f251e3'))
+```
+
 ## Pure Functions
 
-All functions work directly on `AddressType` values.
+All functions work directly on `AddressType` values without Effect.
 
 ### Comparison
 
 ```typescript
-// Check equality
 Address.equals(addr1, addr2)      // boolean
-
-// Compare for ordering (-1, 0, 1)
 Address.compare(addr1, addr2)     // -1 | 0 | 1
-
-// Ordering predicates
 Address.lessThan(addr1, addr2)    // boolean
 Address.greaterThan(addr1, addr2) // boolean
 ```
@@ -76,37 +105,80 @@ Address.greaterThan(addr1, addr2) // boolean
 ### Validation
 
 ```typescript
-// Check if a value is a valid address (any format)
 Address.isValid('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')  // true
 Address.isValid('0x123')  // false (wrong length)
 
-// Check if checksummed string has valid checksum
 Address.isValidChecksum('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')  // true
 Address.isValidChecksum('0x742d35cc6634c0532925a3b844bc9e7595f251e3')  // false
 
-// Check if address is zero address
-Address.isZero(addr)  // boolean
+Address.isZero(addr)      // boolean
+Address.isAddress(value)  // boolean (validates format)
+Address.is(value)         // type guard
 ```
 
 ### Conversion
 
 ```typescript
-// Clone address (new Uint8Array)
-const copy = Address.clone(addr)
+Address.clone(addr)       // AddressType (new copy)
+Address.toBytes(addr)     // Uint8Array
+Address.toHex(addr)       // "0x..." (lowercase)
+Address.toLowercase(addr) // "0x742d35cc..."
+Address.toUppercase(addr) // "0x742D35CC..."
+Address.toShortHex(addr)  // "0x742d...51e3"
+Address.toU256(addr)      // bigint
+Address.toAbiEncoded(addr) // Uint8Array(32)
+```
 
-// Get raw bytes
-const bytes = Address.toBytes(addr)  // Uint8Array
+### Array Utilities
 
-// Convert to U256 (bigint)
-const num = Address.toU256(addr)  // bigint
+```typescript
+Address.sortAddresses([addr1, addr2, addr3])       // sorted array
+Address.deduplicateAddresses([addr1, addr1, addr2]) // [addr1, addr2]
+```
 
-// Hex string formats
-Address.toLowercase(addr)  // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
-Address.toUppercase(addr)  // "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
-Address.toShortHex(addr)   // "0x742d...51e3" (truncated for display)
+## Effectful Functions
 
-// ABI encoding (32 bytes, left-padded with zeros)
-const abiEncoded = Address.toAbiEncoded(addr)  // Uint8Array(32)
+These functions require Effect runtime or services.
+
+### assert / assertBasic
+
+```typescript
+// Basic validation
+const program = Address.assert('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
+
+// Strict checksum validation
+const strictProgram = Address.assert('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3', { strict: true })
+
+// Non-strict (no checksum validation)
+Address.assertBasic(value) // Effect<void, InvalidAddressError>
+```
+
+### toChecksummed
+
+```typescript
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Address.toChecksummed(addr)
+const checksummed = await Effect.runPromise(program.pipe(Effect.provide(KeccakLive)))
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+```
+
+### calculateCreateAddress
+
+Calculate CREATE contract deployment address.
+
+```typescript
+const program = Address.calculateCreateAddress(deployerAddr, 0n)
+const contractAddr = await Effect.runPromise(program)
+```
+
+### calculateCreate2Address
+
+Calculate CREATE2 contract deployment address.
+
+```typescript
+const program = Address.calculateCreate2Address(deployerAddr, salt, initCode)
+const contractAddr = await Effect.runPromise(program)
 ```
 
 ## Usage Examples
@@ -148,7 +220,6 @@ const transfer = (to: AddressType, amount: bigint) =>
 ### Display Truncated Address
 
 ```typescript
-// For UI display
 const display = Address.toShortHex(addr)  // "0x742d...51e3"
 ```
 
@@ -164,7 +235,16 @@ function transfer(to: AddressType, amount: bigint) {
 
 ## Errors
 
-- `ParseError` — Invalid format, hex, or byte length during Schema decode
+The module exports error types for handling failures:
+
+- `InvalidAddressError` — General address validation failure
+- `InvalidAddressLengthError` — Wrong byte length
+- `InvalidHexFormatError` — Invalid hex format
+- `InvalidHexStringError` — Invalid hex characters
+- `InvalidValueError` — Invalid input value
+- `InvalidChecksumError` — EIP-55 checksum mismatch
+- `InvalidAbiEncodedPaddingError` — Non-zero padding in ABI-encoded address
+- `NotImplementedError` — Feature not implemented
 
 ## See Also
 

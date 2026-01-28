@@ -1,15 +1,15 @@
 ---
 title: Siwe
-description: Sign-In with Ethereum (EIP-4361)
+description: Sign-In with Ethereum (EIP-4361) with Effect
 ---
 
 Authenticate users with Ethereum accounts.
 
 ```typescript
-import { Siwe } from 'voltaire-effect/primitives'
+import * as Siwe from 'voltaire-effect/primitives/Siwe'
 import { Effect } from 'effect'
 
-// Create
+// Create message
 const message = await Effect.runPromise(
   Siwe.create({
     domain: 'example.com',
@@ -24,7 +24,7 @@ const message = await Effect.runPromise(
 const text = Siwe.format(message)
 
 // Parse from string
-const parsed = Siwe.parse(text)
+const parsed = await Effect.runPromise(Siwe.parse(text))
 
 // Validate (expiration, etc.)
 const result = Siwe.validate(parsed)
@@ -33,17 +33,16 @@ const result = Siwe.validate(parsed)
 const nonce = Siwe.generateNonce()  // 16 chars default
 ```
 
-## Schema
+## Schemas
 
 ```typescript
-import { Siwe } from 'voltaire-effect'
 import * as Schema from 'effect/Schema'
 
 // Parse SIWE string
 const message = Schema.decodeSync(Siwe.String)(`example.com wants you to sign in...`)
 
 // Validate structure
-const isValid = Schema.is(Siwe.SiweMessageSchema)({
+const isValid = Schema.is(Siwe.MessageStruct)({
   domain: 'example.com',
   address: new Uint8Array(20),
   uri: 'https://example.com',
@@ -54,6 +53,57 @@ const isValid = Schema.is(Siwe.SiweMessageSchema)({
 })
 ```
 
+## Constructors (Effect-wrapped)
+
+```typescript
+const message = await Effect.runPromise(Siwe.create({
+  domain: 'example.com',
+  address: '0x...',
+  uri: 'https://example.com',
+  chainId: 1,
+}))
+
+const parsed = await Effect.runPromise(Siwe.parse(siweString))
+```
+
+## Verification (Effect-wrapped)
+
+```typescript
+const isValid = await Effect.runPromise(Siwe.verify(message, signature))
+const result = await Effect.runPromise(Siwe.verifyMessage(message, signature, { now: new Date() }))
+const hash = await Effect.runPromise(Siwe.getMessageHash(message))
+```
+
+## Pure Functions
+
+```typescript
+Siwe.format(message)        // string
+Siwe.validate(message)      // ValidationResult
+Siwe.generateNonce(16)      // string
+```
+
+## Full Example
+
+```typescript
+const authenticate = (siweText: string, signature: Signature) =>
+  Effect.gen(function* () {
+    const message = yield* Siwe.parse(siweText)
+    const validation = Siwe.validate(message)
+    if (!validation.success) {
+      return yield* Effect.fail(new Error(validation.errors.join(', ')))
+    }
+    const isValid = yield* Siwe.verify(message, signature)
+    if (!isValid) {
+      return yield* Effect.fail(new Error('Invalid signature'))
+    }
+    return message.address
+  })
+```
+
 ## Errors
 
-Returns `SiweError` on parse failures or validation issues.
+- `InvalidFieldError` — Field has invalid value
+- `InvalidNonceLengthError` — Nonce too short
+- `InvalidSiweMessageError` — Message format invalid
+- `MissingFieldError` — Required field missing
+- `SiweParseError` — Failed to parse message
