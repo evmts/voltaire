@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
-import { hash, KeccakLive, KeccakService, KeccakTest } from "./index.js";
+import { hash, hashSync, KeccakLive, KeccakService, KeccakTest } from "./index.js";
 
 const bytesToHex = (bytes: Uint8Array): string => {
 	return (
@@ -261,5 +261,46 @@ describe("hash", () => {
 			),
 		]);
 		expect(bytesToHex(hashResult)).toBe(bytesToHex(serviceResult));
+	});
+});
+
+describe("hashSync", () => {
+	it("hashes data synchronously without Effect service", () => {
+		const data = new Uint8Array([104, 101, 108, 108, 111]); // "hello"
+		const result = hashSync(data);
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(32);
+		expect(bytesToHex(result)).toBe(
+			"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+		);
+	});
+
+	it("matches Effect-based hash result", async () => {
+		const data = new Uint8Array([1, 2, 3]);
+		const syncResult = hashSync(data);
+		const effectResult = await Effect.runPromise(
+			hash(data).pipe(Effect.provide(KeccakLive)),
+		);
+		expect(bytesToHex(syncResult)).toBe(bytesToHex(effectResult));
+	});
+
+	it("works with empty input", () => {
+		const result = hashSync(new Uint8Array(0));
+		expect(bytesToHex(result)).toBe(
+			"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+		);
+	});
+
+	it("works with large input", () => {
+		const result = hashSync(new Uint8Array(1024).fill(0x42));
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(32);
+	});
+
+	it("is deterministic", () => {
+		const data = new Uint8Array([1, 2, 3, 4, 5]);
+		const hash1 = hashSync(data);
+		const hash2 = hashSync(data);
+		expect(bytesToHex(hash1)).toBe(bytesToHex(hash2));
 	});
 });

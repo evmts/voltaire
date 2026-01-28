@@ -9,7 +9,8 @@ import { Address, type AddressType } from "@tevm/voltaire/Address";
 import type { HexType } from "@tevm/voltaire/Hex";
 import * as Hex from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
-import type { ProviderShape as ProviderService } from "../../services/Provider/index.js";
+import { call } from "../../services/Provider/functions/index.js";
+import { ProviderService } from "../../services/Provider/index.js";
 import { VerifyError } from "../Signature/errors.js";
 
 // Output from solc contracts/DeploylessUniversalSigValidator.sol --bin --optimize --optimize-runs=1
@@ -52,7 +53,6 @@ const normalizeCallResult = (value: HexType | `0x${string}`): `0x${string}` =>
  * @param params.address - Expected signer address
  * @param params.message - 32-byte message hash
  * @param params.signature - Signature bytes (may be ERC-6492 wrapped)
- * @param params.provider - Provider service used for eth_call
  * @returns Effect containing true if signature is valid
  *
  * @since 0.2.14
@@ -61,8 +61,7 @@ export const verifySignature = (params: {
 	address: AddressType | `0x${string}`;
 	message: HexType | `0x${string}`;
 	signature: HexType | `0x${string}`;
-	provider: ProviderService;
-}): Effect.Effect<boolean, VerifyError> =>
+}): Effect.Effect<boolean, VerifyError, ProviderService> =>
 	Effect.gen(function* () {
 		const messageHex = params.message as `0x${string}`;
 		const messageBytes = yield* Effect.try({
@@ -102,7 +101,7 @@ export const verifySignature = (params: {
 		const data =
 			`${UNIVERSAL_VALIDATOR_BYTECODE}${Hex.fromBytes(encodedParams).slice(2)}` as `0x${string}`;
 
-		const callResult = yield* params.provider.call({ data }).pipe(
+		const callResult = yield* call({ data }).pipe(
 			Effect.mapError(
 				(e) =>
 					new VerifyError({

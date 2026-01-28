@@ -41,6 +41,7 @@
  */
 
 export { hash } from "./hash.js";
+export { hashSync } from "./hashSync.js";
 export type { Keccak256Hash } from "@tevm/voltaire";
 export {
 	KeccakLive,
