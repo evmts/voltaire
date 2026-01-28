@@ -117,11 +117,10 @@ const balance = await provider.getBalance(address)
 // voltaire-effect
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBalance(addr)
+  return yield* getBalance(addr)
 })
 
 const MainLayer = Provider.pipe(Layer.provide(HttpTransport(url)))

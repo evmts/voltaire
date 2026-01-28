@@ -16,11 +16,10 @@ Requires Effect 3.x, Voltaire 0.x, and TypeScript 5.4+.
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNumber()
 }).pipe(
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
@@ -68,13 +67,14 @@ S.decode(Address.Hex)(input).pipe(
 
 ### Services and Layers
 
-Services declare dependencies in types. Layers provide implementations:
+Free functions depend on services internally. Layers provide implementations:
 
 ```typescript
+import { getBlockNumber, sendTransaction } from 'voltaire-effect'
+
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  const signer = yield* SignerService
-  return yield* signer.sendTransaction({ to, value })
+  const block = yield* getBlockNumber()
+  return yield* sendTransaction({ to, value })
 })
 
 // Compose layers

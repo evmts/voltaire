@@ -280,37 +280,38 @@ export class ProviderService extends Context.Tag("ProviderService")<
 >() {}
 ```
 
-### Live Implementation Pattern
+### Free Functions Pattern
 
 ```typescript
-// INTERNAL: src/services/Provider/Provider.ts
-export const Provider: Layer.Layer<ProviderService, never, TransportService> =
-  Layer.effect(
-    ProviderService,
-    Effect.gen(function* () {
-      const transport = yield* TransportService;
-      
-      const request = <T>(method: string, params?: unknown[]) =>
-        transport.request<T>(method, params);
-      
-      return {
-        getBlockNumber: () =>
-          request<string>("eth_blockNumber").pipe(
-            Effect.flatMap((hex) => parseHexToBigInt({ method: "eth_blockNumber", response: hex })),
-          ),
-        
-        getBalance: (address: AddressInput, blockTag: BlockTag = "latest") =>
-          request<string>("eth_getBalance", [toAddressHex(address), blockTag]).pipe(
-            Effect.flatMap((hex) => parseHexToBigInt({ method: "eth_getBalance", response: hex })),
-          ),
-        
-        // ... 50+ methods
-      };
-    }),
-  );
+// INTERNAL: src/services/Provider/functions/getBlockNumber.ts
+import { TransportService } from '../TransportService.js'
+
+export const getBlockNumber = () =>
+  Effect.gen(function* () {
+    const transport = yield* TransportService
+    const hex = yield* transport.request<string>("eth_blockNumber")
+    return yield* parseHexToBigInt({ method: "eth_blockNumber", response: hex })
+  })
+
+// INTERNAL: src/services/Provider/functions/getBalance.ts
+export const getBalance = (address: AddressInput, blockTag: BlockTag = "latest") =>
+  Effect.gen(function* () {
+    const transport = yield* TransportService
+    const hex = yield* transport.request<string>("eth_getBalance", [toAddressHex(address), blockTag])
+    return yield* parseHexToBigInt({ method: "eth_getBalance", response: hex })
+  })
+
+// PUBLIC API: Users import free functions directly
+import { getBlockNumber, getBalance } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const block = yield* getBlockNumber()
+  const balance = yield* getBalance(addr)
+  return { block, balance }
+})
 ```
 
-**Question**: Should we split into multiple smaller services instead of one large ProviderService?
+**Note**: We use free functions instead of a ProviderService facade. Each function depends on TransportService internally.
 
 ---
 
@@ -447,12 +448,11 @@ export const decodeTransferEvent = (log: { topics: string[]; data: string }): Ef
 ```typescript
 // PUBLIC API: User code
 import { Effect } from "effect";
-import { ProviderService, Provider, HttpTransport } from "voltaire-effect";
+import { getBlockNumber, getBalance, Provider, HttpTransport } from "voltaire-effect";
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService;
-  const blockNum = yield* provider.getBlockNumber();
-  const balance = yield* provider.getBalance("0x1234...");
+  const blockNum = yield* getBlockNumber();
+  const balance = yield* getBalance("0x1234...");
   return { blockNum, balance };
 }).pipe(
   Effect.provide(Provider),

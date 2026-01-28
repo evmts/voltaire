@@ -376,19 +376,18 @@ const program = Effect.gen(function* () {
 Use with the Contract factory for high-level interactions:
 
 ```typescript
-import { Contract, ProviderService, Provider } from 'voltaire-effect'
+import { Contract, call, Provider } from 'voltaire-effect'
 import * as ERC20 from 'voltaire-effect/standards/ERC20'
 
 const program = Effect.gen(function* () {
   // Use Contract for type-safe calls
   const token = yield* Contract(tokenAddress, erc20Abi)
   const balance = yield* token.read.balanceOf(userAddress)
-  
+
   // Or use ERC20 utils for manual encoding
   const calldata = yield* ERC20.encodeBalanceOf(userAddress)
-  const provider = yield* ProviderService
-  const result = yield* provider.call({ to: tokenAddress, data: calldata })
-  
+  const result = yield* call({ to: tokenAddress, data: calldata })
+
   return balance
 })
 ```

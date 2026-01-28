@@ -139,17 +139,16 @@ it('uses keccak service', async () => {
 Use `CryptoLive` for production and `CryptoTest` for deterministic unit tests:
 
 ```typescript
-import { CryptoLive, CryptoTest } from 'voltaire-effect'
-import { KeccakService, Secp256k1Service } from 'voltaire-effect/crypto'
+import * as Effect from 'effect/Effect'
+import { CryptoLive, CryptoTest, keccak256, signMessage } from 'voltaire-effect'
 
-// CryptoLive bundles: Keccak256, Secp256k1, SHA256, Blake2, Ripemd160, 
+// CryptoLive bundles: Keccak256, Secp256k1, SHA256, Blake2, Ripemd160,
 // BLS12-381, Ed25519, P256, KZG, HDWallet, BN254, BIP-39, HMAC, EIP-712,
 // ChaCha20Poly1305, Keystore
 
 const program = Effect.gen(function* () {
-  const keccak = yield* KeccakService
-  const secp = yield* Secp256k1Service
-  // All crypto services available
+  const hash = yield* keccak256(new Uint8Array([1, 2, 3]))
+  return hash
 })
 
 // Production
@@ -161,16 +160,23 @@ await Effect.runPromise(program.pipe(Effect.provide(CryptoTest)))
 
 ## Composing Test Layers
 
-Combine multiple test layers:
+Combine transport and crypto test layers:
 
 ```typescript
+import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import { TestTransport, Provider, CryptoTest, getBalance, keccak256 } from 'voltaire-effect'
 
 const TestLayer = Layer.mergeAll(
-  ProviderTest,
-  KeccakTest,
-  Secp256k1Test
+  Provider.pipe(Layer.provide(TestTransport({ 'eth_getBalance': '0x0' }))),
+  CryptoTest
 )
+
+const program = Effect.gen(function* () {
+  const balance = yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+  const hash = yield* keccak256(new Uint8Array([1, 2, 3]))
+  return { balance, hash }
+})
 
 const result = await Effect.runPromise(
   program.pipe(Effect.provide(TestLayer))

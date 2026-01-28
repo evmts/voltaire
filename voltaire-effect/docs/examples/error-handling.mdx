@@ -7,11 +7,10 @@ description: Composable error handling patterns
 
 ```typescript
 import { Effect, Schedule } from 'effect'
-import { ProviderResponseError, ProviderService, Provider, HttpTransport, TransportError, withTimeout } from 'voltaire-effect'
+import { getBalance, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const client = yield* ProviderService
-  return yield* client.getBalance('0x...', 'latest')
+  return yield* getBalance('0x...', 'latest')
 }).pipe(
   withTimeout('5 seconds'),
   Effect.catchTags({

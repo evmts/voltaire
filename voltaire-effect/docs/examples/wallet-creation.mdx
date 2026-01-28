@@ -122,12 +122,13 @@ Full workflow: create wallet, check balance, send transaction:
 
 ```typescript
 import { Effect } from 'effect'
-import { 
-  SignerService, 
+import {
+  SignerService,
   Signer,
-  ProviderService,
-  Provider, 
-  HttpTransport 
+  getBalance,
+  waitForTransactionReceipt,
+  Provider,
+  HttpTransport
 } from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
@@ -137,28 +138,27 @@ const rpcUrl = 'https://mainnet.infura.io/v3/YOUR_KEY'
 
 const walletWorkflow = Effect.gen(function* () {
   const signer = yield* SignerService
-  const provider = yield* ProviderService
-  
+
   // Get wallet address and balance
   const address = signer.address
-  const balance = yield* provider.getBalance(address, 'latest')
-  
+  const balance = yield* getBalance(address, 'latest')
+
   console.log(`Address: ${address}`)
   console.log(`Balance: ${balance} wei`)
-  
+
   // Send transaction if balance is sufficient
   if (balance > 1000000000000000000n) {
     const txHash = yield* signer.sendTransaction({
       to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
       value: 100000000000000000n // 0.1 ETH
     })
-    
-    const receipt = yield* provider.waitForTransactionReceipt(txHash, { confirmations: 1 })
+
+    const receipt = yield* waitForTransactionReceipt(txHash, { confirmations: 1 })
     console.log(`Transaction confirmed in block ${receipt.blockNumber}`)
-    
+
     return { address, balance, txHash }
   }
-  
+
   return { address, balance, txHash: null }
 }).pipe(
   Effect.provide(Signer.Live),

@@ -198,27 +198,25 @@ Use `withTimeout`, `withRetrySchedule`, and `withTracing` to configure per-reque
 
 ```typescript
 import { Effect, Schedule, Duration } from 'effect'
-import { ProviderService, withTimeout, withRetrySchedule, withTracing } from 'voltaire-effect'
+import { getBalance, getBlock, withTimeout, withRetrySchedule, withTracing } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  
   // 5 second timeout with custom retry
-  const balance = yield* provider.getBalance(addr).pipe(
+  const balance = yield* getBalance(addr).pipe(
     withTimeout("5 seconds"),
     withRetrySchedule(Schedule.recurs(1))
   )
-  
+
   // Using Duration directly
-  const block = yield* provider.getBlock({ blockTag: 'latest' }).pipe(
+  const block = yield* getBlock({ blockTag: 'latest' }).pipe(
     withTimeout(Duration.seconds(10))
   )
-  
+
   // Enable tracing for debugging
-  const debugBlock = yield* provider.getBlock({ blockTag: 'latest' }).pipe(
+  const debugBlock = yield* getBlock({ blockTag: 'latest' }).pipe(
     withTracing(true)
   )
-  
+
   return { balance, block }
 })
 ```
@@ -256,16 +254,15 @@ const InfuraProvider = Layer.mergeAll(Provider, InfuraRateLimiter).pipe(
 
 // Batch operations automatically respect limits
 const fetchManyBlocks = Effect.gen(function* () {
-  const provider = yield* ProviderService
   const rateLimiter = yield* RateLimiterService
 
   const blockNumbers = Array.from({ length: 100 }, (_, i) => i + 1000000)
-  
+
   return yield* Effect.all(
     blockNumbers.map((n) =>
       rateLimiter.withRateLimit(
         'eth_getBlockByNumber',
-        provider.getBlock({ blockTag: `0x${n.toString(16)}` })
+        getBlock({ blockTag: `0x${n.toString(16)}` })
       )
     ),
     { concurrency: 'unbounded' }  // Rate limiter handles throttling

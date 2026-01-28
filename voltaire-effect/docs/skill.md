@@ -23,12 +23,11 @@ pnpm add voltaire-effect @tevm/voltaire effect
 ### Read Blockchain Data
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { getBlockNumber, getBalance, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  const block = yield* provider.getBlockNumber()
-  const balance = yield* provider.getBalance('0x...', 'latest')
+  const block = yield* getBlockNumber()
+  const balance = yield* getBalance('0x...', 'latest')
   return { block, balance }
 }).pipe(
   Effect.provide(Provider),

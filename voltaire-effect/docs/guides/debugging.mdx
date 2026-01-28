@@ -15,15 +15,14 @@ For comprehensive debugging, see the [Effect Debugging Guide](https://effect.web
 
 ```typescript
 import { Effect } from 'effect'
+import { getBlockNumber } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   yield* Effect.log('Starting...')
-  const provider = yield* ProviderService
-  yield* Effect.log('Got provider')
-  
-  const block = yield* provider.getBlockNumber()
+
+  const block = yield* getBlockNumber()
   yield* Effect.log(`Block: ${block}`)
-  
+
   return block
 })
 ```
@@ -31,11 +30,13 @@ const program = Effect.gen(function* () {
 ### Log With Context
 
 ```typescript
+import { getBalance } from 'voltaire-effect'
+
 Effect.gen(function* () {
   yield* Effect.logInfo('Fetching balance').pipe(
     Effect.annotateLogs({ address, network: 'mainnet' })
   )
-  return yield* provider.getBalance(address)
+  return yield* getBalance(address)
 })
 ```
 
@@ -109,11 +110,11 @@ S.decode(Address.Hex)('0x123').pipe(
 
 ```typescript
 import { Effect } from 'effect'
+import { getBalance } from 'voltaire-effect'
 
 const fetchBalance = (address: string) =>
   Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return yield* provider.getBalance(address)
+    return yield* getBalance(address)
   }).pipe(Effect.withSpan('fetchBalance', { attributes: { address } }))
 
 const program = Effect.gen(function* () {
@@ -269,16 +270,16 @@ Provider.pipe(
 ### Forgot to Yield
 
 ```typescript
+import { getBlockNumber } from 'voltaire-effect'
+
 // ✗ Returns Effect, doesn't execute
 Effect.gen(function* () {
-  const provider = yield* ProviderService
-  provider.getBlockNumber()  // Missing yield*!
+  getBlockNumber()  // Missing yield*!
 })
 
 // ✓ Correct
 Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNumber()
 })
 ```
 
