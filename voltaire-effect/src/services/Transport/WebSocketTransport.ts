@@ -269,7 +269,7 @@ export const WebSocketTransport = (
 			> | null>(null);
 			const socketFiberRef = yield* Ref.make<Fiber.Fiber<
 				void,
-				Socket.SocketError
+				TransportError | Socket.SocketError
 			> | null>(null);
 			const reconnectAttemptsRef = yield* Ref.make(0);
 
@@ -394,12 +394,13 @@ export const WebSocketTransport = (
 			> = Effect.gen(function* () {
 				const isClosed = yield* Ref.get(isClosedRef);
 				if (isClosed) {
-					return yield* Effect.fail(
+					yield* Effect.fail(
 						new TransportError({
 							code: -32603,
 							message: "WebSocket transport is closed",
 						}),
 					);
+					return;
 				}
 
 				yield* Ref.set(reconnectFailureRef, null);
@@ -434,7 +435,13 @@ export const WebSocketTransport = (
 
 				yield* Ref.set(isReconnectingRef, false);
 
-				const handleDisconnect = (message: string) =>
+				const handleDisconnect = (
+					message: string,
+				): Effect.Effect<
+					void,
+					TransportError | Socket.SocketError,
+					Scope.Scope | Socket.WebSocketConstructor
+				> =>
 					Effect.gen(function* () {
 						const attempts = yield* Ref.get(reconnectAttemptsRef);
 						yield* stopKeepAlive;
