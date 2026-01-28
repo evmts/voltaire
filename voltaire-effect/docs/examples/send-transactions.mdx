@@ -124,15 +124,16 @@ const program = Effect.gen(function* () {
 ## Send and Wait
 
 ```typescript
-import { ProviderService } from 'voltaire-effect'
+import { Effect } from 'effect'
+import { SignerService, waitForTransactionReceipt, Signer, Provider, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
-  const provider = yield* ProviderService
-  
+
   const txHash = yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
-  const receipt = yield* provider.waitForTransactionReceipt(txHash, { confirmations: 3, timeout: '60 seconds' })
-  
+  const receipt = yield* waitForTransactionReceipt(txHash, { confirmations: 3, timeout: '60 seconds' })
+
   return { hash: txHash, status: receipt.status, blockNumber: receipt.blockNumber }
 }).pipe(
   Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),

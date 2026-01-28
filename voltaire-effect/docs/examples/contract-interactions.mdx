@@ -93,18 +93,19 @@ const program = Effect.gen(function* () {
 A full workflow: read token info, transfer, wait for confirmation, verify balance change:
 
 ```typescript
-import { ProviderService } from 'voltaire-effect'
+import { Effect } from 'effect'
+import { Contract, waitForTransactionReceipt, Signer, Provider, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
-  const client = yield* ProviderService
-  
+
   const [symbol, decimals] = yield* Effect.all([token.read.symbol(), token.read.decimals()])
   const balanceBefore = yield* token.read.balanceOf('0x70997970C51812dc3A010C7d01b50e0d17dc79C8')
   const txHash = yield* token.write.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
-  yield* client.waitForTransactionReceipt(txHash, { confirmations: 1 })
+  yield* waitForTransactionReceipt(txHash, { confirmations: 1 })
   const balanceAfter = yield* token.read.balanceOf('0x70997970C51812dc3A010C7d01b50e0d17dc79C8')
-  
+
   return { symbol, decimals, txHash, transferred: balanceAfter - balanceBefore }
 }).pipe(
   Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
