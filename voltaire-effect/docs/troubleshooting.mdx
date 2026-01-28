@@ -57,16 +57,16 @@ Signer.Live.pipe(
 **Cause:** Missing `yield*` on Effect operations.
 
 ```typescript
+import { getBlockNumber } from 'voltaire-effect'
+
 // ❌ Returns Effect, doesn't execute
 Effect.gen(function* () {
-  const provider = yield* ProviderService
-  provider.getBlockNumber()  // Missing yield*!
+  getBlockNumber()  // Missing yield*!
 })
 
 // ✅ Yield all Effects
 Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNumber()
 })
 ```
 
@@ -191,12 +191,14 @@ yield* signer.sendTransaction({
 **Fix:** Let the signer auto-fetch nonce (default), or manage manually:
 
 ```typescript
+import { sendTransaction, getTransactionCount } from 'voltaire-effect'
+
 // Auto nonce (recommended)
-yield* signer.sendTransaction({ to, value })
+yield* sendTransaction({ to, value })
 
 // Manual nonce
-const nonce = yield* provider.getTransactionCount(address, 'pending')
-yield* signer.sendTransaction({ to, value, nonce })
+const nonce = yield* getTransactionCount(address, 'pending')
+yield* sendTransaction({ to, value, nonce })
 ```
 
 ## Contract Reverted
@@ -228,15 +230,17 @@ if (!success) {
 **Cause:** voltaire-effect uses branded `Uint8Array`, not strings.
 
 ```typescript
+import { getBalance } from 'voltaire-effect'
+
 // ❌ String address
-const balance = yield* provider.getBalance('0x...')
+const balance = yield* getBalance('0x...')
 
 // ✅ Decode first (or use string directly - API accepts both)
 const addr = S.decodeSync(Address.Hex)('0x...')
-const balance = yield* provider.getBalance(addr)
+const balance = yield* getBalance(addr)
 
-// ✅ Or use hex string directly (ProviderService accepts AddressInput)
-const balance = yield* provider.getBalance('0x...', 'latest')
+// ✅ Or use hex string directly (getBalance accepts AddressInput)
+const balance = yield* getBalance('0x...', 'latest')
 ```
 
 ## Debug Effect Execution
@@ -244,14 +248,14 @@ const balance = yield* provider.getBalance('0x...', 'latest')
 Add logging to trace execution:
 
 ```typescript
+import { getBlockNumber } from 'voltaire-effect'
+
 const program = Effect.gen(function* () {
   yield* Effect.log('Starting...')
-  const provider = yield* ProviderService
-  yield* Effect.log('Got provider')
-  
-  const block = yield* provider.getBlockNumber()
+
+  const block = yield* getBlockNumber()
   yield* Effect.log(`Block: ${block}`)
-  
+
   return block
 })
 ```
