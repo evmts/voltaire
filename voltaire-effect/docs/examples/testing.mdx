@@ -7,20 +7,19 @@ description: Mock services for unit tests
 
 ```typescript
 import { Effect, Schedule } from 'effect'
-import { ProviderService, Provider, TestTransport, withTimeout, withoutCache } from 'voltaire-effect'
+import { getBlockNumber, Provider, TestTransport, withTimeout, withoutCache } from 'voltaire-effect'
 import { describe, it, expect } from 'vitest'
 
 describe('Provider', () => {
   it('returns mocked block number', async () => {
     const program = Effect.gen(function* () {
-      const client = yield* ProviderService
-      return yield* client.getBlockNumber()
+      return yield* getBlockNumber()
     }).pipe(
       withTimeout('5 seconds'),
       Effect.provide(Provider),
       Effect.provide(TestTransport({ eth_blockNumber: () => '0x1234' }))
     )
-    
+
     expect(await Effect.runPromise(program)).toBe(4660n)
   })
 })
@@ -29,6 +28,8 @@ describe('Provider', () => {
 ## Mock Multiple Methods
 
 ```typescript
+import { getBlockNumber, getBalance, getBlock, Provider, TestTransport, withoutCache } from 'voltaire-effect'
+
 const mockTransport = TestTransport({
   eth_blockNumber: () => '0x1234',
   eth_getBalance: (params) => params[0] === '0xRich...' ? '0xde0b6b3a7640000' : '0x0',
@@ -39,11 +40,10 @@ const mockTransport = TestTransport({
 })
 
 const program = Effect.gen(function* () {
-  const client = yield* ProviderService
   return yield* Effect.all([
-    client.getBlockNumber(),
-    client.getBalance('0xRich...', 'latest'),
-    client.getBlock({ blockTag: 'latest' })
+    getBlockNumber(),
+    getBalance('0xRich...', 'latest'),
+    getBlock({ blockTag: 'latest' })
   ])
 }).pipe(withoutCache, Effect.provide(Provider), Effect.provide(mockTransport))
 ```

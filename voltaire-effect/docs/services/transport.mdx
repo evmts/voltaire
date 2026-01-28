@@ -47,24 +47,24 @@ HttpTransport({
 Use FiberRef-based helpers for scoped overrides:
 
 ```typescript
-import { withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
+import { getBalance, getBlockNumber, withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
 import { Schedule } from 'effect'
 
 // Override timeout for a single call
-const balance = yield* provider.getBalance(addr).pipe(
+const balance = yield* getBalance(addr).pipe(
   withTimeout('5 seconds')
 )
 
 // Custom retry schedule
-const block = yield* provider.getBlockNumber().pipe(
+const block = yield* getBlockNumber().pipe(
   withRetrySchedule(Schedule.recurs(1))
 )
 
 // Disable caching
-const fresh = yield* provider.getBlockNumber().pipe(withoutCache)
+const fresh = yield* getBlockNumber().pipe(withoutCache)
 
 // Enable tracing
-const traced = yield* provider.getBalance(addr).pipe(withTracing())
+const traced = yield* getBalance(addr).pipe(withTracing())
 ```
 
 ## Request Batching
