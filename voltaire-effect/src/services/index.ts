@@ -335,7 +335,7 @@ export {
 	SerializeError,
 	TransactionSerializerService,
 } from "./TransactionSerializer/index.js";
-// Transport exports
+// Transport exports (low-level - prefer using HttpProvider, WebSocketProvider, etc.)
 export {
 	BrowserTransport,
 	CustomTransport,
@@ -363,3 +363,14 @@ export {
 	withTimeout,
 	withTracing,
 } from "./Transport/index.js";
+// Provider factories (idiomatic - use these for simple single-layer setup)
+export {
+	HttpProvider,
+	HttpProviderFetch,
+	WebSocketProvider,
+	WebSocketProviderGlobal,
+	type WebSocketProviderConfig,
+	BrowserProvider,
+	IpcProvider,
+	TestProvider,
+} from "./Provider/index.js";

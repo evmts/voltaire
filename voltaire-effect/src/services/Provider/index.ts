@@ -24,6 +24,18 @@ export * from "./types.js";
 export { ProviderService, type ProviderShape } from "./ProviderService.js";
 export { Provider } from "./Provider.js";
 
+// Convenience provider factories (idiomatic - use these instead of Provider + Transport)
+export {
+	HttpProvider,
+	HttpProviderFetch,
+	WebSocketProvider,
+	WebSocketProviderGlobal,
+	type WebSocketProviderConfig,
+	BrowserProvider,
+	IpcProvider,
+	TestProvider,
+} from "./providers.js";
+
 // Contract actions
 export {
 	type ContractCall,
