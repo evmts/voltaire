@@ -9,20 +9,19 @@ description: Effect.ts integration for Voltaire Ethereum primitives
 import { Effect, Schedule } from 'effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-import { Provider, MainnetLayer } from 'voltaire-effect'
+import { getBalance, MainnetLayer } from 'voltaire-effect'
 
-const getBalance = (input: string) =>
+const fetchBalance = (input: string) =>
   Effect.gen(function* () {
     const addr = yield* S.decode(Address.Hex)(input)
-    const provider = yield* Provider
-    return yield* provider.getBalance(addr)
+    return yield* getBalance(addr)
   }).pipe(
     Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(3))),
     Effect.timeout('10 seconds')
   )
-// Effect<bigint, ParseError | GetBalanceError | TimeoutException, Provider>
+// Effect<bigint, ParseError | GetBalanceError | TimeoutException, ProviderService>
 
-await Effect.runPromise(getBalance('0x...').pipe(Effect.provide(MainnetLayer)))
+await Effect.runPromise(fetchBalance('0x...').pipe(Effect.provide(MainnetLayer)))
 ```
 
 <CardGroup cols={2}>
@@ -89,10 +88,10 @@ await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 Built-in retry, timeout, and fallback. No external libraries needed:
 
 ```typescript
-provider.getBlockNumber().pipe(
+getBlockNumber().pipe(
   Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
   Effect.timeout(Duration.seconds(10)),
-  Effect.orElse(() => fallbackProvider.getBlockNumber())
+  Effect.orElse(() => getBlockNumber()) // with different provider layer
 )
 ```
 </Accordion>

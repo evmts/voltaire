@@ -172,37 +172,36 @@ Start from historical events and seamlessly transition to live:
 
 ```typescript
 import { Effect, Stream } from 'effect'
-import { Contract, Provider, ProviderService, HttpTransport, makeBlockStream } from 'voltaire-effect'
+import { Contract, Provider, HttpTransport, makeBlockStream, getBlockNumber } from 'voltaire-effect'
 
 const historicalToLive = (startBlock: bigint) =>
   Effect.gen(function* () {
     const blockStream = yield* makeBlockStream()
     const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
-    const provider = yield* ProviderService
-    
+
     // Phase 1: Backfill historical events
     yield* Effect.log('Starting historical backfill...')
-    const currentBlock = yield* provider.getBlockNumber()
-    
+    const currentBlock = yield* getBlockNumber()
+
     let block = startBlock
     while (block < currentBlock) {
       const endBlock = block + 2000n > currentBlock ? currentBlock : block + 2000n
-      
+
       const events = yield* usdc.getEvents('Transfer', {
         fromBlock: block,
         toBlock: endBlock
       })
-      
+
       for (const ev of events) {
         yield* Effect.log(`HISTORICAL: ${ev.args.from} → ${ev.args.to}`)
       }
-      
+
       block = endBlock + 1n
     }
-    
+
     // Phase 2: Switch to live watching
     yield* Effect.log('Switching to live mode...')
-    
+
     yield* Stream.runForEach(
       blockStream.watch({ include: 'header' }),
       (event) => Effect.gen(function* () {
@@ -212,7 +211,7 @@ const historicalToLive = (startBlock: bigint) =>
               fromBlock: BigInt(blk.header.number),
               toBlock: BigInt(blk.header.number)
             })
-            
+
             for (const ev of events) {
               yield* Effect.log(`LIVE: ${ev.args.from} → ${ev.args.to}`)
             }
@@ -334,26 +333,25 @@ const robustQuery = Effect.gen(function* () {
 )
 ```
 
-## Using Provider.getLogs Directly
+## Using getLogs Directly
 
-For more control, use `provider.getLogs` directly:
+For more control, use the `getLogs` free function directly:
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire'
+import { Effect } from 'effect'
+import { getLogs, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  
   // Transfer event topic: keccak256('Transfer(address,address,uint256)')
   const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-  
-  const logs = yield* provider.getLogs({
+
+  const logs = yield* getLogs({
     address: USDC_ADDRESS,
     topics: [transferTopic],
     fromBlock: '0x112a880', // hex block number
     toBlock: 'latest'
   })
-  
+
   return logs
 }).pipe(
   Effect.provide(Provider),
