@@ -27,7 +27,7 @@ npm install voltaire-effect @tevm/voltaire effect
 import { Effect, Layer, Schedule } from 'effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-import { ProviderService, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
+import { getBalance, getBlockNumber, getBlock, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
 ```
 
 ## Decode → Use → Provide
@@ -35,8 +35,7 @@ import { ProviderService, Provider, HttpTransport, withTimeout, withRetrySchedul
 ```typescript
 const program = Effect.gen(function* () {
   const addr = yield* S.decode(Address.Hex)(input)     // decode
-  const provider = yield* ProviderService              // request service
-  return yield* provider.getBalance(addr, 'latest')    // use
+  return yield* getBalance(addr, 'latest')             // use free function
 }).pipe(
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
@@ -73,9 +72,12 @@ program.pipe(
 
 ```typescript
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
+  // Use free functions instead of yielding ProviderService
+  const balance = yield* getBalance(addr)
+  const block = yield* getBlockNumber()
+
+  // For signer, still use the service
   const signer = yield* SignerService
-  // use services
 })
 ```
 
@@ -100,16 +102,19 @@ const SignerLayer = Layer.mergeAll(
 ## Common Queries
 
 ```typescript
-const provider = yield* ProviderService
+import {
+  getBlockNumber, getBalance, getBlock, getTransaction,
+  getTransactionReceipt, getLogs, call, estimateGas
+} from 'voltaire-effect'
 
-yield* provider.getBlockNumber()
-yield* provider.getBalance(addr, 'latest')
-yield* provider.getBlock({ blockTag: 'latest' })
-yield* provider.getTransaction(txHash)
-yield* provider.getTransactionReceipt(txHash)
-yield* provider.getLogs({ address, topics, fromBlock, toBlock })
-yield* provider.call({ to, data })
-yield* provider.estimateGas({ to, data, value })
+yield* getBlockNumber()
+yield* getBalance(addr, 'latest')
+yield* getBlock({ blockTag: 'latest' })
+yield* getTransaction(txHash)
+yield* getTransactionReceipt(txHash)
+yield* getLogs({ address, topics, fromBlock, toBlock })
+yield* call({ to, data })
+yield* estimateGas({ to, data, value })
 ```
 
 ## Send Transaction
@@ -136,11 +141,13 @@ yield* token.getEvents('Transfer', { fromBlock, toBlock })
 ## Parallel Operations
 
 ```typescript
+import { getBlockNumber, getBalance, getChainId } from 'voltaire-effect'
+
 // All at once
 yield* Effect.all([
-  provider.getBlockNumber(),
-  provider.getBalance(addr),
-  provider.getChainId()
+  getBlockNumber(),
+  getBalance(addr),
+  getChainId()
 ])
 
 // With concurrency limit
@@ -151,14 +158,14 @@ yield* Effect.all(operations, { concurrency: 5 })
 
 ```typescript
 import { Effect, Schedule } from 'effect'
-import { withTimeout, withRetrySchedule } from 'voltaire-effect'
+import { getBalance, withTimeout, withRetrySchedule } from 'voltaire-effect'
 
 // Per-request overrides (preferred)
-provider.getBalance(addr).pipe(withTimeout("5 seconds"))
-provider.getBalance(addr).pipe(withRetrySchedule(Schedule.recurs(1)))
+getBalance(addr).pipe(withTimeout("5 seconds"))
+getBalance(addr).pipe(withRetrySchedule(Schedule.recurs(1)))
 
 // Exponential backoff with jitter
-provider.getBalance(addr).pipe(
+getBalance(addr).pipe(
   withRetrySchedule(
     Schedule.exponential("500 millis").pipe(
       Schedule.jittered,
@@ -194,13 +201,20 @@ const caps = yield* engine.exchangeCapabilities(['engine_newPayloadV3'])
 ## Testing
 
 ```typescript
-const MockProvider = Layer.succeed(ProviderService, {
-  getBlockNumber: () => Effect.succeed(12345n),
-  getBalance: () => Effect.succeed(1000000000000000000n),
-  // ...
+import { TestTransport } from 'voltaire-effect'
+
+// Mock transport layer for testing
+const mockTransport = TestTransport({
+  eth_blockNumber: () => '0x3039', // 12345
+  eth_getBalance: () => '0xde0b6b3a7640000' // 1 ETH
 })
 
-await Effect.runPromise(program.pipe(Effect.provide(MockProvider)))
+await Effect.runPromise(
+  program.pipe(
+    Effect.provide(Provider),
+    Effect.provide(mockTransport)
+  )
+)
 ```
 
 ## Crypto Services

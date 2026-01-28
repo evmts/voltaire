@@ -39,11 +39,10 @@ Fetch the latest block number:
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNumber()
 }).pipe(
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
@@ -138,13 +137,13 @@ Per-request overrides and transport configuration use Effect-native Duration and
 
 ```typescript
 import { Effect, Schedule } from 'effect'
-import { Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
+import { getBalance, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
 
 // Per-request timeout
-provider.getBalance(addr).pipe(withTimeout("5 seconds"))
+getBalance(addr).pipe(withTimeout("5 seconds"))
 
 // Per-request retry schedule
-provider.getBalance(addr).pipe(
+getBalance(addr).pipe(
   withRetrySchedule(Schedule.exponential("500 millis").pipe(
     Schedule.jittered,
     Schedule.compose(Schedule.recurs(3))
