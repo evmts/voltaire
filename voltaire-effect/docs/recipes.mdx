@@ -13,11 +13,10 @@ These recipes assume you have installed `voltaire-effect @tevm/voltaire effect`.
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { getCode, Provider, HttpTransport } from 'voltaire-effect'
 
 const isContract = (address: string) => Effect.gen(function* () {
-  const provider = yield* ProviderService
-  const code = yield* provider.getCode(address, 'latest')
+  const code = yield* getCode(address, 'latest')
   return code !== '0x' && code.length > 2
 }).pipe(
   Effect.provide(Provider),
@@ -96,15 +95,14 @@ const approveAndTransfer = (
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+import { waitForTransactionReceipt, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 
-const waitForTx = (txHash: string, confirmations = 1, timeout = "120 seconds") => 
+const waitForTx = (txHash: string, confirmations = 1, timeout = "120 seconds") =>
   Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return yield* provider.waitForTransactionReceipt(txHash, { confirmations })
+    return yield* waitForTransactionReceipt(txHash, { confirmations })
   }).pipe(
     withTimeout(timeout),
-    Effect.catchTag('TimeoutException', () => 
+    Effect.catchTag('TimeoutException', () =>
       Effect.fail(new Error(`Transaction ${txHash} not confirmed`))
     ),
     Effect.provide(Provider),
@@ -219,7 +217,7 @@ const decodeRawTx = (rawTx: string) => Effect.gen(function* () {
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
 
 const providers = [
   'https://eth.llamarpc.com',
@@ -227,22 +225,16 @@ const providers = [
   'https://rpc.ankr.com/eth'
 ]
 
-const withFallback = <A>(operation: (p: typeof ProviderService.Type) => Effect.Effect<A, any, any>) =>
+const withFallback = <A>(operation: Effect.Effect<A, any, any>) =>
   providers.reduce(
-    (acc, url, i) => i === 0 
-      ? Effect.gen(function* () {
-          const provider = yield* ProviderService
-          return yield* operation(provider)
-        }).pipe(
+    (acc, url, i) => i === 0
+      ? operation.pipe(
           Effect.provide(Provider),
           Effect.provide(HttpTransport(url))
         )
       : acc.pipe(
-          Effect.orElse(() => 
-            Effect.gen(function* () {
-              const provider = yield* ProviderService
-              return yield* operation(provider)
-            }).pipe(
+          Effect.orElse(() =>
+            operation.pipe(
               Effect.provide(Provider),
               Effect.provide(HttpTransport(url))
             )
@@ -253,7 +245,7 @@ const withFallback = <A>(operation: (p: typeof ProviderService.Type) => Effect.E
 
 // Usage
 const blockNum = await Effect.runPromise(
-  withFallback(p => p.getBlockNumber())
+  withFallback(getBlockNumber())
 )
 ```
 
@@ -265,7 +257,7 @@ Production note: the `Effect.Effect<A, any, any>` cast erases error typing. Pref
 
 ```typescript
 import { Effect, Schedule } from 'effect'
-import { withRetrySchedule } from 'voltaire-effect'
+import { getBalance, withRetrySchedule } from 'voltaire-effect'
 
 // Per-request retry schedule
 const withExponentialRetry = withRetrySchedule(
@@ -276,7 +268,7 @@ const withExponentialRetry = withRetrySchedule(
 )
 
 // Usage
-provider.getBalance(addr).pipe(withExponentialRetry)
+getBalance(addr).pipe(withExponentialRetry)
 ```
 
 ## Stream Recent Blocks
@@ -304,12 +296,11 @@ const streamBlocks = (count: number) => Effect.gen(function* () {
 
 ```typescript
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { estimateGas, Provider, HttpTransport } from 'voltaire-effect'
 
 const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, buffer = 1.2) =>
   Effect.gen(function* () {
-    const provider = yield* ProviderService
-    const estimate = yield* provider.estimateGas(tx)
+    const estimate = yield* estimateGas(tx)
     return BigInt(Math.ceil(Number(estimate) * buffer))
   }).pipe(
     Effect.provide(Provider),

@@ -372,7 +372,7 @@ export const getBalance = (address: string) =>
   })
 ```
 
-Once the call is Effect-native, you can swap in `ProviderService` and delete the `tryPromise` wrapper.
+Once the call is Effect-native, replace the ethers call with the `getBalance` free function and provide a `Provider` layer (it supplies `ProviderService`) instead of `tryPromise`.
 
 ## See Also
 

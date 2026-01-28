@@ -5,9 +5,9 @@ description: Quick reference for all voltaire-effect exports
 
 ## Services
 
-<CardGroup cols={2}>
+  <CardGroup cols={2}>
   <Card title="ProviderService" icon="database" href="/services/provider">
-    JSON-RPC provider: blocks, txs, logs, calls, simulations
+    JSON-RPC request layer used by provider free functions
   </Card>
   <Card title="DebugService" icon="bug" href="/services/debug">
     debug_* tracing, raw blocks, storage inspection
@@ -30,15 +30,11 @@ description: Quick reference for all voltaire-effect exports
 
 ```typescript
 import {
-  // Provider services
+  // Provider
   ProviderService, Provider,
-  BlocksService, Blocks,
-  ProviderAccountService, ProviderAccount,
-  TransactionService, Transaction,
-  SimulationService, Simulation,
-  EventsService, Events,
-  NetworkService, Network,
-  StreamingService, Streaming,
+  getBlockNumber, getBalance, call, estimateGas,
+  readContract, multicall, simulateContract,
+  RawProviderService, RawProviderTransport,
   DebugService, Debug,
   EngineApiService, EngineApi,
 
@@ -51,9 +47,6 @@ import {
 
   // Contract
   Contract,
-
-  // Utilities
-  readContract, multicall, simulateContract,
 
   // Streaming
   makeBlockStream, BlockStreamService, BlockStream,

@@ -321,14 +321,20 @@ it('produces expected error', async () => {
 import { ProviderResponseError, TransportError } from 'voltaire-effect'
 
 const FailingProvider = Layer.succeed(ProviderService, {
-  getBlockNumber: () =>
-    Effect.fail(
-      new ProviderResponseError({ method: 'eth_blockNumber' }, 'Invalid response')
-    ),
-  getBalance: () =>
-    Effect.fail(
-      new TransportError({ code: 429, message: 'Rate limited' })
-    )
+  request: (method: string, _params?: unknown[]) => {
+    switch (method) {
+      case 'eth_blockNumber':
+        return Effect.fail(
+          new ProviderResponseError({ method: 'eth_blockNumber' }, 'Invalid response')
+        )
+      case 'eth_getBalance':
+        return Effect.fail(
+          new TransportError({ code: 429, message: 'Rate limited' })
+        )
+      default:
+        return Effect.succeed(null)
+    }
+  }
 })
 
 const exit = await Effect.runPromiseExit(

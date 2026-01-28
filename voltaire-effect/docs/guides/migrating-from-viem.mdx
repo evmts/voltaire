@@ -291,13 +291,20 @@ export const getTokenBalanceSafe = (token: AddressType, user: AddressType) =>
 
 ```typescript
 // src/layers.test.ts
-import { Layer } from 'effect'
+import { Effect, Layer } from 'effect'
 import { ProviderService } from 'voltaire-effect'
 
 export const MockProvider = Layer.succeed(ProviderService, {
-  getBlockNumber: () => Effect.succeed(12345n),
-  getBalance: () => Effect.succeed(1000000000000000000n),
-  // ... other methods
+  request: (method: string, _params?: unknown[]) => {
+    switch (method) {
+      case 'eth_blockNumber':
+        return Effect.succeed('0x3039') // 12345
+      case 'eth_getBalance':
+        return Effect.succeed('0xde0b6b3a7640000') // 1 ETH
+      default:
+        return Effect.succeed(null)
+    }
+  }
 })
 
 export const TestLayer = Layer.mergeAll(
@@ -418,7 +425,7 @@ export const getBalance = (address: string) =>
   })
 ```
 
-Once you are ready, replace the viem call with `ProviderService` and remove the `tryPromise` wrapper.
+Once you are ready, replace the viem call with the `getBalance` free function and provide a `Provider` layer instead of the `tryPromise` wrapper.
 
 ## See Also
 

@@ -141,7 +141,7 @@ import {
 
 // Mock transport
 const MockTransport = Layer.succeed(TransportService, {
-  request: (method: string) => {
+  request: (method: string, _params?: unknown[]) => {
     const responses: Record<string, unknown> = {
       eth_blockNumber: '0x1234',
       eth_chainId: '0x1',

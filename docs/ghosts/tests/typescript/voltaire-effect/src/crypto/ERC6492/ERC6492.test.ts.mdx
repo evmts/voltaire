@@ -12,6 +12,11 @@ import { Address } from "@tevm/voltaire/Address";
 import * as Hex from "@tevm/voltaire/Hex";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as Layer from "effect/Layer";
+import {
+	ProviderService,
+	type ProviderShape,
+} from "../../services/Provider/index.js";
 import { VerifyError } from "../Signature/errors.js";
 import { unwrapSignature, verifySignature, wrapSignature } from "./index.js";
 
@@ -65,20 +70,25 @@ describe("ERC6492", () => {
 	it.effect("verifies using deployless validator", () =>
 		Effect.gen(function* () {
 			const calls: Array<{ data?: string }> = [];
-			const provider = {
-				call: (tx: { data?: `0x${string}` }) =>
-					Effect.sync(() => {
+
+			const mockProvider: ProviderShape = {
+				request: <T>(method: string, params?: unknown[]) => {
+					if (method === "eth_call") {
+						const tx = params?.[0] as { data?: string };
 						calls.push(tx);
-						return "0x01" as `0x${string}`;
-					}),
-			} as any;
+						return Effect.succeed("0x01" as T);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const MockProviderLayer = Layer.succeed(ProviderService, mockProvider);
 
 			const result = yield* verifySignature({
 				address: signer,
 				message: messageHash,
 				signature: innerSignature,
-				provider,
-			});
+			}).pipe(Effect.provide(MockProviderLayer));
 
 			expect(result).toBe(true);
 			expect(calls.length).toBe(1);
@@ -98,18 +108,26 @@ describe("ERC6492", () => {
 			const revertData = Hex.fromBytes(
 				encodeParameters([{ type: "string" }] as const, ["boom"] as any),
 			);
-			const provider = {
-				call: () =>
-					Effect.succeed(`0x08c379a0${revertData.slice(2)}` as `0x${string}`),
-			} as any;
+
+			const mockProvider: ProviderShape = {
+				request: <T>(method: string, _params?: unknown[]) => {
+					if (method === "eth_call") {
+						return Effect.succeed(
+							`0x08c379a0${revertData.slice(2)}` as T,
+						);
+					}
+					return Effect.succeed(null as T);
+				},
+			};
+
+			const MockProviderLayer = Layer.succeed(ProviderService, mockProvider);
 
 			const exit = yield* Effect.exit(
 				verifySignature({
 					address: signer,
 					message: messageHash,
 					signature: innerSignature,
-					provider,
-				}),
+				}).pipe(Effect.provide(MockProviderLayer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);

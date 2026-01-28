@@ -52,19 +52,7 @@ describe("checkReturnData", () => {
 
 describe("verifySignature", () => {
 	const mockProvider = {
-		call: vi.fn(),
-		getLogs: vi.fn(),
-		getBlockNumber: vi.fn(),
-		getBalance: vi.fn(),
-		getBlock: vi.fn(),
-		getTransaction: vi.fn(),
-		getTransactionReceipt: vi.fn(),
-		getTransactionCount: vi.fn(),
-		getCode: vi.fn(),
-		getStorageAt: vi.fn(),
-		estimateGas: vi.fn(),
-		getChainId: vi.fn(),
-		getGasPrice: vi.fn(),
+		request: vi.fn(),
 	};
 
 	const _MockProviderLayer = Layer.succeed(

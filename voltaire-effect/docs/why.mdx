@@ -101,20 +101,23 @@ Retry, timeout, fallback—no external libraries:
 
 ```typescript
 import { Schedule, Duration } from 'effect'
+import { getBlockNumber } from 'voltaire-effect'
 
-provider.getBlockNumber().pipe(
+getBlockNumber().pipe(
   // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
   Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
   // Fail after 10 seconds total
   Effect.timeout(Duration.seconds(10)),
-  // Try backup provider
-  Effect.orElse(() => fallbackProvider.getBlockNumber())
+  // Try backup provider (same call, different layer)
+  Effect.orElse(() =>
+    getBlockNumber().pipe(Effect.provide(FallbackProviderLayer))
+  )
 )
 ```
 
 ### Testable by Design
 
-Services are injected, not imported. Swap `ProviderLive` for `ProviderTest` without touching business logic:
+Services are injected, not imported. Swap a live provider layer for a test layer without touching business logic:
 
 ```typescript
 // Production: real RPC calls

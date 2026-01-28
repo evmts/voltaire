@@ -261,18 +261,14 @@ export class StandardsError extends Data.TaggedError("StandardsError")<{
 ### Composition via Type Intersection
 
 <Note>
-**INTERNAL**: ProviderService is a facade composed from sub-service shapes.
+**INTERNAL**: ProviderService is a minimal, request-only Context.Tag. All operations are exposed as free functions.
 </Note>
 
 ```typescript
 // INTERNAL: src/services/Provider/ProviderService.ts
-export type ProviderShape = BlocksShape &
-  AccountShape &
-  TransactionShape &
-  SimulationShape &
-  EventsShape &
-  NetworkShape &
-  StreamingShape;
+export type ProviderShape = {
+  readonly request: <T>(method: string, params?: unknown[]) => Effect.Effect<T, TransportError>;
+};
 
 export class ProviderService extends Context.Tag("ProviderService")<
   ProviderService,
@@ -284,22 +280,24 @@ export class ProviderService extends Context.Tag("ProviderService")<
 
 ```typescript
 // INTERNAL: src/services/Provider/functions/getBlockNumber.ts
-import { TransportService } from '../TransportService.js'
-
 export const getBlockNumber = () =>
-  Effect.gen(function* () {
-    const transport = yield* TransportService
-    const hex = yield* transport.request<string>("eth_blockNumber")
-    return yield* parseHexToBigInt({ method: "eth_blockNumber", response: hex })
-  })
+  Effect.flatMap(ProviderService, (svc) =>
+    svc.request<string>("eth_blockNumber").pipe(
+      Effect.flatMap((hex) =>
+        parseHexToBigInt({ method: "eth_blockNumber", response: hex })
+      )
+    )
+  )
 
 // INTERNAL: src/services/Provider/functions/getBalance.ts
 export const getBalance = (address: AddressInput, blockTag: BlockTag = "latest") =>
-  Effect.gen(function* () {
-    const transport = yield* TransportService
-    const hex = yield* transport.request<string>("eth_getBalance", [toAddressHex(address), blockTag])
-    return yield* parseHexToBigInt({ method: "eth_getBalance", response: hex })
-  })
+  Effect.flatMap(ProviderService, (svc) =>
+    svc.request<string>("eth_getBalance", [toAddressHex(address), blockTag]).pipe(
+      Effect.flatMap((hex) =>
+        parseHexToBigInt({ method: "eth_getBalance", response: hex })
+      )
+    )
+  )
 
 // PUBLIC API: Users import free functions directly
 import { getBlockNumber, getBalance } from 'voltaire-effect'
@@ -311,7 +309,7 @@ const program = Effect.gen(function* () {
 })
 ```
 
-**Note**: We use free functions instead of a ProviderService facade. Each function depends on TransportService internally.
+**Note**: Free functions depend on `ProviderService` (request-only) which is backed by `TransportService`.
 
 ---
 
@@ -756,14 +754,8 @@ These require native compilation (Rust/C libs) which varies by platform.
 
 ### Provider Services
 - **TransportService** - JSON-RPC transport layer
-- **ProviderService** - High-level provider interface (composed from sub-services)
-- **BlocksService** - Block fetching/queries
-- **TransactionService** - Transaction submission/tracking
-- **NetworkService** - Network/chain info
-- **EventsService** - Event log queries
-- **StreamingService** - Subscription streaming
-- **AccountService** (Provider) - Account balance/nonce queries
-- **SimulationService** - Transaction simulation
+- **ProviderService** - Request-only tag used by provider free functions
+- **RawProviderService** - Low-level RPC calls
 
 ### Infrastructure Services
 - **ChainService** - Chain configuration
@@ -774,7 +766,6 @@ These require native compilation (Rust/C libs) which varies by platform.
 - **RateLimiterService** - Rate limiting
 - **FeeEstimatorService** - Gas fee estimation
 - **NonceManagerService** - Nonce management
-- **RawProviderService** - Low-level RPC calls
 
 ### Account & Signing Services
 - **AccountService** - Cryptographic signing (local/JSON-RPC)
@@ -809,7 +800,7 @@ These are effectful functions that depend on services but are not Context.Tag se
 |----------|---------|
 | **Primitives** | Schema.declare for branded Uint8Array types |
 | **Transport** | HttpTransport, WebSocketTransport, BrowserTransport as Layer factories |
-| **Provider** | ProviderService composed from BlocksShape, AccountShape, TransactionShape, etc. |
+| **Provider** | ProviderService (request-only) + free functions for RPC operations |
 | **Signer** | SignerService for wallet transaction signing |
 | **Crypto** | 20 individual services + CryptoLive bundle via Layer.mergeAll |
 | **Functions** | Contract(), aggregate3(), BalanceResolver, ERC standards - depend on services but aren't services |

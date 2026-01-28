@@ -588,7 +588,7 @@ describe("BlockStream", () => {
 						if (method === "eth_getBlockByNumber") {
 							callCount++;
 							if (callCount > 2) {
-								throw new Error("RPC rate limit exceeded");
+								throw new Error("RPC request failed");
 							}
 							return Effect.succeed(mockBlock as T);
 						}
@@ -749,7 +749,7 @@ describe("BlockStream", () => {
 						expect(events.length).toBe(1);
 						expect(events[0].type).toBe("blocks");
 						expect(events[0].blocks.length).toBe(1);
-						expect(events[0].blocks[0].header.number).toBe(100n);
+						expect(BigInt(events[0].blocks[0].number)).toBe(100n);
 					}).pipe(Effect.provide(TestTransportLayer));
 
 					yield* program;
@@ -908,9 +908,9 @@ describe("BlockStream", () => {
 
 						const allBlocks = events.flatMap((e) => e.blocks);
 						expect(allBlocks.length).toBe(3);
-						expect(allBlocks[0].header.number).toBe(100n);
-						expect(allBlocks[1].header.number).toBe(101n);
-						expect(allBlocks[2].header.number).toBe(102n);
+						expect(BigInt(allBlocks[0].number)).toBe(100n);
+						expect(BigInt(allBlocks[1].number)).toBe(101n);
+						expect(BigInt(allBlocks[2].number)).toBe(102n);
 					}).pipe(Effect.provide(TestTransportLayer));
 
 					yield* program;

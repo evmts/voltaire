@@ -373,4 +373,150 @@ describe("edge cases", () => {
 	});
 });
 
+describe("Effect-wrapped constructors", () => {
+	it("from succeeds with valid hex", async () => {
+		const program = Address.from("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		const addr = await Effect.runPromise(program);
+		expect(addr.length).toBe(20);
+	});
+
+	it("from succeeds with bytes", async () => {
+		const bytes = new Uint8Array(20).fill(0xab);
+		const program = Address.from(bytes);
+		const addr = await Effect.runPromise(program);
+		expect(addr.length).toBe(20);
+	});
+
+	it("from fails with invalid hex", async () => {
+		const program = Address.from("invalid");
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("fromHex succeeds with valid hex", async () => {
+		const program = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		const addr = await Effect.runPromise(program);
+		expect(addr.length).toBe(20);
+	});
+
+	it("fromHex fails on wrong length", async () => {
+		const program = Address.fromHex("0x742d35");
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("fromBytes succeeds with 20 bytes", async () => {
+		const program = Address.fromBytes(new Uint8Array(20));
+		const addr = await Effect.runPromise(program);
+		expect(addr.length).toBe(20);
+	});
+
+	it("fromBytes fails on wrong length", async () => {
+		const program = Address.fromBytes(new Uint8Array(19));
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("fromNumber creates address from bigint", async () => {
+		const program = Address.fromNumber(1n);
+		const addr = await Effect.runPromise(program);
+		expect(addr.length).toBe(20);
+		expect(addr[19]).toBe(1);
+	});
+
+	it("zero creates zero address", () => {
+		const addr = Address.zero();
+		expect(addr.length).toBe(20);
+		expect(Address.isZero(addr)).toBe(true);
+	});
+
+	it("toHex converts address to hex", () => {
+		const addr = S.decodeSync(Address.Hex)("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		const hex = Address.toHex(addr);
+		expect(hex).toBe("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+	});
+
+	it("is type guard works", () => {
+		const addr = S.decodeSync(Address.Hex)("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		expect(Address.is(addr)).toBe(true);
+		expect(Address.is("not an address")).toBe(false);
+		expect(Address.is(new Uint8Array(20))).toBe(true);
+		expect(Address.is(new Uint8Array(19))).toBe(false);
+	});
+
+	it("isAddress validates address format", () => {
+		expect(Address.isAddress("0x742d35cc6634c0532925a3b844bc9e7595f251e3")).toBe(true);
+		expect(Address.isAddress("invalid")).toBe(false);
+	});
+});
+
+describe("utility functions", () => {
+	it("sortAddresses sorts lexicographically", () => {
+		const addr1 = S.decodeSync(Address.Hex)("0x0000000000000000000000000000000000000001");
+		const addr2 = S.decodeSync(Address.Hex)("0x0000000000000000000000000000000000000002");
+		const addr3 = S.decodeSync(Address.Hex)("0x0000000000000000000000000000000000000003");
+
+		const sorted = Address.sortAddresses([addr3, addr1, addr2]);
+		expect(Address.equals(sorted[0], addr1)).toBe(true);
+		expect(Address.equals(sorted[1], addr2)).toBe(true);
+		expect(Address.equals(sorted[2], addr3)).toBe(true);
+	});
+
+	it("deduplicateAddresses removes duplicates", () => {
+		const addr1 = S.decodeSync(Address.Hex)("0x0000000000000000000000000000000000000001");
+		const addr2 = S.decodeSync(Address.Hex)("0x0000000000000000000000000000000000000002");
+
+		const deduped = Address.deduplicateAddresses([addr1, addr1, addr2, addr2]);
+		expect(deduped.length).toBe(2);
+	});
+});
+
+describe("assert functions", () => {
+	it("assert succeeds on valid address", async () => {
+		const program = Address.assert("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		await Effect.runPromise(program);
+	});
+
+	it("assert fails on invalid address", async () => {
+		const program = Address.assert("invalid");
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("assert with strict mode validates checksum", async () => {
+		const program = Address.assert("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed", { strict: true });
+		await Effect.runPromise(program);
+	});
+
+	it("assertBasic succeeds on valid format", async () => {
+		const program = Address.assertBasic("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		await Effect.runPromise(program);
+	});
+});
+
+describe("toChecksummed", () => {
+	it("converts to checksummed format", async () => {
+		const addr = S.decodeSync(Address.Hex)("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed");
+		const program = Address.toChecksummed(addr).pipe(Effect.provide(KeccakLive));
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed");
+	});
+});
+
+describe("calculateCreateAddress", () => {
+	it("calculates CREATE address", async () => {
+		const deployer = S.decodeSync(Address.Hex)("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
+		const program = Address.calculateCreateAddress(deployer, 0n);
+		const result = await Effect.runPromise(program);
+		expect(result.length).toBe(20);
+	});
+
+	it("fails on negative nonce", async () => {
+		const deployer = S.decodeSync(Address.Hex)("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
+		const program = Address.calculateCreateAddress(deployer, -1n);
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+});
+
 ```

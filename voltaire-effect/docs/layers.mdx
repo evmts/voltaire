@@ -72,8 +72,7 @@ const program = Effect.gen(function* () {
 ```
 
 **Available**: 
-- `ProviderService` / `Provider` - JSON-RPC provider (blocks, txs, logs, call, simulate, optional account ops)
-- `ProviderAccountService` - Node account ops (eth_accounts, eth_coinbase, eth_sign*)
+- `ProviderService` / `Provider` - JSON-RPC request layer used by provider free functions (blocks, txs, logs, call, simulate, optional account ops)
 - `SignerService` / `Signer` - Signs & sends transactions
 - `AccountService` - Local or JSON-RPC account abstraction for signing
 - `DebugService` / `Debug` - debug_* tracing and raw data access

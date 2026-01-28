@@ -334,6 +334,56 @@ describe("TransportService", () => {
 			}
 		});
 
+		it("sends JSON-RPC batch body for __batch__ requests", async () => {
+			const batchRequests = [
+				{ jsonrpc: "2.0", id: 0, method: "eth_blockNumber", params: [] },
+				{ jsonrpc: "2.0", id: 1, method: "eth_chainId", params: [] },
+			];
+
+			fetchMock.mockImplementation(
+				(request: HttpClientRequest.HttpClientRequest) => {
+					const body = parseJsonBody(request);
+					expect(Array.isArray(body)).toBe(true);
+					if (Array.isArray(body)) {
+						expect(body[0]).toMatchObject({
+							method: "eth_blockNumber",
+							id: 0,
+						});
+						expect(body[1]).toMatchObject({
+							method: "eth_chainId",
+							id: 1,
+						});
+					}
+					return Promise.resolve({
+						ok: true,
+						json: async () => [
+							{ jsonrpc: "2.0", id: 0, result: "0x100" },
+							{ jsonrpc: "2.0", id: 1, result: "0x1" },
+						],
+					});
+				},
+			);
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<
+					Array<{ jsonrpc: string; id: number; result?: unknown }>
+				>("__batch__", batchRequests as unknown[]);
+			}).pipe(
+				Effect.provide(
+					createMockHttpTransport(fetchMock, {
+						url: "https://eth.example.com",
+					}),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toEqual([
+				{ jsonrpc: "2.0", id: 0, result: "0x100" },
+				{ jsonrpc: "2.0", id: 1, result: "0x1" },
+			]);
+		});
+
 		it("handles HTTP errors", async () => {
 			fetchMock.mockResolvedValueOnce({
 				ok: false,

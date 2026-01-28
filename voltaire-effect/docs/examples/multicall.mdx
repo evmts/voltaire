@@ -8,9 +8,12 @@ description: Reduce RPC calls by batching multiple contract reads into a single 
 Querying 10 token balances naively requires 10 separate RPC calls:
 
 ```typescript
+import { Effect } from 'effect'
+import { call } from 'voltaire-effect'
+
 // ❌ Naive approach: 10 RPC calls
-const balances = await Promise.all(
-  addresses.map(addr => provider.call({ to: token, data: encodeBalanceOf(addr) }))
+const balances = yield* Effect.all(
+  addresses.map(addr => call({ to: token, data: encodeBalanceOf(addr) }))
 )
 ```
 

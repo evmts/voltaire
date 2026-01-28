@@ -572,6 +572,110 @@ describe("error cases", () => {
 	});
 });
 
+describe("from functions", () => {
+	describe("from", () => {
+		it("parses valid hex string", () => {
+			const hash = Effect.runSync(Hash.from(`0x${"ab".repeat(32)}`));
+			expect(hash.length).toBe(32);
+		});
+
+		it("parses valid Uint8Array", () => {
+			const hash = Effect.runSync(Hash.from(new Uint8Array(32).fill(0xab)));
+			expect(hash.length).toBe(32);
+		});
+
+		it("fails on invalid hex", () => {
+			expect(() => Effect.runSync(Hash.from("invalid"))).toThrow();
+		});
+
+		it("fails on wrong length bytes", () => {
+			expect(() => Effect.runSync(Hash.from(new Uint8Array(16)))).toThrow();
+		});
+	});
+
+	describe("fromHex", () => {
+		it("parses valid hex", () => {
+			const hash = Effect.runSync(Hash.fromHex(`0x${"ab".repeat(32)}`));
+			expect(hash.length).toBe(32);
+		});
+
+		it("parses hex without 0x prefix", () => {
+			const hash = Effect.runSync(Hash.fromHex("ab".repeat(32)));
+			expect(hash.length).toBe(32);
+		});
+
+		it("fails on invalid characters", () => {
+			expect(() =>
+				Effect.runSync(Hash.fromHex(`0x${"gg".repeat(32)}`)),
+			).toThrow();
+		});
+
+		it("fails on wrong length", () => {
+			expect(() => Effect.runSync(Hash.fromHex(`0x${"ab".repeat(16)}`))).toThrow();
+		});
+	});
+
+	describe("fromBytes", () => {
+		it("parses valid 32-byte array", () => {
+			const hash = Effect.runSync(Hash.fromBytes(new Uint8Array(32)));
+			expect(hash.length).toBe(32);
+		});
+
+		it("fails on wrong length (too short)", () => {
+			expect(() => Effect.runSync(Hash.fromBytes(new Uint8Array(31)))).toThrow();
+		});
+
+		it("fails on wrong length (too long)", () => {
+			expect(() => Effect.runSync(Hash.fromBytes(new Uint8Array(33)))).toThrow();
+		});
+	});
+});
+
+describe("isHash", () => {
+	it("returns true for valid hash", () => {
+		const hash = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
+		expect(Hash.isHash(hash)).toBe(true);
+	});
+
+	it("returns false for wrong length", () => {
+		expect(Hash.isHash(new Uint8Array(16))).toBe(false);
+	});
+
+	it("returns false for non-Uint8Array", () => {
+		expect(Hash.isHash("0x" + "ab".repeat(32))).toBe(false);
+	});
+
+	it("returns false for null", () => {
+		expect(Hash.isHash(null)).toBe(false);
+	});
+
+	it("returns false for undefined", () => {
+		expect(Hash.isHash(undefined)).toBe(false);
+	});
+});
+
+describe("toHex", () => {
+	it("converts hash to hex string", () => {
+		const hash = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
+		expect(Hash.toHex(hash)).toBe(`0x${"ab".repeat(32)}`);
+	});
+
+	it("returns lowercase hex", () => {
+		const hash = S.decodeSync(Hash.Hex)(`0x${"AB".repeat(32)}`);
+		expect(Hash.toHex(hash)).toBe(`0x${"ab".repeat(32)}`);
+	});
+
+	it("produces 66-character string", () => {
+		const hash = S.decodeSync(Hash.Hex)(`0x${"00".repeat(32)}`);
+		expect(Hash.toHex(hash).length).toBe(66);
+	});
+
+	it("starts with 0x", () => {
+		const hash = S.decodeSync(Hash.Hex)(`0x${"ab".repeat(32)}`);
+		expect(Hash.toHex(hash).startsWith("0x")).toBe(true);
+	});
+});
+
 describe("additional edge cases", () => {
 	it("isValidHex with missing 0x prefix accepts raw hex", () => {
 		const result = Effect.runSync(Hash.isValidHex("ab".repeat(32)));

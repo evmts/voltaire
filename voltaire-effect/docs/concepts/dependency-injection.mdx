@@ -85,7 +85,7 @@ Effect.runPromise(program.pipe(Effect.provide(CryptoLive)))
 Swap implementations for tests:
 
 ```typescript
-import { getBlock, getBalance, ProviderService } from 'voltaire-effect'
+import { getBlock, getBalance, ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 
@@ -96,11 +96,15 @@ const program = Effect.gen(function* () {
   return { balance, block }
 })
 
+const ProviderLive = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 Effect.provide(program, ProviderLive)
 
 // Test - mock provider
 const ProviderTest = Layer.succeed(ProviderService, {
-  request: () => Effect.succeed(mockResponse)
+  request: (_method, _params) => Effect.succeed(mockResponse)
 })
 
 Effect.provide(program, ProviderTest)

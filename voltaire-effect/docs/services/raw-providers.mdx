@@ -5,7 +5,7 @@ description: Direct EIP-1193 provider access with Effect
 
 ## Overview
 
-The `RawProviderService` provides direct access to EIP-1193 provider `request` method for advanced operations not covered by the standard `ProviderService`.
+The `RawProviderService` provides direct access to the EIP-1193 `request` method for custom RPCs or object-style params not covered by provider free functions.
 
 ## RawProviderService
 
@@ -58,7 +58,7 @@ const program = Effect.gen(function* () {
 const program = Effect.gen(function* () {
   const raw = yield* RawProviderService
   
-  // Call a custom method not in ProviderService
+  // Call a custom method not covered by provider free functions
   const traces = yield* raw.request({ 
     method: 'debug_traceTransaction',
     params: ['0x...', { tracer: 'callTracer' }]

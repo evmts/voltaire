@@ -156,7 +156,7 @@ Core services for Ethereum operations:
 - `/services/kzg` - KZG commitment utilities (EIP-4844)
 - `/services/presets` - Pre-composed layer configurations
 
-ProviderService composes BlocksService, ProviderAccountService, TransactionService, SimulationService, EventsService, NetworkService, and StreamingService so you can depend on narrower tags when needed.
+ProviderService is a minimal, request-only Context.Tag that powers all provider free functions.
 
 ### Primitives
 

@@ -104,16 +104,16 @@ S.decode(Address.Hex)(input).pipe(
 Per-request configuration helpers compose with pipe:
 
 ```typescript
-import { withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+import { getBalance, getBlock, getTransactionReceipt, withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
 import * as Schedule from 'effect/Schedule'
 
 // Timeout uses Effect Duration format
-provider.getBalance(addr).pipe(
+getBalance(addr).pipe(
   withTimeout("5 seconds")
 )
 
 // Retry uses Effect Schedule
-provider.getBlock(blockNumber).pipe(
+getBlock({ blockNumber }).pipe(
   withRetrySchedule(
     Schedule.exponential("500 millis").pipe(
       Schedule.jittered,
@@ -123,7 +123,7 @@ provider.getBlock(blockNumber).pipe(
 )
 
 // Compose multiple overrides
-provider.getTransactionReceipt(hash).pipe(
+getTransactionReceipt(hash).pipe(
   withTimeout("10 seconds"),
   withRetrySchedule(Schedule.recurs(3)),
   withoutCache

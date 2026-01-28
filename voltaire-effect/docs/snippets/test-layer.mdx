@@ -5,10 +5,18 @@ import { CryptoTest } from 'voltaire-effect/crypto'
 
 // Mock provider with controlled responses
 const MockProvider = Layer.succeed(ProviderService, {
-  getBlockNumber: () => Effect.succeed(12345n),
-  getBalance: () => Effect.succeed(1000000000000000000n),
-  getBlock: () => Effect.succeed({ number: 12345n, hash: '0x...' }),
-  // ... other methods
+  request: (method: string, _params?: unknown[]) => {
+    switch (method) {
+      case 'eth_blockNumber':
+        return Effect.succeed('0x3039') // 12345
+      case 'eth_getBalance':
+        return Effect.succeed('0xde0b6b3a7640000') // 1 ETH
+      case 'eth_getBlockByNumber':
+        return Effect.succeed({ number: '0x3039', hash: '0x...' })
+      default:
+        return Effect.succeed(null)
+    }
+  }
 })
 
 // Combine mock layers
