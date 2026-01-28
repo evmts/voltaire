@@ -30,10 +30,11 @@ async function getBlockAndBalance(address: string) {
 }
 
 // voltaire-effect
+import { getBlockNumber, getBalance } from 'voltaire-effect'
+
 const getBlockAndBalance = (address: AddressType) => Effect.gen(function* () {
-  const provider = yield* ProviderService
-  const block = yield* provider.getBlockNumber()
-  const balance = yield* provider.getBalance(address)
+  const block = yield* getBlockNumber()
+  const balance = yield* getBalance(address)
   return { block, balance }
 })
 ```
@@ -74,9 +75,10 @@ try {
 }
 
 // voltaire-effect - errors in type signature
+import { getBalance } from 'voltaire-effect'
+
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBalance(address)
+  return yield* getBalance(address)
 })
 // Effect<bigint, TransportError | ParseError, ProviderService>
 //              ↑ typed error channel
@@ -107,12 +109,11 @@ const provider = new JsonRpcProvider(rpcUrl)
 const blockNumber = await provider.getBlockNumber()
 
 // voltaire-effect
-import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNumber()
 })
 
 const MainLayer = Provider.pipe(Layer.provide(HttpTransport(rpcUrl)))
@@ -135,12 +136,11 @@ const balance = await client.readContract({
 
 // voltaire-effect
 import { Effect } from 'effect'
-import { ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import { readContract, Provider, HttpTransport } from 'voltaire-effect'
 import * as Abi from 'voltaire-effect/primitives/Abi'
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.readContract({
+  return yield* readContract({
     address: contractAddress,
     abi: Abi.parseAbi(['function balanceOf(address) view returns (uint256)']),
     functionName: 'balanceOf',
@@ -209,16 +209,15 @@ const unwatch = client.watchEvent({
 
 // voltaire-effect
 import { Stream } from 'effect'
-import { ProviderService } from 'voltaire-effect'
+import { watchEvent } from 'voltaire-effect'
 
 const watchTransfers = Effect.gen(function* () {
-  const provider = yield* ProviderService
-  const stream = yield* provider.watchEvent({
+  const stream = yield* watchEvent({
     address: contractAddress,
     event: 'Transfer(address indexed, address indexed, uint256)'
   })
-  
-  yield* Stream.runForEach(stream, (log) => 
+
+  yield* Stream.runForEach(stream, (log) =>
     Effect.sync(() => console.log(log))
   )
 })
@@ -264,10 +263,11 @@ export async function getTokenBalance(token: string, user: string) {
 }
 
 // After: voltaire-effect
+import { readContract } from 'voltaire-effect'
+
 export const getTokenBalance = (token: AddressType, user: AddressType) =>
   Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return yield* provider.readContract({
+    return yield* readContract({
       address: token,
       abi: erc20Abi,
       functionName: 'balanceOf',
@@ -324,14 +324,12 @@ await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
 ```typescript
 // ❌ Returns Effect, doesn't execute
 Effect.gen(function* () {
-  const provider = yield* ProviderService
-  provider.getBlockNumber() // Missing yield*!
+  getBlockNumber() // Missing yield*!
 })
 
 // ✅ Yield all Effects
 Effect.gen(function* () {
-  const provider = yield* ProviderService
-  return yield* provider.getBlockNumber()
+  return yield* getBlockNumber()
 })
 ```
 
