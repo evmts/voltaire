@@ -1,6 +1,6 @@
 {
 	"name": "@tevm/voltaire",
-	"version": "0.2.21",
+	"version": "0.2.22",
 	"private": false,
 	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
 	"keywords": [
