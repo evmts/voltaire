@@ -34,9 +34,9 @@ const program = Effect.gen(function* () {
   const chainId = 1
 
   // Get nonces for 3 concurrent transactions
-  const nonce1 = yield* nonceManager.consume(address, chainId) // e.g., 5
-  const nonce2 = yield* nonceManager.consume(address, chainId) // e.g., 6
-  const nonce3 = yield* nonceManager.consume(address, chainId) // e.g., 7
+  const nonce1 = yield* nonceManager.consume(address, chainId) // e.g., 5n
+  const nonce2 = yield* nonceManager.consume(address, chainId) // e.g., 6n
+  const nonce3 = yield* nonceManager.consume(address, chainId) // e.g., 7n
 
   // Send transactions with these nonces...
 
