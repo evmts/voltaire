@@ -52,6 +52,7 @@ Use `TestTransport` to mock JSON-RPC responses:
 
 ```typescript
 import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
 import { TestTransport, Provider, getBalance } from 'voltaire-effect'
 
 const TestLayer = Provider.pipe(
@@ -188,20 +189,17 @@ const result = await Effect.runPromise(
 Use live layers for integration tests:
 
 ```typescript
+import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { HttpTransport, Provider, ProviderService } from 'voltaire-effect'
-import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+import { HttpTransport, Provider, CryptoLive, getBlock, getBalance } from 'voltaire-effect'
 
 const IntegrationLayer = Layer.mergeAll(
   Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com'))),
-  KeccakLive
+  CryptoLive
 )
 
 it('fetches real block', async () => {
-  const program = Effect.gen(function* () {
-    const provider = yield* ProviderService
-    return yield* provider.getBlock('latest')
-  })
+  const program = getBlock('latest')
 
   const block = await Effect.runPromise(
     program.pipe(Effect.provide(IntegrationLayer))

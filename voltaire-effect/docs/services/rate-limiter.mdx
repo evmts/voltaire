@@ -228,11 +228,12 @@ Most RPC providers enforce rate limits (e.g., Alchemy: 25 CU/sec, Infura: 10 req
 ```typescript
 import { Effect } from 'effect'
 import {
-  ProviderService,
+  getBlock,
   Provider,
   DefaultRateLimiter,
   HttpTransport,
-  RateLimitError
+  RateLimitError,
+  RateLimiterService
 } from 'voltaire-effect'
 import * as Layer from 'effect/Layer'
 

@@ -135,7 +135,7 @@ import { Effect, Layer } from 'effect'
 import {
   ChainService,
   ContractsService,
-  ProviderService,
+  getBlockNumber,
   Provider,
   HttpTransport,
   mainnet
@@ -144,12 +144,11 @@ import {
 const program = Effect.gen(function* () {
   const chain = yield* ChainService
   const contracts = yield* ContractsService
-  const provider = yield* ProviderService
-  
+
   // Use chain-specific data
   const multicall = contracts.multicall3?.address
-  const blockNumber = yield* provider.getBlockNumber()
-  
+  const blockNumber = yield* getBlockNumber()
+
   return { chain: chain.name, multicall, blockNumber }
 }).pipe(
   Effect.provide(Layer.merge(
