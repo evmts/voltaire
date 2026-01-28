@@ -21,25 +21,16 @@ import {
   HttpTransport
 } from 'voltaire-effect'
 
-// Define your contracts once
 const Contracts = makeContractRegistry({
   USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
   WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-  ERC20: { abi: erc20Abi }  // Factory for dynamic addresses
 })
 
-// Use throughout your app with full type safety
 const program = Effect.gen(function* () {
-  const contracts = yield* ContractRegistryService
-
-  // Pre-configured contracts - ready to use
-  const usdcBalance = yield* contracts.USDC.read.balanceOf(userAddress)
-
-  // Factory pattern for runtime addresses
-  const token = yield* contracts.ERC20.at(dynamicAddress)
-  const balance = yield* token.read.balanceOf(userAddress)
-
-  return { usdcBalance, balance }
+  const { USDC, WETH } = yield* ContractRegistryService
+  const usdcBalance = yield* USDC.read.balanceOf(userAddress)
+  const wethBalance = yield* WETH.read.balanceOf(userAddress)
+  return { usdcBalance, wethBalance }
 }).pipe(
   Effect.provide(Contracts),
   Effect.provide(Provider),
@@ -47,7 +38,7 @@ const program = Effect.gen(function* () {
 )
 ```
 
-**Features:** Typed errors, automatic retries, dependency injection, composable operations, tree-shakeable.
+**Features:** Typed errors, dependency injection, composable operations, tree-shakeable.
 
 [Get started with voltaire-effect →](./voltaire-effect)
 

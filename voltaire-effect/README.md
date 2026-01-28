@@ -13,50 +13,21 @@ import {
   HttpTransport
 } from 'voltaire-effect'
 
-const erc20Abi = [
-  {
-    type: 'function',
-    name: 'balanceOf',
-    inputs: [{ type: 'address', name: 'account' }],
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view'
-  },
-  {
-    type: 'function',
-    name: 'transfer',
-    inputs: [{ type: 'address', name: 'to' }, { type: 'uint256', name: 'amount' }],
-    outputs: [{ type: 'bool' }],
-    stateMutability: 'nonpayable'
-  }
-] as const
-
-// Define your contracts once
 const Contracts = makeContractRegistry({
   USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
   WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-  ERC20: { abi: erc20Abi }  // Factory - no address, use .at() at runtime
 })
 
-// Use throughout your app
 const program = Effect.gen(function* () {
-  const contracts = yield* ContractRegistryService
-
-  // Pre-configured contracts ready to use
-  const usdcBalance = yield* contracts.USDC.read.balanceOf(userAddress)
-  const wethBalance = yield* contracts.WETH.read.balanceOf(userAddress)
-
-  // Factory pattern for dynamic addresses
-  const token = yield* contracts.ERC20.at(dynamicTokenAddress)
-  const balance = yield* token.read.balanceOf(userAddress)
-
-  return { usdcBalance, wethBalance, balance }
+  const { USDC, WETH } = yield* ContractRegistryService
+  const usdcBalance = yield* USDC.read.balanceOf(userAddress)
+  const wethBalance = yield* WETH.read.balanceOf(userAddress)
+  return { usdcBalance, wethBalance }
 }).pipe(
   Effect.provide(Contracts),
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
-
-await Effect.runPromise(program)
 ```
 
 ## Installation
