@@ -1,5 +1,10 @@
 // Primitives - explicit namespace exports
 
+// Re-export core types for direct import (e.g., import { AddressType } from 'voltaire-effect')
+export type { AddressType, BrandedAddress } from "@tevm/voltaire/Address";
+export type { HexType, Hex as HexBrand, Sized } from "@tevm/voltaire/Hex";
+export type { HashType } from "@tevm/voltaire/Hash";
+
 // Re-export voltaire error types for Effect compatibility
 export {
 	// Base errors
