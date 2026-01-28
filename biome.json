@@ -58,13 +58,14 @@
 		"rules": {
 			"recommended": true,
 			"complexity": {
-				"noExcessiveCognitiveComplexity": "warn",
+				"noExcessiveCognitiveComplexity": "off",
 				"noForEach": "off",
 				"noBannedTypes": "warn"
 			},
 			"correctness": {
 				"noVoidTypeReturn": "warn",
-				"useYield": "warn"
+				"useYield": "warn",
+				"noUnusedVariables": "warn"
 			},
 			"style": {
 				"useImportType": "error",
