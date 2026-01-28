@@ -3,25 +3,32 @@ title: voltaire-effect
 description: Effect.ts integration for Voltaire Ethereum primitives
 ---
 
-[Effect.ts](https://effect.website) integration for [Voltaire](https://voltaire.tevm.sh) Ethereum primitives. Build applications with typed errors, composable workflows, and testable code.
+[Effect.ts](https://effect.website) integration for [Voltaire](https://voltaire.tevm.sh) Ethereum primitives. Type-safe contract interactions with composable, error-handled operations.
 
 ```typescript
-import { Effect, Schedule } from 'effect'
-import * as S from 'effect/Schema'
-import * as Address from 'voltaire-effect/primitives/Address'
-import { getBalance, MainnetLayer } from 'voltaire-effect'
+import { Effect } from 'effect'
+import {
+  ContractRegistryService,
+  makeContractRegistry,
+  HttpProvider
+} from 'voltaire-effect'
 
-const fetchBalance = (input: string) =>
-  Effect.gen(function* () {
-    const addr = yield* S.decode(Address.Hex)(input)
-    return yield* getBalance(addr)
-  }).pipe(
-    Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(3))),
-    Effect.timeout('10 seconds')
-  )
-// Effect<bigint, ParseError | GetBalanceError | TimeoutException, ProviderService>
+const Contracts = makeContractRegistry({
+  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
+})
 
-await Effect.runPromise(fetchBalance('0x...').pipe(Effect.provide(MainnetLayer)))
+const program = Effect.gen(function* () {
+  const { USDC, WETH } = yield* ContractRegistryService
+  const usdcBalance = yield* USDC.read.balanceOf(userAddress)
+  const wethBalance = yield* WETH.read.balanceOf(userAddress)
+  return { usdcBalance, wethBalance }
+}).pipe(
+  Effect.retry({ times: 3 }),
+  Effect.timeout('10 seconds'),
+  Effect.provide(Contracts),
+  Effect.provide(HttpProvider('https://eth.llamarpc.com'))
+)
 ```
 
 <CardGroup cols={2}>
