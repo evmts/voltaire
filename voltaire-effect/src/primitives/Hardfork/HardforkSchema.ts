@@ -22,13 +22,13 @@ const HardforkTypeSchema = S.declare<HardforkType>(
  * @example
  * ```ts
  * import * as S from 'effect/Schema'
- * import { Schema } from 'voltaire-effect/primitives/Hardfork'
+ * import { HardforkSchema } from 'voltaire-effect/primitives/Hardfork'
  *
- * const fork = S.decodeSync(Schema)('london')
+ * const fork = S.decodeSync(HardforkSchema)('london')
  * ```
  * @since 0.0.1
  */
-export const Schema: S.Schema<HardforkType, string> = S.transformOrFail(
+export const HardforkSchema: S.Schema<HardforkType, string> = S.transformOrFail(
 	S.String,
 	HardforkTypeSchema,
 	{

@@ -1,25 +1,42 @@
 /**
- * @fileoverview BloomFilter module for Ethereum log bloom filters.
  * @module BloomFilter
- * @since 0.0.1
+ * @description Effect Schemas and functions for Ethereum bloom filters.
  *
- * @description
  * Bloom filters are probabilistic data structures used in Ethereum for efficient
  * log searching. Each block contains a logs bloom filter (2048 bits, 3 hash functions)
  * that allows quick checking of whether a block might contain relevant logs.
  *
- * Key properties:
- * - False positives possible: "maybe in set" could be wrong
- * - False negatives impossible: "not in set" is always correct
- * - Space efficient: Compact representation of set membership
- * - Fast lookups: O(k) where k is number of hash functions
+ * ## Type Declarations
  *
- * This module provides:
- * - Creation of bloom filters with configurable parameters
- * - Adding items to filters
- * - Probabilistic membership testing
- * - Serialization to/from hex
- * - Effect Schema for validation
+ * ```typescript
+ * import * as BloomFilter from 'voltaire-effect/primitives/BloomFilter'
+ *
+ * function checkLogs(filter: BloomFilter.BloomFilterType) {
+ *   // ...
+ * }
+ * ```
+ *
+ * ## Constructors (Effect-wrapped)
+ *
+ * ```typescript
+ * BloomFilter.create(m, k)           // Effect<BloomFilterType, InvalidBloomFilterParameterError>
+ * BloomFilter.fromHex(hex, m, k)     // Effect<BloomFilterType, InvalidBloomFilterLengthError>
+ * ```
+ *
+ * ## Pure Functions
+ *
+ * ```typescript
+ * BloomFilter.add(filter, item)      // void (mutates in place)
+ * BloomFilter.contains(filter, item) // boolean
+ * BloomFilter.combine(...filters)    // BloomFilterType
+ * BloomFilter.merge(f1, f2)          // BloomFilterType
+ * BloomFilter.toHex(filter)          // string
+ * BloomFilter.isEmpty(filter)        // boolean
+ * BloomFilter.density(filter)        // number
+ * BloomFilter.expectedFalsePositiveRate(filter, n) // number
+ * BloomFilter.hash(item, seed, m)    // number
+ * BloomFilter.hashFromKeccak(hash, seed, m) // number
+ * ```
  *
  * @example
  * ```typescript
@@ -27,38 +44,43 @@
  * import * as Effect from 'effect/Effect'
  *
  * const program = Effect.gen(function* () {
- *   // Create a filter (Ethereum uses 2048 bits, 3 hash functions)
  *   const filter = yield* BloomFilter.create(2048, 3)
+ *   BloomFilter.add(filter, transferEventTopic)
  *
- *   // Add items
- *   yield* BloomFilter.add(filter, transferEventTopic)
- *   yield* BloomFilter.add(filter, contractAddress)
- *
- *   // Check membership
  *   if (BloomFilter.contains(filter, searchTopic)) {
  *     console.log('Topic might be in filter')
  *   }
  *
- *   // Check if empty
- *   console.log(BloomFilter.isEmpty(filter))  // false
- *
- *   // Serialize for storage
- *   const hex = BloomFilter.toHex(filter)
- *
- *   // Restore later
- *   const restored = yield* BloomFilter.fromHex(hex, 2048, 3)
- *
- *   return filter
+ *   return BloomFilter.toHex(filter)
  * })
  * ```
  *
- * @see {@link create} for creating new filters
- * @see {@link add} for adding items
- * @see {@link contains} for membership testing
- * @see {@link BloomFilterSchema} for Effect Schema validation
+ * @since 0.1.0
  */
 
+// Re-export type
+export type { BloomFilterType } from "@tevm/voltaire/BloomFilter";
+
+// Re-export errors
 export {
-	BloomFilterSchema,
-	BloomFilterSchema as Schema,
-} from "./BloomFilterSchema.js";
+	InvalidBloomFilterLengthError,
+	InvalidBloomFilterParameterError,
+} from "@tevm/voltaire/BloomFilter";
+
+// Schema
+export { BloomFilterSchema, BloomFilterSchema as Schema } from "./BloomFilterSchema.js";
+
+// Constructors (Effect-wrapped)
+export { create } from "./create.js";
+export { fromHex } from "./fromHex.js";
+
+// Pure functions
+export { add } from "./add.js";
+export { combine } from "./combine.js";
+export { contains } from "./contains.js";
+export { density } from "./density.js";
+export { expectedFalsePositiveRate } from "./expectedFalsePositiveRate.js";
+export { hash, hashFromKeccak } from "./hash.js";
+export { isEmpty } from "./isEmpty.js";
+export { merge } from "./merge.js";
+export { toHex } from "./toHex.js";

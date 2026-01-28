@@ -6,7 +6,7 @@ import * as S from "effect/Schema";
  * Type representing an EVM opcode value (0x00-0xFF).
  * @since 0.0.1
  */
-type OpcodeType = ReturnType<typeof Opcode>;
+export type OpcodeType = ReturnType<typeof Opcode>;
 
 const OpcodeTypeSchema = S.declare<OpcodeType>(
 	(u): u is OpcodeType => typeof u === "number" && u >= 0x00 && u <= 0xff,

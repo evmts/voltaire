@@ -1,0 +1,50 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
+import {
+	findSelectorCollisions,
+	hasSelectorCollisions,
+} from "./findSelectorCollisions.js";
+
+const normalAbi = S.decodeUnknownSync(fromArray)([
+	{
+		type: "function",
+		name: "transfer",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ name: "to", type: "address" },
+			{ name: "amount", type: "uint256" },
+		],
+		outputs: [{ type: "bool" }],
+	},
+	{
+		type: "function",
+		name: "balanceOf",
+		stateMutability: "view",
+		inputs: [{ name: "account", type: "address" }],
+		outputs: [{ type: "uint256" }],
+	},
+]);
+
+describe("findSelectorCollisions", () => {
+	describe("success cases", () => {
+		it.effect("returns empty array for normal ABI", () =>
+			Effect.gen(function* () {
+				const collisions = yield* findSelectorCollisions(normalAbi);
+				expect(collisions).toEqual([]);
+			}),
+		);
+	});
+});
+
+describe("hasSelectorCollisions", () => {
+	describe("success cases", () => {
+		it.effect("returns false for normal ABI", () =>
+			Effect.gen(function* () {
+				const hasCollisions = yield* hasSelectorCollisions(normalAbi);
+				expect(hasCollisions).toBe(false);
+			}),
+		);
+	});
+});

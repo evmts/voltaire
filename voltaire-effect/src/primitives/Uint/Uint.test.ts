@@ -836,3 +836,203 @@ describe("additional edge cases", () => {
 		});
 	});
 });
+
+describe("constructor functions", () => {
+	describe("from", () => {
+		it("creates from bigint", () => {
+			const result = Effect.runSync(Uint.from(100n));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(100n);
+		});
+
+		it("creates from number", () => {
+			const result = Effect.runSync(Uint.from(42));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(42n);
+		});
+
+		it("creates from hex string", () => {
+			const result = Effect.runSync(Uint.from("0xff"));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(255n);
+		});
+
+		it("creates from decimal string", () => {
+			const result = Effect.runSync(Uint.from("1000"));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(1000n);
+		});
+
+		it("fails on negative", () => {
+			expect(() => Effect.runSync(Uint.from(-1n))).toThrow();
+		});
+
+		it("fails on overflow", () => {
+			expect(() => Effect.runSync(Uint.from(MAX_UINT256 + 1n))).toThrow();
+		});
+	});
+
+	describe("fromBigInt", () => {
+		it("creates from valid bigint", () => {
+			const result = Effect.runSync(Uint.fromBigInt(100n));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(100n);
+		});
+
+		it("fails on negative", () => {
+			expect(() => Effect.runSync(Uint.fromBigInt(-1n))).toThrow();
+		});
+	});
+
+	describe("fromNumber", () => {
+		it("creates from valid number", () => {
+			const result = Effect.runSync(Uint.fromNumber(42));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(42n);
+		});
+
+		it("fails on non-integer", () => {
+			expect(() => Effect.runSync(Uint.fromNumber(1.5))).toThrow();
+		});
+
+		it("fails on negative", () => {
+			expect(() => Effect.runSync(Uint.fromNumber(-1))).toThrow();
+		});
+	});
+
+	describe("fromHex", () => {
+		it("creates from hex with prefix", () => {
+			const result = Effect.runSync(Uint.fromHex("0xde0b6b3a7640000"));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(1000000000000000000n);
+		});
+
+		it("creates from hex without prefix", () => {
+			const result = Effect.runSync(Uint.fromHex("ff"));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(255n);
+		});
+
+		it("fails on invalid hex", () => {
+			expect(() => Effect.runSync(Uint.fromHex("0xGGG"))).toThrow();
+		});
+	});
+
+	describe("fromBytes", () => {
+		it("creates from bytes", () => {
+			const result = Effect.runSync(Uint.fromBytes(new Uint8Array([0xff])));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(255n);
+		});
+
+		it("creates from 32-byte array", () => {
+			const bytes = new Uint8Array(32).fill(0);
+			bytes[31] = 100;
+			const result = Effect.runSync(Uint.fromBytes(bytes));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(100n);
+		});
+	});
+
+	describe("fromAbiEncoded", () => {
+		it("creates from 32-byte ABI-encoded data", () => {
+			const data = new Uint8Array(32).fill(0);
+			data[31] = 42;
+			const result = Effect.runSync(Uint.fromAbiEncoded(data));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(42n);
+		});
+	});
+
+	describe("tryFrom", () => {
+		it("returns Some for valid value", () => {
+			const result = Uint.tryFrom(100n);
+			expect(result._tag).toBe("Some");
+		});
+
+		it("returns None for invalid value", () => {
+			const result = Uint.tryFrom(-1n);
+			expect(result._tag).toBe("None");
+		});
+
+		it("returns None for invalid string", () => {
+			const result = Uint.tryFrom("invalid");
+			expect(result._tag).toBe("None");
+		});
+	});
+});
+
+describe("type guards", () => {
+	describe("isUint256", () => {
+		it("returns true for valid bigint", () => {
+			expect(Uint.isUint256(100n)).toBe(true);
+		});
+
+		it("returns false for negative", () => {
+			expect(Uint.isUint256(-1n)).toBe(false);
+		});
+
+		it("returns false for overflow", () => {
+			expect(Uint.isUint256(MAX_UINT256 + 1n)).toBe(false);
+		});
+
+		it("returns false for non-bigint", () => {
+			expect(Uint.isUint256(100)).toBe(false);
+			expect(Uint.isUint256("100")).toBe(false);
+		});
+	});
+
+	describe("isValid", () => {
+		it("returns true for valid bigint", () => {
+			expect(Uint.isValid(100n)).toBe(true);
+		});
+
+		it("returns false for negative", () => {
+			expect(Uint.isValid(-1n)).toBe(false);
+		});
+
+		it("returns false for non-bigint", () => {
+			expect(Uint.isValid("hello")).toBe(false);
+		});
+	});
+});
+
+describe("division operations", () => {
+	const a = S.decodeSync(Uint.BigInt)(100n);
+	const b = S.decodeSync(Uint.BigInt)(30n);
+	const zero = S.decodeSync(Uint.BigInt)(0n);
+
+	describe("dividedBy", () => {
+		it("divides two values", () => {
+			const result = Effect.runSync(Uint.dividedBy(a, b));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(3n);
+		});
+
+		it("fails on division by zero", () => {
+			expect(() => Effect.runSync(Uint.dividedBy(a, zero))).toThrow();
+		});
+	});
+
+	describe("modulo", () => {
+		it("computes remainder", () => {
+			const result = Effect.runSync(Uint.modulo(a, b));
+			expect(S.encodeSync(Uint.BigInt)(result)).toBe(10n);
+		});
+
+		it("fails on modulo by zero", () => {
+			expect(() => Effect.runSync(Uint.modulo(a, zero))).toThrow();
+		});
+	});
+});
+
+describe("toHex", () => {
+	it("converts to padded hex by default", () => {
+		const val = S.decodeSync(Uint.BigInt)(255n);
+		const result = Effect.runSync(Uint.toHex(val));
+		expect(result).toMatch(/^0x[0-9a-f]{64}$/);
+		expect(result).toBe(
+			"0x00000000000000000000000000000000000000000000000000000000000000ff",
+		);
+	});
+
+	it("converts to unpadded hex when requested", () => {
+		const val = S.decodeSync(Uint.BigInt)(255n);
+		const result = Effect.runSync(Uint.toHex(val, false));
+		expect(result).toBe("0xff");
+	});
+
+	it("converts zero", () => {
+		const val = S.decodeSync(Uint.BigInt)(0n);
+		const result = Effect.runSync(Uint.toHex(val, false));
+		expect(result).toBe("0x0");
+	});
+});

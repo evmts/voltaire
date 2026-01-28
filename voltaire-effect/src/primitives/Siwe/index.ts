@@ -1,6 +1,6 @@
 /**
  * @module Siwe
- * @description Effect Schemas for Sign-In with Ethereum (SIWE) messages (EIP-4361).
+ * @description Effect Schemas and functions for Sign-In with Ethereum (SIWE) messages (EIP-4361).
  *
  * ## Type Declarations
  *
@@ -19,37 +19,73 @@
  * | `Siwe.String` | SIWE message string | SiweMessageType |
  * | `Siwe.MessageStruct` | SIWE message object | validated object |
  *
- * ## Usage
+ * ## Constructors (Effect-wrapped)
  *
  * ```typescript
- * import * as Siwe from 'voltaire-effect/primitives/Siwe'
- * import * as S from 'effect/Schema'
+ * Siwe.create(params) // Effect<SiweMessageType, Error>
+ * Siwe.parse(text)    // Effect<SiweMessageType, Error>
+ * ```
  *
- * // Parse from string
- * const message = S.decodeSync(Siwe.String)(`example.com wants you to sign in...`)
+ * ## Verification (Effect-wrapped)
  *
- * // Format to string
- * const text = S.encodeSync(Siwe.String)(message)
+ * ```typescript
+ * Siwe.verify(message, signature)       // Effect<boolean, Error>
+ * Siwe.verifyMessage(msg, sig, opts)    // Effect<ValidationResult, Error>
+ * Siwe.getMessageHash(message)          // Effect<Uint8Array, Error>
  * ```
  *
  * ## Pure Functions
  *
  * ```typescript
- * Siwe.format(message)  // string
- * Siwe.validate(message, { now })  // ValidationResult
- * Siwe.generateNonce(length)  // string
+ * Siwe.format(message)            // string
+ * Siwe.validate(message, opts)    // ValidationResult
+ * Siwe.generateNonce(length)      // string
+ * ```
+ *
+ * @example
+ * ```typescript
+ * import * as Siwe from 'voltaire-effect/primitives/Siwe'
+ * import { Effect } from 'effect'
+ *
+ * const program = Effect.gen(function* () {
+ *   const message = yield* Siwe.create({
+ *     domain: 'example.com',
+ *     address: '0x...',
+ *     uri: 'https://example.com',
+ *     chainId: 1,
+ *   })
+ *   const text = Siwe.format(message)
+ *   const hash = yield* Siwe.getMessageHash(message)
+ *   return { message, text, hash }
+ * })
  * ```
  *
  * @since 0.1.0
  */
+
+// Types
+export type { SiweMessageType, ValidationResult } from "./String.js";
+export type { Signature } from "@tevm/voltaire/Siwe";
+
+// Errors (re-export from voltaire)
 export {
-	format,
-	generateNonce,
-	MessageStruct,
-	Schema,
-	SiweMessageSchema,
-	type SiweMessageType,
-	String,
-	type ValidationResult,
-	validate,
-} from "./String.js";
+  InvalidFieldError,
+  InvalidNonceLengthError,
+  InvalidSiweMessageError,
+  MissingFieldError,
+  SiweParseError,
+} from "@tevm/voltaire/Siwe";
+
+// Schemas
+export { MessageStruct, Schema, SiweMessageSchema, String } from "./String.js";
+
+// Constructors (Effect-wrapped)
+export { create } from "./create.js";
+export { parse } from "./parse.js";
+
+// Verification (Effect-wrapped)
+export { verify, verifyMessage } from "./verify.js";
+export { getMessageHash, GetMessageHash, Verify, VerifyMessage } from "./hash.js";
+
+// Pure Functions (re-export)
+export { format, generateNonce, validate } from "./String.js";
