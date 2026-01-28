@@ -517,6 +517,58 @@ describe("Effect functions (fallible)", () => {
 	});
 });
 
+describe("direct voltaire re-exports", () => {
+	describe("fromBytes (pure function)", () => {
+		it("converts Uint8Array to hex string directly (no Effect)", () => {
+			const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+			const result = Hex.fromBytes(bytes);
+			expect(result).toBe("0xdeadbeef");
+			expect(typeof result).toBe("string");
+		});
+
+		it("converts empty bytes to 0x", () => {
+			const result = Hex.fromBytes(new Uint8Array([]));
+			expect(result).toBe("0x");
+		});
+
+		it("converts single byte", () => {
+			const result = Hex.fromBytes(new Uint8Array([0xff]));
+			expect(result).toBe("0xff");
+		});
+
+		it("converts zero bytes", () => {
+			const result = Hex.fromBytes(new Uint8Array([0x00, 0x00]));
+			expect(result).toBe("0x0000");
+		});
+
+		it("handles large arrays", () => {
+			const bytes = new Uint8Array(100).fill(0xab);
+			const result = Hex.fromBytes(bytes);
+			expect(result.length).toBe(202);
+			expect(result.startsWith("0x")).toBe(true);
+		});
+	});
+
+	describe("toBytes (pure function)", () => {
+		it("converts hex string to Uint8Array directly (no Effect)", () => {
+			const hex = "0xdeadbeef" as HexType;
+			const result = Hex.toBytes(hex);
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(4);
+			expect(result[0]).toBe(0xde);
+			expect(result[1]).toBe(0xad);
+			expect(result[2]).toBe(0xbe);
+			expect(result[3]).toBe(0xef);
+		});
+
+		it("converts empty hex to empty array", () => {
+			const result = Hex.toBytes("0x" as HexType);
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(0);
+		});
+	});
+});
+
 describe("API consistency", () => {
 	it("infallible ops return directly, not Effect", () => {
 		const hex = S.decodeSync(Hex.String)("0xdeadbeef");
@@ -531,6 +583,17 @@ describe("API consistency", () => {
 		expect(typeof Hex.trim(hex)).toBe("string");
 		expect(typeof Hex.fromBoolean(true)).toBe("string");
 		expect(typeof Hex.fromString("hello")).toBe("string");
+	});
+
+	it("fromBytes and toBytes are pure functions (not Effect-wrapped)", () => {
+		const bytes = new Uint8Array([0x12, 0x34]);
+		const hex = Hex.fromBytes(bytes);
+		expect(typeof hex).toBe("string");
+		expect(hex).toBe("0x1234");
+
+		const backToBytes = Hex.toBytes(hex);
+		expect(backToBytes).toBeInstanceOf(Uint8Array);
+		expect(Array.from(backToBytes)).toEqual([0x12, 0x34]);
 	});
 });
 

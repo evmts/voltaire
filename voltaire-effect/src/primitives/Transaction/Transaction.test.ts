@@ -1560,3 +1560,312 @@ describe("Transaction pure functions additional coverage", () => {
 		});
 	});
 });
+
+describe("Transaction type guards", () => {
+	const legacyTx: Transaction.Legacy = {
+		type: Transaction.Type.Legacy,
+		nonce: 0n,
+		gasPrice: 20000000000n,
+		gasLimit: 21000n,
+		to: testAddress,
+		value: 0n,
+		data: new Uint8Array(),
+		v: 27n,
+		r: testSignature.r,
+		s: testSignature.s,
+	};
+
+	const eip1559Tx: Transaction.EIP1559 = {
+		type: Transaction.Type.EIP1559,
+		chainId: 1n,
+		nonce: 0n,
+		maxPriorityFeePerGas: 1000000000n,
+		maxFeePerGas: 20000000000n,
+		gasLimit: 21000n,
+		to: testAddress,
+		value: 0n,
+		data: new Uint8Array(),
+		accessList: [],
+		yParity: 0,
+		r: testSignature.r,
+		s: testSignature.s,
+	};
+
+	describe("isLegacy", () => {
+		it("returns true for legacy transactions", () => {
+			expect(Transaction.isLegacy(legacyTx)).toBe(true);
+		});
+
+		it("returns false for non-legacy transactions", () => {
+			expect(Transaction.isLegacy(eip1559Tx)).toBe(false);
+		});
+	});
+
+	describe("isEIP1559", () => {
+		it("returns true for EIP-1559 transactions", () => {
+			expect(Transaction.isEIP1559(eip1559Tx)).toBe(true);
+		});
+
+		it("returns false for non-EIP-1559 transactions", () => {
+			expect(Transaction.isEIP1559(legacyTx)).toBe(false);
+		});
+	});
+
+	describe("isEIP2930", () => {
+		const eip2930Tx: Transaction.EIP2930 = {
+			type: Transaction.Type.EIP2930,
+			chainId: 1n,
+			nonce: 0n,
+			gasPrice: 20000000000n,
+			gasLimit: 21000n,
+			to: testAddress,
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			yParity: 0,
+			r: testSignature.r,
+			s: testSignature.s,
+		};
+
+		it("returns true for EIP-2930 transactions", () => {
+			expect(Transaction.isEIP2930(eip2930Tx)).toBe(true);
+		});
+
+		it("returns false for non-EIP-2930 transactions", () => {
+			expect(Transaction.isEIP2930(legacyTx)).toBe(false);
+		});
+	});
+});
+
+describe("Transaction mutation functions", () => {
+	const baseTx: Transaction.EIP1559 = {
+		type: Transaction.Type.EIP1559,
+		chainId: 1n,
+		nonce: 0n,
+		maxPriorityFeePerGas: 1000000000n,
+		maxFeePerGas: 20000000000n,
+		gasLimit: 21000n,
+		to: testAddress,
+		value: 0n,
+		data: new Uint8Array(),
+		accessList: [],
+		yParity: 0,
+		r: testSignature.r,
+		s: testSignature.s,
+	};
+
+	describe("withNonce", () => {
+		it("returns new transaction with updated nonce", () => {
+			const updated = Transaction.withNonce(baseTx, 42n);
+			expect(updated.nonce).toBe(42n);
+			expect(baseTx.nonce).toBe(0n);
+		});
+	});
+
+	describe("withGasLimit", () => {
+		it("returns new transaction with updated gas limit", () => {
+			const updated = Transaction.withGasLimit(baseTx, 100000n);
+			expect(updated.gasLimit).toBe(100000n);
+			expect(baseTx.gasLimit).toBe(21000n);
+		});
+	});
+
+	describe("withData", () => {
+		it("returns new transaction with updated data", () => {
+			const newData = new Uint8Array([1, 2, 3, 4]);
+			const updated = Transaction.withData(baseTx, newData);
+			expect(updated.data).toEqual(newData);
+			expect(baseTx.data.length).toBe(0);
+		});
+	});
+
+	describe("replaceWith", () => {
+		it("returns new transaction with fee bump", () => {
+			const replaced = Transaction.replaceWith(baseTx);
+			expect((replaced as Transaction.EIP1559).maxFeePerGas).toBeGreaterThan(
+				baseTx.maxFeePerGas,
+			);
+		});
+	});
+});
+
+describe("Transaction accessors", () => {
+	const eip1559Tx: Transaction.EIP1559 = {
+		type: Transaction.Type.EIP1559,
+		chainId: 1n,
+		nonce: 5n,
+		maxPriorityFeePerGas: 1000000000n,
+		maxFeePerGas: 20000000000n,
+		gasLimit: 21000n,
+		to: testAddress,
+		value: 100n,
+		data: new Uint8Array([1, 2, 3]),
+		accessList: [{ address: testAddress, storageKeys: [] }],
+		yParity: 0,
+		r: testSignature.r,
+		s: testSignature.s,
+	};
+
+	describe("hasAccessList", () => {
+		it("returns true for EIP-1559 transactions", () => {
+			expect(Transaction.hasAccessList(eip1559Tx)).toBe(true);
+		});
+
+		it("returns false for legacy transactions", () => {
+			const legacyTx: Transaction.Legacy = {
+				type: Transaction.Type.Legacy,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				v: 27n,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			expect(Transaction.hasAccessList(legacyTx)).toBe(false);
+		});
+	});
+
+	describe("getAccessList", () => {
+		it("returns access list for EIP-1559", () => {
+			const list = Transaction.getAccessList(eip1559Tx);
+			expect(list.length).toBe(1);
+		});
+	});
+
+	describe("isContractCall", () => {
+		it("returns true when to is set and data is non-empty", () => {
+			expect(Transaction.isContractCall(eip1559Tx)).toBe(true);
+		});
+
+		it("returns false when data is empty", () => {
+			const tx = { ...eip1559Tx, data: new Uint8Array() };
+			expect(Transaction.isContractCall(tx)).toBe(false);
+		});
+
+		it("returns false for contract creation", () => {
+			const tx = { ...eip1559Tx, to: null };
+			expect(Transaction.isContractCall(tx)).toBe(false);
+		});
+	});
+
+	describe("format", () => {
+		it("returns string representation", () => {
+			const formatted = Transaction.format(eip1559Tx);
+			expect(typeof formatted).toBe("string");
+			expect(formatted.length).toBeGreaterThan(0);
+		});
+	});
+});
+
+describe("Transaction Effect validation", () => {
+	it.effect("assertSigned succeeds for signed transaction", () =>
+		Effect.gen(function* () {
+			const signedTx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			yield* Transaction.assertSigned(signedTx);
+		}),
+	);
+
+	it.effect("assertSigned fails for unsigned transaction", () =>
+		Effect.gen(function* () {
+			const unsignedTx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: new Uint8Array(32),
+				s: new Uint8Array(32),
+			};
+			const result = yield* Effect.either(Transaction.assertSigned(unsignedTx));
+			expect(result._tag).toBe("Left");
+		}),
+	);
+
+	it.effect("validateGasLimit succeeds for valid gas limit", () =>
+		Effect.gen(function* () {
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			yield* Transaction.validateGasLimit(tx);
+		}),
+	);
+
+	it.effect("validateNonce succeeds for valid nonce", () =>
+		Effect.gen(function* () {
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			yield* Transaction.validateNonce(tx);
+		}),
+	);
+
+	it.effect("validateValue succeeds for valid value", () =>
+		Effect.gen(function* () {
+			const tx: Transaction.EIP1559 = {
+				type: Transaction.Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: testAddress,
+				value: 1000000000000000000n,
+				data: new Uint8Array(),
+				accessList: [],
+				yParity: 0,
+				r: testSignature.r,
+				s: testSignature.s,
+			};
+			yield* Transaction.validateValue(tx);
+		}),
+	);
+});
+
+import * as Effect from "effect/Effect";

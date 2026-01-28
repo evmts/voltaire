@@ -5,20 +5,19 @@ import * as Layer from "effect/Layer";
 import { ProviderService } from "../services/Provider/index.js";
 import * as ERC165 from "./ERC165.js";
 
+const mockCallFn = vi.fn();
+
 const mockProvider = {
-	call: vi.fn(),
-	getLogs: vi.fn(),
-	getBlockNumber: vi.fn(),
-	getBalance: vi.fn(),
-	getBlock: vi.fn(),
-	getTransaction: vi.fn(),
-	getTransactionReceipt: vi.fn(),
-	getTransactionCount: vi.fn(),
-	getCode: vi.fn(),
-	getStorageAt: vi.fn(),
-	estimateGas: vi.fn(),
-	getChainId: vi.fn(),
-	getGasPrice: vi.fn(),
+	request: <T>(method: string, params?: unknown[]) => {
+		switch (method) {
+			case "eth_call":
+				return mockCallFn(params?.[0]) as Effect.Effect<T, never>;
+			case "eth_chainId":
+				return Effect.succeed("0x1" as T);
+			default:
+				return Effect.succeed(null as T);
+		}
+	},
 };
 
 const MockProviderLayer = Layer.succeed(
@@ -96,7 +95,7 @@ describe("ERC165", () => {
 
 	describe("supportsInterface", () => {
 		it("returns true when contract supports interface", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000001",
 				),
@@ -110,11 +109,11 @@ describe("ERC165", () => {
 			);
 
 			expect(result).toBe(true);
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 		});
 
 		it("returns false when contract does not support interface", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000000",
 				),
@@ -131,7 +130,7 @@ describe("ERC165", () => {
 		});
 
 		it("returns false on empty response", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x"));
+			mockCallFn.mockReturnValue(Effect.succeed("0x"));
 
 			const result = await Effect.runPromise(
 				ERC165.supportsInterface(
@@ -144,7 +143,7 @@ describe("ERC165", () => {
 		});
 
 		it("returns false on call failure", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(new Error("execution reverted")),
 			);
 
@@ -161,7 +160,7 @@ describe("ERC165", () => {
 
 	describe("detectInterfaces", () => {
 		it("returns empty array when contract does not support ERC165", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000000",
 				),
@@ -177,7 +176,7 @@ describe("ERC165", () => {
 		});
 
 		it("returns detected interfaces when contract supports ERC165", async () => {
-			mockProvider.call.mockImplementation(({ data }: { data: string }) => {
+			mockCallFn.mockImplementation(({ data }: { data: string }) => {
 				const encodedERC165 = "01ffc9a7";
 				const encodedERC721 = "80ac58cd";
 				const encodedERC721Metadata = "5b5e139f";

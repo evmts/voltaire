@@ -1,6 +1,7 @@
 import { ERC165 as ERC165Impl } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
-import { ProviderService } from "../services/Provider/index.js";
+import { call } from "../services/Provider/functions/index.js";
+import type { ProviderService } from "../services/Provider/index.js";
 import { StandardsError } from "./errors.js";
 
 export const SELECTOR = ERC165Impl.SELECTOR;
@@ -37,18 +38,15 @@ export const supportsInterface = (
 	interfaceId: string,
 ): Effect.Effect<boolean, StandardsError, ProviderService> =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
 		const data = yield* encodeSupportsInterface(interfaceId);
 
-		const result = yield* provider
-			.call({ to: contract as `0x${string}`, data: data as `0x${string}` })
-			.pipe(
-				Effect.map((res) => {
-					if (!res || res === "0x") return false;
-					return ERC165Impl.decodeSupportsInterface(res);
-				}),
-				Effect.catchAll(() => Effect.succeed(false)),
-			);
+		const result = yield* call({ to: contract as `0x${string}`, data: data as `0x${string}` }).pipe(
+			Effect.map((res) => {
+				if (!res || res === "0x") return false;
+				return ERC165Impl.decodeSupportsInterface(res);
+			}),
+			Effect.catchAll(() => Effect.succeed(false)),
+		);
 
 		return result;
 	});

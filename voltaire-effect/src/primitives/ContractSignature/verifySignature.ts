@@ -16,7 +16,7 @@ import {
 } from "@tevm/voltaire";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
-import * as Runtime from "effect/Runtime";
+import { getCode, call } from "../../services/Provider/functions/index.js";
 import { ProviderService } from "../../services/Provider/index.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -122,6 +122,9 @@ const isEmptyCode = (code: unknown): code is string =>
 	typeof code === "string" &&
 	(code === "0x" || code === "0x0" || code === "0x00");
 
+// EIP-1271 magic value
+const EIP1271_MAGIC_VALUE = "0x1626ba7e";
+
 /**
  * Verify a signature for both EOA and contract accounts (EIP-1271).
  *
@@ -167,44 +170,29 @@ export const verifySignature = (
 	ProviderService
 > =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
-		const runtime = yield* Effect.runtime();
-		const runPromise = Runtime.runPromise(runtime);
-
 		const addressStr =
 			typeof address === "string" ? address : Address.toHex(address);
+		const addressHex = addressStr as `0x${string}`;
 
-		return yield* Effect.tryPromise({
-			try: async () => {
-				const providerAdapter = {
-					request: async (method: string, params: unknown[]) => {
-						if (method === "eth_getCode") {
-							const [addr, block] = params as [string, string];
-							return runPromise(
-								provider.getCode(addr as `0x${string}`, block as any),
-							);
-						}
-						if (method === "eth_call") {
-							const [callObj] = params as [{ to: string; data: string }];
-							return runPromise(
-								provider.call({
-									to: callObj.to as `0x${string}`,
-									data: callObj.data as `0x${string}`,
-								}),
-							);
-						}
-						throw new Error(`Unsupported method: ${method}`);
-					},
-				};
+		// Get code to determine if EOA or contract
+		const code = yield* getCode(addressHex, "latest").pipe(
+			Effect.mapError(
+				(e) =>
+					new SignatureVerificationError({
+						input: {
+							address: addressStr,
+							hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash),
+						},
+						message: `Failed to get code: ${e.message}`,
+						cause: e,
+					}),
+			),
+		);
 
-				const addressHex =
-					typeof address === "string" ? address : Address.toHex(address);
-				const code = await providerAdapter.request("eth_getCode", [
-					addressHex,
-					"latest",
-				]);
-
-				if (isEmptyCode(code)) {
+		// EOA verification
+		if (isEmptyCode(code)) {
+			return yield* Effect.try({
+				try: () => {
 					const sigComponents = toSignatureComponents(signature);
 					const publicKey = Secp256k1.recoverPublicKey(
 						sigComponents,
@@ -216,39 +204,77 @@ export const verifySignature = (
 					const expectedAddress =
 						typeof address === "string" ? Address(address) : address;
 					return Address.equals(recoveredAddress, expectedAddress);
-				}
+				},
+				catch: (e) => {
+					if (e instanceof InvalidSignatureFormatError) {
+						return e;
+					}
+					if (
+						e instanceof Error &&
+						(e.name === "InvalidSignatureFormatError" ||
+							e.name === "InvalidSignatureError")
+					) {
+						return new InvalidSignatureFormatError({
+							message: e.message,
+							cause: e,
+						});
+					}
+					return new SignatureVerificationError({
+						input: {
+							address: addressStr,
+							hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash),
+						},
+						message:
+							e instanceof Error ? e.message : "Signature verification failed",
+						cause: e,
+					});
+				},
+			});
+		}
 
-				const signatureBytes = toSignatureBytes(signature);
-				return await ContractSignature.isValidSignature(
-					providerAdapter,
-					address as any,
-					hash as any,
-					signatureBytes,
-				);
-			},
+		// Contract (EIP-1271) verification
+		const signatureBytes = yield* Effect.try({
+			try: () => toSignatureBytes(signature),
 			catch: (e) => {
 				if (e instanceof InvalidSignatureFormatError) {
 					return e;
 				}
-				if (
-					e instanceof Error &&
-					(e.name === "InvalidSignatureFormatError" ||
-						e.name === "InvalidSignatureError")
-				) {
-					return new InvalidSignatureFormatError({
-						message: e.message,
-						cause: e,
-					});
-				}
-				return new SignatureVerificationError({
-					input: {
-						address: addressStr,
-						hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash),
-					},
-					message:
-						e instanceof Error ? e.message : "Signature verification failed",
+				return new InvalidSignatureFormatError({
+					message: e instanceof Error ? e.message : "Invalid signature format",
 					cause: e,
 				});
 			},
 		});
+
+		// Build EIP-1271 isValidSignature call data
+		const hashHex =
+			hash instanceof Uint8Array
+				? `0x${Buffer.from(hash).toString("hex")}`
+				: `0x${Buffer.from(hash).toString("hex")}`;
+		const sigHex = `0x${Buffer.from(signatureBytes).toString("hex")}`;
+
+		// isValidSignature(bytes32 hash, bytes signature) selector: 0x1626ba7e
+		// ABI encode: selector + hash (32 bytes) + offset to signature (32) + signature length (32) + signature data
+		const hashPadded = hashHex.slice(2).padStart(64, "0");
+		const sigOffset = "0000000000000000000000000000000000000000000000000000000000000040"; // 64 in hex
+		const sigLength = signatureBytes.length.toString(16).padStart(64, "0");
+		const sigPadded = sigHex.slice(2).padEnd(Math.ceil(signatureBytes.length / 32) * 64, "0");
+		const callData = `0x1626ba7e${hashPadded}${sigOffset}${sigLength}${sigPadded}` as `0x${string}`;
+
+		const result = yield* call({ to: addressHex, data: callData }).pipe(
+			Effect.mapError(
+				(e) =>
+					new SignatureVerificationError({
+						input: {
+							address: addressStr,
+							hash: hash instanceof Uint8Array ? hash : new Uint8Array(hash),
+						},
+						message: `EIP-1271 call failed: ${e.message}`,
+						cause: e,
+					}),
+			),
+		);
+
+		// Check if result matches EIP-1271 magic value
+		return result.toLowerCase().startsWith(EIP1271_MAGIC_VALUE);
 	});
