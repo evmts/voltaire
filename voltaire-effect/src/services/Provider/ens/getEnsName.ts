@@ -5,7 +5,8 @@
  */
 
 import * as Effect from "effect/Effect";
-import { ProviderService } from "../ProviderService.js";
+import { call } from "../functions/call.js";
+import type { ProviderService } from "../ProviderService.js";
 import { ENS_UNIVERSAL_RESOLVER_ADDRESS } from "./constants.js";
 import { EnsError } from "./EnsError.js";
 import { bytesToHex, dnsEncode, toReverseName } from "./utils.js";
@@ -51,8 +52,6 @@ export const getEnsName = (
 			universalResolverAddress = ENS_UNIVERSAL_RESOLVER_ADDRESS,
 		} = params;
 
-		const provider = yield* ProviderService;
-
 		const reverseName = toReverseName(address);
 		const dnsName = dnsEncode(reverseName);
 
@@ -69,21 +68,19 @@ export const getEnsName = (
 
 		const callData = `0x${selector}${offset}${len}${data}` as `0x${string}`;
 
-		const result = yield* provider
-			.call({
-				to: universalResolverAddress,
-				data: callData,
-			})
-			.pipe(
-				Effect.mapError(
-					(e) =>
-						new EnsError(
-							address,
-							`Failed to reverse resolve address: ${e.message}`,
-							e,
-						),
-				),
-			);
+		const result = yield* call({
+			to: universalResolverAddress,
+			data: callData,
+		}).pipe(
+			Effect.mapError(
+				(e) =>
+					new EnsError(
+						address,
+						`Failed to reverse resolve address: ${e.message}`,
+						e,
+					),
+			),
+		);
 
 		if (!result || result === "0x") {
 			return null;

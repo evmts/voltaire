@@ -5,7 +5,8 @@
  */
 
 import * as Effect from "effect/Effect";
-import { ProviderService } from "../ProviderService.js";
+import { call } from "../functions/call.js";
+import type { ProviderService } from "../ProviderService.js";
 import { ENS_UNIVERSAL_RESOLVER_ADDRESS } from "./constants.js";
 import { EnsError } from "./EnsError.js";
 import {
@@ -53,8 +54,6 @@ export const getEnsAddress = (
 		const { name, universalResolverAddress = ENS_UNIVERSAL_RESOLVER_ADDRESS } =
 			params;
 
-		const provider = yield* ProviderService;
-
 		const node = namehash(name);
 		const dnsName = dnsEncode(name);
 		const addrCallData = encodeAddrCall(node);
@@ -81,17 +80,15 @@ export const getEnsAddress = (
 		const callData =
 			`0x${selector}${offset1}${offset2}${len1}${data1}${len2}${data2}` as `0x${string}`;
 
-		const result = yield* provider
-			.call({
-				to: universalResolverAddress,
-				data: callData,
-			})
-			.pipe(
-				Effect.mapError(
-					(e) =>
-						new EnsError(name, `Failed to resolve ENS name: ${e.message}`, e),
-				),
-			);
+		const result = yield* call({
+			to: universalResolverAddress,
+			data: callData,
+		}).pipe(
+			Effect.mapError(
+				(e) =>
+					new EnsError(name, `Failed to resolve ENS name: ${e.message}`, e),
+			),
+		);
 
 		// Decode the resolve result - first word is offset to data, then length, then data
 		if (!result || result === "0x") {

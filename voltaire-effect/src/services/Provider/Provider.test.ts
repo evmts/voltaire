@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Address, Hash } from "@tevm/voltaire";
-import { InvalidBlobCountError } from "@tevm/voltaire/Blob";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
@@ -9,7 +8,6 @@ import {
 	TransportError,
 	TransportService,
 } from "../Transport/TransportService.js";
-import { calculateBlobGasPrice, estimateBlobGas } from "./getBlobBaseFee.js";
 import { Provider } from "./Provider.js";
 import {
 	ProviderNotFoundError,
@@ -18,6 +16,37 @@ import {
 	ProviderTimeoutError,
 	type ProviderValidationError,
 } from "./ProviderService.js";
+import {
+	getBlockNumber,
+	getBalance,
+	getBlock,
+	getCode,
+	getStorageAt,
+	getTransaction,
+	getTransactionReceipt,
+	getTransactionCount,
+	getBlockTransactionCount,
+	call,
+	estimateGas,
+	getLogs,
+	getChainId,
+	getGasPrice,
+	getMaxPriorityFeePerGas,
+	getFeeHistory,
+	createAccessList,
+	sendRawTransaction,
+	getUncle,
+	getProof,
+	getBlobBaseFee,
+	getTransactionConfirmations,
+	createEventFilter,
+	createBlockFilter,
+	createPendingTransactionFilter,
+	getFilterChanges,
+	getFilterLogs,
+	uninstallFilter,
+	waitForTransactionReceipt,
+} from "./functions/index.js";
 
 const mockTransport = (responses: Record<string, unknown>) =>
 	Layer.succeed(TransportService, {
@@ -68,10 +97,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockNumber();
-				}).pipe(Effect.provide(layer)),
+				getBlockNumber().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(16n);
@@ -84,12 +110,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBalance(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(layer)),
+				getBalance("0x1234567890123456789012345678901234567890").pipe(
+					Effect.provide(layer),
+				),
 			);
 
 			expect(result).toBe(1000000000000000000n);
@@ -101,10 +124,7 @@ describe("ProviderService", () => {
 			const addr = Address("0x1234567890123456789012345678901234567890");
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBalance(addr);
-				}).pipe(Effect.provide(layer)),
+				getBalance(addr).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(1000000000000000000n);
@@ -139,10 +159,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlock({ blockTag: "latest" });
-				}).pipe(Effect.provide(layer)),
+				getBlock({ blockTag: "latest" }).pipe(Effect.provide(layer)),
 			);
 
 			expect(result.number).toBe("0x10");
@@ -164,10 +181,7 @@ describe("ProviderService", () => {
 			const blockHash =
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlock({ blockHash });
-				}).pipe(Effect.provide(layer)),
+				getBlock({ blockHash }).pipe(Effect.provide(layer)),
 			);
 
 			expect(capturedMethod).toBe("eth_getBlockByHash");
@@ -193,10 +207,7 @@ describe("ProviderService", () => {
 			const topic =
 				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getLogs({ topics: [topic] });
-				}).pipe(Effect.provide(layer)),
+				getLogs({ topics: [topic] }).pipe(Effect.provide(layer)),
 			);
 
 			const filter = capturedParams[0] as Record<string, unknown>;
@@ -218,10 +229,7 @@ describe("ProviderService", () => {
 			const topic2 =
 				"0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c";
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getLogs({ topics: [[topic1, topic2]] });
-				}).pipe(Effect.provide(layer)),
+				getLogs({ topics: [[topic1, topic2]] }).pipe(Effect.provide(layer)),
 			);
 
 			const filter = capturedParams[0] as Record<string, unknown>;
@@ -241,10 +249,7 @@ describe("ProviderService", () => {
 			const topic =
 				"0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045";
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getLogs({ topics: [null, topic] });
-				}).pipe(Effect.provide(layer)),
+				getLogs({ topics: [null, topic] }).pipe(Effect.provide(layer)),
 			);
 
 			const filter = capturedParams[0] as Record<string, unknown>;
@@ -268,11 +273,8 @@ describe("ProviderService", () => {
 			const topic3 =
 				"0x0000000000000000000000001234567890123456789012345678901234567890";
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getLogs({
-						topics: [topic1, [topic2, topic3], null],
-					});
+				getLogs({
+					topics: [topic1, [topic2, topic3], null],
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -302,14 +304,11 @@ describe("ProviderService", () => {
 			const topic = Hash(topicHex);
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.createEventFilter({
-						address: [address, address2],
-						topics: [topic, [topic2], null],
-						fromBlock: "latest",
-						toBlock: "0x10",
-					});
+				createEventFilter({
+					address: [address, address2],
+					topics: [topic, [topic2], null],
+					fromBlock: "latest",
+					toBlock: "0x10",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -337,9 +336,8 @@ describe("ProviderService", () => {
 
 			const result = await Effect.runPromise(
 				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					const block = yield* provider.createBlockFilter();
-					const pending = yield* provider.createPendingTransactionFilter();
+					const block = yield* createBlockFilter();
+					const pending = yield* createPendingTransactionFilter();
 					return { block, pending };
 				}).pipe(Effect.provide(layer)),
 			);
@@ -371,10 +369,9 @@ describe("ProviderService", () => {
 			const filterId = "0x1";
 			const result = await Effect.runPromise(
 				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					const changes = yield* provider.getFilterChanges(filterId);
-					const logs = yield* provider.getFilterLogs(filterId);
-					const removed = yield* provider.uninstallFilter(filterId);
+					const changes = yield* getFilterChanges(filterId);
+					const logs = yield* getFilterLogs(filterId);
+					const removed = yield* uninstallFilter(filterId);
 					return { changes, logs, removed };
 				}).pipe(Effect.provide(layer)),
 			);
@@ -394,12 +391,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getTransactionCount(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(layer)),
+				getTransactionCount(
+					"0x1234567890123456789012345678901234567890",
+				).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(5n);
@@ -412,12 +406,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getTransactionCount(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(layer)),
+				getTransactionCount(
+					"0x1234567890123456789012345678901234567890",
+				).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(18446744073709551615n);
@@ -433,11 +424,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockTransactionCount({
-						blockTag: "latest",
-					});
+				getBlockTransactionCount({
+					blockTag: "latest",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -451,11 +439,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockTransactionCount({
-						blockTag: "latest",
-					});
+				getBlockTransactionCount({
+					blockTag: "latest",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -470,12 +455,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getCode(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(layer)),
+				getCode("0x1234567890123456789012345678901234567890").pipe(
+					Effect.provide(layer),
+				),
 			);
 
 			expect(result).toBe("0x6080604052");
@@ -487,10 +469,7 @@ describe("ProviderService", () => {
 			const addr = Address("0x1234567890123456789012345678901234567890");
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getCode(addr);
-				}).pipe(Effect.provide(layer)),
+				getCode(addr).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe("0x6080604052");
@@ -506,13 +485,10 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getStorageAt(
-						"0x1234567890123456789012345678901234567890",
-						"0x0000000000000000000000000000000000000000000000000000000000000000",
-					);
-				}).pipe(Effect.provide(layer)),
+				getStorageAt(
+					"0x1234567890123456789012345678901234567890",
+					"0x0000000000000000000000000000000000000000000000000000000000000000",
+				).pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(
@@ -540,10 +516,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getTransaction("0xabc");
-				}).pipe(Effect.provide(layer)),
+				getTransaction("0xabc").pipe(Effect.provide(layer)),
 			);
 
 			expect(result.hash).toBe("0xabc");
@@ -573,10 +546,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getTransactionReceipt("0xabc");
-				}).pipe(Effect.provide(layer)),
+				getTransactionReceipt("0xabc").pipe(Effect.provide(layer)),
 			);
 
 			expect(result.transactionHash).toBe("0xabc");
@@ -593,12 +563,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.call({
-						to: "0x1234567890123456789012345678901234567890",
-						data: "0x18160ddd",
-					});
+				call({
+					to: "0x1234567890123456789012345678901234567890",
+					data: "0x18160ddd",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -614,11 +581,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.estimateGas({
-						to: "0x1234567890123456789012345678901234567890",
-					});
+				estimateGas({
+					to: "0x1234567890123456789012345678901234567890",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -645,11 +609,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getLogs({
-						address: "0x1234567890123456789012345678901234567890",
-					});
+				getLogs({
+					address: "0x1234567890123456789012345678901234567890",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -666,10 +627,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getChainId();
-				}).pipe(Effect.provide(layer)),
+				getChainId().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(1);
@@ -682,10 +640,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getChainId();
-				}).pipe(Effect.provide(layer)),
+				getChainId().pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -698,10 +653,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getGasPrice();
-				}).pipe(Effect.provide(layer)),
+				getGasPrice().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(1000000000n);
@@ -716,10 +668,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getMaxPriorityFeePerGas();
-				}).pipe(Effect.provide(layer)),
+				getMaxPriorityFeePerGas().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(1000000000n);
@@ -738,10 +687,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(2, "latest", [50]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(2, "latest", [50]).pipe(Effect.provide(layer)),
 			);
 
 			expect(result.oldestBlock).toBe("0x10");
@@ -764,11 +710,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.createAccessList({
-						to: "0x1234567890123456789012345678901234567890",
-					});
+				createAccessList({
+					to: "0x1234567890123456789012345678901234567890",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -788,10 +731,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockNumber();
-				}).pipe(Effect.provide(layer)),
+				getBlockNumber().pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -808,10 +748,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockNumber();
-				}).pipe(Effect.provide(layer)),
+				getBlockNumber().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(0x1234n);
@@ -827,10 +764,9 @@ describe("ProviderService", () => {
 
 			const [blockNumber, chainId, gasPrice] = await Effect.runPromise(
 				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					const block = yield* provider.getBlockNumber();
-					const chain = yield* provider.getChainId();
-					const gas = yield* provider.getGasPrice();
+					const block = yield* getBlockNumber();
+					const chain = yield* getChainId();
+					const gas = yield* getGasPrice();
 					return [block, chain, gas] as const;
 				}).pipe(Effect.provide(layer)),
 			);
@@ -850,11 +786,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.call({
-						to: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-					});
+				call({
+					to: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -885,10 +818,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.waitForTransactionReceipt("0xabc");
-				}).pipe(Effect.provide(layer)),
+				waitForTransactionReceipt("0xabc").pipe(Effect.provide(layer)),
 			);
 
 			expect(result.transactionHash).toBe("0xabc");
@@ -907,10 +837,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.waitForTransactionReceipt("0xabc");
-				}).pipe(Effect.provide(layer)),
+				waitForTransactionReceipt("0xabc").pipe(Effect.provide(layer)),
 			);
 
 			expect(callCount).toBe(3);
@@ -930,11 +857,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.waitForTransactionReceipt("0xabc", {
-						confirmations: 3,
-					});
+				waitForTransactionReceipt("0xabc", {
+					confirmations: 3,
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -949,11 +873,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.waitForTransactionReceipt("0xabc", {
-						timeout: 2000,
-					});
+				waitForTransactionReceipt("0xabc", {
+					timeout: 2000,
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -976,12 +897,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.waitForTransactionReceipt("0xabc", {
-						confirmations: 5,
-						timeout: 2000,
-					});
+				waitForTransactionReceipt("0xabc", {
+					confirmations: 5,
+					timeout: 2000,
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -995,11 +913,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.waitForTransactionReceipt("0xabc", {
-						confirmations: 0,
-					});
+				waitForTransactionReceipt("0xabc", {
+					confirmations: 0,
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -1028,12 +943,9 @@ describe("ProviderService", () => {
 
 			const start = Date.now();
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.waitForTransactionReceipt("0xabc", {
-						timeout: 3000,
-						confirmations: 5,
-					});
+				waitForTransactionReceipt("0xabc", {
+					timeout: 3000,
+					confirmations: 5,
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -1061,10 +973,7 @@ describe("ProviderService", () => {
 			const addr = Address("0x1234567890123456789012345678901234567890");
 
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBalance(addr);
-				}).pipe(Effect.provide(layer)),
+				getBalance(addr).pipe(Effect.provide(layer)),
 			);
 
 			expect(capturedParams[0]).toBe(
@@ -1091,13 +1000,10 @@ describe("ProviderService", () => {
 			);
 
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getStorageAt(
-						"0x1234567890123456789012345678901234567890",
-						hash,
-					);
-				}).pipe(Effect.provide(layer)),
+				getStorageAt(
+					"0x1234567890123456789012345678901234567890",
+					hash,
+				).pipe(Effect.provide(layer)),
 			);
 
 			expect(capturedParams[1]).toBe(
@@ -1112,10 +1018,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(0, "latest", [25, 50, 75]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(0, "latest", [25, 50, 75]).pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1132,10 +1035,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(-1, "latest", [25, 50, 75]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(-1, "latest", [25, 50, 75]).pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1152,10 +1052,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(1.5, "latest", [25, 50, 75]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(1.5, "latest", [25, 50, 75]).pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1172,10 +1069,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(4, "latest", [-1, 50, 75]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(4, "latest", [-1, 50, 75]).pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1192,10 +1086,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(4, "latest", [25, 50, 101]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(4, "latest", [25, 50, 101]).pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1212,10 +1103,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(4, "latest", [75, 50, 25]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(4, "latest", [75, 50, 25]).pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1238,10 +1126,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getFeeHistory(4, "latest", [25, 50, 75]);
-				}).pipe(Effect.provide(layer)),
+				getFeeHistory(4, "latest", [25, 50, 75]).pipe(Effect.provide(layer)),
 			);
 
 			expect(result.oldestBlock).toBe("0x1");
@@ -1262,10 +1147,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockNumber();
-				}).pipe(Effect.provide(layer)),
+				getBlockNumber().pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1292,12 +1174,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBalance(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(layer)),
+				getBalance("0x1234567890123456789012345678901234567890").pipe(
+					Effect.provide(layer),
+				),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1316,10 +1195,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.sendRawTransaction("0xf86c...");
-				}).pipe(Effect.provide(layer)),
+				sendRawTransaction("0xf86c...").pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(txHash);
@@ -1338,10 +1214,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.sendRawTransaction("0xf86c...");
-				}).pipe(Effect.provide(layer)),
+				sendRawTransaction("0xf86c...").pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1360,10 +1233,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.sendRawTransaction("0xf86c...");
-				}).pipe(Effect.provide(layer)),
+				sendRawTransaction("0xf86c...").pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1383,10 +1253,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getUncle({ blockTag: "latest" }, "0x0");
-				}).pipe(Effect.provide(layer)),
+				getUncle({ blockTag: "latest" }, "0x0").pipe(Effect.provide(layer)),
 			);
 
 			expect(result.hash).toBe("0xuncle");
@@ -1408,13 +1275,10 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getProof(
-						"0x1234567890123456789012345678901234567890",
-						["0x0"],
-					);
-				}).pipe(Effect.provide(layer)),
+				getProof(
+					"0x1234567890123456789012345678901234567890",
+					["0x0"],
+				).pipe(Effect.provide(layer)),
 			);
 
 			expect(result.address).toBe("0x1234567890123456789012345678901234567890");
@@ -1428,10 +1292,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlobBaseFee();
-				}).pipe(Effect.provide(layer)),
+				getBlobBaseFee().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(1000000000n);
@@ -1447,10 +1308,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlobBaseFee();
-				}).pipe(Effect.provide(layer)),
+				getBlobBaseFee().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(1n);
@@ -1465,10 +1323,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlobBaseFee();
-				}).pipe(Effect.provide(layer)),
+				getBlobBaseFee().pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1476,22 +1331,6 @@ describe("ProviderService", () => {
 				expect(exit.cause.error).toBeInstanceOf(ProviderResponseError);
 				expect(exit.cause.error._tag).toBe("ProviderResponseError");
 			}
-		});
-	});
-
-	describe("estimateBlobGas", () => {
-		it("estimates blob gas from blob count", () => {
-			expect(estimateBlobGas(3)).toBe(393216n);
-		});
-
-		it("throws for invalid blob count", () => {
-			expect(() => estimateBlobGas(7)).toThrow(InvalidBlobCountError);
-		});
-	});
-
-	describe("calculateBlobGasPrice", () => {
-		it("calculates total blob fee", () => {
-			expect(calculateBlobGasPrice(10n, 2n)).toBe(20n);
 		});
 	});
 
@@ -1509,10 +1348,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getTransactionConfirmations("0xabc");
-				}).pipe(Effect.provide(layer)),
+				getTransactionConfirmations("0xabc").pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(6n); // 105 - 100 + 1 = 6 confirmations
@@ -1526,10 +1362,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getTransactionConfirmations("0xabc");
-				}).pipe(Effect.provide(layer)),
+				getTransactionConfirmations("0xabc").pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(0n);
@@ -1554,13 +1387,10 @@ describe("ProviderService", () => {
 			] as const;
 
 			const results = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* Effect.all(
-						addresses.map((addr) => provider.getBalance(addr)),
-						{ concurrency: "unbounded" },
-					);
-				}).pipe(Effect.provide(layer)),
+				Effect.all(
+					addresses.map((addr) => getBalance(addr)),
+					{ concurrency: "unbounded" },
+				).pipe(Effect.provide(layer)),
 			);
 
 			expect(results).toHaveLength(3);
@@ -1577,12 +1407,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBalance(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(layer)),
+				getBalance("0x1234567890123456789012345678901234567890").pipe(
+					Effect.provide(layer),
+				),
 			);
 
 			expect(result).toBe(0n);
@@ -1593,12 +1420,9 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getCode(
-						"0x1234567890123456789012345678901234567890",
-					);
-				}).pipe(Effect.provide(layer)),
+				getCode("0x1234567890123456789012345678901234567890").pipe(
+					Effect.provide(layer),
+				),
 			);
 
 			expect(result).toBe("0x");
@@ -1609,10 +1433,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const exit = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getTransactionReceipt("0xabc");
-				}).pipe(Effect.provide(layer)),
+				getTransactionReceipt("0xabc").pipe(Effect.provide(layer)),
 			);
 
 			expect(Exit.isFailure(exit)).toBe(true);
@@ -1627,11 +1448,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getLogs({
-						address: "0x1234567890123456789012345678901234567890",
-					});
+				getLogs({
+					address: "0x1234567890123456789012345678901234567890",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -1643,10 +1461,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlockNumber();
-				}).pipe(Effect.provide(layer)),
+				getBlockNumber().pipe(Effect.provide(layer)),
 			);
 
 			expect(result).toBe(0xffffffffffffffn);
@@ -1657,11 +1472,8 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			const result = await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.estimateGas({
-						to: "0x1234567890123456789012345678901234567890",
-					});
+				estimateGas({
+					to: "0x1234567890123456789012345678901234567890",
 				}).pipe(Effect.provide(layer)),
 			);
 
@@ -1686,10 +1498,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlock({ blockNumber: 16n });
-				}).pipe(Effect.provide(layer)),
+				getBlock({ blockNumber: 16n }).pipe(Effect.provide(layer)),
 			);
 
 			expect(capturedParams[0]).toBe("0x10");
@@ -1711,10 +1520,7 @@ describe("ProviderService", () => {
 			const layer = Provider.pipe(Layer.provide(transport));
 
 			await Effect.runPromise(
-				Effect.gen(function* () {
-					const provider = yield* ProviderService;
-					return yield* provider.getBlock({ blockTag: "pending" });
-				}).pipe(Effect.provide(layer)),
+				getBlock({ blockTag: "pending" }).pipe(Effect.provide(layer)),
 			);
 
 			expect(capturedParams[0]).toBe("pending");

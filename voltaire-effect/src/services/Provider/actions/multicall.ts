@@ -22,6 +22,7 @@ import {
 	ProviderService,
 	ProviderValidationError,
 } from "../ProviderService.js";
+import { call } from "../functions/call.js";
 import type { Abi } from "./readContract.js";
 
 type AddressType = BrandedAddress.AddressType;
@@ -214,7 +215,6 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 	ProviderService
 > =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
 		const allowFailure = params.allowFailure ?? true;
 
 		if (params.contracts.length === 0) {
@@ -245,7 +245,7 @@ export const multicall = <TContracts extends readonly ContractCall[]>(
 				[calls],
 			);
 
-			const result = yield* provider.call(
+			const result = yield* call(
 				{ to: MULTICALL3_ADDRESS, data },
 				params.blockTag,
 			);

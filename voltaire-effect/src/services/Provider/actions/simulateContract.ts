@@ -20,6 +20,7 @@ import {
 	ProviderService,
 	ProviderValidationError,
 } from "../ProviderService.js";
+import { call } from "../functions/call.js";
 
 type AddressType = BrandedAddress.AddressType;
 type HexType = BrandedHex.HexType;
@@ -128,8 +129,6 @@ export const simulateContract = <
 	ProviderService
 > =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
-
 		const addressHex =
 			typeof params.address === "string"
 				? params.address
@@ -153,7 +152,7 @@ export const simulateContract = <
 			gas: params.gas,
 		};
 
-		const rawResult = yield* provider.call(callRequest, params.blockTag);
+		const rawResult = yield* call(callRequest, params.blockTag);
 
 		const fn = (params.abi as readonly { type: string; name?: string }[]).find(
 			(item): item is BrandedAbi.Function.FunctionType =>

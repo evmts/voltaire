@@ -155,25 +155,20 @@ const complexAbi = S.decodeUnknownSync(fromArray)([
 	},
 ]);
 
+const mockCallFn = vi.fn();
+
 const mockProvider = {
-	call: vi.fn(),
-	getLogs: vi.fn(),
-	getBlockNumber: vi.fn(),
-	getBalance: vi.fn(),
-	getBlock: vi.fn(),
-	getTransaction: vi.fn(),
-	getTransactionReceipt: vi.fn(),
-	waitForTransactionReceipt: vi.fn(),
-	getTransactionCount: vi.fn(),
-	getCode: vi.fn(),
-	getStorageAt: vi.fn(),
-	estimateGas: vi.fn(),
-	createAccessList: vi.fn(),
-	getChainId: vi.fn(),
-	getGasPrice: vi.fn(),
-	getMaxPriorityFeePerGas: vi.fn(),
-	getFeeHistory: vi.fn(),
-	getBlockTransactionCount: vi.fn(),
+	request: <T>(method: string, params?: unknown[]) => {
+		if (method === "eth_call") {
+			return mockCallFn(params?.[0], params?.[1]) as Effect.Effect<T, never>;
+		}
+		return Effect.succeed(null as T);
+	},
+};
+
+// Helper to set up mock call return value
+const setMockCallReturn = (returnValue: Effect.Effect<unknown, unknown>) => {
+	mockCallFn.mockReturnValue(returnValue);
 };
 
 const MockProviderLayer = Layer.succeed(ProviderService, mockProvider as any);
@@ -186,7 +181,7 @@ describe("readContract", () => {
 	describe("ERC-20 balanceOf", () => {
 		it("reads balance with single argument", async () => {
 			const expectedBalance = 1000000000000000000n;
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -203,12 +198,12 @@ describe("readContract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 			expect(result).toBe(expectedBalance);
 		});
 
 		it("accepts branded address input", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -232,7 +227,7 @@ describe("readContract", () => {
 
 	describe("functions with no arguments", () => {
 		it("reads totalSupply without args", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x00000000000000000000000000000000000000000000d3c21bcecceda1000000" as HexType,
 				),
@@ -248,12 +243,12 @@ describe("readContract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 			expect(typeof result).toBe("bigint");
 		});
 
 		it("reads decimals", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000012" as HexType,
 				),
@@ -275,7 +270,7 @@ describe("readContract", () => {
 
 	describe("multi-return functions", () => {
 		it("reads getReserves with multiple return values", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					("0x" +
 						"00000000000000000000000000000000000000000000021e19e0c9bab2400000" +
@@ -301,7 +296,7 @@ describe("readContract", () => {
 
 	describe("complex arguments", () => {
 		it("handles two address arguments", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -321,12 +316,12 @@ describe("readContract", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalled();
+			expect(mockCallFn).toHaveBeenCalled();
 			expect(typeof result).toBe("bigint");
 		});
 
 		it("handles mixed argument types (address + bool)", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					("0x" +
 						"0000000000000000000000000000000000000000000000000de0b6b3a7640000" +
@@ -350,8 +345,8 @@ describe("readContract", () => {
 	});
 
 	describe("block tag", () => {
-		it("passes block tag to provider.call", async () => {
-			mockProvider.call.mockReturnValue(
+		it("passes block tag to call", async () => {
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -367,14 +362,14 @@ describe("readContract", () => {
 
 			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
-			expect(mockProvider.call).toHaveBeenCalledWith(
+			expect(mockCallFn).toHaveBeenCalledWith(
 				expect.any(Object),
 				"finalized",
 			);
 		});
 
 		it("uses latest by default", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -389,7 +384,7 @@ describe("readContract", () => {
 
 			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
-			expect(mockProvider.call).toHaveBeenCalledWith(
+			expect(mockCallFn).toHaveBeenCalledWith(
 				expect.any(Object),
 				undefined,
 			);
@@ -398,7 +393,7 @@ describe("readContract", () => {
 
 	describe("error handling", () => {
 		it("surfaces transport errors on call failure", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: -32000,
@@ -425,7 +420,7 @@ describe("readContract", () => {
 		});
 
 		it("preserves transport error message", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: -32000,
@@ -451,7 +446,7 @@ describe("readContract", () => {
 		});
 
 		it("fails when function not found in ABI", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType,
 				),
@@ -480,7 +475,7 @@ describe("readContract", () => {
 				"0000000000000000000000000000000000000000000000000000000000000020" +
 				"0000000000000000000000000000000000000000000000000000000000000012" +
 				"496e73756666696369656e742062616c616e63650000000000000000000000";
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: 3,
@@ -509,7 +504,7 @@ describe("readContract", () => {
 
 		it("handles contract revert with custom error", async () => {
 			const customErrorSelector = "0xcf479181";
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: 3,
@@ -537,7 +532,7 @@ describe("readContract", () => {
 		});
 
 		it("propagates transport errors", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: -32603,
@@ -564,7 +559,7 @@ describe("readContract", () => {
 		});
 
 		it("propagates timeout errors", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: -32000,
@@ -591,7 +586,7 @@ describe("readContract", () => {
 		});
 
 		it("propagates rate limit errors", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: 429,
@@ -618,7 +613,7 @@ describe("readContract", () => {
 		});
 
 		it("handles empty return data (0x) for function expecting outputs", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x" as HexType));
 
 			const program = readContract({
 				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
@@ -635,7 +630,7 @@ describe("readContract", () => {
 		});
 
 		it("handles malformed hex (odd length)", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x123" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x123" as HexType));
 
 			const program = readContract({
 				address: "0x6B175474E89094C44Da98b954EecdEfaE6E286AB",
@@ -654,7 +649,7 @@ describe("readContract", () => {
 
 	describe("output type handling", () => {
 		it("handles address output type", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045" as HexType,
 				),
@@ -675,7 +670,7 @@ describe("readContract", () => {
 		});
 
 		it("handles bool output type - true", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000001" as HexType,
 				),
@@ -695,7 +690,7 @@ describe("readContract", () => {
 		});
 
 		it("handles bool output type - false", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					"0x0000000000000000000000000000000000000000000000000000000000000000" as HexType,
 				),
@@ -717,7 +712,7 @@ describe("readContract", () => {
 		it("handles bytes32 output type", async () => {
 			const merkleRoot =
 				"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
-			mockProvider.call.mockReturnValue(Effect.succeed(merkleRoot as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed(merkleRoot as HexType));
 
 			const program = readContract({
 				address: "0x1234567890123456789012345678901234567890",
@@ -733,7 +728,7 @@ describe("readContract", () => {
 		});
 
 		it("handles dynamic array (uint256[]) output", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					("0x" +
 						"0000000000000000000000000000000000000000000000000000000000000020" +
@@ -763,7 +758,7 @@ describe("readContract", () => {
 		});
 
 		it("handles tuple/struct output", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					("0x" +
 						"000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045" +
@@ -789,7 +784,7 @@ describe("readContract", () => {
 		});
 
 		it("handles zero output function", async () => {
-			mockProvider.call.mockReturnValue(Effect.succeed("0x" as HexType));
+			mockCallFn.mockReturnValue(Effect.succeed("0x" as HexType));
 
 			const program = readContract({
 				address: "0x1234567890123456789012345678901234567890",

@@ -22,6 +22,7 @@ import {
 	Hex,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
+import { call } from "../functions/call.js";
 import {
 	type AddressInput,
 	type BlockTag,
@@ -269,8 +270,6 @@ export const readContract = <
 	ProviderService
 > =>
 	Effect.gen(function* () {
-		const provider = yield* ProviderService;
-
 		const addressHex =
 			typeof params.address === "string"
 				? params.address
@@ -282,10 +281,7 @@ export const readContract = <
 			(params.args ?? []) as unknown[],
 		);
 
-		const result = yield* provider.call(
-			{ to: addressHex, data },
-			params.blockTag,
-		);
+		const result = yield* call({ to: addressHex, data }, params.blockTag);
 
 		const fn = (params.abi as readonly AbiItem[]).find(
 			(item): item is BrandedAbi.Function.FunctionType =>

@@ -36,25 +36,15 @@ const erc20Abi = S.decodeUnknownSync(fromArray)([
 	},
 ]);
 
+const mockCallFn = vi.fn();
+
 const mockProvider = {
-	call: vi.fn(),
-	getLogs: vi.fn(),
-	getBlockNumber: vi.fn(),
-	getBalance: vi.fn(),
-	getBlock: vi.fn(),
-	getTransaction: vi.fn(),
-	getTransactionReceipt: vi.fn(),
-	waitForTransactionReceipt: vi.fn(),
-	getTransactionCount: vi.fn(),
-	getCode: vi.fn(),
-	getStorageAt: vi.fn(),
-	estimateGas: vi.fn(),
-	createAccessList: vi.fn(),
-	getChainId: vi.fn(),
-	getGasPrice: vi.fn(),
-	getMaxPriorityFeePerGas: vi.fn(),
-	getFeeHistory: vi.fn(),
-	getBlockTransactionCount: vi.fn(),
+	request: <T>(method: string, params?: unknown[]) => {
+		if (method === "eth_call") {
+			return mockCallFn(params?.[0], params?.[1]) as Effect.Effect<T, never>;
+		}
+		return Effect.succeed(null as T);
+	},
 };
 
 const MockProviderLayer = Layer.succeed(ProviderService, mockProvider as any);
@@ -90,7 +80,7 @@ describe("multicall", () => {
 			const balance2 =
 				"0x00000000000000000000000000000000000000000000021e19e0c9bab2400000" as HexType;
 
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{ success: true, returnData: balance1 },
@@ -120,12 +110,12 @@ describe("multicall", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalledTimes(1);
+			expect(mockCallFn).toHaveBeenCalledTimes(1);
 			expect(result).toEqual([1000000000000000000n, 10000000000000000000000n]);
 		});
 
 		it("calls Multicall3 at correct address", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{
@@ -150,7 +140,7 @@ describe("multicall", () => {
 
 			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
-			expect(mockProvider.call).toHaveBeenCalledWith(
+			expect(mockCallFn).toHaveBeenCalledWith(
 				expect.objectContaining({
 					to: "0xcA11bde05977b3631167028862bE2a173976CA11",
 				}),
@@ -164,7 +154,7 @@ describe("multicall", () => {
 			const balance1 =
 				"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType;
 
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{ success: true, returnData: balance1 },
@@ -202,7 +192,7 @@ describe("multicall", () => {
 			const balance1 =
 				"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType;
 
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{ success: true, returnData: balance1 },
@@ -247,7 +237,7 @@ describe("multicall", () => {
 			const balance2 =
 				"0x00000000000000000000000000000000000000000000021e19e0c9bab2400000" as HexType;
 
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{ success: true, returnData: balance1 },
@@ -291,7 +281,7 @@ describe("multicall", () => {
 			const balance3 =
 				"0x0000000000000000000000000000000000000000000000000000000000000005" as HexType;
 
-			mockProvider.call
+			mockCallFn
 				.mockReturnValueOnce(
 					Effect.succeed(
 						encodeMulticallResult([
@@ -333,7 +323,7 @@ describe("multicall", () => {
 				program.pipe(Effect.provide(MockProviderLayer)),
 			);
 
-			expect(mockProvider.call).toHaveBeenCalledTimes(2);
+			expect(mockCallFn).toHaveBeenCalledTimes(2);
 			expect(result).toEqual([
 				1000000000000000000n,
 				10000000000000000000000n,
@@ -344,7 +334,7 @@ describe("multicall", () => {
 
 	describe("single call", () => {
 		it("works with single contract call", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{
@@ -376,7 +366,7 @@ describe("multicall", () => {
 
 	describe("empty array", () => {
 		it("returns empty array for empty contracts", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(encodeMulticallResult([])),
 			);
 
@@ -393,8 +383,8 @@ describe("multicall", () => {
 	});
 
 	describe("block tag", () => {
-		it("passes block tag to provider.call", async () => {
-			mockProvider.call.mockReturnValue(
+		it("passes block tag to call", async () => {
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{
@@ -420,7 +410,7 @@ describe("multicall", () => {
 
 			await Effect.runPromise(program.pipe(Effect.provide(MockProviderLayer)));
 
-			expect(mockProvider.call).toHaveBeenCalledWith(
+			expect(mockCallFn).toHaveBeenCalledWith(
 				expect.any(Object),
 				"finalized",
 			);
@@ -456,7 +446,7 @@ describe("multicall", () => {
 				"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType;
 			const revertData = "0x08c379a0" as HexType;
 
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{ success: true, returnData: balance1 },
@@ -501,7 +491,7 @@ describe("multicall", () => {
 		});
 
 		it("handles all calls failing with allowFailure true", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{ success: false, returnData: "0x" },
@@ -539,7 +529,7 @@ describe("multicall", () => {
 			const balance1 =
 				"0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as HexType;
 
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.succeed(
 					encodeMulticallResult([
 						{ success: true, returnData: balance1 },
@@ -586,7 +576,7 @@ describe("multicall", () => {
 
 	describe("transport error propagation", () => {
 		it("propagates transport errors", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: -32603,
@@ -618,7 +608,7 @@ describe("multicall", () => {
 		});
 
 		it("propagates timeout errors", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: -32000,
@@ -650,7 +640,7 @@ describe("multicall", () => {
 		});
 
 		it("propagates rate limit errors", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: 429,
@@ -682,7 +672,7 @@ describe("multicall", () => {
 		});
 
 		it("propagates Multicall3 contract not deployed error", async () => {
-			mockProvider.call.mockReturnValue(
+			mockCallFn.mockReturnValue(
 				Effect.fail(
 					new TransportError({
 						code: -32000,

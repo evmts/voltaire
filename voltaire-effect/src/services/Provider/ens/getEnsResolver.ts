@@ -5,7 +5,8 @@
  */
 
 import * as Effect from "effect/Effect";
-import { ProviderService } from "../ProviderService.js";
+import { call } from "../functions/call.js";
+import type { ProviderService } from "../ProviderService.js";
 import { ENS_REGISTRY_ADDRESS } from "./constants.js";
 import { EnsError } from "./EnsError.js";
 import { namehash } from "./utils.js";
@@ -45,8 +46,6 @@ export const getEnsResolver = (
 	Effect.gen(function* () {
 		const { name, registryAddress = ENS_REGISTRY_ADDRESS } = params;
 
-		const provider = yield* ProviderService;
-
 		const node = namehash(name);
 
 		// Encode resolver(bytes32) call
@@ -56,17 +55,15 @@ export const getEnsResolver = (
 
 		const callData = `0x${selector}${nodeHex}` as `0x${string}`;
 
-		const result = yield* provider
-			.call({
-				to: registryAddress,
-				data: callData,
-			})
-			.pipe(
-				Effect.mapError(
-					(e) =>
-						new EnsError(name, `Failed to get ENS resolver: ${e.message}`, e),
-				),
-			);
+		const result = yield* call({
+			to: registryAddress,
+			data: callData,
+		}).pipe(
+			Effect.mapError(
+				(e) =>
+					new EnsError(name, `Failed to get ENS resolver: ${e.message}`, e),
+			),
+		);
 
 		if (!result || result === "0x" || result.length < 66) {
 			return null;
