@@ -7,6 +7,53 @@
       <img width="512" height="512" alt="voltaire-logo" src="https://github.com/user-attachments/assets/409b49cb-113b-4b76-989d-762f6294e26a" />
     </a>
   </h1>
+  <strong>For application development, we recommend <a href="./voltaire-effect">voltaire-effect</a> — Effect.ts integration with typed errors, services, and composable operations.</strong>
+</div>
+
+## voltaire-effect: Production-Ready Contract Interactions
+
+```typescript
+import { Effect } from 'effect'
+import {
+  ContractRegistryService,
+  makeContractRegistry,
+  Provider,
+  HttpTransport
+} from 'voltaire-effect'
+
+// Define your contracts once
+const Contracts = makeContractRegistry({
+  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
+  ERC20: { abi: erc20Abi }  // Factory for dynamic addresses
+})
+
+// Use throughout your app with full type safety
+const program = Effect.gen(function* () {
+  const contracts = yield* ContractRegistryService
+
+  // Pre-configured contracts - ready to use
+  const usdcBalance = yield* contracts.USDC.read.balanceOf(userAddress)
+
+  // Factory pattern for runtime addresses
+  const token = yield* contracts.ERC20.at(dynamicAddress)
+  const balance = yield* token.read.balanceOf(userAddress)
+
+  return { usdcBalance, balance }
+}).pipe(
+  Effect.provide(Contracts),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+**Features:** Typed errors, automatic retries, dependency injection, composable operations, tree-shakeable.
+
+[Get started with voltaire-effect →](./voltaire-effect)
+
+---
+
+<div align="center">
   <sup>
     <a href="https://www.npmjs.com/package/@tevm/voltaire">
        <img src="https://img.shields.io/npm/v/@tevm/voltaire.svg" alt="npm version" />
