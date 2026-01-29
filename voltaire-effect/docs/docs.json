@@ -58,6 +58,7 @@
             "pages": [
               "guides/layers",
               "guides/react-integration",
+              "guides/provider-fallback",
               "guides/hd-wallet",
               "guides/security",
               "guides/debugging",
