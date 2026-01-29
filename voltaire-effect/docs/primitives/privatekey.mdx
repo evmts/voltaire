@@ -1,43 +1,128 @@
 ---
 title: PrivateKey
-description: secp256k1 private key schemas and operations
+description: secp256k1 private key schemas and operations with secure Redacted variants
 ---
+
+## Overview
+
+Private keys are 32-byte secp256k1 secrets used for signing. This module provides both standard schemas and **redacted variants** that prevent accidental exposure in logs and errors.
+
+<Warning>
+**Production recommendation**: Use `RedactedHex` or `RedactedBytes` to prevent private keys from appearing in logs, error messages, or JSON serialization.
+</Warning>
+
+## Schemas
+
+| Schema | Input | Output | Use Case |
+|--------|-------|--------|----------|
+| `PrivateKey.Hex` | hex string | `PrivateKeyType` | Development/debugging |
+| `PrivateKey.Bytes` | `Uint8Array` | `PrivateKeyType` | Development/debugging |
+| `PrivateKey.RedactedHex` | hex string | `Redacted<PrivateKeyType>` | **Production** |
+| `PrivateKey.RedactedBytes` | `Uint8Array` | `Redacted<PrivateKeyType>` | **Production** |
+
+## Basic Usage
 
 ```typescript
 import * as PrivateKey from 'voltaire-effect/primitives/PrivateKey'
-import { Effect } from 'effect'
 import * as S from 'effect/Schema'
 
-// From hex (32 bytes)
-const pk = S.decodeSync(PrivateKey.PrivateKeySchema)(
+// Standard (raw value - use in dev only)
+const pk = S.decodeSync(PrivateKey.Hex)(
   '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 )
 
 // From bytes
-const pk2 = S.decodeSync(PrivateKey.PrivateKeyFromBytesSchema)(
-  new Uint8Array(32).fill(1)
+const pk2 = S.decodeSync(PrivateKey.Bytes)(new Uint8Array(32).fill(1))
+```
+
+## Redacted Schemas (Recommended for Production)
+
+Redacted schemas wrap private keys in Effect's `Redacted<T>` type, which:
+- Shows `<redacted>` when logged or stringified
+- Requires explicit `Redacted.value()` to access the underlying key
+- Prevents exposure in error messages and JSON serialization
+
+```typescript
+import * as PrivateKey from 'voltaire-effect/primitives/PrivateKey'
+import { Redacted } from 'effect'
+import * as S from 'effect/Schema'
+
+// Decode to Redacted type
+const redactedPk = S.decodeSync(PrivateKey.RedactedHex)(
+  '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 )
+
+// Safe logging - shows "<redacted>", not the actual key
+console.log(redactedPk)           // Redacted(<redacted>)
+console.log(String(redactedPk))   // <redacted>
+
+// Explicit unwrap for cryptographic operations
+const unwrapped = Redacted.value(redactedPk)
+const publicKey = Secp256k1.derivePublicKey(unwrapped)
+const signature = Secp256k1.sign(messageHash, unwrapped)
+
+// Round-trip encoding works normally
+const encoded = S.encodeSync(PrivateKey.RedactedHex)(redactedPk)
+// "0x0123456789abcdef..."
 ```
 
 ## Effect API
 
 ```typescript
-// From hex
-const pk = Effect.runSync(PrivateKey.from('0x0123...'))
+import { Effect } from 'effect'
 
-// From bytes
-const pk = Effect.runSync(PrivateKey.fromBytes(new Uint8Array(32).fill(1)))
+// Generate random key
+const pk = Effect.runSync(PrivateKey.random())
+
+// Validate key format
+const isValid = Effect.runSync(PrivateKey.isValid('0x0123...'))
 ```
 
-## Errors
+## Cryptographic Operations
 
 ```typescript
-const result = await Effect.runPromiseExit(PrivateKey.from('0xinvalid'))
-// InvalidFormatError | InvalidLengthError
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1'
+import { Redacted } from 'effect'
+
+const redactedPk = S.decodeSync(PrivateKey.RedactedHex)(hexString)
+const pk = Redacted.value(redactedPk) // Explicit unwrap
+
+// Derive public key
+const publicKey = Secp256k1.derivePublicKey(pk)
+
+// Sign message
+const signature = Secp256k1.sign(messageHash, pk)
+
+// Verify signature
+const isValid = Secp256k1.verify(signature, messageHash, publicKey)
 ```
+
+## Error Handling
+
+```typescript
+import { Effect } from 'effect'
+
+// Parse errors don't expose the attempted value
+const result = await Effect.runPromiseExit(
+  S.decodeUnknown(PrivateKey.RedactedHex)('0xinvalid')
+)
+// Error message: "Invalid private key format"
+// NOT: "Invalid hex: 0xinvalid..."
+```
+
+## When to Use Each Schema
+
+| Scenario | Recommended Schema |
+|----------|-------------------|
+| Production applications | `RedactedHex` / `RedactedBytes` |
+| Unit tests | `Hex` / `Bytes` |
+| Debugging locally | `Hex` / `Bytes` |
+| CI/CD pipelines | `RedactedHex` / `RedactedBytes` |
+| Logging enabled | `RedactedHex` / `RedactedBytes` |
 
 ## See Also
 
 - [PublicKey](/primitives/publickey) - Derive public key from private key
 - [Address](/primitives/address) - Derive address from private key
 - [Signature](/primitives/signature) - Sign messages with private key
+- [Effect Redacted](https://effect.website/docs/data-types/redacted/) - Effect's secure data type

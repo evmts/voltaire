@@ -3,6 +3,7 @@ import { Hash } from "@tevm/voltaire";
 import { PrivateKey as CorePrivateKey } from "@tevm/voltaire/PrivateKey";
 import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 import * as Effect from "effect/Effect";
+import { Redacted } from "effect";
 import * as S from "effect/Schema";
 import * as PrivateKey from "./index.js";
 
@@ -370,6 +371,84 @@ describe("cryptographic operations", () => {
 			);
 			expect([...recoveredPubKey]).toEqual([...publicKey]);
 		});
+	});
+});
+
+describe("PrivateKey.RedactedHex", () => {
+	it("decodes to Redacted type", () => {
+		const pk = S.decodeSync(PrivateKey.RedactedHex)(validHex);
+		expect(Redacted.isRedacted(pk)).toBe(true);
+	});
+
+	it("does not expose value when logged", () => {
+		const pk = S.decodeSync(PrivateKey.RedactedHex)(validHex);
+		expect(String(pk)).toBe("<redacted>");
+		expect(String(pk)).not.toContain("ab");
+	});
+
+	it("allows explicit unwrap", () => {
+		const pk = S.decodeSync(PrivateKey.RedactedHex)(validHex);
+		const unwrapped = Redacted.value(pk);
+		expect(unwrapped).toBeInstanceOf(Uint8Array);
+		expect(unwrapped.length).toBe(32);
+	});
+
+	it("round-trips correctly", () => {
+		const pk = S.decodeSync(PrivateKey.RedactedHex)(validHex);
+		const encoded = S.encodeSync(PrivateKey.RedactedHex)(pk);
+		expect(encoded).toBe(validHex.toLowerCase());
+	});
+
+	it("works with cryptographic operations after unwrap", () => {
+		const pk = S.decodeSync(PrivateKey.RedactedHex)(validHex);
+		const unwrapped = Redacted.value(pk);
+		const publicKey = Secp256k1.derivePublicKey(unwrapped);
+		expect(publicKey.length).toBe(64);
+	});
+
+	it("fails on invalid hex", () => {
+		expect(() => S.decodeSync(PrivateKey.RedactedHex)("0x1234")).toThrow();
+	});
+
+	it("parses without prefix", () => {
+		const pk = S.decodeSync(PrivateKey.RedactedHex)(validHexNoPrefix);
+		expect(Redacted.isRedacted(pk)).toBe(true);
+		expect(Redacted.value(pk).length).toBe(32);
+	});
+});
+
+describe("PrivateKey.RedactedBytes", () => {
+	it("decodes to Redacted type", () => {
+		const bytes = new Uint8Array(32).fill(0xab);
+		const pk = S.decodeSync(PrivateKey.RedactedBytes)(bytes);
+		expect(Redacted.isRedacted(pk)).toBe(true);
+	});
+
+	it("does not expose value when logged", () => {
+		const bytes = new Uint8Array(32).fill(0xab);
+		const pk = S.decodeSync(PrivateKey.RedactedBytes)(bytes);
+		expect(String(pk)).toBe("<redacted>");
+	});
+
+	it("allows explicit unwrap", () => {
+		const bytes = new Uint8Array(32).fill(0xab);
+		const pk = S.decodeSync(PrivateKey.RedactedBytes)(bytes);
+		const unwrapped = Redacted.value(pk);
+		expect(unwrapped).toBeInstanceOf(Uint8Array);
+		expect(unwrapped.length).toBe(32);
+	});
+
+	it("round-trips correctly", () => {
+		const bytes = new Uint8Array(32).fill(0xab);
+		const pk = S.decodeSync(PrivateKey.RedactedBytes)(bytes);
+		const encoded = S.encodeSync(PrivateKey.RedactedBytes)(pk);
+		expect([...encoded]).toEqual([...bytes]);
+	});
+
+	it("fails on wrong length", () => {
+		expect(() =>
+			S.decodeSync(PrivateKey.RedactedBytes)(new Uint8Array(31)),
+		).toThrow();
 	});
 });
 

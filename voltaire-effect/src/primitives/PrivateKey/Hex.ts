@@ -29,6 +29,7 @@ import {
 	PrivateKey,
 	type PrivateKeyType,
 } from "@tevm/voltaire/PrivateKey";
+import { Redacted } from "effect";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 
@@ -62,3 +63,56 @@ export const Hex: S.Schema<PrivateKeyType, string> = S.transformOrFail(
 		},
 	},
 ).annotations({ identifier: "PrivateKey.Hex" });
+
+/**
+ * Schema for PrivateKey encoded as hex string, wrapped in Redacted.
+ *
+ * @description
+ * Transforms hex strings to Redacted<PrivateKeyType> for secure handling.
+ * The redacted wrapper prevents accidental logging of private keys.
+ * Use `Redacted.value()` to explicitly unwrap for cryptographic operations.
+ *
+ * @example Decoding
+ * ```typescript
+ * import * as PrivateKey from 'voltaire-effect/primitives/PrivateKey'
+ * import { Redacted } from 'effect'
+ * import * as S from 'effect/Schema'
+ *
+ * const pk = S.decodeSync(PrivateKey.RedactedHex)('0x0123...')
+ * console.log(pk) // Redacted(<redacted>)
+ *
+ * const unwrapped = Redacted.value(pk)
+ * // Use unwrapped for signing
+ * ```
+ *
+ * @since 0.1.0
+ */
+export const RedactedHex: S.Schema<
+	Redacted.Redacted<PrivateKeyType>,
+	string
+> = S.transformOrFail(S.String, S.Redacted(PrivateKeyTypeSchema), {
+	strict: true,
+	decode: (s, _options, ast) => {
+		try {
+			return ParseResult.succeed(Redacted.make(PrivateKey.from(s)));
+		} catch (e) {
+			return ParseResult.fail(
+				new ParseResult.Type(ast, s, "Invalid private key format"),
+			);
+		}
+	},
+	encode: (redacted, _options, ast) => {
+		try {
+			return ParseResult.succeed(_toHex.call(Redacted.value(redacted)));
+		} catch (e) {
+			return ParseResult.fail(
+				new ParseResult.Type(ast, redacted, (e as Error).message),
+			);
+		}
+	},
+}).annotations({
+	identifier: "PrivateKey.RedactedHex",
+	title: "Private Key (Redacted)",
+	description:
+		"A 32-byte secp256k1 private key wrapped in Redacted to prevent accidental logging",
+});
