@@ -28,6 +28,7 @@ describe('Provider', () => {
 ## Mock Multiple Methods
 
 ```typescript
+import { Effect, Layer } from 'effect'
 import { getBlockNumber, getBalance, getBlock, Provider, TestTransport, withoutCache } from 'voltaire-effect'
 
 const mockTransport = TestTransport({
@@ -39,13 +40,16 @@ const mockTransport = TestTransport({
     : '0x'
 })
 
+// Compose layers first, then provide once
+const TestLayer = Layer.merge(Provider, mockTransport)
+
 const program = Effect.gen(function* () {
   return yield* Effect.all({
     blockNumber: getBlockNumber(),
     balance: getBalance('0xRich...', 'latest'),
     block: getBlock({ blockTag: 'latest' })
   })
-}).pipe(withoutCache, Effect.provide(Provider), Effect.provide(mockTransport))
+}).pipe(withoutCache, Effect.provide(TestLayer))
 ```
 
 ## Test Contract Reads

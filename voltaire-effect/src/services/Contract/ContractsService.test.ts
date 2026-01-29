@@ -82,6 +82,10 @@ const MockProvider = Layer.succeed(ProviderService, {
 });
 
 describe("ContractRegistryService", () => {
+	// Composed test layer to avoid chained Effect.provide anti-pattern
+	const createTestLayer = (Contracts: ReturnType<typeof makeContractRegistry>) =>
+		Layer.merge(Contracts, MockProvider);
+
 	describe("makeContractRegistry", () => {
 		it("creates registry with addressed contracts", async () => {
 			const config = {
@@ -113,7 +117,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(true);
 		});
@@ -137,7 +141,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(true);
 		});
@@ -170,7 +174,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(true);
 		});
@@ -196,7 +200,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(true);
 		});
@@ -222,7 +226,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(1000n);
 		});
@@ -248,7 +252,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(1000n);
 		});
@@ -264,7 +268,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(true);
 		});
@@ -295,7 +299,7 @@ describe("ContractRegistryService", () => {
 			});
 
 			const result = await Effect.runPromise(
-				program.pipe(Effect.provide(Contracts), Effect.provide(MockProvider)),
+				program.pipe(Effect.provide(createTestLayer(Contracts))),
 			);
 			expect(result).toBe(true);
 		});
