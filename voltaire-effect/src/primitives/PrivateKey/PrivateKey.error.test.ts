@@ -154,8 +154,12 @@ describe("PrivateKey parse error messages", () => {
 
 				expect(formatted).toMatchInlineSnapshot(`
 					"PrivateKey.RedactedBytes
-					└─ Transformation process failure
-					   └─ Invalid private key format"
+					└─ Encoded side transformation failure
+					   └─ PrivateKey.Bytes
+					      └─ Transformation process failure
+					         └─ Private key must be 32 bytes, got 31
+
+					Docs: https://voltaire.dev/primitives/private-key"
 				`);
 			}
 		});
