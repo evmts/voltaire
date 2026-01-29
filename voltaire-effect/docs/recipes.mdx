@@ -1,350 +1,210 @@
 ---
-title: Recipes
-description: Copy-paste solutions for common Ethereum tasks
+title: Recipes & References
+description: Quick reference for common patterns and data
 ---
 
-Ready-to-use patterns for common Ethereum operations. Each recipe is self-contained with all imports. See [Examples](/examples/index) for more detailed tutorials.
+## Common Event Topic Hashes
 
-<Tip>
-These recipes assume you have installed `voltaire-effect @tevm/voltaire effect`. See [Getting Started](/getting-started) for setup.
-</Tip>
+Pre-computed keccak256 hashes for common Ethereum events. Use these directly instead of computing at runtime.
 
-## Check If Address Is Contract
+### ERC-20 Token Events
 
-```typescript
-import { Effect, Layer } from 'effect'
-import { getCode, Provider, HttpTransport } from 'voltaire-effect'
+| Event | Signature | Topic Hash |
+|-------|-----------|------------|
+| Transfer | `Transfer(address,address,uint256)` | `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` |
+| Approval | `Approval(address,address,uint256)` | `0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925` |
 
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+### ERC-721 NFT Events
 
-const isContract = (address: string) => Effect.gen(function* () {
-  const code = yield* getCode(address, 'latest')
-  return code !== '0x' && code.length > 2
-}).pipe(Effect.provide(ProviderLayer))
-```
+| Event | Signature | Topic Hash |
+|-------|-----------|------------|
+| Transfer | `Transfer(address,address,uint256)` | `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` |
+| Approval | `Approval(address,address,uint256)` | `0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925` |
+| ApprovalForAll | `ApprovalForAll(address,address,bool)` | `0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31` |
 
-## Get Token Balance (ERC-20)
+### Uniswap V2 Events
 
-```typescript
-import { Effect, Layer } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+| Event | Signature | Topic Hash |
+|-------|-----------|------------|
+| Swap | `Swap(address,uint256,uint256,uint256,uint256,address)` | `0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822` |
+| Sync | `Sync(uint112,uint112)` | `0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1` |
+| Mint | `Mint(address,uint256,uint256)` | `0x4c209b5fc8ad50758f13e2e1088ba56a560dff690a1c6fef26394f4c03821c4f` |
+| Burn | `Burn(address,uint256,uint256,address)` | `0xdccd412f0b1252819cb1fd330b93224ca42612892bb3f4f789976e6d81936496` |
+| PairCreated | `PairCreated(address,address,address,uint256)` | `0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9` |
 
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+### Uniswap V3 Events
 
-const erc20Abi = [
-  { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
-    outputs: [{ type: 'uint256' }], stateMutability: 'view' },
-  { type: 'function', name: 'decimals', inputs: [], 
-    outputs: [{ type: 'uint8' }], stateMutability: 'view' }
-] as const
+| Event | Signature | Topic Hash |
+|-------|-----------|------------|
+| Swap | `Swap(address,address,int256,int256,uint160,uint128,int24)` | `0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67` |
+| Mint | `Mint(address,address,int24,int24,uint128,uint256,uint256)` | `0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde` |
+| Burn | `Burn(address,int24,int24,uint128,uint256,uint256)` | `0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c` |
+| PoolCreated | `PoolCreated(address,address,uint24,int24,address)` | `0x783cca1c0412dd0d695e784568c96da2e9c22ff989357a2e8b1d9b2b4e6b7118` |
 
-const getTokenBalance = (token: string, user: string) => Effect.gen(function* () {
-  const contract = yield* Contract(token, erc20Abi)
-  const { balance, decimals } = yield* Effect.all({
-    balance: contract.read.balanceOf(user),
-    decimals: contract.read.decimals()
-  })
-  return { raw: balance, formatted: Number(balance) / 10 ** decimals }
-}).pipe(Effect.provide(ProviderLayer))
-```
+### WETH Events
 
-<Warning>
-Production note: avoid `Number(balance)` for arbitrary ERC-20 balances. Use bigint-safe formatting (e.g., Formatter or Denomination helpers).
-</Warning>
+| Event | Signature | Topic Hash |
+|-------|-----------|------------|
+| Deposit | `Deposit(address,uint256)` | `0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c` |
+| Withdrawal | `Withdrawal(address,uint256)` | `0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65` |
 
-## Approve and Transfer ERC-20
+### Usage Example
 
 ```typescript
-import { Effect, Layer } from 'effect'
-import { Contract, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
-import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+// Copy-paste the topic hash you need
+const UNISWAP_V2_SWAP = "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822"
 
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-const TransportLayer = HttpTransport('https://eth.llamarpc.com')
-const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
-
-const makeSignerLayer = (privateKey: Uint8Array) =>
-  Layer.mergeAll(Signer.Live, CryptoLayer, ProviderLayer).pipe(
-    Layer.provideMerge(LocalAccount(privateKey))
-  )
-
-const approveAndTransfer = (
-  token: string, 
-  spender: string, 
-  recipient: string, 
-  amount: bigint, 
-  privateKey: Uint8Array
-) => Effect.gen(function* () {
-  const contract = yield* Contract(token, [
-    { type: 'function', name: 'approve', inputs: [
-      { name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }
-    ], outputs: [{ type: 'bool' }], stateMutability: 'nonpayable' },
-    { type: 'function', name: 'transfer', inputs: [
-      { name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }
-    ], outputs: [{ type: 'bool' }], stateMutability: 'nonpayable' }
-  ] as const)
-
-  const approveHash = yield* contract.write.approve(spender, amount)
-  const transferHash = yield* contract.write.transfer(recipient, amount)
-  
-  return { approveHash, transferHash }
-}).pipe(Effect.provide(makeSignerLayer(privateKey)))
-```
-
-## Wait For Transaction With Timeout
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { waitForTransactionReceipt, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
-
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
-const waitForTx = (txHash: string, confirmations = 1, timeout = "120 seconds") =>
-  waitForTransactionReceipt(txHash, { confirmations }).pipe(
-    withTimeout(timeout),
-    Effect.catchTag('TimeoutException', () =>
-      Effect.fail(new Error(`Transaction ${txHash} not confirmed`))
-    ),
-    Effect.provide(ProviderLayer)
-  )
-```
-
-## Batch Multiple Balance Checks
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { multicall, Provider, HttpTransport } from 'voltaire-effect'
-
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
-const erc20Abi = [
-  { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
-    outputs: [{ type: 'uint256' }], stateMutability: 'view' }
-] as const
-
-const getBalances = (token: string, users: string[]) => Effect.gen(function* () {
-  const results = yield* multicall({
-    contracts: users.map(user => ({
-      address: token,
-      abi: erc20Abi,
-      functionName: 'balanceOf',
-      args: [user]
-    })),
-    allowFailure: false
-  })
-  return results as bigint[]
-}).pipe(Effect.provide(ProviderLayer))
-```
-
-## Sign and Verify Message
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { Hex, Address } from '@tevm/voltaire'
-import { Secp256k1Service, KeccakService, Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
-
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-
-const signAndVerify = (message: string, privateKey: Uint8Array) => Effect.gen(function* () {
-  const keccak = yield* KeccakService
-  const secp = yield* Secp256k1Service
-
-  // Hash the message with Ethereum prefix
-  const prefix = `\x19Ethereum Signed Message:\n${message.length}`
-  const prefixedMessage = new TextEncoder().encode(prefix + message)
-  const messageHash = yield* keccak.hash(prefixedMessage)
-
-  // Sign
-  const signature = yield* secp.sign(messageHash, privateKey)
-
-  // Recover signer
-  const publicKey = yield* secp.recover(signature, messageHash)
-  
-  // Verify
-  const isValid = yield* secp.verify(signature, messageHash, publicKey)
-
-  return { signature, publicKey, isValid }
-}).pipe(Effect.provide(CryptoLayer))
-```
-
-## Derive Address From Private Key
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { Address } from '@tevm/voltaire'
-import { Secp256k1Service, KeccakService, Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
-
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-
-const getAddress = (privateKey: Uint8Array) => Effect.gen(function* () {
-  const secp = yield* Secp256k1Service
-  const keccak = yield* KeccakService
-
-  const publicKey = yield* secp.getPublicKey(privateKey)
-  const hash = yield* keccak.hash(publicKey.slice(1)) // Remove 0x04 prefix
-  const addressBytes = hash.slice(-20)
-  
-  return Address.fromBytes(addressBytes)
-}).pipe(Effect.provide(CryptoLayer))
-```
-
-## Parse and Decode Transaction
-
-```typescript
-import { Effect } from 'effect'
-import { Transaction, Rlp, Hex } from '@tevm/voltaire'
-
-const decodeRawTx = (rawTx: string) => Effect.gen(function* () {
-  const bytes = Hex.toBytes(Hex.fromHex(rawTx))
-  const tx = Transaction.parse(bytes)
-  
-  return {
-    type: tx.type,
-    to: tx.to ? Address.toHex(tx.to) : null,
-    value: tx.value,
-    data: Hex.fromBytes(tx.data),
-    nonce: tx.nonce,
-    gasLimit: tx.gasLimit
-  }
+const logs = yield* getLogs({
+  topics: [[UNISWAP_V2_SWAP]],
+  fromBlock: "0x1000000",
+  toBlock: "latest"
 })
 ```
 
-## Fallback RPC Provider
+---
+
+## Contract Addresses (Mainnet)
+
+### Uniswap
+
+| Contract | Address |
+|----------|---------|
+| V2 Factory | `0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f` |
+| V2 Router | `0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D` |
+| V3 Factory | `0x1F98431c8aD98523631AE4a59f267346ea31F984` |
+| V3 Router | `0xE592427A0AEce92De3Edee1F18E0157C05861564` |
+| Universal Router | `0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD` |
+
+### Common Tokens
+
+| Token | Address | Decimals |
+|-------|---------|----------|
+| WETH | `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2` | 18 |
+| USDC | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | 6 |
+| USDT | `0xdAC17F958D2ee523a2206206994597C13D831ec7` | 6 |
+| DAI | `0x6B175474E89094C44Da98b954EeshdC1c9E` | 18 |
+| WBTC | `0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599` | 8 |
+
+### Deploy Blocks
+
+| Contract | Block Number |
+|----------|--------------|
+| Uniswap V2 Factory | 10000835 |
+| Uniswap V3 Factory | 12369621 |
+| USDC | 6082465 |
+
+---
+
+## Public RPC Endpoints
+
+Free, rate-limited RPCs for development:
+
+| Provider | URL | Rate Limit |
+|----------|-----|------------|
+| LlamaRPC | `https://eth.llamarpc.com` | ~25 req/s |
+| Ankr | `https://rpc.ankr.com/eth` | ~30 req/s |
+| PublicNode | `https://ethereum.publicnode.com` | ~10 req/s |
+| Cloudflare | `https://cloudflare-eth.com` | ~10 req/s |
+
+### Fallback Pattern
 
 ```typescript
-import { Effect, Layer } from 'effect'
-import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
+const RPC_URLS = [
+  process.env.ALCHEMY_URL,           // Primary (if set)
+  "https://eth.llamarpc.com",        // Fallback 1
+  "https://rpc.ankr.com/eth",        // Fallback 2
+  "https://ethereum.publicnode.com", // Fallback 3
+].filter(Boolean) as string[]
+```
 
-const providers = [
-  'https://eth.llamarpc.com',
-  'https://cloudflare-eth.com',
-  'https://rpc.ankr.com/eth'
-]
+---
 
-const makeProviderLayer = (url: string) => Provider.pipe(
-  Layer.provide(HttpTransport(url))
+## ABI Decoding Cheatsheet
+
+### Decode Address from Topic (indexed param)
+
+```typescript
+// Topics are 32 bytes, addresses are 20 bytes (right-aligned)
+const address = "0x" + topic.slice(-40)
+```
+
+### Decode uint256 from Data
+
+```typescript
+// Each param is 32 bytes = 64 hex chars
+const data = log.data.slice(2) // remove 0x
+const param0 = BigInt("0x" + data.slice(0, 64))
+const param1 = BigInt("0x" + data.slice(64, 128))
+const param2 = BigInt("0x" + data.slice(128, 192))
+```
+
+### Decode int256 from Data
+
+```typescript
+const raw = BigInt("0x" + data.slice(0, 64))
+// Check sign bit (most significant bit)
+const int256 = raw >= 2n ** 255n ? raw - 2n ** 256n : raw
+```
+
+### Decode bytes32
+
+```typescript
+const bytes32 = "0x" + data.slice(0, 64)
+```
+
+### Decode Dynamic String/Bytes
+
+```typescript
+// First 32 bytes = offset to data
+const offset = parseInt(data.slice(0, 64), 16) * 2
+// Next 32 bytes at offset = length
+const length = parseInt(data.slice(offset, offset + 64), 16) * 2
+// Actual data follows
+const stringHex = data.slice(offset + 64, offset + 64 + length)
+const string = Buffer.from(stringHex, 'hex').toString('utf8')
+```
+
+---
+
+## Effect Patterns Quick Reference
+
+### Retry with Exponential Backoff
+
+```typescript
+import { Schedule } from "effect"
+
+const retrySchedule = Schedule.exponential("100 millis").pipe(
+  Schedule.jittered,
+  Schedule.compose(Schedule.recurs(3))
 )
 
-const withFallback = <A>(operation: Effect.Effect<A, any, any>) =>
-  providers.reduce(
-    (acc, url, i) => i === 0
-      ? operation.pipe(Effect.provide(makeProviderLayer(url)))
-      : acc.pipe(
-          Effect.orElse(() => operation.pipe(Effect.provide(makeProviderLayer(url))))
-        ),
-    Effect.fail(new Error('All providers failed')) as Effect.Effect<A, any, any>
+myEffect.pipe(Effect.retry(retrySchedule))
+```
+
+### Timeout
+
+```typescript
+myEffect.pipe(Effect.timeout("5 seconds"))
+```
+
+### Try Multiple in Sequence (First Success)
+
+```typescript
+const tryAll = <A, E>(effects: Effect.Effect<A, E>[]) =>
+  effects.slice(1).reduce(
+    (acc, eff) => acc.pipe(Effect.orElse(() => eff)),
+    effects[0]!
   )
-
-// Usage
-const blockNum = await Effect.runPromise(
-  withFallback(getBlockNumber())
-)
 ```
 
-<Note>
-Production note: the `Effect.Effect<A, any, any>` cast erases error typing. Prefer a typed error union when you want compile-time guarantees.
-</Note>
-
-## Retry With Exponential Backoff
+### Parallel with Concurrency Limit
 
 ```typescript
-import { Effect, Schedule } from 'effect'
-import { getBalance, withRetrySchedule } from 'voltaire-effect'
-
-// Per-request retry schedule
-const withExponentialRetry = withRetrySchedule(
-  Schedule.exponential('500 millis').pipe(
-    Schedule.jittered,
-    Schedule.compose(Schedule.recurs(5))
-  )
-)
-
-// Usage
-getBalance(addr).pipe(withExponentialRetry)
+Effect.forEach(items, processItem, { concurrency: 10 })
 ```
 
-## Stream Recent Blocks
+### Stream to Array
 
 ```typescript
-import { Effect, Layer, Stream } from 'effect'
-import { makeBlockStream, HttpTransport } from 'voltaire-effect/services'
-
-const TransportLayer = HttpTransport('https://eth.llamarpc.com')
-
-const streamBlocks = (count: number) => Effect.gen(function* () {
-  const blockStream = yield* makeBlockStream()
-  
-  const blocks = yield* Stream.runCollect(
-    blockStream.watch({ include: 'header' }).pipe(
-      Stream.take(count)
-    )
-  )
-  
-  return blocks.toArray()
-}).pipe(Effect.provide(TransportLayer))
-```
-
-## Estimate Gas With Buffer
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { estimateGas, Provider, HttpTransport } from 'voltaire-effect'
-
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
-const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, buffer = 1.2) =>
-  Effect.gen(function* () {
-    const estimate = yield* estimateGas(tx)
-    return BigInt(Math.ceil(Number(estimate) * buffer))
-  }).pipe(Effect.provide(ProviderLayer))
-```
-
-<Note>
-Production note: `Number(estimate)` is fine for small gas limits; use bigint-safe math if you need exactness.
-</Note>
-
-## See Also
-
-- [Examples](/examples/index) — Detailed tutorials with explanations
-- [Cheatsheet](/cheatsheet) — Quick reference patterns
-- [Troubleshooting](/troubleshooting) — Common issues and solutions
-- [Provider Service](/services/provider) — All provider methods
-- [Signer Service](/services/signer) — Transaction signing
-- [Multicall](/services/multicall) — Batch RPC calls
-- [ERC Standards](/standards) — Token standard utilities
-- [Effect Documentation](https://effect.website/docs/getting-started/introduction/) — Official Effect.ts docs
-
-## Check NFT Ownership
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { Contract, Provider, HttpTransport } from 'voltaire-effect'
-
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
-const erc721Abi = [
-  { type: 'function', name: 'ownerOf', inputs: [{ name: 'tokenId', type: 'uint256' }], 
-    outputs: [{ type: 'address' }], stateMutability: 'view' }
-] as const
-
-const isOwner = (nft: string, tokenId: bigint, address: string) => Effect.gen(function* () {
-  const contract = yield* Contract(nft, erc721Abi)
-  const owner = yield* contract.read.ownerOf(tokenId)
-  return owner.toLowerCase() === address.toLowerCase()
-}).pipe(
-  Effect.catchTag('ContractCallError', () => Effect.succeed(false)),
-  Effect.provide(ProviderLayer)
-)
+Stream.runCollect(myStream).pipe(Effect.map(Chunk.toArray))
 ```

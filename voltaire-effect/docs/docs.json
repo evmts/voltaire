@@ -136,6 +136,7 @@
               "examples/contract-interactions",
               "examples/event-streaming",
               "examples/block-streaming",
+              "examples/uniswap-indexer",
               "examples/multicall",
               "examples/layer-presets",
               "examples/error-handling",
