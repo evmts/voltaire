@@ -30,11 +30,11 @@
  *   const batch = yield* RpcBatchService
  *
  *   // These are automatically batched into a single RPC call
- *   const [blockNumber, balance1, balance2] = yield* Effect.all([
- *     batch.request(new EthBlockNumber({})),
- *     batch.request(new EthGetBalance({ address: addr1, blockTag: "latest" })),
- *     batch.request(new EthGetBalance({ address: addr2, blockTag: "latest" })),
- *   ], { concurrency: "unbounded" })
+ *   const { blockNumber, balance1, balance2 } = yield* Effect.all({
+ *     blockNumber: batch.request(new EthBlockNumber({})),
+ *     balance1: batch.request(new EthGetBalance({ address: addr1, blockTag: "latest" })),
+ *     balance2: batch.request(new EthGetBalance({ address: addr2, blockTag: "latest" })),
+ *   }, { concurrency: "unbounded" })
  *
  *   return { blockNumber, balance1, balance2 }
  * }).pipe(
@@ -49,10 +49,10 @@
  *   const batch = yield* RpcBatchService
  *
  *   // Same request twice - only one RPC call is made
- *   const [balance1, balance2] = yield* Effect.all([
- *     batch.request(new EthGetBalance({ address: addr, blockTag: "latest" })),
- *     batch.request(new EthGetBalance({ address: addr, blockTag: "latest" })),
- *   ], { concurrency: "unbounded" })
+ *   const { balance1, balance2 } = yield* Effect.all({
+ *     balance1: batch.request(new EthGetBalance({ address: addr, blockTag: "latest" })),
+ *     balance2: batch.request(new EthGetBalance({ address: addr, blockTag: "latest" })),
+ *   }, { concurrency: "unbounded" })
  *
  *   // balance1 === balance2 (same result, shared)
  * })

@@ -408,10 +408,10 @@ const makeCacheKey = (method: string, params: unknown[]): string =>
  *   const t = yield* TransportService
  *
  *   // These will share the same request
- *   const [a, b] = yield* Effect.all([
- *     t.request('eth_blockNumber'),
- *     t.request('eth_blockNumber'),
- *   ], { concurrency: 'unbounded' })
+ *   const { a, b } = yield* Effect.all({
+ *     a: t.request('eth_blockNumber'),
+ *     b: t.request('eth_blockNumber'),
+ *   }, { concurrency: 'unbounded' })
  *
  *   return { a, b }
  * }).pipe(Effect.provide(transport))

@@ -311,10 +311,10 @@ export const makeRpcResolver = (transport: {
  *   const batch = yield* RpcBatchService
  *
  *   // These are automatically batched when run concurrently
- *   const [blockNumber, balance] = yield* Effect.all([
- *     batch.request(new EthBlockNumber({})),
- *     batch.request(new EthGetBalance({ address: "0x...", blockTag: "latest" })),
- *   ], { concurrency: "unbounded" })
+ *   const { blockNumber, balance } = yield* Effect.all({
+ *     blockNumber: batch.request(new EthBlockNumber({})),
+ *     balance: batch.request(new EthGetBalance({ address: "0x...", blockTag: "latest" })),
+ *   }, { concurrency: "unbounded" })
  *
  *   return { blockNumber, balance }
  * }).pipe(

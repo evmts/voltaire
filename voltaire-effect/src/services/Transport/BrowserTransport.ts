@@ -98,10 +98,10 @@ declare global {
  *
  * const program = Effect.gen(function* () {
  *   const client = yield* ProviderService
- *   const [blockNumber, chainId] = yield* Effect.all([
- *     client.getBlockNumber(),
- *     client.getChainId()
- *   ])
+ *   const { blockNumber, chainId } = yield* Effect.all({
+ *     blockNumber: client.getBlockNumber(),
+ *     chainId: client.getChainId()
+ *   })
  *   return { blockNumber, chainId }
  * }).pipe(
  *   Effect.provide(Provider),
