@@ -143,9 +143,42 @@ For bundle-size optimization, Voltaire also provides a [tree-shakeable functiona
 | [ChainIdType](/primitives/chain) | number | Chain identifier |
 | [OpcodeType](/primitives/opcode) | number | EVM opcode |
 
+## Schema Annotations
+
+When using Effect Schema, annotate schemas with metadata for better error messages, JSON Schema generation, and form integration:
+
+```typescript
+import * as S from "effect/Schema"
+
+const AddressHex = S.String.pipe(
+  S.pattern(/^0x[a-fA-F0-9]{40}$/),
+  S.brand("Address")
+).annotations({
+  identifier: "Address.Hex",
+  title: "Ethereum Address",
+  description: "A 20-byte Ethereum address as a checksummed hex string",
+  examples: [
+    "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+  ],
+  message: () => "Expected a valid Ethereum address (40 hex characters with 0x prefix)"
+})
+```
+
+Benefits:
+- **Better errors**: Custom `message` replaces raw parse errors
+- **JSON Schema**: `JSONSchema.make()` generates OpenAPI-compatible specs
+- **Form labels**: `title` and `description` for UI integration
+- **IDE support**: Annotations surface in hover information
+
+See [Schema Annotations](/concepts/schema-annotations) for complete documentation.
+
 ## Learn More
 
 <CardGroup cols={2}>
+  <Card title="Schema Annotations" icon="tag" href="/concepts/schema-annotations">
+    Annotate schemas for better DX
+  </Card>
   <Card title="Tree-Shakeable API" icon="leaf" href="/concepts/tree-shakeable-api">
     Functional API for minimal bundle size
   </Card>

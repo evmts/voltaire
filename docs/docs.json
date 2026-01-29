@@ -42,6 +42,7 @@
             "icon": "book",
             "pages": [
               "concepts/branded-types",
+              "concepts/schema-annotations",
               "concepts/type-safe-values",
               "concepts/data-first-api",
               "concepts/tree-shakeable-api",
@@ -1602,9 +1603,12 @@
             "group": "Guides",
             "icon": "book-open",
             "pages": [
+              "guides/rate-limiting",
+              "guides/provider-fallback",
               {
                 "group": "Integrations",
                 "pages": [
+                  "integrations/effect-atom",
                   "integrations/tanstack-query",
                   "integrations/svelte",
                   "integrations/vue",

@@ -72,7 +72,38 @@ const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
 - **Never** use `as` or `unknown as` on untrusted data.
 - **Always** use schemas to validate at runtime at the boundary.
 
+## Annotations for Better Errors
+
+Annotated schemas provide better error messages and enable JSON Schema generation:
+
+```ts
+import * as S from 'effect/Schema'
+import { JSONSchema } from 'effect'
+
+const AddressHex = S.String.pipe(
+  S.pattern(/^0x[a-fA-F0-9]{40}$/)
+).annotations({
+  identifier: "Address.Hex",
+  title: "Ethereum Address",
+  description: "A 20-byte Ethereum address as a hex string",
+  examples: ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"],
+  message: () => "Invalid address: expected 40 hex characters with 0x prefix"
+})
+
+// Generate JSON Schema for OpenAPI
+const jsonSchema = JSONSchema.make(AddressHex)
+// { title: "Ethereum Address", description: "...", examples: [...] }
+```
+
+Key annotations:
+- `identifier` - Unique ID for the schema
+- `title` - Human-readable name (form labels)
+- `description` - Explains the type (help text)
+- `examples` - Valid example values
+- `message` - Custom error message function
+
 ## See Also
 
+- [Schema Annotations](/concepts/schema-annotations)
 - [How to Validate an Ethereum Address](/ghosts/security/how-to-validate-address)
 - [How to Serialize to JSON](/ghosts/general/how-to-serialize-to-json)

@@ -218,6 +218,152 @@ error._tag;  // "InvalidAddressLength"
 
 Effect.ts is optional—imported from `@tevm/voltaire/effect` subpath. Regular usage just throws standard exceptions.
 
+## Schema Error Messages
+
+When using Effect schemas, use `formatError` from `effect/ParseResult` to get human-readable error messages:
+
+```typescript
+import * as S from "effect/Schema"
+import { formatError } from "effect/ParseResult"
+import * as Address from 'voltaire-effect/primitives/Address'
+
+// Test error output
+const result = S.decodeUnknownEither(Address.Hex)("0x1234")
+if (result._tag === "Left") {
+  const formatted = formatError(result.left)
+  // "Address.Hex
+  //  └─ Invalid Ethereum address: expected 40 hex characters, got 4"
+}
+```
+
+### Error Message Guidelines
+
+When implementing schema annotations, follow these guidelines:
+
+| Guideline | Example |
+|-----------|---------|
+| ✅ Include expected format/length | `"Expected 40 hex characters"` |
+| ✅ Include what was received | `"got 4 characters"` |
+| ❌ Never include actual value for sensitive types | `PrivateKey`, `Mnemonic` |
+| ❌ Avoid raw predicate failures | `"Predicate refinement failure"` |
+
+### Custom Message Annotations
+
+Use `.annotations({ message })` to provide helpful error messages:
+
+```typescript
+import * as S from "effect/Schema"
+
+const AddressHex = S.String.pipe(
+  S.filter((s) => /^0x[a-fA-F0-9]{40}$/.test(s))
+).annotations({
+  identifier: "Address.Hex",
+  title: "Ethereum Address",
+  message: (issue) => {
+    const actual = issue.actual
+    if (typeof actual !== "string") {
+      return `Expected string, got ${typeof actual}`
+    }
+    if (!actual.startsWith("0x")) {
+      return `Address must start with 0x prefix`
+    }
+    const hexPart = actual.slice(2)
+    return `Invalid address: expected 40 hex characters, got ${hexPart.length}`
+  }
+})
+```
+
+### formatError API
+
+The `formatError` function from `effect/ParseResult` renders parse errors as human-readable trees:
+
+```typescript
+import { formatError, formatErrorSync } from "effect/ParseResult"
+import * as S from "effect/Schema"
+
+// Sync version for Either results
+const result = S.decodeUnknownEither(MySchema)(input)
+if (result._tag === "Left") {
+  console.log(formatError(result.left))
+}
+
+// Async version for Effect failures
+import { Effect } from "effect"
+const program = S.decode(MySchema)(input).pipe(
+  Effect.catchAll((error) => {
+    console.log(formatError(error))
+    return Effect.fail(error)
+  })
+)
+```
+
+Output format is a tree showing the path to the error:
+
+```
+Address.Hex
+└─ Predicate refinement failure
+   └─ Invalid address: expected 40 hex characters, got 4
+```
+
+### Testing Schema Errors
+
+Iterate on schema error messages to ensure good UX:
+
+```typescript
+import { describe, it, expect } from "vitest"
+import * as S from "effect/Schema"
+import { formatError } from "effect/ParseResult"
+import * as Address from "voltaire-effect/primitives/Address"
+
+describe("Address.Hex error messages", () => {
+  it("shows helpful error for short input", () => {
+    const result = S.decodeUnknownEither(Address.Hex)("0x1234")
+    expect(result._tag).toBe("Left")
+    if (result._tag === "Left") {
+      const formatted = formatError(result.left)
+      expect(formatted).toContain("expected 40 hex characters")
+      expect(formatted).toContain("got 4")
+    }
+  })
+
+  it("shows helpful error for missing prefix", () => {
+    const result = S.decodeUnknownEither(Address.Hex)("1234abcd")
+    expect(result._tag).toBe("Left")
+    if (result._tag === "Left") {
+      const formatted = formatError(result.left)
+      expect(formatted).toContain("0x prefix")
+    }
+  })
+
+  it("shows helpful error for wrong type", () => {
+    const result = S.decodeUnknownEither(Address.Hex)(12345)
+    expect(result._tag).toBe("Left")
+    if (result._tag === "Left") {
+      const formatted = formatError(result.left)
+      expect(formatted).toContain("Expected string")
+    }
+  })
+})
+```
+
+### Sensitive Types
+
+Never expose actual values in error messages for sensitive types:
+
+```typescript
+// ❌ BAD - exposes private key
+message: (issue) => `Invalid private key: ${issue.actual}`
+
+// ✅ GOOD - describes the problem without exposing data
+message: () => "Invalid private key: expected 32 bytes (64 hex characters)"
+```
+
+Sensitive types include:
+- `PrivateKey`
+- `Mnemonic`
+- `SeedPhrase`
+- Any key material
+
 ## Learn More
 
 <CardGroup cols={2}>
