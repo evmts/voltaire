@@ -53,4 +53,15 @@ export const Hex: S.Schema<AddressType, string> = S.transformOrFail(
 			return ParseResult.succeed(Address.toHex(addr));
 		},
 	},
-).annotations({ identifier: "Address.Hex" });
+).annotations({
+	identifier: "Address.Hex",
+	title: "Ethereum Address",
+	description:
+		"A 20-byte Ethereum address as a hex string. Accepts checksummed, lowercase, or uppercase.",
+	examples: [
+		"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+	],
+	message: () =>
+		"Invalid Ethereum address: expected 40 hex characters with 0x prefix",
+});

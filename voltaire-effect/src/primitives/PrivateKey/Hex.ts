@@ -62,7 +62,13 @@ export const Hex: S.Schema<PrivateKeyType, string> = S.transformOrFail(
 			}
 		},
 	},
-).annotations({ identifier: "PrivateKey.Hex" });
+).annotations({
+	identifier: "PrivateKey.Hex",
+	title: "Private Key",
+	description: "A 32-byte secp256k1 private key as a hex string. NEVER log or expose this value.",
+	examples: ["0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
+	message: () => "Invalid private key: expected 64 hex characters (32 bytes)",
+});
 
 /**
  * Schema for PrivateKey encoded as hex string, wrapped in Redacted.
@@ -113,6 +119,7 @@ export const RedactedHex: S.Schema<
 }).annotations({
 	identifier: "PrivateKey.RedactedHex",
 	title: "Private Key (Redacted)",
-	description:
-		"A 32-byte secp256k1 private key wrapped in Redacted to prevent accidental logging",
+	description: "A 32-byte secp256k1 private key wrapped in Redacted to prevent accidental logging. NEVER log or expose the unwrapped value.",
+	examples: ["0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
+	message: () => "Invalid private key: expected 64 hex characters (32 bytes)",
 });
