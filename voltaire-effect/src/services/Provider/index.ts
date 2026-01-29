@@ -74,3 +74,10 @@ export {
 	toAddressHex,
 	toHashHex,
 } from "./utils.js";
+
+// ExecutionPlan-based provider fallback (experimental, requires Effect 3.16+)
+export {
+	makeProviderPlan,
+	makeResilientProviderPlan,
+	type ProviderStepConfig,
+} from "./ExecutionPlanProvider.js";
