@@ -213,61 +213,6 @@
 			"import": "./dist/primitives/Uint/index.js",
 			"require": "./dist/primitives/Uint/index.cjs"
 		},
-		"./Hash/effect": {
-			"types": "./types/primitives/Hash/effect.d.ts",
-			"import": "./dist/primitives/Hash/effect.js",
-			"require": "./dist/primitives/Hash/effect.cjs"
-		},
-		"./Hex/effect": {
-			"types": "./types/primitives/Hex/effect.d.ts",
-			"import": "./dist/primitives/Hex/effect.js",
-			"require": "./dist/primitives/Hex/effect.cjs"
-		},
-		"./Uint/effect": {
-			"types": "./types/primitives/Uint/effect.d.ts",
-			"import": "./dist/primitives/Uint/effect.js",
-			"require": "./dist/primitives/Uint/effect.cjs"
-		},
-		"./Signature/effect": {
-			"types": "./types/primitives/Signature/effect.d.ts",
-			"import": "./dist/primitives/Signature/effect.js",
-			"require": "./dist/primitives/Signature/effect.cjs"
-		},
-		"./Bytecode/effect": {
-			"types": "./types/primitives/Bytecode/effect.d.ts",
-			"import": "./dist/primitives/Bytecode/effect.js",
-			"require": "./dist/primitives/Bytecode/effect.cjs"
-		},
-		"./Base64/effect": {
-			"types": "./types/primitives/Base64/effect.d.ts",
-			"import": "./dist/primitives/Base64/effect.js",
-			"require": "./dist/primitives/Base64/effect.cjs"
-		},
-		"./Ens/effect": {
-			"types": "./types/primitives/Ens/effect.d.ts",
-			"import": "./dist/primitives/Ens/effect.js",
-			"require": "./dist/primitives/Ens/effect.cjs"
-		},
-		"./Transaction/effect": {
-			"types": "./types/primitives/Transaction/effect.d.ts",
-			"import": "./dist/primitives/Transaction/effect.js",
-			"require": "./dist/primitives/Transaction/effect.cjs"
-		},
-		"./EventLog/effect": {
-			"types": "./types/primitives/EventLog/effect.d.ts",
-			"import": "./dist/primitives/EventLog/effect.js",
-			"require": "./dist/primitives/EventLog/effect.cjs"
-		},
-		"./AccessList/effect": {
-			"types": "./types/primitives/AccessList/effect.d.ts",
-			"import": "./dist/primitives/AccessList/effect.js",
-			"require": "./dist/primitives/AccessList/effect.cjs"
-		},
-		"./Transaction/Authorization/effect": {
-			"types": "./types/primitives/Transaction/Authorization/effect.d.ts",
-			"import": "./dist/primitives/Transaction/Authorization/effect.js",
-			"require": "./dist/primitives/Transaction/Authorization/effect.cjs"
-		},
 		"./Bip39": {
 			"types": "./types/crypto/Bip39/index.d.ts",
 			"import": "./dist/crypto/Bip39/index.js",
@@ -372,21 +317,6 @@
 			"types": "./types/evm/precompiles/index.d.ts",
 			"import": "./dist/evm/precompiles/index.js",
 			"require": "./dist/evm/precompiles/index.cjs"
-		},
-		"./Rlp/effect": {
-			"types": "./types/primitives/Rlp/effect.d.ts",
-			"import": "./dist/primitives/Rlp/effect.js",
-			"require": "./dist/primitives/Rlp/effect.cjs"
-		},
-		"./Blob/effect": {
-			"types": "./types/primitives/Blob/effect.d.ts",
-			"import": "./dist/primitives/Blob/effect.js",
-			"require": "./dist/primitives/Blob/effect.cjs"
-		},
-		"./State/effect": {
-			"types": "./types/primitives/State/effect.d.ts",
-			"import": "./dist/primitives/State/effect.js",
-			"require": "./dist/primitives/State/effect.cjs"
 		},
 		"./block": {
 			"types": "./types/block/index.d.ts",
@@ -542,39 +472,6 @@
 			"Uint": [
 				"./types/primitives/Uint/index.d.ts"
 			],
-			"Hash/effect": [
-				"./types/primitives/Hash/effect.d.ts"
-			],
-			"Hex/effect": [
-				"./types/primitives/Hex/effect.d.ts"
-			],
-			"Uint/effect": [
-				"./types/primitives/Uint/effect.d.ts"
-			],
-			"Signature/effect": [
-				"./types/primitives/Signature/effect.d.ts"
-			],
-			"Bytecode/effect": [
-				"./types/primitives/Bytecode/effect.d.ts"
-			],
-			"Base64/effect": [
-				"./types/primitives/Base64/effect.d.ts"
-			],
-			"Ens/effect": [
-				"./types/primitives/Ens/effect.d.ts"
-			],
-			"Transaction/effect": [
-				"./types/primitives/Transaction/effect.d.ts"
-			],
-			"EventLog/effect": [
-				"./types/primitives/EventLog/effect.d.ts"
-			],
-			"AccessList/effect": [
-				"./types/primitives/AccessList/effect.d.ts"
-			],
-			"Transaction/Authorization/effect": [
-				"./types/primitives/Transaction/Authorization/effect.d.ts"
-			],
 			"Bip39": [
 				"./types/crypto/Bip39/index.d.ts"
 			],
@@ -634,15 +531,6 @@
 			],
 			"precompiles": [
 				"./types/evm/precompiles/index.d.ts"
-			],
-			"Rlp/effect": [
-				"./types/primitives/Rlp/effect.d.ts"
-			],
-			"Blob/effect": [
-				"./types/primitives/Blob/effect.d.ts"
-			],
-			"State/effect": [
-				"./types/primitives/State/effect.d.ts"
 			]
 		}
 	},
