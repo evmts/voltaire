@@ -658,6 +658,9 @@
 		"node": ">=18"
 	},
 	"scripts": {
+		"changeset": "changeset",
+		"version-packages": "changeset version",
+		"release": "pnpm run build && npm publish --provenance --access public && pnpm --filter voltaire-effect publish --provenance --access public --no-git-checks",
 		"all": "pnpm install && pnpm build && pnpm lint && pnpm format && pnpm test:run",
 		"bench": "pnpm dlx tsx scripts/run-benchmarks.ts",
 		"bench:size": "size-limit",
@@ -706,6 +709,8 @@
 	"devDependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.1.76",
 		"@biomejs/biome": "^2.3.10",
+		"@changesets/changelog-github": "^0.5.2",
+		"@changesets/cli": "^2.29.8",
 		"@noble/curves": "^2.0.1",
 		"@noble/hashes": "^2.0.1",
 		"@noble/secp256k1": "^3.0.0",
