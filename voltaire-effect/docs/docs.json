@@ -57,6 +57,7 @@
             "icon": "book",
             "pages": [
               "guides/layers",
+              "guides/react-integration",
               "guides/hd-wallet",
               "guides/security",
               "guides/debugging",
