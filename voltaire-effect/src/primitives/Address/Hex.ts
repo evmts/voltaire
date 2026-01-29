@@ -11,6 +11,12 @@ import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 import { AddressTypeSchema } from "./AddressSchema.js";
 
+// Pre-computed example addresses for schema annotations
+const EXAMPLE_ADDRESSES: readonly [AddressType, AddressType] = [
+	Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"),
+	Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+] as const;
+
 /**
  * Schema for Address encoded as a hex string.
  *
@@ -58,10 +64,7 @@ export const Hex: S.Schema<AddressType, string> = S.transformOrFail(
 	title: "Ethereum Address",
 	description:
 		"A 20-byte Ethereum address as a hex string. Accepts checksummed, lowercase, or uppercase.",
-	examples: [
-		"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-		"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-	],
+	examples: EXAMPLE_ADDRESSES,
 	message: () =>
 		"Invalid Ethereum address: expected 40 hex characters with 0x prefix",
 });
