@@ -33,15 +33,18 @@ import { getBalance, getBlockNumber, getBlock, Provider, HttpTransport, withTime
 ## Decode → Use → Provide
 
 ```typescript
+import { Layer } from 'effect'
+
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const addr = yield* S.decode(Address.Hex)(input)     // decode
   return yield* getBalance(addr, 'latest')             // use free function
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
 
-await Effect.runPromise(program)
+await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 ```
 
 ## Schema Operations
@@ -84,19 +87,21 @@ const program = Effect.gen(function* () {
 ## Layer Composition
 
 ```typescript
-const MainLayer = Layer.mergeAll(
-  Provider,
-  HttpTransport('https://eth.llamarpc.com')
+// Provider layer
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
+// Full signer layer with crypto
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 const SignerLayer = Layer.mergeAll(
   Signer.Live,
-  LocalAccount(privateKey),
-  Provider,
-  HttpTransport('https://eth.llamarpc.com'),
-  Secp256k1Live,
-  KeccakLive
-)
+  CryptoLayer,
+  ProviderLayer
+).pipe(Layer.provideMerge(LocalAccount(privateKey)))
+
+// Provide once at the edge
+await Effect.runPromise(program.pipe(Effect.provide(SignerLayer)))
 ```
 
 ## Common Queries
@@ -138,20 +143,35 @@ yield* token.simulate.transfer(to, amount)
 yield* token.getEvents('Transfer', { fromBlock, toBlock })
 ```
 
-## Parallel Operations
+## Parallel & Collection Operations
+
+| Pattern | Use Case |
+|---------|----------|
+| `Effect.all({ a, b, c })` | Run named effects, destructure results (PREFERRED) |
+| `Effect.all([a, b, c])` | Homogeneous collection where index matters |
+| `Effect.forEach(items, fn)` | Transform collection with effects |
 
 ```typescript
 import { getBlockNumber, getBalance, getChainId } from 'voltaire-effect'
 
-// All at once
-yield* Effect.all([
-  getBlockNumber(),
-  getBalance(addr),
-  getChainId()
-])
+// Named effects - use object notation for self-documenting code
+const { blockNumber, balance, chainId } = yield* Effect.all({
+  blockNumber: getBlockNumber(),
+  balance: getBalance(addr),
+  chainId: getChainId()
+})
 
-// With concurrency limit
-yield* Effect.all(operations, { concurrency: 5 })
+// Transform collection - use Effect.forEach (NOT Effect.all with .map)
+yield* Effect.forEach(addresses, (addr) => getBalance(addr))
+
+// With concurrency
+yield* Effect.forEach(addresses, (addr) => getBalance(addr), { concurrency: 5 })
+
+// With index
+yield* Effect.forEach(items, (item, index) => processItem(item, index))
+
+// Discard results (side effects only)
+yield* Effect.forEach(items, (item) => logItem(item), { discard: true })
 ```
 
 ## Retry & Timeout
@@ -201,7 +221,8 @@ const caps = yield* engine.exchangeCapabilities(['engine_newPayloadV3'])
 ## Testing
 
 ```typescript
-import { TestTransport } from 'voltaire-effect'
+import { Layer } from 'effect'
+import { TestTransport, Provider } from 'voltaire-effect'
 
 // Mock transport layer for testing
 const mockTransport = TestTransport({
@@ -209,12 +230,10 @@ const mockTransport = TestTransport({
   eth_getBalance: () => '0xde0b6b3a7640000' // 1 ETH
 })
 
-await Effect.runPromise(
-  program.pipe(
-    Effect.provide(Provider),
-    Effect.provide(mockTransport)
-  )
-)
+// Compose test layer
+const TestLayer = Provider.pipe(Layer.provide(mockTransport))
+
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 ```
 
 ## Crypto Services

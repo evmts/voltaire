@@ -56,7 +56,9 @@
             "group": "Guides",
             "icon": "book",
             "pages": [
+              "guides/layers",
               "guides/hd-wallet",
+              "guides/security",
               "guides/debugging",
               "guides/migrating-from-viem",
               "guides/migrating-from-ethers"

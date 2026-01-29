@@ -59,14 +59,15 @@ Import only what you need for smaller bundles:
 ```typescript
 import { KeccakLive, KeccakService } from 'voltaire-effect/crypto/Keccak256'
 import { Secp256k1Live, Secp256k1Service } from 'voltaire-effect/crypto/Secp256k1'
+import { Effect, Layer } from 'effect'
+
+// Compose layers once
+const CryptoLayer = Layer.mergeAll(KeccakLive, Secp256k1Live)
 
 const program = Effect.gen(function* () {
   const keccak = yield* KeccakService
   const hash = yield* keccak.hash(data)
-}).pipe(
-  Effect.provide(KeccakLive),
-  Effect.provide(Secp256k1Live)
-)
+}).pipe(Effect.provide(CryptoLayer))
 ```
 
 ## Service Categories

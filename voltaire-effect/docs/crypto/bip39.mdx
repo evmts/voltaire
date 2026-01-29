@@ -98,10 +98,13 @@ Passphrases add plausible deniability: the same mnemonic with different passphra
 ## Complete Wallet Creation
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Bip39Service, Bip39Live, Secp256k1Service, Secp256k1Live, 
          KeccakService, KeccakLive } from 'voltaire-effect/crypto'
 import { HDWallet, Address } from 'voltaire-effect/native'
+
+// Compose layers once
+const WalletCryptoLayer = Layer.mergeAll(Bip39Live, Secp256k1Live, KeccakLive)
 
 const createWallet = Effect.gen(function* () {
   const bip39 = yield* Bip39Service
@@ -132,11 +135,7 @@ const createWallet = Effect.gen(function* () {
     mnemonic,
     address: Address.toHex(address)
   }
-}).pipe(
-  Effect.provide(Bip39Live),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(WalletCryptoLayer))
 ```
 
 ## Testing

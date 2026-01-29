@@ -13,11 +13,11 @@ const program = Effect.gen(function* () {
   const batch = yield* RpcBatchService
 
   // These are automatically batched into a single JSON-RPC call
-  const [blockNumber, balance1, balance2] = yield* Effect.all([
-    batch.request(new EthBlockNumber({})),
-    batch.request(new EthGetBalance({ address: '0x1234...', blockTag: 'latest' })),
-    batch.request(new EthGetBalance({ address: '0x5678...', blockTag: 'latest' })),
-  ], { concurrency: 'unbounded' })
+  const { blockNumber, balance1, balance2 } = yield* Effect.all({
+    blockNumber: batch.request(new EthBlockNumber({})),
+    balance1: batch.request(new EthGetBalance({ address: '0x1234...', blockTag: 'latest' })),
+    balance2: batch.request(new EthGetBalance({ address: '0x5678...', blockTag: 'latest' })),
+  }, { concurrency: 'unbounded' })
 
   return { blockNumber, balance1, balance2 }
 }).pipe(
@@ -114,10 +114,10 @@ const program = Effect.gen(function* () {
   const addr = '0x1234567890123456789012345678901234567890'
 
   // Same request twice - only ONE RPC call is made
-  const [balance1, balance2] = yield* Effect.all([
-    batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
-    batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
-  ], { concurrency: 'unbounded' })
+  const { balance1, balance2 } = yield* Effect.all({
+    balance1: batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
+    balance2: batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
+  }, { concurrency: 'unbounded' })
 
   // balance1 === balance2 (structurally equal, shared result)
 })
@@ -135,13 +135,13 @@ import { TransportError } from 'voltaire-effect'
 const program = Effect.gen(function* () {
   const batch = yield* RpcBatchService
 
-  const results = yield* Effect.all([
-    batch.request(new EthGetBalance({ address: validAddr, blockTag: 'latest' })),
-    batch.request(new EthCall({ to: invalidContract, data: '0x...', blockTag: 'latest' })),
-  ], { concurrency: 'unbounded', mode: 'either' })
+  const { balance, call } = yield* Effect.all({
+    balance: batch.request(new EthGetBalance({ address: validAddr, blockTag: 'latest' })),
+    call: batch.request(new EthCall({ to: invalidContract, data: '0x...', blockTag: 'latest' })),
+  }, { concurrency: 'unbounded', mode: 'either' })
 
-  // results[0] might succeed while results[1] fails
-  for (const result of results) {
+  // balance might succeed while call fails
+  for (const result of [balance, call]) {
     if (result._tag === 'Right') {
       console.log('Success:', result.right)
     } else {
@@ -248,10 +248,10 @@ const [blockNumber, balance] = responses.map(r => r.result)
 
 ```typescript
 // Effect: declare requests, batching/deduplication is automatic
-const [blockNumber, balance] = yield* Effect.all([
-  batch.request(new EthBlockNumber({})),
-  batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
-], { concurrency: 'unbounded' })
+const { blockNumber, balance } = yield* Effect.all({
+  blockNumber: batch.request(new EthBlockNumber({})),
+  balance: batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
+}, { concurrency: 'unbounded' })
 ```
 
 **Benefits of Effect.request:**

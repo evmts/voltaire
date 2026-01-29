@@ -21,11 +21,11 @@ const erc20Abi = [
 
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
-  return yield* Effect.all([
-    token.read.symbol(),
-    token.read.decimals(),
-    token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
-  ])
+  return yield* Effect.all({
+    symbol: token.read.symbol(),
+    decimals: token.read.decimals(),
+    balance: token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+  })
 }).pipe(
   Effect.provide(Provider),
   Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
@@ -100,7 +100,7 @@ import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
 
-  const [symbol, decimals] = yield* Effect.all([token.read.symbol(), token.read.decimals()])
+  const { symbol, decimals } = yield* Effect.all({ symbol: token.read.symbol(), decimals: token.read.decimals() })
   const balanceBefore = yield* token.read.balanceOf('0x70997970C51812dc3A010C7d01b50e0d17dc79C8')
   const txHash = yield* token.write.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
   yield* waitForTransactionReceipt(txHash, { confirmations: 1 })

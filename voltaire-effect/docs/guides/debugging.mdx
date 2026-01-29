@@ -118,11 +118,11 @@ const fetchBalance = (address: string) =>
   }).pipe(Effect.withSpan('fetchBalance', { attributes: { address } }))
 
 const program = Effect.gen(function* () {
-  const balances = yield* Effect.all([
-    fetchBalance(addr1),
-    fetchBalance(addr2)
-  ])
-  return balances
+  const { balance1, balance2 } = yield* Effect.all({
+    balance1: fetchBalance(addr1),
+    balance2: fetchBalance(addr2)
+  })
+  return { balance1, balance2 }
 }).pipe(Effect.withSpan('program'))
 ```
 

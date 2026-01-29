@@ -285,10 +285,10 @@ const multiEventAbi = [
 const program = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, multiEventAbi)
   
-  const [transfers, approvals] = yield* Effect.all([
-    usdc.getEvents('Transfer', { fromBlock: 18000000n, toBlock: 18000100n }),
-    usdc.getEvents('Approval', { fromBlock: 18000000n, toBlock: 18000100n })
-  ])
+  const { transfers, approvals } = yield* Effect.all({
+    transfers: usdc.getEvents('Transfer', { fromBlock: 18000000n, toBlock: 18000100n }),
+    approvals: usdc.getEvents('Approval', { fromBlock: 18000000n, toBlock: 18000100n })
+  })
   
   yield* Effect.log(`Found ${transfers.length} transfers and ${approvals.length} approvals`)
   

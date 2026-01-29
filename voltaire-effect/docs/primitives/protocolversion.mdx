@@ -17,7 +17,7 @@ Effect.runSync(program)
 
 // Version negotiation
 const negotiate = (versions: string[]) =>
-  Effect.all(versions.map(v => ProtocolVersion.from(v)))
+  Effect.forEach(versions, (v) => ProtocolVersion.from(v))
 ```
 
 ## Error Handling

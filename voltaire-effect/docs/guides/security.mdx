@@ -1,0 +1,149 @@
+---
+title: Security Best Practices
+description: Protecting sensitive data with Effect's Redacted type and secure patterns
+---
+
+## Why Redacted Types Matter
+
+Private keys, mnemonics, and API keys can leak through:
+- Console logging during debugging
+- Error stack traces
+- JSON serialization in API responses
+- Unintentional exposure in logs
+
+Effect's `Redacted<T>` type prevents accidental exposure by showing `<redacted>` instead of the actual value.
+
+## Primitives That Should Use Redacted
+
+| Primitive | Redacted Schema | Risk if Exposed |
+|-----------|-----------------|-----------------|
+| Private Keys | `PrivateKey.RedactedHex` | Full account control |
+| Mnemonics | Manual `Redacted.make()` | All derived wallets compromised |
+| API Keys | Manual `Redacted.make()` | Rate limits, billing, access |
+| Encryption Keys | Manual `Redacted.make()` | Data decryption |
+
+## Safe Logging Example
+
+```typescript
+import * as PrivateKey from 'voltaire-effect/primitives/PrivateKey'
+import { Redacted } from 'effect'
+import * as S from 'effect/Schema'
+
+const hexKey = '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+
+// ❌ UNSAFE - raw value exposed in logs
+const unsafePk = S.decodeSync(PrivateKey.Hex)(hexKey)
+console.log(unsafePk) // Uint8Array(32) [1, 35, 69, ...]
+console.log({ key: unsafePk }) // { key: Uint8Array(32) [...] }
+
+// ✅ SAFE - value is redacted
+const safePk = S.decodeSync(PrivateKey.RedactedHex)(hexKey)
+console.log(safePk)           // Redacted(<redacted>)
+console.log(String(safePk))   // <redacted>
+console.log({ key: safePk })  // { key: Redacted(<redacted>) }
+```
+
+## Unwrapping When Needed
+
+Use `Redacted.value()` to explicitly access the underlying value for cryptographic operations:
+
+```typescript
+import { Redacted } from 'effect'
+import * as Secp256k1 from 'voltaire-effect/crypto/Secp256k1'
+
+const redactedPk = S.decodeSync(PrivateKey.RedactedHex)(hexString)
+
+// Explicit unwrap - only when you need the actual value
+const rawKey = Redacted.value(redactedPk)
+const publicKey = Secp256k1.derivePublicKey(rawKey)
+const signature = Secp256k1.sign(messageHash, rawKey)
+```
+
+## Creating Redacted Values Manually
+
+For data without built-in Redacted schemas:
+
+```typescript
+import { Redacted } from 'effect'
+
+// Wrap sensitive data
+const apiKey = Redacted.make('sk-secret-api-key-12345')
+const mnemonic = Redacted.make('abandon abandon abandon ... about')
+
+// Safe to log
+console.log(apiKey)  // Redacted(<redacted>)
+
+// Unwrap when needed
+const raw = Redacted.value(apiKey)
+fetch(url, { headers: { 'Authorization': `Bearer ${raw}` } })
+```
+
+## Round-Trip Encoding
+
+Redacted values encode back to their original form:
+
+```typescript
+const redactedPk = S.decodeSync(PrivateKey.RedactedHex)(hexString)
+
+// Encode extracts the value for serialization
+const encoded = S.encodeSync(PrivateKey.RedactedHex)(redactedPk)
+// "0x0123456789abcdef..."
+
+// Useful for storing encrypted or transmitting securely
+```
+
+## Error Handling
+
+Parse errors don't expose attempted values:
+
+```typescript
+import { Effect } from 'effect'
+
+const result = await Effect.runPromiseExit(
+  S.decodeUnknown(PrivateKey.RedactedHex)('0xinvalid')
+)
+// Error: "Invalid private key format"
+// NOT: "Invalid hex: 0xinvalid..."
+```
+
+## Environment Variable Pattern
+
+```typescript
+import { Redacted, Config, Effect } from 'effect'
+
+// Config automatically redacts sensitive values
+const program = Effect.gen(function* () {
+  // Use Config.redacted for sensitive env vars
+  const apiKey = yield* Config.redacted('API_KEY')
+  
+  // Safe to log config object
+  console.log({ apiKey }) // { apiKey: Redacted(<redacted>) }
+  
+  // Unwrap for actual use
+  const raw = Redacted.value(apiKey)
+  return yield* fetchWithKey(raw)
+})
+```
+
+## Testing with Redacted Values
+
+```typescript
+import { expect, test } from 'vitest'
+import { Redacted } from 'effect'
+
+test('signing works with redacted key', () => {
+  const testKey = '0x' + '01'.repeat(32)
+  const redactedPk = S.decodeSync(PrivateKey.RedactedHex)(testKey)
+  
+  // Unwrap for crypto operations
+  const signature = sign(message, Redacted.value(redactedPk))
+  
+  expect(signature).toBeDefined()
+})
+```
+
+## See Also
+
+- [PrivateKey](/primitives/privatekey) - Redacted schemas for private keys
+- [Effect Redacted](https://effect.website/docs/data-types/redacted/) - Effect's documentation
+- [HD Wallet Guide](/guides/hd-wallet) - Deriving keys from mnemonics

@@ -1,6 +1,11 @@
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { multicall, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers once
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
@@ -18,8 +23,7 @@ const program = Effect.gen(function* () {
     allowFailure: false
   })
   return results as bigint[]
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
+
+await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 ```

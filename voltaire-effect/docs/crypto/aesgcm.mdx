@@ -50,10 +50,10 @@ const encryptPrivateKey = (privateKey: Uint8Array, password: string) =>
     encrypted.set(ciphertext, nonce.length)
     
     return encrypted
-  }).pipe(
-    Effect.provide(AesGcmLive),
-    Effect.provide(Keccak256.KeccakLive)
-  )
+  })
+
+const EncryptionLayer = Layer.mergeAll(AesGcmLive, Keccak256.KeccakLive)
+// Usage: encryptPrivateKey(pk, pwd).pipe(Effect.provide(EncryptionLayer))
 ```
 
 ## Additional Authenticated Data

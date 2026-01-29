@@ -9,6 +9,9 @@ Secp256k1 is the elliptic curve used for all Ethereum signatures. Sign transacti
 import { Secp256k1Service, Secp256k1Live, KeccakService, KeccakLive } from 'voltaire-effect/crypto'
 import { Effect, Layer } from 'effect'
 
+// Compose layers once
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+
 const program = Effect.gen(function* () {
   const secp = yield* Secp256k1Service
   const keccak = yield* KeccakService
@@ -19,10 +22,7 @@ const program = Effect.gen(function* () {
   const isValid = yield* secp.verify(signature, messageHash, publicKey)
 
   return { signature, publicKey, isValid }
-}).pipe(
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(CryptoLayer))
 ```
 
 ## Sign Message Hash
@@ -97,7 +97,9 @@ const getPublicKey = (privateKey: Uint8Array) =>
 
 ```typescript
 import { Secp256k1Service, Secp256k1Live, KeccakService, KeccakLive } from 'voltaire-effect/crypto'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
+
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 
 const signEthereumMessage = (message: string, privateKey: Uint8Array) =>
   Effect.gen(function* () {
@@ -110,16 +112,17 @@ const signEthereumMessage = (message: string, privateKey: Uint8Array) =>
     const hash = yield* keccak.hash(prefixed)
 
     return yield* secp.sign(hash, privateKey)
-  }).pipe(
-    Effect.provide(Secp256k1Live),
-    Effect.provide(KeccakLive)
-  )
+  }).pipe(Effect.provide(CryptoLayer))
 ```
 
 ## Derive Address From Private Key
 
 ```typescript
 import { Address } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { Secp256k1Service, Secp256k1Live, KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 
 const privateKeyToAddress = (privateKey: Uint8Array) =>
   Effect.gen(function* () {
@@ -129,10 +132,7 @@ const privateKeyToAddress = (privateKey: Uint8Array) =>
     const publicKey = yield* secp.getPublicKey(privateKey)
     const hash = yield* keccak.hash(publicKey.slice(1)) // Remove 0x04 prefix
     return Address.fromBytes(hash.slice(-20))
-  }).pipe(
-    Effect.provide(Secp256k1Live),
-    Effect.provide(KeccakLive)
-  )
+  }).pipe(Effect.provide(CryptoLayer))
 ```
 
 ## Error Handling

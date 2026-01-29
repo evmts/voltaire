@@ -38,17 +38,19 @@ Runtime support:
 Fetch the latest block number:
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers once
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   return yield* getBlockNumber()
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
 
-const blockNumber = await Effect.runPromise(program)
+const blockNumber = await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 console.log(`Block: ${blockNumber}`)
 ```
 
@@ -112,8 +114,13 @@ const checksummed = await Effect.runPromise(
 ## Read Contract
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose provider layer once
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const erc20 = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
@@ -123,12 +130,9 @@ const erc20 = [
 const getBalance = Effect.gen(function* () {
   const usdc = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20)
   return yield* usdc.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
 
-const balance = await Effect.runPromise(getBalance)
+const balance = await Effect.runPromise(getBalance.pipe(Effect.provide(ProviderLayer)))
 ```
 
 ## Timeout & Retry

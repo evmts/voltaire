@@ -53,12 +53,10 @@ const secureMessaging = Effect.gen(function* () {
   const text = new TextDecoder().decode(decrypted)
   
   return { text, alicePublicKey: alice.publicKey, bobPublicKey: bob.publicKey }
-}).pipe(
-  Effect.provide(X25519Live),
-  Effect.provide(AesGcmLive)
-)
+})
 
-const result = await Effect.runPromise(secureMessaging)
+const CryptoLayer = Layer.mergeAll(X25519Live, AesGcmLive)
+const result = await Effect.runPromise(secureMessaging.pipe(Effect.provide(CryptoLayer)))
 console.log('Decrypted message:', result.text) // "Hello Bob!"
 ```
 

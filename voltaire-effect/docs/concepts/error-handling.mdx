@@ -181,10 +181,86 @@ voltaire-effect defines these error types:
 
 Provider methods expose method-specific error unions (e.g. `GetBalanceError`, `GetBlockError`) that combine `TransportError` with relevant provider errors.
 
+## Either for Partial Failures
+
+Use `Either` when operations can partially succeed (e.g., multicall batches):
+
+```typescript
+import { Effect, Either, Array } from 'effect'
+import { aggregate3 } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const rawResults = yield* aggregate3(calls)
+  
+  // Transform to Either for ergonomic handling
+  const results = rawResults.map((r, i) =>
+    r.success
+      ? Either.right({ index: i, data: r.returnData })
+      : Either.left({ index: i, message: 'Call failed' })
+  )
+  
+  // Exhaustive pattern matching
+  const processed = results.map(r =>
+    Either.match(r, {
+      onLeft: (err) => ({ balance: null, error: err.message }),
+      onRight: (ok) => ({ balance: BigInt(ok.data), error: null })
+    })
+  )
+  
+  // Type-safe filtering
+  const successes = results.filter(Either.isRight).map(r => r.right)
+  const failures = results.filter(Either.isLeft).map(r => r.left)
+  
+  // Or partition in one pass
+  const [fails, wins] = Array.partition(results, Either.isLeft)
+  
+  return { processed, successes, failures }
+})
+```
+
+### Either vs Effect
+
+| Use Case | Use `Either` | Use `Effect` |
+|----------|--------------|--------------|
+| Partial failures (some succeed, some fail) | ✅ | ❌ |
+| Batch results with mixed outcomes | ✅ | ❌ |
+| Operations that can retry/recover | ❌ | ✅ |
+| Async operations with dependencies | ❌ | ✅ |
+| Schema validation (sync) | ✅ `decodeEither` | ✅ `decode` |
+
+### Either API Quick Reference
+
+```typescript
+import { Either } from 'effect'
+
+// Create
+const success = Either.right(42)
+const failure = Either.left(new Error('oops'))
+
+// Check type
+Either.isRight(success) // true
+Either.isLeft(failure)  // true
+
+// Pattern match (exhaustive)
+Either.match(result, {
+  onLeft: (error) => `Error: ${error.message}`,
+  onRight: (value) => `Value: ${value}`
+})
+
+// Transform
+Either.map(success, n => n * 2)           // Either.right(84)
+Either.mapLeft(failure, e => e.message)   // Either.left('oops')
+
+// Extract with fallback
+Either.getOrElse(failure, () => 0)        // 0
+Either.getOrElse(success, () => 0)        // 42
+```
+
 ## See Also
 
 - [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — Official Effect docs
 - [Effect Either](https://effect.website/docs/data-types/either/) — Either type for error handling
+- [Multicall Example](/examples/multicall) — Either pattern for batch results
 - [Provider Service](/services/provider) — Provider error handling
 - [Signer Service](/services/signer) — Signer error handling
 - [Debugging Guide](/guides/debugging) — Inspect errors and trace execution

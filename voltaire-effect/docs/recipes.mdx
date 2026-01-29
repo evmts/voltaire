@@ -12,23 +12,28 @@ These recipes assume you have installed `voltaire-effect @tevm/voltaire effect`.
 ## Check If Address Is Contract
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getCode, Provider, HttpTransport } from 'voltaire-effect'
+
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const isContract = (address: string) => Effect.gen(function* () {
   const code = yield* getCode(address, 'latest')
   return code !== '0x' && code.length > 2
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Get Token Balance (ERC-20)
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
@@ -39,15 +44,12 @@ const erc20Abi = [
 
 const getTokenBalance = (token: string, user: string) => Effect.gen(function* () {
   const contract = yield* Contract(token, erc20Abi)
-  const [balance, decimals] = yield* Effect.all([
-    contract.read.balanceOf(user),
-    contract.read.decimals()
-  ])
+  const { balance, decimals } = yield* Effect.all({
+    balance: contract.read.balanceOf(user),
+    decimals: contract.read.decimals()
+  })
   return { raw: balance, formatted: Number(balance) / 10 ** decimals }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 <Warning>
@@ -57,9 +59,18 @@ Production note: avoid `Number(balance)` for arbitrary ERC-20 balances. Use bigi
 ## Approve and Transfer ERC-20
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Contract, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+
+const makeSignerLayer = (privateKey: Uint8Array) =>
+  Layer.mergeAll(Signer.Live, CryptoLayer, ProviderLayer).pipe(
+    Layer.provideMerge(LocalAccount(privateKey))
+  )
 
 const approveAndTransfer = (
   token: string, 
@@ -81,40 +92,38 @@ const approveAndTransfer = (
   const transferHash = yield* contract.write.transfer(recipient, amount)
   
   return { approveHash, transferHash }
-}).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com')),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(makeSignerLayer(privateKey)))
 ```
 
 ## Wait For Transaction With Timeout
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { waitForTransactionReceipt, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const waitForTx = (txHash: string, confirmations = 1, timeout = "120 seconds") =>
-  Effect.gen(function* () {
-    return yield* waitForTransactionReceipt(txHash, { confirmations })
-  }).pipe(
+  waitForTransactionReceipt(txHash, { confirmations }).pipe(
     withTimeout(timeout),
     Effect.catchTag('TimeoutException', () =>
       Effect.fail(new Error(`Transaction ${txHash} not confirmed`))
     ),
-    Effect.provide(Provider),
-    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+    Effect.provide(ProviderLayer)
   )
 ```
 
 ## Batch Multiple Balance Checks
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { multicall, Provider, HttpTransport } from 'voltaire-effect'
+
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
@@ -132,18 +141,17 @@ const getBalances = (token: string, users: string[]) => Effect.gen(function* () 
     allowFailure: false
   })
   return results as bigint[]
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Sign and Verify Message
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Hex, Address } from '@tevm/voltaire'
 import { Secp256k1Service, KeccakService, Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 
 const signAndVerify = (message: string, privateKey: Uint8Array) => Effect.gen(function* () {
   const keccak = yield* KeccakService
@@ -164,18 +172,17 @@ const signAndVerify = (message: string, privateKey: Uint8Array) => Effect.gen(fu
   const isValid = yield* secp.verify(signature, messageHash, publicKey)
 
   return { signature, publicKey, isValid }
-}).pipe(
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(CryptoLayer))
 ```
 
 ## Derive Address From Private Key
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Address } from '@tevm/voltaire'
 import { Secp256k1Service, KeccakService, Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 
 const getAddress = (privateKey: Uint8Array) => Effect.gen(function* () {
   const secp = yield* Secp256k1Service
@@ -186,10 +193,7 @@ const getAddress = (privateKey: Uint8Array) => Effect.gen(function* () {
   const addressBytes = hash.slice(-20)
   
   return Address.fromBytes(addressBytes)
-}).pipe(
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(CryptoLayer))
 ```
 
 ## Parse and Decode Transaction
@@ -216,7 +220,7 @@ const decodeRawTx = (rawTx: string) => Effect.gen(function* () {
 ## Fallback RPC Provider
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
 
 const providers = [
@@ -225,20 +229,16 @@ const providers = [
   'https://rpc.ankr.com/eth'
 ]
 
+const makeProviderLayer = (url: string) => Provider.pipe(
+  Layer.provide(HttpTransport(url))
+)
+
 const withFallback = <A>(operation: Effect.Effect<A, any, any>) =>
   providers.reduce(
     (acc, url, i) => i === 0
-      ? operation.pipe(
-          Effect.provide(Provider),
-          Effect.provide(HttpTransport(url))
-        )
+      ? operation.pipe(Effect.provide(makeProviderLayer(url)))
       : acc.pipe(
-          Effect.orElse(() =>
-            operation.pipe(
-              Effect.provide(Provider),
-              Effect.provide(HttpTransport(url))
-            )
-          )
+          Effect.orElse(() => operation.pipe(Effect.provide(makeProviderLayer(url))))
         ),
     Effect.fail(new Error('All providers failed')) as Effect.Effect<A, any, any>
   )
@@ -274,8 +274,10 @@ getBalance(addr).pipe(withExponentialRetry)
 ## Stream Recent Blocks
 
 ```typescript
-import { Effect, Stream } from 'effect'
+import { Effect, Layer, Stream } from 'effect'
 import { makeBlockStream, HttpTransport } from 'voltaire-effect/services'
+
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
 
 const streamBlocks = (count: number) => Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()
@@ -287,25 +289,24 @@ const streamBlocks = (count: number) => Effect.gen(function* () {
   )
   
   return blocks.toArray()
-}).pipe(
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(TransportLayer))
 ```
 
 ## Estimate Gas With Buffer
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { estimateGas, Provider, HttpTransport } from 'voltaire-effect'
+
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const estimateWithBuffer = (tx: { to: string; data: string; value?: bigint }, buffer = 1.2) =>
   Effect.gen(function* () {
     const estimate = yield* estimateGas(tx)
     return BigInt(Math.ceil(Number(estimate) * buffer))
-  }).pipe(
-    Effect.provide(Provider),
-    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-  )
+  }).pipe(Effect.provide(ProviderLayer))
 ```
 
 <Note>
@@ -326,8 +327,12 @@ Production note: `Number(estimate)` is fine for small gas limits; use bigint-saf
 ## Check NFT Ownership
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const erc721Abi = [
   { type: 'function', name: 'ownerOf', inputs: [{ name: 'tokenId', type: 'uint256' }], 
@@ -340,7 +345,6 @@ const isOwner = (nft: string, tokenId: bigint, address: string) => Effect.gen(fu
   return owner.toLowerCase() === address.toLowerCase()
 }).pipe(
   Effect.catchTag('ContractCallError', () => Effect.succeed(false)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(ProviderLayer)
 )
 ```

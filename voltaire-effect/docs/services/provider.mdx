@@ -119,11 +119,11 @@ const transport = HttpTransport({
 // Requests made concurrently are automatically batched
 const program = Effect.gen(function* () {
   const t = yield* TransportService
-  const [blockNumber, chainId, gasPrice] = yield* Effect.all([
-    t.request<string>('eth_blockNumber'),
-    t.request<string>('eth_chainId'),
-    t.request<string>('eth_gasPrice')
-  ])
+  const { blockNumber, chainId, gasPrice } = yield* Effect.all({
+    blockNumber: t.request<string>('eth_blockNumber'),
+    chainId: t.request<string>('eth_chainId'),
+    gasPrice: t.request<string>('eth_gasPrice')
+  })
   return { blockNumber, chainId, gasPrice }
 }).pipe(Effect.provide(transport))
 ```

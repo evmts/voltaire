@@ -168,11 +168,11 @@ import { Transaction } from 'voltaire-effect'
 import { Effect, pipe } from 'effect'
 
 const validated = pipe(
-  Effect.all([
-    Transaction.assertSigned(tx),
-    Transaction.validateGasLimit(tx),
-    Transaction.validateNonce(tx),
-  ]),
+  Effect.all({
+    signed: Transaction.assertSigned(tx),
+    gasLimit: Transaction.validateGasLimit(tx),
+    nonce: Transaction.validateNonce(tx),
+  }),
   Effect.map(() => tx)
 )
 ```

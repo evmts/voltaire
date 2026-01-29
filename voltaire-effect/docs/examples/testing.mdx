@@ -40,11 +40,11 @@ const mockTransport = TestTransport({
 })
 
 const program = Effect.gen(function* () {
-  return yield* Effect.all([
-    getBlockNumber(),
-    getBalance('0xRich...', 'latest'),
-    getBlock({ blockTag: 'latest' })
-  ])
+  return yield* Effect.all({
+    blockNumber: getBlockNumber(),
+    balance: getBalance('0xRich...', 'latest'),
+    block: getBlock({ blockTag: 'latest' })
+  })
 }).pipe(withoutCache, Effect.provide(Provider), Effect.provide(mockTransport))
 ```
 

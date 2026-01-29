@@ -1,13 +1,15 @@
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers once
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   return yield* getBlockNumber()
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
 
-await Effect.runPromise(program)
+await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 ```
