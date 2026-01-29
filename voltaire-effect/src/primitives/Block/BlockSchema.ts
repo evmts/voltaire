@@ -198,4 +198,4 @@ export const BlockSchema: Schema.Schema<BlockType> = Schema.declare(
 
 		return true;
 	},
-);
+).annotations({ identifier: "BlockSchema" });
