@@ -86,27 +86,7 @@ export const Bytes: S.Schema<PrivateKeyType, Uint8Array> = S.transformOrFail(
 export const RedactedBytes: S.Schema<
 	Redacted.Redacted<PrivateKeyType>,
 	Uint8Array
-> = S.transformOrFail(S.Uint8ArrayFromSelf, S.Redacted(PrivateKeyTypeSchema), {
-	strict: true,
-	decode: (bytes, _options, ast) => {
-		try {
-			return ParseResult.succeed(Redacted.make(PrivateKey.fromBytes(bytes)));
-		} catch (e) {
-			return ParseResult.fail(
-				new ParseResult.Type(ast, bytes, "Invalid private key format"),
-			);
-		}
-	},
-	encode: (redacted, _options, ast) => {
-		try {
-			return ParseResult.succeed(new Uint8Array(Redacted.value(redacted)));
-		} catch (e) {
-			return ParseResult.fail(
-				new ParseResult.Type(ast, redacted, (e as Error).message),
-			);
-		}
-	},
-}).annotations({
+> = Bytes.pipe(S.Redacted).annotations({
 	identifier: "PrivateKey.RedactedBytes",
 	title: "Private Key (Redacted)",
 	description:

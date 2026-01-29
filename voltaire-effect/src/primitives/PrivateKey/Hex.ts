@@ -33,6 +33,11 @@ import { Redacted } from "effect";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
 
+// Pre-computed example private key for schema annotations (test vector only)
+const EXAMPLE_PRIVATE_KEY: PrivateKeyType = PrivateKey.from(
+	"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+);
+
 const PrivateKeyTypeSchema = S.declare<PrivateKeyType>(
 	(u): u is PrivateKeyType => u instanceof Uint8Array && u.length === 32,
 	{ identifier: "PrivateKey" },
@@ -65,8 +70,9 @@ export const Hex: S.Schema<PrivateKeyType, string> = S.transformOrFail(
 ).annotations({
 	identifier: "PrivateKey.Hex",
 	title: "Private Key",
-	description: "A 32-byte secp256k1 private key as a hex string. NEVER log or expose this value.",
-	examples: ["0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
+	description:
+		"A 32-byte secp256k1 private key as a hex string. NEVER log or expose this value.",
+	examples: [EXAMPLE_PRIVATE_KEY],
 	message: () => "Invalid private key: expected 64 hex characters (32 bytes)",
 });
 
@@ -96,30 +102,11 @@ export const Hex: S.Schema<PrivateKeyType, string> = S.transformOrFail(
 export const RedactedHex: S.Schema<
 	Redacted.Redacted<PrivateKeyType>,
 	string
-> = S.transformOrFail(S.String, S.Redacted(PrivateKeyTypeSchema), {
-	strict: true,
-	decode: (s, _options, ast) => {
-		try {
-			return ParseResult.succeed(Redacted.make(PrivateKey.from(s)));
-		} catch (e) {
-			return ParseResult.fail(
-				new ParseResult.Type(ast, s, "Invalid private key format"),
-			);
-		}
-	},
-	encode: (redacted, _options, ast) => {
-		try {
-			return ParseResult.succeed(_toHex.call(Redacted.value(redacted)));
-		} catch (e) {
-			return ParseResult.fail(
-				new ParseResult.Type(ast, redacted, (e as Error).message),
-			);
-		}
-	},
-}).annotations({
+> = Hex.pipe(S.Redacted).annotations({
 	identifier: "PrivateKey.RedactedHex",
 	title: "Private Key (Redacted)",
-	description: "A 32-byte secp256k1 private key wrapped in Redacted to prevent accidental logging. NEVER log or expose the unwrapped value.",
-	examples: ["0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
+	description:
+		"A 32-byte secp256k1 private key wrapped in Redacted to prevent accidental logging. NEVER log or expose the unwrapped value.",
+	examples: [Redacted.make(EXAMPLE_PRIVATE_KEY)],
 	message: () => "Invalid private key: expected 64 hex characters (32 bytes)",
 });
