@@ -25,7 +25,10 @@ const entryPointAddress = createAddress(0xee);
 
 // Simple call data (transfer)
 const simpleCallData = new Uint8Array([
-	0xa9, 0x05, 0x9c, 0xbb, // transfer(address,uint256) selector
+	0xa9,
+	0x05,
+	0x9c,
+	0xbb, // transfer(address,uint256) selector
 	...new Uint8Array(32).fill(0x01), // to address
 	...new Uint8Array(32).fill(0x00), // amount
 ]);

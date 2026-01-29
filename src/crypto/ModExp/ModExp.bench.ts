@@ -22,8 +22,10 @@ const largeMod = 2n ** 256n - 189n; // Prime-like
 
 // EIP-198 test vectors
 const eip198Base = 0x03n;
-const eip198Exp = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2en;
-const eip198Mod = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn;
+const eip198Exp =
+	0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2en;
+const eip198Mod =
+	0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn;
 
 // Byte array test data
 const baseBytes = new Uint8Array([0x02]);

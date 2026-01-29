@@ -209,12 +209,7 @@ await run();
 // ============================================================================
 
 // Simulate processing multiple trace results
-const results = [
-	simpleResult,
-	structLogResult,
-	callTraceResult,
-	failedResult,
-];
+const results = [simpleResult, structLogResult, callTraceResult, failedResult];
 
 bench("getStructLogs - 4 results - voltaire", () => {
 	for (const result of results) {

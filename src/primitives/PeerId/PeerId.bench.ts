@@ -7,9 +7,12 @@ import { bench, run } from "mitata";
 import * as PeerId from "./index.js";
 
 // Test data - realistic enode URLs
-const enode1 = "enode://abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123de@192.168.1.1:30303";
-const enode2 = "enode://def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456ab@192.168.1.2:30303";
-const enodeSame = "enode://abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123de@192.168.1.1:30303";
+const enode1 =
+	"enode://abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123de@192.168.1.1:30303";
+const enode2 =
+	"enode://def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456ab@192.168.1.2:30303";
+const enodeSame =
+	"enode://abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123de@192.168.1.1:30303";
 
 // Pre-created peer IDs
 const peerId1 = PeerId.from(enode1);

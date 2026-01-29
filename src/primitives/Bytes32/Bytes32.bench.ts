@@ -21,7 +21,8 @@ for (let i = 0; i < 32; i++) {
 	testBytes[i] = i + 1;
 }
 
-const testBigInt = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+const testBigInt =
+	0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
 const testNumber = 123456789;
 
 // Pre-created Bytes32 values for operations

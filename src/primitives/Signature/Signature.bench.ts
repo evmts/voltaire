@@ -478,11 +478,14 @@ bench("roundtrip hex->sig->serialized - ethers", () => {
 
 await run();
 
-bench("secp256k1 full roundtrip (create -> normalize -> toDER) - voltaire", () => {
-	const sig = Signature.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
-	const normalized = Signature.normalize(sig);
-	Signature.toDER(normalized);
-});
+bench(
+	"secp256k1 full roundtrip (create -> normalize -> toDER) - voltaire",
+	() => {
+		const sig = Signature.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
+		const normalized = Signature.normalize(sig);
+		Signature.toDER(normalized);
+	},
+);
 
 bench("p256 full roundtrip (create -> normalize -> toDER) - voltaire", () => {
 	const sig = Signature.fromP256(p256_r, p256_s);

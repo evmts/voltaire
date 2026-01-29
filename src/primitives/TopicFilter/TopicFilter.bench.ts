@@ -46,12 +46,21 @@ const RANDOM_TOPIC = hexToHash(
 
 // Test log topics
 const transferLogTopics = [TRANSFER_TOPIC, FROM_TOPIC, TO_TOPIC] as HashType[];
-const swapLogTopics = [SWAP_TOPIC, FROM_TOPIC, TO_TOPIC, RANDOM_TOPIC] as HashType[];
+const swapLogTopics = [
+	SWAP_TOPIC,
+	FROM_TOPIC,
+	TO_TOPIC,
+	RANDOM_TOPIC,
+] as HashType[];
 
 // Pre-created filters
 const singleTopicFilter = TopicFilter.from([TRANSFER_TOPIC]);
 const wildcardFilter = TopicFilter.from([TRANSFER_TOPIC, null]);
-const fullMatchFilter = TopicFilter.from([TRANSFER_TOPIC, FROM_TOPIC, TO_TOPIC]);
+const fullMatchFilter = TopicFilter.from([
+	TRANSFER_TOPIC,
+	FROM_TOPIC,
+	TO_TOPIC,
+]);
 const orFilter = TopicFilter.from([[TRANSFER_TOPIC, APPROVAL_TOPIC]]);
 const complexFilter = TopicFilter.from([
 	[TRANSFER_TOPIC, SWAP_TOPIC],
@@ -82,11 +91,7 @@ bench("from - OR filter (2 options) - voltaire", () => {
 });
 
 bench("from - complex OR + wildcard - voltaire", () => {
-	TopicFilter.from([
-		[TRANSFER_TOPIC, SWAP_TOPIC],
-		FROM_TOPIC,
-		null,
-	]);
+	TopicFilter.from([[TRANSFER_TOPIC, SWAP_TOPIC], FROM_TOPIC, null]);
 });
 
 await run();

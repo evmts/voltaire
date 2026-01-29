@@ -21,8 +21,7 @@ const ALLOWANCE_SIG = "allowance(address,address)";
 
 // Complex function signatures
 const MULTICALL_SIG = "multicall(bytes[])";
-const SWAP_SIG =
-	"swap(uint256,uint256,address,bytes)";
+const SWAP_SIG = "swap(uint256,uint256,address,bytes)";
 const PERMIT_SIG =
 	"permit(address,address,uint256,uint256,uint8,bytes32,bytes32)";
 

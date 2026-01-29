@@ -9,7 +9,10 @@ import { computeViewTag } from "./computeViewTag.js";
 import { decompressPublicKey } from "./decompressPublicKey.js";
 import { generateMetaAddress } from "./generateMetaAddress.js";
 import { parseMetaAddress } from "./parseMetaAddress.js";
-import type { SpendingPublicKey, ViewingPublicKey } from "./StealthAddressType.js";
+import type {
+	SpendingPublicKey,
+	ViewingPublicKey,
+} from "./StealthAddressType.js";
 
 // Test data - pre-computed keys (deterministic for benchmarking)
 const uncompressedKey = new Uint8Array(64);
@@ -100,13 +103,16 @@ await run();
 // Full utility workflow: compress + generate + parse
 // ============================================================================
 
-bench("StealthAddress workflow - compress + generateMeta + parse - voltaire", () => {
-	const spending = compressPublicKey(uncompressedKey);
-	const meta = generateMetaAddress(
-		spending as SpendingPublicKey,
-		viewingPubKey as ViewingPublicKey,
-	);
-	parseMetaAddress(meta);
-});
+bench(
+	"StealthAddress workflow - compress + generateMeta + parse - voltaire",
+	() => {
+		const spending = compressPublicKey(uncompressedKey);
+		const meta = generateMetaAddress(
+			spending as SpendingPublicKey,
+			viewingPubKey as ViewingPublicKey,
+		);
+		parseMetaAddress(meta);
+	},
+);
 
 await run();

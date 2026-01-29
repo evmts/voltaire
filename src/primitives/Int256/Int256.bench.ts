@@ -21,8 +21,10 @@ const MEDIUM_NEG = Int256.from(-(1n << 128n));
 const SMALL_POS = Int256.from(100n);
 const SMALL_NEG = Int256.from(-100n);
 
-const HEX_POS = "0x0000000000000000000000000000000000000000000000000000000000000064";
-const HEX_NEG = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9c"; // -100 in two's complement
+const HEX_POS =
+	"0x0000000000000000000000000000000000000000000000000000000000000064";
+const HEX_NEG =
+	"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9c"; // -100 in two's complement
 
 // ============================================================================
 // Construction: from

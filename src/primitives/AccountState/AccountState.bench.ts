@@ -158,15 +158,18 @@ bench("AccountState.equals - EOA vs contract - voltaire", () => {
 	equals(eoaState, contractState);
 });
 
-bench("AccountState.equals - contracts with different storage - voltaire", () => {
-	const contract2 = from({
-		nonce: 1n,
-		balance: 500000000000000000n,
-		storageRoot: createHash(101),
-		codeHash: createHash(200),
-	});
-	equals(contractState, contract2);
-});
+bench(
+	"AccountState.equals - contracts with different storage - voltaire",
+	() => {
+		const contract2 = from({
+			nonce: 1n,
+			balance: 500000000000000000n,
+			storageRoot: createHash(101),
+			codeHash: createHash(200),
+		});
+		equals(contractState, contract2);
+	},
+);
 
 await run();
 
@@ -239,7 +242,8 @@ bench("AccountState.from - max nonce - voltaire", () => {
 bench("AccountState.from - max balance - voltaire", () => {
 	from({
 		nonce: 0n,
-		balance: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
+		balance:
+			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
 		storageRoot: EMPTY_TRIE_HASH_BYTES,
 		codeHash: EMPTY_CODE_HASH_BYTES,
 	});

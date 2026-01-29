@@ -39,7 +39,8 @@ const messageWithStatement: BrandedMessage = {
 
 const messageWithAllFields: BrandedMessage = {
 	...basicMessage,
-	statement: "Sign in to Example App with all the optional fields included for comprehensive testing",
+	statement:
+		"Sign in to Example App with all the optional fields included for comprehensive testing",
 	expirationTime: "2021-10-01T16:25:24.000Z",
 	notBefore: "2021-09-30T16:00:00.000Z",
 	requestId: "request-123",
@@ -226,11 +227,14 @@ bench("Siwe full cycle - format + parse + validate - basic - voltaire", () => {
 	Siwe.validate(parsed);
 });
 
-bench("Siwe full cycle - format + parse + validate - complex - voltaire", () => {
-	const formatted = Siwe.format(messageWithAllFields);
-	const parsed = Siwe.parse(formatted);
-	Siwe.validate(parsed);
-});
+bench(
+	"Siwe full cycle - format + parse + validate - complex - voltaire",
+	() => {
+		const formatted = Siwe.format(messageWithAllFields);
+		const parsed = Siwe.parse(formatted);
+		Siwe.validate(parsed);
+	},
+);
 
 await run();
 
@@ -263,11 +267,15 @@ await run();
 const oneResource = { ...basicMessage, resources: ["https://example.com/r1"] };
 const fiveResources = {
 	...basicMessage,
-	resources: Array(5).fill("").map((_, i) => `https://example.com/r${i}`),
+	resources: Array(5)
+		.fill("")
+		.map((_, i) => `https://example.com/r${i}`),
 };
 const tenResources = {
 	...basicMessage,
-	resources: Array(10).fill("").map((_, i) => `https://example.com/r${i}`),
+	resources: Array(10)
+		.fill("")
+		.map((_, i) => `https://example.com/r${i}`),
 };
 
 bench("Siwe.format - 1 resource - voltaire", () => {

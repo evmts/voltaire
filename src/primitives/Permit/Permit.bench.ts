@@ -89,13 +89,15 @@ const largeValuePermit: PermitType = {
 const maxApprovalPermit: PermitType = {
 	owner: ownerAddress,
 	spender: spenderAddress,
-	value: createUint256(
-		0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
-	),
+	value:
+		createUint256(
+			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
+		),
 	nonce: createUint256(0n),
-	deadline: createUint256(
-		0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
-	),
+	deadline:
+		createUint256(
+			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
+		),
 };
 
 // High nonce permit (active user)

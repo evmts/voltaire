@@ -126,17 +126,15 @@ await run();
 // ============================================================================
 
 bench("Domain.encodeType - minimal - voltaire", () => {
-	Domain.encodeType(
-		"EIP712Domain",
-		{ EIP712Domain: Domain.getEIP712DomainType(minimalDomainInstance) },
-	);
+	Domain.encodeType("EIP712Domain", {
+		EIP712Domain: Domain.getEIP712DomainType(minimalDomainInstance),
+	});
 });
 
 bench("Domain.encodeType - full - voltaire", () => {
-	Domain.encodeType(
-		"EIP712Domain",
-		{ EIP712Domain: Domain.getEIP712DomainType(fullDomainInstance) },
-	);
+	Domain.encodeType("EIP712Domain", {
+		EIP712Domain: Domain.getEIP712DomainType(fullDomainInstance),
+	});
 });
 
 await run();

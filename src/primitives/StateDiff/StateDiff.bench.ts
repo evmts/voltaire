@@ -67,7 +67,9 @@ const complexAccountDiff: AccountDiff = {
 const emptyDiff = new Map<AddressType, AccountDiff>();
 
 // Small state diff (1 account)
-const smallDiff = new Map<AddressType, AccountDiff>([[addr1, simpleAccountDiff]]);
+const smallDiff = new Map<AddressType, AccountDiff>([
+	[addr1, simpleAccountDiff],
+]);
 
 // Medium state diff (5 accounts)
 const mediumDiff = new Map<AddressType, AccountDiff>([

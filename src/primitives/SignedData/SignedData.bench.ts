@@ -10,16 +10,30 @@ import * as SignedData from "./index.js";
 
 // Test data - various message sizes
 const shortMessage = new TextEncoder().encode("Hello, World!");
-const mediumMessage = new TextEncoder().encode("This is a medium-length message for signing that contains more content and testing data.");
+const mediumMessage = new TextEncoder().encode(
+	"This is a medium-length message for signing that contains more content and testing data.",
+);
 const longMessage = new TextEncoder().encode("A".repeat(1000));
 
 // Pre-create Hash factory
 const Hash = SignedData.Hash({ keccak256 });
 
 // Pre-create signed data instances (EIP-191 personal message format: 0x19 0x45 <data>)
-const signedDataShort = SignedData.from(VERSION_PERSONAL_MESSAGE, new Uint8Array(0), shortMessage);
-const signedDataMedium = SignedData.from(VERSION_PERSONAL_MESSAGE, new Uint8Array(0), mediumMessage);
-const signedDataLong = SignedData.from(VERSION_PERSONAL_MESSAGE, new Uint8Array(0), longMessage);
+const signedDataShort = SignedData.from(
+	VERSION_PERSONAL_MESSAGE,
+	new Uint8Array(0),
+	shortMessage,
+);
+const signedDataMedium = SignedData.from(
+	VERSION_PERSONAL_MESSAGE,
+	new Uint8Array(0),
+	mediumMessage,
+);
+const signedDataLong = SignedData.from(
+	VERSION_PERSONAL_MESSAGE,
+	new Uint8Array(0),
+	longMessage,
+);
 
 // ============================================================================
 // from (constructor - personal message version)
@@ -62,12 +76,20 @@ await run();
 // ============================================================================
 
 bench("SignedData workflow - from + Hash - short - voltaire", () => {
-	const data = SignedData.from(VERSION_PERSONAL_MESSAGE, new Uint8Array(0), shortMessage);
+	const data = SignedData.from(
+		VERSION_PERSONAL_MESSAGE,
+		new Uint8Array(0),
+		shortMessage,
+	);
 	Hash(data);
 });
 
 bench("SignedData workflow - from + Hash - long - voltaire", () => {
-	const data = SignedData.from(VERSION_PERSONAL_MESSAGE, new Uint8Array(0), longMessage);
+	const data = SignedData.from(
+		VERSION_PERSONAL_MESSAGE,
+		new Uint8Array(0),
+		longMessage,
+	);
 	Hash(data);
 });
 

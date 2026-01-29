@@ -214,7 +214,9 @@ bench("full error data - ERC20InsufficientBalance", () => {
 
 bench("full error data - ERC721NonexistentToken", () => {
 	const selector = AbiError.getSelector(ERC721NonexistentToken);
-	const params = AbiError.encodeParams(ERC721NonexistentToken, [testTokenId] as [bigint]);
+	const params = AbiError.encodeParams(ERC721NonexistentToken, [
+		testTokenId,
+	] as [bigint]);
 	const result = new Uint8Array(4 + params.length);
 	result.set(selector, 0);
 	result.set(params, 4);

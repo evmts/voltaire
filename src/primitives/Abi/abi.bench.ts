@@ -231,9 +231,7 @@ bench("encodeParameters(string) - voltaire", () => {
 });
 
 bench("encodeParameters(string) - viem", () => {
-	encodeAbiParameters(stringParams, [
-		"Hello, World! This is a test string.",
-	]);
+	encodeAbiParameters(stringParams, ["Hello, World! This is a test string."]);
 });
 
 await run();
@@ -264,7 +262,11 @@ await run();
 
 const encodedUint256 = encodeAbiParameters(uint256Params, [amount]);
 const encodedAddress = encodeAbiParameters(addressParams, [recipient]);
-const encodedMixed = encodeAbiParameters(mixedParams, [amount, recipient, true]);
+const encodedMixed = encodeAbiParameters(mixedParams, [
+	amount,
+	recipient,
+	true,
+]);
 const encodedString = encodeAbiParameters(stringParams, ["Hello, World!"]);
 const encodedArray = encodeAbiParameters(arrayParams, [testArray]);
 

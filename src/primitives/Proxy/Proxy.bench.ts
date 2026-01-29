@@ -8,13 +8,16 @@ import * as Proxy from "./index.js";
 
 // Test data - implementation address
 const implementationAddress = new Uint8Array([
-	0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53, 0x29, 0x25,
-	0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75, 0x95, 0xf0, 0xbe, 0xb0,
+	0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53, 0x29, 0x25, 0xa3, 0xb8, 0x44,
+	0xbc, 0x9e, 0x75, 0x95, 0xf0, 0xbe, 0xb0,
 ]);
 
 // Pre-generate proxy bytecode for detection benchmarks
 const erc1167Bytecode = Proxy.generateErc1167(implementationAddress);
-const erc3448Bytecode = Proxy.generateErc3448(implementationAddress, new Uint8Array([1, 2, 3, 4]));
+const erc3448Bytecode = Proxy.generateErc3448(
+	implementationAddress,
+	new Uint8Array([1, 2, 3, 4]),
+);
 
 // Invalid bytecode for negative tests
 const invalidBytecode = new Uint8Array(45);

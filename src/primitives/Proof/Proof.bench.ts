@@ -186,9 +186,7 @@ await run();
 
 const proofBatch = Array.from({ length: 10 }, (_, i) => ({
 	value: createHash(i * 10),
-	proof: Array.from({ length: 5 + (i % 5) }, (_, j) =>
-		createHash(i * 100 + j),
-	),
+	proof: Array.from({ length: 5 + (i % 5) }, (_, j) => createHash(i * 100 + j)),
 })) as ProofType[];
 
 bench("Proof.verify x10 - voltaire", () => {

@@ -18,8 +18,7 @@ const APPROVAL_SIG = "Approval(address,address,uint256)";
 const APPROVAL_FOR_ALL_SIG = "ApprovalForAll(address,address,bool)";
 
 // Complex events with multiple indexed params
-const SWAP_SIG =
-	"Swap(address,uint256,uint256,uint256,uint256,address)";
+const SWAP_SIG = "Swap(address,uint256,uint256,uint256,uint256,address)";
 const DEPOSIT_SIG = "Deposit(address,uint256)";
 const WITHDRAWAL_SIG = "Withdrawal(address,uint256)";
 

@@ -33,15 +33,9 @@ function hexToHash(hex: string): HashType {
 }
 
 // Test addresses
-const USDC_ADDRESS = hexToAddress(
-	"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-);
-const UNISWAP_PAIR = hexToAddress(
-	"0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc",
-);
-const RANDOM_ADDR = hexToAddress(
-	"0x1111111111111111111111111111111111111111",
-);
+const USDC_ADDRESS = hexToAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+const UNISWAP_PAIR = hexToAddress("0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc");
+const RANDOM_ADDR = hexToAddress("0x1111111111111111111111111111111111111111");
 
 // Test topics (Transfer event)
 const TRANSFER_TOPIC = hexToHash(
