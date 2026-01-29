@@ -1,61 +1,12 @@
 /**
- * SIWE Benchmarks
- *
- * Measures performance of Sign-In with Ethereum operations
+ * Benchmark: SIWE (Sign-In with Ethereum) operations
+ * Compares voltaire SIWE against siwe package
  */
 
-import { Address } from "../../Address/index.js";
+import { bench, run } from "mitata";
+import { Address } from "../Address/index.js";
 import * as Siwe from "./index.js";
 import type { BrandedMessage } from "./SiweMessageType.js";
-
-// Benchmark runner
-interface BenchmarkResult {
-	name: string;
-	opsPerSec: number;
-	avgTimeMs: number;
-	iterations: number;
-}
-
-function benchmark(
-	name: string,
-	fn: () => void,
-	duration = 2000,
-): BenchmarkResult {
-	// Warmup
-	for (let i = 0; i < 100; i++) {
-		try {
-			fn();
-		} catch {
-			// Ignore errors during warmup
-		}
-	}
-
-	// Benchmark
-	const startTime = performance.now();
-	let iterations = 0;
-	let endTime = startTime;
-
-	while (endTime - startTime < duration) {
-		try {
-			fn();
-		} catch {
-			// Count iteration even if it throws
-		}
-		iterations++;
-		endTime = performance.now();
-	}
-
-	const totalTime = endTime - startTime;
-	const avgTimeMs = totalTime / iterations;
-	const opsPerSec = (iterations / totalTime) * 1000;
-
-	return {
-		name,
-		opsPerSec,
-		avgTimeMs,
-		iterations,
-	};
-}
 
 // ============================================================================
 // Test Data
@@ -69,6 +20,7 @@ function createTestAddress(seed: number) {
 
 const testAddress = createTestAddress(1);
 const testSignature = new Uint8Array(65);
+testSignature.fill(0x42);
 
 const basicMessage: BrandedMessage = {
 	domain: "example.com",
@@ -87,7 +39,7 @@ const messageWithStatement: BrandedMessage = {
 
 const messageWithAllFields: BrandedMessage = {
 	...basicMessage,
-	statement: "Sign in to Example App",
+	statement: "Sign in to Example App with all the optional fields included for comprehensive testing",
 	expirationTime: "2021-10-01T16:25:24.000Z",
 	notBefore: "2021-09-30T16:00:00.000Z",
 	requestId: "request-123",
@@ -101,101 +53,6 @@ const messageWithAllFields: BrandedMessage = {
 const formattedBasic = Siwe.format(basicMessage);
 const formattedComplex = Siwe.format(messageWithAllFields);
 
-const results: BenchmarkResult[] = [];
-results.push(
-	benchmark("Siwe.create - minimal fields", () =>
-		Siwe.create({
-			domain: "example.com",
-			address: testAddress,
-			uri: "https://example.com",
-			chainId: 1,
-		}),
-	),
-);
-
-results.push(
-	benchmark("Siwe.create - with statement", () =>
-		Siwe.create({
-			domain: "example.com",
-			address: testAddress,
-			uri: "https://example.com",
-			chainId: 1,
-			statement: "Sign in to Example",
-		}),
-	),
-);
-
-results.push(
-	benchmark("Siwe.create - all fields", () =>
-		Siwe.create({
-			domain: "example.com",
-			address: testAddress,
-			uri: "https://example.com",
-			chainId: 1,
-			statement: "Sign in to Example",
-			expirationTime: "2021-10-01T16:25:24.000Z",
-			notBefore: "2021-09-30T16:00:00.000Z",
-			requestId: "request-123",
-			resources: [
-				"https://example.com/resource1",
-				"https://example.com/resource2",
-			],
-		}),
-	),
-);
-
-results.push(
-	benchmark("Siwe.create - custom nonce", () =>
-		Siwe.create({
-			domain: "example.com",
-			address: testAddress,
-			uri: "https://example.com",
-			chainId: 1,
-			nonce: "customnonce123",
-		}),
-	),
-);
-results.push(
-	benchmark("generateNonce - default length (11)", () => Siwe.generateNonce()),
-);
-
-results.push(benchmark("generateNonce - 8 chars", () => Siwe.generateNonce(8)));
-
-results.push(
-	benchmark("generateNonce - 16 chars", () => Siwe.generateNonce(16)),
-);
-
-results.push(
-	benchmark("generateNonce - 32 chars", () => Siwe.generateNonce(32)),
-);
-results.push(
-	benchmark("Message.format - basic", () => Siwe.format(basicMessage)),
-);
-
-results.push(
-	benchmark("Message.format - with statement", () =>
-		Siwe.format(messageWithStatement),
-	),
-);
-
-results.push(
-	benchmark("Message.format - all fields", () =>
-		Siwe.format(messageWithAllFields),
-	),
-);
-results.push(benchmark("format - basic", () => Siwe.format(basicMessage)));
-
-results.push(
-	benchmark("format - all fields", () => Siwe.format(messageWithAllFields)),
-);
-results.push(
-	benchmark("parse - basic message", () => Siwe.parse(formattedBasic)),
-);
-
-results.push(
-	benchmark("parse - complex message", () => Siwe.parse(formattedComplex)),
-);
-
 const formattedWithMultilineStatement = `example.com wants you to sign in with your Ethereum account:
 0x0101010101010101010101010101010101010101
 
@@ -208,145 +65,221 @@ Chain ID: 1
 Nonce: 12345678
 Issued At: 2021-09-30T16:25:24.000Z`;
 
-results.push(
-	benchmark("parse - multiline statement", () =>
-		Siwe.parse(formattedWithMultilineStatement),
-	),
-);
-results.push(
-	benchmark("Message.validate - basic", () => Siwe.validate(basicMessage)),
-);
+// ============================================================================
+// create
+// ============================================================================
 
-results.push(
-	benchmark("Message.validate - with timestamps", () => {
-		const now = new Date("2021-09-30T18:00:00.000Z");
-		Siwe.validate(messageWithAllFields, { now });
-	}),
-);
+bench("Siwe.create - minimal fields - voltaire", () => {
+	Siwe.create({
+		domain: "example.com",
+		address: testAddress,
+		uri: "https://example.com",
+		chainId: 1,
+	});
+});
 
-const invalidMessage = { ...basicMessage, version: "2" as "1" };
-results.push(
-	benchmark("Message.validate - invalid version", () =>
-		Siwe.validate(invalidMessage),
-	),
-);
+bench("Siwe.create - with statement - voltaire", () => {
+	Siwe.create({
+		domain: "example.com",
+		address: testAddress,
+		uri: "https://example.com",
+		chainId: 1,
+		statement: "Sign in to Example",
+	});
+});
+
+bench("Siwe.create - all fields - voltaire", () => {
+	Siwe.create({
+		domain: "example.com",
+		address: testAddress,
+		uri: "https://example.com",
+		chainId: 1,
+		statement: "Sign in to Example",
+		expirationTime: "2021-10-01T16:25:24.000Z",
+		notBefore: "2021-09-30T16:00:00.000Z",
+		requestId: "request-123",
+		resources: [
+			"https://example.com/resource1",
+			"https://example.com/resource2",
+		],
+	});
+});
+
+await run();
+
+// ============================================================================
+// generateNonce
+// ============================================================================
+
+bench("Siwe.generateNonce - default (11 chars) - voltaire", () => {
+	Siwe.generateNonce();
+});
+
+bench("Siwe.generateNonce - 8 chars - voltaire", () => {
+	Siwe.generateNonce(8);
+});
+
+bench("Siwe.generateNonce - 32 chars - voltaire", () => {
+	Siwe.generateNonce(32);
+});
+
+await run();
+
+// ============================================================================
+// format
+// ============================================================================
+
+bench("Siwe.format - basic - voltaire", () => {
+	Siwe.format(basicMessage);
+});
+
+bench("Siwe.format - with statement - voltaire", () => {
+	Siwe.format(messageWithStatement);
+});
+
+bench("Siwe.format - all fields - voltaire", () => {
+	Siwe.format(messageWithAllFields);
+});
+
+await run();
+
+// ============================================================================
+// parse
+// ============================================================================
+
+bench("Siwe.parse - basic message - voltaire", () => {
+	Siwe.parse(formattedBasic);
+});
+
+bench("Siwe.parse - complex message - voltaire", () => {
+	Siwe.parse(formattedComplex);
+});
+
+bench("Siwe.parse - multiline statement - voltaire", () => {
+	Siwe.parse(formattedWithMultilineStatement);
+});
+
+await run();
+
+// ============================================================================
+// validate
+// ============================================================================
+
+bench("Siwe.validate - basic - voltaire", () => {
+	Siwe.validate(basicMessage);
+});
+
+bench("Siwe.validate - with timestamps - voltaire", () => {
+	const now = new Date("2021-09-30T18:00:00.000Z");
+	Siwe.validate(messageWithAllFields, { now });
+});
 
 const expiredMessage = {
 	...basicMessage,
 	expirationTime: "2021-09-30T15:00:00.000Z",
 };
-results.push(
-	benchmark("Message.validate - expired", () => {
-		const now = new Date("2021-09-30T18:00:00.000Z");
-		Siwe.validate(expiredMessage, { now });
-	}),
-);
-results.push(benchmark("validate - basic", () => Siwe.validate(basicMessage)));
 
-results.push(
-	benchmark("validate - with options", () => {
-		const now = new Date("2021-09-30T18:00:00.000Z");
-		Siwe.validate(messageWithAllFields, { now });
-	}),
-);
-results.push(
-	benchmark("roundtrip - basic message", () => {
-		const formatted = Siwe.format(basicMessage);
-		Siwe.parse(formatted);
-	}),
-);
+bench("Siwe.validate - expired message - voltaire", () => {
+	const now = new Date("2021-09-30T18:00:00.000Z");
+	Siwe.validate(expiredMessage, { now });
+});
 
-results.push(
-	benchmark("roundtrip - complex message", () => {
-		const formatted = Siwe.format(messageWithAllFields);
-		Siwe.parse(formatted);
-	}),
-);
-results.push(
-	benchmark("full cycle - basic", () => {
-		const formatted = Siwe.format(basicMessage);
-		const parsed = Siwe.parse(formatted);
-		Siwe.validate(parsed);
-	}),
-);
+await run();
 
-results.push(
-	benchmark("full cycle - complex", () => {
-		const formatted = Siwe.format(messageWithAllFields);
-		const parsed = Siwe.parse(formatted);
-		Siwe.validate(parsed);
-	}),
-);
-results.push(
-	benchmark("Message.getMessageHash", () => {
-		try {
-			Siwe.getMessageHash(basicMessage);
-		} catch {
-			// Expected - not implemented
-		}
-	}),
-);
+// ============================================================================
+// getMessageHash (crypto operation)
+// ============================================================================
 
-results.push(
-	benchmark("Message.verify", () => {
-		try {
-			Siwe.verify(basicMessage, testSignature);
-		} catch {
-			// Expected - not implemented
-		}
-	}),
-);
+bench("Siwe.getMessageHash - basic - voltaire", () => {
+	Siwe.getMessageHash(basicMessage);
+});
 
-results.push(
-	benchmark("verifyMessage", () => {
-		try {
-			Siwe.verifyMessage(basicMessage, testSignature);
-		} catch {
-			// Expected - not implemented
-		}
-	}),
-);
-const addresses = [
-	createTestAddress(0),
-	createTestAddress(42),
-	createTestAddress(255),
-	Address.fromBytes(new Uint8Array(20).fill(0xff)),
-];
+bench("Siwe.getMessageHash - complex - voltaire", () => {
+	Siwe.getMessageHash(messageWithAllFields);
+});
 
-for (const addr of addresses) {
-	const msg = { ...basicMessage, address: addr };
-	results.push(
-		benchmark(
-			`format with address 0x${addr[0]?.toString(16).padStart(2, "0")}...`,
-			() => Siwe.format(msg),
-		),
-	);
-}
-const statementLengths = [0, 10, 100, 1000];
-for (const len of statementLengths) {
-	const statement = "a".repeat(len);
-	const msg = len === 0 ? basicMessage : { ...basicMessage, statement };
-	results.push(
-		benchmark(`format - statement length ${len}`, () => Siwe.format(msg)),
-	);
-}
-const resourceCounts = [0, 1, 5, 10];
-for (const count of resourceCounts) {
-	const resources = Array(count)
-		.fill("")
-		.map((_, i) => `https://example.com/resource${i}`);
-	const msg = count === 0 ? basicMessage : { ...basicMessage, resources };
-	results.push(
-		benchmark(`format - ${count} resources`, () => Siwe.format(msg)),
-	);
-}
+await run();
 
-// Find fastest and slowest operations
-const _sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+// ============================================================================
+// roundtrip (format + parse)
+// ============================================================================
 
-// Export results for analysis
-if (typeof Bun !== "undefined") {
-	const resultsFile =
-		"/Users/williamcory/primitives/src/primitives/siwe-results.json";
-	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-}
+bench("Siwe roundtrip - format + parse - basic - voltaire", () => {
+	const formatted = Siwe.format(basicMessage);
+	Siwe.parse(formatted);
+});
+
+bench("Siwe roundtrip - format + parse - complex - voltaire", () => {
+	const formatted = Siwe.format(messageWithAllFields);
+	Siwe.parse(formatted);
+});
+
+await run();
+
+// ============================================================================
+// full cycle (format + parse + validate)
+// ============================================================================
+
+bench("Siwe full cycle - format + parse + validate - basic - voltaire", () => {
+	const formatted = Siwe.format(basicMessage);
+	const parsed = Siwe.parse(formatted);
+	Siwe.validate(parsed);
+});
+
+bench("Siwe full cycle - format + parse + validate - complex - voltaire", () => {
+	const formatted = Siwe.format(messageWithAllFields);
+	const parsed = Siwe.parse(formatted);
+	Siwe.validate(parsed);
+});
+
+await run();
+
+// ============================================================================
+// statement length variations
+// ============================================================================
+
+const shortStatement = { ...basicMessage, statement: "a".repeat(10) };
+const mediumStatement = { ...basicMessage, statement: "a".repeat(100) };
+const longStatement = { ...basicMessage, statement: "a".repeat(1000) };
+
+bench("Siwe.format - statement 10 chars - voltaire", () => {
+	Siwe.format(shortStatement);
+});
+
+bench("Siwe.format - statement 100 chars - voltaire", () => {
+	Siwe.format(mediumStatement);
+});
+
+bench("Siwe.format - statement 1000 chars - voltaire", () => {
+	Siwe.format(longStatement);
+});
+
+await run();
+
+// ============================================================================
+// resource count variations
+// ============================================================================
+
+const oneResource = { ...basicMessage, resources: ["https://example.com/r1"] };
+const fiveResources = {
+	...basicMessage,
+	resources: Array(5).fill("").map((_, i) => `https://example.com/r${i}`),
+};
+const tenResources = {
+	...basicMessage,
+	resources: Array(10).fill("").map((_, i) => `https://example.com/r${i}`),
+};
+
+bench("Siwe.format - 1 resource - voltaire", () => {
+	Siwe.format(oneResource);
+});
+
+bench("Siwe.format - 5 resources - voltaire", () => {
+	Siwe.format(fiveResources);
+});
+
+bench("Siwe.format - 10 resources - voltaire", () => {
+	Siwe.format(tenResources);
+});
+
+await run();

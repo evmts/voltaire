@@ -8,9 +8,17 @@ import { bench, run } from "mitata";
 import { keccak256 as viemKeccak256 } from "viem";
 import { Keccak256 } from "./Keccak256/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
+import * as Keccak256Native from "./Keccak256/Keccak256.native.js";
 
 // Initialize WASM
 await Keccak256Wasm.init();
+
+// Pre-warm native (load FFI library)
+try {
+	await Keccak256Native.hash(new Uint8Array(1));
+} catch {
+	console.log("Native FFI not available, skipping native benchmarks");
+}
 
 // Test data
 const emptyData = new Uint8Array(0);
@@ -62,6 +70,10 @@ bench("hash - 32B - ethers", () => {
 
 bench("hash - 32B - viem", () => {
 	viemKeccak256(data32B);
+});
+
+bench("hash - 32B - native", async () => {
+	await Keccak256Native.hash(data32B);
 });
 
 await run();

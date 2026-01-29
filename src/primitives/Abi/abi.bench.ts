@@ -1,433 +1,418 @@
 /**
- * ABI Encoding/Decoding Benchmarks
- *
- * Measures performance of ABI operations
+ * ABI Encoding/Decoding Benchmarks - mitata format
+ * Compares voltaire vs viem vs ethers ABI operations
  */
 
+import { Interface as EthersInterface } from "ethers";
+import { bench, run } from "mitata";
+import {
+	decodeAbiParameters,
+	encodeAbiParameters,
+	encodeFunctionData as viemEncodeFunctionData,
+	decodeFunctionData as viemDecodeFunctionData,
+	decodeFunctionResult as viemDecodeFunctionResult,
+	encodeFunctionResult as viemEncodeFunctionResult,
+} from "viem";
 import { Address } from "../Address/index.js";
-import type { ErrorType } from "./error/ErrorType.js";
-import type { EventType as AbiEvent } from "./event/EventType.js";
-import type { FunctionType as AbiFunction } from "./function/FunctionType.js";
-import type { ItemType as Item } from "./Item/index.js";
 import * as Abi from "./index.js";
-import * as Parameter from "./parameter/index.js";
-
-// Helper to work around strict type checking in benchmarks
-// biome-ignore lint/suspicious/noExplicitAny: Benchmark helper bypasses strict types
-const encodeParams = Abi.encodeParameters as any;
-// biome-ignore lint/suspicious/noExplicitAny: Benchmark helper bypasses strict types
-const decodeParams = Abi.decodeParameters as any;
-
-// Benchmark runner
-interface BenchmarkResult {
-	name: string;
-	opsPerSec: number;
-	avgTimeMs: number;
-	iterations: number;
-}
-
-function benchmark(
-	name: string,
-	fn: () => void,
-	duration = 2000,
-): BenchmarkResult {
-	// Warmup
-	for (let i = 0; i < 100; i++) {
-		try {
-			fn();
-		} catch {
-			// Ignore errors during warmup (for not-implemented functions)
-		}
-	}
-
-	// Benchmark
-	const startTime = performance.now();
-	let iterations = 0;
-	let endTime = startTime;
-
-	while (endTime - startTime < duration) {
-		try {
-			fn();
-		} catch {
-			// Count iteration even if it throws
-		}
-		iterations++;
-		endTime = performance.now();
-	}
-
-	const totalTime = endTime - startTime;
-	const avgTimeMs = totalTime / iterations;
-	const opsPerSec = (iterations / totalTime) * 1000;
-
-	return {
-		name,
-		opsPerSec,
-		avgTimeMs,
-		iterations,
-	};
-}
+import type { FunctionType } from "./function/FunctionType.js";
 
 // ============================================================================
 // Test Data
 // ============================================================================
 
-const transferFunc = {
-	type: "function",
-	name: "transfer",
-	stateMutability: "nonpayable",
-	inputs: [
-		{ type: "address", name: "to" },
-		{ type: "uint256", name: "amount" },
-	],
-	outputs: [{ type: "bool", name: "" }],
-} as const satisfies AbiFunction;
+const transferAbi = [
+	{
+		type: "function",
+		name: "transfer",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ type: "address", name: "to" },
+			{ type: "uint256", name: "amount" },
+		],
+		outputs: [{ type: "bool", name: "" }],
+	},
+] as const;
 
-const balanceOfFunc = {
-	type: "function",
-	name: "balanceOf",
-	stateMutability: "view",
-	inputs: [{ type: "address", name: "account" }],
-	outputs: [{ type: "uint256", name: "" }],
-} as const satisfies AbiFunction;
+const transferFunc = transferAbi[0] as unknown as FunctionType;
 
-const complexFunc = {
-	type: "function",
-	name: "processOrder",
-	stateMutability: "nonpayable",
-	inputs: [
-		{
-			type: "tuple",
-			name: "order",
-			components: [
-				{ type: "address", name: "maker" },
-				{
-					type: "tuple",
-					name: "asset",
-					components: [
-						{ type: "address", name: "token" },
-						{ type: "uint256", name: "amount" },
-					],
-				},
-				{ type: "uint256[]", name: "fees" },
-			],
-		},
-	],
-	outputs: [],
-} as const satisfies AbiFunction;
+const balanceOfAbi = [
+	{
+		type: "function",
+		name: "balanceOf",
+		stateMutability: "view",
+		inputs: [{ type: "address", name: "account" }],
+		outputs: [{ type: "uint256", name: "" }],
+	},
+] as const;
 
-const transferEvent = {
-	type: "event",
-	name: "Transfer",
-	inputs: [
-		{ type: "address", name: "from", indexed: true },
-		{ type: "address", name: "to", indexed: true },
-		{ type: "uint256", name: "value", indexed: false },
-	],
-} as const satisfies AbiEvent;
+const complexAbi = [
+	{
+		type: "function",
+		name: "processOrder",
+		stateMutability: "nonpayable",
+		inputs: [
+			{
+				type: "tuple",
+				name: "order",
+				components: [
+					{ type: "address", name: "maker" },
+					{
+						type: "tuple",
+						name: "asset",
+						components: [
+							{ type: "address", name: "token" },
+							{ type: "uint256", name: "amount" },
+						],
+					},
+					{ type: "uint256[]", name: "fees" },
+				],
+			},
+		],
+		outputs: [],
+	},
+] as const;
 
-const insufficientBalanceError = {
-	type: "error",
-	name: "InsufficientBalance",
-	inputs: [
-		Parameter.from({ type: "uint256", name: "available" }),
-		Parameter.from({ type: "uint256", name: "required" }),
-	],
-} satisfies ErrorType;
+const recipient = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
+const amount = 1000000000000000000n;
 
-const results: BenchmarkResult[] = [];
-results.push(
-	benchmark("Function.getSignature - simple", () =>
-		Abi.Function.getSignature(transferFunc),
-	),
-);
-results.push(
-	benchmark("Function.getSignature - complex tuple", () =>
-		Abi.Function.getSignature(complexFunc),
-	),
-);
-results.push(
-	benchmark("Event.getSignature", () => Abi.Event.getSignature(transferEvent)),
-);
-results.push(
-	benchmark("Error.getSignature", () =>
-		Abi.Error.getSignature(insufficientBalanceError),
-	),
-);
-results.push(
-	benchmark("Function.getSelector - transfer", () =>
-		Abi.Function.getSelector(transferFunc),
-	),
-);
-results.push(
-	benchmark("Function.getSelector - balanceOf", () =>
-		Abi.Function.getSelector(balanceOfFunc),
-	),
-);
-results.push(
-	benchmark("Event.getSelector - Transfer", () =>
-		Abi.Event.getSelector(transferEvent),
-	),
-);
-results.push(
-	benchmark("Error.getSelector - InsufficientBalance", () =>
-		Abi.Error.getSelector(insufficientBalanceError),
-	),
-);
-results.push(
-	benchmark("Abi.getFunctionSelector", () => {
-		const func = {
-			type: "function" as const,
-			name: "transfer",
-			stateMutability: "nonpayable" as const,
-			inputs: [{ type: "address" }, { type: "uint256" }] as const,
-			outputs: [] as const,
-		};
-		return Abi.Function.getSelector(func);
-	}),
-);
-results.push(
-	benchmark("Abi.getEventSelector", () => {
-		const event = {
-			type: "event" as const,
-			name: "Transfer",
-			inputs: [
-				{ type: "address", indexed: true },
-				{ type: "address", indexed: true },
-				{ type: "uint256", indexed: false },
-			] as const,
-		};
-		return Abi.Event.getSelector(event);
-	}),
-);
-results.push(
-	benchmark("Abi.getErrorSelector", () => {
-		const error = {
-			type: "error" as const,
-			name: "InsufficientBalance",
-			inputs: [
-				Parameter.from({ type: "uint256" }),
-				Parameter.from({ type: "uint256" }),
-			],
-		};
-		return Abi.Error.getSelector(error);
-	}),
-);
-results.push(
-	benchmark("formatAbiItem - function", () => Abi.Item.format(transferFunc)),
-);
-results.push(
-	benchmark("formatAbiItem - event", () => Abi.Item.format(transferEvent)),
-);
-results.push(
-	benchmark("formatAbiItem - error", () =>
-		Abi.Item.format(insufficientBalanceError),
-	),
-);
-results.push(
-	benchmark("formatAbiItem - complex", () => Abi.Item.format(complexFunc)),
-);
-results.push(
-	benchmark("formatAbiItemWithArgs - function", () =>
-		Abi.Item.formatWithArgs(transferFunc, [
-			"0x0000000000000000000000000000000000000000",
-			100n,
-		]),
-	),
-);
-results.push(
-	benchmark("formatAbiItemWithArgs - event", () =>
-		Abi.Item.formatWithArgs(transferEvent, [
-			"0x0000000000000000000000000000000000000000",
-			"0x0000000000000000000000000000000000000000",
-			1000n,
-		]),
-	),
-);
-results.push(
-	benchmark("encode uint256", () => {
-		encodeParams([{ type: "uint256" }], [42n]);
-	}),
-);
-results.push(
-	benchmark("encode address", () => {
-		encodeParams(
-			[{ type: "address" }],
-			["0x0000000000000000000000000000000000000000"],
-		);
-	}),
-);
-results.push(
-	benchmark("encode bool", () => {
-		encodeParams([{ type: "bool" }], [true]);
-	}),
-);
-results.push(
-	benchmark("encode string", () => {
-		encodeParams([{ type: "string" }], ["Hello World"]);
-	}),
-);
-results.push(
-	benchmark("encode (uint256, address, bool)", () => {
-		encodeParams(
-			[{ type: "uint256" }, { type: "address" }, { type: "bool" }],
-			[123n, "0x0000000000000000000000000000000000000000", true],
-		);
-	}),
-);
-results.push(
-	benchmark("encode (string, uint256, bool)", () => {
-		encodeParams(
-			[{ type: "string" }, { type: "uint256" }, { type: "bool" }],
-			["test", 420n, true],
-		);
-	}),
-);
-const zeroAddr = Address.fromHex("0x0000000000000000000000000000000000000000");
-results.push(
-	benchmark("Function.encodeParams - transfer", () => {
-		Abi.Function.encodeParams(transferFunc, [zeroAddr, 100n]);
-	}),
-);
-results.push(
-	benchmark("Function.encodeResult - bool", () => {
-		Abi.Function.encodeResult(transferFunc, [true] as [boolean]);
-	}),
-);
-results.push(
-	benchmark("Event.encodeTopics", () => {
-		Abi.Event.encodeTopics(transferEvent, {
-			from: "0x0000000000000000000000000000000000000000",
-		});
-	}),
-);
-results.push(
-	benchmark("Error.encodeParams", () => {
-		Abi.Error.encodeParams(insufficientBalanceError, [100n, 200n] as [
-			bigint,
-			bigint,
-		]);
-	}),
-);
-
-const encodedUint256 = encodeParams([{ type: "uint256" }], [42n]);
-const encodedAddress = encodeParams(
-	[{ type: "address" }],
-	["0x0000000000000000000000000000000000000000"],
-);
-const encodedBool = encodeParams([{ type: "bool" }], [true]);
-const encodedString = encodeParams([{ type: "string" }], ["Hello World"]);
-const encodedMixed = encodeParams(
-	[{ type: "uint256" }, { type: "address" }],
-	[123n, "0x0000000000000000000000000000000000000000"],
-);
-results.push(
-	benchmark("decode uint256", () => {
-		decodeParams([{ type: "uint256" }], encodedUint256);
-	}),
-);
-results.push(
-	benchmark("decode address", () => {
-		decodeParams([{ type: "address" }], encodedAddress);
-	}),
-);
-results.push(
-	benchmark("decode bool", () => {
-		decodeParams([{ type: "bool" }], encodedBool);
-	}),
-);
-results.push(
-	benchmark("decode string", () => {
-		decodeParams([{ type: "string" }], encodedString);
-	}),
-);
-results.push(
-	benchmark("decode (uint256, address)", () => {
-		decodeParams([{ type: "uint256" }, { type: "address" }], encodedMixed);
-	}),
-);
-const encodedTransferCall = Abi.Function.encodeParams(transferFunc, [
-	zeroAddr,
-	100n,
-]);
-const encodedBoolResult = Abi.Function.encodeResult(transferFunc, [true] as [
-	boolean,
-]);
-
-results.push(
-	benchmark("Function.decodeParams", () => {
-		Abi.Function.decodeParams(transferFunc, encodedTransferCall);
-	}),
-);
-results.push(
-	benchmark("Function.decodeResult", () => {
-		Abi.Function.decodeResult(transferFunc, encodedBoolResult);
-	}),
-);
-const encodedEventData = encodeParams([{ type: "uint256" }], [1000n]);
-const eventTopics = Abi.Event.encodeTopics(transferEvent, {
-	from: "0x0000000000000000000000000000000000000000",
-	to: "0x0000000000000000000000000000000000000000",
+// Pre-encode for decode benchmarks
+const encodedTransfer = viemEncodeFunctionData({
+	abi: transferAbi,
+	functionName: "transfer",
+	args: [recipient, amount],
 });
 
-results.push(
-	benchmark("Event.decodeLog", () => {
-		// biome-ignore lint/suspicious/noExplicitAny: Benchmark type coercion
-		Abi.Event.decodeLog(transferEvent, encodedEventData, eventTopics as any);
-	}),
-);
-const encodedError = Abi.Error.encodeParams(insufficientBalanceError, [
-	100n,
-	200n,
-] as [bigint, bigint]);
+const encodedResult = viemEncodeFunctionResult({
+	abi: transferAbi,
+	functionName: "transfer",
+	result: true,
+});
 
-results.push(
-	benchmark("Error.decodeParams", () => {
-		Abi.Error.decodeParams(insufficientBalanceError, encodedError);
-	}),
-);
+// Ethers interface
+const ethersInterface = new EthersInterface([
+	"function transfer(address to, uint256 amount) returns (bool)",
+	"function balanceOf(address account) view returns (uint256)",
+]);
 
 // ============================================================================
-// ABI-Level Operations
+// encodeFunctionData - transfer(address, uint256)
 // ============================================================================
 
-const testAbi = [
-	transferFunc,
-	balanceOfFunc,
-] as const satisfies readonly Item[];
-results.push(
-	benchmark("Abi.getItem", () =>
-		Abi.Item.getItem(testAbi, "transfer", "function"),
-	),
-);
-results.push(
-	benchmark("round-trip uint256", () => {
-		const encoded = encodeParams([{ type: "uint256" }], [42n]);
-		decodeParams([{ type: "uint256" }], encoded);
-	}),
-);
-results.push(
-	benchmark("round-trip (uint256, address)", () => {
-		const params = [{ type: "uint256" }, { type: "address" }];
-		const values = [123n, zeroAddr];
-		// biome-ignore lint/suspicious/noExplicitAny: Benchmark type coercion
-		const encoded = encodeParams(params, values as any);
-		decodeParams(params, encoded);
-	}),
-);
-results.push(
-	benchmark("round-trip Function call", () => {
-		const encoded = Abi.Function.encodeParams(transferFunc, [zeroAddr, 100n]);
-		Abi.Function.decodeParams(transferFunc, encoded);
-	}),
-);
+bench("encodeFunctionData(transfer) - voltaire", () => {
+	Abi.encodeFunction(transferAbi, "transfer", [recipient, amount]);
+});
 
-// Calculate statistics
-const sortedResults = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sortedResults.slice(0, 5).forEach(() => {});
+bench("encodeFunctionData(transfer) - viem", () => {
+	viemEncodeFunctionData({
+		abi: transferAbi,
+		functionName: "transfer",
+		args: [recipient, amount],
+	});
+});
 
-// Export results for analysis
-if (typeof Bun !== "undefined") {
-	const resultsFile =
-		"/Users/williamcory/primitives/src/primitives/abi-results.json";
-	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-}
+bench("encodeFunctionData(transfer) - ethers", () => {
+	ethersInterface.encodeFunctionData("transfer", [recipient, amount]);
+});
+
+await run();
+
+// ============================================================================
+// decodeFunctionData - transfer(address, uint256)
+// ============================================================================
+
+bench("decodeFunctionData(transfer) - voltaire", () => {
+	Abi.decodeFunction(transferAbi, encodedTransfer);
+});
+
+bench("decodeFunctionData(transfer) - viem", () => {
+	viemDecodeFunctionData({
+		abi: transferAbi,
+		data: encodedTransfer,
+	});
+});
+
+bench("decodeFunctionData(transfer) - ethers", () => {
+	ethersInterface.decodeFunctionData("transfer", encodedTransfer);
+});
+
+await run();
+
+// ============================================================================
+// encodeFunctionResult - bool return
+// ============================================================================
+
+bench("encodeFunctionResult(bool) - voltaire", () => {
+	Abi.Function.encodeResult(transferFunc, [true] as [boolean]);
+});
+
+bench("encodeFunctionResult(bool) - viem", () => {
+	viemEncodeFunctionResult({
+		abi: transferAbi,
+		functionName: "transfer",
+		result: true,
+	});
+});
+
+await run();
+
+// ============================================================================
+// decodeFunctionResult - bool return
+// ============================================================================
+
+bench("decodeFunctionResult(bool) - voltaire", () => {
+	Abi.Function.decodeResult(transferFunc, encodedResult);
+});
+
+bench("decodeFunctionResult(bool) - viem", () => {
+	viemDecodeFunctionResult({
+		abi: transferAbi,
+		functionName: "transfer",
+		data: encodedResult,
+	});
+});
+
+bench("decodeFunctionResult(bool) - ethers", () => {
+	ethersInterface.decodeFunctionResult("transfer", encodedResult);
+});
+
+await run();
+
+// ============================================================================
+// encodeAbiParameters - various types
+// ============================================================================
+
+const uint256Params = [{ type: "uint256" }] as const;
+const addressParams = [{ type: "address" }] as const;
+const mixedParams = [
+	{ type: "uint256" },
+	{ type: "address" },
+	{ type: "bool" },
+] as const;
+const stringParams = [{ type: "string" }] as const;
+const bytesParams = [{ type: "bytes" }] as const;
+const arrayParams = [{ type: "uint256[]" }] as const;
+
+const testArray = [1n, 2n, 3n, 4n, 5n, 6n, 7n, 8n, 9n, 10n];
+const testBytes = new Uint8Array(100).fill(0xab);
+
+bench("encodeParameters(uint256) - voltaire", () => {
+	Abi.encodeParameters(uint256Params, [amount]);
+});
+
+bench("encodeParameters(uint256) - viem", () => {
+	encodeAbiParameters(uint256Params, [amount]);
+});
+
+await run();
+
+bench("encodeParameters(address) - voltaire", () => {
+	Abi.encodeParameters(addressParams, [recipient]);
+});
+
+bench("encodeParameters(address) - viem", () => {
+	encodeAbiParameters(addressParams, [recipient]);
+});
+
+await run();
+
+bench("encodeParameters(uint256,address,bool) - voltaire", () => {
+	Abi.encodeParameters(mixedParams, [amount, recipient, true]);
+});
+
+bench("encodeParameters(uint256,address,bool) - viem", () => {
+	encodeAbiParameters(mixedParams, [amount, recipient, true]);
+});
+
+await run();
+
+bench("encodeParameters(string) - voltaire", () => {
+	Abi.encodeParameters(stringParams, ["Hello, World! This is a test string."]);
+});
+
+bench("encodeParameters(string) - viem", () => {
+	encodeAbiParameters(stringParams, [
+		"Hello, World! This is a test string.",
+	]);
+});
+
+await run();
+
+bench("encodeParameters(bytes) - voltaire", () => {
+	Abi.encodeParameters(bytesParams, [testBytes]);
+});
+
+bench("encodeParameters(bytes) - viem", () => {
+	encodeAbiParameters(bytesParams, [testBytes]);
+});
+
+await run();
+
+bench("encodeParameters(uint256[]) - voltaire", () => {
+	Abi.encodeParameters(arrayParams, [testArray]);
+});
+
+bench("encodeParameters(uint256[]) - viem", () => {
+	encodeAbiParameters(arrayParams, [testArray]);
+});
+
+await run();
+
+// ============================================================================
+// decodeAbiParameters - various types
+// ============================================================================
+
+const encodedUint256 = encodeAbiParameters(uint256Params, [amount]);
+const encodedAddress = encodeAbiParameters(addressParams, [recipient]);
+const encodedMixed = encodeAbiParameters(mixedParams, [amount, recipient, true]);
+const encodedString = encodeAbiParameters(stringParams, ["Hello, World!"]);
+const encodedArray = encodeAbiParameters(arrayParams, [testArray]);
+
+bench("decodeParameters(uint256) - voltaire", () => {
+	Abi.decodeParameters(uint256Params, encodedUint256);
+});
+
+bench("decodeParameters(uint256) - viem", () => {
+	decodeAbiParameters(uint256Params, encodedUint256);
+});
+
+await run();
+
+bench("decodeParameters(address) - voltaire", () => {
+	Abi.decodeParameters(addressParams, encodedAddress);
+});
+
+bench("decodeParameters(address) - viem", () => {
+	decodeAbiParameters(addressParams, encodedAddress);
+});
+
+await run();
+
+bench("decodeParameters(uint256,address,bool) - voltaire", () => {
+	Abi.decodeParameters(mixedParams, encodedMixed);
+});
+
+bench("decodeParameters(uint256,address,bool) - viem", () => {
+	decodeAbiParameters(mixedParams, encodedMixed);
+});
+
+await run();
+
+bench("decodeParameters(string) - voltaire", () => {
+	Abi.decodeParameters(stringParams, encodedString);
+});
+
+bench("decodeParameters(string) - viem", () => {
+	decodeAbiParameters(stringParams, encodedString);
+});
+
+await run();
+
+bench("decodeParameters(uint256[]) - voltaire", () => {
+	Abi.decodeParameters(arrayParams, encodedArray);
+});
+
+bench("decodeParameters(uint256[]) - viem", () => {
+	decodeAbiParameters(arrayParams, encodedArray);
+});
+
+await run();
+
+// ============================================================================
+// Function signature/selector operations
+// ============================================================================
+
+bench("getSelector(transfer) - voltaire", () => {
+	Abi.Function.getSelector(transferFunc);
+});
+
+await run();
+
+bench("getSignature(transfer) - voltaire", () => {
+	Abi.Function.getSignature(transferFunc);
+});
+
+await run();
+
+// ============================================================================
+// Round-trip operations
+// ============================================================================
+
+bench("roundtrip - transfer encode+decode - voltaire", () => {
+	const encoded = Abi.encodeFunction(transferAbi, "transfer", [
+		recipient,
+		amount,
+	]);
+	Abi.decodeFunction(transferAbi, encoded);
+});
+
+bench("roundtrip - transfer encode+decode - viem", () => {
+	const encoded = viemEncodeFunctionData({
+		abi: transferAbi,
+		functionName: "transfer",
+		args: [recipient, amount],
+	});
+	viemDecodeFunctionData({
+		abi: transferAbi,
+		data: encoded,
+	});
+});
+
+bench("roundtrip - transfer encode+decode - ethers", () => {
+	const encoded = ethersInterface.encodeFunctionData("transfer", [
+		recipient,
+		amount,
+	]);
+	ethersInterface.decodeFunctionData("transfer", encoded);
+});
+
+await run();
+
+// ============================================================================
+// encodePacked (tight packing)
+// ============================================================================
+
+bench("encodePacked(address,uint256) - voltaire", () => {
+	Abi.encodePacked(["address", "uint256"], [recipient, amount]);
+});
+
+await run();
+
+bench("encodePacked(string,uint256,address) - voltaire", () => {
+	Abi.encodePacked(
+		["string", "uint256", "address"],
+		["Hello", amount, recipient],
+	);
+});
+
+await run();
+
+// ============================================================================
+// ABI Item operations
+// ============================================================================
+
+bench("Item.format - function - voltaire", () => {
+	Abi.Item.format(transferFunc);
+});
+
+await run();
+
+const zeroAddr = Address.fromHex("0x0000000000000000000000000000000000000000");
+
+bench("Item.formatWithArgs - function - voltaire", () => {
+	Abi.Item.formatWithArgs(transferFunc, [zeroAddr, 100n]);
+});
+
+await run();
+
+// ============================================================================
+// getItem from ABI
+// ============================================================================
+
+const testAbi = [transferFunc, balanceOfAbi[0]] as const;
+
+bench("Item.getItem - voltaire", () => {
+	Abi.Item.getItem(testAbi, "transfer", "function");
+});
+
+await run();

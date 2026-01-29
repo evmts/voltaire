@@ -1,76 +1,179 @@
 /**
- * Bytecode Benchmarks
- *
- * Measures performance of bytecode analysis and manipulation operations
+ * Benchmark: TypeScript vs WASM Bytecode implementations
+ * Compares performance of bytecode analysis operations across backends
  */
 
-import type { BrandedBytecode } from "../Bytecode/BytecodeType.js";
-import { analyze } from "./analyze.js";
-import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
-import { equals } from "./equals.js";
-import { extractRuntime } from "./extractRuntime.js";
-import { formatInstructions } from "./formatInstructions.js";
-import { fromHex } from "./fromHex.js";
-import { getPushSize } from "./getPushSize.js";
-import { hasMetadata } from "./hasMetadata.js";
-import { isPush } from "./isPush.js";
-import { isTerminator } from "./isTerminator.js";
-import { isValidJumpDest } from "./isValidJumpDest.js";
-import { parseInstructions } from "./parseInstructions.js";
-import { size } from "./size.js";
-import { stripMetadata } from "./stripMetadata.js";
-import { toHex } from "./toHex.js";
-import { validate } from "./validate.js";
+import { bench, run } from "mitata";
+import { loadWasm } from "../../wasm-loader/loader.js";
+import * as BytecodeWasm from "./Bytecode.wasm.js";
+import type { BrandedBytecode } from "./BytecodeType.js";
+import * as BytecodeTS from "./index.js";
+
+// Initialize WASM before benchmarks
+await loadWasm(new URL("../../wasm-loader/primitives.wasm", import.meta.url));
+
+// Helper to create branded bytecode
+const bc = (arr: Uint8Array): BrandedBytecode => arr as BrandedBytecode;
 
 // ============================================================================
-// Benchmark Runner
+// Test Data - Realistic EVM Bytecode
 // ============================================================================
 
-interface BenchmarkResult {
-	name: string;
-	opsPerSec: number;
-	avgTimeMs: number;
-	iterations: number;
-}
+// Simple contract: PUSH1 0x00, PUSH1 0x00, RETURN
+const simpleCode = bc(new Uint8Array([0x60, 0x00, 0x60, 0x00, 0xf3]));
 
-function benchmark(
-	name: string,
-	fn: () => void,
-	duration = 2000,
-): BenchmarkResult {
-	// Warmup
-	for (let i = 0; i < 100; i++) {
-		fn();
-	}
+// Contract with jumps: PUSH1 0x05, JUMP, STOP, STOP, JUMPDEST, STOP
+const jumpCode = bc(new Uint8Array([0x60, 0x05, 0x56, 0x00, 0x00, 0x5b, 0x00]));
 
-	// Benchmark
-	const startTime = performance.now();
-	let iterations = 0;
-	let endTime = startTime;
+// Function dispatcher pattern
+const dispatcherCode = bc(
+	new Uint8Array([
+		0x60,
+		0x04,
+		0x35, // PUSH1 4, CALLDATALOAD (selector)
+		0x63,
+		0x12,
+		0x34,
+		0x56,
+		0x78, // PUSH4 selector
+		0x14, // EQ
+		0x60,
+		0x10, // PUSH1 0x10
+		0x57, // JUMPI
+		0x60,
+		0x00,
+		0x80,
+		0xfd, // revert
+		0x5b, // JUMPDEST
+		0x60,
+		0x01, // PUSH1 0x01
+		0x00, // STOP
+	]),
+);
 
-	while (endTime - startTime < duration) {
-		fn();
-		iterations++;
-		endTime = performance.now();
-	}
+// Medium-sized realistic contract bytecode (simplified ERC20-like)
+const mediumCode = bc(
+	new Uint8Array([
+		// Init code
+		0x60,
+		0x80,
+		0x60,
+		0x40,
+		0x52, // PUSH1 0x80, PUSH1 0x40, MSTORE
+		// Selector check
+		0x60,
+		0x04,
+		0x36,
+		0x10, // PUSH1 4, CALLDATASIZE, LT
+		0x60,
+		0x50,
+		0x57, // PUSH1 0x50, JUMPI
+		// Load selector
+		0x60,
+		0x00,
+		0x35, // PUSH1 0, CALLDATALOAD
+		0x60,
+		0xe0,
+		0x1c, // PUSH1 0xe0, SHR (get selector)
+		// Check selectors
+		0x80,
+		0x63,
+		0xa9,
+		0x05,
+		0x9c,
+		0xbb, // DUP1, PUSH4 balanceOf
+		0x14,
+		0x60,
+		0x60,
+		0x57, // EQ, PUSH1 0x60, JUMPI
+		0x80,
+		0x63,
+		0xdd,
+		0x62,
+		0xed,
+		0x3e, // DUP1, PUSH4 transfer
+		0x14,
+		0x60,
+		0x80,
+		0x57, // EQ, PUSH1 0x80, JUMPI
+		0x5b,
+		0x60,
+		0x00,
+		0x80,
+		0xfd, // JUMPDEST, revert
+		// balanceOf
+		0x5b, // JUMPDEST
+		0x60,
+		0x04,
+		0x35, // PUSH1 4, CALLDATALOAD
+		0x60,
+		0x00,
+		0x52, // PUSH1 0, MSTORE
+		0x60,
+		0x20,
+		0x60,
+		0x00,
+		0x20, // PUSH1 32, PUSH1 0, SHA3
+		0x54, // SLOAD
+		0x60,
+		0x00,
+		0x52, // PUSH1 0, MSTORE
+		0x60,
+		0x20,
+		0x60,
+		0x00,
+		0xf3, // PUSH1 32, PUSH1 0, RETURN
+		// transfer
+		0x5b, // JUMPDEST
+		0x60,
+		0x04,
+		0x35, // PUSH1 4, CALLDATALOAD
+		0x60,
+		0x24,
+		0x35, // PUSH1 36, CALLDATALOAD
+		0x33, // CALLER
+		0x60,
+		0x00,
+		0x52, // PUSH1 0, MSTORE
+		0x60,
+		0x20,
+		0x60,
+		0x00,
+		0x20, // PUSH1 32, PUSH1 0, SHA3
+		0x80,
+		0x54, // DUP1, SLOAD
+		0x82,
+		0x81,
+		0x10,
+		0x15, // DUP3, DUP2, LT, ISZERO
+		0x60,
+		0xc0,
+		0x57, // PUSH1 0xc0, JUMPI
+		0x60,
+		0x00,
+		0x80,
+		0xfd, // revert
+		0x5b, // JUMPDEST
+		0x82,
+		0x03,
+		0x81,
+		0x55, // DUP3, SUB, DUP2, SSTORE
+		0x50, // POP
+		0x60,
+		0x01,
+		0x60,
+		0x00,
+		0x52, // PUSH1 1, PUSH1 0, MSTORE
+		0x60,
+		0x20,
+		0x60,
+		0x00,
+		0xf3, // PUSH1 32, PUSH1 0, RETURN
+	]),
+);
 
-	const totalTime = endTime - startTime;
-	const avgTimeMs = totalTime / iterations;
-	const opsPerSec = (iterations / totalTime) * 1000;
-
-	return {
-		name,
-		opsPerSec,
-		avgTimeMs,
-		iterations,
-	};
-}
-
-// ============================================================================
-// Test Data Generation
-// ============================================================================
-
-function generateBytecode(size: number, includeJumpdests = true): Uint8Array {
+// Large bytecode (many JUMPDESTs and PUSH operations)
+function generateLargeBytecode(size: number): BrandedBytecode {
 	const bytecode: number[] = [];
 	let pos = 0;
 
@@ -86,7 +189,7 @@ function generateBytecode(size: number, includeJumpdests = true): Uint8Array {
 				bytecode.push(Math.floor(Math.random() * 256));
 			}
 			pos += 1 + pushSize;
-		} else if (includeJumpdests && Math.random() < 0.1) {
+		} else if (Math.random() < 0.1) {
 			// 10% chance of JUMPDEST
 			bytecode.push(0x5b);
 			pos += 1;
@@ -97,198 +200,356 @@ function generateBytecode(size: number, includeJumpdests = true): Uint8Array {
 		}
 	}
 
-	return new Uint8Array(bytecode.slice(0, size)) as BrandedBytecode;
+	return bc(new Uint8Array(bytecode.slice(0, size)));
 }
 
-// Generate test bytecode samples
-const smallCode = generateBytecode(100) as BrandedBytecode;
-const mediumCode = generateBytecode(1000) as BrandedBytecode;
-const largeCode = generateBytecode(10000) as BrandedBytecode;
-const hugeCode = generateBytecode(50000) as BrandedBytecode;
+const largeCode = generateLargeBytecode(10000);
 
-// Simple patterns
-const simplePush = new Uint8Array([
-	0x60, 0x01, 0x60, 0x02, 0x01,
-]) as BrandedBytecode;
-const pushWithJumpdest = new Uint8Array([
-	0x60,
-	0x5b,
-	0x5b, // PUSH1 0x5b, JUMPDEST
-	0x60,
-	0x00,
-	0x56, // PUSH1 0x00, JUMP
-	0x5b,
-	0x00, // JUMPDEST, STOP
-]) as BrandedBytecode;
+// Hex strings for fromHex benchmarks
+const simpleHex = "0x60006000f3";
+const mediumHex = BytecodeTS.toHex(mediumCode);
+const largeHex = BytecodeTS.toHex(largeCode);
 
-// Metadata samples
-const codeWithMetadata = new Uint8Array([
-	...mediumCode.slice(0, 900),
-	...new Array(0x33 - 2).fill(0xa2),
-	0x00,
-	0x33,
-]) as BrandedBytecode;
+// ============================================================================
+// from / fromHex benchmarks
+// ============================================================================
 
-const results: BenchmarkResult[] = [];
-results.push(
-	benchmark("analyzeJumpDestinations - small (100b)", () =>
-		analyzeJumpDestinations(smallCode),
-	),
-);
-results.push(
-	benchmark("analyzeJumpDestinations - medium (1kb)", () =>
-		analyzeJumpDestinations(mediumCode),
-	),
-);
-results.push(
-	benchmark("analyzeJumpDestinations - large (10kb)", () =>
-		analyzeJumpDestinations(largeCode),
-	),
-);
-results.push(
-	benchmark("analyzeJumpDestinations - huge (50kb)", () =>
-		analyzeJumpDestinations(hugeCode),
-	),
-);
-results.push(
-	benchmark("isValidJumpDest - small", () => isValidJumpDest(smallCode, 10)),
-);
-results.push(
-	benchmark("isValidJumpDest - medium", () => isValidJumpDest(mediumCode, 500)),
-);
-results.push(
-	benchmark("isValidJumpDest - large", () => isValidJumpDest(largeCode, 5000)),
-);
-results.push(benchmark("validate - small (100b)", () => validate(smallCode)));
-results.push(benchmark("validate - medium (1kb)", () => validate(mediumCode)));
-results.push(benchmark("validate - large (10kb)", () => validate(largeCode)));
-results.push(benchmark("validate - huge (50kb)", () => validate(hugeCode)));
-const invalidPush = new Uint8Array([0x60]) as BrandedBytecode; // Incomplete PUSH
-results.push(
-	benchmark("validate - invalid (incomplete PUSH)", () =>
-		validate(invalidPush),
-	),
-);
-results.push(
-	benchmark("validate - simple pattern", () => validate(simplePush)),
-);
-results.push(
-	benchmark("parseInstructions - small (100b)", () =>
-		parseInstructions(smallCode),
-	),
-);
-results.push(
-	benchmark("parseInstructions - medium (1kb)", () =>
-		parseInstructions(mediumCode),
-	),
-);
-results.push(
-	benchmark("parseInstructions - large (10kb)", () =>
-		parseInstructions(largeCode),
-	),
-);
-results.push(
-	benchmark("parseInstructions - huge (50kb)", () =>
-		parseInstructions(hugeCode),
-	),
-);
-results.push(
-	benchmark("parseInstructions - simple PUSH", () =>
-		parseInstructions(simplePush),
-	),
-);
-results.push(
-	benchmark("parseInstructions - with JUMPDESTs", () =>
-		parseInstructions(pushWithJumpdest),
-	),
-);
-results.push(benchmark("analyze - small (100b)", () => analyze(smallCode)));
-results.push(benchmark("analyze - medium (1kb)", () => analyze(mediumCode)));
-results.push(benchmark("analyze - large (10kb)", () => analyze(largeCode)));
-results.push(benchmark("analyze - huge (50kb)", () => analyze(hugeCode)));
-results.push(benchmark("toHex - small (100b)", () => toHex(smallCode)));
-results.push(benchmark("toHex - medium (1kb)", () => toHex(mediumCode)));
-results.push(benchmark("toHex - large (10kb)", () => toHex(largeCode)));
+bench("from(hex) - simple - TS", () => {
+	BytecodeTS.from(simpleHex);
+});
 
-const smallHex = toHex(smallCode);
-const mediumHex = toHex(mediumCode);
-const largeHex = toHex(largeCode);
-results.push(benchmark("fromHex - small (100b)", () => fromHex(smallHex)));
-results.push(benchmark("fromHex - medium (1kb)", () => fromHex(mediumHex)));
-results.push(benchmark("fromHex - large (10kb)", () => fromHex(largeHex)));
-results.push(
-	benchmark("hex round-trip - small", () => fromHex(toHex(smallCode))),
-);
-results.push(
-	benchmark("hex round-trip - medium", () => fromHex(toHex(mediumCode))),
-);
-results.push(
-	benchmark("formatInstructions - small (100b)", () =>
-		formatInstructions(smallCode),
-	),
-);
-results.push(
-	benchmark("formatInstructions - medium (1kb)", () =>
-		formatInstructions(mediumCode),
-	),
-);
-results.push(
-	benchmark("formatInstructions - large (10kb)", () =>
-		formatInstructions(largeCode),
-	),
-);
-results.push(
-	benchmark("hasMetadata - without metadata", () => hasMetadata(mediumCode)),
-);
-results.push(
-	benchmark("hasMetadata - with metadata", () => hasMetadata(codeWithMetadata)),
-);
-results.push(
-	benchmark("stripMetadata - without metadata", () =>
-		stripMetadata(mediumCode),
-	),
-);
-results.push(
-	benchmark("stripMetadata - with metadata", () =>
-		stripMetadata(codeWithMetadata),
-	),
+bench("from(hex) - simple - WASM", () => {
+	BytecodeWasm.from(simpleHex);
+});
+
+await run();
+
+bench("from(hex) - medium - TS", () => {
+	BytecodeTS.from(mediumHex);
+});
+
+bench("from(hex) - medium - WASM", () => {
+	BytecodeWasm.from(mediumHex);
+});
+
+await run();
+
+bench("fromHex - large - TS", () => {
+	BytecodeTS.fromHex(largeHex);
+});
+
+bench("fromHex - large - WASM", () => {
+	BytecodeWasm.fromHex(largeHex);
+});
+
+await run();
+
+// ============================================================================
+// analyzeJumpDestinations benchmarks
+// ============================================================================
+
+bench("analyzeJumpDestinations - simple - TS", () => {
+	BytecodeTS.analyzeJumpDestinations(simpleCode);
+});
+
+bench("analyzeJumpDestinations - simple - WASM", () => {
+	BytecodeWasm.analyzeJumpDestinations(simpleCode);
+});
+
+await run();
+
+bench("analyzeJumpDestinations - jump - TS", () => {
+	BytecodeTS.analyzeJumpDestinations(jumpCode);
+});
+
+bench("analyzeJumpDestinations - jump - WASM", () => {
+	BytecodeWasm.analyzeJumpDestinations(jumpCode);
+});
+
+await run();
+
+bench("analyzeJumpDestinations - dispatcher - TS", () => {
+	BytecodeTS.analyzeJumpDestinations(dispatcherCode);
+});
+
+bench("analyzeJumpDestinations - dispatcher - WASM", () => {
+	BytecodeWasm.analyzeJumpDestinations(dispatcherCode);
+});
+
+await run();
+
+bench("analyzeJumpDestinations - medium - TS", () => {
+	BytecodeTS.analyzeJumpDestinations(mediumCode);
+});
+
+bench("analyzeJumpDestinations - medium - WASM", () => {
+	BytecodeWasm.analyzeJumpDestinations(mediumCode);
+});
+
+await run();
+
+bench("analyzeJumpDestinations - large (10KB) - TS", () => {
+	BytecodeTS.analyzeJumpDestinations(largeCode);
+});
+
+bench("analyzeJumpDestinations - large (10KB) - WASM", () => {
+	BytecodeWasm.analyzeJumpDestinations(largeCode);
+});
+
+await run();
+
+// ============================================================================
+// isValidJumpDest benchmarks
+// ============================================================================
+
+bench("isValidJumpDest - simple - TS", () => {
+	BytecodeTS.isValidJumpDest(jumpCode, 5);
+});
+
+bench("isValidJumpDest - simple - WASM", () => {
+	BytecodeWasm.isValidJumpDest(jumpCode, 5);
+});
+
+await run();
+
+bench("isValidJumpDest - medium - TS", () => {
+	BytecodeTS.isValidJumpDest(mediumCode, 50);
+});
+
+bench("isValidJumpDest - medium - WASM", () => {
+	BytecodeWasm.isValidJumpDest(mediumCode, 50);
+});
+
+await run();
+
+bench("isValidJumpDest - large - TS", () => {
+	BytecodeTS.isValidJumpDest(largeCode, 5000);
+});
+
+bench("isValidJumpDest - large - WASM", () => {
+	BytecodeWasm.isValidJumpDest(largeCode, 5000);
+});
+
+await run();
+
+// ============================================================================
+// validate benchmarks
+// ============================================================================
+
+bench("validate - simple - TS", () => {
+	BytecodeTS.validate(simpleCode);
+});
+
+bench("validate - simple - WASM", () => {
+	try {
+		BytecodeWasm.validate(simpleCode);
+	} catch {
+		// WASM throws on invalid, TS returns boolean
+	}
+});
+
+await run();
+
+bench("validate - dispatcher - TS", () => {
+	BytecodeTS.validate(dispatcherCode);
+});
+
+bench("validate - dispatcher - WASM", () => {
+	try {
+		BytecodeWasm.validate(dispatcherCode);
+	} catch {
+		// WASM throws on invalid
+	}
+});
+
+await run();
+
+bench("validate - medium - TS", () => {
+	BytecodeTS.validate(mediumCode);
+});
+
+bench("validate - medium - WASM", () => {
+	try {
+		BytecodeWasm.validate(mediumCode);
+	} catch {
+		// WASM throws on invalid
+	}
+});
+
+await run();
+
+bench("validate - large (10KB) - TS", () => {
+	BytecodeTS.validate(largeCode);
+});
+
+bench("validate - large (10KB) - WASM", () => {
+	try {
+		BytecodeWasm.validate(largeCode);
+	} catch {
+		// WASM throws on invalid
+	}
+});
+
+await run();
+
+// ============================================================================
+// analyze benchmarks (TS-only, comprehensive analysis)
+// ============================================================================
+
+bench("analyze - simple - TS", () => {
+	BytecodeTS.analyze(simpleCode);
+});
+
+bench("analyze - simple - WASM", () => {
+	BytecodeWasm.analyze(simpleCode);
+});
+
+await run();
+
+bench("analyze - dispatcher - TS", () => {
+	BytecodeTS.analyze(dispatcherCode);
+});
+
+bench("analyze - dispatcher - WASM", () => {
+	BytecodeWasm.analyze(dispatcherCode);
+});
+
+await run();
+
+bench("analyze - medium - TS", () => {
+	BytecodeTS.analyze(mediumCode);
+});
+
+bench("analyze - medium - WASM", () => {
+	BytecodeWasm.analyze(mediumCode);
+});
+
+await run();
+
+bench("analyze - large (10KB) - TS", () => {
+	BytecodeTS.analyze(largeCode);
+});
+
+bench("analyze - large (10KB) - WASM", () => {
+	BytecodeWasm.analyze(largeCode);
+});
+
+await run();
+
+// ============================================================================
+// parseInstructions benchmarks
+// ============================================================================
+
+bench("parseInstructions - simple - TS", () => {
+	BytecodeTS.parseInstructions(simpleCode);
+});
+
+bench("parseInstructions - simple - WASM", () => {
+	BytecodeWasm.parseInstructions(simpleCode);
+});
+
+await run();
+
+bench("parseInstructions - medium - TS", () => {
+	BytecodeTS.parseInstructions(mediumCode);
+});
+
+bench("parseInstructions - medium - WASM", () => {
+	BytecodeWasm.parseInstructions(mediumCode);
+});
+
+await run();
+
+bench("parseInstructions - large (10KB) - TS", () => {
+	BytecodeTS.parseInstructions(largeCode);
+});
+
+bench("parseInstructions - large (10KB) - WASM", () => {
+	BytecodeWasm.parseInstructions(largeCode);
+});
+
+await run();
+
+// ============================================================================
+// toHex benchmarks
+// ============================================================================
+
+bench("toHex - simple - TS", () => {
+	BytecodeTS.toHex(simpleCode);
+});
+
+bench("toHex - simple - WASM", () => {
+	BytecodeWasm.toHex(simpleCode);
+});
+
+await run();
+
+bench("toHex - medium - TS", () => {
+	BytecodeTS.toHex(mediumCode);
+});
+
+bench("toHex - medium - WASM", () => {
+	BytecodeWasm.toHex(mediumCode);
+});
+
+await run();
+
+bench("toHex - large (10KB) - TS", () => {
+	BytecodeTS.toHex(largeCode);
+});
+
+bench("toHex - large (10KB) - WASM", () => {
+	BytecodeWasm.toHex(largeCode);
+});
+
+await run();
+
+// ============================================================================
+// hasMetadata benchmarks
+// ============================================================================
+
+// Bytecode with Solidity metadata
+const codeWithMetadata = bc(
+	new Uint8Array([
+		0x60, 0x80, 0x60, 0x40, 0x52, 0xa2, 0x64, 0x69, 0x70, 0x66, 0x73, 0x00,
+		0x33,
+	]),
 );
 
-const smallCode2 = new Uint8Array(smallCode) as BrandedBytecode;
-const mediumCode2 = new Uint8Array(mediumCode) as BrandedBytecode;
-const largeCode2 = new Uint8Array(largeCode) as BrandedBytecode;
-results.push(
-	benchmark("equals - small (100b)", () => equals(smallCode, smallCode2)),
-);
-results.push(
-	benchmark("equals - medium (1kb)", () => equals(mediumCode, mediumCode2)),
-);
-results.push(
-	benchmark("equals - large (10kb)", () => equals(largeCode, largeCode2)),
-);
-results.push(benchmark("isPush", () => isPush(0x60)));
-results.push(benchmark("getPushSize", () => getPushSize(0x7f)));
-results.push(benchmark("isTerminator", () => isTerminator(0xf3)));
-results.push(benchmark("size - small", () => size(smallCode)));
-results.push(benchmark("size - large", () => size(largeCode)));
-results.push(
-	benchmark("extractRuntime - small", () => extractRuntime(smallCode, 10)),
-);
-results.push(
-	benchmark("extractRuntime - large", () => extractRuntime(largeCode, 100)),
-);
+bench("hasMetadata - without metadata - TS", () => {
+	BytecodeTS.hasMetadata(mediumCode);
+});
 
-// Scaling analysis
-const smallAnalysis = results.find((r) => r.name === "analyze - small (100b)");
-const mediumAnalysis = results.find((r) => r.name === "analyze - medium (1kb)");
-const largeAnalysis = results.find((r) => r.name === "analyze - large (10kb)");
+bench("hasMetadata - without metadata - WASM", () => {
+	BytecodeWasm.hasMetadata(mediumCode);
+});
 
-if (smallAnalysis && mediumAnalysis && largeAnalysis) {
-}
+await run();
 
-// Export results
-if (typeof Bun !== "undefined") {
-	const resultsFile =
-		"/Users/williamcory/primitives/src/primitives/bytecode-results.json";
-	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-}
+bench("hasMetadata - with metadata - TS", () => {
+	BytecodeTS.hasMetadata(codeWithMetadata);
+});
+
+bench("hasMetadata - with metadata - WASM", () => {
+	BytecodeWasm.hasMetadata(codeWithMetadata);
+});
+
+await run();
+
+// ============================================================================
+// isBytecodeBoundary benchmarks (WASM-only method)
+// ============================================================================
+
+bench("isBytecodeBoundary - small - WASM", () => {
+	BytecodeWasm.isBytecodeBoundary(jumpCode, 0);
+	BytecodeWasm.isBytecodeBoundary(jumpCode, 1);
+	BytecodeWasm.isBytecodeBoundary(jumpCode, 2);
+});
+
+bench("isBytecodeBoundary - large - WASM", () => {
+	BytecodeWasm.isBytecodeBoundary(largeCode, 0);
+	BytecodeWasm.isBytecodeBoundary(largeCode, 5000);
+	BytecodeWasm.isBytecodeBoundary(largeCode, 9999);
+});
+
+await run();

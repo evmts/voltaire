@@ -1,18 +1,20 @@
 /**
- * EIP-712 Benchmarks
- *
- * Performance benchmarks for EIP-712 operations
+ * Benchmark: JS vs WASM vs viem EIP-712 implementations
+ * Compares performance of EIP-712 operations across different backends
  */
 
-import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
+import { hashTypedData as viemHashTypedData } from "viem";
 import { Address } from "../primitives/Address/index.js";
-import { fromHex } from "../primitives/Hash/HashType/fromHex.js";
 import {
 	EIP712,
 	type TypeDefinitions,
 	type TypedData,
 } from "./EIP712/index.js";
+import { Eip712Wasm } from "./eip712.wasm.js";
+
+// Initialize WASM
+await Eip712Wasm.init();
 
 // Test data setup
 const privateKey = new Uint8Array(32);
@@ -20,6 +22,7 @@ for (let i = 0; i < 32; i++) {
 	privateKey[i] = i + 1;
 }
 
+// Simple typed data
 const simpleTypedData: TypedData = {
 	domain: {
 		name: "TestApp",
@@ -35,7 +38,8 @@ const simpleTypedData: TypedData = {
 	},
 };
 
-const complexTypedData: TypedData = {
+// Complex Mail typed data (EIP-712 reference example)
+const mailTypedData: TypedData = {
 	domain: {
 		name: "Ether Mail",
 		version: "1",
@@ -69,6 +73,7 @@ const complexTypedData: TypedData = {
 	},
 };
 
+// ERC-2612 Permit typed data (real-world use case)
 const permitTypedData: TypedData = {
 	domain: {
 		name: "USD Coin",
@@ -97,256 +102,367 @@ const permitTypedData: TypedData = {
 	},
 };
 
-// Pre-computed signature for verification benchmark
-const testSignature = EIP712.signTypedData(simpleTypedData, privateKey);
-const testAddress = EIP712.recoverAddress(testSignature, simpleTypedData);
-
-// ============================================================================
-// Domain Operations
-// ============================================================================
-
-bench("Domain.hash - minimal", () => {
-	EIP712.Domain.hash({ name: "Test" });
-});
-
-bench("Domain.hash - complete", () => {
-	EIP712.Domain.hash({
-		name: "TestDomain",
+// viem-compatible typed data (uses hex strings for addresses)
+const viemSimpleTypedData = {
+	domain: {
+		name: "TestApp",
 		version: "1",
 		chainId: 1n,
-		verifyingContract: Address.fromHex(
-			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
-		),
-		salt: fromHex(
-			"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-		),
-	});
-});
+	},
+	types: {
+		Message: [{ name: "content", type: "string" }],
+	},
+	primaryType: "Message" as const,
+	message: {
+		content: "Hello, World!",
+	},
+};
 
-// ============================================================================
-// Type Encoding
-// ============================================================================
-
-bench("encodeType - simple", () => {
-	const types: TypeDefinitions = {
+const viemMailTypedData = {
+	domain: {
+		name: "Ether Mail",
+		version: "1",
+		chainId: 1n,
+		verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC" as const,
+	},
+	types: {
 		Person: [
 			{ name: "name", type: "string" },
 			{ name: "wallet", type: "address" },
 		],
-	};
-	EIP712.encodeType("Person", types);
-});
-
-bench("encodeType - nested", () => {
-	EIP712.encodeType("Mail", complexTypedData.types);
-});
-
-bench("hashType - simple", () => {
-	const types: TypeDefinitions = {
-		Person: [
-			{ name: "name", type: "string" },
-			{ name: "wallet", type: "address" },
+		Mail: [
+			{ name: "from", type: "Person" },
+			{ name: "to", type: "Person" },
+			{ name: "contents", type: "string" },
 		],
-	};
-	EIP712.hashType("Person", types);
-});
+	},
+	primaryType: "Mail" as const,
+	message: {
+		from: {
+			name: "Cow",
+			wallet: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826" as const,
+		},
+		to: {
+			name: "Bob",
+			wallet: "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB" as const,
+		},
+		contents: "Hello, Bob!",
+	},
+};
 
-bench("hashType - nested", () => {
-	EIP712.hashType("Mail", complexTypedData.types);
-});
+const viemPermitTypedData = {
+	domain: {
+		name: "USD Coin",
+		version: "1",
+		chainId: 1n,
+		verifyingContract: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as const,
+	},
+	types: {
+		Permit: [
+			{ name: "owner", type: "address" },
+			{ name: "spender", type: "address" },
+			{ name: "value", type: "uint256" },
+			{ name: "nonce", type: "uint256" },
+			{ name: "deadline", type: "uint256" },
+		],
+	},
+	primaryType: "Permit" as const,
+	message: {
+		// Use checksummed addresses for viem
+		owner: "0x742d35Cc6634c0532925a3b844bc9e7595F251E3" as const,
+		spender: "0x1234567890123456789012345678901234567890" as const,
+		value: 1000000n,
+		nonce: 0n,
+		deadline: 1700000000n,
+	},
+};
 
 // ============================================================================
-// Value Encoding
+// hashTypedData - Simple Message
 // ============================================================================
 
-bench("encodeValue - uint256", () => {
-	EIP712.encodeValue("uint256", 42n, {});
+bench("hashTypedData - simple - TS", () => {
+	EIP712.hashTypedData(simpleTypedData);
 });
 
-bench("encodeValue - address", () => {
+bench("hashTypedData - simple - WASM", () => {
+	Eip712Wasm.hashTypedData(simpleTypedData);
+});
+
+bench("hashTypedData - simple - viem", () => {
+	viemHashTypedData(viemSimpleTypedData);
+});
+
+await run();
+
+// ============================================================================
+// hashTypedData - Nested Types (Mail)
+// ============================================================================
+
+bench("hashTypedData - nested - TS", () => {
+	EIP712.hashTypedData(mailTypedData);
+});
+
+bench("hashTypedData - nested - WASM", () => {
+	Eip712Wasm.hashTypedData(mailTypedData);
+});
+
+bench("hashTypedData - nested - viem", () => {
+	viemHashTypedData(viemMailTypedData);
+});
+
+await run();
+
+// ============================================================================
+// hashTypedData - ERC-2612 Permit
+// ============================================================================
+
+bench("hashTypedData - permit - TS", () => {
+	EIP712.hashTypedData(permitTypedData);
+});
+
+bench("hashTypedData - permit - WASM", () => {
+	Eip712Wasm.hashTypedData(permitTypedData);
+});
+
+bench("hashTypedData - permit - viem", () => {
+	viemHashTypedData(viemPermitTypedData);
+});
+
+await run();
+
+// ============================================================================
+// Domain.hash (encode domain separator)
+// ============================================================================
+
+const minimalDomain = { name: "Test" };
+// Helper to create bytes32 from hex
+function hexToBytes32(hex: string): Uint8Array {
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(32);
+	for (let i = 0; i < 32; i++) {
+		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+}
+
+const completeDomain = {
+	name: "TestDomain",
+	version: "1",
+	chainId: 1n,
+	verifyingContract: Address.fromHex(
+		"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+	),
+	salt: hexToBytes32(
+		"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+	),
+};
+
+bench("Domain.hash - minimal - TS", () => {
+	EIP712.Domain.hash(minimalDomain);
+});
+
+bench("Domain.hash - minimal - WASM", () => {
+	Eip712Wasm.Domain.hash(minimalDomain);
+});
+
+await run();
+
+bench("Domain.hash - complete - TS", () => {
+	EIP712.Domain.hash(completeDomain);
+});
+
+bench("Domain.hash - complete - WASM", () => {
+	Eip712Wasm.Domain.hash(completeDomain);
+});
+
+await run();
+
+// ============================================================================
+// hashStruct
+// ============================================================================
+
+const personTypes: TypeDefinitions = {
+	Person: [
+		{ name: "name", type: "string" },
+		{ name: "wallet", type: "address" },
+	],
+};
+
+const personMessage = {
+	name: "Alice",
+	wallet: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+};
+
+bench("hashStruct - simple - TS", () => {
+	EIP712.hashStruct("Person", personMessage, personTypes);
+});
+
+bench("hashStruct - simple - WASM", () => {
+	Eip712Wasm.hashStruct("Person", personMessage, personTypes);
+});
+
+await run();
+
+bench("hashStruct - nested - TS", () => {
+	EIP712.hashStruct(
+		mailTypedData.primaryType,
+		mailTypedData.message,
+		mailTypedData.types,
+	);
+});
+
+bench("hashStruct - nested - WASM", () => {
+	Eip712Wasm.hashStruct(
+		mailTypedData.primaryType,
+		mailTypedData.message,
+		mailTypedData.types,
+	);
+});
+
+await run();
+
+// ============================================================================
+// encodeType
+// ============================================================================
+
+bench("encodeType - simple - TS", () => {
+	EIP712.encodeType("Person", personTypes);
+});
+
+bench("encodeType - simple - WASM", () => {
+	Eip712Wasm.encodeType("Person", personTypes);
+});
+
+await run();
+
+bench("encodeType - nested - TS", () => {
+	EIP712.encodeType("Mail", mailTypedData.types);
+});
+
+bench("encodeType - nested - WASM", () => {
+	Eip712Wasm.encodeType("Mail", mailTypedData.types);
+});
+
+await run();
+
+// ============================================================================
+// hashType
+// ============================================================================
+
+bench("hashType - simple - TS", () => {
+	EIP712.hashType("Person", personTypes);
+});
+
+bench("hashType - simple - WASM", () => {
+	Eip712Wasm.hashType("Person", personTypes);
+});
+
+await run();
+
+bench("hashType - nested - TS", () => {
+	EIP712.hashType("Mail", mailTypedData.types);
+});
+
+bench("hashType - nested - WASM", () => {
+	Eip712Wasm.hashType("Mail", mailTypedData.types);
+});
+
+await run();
+
+// ============================================================================
+// encodeValue
+// ============================================================================
+
+bench("encodeValue - uint256 - TS", () => {
+	EIP712.encodeValue("uint256", 1000000000000000000n, {});
+});
+
+bench("encodeValue - uint256 - WASM", () => {
+	Eip712Wasm.encodeValue("uint256", 1000000000000000000n, {});
+});
+
+await run();
+
+bench("encodeValue - address - TS", () => {
 	const address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
 	EIP712.encodeValue("address", address, {});
 });
 
-bench("encodeValue - string", () => {
-	EIP712.encodeValue("string", "Hello, World!", {});
+bench("encodeValue - address - WASM", () => {
+	const address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+	Eip712Wasm.encodeValue("address", address, {});
 });
-
-bench("encodeValue - bytes", () => {
-	const bytes = new Uint8Array([1, 2, 3, 4, 5]);
-	EIP712.encodeValue("bytes", bytes, {});
-});
-
-bench("encodeValue - struct", () => {
-	const types: TypeDefinitions = {
-		Person: [
-			{ name: "name", type: "string" },
-			{ name: "wallet", type: "address" },
-		],
-	};
-	const person = {
-		name: "Alice",
-		wallet: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
-	};
-	EIP712.encodeValue("Person", person, types);
-});
-
-// ============================================================================
-// Struct Hashing
-// ============================================================================
-
-bench("hashStruct - simple", () => {
-	const types: TypeDefinitions = {
-		Message: [{ name: "content", type: "string" }],
-	};
-	const message = { content: "Hello!" };
-	EIP712.hashStruct("Message", message, types);
-});
-
-bench("hashStruct - complex", () => {
-	EIP712.hashStruct(
-		complexTypedData.primaryType,
-		complexTypedData.message,
-		complexTypedData.types,
-	);
-});
-
-// ============================================================================
-// Typed Data Hashing
-// ============================================================================
-
-bench("hashTypedData - simple message", () => {
-	EIP712.hashTypedData(simpleTypedData);
-});
-
-bench("hashTypedData - nested types", () => {
-	EIP712.hashTypedData(complexTypedData);
-});
-
-bench("hashTypedData - ERC-2612 permit", () => {
-	EIP712.hashTypedData(permitTypedData);
-});
-
-// ============================================================================
-// Signing Operations
-// ============================================================================
-
-bench("signTypedData - simple message", () => {
-	EIP712.signTypedData(simpleTypedData, privateKey);
-});
-
-bench("signTypedData - nested types", () => {
-	EIP712.signTypedData(complexTypedData, privateKey);
-});
-
-bench("signTypedData - ERC-2612 permit", () => {
-	EIP712.signTypedData(permitTypedData, privateKey);
-});
-
-// ============================================================================
-// Verification Operations
-// ============================================================================
-
-bench("recoverAddress", () => {
-	EIP712.recoverAddress(testSignature, simpleTypedData);
-});
-
-bench("verifyTypedData - valid signature", () => {
-	EIP712.verifyTypedData(testSignature, simpleTypedData, testAddress);
-});
-
-bench("verifyTypedData - invalid signature", () => {
-	const wrongAddress = Address.fromHex(
-		"0x1234567890123456789012345678901234567890",
-	);
-	EIP712.verifyTypedData(testSignature, simpleTypedData, wrongAddress);
-});
-
-// ============================================================================
-// End-to-End Operations
-// ============================================================================
-
-bench("sign + verify (simple)", () => {
-	const sig = EIP712.signTypedData(simpleTypedData, privateKey);
-	const addr = EIP712.recoverAddress(sig, simpleTypedData);
-	EIP712.verifyTypedData(sig, simpleTypedData, addr);
-});
-
-bench("sign + verify (complex)", () => {
-	const sig = EIP712.signTypedData(complexTypedData, privateKey);
-	const addr = EIP712.recoverAddress(sig, complexTypedData);
-	EIP712.verifyTypedData(sig, complexTypedData, addr);
-});
-
-bench("sign + verify (permit)", () => {
-	const sig = EIP712.signTypedData(permitTypedData, privateKey);
-	const addr = EIP712.recoverAddress(sig, permitTypedData);
-	EIP712.verifyTypedData(sig, permitTypedData, addr);
-});
-
-// ============================================================================
-// Utility Operations
-// ============================================================================
-
-bench("validate - simple", () => {
-	EIP712.validate(simpleTypedData);
-});
-
-bench("validate - complex", () => {
-	EIP712.validate(complexTypedData);
-});
-
-bench("format", () => {
-	EIP712.format(simpleTypedData);
-});
-
-// ============================================================================
-// Run benchmarks and export results
-// ============================================================================
-
-// Capture results
-const results: Record<
-	string,
-	{ opsPerSec: number; avgTime: number; samples: number }
-> = {};
-
-// Monkey-patch mitata's summary function to capture results
-// biome-ignore lint/suspicious/noExplicitAny: mitata injects summary on globalThis
-const originalSummary = (globalThis as any).summary;
-// biome-ignore lint/suspicious/noExplicitAny: mitata injects summary on globalThis
-(globalThis as any).summary = (result: any) => {
-	results[result.name] = {
-		opsPerSec: result.hz || 0,
-		avgTime: result.avg || 0,
-		samples: result.samples || 0,
-	};
-	if (originalSummary) originalSummary(result);
-};
 
 await run();
 
-// Export results to JSON
-const output = {
-	timestamp: new Date().toISOString(),
-	results,
-	summary: {
-		totalBenchmarks: Object.keys(results).length,
-		categories: {
-			domain: Object.keys(results).filter((k) => k.startsWith("Domain")).length,
-			encoding: Object.keys(results).filter(
-				(k) => k.startsWith("encode") || k.startsWith("hash"),
-			).length,
-			signing: Object.keys(results).filter(
-				(k) => k.startsWith("sign") || k.startsWith("verify"),
-			).length,
-			utility: Object.keys(results).filter(
-				(k) => k.startsWith("validate") || k.startsWith("format"),
-			).length,
-		},
-	},
-};
+bench("encodeValue - string - TS", () => {
+	EIP712.encodeValue("string", "Hello, World!", {});
+});
 
-writeFileSync(
-	new URL("./eip712-results.json", import.meta.url),
-	JSON.stringify(output, null, 2),
-);
+bench("encodeValue - string - WASM", () => {
+	Eip712Wasm.encodeValue("string", "Hello, World!", {});
+});
+
+await run();
+
+bench("encodeValue - bytes - TS", () => {
+	const bytes = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+	EIP712.encodeValue("bytes", bytes, {});
+});
+
+bench("encodeValue - bytes - WASM", () => {
+	const bytes = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+	Eip712Wasm.encodeValue("bytes", bytes, {});
+});
+
+await run();
+
+// ============================================================================
+// Sign + Verify (end-to-end)
+// ============================================================================
+
+bench("signTypedData - simple - TS", () => {
+	EIP712.signTypedData(simpleTypedData, privateKey);
+});
+
+bench("signTypedData - simple - WASM", () => {
+	Eip712Wasm.signTypedData(simpleTypedData, privateKey);
+});
+
+await run();
+
+bench("signTypedData - permit - TS", () => {
+	EIP712.signTypedData(permitTypedData, privateKey);
+});
+
+bench("signTypedData - permit - WASM", () => {
+	Eip712Wasm.signTypedData(permitTypedData, privateKey);
+});
+
+await run();
+
+// Pre-compute signatures for verification benchmarks
+const tsSignature = EIP712.signTypedData(simpleTypedData, privateKey);
+const wasmSignature = Eip712Wasm.signTypedData(simpleTypedData, privateKey);
+const tsAddress = EIP712.recoverAddress(tsSignature, simpleTypedData);
+
+bench("recoverAddress - TS", () => {
+	EIP712.recoverAddress(tsSignature, simpleTypedData);
+});
+
+bench("recoverAddress - WASM", () => {
+	Eip712Wasm.recoverAddress(wasmSignature, simpleTypedData);
+});
+
+await run();
+
+bench("verifyTypedData - TS", () => {
+	EIP712.verifyTypedData(tsSignature, simpleTypedData, tsAddress);
+});
+
+bench("verifyTypedData - WASM", () => {
+	Eip712Wasm.verifyTypedData(wasmSignature, simpleTypedData, tsAddress);
+});
+
+await run();

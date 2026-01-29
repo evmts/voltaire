@@ -1,372 +1,305 @@
 /**
- * EventLog Benchmarks
+ * EventLog Benchmarks: TS vs WASM vs viem
  *
- * Measures performance of event log operations
+ * Compares performance of event log operations across implementations.
+ * Uses realistic ERC20 Transfer event logs as test data.
  */
 
+import { bench, run } from "mitata";
+import { decodeEventLog, encodeEventTopics } from "viem";
+import { loadWasm } from "../../wasm-loader/loader.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/HashType.js";
-import { clone } from "./clone.js";
-import { copy } from "./copy.js";
 import { create } from "./create.js";
+import {
+	filterLogsWasm,
+	matchesAddressWasm,
+	matchesTopicsWasm,
+} from "./EventLog.wasm.js";
 import { filterLogs } from "./filterLogs.js";
-import { getIndexed } from "./getIndexed.js";
-import { getIndexedTopics } from "./getIndexedTopics.js";
-import { getSignature } from "./getSignature.js";
-import { getTopic0 } from "./getTopic0.js";
-import { isRemoved } from "./isRemoved.js";
 import { matchesAddress } from "./matchesAddress.js";
 import { matchesFilter } from "./matchesFilter.js";
 import { matchesTopics } from "./matchesTopics.js";
-import { sortLogs } from "./sortLogs.js";
-import { wasRemoved } from "./wasRemoved.js";
+
+// Initialize WASM
+await loadWasm(new URL("../../wasm-loader/primitives.wasm", import.meta.url));
 
 // ============================================================================
-// Benchmark Infrastructure
+// ERC20 Transfer Event Test Data
 // ============================================================================
 
-interface BenchmarkResult {
-	name: string;
-	opsPerSec: number;
-	avgTimeMs: number;
-	iterations: number;
+// ERC20 Transfer(address indexed from, address indexed to, uint256 value)
+const TRANSFER_TOPIC =
+	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+
+// Test addresses (USDC, Uniswap V2 Pair, random addresses)
+const USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+const UNISWAP_PAIR = "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc";
+const RANDOM_ADDR1 = "0x1111111111111111111111111111111111111111";
+const RANDOM_ADDR2 = "0x2222222222222222222222222222222222222222";
+const RANDOM_ADDR3 = "0x3333333333333333333333333333333333333333";
+
+// Convert hex strings to branded types for TS/WASM
+function hexToBytes(hex: string): Uint8Array {
+	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(clean.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
 }
 
-function benchmark(
-	name: string,
-	fn: () => void,
-	duration = 2000,
-): BenchmarkResult {
-	// Warmup
-	for (let i = 0; i < 100; i++) {
-		fn();
-	}
-
-	// Benchmark
-	const startTime = performance.now();
-	let iterations = 0;
-	let endTime = startTime;
-
-	while (endTime - startTime < duration) {
-		fn();
-		iterations++;
-		endTime = performance.now();
-	}
-
-	const totalTime = endTime - startTime;
-	const avgTimeMs = totalTime / iterations;
-	const opsPerSec = (iterations / totalTime) * 1000;
-
-	return {
-		name,
-		opsPerSec,
-		avgTimeMs,
-		iterations,
-	};
+function hexToAddress(hex: string): BrandedAddress {
+	return hexToBytes(hex) as BrandedAddress;
 }
 
-// ============================================================================
-// Test Data
-// ============================================================================
+function hexToHash(hex: string): HashType {
+	return hexToBytes(hex) as HashType;
+}
 
-const addr1 =
-	"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
-const addr2 =
-	"0x0000000000000000000000000000000000000002" as unknown as BrandedAddress;
-const addr3 =
-	"0x0000000000000000000000000000000000000003" as unknown as BrandedAddress;
+function addressToTopic(address: string): HashType {
+	// Pad address to 32 bytes
+	const clean = address.startsWith("0x") ? address.slice(2) : address;
+	const padded = `000000000000000000000000${clean}`;
+	return hexToHash(`0x${padded}`);
+}
 
-const topic0 =
-	"0x0000000000000000000000000000000000000000000000000000000000000010" as unknown as HashType;
-const topic1 =
-	"0x0000000000000000000000000000000000000000000000000000000000000011" as unknown as HashType;
-const topic2 =
-	"0x0000000000000000000000000000000000000000000000000000000000000012" as unknown as HashType;
-const topic3 =
-	"0x0000000000000000000000000000000000000000000000000000000000000013" as unknown as HashType;
+// Branded addresses
+const usdcAddr = hexToAddress(USDC_ADDRESS);
+const uniswapAddr = hexToAddress(UNISWAP_PAIR);
+const randomAddr1 = hexToAddress(RANDOM_ADDR1);
+const randomAddr2 = hexToAddress(RANDOM_ADDR2);
+const randomAddr3 = hexToAddress(RANDOM_ADDR3);
 
-const blockHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000100" as unknown as HashType;
-const txHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000200" as unknown as HashType;
+// Topics
+const transferTopic = hexToHash(TRANSFER_TOPIC);
+const fromTopic = addressToTopic(USDC_ADDRESS);
+const toTopic = addressToTopic(UNISWAP_PAIR);
 
-const testLog = create({
-	address: addr1,
-	topics: [topic0, topic1, topic2],
-	data: new Uint8Array([1, 2, 3, 4, 5]),
-	blockNumber: 100n,
-	transactionHash: txHash,
-	transactionIndex: 5,
-	blockHash: blockHash,
-	logIndex: 10,
-	removed: false,
+// Transfer value: 100 USDC (6 decimals = 100_000_000)
+const transferData = hexToBytes(
+	"0x0000000000000000000000000000000000000000000000000000000005f5e100",
+);
+
+// Create a realistic ERC20 Transfer log
+const transferLog = create({
+	address: usdcAddr,
+	topics: [transferTopic, fromTopic, toTopic],
+	data: transferData,
+	blockNumber: 18_000_000n,
+	logIndex: 42,
+	transactionIndex: 15,
 });
 
-// Create large log dataset for filtering benchmarks
-const largeLogs = Array.from({ length: 1000 }, (_, i) => {
-	const blockNum = 1000n + BigInt(i);
-	return create({
-		address: i % 3 === 0 ? addr1 : i % 3 === 1 ? addr2 : addr3,
-		topics: [
-			i % 2 === 0 ? topic0 : topic1,
-			i % 3 === 0 ? topic1 : topic2,
-			topic3,
+// ERC20 ABI for viem
+const erc20TransferAbi = [
+	{
+		type: "event" as const,
+		name: "Transfer",
+		inputs: [
+			{ indexed: true, name: "from", type: "address" },
+			{ indexed: true, name: "to", type: "address" },
+			{ indexed: false, name: "value", type: "uint256" },
 		],
-		data: new Uint8Array([i % 256]),
-		blockNumber: blockNum,
-		logIndex: i % 50,
+	},
+] as const;
+
+// Create large dataset for filtering benchmarks (1000 logs)
+const largeLogs = Array.from({ length: 1000 }, (_, i) => {
+	const addresses = [
+		usdcAddr,
+		uniswapAddr,
+		randomAddr1,
+		randomAddr2,
+		randomAddr3,
+	];
+	const addr = addresses[i % 5];
+	const from = addressToTopic(i % 2 === 0 ? USDC_ADDRESS : RANDOM_ADDR1);
+	const to = addressToTopic(i % 3 === 0 ? UNISWAP_PAIR : RANDOM_ADDR2);
+
+	return create({
+		address: addr,
+		topics: [transferTopic, from, to],
+		data: transferData,
+		blockNumber: BigInt(18_000_000 + i),
+		logIndex: i % 100,
 	});
 });
 
-const results: BenchmarkResult[] = [];
-results.push(
-	benchmark("EventLog.create - minimal", () =>
-		create({
-			address: addr1,
-			topics: [topic0],
-			data: new Uint8Array([1, 2, 3]),
-		}),
-	),
-);
-results.push(
-	benchmark("EventLog.create - full", () =>
-		create({
-			address: addr1,
-			topics: [topic0, topic1, topic2],
-			data: new Uint8Array([1, 2, 3, 4, 5]),
-			blockNumber: 100n,
-			transactionHash: txHash,
-			transactionIndex: 5,
-			blockHash: blockHash,
-			logIndex: 10,
-			removed: false,
-		}),
-	),
-);
-results.push(benchmark("EventLog.getTopic0", () => getTopic0(testLog)));
-results.push(
-	benchmark("EventLog.getSignature (this:)", () => getSignature(testLog)),
-);
-results.push(
-	benchmark("EventLog.getIndexedTopics", () => getIndexedTopics(testLog)),
-);
-results.push(
-	benchmark("EventLog.getIndexed (this:)", () => getIndexed(testLog)),
-);
-results.push(
-	benchmark("matchesTopics - exact match", () =>
-		matchesTopics(testLog, [topic0, topic1, topic2]),
-	),
-);
-results.push(
-	benchmark("matchesTopics - with null wildcard", () =>
-		matchesTopics(testLog, [topic0, null, topic2]),
-	),
-);
-results.push(
-	benchmark("matchesTopics - with array (OR logic)", () =>
-		matchesTopics(testLog, [[topic0, topic1], topic1, topic2]),
-	),
-);
-results.push(
-	benchmark("matchesTopics - no match", () =>
-		matchesTopics(testLog, [topic1, topic1, topic2]),
-	),
-);
-results.push(
-	benchmark("matches (this:) - with wildcard", () =>
-		matchesTopics(testLog, [topic0, null, topic2]),
-	),
-);
-results.push(
-	benchmark("matchesAddress - single match", () =>
-		matchesAddress(testLog, addr1),
-	),
-);
-results.push(
-	benchmark("matchesAddress - single no match", () =>
-		matchesAddress(testLog, addr2),
-	),
-);
-results.push(
-	benchmark("matchesAddress - array match", () =>
-		matchesAddress(testLog, [addr1, addr2, addr3]),
-	),
-);
-results.push(
-	benchmark("matchesAddress - array no match", () =>
-		matchesAddress(testLog, [addr2, addr3]),
-	),
-);
-results.push(
-	benchmark("matchesAddr (this:) - single", () =>
-		matchesAddress(testLog, addr1),
-	),
-);
-results.push(
-	benchmark("matchesFilter - address only", () =>
-		matchesFilter(testLog, { address: addr1 }),
-	),
-);
-results.push(
-	benchmark("matchesFilter - topics only", () =>
-		matchesFilter(testLog, { topics: [topic0, null, topic2] }),
-	),
-);
-results.push(
-	benchmark("matchesFilter - address + topics", () =>
-		matchesFilter(testLog, {
-			address: addr1,
-			topics: [topic0, null, topic2],
-		}),
-	),
-);
-results.push(
-	benchmark("matchesFilter - with block range", () =>
-		matchesFilter(testLog, {
-			address: addr1,
-			topics: [topic0],
-			fromBlock: 50n,
-			toBlock: 150n,
-		}),
-	),
-);
-results.push(
-	benchmark("matchesFilter - complete filter", () =>
-		matchesFilter(testLog, {
-			address: [addr1, addr2],
-			topics: [topic0, null, topic2],
-			fromBlock: 50n,
-			toBlock: 150n,
-			blockHash: blockHash,
-		}),
-	),
-);
-results.push(
-	benchmark("matchesAll (this:) - complete", () =>
-		matchesFilter(testLog, {
-			address: addr1,
-			topics: [topic0, null, topic2],
-			fromBlock: 50n,
-			toBlock: 150n,
-		}),
-	),
-);
-results.push(
-	benchmark(
-		"filterLogs - by address",
-		() => filterLogs(largeLogs, { address: addr1 }),
-		1000,
-	),
-);
-results.push(
-	benchmark(
-		"filterLogs - by topics",
-		() => filterLogs(largeLogs, { topics: [topic0] }),
-		1000,
-	),
-);
-results.push(
-	benchmark(
-		"filterLogs - address + topics",
-		() =>
-			filterLogs(largeLogs, {
-				address: addr1,
-				topics: [topic0],
-			}),
-		1000,
-	),
-);
-results.push(
-	benchmark(
-		"filterLogs - block range",
-		() =>
-			filterLogs(largeLogs, {
-				fromBlock: 1100n,
-				toBlock: 1200n,
-			}),
-		1000,
-	),
-);
-results.push(
-	benchmark(
-		"filterLogs - complex filter",
-		() =>
-			filterLogs(largeLogs, {
-				address: [addr1, addr2],
-				topics: [[topic0, topic1], null, topic3],
-				fromBlock: 1100n,
-				toBlock: 1500n,
-			}),
-		1000,
-	),
-);
-results.push(
-	benchmark(
-		"filter (this:) - complex",
-		() =>
-			filterLogs(largeLogs, {
-				address: [addr1, addr2],
-				topics: [topic0],
-			}),
-		1000,
-	),
-);
-results.push(
-	benchmark("sortLogs - 10 logs", () => sortLogs(largeLogs.slice(0, 10)), 2000),
-);
-results.push(
-	benchmark(
-		"sortLogs - 100 logs",
-		() => sortLogs(largeLogs.slice(0, 100)),
-		1000,
-	),
-);
-results.push(benchmark("sortLogs - 1000 logs", () => sortLogs(largeLogs), 500));
-results.push(
-	benchmark(
-		"sort (this:) - 100 logs",
-		() => sortLogs(largeLogs.slice(0, 100)),
-		1000,
-	),
-);
+// ============================================================================
+// Benchmarks: matchesAddress
+// ============================================================================
 
-const removedLog = create({
-	address: addr1,
-	topics: [topic0],
-	data: new Uint8Array([]),
-	removed: true,
+bench("matchesAddress - single - TS", () => {
+	matchesAddress(transferLog, usdcAddr);
 });
-results.push(benchmark("isRemoved - removed log", () => isRemoved(removedLog)));
-results.push(benchmark("isRemoved - active log", () => isRemoved(testLog)));
-results.push(
-	benchmark("wasRemoved (this:) - removed", () => wasRemoved(removedLog)),
-);
-results.push(
-	benchmark("clone - minimal log", () =>
-		clone(
-			create({
-				address: addr1,
-				topics: [topic0],
-				data: new Uint8Array([1, 2, 3]),
-			}),
-		),
-	),
-);
-results.push(benchmark("clone - full log", () => clone(testLog)));
-results.push(benchmark("copy (this:) - full log", () => copy(testLog)));
 
-// Find fastest and slowest operations
-const _fastest = results.reduce((prev, curr) =>
-	curr.opsPerSec > prev.opsPerSec ? curr : prev,
-);
-const _slowest = results.reduce((prev, curr) =>
-	curr.opsPerSec < prev.opsPerSec ? curr : prev,
-);
+bench("matchesAddress - single - WASM", () => {
+	matchesAddressWasm(transferLog.address, [usdcAddr]);
+});
 
-// Export results for analysis
-if (typeof Bun !== "undefined") {
-	const resultsFile =
-		"/Users/williamcory/primitives/src/primitives/event-log-results.json";
-	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-}
+await run();
+
+bench("matchesAddress - array (3) - TS", () => {
+	matchesAddress(transferLog, [randomAddr1, randomAddr2, usdcAddr]);
+});
+
+bench("matchesAddress - array (3) - WASM", () => {
+	matchesAddressWasm(transferLog.address, [randomAddr1, randomAddr2, usdcAddr]);
+});
+
+await run();
+
+bench("matchesAddress - no match - TS", () => {
+	matchesAddress(transferLog, randomAddr1);
+});
+
+bench("matchesAddress - no match - WASM", () => {
+	matchesAddressWasm(transferLog.address, [randomAddr1]);
+});
+
+await run();
+
+// ============================================================================
+// Benchmarks: matchesTopics
+// ============================================================================
+
+bench("matchesTopics - exact - TS", () => {
+	matchesTopics(transferLog, [transferTopic, fromTopic, toTopic]);
+});
+
+bench("matchesTopics - exact - WASM", () => {
+	matchesTopicsWasm(transferLog.topics as HashType[], [
+		transferTopic,
+		fromTopic,
+		toTopic,
+	]);
+});
+
+await run();
+
+bench("matchesTopics - wildcard - TS", () => {
+	matchesTopics(transferLog, [transferTopic, null, toTopic]);
+});
+
+bench("matchesTopics - wildcard - WASM", () => {
+	matchesTopicsWasm(transferLog.topics as HashType[], [
+		transferTopic,
+		null,
+		toTopic,
+	]);
+});
+
+await run();
+
+bench("matchesTopics - topic0 only - TS", () => {
+	matchesTopics(transferLog, [transferTopic]);
+});
+
+bench("matchesTopics - topic0 only - WASM", () => {
+	matchesTopicsWasm(transferLog.topics as HashType[], [transferTopic]);
+});
+
+await run();
+
+// ============================================================================
+// Benchmarks: matchesFilter (combined)
+// ============================================================================
+
+bench("matchesFilter - address+topics - TS", () => {
+	matchesFilter(transferLog, {
+		address: usdcAddr,
+		topics: [transferTopic, null, toTopic],
+	});
+});
+
+await run();
+
+bench("matchesFilter - with block range - TS", () => {
+	matchesFilter(transferLog, {
+		address: usdcAddr,
+		topics: [transferTopic],
+		fromBlock: 17_000_000n,
+		toBlock: 19_000_000n,
+	});
+});
+
+await run();
+
+// ============================================================================
+// Benchmarks: filterLogs (batch operations)
+// ============================================================================
+
+bench("filterLogs - 1000 logs by address - TS", () => {
+	filterLogs(largeLogs, { address: usdcAddr });
+});
+
+bench("filterLogs - 1000 logs by address - WASM", () => {
+	filterLogsWasm(largeLogs, [usdcAddr], []);
+});
+
+await run();
+
+bench("filterLogs - 1000 logs by topic0 - TS", () => {
+	filterLogs(largeLogs, { topics: [transferTopic] });
+});
+
+bench("filterLogs - 1000 logs by topic0 - WASM", () => {
+	filterLogsWasm(largeLogs, [], [transferTopic]);
+});
+
+await run();
+
+bench("filterLogs - 1000 logs address+topics - TS", () => {
+	filterLogs(largeLogs, {
+		address: usdcAddr,
+		topics: [transferTopic, null],
+	});
+});
+
+bench("filterLogs - 1000 logs address+topics - WASM", () => {
+	filterLogsWasm(largeLogs, [usdcAddr], [transferTopic, null]);
+});
+
+await run();
+
+// ============================================================================
+// Benchmarks: viem decodeEventLog
+// ============================================================================
+
+// Hex strings for viem (it expects hex format)
+const viemTopics = [
+	TRANSFER_TOPIC,
+	`0x000000000000000000000000${USDC_ADDRESS.slice(2)}`,
+	`0x000000000000000000000000${UNISWAP_PAIR.slice(2)}`,
+] as const;
+
+const viemData =
+	"0x0000000000000000000000000000000000000000000000000000000005f5e100";
+
+bench("decodeEventLog - viem", () => {
+	decodeEventLog({
+		abi: erc20TransferAbi,
+		data: viemData,
+		topics: viemTopics,
+	});
+});
+
+await run();
+
+// ============================================================================
+// Benchmarks: encodeEventTopics (viem)
+// ============================================================================
+
+bench("encodeEventTopics - viem", () => {
+	encodeEventTopics({
+		abi: erc20TransferAbi,
+		eventName: "Transfer",
+		args: {
+			from: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			to: "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc",
+		},
+	});
+});
+
+await run();

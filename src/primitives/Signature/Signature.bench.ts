@@ -1,10 +1,25 @@
 /**
- * Benchmark: Signature Performance
- * Measures performance of Signature operations across different algorithms
+ * Signature Performance Benchmarks - SLICE 2
+ *
+ * Measures performance of Signature operations across:
+ * - voltaire (default JS)
+ * - voltaire-effect
+ * - viem (reference)
+ * - ethers (reference)
  */
 
 import { bench, run } from "mitata";
 import * as Signature from "./index.js";
+
+// voltaire-effect
+import * as SignatureEffect from "../../../voltaire-effect/src/primitives/Signature/index.js";
+import * as Effect from "effect/Effect";
+
+// viem comparison
+import { parseSignature, serializeSignature } from "viem";
+
+// ethers comparison
+import { Signature as EthersSignature } from "ethers";
 
 // =============================================================================
 // Test Data
@@ -60,6 +75,13 @@ const derBytes = new Uint8Array([
 	...secp256k1_s,
 ]);
 
+// Hex signature for viem/ethers comparison
+const hexSignature =
+	"0x" +
+	Buffer.from(secp256k1_r).toString("hex") +
+	Buffer.from(secp256k1_s).toString("hex") +
+	"1b"; // v=27
+
 // Pre-created signatures for conversion benchmarks
 const sig_secp256k1 = Signature.fromSecp256k1(
 	secp256k1_r,
@@ -81,257 +103,353 @@ const signatures_batch = Array.from({ length: 100 }, (_, i) => {
 	return Signature.fromSecp256k1(r, s, 27);
 });
 
-bench("Signature.fromSecp256k1 - with v", () => {
+// =============================================================================
+// Construction: fromSecp256k1
+// =============================================================================
+
+bench("Signature.fromSecp256k1 - voltaire", () => {
 	Signature.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
 });
 
-bench("Signature.fromSecp256k1 - without v", () => {
-	Signature.fromSecp256k1(secp256k1_r, secp256k1_s);
+bench("Signature.fromSecp256k1 - voltaire-effect", () => {
+	SignatureEffect.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
 });
 
 await run();
 
-bench("Signature.fromP256", () => {
+// =============================================================================
+// Construction: fromHex
+// =============================================================================
+
+bench("Signature.fromHex - voltaire", () => {
+	Signature.fromHex(hexSignature);
+});
+
+bench("Signature.fromHex - voltaire-effect", () => {
+	Effect.runSync(SignatureEffect.fromHex(hexSignature));
+});
+
+bench("parseSignature - viem", () => {
+	parseSignature(hexSignature as `0x${string}`);
+});
+
+bench("Signature.from - ethers", () => {
+	EthersSignature.from(hexSignature);
+});
+
+await run();
+
+// =============================================================================
+// Construction: fromP256
+// =============================================================================
+
+bench("Signature.fromP256 - voltaire", () => {
 	Signature.fromP256(p256_r, p256_s);
 });
 
+bench("Signature.fromP256 - voltaire-effect", () => {
+	SignatureEffect.fromP256(p256_r, p256_s);
+});
+
 await run();
 
-bench("Signature.fromEd25519", () => {
+// =============================================================================
+// Construction: fromEd25519
+// =============================================================================
+
+bench("Signature.fromEd25519 - voltaire", () => {
 	Signature.fromEd25519(ed25519_sig);
 });
 
+bench("Signature.fromEd25519 - voltaire-effect", () => {
+	SignatureEffect.fromEd25519(ed25519_sig);
+});
+
 await run();
 
-bench("Signature.fromCompact - secp256k1", () => {
+// =============================================================================
+// Construction: fromCompact
+// =============================================================================
+
+bench("Signature.fromCompact - secp256k1 - voltaire", () => {
 	Signature.fromCompact(compactBytes, "secp256k1");
 });
 
-bench("Signature.fromCompact - p256", () => {
-	Signature.fromCompact(compactBytes, "p256");
-});
-
-bench("Signature.fromCompact - ed25519", () => {
-	Signature.fromCompact(compactBytes, "ed25519");
+bench("Signature.fromCompact - secp256k1 - voltaire-effect", () => {
+	Effect.runSync(SignatureEffect.fromCompact(compactBytes, "secp256k1"));
 });
 
 await run();
 
-bench("Signature.fromDER - secp256k1", () => {
+// =============================================================================
+// Construction: fromDER
+// =============================================================================
+
+bench("Signature.fromDER - secp256k1 - voltaire", () => {
 	Signature.fromDER(derBytes, "secp256k1");
 });
 
-bench("Signature.fromDER - p256", () => {
-	Signature.fromDER(derBytes, "p256");
+bench("Signature.fromDER - secp256k1 - voltaire-effect", () => {
+	Effect.runSync(SignatureEffect.fromDER(derBytes, "secp256k1"));
 });
 
 await run();
 
-bench("Signature.from - Uint8Array", () => {
-	Signature.from(compactBytes);
+// =============================================================================
+// Conversion: toHex
+// =============================================================================
+
+bench("Signature.toHex - voltaire", () => {
+	Signature.toHex(sig_secp256k1);
 });
 
-bench("Signature.from - object {r, s, v}", () => {
-	Signature.from({
-		r: secp256k1_r,
-		s: secp256k1_s,
-		v: secp256k1_v,
-		algorithm: "secp256k1",
-	});
+bench("Signature.toHex - voltaire-effect", () => {
+	SignatureEffect.toHex(sig_secp256k1);
 });
 
-bench("Signature.from - Ed25519 object", () => {
-	Signature.from({ signature: ed25519_sig, algorithm: "ed25519" });
+bench("serializeSignature - viem", () => {
+	const parsed = parseSignature(hexSignature as `0x${string}`);
+	serializeSignature(parsed);
 });
 
-bench("Signature.from - existing signature", () => {
-	Signature.from(sig_secp256k1);
+bench("signature.serialized - ethers", () => {
+	EthersSignature.from(hexSignature).serialized;
 });
 
 await run();
 
-bench("signature.toBytes - secp256k1", () => {
+// =============================================================================
+// Conversion: toBytes
+// =============================================================================
+
+bench("Signature.toBytes - secp256k1 - voltaire", () => {
 	Signature.toBytes(sig_secp256k1);
 });
 
-bench("signature.toBytes - p256", () => {
+bench("Signature.toBytes - secp256k1 - voltaire-effect", () => {
+	SignatureEffect.toBytes(sig_secp256k1);
+});
+
+bench("Signature.toBytes - p256 - voltaire", () => {
 	Signature.toBytes(sig_p256);
 });
 
-bench("signature.toBytes - ed25519", () => {
+bench("Signature.toBytes - ed25519 - voltaire", () => {
 	Signature.toBytes(sig_ed25519);
 });
 
 await run();
 
-bench("signature.toCompact - secp256k1", () => {
+// =============================================================================
+// Conversion: toCompact
+// =============================================================================
+
+bench("Signature.toCompact - secp256k1 - voltaire", () => {
 	Signature.toCompact(sig_secp256k1);
 });
 
-bench("signature.toCompact - p256", () => {
+bench("Signature.toCompact - secp256k1 - voltaire-effect", () => {
+	SignatureEffect.toCompact(sig_secp256k1);
+});
+
+bench("Signature.toCompact - p256 - voltaire", () => {
 	Signature.toCompact(sig_p256);
 });
 
-bench("signature.toCompact - ed25519", () => {
+bench("Signature.toCompact - ed25519 - voltaire", () => {
 	Signature.toCompact(sig_ed25519);
 });
 
 await run();
 
-bench("signature.toDER - secp256k1", () => {
+// =============================================================================
+// Conversion: toDER
+// =============================================================================
+
+bench("Signature.toDER - secp256k1 - voltaire", () => {
 	Signature.toDER(sig_secp256k1);
 });
 
-bench("signature.toDER - p256", () => {
+bench("Signature.toDER - secp256k1 - voltaire-effect", () => {
+	SignatureEffect.toDER(sig_secp256k1);
+});
+
+bench("Signature.toDER - p256 - voltaire", () => {
 	Signature.toDER(sig_p256);
 });
 
 await run();
 
-bench("Signature.getAlgorithm - secp256k1", () => {
+// =============================================================================
+// Accessors: getR, getS, getV
+// =============================================================================
+
+bench("Signature.getR - voltaire", () => {
+	Signature.getR(sig_secp256k1);
+});
+
+bench("Signature.getR - voltaire-effect", () => {
+	SignatureEffect.getR(sig_secp256k1);
+});
+
+await run();
+
+bench("Signature.getS - voltaire", () => {
+	Signature.getS(sig_secp256k1);
+});
+
+bench("Signature.getS - voltaire-effect", () => {
+	SignatureEffect.getS(sig_secp256k1);
+});
+
+await run();
+
+bench("Signature.getV - voltaire", () => {
+	Signature.getV(sig_secp256k1);
+});
+
+bench("Signature.getV - voltaire-effect", () => {
+	SignatureEffect.getV(sig_secp256k1);
+});
+
+await run();
+
+// =============================================================================
+// Algorithm detection
+// =============================================================================
+
+bench("Signature.getAlgorithm - secp256k1 - voltaire", () => {
 	Signature.getAlgorithm(sig_secp256k1);
 });
 
-bench("Signature.getAlgorithm - p256", () => {
+bench("Signature.getAlgorithm - secp256k1 - voltaire-effect", () => {
+	SignatureEffect.getAlgorithm(sig_secp256k1);
+});
+
+bench("Signature.getAlgorithm - p256 - voltaire", () => {
 	Signature.getAlgorithm(sig_p256);
 });
 
-bench("Signature.getAlgorithm - ed25519", () => {
+bench("Signature.getAlgorithm - ed25519 - voltaire", () => {
 	Signature.getAlgorithm(sig_ed25519);
 });
 
 await run();
 
-bench("Signature.getR - secp256k1", () => {
-	Signature.getR(sig_secp256k1);
-});
+// =============================================================================
+// Canonicalization
+// =============================================================================
 
-bench("Signature.getS - secp256k1", () => {
-	Signature.getS(sig_secp256k1);
-});
-
-bench("Signature.getV - secp256k1", () => {
-	Signature.getV(sig_secp256k1);
-});
-
-await run();
-
-bench("Signature.isCanonical - canonical", () => {
+bench("Signature.isCanonical - canonical - voltaire", () => {
 	Signature.isCanonical(sig_secp256k1);
 });
 
-bench("Signature.isCanonical - non-canonical", () => {
+bench("Signature.isCanonical - canonical - voltaire-effect", () => {
+	SignatureEffect.isCanonical(sig_secp256k1);
+});
+
+bench("Signature.isCanonical - non-canonical - voltaire", () => {
 	Signature.isCanonical(sig_secp256k1_nocanonical);
 });
 
-bench("Signature.isCanonical - ed25519 (always canonical)", () => {
+bench("Signature.isCanonical - ed25519 - voltaire", () => {
 	Signature.isCanonical(sig_ed25519);
 });
 
 await run();
 
-bench("Signature.normalize - already canonical", () => {
+bench("Signature.normalize - already canonical - voltaire", () => {
 	Signature.normalize(sig_secp256k1);
 });
 
-bench("Signature.normalize - non-canonical", () => {
+bench("Signature.normalize - already canonical - voltaire-effect", () => {
+	SignatureEffect.normalize(sig_secp256k1);
+});
+
+bench("Signature.normalize - non-canonical - voltaire", () => {
 	Signature.normalize(sig_secp256k1_nocanonical);
 });
 
-bench("Signature.normalize - p256", () => {
+bench("Signature.normalize - p256 - voltaire", () => {
 	Signature.normalize(sig_p256);
 });
 
-bench("Signature.normalize - ed25519 (no-op)", () => {
+bench("Signature.normalize - ed25519 (no-op) - voltaire", () => {
 	Signature.normalize(sig_ed25519);
 });
 
 await run();
 
-bench("Signature.equals - same signature", () => {
+// =============================================================================
+// Comparison
+// =============================================================================
+
+bench("Signature.equals - same - voltaire", () => {
 	Signature.equals(sig_secp256k1, sig_secp256k1);
 });
 
-bench("Signature.equals - different signatures", () => {
+bench("Signature.equals - same - voltaire-effect", () => {
+	SignatureEffect.equals(sig_secp256k1, sig_secp256k1);
+});
+
+bench("Signature.equals - different - voltaire", () => {
 	Signature.equals(sig_secp256k1, sig_p256);
 });
 
-bench("Signature.equals - different algorithms", () => {
+bench("Signature.equals - different algorithms - voltaire", () => {
 	Signature.equals(sig_secp256k1, sig_ed25519);
 });
 
 await run();
 
-bench("Signature.is - valid signature", () => {
+// =============================================================================
+// Type checking
+// =============================================================================
+
+bench("Signature.is - valid - voltaire", () => {
 	Signature.is(sig_secp256k1);
 });
 
-bench("Signature.is - invalid (bytes)", () => {
+bench("Signature.is - valid - voltaire-effect", () => {
+	SignatureEffect.is(sig_secp256k1);
+});
+
+bench("Signature.is - invalid (bytes) - voltaire", () => {
 	Signature.is(compactBytes);
 });
 
-bench("Signature.is - invalid (null)", () => {
+bench("Signature.is - invalid (null) - voltaire", () => {
 	Signature.is(null);
 });
 
 await run();
 
-bench("fromSecp256k1 - invalid r length (error)", () => {
-	try {
-		Signature.fromSecp256k1(new Uint8Array(31), secp256k1_s, secp256k1_v);
-	} catch {
-		// Expected
-	}
-});
+// =============================================================================
+// Batch operations
+// =============================================================================
 
-bench("fromSecp256k1 - invalid s length (error)", () => {
-	try {
-		Signature.fromSecp256k1(secp256k1_r, new Uint8Array(31), secp256k1_v);
-	} catch {
-		// Expected
-	}
-});
-
-bench("fromCompact - invalid length (error)", () => {
-	try {
-		Signature.fromCompact(new Uint8Array(63), "secp256k1");
-	} catch {
-		// Expected
-	}
-});
-
-bench("fromDER - invalid format (error)", () => {
-	try {
-		Signature.fromDER(new Uint8Array([0x30, 0x00]), "secp256k1");
-	} catch {
-		// Expected
-	}
-});
-
-await run();
-
-bench("Batch - normalize 10 signatures", () => {
+bench("Batch normalize 10 signatures - voltaire", () => {
 	for (let i = 0; i < 10; i++) {
 		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.normalize(signatures_batch[i]!);
 	}
 });
 
-bench("Batch - isCanonical check 100 signatures", () => {
+bench("Batch isCanonical 100 signatures - voltaire", () => {
 	for (let i = 0; i < 100; i++) {
 		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.isCanonical(signatures_batch[i]!);
 	}
 });
 
-bench("Batch - toCompact 100 signatures", () => {
+bench("Batch toCompact 100 signatures - voltaire", () => {
 	for (let i = 0; i < 100; i++) {
 		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.toCompact(signatures_batch[i]!);
 	}
 });
 
-bench("Batch - toDER 100 signatures", () => {
+bench("Batch toDER 100 signatures - voltaire", () => {
 	for (let i = 0; i < 100; i++) {
 		// biome-ignore lint/style/noNonNullAssertion: benchmark array access
 		Signature.toDER(signatures_batch[i]!);
@@ -340,19 +458,39 @@ bench("Batch - toDER 100 signatures", () => {
 
 await run();
 
-bench("secp256k1 - full roundtrip (create → normalize → toDER)", () => {
+// =============================================================================
+// Round-trip conversions
+// =============================================================================
+
+bench("roundtrip hex->sig->hex - voltaire", () => {
+	const sig = Signature.fromHex(hexSignature);
+	Signature.toHex(sig);
+});
+
+bench("roundtrip hex->sig->hex - viem", () => {
+	const sig = parseSignature(hexSignature as `0x${string}`);
+	serializeSignature(sig);
+});
+
+bench("roundtrip hex->sig->serialized - ethers", () => {
+	EthersSignature.from(hexSignature).serialized;
+});
+
+await run();
+
+bench("secp256k1 full roundtrip (create -> normalize -> toDER) - voltaire", () => {
 	const sig = Signature.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
 	const normalized = Signature.normalize(sig);
 	Signature.toDER(normalized);
 });
 
-bench("p256 - full roundtrip (create → normalize → toDER)", () => {
+bench("p256 full roundtrip (create -> normalize -> toDER) - voltaire", () => {
 	const sig = Signature.fromP256(p256_r, p256_s);
 	const normalized = Signature.normalize(sig);
 	Signature.toDER(normalized);
 });
 
-bench("ed25519 - full roundtrip (create → toCompact)", () => {
+bench("ed25519 full roundtrip (create -> toCompact) - voltaire", () => {
 	const sig = Signature.fromEd25519(ed25519_sig);
 	Signature.toCompact(sig);
 });

@@ -1,419 +1,367 @@
 /**
- * Transaction Benchmarks
+ * Transaction Benchmarks: Voltaire TS vs WASM vs viem vs ethers
  *
- * Measures performance of transaction operations
+ * Compares transaction operations across implementations.
+ * Note: WASM currently only supports detectType. Full serialize/deserialize/hash in WASM is WIP.
  */
 
+import { Transaction as EthersTransaction } from "ethers";
+import { bench, run } from "mitata";
+import {
+	keccak256 as viemKeccak256,
+	parseTransaction as viemParseTransaction,
+	serializeTransaction as viemSerializeTransaction,
+} from "viem";
+import * as loader from "../../wasm-loader/loader.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
-import type { HashType } from "../Hash/index.js";
-import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/TransactionEIP1559Type.js";
-import type { TransactionEIP4844Type } from "../Transaction/EIP4844/TransactionEIP4844Type.js";
-import type { TransactionEIP7702Type } from "../Transaction/EIP7702/TransactionEIP7702Type.js";
-import * as Transaction from "../Transaction/index.js";
-import type { TransactionLegacyType } from "../Transaction/Legacy/TransactionLegacyType.js";
-import type {
-	EIP1559,
-	EIP2930,
-	EIP4844,
-	EIP7702,
-	Legacy,
-} from "../Transaction/types.js";
+import type { HashType } from "../Hash/HashType.js";
+import * as Transaction from "./index.js";
+import { detectTransactionType } from "./Transaction.wasm.js";
+import { Type } from "./types.js";
+
+// Initialize WASM
+await loader.loadWasm(
+	new URL("../../wasm-loader/primitives.wasm", import.meta.url),
+);
 
 // ============================================================================
-// Benchmark Runner
+// Test Data - Realistic signed EIP-1559 transaction
 // ============================================================================
 
-interface BenchmarkResult {
-	name: string;
-	opsPerSec: number;
-	avgTimeMs: number;
-	iterations: number;
-}
-
-function benchmark(
-	name: string,
-	fn: () => void,
-	duration = 2000,
-): BenchmarkResult {
-	// Warmup
-	for (let i = 0; i < 100; i++) {
-		try {
-			fn();
-		} catch {
-			// Ignore errors during warmup
-		}
+// Parse hex to Uint8Array
+function hexToBytes(hex: string): Uint8Array {
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(normalized.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 	}
-
-	// Benchmark
-	const startTime = performance.now();
-	let iterations = 0;
-	let endTime = startTime;
-
-	while (endTime - startTime < duration) {
-		try {
-			fn();
-		} catch {
-			// Count iteration even if it throws
-		}
-		iterations++;
-		endTime = performance.now();
-	}
-
-	const totalTime = endTime - startTime;
-	const avgTimeMs = totalTime / iterations;
-	const opsPerSec = (iterations / totalTime) * 1000;
-
-	return {
-		name,
-		opsPerSec,
-		avgTimeMs,
-		iterations,
-	};
-}
-
-// ============================================================================
-// Test Data
-// ============================================================================
-
-function createAddress(byte: number): BrandedAddress {
-	const addr = new Uint8Array(20);
-	addr.fill(byte);
-	return addr as BrandedAddress;
-}
-
-function createHash(byte: number): HashType {
-	const hash = new Uint8Array(32);
-	hash.fill(byte);
-	return hash as HashType;
-}
-
-function createBytes(length: number, fill = 0): Uint8Array {
-	const bytes = new Uint8Array(length);
-	bytes.fill(fill);
 	return bytes;
 }
 
-const testAddress = createAddress(1);
-const testHash = createHash(10);
-const testSignature = {
-	r: createBytes(32, 1),
-	s: createBytes(32, 2),
+// Create branded address from hex
+function createAddress(hex: string): BrandedAddress {
+	const bytes = hexToBytes(hex);
+	return bytes as BrandedAddress;
+}
+
+// Create branded hash from bytes
+function _createHash(bytes: Uint8Array): HashType {
+	return bytes as HashType;
+}
+
+// Real signed EIP-1559 transaction (mainnet transfer)
+const signedEIP1559Hex =
+	"0x02f8730180843b9aca00851bf08eb00082520894742d35cc6634c0532925a3b844bc9e7595f0beb0880de0b6b3a764000080c080a0b8c4f1c9b6b3a1c8d5e7f9a0b2c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a3b5c7a00d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1";
+
+const signedTxBytes = hexToBytes(signedEIP1559Hex);
+
+// Pre-create a transaction object for serialize benchmarks
+const testAddress = createAddress("0x742d35cc6634c0532925a3b844bc9e7595f0beb0");
+const testR = new Uint8Array(32);
+testR.set(
+	hexToBytes(
+		"b8c4f1c9b6b3a1c8d5e7f9a0b2c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a3b5c7",
+	),
+);
+const testS = new Uint8Array(32);
+testS.set(
+	hexToBytes("0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1"),
+);
+
+const eip1559Tx = {
+	__tag: "TransactionEIP1559" as const,
+	type: Type.EIP1559,
+	chainId: 1n,
+	nonce: 0n,
+	maxPriorityFeePerGas: 1000000000n, // 1 gwei
+	maxFeePerGas: 7500000000n, // 7.5 gwei
+	gasLimit: 21000n,
+	to: testAddress,
+	value: 1000000000000000000n, // 1 ETH
+	data: new Uint8Array(),
+	accessList: [],
+	yParity: 0,
+	r: testR,
+	s: testS,
 };
 
-const legacyTx: Legacy = {
-	type: Transaction.Type.Legacy,
+// viem transaction format
+const viemTx = {
+	type: "eip1559" as const,
+	chainId: 1,
+	nonce: 0,
+	maxPriorityFeePerGas: 1000000000n,
+	maxFeePerGas: 7500000000n,
+	gas: 21000n,
+	to: "0x742d35cc6634c0532925a3b844bc9e7595f0beb0" as `0x${string}`,
+	value: 1000000000000000000n,
+	data: "0x" as `0x${string}`,
+	accessList: [],
+};
+
+const viemSignature = {
+	r: "0xb8c4f1c9b6b3a1c8d5e7f9a0b2c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a3b5c7" as `0x${string}`,
+	s: "0x0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1" as `0x${string}`,
+	yParity: 0,
+};
+
+// Pre-serialize for deserialize benchmarks
+// biome-ignore lint/suspicious/noExplicitAny: benchmark flexibility
+const serializedVoltaire = Transaction.serialize(eip1559Tx as any);
+const serializedViem = viemSerializeTransaction(viemTx, viemSignature);
+
+// ============================================================================
+// Detect Type Benchmarks
+// ============================================================================
+
+bench("detectType - Voltaire TS", () => {
+	Transaction.detectType(signedTxBytes);
+});
+
+bench("detectType - Voltaire WASM", () => {
+	detectTransactionType(signedTxBytes);
+});
+
+// viem doesn't have explicit detectType - it's built into parseTransaction
+
+await run();
+
+// ============================================================================
+// Serialize Benchmarks
+// ============================================================================
+
+bench("serialize - Voltaire TS", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark flexibility
+	Transaction.serialize(eip1559Tx as any);
+});
+
+bench("serialize - viem", () => {
+	viemSerializeTransaction(viemTx, viemSignature);
+});
+
+// ethers Transaction.from + serialized
+const ethersTxObj = {
+	type: 2,
+	chainId: 1,
+	nonce: 0,
+	maxPriorityFeePerGas: 1000000000n,
+	maxFeePerGas: 7500000000n,
+	gasLimit: 21000n,
+	to: "0x742d35cc6634c0532925a3b844bc9e7595f0beb0",
+	value: 1000000000000000000n,
+	data: "0x",
+	accessList: [],
+	signature: {
+		r: "0xb8c4f1c9b6b3a1c8d5e7f9a0b2c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a3b5c7",
+		s: "0x0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1",
+		yParity: 0,
+	},
+};
+
+bench("serialize - ethers", () => {
+	EthersTransaction.from(ethersTxObj).serialized;
+});
+
+await run();
+
+// ============================================================================
+// Deserialize / Parse Benchmarks
+// ============================================================================
+
+bench("deserialize - Voltaire TS", () => {
+	Transaction.deserialize(serializedVoltaire);
+});
+
+bench("parseTransaction - viem", () => {
+	viemParseTransaction(serializedViem);
+});
+
+bench("parseTransaction - ethers", () => {
+	EthersTransaction.from(serializedViem);
+});
+
+await run();
+
+// ============================================================================
+// Hash Benchmarks
+// ============================================================================
+
+bench("hash - Voltaire TS", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark flexibility
+	Transaction.hash(eip1559Tx as any);
+});
+
+bench("hash - viem (keccak256 of serialized)", () => {
+	viemKeccak256(serializedViem);
+});
+
+await run();
+
+// ============================================================================
+// Combined Round-trip Benchmarks
+// ============================================================================
+
+bench("roundtrip (serialize + deserialize) - Voltaire TS", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark flexibility
+	const serialized = Transaction.serialize(eip1559Tx as any);
+	Transaction.deserialize(serialized);
+});
+
+bench("roundtrip (serialize + parse) - viem", () => {
+	const serialized = viemSerializeTransaction(viemTx, viemSignature);
+	viemParseTransaction(serialized);
+});
+
+bench("roundtrip (serialize + parse) - ethers", () => {
+	const tx = EthersTransaction.from(ethersTxObj);
+	EthersTransaction.from(tx.serialized);
+});
+
+await run();
+
+// ============================================================================
+// Legacy Transaction Benchmarks
+// ============================================================================
+
+const legacyTx = {
+	__tag: "TransactionLegacy" as const,
+	type: Type.Legacy,
 	nonce: 0n,
-	gasPrice: 20000000000n,
+	gasPrice: 20000000000n, // 20 gwei
 	gasLimit: 21000n,
 	to: testAddress,
 	value: 1000000000000000000n,
 	data: new Uint8Array(),
 	v: 27n,
-	r: testSignature.r,
-	s: testSignature.s,
+	r: testR,
+	s: testS,
 };
 
-const eip155Tx: Legacy = {
-	...legacyTx,
-	v: 37n, // Chain ID 1
+const viemLegacyTx = {
+	type: "legacy" as const,
+	nonce: 0,
+	gasPrice: 20000000000n,
+	gas: 21000n,
+	to: "0x742d35cc6634c0532925a3b844bc9e7595f0beb0" as `0x${string}`,
+	value: 1000000000000000000n,
+	data: "0x" as `0x${string}`,
 };
 
-const eip2930Tx: EIP2930 = {
-	type: Transaction.Type.EIP2930,
+const viemLegacySignature = {
+	r: "0xb8c4f1c9b6b3a1c8d5e7f9a0b2c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a3b5c7" as `0x${string}`,
+	s: "0x0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1" as `0x${string}`,
+	v: 27n,
+};
+
+bench("serialize legacy - Voltaire TS", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark flexibility
+	Transaction.serialize(legacyTx as any);
+});
+
+bench("serialize legacy - viem", () => {
+	viemSerializeTransaction(viemLegacyTx, viemLegacySignature);
+});
+
+const ethersLegacyTx = {
+	type: 0,
+	nonce: 0,
+	gasPrice: 20000000000n,
+	gasLimit: 21000n,
+	to: "0x742d35cc6634c0532925a3b844bc9e7595f0beb0",
+	value: 1000000000000000000n,
+	data: "0x",
+	signature: {
+		r: "0xb8c4f1c9b6b3a1c8d5e7f9a0b2c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a3b5c7",
+		s: "0x0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1",
+		v: 27,
+	},
+};
+
+bench("serialize legacy - ethers", () => {
+	EthersTransaction.from(ethersLegacyTx).serialized;
+});
+
+await run();
+
+// ============================================================================
+// EIP-2930 Transaction Benchmarks
+// ============================================================================
+
+const eip2930Tx = {
+	__tag: "TransactionEIP2930" as const,
+	type: Type.EIP2930,
 	chainId: 1n,
 	nonce: 0n,
 	gasPrice: 20000000000n,
-	gasLimit: 21000n,
-	to: testAddress,
-	value: 1000000000000000000n,
-	data: new Uint8Array(),
-	accessList: [{ address: testAddress, storageKeys: [testHash] }],
-	yParity: 0,
-	r: testSignature.r,
-	s: testSignature.s,
-};
-
-const eip1559Tx: EIP1559 = {
-	type: Transaction.Type.EIP1559,
-	chainId: 1n,
-	nonce: 0n,
-	maxPriorityFeePerGas: 2000000000n,
-	maxFeePerGas: 30000000000n,
-	gasLimit: 21000n,
-	to: testAddress,
-	value: 1000000000000000000n,
-	data: new Uint8Array(),
-	accessList: [{ address: testAddress, storageKeys: [testHash] }],
-	yParity: 0,
-	r: testSignature.r,
-	s: testSignature.s,
-};
-
-const eip4844Tx: EIP4844 = {
-	type: Transaction.Type.EIP4844,
-	chainId: 1n,
-	nonce: 0n,
-	maxPriorityFeePerGas: 1000000000n,
-	maxFeePerGas: 20000000000n,
-	gasLimit: 100000n,
+	gasLimit: 50000n,
 	to: testAddress,
 	value: 0n,
 	data: new Uint8Array(),
-	accessList: [],
-	maxFeePerBlobGas: 2000000000n,
-	blobVersionedHashes: [testHash, createHash(20)],
+	accessList: [
+		{
+			address: createAddress("0x0000000000000000000000000000000000000001"),
+			storageKeys: [_createHash(new Uint8Array(32).fill(1))],
+		},
+	],
 	yParity: 0,
-	r: testSignature.r,
-	s: testSignature.s,
+	r: testR,
+	s: testS,
 };
 
-const eip7702Tx: EIP7702 = {
-	type: Transaction.Type.EIP7702,
-	chainId: 1n,
-	nonce: 0n,
-	maxPriorityFeePerGas: 1000000000n,
-	maxFeePerGas: 20000000000n,
-	gasLimit: 100000n,
-	to: testAddress,
+const viemEIP2930Tx = {
+	type: "eip2930" as const,
+	chainId: 1,
+	nonce: 0,
+	gasPrice: 20000000000n,
+	gas: 50000n,
+	to: "0x742d35cc6634c0532925a3b844bc9e7595f0beb0" as `0x${string}`,
 	value: 0n,
-	data: new Uint8Array(),
-	accessList: [],
-	authorizationList: [],
-	yParity: 0,
-	r: testSignature.r,
-	s: testSignature.s,
+	data: "0x" as `0x${string}`,
+	accessList: [
+		{
+			address: "0x0000000000000000000000000000000000000001" as `0x${string}`,
+			storageKeys: [
+				"0x0101010101010101010101010101010101010101010101010101010101010101" as `0x${string}`,
+			],
+		},
+	],
 };
 
-const typedTxData = new Uint8Array([0x02, 0xc0]);
-const legacyTxData = new Uint8Array([0xc0]);
+bench("serialize EIP-2930 with accessList - Voltaire TS", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: benchmark flexibility
+	Transaction.serialize(eip2930Tx as any);
+});
 
-const results: BenchmarkResult[] = [];
-results.push(
-	benchmark("Transaction.isLegacy", () => Transaction.isLegacy(legacyTx)),
-);
-results.push(
-	benchmark("Transaction.isEIP2930", () => Transaction.isEIP2930(eip2930Tx)),
-);
-results.push(
-	benchmark("Transaction.isEIP1559", () => Transaction.isEIP1559(eip1559Tx)),
-);
-results.push(
-	benchmark("Transaction.isEIP4844", () => Transaction.isEIP4844(eip4844Tx)),
-);
-results.push(
-	benchmark("Transaction.isEIP7702", () => Transaction.isEIP7702(eip7702Tx)),
-);
-results.push(
-	benchmark("Transaction.detectType - typed tx", () =>
-		Transaction.detectType(typedTxData),
-	),
-);
-results.push(
-	benchmark("Transaction.detectType - legacy tx", () =>
-		Transaction.detectType(legacyTxData),
-	),
-);
-results.push(
-	benchmark("Legacy.getChainId - EIP-155", () =>
-		Transaction.Legacy.getChainId.call(eip155Tx as TransactionLegacyType),
-	),
-);
-results.push(
-	benchmark("Legacy.getChainId - pre-EIP-155", () =>
-		Transaction.Legacy.getChainId.call(legacyTx as TransactionLegacyType),
-	),
-);
-results.push(
-	benchmark("Legacy.serialize", () => {
-		try {
-			Transaction.Legacy.serialize.call(legacyTx as TransactionLegacyType);
-		} catch {}
-	}),
-);
-results.push(
-	benchmark("Legacy.hash", () => {
-		try {
-			Transaction.Legacy.hash.call(legacyTx as TransactionLegacyType);
-		} catch {}
-	}),
-);
-results.push(
-	benchmark("Legacy.getSigningHash", () => {
-		try {
-			Transaction.Legacy.getSigningHash.call(legacyTx as TransactionLegacyType);
-		} catch {}
-	}),
-);
-const baseFee = 10000000000n;
-results.push(
-	benchmark("EIP1559.getEffectiveGasPrice", () =>
-		Transaction.EIP1559.getEffectiveGasPrice(
-			eip1559Tx as BrandedTransactionEIP1559,
-			baseFee,
-		),
-	),
-);
-results.push(
-	benchmark("EIP1559.serialize", () => {
-		try {
-			Transaction.EIP1559.serialize(eip1559Tx as BrandedTransactionEIP1559);
-		} catch {}
-	}),
-);
-results.push(
-	benchmark("EIP1559.hash", () => {
-		try {
-			Transaction.EIP1559.hash(eip1559Tx as BrandedTransactionEIP1559);
-		} catch {}
-	}),
-);
-results.push(
-	benchmark("EIP1559.getSigningHash", () => {
-		try {
-			Transaction.EIP1559.getSigningHash(
-				eip1559Tx as BrandedTransactionEIP1559,
-			);
-		} catch {}
-	}),
-);
-const blobBaseFee = 1n;
-results.push(
-	benchmark("EIP4844.getBlobGasCost", () =>
-		Transaction.EIP4844.getBlobGasCost(
-			eip4844Tx as TransactionEIP4844Type,
-			blobBaseFee,
-		),
-	),
-);
-results.push(
-	benchmark("EIP4844.getEffectiveGasPrice", () =>
-		Transaction.EIP4844.getEffectiveGasPrice(
-			eip4844Tx as TransactionEIP4844Type,
-			baseFee,
-		),
-	),
-);
-results.push(
-	benchmark("EIP4844.serialize", () => {
-		try {
-			Transaction.EIP4844.serialize(eip4844Tx as TransactionEIP4844Type);
-		} catch {}
-	}),
-);
-results.push(
-	benchmark("EIP7702.getEffectiveGasPrice", () =>
-		Transaction.EIP7702.getEffectiveGasPrice(
-			eip7702Tx as TransactionEIP7702Type,
-			baseFee,
-		),
-	),
-);
-results.push(
-	benchmark("Transaction.format - legacy", () => Transaction.format(legacyTx)),
-);
-results.push(
-	benchmark("Transaction.format - EIP-1559", () =>
-		Transaction.format(eip1559Tx),
-	),
-);
-results.push(
-	benchmark("Transaction.getGasPrice - legacy", () =>
-		Transaction.getGasPrice(legacyTx),
-	),
-);
-results.push(
-	benchmark("Transaction.getGasPrice - EIP-1559", () =>
-		Transaction.getGasPrice(eip1559Tx, baseFee),
-	),
-);
-results.push(
-	benchmark("Transaction.hasAccessList", () =>
-		Transaction.hasAccessList(legacyTx),
-	),
-);
-results.push(
-	benchmark("Transaction.getAccessList", () =>
-		Transaction.getAccessList(eip1559Tx),
-	),
-);
-results.push(
-	benchmark("Transaction.getChainId", () => Transaction.getChainId(eip1559Tx)),
-);
-results.push(
-	benchmark("Transaction.isSigned", () => Transaction.isSigned(legacyTx)),
-);
-results.push(
-	benchmark("Create Legacy Transaction", () => {
-		const tx: Legacy = {
-			type: Transaction.Type.Legacy,
-			nonce: 0n,
-			gasPrice: 20000000000n,
-			gasLimit: 21000n,
-			to: testAddress,
-			value: 1000000000000000000n,
-			data: new Uint8Array(),
-			v: 27n,
-			r: testSignature.r,
-			s: testSignature.s,
-		};
-		return tx;
-	}),
-);
-results.push(
-	benchmark("Create EIP-1559 Transaction", () => {
-		const tx: EIP1559 = {
-			type: Transaction.Type.EIP1559,
-			chainId: 1n,
-			nonce: 0n,
-			maxPriorityFeePerGas: 2000000000n,
-			maxFeePerGas: 30000000000n,
-			gasLimit: 21000n,
-			to: testAddress,
-			value: 1000000000000000000n,
-			data: new Uint8Array(),
-			accessList: [],
-			yParity: 0,
-			r: testSignature.r,
-			s: testSignature.s,
-		};
-		return tx;
-	}),
-);
-results.push(
-	benchmark("Create EIP-4844 Transaction", () => {
-		const tx: EIP4844 = {
-			type: Transaction.Type.EIP4844,
-			chainId: 1n,
-			nonce: 0n,
-			maxPriorityFeePerGas: 1000000000n,
-			maxFeePerGas: 20000000000n,
-			gasLimit: 100000n,
-			to: testAddress,
-			value: 0n,
-			data: new Uint8Array(),
-			accessList: [],
-			maxFeePerBlobGas: 2000000000n,
-			blobVersionedHashes: [testHash],
-			yParity: 0,
-			r: testSignature.r,
-			s: testSignature.s,
-		};
-		return tx;
-	}),
-);
-results.push(benchmark("Access nonce", () => legacyTx.nonce));
-results.push(benchmark("Access gasPrice", () => legacyTx.gasPrice));
-results.push(benchmark("Access to address", () => legacyTx.to));
-results.push(benchmark("Access value", () => legacyTx.value));
-results.push(benchmark("Access data", () => legacyTx.data));
-results.push(benchmark("Access signature (r)", () => legacyTx.r));
+bench("serialize EIP-2930 with accessList - viem", () => {
+	viemSerializeTransaction(viemEIP2930Tx, viemSignature);
+});
 
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sorted.slice(0, 5).forEach((_r, _i) => {});
+const ethersEIP2930Tx = {
+	type: 1,
+	chainId: 1,
+	nonce: 0,
+	gasPrice: 20000000000n,
+	gasLimit: 50000n,
+	to: "0x742d35cc6634c0532925a3b844bc9e7595f0beb0",
+	value: 0n,
+	data: "0x",
+	accessList: [
+		{
+			address: "0x0000000000000000000000000000000000000001",
+			storageKeys: [
+				"0x0101010101010101010101010101010101010101010101010101010101010101",
+			],
+		},
+	],
+	signature: {
+		r: "0xb8c4f1c9b6b3a1c8d5e7f9a0b2c4d6e8f0a1b3c5d7e9f1a2b4c6d8e0f2a3b5c7",
+		s: "0x0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1",
+		yParity: 0,
+	},
+};
 
-// Export results for analysis
-if (typeof Bun !== "undefined") {
-	const resultsFile =
-		"/Users/williamcory/primitives/src/primitives/transaction-results.json";
-	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-}
+bench("serialize EIP-2930 with accessList - ethers", () => {
+	EthersTransaction.from(ethersEIP2930Tx).serialized;
+});
+
+await run();

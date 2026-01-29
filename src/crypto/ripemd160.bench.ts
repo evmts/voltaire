@@ -1,242 +1,105 @@
 /**
- * RIPEMD160 Benchmarks
- *
- * Performance tests for RIPEMD160 hash function
- * at different input sizes. Compares Noble vs WASM implementations.
+ * Benchmark: TS vs WASM vs Noble RIPEMD160 implementations
+ * Compares performance of RIPEMD160 operations across different backends
  */
 
-import { writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { bench, describe } from "vitest";
+import { ripemd160 as nobleRipemd160 } from "@noble/hashes/legacy.js";
+import { bench, run } from "mitata";
 import { Ripemd160 } from "./Ripemd160/index.js";
 import { Ripemd160Wasm } from "./ripemd160.wasm.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Benchmark results storage
-const results: Record<string, { opsPerSec: number; avgTime: number }> = {};
-
-// Load WASM before running benchmarks
+// Initialize WASM
 await Ripemd160Wasm.load();
 
-describe("Ripemd160 Performance (Noble)", () => {
-	// Small input (32 bytes - typical hash size)
-	const small = new Uint8Array(32).fill(42);
-	bench(
-		"hash 32 bytes",
-		() => {
-			Ripemd160.hash(small);
-		},
-		{
-			time: 1000,
-			iterations: 10000,
-		},
-	);
+// Test data
+const emptyData = new Uint8Array(0);
+const data32B = new Uint8Array(32).fill(1);
+const data256B = new Uint8Array(256).fill(2);
+const data1KB = new Uint8Array(1024).fill(3);
 
-	// Medium input (1 KB)
-	const medium = new Uint8Array(1024).fill(42);
-	bench(
-		"hash 1 KB",
-		() => {
-			Ripemd160.hash(medium);
-		},
-		{
-			time: 1000,
-			iterations: 5000,
-		},
-	);
+const shortString = "hello";
+const mediumString = "The quick brown fox jumps over the lazy dog";
 
-	// Large input (64 KB)
-	const large = new Uint8Array(64 * 1024).fill(42);
-	bench(
-		"hash 64 KB",
-		() => {
-			Ripemd160.hash(large);
-		},
-		{
-			time: 1000,
-			iterations: 1000,
-		},
-	);
-
-	// String hashing
-	const str = "The quick brown fox jumps over the lazy dog";
-	bench(
-		"hashString",
-		() => {
-			Ripemd160.hashString(str);
-		},
-		{
-			time: 1000,
-			iterations: 10000,
-		},
-	);
-
-	// Empty input
-	bench(
-		"hash empty",
-		() => {
-			Ripemd160.hash(new Uint8Array([]));
-		},
-		{
-			time: 1000,
-			iterations: 10000,
-		},
-	);
+bench("hash - empty - TS", () => {
+	Ripemd160.hash(emptyData);
 });
 
-describe("Ripemd160Wasm Performance (Zig)", () => {
-	// Small input (32 bytes - typical hash size)
-	const small = new Uint8Array(32).fill(42);
-	bench(
-		"hash 32 bytes",
-		() => {
-			Ripemd160Wasm.hash(small);
-		},
-		{
-			time: 1000,
-			iterations: 10000,
-		},
-	);
-
-	// Medium input (1 KB)
-	const medium = new Uint8Array(1024).fill(42);
-	bench(
-		"hash 1 KB",
-		() => {
-			Ripemd160Wasm.hash(medium);
-		},
-		{
-			time: 1000,
-			iterations: 5000,
-		},
-	);
-
-	// Large input (64 KB)
-	const large = new Uint8Array(64 * 1024).fill(42);
-	bench(
-		"hash 64 KB",
-		() => {
-			Ripemd160Wasm.hash(large);
-		},
-		{
-			time: 1000,
-			iterations: 1000,
-		},
-	);
-
-	// String hashing
-	const str = "The quick brown fox jumps over the lazy dog";
-	bench(
-		"hashString",
-		() => {
-			Ripemd160Wasm.hashString(str);
-		},
-		{
-			time: 1000,
-			iterations: 10000,
-		},
-	);
-
-	// Empty input
-	bench(
-		"hash empty",
-		() => {
-			Ripemd160Wasm.hash(new Uint8Array([]));
-		},
-		{
-			time: 1000,
-			iterations: 10000,
-		},
-	);
+bench("hash - empty - WASM", () => {
+	Ripemd160Wasm.hash(emptyData);
 });
 
-// Manual benchmark runner for detailed results
-function runBenchmarks() {
-	const testCases = [
-		{ name: "hash_32_bytes", size: 32 },
-		{ name: "hash_1_KB", size: 1024 },
-		{ name: "hash_64_KB", size: 64 * 1024 },
-		{ name: "hash_1_MB", size: 1024 * 1024 },
-	];
-	for (const { name, size } of testCases) {
-		const data = new Uint8Array(size).fill(42);
-		const iterations = size > 10000 ? 1000 : 10000;
+bench("hash - empty - noble", () => {
+	nobleRipemd160(emptyData);
+});
 
-		const start = performance.now();
-		for (let i = 0; i < iterations; i++) {
-			Ripemd160.hash(data);
-		}
-		const end = performance.now();
+await run();
 
-		const totalTime = end - start;
-		const avgTime = totalTime / iterations;
-		const opsPerSec = Math.round(1000 / avgTime);
+bench("hash - 32B - TS", () => {
+	Ripemd160.hash(data32B);
+});
 
-		results[`noble_${name}`] = { opsPerSec, avgTime };
-	}
-	for (const { name, size } of testCases) {
-		const data = new Uint8Array(size).fill(42);
-		const iterations = size > 10000 ? 1000 : 10000;
+bench("hash - 32B - WASM", () => {
+	Ripemd160Wasm.hash(data32B);
+});
 
-		const start = performance.now();
-		for (let i = 0; i < iterations; i++) {
-			Ripemd160Wasm.hash(data);
-		}
-		const end = performance.now();
+bench("hash - 32B - noble", () => {
+	nobleRipemd160(data32B);
+});
 
-		const totalTime = end - start;
-		const avgTime = totalTime / iterations;
-		const opsPerSec = Math.round(1000 / avgTime);
+await run();
 
-		results[`wasm_${name}`] = { opsPerSec, avgTime };
-	}
+bench("hash - 256B - TS", () => {
+	Ripemd160.hash(data256B);
+});
 
-	// String benchmark - Noble
-	{
-		const str = "The quick brown fox jumps over the lazy dog";
-		const iterations = 10000;
+bench("hash - 256B - WASM", () => {
+	Ripemd160Wasm.hash(data256B);
+});
 
-		const start = performance.now();
-		for (let i = 0; i < iterations; i++) {
-			Ripemd160.hashString(str);
-		}
-		const end = performance.now();
+bench("hash - 256B - noble", () => {
+	nobleRipemd160(data256B);
+});
 
-		const totalTime = end - start;
-		const avgTime = totalTime / iterations;
-		const opsPerSec = Math.round(1000 / avgTime);
+await run();
 
-		results.noble_hashString = { opsPerSec, avgTime };
-	}
+bench("hash - 1KB - TS", () => {
+	Ripemd160.hash(data1KB);
+});
 
-	// String benchmark - WASM
-	{
-		const str = "The quick brown fox jumps over the lazy dog";
-		const iterations = 10000;
+bench("hash - 1KB - WASM", () => {
+	Ripemd160Wasm.hash(data1KB);
+});
 
-		const start = performance.now();
-		for (let i = 0; i < iterations; i++) {
-			Ripemd160Wasm.hashString(str);
-		}
-		const end = performance.now();
+bench("hash - 1KB - noble", () => {
+	nobleRipemd160(data1KB);
+});
 
-		const totalTime = end - start;
-		const avgTime = totalTime / iterations;
-		const opsPerSec = Math.round(1000 / avgTime);
+await run();
 
-		results.wasm_hashString = { opsPerSec, avgTime };
-	}
-	// Comparison logic removed (variables were unused)
+bench("hashString - short - TS", () => {
+	Ripemd160.hashString(shortString);
+});
 
-	// Save results
-	const outputPath = join(__dirname, "ripemd160-results.json");
-	writeFileSync(outputPath, JSON.stringify(results, null, 2));
-}
+bench("hashString - short - WASM", () => {
+	Ripemd160Wasm.hashString(shortString);
+});
 
-// Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-	runBenchmarks();
-}
+bench("hashString - short - noble", () => {
+	nobleRipemd160(new TextEncoder().encode(shortString));
+});
+
+await run();
+
+bench("hashString - medium - TS", () => {
+	Ripemd160.hashString(mediumString);
+});
+
+bench("hashString - medium - WASM", () => {
+	Ripemd160Wasm.hashString(mediumString);
+});
+
+bench("hashString - medium - noble", () => {
+	nobleRipemd160(new TextEncoder().encode(mediumString));
+});
+
+await run();

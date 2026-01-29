@@ -1,82 +1,37 @@
 /**
- * AccessList Performance Benchmarks
- *
- * Measures performance of access list operations
+ * Benchmark: Voltaire TS vs WASM vs viem AccessList implementations
+ * Compares performance of AccessList operations across different backends
  */
 
+import { bench, run } from "mitata";
+import { serializeAccessList } from "viem";
+import * as loader from "../../wasm-loader/loader.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/HashType.js";
-import type { Item } from "./AccessListType.js";
-import { addressCount } from "./addressCount.js";
+import * as Hex from "../Hex/index.js";
+import {
+	gasCostWasm,
+	gasSavingsWasm,
+	includesAddressWasm,
+	includesStorageKeyWasm,
+} from "./AccessList.wasm.js";
+import type { BrandedAccessList, Item } from "./AccessListType.js";
 import { assertValid } from "./assertValid.js";
-import { create } from "./create.js";
-import { deduplicate } from "./deduplicate.js";
 import { from } from "./from.js";
+import { fromBytes } from "./fromBytes.js";
 import { gasCost } from "./gasCost.js";
 import { gasSavings } from "./gasSavings.js";
-import { hasSavings } from "./hasSavings.js";
 import { includesAddress } from "./includesAddress.js";
 import { includesStorageKey } from "./includesStorageKey.js";
-import { is } from "./is.js";
-import { isEmpty } from "./isEmpty.js";
-import { isItem } from "./isItem.js";
-import { keysFor } from "./keysFor.js";
-import { merge } from "./merge.js";
-import { storageKeyCount } from "./storageKeyCount.js";
-import { withAddress } from "./withAddress.js";
-import { withStorageKey } from "./withStorageKey.js";
+import { toBytes } from "./toBytes.js";
 
-// Benchmark runner
-interface BenchmarkResult {
-	name: string;
-	opsPerSec: number;
-	avgTimeMs: number;
-	iterations: number;
-}
-
-function benchmark(
-	name: string,
-	fn: () => void,
-	duration = 2000,
-): BenchmarkResult {
-	// Warmup
-	for (let i = 0; i < 100; i++) {
-		try {
-			fn();
-		} catch {
-			// Ignore errors during warmup
-		}
-	}
-
-	// Benchmark
-	const startTime = performance.now();
-	let iterations = 0;
-	let endTime = startTime;
-
-	while (endTime - startTime < duration) {
-		try {
-			fn();
-		} catch {
-			// Count iteration even if it throws
-		}
-		iterations++;
-		endTime = performance.now();
-	}
-
-	const totalTime = endTime - startTime;
-	const avgTimeMs = totalTime / iterations;
-	const opsPerSec = (iterations / totalTime) * 1000;
-
-	return {
-		name,
-		opsPerSec,
-		avgTimeMs,
-		iterations,
-	};
-}
+// Initialize WASM
+await loader.loadWasm(
+	new URL("../../wasm-loader/primitives.wasm", import.meta.url),
+);
 
 // ============================================================================
-// Test Data
+// Test Data - Realistic EIP-2930 Access Lists
 // ============================================================================
 
 // Helper to create test addresses
@@ -93,176 +48,270 @@ function createStorageKey(byte: number): HashType {
 	return key as HashType;
 }
 
-const addr1 = createAddress(1);
-const addr2 = createAddress(2);
-// const _addr3 = createAddress(3);
+// Real-world-like addresses
+const uniswapRouter = createAddress(0x7a);
+const weth = createAddress(0xc0);
+const usdc = createAddress(0xa0);
+const uniswapPool = createAddress(0x88);
 
-const key1 = createStorageKey(10);
-const key2 = createStorageKey(20);
-const key3 = createStorageKey(30);
+// Common storage slots
+const slot0 = createStorageKey(0x00);
+const slot1 = createStorageKey(0x01);
+const balanceSlot = createStorageKey(0x02);
+const allowanceSlot = createStorageKey(0x03);
+const sqrtPriceSlot = createStorageKey(0x04);
+const liquiditySlot = createStorageKey(0x05);
 
-// Small list
+// Small access list (typical simple swap)
 const smallListArray: Item[] = [
-	{ address: addr1, storageKeys: [key1] },
-	{ address: addr2, storageKeys: [key2, key3] },
+	{ address: weth, storageKeys: [balanceSlot] },
+	{ address: usdc, storageKeys: [balanceSlot, allowanceSlot] },
 ];
 const smallList = from(smallListArray);
 
-// Medium list
-const mediumListArray: Item[] = [];
-for (let i = 0; i < 10; i++) {
-	mediumListArray.push({
-		address: createAddress(i),
-		storageKeys: [createStorageKey(i * 2), createStorageKey(i * 2 + 1)],
-	});
-}
+// Medium access list (multi-hop swap)
+const mediumListArray: Item[] = [
+	{ address: uniswapRouter, storageKeys: [] },
+	{ address: weth, storageKeys: [balanceSlot, allowanceSlot] },
+	{ address: usdc, storageKeys: [balanceSlot, allowanceSlot] },
+	{
+		address: uniswapPool,
+		storageKeys: [slot0, slot1, sqrtPriceSlot, liquiditySlot],
+	},
+	{ address: createAddress(0x11), storageKeys: [balanceSlot] },
+	{ address: createAddress(0x22), storageKeys: [balanceSlot, allowanceSlot] },
+];
 const mediumList = from(mediumListArray);
 
-// Large list
+// Large access list (complex DeFi operation)
 const largeListArray: Item[] = [];
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 20; i++) {
+	const keys: HashType[] = [];
+	for (let j = 0; j < 5; j++) {
+		keys.push(createStorageKey(i * 10 + j));
+	}
 	largeListArray.push({
-		address: createAddress(i % 50),
-		storageKeys: [createStorageKey(i * 2), createStorageKey(i * 2 + 1)],
+		address: createAddress(i + 0x10),
+		storageKeys: keys,
 	});
 }
 const largeList = from(largeListArray);
 
-// List with duplicates
-const duplicateListArray: Item[] = [
-	{ address: addr1, storageKeys: [key1] },
-	{ address: addr2, storageKeys: [key2] },
-	{ address: addr1, storageKeys: [key2, key3] },
-	{ address: addr2, storageKeys: [key3] },
-];
-const duplicateList = from(duplicateListArray);
+// Pre-encode for fromBytes benchmarks
+const smallListBytes = toBytes(smallList);
+const mediumListBytes = toBytes(mediumList);
+const largeListBytes = toBytes(largeList);
 
-const results: BenchmarkResult[] = [];
-results.push(benchmark("gasCost - small list", () => gasCost(smallList)));
-results.push(benchmark("gasCost - medium list", () => gasCost(mediumList)));
-results.push(benchmark("gasCost - large list", () => gasCost(largeList)));
-results.push(benchmark("gasSavings - small list", () => gasSavings(smallList)));
-results.push(
-	benchmark("gasSavings - medium list", () => gasSavings(mediumList)),
-);
-results.push(benchmark("gasSavings - large list", () => gasSavings(largeList)));
-results.push(benchmark("hasSavings - small list", () => hasSavings(smallList)));
-results.push(
-	benchmark("hasSavings - medium list", () => hasSavings(mediumList)),
-);
-results.push(
-	benchmark("includesAddress - small list (found)", () =>
-		includesAddress(smallList, addr1),
-	),
-);
-results.push(
-	benchmark("includesAddress - medium list (found)", () =>
-		includesAddress(mediumList, mediumList[5]?.address),
-	),
-);
-results.push(
-	benchmark("includesAddress - large list (not found)", () =>
-		includesAddress(largeList, createAddress(200)),
-	),
-);
-results.push(
-	benchmark("includesStorageKey - found", () =>
-		includesStorageKey(smallList, addr1, key1),
-	),
-);
-results.push(
-	benchmark("includesStorageKey - not found", () =>
-		includesStorageKey(smallList, addr1, createStorageKey(99)),
-	),
-);
-results.push(benchmark("keysFor - found", () => keysFor(smallList, addr1)));
-results.push(
-	benchmark("keysFor - not found", () => keysFor(smallList, createAddress(99))),
-);
-results.push(
-	benchmark("deduplicate - no duplicates", () => deduplicate(smallList)),
-);
-results.push(
-	benchmark("deduplicate - with duplicates", () => deduplicate(duplicateList)),
-);
-results.push(
-	benchmark("deduplicate - large list", () => deduplicate(largeList)),
-);
-results.push(
-	benchmark("withAddress - new address", () =>
-		withAddress(smallList, createAddress(99)),
-	),
-);
-results.push(
-	benchmark("withAddress - existing address", () =>
-		withAddress(smallList, addr1),
-	),
-);
-results.push(
-	benchmark("withStorageKey - new key to existing address", () =>
-		withStorageKey(smallList, addr1, createStorageKey(99)),
-	),
-);
-results.push(
-	benchmark("withStorageKey - duplicate key", () =>
-		withStorageKey(smallList, addr1, key1),
-	),
-);
-results.push(
-	benchmark("withStorageKey - new address with key", () =>
-		withStorageKey(smallList, createAddress(99), key1),
-	),
-);
-results.push(
-	benchmark("merge - two small lists", () => merge(smallList, smallList)),
-);
-results.push(
-	benchmark("merge - three lists", () =>
-		merge(smallList, mediumList, duplicateList),
-	),
-);
-results.push(
-	benchmark("merge - large lists", () => merge(largeList, largeList)),
-);
-results.push(
-	benchmark("assertValid - small list", () => assertValid(smallList)),
-);
-results.push(
-	benchmark("assertValid - medium list", () => assertValid(mediumList)),
-);
-results.push(
-	benchmark("assertValid - large list", () => assertValid(largeList)),
-);
-results.push(
-	benchmark("isItem - valid", () =>
-		isItem({ address: addr1, storageKeys: [key1] }),
-	),
-);
-results.push(benchmark("isItem - invalid", () => isItem({ invalid: true })));
-results.push(benchmark("is - valid", () => is(smallList)));
-results.push(benchmark("is - invalid", () => is({ invalid: true })));
-results.push(
-	benchmark("addressCount - small list", () => addressCount(smallList)),
-);
-results.push(
-	benchmark("storageKeyCount - small list", () => storageKeyCount(smallList)),
-);
-results.push(
-	benchmark("addressCount - large list", () => addressCount(largeList)),
-);
-results.push(
-	benchmark("storageKeyCount - large list", () => storageKeyCount(largeList)),
-);
-results.push(benchmark("isEmpty - empty", () => isEmpty([])));
-results.push(benchmark("isEmpty - non-empty", () => isEmpty(smallList)));
-results.push(benchmark("create", () => create()));
-
-// Find fastest and slowest operations
-const _sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-
-// Export results for analysis
-if (typeof Bun !== "undefined") {
-	const resultsFile =
-		"/Users/williamcory/primitives/src/primitives/access-list-results.json";
-	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
+// Viem format (hex strings)
+function toViemAccessList(
+	list: BrandedAccessList,
+): Array<{ address: `0x${string}`; storageKeys: `0x${string}`[] }> {
+	return list.map((item) => ({
+		address: Hex.fromBytes(item.address) as `0x${string}`,
+		storageKeys: item.storageKeys.map((k) => Hex.fromBytes(k) as `0x${string}`),
+	}));
 }
+
+const smallListViem = toViemAccessList(smallList);
+const mediumListViem = toViemAccessList(mediumList);
+const largeListViem = toViemAccessList(largeList);
+
+// Note: viem's parseAccessList is not exported from public API, so we can't benchmark it directly
+
+// ============================================================================
+// from / parse Benchmarks
+// ============================================================================
+
+bench("from array - small - TS", () => {
+	from(smallListArray);
+});
+
+bench("from array - medium - TS", () => {
+	from(mediumListArray);
+});
+
+bench("from array - large - TS", () => {
+	from(largeListArray);
+});
+
+await run();
+
+bench("fromBytes - small - TS", () => {
+	fromBytes(smallListBytes);
+});
+
+bench("fromBytes - medium - TS", () => {
+	fromBytes(mediumListBytes);
+});
+
+bench("fromBytes - large - TS", () => {
+	fromBytes(largeListBytes);
+});
+
+await run();
+
+// ============================================================================
+// encode / serialize Benchmarks
+// ============================================================================
+
+bench("toBytes - small - TS", () => {
+	toBytes(smallList);
+});
+
+bench("toBytes - medium - TS", () => {
+	toBytes(mediumList);
+});
+
+bench("toBytes - large - TS", () => {
+	toBytes(largeList);
+});
+
+await run();
+
+bench("serializeAccessList - small - viem", () => {
+	serializeAccessList(smallListViem);
+});
+
+bench("serializeAccessList - medium - viem", () => {
+	serializeAccessList(mediumListViem);
+});
+
+bench("serializeAccessList - large - viem", () => {
+	serializeAccessList(largeListViem);
+});
+
+await run();
+
+// ============================================================================
+// validate Benchmarks
+// ============================================================================
+
+bench("assertValid - small - TS", () => {
+	assertValid(smallList);
+});
+
+bench("assertValid - medium - TS", () => {
+	assertValid(mediumList);
+});
+
+bench("assertValid - large - TS", () => {
+	assertValid(largeList);
+});
+
+await run();
+
+// ============================================================================
+// gasCost Benchmarks (TS vs WASM)
+// ============================================================================
+
+bench("gasCost - small - TS", () => {
+	gasCost(smallList);
+});
+
+bench("gasCost - small - WASM", () => {
+	gasCostWasm(smallList);
+});
+
+await run();
+
+bench("gasCost - medium - TS", () => {
+	gasCost(mediumList);
+});
+
+bench("gasCost - medium - WASM", () => {
+	gasCostWasm(mediumList);
+});
+
+await run();
+
+bench("gasCost - large - TS", () => {
+	gasCost(largeList);
+});
+
+bench("gasCost - large - WASM", () => {
+	gasCostWasm(largeList);
+});
+
+await run();
+
+// ============================================================================
+// gasSavings Benchmarks (TS vs WASM)
+// ============================================================================
+
+bench("gasSavings - small - TS", () => {
+	gasSavings(smallList);
+});
+
+bench("gasSavings - small - WASM", () => {
+	gasSavingsWasm(smallList);
+});
+
+await run();
+
+bench("gasSavings - medium - TS", () => {
+	gasSavings(mediumList);
+});
+
+bench("gasSavings - medium - WASM", () => {
+	gasSavingsWasm(mediumList);
+});
+
+await run();
+
+bench("gasSavings - large - TS", () => {
+	gasSavings(largeList);
+});
+
+bench("gasSavings - large - WASM", () => {
+	gasSavingsWasm(largeList);
+});
+
+await run();
+
+// ============================================================================
+// includesAddress Benchmarks (TS vs WASM)
+// ============================================================================
+
+bench("includesAddress - found - TS", () => {
+	includesAddress(mediumList, weth);
+});
+
+bench("includesAddress - found - WASM", () => {
+	includesAddressWasm(mediumList, weth);
+});
+
+await run();
+
+bench("includesAddress - not found - TS", () => {
+	includesAddress(mediumList, createAddress(0xff));
+});
+
+bench("includesAddress - not found - WASM", () => {
+	includesAddressWasm(mediumList, createAddress(0xff));
+});
+
+await run();
+
+// ============================================================================
+// includesStorageKey Benchmarks (TS vs WASM)
+// ============================================================================
+
+bench("includesStorageKey - found - TS", () => {
+	includesStorageKey(mediumList, weth, balanceSlot);
+});
+
+bench("includesStorageKey - found - WASM", () => {
+	includesStorageKeyWasm(mediumList, weth, balanceSlot);
+});
+
+await run();
+
+bench("includesStorageKey - not found - TS", () => {
+	includesStorageKey(mediumList, weth, createStorageKey(0xff));
+});
+
+bench("includesStorageKey - not found - WASM", () => {
+	includesStorageKeyWasm(mediumList, weth, createStorageKey(0xff));
+});
+
+await run();
