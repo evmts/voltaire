@@ -4,13 +4,26 @@ Effect-TS integration for the [Voltaire](https://github.com/evmts/voltaire) Ethe
 
 ## Quick Start
 
+**viem** - implicit 3 retries hidden in transport config:
+```typescript
+import { createPublicClient, http } from 'viem'
+
+const client = createPublicClient({
+  transport: http('https://eth.llamarpc.com', { retryCount: 3 }) // hidden default
+})
+
+const balance = await client.readContract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  functionName: 'balanceOf',
+  args: [userAddress]
+})
+```
+
+**voltaire-effect** - explicit control over retry, timeout, and composition:
 ```typescript
 import { Effect } from 'effect'
-import {
-  ContractRegistryService,
-  makeContractRegistry,
-  HttpProvider
-} from 'voltaire-effect'
+import { ContractRegistryService, makeContractRegistry, HttpProvider } from 'voltaire-effect'
 
 const Contracts = makeContractRegistry({
   USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
@@ -23,12 +36,86 @@ const program = Effect.gen(function* () {
   const wethBalance = yield* WETH.read.balanceOf(userAddress)
   return { usdcBalance, wethBalance }
 }).pipe(
-  Effect.retry({ times: 3 }),
-  Effect.timeout('10 seconds'),
+  Effect.retry({ times: 3 }),           // explicit retry policy
+  Effect.timeout('10 seconds'),         // explicit timeout
   Effect.provide(Contracts),
   Effect.provide(HttpProvider('https://eth.llamarpc.com'))
 )
+
+const { usdcBalance, wethBalance } = await Effect.runPromise(program)
 ```
+
+**viem** - Address and Bytecode are both `0x${string}`, easily confused:
+```typescript
+import { type Address, type Hex } from 'viem'
+
+const address: Address = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const bytecode: Hex = '0x608060405234801561001057600080fd5b50'
+
+// TypeScript allows this - runtime bug waiting to happen
+await client.readContract({
+  address: bytecode,  // oops, passed bytecode as address - compiles fine!
+  abi: erc20Abi,
+  functionName: 'balanceOf',
+  args: [address]
+})
+```
+
+**voltaire-effect** - branded types prevent mixing:
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const address = Address.from('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
+const bytecode = Bytecode.from('0x608060405234801561001057600080fd5b50')
+
+await client.readContract({
+  address: bytecode,  // Type error: Bytecode is not assignable to Address
+  ...
+})
+```
+
+### Performance: encodeFunctionData
+
+Both encode the same calldata, but Voltaire's WASM-optimized keccak256 (used for function selectors) is ~9x faster:
+
+**viem**:
+```typescript
+import { encodeFunctionData } from 'viem'
+
+const calldata = encodeFunctionData({
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: [recipient, amount]
+})
+// Throws on error - must wrap in try/catch
+```
+
+**voltaire**:
+```typescript
+import * as Abi from '@tevm/voltaire/Abi'
+
+const calldata = Abi.encodeFunction(erc20Abi, 'transfer', [recipient, amount])
+```
+
+**voltaire-effect** (typed errors):
+```typescript
+import { Effect } from 'effect'
+import { encodeFunctionData } from 'voltaire-effect/primitives/Abi'
+
+const calldata = await Effect.runPromise(
+  encodeFunctionData(erc20Abi, 'transfer', [recipient, amount])
+)
+// Effect<Hex, AbiItemNotFoundError | AbiEncodingError>
+```
+
+| Operation | viem | voltaire | Speedup |
+|-----------|------|----------|---------|
+| keccak256 (32B) | 3.22 µs | 349 ns | **9.2x** |
+| keccak256 (256B) | 6.23 µs | 571 ns | **10.9x** |
+| keccak256 (1KB) | 24.4 µs | 1.87 µs | **13x** |
+
+*Benchmarks on Apple M3 Max, bun 1.3.4. Voltaire uses WASM-compiled Zig keccak256.*
 
 ## Installation
 
