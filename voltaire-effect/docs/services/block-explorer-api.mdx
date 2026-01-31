@@ -1,0 +1,243 @@
+---
+title: Block Explorer API
+description: Typed access to block explorer-backed contract metadata, verified ABIs, and sources.
+---
+
+The **Block Explorer API** service provides a single, Effect-native interface for querying contract metadata from common explorer backends: **Sourcify**, **Etherscan-family**, and **Blockscout-family**.
+
+## Quick Start
+
+```typescript
+import { Effect, Layer } from "effect"
+import {
+  Provider,
+  HttpTransport,
+  mainnet,
+  BlockExplorerApi,
+  BlockExplorerApiService
+} from "voltaire-effect"
+
+const AppLayer = Layer.mergeAll(
+  Provider.pipe(Layer.provide(HttpTransport("https://eth.llamarpc.com"))),
+  mainnet,
+  BlockExplorerApi.fromEnv()
+)
+
+const program = Effect.gen(function* () {
+  const explorer = yield* BlockExplorerApiService
+
+  const contract = yield* explorer.getContract(
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    { resolution: "verified-first" }
+  )
+
+  return { name: contract.name, abi: contract.abi }
+}).pipe(Effect.provide(AppLayer))
+
+await Effect.runPromise(program)
+```
+
+## Service Interface
+
+```typescript
+interface BlockExplorerApiShape {
+  /** Fetch ABI + basic metadata. May optionally return sources. */
+  getContract: (
+    address: `0x${string}`,
+    options?: GetContractOptions
+  ) => Effect<ResolvedExplorerContract, BlockExplorerApiError>
+
+  /** Convenience wrapper for getContract(...).abi */
+  getAbi: (
+    address: `0x${string}`,
+    options?: GetAbiOptions
+  ) => Effect<ReadonlyArray<AbiItem>, BlockExplorerApiError>
+
+  /** Get source files (fails if sources unavailable) */
+  getSources: (
+    address: `0x${string}`,
+    options?: GetSourcesOptions
+  ) => Effect<ReadonlyArray<ContractSourceFile>, BlockExplorerApiError>
+}
+```
+
+## Resolution Modes
+
+Resolution is explicit and testable:
+
+| Mode | Behavior |
+|------|----------|
+| `verified-only` | Only returns verified ABIs. Fails if nothing found. |
+| `verified-first` | Tries verified sources in order. Fails if all miss. (Recommended default) |
+| `best-effort` | Falls back to ABI recovery when no verified ABI available. For inspection only. |
+
+```typescript
+// verified-only: strict, production-safe
+yield* explorer.getAbi(address, { resolution: "verified-only" })
+
+// verified-first: try all sources, fail if none
+yield* explorer.getAbi(address, { resolution: "verified-first" })
+
+// best-effort: inspection/tooling, not guaranteed correct
+yield* explorer.getAbi(address, { resolution: "best-effort" })
+```
+
+## Configuration
+
+### Explicit Configuration
+
+```typescript
+import { BlockExplorerApi } from "voltaire-effect"
+
+const ExplorerLayer = BlockExplorerApi({
+  sources: {
+    sourcify: { enabled: true },
+    etherscanV2: { enabled: true, apiKey: "..." },
+    blockscout: { enabled: true, apiKey: "..." }
+  },
+  // Order matters for verified-first
+  sourceOrder: ["sourcify", "etherscanV2", "blockscout"],
+  // Optional caching
+  cache: {
+    enabled: true,
+    ttlMillis: 300_000,
+    capacity: 100
+  }
+})
+```
+
+### Environment Configuration
+
+```typescript
+// Reads from environment:
+// - ETHERSCAN_API_KEY
+// - BLOCKSCOUT_API_KEY
+// - VOLTAIRE_EXPLORER_SOURCES (comma-separated order)
+const ExplorerLayer = BlockExplorerApi.fromEnv()
+```
+
+### API Key Handling
+
+API keys can be provided as strings or as `Redacted` values for security:
+
+```typescript
+import { Redacted } from "effect"
+
+BlockExplorerApi({
+  sources: {
+    etherscanV2: {
+      enabled: true,
+      apiKey: Redacted.make(process.env.ETHERSCAN_API_KEY!)
+    }
+  }
+})
+```
+
+## Response Types
+
+### ResolvedExplorerContract
+
+```typescript
+interface ResolvedExplorerContract {
+  /** Resolved address (implementation if proxies followed) */
+  address: `0x${string}`
+  /** Original input address */
+  requestedAddress: `0x${string}`
+  /** Contract name if available */
+  name?: string
+  /** Resolved ABI */
+  abi: ReadonlyArray<AbiItem>
+  /** How the ABI was resolved */
+  resolution: AbiResolution
+  /** Source files if requested */
+  sources?: ReadonlyArray<ContractSourceFile>
+  /** Proxy chain if followProxies was true */
+  proxies?: ReadonlyArray<ProxyInfo>
+}
+```
+
+### AbiResolution
+
+```typescript
+type AbiResolution =
+  | { mode: "verified"; source: "sourcify" | "etherscanV2" | "blockscout" }
+  | { mode: "best-effort"; source: "whatsabi" }
+```
+
+## Error Handling
+
+All errors are tagged and compatible with `Effect.catchTag`:
+
+```typescript
+const program = Effect.gen(function* () {
+  const explorer = yield* BlockExplorerApiService
+  return yield* explorer.getAbi("0x...")
+}).pipe(
+  Effect.catchTag("BlockExplorerNotFoundError", (e) =>
+    Effect.succeed({ fallback: true, attempted: e.attemptedSources })
+  ),
+  Effect.catchTag("BlockExplorerRateLimitError", (e) =>
+    Effect.fail(new Error(`Rate limited by ${e.source}, retry in ${e.retryAfterSeconds}s`))
+  )
+)
+```
+
+### Error Types
+
+| Error | When |
+|-------|------|
+| `BlockExplorerConfigError` | Invalid configuration |
+| `BlockExplorerNotFoundError` | No ABI found from any source |
+| `BlockExplorerRateLimitError` | Rate limited by source |
+| `BlockExplorerResponseError` | HTTP error from source |
+| `BlockExplorerDecodeError` | Response could not be parsed |
+| `BlockExplorerProxyResolutionError` | Proxy resolution failed |
+| `BlockExplorerUnexpectedError` | Unexpected failure |
+
+## Proxy Resolution
+
+When `followProxies: true`, the service resolves proxy contracts to their implementation:
+
+```typescript
+const contract = yield* explorer.getContract(proxyAddress, {
+  followProxies: true
+})
+
+// contract.address = implementation address
+// contract.requestedAddress = original proxy address
+// contract.proxies = proxy chain metadata
+```
+
+## Caching
+
+Enable caching to avoid repeated API calls:
+
+```typescript
+BlockExplorerApi({
+  sources: { sourcify: { enabled: true } },
+  cache: {
+    enabled: true,
+    ttlMillis: 300_000,  // 5 minutes
+    capacity: 100        // max entries
+  }
+})
+```
+
+## Source Order
+
+The `sourceOrder` option controls which sources are tried first:
+
+```typescript
+// Prefer Sourcify, fall back to Etherscan
+sourceOrder: ["sourcify", "etherscanV2"]
+
+// Prefer Etherscan (faster), fall back to Sourcify
+sourceOrder: ["etherscanV2", "sourcify"]
+```
+
+## See Also
+
+- [Explorer Contracts](/services/explorer-contracts) - Create Contract instances from address
+- [Contract Factory](/services/contract) - Low-level contract factory
+- [Contract Registry](/services/contract-registry) - Pre-configured contracts
+- [Error Handling](/concepts/error-handling) - Effect error patterns

@@ -1,0 +1,199 @@
+---
+title: Explorer Contracts
+description: Create a Contract instance from an address by resolving ABI through Block Explorer APIs.
+---
+
+**Explorer Contracts** lets you create a dynamic `Contract` instance from **only an address** by resolving the ABI via `BlockExplorerApiService`.
+
+Use this for:
+- User-provided addresses at runtime
+- Tooling and dashboards
+- "Inspect any contract" workflows
+
+## Quick Start
+
+```typescript
+import { Effect, Layer } from "effect"
+import {
+  Provider,
+  HttpTransport,
+  mainnet,
+  BlockExplorerApi,
+  ExplorerContract
+} from "voltaire-effect"
+
+const AppLayer = Layer.mergeAll(
+  Provider.pipe(Layer.provide(HttpTransport("https://eth.llamarpc.com"))),
+  mainnet,
+  BlockExplorerApi.fromEnv()
+)
+
+const program = Effect.gen(function* () {
+  const c = yield* ExplorerContract(
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    { resolution: "verified-first", followProxies: true }
+  )
+
+  // Dynamic contract interface - keys are strings
+  const symbol = yield* c.read["symbol()"]()
+  const decimals = yield* c.read["decimals()"]()
+
+  return { address: c.address, symbol, decimals }
+}).pipe(Effect.provide(AppLayer))
+
+await Effect.runPromise(program)
+```
+
+## ExplorerContractInstance
+
+The returned instance provides dynamic method access:
+
+```typescript
+interface ExplorerContractInstance {
+  address: `0x${string}`           // Resolved implementation address
+  requestedAddress: `0x${string}`  // Original input address
+  abi: ReadonlyArray<AbiItem>      // Resolved ABI
+  resolution: AbiResolution        // How ABI was resolved
+
+  // Read-only methods (view/pure)
+  read: Record<string, (...args) => Effect<unknown, ContractCallError, ProviderService>>
+
+  // Simulate state-changing methods
+  simulate: Record<string, (...args) => Effect<unknown, ContractCallError, ProviderService>>
+
+  // State-changing methods
+  write: Record<string, (...args) => Effect<`0x${string}`, ContractWriteError, SignerService>>
+
+  // Explicit signature-based access
+  call: (signature: string, args: ReadonlyArray<unknown>) => Effect<unknown, ContractCallError, ProviderService>
+}
+```
+
+## Method Access Patterns
+
+### By Name (Non-Overloaded Functions)
+
+```typescript
+const contract = yield* ExplorerContract(address)
+
+// Simple access when function name is unique
+const name = yield* contract.read.name()
+const symbol = yield* contract.read.symbol()
+const balance = yield* contract.read.balanceOf(account)
+```
+
+### By Signature (Always Available)
+
+```typescript
+// Full signature always works
+const name = yield* contract.read["name()"]()
+const balance = yield* contract.read["balanceOf(address)"](account)
+const transfer = yield* contract.write["transfer(address,uint256)"](to, amount)
+```
+
+### Overloaded Functions
+
+When a contract has overloaded functions (same name, different parameters), only signature keys are available:
+
+```typescript
+// ERC721 safeTransferFrom has two overloads
+// contract.write.safeTransferFrom is undefined
+
+// Use explicit signatures:
+yield* contract.write["safeTransferFrom(address,address,uint256)"](from, to, tokenId)
+yield* contract.write["safeTransferFrom(address,address,uint256,bytes)"](from, to, tokenId, data)
+```
+
+### Explicit `call()` Method
+
+For programmatic access:
+
+```typescript
+const result = yield* contract.call("balanceOf(address)", [account])
+```
+
+## Options
+
+```typescript
+interface ExplorerContractOptions {
+  // Resolution mode for ABI retrieval
+  resolution?: "verified-only" | "verified-first" | "best-effort"
+
+  // Follow proxy contracts to implementation
+  followProxies?: boolean
+}
+```
+
+## Proxy Resolution
+
+With `followProxies: true`, the contract resolves to the implementation:
+
+```typescript
+const contract = yield* ExplorerContract(proxyAddress, {
+  followProxies: true
+})
+
+// contract.address = implementation address
+// contract.requestedAddress = proxy address
+```
+
+## Error Handling
+
+Explorer contracts can fail with block explorer errors:
+
+```typescript
+const program = ExplorerContract(address).pipe(
+  Effect.catchTag("BlockExplorerNotFoundError", () =>
+    Effect.succeed(null)
+  ),
+  Effect.catchTag("BlockExplorerRateLimitError", (e) =>
+    Effect.fail(new Error(`Try again in ${e.retryAfterSeconds}s`))
+  )
+)
+```
+
+Once you have a contract, method calls can fail with contract errors:
+
+```typescript
+const program = Effect.gen(function* () {
+  const c = yield* ExplorerContract(address)
+  return yield* c.read.symbol()
+}).pipe(
+  Effect.catchTag("ContractCallError", (e) =>
+    Effect.succeed("Unknown")
+  )
+)
+```
+
+## When to Use What
+
+| Scenario | Solution |
+|----------|----------|
+| Known ABI at build time | `Contract(address, abi)` - type-safe |
+| Known contracts, centralized | `ContractRegistryService` - typed map |
+| User-provided address, unknown ABI | `ExplorerContract` - dynamic |
+| Discovery/inspection tooling | `ExplorerContract` with best-effort |
+
+## Typed vs Dynamic
+
+`ExplorerContract` returns a **dynamic** contract where method access is string-based. For production-critical code where you know the ABI, prefer the typed `Contract` factory:
+
+```typescript
+// Dynamic - runtime resolution, string-based access
+const c = yield* ExplorerContract(address)
+const symbol = yield* c.read["symbol()"]()
+
+// Typed - compile-time ABI, type-safe access
+const c = Contract(address, erc20Abi)
+const symbol = yield* c.read.symbol()  // TypeScript knows the types
+```
+
+A common pattern:
+1. Use `ExplorerContract` for discovery/UX
+2. Use `Contract` with known ABIs for production interactions
+
+## See Also
+
+- [Block Explorer API](/services/block-explorer-api) - Underlying ABI resolution
+- [Contract Factory](/services/contract) - Type-safe contract factory
+- [Contract Registry](/services/contract-registry) - Pre-configured contracts
