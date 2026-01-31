@@ -683,6 +683,93 @@ describe("P256", () => {
 
 			expect(different).toBe(true);
 		});
+
+		it("produces deterministic signatures with extraEntropy: false", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const messageHash = Hash.keccak256String("test");
+
+			const sig1 = P256.sign(messageHash, privateKey, { extraEntropy: false });
+			const sig2 = P256.sign(messageHash, privateKey, { extraEntropy: false });
+
+			expect(sig1.r).toEqual(sig2.r);
+			expect(sig1.s).toEqual(sig2.s);
+		});
+
+		it("produces randomized signatures with extraEntropy: true", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const messageHash = Hash.keccak256String("test");
+
+			const sig1 = P256.sign(messageHash, privateKey, { extraEntropy: true });
+			const sig2 = P256.sign(messageHash, privateKey, { extraEntropy: true });
+
+			// At least one component should differ (with high probability)
+			const different =
+				!sig1.r.every((v, i) => v === sig2.r[i]) ||
+				!sig1.s.every((v, i) => v === sig2.s[i]);
+
+			expect(different).toBe(true);
+		});
+
+		it("produces valid signatures with extraEntropy: false", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const publicKey = P256.derivePublicKey(privateKey);
+			const messageHash = Hash.keccak256String("test");
+
+			const signature = P256.sign(messageHash, privateKey, {
+				extraEntropy: false,
+			});
+			const valid = P256.verify(signature, messageHash, publicKey);
+
+			expect(valid).toBe(true);
+		});
+
+		it("produces valid signatures with extraEntropy: true", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const publicKey = P256.derivePublicKey(privateKey);
+			const messageHash = Hash.keccak256String("test");
+
+			const signature = P256.sign(messageHash, privateKey, {
+				extraEntropy: true,
+			});
+			const valid = P256.verify(signature, messageHash, publicKey);
+
+			expect(valid).toBe(true);
+		});
+
+		it("accepts custom entropy as Uint8Array", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const publicKey = P256.derivePublicKey(privateKey);
+			const messageHash = Hash.keccak256String("test");
+
+			const customEntropy = new Uint8Array(32).fill(42);
+			const signature = P256.sign(messageHash, privateKey, {
+				extraEntropy: customEntropy,
+			});
+			const valid = P256.verify(signature, messageHash, publicKey);
+
+			expect(valid).toBe(true);
+		});
+
+		it("produces different signatures with different custom entropy", () => {
+			const privateKey = new Uint8Array(32).fill(1);
+			const messageHash = Hash.keccak256String("test");
+
+			const entropy1 = new Uint8Array(32).fill(1);
+			const entropy2 = new Uint8Array(32).fill(2);
+
+			const sig1 = P256.sign(messageHash, privateKey, {
+				extraEntropy: entropy1,
+			});
+			const sig2 = P256.sign(messageHash, privateKey, {
+				extraEntropy: entropy2,
+			});
+
+			const different =
+				!sig1.r.every((v, i) => v === sig2.r[i]) ||
+				!sig1.s.every((v, i) => v === sig2.s[i]);
+
+			expect(different).toBe(true);
+		});
 	});
 
 	describe("Stress Tests", () => {
