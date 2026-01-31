@@ -5,7 +5,7 @@
  */
 import { BrandedBlob as BlobNamespace } from "@tevm/voltaire";
 import { Effect } from "effect";
-import type { InvalidBlobDataSizeError } from "@tevm/voltaire/Blob";
+import { ValidationError } from "@tevm/voltaire/errors";
 
 type BrandedBlob = BlobNamespace.BrandedBlob;
 
@@ -15,7 +15,7 @@ type BrandedBlob = BlobNamespace.BrandedBlob;
  * If input is 131072 bytes, returns as-is. Otherwise encodes with padding.
  *
  * @param value - Uint8Array (either 131072 bytes blob or data to encode)
- * @returns Effect yielding BrandedBlob or failing with InvalidBlobDataSizeError
+ * @returns Effect yielding BrandedBlob or failing with ValidationError
  * @example
  * ```typescript
  * import * as Blob from 'voltaire-effect/primitives/Blob'
@@ -31,8 +31,16 @@ type BrandedBlob = BlobNamespace.BrandedBlob;
  */
 export const from = (
 	value: Uint8Array,
-): Effect.Effect<BrandedBlob, InvalidBlobDataSizeError> =>
+): Effect.Effect<BrandedBlob, ValidationError> =>
 	Effect.try({
 		try: () => BlobNamespace.from(value),
-		catch: (e) => e as InvalidBlobDataSizeError,
+		catch: (error) =>
+			new ValidationError(
+				error instanceof Error ? error.message : "Invalid blob input",
+				{
+					value,
+					expected: "Uint8Array (131072 bytes or data to encode)",
+					cause: error instanceof Error ? error : undefined,
+				},
+			),
 	});

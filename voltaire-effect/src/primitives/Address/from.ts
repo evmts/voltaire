@@ -5,24 +5,13 @@
  */
 import { Effect } from "effect";
 import { Address, type AddressType } from "@tevm/voltaire/Address";
-import type {
-  InvalidAddressError,
-  InvalidHexFormatError,
-  InvalidAddressLengthError,
-  InvalidValueError,
-} from "@tevm/voltaire/Address";
-
-type AddressError =
-  | InvalidAddressError
-  | InvalidHexFormatError
-  | InvalidAddressLengthError
-  | InvalidValueError;
+import { ValidationError } from "@tevm/voltaire/errors";
 
 /**
  * Create Address from hex string, bytes, or number
  *
  * @param value - Hex string, Uint8Array, number, or bigint
- * @returns Effect yielding AddressType or failing with AddressError
+ * @returns Effect yielding AddressType or failing with ValidationError
  * @example
  * ```typescript
  * import * as Address from 'voltaire-effect/primitives/Address'
@@ -34,8 +23,16 @@ type AddressError =
  */
 export const from = (
   value: string | Uint8Array | number | bigint,
-): Effect.Effect<AddressType, AddressError> =>
+): Effect.Effect<AddressType, ValidationError> =>
   Effect.try({
     try: () => Address.from(value),
-    catch: (e) => e as AddressError,
+    catch: (error) =>
+      new ValidationError(
+        error instanceof Error ? error.message : "Invalid address input",
+        {
+          value,
+          expected: "20-byte hex string or Uint8Array",
+          cause: error instanceof Error ? error : undefined,
+        },
+      ),
   });

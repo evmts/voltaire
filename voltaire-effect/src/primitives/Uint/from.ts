@@ -6,6 +6,7 @@
 
 import { Uint256, type Type as Uint256Type } from "@tevm/voltaire/Uint";
 import * as Effect from "effect/Effect";
+import { ValidationError } from "@tevm/voltaire/errors";
 
 /**
  * Create Uint256 from bigint, number, or string.
@@ -28,8 +29,16 @@ import * as Effect from "effect/Effect";
  */
 export const from = (
 	value: bigint | number | string,
-): Effect.Effect<Uint256Type, Error> =>
+): Effect.Effect<Uint256Type, ValidationError> =>
 	Effect.try({
 		try: () => Uint256.from(value),
-		catch: (e) => (e instanceof Error ? e : new Error(String(e))),
+		catch: (error) =>
+			new ValidationError(
+				error instanceof Error ? error.message : "Invalid Uint256 input",
+				{
+					value,
+					expected: "bigint, number, or string (decimal or hex)",
+					cause: error instanceof Error ? error : undefined,
+				},
+			),
 	});

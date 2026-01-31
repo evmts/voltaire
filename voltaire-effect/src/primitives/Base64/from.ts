@@ -5,6 +5,7 @@
  */
 import { Effect } from "effect";
 import { Base64, type BrandedBase64, type BrandedBase64Url } from "@tevm/voltaire/Base64";
+import { ValidationError } from "@tevm/voltaire/errors";
 
 /**
  * Create validated standard Base64 string from input
@@ -18,10 +19,18 @@ import { Base64, type BrandedBase64, type BrandedBase64Url } from "@tevm/voltair
  */
 export const from = (
   value: string | Uint8Array,
-): Effect.Effect<BrandedBase64, Error> =>
+): Effect.Effect<BrandedBase64, ValidationError> =>
   Effect.try({
     try: () => Base64.from(value),
-    catch: (e) => e as Error,
+    catch: (error) =>
+      new ValidationError(
+        error instanceof Error ? error.message : "Invalid Base64 input",
+        {
+          value,
+          expected: "valid Base64 string or Uint8Array",
+          cause: error instanceof Error ? error : undefined,
+        },
+      ),
   });
 
 /**
@@ -32,8 +41,16 @@ export const from = (
  */
 export const fromUrlSafe = (
   value: string | Uint8Array,
-): Effect.Effect<BrandedBase64Url, Error> =>
+): Effect.Effect<BrandedBase64Url, ValidationError> =>
   Effect.try({
     try: () => Base64.fromUrlSafe(value),
-    catch: (e) => e as Error,
+    catch: (error) =>
+      new ValidationError(
+        error instanceof Error ? error.message : "Invalid URL-safe Base64 input",
+        {
+          value,
+          expected: "valid URL-safe Base64 string or Uint8Array",
+          cause: error instanceof Error ? error : undefined,
+        },
+      ),
   });

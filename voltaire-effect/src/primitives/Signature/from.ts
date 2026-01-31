@@ -5,6 +5,7 @@
  */
 import { Signature, type SignatureType } from "@tevm/voltaire/Signature";
 import * as Effect from "effect/Effect";
+import { ValidationError } from "@tevm/voltaire/errors";
 
 /**
  * Creates a Signature from various input formats.
@@ -31,8 +32,16 @@ export const from = (
 				v?: number;
 				algorithm?: "secp256k1" | "p256" | "ed25519";
 		  },
-): Effect.Effect<SignatureType, Error> =>
+): Effect.Effect<SignatureType, ValidationError> =>
 	Effect.try({
 		try: () => Signature.from(value),
-		catch: (e) => e as Error,
+		catch: (error) =>
+			new ValidationError(
+				error instanceof Error ? error.message : "Invalid signature input",
+				{
+					value,
+					expected: "signature bytes or {r, s, v} object",
+					cause: error instanceof Error ? error : undefined,
+				},
+			),
 	});

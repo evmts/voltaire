@@ -8,15 +8,15 @@
 import {
 	type HexType,
 	Hex as VoltaireHex,
-	InvalidFormatError,
 } from "@tevm/voltaire/Hex";
+import { ValidationError } from "@tevm/voltaire/errors";
 import { Effect } from "effect";
 
 /**
  * Parse any input (string or Uint8Array) to Hex.
  *
  * @param value - String or bytes to convert
- * @returns Effect with HexType or InvalidFormatError
+ * @returns Effect with HexType or ValidationError
  *
  * @example
  * ```ts
@@ -31,8 +31,16 @@ import { Effect } from "effect";
  */
 export const from = (
 	value: string | Uint8Array,
-): Effect.Effect<HexType, InvalidFormatError> =>
+): Effect.Effect<HexType, ValidationError> =>
 	Effect.try({
 		try: () => VoltaireHex.from(value),
-		catch: (e) => e as InvalidFormatError,
+		catch: (error) =>
+			new ValidationError(
+				error instanceof Error ? error.message : "Invalid hex input",
+				{
+					value,
+					expected: "hex string (0x-prefixed) or Uint8Array",
+					cause: error instanceof Error ? error : undefined,
+				},
+			),
 	});

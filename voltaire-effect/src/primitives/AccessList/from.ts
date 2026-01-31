@@ -9,18 +9,13 @@ import {
   type BrandedAccessList,
   type Item,
 } from "@tevm/voltaire/AccessList";
-import type {
-  InvalidFormatError,
-  InvalidLengthError,
-} from "@tevm/voltaire/errors";
-
-type AccessListError = InvalidFormatError | InvalidLengthError;
+import { ValidationError } from "@tevm/voltaire/errors";
 
 /**
  * Create AccessList from array or bytes
  *
  * @param value - AccessList items or RLP bytes
- * @returns Effect yielding BrandedAccessList or failing with AccessListError
+ * @returns Effect yielding BrandedAccessList or failing with ValidationError
  * @example
  * ```typescript
  * import * as AccessList from 'voltaire-effect/primitives/AccessList'
@@ -32,8 +27,16 @@ type AccessListError = InvalidFormatError | InvalidLengthError;
  */
 export const from = (
   value: readonly Item[] | Uint8Array,
-): Effect.Effect<BrandedAccessList, AccessListError> =>
+): Effect.Effect<BrandedAccessList, ValidationError> =>
   Effect.try({
     try: () => AccessList.from(value),
-    catch: (e) => e as AccessListError,
+    catch: (error) =>
+      new ValidationError(
+        error instanceof Error ? error.message : "Invalid access list input",
+        {
+          value,
+          expected: "array of {address, storageKeys} or RLP-encoded bytes",
+          cause: error instanceof Error ? error : undefined,
+        },
+      ),
   });
