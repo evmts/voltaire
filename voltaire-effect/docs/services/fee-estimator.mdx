@@ -15,10 +15,8 @@ import {
 } from 'voltaire-effect'
 
 // Compose layers first
-const FeeEstimatorLayer = DefaultFeeEstimator.pipe(
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
+const FeeEstimatorLayer = DefaultFeeEstimator.pipe(Layer.provide(ProviderLayer))
 
 const program = Effect.gen(function* () {
   const feeEstimator = yield* FeeEstimatorService
@@ -66,10 +64,8 @@ import { makeFeeEstimator } from 'voltaire-effect'
 const CustomFeeEstimator = makeFeeEstimator(1.5)
 
 // Compose layers first
-const CustomFeeEstimatorLayer = CustomFeeEstimator.pipe(
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport('https://...'))
-)
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://...')))
+const CustomFeeEstimatorLayer = CustomFeeEstimator.pipe(Layer.provide(ProviderLayer))
 
 const program = Effect.gen(function* () {
   const feeEstimator = yield* FeeEstimatorService
@@ -127,10 +123,8 @@ import * as Layer from 'effect/Layer'
 const DefaultFeeEstimator: Layer.Layer<FeeEstimatorService, never, ProviderService>
 
 // Compose full stack
-const FullStack = DefaultFeeEstimator.pipe(
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
+const FullStack = DefaultFeeEstimator.pipe(Layer.provide(ProviderLayer))
 
 const program = myEffect.pipe(Effect.provide(FullStack))
 ```

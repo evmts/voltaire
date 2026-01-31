@@ -24,10 +24,8 @@ const TransportLayer = HttpTransport({
   timeout: '30 seconds',
   retrySchedule: Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(3))
 })
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
-  Layer.provide(CryptoLayer),
-  Layer.provide(TransportLayer)
-)
+const DepsLayer = Layer.mergeAll(CryptoLayer, TransportLayer)
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -49,10 +47,8 @@ import { Effect, Layer } from 'effect'
 // Compose layers first
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
-  Layer.provide(CryptoLayer),
-  Layer.provide(TransportLayer)
-)
+const DepsLayer = Layer.mergeAll(CryptoLayer, TransportLayer)
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -73,10 +69,8 @@ import { Effect, Layer } from 'effect'
 // Compose layers first
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
-  Layer.provide(CryptoLayer),
-  Layer.provide(TransportLayer)
-)
+const DepsLayer = Layer.mergeAll(CryptoLayer, TransportLayer)
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -113,10 +107,8 @@ const typedData = {
 // Compose layers first
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
-  Layer.provide(CryptoLayer),
-  Layer.provide(TransportLayer)
-)
+const DepsLayer = Layer.mergeAll(CryptoLayer, TransportLayer)
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -154,10 +146,8 @@ import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 // Compose layers first
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
-  Layer.provide(CryptoLayer),
-  Layer.provide(TransportLayer)
-)
+const DepsLayer = Layer.mergeAll(CryptoLayer, TransportLayer)
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService

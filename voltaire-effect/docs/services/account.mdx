@@ -18,10 +18,8 @@ import { Hex } from '@tevm/voltaire'
 const privateKey = Hex.fromHex('0xac0974bec...')
 
 // Compose layers first
-const AccountLayer = LocalAccount(privateKey).pipe(
-  Layer.provide(Secp256k1Live),
-  Layer.provide(KeccakLive)
-)
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const AccountLayer = LocalAccount(privateKey).pipe(Layer.provide(CryptoLayer))
 
 const program = Effect.gen(function* () {
   const account = yield* AccountService
@@ -151,10 +149,8 @@ import { MnemonicAccount } from 'voltaire-effect/native'
 const mnemonic = "test test test test test test test test test test test junk"
 
 // Compose layers first
-const MnemonicAccountLayer = MnemonicAccount(mnemonic).pipe(
-  Layer.provide(Secp256k1Live),
-  Layer.provide(KeccakLive)
-)
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const MnemonicAccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
 
 const program = Effect.gen(function* () {
   const account = yield* AccountService

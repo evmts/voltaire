@@ -155,10 +155,8 @@ const TransportLayer = HttpTransport('https://eth.llamarpc.com')
 const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
 const AccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
 
-const SignerLayer = Signer.Live.pipe(
-  Layer.provide(AccountLayer),
-  Layer.provide(ProviderLayer)
-)
+const DepsLayer = Layer.mergeAll(AccountLayer, ProviderLayer)
+const SignerLayer = Signer.Live.pipe(Layer.provide(DepsLayer))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService

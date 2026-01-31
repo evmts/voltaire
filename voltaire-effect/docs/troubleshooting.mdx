@@ -49,11 +49,8 @@ const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 const TransportLayer = HttpTransport(rpcUrl)
 const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
 
-const SignerLayer = Signer.Live.pipe(
-  Layer.provide(LocalAccount(privateKey)),
-  Layer.provide(ProviderLayer),
-  Layer.provide(CryptoLayer)
-)
+const DepsLayer = Layer.mergeAll(LocalAccount(privateKey), ProviderLayer, CryptoLayer)
+const SignerLayer = Signer.Live.pipe(Layer.provide(DepsLayer))
 ```
 
 ## Forgot to Yield

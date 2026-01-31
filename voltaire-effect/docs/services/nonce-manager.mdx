@@ -10,10 +10,8 @@ import { Effect, Layer } from 'effect'
 import { NonceManagerService, DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect'
 
 // Compose layers first
-const NonceManagerLayer = DefaultNonceManager.pipe(
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
+const NonceManagerLayer = DefaultNonceManager.pipe(Layer.provide(ProviderLayer))
 
 const program = Effect.gen(function* () {
   const nonceManager = yield* NonceManagerService

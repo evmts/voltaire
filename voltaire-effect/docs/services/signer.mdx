@@ -17,18 +17,19 @@ import { Hex } from '@tevm/voltaire'
 const privateKey = Hex.fromHex('0xac0974bec...')
 
 // Compose layers first
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
-  Layer.provide(Secp256k1Live),
-  Layer.provide(KeccakLive),
-  Layer.provide(HttpTransport({
+const DepsLayer = Layer.mergeAll(
+  Secp256k1Live,
+  KeccakLive,
+  HttpTransport({
     url: 'https://eth.llamarpc.com',
     timeout: '30 seconds',
     retrySchedule: Schedule.exponential('1 second').pipe(
       Schedule.jittered,
       Schedule.compose(Schedule.recurs(3))
     )
-  }))
+  })
 )
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -73,10 +74,8 @@ const browserSigner = Signer.fromProvider(Provider, JsonRpcAccount(userAddress))
 Base layer requiring all dependencies explicitly:
 
 ```typescript
-const signer = Signer.Live.pipe(
-  Layer.provide(Provider),
-  Layer.provide(LocalAccount(privateKey))
-)
+const DepsLayer = Layer.mergeAll(Provider, LocalAccount(privateKey))
+const signer = Signer.Live.pipe(Layer.provide(DepsLayer))
 
 // Type: Layer.Layer<SignerService, never, TransportService>
 ```
@@ -101,8 +100,7 @@ const Signer = {
     accountLayer: Layer.Layer<AccountService>
   ): Layer.Layer<SignerService, any, TransportService> =>
     Signer.Live.pipe(
-      Layer.provide(providerLayer),
-      Layer.provide(accountLayer)
+      Layer.provide(Layer.mergeAll(providerLayer, accountLayer))
     ),
 
   // Convenience: local private key signer

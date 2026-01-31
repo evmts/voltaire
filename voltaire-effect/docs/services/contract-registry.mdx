@@ -46,10 +46,8 @@ const Contracts = makeContractRegistry({
 })
 
 // Compose layers first
-const AppLayer = Contracts.pipe(
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
+const AppLayer = Contracts.pipe(Layer.provide(ProviderLayer))
 
 // Use in your program
 const program = Effect.gen(function* () {
@@ -220,10 +218,8 @@ const Contracts = makeContractRegistry({ ... })
 // Layer<ContractRegistryService, never, ProviderService>
 
 // Compose with Provider
-const AppLayer = Contracts.pipe(
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
+const AppLayer = Contracts.pipe(Layer.provide(ProviderLayer))
 
 // Use in program
 const result = await Effect.runPromise(
