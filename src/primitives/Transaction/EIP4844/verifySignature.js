@@ -7,6 +7,10 @@ import { Hash } from "../../Hash/index.js";
 import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { GetSigningHash } from "./getSigningHash.js";
 
+const SECP256K1_N =
+	0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+const SECP256K1_HALF_N = SECP256K1_N / 2n;
+
 /**
  * Factory: Verify transaction signature.
  *
@@ -47,8 +51,19 @@ export function VerifySignature({
 		try {
 			const signingHash = getSigningHash(tx);
 			const v = 27 + tx.yParity;
+			const sBytes = tx.s;
+			// EIP-2: Reject high-s signatures to prevent malleability
+			const sValue = BigInt(
+				`0x${Array.from(sBytes)
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("")}`,
+			);
+			if (sValue > SECP256K1_HALF_N) {
+				return false;
+			}
+
 			const r = Hash.from(tx.r);
-			const s = Hash.from(tx.s);
+			const s = Hash.from(sBytes);
 			const publicKey = secp256k1RecoverPublicKey({ r, s, v }, signingHash);
 			return secp256k1Verify({ r, s, v }, signingHash, publicKey);
 		} catch {

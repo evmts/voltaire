@@ -6,6 +6,27 @@ import { Type } from "../types.js";
 import * as TransactionEIP7702 from "./index.js";
 import type { TransactionEIP7702Type } from "./TransactionEIP7702Type.js";
 
+const SECP256K1_N =
+	0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+const SECP256K1_HALF_N = SECP256K1_N / 2n;
+
+function bytesToBigInt(bytes: Uint8Array): bigint {
+	return BigInt(
+		`0x${Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")}`,
+	);
+}
+
+function bigIntToBytes32(value: bigint): Uint8Array {
+	const hex = value.toString(16).padStart(64, "0");
+	const out = new Uint8Array(32);
+	for (let i = 0; i < 32; i++) {
+		out[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+	}
+	return out;
+}
+
 describe("TransactionEIP7702.verifySignature", () => {
 	it("returns true for valid signature (yParity 0)", () => {
 		const privateKey = PrivateKey.from(
@@ -113,6 +134,47 @@ describe("TransactionEIP7702.verifySignature", () => {
 		};
 
 		expect(TransactionEIP7702.verifySignature(signedTx)).toBe(true);
+	});
+
+	it("rejects high-s signature (EIP-2)", () => {
+		const privateKey = PrivateKey.from(
+			"0x0123456789012345678901234567890123456789012345678901234567890123",
+		);
+
+		const unsignedTx: TransactionEIP7702Type = {
+			__brand: "TransactionEIP7702",
+			type: Type.EIP7702,
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 21000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 1000000000000000000n,
+			data: new Uint8Array(),
+			accessList: [],
+			authorizationList: [],
+			yParity: 0,
+			r: new Uint8Array(32),
+			s: new Uint8Array(32),
+		};
+
+		const signingHash = TransactionEIP7702.getSigningHash(unsignedTx);
+		const signature = Secp256k1.sign(signingHash, privateKey);
+		const sValue = bytesToBigInt(signature.s);
+		const highSValue = SECP256K1_N - sValue;
+		const recoveryBit = signature.v - 27;
+		const highYParity = 1 - recoveryBit;
+
+		const highSSignedTx: TransactionEIP7702Type = {
+			...unsignedTx,
+			yParity: highYParity,
+			r: signature.r,
+			s: bigIntToBytes32(highSValue),
+		};
+
+		expect(sValue <= SECP256K1_HALF_N).toBe(true);
+		expect(TransactionEIP7702.verifySignature(highSSignedTx)).toBe(false);
 	});
 
 	it("returns true for signature with authorization list", () => {
