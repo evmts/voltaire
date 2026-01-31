@@ -65,7 +65,17 @@ export function sign(messageHash, privateKey, options = {}) {
 		}
 
 		// Sign with compact format (prehash:false since we already have the hash)
-		const sigCompact = secp256k1.sign(messageHash, privateKey, signOptions);
+		const sigResult = secp256k1.sign(messageHash, privateKey, signOptions);
+
+		// Handle both Signature object (@noble/curves 1.9.x) and Uint8Array (2.0.x)
+		const sigCompact =
+			sigResult instanceof Uint8Array
+				? sigResult
+				: sigResult.toCompactRawBytes();
+		const sig =
+			sigResult instanceof Uint8Array
+				? secp256k1.Signature.fromBytes(sigResult)
+				: sigResult;
 
 		// Extract r and s
 		const r = sigCompact.slice(0, 32);
@@ -74,7 +84,6 @@ export function sign(messageHash, privateKey, options = {}) {
 		// Compute recovery bit by trying all possibilities (0-3)
 		// In practice, only 0-1 are typically needed for secp256k1
 		const publicKey = secp256k1.getPublicKey(privateKey, false);
-		const sig = secp256k1.Signature.fromBytes(sigCompact);
 
 		let recoveryBit = 0;
 		for (let i = 0; i < 4; i++) {
