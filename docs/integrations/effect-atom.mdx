@@ -64,7 +64,6 @@ const balanceAtom = (address: `0x${string}`) =>
 
 ```tsx
 import { useAtomValue, Result } from "@effect-atom/atom-react"
-import { Denomination } from "voltaire-effect"
 
 function Balance({ address }: { address: `0x${string}` }) {
   const result = useAtomValue(balanceAtom(address))
@@ -72,7 +71,7 @@ function Balance({ address }: { address: `0x${string}` }) {
   return Result.match(result, {
     onInitial: () => <div>Loading...</div>,
     onSuccess: (balance) => (
-      <div>{Denomination.formatEther(balance)} ETH</div>
+      <div>{(Number(balance) / 1e18).toFixed(4)} ETH</div>
     ),
     onFailure: (cause) => (
       <div>Error: {cause._tag}</div>
@@ -142,7 +141,7 @@ const balance = Result.getOrThrow(result)
 
 // Map over success value
 const formatted = Result.map(result, (balance) =>
-  Denomination.formatEther(balance)
+  (Number(balance) / 1e18).toFixed(4)
 )
 ```
 
@@ -204,7 +203,7 @@ function BalanceWithRefresh({ address }: { address: `0x${string}` }) {
     <div>
       {Result.match(result, {
         onInitial: () => "Loading...",
-        onSuccess: (b) => `${Denomination.formatEther(b)} ETH`,
+        onSuccess: (b) => `${(Number(b) / 1e18).toFixed(4)} ETH`,
         onFailure: () => "Error",
       })}
       <button onClick={refresh}>Refresh</button>
@@ -225,7 +224,7 @@ function BalanceSuspense({ address }: { address: `0x${string}` }) {
   // Suspends until success, throws on failure
   const balance = useAtomSuspense(balanceAtom(address))
   
-  return <div>{Denomination.formatEther(balance)} ETH</div>
+  return <div>{(Number(balance) / 1e18).toFixed(4)} ETH</div>
 }
 
 function App() {
@@ -336,7 +335,6 @@ export const balanceAtom = (address: `0x${string}`) =>
 
 import { useAtomValue, Result } from "@effect-atom/atom-react"
 import { blockNumberAtom, balanceAtom } from "@/lib/atoms"
-import { Denomination } from "voltaire-effect"
 
 export default function Home() {
   const blockResult = useAtomValue(blockNumberAtom)
@@ -362,7 +360,7 @@ export default function Home() {
         {Result.match(balanceResult, {
           onInitial: () => <p>Loading...</p>,
           onSuccess: (balance) => (
-            <p>{Denomination.formatEther(balance)} ETH</p>
+            <p>{(Number(balance) / 1e18).toFixed(4)} ETH</p>
           ),
           onFailure: () => <p>Error loading balance</p>,
         })}
