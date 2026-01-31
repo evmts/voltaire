@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as Bip39 from "./Bip39.js";
+import * as wordlists from "./wordlists.js";
 
 describe("Bip39", () => {
 	describe("generateMnemonic", () => {
@@ -1094,6 +1095,51 @@ describe("Bip39", () => {
 			}
 			// All should be unique with overwhelming probability
 			expect(mnemonics.size).toBe(1000);
+		});
+	});
+
+	describe("wordlists", () => {
+		it("exports all 10 wordlists", () => {
+			expect(Object.keys(wordlists)).toHaveLength(10);
+		});
+
+		it("exports english wordlist with 2048 words", () => {
+			expect(wordlists.english).toHaveLength(2048);
+			expect(wordlists.english[0]).toBe("abandon");
+			expect(wordlists.english[2047]).toBe("zoo");
+		});
+
+		it("exports all expected language wordlists", () => {
+			const expectedLanguages = [
+				"czech",
+				"english",
+				"french",
+				"italian",
+				"japanese",
+				"korean",
+				"portuguese",
+				"simplifiedChinese",
+				"spanish",
+				"traditionalChinese",
+			];
+			for (const lang of expectedLanguages) {
+				expect(wordlists).toHaveProperty(lang);
+				expect((wordlists as Record<string, string[]>)[lang]).toHaveLength(
+					2048,
+				);
+			}
+		});
+
+		it("japanese wordlist contains hiragana", () => {
+			expect(wordlists.japanese[0]).toBe("あいこくしん");
+		});
+
+		it("simplified chinese wordlist contains chinese characters", () => {
+			expect(wordlists.simplifiedChinese[0]).toBe("的");
+		});
+
+		it("traditional chinese wordlist contains traditional chinese characters", () => {
+			expect(wordlists.traditionalChinese[0]).toBe("的");
 		});
 	});
 });

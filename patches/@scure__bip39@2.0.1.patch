@@ -1,0 +1,13 @@
+diff --git a/package.json b/package.json
+index 9d3c28d4cf5e796821aa761aaa0f9dad0aeedc03..4f6c4c564050a3f022b07dc8b14e5f9d5323d783 100644
+--- a/package.json
++++ b/package.json
+@@ -40,7 +40,7 @@
+     "./wordlists/portuguese.js": "./wordlists/portuguese.js",
+     "./wordlists/simplified-chinese.js": "./wordlists/simplified-chinese.js",
+     "./wordlists/spanish.js": "./wordlists/spanish.js",
+-    "./wordlists/traditional-chinese.js": "./wordlists/traditional-chinesejss"
++    "./wordlists/traditional-chinese.js": "./wordlists/traditional-chinese.js"
+   },
+   "keywords": [
+     "bip39",
