@@ -1,10 +1,7 @@
-// @ts-nocheck - TODO: Fix ABI type inference issues
 import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { Address, BrandedAbi } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as S from "effect/Schema";
-import { fromArray } from "../../primitives/Abi/AbiSchema.js";
 import { ProviderService } from "../Provider/index.js";
 import { Contract } from "./Contract.js";
 
@@ -12,7 +9,7 @@ type HexType = `0x${string}`;
 
 const testAddress = Address("0x6B175474E89094C44Da98b954EecdEfaE6E286AB");
 
-const erc20Abi = S.decodeUnknownSync(fromArray)([
+const erc20Abi = [
 	{
 		type: "function",
 		name: "transfer",
@@ -30,7 +27,7 @@ const erc20Abi = S.decodeUnknownSync(fromArray)([
 		inputs: [],
 		outputs: [],
 	},
-]);
+] as const;
 
 const mockEstimateGasFn = vi.fn();
 
@@ -76,7 +73,7 @@ describe("Contract.estimateGas", () => {
 
 		const callArgs = mockEstimateGasFn.mock.calls[0][0];
 		const expectedData = BrandedAbi.encodeFunction(
-			erc20Abi as unknown as BrandedAbi.Abi,
+			erc20Abi,
 			"transfer",
 			[recipient, amount],
 		);
@@ -98,7 +95,7 @@ describe("Contract.estimateGas", () => {
 
 		const callArgs = mockEstimateGasFn.mock.calls[0][0];
 		const expectedData = BrandedAbi.encodeFunction(
-			erc20Abi as unknown as BrandedAbi.Abi,
+			erc20Abi,
 			"deposit",
 			[],
 		);

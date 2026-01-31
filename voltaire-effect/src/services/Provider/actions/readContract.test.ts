@@ -1,17 +1,14 @@
-// @ts-nocheck - TODO: Fix ABI type inference issues
 import { beforeEach, describe, expect, it, vi } from "@effect/vitest";
 import { Address } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as S from "effect/Schema";
-import { fromArray } from "../../../primitives/Abi/AbiSchema.js";
 import { TransportError } from "../../Transport/TransportService.js";
 import { ProviderService } from "../ProviderService.js";
 import { readContract } from "./readContract.js";
 
 type HexType = `0x${string}`;
 
-const erc20Abi = S.decodeUnknownSync(fromArray)([
+const erc20Abi = [
 	{
 		type: "function",
 		name: "balanceOf",
@@ -50,9 +47,9 @@ const erc20Abi = S.decodeUnknownSync(fromArray)([
 		],
 		outputs: [{ name: "", type: "uint256" }],
 	},
-]);
+] as const;
 
-const pairAbi = S.decodeUnknownSync(fromArray)([
+const pairAbi = [
 	{
 		type: "function",
 		name: "getReserves",
@@ -71,9 +68,9 @@ const pairAbi = S.decodeUnknownSync(fromArray)([
 		inputs: [],
 		outputs: [{ name: "", type: "address" }],
 	},
-]);
+] as const;
 
-const extendedAbi = S.decodeUnknownSync(fromArray)([
+const extendedAbi = [
 	{
 		type: "function",
 		name: "owner",
@@ -127,9 +124,9 @@ const extendedAbi = S.decodeUnknownSync(fromArray)([
 		inputs: [{ name: "data", type: "bytes" }],
 		outputs: [],
 	},
-]);
+] as const;
 
-const complexAbi = S.decodeUnknownSync(fromArray)([
+const complexAbi = [
 	{
 		type: "function",
 		name: "getPositions",
@@ -153,7 +150,7 @@ const complexAbi = S.decodeUnknownSync(fromArray)([
 			{ name: "nonce", type: "uint256" },
 		],
 	},
-]);
+] as const;
 
 const mockCallFn = vi.fn();
 

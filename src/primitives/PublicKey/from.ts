@@ -53,5 +53,6 @@ export function from(hex: string): PublicKeyType {
 			docsPath: "/primitives/public-key/from#error-handling",
 		});
 	}
-	return bytes as PublicKeyType;
+	// Validated secp256k1 public key matches PublicKeyType structurally
+	return bytes as unknown as PublicKeyType;
 }

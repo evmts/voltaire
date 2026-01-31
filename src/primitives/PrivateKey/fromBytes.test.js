@@ -3,6 +3,10 @@ import { CURVE_ORDER } from "../../crypto/Secp256k1/constants.js";
 import { InvalidLengthError, InvalidRangeError } from "../errors/index.js";
 import { fromBytes } from "./fromBytes.js";
 
+/**
+ * @param {bigint} value
+ * @returns {Uint8Array}
+ */
 function bigIntToBytes32(value) {
 	const hex = value.toString(16).padStart(64, "0");
 	const bytes = new Uint8Array(32);
