@@ -38,11 +38,12 @@ describe("Secp256k1.isValidSignature", () => {
 		});
 
 		it("should return true for low-s signatures", () => {
+			// Create valid private key bytes first
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = (i * 7) % 256;
+				privateKeyBytes[i] = (i * 7 + 1) % 256; // +1 to avoid zero
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			// biome-ignore lint/suspicious/noExplicitAny: sha256 returns Uint8Array, needs branded type
 			const message = sha256(new TextEncoder().encode("low-s test")) as any;
 

@@ -317,11 +317,12 @@ describe("Secp256k1.Signature methods", () => {
 		});
 
 		it("should maintain data integrity across conversions", () => {
+			// Create valid private key bytes (non-zero, in valid range)
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = (i * 7) % 256;
+				privateKeyBytes[i] = (i * 7 + 1) % 256; // +1 to avoid all zeros
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = sha256(
 				new TextEncoder().encode("conversion test"),
 				// biome-ignore lint/suspicious/noExplicitAny: testing type compatibility

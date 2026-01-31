@@ -121,27 +121,24 @@ describe("PublicKey.toHex", () => {
 			expect(pubkey2.every((b, i) => b === pubkey1[i])).toBe(true);
 		});
 
-		it("round-trips zero key", () => {
+		it("rejects zero key (not on curve)", () => {
 			const pubkey1 = asPublicKey(new Uint8Array(64));
 			const hex = toHex.call(pubkey1);
-			const pubkey2 = from(hex);
-
-			expect(pubkey2.every((b, i) => b === pubkey1[i])).toBe(true);
+			expect(() => from(hex)).toThrow();
 		});
 
-		it("round-trips max key", () => {
+		it("rejects max key (not on curve)", () => {
 			const pubkey1 = asPublicKey(new Uint8Array(64).fill(0xff));
 			const hex = toHex.call(pubkey1);
-			const pubkey2 = from(hex);
-
-			expect(pubkey2.every((b, i) => b === pubkey1[i])).toBe(true);
+			expect(() => from(hex)).toThrow();
 		});
 
-		it("preserves all byte values", () => {
-			const pubkey1 = asPublicKey(new Uint8Array(64));
-			for (let i = 0; i < 64; i++) {
-				pubkey1[i] = i;
-			}
+		it("round-trips another valid key", () => {
+			// Use a different private key to get another valid public key
+			const pk = privateKeyFrom(
+				"0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+			);
+			const pubkey1 = fromPrivateKey(pk);
 			const hex = toHex.call(pubkey1);
 			const pubkey2 = from(hex);
 

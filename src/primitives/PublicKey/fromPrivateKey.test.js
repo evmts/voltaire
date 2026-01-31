@@ -16,8 +16,9 @@ describe("PublicKey.fromPrivateKey", () => {
 		});
 
 		it("derives public key from minimum private key", () => {
-			const pk = privateKeyFromBytes(new Uint8Array(32));
-			pk[31] = 0x01;
+			const bytes = new Uint8Array(32);
+			bytes[31] = 0x01;
+			const pk = privateKeyFromBytes(bytes);
 			const pubkey = fromPrivateKey(pk);
 
 			expect(pubkey).toBeInstanceOf(Uint8Array);
@@ -175,8 +176,9 @@ describe("PublicKey.fromPrivateKey", () => {
 		});
 
 		it("derives from small private key", () => {
-			const pk = privateKeyFromBytes(new Uint8Array(32));
-			pk[31] = 0x01;
+			const bytes = new Uint8Array(32);
+			bytes[31] = 0x01;
+			const pk = privateKeyFromBytes(bytes);
 			const pubkey = fromPrivateKey(pk);
 
 			expect(pubkey.length).toBe(64);
@@ -184,8 +186,10 @@ describe("PublicKey.fromPrivateKey", () => {
 		});
 
 		it("derives from large private key", () => {
-			const pk = privateKeyFromBytes(new Uint8Array(32).fill(0xff));
-			pk[0] = 0x7f;
+			// Create bytes with large value but under curve order
+			const bytes = new Uint8Array(32).fill(0xff);
+			bytes[0] = 0x7f; // Ensure under curve order
+			const pk = privateKeyFromBytes(bytes);
 			const pubkey = fromPrivateKey(pk);
 
 			expect(pubkey.length).toBe(64);
@@ -247,8 +251,10 @@ describe("PublicKey.fromPrivateKey", () => {
 
 	describe("edge cases", () => {
 		it("handles minimum valid private key", () => {
-			const pk = privateKeyFromBytes(new Uint8Array(32));
-			pk[31] = 0x01;
+			// Create bytes for minimum valid private key (value = 1)
+			const bytes = new Uint8Array(32);
+			bytes[31] = 0x01;
+			const pk = privateKeyFromBytes(bytes);
 			const pubkey = fromPrivateKey(pk);
 
 			expect(pubkey.length).toBe(64);

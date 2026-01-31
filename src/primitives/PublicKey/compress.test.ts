@@ -84,16 +84,15 @@ describe("PublicKey.compress", () => {
 	});
 
 	test("handles odd y coordinate", () => {
-		// Create a key with odd y
-		// Private key 2 generates: x=c6047f..., y=5cbdf0... (odd)
+		// Private key 6 generates a valid point with odd y (parity=1)
 		const uncompressed =
-			"0xc6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee55cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bffcf34e7e91c";
+			"0xfff97bd5755eeea420453a14355235d382f6472f8568a18b2f057a1460297556ae12777aacfbb620f3be96017f45c560de80f0f6518fe4a03c870c36b075f297";
 
 		const compressed = PublicKey.compress(uncompressed);
 
 		expect(compressed.length).toBe(33);
-		// y ends in ...1c, which is even, so prefix should be 0x02
-		expect(compressed[0]).toBe(0x02);
+		// y ends in ...97, which is odd, so prefix should be 0x03
+		expect(compressed[0]).toBe(0x03);
 	});
 
 	test("accepts Uint8Array input", () => {
@@ -122,17 +121,19 @@ describe("PublicKey.compress", () => {
 	});
 
 	test("compresses multiple keys correctly", () => {
-		// Test vectors with different y parities
+		// Test vectors with different y parities (from known private keys)
 		const keys = [
 			{
+				// Private key 1 (generator point G) - even y
 				uncompressed:
 					"0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
 				expectedPrefix: 0x02, // y is even
 			},
 			{
+				// Private key 6 - odd y
 				uncompressed:
-					"0xc6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee55cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bffcf34e7e91c",
-				expectedPrefix: 0x02, // y is even
+					"0xfff97bd5755eeea420453a14355235d382f6472f8568a18b2f057a1460297556ae12777aacfbb620f3be96017f45c560de80f0f6518fe4a03c870c36b075f297",
+				expectedPrefix: 0x03, // y is odd
 			},
 		];
 
