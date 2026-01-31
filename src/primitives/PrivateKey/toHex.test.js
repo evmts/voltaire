@@ -5,21 +5,23 @@ import { toHex } from "./toHex.js";
 
 describe("PrivateKey.toHex", () => {
 	describe("conversion tests", () => {
-		it("converts zero key to hex", () => {
-			const pk = fromBytes(new Uint8Array(32));
+		it("converts minimal key to hex", () => {
+			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
+			const pk = fromBytes(bytes);
 			const hex = toHex.call(pk);
 
 			expect(hex).toBe(
-				"0x0000000000000000000000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			);
 		});
 
-		it("converts max key to hex", () => {
-			const pk = fromBytes(new Uint8Array(32).fill(0xff));
+		it("converts high key to hex", () => {
+			const pk = fromBytes(new Uint8Array(32).fill(0xfe));
 			const hex = toHex.call(pk);
 
 			expect(hex).toBe(
-				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+				"0xfefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe",
 			);
 		});
 
@@ -83,7 +85,9 @@ describe("PrivateKey.toHex", () => {
 
 	describe("format tests", () => {
 		it("returns hex string with 0x prefix", () => {
-			const pk = fromBytes(new Uint8Array(32));
+			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
+			const pk = fromBytes(bytes);
 			const hex = toHex.call(pk);
 
 			expect(hex.startsWith("0x")).toBe(true);
@@ -101,7 +105,9 @@ describe("PrivateKey.toHex", () => {
 		});
 
 		it("returns exactly 66 characters", () => {
-			const pk = fromBytes(new Uint8Array(32));
+			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
+			const pk = fromBytes(bytes);
 			const hex = toHex.call(pk);
 
 			expect(hex.length).toBe(66);
@@ -137,18 +143,18 @@ describe("PrivateKey.toHex", () => {
 			expect(pk2).toEqual(pk);
 		});
 
-		it("round-trips zero key", () => {
+		it("round-trips minimal key", () => {
 			const original =
-				"0x0000000000000000000000000000000000000000000000000000000000000000";
+				"0x0000000000000000000000000000000000000000000000000000000000000001";
 			const pk = from(original);
 			const hex = toHex.call(pk);
 
 			expect(hex).toBe(original);
 		});
 
-		it("round-trips max key", () => {
+		it("round-trips high key", () => {
 			const original =
-				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+				"0xfefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe";
 			const pk = from(original);
 			const hex = toHex.call(pk);
 
@@ -171,21 +177,23 @@ describe("PrivateKey.toHex", () => {
 	});
 
 	describe("edge cases", () => {
-		it("handles all zeros", () => {
-			const pk = fromBytes(new Uint8Array(32));
+		it("handles minimal key", () => {
+			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
+			const pk = fromBytes(bytes);
 			const hex = toHex.call(pk);
 
 			expect(hex).toBe(
-				"0x0000000000000000000000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			);
 		});
 
 		it("handles all ones", () => {
-			const pk = fromBytes(new Uint8Array(32).fill(0xff));
+			const pk = fromBytes(new Uint8Array(32).fill(0x01));
 			const hex = toHex.call(pk);
 
 			expect(hex).toBe(
-				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+				"0x0101010101010101010101010101010101010101010101010101010101010101",
 			);
 		});
 

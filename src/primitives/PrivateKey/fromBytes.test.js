@@ -1,29 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { InvalidLengthError } from "../errors/index.js";
+import { CURVE_ORDER } from "../../crypto/Secp256k1/constants.js";
+import { InvalidLengthError, InvalidRangeError } from "../errors/index.js";
 import { fromBytes } from "./fromBytes.js";
+
+function bigIntToBytes32(value) {
+	const hex = value.toString(16).padStart(64, "0");
+	const bytes = new Uint8Array(32);
+	for (let i = 0; i < 32; i++) {
+		bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+}
 
 describe("PrivateKey.fromBytes", () => {
 	describe("constructor tests", () => {
 		it("creates PrivateKey from 32 bytes", () => {
 			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
 			const pk = fromBytes(bytes);
 
 			expect(pk).toBeInstanceOf(Uint8Array);
 			expect(pk.length).toBe(32);
 		});
 
-		it("creates PrivateKey from zero bytes", () => {
+		it("rejects zero private key", () => {
 			const bytes = new Uint8Array(32);
-			const pk = fromBytes(bytes);
-
-			expect(pk.every((byte) => byte === 0)).toBe(true);
+			expect(() => fromBytes(bytes)).toThrow(InvalidRangeError);
 		});
 
-		it("creates PrivateKey from max bytes", () => {
+		it("rejects private key at or above curve order", () => {
 			const bytes = new Uint8Array(32).fill(0xff);
-			const pk = fromBytes(bytes);
-
-			expect(pk.every((byte) => byte === 0xff)).toBe(true);
+			expect(() => fromBytes(bytes)).toThrow(InvalidRangeError);
 		});
 
 		it("creates PrivateKey from known test key", () => {
@@ -41,6 +48,7 @@ describe("PrivateKey.fromBytes", () => {
 
 		it("creates new Uint8Array instance", () => {
 			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
 			const pk = fromBytes(bytes);
 
 			expect(pk).not.toBe(bytes);
@@ -65,7 +73,18 @@ describe("PrivateKey.fromBytes", () => {
 	describe("validation tests", () => {
 		it("accepts exactly 32 bytes", () => {
 			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
 			expect(() => fromBytes(bytes)).not.toThrow();
+		});
+
+		it("throws on zero private key", () => {
+			const bytes = new Uint8Array(32);
+			expect(() => fromBytes(bytes)).toThrow(InvalidRangeError);
+		});
+
+		it("throws on private key equal to curve order", () => {
+			const bytes = bigIntToBytes32(CURVE_ORDER);
+			expect(() => fromBytes(bytes)).toThrow(InvalidRangeError);
 		});
 
 		it("throws on 31 bytes", () => {
@@ -129,20 +148,6 @@ describe("PrivateKey.fromBytes", () => {
 	});
 
 	describe("edge cases", () => {
-		it("handles all zero bytes", () => {
-			const bytes = new Uint8Array(32);
-			const pk = fromBytes(bytes);
-
-			expect(pk.every((b) => b === 0)).toBe(true);
-		});
-
-		it("handles all max bytes", () => {
-			const bytes = new Uint8Array(32).fill(0xff);
-			const pk = fromBytes(bytes);
-
-			expect(pk.every((b) => b === 0xff)).toBe(true);
-		});
-
 		it("handles alternating pattern", () => {
 			const bytes = new Uint8Array(32);
 			for (let i = 0; i < 32; i++) {
@@ -184,6 +189,7 @@ describe("PrivateKey.fromBytes", () => {
 	describe("type tests", () => {
 		it("returns Uint8Array", () => {
 			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
 			const pk = fromBytes(bytes);
 
 			expect(pk).toBeInstanceOf(Uint8Array);
@@ -191,6 +197,7 @@ describe("PrivateKey.fromBytes", () => {
 
 		it("has correct length property", () => {
 			const bytes = new Uint8Array(32);
+			bytes[31] = 1;
 			const pk = fromBytes(bytes);
 
 			expect(pk.length).toBe(32);

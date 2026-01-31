@@ -348,10 +348,10 @@ describe("Secp256k1.recoverPublicKey", () => {
 	describe("Ethereum address recovery", () => {
 		it("should recover public key suitable for address derivation", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = (i * 7) % 256;
+				privateKeyBytes[i] = (i * 7) % 256;
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash(
 				sha256(new TextEncoder().encode("Ethereum transaction")),
 			);
@@ -413,10 +413,10 @@ describe("Secp256k1.recoverPublicKey", () => {
 	describe("malleability protection", () => {
 		it("should handle low-s signatures correctly", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = (i * 11) % 256;
+				privateKeyBytes[i] = (i * 11) % 256;
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash(
 				sha256(new TextEncoder().encode("malleability test")),
 			);

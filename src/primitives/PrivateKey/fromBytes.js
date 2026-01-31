@@ -1,4 +1,5 @@
-import { InvalidLengthError } from "../errors/index.js";
+import { InvalidLengthError, InvalidRangeError } from "../errors/index.js";
+import { isValidPrivateKey } from "../../crypto/Secp256k1/isValidPrivateKey.js";
 
 /**
  * Create PrivateKey from raw bytes
@@ -6,6 +7,7 @@ import { InvalidLengthError } from "../errors/index.js";
  * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
  * @returns {import('./PrivateKeyType.js').PrivateKeyType} Private key
  * @throws {InvalidLengthError} If bytes is not 32 bytes
+ * @throws {InvalidRangeError} If private key is out of range [1, n-1]
  *
  * @example
  * ```javascript
@@ -26,6 +28,14 @@ export function fromBytes(bytes) {
 				docsPath: "/primitives/private-key",
 			},
 		);
+	}
+	if (!isValidPrivateKey(bytes)) {
+		throw new InvalidRangeError("Private key must be in range [1, n-1]", {
+			code: "PRIVATE_KEY_INVALID_RANGE",
+			value: bytes,
+			expected: "Private key in range [1, n-1]",
+			docsPath: "/primitives/private-key",
+		});
 	}
 	return /** @type {import('./PrivateKeyType.js').PrivateKeyType} */ (
 		new Uint8Array(bytes)

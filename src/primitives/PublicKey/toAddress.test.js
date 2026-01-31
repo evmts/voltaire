@@ -213,8 +213,9 @@ describe("PublicKey.toAddress", () => {
 	describe("edge cases", () => {
 		it("handles minimum private key", async () => {
 			const { fromBytes } = await import("../PrivateKey/fromBytes.js");
-			const pk = fromBytes(new Uint8Array(32));
-			pk[31] = 0x01;
+			const bytes = new Uint8Array(32);
+			bytes[31] = 0x01;
+			const pk = fromBytes(bytes);
 			const pubkey = fromPrivateKey(pk);
 			const address = toAddress.call(pubkey);
 

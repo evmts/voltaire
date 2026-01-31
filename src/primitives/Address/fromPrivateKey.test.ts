@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { hash } from "../../crypto/Keccak256/hash.js";
 import { derivePublicKey } from "../../crypto/Secp256k1/derivePublicKey.js";
-import { InvalidLengthError } from "../errors/index.js";
+import { InvalidLengthError, InvalidRangeError } from "../errors/index.js";
 import { Address } from "../index.js";
 import { PrivateKey } from "../PrivateKey/index.js";
-import { FromPrivateKey, InvalidValueError } from "./internal-index.js";
+import { FromPrivateKey } from "./internal-index.js";
 
 // Create factory instance with crypto dependencies
 const fromPrivateKey = FromPrivateKey({
@@ -24,8 +24,8 @@ describe("fromPrivateKey", () => {
 
 		it("derives known address from test vector 1", () => {
 			const privateKeyBytes = new Uint8Array(32);
+			privateKeyBytes.fill(1);
 			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			privateKey.fill(1);
 			const addr = fromPrivateKey(privateKey);
 			const hex = Address.toHex(addr);
 			expect(hex).toMatch(/^0x[0-9a-f]{40}$/);
@@ -34,10 +34,10 @@ describe("fromPrivateKey", () => {
 
 		it("derives known address from test vector 2", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = i + 1;
+				privateKeyBytes[i] = i + 1;
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const addr = fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);
@@ -95,15 +95,17 @@ describe("fromPrivateKey", () => {
 
 		it("throws on zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			expect(() => fromPrivateKey(privateKey)).toThrow(InvalidValueError);
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidRangeError,
+			);
 		});
 
 		it("throws on private key >= secp256k1 order", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			privateKey.fill(0xff);
-			expect(() => fromPrivateKey(privateKey)).toThrow(InvalidValueError);
+			privateKeyBytes.fill(0xff);
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidRangeError,
+			);
 		});
 	});
 
@@ -118,15 +120,13 @@ describe("fromPrivateKey", () => {
 		});
 
 		it("handles maximum valid private key", () => {
-			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			// secp256k1 order - 1
 			const orderMinus1 = [
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 			];
-			privateKey.set(orderMinus1);
+			const privateKey = PrivateKey.fromBytes(new Uint8Array(orderMinus1));
 			const addr = fromPrivateKey(privateKey);
 			expect(addr).toBeInstanceOf(Uint8Array);
 			expect(addr.length).toBe(20);

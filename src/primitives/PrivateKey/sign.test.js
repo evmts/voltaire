@@ -221,8 +221,9 @@ describe("PrivateKey.sign", () => {
 
 	describe("edge cases", () => {
 		it("signs with minimum valid private key", () => {
-			const pk = fromBytes(new Uint8Array(32));
-			pk[31] = 0x01;
+			const bytes = new Uint8Array(32);
+			bytes[31] = 0x01;
+			const pk = fromBytes(bytes);
 			const hash = Hash.keccak256(new Uint8Array([1]));
 			const sig = sign(pk, hash);
 

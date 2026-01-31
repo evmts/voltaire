@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
 	InvalidLengthError,
 	InvalidPrivateKeyError,
+	InvalidRangeError,
 } from "../../primitives/errors/index.js";
 import { Hash } from "../../primitives/Hash/index.js";
 import { PrivateKey } from "../../primitives/PrivateKey/index.js";
@@ -163,38 +164,33 @@ describe("Secp256k1.sign", () => {
 	});
 
 	describe("validation", () => {
-		it("should throw InvalidPrivateKeyError for zero private key", () => {
+		it("should throw InvalidRangeError for zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes); // All zeros
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
-
-			expect(() => sign(message, privateKey)).toThrow(InvalidPrivateKeyError);
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidRangeError,
+			);
 		});
 
 		it("should throw error with correct name for zero private key", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
-
 			try {
-				sign(message, privateKey);
+				PrivateKey.fromBytes(privateKeyBytes);
 				expect.fail("Should have thrown");
 			} catch (e) {
-				expect((e as Error).name).toBe("InvalidPrivateKeyError");
+				expect((e as Error).name).toBe("InvalidRangeError");
 			}
 		});
 
-		it("should throw InvalidPrivateKeyError for private key >= n", () => {
+		it("should throw InvalidRangeError for private key >= n", () => {
 			// CURVE_ORDER (invalid)
 			const privateKeyBytes = new Uint8Array([
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
 			]);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test")));
-
-			expect(() => sign(message, privateKey)).toThrow();
+			expect(() => PrivateKey.fromBytes(privateKeyBytes)).toThrow(
+				InvalidRangeError,
+			);
 		});
 
 		it("should throw InvalidPrivateKeyError for wrong length private key", () => {
@@ -241,10 +237,10 @@ describe("Secp256k1.sign", () => {
 	describe("cross-validation with @noble/curves", () => {
 		it("should produce signature verifiable by @noble/curves", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = i + 1;
+				privateKeyBytes[i] = i + 1;
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(
 				sha256(new TextEncoder().encode("cross validation test")),
 			);
@@ -409,10 +405,10 @@ describe("Secp256k1.sign", () => {
 	describe("low-s enforcement", () => {
 		it("should produce low-s signatures (s <= n/2)", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = (i * 7) % 256;
+				privateKeyBytes[i] = (i * 7) % 256;
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.fromBytes(
 				sha256(new TextEncoder().encode("low-s test")),
 			);

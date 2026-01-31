@@ -24,10 +24,10 @@ describe("Secp256k1.verify", () => {
 
 		it("should verify multiple valid signatures", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = i + 1;
+				privateKeyBytes[i] = i + 1;
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 
 			const messages = [
 				Hash(sha256(new TextEncoder().encode("message 1"))),
@@ -353,10 +353,10 @@ describe("Secp256k1.verify", () => {
 	describe("cross-validation with @noble/curves", () => {
 		it("should verify signature created by @noble/curves", () => {
 			const privateKeyBytes = new Uint8Array(32);
-			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			for (let i = 0; i < 32; i++) {
-				privateKey[i] = (i * 13) % 256;
+				privateKeyBytes[i] = (i * 13) % 256;
 			}
+			const privateKey = PrivateKey.fromBytes(privateKeyBytes);
 			const message = Hash.from(
 				sha256(new TextEncoder().encode("cross validation")),
 			);
