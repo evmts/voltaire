@@ -85,7 +85,7 @@ export {
 	UserRejectedRequestError,
 } from "./errors.js";
 export * as Hardhat from "./Hardhat.js";
-export { nextId, resetId } from "./IdCounter.js";
+export { IdCounterService, IdCounterLive } from "./IdCounter.js";
 export * as Net from "./Net.js";
 export {
 	from as requestFrom,

@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	Anvil,
 	BatchRequest,
@@ -10,6 +10,7 @@ import {
 	EXECUTION_REVERTED,
 	ExecutionRevertedError,
 	Hardhat,
+	IdCounterLive,
 	INSUFFICIENT_FUNDS,
 	InsufficientFundsError,
 	isDisconnected,
@@ -28,7 +29,6 @@ import {
 	parseErrorCode,
 	Request,
 	Response,
-	resetId,
 	Txpool,
 	USER_REJECTED_REQUEST,
 	Wallet,
@@ -66,10 +66,13 @@ describe("JsonRpc", () => {
 			expect(Request.isNotification(req)).toBe(false);
 		});
 
-		it("withParams adds parameters to request", () => {
+		it("withParams adds parameters to request", async () => {
 			const base = Request.from({ method: "eth_getBalance", id: 1 });
 			const addParams = Request.withParams<[string, string]>(base);
-			const req = addParams(["0x1234", "latest"]);
+			const program = addParams(["0x1234", "latest"]).pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.params).toEqual(["0x1234", "latest"]);
 		});
 
@@ -98,10 +101,13 @@ describe("JsonRpc", () => {
 			expect(Request.isNotification(req)).toBe(false);
 		});
 
-		it("withParams auto-assigns id when undefined", () => {
+		it("withParams auto-assigns id when undefined", async () => {
 			const base = Request.from({ method: "eth_getBalance" });
 			const addParams = Request.withParams<[string, string]>(base);
-			const req = addParams(["0x1234", "latest"]);
+			const program = addParams(["0x1234", "latest"]).pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.id).toBeDefined();
 			expect(typeof req.id).toBe("number");
 		});
@@ -478,84 +484,123 @@ describe("JsonRpc", () => {
 	});
 
 	describe("Eth namespace", () => {
-		it("creates GetBalanceRequest", () => {
-			const req = Eth.GetBalanceRequest("0x1234", "latest");
+		it("creates GetBalanceRequest", async () => {
+			const program = Eth.GetBalanceRequest("0x1234", "latest").pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("eth_getBalance");
 			expect(req.params).toEqual(["0x1234", "latest"]);
 		});
 
-		it("creates BlockNumberRequest", () => {
-			const req = Eth.BlockNumberRequest();
+		it("creates BlockNumberRequest", async () => {
+			const program = Eth.BlockNumberRequest().pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("eth_blockNumber");
 		});
 
-		it("creates ChainIdRequest", () => {
-			const req = Eth.ChainIdRequest();
+		it("creates ChainIdRequest", async () => {
+			const program = Eth.ChainIdRequest().pipe(Effect.provide(IdCounterLive));
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("eth_chainId");
 		});
 
-		it("creates CallRequest", () => {
-			const req = Eth.CallRequest({ to: "0xabc", data: "0x123" }, "latest");
+		it("creates CallRequest", async () => {
+			const program = Eth.CallRequest(
+				{ to: "0xabc", data: "0x123" },
+				"latest",
+			).pipe(Effect.provide(IdCounterLive));
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("eth_call");
 		});
 
-		it("creates GetBlockByNumberRequest", () => {
-			const req = Eth.GetBlockByNumberRequest("0x1", false);
+		it("creates GetBlockByNumberRequest", async () => {
+			const program = Eth.GetBlockByNumberRequest("0x1", false).pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("eth_getBlockByNumber");
 			expect(req.params).toEqual(["0x1", false]);
 		});
 	});
 
 	describe("Wallet namespace", () => {
-		it("creates SwitchEthereumChainRequest", () => {
-			const req = Wallet.SwitchEthereumChainRequest("0x1");
+		it("creates SwitchEthereumChainRequest", async () => {
+			const program = Wallet.SwitchEthereumChainRequest("0x1").pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("wallet_switchEthereumChain");
 		});
 	});
 
 	describe("Net namespace", () => {
-		it("creates VersionRequest", () => {
-			const req = Net.VersionRequest();
+		it("creates VersionRequest", async () => {
+			const program = Net.VersionRequest().pipe(Effect.provide(IdCounterLive));
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("net_version");
 		});
 
-		it("creates ListeningRequest", () => {
-			const req = Net.ListeningRequest();
+		it("creates ListeningRequest", async () => {
+			const program = Net.ListeningRequest().pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("net_listening");
 		});
 
-		it("creates PeerCountRequest", () => {
-			const req = Net.PeerCountRequest();
+		it("creates PeerCountRequest", async () => {
+			const program = Net.PeerCountRequest().pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("net_peerCount");
 		});
 	});
 
 	describe("Web3 namespace", () => {
-		it("creates ClientVersionRequest", () => {
-			const req = Web3.ClientVersionRequest();
+		it("creates ClientVersionRequest", async () => {
+			const program = Web3.ClientVersionRequest().pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("web3_clientVersion");
 		});
 
-		it("creates Sha3Request", () => {
-			const req = Web3.Sha3Request("0x68656c6c6f");
+		it("creates Sha3Request", async () => {
+			const program = Web3.Sha3Request("0x68656c6c6f").pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("web3_sha3");
 			expect(req.params).toEqual(["0x68656c6c6f"]);
 		});
 	});
 
 	describe("Txpool namespace", () => {
-		it("creates StatusRequest", () => {
-			const req = Txpool.StatusRequest();
+		it("creates StatusRequest", async () => {
+			const program = Txpool.StatusRequest().pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("txpool_status");
 		});
 
-		it("creates ContentRequest", () => {
-			const req = Txpool.ContentRequest();
+		it("creates ContentRequest", async () => {
+			const program = Txpool.ContentRequest().pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("txpool_content");
 		});
 
-		it("creates InspectRequest", () => {
-			const req = Txpool.InspectRequest();
+		it("creates InspectRequest", async () => {
+			const program = Txpool.InspectRequest().pipe(
+				Effect.provide(IdCounterLive),
+			);
+			const req = await Effect.runPromise(program);
 			expect(req.method).toBe("txpool_inspect");
 		});
 	});
@@ -569,41 +614,61 @@ describe("JsonRpc", () => {
 	});
 
 	describe("ID Counter", () => {
-		beforeEach(() => {
-			resetId();
-		});
+		it("generates unique IDs across namespaces", async () => {
+			const program = Effect.gen(function* () {
+				const ids = new Set<number>();
 
-		it("generates unique IDs across namespaces", () => {
-			const ids = new Set<number>();
+				// Generate requests from multiple namespaces
+				const req1 = yield* Eth.BlockNumberRequest();
+				ids.add(req1.id as number);
+				const req2 = yield* Eth.ChainIdRequest();
+				ids.add(req2.id as number);
+				const req3 = yield* Net.VersionRequest();
+				ids.add(req3.id as number);
+				const req4 = yield* Web3.ClientVersionRequest();
+				ids.add(req4.id as number);
+				const req5 = yield* Txpool.StatusRequest();
+				ids.add(req5.id as number);
+				const req6 = yield* Wallet.GetPermissionsRequest();
+				ids.add(req6.id as number);
+				const req7 = yield* Anvil.GetAutomineRequest();
+				ids.add(req7.id as number);
+				const req8 = yield* Hardhat.MineRequest();
+				ids.add(req8.id as number);
 
-			// Generate requests from multiple namespaces
-			ids.add(Eth.BlockNumberRequest().id as number);
-			ids.add(Eth.ChainIdRequest().id as number);
-			ids.add(Net.VersionRequest().id as number);
-			ids.add(Web3.ClientVersionRequest().id as number);
-			ids.add(Txpool.StatusRequest().id as number);
-			ids.add(Wallet.GetPermissionsRequest().id as number);
-			ids.add(Anvil.GetAutomineRequest().id as number);
-			ids.add(Hardhat.MineRequest().id as number);
+				return ids;
+			}).pipe(Effect.provide(IdCounterLive));
 
+			const ids = await Effect.runPromise(program);
 			// All 8 IDs should be unique
 			expect(ids.size).toBe(8);
 		});
 
-		it("increments IDs sequentially", () => {
-			const id1 = Eth.BlockNumberRequest().id as number;
-			const id2 = Net.VersionRequest().id as number;
-			const id3 = Web3.ClientVersionRequest().id as number;
+		it("increments IDs sequentially", async () => {
+			const program = Effect.gen(function* () {
+				const req1 = yield* Eth.BlockNumberRequest();
+				const req2 = yield* Net.VersionRequest();
+				const req3 = yield* Web3.ClientVersionRequest();
 
+				return {
+					id1: req1.id as number,
+					id2: req2.id as number,
+					id3: req3.id as number,
+				};
+			}).pipe(Effect.provide(IdCounterLive));
+
+			const { id1, id2, id3 } = await Effect.runPromise(program);
 			expect(id2).toBe(id1 + 1);
 			expect(id3).toBe(id2 + 1);
 		});
 
-		it("resetId resets the counter", () => {
-			Eth.BlockNumberRequest();
-			Eth.ChainIdRequest();
-			resetId();
-			const id = Eth.BlockNumberRequest().id as number;
+		it("isolated counter starts fresh", async () => {
+			const program = Effect.gen(function* () {
+				const req = yield* Eth.BlockNumberRequest();
+				return req.id as number;
+			}).pipe(Effect.provide(IdCounterLive));
+
+			const id = await Effect.runPromise(program);
 			expect(id).toBe(1);
 		});
 	});

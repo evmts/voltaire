@@ -1,4 +1,5 @@
-import { nextId } from "./IdCounter.js";
+import * as Effect from "effect/Effect";
+import { IdCounterService } from "./IdCounter.js";
 
 export type JsonRpcIdType = number | string | null;
 
@@ -28,13 +29,20 @@ export function isNotification(request: JsonRpcRequestType): boolean {
 
 export function withParams<TParams>(
 	request: JsonRpcRequestType,
-): (params: TParams) => JsonRpcRequestType<TParams> {
-	return (params: TParams) => ({
-		jsonrpc: "2.0",
-		method: request.method,
-		params,
-		id: request.id ?? nextId(),
-	});
+): (
+	params: TParams,
+) => Effect.Effect<JsonRpcRequestType<TParams>, never, IdCounterService> {
+	return (params: TParams) =>
+		Effect.gen(function* () {
+			const counter = yield* IdCounterService;
+			const id = request.id ?? (yield* counter.next());
+			return {
+				jsonrpc: "2.0",
+				method: request.method,
+				params,
+				id,
+			};
+		});
 }
 
 export const Request = {

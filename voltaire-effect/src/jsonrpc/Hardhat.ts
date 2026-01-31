@@ -1,16 +1,21 @@
-import { nextId } from "./IdCounter.js";
+import * as Effect from "effect/Effect";
+import { IdCounterService } from "./IdCounter.js";
 import type { JsonRpcRequestType } from "./Request.js";
 
 function makeRequest(
 	method: string,
 	params: unknown[] = [],
-): JsonRpcRequestType {
-	return {
-		jsonrpc: "2.0",
-		method,
-		params,
-		id: nextId(),
-	};
+): Effect.Effect<JsonRpcRequestType, never, IdCounterService> {
+	return Effect.gen(function* () {
+		const counter = yield* IdCounterService;
+		const id = yield* counter.next();
+		return {
+			jsonrpc: "2.0",
+			method,
+			params,
+			id,
+		};
+	});
 }
 
 export const ResetRequest = (options?: {
