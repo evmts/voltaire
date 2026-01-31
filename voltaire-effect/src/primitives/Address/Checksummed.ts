@@ -7,10 +7,9 @@
  */
 
 import { Address, type AddressType } from "@tevm/voltaire/Address";
-import * as Effect from "effect/Effect";
+import { hash as keccak256 } from "@tevm/voltaire/Keccak256";
 import * as ParseResult from "effect/ParseResult";
 import * as S from "effect/Schema";
-import { KeccakService } from "../../crypto/Keccak256/index.js";
 import { AddressTypeSchema } from "./AddressSchema.js";
 
 /**
@@ -36,22 +35,19 @@ import { AddressTypeSchema } from "./AddressSchema.js";
  * S.decodeSync(Address.Checksummed)('0x742d35cc6634c0532925a3b844bc9e7595f251e3') // Error!
  * ```
  *
- * @example Encoding (requires KeccakService)
+ * @example Encoding (sync)
  * ```typescript
  * import * as Address from 'voltaire-effect/primitives/Address'
  * import * as S from 'effect/Schema'
- * import * as Effect from 'effect/Effect'
- * import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
  *
  * const addr = S.decodeSync(Address.Hex)('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
- * const program = S.encode(Address.Checksummed)(addr)
- * const checksummed = await Effect.runPromise(program.pipe(Effect.provide(KeccakLive)))
+ * const checksummed = S.encodeSync(Address.Checksummed)(addr)
  * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
  * ```
  *
  * @since 0.1.0
  */
-export const Checksummed: S.Schema<AddressType, string, KeccakService> =
+export const Checksummed: S.Schema<AddressType, string> =
 	S.transformOrFail(S.String, AddressTypeSchema, {
 		strict: true,
 		decode: (s, _options, ast) => {
@@ -69,25 +65,23 @@ export const Checksummed: S.Schema<AddressType, string, KeccakService> =
 				);
 			}
 		},
-		encode: (addr, _options, _ast) =>
-			Effect.gen(function* () {
-				const keccak = yield* KeccakService;
-				const hex = Address.toHex(addr).slice(2).toLowerCase();
-				const hashResult = yield* keccak.hash(new TextEncoder().encode(hex));
-				const hashHex = Array.from(hashResult)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+		encode: (addr, _options, _ast) => {
+			const hex = Address.toHex(addr).slice(2).toLowerCase();
+			const hashResult = keccak256(new TextEncoder().encode(hex));
+			const hashHex = Array.from(hashResult as Uint8Array)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
 
-				let checksummed = "0x";
-				for (let i = 0; i < hex.length; i++) {
-					const char = hex[i];
-					if (char >= "a" && char <= "f") {
-						const hashNibble = Number.parseInt(hashHex[i], 16);
-						checksummed += hashNibble >= 8 ? char.toUpperCase() : char;
-					} else {
-						checksummed += char;
-					}
+			let checksummed = "0x";
+			for (let i = 0; i < hex.length; i++) {
+				const char = hex[i];
+				if (char >= "a" && char <= "f") {
+					const hashNibble = Number.parseInt(hashHex[i], 16);
+					checksummed += hashNibble >= 8 ? char.toUpperCase() : char;
+				} else {
+					checksummed += char;
 				}
-				return checksummed;
-			}),
+			}
+			return ParseResult.succeed(checksummed);
+		},
 	}).annotations({ identifier: "Address.Checksummed" });
