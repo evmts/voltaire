@@ -78,8 +78,8 @@
 	},
 	"sideEffects": false,
 	"peerDependencies": {
-		"@tevm/voltaire": "workspace:*",
 		"@effect/platform": "^0.94.0",
+		"@tevm/voltaire": "workspace:*",
 		"effect": "^3.19.0"
 	},
 	"optionalDependencies": {
@@ -91,8 +91,8 @@
 		"@effect/platform": "^0.94.0",
 		"@effect/platform-node": "^0.104.0",
 		"@effect/vitest": "^0.27.0",
-		"effect": "^3.19.0",
 		"astro": "^5.0.0",
+		"effect": "^3.19.0",
 		"tsup": "^8.4.0",
 		"typescript": "^5.9.3",
 		"vitest": "^2.1.8"
@@ -105,5 +105,8 @@
 		"prepublishOnly": "pnpm run build && pnpm run typecheck",
 		"docs:dev": "cd docs && mintlify dev",
 		"docs:build": "cd docs && mintlify build"
+	},
+	"dependencies": {
+		"@shazow/whatsabi": "^0.25.0"
 	}
 }

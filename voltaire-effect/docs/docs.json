@@ -81,6 +81,8 @@
             "icon": "gears",
             "pages": [
               "services/contract-registry",
+              "services/block-explorer-api",
+              "services/explorer-contracts",
               "services/block-stream",
               "services/transaction-stream",
               "services/cache",
@@ -91,7 +93,7 @@
               "services/ccip",
               "services/debug",
               "services/engine-api",
-                            "services/chain",
+              "services/chain",
               "services/kzg",
               "services/presets"
             ]
