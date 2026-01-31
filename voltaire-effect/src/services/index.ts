@@ -95,6 +95,33 @@ export {
 	type AbiEncoderShape,
 	DefaultAbiEncoder,
 } from "./AbiEncoder/index.js";
+// BlockExplorerApi exports
+export {
+	BlockExplorerApi,
+	BlockExplorerApiService,
+	type BlockExplorerApiShape,
+	type BlockExplorerApiConfig,
+	type BlockExplorerApiError,
+	BlockExplorerConfigError,
+	BlockExplorerDecodeError,
+	BlockExplorerNotFoundError,
+	BlockExplorerProxyResolutionError,
+	BlockExplorerRateLimitError,
+	BlockExplorerResponseError,
+	BlockExplorerUnexpectedError,
+	ExplorerContract,
+	type ExplorerContractInstance,
+	type ExplorerContractOptions,
+	type ExplorerSourceId,
+	type ResolvedExplorerContract,
+	type AbiItem as ExplorerAbiItem,
+	type AbiResolution,
+	type ContractSourceFile,
+	type GetAbiOptions,
+	type GetContractOptions,
+	type GetSourcesOptions,
+	type ProxyInfo,
+} from "./BlockExplorerApi/index.js";
 // Account exports
 export {
 	AccountError,

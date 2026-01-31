@@ -77,3 +77,6 @@ export { getSelector } from "./getSelector.js";
 export { AbiParseError, parse } from "./parse.js";
 export { AbiItemParseError, parseItem } from "./parseItem.js";
 export { parseLogs, type ParsedLog, type ParseLogsInput } from "./parseLogs.js";
+
+// Bytecode analysis
+export { AbiBytecodeError, fromBytecode, type RecoveredAbiItem } from "./fromBytecode.js";
