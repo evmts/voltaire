@@ -20,25 +20,26 @@ Voltaire-effect provides the `MnemonicAccount` helper to integrate these with `A
 The `MnemonicAccount` function creates an account layer from a BIP-39 mnemonic:
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { AccountService } from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = "test test test test test test test test test test test junk";
 
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const AccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
+
 const program = Effect.gen(function* () {
   const account = yield* AccountService
   console.log('Address:', account.address)
   const signature = yield* account.signMessage(messageHex)
   return signature
-}).pipe(
-  Effect.provide(MnemonicAccount(mnemonic)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+})
 
-await Effect.runPromise(program)
+// Provide composed layer once
+await Effect.runPromise(program.pipe(Effect.provide(AccountLayer)))
 ```
 
 ## Derivation Options
@@ -136,17 +137,28 @@ console.log(Bip39.validateMnemonic(mnemonic24)) // true
 ## With Transaction Signing
 
 ```typescript
-import { Effect } from 'effect'
-import { 
-  SignerService, 
-  Signer, 
+import { Effect, Layer } from 'effect'
+import {
+  SignerService,
+  Signer,
   Provider,
-  HttpTransport 
+  HttpTransport
 } from 'voltaire-effect'
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = process.env.MNEMONIC!
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const AccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
+
+const SignerLayer = Signer.Live.pipe(
+  Layer.provide(AccountLayer),
+  Layer.provide(ProviderLayer)
+)
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -154,14 +166,7 @@ const program = Effect.gen(function* () {
     to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     value: 1000000000000000000n
   })
-}).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(MnemonicAccount(mnemonic)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Security Considerations

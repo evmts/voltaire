@@ -10,12 +10,24 @@ All signing operations require crypto services. See [Crypto Overview](/crypto/in
 ## Simple ETH Transfer
 
 ```typescript
-import { Effect, Schedule } from 'effect'
+import { Effect, Schedule, Layer } from 'effect'
 import { SignerService, Signer, LocalAccount, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport({
+  url: 'https://eth.llamarpc.com',
+  timeout: '30 seconds',
+  retrySchedule: Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(3))
+})
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(CryptoLayer),
+  Layer.provide(TransportLayer)
+)
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -25,20 +37,23 @@ const program = Effect.gen(function* () {
   })
 }).pipe(
   withTimeout('30 seconds'),
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport({
-    url: 'https://eth.llamarpc.com',
-    timeout: '30 seconds',
-    retrySchedule: Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(3))
-  }))
+  Effect.provide(SignerLayer)
 )
 ```
 
 ## EIP-1559 Transaction
 
 ```typescript
+import { Effect, Layer } from 'effect'
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(CryptoLayer),
+  Layer.provide(TransportLayer)
+)
+
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   return yield* signer.sendTransaction({
@@ -47,31 +62,33 @@ const program = Effect.gen(function* () {
     maxFeePerGas: 50000000000n,
     maxPriorityFeePerGas: 2000000000n
   })
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Sign Message (EIP-191)
 
 ```typescript
+import { Effect, Layer } from 'effect'
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(CryptoLayer),
+  Layer.provide(TransportLayer)
+)
+
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   return yield* signer.signMessage(Hex.fromString('Hello, Ethereum!'))
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Sign EIP-712 Typed Data
 
 ```typescript
+import { Effect, Layer } from 'effect'
+
 const typedData = {
   types: {
     EIP712Domain: [
@@ -93,40 +110,54 @@ const typedData = {
   message: { owner: '0x...', spender: '0x...', value: 1000000n, nonce: 0n, deadline: 1700000000n }
 }
 
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(CryptoLayer),
+  Layer.provide(TransportLayer)
+)
+
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   return yield* signer.signTypedData(typedData)
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Browser Wallet (MetaMask)
 
 ```typescript
-import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { JsonRpcAccount, BrowserTransport, Signer, Provider } from 'voltaire-effect'
+
+// Compose layers first
+const BrowserLayer = Layer.mergeAll(
+  Signer.Live,
+  JsonRpcAccount(userAddress),
+  Provider
+).pipe(Layer.provide(BrowserTransport))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   const accounts = yield* signer.requestAddresses()
   return yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
-}).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(JsonRpcAccount(userAddress)),
-  Effect.provide(Provider),
-  Effect.provide(BrowserTransport)
-)
+}).pipe(Effect.provide(BrowserLayer))
 ```
 
 ## Send and Wait
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { SignerService, waitForTransactionReceipt, Signer, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(CryptoLayer),
+  Layer.provide(TransportLayer)
+)
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -135,26 +166,25 @@ const program = Effect.gen(function* () {
   const receipt = yield* waitForTransactionReceipt(txHash, { confirmations: 3, timeout: '60 seconds' })
 
   return { hash: txHash, status: receipt.status, blockNumber: receipt.blockNumber }
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Switch Chain
 
 ```typescript
+import { Effect, Layer } from 'effect'
+
+// Compose layers first
+const BrowserLayer = Layer.mergeAll(
+  Signer.Live,
+  JsonRpcAccount(userAddress),
+  Provider
+).pipe(Layer.provide(BrowserTransport))
+
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   yield* signer.switchChain(10) // Optimism
-}).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(JsonRpcAccount(userAddress)),
-  Effect.provide(Provider),
-  Effect.provide(BrowserTransport)
-)
+}).pipe(Effect.provide(BrowserLayer))
 ```
 
 ## See Also

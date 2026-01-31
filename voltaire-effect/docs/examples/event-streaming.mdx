@@ -8,16 +8,16 @@ description: Query and stream contract events with backfill and live watching
 Use `Contract.getEvents` for historical event queries:
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 // USDC contract
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
 const transferAbi = [
-  { 
-    type: 'event', 
-    name: 'Transfer', 
+  {
+    type: 'event',
+    name: 'Transfer',
     inputs: [
       { name: 'from', type: 'address', indexed: true },
       { name: 'to', type: 'address', indexed: true },
@@ -26,23 +26,25 @@ const transferAbi = [
   }
 ] as const
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
-  
+
   const events = yield* usdc.getEvents('Transfer', {
     fromBlock: 18000000n,
     toBlock: 18000100n
   })
-  
+
   for (const event of events) {
     console.log(`Transfer: ${event.args.from} → ${event.args.to} | ${event.args.value}`)
   }
-  
+
   return events
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 
 await Effect.runPromise(program)
 ```
@@ -54,28 +56,30 @@ Filter events efficiently at the RPC level using indexed parameters:
 ```typescript
 const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
-  
+
   // Get transfers FROM Vitalik
   const fromVitalik = yield* usdc.getEvents('Transfer', {
     fromBlock: 18000000n,
     toBlock: 18100000n,
     args: { from: VITALIK }
   })
-  
+
   // Get transfers TO Vitalik
   const toVitalik = yield* usdc.getEvents('Transfer', {
     fromBlock: 18000000n,
     toBlock: 18100000n,
     args: { to: VITALIK }
   })
-  
+
   return { fromVitalik, toVitalik }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Large Block Range Backfill
@@ -111,13 +115,15 @@ const backfillEvents = (fromBlock: bigint, toBlock: bigint, chunkSize = 2000n) =
     }
     
     return allEvents
-  }).pipe(
-    Effect.provide(Provider),
-    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-  )
+  })
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 // Backfill 100k blocks
-await Effect.runPromise(backfillEvents(18000000n, 18100000n))
+await Effect.runPromise(backfillEvents(18000000n, 18100000n).pipe(Effect.provide(ProviderLayer)))
 ```
 
 ## Live Event Watching with BlockStream
@@ -125,15 +131,20 @@ await Effect.runPromise(backfillEvents(18000000n, 18100000n))
 Combine [BlockStream](/services/block-stream) with event queries for live watching:
 
 ```typescript
-import { Effect, Stream } from 'effect'
+import { Effect, Stream, Layer } from 'effect'
 import { makeBlockStream, Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const watchLive = Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
-  
+
   let lastProcessedBlock = 0n
-  
+
   yield* Stream.runForEach(
     blockStream.watch({ include: 'header' }),
     (event) => Effect.gen(function* () {
@@ -141,29 +152,26 @@ const watchLive = Effect.gen(function* () {
         yield* Effect.log(`Reorg detected: ${event.removed.length} blocks removed`)
         return
       }
-      
+
       for (const block of event.blocks) {
         const blockNumber = BigInt(block.header.number)
-        
+
         if (blockNumber <= lastProcessedBlock) continue
-        
+
         const events = yield* usdc.getEvents('Transfer', {
           fromBlock: blockNumber,
           toBlock: blockNumber
         })
-        
+
         for (const ev of events) {
           yield* Effect.log(`LIVE: ${ev.args.from} → ${ev.args.to} | ${ev.args.value}`)
         }
-        
+
         lastProcessedBlock = blockNumber
       }
     })
   )
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Historical to Live Transition
@@ -171,8 +179,13 @@ const watchLive = Effect.gen(function* () {
 Start from historical events and seamlessly transition to live:
 
 ```typescript
-import { Effect, Stream } from 'effect'
+import { Effect, Stream, Layer } from 'effect'
 import { Contract, Provider, HttpTransport, makeBlockStream, getBlockNumber } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const historicalToLive = (startBlock: bigint) =>
   Effect.gen(function* () {
@@ -219,10 +232,7 @@ const historicalToLive = (startBlock: bigint) =>
         }
       })
     )
-  }).pipe(
-    Effect.provide(Provider),
-    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-  )
+  }).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Filter Large Transfers
@@ -230,19 +240,24 @@ const historicalToLive = (startBlock: bigint) =>
 Process events with filtering and transformation:
 
 ```typescript
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const whaleTransfers = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
-  
+
   const events = yield* usdc.getEvents('Transfer', {
     fromBlock: 18000000n,
     toBlock: 18001000n
   })
-  
+
   // Filter large transfers (> 100k USDC, 6 decimals)
   const whales = events.filter(e => e.args.value > 100_000_000000n)
-  
+
   yield* Effect.log(`Found ${whales.length} whale transfers out of ${events.length} total`)
-  
+
   return whales.map(e => ({
     from: e.args.from,
     to: e.args.to,
@@ -250,10 +265,7 @@ const whaleTransfers = Effect.gen(function* () {
     block: e.blockNumber,
     txHash: e.transactionHash
   }))
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Multiple Event Types
@@ -282,21 +294,23 @@ const multiEventAbi = [
   }
 ] as const
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, multiEventAbi)
-  
+
   const { transfers, approvals } = yield* Effect.all({
     transfers: usdc.getEvents('Transfer', { fromBlock: 18000000n, toBlock: 18000100n }),
     approvals: usdc.getEvents('Approval', { fromBlock: 18000000n, toBlock: 18000100n })
   })
-  
+
   yield* Effect.log(`Found ${transfers.length} transfers and ${approvals.length} approvals`)
-  
+
   return { transfers, approvals }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Error Handling
@@ -307,9 +321,14 @@ Handle common event query errors with Effect Schedule:
 import { Effect, Schedule } from 'effect'
 import { ContractEventError, withRetrySchedule } from 'voltaire-effect'
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const robustQuery = Effect.gen(function* () {
   const usdc = yield* Contract(USDC_ADDRESS, transferAbi)
-  
+
   return yield* usdc.getEvents('Transfer', {
     fromBlock: 18000000n,
     toBlock: 18010000n
@@ -328,8 +347,7 @@ const robustQuery = Effect.gen(function* () {
     }
     return Effect.fail(e)
   }),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(ProviderLayer)
 )
 ```
 
@@ -338,8 +356,13 @@ const robustQuery = Effect.gen(function* () {
 For more control, use the `getLogs` free function directly:
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getLogs, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   // Transfer event topic: keccak256('Transfer(address,address,uint256)')
@@ -353,10 +376,7 @@ const program = Effect.gen(function* () {
   })
 
   return logs
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## See Also

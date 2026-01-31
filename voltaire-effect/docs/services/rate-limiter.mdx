@@ -6,8 +6,14 @@ description: Rate limiting for RPC calls with Effect.ts
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
-import { RateLimiterService, DefaultRateLimiter, TransportService } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { RateLimiterService, DefaultRateLimiter, TransportService, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const RateLimitedLayer = Layer.mergeAll(
+  DefaultRateLimiter({ global: { limit: 10, interval: '1 seconds' } }),
+  HttpTransport('https://eth.llamarpc.com')
+)
 
 const program = Effect.gen(function* () {
   const rateLimiter = yield* RateLimiterService
@@ -19,8 +25,7 @@ const program = Effect.gen(function* () {
   )
 }).pipe(
   Effect.scoped,
-  Effect.provide(DefaultRateLimiter({ global: { limit: 10, interval: '1 seconds' } })),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+  Effect.provide(RateLimitedLayer)
 )
 ```
 

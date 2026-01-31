@@ -6,18 +6,20 @@ description: Query blocks, balances, transactions and logs
 ## Get Block Number
 
 ```typescript
-import { Effect, Duration, Schedule } from 'effect'
+import { Effect, Duration, Schedule, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 
-const program = Effect.gen(function* () {
-  return yield* getBlockNumber()
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({
     url: 'https://eth.llamarpc.com',
     timeout: '30 seconds'
   }))
 )
+
+const program = Effect.gen(function* () {
+  return yield* getBlockNumber()
+}).pipe(Effect.provide(ProviderLayer))
 
 const blockNumber = await Effect.runPromise(program)
 ```
@@ -25,37 +27,51 @@ const blockNumber = await Effect.runPromise(program)
 ## Get Balance
 
 ```typescript
+import { Effect, Layer } from 'effect'
 import { getBalance, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
 
 const program = Effect.gen(function* () {
   return yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
 }).pipe(
   withTimeout('5 seconds'),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+  Effect.provide(ProviderLayer)
 )
 ```
 
 ## Get Block with Transactions
 
 ```typescript
+import { Effect, Layer } from 'effect'
 import { getBlock, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
 
 const program = Effect.gen(function* () {
   const block = yield* getBlock({ blockTag: 'latest', includeTransactions: true })
   return { number: block.number, hash: block.hash, txCount: block.transactions.length }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Query Event Logs
 
 ```typescript
+import { Effect, Layer } from 'effect'
 import { getLogs, Provider, HttpTransport } from 'voltaire-effect'
 
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
 
 const program = Effect.gen(function* () {
   const logs = yield* getLogs({
@@ -65,29 +81,35 @@ const program = Effect.gen(function* () {
     toBlock: 'latest'
   })
   return logs.map(log => ({ from: log.topics[1], to: log.topics[2], blockNumber: log.blockNumber }))
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Wait for Confirmation
 
 ```typescript
+import { Effect, Layer } from 'effect'
 import { waitForTransactionReceipt, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
 
 const program = Effect.gen(function* () {
   return yield* waitForTransactionReceipt('0x1234...', { confirmations: 3, timeout: '60 seconds' })
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Estimate Gas
 
 ```typescript
+import { Effect, Layer } from 'effect'
 import { estimateGas, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
 
 const program = Effect.gen(function* () {
   return yield* estimateGas({
@@ -95,16 +117,19 @@ const program = Effect.gen(function* () {
     to: '0xRecipient...',
     value: 1000000000000000000n
   })
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Get Gas Prices (EIP-1559)
 
 ```typescript
+import { Effect, Layer } from 'effect'
 import { getGasPrice, getMaxPriorityFeePerGas, getFeeHistory, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
 
 const program = Effect.gen(function* () {
   return yield* Effect.all({
@@ -112,16 +137,13 @@ const program = Effect.gen(function* () {
     maxPriorityFee: getMaxPriorityFeePerGas(),
     feeHistory: getFeeHistory(4, 'latest', [25, 50, 75])
   })
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Parallel Queries with Retry
 
 ```typescript
-import { Effect, Schedule } from 'effect'
+import { Effect, Schedule, Layer } from 'effect'
 import { getBalance, Provider, HttpTransport, withRetrySchedule } from 'voltaire-effect'
 
 const addresses = [
@@ -130,6 +152,11 @@ const addresses = [
   '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3'
 ]
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
 const program = Effect.gen(function* () {
   return yield* Effect.all(
     addresses.map(addr => getBalance(addr, 'latest')),
@@ -137,8 +164,7 @@ const program = Effect.gen(function* () {
   )
 }).pipe(
   withRetrySchedule(Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(5))),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+  Effect.provide(ProviderLayer)
 )
 ```
 

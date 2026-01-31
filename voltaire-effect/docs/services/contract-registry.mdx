@@ -8,7 +8,7 @@ The Contract Registry service provides a way to define your application's contra
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import {
   ContractRegistryService,
   makeContractRegistry,
@@ -45,6 +45,12 @@ const Contracts = makeContractRegistry({
   }
 })
 
+// Compose layers first
+const AppLayer = Contracts.pipe(
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 // Use in your program
 const program = Effect.gen(function* () {
   const contracts = yield* ContractRegistryService
@@ -53,11 +59,7 @@ const program = Effect.gen(function* () {
   const wethBalance = yield* contracts.WETH.read.balanceOf(userAddress)
 
   return { usdcBalance, wethBalance }
-}).pipe(
-  Effect.provide(Contracts),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(AppLayer))
 ```
 
 ## Two Modes: Addressed vs Factory
@@ -273,5 +275,7 @@ const ContractsLayer = isMainnet ? mainnetContracts : arbitrumContracts
 ## See Also
 
 - [Contract Factory](/services/contract) - Low-level Contract() factory function
+- [Explorer Contracts](/services/explorer-contracts) - Create contracts from address when ABI is unknown
+- [Block Explorer API](/services/block-explorer-api) - ABI resolution from Sourcify/Etherscan/Blockscout
 - [Provider Service](/services/provider) - Required for all contract operations
 - [Signer Service](/services/signer) - Required for write operations

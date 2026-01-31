@@ -25,14 +25,16 @@ pnpm add voltaire-effect @tevm/voltaire effect
 import { Effect } from 'effect'
 import { getBlockNumber, getBalance, Provider, HttpTransport } from 'voltaire-effect'
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const block = yield* getBlockNumber()
   const balance = yield* getBalance('0x...', 'latest')
   return { block, balance }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ### Validate Address
@@ -47,28 +49,33 @@ const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251
 ```typescript
 import { SignerService, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
 
+// Compose layers first
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const SignerLayer = Signer.Live.pipe(
+  Layer.provide(LocalAccount(privateKey)),
+  Layer.provide(ProviderLayer)
+)
+
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   return yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
-}).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ### Read Contract
 ```typescript
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)
   return yield* token.read.balanceOf(userAddress)
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## When to Use

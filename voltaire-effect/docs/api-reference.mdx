@@ -173,10 +173,14 @@ const ProviderLayer = Provider.pipe(
 ### Signer with Local Account
 
 ```typescript
+// Compose dependencies first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const DepsLayer = Layer.mergeAll(CryptoLayer, TransportLayer)
+
+// Then provide composed layer
 const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
-  Layer.provide(Secp256k1Live),
-  Layer.provide(KeccakLive),
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+  Layer.provide(DepsLayer)
 )
 ```
 

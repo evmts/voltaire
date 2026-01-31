@@ -445,19 +445,22 @@ export const decodeTransferEvent = (log: { topics: string[]; data: string }): Ef
 
 ```typescript
 // PUBLIC API: User code
-import { Effect } from "effect";
+import { Effect, Layer } from "effect";
 import { getBlockNumber, getBalance, Provider, HttpTransport } from "voltaire-effect";
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport("https://mainnet.infura.io/v3/KEY"))
+);
 
 const program = Effect.gen(function* () {
   const blockNum = yield* getBlockNumber();
   const balance = yield* getBalance("0x1234...");
   return { blockNum, balance };
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport("https://mainnet.infura.io/v3/KEY")),
-);
+});
 
-await Effect.runPromise(program);
+// Single provide at the edge
+await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)));
 ```
 
 ### Crypto with Layer Composition

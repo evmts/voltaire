@@ -49,18 +49,18 @@ const doubleSha256 = (data: Uint8Array) =>
 Build a merkle tree for transaction verification:
 
 ```typescript
-const computeMerkleRoot = (hashes: Uint8Array[]) =>
+const computeMerkleRoot = (hashes: Uint8Array[]): Effect.Effect<Uint8Array, never, SHA256Service> =>
   Effect.gen(function* () {
     const sha256 = yield* SHA256Service
-    
+
     if (hashes.length === 0) return new Uint8Array(32)
     if (hashes.length === 1) return hashes[0]!
-    
+
     // Duplicate last hash if odd number
     if (hashes.length % 2 === 1) {
       hashes.push(hashes[hashes.length - 1]!)
     }
-    
+
     const nextLevel: Uint8Array[] = []
     for (let i = 0; i < hashes.length; i += 2) {
       const combined = new Uint8Array(64)
@@ -68,9 +68,14 @@ const computeMerkleRoot = (hashes: Uint8Array[]) =>
       combined.set(hashes[i + 1]!, 32)
       nextLevel.push(yield* sha256.hash(combined))
     }
-    
-    return yield* computeMerkleRoot(nextLevel).pipe(Effect.provide(SHA256Live))
-  }).pipe(Effect.provide(SHA256Live))
+
+    return yield* computeMerkleRoot(nextLevel)
+  })
+
+// Provide layer once at the call site
+const merkleRoot = await Effect.runPromise(
+  computeMerkleRoot(txHashes).pipe(Effect.provide(SHA256Live))
+)
 ```
 
 ## HMAC-SHA256

@@ -6,8 +6,13 @@ description: Effect-idiomatic JSON-RPC request batching and deduplication
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { RpcBatchService, RpcBatch, EthBlockNumber, EthGetBalance, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const RpcBatchLayer = RpcBatch.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   const batch = yield* RpcBatchService
@@ -20,10 +25,7 @@ const program = Effect.gen(function* () {
   }, { concurrency: 'unbounded' })
 
   return { blockNumber, balance1, balance2 }
-}).pipe(
-  Effect.provide(RpcBatch),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(RpcBatchLayer))
 ```
 
 ## Request Types

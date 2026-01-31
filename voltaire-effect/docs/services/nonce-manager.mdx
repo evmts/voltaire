@@ -6,21 +6,23 @@ description: Transaction nonce management for concurrent transactions with Effec
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { NonceManagerService, DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const NonceManagerLayer = DefaultNonceManager.pipe(
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   const nonceManager = yield* NonceManagerService
   const chainId = 1
-  
+
   // Consume nonce for transaction
   const nonce = yield* nonceManager.consume('0x1234...', chainId)
   return nonce
-}).pipe(
-  Effect.provide(DefaultNonceManager),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(NonceManagerLayer))
 ```
 
 ## Why NonceManager?

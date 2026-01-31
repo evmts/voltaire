@@ -6,7 +6,7 @@ description: Gas fee estimation for EIP-1559 and legacy transactions with Effect
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import {
   FeeEstimatorService,
   DefaultFeeEstimator,
@@ -14,15 +14,17 @@ import {
   HttpTransport
 } from 'voltaire-effect'
 
+// Compose layers first
+const FeeEstimatorLayer = DefaultFeeEstimator.pipe(
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const feeEstimator = yield* FeeEstimatorService
   const fees = yield* feeEstimator.estimateFeesPerGas('eip1559')
   return fees
-}).pipe(
-  Effect.provide(DefaultFeeEstimator),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(FeeEstimatorLayer))
 ```
 
 ## EIP-1559 Fee Estimation
@@ -63,15 +65,17 @@ import { makeFeeEstimator } from 'voltaire-effect'
 // 1.5x multiplier for more volatile networks
 const CustomFeeEstimator = makeFeeEstimator(1.5)
 
+// Compose layers first
+const CustomFeeEstimatorLayer = CustomFeeEstimator.pipe(
+  Layer.provide(Provider),
+  Layer.provide(HttpTransport('https://...'))
+)
+
 const program = Effect.gen(function* () {
   const feeEstimator = yield* FeeEstimatorService
   console.log('Multiplier:', feeEstimator.baseFeeMultiplier) // 1.5
   return yield* feeEstimator.estimateFeesPerGas('eip1559')
-}).pipe(
-  Effect.provide(CustomFeeEstimator),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://...'))
-)
+}).pipe(Effect.provide(CustomFeeEstimatorLayer))
 ```
 
 ## Error Handling

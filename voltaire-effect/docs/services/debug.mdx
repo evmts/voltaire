@@ -10,16 +10,18 @@ description: debug_* JSON-RPC tracing and raw data access
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { DebugService, Debug, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const DebugLayer = Debug.pipe(
+  Layer.provide(HttpTransport('http://localhost:8545'))
+)
 
 const program = Effect.gen(function* () {
   const debug = yield* DebugService
   return yield* debug.traceTransaction('0x...')
-}).pipe(
-  Effect.provide(Debug),
-  Effect.provide(HttpTransport('http://localhost:8545'))
-)
+}).pipe(Effect.provide(DebugLayer))
 ```
 
 ## Tracing

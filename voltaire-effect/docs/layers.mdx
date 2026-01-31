@@ -90,23 +90,27 @@ Create a Signer from existing Provider + Account:
 
 ```typescript
 import { sendTransaction, Signer, Provider, LocalAccount, HttpTransport } from 'voltaire-effect'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
 
-// Compose layers
-const signer = Signer.fromPrivateKey(privateKey, Provider)
+// Compose layers first
+const TransportLayer = HttpTransport("https://eth.llamarpc.com")
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(TransportLayer)
+)
 
-// Or explicitly:
-const signer = Signer.fromProvider(Provider, LocalAccount(privateKey))
+// Or explicitly with LocalAccount:
+const SignerLayer2 = Signer.fromProvider(Provider, LocalAccount(privateKey)).pipe(
+  Layer.provide(TransportLayer)
+)
 
-// Use in program
+// Single provide at the edge
 const program = Effect.gen(function* () {
   return yield* sendTransaction({ to, value })
-}).pipe(
-  Effect.provide(signer),
-  Effect.provide(HttpTransport("https://eth.llamarpc.com"))
-)
+})
+
+await Effect.runPromise(program.pipe(Effect.provide(SignerLayer)))
 ```
 
 ## Layer Composition

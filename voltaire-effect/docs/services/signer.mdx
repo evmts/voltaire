@@ -6,8 +6,8 @@ description: Transaction signing and sending with Effect.ts
 ## Quick Start
 
 ```typescript
-import { Effect, Schedule } from 'effect'
-import { 
+import { Effect, Schedule, Layer } from 'effect'
+import {
   SignerService, Signer, Provider, LocalAccount,
   HttpTransport, Secp256k1Live, KeccakLive,
   withTimeout, withRetrySchedule
@@ -16,19 +16,11 @@ import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
 
-const program = Effect.gen(function* () {
-  const signer = yield* SignerService
-  
-  // Per-request timeout for transaction broadcast
-  return yield* signer.sendTransaction({
-    to: recipientAddress,
-    value: 1000000000000000000n
-  }).pipe(withTimeout('30 seconds'))
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport({
+// Compose layers first
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(Secp256k1Live),
+  Layer.provide(KeccakLive),
+  Layer.provide(HttpTransport({
     url: 'https://eth.llamarpc.com',
     timeout: '30 seconds',
     retrySchedule: Schedule.exponential('1 second').pipe(
@@ -37,6 +29,16 @@ const program = Effect.gen(function* () {
     )
   }))
 )
+
+const program = Effect.gen(function* () {
+  const signer = yield* SignerService
+
+  // Per-request timeout for transaction broadcast
+  return yield* signer.sendTransaction({
+    to: recipientAddress,
+    value: 1000000000000000000n
+  }).pipe(withTimeout('30 seconds'))
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Constructors
@@ -116,16 +118,19 @@ const Signer = {
 
 ```typescript
 import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
+import { Layer } from 'effect'
+
+// Compose layers first
+const BrowserSignerLayer = Signer.fromProvider(Provider, JsonRpcAccount(userAddress)).pipe(
+  Layer.provide(BrowserTransport)
+)
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   const accounts = yield* signer.requestAddresses() // triggers popup
   const txHash = yield* signer.sendTransaction({ to, value })
   return txHash
-}).pipe(
-  Effect.provide(Signer.fromProvider(Provider, JsonRpcAccount(userAddress))),
-  Effect.provide(BrowserTransport)
-)
+}).pipe(Effect.provide(BrowserSignerLayer))
 ```
 
 ## Methods

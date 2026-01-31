@@ -9,19 +9,21 @@ description: Common issues and solutions
 
 **Cause:** A required layer wasn't provided.
 
-**Fix:** Provide all required layers:
+**Fix:** Compose and provide all required layers:
 
 ```typescript
+import { Layer } from 'effect'
+import { Provider, HttpTransport } from 'voltaire-effect'
+
 // ❌ Missing layer
 await Effect.runPromise(program)
 
-// ✅ Provide all layers
-await Effect.runPromise(
-  program.pipe(
-    Effect.provide(Provider),
-    Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-  )
+// ✅ Compose layers first, then provide once
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
+
+await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 ```
 
 Check the type signature—it shows what's needed:
@@ -37,16 +39,20 @@ Check the type signature—it shows what's needed:
 
 **Cause:** Layers that depend on other layers must be provided in correct order.
 
-**Fix:** Provide dependencies after the layers that need them:
+**Fix:** Compose layers properly with dependencies:
 
 ```typescript
-// ✅ Correct order
-Signer.Live.pipe(
+import { Layer } from 'effect'
+
+// ✅ Compose layers with their dependencies
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport(rpcUrl)
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+
+const SignerLayer = Signer.Live.pipe(
   Layer.provide(LocalAccount(privateKey)),
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport(rpcUrl)),
-  Layer.provide(Secp256k1Live),
-  Layer.provide(KeccakLive)
+  Layer.provide(ProviderLayer),
+  Layer.provide(CryptoLayer)
 )
 ```
 

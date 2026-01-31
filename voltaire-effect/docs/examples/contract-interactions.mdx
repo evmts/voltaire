@@ -10,7 +10,7 @@ This page shows common contract patterns. See [Contract Factory](/services/contr
 ## Read Contract
 
 ```typescript
-import { Effect, Duration, Schedule } from 'effect'
+import { Effect, Duration, Schedule, Layer } from 'effect'
 import { Contract, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
 
 const erc20Abi = [
@@ -19,6 +19,11 @@ const erc20Abi = [
   { type: 'function', name: 'decimals', inputs: [], outputs: [{ type: 'uint8' }], stateMutability: 'view' }
 ] as const
 
+// Compose layers first, then provide once
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* Effect.all({
@@ -26,30 +31,31 @@ const program = Effect.gen(function* () {
     decimals: token.read.decimals(),
     balance: token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
   })
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Write Contract
 
 ```typescript
-import { Signer, LocalAccount } from 'voltaire-effect'
+import { Layer } from 'effect'
+import { Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
+// Compose all layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const SignerLayer = Layer.mergeAll(
+  Signer.fromPrivateKey(privateKey, Provider),
+  CryptoLayer
+).pipe(Layer.provide(TransportLayer))
+
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* token.write.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Simulate (Dry Run)
@@ -57,13 +63,15 @@ const program = Effect.gen(function* () {
 Simulate a write before sending to catch reverts:
 
 ```typescript
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* token.simulate.transfer('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 100_000_000n)
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Query Events
@@ -79,13 +87,15 @@ const eventAbi = [
   ]}
 ] as const
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', eventAbi)
   return yield* token.getEvents('Transfer', { fromBlock: 'latest', toBlock: 'latest' })
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Complete ERC20 Workflow
@@ -93,9 +103,17 @@ const program = Effect.gen(function* () {
 A full workflow: read token info, transfer, wait for confirmation, verify balance change:
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Contract, waitForTransactionReceipt, Signer, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+// Compose all layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const SignerLayer = Layer.mergeAll(
+  Signer.fromPrivateKey(privateKey, Provider),
+  CryptoLayer
+).pipe(Layer.provide(TransportLayer))
 
 const program = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
@@ -107,12 +125,7 @@ const program = Effect.gen(function* () {
   const balanceAfter = yield* token.read.balanceOf('0x70997970C51812dc3A010C7d01b50e0d17dc79C8')
 
   return { symbol, decimals, txHash, transferred: balanceAfter - balanceBefore }
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Uniswap V2 Swap
@@ -132,21 +145,24 @@ const routerAbi = [
 
 const myAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
+// Compose all layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const SignerLayer = Layer.mergeAll(
+  Signer.fromPrivateKey(privateKey, Provider),
+  CryptoLayer
+).pipe(Layer.provide(TransportLayer))
+
 const program = Effect.gen(function* () {
   const router = yield* Contract('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', routerAbi)
   const path = ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2']
-  
+
   const amounts = yield* router.read.getAmountsOut(1000_000_000n, path)
   const amountOutMin = (amounts[1] * 95n) / 100n  // 5% slippage
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200)  // 20 minutes
-  
+
   return yield* router.write.swapExactTokensForTokens(1000_000_000n, amountOutMin, path, myAddress, deadline)
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## See Also
@@ -163,6 +179,11 @@ const program = Effect.gen(function* () {
 Use Effect-idiomatic helpers for timeouts and retries:
 
 ```typescript
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+)
+
 const resilientRead = Effect.gen(function* () {
   const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
@@ -176,7 +197,6 @@ const resilientRead = Effect.gen(function* () {
       Schedule.compose(Schedule.recurs(3))
     )
   ),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Effect.provide(ProviderLayer)
 )
 ```

@@ -167,13 +167,13 @@ const hash = await client.sendTransaction({
 })
 
 // voltaire-effect
-import { Effect } from 'effect'
-import { 
-  SignerService, 
+import { Effect, Layer } from 'effect'
+import {
+  SignerService,
   Signer,
   LocalAccount,
   Provider,
-  HttpTransport 
+  HttpTransport
 } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
@@ -185,13 +185,15 @@ const program = Effect.gen(function* () {
   })
 })
 
-const MainLayer = Layer.mergeAll(
-  Signer.Live,
-  LocalAccount('0x...'), // private key
-  Provider,
-  HttpTransport(rpcUrl),
-  Secp256k1Live,
-  KeccakLive
+// Compose layers with dependencies
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport(rpcUrl)
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+
+const MainLayer = Signer.Live.pipe(
+  Layer.provide(LocalAccount('0x...')),  // private key
+  Layer.provide(ProviderLayer),
+  Layer.provide(CryptoLayer)
 )
 
 const hash = await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
@@ -371,16 +373,18 @@ const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f...
 const hexString = Address.toHex(addr)
 ```
 
-### 5. Layer Order Matters
+### 5. Layer Composition Matters
 
 ```typescript
-// Layers that depend on other layers must be provided after their dependencies
+// Compose layers with their dependencies properly
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport(rpcUrl)
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+
 const MainLayer = Signer.Live.pipe(
   Layer.provide(LocalAccount(privateKey)),
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport(rpcUrl)),
-  Layer.provide(Secp256k1Live),
-  Layer.provide(KeccakLive)
+  Layer.provide(ProviderLayer),
+  Layer.provide(CryptoLayer)
 )
 ```
 

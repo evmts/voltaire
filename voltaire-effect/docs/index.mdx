@@ -8,13 +8,18 @@ description: Effect.ts integration for Voltaire Ethereum primitives
 <Tabs>
   <Tab title="voltaire-effect">
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { ContractRegistryService, makeContractRegistry, HttpProvider } from 'voltaire-effect'
 
 const Contracts = makeContractRegistry({
   USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
   WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
 })
+
+// Compose layers first
+const AppLayer = Contracts.pipe(
+  Layer.provide(HttpProvider('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   const { USDC, WETH } = yield* ContractRegistryService
@@ -24,8 +29,7 @@ const program = Effect.gen(function* () {
 }).pipe(
   Effect.retry({ times: 3 }),           // explicit retry policy
   Effect.timeout('10 seconds'),         // explicit timeout
-  Effect.provide(Contracts),
-  Effect.provide(HttpProvider('https://eth.llamarpc.com'))
+  Effect.provide(AppLayer)              // single provide
 )
 
 const { usdcBalance, wethBalance } = await Effect.runPromise(program)

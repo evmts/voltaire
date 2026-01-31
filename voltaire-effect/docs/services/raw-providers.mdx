@@ -16,20 +16,22 @@ The `RawProviderService` provides direct access to the EIP-1193 `request` method
 Direct access to the underlying transport for EIP-1193 requests:
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { RawProviderService, RawProviderTransport, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const RawLayer = RawProviderTransport.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   const raw = yield* RawProviderService
-  
+
   // Direct EIP-1193 request
   const result = yield* raw.request({ method: 'eth_blockNumber', params: [] })
-  
+
   return result
-}).pipe(
-  Effect.provide(RawProviderTransport),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(RawLayer))
 ```
 
 ## Use Cases

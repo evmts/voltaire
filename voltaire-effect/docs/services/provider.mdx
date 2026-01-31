@@ -10,11 +10,23 @@ voltaire-effect exposes all provider operations as **free functions** (idiomatic
 ## Quick Start
 
 ```typescript
-import { Effect, Schedule } from 'effect'
+import { Effect, Schedule, Layer } from 'effect'
 import {
   getBlockNumber, getBalance, getBlock,
   Provider, HttpTransport, withTimeout, withRetrySchedule
 } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({
+    url: 'https://eth.llamarpc.com',
+    timeout: '30 seconds',
+    retrySchedule: Schedule.exponential('1 second').pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(3))
+    )
+  }))
+)
 
 const program = Effect.gen(function* () {
   const blockNum = yield* getBlockNumber()
@@ -33,17 +45,7 @@ const program = Effect.gen(function* () {
   )
 
   return { blockNum, balance, block }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({
-    url: 'https://eth.llamarpc.com',
-    timeout: '30 seconds',
-    retrySchedule: Schedule.exponential('1 second').pipe(
-      Schedule.jittered,
-      Schedule.compose(Schedule.recurs(3))
-    )
-  }))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Transport Layer
@@ -678,6 +680,11 @@ import { getBlockNumber, OpStackActionsService, OpStackActions, Provider, HttpTr
 // Compose OP Stack extension with base Provider
 const OpStackProvider = Layer.merge(Provider, OpStackActions)
 
+// Compose layers first
+const OpStackLayer = OpStackProvider.pipe(
+  Layer.provide(HttpTransport('https://mainnet.optimism.io'))
+)
+
 const program = Effect.gen(function* () {
   const opStack = yield* OpStackActionsService
 
@@ -685,10 +692,7 @@ const program = Effect.gen(function* () {
   const l1BaseFee = yield* opStack.getL1BaseFee()
 
   return { block, l1BaseFee }
-}).pipe(
-  Effect.provide(OpStackProvider),
-  Effect.provide(HttpTransport('https://mainnet.optimism.io'))
-)
+}).pipe(Effect.provide(OpStackLayer))
 ```
 
 ## See Also

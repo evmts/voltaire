@@ -211,11 +211,10 @@ import type { GetBalanceError } from 'voltaire-effect'
 // TypeScript shows missing requirements
 const program: Effect.Effect<bigint, GetBalanceError, ProviderService>
 
-// After providing layers:
-const provided = program.pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport(url))
-)
+// Compose layers first, then provide once:
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport(url)))
+
+const provided = program.pipe(Effect.provide(ProviderLayer))
 // Effect.Effect<bigint, GetBalanceError, never>
 //                                        ↑ no more requirements
 ```
@@ -239,30 +238,33 @@ const MyLayer = Layer.effect(
 
 **Error**: "Service not found: ProviderService"
 
-**Fix**: Ensure you provide all required layers:
+**Fix**: Compose and provide all required layers:
 
 ```typescript
-program.pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport(url))  // Don't forget transport!
-)
+// Compose layers first
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport(url)))
+
+// Then provide once
+program.pipe(Effect.provide(ProviderLayer))
 ```
 
 ### Wrong Layer Order
 
-Layers that depend on other layers must be provided after their dependencies:
+Layers that depend on other layers must be composed with their dependencies:
 
 ```typescript
-// ✓ Correct order
-Signer.Live.pipe(
+// ✓ Correct - compose layers with dependencies
+const TransportLayer = HttpTransport(url)
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+
+const SignerLayer = Signer.Live.pipe(
   Layer.provide(LocalAccount(key)),
-  Layer.provide(Provider),
-  Layer.provide(HttpTransport(url))
+  Layer.provide(ProviderLayer)
 )
 
-// ✗ Wrong - Signer needs Provider
+// ✗ Wrong - Provider doesn't need Signer
 Provider.pipe(
-  Layer.provide(Signer.Live),  // Provider doesn't need Signer
+  Layer.provide(Signer.Live),  // Incorrect direction
   Layer.provide(HttpTransport(url))
 )
 ```

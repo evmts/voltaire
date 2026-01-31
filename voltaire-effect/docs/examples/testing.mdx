@@ -6,18 +6,22 @@ description: Mock services for unit tests
 ## Mock Transport
 
 ```typescript
-import { Effect, Schedule } from 'effect'
+import { Effect, Schedule, Layer } from 'effect'
 import { getBlockNumber, Provider, TestTransport, withTimeout, withoutCache } from 'voltaire-effect'
 import { describe, it, expect } from 'vitest'
 
 describe('Provider', () => {
   it('returns mocked block number', async () => {
+    // Compose layers first
+    const TestLayer = Provider.pipe(
+      Layer.provide(TestTransport({ eth_blockNumber: () => '0x1234' }))
+    )
+
     const program = Effect.gen(function* () {
       return yield* getBlockNumber()
     }).pipe(
       withTimeout('5 seconds'),
-      Effect.provide(Provider),
-      Effect.provide(TestTransport({ eth_blockNumber: () => '0x1234' }))
+      Effect.provide(TestLayer)
     )
 
     expect(await Effect.runPromise(program)).toBe(4660n)
@@ -55,23 +59,26 @@ const program = Effect.gen(function* () {
 ## Test Contract Reads
 
 ```typescript
-import { Contract } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { Contract, Provider, TestTransport } from 'voltaire-effect'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }
 ] as const
 
 it('reads balance', async () => {
-  const program = Effect.gen(function* () {
-    const token = yield* Contract('0xToken...', erc20Abi)
-    return yield* token.read.balanceOf('0xUser...')
-  }).pipe(
-    Effect.provide(Provider),
-    Effect.provide(TestTransport({
+  // Compose layers first
+  const TestLayer = Provider.pipe(
+    Layer.provide(TestTransport({
       eth_call: () => '0x0000000000000000000000000000000000000000000000056bc75e2d63100000'
     }))
   )
-  
+
+  const program = Effect.gen(function* () {
+    const token = yield* Contract('0xToken...', erc20Abi)
+    return yield* token.read.balanceOf('0xUser...')
+  }).pipe(Effect.provide(TestLayer))
+
   expect(await Effect.runPromise(program)).toBe(100000000000000000000n)
 })
 ```
@@ -79,28 +86,34 @@ it('reads balance', async () => {
 ## Test Error Handling
 
 ```typescript
-import { Effect, Exit } from 'effect'
+import { Effect, Exit, Layer } from 'effect'
 import { getBalance, Provider, TestTransport } from 'voltaire-effect'
 
 it('handles RPC errors', async () => {
+  // Compose layers first
+  const TestLayer = Provider.pipe(
+    Layer.provide(TestTransport({ eth_getBalance: () => { throw new Error('Rate limited') } }))
+  )
+
   const program = Effect.gen(function* () {
     return yield* getBalance('0x...', 'latest')
-  }).pipe(
-    Effect.provide(Provider),
-    Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Rate limited') } }))
-  )
+  }).pipe(Effect.provide(TestLayer))
 
   const exit = await Effect.runPromiseExit(program)
   expect(Exit.isFailure(exit)).toBe(true)
 })
 
 it('recovers from errors', async () => {
+  // Compose layers first
+  const TestLayer = Provider.pipe(
+    Layer.provide(TestTransport({ eth_getBalance: () => { throw new Error('Failed') } }))
+  )
+
   const program = Effect.gen(function* () {
     return yield* getBalance('0x...', 'latest')
   }).pipe(
     Effect.catchTag('TransportError', () => Effect.succeed(0n)),
-    Effect.provide(Provider),
-    Effect.provide(TestTransport({ eth_getBalance: () => { throw new Error('Failed') } }))
+    Effect.provide(TestLayer)
   )
 
   expect(await Effect.runPromise(program)).toBe(0n)

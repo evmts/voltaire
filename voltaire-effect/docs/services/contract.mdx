@@ -13,7 +13,7 @@ For applications with multiple contracts, use [ContractRegistryService](/service
 
 ```typescript
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', stateMutability: 'view',
@@ -24,15 +24,17 @@ const erc20Abi = [
     outputs: [{ name: 'success', type: 'bool' }] },
 ] as const
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   // Contract() is a factory that yields a contract instance
   const dai = yield* Contract(daiAddress, erc20Abi)
   const balance = yield* dai.read.balanceOf(userAddress)
   return balance
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Read
@@ -133,31 +135,35 @@ import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
 
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(CryptoLayer),
+  Layer.provide(TransportLayer)
+)
+
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)
-  
+
   // Read before
   const balanceBefore = yield* token.read.balanceOf(recipient)
-  
+
   // Simulate
   const success = yield* token.simulate.transfer(recipient, 100n)
   if (!success) return yield* Effect.fail(new Error('Transfer would fail'))
-  
+
   // Write
   const txHash = yield* token.write.transfer(recipient, 100n)
-  
+
   return { txHash, balanceBefore }
-}).pipe(
-  Effect.provide(Signer.fromPrivateKey(privateKey, Provider)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(SignerLayer))
 ```
 
 ## See Also
 
 - [Contract Registry](/services/contract-registry) — Pre-configured contracts as a named map
+- [Explorer Contracts](/services/explorer-contracts) — Create contracts from address when ABI is unknown
 - [Contract Interactions Example](/examples/contract-interactions) — Complete examples
 - [Provider Service](/services/provider) — `readContract` and `multicall`
 - [Signer Service](/services/signer) — Transaction signing for writes

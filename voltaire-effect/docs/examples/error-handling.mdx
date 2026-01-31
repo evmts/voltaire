@@ -6,8 +6,13 @@ description: Composable error handling patterns
 ## Catch Specific Errors
 
 ```typescript
-import { Effect, Schedule } from 'effect'
+import { Effect, Schedule, Layer } from 'effect'
 import { getBalance, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
 
 const program = Effect.gen(function* () {
   return yield* getBalance('0x...', 'latest')
@@ -17,15 +22,24 @@ const program = Effect.gen(function* () {
     TransportError: () => Effect.succeed(0n),
     ProviderResponseError: () => Effect.succeed(0n)
   }),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Effect.provide(ProviderLayer)
 )
 ```
 
 ## Handle Multiple Error Types
 
 ```typescript
-import { Contract, ContractCallError, ContractWriteError, Signer, LocalAccount } from 'voltaire-effect'
+import { Layer } from 'effect'
+import { Contract, ContractCallError, ContractWriteError, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose all layers first
+const TransportLayer = HttpTransport({ url: 'https://...' })
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const SignerLayer = Layer.mergeAll(
+  Signer.Live,
+  LocalAccount(privateKey),
+  ProviderLayer
+)
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)
@@ -37,64 +51,74 @@ const program = Effect.gen(function* () {
     ContractCallError: () => Effect.fail(new Error('Read failed')),
     ContractWriteError: () => Effect.fail(new Error('Write failed'))
   }),
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://...' }))
+  Effect.provide(SignerLayer)
 )
 ```
 
 ## Retry with Backoff
 
 ```typescript
-import { Effect, Schedule } from 'effect'
+import { Effect, Schedule, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport, withRetrySchedule } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
 
 const program = Effect.gen(function* () {
   return yield* getBlockNumber()
 }).pipe(
   withRetrySchedule(Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(5))),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Effect.provide(ProviderLayer)
 )
 ```
 
 ## Timeout
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getBlock, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
 
 const program = Effect.gen(function* () {
   return yield* getBlock({ blockTag: 'latest', includeTransactions: true })
 }).pipe(
   withTimeout('10 seconds'),
   Effect.catchTag('TimeoutException', () => Effect.succeed(null)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Effect.provide(ProviderLayer)
 )
 ```
 
 ## Fallback RPC
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers for each provider
+const PrimaryLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
+const BackupLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
 
 const primary = Effect.gen(function* () {
   return yield* getBlockNumber()
 }).pipe(
   withTimeout('3 seconds'),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Effect.provide(PrimaryLayer)
 )
 
 const backup = Effect.gen(function* () {
   return yield* getBlockNumber()
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
-)
+}).pipe(Effect.provide(BackupLayer))
 
 const program = primary.pipe(Effect.orElse(() => backup))
 ```
@@ -102,8 +126,13 @@ const program = primary.pipe(Effect.orElse(() => backup))
 ## Graceful Degradation
 
 ```typescript
-import { Effect, Option } from 'effect'
+import { Effect, Option, Layer } from 'effect'
 import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
 
 const program = Effect.gen(function* () {
   const balance = yield* getBalance(address, 'latest').pipe(
@@ -112,16 +141,13 @@ const program = Effect.gen(function* () {
   )
 
   return { address, balance: Option.getOrElse(balance, () => 0n) }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ## Custom Error Types
 
 ```typescript
-import { Effect, Data } from 'effect'
+import { Effect, Data, Layer } from 'effect'
 import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
 
 class InsufficientBalance extends Data.TaggedError('InsufficientBalance')<{
@@ -132,6 +158,11 @@ class InsufficientBalance extends Data.TaggedError('InsufficientBalance')<{
 const address = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 const requiredAmount = 1_000_000_000_000_000_000n  // 1 ETH
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
 const program = Effect.gen(function* () {
   const balance = yield* getBalance(address, 'latest')
 
@@ -141,8 +172,7 @@ const program = Effect.gen(function* () {
   return balance
 }).pipe(
   Effect.catchTag('InsufficientBalance', (e) => Effect.succeed(e.available)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Effect.provide(ProviderLayer)
 )
 ```
 

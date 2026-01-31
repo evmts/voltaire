@@ -10,8 +10,13 @@ description: engine_* JSON-RPC for consensus and execution integration
 ## Quick Start
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { EngineApiService, EngineApi, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const EngineLayer = EngineApi.pipe(
+  Layer.provide(HttpTransport('http://localhost:8551'))
+)
 
 const program = Effect.gen(function* () {
   const engine = yield* EngineApiService
@@ -21,10 +26,7 @@ const program = Effect.gen(function* () {
     'engine_getPayloadV3'
   ])
   return caps
-}).pipe(
-  Effect.provide(EngineApi),
-  Effect.provide(HttpTransport('http://localhost:8551'))
-)
+}).pipe(Effect.provide(EngineLayer))
 ```
 
 ## Forkchoice and Payloads

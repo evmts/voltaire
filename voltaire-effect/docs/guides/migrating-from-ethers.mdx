@@ -19,17 +19,20 @@ const blockNumber = await provider.getBlockNumber()
 ### voltaire-effect
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   return yield* getBlockNumber()
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
 
-const blockNumber = await Effect.runPromise(program)
+// Provide composed layer once
+const blockNumber = await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 ```
 
 ## Wallet/Signer
@@ -51,18 +54,26 @@ const tx = await wallet.sendTransaction({
 ### voltaire-effect
 
 ```typescript
-import { Effect } from 'effect'
-import { 
-  SignerService, 
-  Signer, 
+import { Effect, Layer } from 'effect'
+import {
+  SignerService,
+  Signer,
   LocalAccount,
   Provider,
-  HttpTransport 
+  HttpTransport
 } from 'voltaire-effect'
 import * as Hex from 'voltaire-effect/primitives/Hex'
 import * as S from 'effect/Schema'
 
 const privateKey = S.decodeSync(Hex.String)('0xac0974bec...')
+
+// Compose layers first
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const SignerLayer = Signer.Live.pipe(
+  Layer.provide(LocalAccount(privateKey)),
+  Layer.provide(ProviderLayer)
+)
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
@@ -70,14 +81,10 @@ const program = Effect.gen(function* () {
     to: '0x...',
     value: 1000000000000000000n
   })
-}).pipe(
-  Effect.provide(Signer.Live),
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
 
-const tx = await Effect.runPromise(program)
+// Provide composed layer once
+const tx = await Effect.runPromise(program.pipe(Effect.provide(SignerLayer)))
 ```
 
 ## HD Wallet
@@ -95,9 +102,9 @@ const secondAddress = wallet.derivePath("m/44'/60'/0'/0/1")
 ### voltaire-effect
 
 ```typescript
-import { Effect } from 'effect'
-import { 
-  AccountService, 
+import { Effect, Layer } from 'effect'
+import {
+  AccountService,
   SignerService,
   Signer,
   Provider,
@@ -108,25 +115,26 @@ import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
 const mnemonic = 'test test test test test test test test test test test junk'
 
+// Compose crypto layers
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+
 // Default address (index 0)
+const AccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
+
 const program = Effect.gen(function* () {
   const account = yield* AccountService
   console.log('Address:', account.address)
-}).pipe(
-  Effect.provide(MnemonicAccount(mnemonic)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(AccountLayer))
 
 // Second address (index 1)
+const SecondAccountLayer = MnemonicAccount(mnemonic, { index: 1 }).pipe(
+  Layer.provide(CryptoLayer)
+)
+
 const secondAddr = Effect.gen(function* () {
   const account = yield* AccountService
   console.log('Address:', account.address)
-}).pipe(
-  Effect.provide(MnemonicAccount(mnemonic, { index: 1 })),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(SecondAccountLayer))
 ```
 
 ## Contract Interaction
@@ -146,28 +154,31 @@ const balance = await contract.balanceOf(userAddress)
 ### voltaire-effect
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const abi = [
-  { 
-    type: 'function', 
-    name: 'balanceOf', 
+  {
+    type: 'function',
+    name: 'balanceOf',
     stateMutability: 'view',
     inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: 'balance', type: 'uint256' }] 
+    outputs: [{ name: 'balance', type: 'uint256' }]
   }
 ] as const
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, abi)
   return yield* token.read.balanceOf(userAddress)
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+})
 
-const balance = await Effect.runPromise(program)
+// Provide composed layer once
+const balance = await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 ```
 
 ## Error Handling

@@ -302,27 +302,30 @@ The [ERC-165](https://eips.ethereum.org/EIPS/eip-165) standard provides a way to
 ### Check Interface Support
 
 ```typescript
+import { Layer } from 'effect'
 import * as ERC165 from 'voltaire-effect/standards/ERC165'
 import { Provider, HttpTransport } from 'voltaire-effect'
 
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
 const program = Effect.gen(function* () {
   const contract = '0x1234567890123456789012345678901234567890'
-  
+
   // Check if contract supports ERC-721
   const supportsERC721 = yield* ERC165.supportsInterface(
-    contract, 
+    contract,
     ERC165.INTERFACE_IDS.ERC721
   )
-  
+
   // Detect all supported interfaces
   const interfaces = yield* ERC165.detectInterfaces(contract)
   // ['ERC165', 'ERC721', 'ERC721Metadata']
-  
+
   return { supportsERC721, interfaces }
-}).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+}).pipe(Effect.provide(ProviderLayer))
 ```
 
 ### Encoding Calldata

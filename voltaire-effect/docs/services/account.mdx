@@ -10,45 +10,50 @@ AccountService is for local or wallet signing. For node account RPCs like `eth_a
 ## Quick Start
 
 ```typescript
-import { Effect, Schedule } from 'effect'
+import { Effect, Schedule, Layer } from 'effect'
 import { AccountService, LocalAccount, withTimeout } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
 
+// Compose layers first
+const AccountLayer = LocalAccount(privateKey).pipe(
+  Layer.provide(Secp256k1Live),
+  Layer.provide(KeccakLive)
+)
+
 const program = Effect.gen(function* () {
   const account = yield* AccountService
-  
+
   // Per-request timeout for signing (useful for hardware wallets)
   const signature = yield* account.signMessage(Hex.fromString('Hello!')).pipe(
     withTimeout('10 seconds')
   )
   return signature
-}).pipe(
-  Effect.provide(LocalAccount(privateKey)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(AccountLayer))
 ```
 
 ## Browser Wallet
 
 ```typescript
 import { JsonRpcAccount, BrowserTransport, withTimeout } from 'voltaire-effect'
+import { Layer } from 'effect'
+
+// Compose layers first
+const BrowserAccountLayer = JsonRpcAccount(userAddress).pipe(
+  Layer.provide(BrowserTransport)
+)
 
 const program = Effect.gen(function* () {
   const account = yield* AccountService
-  
+
   // Longer timeout for user interaction
   const signature = yield* account.signMessage(messageHex).pipe(
     withTimeout('2 minutes')
   )
   return signature
-}).pipe(
-  Effect.provide(JsonRpcAccount(userAddress)),
-  Effect.provide(BrowserTransport)
-)
+}).pipe(Effect.provide(BrowserAccountLayer))
 ```
 
 ## Methods
@@ -145,14 +150,16 @@ import { MnemonicAccount } from 'voltaire-effect/native'
 
 const mnemonic = "test test test test test test test test test test test junk"
 
+// Compose layers first
+const MnemonicAccountLayer = MnemonicAccount(mnemonic).pipe(
+  Layer.provide(Secp256k1Live),
+  Layer.provide(KeccakLive)
+)
+
 const program = Effect.gen(function* () {
   const account = yield* AccountService
   return account.address
-}).pipe(
-  Effect.provide(MnemonicAccount(mnemonic)),
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive)
-)
+}).pipe(Effect.provide(MnemonicAccountLayer))
 ```
 
 See the [HD Wallet Guide](/guides/hd-wallet) for derivation paths, passphrases, and manual usage.
