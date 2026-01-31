@@ -1,8 +1,6 @@
 /**
  * Tests for ABI module with abitype integration
  */
-
-// @ts-nocheck
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { BrandedAddress } from "../address.js";
 import * as Abi from "./index.js";

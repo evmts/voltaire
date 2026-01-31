@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * WASM implementation of EVM bytecode operations
  * Uses WebAssembly bindings to Zig implementation

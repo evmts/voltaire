@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Internal method exports
 // Public wrapper exports (no wrappers needed, direct re-exports)
 export { format as _format, format } from "./format.js";
