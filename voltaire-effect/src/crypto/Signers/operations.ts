@@ -6,10 +6,8 @@
 
 import { Signers } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
+import { CryptoError, InvalidPrivateKeyError } from "./errors.js";
 import type { Signer } from "./SignersService.js";
-
-type CryptoError = Error;
-type InvalidPrivateKeyError = Error & { code: "INVALID_PRIVATE_KEY" };
 
 /**
  * Creates a signer from a private key.
@@ -49,21 +47,37 @@ export const fromPrivateKey = (
 				signMessage: (message: string | Uint8Array) =>
 					Effect.tryPromise({
 						try: () => impl.signMessage(message),
-						catch: (e) => e as CryptoError,
+						catch: (e) =>
+							new CryptoError({
+								message: e instanceof Error ? e.message : String(e),
+								cause: e,
+							}),
 					}),
 				signTransaction: (transaction: unknown) =>
 					Effect.tryPromise({
 						try: () => impl.signTransaction(transaction),
-						catch: (e) => e as CryptoError,
+						catch: (e) =>
+							new CryptoError({
+								message: e instanceof Error ? e.message : String(e),
+								cause: e,
+							}),
 					}),
 				signTypedData: (typedData: unknown) =>
 					Effect.tryPromise({
 						try: () => impl.signTypedData(typedData),
-						catch: (e) => e as CryptoError,
+						catch: (e) =>
+							new CryptoError({
+								message: e instanceof Error ? e.message : String(e),
+								cause: e,
+							}),
 					}),
 			} as Signer;
 		},
-		catch: (e) => e as InvalidPrivateKeyError,
+		catch: (e) =>
+			new InvalidPrivateKeyError({
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
 	});
 
 /**
@@ -119,5 +133,9 @@ export const recoverTransactionAddress = (
 ): Effect.Effect<string, CryptoError> =>
 	Effect.tryPromise({
 		try: () => Signers.recoverTransactionAddress(transaction),
-		catch: (e) => e as CryptoError,
+		catch: (e) =>
+			new CryptoError({
+				message: e instanceof Error ? e.message : String(e),
+				cause: e,
+			}),
 	});

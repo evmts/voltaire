@@ -29,6 +29,7 @@
  * @see {@link https://eips.ethereum.org/EIPS/eip-191 | EIP-191}
  * @see {@link https://eips.ethereum.org/EIPS/eip-712 | EIP-712}
  */
+export { CryptoError, InvalidPrivateKeyError } from "./errors.js";
 export {
 	fromPrivateKey,
 	getAddress,
