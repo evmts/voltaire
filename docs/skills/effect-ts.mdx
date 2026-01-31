@@ -30,8 +30,8 @@ Voltaire's errors all have a typesafe `name` property, making them perfect for E
 
 ```typescript
 import { Effect, Schema } from "effect";
-import * as Address from "@voltaire/primitives/Address";
-import { InvalidFormatError, InvalidLengthError } from "@voltaire/primitives/errors";
+import * as Address from "@tevm/voltaire/Address";
+import { InvalidFormatError, InvalidLengthError } from "@tevm/voltaire/errors";
 
 // Effect knows exactly what errors can occur
 const parseAddress = (input: string): Effect.Effect<
@@ -49,27 +49,36 @@ const parseAddress = (input: string): Effect.Effect<
 Use Effect Schema to validate and decode branded types:
 
 ```typescript
-import { Schema } from "@effect/schema";
-import * as Address from "@voltaire/primitives/Address";
-import * as Hex from "@voltaire/primitives/Hex";
+import { Effect, ParseResult } from "effect";
+import * as Schema from "effect/Schema";
+import * as Address from "@tevm/voltaire/Address";
+import * as Hex from "@tevm/voltaire/Hex";
 
 // Schema for Address validation
-const AddressSchema = Schema.transform(
+const AddressSchema = Schema.transformOrFail(
   Schema.String,
   Schema.instanceOf(Uint8Array),
   {
-    decode: (s) => Address.from(s),
-    encode: (a) => Address.toHex(a),
+    decode: (s) =>
+      Effect.try({
+        try: () => Address.from(s),
+        catch: () => new ParseResult.Type(Schema.String.ast, s),
+      }),
+    encode: (a) => Effect.succeed(Address.toHex(a)),
   }
 );
 
 // Schema for Hex validation
-const HexSchema = Schema.transform(
+const HexSchema = Schema.transformOrFail(
   Schema.String,
   Schema.instanceOf(Uint8Array),
   {
-    decode: (s) => Hex.from(s),
-    encode: (h) => Hex.toHex(h),
+    decode: (s) =>
+      Effect.try({
+        try: () => Hex.from(s),
+        catch: () => new ParseResult.Type(Schema.String.ast, s),
+      }),
+    encode: (h) => Effect.succeed(Hex.toHex(h)),
   }
 );
 ```
@@ -97,12 +106,12 @@ export const effectify = <A, E extends Error, Args extends unknown[]>(
 
 ```typescript
 import { Effect } from "effect";
-import * as Address from "@voltaire/primitives/Address";
+import * as Address from "@tevm/voltaire/Address";
 import {
   InvalidFormatError,
   InvalidLengthError,
   InvalidChecksumError,
-} from "@voltaire/primitives/Address/errors";
+} from "@tevm/voltaire/Address/errors";
 
 export const from = effectify(
   Address.from,
@@ -124,8 +133,8 @@ export const assert = effectify(
 
 ```typescript
 import { Effect, pipe } from "effect";
-import * as Transaction from "@voltaire/primitives/Transaction";
-import * as Secp256k1 from "@voltaire/crypto/Secp256k1";
+import * as Transaction from "@tevm/voltaire/Transaction";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 
 type TransactionError =
   | InvalidFormatError
