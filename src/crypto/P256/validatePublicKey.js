@@ -25,14 +25,19 @@ export function validatePublicKey(publicKey) {
 	}
 
 	try {
-		// Add 0x04 prefix for uncompressed point format
+		// Add 0x04 prefix for uncompressed point format and convert to hex
 		const fullPublicKey = new Uint8Array(65);
 		fullPublicKey[0] = 0x04;
 		fullPublicKey.set(publicKey, 1);
 
-		// Use @noble/curves' ProjectivePoint.fromHex to validate the point
+		// Convert to hex string for noble/curves Point.fromHex
+		const hexString = Array.from(fullPublicKey)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+
+		// Use @noble/curves' Point.fromHex to validate the point
 		// This properly checks if the point is on the curve
-		p256.ProjectivePoint.fromHex(fullPublicKey);
+		p256.Point.fromHex(hexString);
 		return true;
 	} catch {
 		return false;
