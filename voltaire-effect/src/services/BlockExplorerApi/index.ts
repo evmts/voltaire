@@ -11,7 +11,7 @@ export type {
 	AbiResolution,
 	BlockExplorerApiConfig,
 	ContractSourceFile,
-	ExplorerContractOptions,
+	ExplorerContractInstance,
 	ExplorerSourceId,
 	GetAbiOptions,
 	GetContractOptions,
@@ -40,9 +40,3 @@ export {
 
 // Layer factory
 export { BlockExplorerApi } from "./BlockExplorerApi.js";
-
-// ExplorerContract
-export {
-	ExplorerContract,
-	type ExplorerContractInstance,
-} from "./ExplorerContract.js";

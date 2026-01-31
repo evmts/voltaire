@@ -9,12 +9,22 @@
  * Supports explicit configuration and environment-based configuration.
  */
 
+import {
+	Address,
+	BrandedAbi,
+	type BrandedHex,
+	Hex,
+} from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Runtime from "effect/Runtime";
 import { Redacted } from "effect";
+import { ContractCallError, ContractWriteError } from "../Contract/ContractTypes.js";
 import { ProviderService } from "../Provider/ProviderService.js";
+import { SignerService } from "../Signer/SignerService.js";
 import { getCode, call, getStorageAt } from "../Provider/functions/index.js";
+
+type HexType = BrandedHex.HexType;
 import {
 	BlockExplorerConfigError,
 	BlockExplorerNotFoundError,
@@ -29,11 +39,11 @@ import type {
 	AbiItem,
 	BlockExplorerApiConfig,
 	ContractSourceFile,
+	ExplorerContractInstance,
 	ExplorerSourceId,
 	GetAbiOptions,
 	GetContractOptions,
 	GetSourcesOptions,
-	ResolvedExplorerContract,
 } from "./BlockExplorerApiTypes.js";
 import type { BlockExplorerApiError } from "./BlockExplorerApiErrors.js";
 import { ChainService } from "../Chain/ChainService.js";
@@ -253,6 +263,230 @@ interface WhatsAbiProvider {
 	call(tx: { to: string; data: string }): Promise<string>;
 }
 
+// ============================================================================
+// Contract method building helpers
+// ============================================================================
+
+function getFunctionSignature(item: AbiItem): string {
+	const inputs = item.inputs ?? [];
+	const types = inputs.map((i) => i.type).join(",");
+	return `${item.name ?? ""}(${types})`;
+}
+
+function isViewFunction(item: AbiItem): boolean {
+	return (
+		item.type === "function" &&
+		(item.stateMutability === "view" || item.stateMutability === "pure")
+	);
+}
+
+function isWriteFunction(item: AbiItem): boolean {
+	return (
+		item.type === "function" &&
+		(item.stateMutability === "nonpayable" || item.stateMutability === "payable")
+	);
+}
+
+function encodeArgs(
+	abi: ReadonlyArray<AbiItem>,
+	functionName: string,
+	args: ReadonlyArray<unknown>,
+): HexType {
+	return BrandedAbi.encodeFunction(
+		abi as unknown as BrandedAbi.Abi,
+		functionName,
+		args as unknown[],
+	);
+}
+
+function decodeResult(
+	abi: ReadonlyArray<AbiItem>,
+	functionName: string,
+	data: HexType,
+): Effect.Effect<unknown, ContractCallError> {
+	return Effect.try({
+		try: () => {
+			const fn = abi.find(
+				(item): item is BrandedAbi.Function.FunctionType =>
+					item.type === "function" && (item as any).name === functionName,
+			) as BrandedAbi.Function.FunctionType | undefined;
+			if (!fn) throw new Error(`Function ${functionName} not found in ABI`);
+
+			const bytes = Hex.toBytes(data);
+			const decoded = BrandedAbi.Function.decodeResult(fn, bytes);
+			if (fn.outputs.length === 1) {
+				return decoded[0];
+			}
+			return decoded;
+		},
+		catch: (e) =>
+			new ContractCallError(
+				{ address: "", method: functionName, args: [] },
+				e instanceof Error ? e.message : "Decode error",
+				{ cause: e instanceof Error ? e : undefined },
+			),
+	});
+}
+
+function buildMethodMaps(
+	address: `0x${string}`,
+	abi: ReadonlyArray<AbiItem>,
+): Pick<ExplorerContractInstance, "read" | "simulate" | "write" | "call"> {
+	const functions = abi.filter((item) => item.type === "function");
+
+	const byName = new Map<string, AbiItem[]>();
+	for (const fn of functions) {
+		if (!fn.name) continue;
+		const existing = byName.get(fn.name) ?? [];
+		existing.push(fn);
+		byName.set(fn.name, existing);
+	}
+
+	const bySignature = new Map<string, AbiItem>();
+	for (const fn of functions) {
+		if (!fn.name) continue;
+		const sig = getFunctionSignature(fn);
+		bySignature.set(sig, fn);
+	}
+
+	const createReadMethod = (
+		fn: AbiItem,
+	): ((...args: ReadonlyArray<unknown>) => Effect.Effect<unknown, ContractCallError, ProviderService>) => {
+		return (...args: ReadonlyArray<unknown>) =>
+			Effect.gen(function* () {
+				const data = encodeArgs(abi, fn.name!, args);
+				const result = yield* call({ to: address, data }).pipe(
+					Effect.mapError(
+						(e) =>
+							new ContractCallError(
+								{ address, method: fn.name!, args: args as unknown[] },
+								e.message,
+								{ cause: e },
+							),
+					),
+				);
+				return yield* decodeResult(abi, fn.name!, result as HexType);
+			});
+	};
+
+	const createSimulateMethod = (
+		fn: AbiItem,
+	): ((...args: ReadonlyArray<unknown>) => Effect.Effect<unknown, ContractCallError, ProviderService>) => {
+		return (...args: ReadonlyArray<unknown>) =>
+			Effect.gen(function* () {
+				const data = encodeArgs(abi, fn.name!, args);
+				const result = yield* call({ to: address, data }).pipe(
+					Effect.mapError(
+						(e) =>
+							new ContractCallError(
+								{ address, method: fn.name!, args: args as unknown[], simulate: true },
+								e.message,
+								{ cause: e },
+							),
+					),
+				);
+				return yield* decodeResult(abi, fn.name!, result as HexType);
+			});
+	};
+
+	const createWriteMethod = (
+		fn: AbiItem,
+	): ((...args: ReadonlyArray<unknown>) => Effect.Effect<`0x${string}`, ContractWriteError, SignerService>) => {
+		return (...args: ReadonlyArray<unknown>) =>
+			Effect.gen(function* () {
+				const signer = yield* SignerService;
+				const data = encodeArgs(abi, fn.name!, args);
+				const brandedAddress = Address.fromHex(address);
+				const txHash = yield* signer
+					.sendTransaction({
+						to: brandedAddress as unknown as undefined,
+						data: data as unknown as undefined,
+					})
+					.pipe(
+						Effect.mapError(
+							(e) =>
+								new ContractWriteError(
+									{ address, method: fn.name!, args: args as unknown[] },
+									e.message,
+									{ cause: e instanceof Error ? e : undefined },
+								),
+						),
+					);
+				return txHash as unknown as `0x${string}`;
+			});
+	};
+
+	const read: Record<
+		string,
+		(...args: ReadonlyArray<unknown>) => Effect.Effect<unknown, ContractCallError, ProviderService>
+	> = {};
+
+	for (const fn of functions) {
+		if (!fn.name || !isViewFunction(fn)) continue;
+
+		const sig = getFunctionSignature(fn);
+		const overloads = byName.get(fn.name) ?? [];
+
+		read[sig] = createReadMethod(fn);
+
+		if (overloads.length === 1) {
+			read[fn.name] = createReadMethod(fn);
+		}
+	}
+
+	const simulate: Record<
+		string,
+		(...args: ReadonlyArray<unknown>) => Effect.Effect<unknown, ContractCallError, ProviderService>
+	> = {};
+
+	for (const fn of functions) {
+		if (!fn.name || !isWriteFunction(fn)) continue;
+
+		const sig = getFunctionSignature(fn);
+		const overloads = byName.get(fn.name) ?? [];
+
+		simulate[sig] = createSimulateMethod(fn);
+		if (overloads.length === 1) {
+			simulate[fn.name] = createSimulateMethod(fn);
+		}
+	}
+
+	const write: Record<
+		string,
+		(...args: ReadonlyArray<unknown>) => Effect.Effect<`0x${string}`, ContractWriteError, SignerService>
+	> = {};
+
+	for (const fn of functions) {
+		if (!fn.name || !isWriteFunction(fn)) continue;
+
+		const sig = getFunctionSignature(fn);
+		const overloads = byName.get(fn.name) ?? [];
+
+		write[sig] = createWriteMethod(fn);
+		if (overloads.length === 1) {
+			write[fn.name] = createWriteMethod(fn);
+		}
+	}
+
+	const callFn = (
+		signature: string,
+		args: ReadonlyArray<unknown>,
+	): Effect.Effect<unknown, ContractCallError, ProviderService> => {
+		const fn = bySignature.get(signature);
+		if (!fn) {
+			return Effect.fail(
+				new ContractCallError(
+					{ address, method: signature, args: args as unknown[] },
+					`Function not found: ${signature}`,
+				),
+			);
+		}
+		return createReadMethod(fn)(...args);
+	};
+
+	return { read, simulate, write, call: callFn };
+}
+
 /**
  * Create the BlockExplorerApiService implementation.
  */
@@ -287,7 +521,7 @@ function makeBlockExplorerApi(
 
 		const cache = new Map<
 			string,
-			{ value: ResolvedExplorerContract; expiry: number }
+			{ value: ExplorerContractInstance; expiry: number }
 		>();
 		const cacheEnabled = config.cache?.enabled ?? false;
 		const cacheTtl = config.cache?.ttlMillis ?? 300_000;
@@ -302,7 +536,7 @@ function makeBlockExplorerApi(
 
 		function getFromCache(
 			key: string,
-		): ResolvedExplorerContract | undefined {
+		): ExplorerContractInstance | undefined {
 			if (!cacheEnabled) return undefined;
 			const entry = cache.get(key);
 			if (!entry) return undefined;
@@ -313,7 +547,7 @@ function makeBlockExplorerApi(
 			return entry.value;
 		}
 
-		function setCache(key: string, value: ResolvedExplorerContract): void {
+		function setCache(key: string, value: ExplorerContractInstance): void {
 			if (!cacheEnabled) return;
 			if (cache.size >= cacheCapacity) {
 				const oldest = cache.keys().next().value;
@@ -325,7 +559,7 @@ function makeBlockExplorerApi(
 		const getContract = (
 			address: `0x${string}`,
 			options?: GetContractOptions,
-		): Effect.Effect<ResolvedExplorerContract, BlockExplorerApiError> =>
+		): Effect.Effect<ExplorerContractInstance, BlockExplorerApiError> =>
 			Effect.gen(function* () {
 				const cacheKey = getCacheKey(address, options);
 				const cached = getFromCache(cacheKey);
@@ -404,9 +638,11 @@ function makeBlockExplorerApi(
 
 							if (recoveredAbi && recoveredAbi.length > 0) {
 								const normalizedAbi = normalizeAbi(recoveredAbi as WhatsABI);
+								const resolvedAddr = result.address as `0x${string}`;
+								const methods = buildMethodMaps(resolvedAddr, normalizedAbi);
 
-								const contract: ResolvedExplorerContract = {
-									address: result.address as `0x${string}`,
+								const contract: ExplorerContractInstance = {
+									address: resolvedAddr,
 									requestedAddress: address,
 									abi: normalizedAbi,
 									resolution: { mode: "best-effort", source: "whatsabi" },
@@ -416,6 +652,7 @@ function makeBlockExplorerApi(
 											address: address,
 										})),
 									}),
+									...methods,
 								};
 
 								setCache(cacheKey, contract);
@@ -440,14 +677,17 @@ function makeBlockExplorerApi(
 					: "sourcify";
 
 				const normalizedAbi = normalizeAbi(result.abi as WhatsABI);
+				const resolvedAddr = result.address as `0x${string}`;
+				const methods = buildMethodMaps(resolvedAddr, normalizedAbi);
 
-				const contract: ResolvedExplorerContract = {
-					address: result.address as `0x${string}`,
+				const contract: ExplorerContractInstance = {
+					address: resolvedAddr,
 					requestedAddress: address,
 					abi: normalizedAbi,
 					resolution: { mode: "verified", source },
 					...(proxyChain.length > 0 && { proxies: proxyChain }),
 					...(includeSources && { sources: [] as ContractSourceFile[] }),
+					...methods,
 				};
 
 				setCache(cacheKey, contract);

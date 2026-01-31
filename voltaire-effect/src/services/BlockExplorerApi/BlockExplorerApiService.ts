@@ -14,10 +14,10 @@ import type * as Effect from "effect/Effect";
 import type {
 	AbiItem,
 	ContractSourceFile,
+	ExplorerContractInstance,
 	GetAbiOptions,
 	GetContractOptions,
 	GetSourcesOptions,
-	ResolvedExplorerContract,
 } from "./BlockExplorerApiTypes.js";
 import type { BlockExplorerApiError } from "./BlockExplorerApiErrors.js";
 
@@ -27,12 +27,12 @@ import type { BlockExplorerApiError } from "./BlockExplorerApiErrors.js";
  */
 export interface BlockExplorerApiShape {
 	/**
-	 * Fetch ABI + basic metadata. May optionally return sources.
+	 * Fetch contract with callable read/write methods.
 	 */
 	readonly getContract: (
 		address: `0x${string}`,
 		options?: GetContractOptions,
-	) => Effect.Effect<ResolvedExplorerContract, BlockExplorerApiError>;
+	) => Effect.Effect<ExplorerContractInstance, BlockExplorerApiError>;
 
 	/**
 	 * Convenience wrapper for getContract(...).abi

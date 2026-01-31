@@ -82,7 +82,6 @@
             "pages": [
               "services/contract-registry",
               "services/block-explorer-api",
-              "services/explorer-contracts",
               "services/block-stream",
               "services/transaction-stream",
               "services/cache",

@@ -10,6 +10,10 @@
  */
 
 import type { Redacted } from "effect";
+import type * as Effect from "effect/Effect";
+import type { ContractCallError, ContractWriteError } from "../Contract/ContractTypes.js";
+import type { ProviderService } from "../Provider/ProviderService.js";
+import type { SignerService } from "../Signer/SignerService.js";
 
 /**
  * Identifier for supported block explorer sources.
@@ -175,10 +179,47 @@ export interface GetSourcesOptions {
 }
 
 /**
- * Options for ExplorerContract.
+ * Dynamic contract instance with callable methods.
+ * Returned by getContract() for interacting with contracts.
  * @since 0.0.1
  */
-export interface ExplorerContractOptions {
-	readonly resolution?: "verified-only" | "verified-first" | "best-effort";
-	readonly followProxies?: boolean;
+export interface ExplorerContractInstance {
+	/** Resolved address (implementation if proxies followed) */
+	readonly address: `0x${string}`;
+	/** Original input address */
+	readonly requestedAddress: `0x${string}`;
+	/** Resolved ABI */
+	readonly abi: ReadonlyArray<AbiItem>;
+	/** How the ABI was resolved */
+	readonly resolution: AbiResolution;
+	/** Contract name if available */
+	readonly name?: string;
+	/** Source files if requested and available */
+	readonly sources?: ReadonlyArray<ContractSourceFile>;
+	/** Proxy chain if followProxies was true */
+	readonly proxies?: ReadonlyArray<ProxyInfo>;
+
+	/** Read-only methods (view/pure) */
+	readonly read: Record<
+		string,
+		(...args: ReadonlyArray<unknown>) => Effect.Effect<unknown, ContractCallError, ProviderService>
+	>;
+
+	/** Simulate state-changing methods */
+	readonly simulate: Record<
+		string,
+		(...args: ReadonlyArray<unknown>) => Effect.Effect<unknown, ContractCallError, ProviderService>
+	>;
+
+	/** State-changing methods */
+	readonly write: Record<
+		string,
+		(...args: ReadonlyArray<unknown>) => Effect.Effect<`0x${string}`, ContractWriteError, SignerService>
+	>;
+
+	/** Explicit signature-based access */
+	readonly call: (
+		signature: string,
+		args: ReadonlyArray<unknown>,
+	) => Effect.Effect<unknown, ContractCallError, ProviderService>;
 }

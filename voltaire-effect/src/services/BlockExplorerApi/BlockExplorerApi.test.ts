@@ -8,8 +8,9 @@ import {
 	BlockExplorerNotFoundError,
 	BlockExplorerRateLimitError,
 } from "./BlockExplorerApiErrors";
-import type { ResolvedExplorerContract, AbiItem } from "./BlockExplorerApiTypes";
+import type { ExplorerContractInstance, AbiItem } from "./BlockExplorerApiTypes";
 import { ChainService, type ChainConfig } from "../Chain/ChainService";
+import { ContractCallError, ContractWriteError } from "../Contract/ContractTypes";
 
 // Mock chain config
 const mockMainnetConfig: ChainConfig = {
@@ -32,12 +33,19 @@ const mockAbi: AbiItem[] = [
 	},
 ];
 
-// Mock contract response
-const createMockContract = (address: `0x${string}`): ResolvedExplorerContract => ({
+// Mock contract response with method maps
+const createMockContract = (address: `0x${string}`, abi: AbiItem[] = mockAbi): ExplorerContractInstance => ({
 	address,
 	requestedAddress: address,
-	abi: mockAbi,
+	abi,
 	resolution: { mode: "verified", source: "sourcify" },
+	read: {
+		symbol: () => Effect.succeed("MOCK"),
+		"symbol()": () => Effect.succeed("MOCK"),
+	},
+	write: {},
+	simulate: {},
+	call: (_sig, _args) => Effect.succeed("MOCK"),
 });
 
 // Create mock service layer
@@ -593,6 +601,189 @@ describe("BlockExplorerApi", () => {
 			expect(error.attemptedSources).toContain("etherscanV2");
 			expect(error.attemptedSources).toContain("blockscout");
 			expect(error.attemptedSources).toHaveLength(3);
+		});
+	});
+
+	describe("Contract method access", () => {
+		const erc20Abi: AbiItem[] = [
+			{
+				type: "function",
+				name: "name",
+				inputs: [],
+				outputs: [{ name: "", type: "string" }],
+				stateMutability: "view",
+			},
+			{
+				type: "function",
+				name: "symbol",
+				inputs: [],
+				outputs: [{ name: "", type: "string" }],
+				stateMutability: "view",
+			},
+			{
+				type: "function",
+				name: "balanceOf",
+				inputs: [{ name: "account", type: "address" }],
+				outputs: [{ name: "", type: "uint256" }],
+				stateMutability: "view",
+			},
+			{
+				type: "function",
+				name: "transfer",
+				inputs: [
+					{ name: "to", type: "address" },
+					{ name: "amount", type: "uint256" },
+				],
+				outputs: [{ name: "", type: "bool" }],
+				stateMutability: "nonpayable",
+			},
+		];
+
+		it("getContract returns contract with read methods", async () => {
+			const mockWithMethods: ExplorerContractInstance = {
+				...createMockContract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", erc20Abi),
+				read: {
+					name: () => Effect.succeed("USD Coin"),
+					symbol: () => Effect.succeed("USDC"),
+					balanceOf: () => Effect.succeed(1000n),
+					"name()": () => Effect.succeed("USD Coin"),
+					"symbol()": () => Effect.succeed("USDC"),
+					"balanceOf(address)": () => Effect.succeed(1000n),
+				},
+				write: {
+					transfer: () => Effect.succeed("0x123" as `0x${string}`),
+					"transfer(address,uint256)": () => Effect.succeed("0x123" as `0x${string}`),
+				},
+				simulate: {
+					transfer: () => Effect.succeed(true),
+					"transfer(address,uint256)": () => Effect.succeed(true),
+				},
+			};
+
+			const mockService = createMockService({
+				getContract: (_address, _options) => Effect.succeed(mockWithMethods),
+			});
+
+			const program = Effect.gen(function* () {
+				const explorer = yield* BlockExplorerApiService;
+				return yield* explorer.getContract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+			}).pipe(
+				Effect.provide(mockService),
+				Effect.provide(mockChainLayer),
+			);
+
+			const result = await Effect.runPromise(program);
+
+			expect(typeof result.read).toBe("object");
+			expect(typeof result.read.name).toBe("function");
+			expect(typeof result.read.symbol).toBe("function");
+			expect(typeof result.read["balanceOf(address)"]).toBe("function");
+		});
+
+		it("getContract returns contract with write methods", async () => {
+			const mockWithMethods: ExplorerContractInstance = {
+				...createMockContract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", erc20Abi),
+				read: {},
+				write: {
+					transfer: () => Effect.succeed("0x123" as `0x${string}`),
+					"transfer(address,uint256)": () => Effect.succeed("0x123" as `0x${string}`),
+				},
+				simulate: {},
+			};
+
+			const mockService = createMockService({
+				getContract: (_address, _options) => Effect.succeed(mockWithMethods),
+			});
+
+			const program = Effect.gen(function* () {
+				const explorer = yield* BlockExplorerApiService;
+				return yield* explorer.getContract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+			}).pipe(
+				Effect.provide(mockService),
+				Effect.provide(mockChainLayer),
+			);
+
+			const result = await Effect.runPromise(program);
+
+			expect(typeof result.write).toBe("object");
+			expect(typeof result.write.transfer).toBe("function");
+			expect(typeof result.write["transfer(address,uint256)"]).toBe("function");
+		});
+
+		it("getContract returns contract with call method", async () => {
+			const program = Effect.gen(function* () {
+				const explorer = yield* BlockExplorerApiService;
+				return yield* explorer.getContract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+			}).pipe(
+				Effect.provide(createMockService()),
+				Effect.provide(mockChainLayer),
+			);
+
+			const result = await Effect.runPromise(program);
+
+			expect(typeof result.call).toBe("function");
+		});
+
+		it("handles overloaded functions with signature keys only", async () => {
+			const overloadedAbi: AbiItem[] = [
+				{
+					type: "function",
+					name: "safeTransferFrom",
+					inputs: [
+						{ name: "from", type: "address" },
+						{ name: "to", type: "address" },
+						{ name: "tokenId", type: "uint256" },
+					],
+					outputs: [],
+					stateMutability: "nonpayable",
+				},
+				{
+					type: "function",
+					name: "safeTransferFrom",
+					inputs: [
+						{ name: "from", type: "address" },
+						{ name: "to", type: "address" },
+						{ name: "tokenId", type: "uint256" },
+						{ name: "data", type: "bytes" },
+					],
+					outputs: [],
+					stateMutability: "nonpayable",
+				},
+			];
+
+			const mockWithOverloads: ExplorerContractInstance = {
+				...createMockContract("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", overloadedAbi),
+				read: {},
+				write: {
+					// No name-only key for overloaded function
+					"safeTransferFrom(address,address,uint256)": () => Effect.succeed("0x123" as `0x${string}`),
+					"safeTransferFrom(address,address,uint256,bytes)": () => Effect.succeed("0x456" as `0x${string}`),
+				},
+				simulate: {
+					"safeTransferFrom(address,address,uint256)": () => Effect.succeed(undefined),
+					"safeTransferFrom(address,address,uint256,bytes)": () => Effect.succeed(undefined),
+				},
+			};
+
+			const mockService = createMockService({
+				getContract: (_address, _options) => Effect.succeed(mockWithOverloads),
+			});
+
+			const program = Effect.gen(function* () {
+				const explorer = yield* BlockExplorerApiService;
+				return yield* explorer.getContract("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D");
+			}).pipe(
+				Effect.provide(mockService),
+				Effect.provide(mockChainLayer),
+			);
+
+			const result = await Effect.runPromise(program);
+
+			// Overloaded function should not have name-only key
+			expect(result.write.safeTransferFrom).toBeUndefined();
+			// But should have signature keys
+			expect(typeof result.write["safeTransferFrom(address,address,uint256)"]).toBe("function");
+			expect(typeof result.write["safeTransferFrom(address,address,uint256,bytes)"]).toBe("function");
 		});
 	});
 });
