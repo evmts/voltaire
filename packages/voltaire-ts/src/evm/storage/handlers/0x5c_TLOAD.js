@@ -1,0 +1,42 @@
+import { TLoad } from "../../../primitives/GasConstants/constants.js";
+import * as Frame from "../../Frame/index.js";
+
+/**
+ * TLOAD (0x5c) - Load word from transient storage
+ *
+ * Stack:
+ *   in: key
+ *   out: value
+ *
+ * Gas: 100
+ *
+ * EIP-1153: Transient storage opcodes (Cancun hardfork)
+ * - Transaction-scoped storage, cleared at end of transaction
+ * - No refunds or complex gas metering
+ *
+ * @param {import("../../Frame/FrameType.js").BrandedFrame} frame - Frame instance
+ * @param {import("../../Host/HostType.js").BrandedHost} host - Host interface
+ * @returns {import("../../Frame/FrameType.js").EvmError | null} Error if any
+ */
+export function tload(frame, host) {
+	// Note: Add hardfork validation - TLOAD requires Cancun+
+	// if (hardfork < CANCUN) return { type: "InvalidOpcode" };
+
+	const gasError = Frame.consumeGas(frame, TLoad);
+	if (gasError) return gasError;
+
+	// Pop key from stack
+	const keyResult = Frame.popStack(frame);
+	if (keyResult.error) return keyResult.error;
+	const key = keyResult.value;
+
+	// Load from transient storage (EIP-1153)
+	const value = host.getTransientStorage(frame.address, key);
+
+	// Push value onto stack
+	const pushError = Frame.pushStack(frame, value);
+	if (pushError) return pushError;
+
+	frame.pc += 1;
+	return null;
+}

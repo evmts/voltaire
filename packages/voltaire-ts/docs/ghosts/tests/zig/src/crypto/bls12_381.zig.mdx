@@ -1,0 +1,478 @@
+---
+title: '[Zig] src/crypto/bls12_381.zig'
+source: 'src/crypto/bls12_381.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/bls12_381.zig
+
+### secret key generation
+
+```zig
+test "secret key generation" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk = try SecretKey.generate();
+    const bytes = sk.toBytes();
+
+    // Should not be all zeros
+    var all_zero = true;
+    for (bytes) |b| {
+        if (b != 0) {
+            all_zero = false;
+            break;
+        }
+    }
+    try testing.expect(!all_zero);
+}
+```
+
+### secret key from bytes roundtrip
+
+```zig
+test "secret key from bytes roundtrip" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk = try SecretKey.generate();
+    const bytes = sk.toBytes();
+    const sk2 = try SecretKey.fromBytes(&bytes);
+    const bytes2 = sk2.toBytes();
+
+    try testing.expectEqualSlices(u8, &bytes, &bytes2);
+}
+```
+
+### public key derivation
+
+```zig
+test "public key derivation" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk = try SecretKey.generate();
+    const pk = sk.toPublicKey();
+
+    // Public key should not be infinity
+    try testing.expect(!pk.isInfinity());
+
+    // Should validate
+    try pk.validate();
+}
+```
+
+### public key serialization roundtrip
+
+```zig
+test "public key serialization roundtrip" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk = try SecretKey.generate();
+    const pk = sk.toPublicKey();
+
+    // Compressed roundtrip
+    const compressed = pk.toCompressed();
+    const pk_compressed = try PublicKey.fromCompressed(&compressed);
+    try testing.expect(pk.isEqual(&pk_compressed));
+
+    // Uncompressed roundtrip
+    const uncompressed = pk.toUncompressed();
+    const pk_uncompressed = try PublicKey.fromUncompressed(&uncompressed);
+    try testing.expect(pk.isEqual(&pk_uncompressed));
+}
+```
+
+### sign and verify
+
+```zig
+test "sign and verify" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk = try SecretKey.generate();
+    const pk = sk.toPublicKey();
+
+    const message = "Hello, BLS12-381!";
+    const dst = DST.ETH2_SIGNATURE;
+
+    const sig = try sign(&sk, message, dst);
+    const valid = try verify(&sig, &pk, message, dst);
+
+    try testing.expect(valid);
+}
+```
+
+### verify wrong message fails
+
+```zig
+test "verify wrong message fails" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk = try SecretKey.generate();
+    const pk = sk.toPublicKey();
+
+    const message = "Hello, BLS12-381!";
+    const wrong_message = "Wrong message";
+    const dst = DST.ETH2_SIGNATURE;
+
+    const sig = try sign(&sk, message, dst);
+    const valid = try verify(&sig, &pk, wrong_message, dst);
+
+    try testing.expect(!valid);
+}
+```
+
+### verify wrong public key fails
+
+```zig
+test "verify wrong public key fails" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk1 = try SecretKey.generate();
+    const sk2 = try SecretKey.generate();
+    const pk2 = sk2.toPublicKey();
+
+    const message = "Hello, BLS12-381!";
+    const dst = DST.ETH2_SIGNATURE;
+
+    const sig = try sign(&sk1, message, dst);
+    const valid = try verify(&sig, &pk2, message, dst);
+
+    try testing.expect(!valid);
+}
+```
+
+### signature serialization roundtrip
+
+```zig
+test "signature serialization roundtrip" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk = try SecretKey.generate();
+    const message = "Test message";
+    const dst = DST.ETH2_SIGNATURE;
+
+    const sig = try sign(&sk, message, dst);
+
+    // Compressed roundtrip
+    const compressed = sig.toCompressed();
+    const sig_compressed = try Signature.fromCompressed(&compressed);
+    try testing.expect(sig.isEqual(&sig_compressed));
+
+    // Uncompressed roundtrip
+    const uncompressed = sig.toUncompressed();
+    const sig_uncompressed = try Signature.fromUncompressed(&uncompressed);
+    try testing.expect(sig.isEqual(&sig_uncompressed));
+}
+```
+
+### aggregate signatures - same message
+
+```zig
+test "aggregate signatures - same message" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const message = "Same message for all signers";
+    const dst = DST.ETH2_SIGNATURE;
+
+    // Generate 3 key pairs
+    const sk1 = try SecretKey.generate();
+    const sk2 = try SecretKey.generate();
+    const sk3 = try SecretKey.generate();
+
+    const pk1 = sk1.toPublicKey();
+    const pk2 = sk2.toPublicKey();
+    const pk3 = sk3.toPublicKey();
+
+    // Sign with each key
+    const sig1 = try sign(&sk1, message, dst);
+    const sig2 = try sign(&sk2, message, dst);
+    const sig3 = try sign(&sk3, message, dst);
+
+    // Aggregate signatures
+    const sigs = [_]*const Signature{ &sig1, &sig2, &sig3 };
+    const agg_sig = try aggregateSignatures(&sigs);
+
+    // Verify aggregate
+    const pks = [_]*const PublicKey{ &pk1, &pk2, &pk3 };
+    const valid = try verifyAggregate(&agg_sig, &pks, message, dst);
+
+    try testing.expect(valid);
+}
+```
+
+### aggregate public keys
+
+```zig
+test "aggregate public keys" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const sk1 = try SecretKey.generate();
+    const sk2 = try SecretKey.generate();
+
+    const pk1 = sk1.toPublicKey();
+    const pk2 = sk2.toPublicKey();
+
+    const pks = [_]*const PublicKey{ &pk1, &pk2 };
+    const agg_pk = try aggregatePublicKeys(&pks);
+
+    // Aggregated key should not be infinity (extremely unlikely)
+    try testing.expect(!agg_pk.isInfinity());
+    try agg_pk.validate();
+}
+```
+
+### G1 point operations
+
+```zig
+test "G1 point operations" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const g1 = G1Point.generator();
+
+    // Generator should be on curve and in group
+    try testing.expect(g1.isOnCurve());
+    try testing.expect(g1.isInGroup());
+    try testing.expect(!g1.isInfinity());
+
+    // Double
+    const g1_doubled = g1.double();
+    try testing.expect(g1_doubled.isOnCurve());
+
+    // Add
+    const g1_added = g1.add(&g1);
+    try testing.expect(g1_added.isEqual(&g1_doubled));
+
+    // Negate
+    const g1_neg = g1.negate();
+    const should_be_infinity = g1.add(&g1_neg);
+    try testing.expect(should_be_infinity.isInfinity());
+}
+```
+
+### G2 point operations
+
+```zig
+test "G2 point operations" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const g2 = G2Point.generator();
+
+    // Generator should be on curve and in group
+    try testing.expect(g2.isOnCurve());
+    try testing.expect(g2.isInGroup());
+    try testing.expect(!g2.isInfinity());
+
+    // Double
+    const g2_doubled = g2.double();
+    try testing.expect(g2_doubled.isOnCurve());
+
+    // Add
+    const g2_added = g2.add(&g2);
+    try testing.expect(g2_added.isEqual(&g2_doubled));
+
+    // Negate
+    const g2_neg = g2.negate();
+    const should_be_infinity = g2.add(&g2_neg);
+    try testing.expect(should_be_infinity.isInfinity());
+}
+```
+
+### hash to G2
+
+```zig
+test "hash to G2" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const message = "test message";
+    const dst = DST.ETH2_SIGNATURE;
+
+    const h = G2Point.hashToG2(message, dst);
+
+    // Hash result should be on curve and in group
+    try testing.expect(h.isOnCurve());
+    try testing.expect(h.isInGroup());
+    try testing.expect(!h.isInfinity());
+
+    // Same message should produce same hash
+    const h2 = G2Point.hashToG2(message, dst);
+    try testing.expect(h.isEqual(&h2));
+
+    // Different message should produce different hash
+    const h3 = G2Point.hashToG2("different message", dst);
+    try testing.expect(!h.isEqual(&h3));
+}
+```
+
+### pairing bilinearity
+
+```zig
+test "pairing bilinearity" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const g1 = G1Point.generator();
+    const g2 = G2Point.generator();
+
+    // e(aG1, bG2) should equal e(G1, G2)^(a*b)
+    // We test: e(2*G1, G2) == e(G1, 2*G2)
+
+    var scalar_2: [32]u8 = [_]u8{0} ** 32;
+    scalar_2[31] = 2;
+
+    const g1_times_2 = g1.mul(&scalar_2);
+    const g2_times_2 = g2.mul(&scalar_2);
+
+    const pairing1 = pairing(&g1_times_2, &g2);
+    const pairing2 = pairing(&g1, &g2_times_2);
+
+    try testing.expect(pairing1.isEqual(&pairing2));
+}
+```
+
+### pairing check
+
+```zig
+test "pairing check" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    const g1 = G1Point.generator();
+    const g2 = G2Point.generator();
+    const g1_neg = g1.negate();
+
+    // e(G1, G2) * e(-G1, G2) should equal 1
+    const g1_points = [_]*const G1Point{ &g1, &g1_neg };
+    const g2_points = [_]*const G2Point{ &g2, &g2 };
+
+    const result = try pairingCheck(&g1_points, &g2_points);
+    try testing.expect(result);
+}
+```
+
+### empty inputs
+
+```zig
+test "empty inputs" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // Empty signature aggregation should fail
+    const empty_sigs: []const *const Signature = &.{};
+    try testing.expectError(Error.EmptyInput, aggregateSignatures(empty_sigs));
+
+    // Empty public key aggregation should fail
+    const empty_pks: []const *const PublicKey = &.{};
+    try testing.expectError(Error.EmptyInput, aggregatePublicKeys(empty_pks));
+
+    // Empty pairing check should return true
+    const empty_g1: []const *const G1Point = &.{};
+    const empty_g2: []const *const G2Point = &.{};
+    const result = try pairingCheck(empty_g1, empty_g2);
+    try testing.expect(result);
+}
+```
+
+### BLS signature test vector - Ethereum style
+
+```zig
+test "BLS signature test vector - Ethereum style" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // Test vector: specific secret key
+    // sk = 0x0000000000000000000000000000000000000000000000000000000000000001
+    var sk_bytes: [32]u8 = [_]u8{0} ** 32;
+    sk_bytes[31] = 1;
+
+    const sk = try SecretKey.fromBytes(&sk_bytes);
+    const pk = sk.toPublicKey();
+
+    // Verify public key is not infinity
+    try testing.expect(!pk.isInfinity());
+
+    // Sign and verify a message
+    const message = "test";
+    const dst = DST.ETH2_SIGNATURE;
+
+    const sig = try sign(&sk, message, dst);
+    const valid = try verify(&sig, &pk, message, dst);
+
+    try testing.expect(valid);
+}
+```
+
+### signature aggregation is commutative
+
+```zig
+test "signature aggregation is commutative" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // BLS signature aggregation uses elliptic curve point addition,
+    // which is commutative: sig1 + sig2 + sig3 == sig3 + sig1 + sig2
+    const message = "Test message for commutativity";
+    const dst = DST.ETH2_SIGNATURE;
+
+    // Generate 3 key pairs and signatures
+    const sk1 = try SecretKey.generate();
+    const sk2 = try SecretKey.generate();
+    const sk3 = try SecretKey.generate();
+
+    const sig1 = try sign(&sk1, message, dst);
+    const sig2 = try sign(&sk2, message, dst);
+    const sig3 = try sign(&sk3, message, dst);
+
+    // Aggregate in order: 1, 2, 3
+    const order_123 = [_]*const Signature{ &sig1, &sig2, &sig3 };
+    const agg_123 = try aggregateSignatures(&order_123);
+
+    // Aggregate in order: 3, 1, 2
+    const order_312 = [_]*const Signature{ &sig3, &sig1, &sig2 };
+    const agg_312 = try aggregateSignatures(&order_312);
+
+    // Aggregate in order: 2, 3, 1
+    const order_231 = [_]*const Signature{ &sig2, &sig3, &sig1 };
+    const agg_231 = try aggregateSignatures(&order_231);
+
+    // All orderings should produce the same aggregated signature
+    try testing.expect(agg_123.isEqual(&agg_312));
+    try testing.expect(agg_123.isEqual(&agg_231));
+    try testing.expect(agg_312.isEqual(&agg_231));
+
+    // Verify all produce valid aggregated signatures
+    const pk1 = sk1.toPublicKey();
+    const pk2 = sk2.toPublicKey();
+    const pk3 = sk3.toPublicKey();
+    const pks = [_]*const PublicKey{ &pk1, &pk2, &pk3 };
+
+    const valid = try verifyAggregate(&agg_123, &pks, message, dst);
+    try testing.expect(valid);
+}
+```
+
+### public key aggregation is commutative
+
+```zig
+test "public key aggregation is commutative" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // BLS public key aggregation uses elliptic curve point addition,
+    // which is commutative: pk1 + pk2 + pk3 == pk3 + pk1 + pk2
+    const sk1 = try SecretKey.generate();
+    const sk2 = try SecretKey.generate();
+    const sk3 = try SecretKey.generate();
+
+    const pk1 = sk1.toPublicKey();
+    const pk2 = sk2.toPublicKey();
+    const pk3 = sk3.toPublicKey();
+
+    // Aggregate in order: 1, 2, 3
+    const order_123 = [_]*const PublicKey{ &pk1, &pk2, &pk3 };
+    const agg_123 = try aggregatePublicKeys(&order_123);
+
+    // Aggregate in order: 3, 1, 2
+    const order_312 = [_]*const PublicKey{ &pk3, &pk1, &pk2 };
+    const agg_312 = try aggregatePublicKeys(&order_312);
+
+    // Aggregate in order: 2, 3, 1
+    const order_231 = [_]*const PublicKey{ &pk2, &pk3, &pk1 };
+    const agg_231 = try aggregatePublicKeys(&order_231);
+
+    // All orderings should produce the same aggregated public key
+    try testing.expect(agg_123.isEqual(&agg_312));
+    try testing.expect(agg_123.isEqual(&agg_231));
+    try testing.expect(agg_312.isEqual(&agg_231));
+}
+```

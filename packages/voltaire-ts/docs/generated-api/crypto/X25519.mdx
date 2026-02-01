@@ -1,0 +1,1469 @@
+---
+title: "crypto/X25519"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/X25519
+
+# crypto/X25519
+
+## Classes
+
+### InvalidPublicKeyError
+
+Defined in: [src/crypto/X25519/errors.js:87](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L87)
+
+Error thrown when public key is invalid
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidPublicKeyError } from './crypto/X25519/index.js';
+throw new InvalidPublicKeyError('Invalid public key', {
+  code: 'X25519_INVALID_PUBLIC_KEY_LENGTH',
+  context: { length: 16, expected: 32 },
+  docsPath: '/crypto/x25519/scalarmult#error-handling'
+});
+```
+
+#### Extends
+
+- [`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPublicKeyError**(`message`, `options?`): [`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+Defined in: [src/crypto/X25519/errors.js:92](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L92)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+###### Overrides
+
+[`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror).[`constructor`](../index/index.mdx#constructor-10)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror).[`cause`](../index/index.mdx#cause-10)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror).[`code`](../index/index.mdx#code-10)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror).[`context`](../index/index.mdx#context-10)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror).[`docsPath`](../index/index.mdx#docspath-10)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/X25519/errors.js:99](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L99)
+
+###### Inherited from
+
+`BaseInvalidPublicKeyError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror).[`getErrorChain`](../index/index.mdx#geterrorchain-20)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidPublicKeyError`](../index/index.mdx#invalidpublickeyerror).[`toJSON`](../index/index.mdx#tojson-20)
+
+***
+
+### InvalidSecretKeyError
+
+Defined in: [src/crypto/X25519/errors.js:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L55)
+
+Error thrown when secret key is invalid
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidSecretKeyError } from './crypto/X25519/index.js';
+throw new InvalidSecretKeyError('Invalid secret key', {
+  code: 'X25519_INVALID_SECRET_KEY_LENGTH',
+  context: { length: 16, expected: 32 },
+  docsPath: '/crypto/x25519/scalarmult#error-handling'
+});
+```
+
+#### Extends
+
+- [`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSecretKeyError**(`message`, `options?`): [`InvalidSecretKeyError`](#invalidsecretkeyerror)
+
+Defined in: [src/crypto/X25519/errors.js:60](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L60)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidSecretKeyError`](#invalidsecretkeyerror)
+
+###### Overrides
+
+[`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror).[`constructor`](../index/index.mdx#constructor-9)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror).[`cause`](../index/index.mdx#cause-9)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror).[`code`](../index/index.mdx#code-9)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror).[`context`](../index/index.mdx#context-9)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror).[`docsPath`](../index/index.mdx#docspath-9)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/X25519/errors.js:67](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L67)
+
+###### Inherited from
+
+`InvalidPrivateKeyError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror).[`getErrorChain`](../index/index.mdx#geterrorchain-18)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidPrivateKeyError`](../index/index.mdx#invalidprivatekeyerror).[`toJSON`](../index/index.mdx#tojson-18)
+
+***
+
+### X25519Error
+
+Defined in: [src/crypto/X25519/errors.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L23)
+
+Base error for X25519 operations
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { X25519Error } from './crypto/X25519/index.js';
+throw new X25519Error('Invalid operation', {
+  code: 'X25519_ERROR',
+  context: { operation: 'scalarmult' },
+  docsPath: '/crypto/x25519#error-handling'
+});
+```
+
+#### Extends
+
+- [`CryptoError`](../index/index.mdx#cryptoerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new X25519Error**(`message`, `options?`): [`X25519Error`](#x25519error)
+
+Defined in: [src/crypto/X25519/errors.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L28)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`X25519Error`](#x25519error)
+
+###### Overrides
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`constructor`](../index/index.mdx#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`cause`](../index/index.mdx#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`code`](../index/index.mdx#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`context`](../index/index.mdx#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`docsPath`](../index/index.mdx#docspath-1)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/X25519/errors.js:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/errors.js#L35)
+
+###### Inherited from
+
+`CryptoError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`getErrorChain`](../index/index.mdx#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`toJSON`](../index/index.mdx#tojson-2)
+
+## Type Aliases
+
+### PublicKey
+
+> **PublicKey** = `Uint8Array`
+
+Defined in: [src/crypto/X25519/PublicKey.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/PublicKey.ts#L12)
+
+X25519 public key (32 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import type { PublicKey } from './crypto/X25519/PublicKey.js';
+const publicKey: PublicKey = new Uint8Array(32);
+```
+
+***
+
+### SecretKey
+
+> **SecretKey** = `Uint8Array`
+
+Defined in: [src/crypto/X25519/SecretKey.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/SecretKey.ts#L12)
+
+X25519 secret key (32 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import type { SecretKey } from './crypto/X25519/SecretKey.js';
+const secretKey: SecretKey = new Uint8Array(32);
+```
+
+***
+
+### SharedSecret
+
+> **SharedSecret** = `Uint8Array`
+
+Defined in: [src/crypto/X25519/SharedSecret.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/SharedSecret.ts#L12)
+
+Shared secret from key exchange (32 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import type { SharedSecret } from './crypto/X25519/SharedSecret.js';
+const shared: SharedSecret = new Uint8Array(32);
+```
+
+## Variables
+
+### PUBLIC\_KEY\_SIZE
+
+> `const` **PUBLIC\_KEY\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/X25519/constants.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/constants.js#L29)
+
+Public key size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { PUBLIC_KEY_SIZE } from './crypto/X25519/index.js';
+console.log(PUBLIC_KEY_SIZE); // 32
+```
+
+***
+
+### SECRET\_KEY\_SIZE
+
+> `const` **SECRET\_KEY\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/X25519/constants.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/constants.js#L14)
+
+Secret key size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SECRET_KEY_SIZE } from './crypto/X25519/index.js';
+console.log(SECRET_KEY_SIZE); // 32
+```
+
+***
+
+### SHARED\_SECRET\_SIZE
+
+> `const` **SHARED\_SECRET\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/X25519/constants.js:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/constants.js#L44)
+
+Shared secret size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { SHARED_SECRET_SIZE } from './crypto/X25519/index.js';
+console.log(SHARED_SECRET_SIZE); // 32
+```
+
+***
+
+### X25519
+
+> `const` **X25519**: `object`
+
+Defined in: [src/crypto/X25519/X25519.js:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/X25519.js#L56)
+
+X25519 Elliptic Curve Diffie-Hellman
+
+Curve25519 key exchange algorithm for secure shared secret generation.
+Fast, simple, and designed for ECDH key agreement.
+Used in modern protocols like TLS 1.3, WireGuard, Signal, and SSH.
+
+#### Type Declaration
+
+##### derivePublicKey()
+
+> **derivePublicKey**: (`secretKey`) => [`PublicKey`](#publickey)
+
+Derive public key from secret key
+
+###### Parameters
+
+###### secretKey
+
+[`SecretKey`](#secretkey)
+
+32-byte secret key
+
+###### Returns
+
+[`PublicKey`](#publickey)
+
+32-byte public key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If secret key is invalid
+
+###### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const secretKey = crypto.getRandomValues(new Uint8Array(32));
+const publicKey = X25519.derivePublicKey(secretKey);
+console.log(publicKey.length); // 32
+```
+
+##### generateKeypair()
+
+> **generateKeypair**: () => `object`
+
+Generate random keypair
+
+Uses crypto.getRandomValues for secure random generation
+
+###### Returns
+
+`object`
+
+Object with secretKey and publicKey
+
+###### publicKey
+
+> **publicKey**: [`PublicKey`](#publickey)
+
+###### secretKey
+
+> **secretKey**: [`SecretKey`](#secretkey)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const keypair = X25519.generateKeypair();
+console.log(keypair.secretKey.length); // 32
+console.log(keypair.publicKey.length); // 32
+```
+
+##### generateSecretKey()
+
+> **generateSecretKey**: () => [`SecretKey`](#secretkey)
+
+Generate random secret key
+
+Uses crypto.getRandomValues for secure random generation
+
+###### Returns
+
+[`SecretKey`](#secretkey)
+
+32-byte random secret key
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const secretKey = X25519.generateSecretKey();
+const publicKey = X25519.derivePublicKey(secretKey);
+console.log(secretKey.length); // 32
+```
+
+##### keypairFromSeed()
+
+> **keypairFromSeed**: (`seed`) => `object`
+
+Generate X25519 keypair from seed
+
+###### Parameters
+
+###### seed
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte seed for deterministic generation
+
+###### Returns
+
+`object`
+
+Object with secretKey and publicKey
+
+###### publicKey
+
+> **publicKey**: [`PublicKey`](#publickey)
+
+###### secretKey
+
+> **secretKey**: [`SecretKey`](#secretkey)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If seed length is invalid
+
+###### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const seed = crypto.getRandomValues(new Uint8Array(32));
+const keypair = X25519.keypairFromSeed(seed);
+console.log(keypair.secretKey.length); // 32
+console.log(keypair.publicKey.length); // 32
+```
+
+##### PUBLIC\_KEY\_SIZE
+
+> **PUBLIC\_KEY\_SIZE**: `32`
+
+Public key size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { PUBLIC_KEY_SIZE } from './crypto/X25519/index.js';
+console.log(PUBLIC_KEY_SIZE); // 32
+```
+
+##### scalarmult()
+
+> **scalarmult**: (`secretKey`, `publicKey`) => [`SharedSecret`](#sharedsecret)
+
+Perform X25519 scalar multiplication (ECDH)
+
+Computes shared secret from your secret key and their public key.
+
+###### Parameters
+
+###### secretKey
+
+[`SecretKey`](#secretkey)
+
+Your 32-byte secret key
+
+###### publicKey
+
+[`PublicKey`](#publickey)
+
+Their 32-byte public key
+
+###### Returns
+
+[`SharedSecret`](#sharedsecret)
+
+32-byte shared secret
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If secret key is invalid
+
+###### Throws
+
+If public key is invalid
+
+###### Throws
+
+If scalar multiplication fails
+
+###### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const mySecret = crypto.getRandomValues(new Uint8Array(32));
+const theirPublic = X25519.derivePublicKey(theirSecret);
+const shared = X25519.scalarmult(mySecret, theirPublic);
+console.log(shared.length); // 32
+```
+
+##### SECRET\_KEY\_SIZE
+
+> **SECRET\_KEY\_SIZE**: `32`
+
+Secret key size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SECRET_KEY_SIZE } from './crypto/X25519/index.js';
+console.log(SECRET_KEY_SIZE); // 32
+```
+
+##### SHARED\_SECRET\_SIZE
+
+> **SHARED\_SECRET\_SIZE**: `32`
+
+Shared secret size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { SHARED_SECRET_SIZE } from './crypto/X25519/index.js';
+console.log(SHARED_SECRET_SIZE); // 32
+```
+
+##### validatePublicKey()
+
+> **validatePublicKey**: (`publicKey`) => `boolean`
+
+Validate a public key
+
+Checks if the public key has correct length
+
+###### Parameters
+
+###### publicKey
+
+[`PublicKey`](#publickey)
+
+Public key to validate
+
+###### Returns
+
+`boolean`
+
+True if valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const publicKey = new Uint8Array(32);
+const valid = X25519.validatePublicKey(publicKey);
+```
+
+##### validateSecretKey()
+
+> **validateSecretKey**: (`secretKey`) => `boolean`
+
+Validate a secret key
+
+Checks if the secret key has correct length and can derive a public key
+
+###### Parameters
+
+###### secretKey
+
+[`SecretKey`](#secretkey)
+
+Secret key to validate
+
+###### Returns
+
+`boolean`
+
+True if valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const secretKey = new Uint8Array(32);
+const valid = X25519.validateSecretKey(secretKey);
+```
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+
+// Generate two keypairs
+const seed1 = crypto.getRandomValues(new Uint8Array(32));
+const seed2 = crypto.getRandomValues(new Uint8Array(32));
+const keypair1 = X25519.keypairFromSeed(seed1);
+const keypair2 = X25519.keypairFromSeed(seed2);
+
+// Perform key exchange
+const shared1 = X25519.scalarmult(keypair1.secretKey, keypair2.publicKey);
+const shared2 = X25519.scalarmult(keypair2.secretKey, keypair1.publicKey);
+// shared1 === shared2 (same shared secret from both sides)
+```
+
+## Functions
+
+### derivePublicKey()
+
+> **derivePublicKey**(`secretKey`): [`PublicKey`](#publickey)
+
+Defined in: [src/crypto/X25519/derivePublicKey.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/derivePublicKey.js#L21)
+
+Derive public key from secret key
+
+#### Parameters
+
+##### secretKey
+
+[`SecretKey`](#secretkey)
+
+32-byte secret key
+
+#### Returns
+
+[`PublicKey`](#publickey)
+
+32-byte public key
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If secret key is invalid
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const secretKey = crypto.getRandomValues(new Uint8Array(32));
+const publicKey = X25519.derivePublicKey(secretKey);
+console.log(publicKey.length); // 32
+```
+
+***
+
+### generateKeypair()
+
+> **generateKeypair**(): `object`
+
+Defined in: [src/crypto/X25519/generateKeypair.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/generateKeypair.js#L21)
+
+Generate random keypair
+
+Uses crypto.getRandomValues for secure random generation
+
+#### Returns
+
+`object`
+
+Object with secretKey and publicKey
+
+##### publicKey
+
+> **publicKey**: [`PublicKey`](#publickey)
+
+##### secretKey
+
+> **secretKey**: [`SecretKey`](#secretkey)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const keypair = X25519.generateKeypair();
+console.log(keypair.secretKey.length); // 32
+console.log(keypair.publicKey.length); // 32
+```
+
+***
+
+### generateSecretKey()
+
+> **generateSecretKey**(): [`SecretKey`](#secretkey)
+
+Defined in: [src/crypto/X25519/generateSecretKey.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/generateSecretKey.js#L20)
+
+Generate random secret key
+
+Uses crypto.getRandomValues for secure random generation
+
+#### Returns
+
+[`SecretKey`](#secretkey)
+
+32-byte random secret key
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const secretKey = X25519.generateSecretKey();
+const publicKey = X25519.derivePublicKey(secretKey);
+console.log(secretKey.length); // 32
+```
+
+***
+
+### keypairFromSeed()
+
+> **keypairFromSeed**(`seed`): `object`
+
+Defined in: [src/crypto/X25519/keypairFromSeed.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/keypairFromSeed.js#L22)
+
+Generate X25519 keypair from seed
+
+#### Parameters
+
+##### seed
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte seed for deterministic generation
+
+#### Returns
+
+`object`
+
+Object with secretKey and publicKey
+
+##### publicKey
+
+> **publicKey**: [`PublicKey`](#publickey)
+
+##### secretKey
+
+> **secretKey**: [`SecretKey`](#secretkey)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If seed length is invalid
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const seed = crypto.getRandomValues(new Uint8Array(32));
+const keypair = X25519.keypairFromSeed(seed);
+console.log(keypair.secretKey.length); // 32
+console.log(keypair.publicKey.length); // 32
+```
+
+***
+
+### scalarmult()
+
+> **scalarmult**(`secretKey`, `publicKey`): [`SharedSecret`](#sharedsecret)
+
+Defined in: [src/crypto/X25519/scalarmult.js:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/scalarmult.js#L31)
+
+Perform X25519 scalar multiplication (ECDH)
+
+Computes shared secret from your secret key and their public key.
+
+#### Parameters
+
+##### secretKey
+
+[`SecretKey`](#secretkey)
+
+Your 32-byte secret key
+
+##### publicKey
+
+[`PublicKey`](#publickey)
+
+Their 32-byte public key
+
+#### Returns
+
+[`SharedSecret`](#sharedsecret)
+
+32-byte shared secret
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If secret key is invalid
+
+#### Throws
+
+If public key is invalid
+
+#### Throws
+
+If scalar multiplication fails
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const mySecret = crypto.getRandomValues(new Uint8Array(32));
+const theirPublic = X25519.derivePublicKey(theirSecret);
+const shared = X25519.scalarmult(mySecret, theirPublic);
+console.log(shared.length); // 32
+```
+
+***
+
+### validatePublicKey()
+
+> **validatePublicKey**(`publicKey`): `boolean`
+
+Defined in: [src/crypto/X25519/validatePublicKey.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/validatePublicKey.js#L20)
+
+Validate a public key
+
+Checks if the public key has correct length
+
+#### Parameters
+
+##### publicKey
+
+[`PublicKey`](#publickey)
+
+Public key to validate
+
+#### Returns
+
+`boolean`
+
+True if valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const publicKey = new Uint8Array(32);
+const valid = X25519.validatePublicKey(publicKey);
+```
+
+***
+
+### validateSecretKey()
+
+> **validateSecretKey**(`secretKey`): `boolean`
+
+Defined in: [src/crypto/X25519/validateSecretKey.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/X25519/validateSecretKey.js#L21)
+
+Validate a secret key
+
+Checks if the secret key has correct length and can derive a public key
+
+#### Parameters
+
+##### secretKey
+
+[`SecretKey`](#secretkey)
+
+Secret key to validate
+
+#### Returns
+
+`boolean`
+
+True if valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { X25519 } from './crypto/X25519/index.js';
+const secretKey = new Uint8Array(32);
+const valid = X25519.validateSecretKey(secretKey);
+```

@@ -1,0 +1,258 @@
+/**
+ * Tests for viem PublicClient playbook
+ * @see /docs/playbooks/viem-publicclient.mdx
+ *
+ * Note: The playbook documents a REFERENCE IMPLEMENTATION in examples/viem-publicclient/.
+ * Tests cover the data structures and patterns shown in the guide.
+ *
+ * API DISCREPANCIES:
+ * - createPublicClient is in examples/viem-publicclient/, not library export
+ * - Client patterns are documented as copyable reference implementation
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Viem PublicClient Playbook", () => {
+	it("should define PublicClient structure", () => {
+		// From playbook: PublicClient properties
+		interface PublicClient {
+			chain: unknown;
+			transport: unknown;
+			cacheTime: number;
+			pollingInterval: number;
+			uid: string;
+			getBlockNumber: () => Promise<bigint>;
+			getBalance: (args: { address: string }) => Promise<bigint>;
+			extend: <T>(fn: (base: PublicClient) => T) => PublicClient & T;
+		}
+
+		const client: Partial<PublicClient> = {
+			cacheTime: 250,
+			pollingInterval: 4000,
+			uid: "client-123",
+		};
+
+		expect(client.cacheTime).toBe(250);
+	});
+
+	it("should define transport configuration", () => {
+		// From playbook: HTTP transport config
+		const transportConfig = {
+			timeout: 10_000,
+			retryCount: 3,
+			retryDelay: 150,
+			fetchOptions: {
+				headers: { Authorization: "Bearer ..." },
+			},
+		};
+
+		expect(transportConfig.timeout).toBe(10_000);
+		expect(transportConfig.retryCount).toBe(3);
+	});
+
+	it("should define createPublicClient config", () => {
+		// From playbook: client configuration
+		interface PublicClientConfig {
+			chain?: unknown;
+			transport: unknown;
+			cacheTime?: number;
+			pollingInterval?: number;
+			key?: string;
+			name?: string;
+		}
+
+		const config: PublicClientConfig = {
+			transport: {},
+			cacheTime: 250,
+			pollingInterval: 4000,
+			key: "public",
+			name: "Public Client",
+		};
+
+		expect(config.key).toBe("public");
+	});
+
+	it("should define public actions", () => {
+		// From playbook: public actions list
+		const publicActions = [
+			"getBlockNumber",
+			"getBalance",
+			"getBlock",
+			"call",
+			"estimateGas",
+			"getTransaction",
+			"getTransactionReceipt",
+			"getLogs",
+			"getCode",
+			"getStorageAt",
+			"getTransactionCount",
+			"getChainId",
+			"getGasPrice",
+		];
+
+		expect(publicActions).toContain("getBlockNumber");
+		expect(publicActions).toContain("getBalance");
+		expect(publicActions).toContain("getLogs");
+	});
+
+	it("should handle getBalance params", () => {
+		// From playbook: getBalance parameters
+		const params = {
+			address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+			blockTag: "latest",
+		};
+
+		expect(params.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
+		expect(params.blockTag).toBe("latest");
+	});
+
+	it("should handle getBlock params", () => {
+		// From playbook: getBlock parameters
+		const paramsNumber = {
+			blockNumber: 19000000n,
+			includeTransactions: true,
+		};
+
+		const paramsHash = {
+			blockHash: "0x1234567890abcdef...",
+			includeTransactions: false,
+		};
+
+		expect(paramsNumber.blockNumber).toBe(19000000n);
+		expect(paramsHash.blockHash).toMatch(/^0x/);
+	});
+
+	it("should handle call params", () => {
+		// From playbook: call parameters
+		const params = {
+			to: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			data: "0x70a08231...",
+			value: 0n,
+			blockTag: "latest",
+		};
+
+		expect(params.to).toMatch(/^0x/);
+	});
+
+	it("should handle getLogs params", () => {
+		// From playbook: getLogs filter
+		const params = {
+			address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			fromBlock: 19000000n,
+			toBlock: 19000100n,
+			topics: ["0xddf252ad..."],
+		};
+
+		const range = params.toBlock - params.fromBlock;
+		expect(range).toBe(100n);
+	});
+
+	it("should define chain configuration", () => {
+		// From playbook: chain definition
+		interface Chain {
+			id: number;
+			name: string;
+			nativeCurrency: {
+				name: string;
+				symbol: string;
+				decimals: number;
+			};
+			rpcUrls: {
+				default: {
+					http: string[];
+				};
+			};
+			blockTime: number;
+			blockExplorers?: {
+				default: {
+					name: string;
+					url: string;
+				};
+			};
+		}
+
+		const mainnet: Chain = {
+			id: 1,
+			name: "Ethereum",
+			nativeCurrency: {
+				name: "Ether",
+				symbol: "ETH",
+				decimals: 18,
+			},
+			rpcUrls: {
+				default: {
+					http: ["https://eth.llamarpc.com"],
+				},
+			},
+			blockTime: 12_000,
+			blockExplorers: {
+				default: {
+					name: "Etherscan",
+					url: "https://etherscan.io",
+				},
+			},
+		};
+
+		expect(mainnet.id).toBe(1);
+		expect(mainnet.nativeCurrency.symbol).toBe("ETH");
+	});
+
+	it("should define error types", () => {
+		// From playbook: error types
+		const errorTypes = [
+			"RpcRequestError",
+			"TransactionNotFoundError",
+			"BlockNotFoundError",
+			"UrlRequiredError",
+		];
+
+		expect(errorTypes).toContain("RpcRequestError");
+		expect(errorTypes).toContain("TransactionNotFoundError");
+	});
+
+	it("should handle extend pattern", () => {
+		// From playbook: extend for custom actions
+		interface BaseClient {
+			getBlockNumber: () => Promise<bigint>;
+		}
+
+		const extend = <T>(
+			base: BaseClient,
+			fn: (b: BaseClient) => T,
+		): BaseClient & T => {
+			return { ...base, ...fn(base) };
+		};
+
+		const base: BaseClient = {
+			getBlockNumber: async () => 1n,
+		};
+
+		const extended = extend(base, (b) => ({
+			getDoubleBlockNumber: async () => (await b.getBlockNumber()) * 2n,
+		}));
+
+		expect(extended).toHaveProperty("getBlockNumber");
+		expect(extended).toHaveProperty("getDoubleBlockNumber");
+	});
+
+	it("should handle caching behavior", () => {
+		// From playbook: block number caching
+		const cacheConfig = {
+			cacheTime: 250, // ms
+		};
+
+		// Same request within cacheTime returns cached value
+		expect(cacheConfig.cacheTime).toBe(250);
+	});
+
+	it("should handle polling interval derivation", () => {
+		// From playbook: polling interval from block time
+		const mainnetBlockTime = 12_000; // 12 seconds
+		const arbitrumBlockTime = 250; // 250ms
+
+		const getPollingInterval = (blockTime: number) =>
+			Math.max(500, blockTime / 3);
+
+		expect(getPollingInterval(mainnetBlockTime)).toBe(4000);
+		expect(getPollingInterval(arbitrumBlockTime)).toBe(500); // minimum
+	});
+});

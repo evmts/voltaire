@@ -1,0 +1,39 @@
+---
+title: Paymaster
+description: ERC-4337 paymaster for gas sponsorship
+---
+
+```typescript
+import * as Paymaster from 'voltaire-effect/primitives/Paymaster'
+import { Effect } from 'effect'
+
+// Create with time validity
+const paymaster = await Effect.runPromise(Paymaster.from({
+  address: '0x1234567890123456789012345678901234567890',
+  data: '0xabcd',
+  validUntil: 1700000000n,
+  validAfter: 1699000000n
+}))
+
+// Check validity at timestamp
+const valid = await Effect.runPromise(
+  Paymaster.isValid(paymaster, BigInt(Math.floor(Date.now() / 1000)))
+)
+
+// Encode for UserOperation
+const paymasterAndData = await Effect.runPromise(
+  Paymaster.toPaymasterAndData(paymaster)
+) // Uint8Array: [20 bytes address][data bytes]
+
+// Check for no paymaster
+const isZero = await Effect.runPromise(Paymaster.isZeroAddress(paymaster))
+```
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| address | Address | Paymaster contract |
+| data | Uint8Array | Paymaster-specific data |
+| validUntil | bigint? | Expiry timestamp |
+| validAfter | bigint? | Start timestamp |

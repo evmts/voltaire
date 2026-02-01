@@ -1,0 +1,32 @@
+---
+title: NetworkId
+description: Ethereum network identifier
+---
+
+Non-negative integer identifying Ethereum networks. Used for replay protection.
+
+```typescript
+import * as NetworkId from 'voltaire-effect/NetworkId'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const mainnet = Schema.decodeSync(NetworkId.Number)(1)
+
+// Effect
+const program = NetworkId.from(1)
+// Effect.Effect<NetworkIdType, InvalidNetworkIdError>
+```
+
+## Constants
+
+```typescript
+import { MAINNET, SEPOLIA, HOLESKY, GOERLI } from 'voltaire-effect/NetworkId'
+
+MAINNET  // 1
+SEPOLIA  // 11155111
+HOLESKY  // 17000
+GOERLI   // 5 (deprecated)
+```
+
+Fails on negative values or non-integers.

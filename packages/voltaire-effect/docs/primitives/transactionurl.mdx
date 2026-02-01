@@ -1,0 +1,36 @@
+---
+title: TransactionUrl
+description: EIP-681 transaction URLs for payment links and QR codes
+---
+
+Encodes transaction parameters as `ethereum:` URLs.
+
+## Schema
+
+```typescript
+import * as TransactionUrl from 'voltaire-effect/TransactionUrl'
+import * as Schema from 'effect/Schema'
+
+const url = Schema.decodeSync(TransactionUrl.String)(
+  'ethereum:0x1234567890abcdef1234567890abcdef12345678?value=1e18'
+)
+```
+
+## Effect
+
+```typescript
+import * as TransactionUrl from 'voltaire-effect/TransactionUrl'
+import { Effect } from 'effect'
+
+const program = TransactionUrl.from('ethereum:0x123...?value=1e18')
+// Effect.Effect<TransactionUrlType, TransactionUrlError>
+
+const url = await Effect.runPromise(program)
+const { address, value, chainId } = TransactionUrl.parse(url)
+
+const formatted = TransactionUrl.format({
+  address: '0x1234567890abcdef1234567890abcdef12345678',
+  value: '1000000000000000000',
+  chainId: 1
+})
+```

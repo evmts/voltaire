@@ -1,0 +1,316 @@
+---
+title: '[TS/JS] src/primitives/Abi/error/Error.test.ts'
+source: 'src/primitives/Abi/error/Error.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Abi/error/Error.test.ts
+
+```typescript
+/**
+ * Unit tests for Error namespace
+ */
+
+import { keccak_256 as keccak256 } from "@noble/hashes/sha3.js";
+import { describe, expect, it } from "vitest";
+import { decodeParams } from "./decodeParams.js";
+import { encodeParams } from "./encodeParams.js";
+import { GetSelector } from "./getSelector.js";
+import { getSignature } from "./getSignature.js";
+
+// Create keccak256String function for testing
+const keccak256String = (str: string): Uint8Array => {
+	const encoder = new TextEncoder();
+	return keccak256(encoder.encode(str));
+};
+
+// Create Error namespace locally to avoid circular dependency
+const getSelector = GetSelector({ keccak256String });
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named Error for ABI error namespace
+const Error = {
+	getSignature,
+	getSelector,
+	encodeParams,
+	decodeParams,
+	GetSelector,
+};
+
+describe("Error namespace", () => {
+	it("has getSignature method", () => {
+		expect(Error.getSignature).toBeDefined();
+		expect(typeof Error.getSignature).toBe("function");
+	});
+
+	it("has getSelector method", () => {
+		expect(Error.getSelector).toBeDefined();
+		expect(typeof Error.getSelector).toBe("function");
+	});
+
+	it("has encodeParams method", () => {
+		expect(Error.encodeParams).toBeDefined();
+		expect(typeof Error.encodeParams).toBe("function");
+	});
+
+	it("has decodeParams method", () => {
+		expect(Error.decodeParams).toBeDefined();
+		expect(typeof Error.decodeParams).toBe("function");
+	});
+
+	it("has GetSelector factory", () => {
+		expect(Error.GetSelector).toBeDefined();
+		expect(typeof Error.GetSelector).toBe("function");
+	});
+
+	it("getSignature returns correct signature", () => {
+		const error = {
+			type: "error",
+			name: "TestError",
+			inputs: [{ type: "uint256", name: "value" }],
+		} as const;
+
+		const signature = Error.getSignature(error);
+		expect(signature).toBe("TestError(uint256)");
+	});
+
+	it("getSelector returns 4-byte selector", () => {
+		const error = {
+			type: "error",
+			name: "TestError",
+			inputs: [],
+		} as const;
+
+		const selector = Error.getSelector(error);
+		expect(selector).toBeInstanceOf(Uint8Array);
+		expect(selector.length).toBe(4);
+	});
+
+	it("encodeParams encodes error parameters", () => {
+		const error = {
+			type: "error",
+			name: "TestError",
+			inputs: [{ type: "uint256", name: "value" }],
+		} as const;
+
+		const encoded = Error.encodeParams(error, [100n]);
+		expect(encoded).toBeInstanceOf(Uint8Array);
+		expect(encoded.length).toBe(36);
+	});
+
+	it("decodeParams decodes error parameters", () => {
+		const error = {
+			type: "error",
+			name: "TestError",
+			inputs: [{ type: "uint256", name: "value" }],
+		} as const;
+
+		const encoded = Error.encodeParams(error, [100n]);
+		const decoded = Error.decodeParams(error, encoded);
+		expect(decoded).toEqual([100n]);
+	});
+
+	it("round-trips encode/decode", () => {
+		const error = {
+			type: "error",
+			name: "RoundTrip",
+			inputs: [
+				{ type: "address", name: "addr" },
+				{ type: "uint256", name: "amount" },
+			],
+		} as const;
+
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const args = ["0x742d35Cc6634C0532925a3b844Bc9e7595f251e3", 1000n] as any;
+		const encoded = Error.encodeParams(error, args);
+		const decoded = Error.decodeParams(error, encoded);
+
+		// Address checksum not preserved through ABI encode/decode (compared lowercase)
+		expect(decoded[0]?.toLowerCase()).toBe(args[0].toLowerCase());
+		expect(decoded[1]).toBe(args[1]);
+	});
+
+	it("works with error with no parameters", () => {
+		const error = {
+			type: "error",
+			name: "Unauthorized",
+			inputs: [],
+		} as const;
+
+		const signature = Error.getSignature(error);
+		const selector = Error.getSelector(error);
+		const encoded = Error.encodeParams(error, []);
+		const decoded = Error.decodeParams(error, encoded);
+
+		expect(signature).toBe("Unauthorized()");
+		expect(selector.length).toBe(4);
+		expect(encoded.length).toBe(4);
+		expect(decoded).toEqual([]);
+	});
+
+	it("works with error with multiple parameters", () => {
+		const error = {
+			type: "error",
+			name: "TransferFailed",
+			inputs: [
+				{ type: "address", name: "from" },
+				{ type: "address", name: "to" },
+				{ type: "uint256", name: "amount" },
+			],
+		} as const;
+
+		const signature = Error.getSignature(error);
+		expect(signature).toBe("TransferFailed(address,address,uint256)");
+	});
+
+	it("works with tuple parameter", () => {
+		const error = {
+			type: "error",
+			name: "TupleError",
+			inputs: [
+				{
+					type: "tuple",
+					name: "data",
+					components: [
+						{ type: "address", name: "owner" },
+						{ type: "uint256", name: "fee" },
+					],
+				},
+			],
+		} as const;
+
+		const signature = Error.getSignature(error);
+		expect(signature).toBe("TupleError((address,uint256))");
+	});
+
+	it("works with array parameter", () => {
+		const error = {
+			type: "error",
+			name: "ArrayError",
+			inputs: [{ type: "uint256[]", name: "values" }],
+		} as const;
+
+		const args = [[1n, 2n, 3n]];
+		const encoded = Error.encodeParams(error, args);
+		const decoded = Error.decodeParams(error, encoded);
+
+		expect(decoded).toEqual(args);
+	});
+
+	it("works with string parameter", () => {
+		const error = {
+			type: "error",
+			name: "StringError",
+			inputs: [{ type: "string", name: "message" }],
+		} as const;
+
+		const args = ["Error message"];
+		const encoded = Error.encodeParams(error, args);
+		const decoded = Error.decodeParams(error, encoded);
+
+		expect(decoded).toEqual(args);
+	});
+
+	it("works with bytes parameter", () => {
+		const error = {
+			type: "error",
+			name: "BytesError",
+			inputs: [{ type: "bytes", name: "data" }],
+		} as const;
+
+		const args = ["0x123456"];
+		const encoded = Error.encodeParams(error, args);
+		const decoded = Error.decodeParams(error, encoded);
+
+		expect(decoded).toHaveLength(1);
+	});
+
+	it("works with bool parameter", () => {
+		const error = {
+			type: "error",
+			name: "BoolError",
+			inputs: [{ type: "bool", name: "flag" }],
+		} as const;
+
+		const args = [true];
+		const encoded = Error.encodeParams(error, args);
+		const decoded = Error.decodeParams(error, encoded);
+
+		expect(decoded).toEqual(args);
+	});
+
+	it("handles ERC20InsufficientBalance error", () => {
+		const error = {
+			type: "error",
+			name: "ERC20InsufficientBalance",
+			inputs: [
+				{ type: "address", name: "sender" },
+				{ type: "uint256", name: "balance" },
+				{ type: "uint256", name: "needed" },
+			],
+		} as const;
+
+		const signature = Error.getSignature(error);
+		expect(signature).toBe("ERC20InsufficientBalance(address,uint256,uint256)");
+
+		const selector = Error.getSelector(error);
+		expect(selector[0]).toBe(0xe4);
+		expect(selector[1]).toBe(0x50);
+		expect(selector[2]).toBe(0xd3);
+		expect(selector[3]).toBe(0x8c);
+	});
+
+	it("handles Panic error", () => {
+		const error = {
+			type: "error",
+			name: "Panic",
+			inputs: [{ type: "uint256", name: "code" }],
+		} as const;
+
+		const signature = Error.getSignature(error);
+		expect(signature).toBe("Panic(uint256)");
+
+		const selector = Error.getSelector(error);
+		expect(selector[0]).toBe(0x4e);
+		expect(selector[1]).toBe(0x48);
+		expect(selector[2]).toBe(0x7b);
+		expect(selector[3]).toBe(0x71);
+	});
+
+	it("handles Error(string) error", () => {
+		const error = {
+			type: "error",
+			name: "Error",
+			inputs: [{ type: "string", name: "message" }],
+		} as const;
+
+		const signature = Error.getSignature(error);
+		expect(signature).toBe("Error(string)");
+
+		const selector = Error.getSelector(error);
+		expect(selector[0]).toBe(0x08);
+		expect(selector[1]).toBe(0xc3);
+		expect(selector[2]).toBe(0x79);
+		expect(selector[3]).toBe(0xa0);
+	});
+
+	it("GetSelector factory works with custom keccak implementation", () => {
+		const mockKeccak = (str: string) => {
+			const result = new Uint8Array(32);
+			result[0] = str.length;
+			return result;
+		};
+
+		const customGetSelector = Error.GetSelector({
+			keccak256String: mockKeccak,
+		});
+		const error = {
+			type: "error",
+			name: "Test",
+			inputs: [],
+		} as const;
+
+		const selector = customGetSelector(error);
+		expect(selector).toBeInstanceOf(Uint8Array);
+		expect(selector.length).toBe(4);
+	});
+});
+
+```

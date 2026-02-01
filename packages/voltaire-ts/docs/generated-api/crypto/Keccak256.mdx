@@ -1,0 +1,1042 @@
+---
+title: "crypto/Keccak256"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/Keccak256
+
+# crypto/Keccak256
+
+## Variables
+
+### DIGEST\_SIZE
+
+> `const` **DIGEST\_SIZE**: `number` = `32`
+
+Defined in: [src/crypto/Keccak256/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/constants.js#L13)
+
+Digest size in bytes (32 bytes = 256 bits)
+
+#### Since
+
+0.0.0
+
+***
+
+### ~~Keccak256~~
+
+> `const` **Keccak256**: (`input`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash) & `object` = `Keccak256Hash`
+
+Defined in: [src/crypto/Keccak256/Keccak256.js:82](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/Keccak256.js#L82)
+
+#### Type Declaration
+
+##### ~~contractAddress()~~
+
+> **contractAddress**: (`sender`, `nonce`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Compute contract address from deployer and nonce
+
+Uses CREATE formula: keccak256(rlp([sender, nonce]))[12:]
+
+###### Parameters
+
+###### sender
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Deployer address (20 bytes)
+
+###### nonce
+
+`bigint`
+
+Transaction nonce
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Contract address (20 bytes)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If sender is not 20 bytes
+
+###### Example
+
+```javascript
+import * as Keccak256 from './crypto/Keccak256/index.js';
+const sender = new Uint8Array(20);
+const address = Keccak256.contractAddress(sender, 0n);
+```
+
+##### ~~create2Address()~~
+
+> **create2Address**: (`sender`, `salt`, `initCodeHash`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Compute CREATE2 address
+
+Uses CREATE2 formula: keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]
+
+###### Parameters
+
+###### sender
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Deployer address (20 bytes)
+
+###### salt
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte salt
+
+###### initCodeHash
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Hash of initialization code
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Contract address (20 bytes)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If sender is not 20 bytes
+
+###### Throws
+
+If salt is not 32 bytes
+
+###### Throws
+
+If initCodeHash is not 32 bytes
+
+###### Example
+
+```javascript
+import * as Keccak256 from './crypto/Keccak256/index.js';
+const sender = new Uint8Array(20);
+const salt = new Uint8Array(32);
+const initCodeHash = new Uint8Array(32);
+const address = Keccak256.create2Address(sender, salt, initCodeHash);
+```
+
+##### ~~DIGEST\_SIZE~~
+
+> **DIGEST\_SIZE**: `number`
+
+Digest size in bytes (32 bytes = 256 bits)
+
+###### Since
+
+0.0.0
+
+##### ~~from()~~
+
+> **from**: (`input`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Hash input with Keccak-256 (constructor pattern)
+
+Auto-detects input type and hashes accordingly:
+- Uint8Array: hash directly
+- string starting with 0x: parse as hex
+- string: UTF-8 encode then hash
+
+###### Parameters
+
+###### input
+
+Data to hash
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto/keccak256 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If hex string is invalid
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+
+const hash1 = Keccak256Hash.from("0x1234");      // Hex
+const hash2 = Keccak256Hash.from("hello");       // String
+const hash3 = Keccak256Hash.from(uint8array);    // Bytes
+```
+
+##### ~~fromHex()~~
+
+> **fromHex**: (`hex`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash) = `hashHex`
+
+Hash hex string with Keccak-256
+
+###### Parameters
+
+###### hex
+
+`string`
+
+Hex string to hash (with or without 0x prefix)
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If hex string is invalid or has odd length
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.fromHex('0x1234abcd');
+```
+
+##### ~~fromString()~~
+
+> **fromString**: (`str`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash) = `hashString`
+
+Hash string with Keccak-256
+
+String is UTF-8 encoded before hashing.
+
+###### Parameters
+
+###### str
+
+`string`
+
+String to hash
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.fromString('hello');
+```
+
+##### ~~fromTopic()~~
+
+> **fromTopic**: (`signature`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash) = `topic`
+
+Compute event topic (32-byte Keccak-256 hash)
+
+Used for Ethereum event signatures.
+
+###### Parameters
+
+###### signature
+
+`string`
+
+Event signature string
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte topic
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const topic = Keccak256Hash.fromTopic('Transfer(address,address,uint256)');
+```
+
+##### ~~hash()~~
+
+> **hash**: (`data`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Hash data with Keccak-256
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to hash
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.from(data);
+```
+
+##### ~~hashHex()~~
+
+> **hashHex**: (`hex`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Hash hex string with Keccak-256
+
+###### Parameters
+
+###### hex
+
+`string`
+
+Hex string to hash (with or without 0x prefix)
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If hex string is invalid or has odd length
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.fromHex('0x1234abcd');
+```
+
+##### ~~hashMultiple()~~
+
+> **hashMultiple**: (`chunks`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Hash multiple data chunks in sequence
+
+Equivalent to hashing the concatenation of all chunks.
+
+###### Parameters
+
+###### chunks
+
+readonly `Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of data chunks to hash
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.from(combined);
+```
+
+##### ~~hashString()~~
+
+> **hashString**: (`str`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Hash string with Keccak-256
+
+String is UTF-8 encoded before hashing.
+
+###### Parameters
+
+###### str
+
+`string`
+
+String to hash
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.fromString('hello');
+```
+
+##### ~~RATE~~
+
+> **RATE**: `number`
+
+Rate in bytes for Keccak256 (136 bytes = 1088 bits)
+
+###### Since
+
+0.0.0
+
+##### ~~selector()~~
+
+> **selector**: (`signature`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Compute function selector (first 4 bytes of Keccak-256 hash)
+
+Used for Ethereum function signatures.
+
+###### Parameters
+
+###### signature
+
+`string`
+
+Function signature string
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+4-byte selector
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Keccak256 from './crypto/Keccak256/index.js';
+const selector = Keccak256.selector('transfer(address,uint256)');
+// Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
+```
+
+##### ~~STATE\_SIZE~~
+
+> **STATE\_SIZE**: `number`
+
+State size (25 u64 words = 1600 bits)
+
+###### Since
+
+0.0.0
+
+##### ~~topic()~~
+
+> **topic**: (`signature`) => [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Compute event topic (32-byte Keccak-256 hash)
+
+Used for Ethereum event signatures.
+
+###### Parameters
+
+###### signature
+
+`string`
+
+Event signature string
+
+###### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte topic
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const topic = Keccak256Hash.fromTopic('Transfer(address,address,uint256)');
+```
+
+#### Deprecated
+
+Use Keccak256Hash instead
+Keccak256 alias maintained for backward compatibility
+
+***
+
+### RATE
+
+> `const` **RATE**: `number` = `136`
+
+Defined in: [src/crypto/Keccak256/constants.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/constants.js#L20)
+
+Rate in bytes for Keccak256 (136 bytes = 1088 bits)
+
+#### Since
+
+0.0.0
+
+***
+
+### STATE\_SIZE
+
+> `const` **STATE\_SIZE**: `number` = `25`
+
+Defined in: [src/crypto/Keccak256/constants.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/constants.js#L27)
+
+State size (25 u64 words = 1600 bits)
+
+#### Since
+
+0.0.0
+
+## Functions
+
+### contractAddress()
+
+> **contractAddress**(`sender`, `nonce`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Keccak256/contractAddress.js:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/contractAddress.js#L40)
+
+Compute contract address from deployer and nonce
+
+Uses CREATE formula: keccak256(rlp([sender, nonce]))[12:]
+
+#### Parameters
+
+##### sender
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Deployer address (20 bytes)
+
+##### nonce
+
+`bigint`
+
+Transaction nonce
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Contract address (20 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If sender is not 20 bytes
+
+#### Example
+
+```javascript
+import * as Keccak256 from './crypto/Keccak256/index.js';
+const sender = new Uint8Array(20);
+const address = Keccak256.contractAddress(sender, 0n);
+```
+
+***
+
+### create2Address()
+
+> **create2Address**(`sender`, `salt`, `initCodeHash`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Keccak256/create2Address.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/create2Address.js#L27)
+
+Compute CREATE2 address
+
+Uses CREATE2 formula: keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]
+
+#### Parameters
+
+##### sender
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Deployer address (20 bytes)
+
+##### salt
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte salt
+
+##### initCodeHash
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Hash of initialization code
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Contract address (20 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If sender is not 20 bytes
+
+#### Throws
+
+If salt is not 32 bytes
+
+#### Throws
+
+If initCodeHash is not 32 bytes
+
+#### Example
+
+```javascript
+import * as Keccak256 from './crypto/Keccak256/index.js';
+const sender = new Uint8Array(20);
+const salt = new Uint8Array(32);
+const initCodeHash = new Uint8Array(32);
+const address = Keccak256.create2Address(sender, salt, initCodeHash);
+```
+
+***
+
+### from()
+
+> **from**(`input`): [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Defined in: [src/crypto/Keccak256/from.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/from.js#L27)
+
+Hash input with Keccak-256 (constructor pattern)
+
+Auto-detects input type and hashes accordingly:
+- Uint8Array: hash directly
+- string starting with 0x: parse as hex
+- string: UTF-8 encode then hash
+
+#### Parameters
+
+##### input
+
+Data to hash
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto/keccak256 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If hex string is invalid
+
+#### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+
+const hash1 = Keccak256Hash.from("0x1234");      // Hex
+const hash2 = Keccak256Hash.from("hello");       // String
+const hash3 = Keccak256Hash.from(uint8array);    // Bytes
+```
+
+***
+
+### hash()
+
+> **hash**(`data`): [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Defined in: [src/crypto/Keccak256/hash.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/hash.js#L17)
+
+Hash data with Keccak-256
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to hash
+
+#### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.from(data);
+```
+
+***
+
+### hashHex()
+
+> **hashHex**(`hex`): [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Defined in: [src/crypto/Keccak256/hashHex.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/hashHex.js#L18)
+
+Hash hex string with Keccak-256
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string to hash (with or without 0x prefix)
+
+#### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If hex string is invalid or has odd length
+
+#### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.fromHex('0x1234abcd');
+```
+
+***
+
+### hashMultiple()
+
+> **hashMultiple**(`chunks`): [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Defined in: [src/crypto/Keccak256/hashMultiple.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/hashMultiple.js#L19)
+
+Hash multiple data chunks in sequence
+
+Equivalent to hashing the concatenation of all chunks.
+
+#### Parameters
+
+##### chunks
+
+readonly `Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of data chunks to hash
+
+#### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.from(combined);
+```
+
+***
+
+### hashString()
+
+> **hashString**(`str`): [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Defined in: [src/crypto/Keccak256/hashString.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/hashString.js#L19)
+
+Hash string with Keccak-256
+
+String is UTF-8 encoded before hashing.
+
+#### Parameters
+
+##### str
+
+`string`
+
+String to hash
+
+#### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte hash
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const hash = Keccak256Hash.fromString('hello');
+```
+
+***
+
+### selector()
+
+> **selector**(`signature`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Keccak256/selector.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/selector.js#L20)
+
+Compute function selector (first 4 bytes of Keccak-256 hash)
+
+Used for Ethereum function signatures.
+
+#### Parameters
+
+##### signature
+
+`string`
+
+Function signature string
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+4-byte selector
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Keccak256 from './crypto/Keccak256/index.js';
+const selector = Keccak256.selector('transfer(address,uint256)');
+// Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
+```
+
+***
+
+### topic()
+
+> **topic**(`signature`): [`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+Defined in: [src/crypto/Keccak256/topic.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/topic.js#L19)
+
+Compute event topic (32-byte Keccak-256 hash)
+
+Used for Ethereum event signatures.
+
+#### Parameters
+
+##### signature
+
+`string`
+
+Event signature string
+
+#### Returns
+
+[`Keccak256Hash`](../index/index.mdx#keccak256hash)
+
+32-byte topic
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { Keccak256Hash } from './crypto/Keccak256/index.js';
+const topic = Keccak256Hash.fromTopic('Transfer(address,address,uint256)');
+```
+
+## References
+
+### Keccak256Hash
+
+Re-exports [Keccak256Hash](../index/index.mdx#keccak256hash)

@@ -1,0 +1,197 @@
+---
+title: Block Methods
+description: Query blocks, receipts, and transaction counts (8 methods)
+---
+
+<Warning>
+TypeScript-first: In Zig, build these JSON-RPC payloads with `std.json` and POST with `std.http.Client`. Quantities are hex strings; parse with `std.fmt.parseInt` after trimming `0x`.
+</Warning>
+
+# Block Methods
+
+8 methods for querying block data, receipts, and transaction counts.
+
+## Overview
+
+Block methods provide access to block headers, full blocks, transaction receipts, and metadata. Use these methods to query blockchain state at specific block heights or hashes.
+
+## Methods
+
+<Accordion title="eth_blockNumber">
+
+Get the most recent block number.
+
+**Returns:** `Quantity`
+
+```zig
+// {"method":"eth_blockNumber","params":[]}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockByNumber">
+
+Get block by number with full transactions or hashes.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query (`'latest'`, `'earliest'`, `'pending'`, or block number) |
+| `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
+
+**Returns:** `Block`
+
+```zig
+// {"method":"eth_getBlockByNumber","params":["latest",true]}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockByHash">
+
+Get block by hash with full transactions or hashes.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+| `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
+
+**Returns:** `Block`
+
+```zig
+// {"method":"eth_getBlockByHash","params":["0xBLOCK_HASH",false]}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockReceipts">
+
+Get all transaction receipts for a block.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `TransactionReceipt[]`
+
+```zig
+// {"method":"eth_getBlockReceipts","params":["latest"]}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockTransactionCountByHash">
+
+Get transaction count in a block by hash.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+
+**Returns:** `Quantity`
+
+```zig
+// {"method":"eth_getBlockTransactionCountByHash","params":["0xBLOCK_HASH"]}
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockTransactionCountByNumber">
+
+Get transaction count in a block by number.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `Quantity`
+
+```zig
+// {"method":"eth_getBlockTransactionCountByNumber","params":["latest"]}
+```
+
+</Accordion>
+
+<Accordion title="eth_getUncleCountByBlockHash">
+
+Get uncle count for a block by hash.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+
+**Returns:** `Quantity`
+
+```zig
+// {"method":"eth_getUncleCountByBlockHash","params":["0xBLOCK_HASH"]}
+```
+
+<Note>
+Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge). This method returns 0 for post-merge blocks.
+</Note>
+
+</Accordion>
+
+<Accordion title="eth_getUncleCountByBlockNumber">
+
+Get uncle count for a block by number.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `Quantity`
+
+```zig
+// {"method":"eth_getUncleCountByBlockNumber","params":["latest"]}
+```
+
+<Note>
+Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge). This method returns 0 for post-merge blocks.
+</Note>
+
+</Accordion>
+
+## Usage Patterns
+
+### Get Latest Block with Transactions
+
+```zig
+// {"method":"eth_getBlockByNumber","params":["latest",true]}
+// Then: {"method":"eth_getBlockReceipts","params":["latest"]}
+// Sum receipt.gasUsed (hex) after parsing
+```
+
+### Query Historical Block
+
+```zig
+// {"method":"eth_getBlockByNumber","params":["0x112A880",false]}
+// {"method":"eth_getBlockTransactionCountByNumber","params":["0x112A880"]}
+```
+
+### Check Block Finality
+
+```zig
+// Parallel requests to eth_getBlockByNumber for 'latest' and 'finalized'
+// Compute difference between hex numbers after parsing
+```
+
+## Related
+
+- [eth Methods](/jsonrpc-provider/eth-methods/index) - All eth namespace methods
+- [Transaction Methods](/jsonrpc-provider/eth-methods/transactions) - Transaction queries and submission
+- [State Methods](/jsonrpc-provider/eth-methods/state) - Account and storage queries
+- [Block JSON-RPC Types](/jsonrpc/eth/types/block) - Block type definitions

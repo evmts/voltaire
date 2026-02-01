@@ -1,0 +1,29 @@
+---
+title: TransactionIndex
+description: Zero-based transaction position within a block
+---
+
+Non-negative integer indicating transaction order in a block.
+
+## Schema
+
+```typescript
+import * as TransactionIndex from 'voltaire-effect/primitives/TransactionIndex'
+import * as Schema from 'effect/Schema'
+
+const index = Schema.decodeSync(TransactionIndex.Number)(5)
+const fromBigInt = Schema.decodeSync(TransactionIndex.BigInt)(5n)
+```
+
+## Effect
+
+```typescript
+import * as TransactionIndex from 'voltaire-effect/primitives/TransactionIndex'
+import { Effect } from 'effect'
+
+const program = TransactionIndex.from(5)
+// Effect.Effect<TransactionIndexType, TransactionIndexError>
+
+const index = await Effect.runPromise(program)
+const num = TransactionIndex.toNumber(index) // 5
+```

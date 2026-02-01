@@ -1,0 +1,316 @@
+---
+title: "ERC1155"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / ERC1155
+
+# ERC1155
+
+## Variables
+
+### EVENTS
+
+> `const` **EVENTS**: `object`
+
+Defined in: [src/standards/ERC1155.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L37)
+
+ERC-1155 event signatures
+keccak256 hash of event signature
+
+#### Type Declaration
+
+##### ApprovalForAll
+
+> `readonly` **ApprovalForAll**: `"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"` = `"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"`
+
+ApprovalForAll(address indexed account, address indexed operator, bool approved)
+
+##### TransferBatch
+
+> `readonly` **TransferBatch**: `"0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb"` = `"0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb"`
+
+TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)
+
+##### TransferSingle
+
+> `readonly` **TransferSingle**: `"0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62"` = `"0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62"`
+
+TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)
+
+##### URI
+
+> `readonly` **URI**: `"0x6bb7ff708619ba0610cba295a58592e0451dee2622938c8755667688daf3529b"` = `"0x6bb7ff708619ba0610cba295a58592e0451dee2622938c8755667688daf3529b"`
+
+URI(string value, uint256 indexed id)
+
+***
+
+### SELECTORS
+
+> `const` **SELECTORS**: `object`
+
+Defined in: [src/standards/ERC1155.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L15)
+
+ERC-1155 function selectors
+First 4 bytes of keccak256 hash of function signature
+
+#### Type Declaration
+
+##### balanceOf
+
+> `readonly` **balanceOf**: `"0x00fdd58e"` = `"0x00fdd58e"`
+
+balanceOf(address,uint256)
+
+##### balanceOfBatch
+
+> `readonly` **balanceOfBatch**: `"0x4e1273f4"` = `"0x4e1273f4"`
+
+balanceOfBatch(address[],uint256[])
+
+##### isApprovedForAll
+
+> `readonly` **isApprovedForAll**: `"0xe985e9c5"` = `"0xe985e9c5"`
+
+isApprovedForAll(address,address)
+
+##### safeBatchTransferFrom
+
+> `readonly` **safeBatchTransferFrom**: `"0x2eb2c2d6"` = `"0x2eb2c2d6"`
+
+safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)
+
+##### safeTransferFrom
+
+> `readonly` **safeTransferFrom**: `"0xf242432a"` = `"0xf242432a"`
+
+safeTransferFrom(address,address,uint256,uint256,bytes)
+
+##### setApprovalForAll
+
+> `readonly` **setApprovalForAll**: `"0xa22cb465"` = `"0xa22cb465"`
+
+setApprovalForAll(address,bool)
+
+##### uri
+
+> `readonly` **uri**: `"0x0e89341c"` = `"0x0e89341c"`
+
+uri(uint256)
+
+## Functions
+
+### decodeApprovalForAllEvent()
+
+> **decodeApprovalForAllEvent**(`log`): `object`
+
+Defined in: [src/standards/ERC1155.ts:177](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L177)
+
+Decode ApprovalForAll event log
+
+#### Parameters
+
+##### log
+
+###### data
+
+`string`
+
+###### topics
+
+`string`[]
+
+#### Returns
+
+`object`
+
+##### account
+
+> **account**: `string`
+
+##### approved
+
+> **approved**: `boolean`
+
+##### operator
+
+> **operator**: `string`
+
+***
+
+### decodeTransferSingleEvent()
+
+> **decodeTransferSingleEvent**(`log`): `object`
+
+Defined in: [src/standards/ERC1155.ts:141](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L141)
+
+Decode TransferSingle event log
+
+#### Parameters
+
+##### log
+
+###### data
+
+`string`
+
+###### topics
+
+`string`[]
+
+#### Returns
+
+`object`
+
+##### from
+
+> **from**: `string`
+
+##### id
+
+> **id**: [`Type`](../../primitives/Uint.mdx#type)
+
+##### operator
+
+> **operator**: `string`
+
+##### to
+
+> **to**: `string`
+
+##### value
+
+> **value**: [`Type`](../../primitives/Uint.mdx#type)
+
+***
+
+### encodeBalanceOf()
+
+> **encodeBalanceOf**(`account`, `id`): `string`
+
+Defined in: [src/standards/ERC1155.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L54)
+
+Encode balanceOf(address,uint256) calldata
+
+#### Parameters
+
+##### account
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### id
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+#### Returns
+
+`string`
+
+***
+
+### encodeIsApprovedForAll()
+
+> **encodeIsApprovedForAll**(`account`, `operator`): `string`
+
+Defined in: [src/standards/ERC1155.ts:113](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L113)
+
+Encode isApprovedForAll(address,address) calldata
+
+#### Parameters
+
+##### account
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### operator
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+#### Returns
+
+`string`
+
+***
+
+### encodeSafeTransferFrom()
+
+> **encodeSafeTransferFrom**(`from`, `to`, `id`, `amount`, `data`): `string`
+
+Defined in: [src/standards/ERC1155.ts:83](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L83)
+
+Encode safeTransferFrom(address,address,uint256,uint256,bytes) calldata
+
+#### Parameters
+
+##### from
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### to
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### id
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+##### amount
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+##### data
+
+`Uint8Array` = `...`
+
+#### Returns
+
+`string`
+
+***
+
+### encodeSetApprovalForAll()
+
+> **encodeSetApprovalForAll**(`operator`, `approved`): `string`
+
+Defined in: [src/standards/ERC1155.ts:66](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L66)
+
+Encode setApprovalForAll(address,bool) calldata
+
+#### Parameters
+
+##### operator
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+##### approved
+
+`boolean`
+
+#### Returns
+
+`string`
+
+***
+
+### encodeURI()
+
+> **encodeURI**(`id`): `string`
+
+Defined in: [src/standards/ERC1155.ts:133](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/standards/ERC1155.ts#L133)
+
+Encode uri(uint256) calldata
+
+#### Parameters
+
+##### id
+
+[`Type`](../../primitives/Uint.mdx#type)
+
+#### Returns
+
+`string`

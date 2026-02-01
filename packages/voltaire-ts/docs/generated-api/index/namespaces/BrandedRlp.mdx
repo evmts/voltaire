@@ -1,0 +1,2506 @@
+---
+title: "BrandedRlp"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedRlp
+
+# BrandedRlp
+
+## Variables
+
+### BrandedRlp
+
+> `const` **BrandedRlp**: `object`
+
+Defined in: [src/primitives/Rlp/internal-index.ts:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/internal-index.ts#L65)
+
+#### Type Declaration
+
+##### decode()
+
+> **decode**: (`bytes`, `stream?`) => `Decoded`
+
+Decodes RLP-encoded bytes
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+###### stream?
+
+`boolean` = `false`
+
+If true, allows extra data after decoded value. If false, expects exact match
+
+###### Returns
+
+`Decoded`
+
+Decoded RLP data with remainder
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If input is too short, invalid, or has unexpected remainder (when stream=false)
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Decode single value
+const bytes = new Uint8Array([0x83, 1, 2, 3]);
+const result = Rlp.decode(bytes);
+// => { data: { type: 'bytes', value: Uint8Array([1, 2, 3]) }, remainder: Uint8Array([]) }
+
+// Stream decoding (multiple values)
+const stream = new Uint8Array([0x01, 0x02]);
+const result = Rlp.decode(stream, true);
+// => { data: { type: 'bytes', value: Uint8Array([1]) }, remainder: Uint8Array([2]) }
+
+// Decode list
+const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
+const result = Rlp.decode(list);
+```
+
+##### decodeArray()
+
+> **decodeArray**: (`data`) => `any`[]
+
+Decodes RLP-encoded bytes to an array
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+###### Returns
+
+`any`[]
+
+Decoded array
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If decoding fails
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const encoded = Rlp.encodeArray([
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4])
+]);
+const arr = Rlp.decodeArray(encoded);
+// => [Uint8Array([1, 2]), Uint8Array([3, 4])]
+```
+
+##### decodeBatch()
+
+> **decodeBatch**: (`data`) => `any`[][]
+
+Decodes multiple RLP-encoded items
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of RLP-encoded data
+
+###### Returns
+
+`any`[][]
+
+Array of decoded results
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If decoding fails for any item
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const items = [
+  Rlp.encode([new Uint8Array([1, 2])]),
+  Rlp.encode([new Uint8Array([3, 4])])
+];
+const decoded = Rlp.decodeBatch(items);
+// => [[Uint8Array([1, 2])], [Uint8Array([3, 4])]]
+```
+
+##### decodeObject()
+
+> **decodeObject**: (`data`) => `Record`\<`string`, `any`\>
+
+Decodes RLP-encoded bytes to an object with known keys
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+###### Returns
+
+`Record`\<`string`, `any`\>
+
+Decoded object
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If decoding fails or data format is invalid
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const obj = { name: new Uint8Array([65, 66]), age: new Uint8Array([25]) };
+const encoded = Rlp.encodeObject(obj);
+const decoded = Rlp.decodeObject(encoded);
+```
+
+##### encode()
+
+> **encode**: (`data`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encodes data to RLP format
+
+###### Parameters
+
+###### data
+
+`Encodable`
+
+Data to encode (Uint8Array, RlpData, or array)
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If data type is invalid or encoding fails
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Encode bytes
+const bytes = new Uint8Array([1, 2, 3]);
+const encoded = Rlp.encode(bytes);
+// => Uint8Array([0x83, 1, 2, 3])
+
+// Encode list
+const list = [new Uint8Array([1, 2]), new Uint8Array([3, 4])];
+const encoded = Rlp.encode(list);
+
+// Encode nested structures
+const nested = [new Uint8Array([1]), [new Uint8Array([2]), new Uint8Array([3])]];
+const encoded = Rlp.encode(nested);
+```
+
+##### encodeArray()
+
+> **encodeArray**: (`items`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encodes an array of values to RLP format
+
+###### Parameters
+
+###### items
+
+`Encodable`[]
+
+Array of values to encode
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If encoding fails
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+];
+const encoded = Rlp.encodeArray(items);
+```
+
+##### encodeBatch()
+
+> **encodeBatch**: (`items`) => `Uint8Array`\<`ArrayBufferLike`\>[]
+
+Encodes multiple items efficiently
+
+###### Parameters
+
+###### items
+
+`Encodable`[][]
+
+Array of items to encode
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of RLP-encoded results
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If encoding fails for any item
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const items = [
+  [new Uint8Array([1, 2]), new Uint8Array([3, 4])],
+  [new Uint8Array([5, 6]), new Uint8Array([7, 8])]
+];
+const encoded = Rlp.encodeBatch(items);
+// => [Uint8Array(...), Uint8Array(...)]
+```
+
+##### encodeBytes()
+
+> **encodeBytes**: (`bytes`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encodes a byte array according to RLP string rules
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Byte array to encode
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If encoding fails
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Single byte < 0x80
+const b1 = new Uint8Array([0x7f]);
+const encoded = Rlp.encodeBytes(b1);
+// => Uint8Array([0x7f])
+
+// Short string
+const b2 = new Uint8Array([1, 2, 3]);
+const encoded = Rlp.encodeBytes(b2);
+// => Uint8Array([0x83, 1, 2, 3])
+
+// Long string (> 55 bytes)
+const longBytes = new Uint8Array(60).fill(0x42);
+const encoded = Rlp.encodeBytes(longBytes);
+// => Uint8Array([0xb8, 60, ...longBytes])
+```
+
+##### encodeList()
+
+> **encodeList**: (`items`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encodes a list of RLP-encodable items
+
+###### Parameters
+
+###### items
+
+(`any`[] \| `Uint8Array`\<`ArrayBufferLike`\> \| [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp))[]
+
+Array of items to encode
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded list
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If encoding fails
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Empty list
+const empty = [];
+const encoded = Rlp.encodeList(empty);
+// => Uint8Array([0xc0])
+
+// Simple list
+const list = [new Uint8Array([1]), new Uint8Array([2])];
+const encoded = Rlp.encodeList(list);
+// => Uint8Array([0xc4, 0x01, 0x02])
+
+// Nested list
+const nested = [new Uint8Array([1]), [new Uint8Array([2])]];
+const encoded = Rlp.encodeList(nested);
+```
+
+##### encodeObject()
+
+> **encodeObject**: (`obj`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encodes an object (key-value pairs) to RLP format
+Converts object to array of [key, value] pairs and encodes
+
+###### Parameters
+
+###### obj
+
+`Record`\<`string`, `Encodable`\>
+
+Object to encode
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If encoding fails
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const obj = {
+  name: new Uint8Array([65, 66, 67]),
+  age: new Uint8Array([25])
+};
+const encoded = Rlp.encodeObject(obj);
+```
+
+##### encodeVariadic()
+
+> **encodeVariadic**: (...`items`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encodes a variadic list of items to RLP format
+
+###### Parameters
+
+###### items
+
+...`Encodable`[]
+
+Items to encode
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If encoding fails
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const encoded = Rlp.encodeVariadic(
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4]),
+  new Uint8Array([5, 6])
+);
+```
+
+##### equals()
+
+> **equals**: (`data`, `other`) => `boolean`
+
+Check if two RLP Data structures are equal
+
+###### Parameters
+
+###### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+First RLP data structure
+
+###### other
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+Second RLP data structure
+
+###### Returns
+
+`boolean`
+
+True if structures are deeply equal
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const a = { type: 'bytes', value: new Uint8Array([1, 2]) };
+const b = { type: 'bytes', value: new Uint8Array([1, 2]) };
+Rlp.equals(a, b); // => true
+```
+
+##### flatten()
+
+> **flatten**: (`data`) => [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp) & `object`[]
+
+Flatten nested list Data into array of bytes Data (depth-first)
+
+###### Parameters
+
+###### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure to flatten
+
+###### Returns
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp) & `object`[]
+
+Array of bytes data (all nested lists flattened)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [{ type: 'bytes', value: new Uint8Array([2]) }]
+    }
+  ]
+};
+const flat = Rlp.flatten(nested);
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) }
+// ]
+```
+
+##### from()
+
+> **from**: (`value`) => [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+Create RLP data from various inputs
+
+###### Parameters
+
+###### value
+
+Uint8Array (bytes), RlpData, or array (list)
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp) | [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)[]
+
+###### Returns
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If input type is invalid
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const rlp = Rlp.from(new Uint8Array([1, 2, 3]));
+// => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+const rlp2 = Rlp.from([{ type: 'bytes', value: new Uint8Array([1]) }]);
+// => { type: 'list', value: [...] }
+```
+
+##### fromJSON()
+
+> **fromJSON**: (`json`) => [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+Convert JSON representation back to RLP Data
+
+###### Parameters
+
+###### json
+
+`unknown`
+
+JSON object from toJSON
+
+###### Returns
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If JSON format is invalid or type is unrecognized
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const json = { type: 'bytes', value: [1, 2, 3] };
+const data = Rlp.fromJSON(json);
+// => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+```
+
+##### getEncodedLength()
+
+> **getEncodedLength**: (`data`) => `number`
+
+Get the total byte length of RLP-encoded data without actually encoding
+
+###### Parameters
+
+###### data
+
+Data to measure
+
+`any`[] | `Uint8Array`\<`ArrayBufferLike`\> | [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+###### Returns
+
+`number`
+
+Length in bytes after RLP encoding
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If data type is invalid
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const bytes = new Uint8Array([1, 2, 3]);
+const length = Rlp.getEncodedLength(bytes);
+// => 4 (0x83 prefix + 3 bytes)
+```
+
+##### getLength()
+
+> **getLength**: (`data`) => `number`
+
+Gets the total length of an RLP item (prefix + payload)
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+###### Returns
+
+`number`
+
+Total length in bytes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If data is empty, too short, or has invalid prefix
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const encoded = new Uint8Array([0x83, 1, 2, 3]);
+const length = Rlp.getLength(encoded);
+// => 4 (1 byte prefix + 3 bytes payload)
+```
+
+##### isBytesData()
+
+> **isBytesData**: (`value`) => `boolean`
+
+Check if value is RLP bytes data
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+Value to check
+
+###### Returns
+
+`boolean`
+
+True if value is RLP bytes data structure
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+Rlp.isBytesData({ type: 'bytes', value: new Uint8Array([1]) });
+// => true
+Rlp.isBytesData({ type: 'list', value: [] });
+// => false
+```
+
+##### isCanonical()
+
+> **isCanonical**: (`bytes`, `depth?`) => `boolean`
+
+Validates if RLP encoding is canonical
+
+Canonical encoding rules:
+- Integers must use minimum bytes (no leading zeros)
+- Strings/bytes must use shortest length prefix
+- Single byte < 0x80 must not be encoded as string
+- Length prefix must use minimum bytes
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+###### depth?
+
+`number` = `0`
+
+Current recursion depth (internal)
+
+###### Returns
+
+`boolean`
+
+True if encoding is canonical
+
+###### See
+
+ - https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+ - https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/ for canonical rules
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Canonical encoding
+const canonical = new Uint8Array([0x83, 0x64, 0x6f, 0x67]); // "dog"
+Rlp.isCanonical(canonical); // => true
+
+// Non-canonical: single byte should not be prefixed
+const nonCanonical = new Uint8Array([0x81, 0x7f]); // should be just 0x7f
+Rlp.isCanonical(nonCanonical); // => false
+
+// Non-canonical: leading zeros in length
+const leadingZeros = new Uint8Array([0xb8, 0x00, 0x05, 0x68, 0x65, 0x6c, 0x6c, 0x6f]);
+Rlp.isCanonical(leadingZeros); // => false
+```
+
+##### isData()
+
+> **isData**: (`value`) => `value is BrandedRlp`
+
+Check if value is RLP Data structure
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+Value to check
+
+###### Returns
+
+`value is BrandedRlp`
+
+True if value is valid RLP data structure
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+Rlp.isData({ type: 'bytes', value: new Uint8Array([1]) });
+// => true
+Rlp.isData({ type: 'list', value: [] });
+// => true
+Rlp.isData('invalid');
+// => false
+```
+
+##### isList()
+
+> **isList**: (`data`) => `boolean`
+
+Checks if RLP-encoded data represents a list
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+###### Returns
+
+`boolean`
+
+True if data encodes a list
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If data is empty
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
+Rlp.isList(list);
+// => true
+
+const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
+Rlp.isList(bytes);
+// => false
+```
+
+##### isListData()
+
+> **isListData**: (`value`) => `boolean`
+
+Check if value is RLP list data
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+Value to check
+
+###### Returns
+
+`boolean`
+
+True if value is RLP list data structure
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+Rlp.isListData({ type: 'list', value: [] });
+// => true
+Rlp.isListData({ type: 'bytes', value: new Uint8Array([1]) });
+// => false
+```
+
+##### isString()
+
+> **isString**: (`data`) => `boolean`
+
+Checks if RLP-encoded data represents a string (byte array)
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+###### Returns
+
+`boolean`
+
+True if data encodes a string
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If data is empty
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
+Rlp.isString(bytes);
+// => true
+
+const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
+Rlp.isString(list);
+// => false
+```
+
+##### toJSON()
+
+> **toJSON**: (`data`) => `unknown`
+
+Convert RLP Data to human-readable JSON format
+
+###### Parameters
+
+###### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure
+
+###### Returns
+
+`unknown`
+
+JSON-serializable representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
+const json = Rlp.toJSON(data);
+// => { type: 'bytes', value: [1, 2, 3] }
+```
+
+##### toRaw()
+
+> **toRaw**: (`data`) => `any`[] \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Converts RLP Data structure to raw JavaScript values (Uint8Array or nested arrays)
+
+###### Parameters
+
+###### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure to convert
+
+###### Returns
+
+`any`[] \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Raw value (Uint8Array for bytes, array for list)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
+const raw = Rlp.toRaw(data);
+// => Uint8Array([1, 2, 3])
+
+const listData = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+};
+const rawList = Rlp.toRaw(listData);
+// => [Uint8Array([1]), Uint8Array([2])]
+```
+
+##### validate()
+
+> **validate**: (`data`) => `boolean`
+
+Validates if data is valid RLP encoding
+
+###### Parameters
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to validate
+
+###### Returns
+
+`boolean`
+
+True if valid RLP encoding
+
+###### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const valid = Rlp.validate(new Uint8Array([0x83, 1, 2, 3]));
+// => true
+
+const invalid = Rlp.validate(new Uint8Array([0x83, 1]));
+// => false (incomplete)
+```
+
+## Functions
+
+### decode()
+
+> **decode**(`bytes`, `stream?`): `Decoded`
+
+Defined in: [src/primitives/Rlp/decode.js:75](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/decode.js#L75)
+
+Decodes RLP-encoded bytes
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+##### stream?
+
+`boolean` = `false`
+
+If true, allows extra data after decoded value. If false, expects exact match
+
+#### Returns
+
+`Decoded`
+
+Decoded RLP data with remainder
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If input is too short, invalid, or has unexpected remainder (when stream=false)
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Decode single value
+const bytes = new Uint8Array([0x83, 1, 2, 3]);
+const result = Rlp.decode(bytes);
+// => { data: { type: 'bytes', value: Uint8Array([1, 2, 3]) }, remainder: Uint8Array([]) }
+
+// Stream decoding (multiple values)
+const stream = new Uint8Array([0x01, 0x02]);
+const result = Rlp.decode(stream, true);
+// => { data: { type: 'bytes', value: Uint8Array([1]) }, remainder: Uint8Array([2]) }
+
+// Decode list
+const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
+const result = Rlp.decode(list);
+```
+
+***
+
+### decodeArray()
+
+> **decodeArray**(`data`): `any`[]
+
+Defined in: [src/primitives/Rlp/decodeArray.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/decodeArray.js#L23)
+
+Decodes RLP-encoded bytes to an array
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+#### Returns
+
+`any`[]
+
+Decoded array
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If decoding fails
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const encoded = Rlp.encodeArray([
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4])
+]);
+const arr = Rlp.decodeArray(encoded);
+// => [Uint8Array([1, 2]), Uint8Array([3, 4])]
+```
+
+***
+
+### decodeBatch()
+
+> **decodeBatch**(`data`): `any`[][]
+
+Defined in: [src/primitives/Rlp/decodeBatch.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/decodeBatch.js#L23)
+
+Decodes multiple RLP-encoded items
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of RLP-encoded data
+
+#### Returns
+
+`any`[][]
+
+Array of decoded results
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If decoding fails for any item
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const items = [
+  Rlp.encode([new Uint8Array([1, 2])]),
+  Rlp.encode([new Uint8Array([3, 4])])
+];
+const decoded = Rlp.decodeBatch(items);
+// => [[Uint8Array([1, 2])], [Uint8Array([3, 4])]]
+```
+
+***
+
+### decodeObject()
+
+> **decodeObject**(`data`): `Record`\<`string`, `any`\>
+
+Defined in: [src/primitives/Rlp/decodeObject.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/decodeObject.js#L20)
+
+Decodes RLP-encoded bytes to an object with known keys
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+#### Returns
+
+`Record`\<`string`, `any`\>
+
+Decoded object
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If decoding fails or data format is invalid
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const obj = { name: new Uint8Array([65, 66]), age: new Uint8Array([25]) };
+const encoded = Rlp.encodeObject(obj);
+const decoded = Rlp.decodeObject(encoded);
+```
+
+***
+
+### encode()
+
+> **encode**(`data`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Rlp/encode.js:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/encode.js#L47)
+
+Encodes data to RLP format
+
+#### Parameters
+
+##### data
+
+`Encodable`
+
+Data to encode (Uint8Array, RlpData, or array)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data type is invalid or encoding fails
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Encode bytes
+const bytes = new Uint8Array([1, 2, 3]);
+const encoded = Rlp.encode(bytes);
+// => Uint8Array([0x83, 1, 2, 3])
+
+// Encode list
+const list = [new Uint8Array([1, 2]), new Uint8Array([3, 4])];
+const encoded = Rlp.encode(list);
+
+// Encode nested structures
+const nested = [new Uint8Array([1]), [new Uint8Array([2]), new Uint8Array([3])]];
+const encoded = Rlp.encode(nested);
+```
+
+***
+
+### encodeArray()
+
+> **encodeArray**(`items`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Rlp/encodeArray.js:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/encodeArray.js#L25)
+
+Encodes an array of values to RLP format
+
+#### Parameters
+
+##### items
+
+`Encodable`[]
+
+Array of values to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If encoding fails
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+];
+const encoded = Rlp.encodeArray(items);
+```
+
+***
+
+### encodeBatch()
+
+> **encodeBatch**(`items`): `Uint8Array`\<`ArrayBufferLike`\>[]
+
+Defined in: [src/primitives/Rlp/encodeBatch.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/encodeBatch.js#L26)
+
+Encodes multiple items efficiently
+
+#### Parameters
+
+##### items
+
+`Encodable`[][]
+
+Array of items to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of RLP-encoded results
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If encoding fails for any item
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const items = [
+  [new Uint8Array([1, 2]), new Uint8Array([3, 4])],
+  [new Uint8Array([5, 6]), new Uint8Array([7, 8])]
+];
+const encoded = Rlp.encodeBatch(items);
+// => [Uint8Array(...), Uint8Array(...)]
+```
+
+***
+
+### encodeBytes()
+
+> **encodeBytes**(`bytes`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Rlp/encodeBytes.js:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/encodeBytes.js#L30)
+
+Encodes a byte array according to RLP string rules
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Byte array to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If encoding fails
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Single byte < 0x80
+const b1 = new Uint8Array([0x7f]);
+const encoded = Rlp.encodeBytes(b1);
+// => Uint8Array([0x7f])
+
+// Short string
+const b2 = new Uint8Array([1, 2, 3]);
+const encoded = Rlp.encodeBytes(b2);
+// => Uint8Array([0x83, 1, 2, 3])
+
+// Long string (> 55 bytes)
+const longBytes = new Uint8Array(60).fill(0x42);
+const encoded = Rlp.encodeBytes(longBytes);
+// => Uint8Array([0xb8, 60, ...longBytes])
+```
+
+***
+
+### encodeList()
+
+> **encodeList**(`items`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Rlp/encodeList.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/encodeList.js#L29)
+
+Encodes a list of RLP-encodable items
+
+#### Parameters
+
+##### items
+
+(`any`[] \| `Uint8Array`\<`ArrayBufferLike`\> \| [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp))[]
+
+Array of items to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded list
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If encoding fails
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Empty list
+const empty = [];
+const encoded = Rlp.encodeList(empty);
+// => Uint8Array([0xc0])
+
+// Simple list
+const list = [new Uint8Array([1]), new Uint8Array([2])];
+const encoded = Rlp.encodeList(list);
+// => Uint8Array([0xc4, 0x01, 0x02])
+
+// Nested list
+const nested = [new Uint8Array([1]), [new Uint8Array([2])]];
+const encoded = Rlp.encodeList(nested);
+```
+
+***
+
+### encodeObject()
+
+> **encodeObject**(`obj`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Rlp/encodeObject.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/encodeObject.js#L26)
+
+Encodes an object (key-value pairs) to RLP format
+Converts object to array of [key, value] pairs and encodes
+
+#### Parameters
+
+##### obj
+
+`Record`\<`string`, `Encodable`\>
+
+Object to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If encoding fails
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const obj = {
+  name: new Uint8Array([65, 66, 67]),
+  age: new Uint8Array([25])
+};
+const encoded = Rlp.encodeObject(obj);
+```
+
+***
+
+### encodeVariadic()
+
+> **encodeVariadic**(...`items`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Rlp/encodeVariadic.js:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/encodeVariadic.js#L25)
+
+Encodes a variadic list of items to RLP format
+
+#### Parameters
+
+##### items
+
+...`Encodable`[]
+
+Items to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If encoding fails
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const encoded = Rlp.encodeVariadic(
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4]),
+  new Uint8Array([5, 6])
+);
+```
+
+***
+
+### equals()
+
+> **equals**(`data`, `other`): `boolean`
+
+Defined in: [src/primitives/Rlp/equals.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/equals.js#L19)
+
+Check if two RLP Data structures are equal
+
+#### Parameters
+
+##### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+First RLP data structure
+
+##### other
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+Second RLP data structure
+
+#### Returns
+
+`boolean`
+
+True if structures are deeply equal
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const a = { type: 'bytes', value: new Uint8Array([1, 2]) };
+const b = { type: 'bytes', value: new Uint8Array([1, 2]) };
+Rlp.equals(a, b); // => true
+```
+
+***
+
+### flatten()
+
+> **flatten**(`data`): [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp) & `object`[]
+
+Defined in: [src/primitives/Rlp/flatten.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/flatten.js#L29)
+
+Flatten nested list Data into array of bytes Data (depth-first)
+
+#### Parameters
+
+##### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure to flatten
+
+#### Returns
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp) & `object`[]
+
+Array of bytes data (all nested lists flattened)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [{ type: 'bytes', value: new Uint8Array([2]) }]
+    }
+  ]
+};
+const flat = Rlp.flatten(nested);
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) }
+// ]
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+Defined in: [src/primitives/Rlp/from.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/from.js#L20)
+
+Create RLP data from various inputs
+
+#### Parameters
+
+##### value
+
+Uint8Array (bytes), RlpData, or array (list)
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp) | [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)[]
+
+#### Returns
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If input type is invalid
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const rlp = Rlp.from(new Uint8Array([1, 2, 3]));
+// => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+const rlp2 = Rlp.from([{ type: 'bytes', value: new Uint8Array([1]) }]);
+// => { type: 'list', value: [...] }
+```
+
+***
+
+### fromJSON()
+
+> **fromJSON**(`json`): [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+Defined in: [src/primitives/Rlp/fromJSON.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/fromJSON.js#L19)
+
+Convert JSON representation back to RLP Data
+
+#### Parameters
+
+##### json
+
+`unknown`
+
+JSON object from toJSON
+
+#### Returns
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If JSON format is invalid or type is unrecognized
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const json = { type: 'bytes', value: [1, 2, 3] };
+const data = Rlp.fromJSON(json);
+// => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+```
+
+***
+
+### getEncodedLength()
+
+> **getEncodedLength**(`data`): `number`
+
+Defined in: [src/primitives/Rlp/getEncodedLength.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/getEncodedLength.js#L21)
+
+Get the total byte length of RLP-encoded data without actually encoding
+
+#### Parameters
+
+##### data
+
+Data to measure
+
+`any`[] | `Uint8Array`\<`ArrayBufferLike`\> | [`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+#### Returns
+
+`number`
+
+Length in bytes after RLP encoding
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data type is invalid
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const bytes = new Uint8Array([1, 2, 3]);
+const length = Rlp.getEncodedLength(bytes);
+// => 4 (0x83 prefix + 3 bytes)
+```
+
+***
+
+### getLength()
+
+> **getLength**(`data`): `number`
+
+Defined in: [src/primitives/Rlp/getLength.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/getLength.js#L20)
+
+Gets the total length of an RLP item (prefix + payload)
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+#### Returns
+
+`number`
+
+Total length in bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data is empty, too short, or has invalid prefix
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const encoded = new Uint8Array([0x83, 1, 2, 3]);
+const length = Rlp.getLength(encoded);
+// => 4 (1 byte prefix + 3 bytes payload)
+```
+
+***
+
+### isBytesData()
+
+> **isBytesData**(`value`): `boolean`
+
+Defined in: [src/primitives/Rlp/isBytesData.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/isBytesData.js#L20)
+
+Check if value is RLP bytes data
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`boolean`
+
+True if value is RLP bytes data structure
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+Rlp.isBytesData({ type: 'bytes', value: new Uint8Array([1]) });
+// => true
+Rlp.isBytesData({ type: 'list', value: [] });
+// => false
+```
+
+***
+
+### isCanonical()
+
+> **isCanonical**(`bytes`, `depth?`): `boolean`
+
+Defined in: [src/primitives/Rlp/isCanonical.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/isCanonical.js#L34)
+
+Validates if RLP encoding is canonical
+
+Canonical encoding rules:
+- Integers must use minimum bytes (no leading zeros)
+- Strings/bytes must use shortest length prefix
+- Single byte < 0x80 must not be encoded as string
+- Length prefix must use minimum bytes
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+##### depth?
+
+`number` = `0`
+
+Current recursion depth (internal)
+
+#### Returns
+
+`boolean`
+
+True if encoding is canonical
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+ - https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/ for canonical rules
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+// Canonical encoding
+const canonical = new Uint8Array([0x83, 0x64, 0x6f, 0x67]); // "dog"
+Rlp.isCanonical(canonical); // => true
+
+// Non-canonical: single byte should not be prefixed
+const nonCanonical = new Uint8Array([0x81, 0x7f]); // should be just 0x7f
+Rlp.isCanonical(nonCanonical); // => false
+
+// Non-canonical: leading zeros in length
+const leadingZeros = new Uint8Array([0xb8, 0x00, 0x05, 0x68, 0x65, 0x6c, 0x6c, 0x6f]);
+Rlp.isCanonical(leadingZeros); // => false
+```
+
+***
+
+### isData()
+
+> **isData**(`value`): `value is BrandedRlp`
+
+Defined in: [src/primitives/Rlp/isData.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/isData.js#L20)
+
+Check if value is RLP Data structure
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`value is BrandedRlp`
+
+True if value is valid RLP data structure
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+Rlp.isData({ type: 'bytes', value: new Uint8Array([1]) });
+// => true
+Rlp.isData({ type: 'list', value: [] });
+// => true
+Rlp.isData('invalid');
+// => false
+```
+
+***
+
+### isList()
+
+> **isList**(`data`): `boolean`
+
+Defined in: [src/primitives/Rlp/isList.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/isList.js#L23)
+
+Checks if RLP-encoded data represents a list
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+#### Returns
+
+`boolean`
+
+True if data encodes a list
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data is empty
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
+Rlp.isList(list);
+// => true
+
+const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
+Rlp.isList(bytes);
+// => false
+```
+
+***
+
+### isListData()
+
+> **isListData**(`value`): `boolean`
+
+Defined in: [src/primitives/Rlp/isListData.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/isListData.js#L20)
+
+Check if value is RLP list data
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`boolean`
+
+True if value is RLP list data structure
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+Rlp.isListData({ type: 'list', value: [] });
+// => true
+Rlp.isListData({ type: 'bytes', value: new Uint8Array([1]) });
+// => false
+```
+
+***
+
+### isString()
+
+> **isString**(`data`): `boolean`
+
+Defined in: [src/primitives/Rlp/isString.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/isString.js#L23)
+
+Checks if RLP-encoded data represents a string (byte array)
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+RLP-encoded data
+
+#### Returns
+
+`boolean`
+
+True if data encodes a string
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If data is empty
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
+Rlp.isString(bytes);
+// => true
+
+const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
+Rlp.isString(list);
+// => false
+```
+
+***
+
+### toJSON()
+
+> **toJSON**(`data`): `unknown`
+
+Defined in: [src/primitives/Rlp/toJSON.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/toJSON.js#L17)
+
+Convert RLP Data to human-readable JSON format
+
+#### Parameters
+
+##### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure
+
+#### Returns
+
+`unknown`
+
+JSON-serializable representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
+const json = Rlp.toJSON(data);
+// => { type: 'bytes', value: [1, 2, 3] }
+```
+
+***
+
+### toRaw()
+
+> **toRaw**(`data`): `any`[] \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Rlp/toRaw.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/toRaw.js#L27)
+
+Converts RLP Data structure to raw JavaScript values (Uint8Array or nested arrays)
+
+#### Parameters
+
+##### data
+
+[`BrandedRlp`](../../primitives/Rlp.mdx#brandedrlp)
+
+RLP data structure to convert
+
+#### Returns
+
+`any`[] \| `Uint8Array`\<`ArrayBufferLike`\>
+
+Raw value (Uint8Array for bytes, array for list)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
+const raw = Rlp.toRaw(data);
+// => Uint8Array([1, 2, 3])
+
+const listData = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+};
+const rawList = Rlp.toRaw(listData);
+// => [Uint8Array([1]), Uint8Array([2])]
+```
+
+***
+
+### validate()
+
+> **validate**(`data`): `boolean`
+
+Defined in: [src/primitives/Rlp/validate.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Rlp/validate.js#L21)
+
+Validates if data is valid RLP encoding
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to validate
+
+#### Returns
+
+`boolean`
+
+True if valid RLP encoding
+
+#### See
+
+https://voltaire.tevm.sh/primitives/rlp for RLP documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Rlp from './primitives/Rlp/index.js';
+const valid = Rlp.validate(new Uint8Array([0x83, 1, 2, 3]));
+// => true
+
+const invalid = Rlp.validate(new Uint8Array([0x83, 1]));
+// => false (incomplete)
+```
+
+## References
+
+### Encodable
+
+Re-exports [Encodable](../../primitives/Rlp.mdx#encodable)
+
+***
+
+### Error
+
+Re-exports [Error](../../primitives/Rlp.mdx#error)
+
+***
+
+### ErrorType
+
+Re-exports [ErrorType](../../primitives/Rlp.mdx#errortype-1)
+
+***
+
+### MAX\_DEPTH
+
+Re-exports [MAX_DEPTH](../../primitives/Rlp.mdx#max_depth)
+
+***
+
+### RlpError
+
+Re-exports [RlpError](../../primitives/Rlp.mdx#rlperror)

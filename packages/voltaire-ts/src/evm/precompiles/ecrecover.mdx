@@ -1,0 +1,214 @@
+---
+title: ECRecover (0x01)
+description: Elliptic curve signature recovery precompile
+---
+
+# ECRecover
+
+ECDSA public key recovery from signatures on the secp256k1 curve. Returns the Ethereum address that signed a message.
+
+## Overview
+
+The ECRecover precompile provides:
+- **Signature Recovery**: Recover public key from ECDSA signature
+- **Address Derivation**: Compute Ethereum address from recovered public key
+- **EIP-2 Protection**: Signature malleability protection (low-s values only)
+- **Validation**: Full r, s, v parameter validation
+- **Address**: 0x0000000000000000000000000000000000000001
+- **Since**: Frontier
+
+**Source**: `src/precompiles/ecrecover.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: 128 bytes (hash32, v32, r32, s32)
+- `gas_limit`: Maximum gas available
+
+**Input Format** (128 bytes):
+- Bytes 0-31: Message hash (32 bytes)
+- Bytes 32-63: Recovery ID v (32 bytes, big-endian)
+- Bytes 64-95: Signature component r (32 bytes)
+- Bytes 96-127: Signature component s (32 bytes)
+
+**Returns:** 32-byte left-padded Ethereum address (or 0x0 on failure)
+
+**Errors:** `OutOfGas`, `OutOfMemory`
+
+**Security Notes:**
+- Implements EIP-2 malleability protection
+- Validates r ∈ [1, n-1]
+- Validates s ∈ [1, n/2] (prevents high-s malleability)
+- Validates v ∈ {27, 28, 0, 1}
+- Invalid signatures return address 0x0 (not an error)
+
+## Gas Costs
+
+**Fixed Cost:** 3000 gas
+
+No variable gas component - constant time execution.
+
+## Examples
+
+### Recover Signer Address
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn recoverSigner() !void {
+    const allocator = std.heap.page_allocator;
+
+    // Prepare input: hash, v, r, s (each 32 bytes)
+    var input: [128]u8 = [_]u8{0} ** 128;
+
+    // Message hash (keccak256 of message)
+    const hash = [_]u8{0x47} ** 32;
+    @memcpy(input[0..32], &hash);
+
+    // Recovery ID v (27 or 28)
+    input[63] = 28;
+
+    // Signature components r and s
+    const r = [_]u8{0x69} ** 32;
+    const s = [_]u8{0x7a} ** 32;
+    @memcpy(input[64..96], &r);
+    @memcpy(input[96..128], &s);
+
+    // Execute precompile
+    const result = try precompiles.ecrecover.execute(
+        allocator,
+        &input,
+        3000,
+    );
+    defer result.deinit(allocator);
+
+    // Result is 32-byte address (left-padded)
+    const address = result.output[12..32]; // Last 20 bytes
+    std.debug.print("Signer address: 0x{x}\n", .{address});
+}
+```
+
+### Handle Invalid Signatures
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn validateSignature(input: []const u8) !bool {
+    const allocator = std.heap.page_allocator;
+
+    const result = try precompiles.ecrecover.execute(
+        allocator,
+        input,
+        3000,
+    );
+    defer result.deinit(allocator);
+
+    // Check if address is zero (invalid signature)
+    for (result.output) |byte| {
+        if (byte != 0) return true; // Valid signature
+    }
+    return false; // Invalid signature
+}
+```
+
+### Verify Message Signature
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+const crypto = @import("crypto");
+
+pub fn verifyMessage(
+    allocator: std.mem.Allocator,
+    message: []const u8,
+    v: u8,
+    r: []const u8,
+    s: []const u8,
+    expected_address: []const u8,
+) !bool {
+    // Hash message
+    var hash: [32]u8 = undefined;
+    try crypto.keccak_asm.keccak256(message, &hash);
+
+    // Build ecrecover input
+    var input: [128]u8 = [_]u8{0} ** 128;
+    @memcpy(input[0..32], &hash);
+    input[63] = v;
+    @memcpy(input[64..96], r);
+    @memcpy(input[96..128], s);
+
+    // Recover signer
+    const result = try precompiles.ecrecover.execute(
+        allocator,
+        &input,
+        3000,
+    );
+    defer result.deinit(allocator);
+
+    // Compare addresses
+    const recovered = result.output[12..32];
+    return std.mem.eql(u8, recovered, expected_address);
+}
+```
+
+## Algorithm
+
+1. **Parse Input**: Extract hash, v, r, s from 128-byte input
+2. **Validate v**: Must be 27, 28, 0, or 1
+3. **Validate r**: Must be in range [1, secp256k1_n - 1]
+4. **Validate s**: Must be in range [1, secp256k1_n / 2] (EIP-2)
+5. **Recover Public Key**: Use ECDSA recovery algorithm
+6. **Hash Public Key**: Compute keccak256(pubkey)
+7. **Extract Address**: Take last 20 bytes of hash
+8. **Return**: Left-pad address to 32 bytes
+
+If any validation fails, returns 32 zero bytes (address 0x0).
+
+## Performance
+
+**Native (ReleaseFast)**: ~15-25 μs
+**WASM (ReleaseFast)**: ~40-60 μs
+
+Uses assembly-optimized secp256k1 implementation via Rust crypto wrappers.
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=ecrecover
+```
+
+Test coverage includes:
+- Valid signature recovery
+- Invalid signature handling (returns 0x0)
+- EIP-2 malleability protection
+- Boundary cases (r=0, s=0, r≥n, s≥n)
+- Recovery ID validation
+- Gas cost verification
+
+## Related
+
+- [secp256k1](/zig/crypto/secp256k1/) - Elliptic curve operations
+- [Keccak](/zig/crypto/keccak/) - Hash function
+- [Signature](/zig/primitives/signature/) - Signature type
+
+## References
+
+- [EIP-2](https://eips.ethereum.org/EIPS/eip-2) - Homestead Hard-fork Changes
+- [SEC2](https://www.secg.org/sec2-v2.pdf) - secp256k1 curve parameters
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [Test Vectors](https://github.com/ethereum/tests) - Common test suite

@@ -1,0 +1,502 @@
+---
+title: '[Zig] src/primitives/uint128.zig'
+source: 'src/primitives/uint128.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/uint128.zig
+
+### Uint128 constants
+
+```zig
+test "Uint128 constants" {
+    try testing.expectEqual(@as(u128, 0), Uint128.MIN.value);
+    try testing.expectEqual(std.math.maxInt(u128), Uint128.MAX.value);
+    try testing.expectEqual(@as(u128, 0), Uint128.ZERO.value);
+    try testing.expectEqual(@as(u128, 1), Uint128.ONE.value);
+    try testing.expectEqual(@as(usize, 16), Uint128.SIZE);
+    try testing.expectEqual(@as(usize, 128), Uint128.BITS);
+}
+```
+
+### Uint128 from
+
+```zig
+test "Uint128 from" {
+    const a = Uint128.from(42);
+    try testing.expectEqual(@as(u128, 42), a.value);
+
+    const b = Uint128.from(0);
+    try testing.expectEqual(@as(u128, 0), b.value);
+
+    const c = Uint128.from(std.math.maxInt(u128));
+    try testing.expectEqual(std.math.maxInt(u128), c.value);
+}
+```
+
+### Uint128 fromNumber
+
+```zig
+test "Uint128 fromNumber" {
+    const a = Uint128.fromNumber(42);
+    try testing.expect(a != null);
+    try testing.expectEqual(@as(u128, 42), a.?.value);
+
+    const c = Uint128.fromNumber(-1);
+    try testing.expect(c == null);
+}
+```
+
+### Uint128 fromHex
+
+```zig
+test "Uint128 fromHex" {
+    const a = try Uint128.fromHex("0x0000000000000000000000000000002a");
+    try testing.expectEqual(@as(u128, 42), a.value);
+
+    const b = try Uint128.fromHex("ffffffffffffffffffffffffffffffff");
+    try testing.expectEqual(std.math.maxInt(u128), b.value);
+
+    const c = try Uint128.fromHex("0X00000000000000000000000000000000");
+    try testing.expectEqual(@as(u128, 0), c.value);
+
+    try testing.expectError(error.InvalidHex, Uint128.fromHex("0x100000000000000000000000000000000"));
+    try testing.expectError(error.InvalidHex, Uint128.fromHex(""));
+    try testing.expectError(error.InvalidHex, Uint128.fromHex("0x"));
+}
+```
+
+### Uint128 fromBytes
+
+```zig
+test "Uint128 fromBytes" {
+    var bytes_be: [16]u8 = undefined;
+    @memset(&bytes_be, 0);
+    bytes_be[15] = 0x2a;
+    const a = Uint128.fromBytes(&bytes_be);
+    try testing.expect(a != null);
+    try testing.expectEqual(@as(u128, 42), a.?.value);
+
+    var bytes_le: [16]u8 = undefined;
+    @memset(&bytes_le, 0);
+    bytes_le[0] = 0x2a;
+    const b = Uint128.fromBytesLittle(&bytes_le);
+    try testing.expect(b != null);
+    try testing.expectEqual(@as(u128, 42), b.?.value);
+
+    const empty: []const u8 = &.{};
+    try testing.expect(Uint128.fromBytes(empty) == null);
+
+    var too_long: [17]u8 = undefined;
+    try testing.expect(Uint128.fromBytes(&too_long) == null);
+}
+```
+
+### Uint128 toNumber
+
+```zig
+test "Uint128 toNumber" {
+    const a = Uint128.from(42);
+    try testing.expectEqual(@as(u128, 42), a.toNumber());
+}
+```
+
+### Uint128 toU64
+
+```zig
+test "Uint128 toU64" {
+    const a = Uint128.from(42);
+    try testing.expect(a.toU64() != null);
+    try testing.expectEqual(@as(u64, 42), a.toU64().?);
+
+    const b = Uint128.from(@as(u128, std.math.maxInt(u64)) + 1);
+    try testing.expect(b.toU64() == null);
+}
+```
+
+### Uint128 toHex
+
+```zig
+test "Uint128 toHex" {
+    var buf: [34]u8 = undefined;
+
+    const a = Uint128.from(42);
+    try testing.expectEqualStrings("0x0000000000000000000000000000002a", a.toHex(&buf));
+
+    const b = Uint128.from(0);
+    try testing.expectEqualStrings("0x00000000000000000000000000000000", b.toHex(&buf));
+}
+```
+
+### Uint128 toBytes
+
+```zig
+test "Uint128 toBytes" {
+    var buf: [16]u8 = undefined;
+    const val: u128 = 0x123456789ABCDEF0123456789ABCDEF0;
+    const a = Uint128.from(val);
+    const bytes = a.toBytes(&buf);
+    try testing.expectEqual(@as(usize, 16), bytes.len);
+    try testing.expectEqual(@as(u8, 0x12), bytes[0]);
+    try testing.expectEqual(@as(u8, 0x34), bytes[1]);
+    try testing.expectEqual(@as(u8, 0xF0), bytes[15]);
+
+    const bytes_le = a.toBytesLittle(&buf);
+    try testing.expectEqual(@as(u8, 0xF0), bytes_le[0]);
+    try testing.expectEqual(@as(u8, 0x12), bytes_le[15]);
+}
+```
+
+### Uint128 checked add
+
+```zig
+test "Uint128 checked add" {
+    const a = Uint128.from(100);
+    const b = Uint128.from(50);
+    const result = a.add(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 150), result.?.value);
+
+    const c = Uint128.MAX;
+    const d = Uint128.from(1);
+    try testing.expect(c.add(d) == null);
+}
+```
+
+### Uint128 checked sub
+
+```zig
+test "Uint128 checked sub" {
+    const a = Uint128.from(100);
+    const b = Uint128.from(50);
+    const result = a.sub(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 50), result.?.value);
+
+    const c = Uint128.from(50);
+    const d = Uint128.from(100);
+    try testing.expect(c.sub(d) == null);
+}
+```
+
+### Uint128 checked mul
+
+```zig
+test "Uint128 checked mul" {
+    const a = Uint128.from(1000000000000);
+    const b = Uint128.from(1000000000000);
+    const result = a.mul(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 1000000000000000000000000), result.?.value);
+
+    const c = Uint128.from(std.math.maxInt(u128) / 2 + 1);
+    const d = Uint128.from(2);
+    try testing.expect(c.mul(d) == null);
+}
+```
+
+### Uint128 checked div
+
+```zig
+test "Uint128 checked div" {
+    const a = Uint128.from(1000000000000);
+    const b = Uint128.from(1000);
+    const result = a.div(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 1000000000), result.?.value);
+
+    const c = Uint128.from(100);
+    const d = Uint128.from(0);
+    try testing.expect(c.div(d) == null);
+}
+```
+
+### Uint128 checked mod
+
+```zig
+test "Uint128 checked mod" {
+    const a = Uint128.from(100);
+    const b = Uint128.from(30);
+    const result = a.mod(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 10), result.?.value);
+
+    const c = Uint128.from(100);
+    const d = Uint128.from(0);
+    try testing.expect(c.mod(d) == null);
+}
+```
+
+### Uint128 checked pow
+
+```zig
+test "Uint128 checked pow" {
+    const a = Uint128.from(2);
+    const result = a.pow(40);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 1099511627776), result.?.value);
+
+    try testing.expectEqual(@as(u128, 1), Uint128.from(5).pow(0).?.value);
+    try testing.expectEqual(@as(u128, 0), Uint128.from(0).pow(5).?.value);
+    try testing.expectEqual(@as(u128, 1), Uint128.from(1).pow(127).?.value);
+
+    const b = Uint128.from(10);
+    try testing.expect(b.pow(40) == null);
+}
+```
+
+### Uint128 wrapping arithmetic
+
+```zig
+test "Uint128 wrapping arithmetic" {
+    const a = Uint128.MAX;
+    const b = Uint128.from(1);
+    try testing.expectEqual(@as(u128, 0), a.wrappingAdd(b).value);
+
+    const c = Uint128.from(0);
+    const d = Uint128.from(1);
+    try testing.expectEqual(Uint128.MAX.value, c.wrappingSub(d).value);
+}
+```
+
+### Uint128 saturating arithmetic
+
+```zig
+test "Uint128 saturating arithmetic" {
+    const a = Uint128.MAX;
+    const b = Uint128.from(1);
+    try testing.expectEqual(Uint128.MAX.value, a.saturatingAdd(b).value);
+
+    const c = Uint128.from(0);
+    const d = Uint128.from(1);
+    try testing.expectEqual(@as(u128, 0), c.saturatingSub(d).value);
+}
+```
+
+### Uint128 comparison
+
+```zig
+test "Uint128 comparison" {
+    const a = Uint128.from(100);
+    const b = Uint128.from(100);
+    const c = Uint128.from(50);
+
+    try testing.expect(a.equals(b));
+    try testing.expect(!a.equals(c));
+
+    try testing.expectEqual(std.math.Order.eq, a.compare(b));
+    try testing.expectEqual(std.math.Order.gt, a.compare(c));
+    try testing.expectEqual(std.math.Order.lt, c.compare(a));
+
+    try testing.expect(!a.lessThan(b));
+    try testing.expect(c.lessThan(a));
+    try testing.expect(a.greaterThan(c));
+    try testing.expect(a.lessThanOrEqual(b));
+    try testing.expect(a.greaterThanOrEqual(b));
+}
+```
+
+### Uint128 bitwise operations
+
+```zig
+test "Uint128 bitwise operations" {
+    const a = Uint128.from(0xFFFFFFFFFFFFFFFF0000000000000000);
+    const b = Uint128.from(0x0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F);
+
+    try testing.expectEqual(@as(u128, 0x0F0F0F0F0F0F0F0F0000000000000000), a.bitwiseAnd(b).value);
+    try testing.expectEqual(@as(u128, 0xFFFFFFFFFFFFFFFF0F0F0F0F0F0F0F0F), a.bitwiseOr(b).value);
+    try testing.expectEqual(@as(u128, 0xF0F0F0F0F0F0F0F00F0F0F0F0F0F0F0F), a.bitwiseXor(b).value);
+    try testing.expectEqual(@as(u128, 0x0000000000000000FFFFFFFFFFFFFFFF), a.bitwiseNot().value);
+}
+```
+
+### Uint128 shift operations
+
+```zig
+test "Uint128 shift operations" {
+    const a = Uint128.from(0xFF);
+    try testing.expectEqual(@as(u128, 0xFF00), a.shiftLeft(8).value);
+    try testing.expectEqual(@as(u128, 0x0F), a.shiftRight(4).value);
+}
+```
+
+### Uint128 rotate operations
+
+```zig
+test "Uint128 rotate operations" {
+    const val: u128 = 0x123456789ABCDEF0123456789ABCDEF0;
+    const a = Uint128.from(val);
+    const rotated_left = a.rotateLeft(4);
+    const rotated_back = rotated_left.rotateRight(4);
+    try testing.expectEqual(val, rotated_back.value);
+}
+```
+
+### Uint128 utility functions
+
+```zig
+test "Uint128 utility functions" {
+    const zero = Uint128.from(0);
+    const nonzero = Uint128.from(42);
+
+    try testing.expect(zero.isZero());
+    try testing.expect(!nonzero.isZero());
+
+    const a = Uint128.from(100);
+    const b = Uint128.from(200);
+    try testing.expectEqual(@as(u128, 100), a.min(b).value);
+    try testing.expectEqual(@as(u128, 200), a.max(b).value);
+}
+```
+
+### Uint128 bit counting
+
+```zig
+test "Uint128 bit counting" {
+    const a = Uint128.from(0b00101100);
+    try testing.expectEqual(@as(u8, 6), a.bitLength());
+    try testing.expectEqual(@as(u8, 122), a.leadingZeros());
+    try testing.expectEqual(@as(u8, 2), a.trailingZeros());
+    try testing.expectEqual(@as(u8, 3), a.popCount());
+
+    const zero = Uint128.from(0);
+    try testing.expectEqual(@as(u8, 0), zero.bitLength());
+    try testing.expectEqual(@as(u8, 128), zero.leadingZeros());
+}
+```
+
+### Uint128 byteSwap
+
+```zig
+test "Uint128 byteSwap" {
+    const val: u128 = 0x0102030405060708090A0B0C0D0E0F10;
+    const a = Uint128.from(val);
+    const swapped = a.byteSwap();
+    try testing.expectEqual(@as(u128, 0x100F0E0D0C0B0A090807060504030201), swapped.value);
+}
+```
+
+### Uint128 reverseBits
+
+```zig
+test "Uint128 reverseBits" {
+    const val: u128 = @as(u128, 1) << 127;
+    const a = Uint128.from(val);
+    try testing.expectEqual(@as(u128, 1), a.reverseBits().value);
+}
+```
+
+### Uint128 hi/lo parts
+
+```zig
+test "Uint128 hi/lo parts" {
+    const val: u128 = 0x123456789ABCDEF0FEDCBA9876543210;
+    const a = Uint128.from(val);
+    try testing.expectEqual(@as(u64, 0x123456789ABCDEF0), a.hi());
+    try testing.expectEqual(@as(u64, 0xFEDCBA9876543210), a.lo());
+
+    const b = Uint128.fromHiLo(0x123456789ABCDEF0, 0xFEDCBA9876543210);
+    try testing.expectEqual(val, b.value);
+}
+```
+
+### Uint128 gcd
+
+```zig
+test "Uint128 gcd" {
+    const a = Uint128.from(48);
+    const b = Uint128.from(18);
+    try testing.expectEqual(@as(u128, 6), a.gcd(b).value);
+
+    const c = Uint128.from(100);
+    const d = Uint128.from(25);
+    try testing.expectEqual(@as(u128, 25), c.gcd(d).value);
+
+    const e = Uint128.from(17);
+    const f = Uint128.from(13);
+    try testing.expectEqual(@as(u128, 1), e.gcd(f).value);
+}
+```
+
+### Uint128 lcm
+
+```zig
+test "Uint128 lcm" {
+    const a = Uint128.from(4);
+    const b = Uint128.from(6);
+    const result = a.lcm(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 12), result.?.value);
+
+    const c = Uint128.from(0);
+    const d = Uint128.from(5);
+    try testing.expectEqual(@as(u128, 0), c.lcm(d).?.value);
+}
+```
+
+### Uint128 isPowerOf2
+
+```zig
+test "Uint128 isPowerOf2" {
+    try testing.expect(Uint128.from(1).isPowerOf2());
+    try testing.expect(Uint128.from(2).isPowerOf2());
+    try testing.expect(Uint128.from(4).isPowerOf2());
+    try testing.expect(Uint128.from(1024).isPowerOf2());
+    try testing.expect(!Uint128.from(0).isPowerOf2());
+    try testing.expect(!Uint128.from(3).isPowerOf2());
+    try testing.expect(!Uint128.from(100).isPowerOf2());
+}
+```
+
+### Uint128 sum
+
+```zig
+test "Uint128 sum" {
+    const values = [_]Uint128{
+        Uint128.from(10),
+        Uint128.from(20),
+        Uint128.from(30),
+    };
+    const result = Uint128.sum(&values);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 60), result.?.value);
+
+    const empty: []const Uint128 = &.{};
+    try testing.expectEqual(@as(u128, 0), Uint128.sum(empty).?.value);
+}
+```
+
+### Uint128 product
+
+```zig
+test "Uint128 product" {
+    const values = [_]Uint128{
+        Uint128.from(2),
+        Uint128.from(3),
+        Uint128.from(4),
+    };
+    const result = Uint128.product(&values);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u128, 24), result.?.value);
+
+    const empty: []const Uint128 = &.{};
+    try testing.expectEqual(@as(u128, 1), Uint128.product(empty).?.value);
+}
+```
+
+### Uint128 minimum/maximum
+
+```zig
+test "Uint128 minimum/maximum" {
+    const values = [_]Uint128{
+        Uint128.from(50),
+        Uint128.from(10),
+        Uint128.from(30),
+    };
+    try testing.expectEqual(@as(u128, 10), Uint128.minimum(&values).?.value);
+    try testing.expectEqual(@as(u128, 50), Uint128.maximum(&values).?.value);
+
+    const empty: []const Uint128 = &.{};
+    try testing.expect(Uint128.minimum(empty) == null);
+    try testing.expect(Uint128.maximum(empty) == null);
+}
+```

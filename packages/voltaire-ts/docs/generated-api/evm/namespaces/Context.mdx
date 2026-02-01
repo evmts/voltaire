@@ -1,0 +1,540 @@
+---
+title: "Context"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [evm](../index.mdx) / Context
+
+# Context
+
+## Functions
+
+### address()
+
+> **address**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x30\_ADDRESS.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x30_ADDRESS.js#L14)
+
+ADDRESS opcode (0x30) - Get address of currently executing account
+
+Stack: [] => [address]
+Gas: 2 (GasQuickStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### balance()
+
+> **balance**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x31\_BALANCE.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x31_BALANCE.js#L27)
+
+BALANCE opcode (0x31) - Get balance of an account
+
+Stack: [address] => [balance]
+
+Gas costs vary by hardfork (EIP-150, EIP-1884, EIP-2929):
+- Pre-Tangerine Whistle: 20 gas
+- Tangerine Whistle (EIP-150): 400 gas
+- Istanbul (EIP-1884): 700 gas
+- Berlin (EIP-2929): 2600 gas (cold) / 100 gas (warm)
+
+EIP-2929 (Berlin) tracks warm/cold access for state operations:
+- Cold access: First time address is accessed in transaction (2600 gas)
+- Warm access: Subsequent accesses to same address (100 gas)
+- Tracking maintained in frame.accessedAddresses Set
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### calldatacopy()
+
+> **calldatacopy**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x37\_CALLDATACOPY.js:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x37_CALLDATACOPY.js#L42)
+
+CALLDATACOPY opcode (0x37) - Copy input data in current environment to memory
+
+Stack: [destOffset, offset, length] => []
+Gas: 3 (GasFastestStep) + memory expansion + copy cost
+
+Copies length bytes from calldata[offset:offset+length] to memory[destOffset:destOffset+length].
+If offset + i >= calldata.length, remaining bytes are zero-padded.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### calldataload()
+
+> **calldataload**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x35\_CALLDATALOAD.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x35_CALLDATALOAD.js#L32)
+
+CALLDATALOAD opcode (0x35) - Get input data of current environment
+
+Stack: [offset] => [data]
+Gas: 3 (GasFastestStep)
+
+Loads 32 bytes from calldata starting at offset. If offset + i >= calldata.length,
+remaining bytes are zero-padded.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### calldatasize()
+
+> **calldatasize**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x36\_CALLDATASIZE.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x36_CALLDATASIZE.js#L13)
+
+CALLDATASIZE opcode (0x36) - Get size of input data in current environment
+
+Stack: [] => [size]
+Gas: 2 (GasQuickStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### caller()
+
+> **caller**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x33\_CALLER.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x33_CALLER.js#L14)
+
+CALLER opcode (0x33) - Get caller address
+
+Stack: [] => [caller]
+Gas: 2 (GasQuickStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### callvalue()
+
+> **callvalue**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x34\_CALLVALUE.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x34_CALLVALUE.js#L13)
+
+CALLVALUE opcode (0x34) - Get deposited value by instruction/transaction responsible for this execution
+
+Stack: [] => [value]
+Gas: 2 (GasQuickStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### codecopy()
+
+> **codecopy**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x39\_CODECOPY.js:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x39_CODECOPY.js#L42)
+
+CODECOPY opcode (0x39) - Copy code running in current environment to memory
+
+Stack: [destOffset, offset, length] => []
+Gas: 3 (GasFastestStep) + memory expansion + copy cost
+
+Copies length bytes from bytecode[offset:offset+length] to memory[destOffset:destOffset+length].
+If offset + i >= bytecode.length, remaining bytes are zero-padded.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### codesize()
+
+> **codesize**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x38\_CODESIZE.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x38_CODESIZE.js#L13)
+
+CODESIZE opcode (0x38) - Get size of code running in current environment
+
+Stack: [] => [size]
+Gas: 2 (GasQuickStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### extcodecopy()
+
+> **extcodecopy**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x3c\_EXTCODECOPY.js:57](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x3c_EXTCODECOPY.js#L57)
+
+EXTCODECOPY opcode (0x3c) - Copy an account's code to memory
+
+Stack: [address, destOffset, offset, size] => []
+
+Gas costs include three components:
+1. Access cost: hardfork-dependent (EIP-150, EIP-1884, EIP-2929)
+2. Copy cost: 3 gas per 32-byte word (rounded up)
+3. Memory expansion cost: Quadratic expansion cost for new memory
+
+Gas varies by hardfork:
+- Pre-Tangerine Whistle: 20 gas access
+- Tangerine Whistle (EIP-150): 700 gas access
+- Istanbul (EIP-1884): 700 gas access
+- Berlin (EIP-2929): 2600 gas (cold) / 100 gas (warm) access
+
+EIP-2929 (Berlin) tracks warm/cold access for state operations.
+Copies size bytes from code[offset:offset+size] to memory[destOffset:].
+Missing bytes (beyond code length) are zero-padded.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### extcodehash()
+
+> **extcodehash**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x3f\_EXTCODEHASH.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x3f_EXTCODEHASH.js#L32)
+
+EXTCODEHASH opcode (0x3f) - Get hash of an account's code
+
+Stack: [address] => [hash]
+
+Gas costs vary by hardfork (EIP-1884, EIP-2929):
+- Constantinople-Istanbul: 400 gas
+- Istanbul-Berlin: 700 gas (EIP-1884)
+- Berlin+ (EIP-2929): 2600 gas (cold) / 100 gas (warm)
+
+EIP-1052 (Constantinople): Introduces EXTCODEHASH opcode
+- Returns keccak256 hash of account's code
+- Returns 0 for non-existent accounts (instead of empty hash)
+- Can be used for code verification without deploying full code
+
+EIP-2929 (Berlin) tracks warm/cold access for state operations.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### extcodesize()
+
+> **extcodesize**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x3b\_EXTCODESIZE.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x3b_EXTCODESIZE.js#L27)
+
+EXTCODESIZE opcode (0x3b) - Get size of an account's code
+
+Stack: [address] => [codeSize]
+
+Gas costs vary by hardfork (EIP-150, EIP-1884, EIP-2929):
+- Pre-Tangerine Whistle: 20 gas
+- Tangerine Whistle (EIP-150): 700 gas
+- Istanbul (EIP-1884): 700 gas
+- Berlin (EIP-2929): 2600 gas (cold) / 100 gas (warm)
+
+EIP-2929 (Berlin) tracks warm/cold access for state operations:
+- Cold access: First time address is accessed in transaction (2600 gas)
+- Warm access: Subsequent accesses to same address (100 gas)
+- Tracking maintained in frame.accessedAddresses Set
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### gasprice()
+
+> **gasprice**(`frame`, `gasPrice`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x3a\_GASPRICE.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x3a_GASPRICE.js#L14)
+
+GASPRICE opcode (0x3a) - Get price of gas in current environment
+
+Stack: [] => [gasPrice]
+Gas: 2 (GasQuickStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### gasPrice
+
+`bigint`
+
+Transaction gas price
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### origin()
+
+> **origin**(`frame`, `origin`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x32\_ORIGIN.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x32_ORIGIN.js#L15)
+
+ORIGIN opcode (0x32) - Get execution origination address
+
+Stack: [] => [origin]
+Gas: 2 (GasQuickStep)
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### origin
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Transaction origin address
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### returndatacopy()
+
+> **returndatacopy**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x3e\_RETURNDATACOPY.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x3e_RETURNDATACOPY.js#L53)
+
+RETURNDATACOPY opcode (0x3e) - Copy output data from the previous call to memory
+
+Stack: [destOffset, offset, length] => []
+Gas: 3 (GasFastestStep) + memory expansion + copy cost
+
+EIP-211: Introduced in Byzantium hardfork
+Copies length bytes from returnData[offset:offset+length] to memory[destOffset:destOffset+length].
+Throws OutOfBounds if offset + length > returnData.length.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### returndatasize()
+
+> **returndatasize**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/context/0x3d\_RETURNDATASIZE.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/context/0x3d_RETURNDATASIZE.js#L15)
+
+RETURNDATASIZE opcode (0x3d) - Get size of output data from the previous call
+
+Stack: [] => [size]
+Gas: 2 (GasQuickStep)
+
+EIP-211: Introduced in Byzantium hardfork
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any

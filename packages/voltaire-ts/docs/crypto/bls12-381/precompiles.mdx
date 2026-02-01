@@ -1,0 +1,238 @@
+---
+title: Precompiles
+description: EIP-2537 BLS12-381 precompiled contracts
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/bls12381.ts">
+  Run BLS12-381 examples in the interactive playground
+</Card>
+
+# BLS12-381 Precompiles
+
+EIP-2537 defines BLS12-381 precompiled contracts for the EVM.
+
+<Warning>
+**NOT on Mainnet** - These precompiles are proposed but NOT activated on Ethereum mainnet. For execution layer zkSNARKs, use [BN254 precompiles](/crypto/bn254) (addresses 0x06-0x08) which ARE available on mainnet.
+</Warning>
+
+## Status
+
+| Network | Status |
+|---------|--------|
+| Ethereum Mainnet | ❌ Not activated |
+| Sepolia | ✅ Available for testing |
+| Some L2s | ⚠️ Check individual L2 docs |
+
+## Precompile Addresses
+
+If/when activated, the precompiles occupy addresses `0x0b` through `0x13`:
+
+| Address | Name | Operation |
+|---------|------|-----------|
+| `0x0b` | BLS12_G1ADD | G1 point addition |
+| `0x0c` | BLS12_G1MUL | G1 scalar multiplication |
+| `0x0d` | BLS12_G1MSM | G1 multi-scalar multiplication |
+| `0x0e` | BLS12_G2ADD | G2 point addition |
+| `0x0f` | BLS12_G2MUL | G2 scalar multiplication |
+| `0x10` | BLS12_G2MSM | G2 multi-scalar multiplication |
+| `0x11` | BLS12_PAIRING | Pairing check |
+| `0x12` | BLS12_MAP_FP_TO_G1 | Map field element to G1 |
+| `0x13` | BLS12_MAP_FP2_TO_G2 | Map Fp2 element to G2 |
+
+## Gas Costs
+
+### G1 Operations
+
+| Operation | Gas Cost |
+|-----------|----------|
+| G1ADD | 500 |
+| G1MUL | 12,000 |
+| G1MSM (base) | 12,000 |
+| G1MSM (per point) | Discount schedule |
+
+### G2 Operations
+
+| Operation | Gas Cost |
+|-----------|----------|
+| G2ADD | 800 |
+| G2MUL | 45,000 |
+| G2MSM (base) | 45,000 |
+| G2MSM (per point) | Discount schedule |
+
+### Pairing
+
+| Operation | Gas Cost |
+|-----------|----------|
+| Pairing (base) | 115,000 |
+| Pairing (per pair) | 23,000 |
+
+### Hash-to-Curve
+
+| Operation | Gas Cost |
+|-----------|----------|
+| MAP_FP_TO_G1 | 5,500 |
+| MAP_FP2_TO_G2 | 110,000 |
+
+## Input/Output Formats
+
+### G1 Point (Uncompressed)
+
+```
+| x-coordinate | y-coordinate |
+|   64 bytes   |   64 bytes   |
+Total: 128 bytes (padded from 96)
+```
+
+### G2 Point (Uncompressed)
+
+```
+| x.c0 | x.c1 | y.c0 | y.c1 |
+|  64  |  64  |  64  |  64  |
+Total: 256 bytes (padded from 192)
+```
+
+### Scalar
+
+```
+| scalar |
+| 32 bytes |
+```
+
+## Operation Details
+
+### G1ADD (0x0b)
+
+Add two G1 points.
+
+**Input**: 256 bytes (two G1 points)
+**Output**: 128 bytes (one G1 point)
+
+```solidity
+// Pseudocode
+function g1Add(bytes memory input) returns (bytes memory) {
+    G1Point p1 = decodeG1(input[0:128]);
+    G1Point p2 = decodeG1(input[128:256]);
+    return encodeG1(p1 + p2);
+}
+```
+
+### G1MUL (0x0c)
+
+Multiply G1 point by scalar.
+
+**Input**: 160 bytes (G1 point + 32-byte scalar)
+**Output**: 128 bytes (one G1 point)
+
+```solidity
+function g1Mul(bytes memory input) returns (bytes memory) {
+    G1Point p = decodeG1(input[0:128]);
+    uint256 scalar = uint256(bytes32(input[128:160]));
+    return encodeG1(p * scalar);
+}
+```
+
+### G1MSM (0x0d)
+
+Multi-scalar multiplication on G1.
+
+**Input**: Variable (pairs of G1 point + scalar)
+**Output**: 128 bytes (one G1 point)
+
+Computes: `Σ sᵢ·Pᵢ`
+
+### PAIRING (0x11)
+
+Pairing check on multiple pairs.
+
+**Input**: Variable (pairs of G1 and G2 points)
+**Output**: 32 bytes (boolean: 1 if check passes, 0 otherwise)
+
+Verifies: `e(P₁, Q₁) · e(P₂, Q₂) · ... · e(Pₙ, Qₙ) = 1`
+
+```solidity
+function pairingCheck(bytes memory input) returns (bool) {
+    // Input: n * (128 + 256) = n * 384 bytes
+    uint256 n = input.length / 384;
+
+    G1Point[] memory g1Points = new G1Point[](n);
+    G2Point[] memory g2Points = new G2Point[](n);
+
+    for (uint256 i = 0; i < n; i++) {
+        g1Points[i] = decodeG1(input[i*384:i*384+128]);
+        g2Points[i] = decodeG2(input[i*384+128:i*384+384]);
+    }
+
+    return multiPairing(g1Points, g2Points) == GT.identity();
+}
+```
+
+## Use Cases (When Available)
+
+### BLS Signature Verification
+
+```solidity
+// Verify BLS signature in smart contract
+function verifyBLSSignature(
+    bytes memory publicKey,   // 128 bytes G1
+    bytes memory message,     // arbitrary
+    bytes memory signature    // 256 bytes G2
+) public view returns (bool) {
+    // Hash message to G2
+    bytes memory messagePoint = mapToG2(hashToFp2(message));
+
+    // Pairing check: e(pk, H(m)) == e(G1, sig)
+    // Equivalently: e(pk, H(m)) · e(-G1, sig) == 1
+    bytes memory input = abi.encodePacked(
+        publicKey,
+        messagePoint,
+        G1_GENERATOR_NEG,
+        signature
+    );
+
+    (bool success, bytes memory result) = BLS12_PAIRING.staticcall(input);
+    return success && abi.decode(result, (bool));
+}
+```
+
+### Aggregated Signature Verification
+
+```solidity
+function verifyAggregatedSignature(
+    bytes[] memory publicKeys,
+    bytes memory message,
+    bytes memory aggregatedSignature
+) public view returns (bool) {
+    // Aggregate public keys
+    bytes memory aggPk = publicKeys[0];
+    for (uint256 i = 1; i < publicKeys.length; i++) {
+        aggPk = g1Add(aggPk, publicKeys[i]);
+    }
+
+    return verifyBLSSignature(aggPk, message, aggregatedSignature);
+}
+```
+
+## Error Conditions
+
+Precompiles return error (consume all gas) for:
+
+- Invalid point encoding
+- Point not on curve
+- Point not in correct subgroup
+- Invalid scalar (> field modulus)
+- Input length mismatch
+
+## Comparison with BN254
+
+| Feature | BLS12-381 | BN254 |
+|---------|-----------|-------|
+| Security | 128-bit | ~100-bit |
+| Mainnet | ❌ Not yet | ✅ Available |
+| Pairing gas | 115,000 + 23,000/pair | 45,000 + 34,000/pair |
+| Use case | Consensus layer | zkSNARKs, DeFi |
+
+## Related
+
+- [BLS12-381 Overview](/crypto/bls12-381) - Curve fundamentals
+- [BN254 Precompiles](/crypto/bn254) - Available on mainnet
+- [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) - Full specification

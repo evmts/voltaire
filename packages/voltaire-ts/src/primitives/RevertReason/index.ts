@@ -1,0 +1,43 @@
+import type { ReturnDataType } from "../ReturnData/ReturnDataType.js";
+import { from as _from } from "./from.js";
+import { fromReturnData as _fromReturnData } from "./fromReturnData.js";
+import type { RevertReasonType } from "./RevertReasonType.js";
+import { toString as _toString } from "./toString.js";
+
+export * from "./constants.js";
+export type {
+	CustomRevertReason,
+	ErrorRevertReason,
+	PanicRevertReason,
+	RevertReasonType,
+	UnknownRevertReason,
+} from "./RevertReasonType.js";
+
+/**
+ * Create RevertReason from various inputs
+ */
+export function from(
+	value: ReturnDataType | string | Uint8Array,
+): RevertReasonType {
+	return _from(value);
+}
+
+/**
+ * Decode RevertReason from ReturnData
+ */
+export function fromReturnData(returnData: ReturnDataType): RevertReasonType {
+	return _fromReturnData(returnData);
+}
+
+/**
+ * Convert RevertReason to string representation
+ */
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentional override for branded type conversion
+export function toString(reason: RevertReasonType): string {
+	return _toString(reason);
+}
+
+/**
+ * Internal exports for advanced usage
+ */
+export { _from, _fromReturnData, _toString };

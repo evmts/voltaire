@@ -1,0 +1,36 @@
+---
+title: State
+description: Storage keys combining address + slot
+---
+
+```typescript
+import { State } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+// Create storage key
+const key = yield* State.create('0x1234...', 0n)
+
+// From object
+const key2 = yield* State.from({ address: new Uint8Array(20), slot: 0n })
+
+// String conversion
+const str = State.toString(key)       // "0x1234...:0"
+const parsed = State.fromString(str)  // StorageKeyType | undefined
+
+// Comparison
+State.equals(key1, key2)
+State.hashCode(key)
+State.is(value)
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(input) => Effect<StorageKeyType, StateError>` |
+| `create` | `(address, slot) => Effect<StorageKeyType>` |
+| `toString` | `(key) => string` |
+| `fromString` | `(str) => StorageKeyType \| undefined` |
+| `equals` | `(a, b) => boolean` |
+| `hashCode` | `(key) => number` |
+| `is` | `(value) => value is StorageKeyType` |

@@ -1,0 +1,406 @@
+---
+title: '[Zig] src/primitives/uint64.zig'
+source: 'src/primitives/uint64.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/uint64.zig
+
+### Uint64 constants
+
+```zig
+test "Uint64 constants" {
+    try testing.expectEqual(@as(u64, 0), Uint64.MIN.value);
+    try testing.expectEqual(@as(u64, 18446744073709551615), Uint64.MAX.value);
+    try testing.expectEqual(@as(u64, 0), Uint64.ZERO.value);
+    try testing.expectEqual(@as(u64, 1), Uint64.ONE.value);
+    try testing.expectEqual(@as(usize, 8), Uint64.SIZE);
+    try testing.expectEqual(@as(usize, 64), Uint64.BITS);
+}
+```
+
+### Uint64 from
+
+```zig
+test "Uint64 from" {
+    const a = Uint64.from(42);
+    try testing.expectEqual(@as(u64, 42), a.value);
+
+    const b = Uint64.from(0);
+    try testing.expectEqual(@as(u64, 0), b.value);
+
+    const c = Uint64.from(18446744073709551615);
+    try testing.expectEqual(@as(u64, 18446744073709551615), c.value);
+}
+```
+
+### Uint64 fromNumber
+
+```zig
+test "Uint64 fromNumber" {
+    const a = Uint64.fromNumber(42);
+    try testing.expect(a != null);
+    try testing.expectEqual(@as(u64, 42), a.?.value);
+
+    const c = Uint64.fromNumber(-1);
+    try testing.expect(c == null);
+}
+```
+
+### Uint64 fromHex
+
+```zig
+test "Uint64 fromHex" {
+    const a = try Uint64.fromHex("0x000000000000002a");
+    try testing.expectEqual(@as(u64, 42), a.value);
+
+    const b = try Uint64.fromHex("ffffffffffffffff");
+    try testing.expectEqual(@as(u64, 18446744073709551615), b.value);
+
+    const c = try Uint64.fromHex("0X0000000000000000");
+    try testing.expectEqual(@as(u64, 0), c.value);
+
+    try testing.expectError(error.InvalidHex, Uint64.fromHex("0x10000000000000000"));
+    try testing.expectError(error.InvalidHex, Uint64.fromHex(""));
+    try testing.expectError(error.InvalidHex, Uint64.fromHex("0x"));
+}
+```
+
+### Uint64 fromBytes
+
+```zig
+test "Uint64 fromBytes" {
+    const bytes_be = [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2a };
+    const a = Uint64.fromBytes(&bytes_be);
+    try testing.expect(a != null);
+    try testing.expectEqual(@as(u64, 42), a.?.value);
+
+    const bytes_le = [_]u8{ 0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    const b = Uint64.fromBytesLittle(&bytes_le);
+    try testing.expect(b != null);
+    try testing.expectEqual(@as(u64, 42), b.?.value);
+
+    const empty: []const u8 = &.{};
+    try testing.expect(Uint64.fromBytes(empty) == null);
+
+    const too_long = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    try testing.expect(Uint64.fromBytes(&too_long) == null);
+}
+```
+
+### Uint64 toNumber
+
+```zig
+test "Uint64 toNumber" {
+    const a = Uint64.from(42);
+    try testing.expectEqual(@as(u64, 42), a.toNumber());
+}
+```
+
+### Uint64 toBigInt
+
+```zig
+test "Uint64 toBigInt" {
+    const a = Uint64.from(42);
+    try testing.expectEqual(@as(u128, 42), a.toBigInt());
+}
+```
+
+### Uint64 toHex
+
+```zig
+test "Uint64 toHex" {
+    var buf: [18]u8 = undefined;
+
+    const a = Uint64.from(42);
+    try testing.expectEqualStrings("0x000000000000002a", a.toHex(&buf));
+
+    const b = Uint64.from(18446744073709551615);
+    try testing.expectEqualStrings("0xffffffffffffffff", b.toHex(&buf));
+
+    const c = Uint64.from(0);
+    try testing.expectEqualStrings("0x0000000000000000", c.toHex(&buf));
+}
+```
+
+### Uint64 toBytes
+
+```zig
+test "Uint64 toBytes" {
+    var buf: [8]u8 = undefined;
+    const a = Uint64.from(0x123456789ABCDEF0);
+    const bytes = a.toBytes(&buf);
+    try testing.expectEqual(@as(usize, 8), bytes.len);
+    try testing.expectEqual(@as(u8, 0x12), bytes[0]);
+    try testing.expectEqual(@as(u8, 0x34), bytes[1]);
+    try testing.expectEqual(@as(u8, 0x56), bytes[2]);
+    try testing.expectEqual(@as(u8, 0x78), bytes[3]);
+    try testing.expectEqual(@as(u8, 0x9A), bytes[4]);
+    try testing.expectEqual(@as(u8, 0xBC), bytes[5]);
+    try testing.expectEqual(@as(u8, 0xDE), bytes[6]);
+    try testing.expectEqual(@as(u8, 0xF0), bytes[7]);
+
+    const bytes_le = a.toBytesLittle(&buf);
+    try testing.expectEqual(@as(u8, 0xF0), bytes_le[0]);
+    try testing.expectEqual(@as(u8, 0xDE), bytes_le[1]);
+    try testing.expectEqual(@as(u8, 0xBC), bytes_le[2]);
+    try testing.expectEqual(@as(u8, 0x9A), bytes_le[3]);
+    try testing.expectEqual(@as(u8, 0x78), bytes_le[4]);
+    try testing.expectEqual(@as(u8, 0x56), bytes_le[5]);
+    try testing.expectEqual(@as(u8, 0x34), bytes_le[6]);
+    try testing.expectEqual(@as(u8, 0x12), bytes_le[7]);
+}
+```
+
+### Uint64 checked add
+
+```zig
+test "Uint64 checked add" {
+    const a = Uint64.from(10000000000000000000);
+    const b = Uint64.from(5000000000000000000);
+    const result = a.add(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u64, 15000000000000000000), result.?.value);
+
+    const c = Uint64.from(10000000000000000000);
+    const d = Uint64.from(10000000000000000000);
+    try testing.expect(c.add(d) == null);
+}
+```
+
+### Uint64 checked sub
+
+```zig
+test "Uint64 checked sub" {
+    const a = Uint64.from(10000000000000000000);
+    const b = Uint64.from(5000000000000000000);
+    const result = a.sub(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u64, 5000000000000000000), result.?.value);
+
+    const c = Uint64.from(5000000000000000000);
+    const d = Uint64.from(10000000000000000000);
+    try testing.expect(c.sub(d) == null);
+}
+```
+
+### Uint64 checked mul
+
+```zig
+test "Uint64 checked mul" {
+    const a = Uint64.from(1000000000);
+    const b = Uint64.from(1000000000);
+    const result = a.mul(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u64, 1000000000000000000), result.?.value);
+
+    const c = Uint64.from(10000000000);
+    const d = Uint64.from(10000000000);
+    try testing.expect(c.mul(d) == null);
+}
+```
+
+### Uint64 checked div
+
+```zig
+test "Uint64 checked div" {
+    const a = Uint64.from(10000000000000000000);
+    const b = Uint64.from(1000000000);
+    const result = a.div(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u64, 10000000000), result.?.value);
+
+    const c = Uint64.from(100);
+    const d = Uint64.from(0);
+    try testing.expect(c.div(d) == null);
+}
+```
+
+### Uint64 checked mod
+
+```zig
+test "Uint64 checked mod" {
+    const a = Uint64.from(10000000000000000000);
+    const b = Uint64.from(3000000000000000000);
+    const result = a.mod(b);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u64, 1000000000000000000), result.?.value);
+
+    const c = Uint64.from(100);
+    const d = Uint64.from(0);
+    try testing.expect(c.mod(d) == null);
+}
+```
+
+### Uint64 checked pow
+
+```zig
+test "Uint64 checked pow" {
+    const a = Uint64.from(2);
+    const result = a.pow(20);
+    try testing.expect(result != null);
+    try testing.expectEqual(@as(u64, 1048576), result.?.value);
+
+    const b = Uint64.from(10);
+    const result2 = b.pow(18);
+    try testing.expect(result2 != null);
+    try testing.expectEqual(@as(u64, 1000000000000000000), result2.?.value);
+
+    const c = Uint64.from(10);
+    try testing.expect(c.pow(20) == null);
+
+    try testing.expectEqual(@as(u64, 1), Uint64.from(5).pow(0).?.value);
+    try testing.expectEqual(@as(u64, 0), Uint64.from(0).pow(5).?.value);
+    try testing.expectEqual(@as(u64, 1), Uint64.from(1).pow(63).?.value);
+}
+```
+
+### Uint64 wrapping arithmetic
+
+```zig
+test "Uint64 wrapping arithmetic" {
+    const a = Uint64.from(10000000000000000000);
+    const b = Uint64.from(10000000000000000000);
+    const expected = a.value +% b.value;
+    try testing.expectEqual(expected, a.wrappingAdd(b).value);
+
+    const c = Uint64.from(5000000000000000000);
+    const d = Uint64.from(10000000000000000000);
+    const expected2 = c.value -% d.value;
+    try testing.expectEqual(expected2, c.wrappingSub(d).value);
+}
+```
+
+### Uint64 saturating arithmetic
+
+```zig
+test "Uint64 saturating arithmetic" {
+    const a = Uint64.from(10000000000000000000);
+    const b = Uint64.from(10000000000000000000);
+    try testing.expectEqual(@as(u64, 18446744073709551615), a.saturatingAdd(b).value);
+
+    const c = Uint64.from(5000000000000000000);
+    const d = Uint64.from(10000000000000000000);
+    try testing.expectEqual(@as(u64, 0), c.saturatingSub(d).value);
+}
+```
+
+### Uint64 comparison
+
+```zig
+test "Uint64 comparison" {
+    const a = Uint64.from(10000000000000000000);
+    const b = Uint64.from(10000000000000000000);
+    const c = Uint64.from(5000000000000000000);
+
+    try testing.expect(a.equals(b));
+    try testing.expect(!a.equals(c));
+
+    try testing.expectEqual(std.math.Order.eq, a.compare(b));
+    try testing.expectEqual(std.math.Order.gt, a.compare(c));
+    try testing.expectEqual(std.math.Order.lt, c.compare(a));
+
+    try testing.expect(!a.lessThan(b));
+    try testing.expect(c.lessThan(a));
+    try testing.expect(a.greaterThan(c));
+    try testing.expect(a.lessThanOrEqual(b));
+    try testing.expect(a.greaterThanOrEqual(b));
+}
+```
+
+### Uint64 bitwise operations
+
+```zig
+test "Uint64 bitwise operations" {
+    const a = Uint64.from(0xFFFFFFFF00000000);
+    const b = Uint64.from(0x0F0F0F0F0F0F0F0F);
+
+    try testing.expectEqual(@as(u64, 0x0F0F0F0F00000000), a.bitwiseAnd(b).value);
+    try testing.expectEqual(@as(u64, 0xFFFFFFFF0F0F0F0F), a.bitwiseOr(b).value);
+    try testing.expectEqual(@as(u64, 0xF0F0F0F00F0F0F0F), a.bitwiseXor(b).value);
+    try testing.expectEqual(@as(u64, 0x00000000FFFFFFFF), a.bitwiseNot().value);
+}
+```
+
+### Uint64 shift operations
+
+```zig
+test "Uint64 shift operations" {
+    const a = Uint64.from(0x00000000000000FF);
+    try testing.expectEqual(@as(u64, 0x000000000000FF00), a.shiftLeft(8).value);
+    try testing.expectEqual(@as(u64, 0x000000000000000F), a.shiftRight(4).value);
+}
+```
+
+### Uint64 rotate operations
+
+```zig
+test "Uint64 rotate operations" {
+    const a = Uint64.from(0x123456789ABCDEF0);
+    try testing.expectEqual(@as(u64, 0x23456789ABCDEF01), a.rotateLeft(4).value);
+    try testing.expectEqual(@as(u64, 0x0123456789ABCDEF), a.rotateRight(4).value);
+}
+```
+
+### Uint64 utility functions
+
+```zig
+test "Uint64 utility functions" {
+    const zero = Uint64.from(0);
+    const nonzero = Uint64.from(42);
+
+    try testing.expect(zero.isZero());
+    try testing.expect(!nonzero.isZero());
+
+    const a = Uint64.from(1000000000000);
+    const b = Uint64.from(2000000000000);
+    try testing.expectEqual(@as(u64, 1000000000000), a.min(b).value);
+    try testing.expectEqual(@as(u64, 2000000000000), a.max(b).value);
+}
+```
+
+### Uint64 bit counting
+
+```zig
+test "Uint64 bit counting" {
+    const a = Uint64.from(0x0010000000000000);
+    try testing.expectEqual(@as(u7, 53), a.bitLength());
+    try testing.expectEqual(@as(u7, 11), a.leadingZeros());
+    try testing.expectEqual(@as(u7, 52), a.trailingZeros());
+    try testing.expectEqual(@as(u7, 1), a.popCount());
+
+    const zero = Uint64.from(0);
+    try testing.expectEqual(@as(u7, 0), zero.bitLength());
+    try testing.expectEqual(@as(u7, 64), zero.leadingZeros());
+}
+```
+
+### Uint64 byteSwap
+
+```zig
+test "Uint64 byteSwap" {
+    const a = Uint64.from(0x123456789ABCDEF0);
+    try testing.expectEqual(@as(u64, 0xF0DEBC9A78563412), a.byteSwap().value);
+}
+```
+
+### Uint64 reverseBits
+
+```zig
+test "Uint64 reverseBits" {
+    const a = Uint64.from(0x8000000000000000);
+    try testing.expectEqual(@as(u64, 0x0000000000000001), a.reverseBits().value);
+}
+```
+
+### Uint64 hi/lo parts
+
+```zig
+test "Uint64 hi/lo parts" {
+    const a = Uint64.from(0x123456789ABCDEF0);
+    try testing.expectEqual(@as(u32, 0x12345678), a.hi());
+    try testing.expectEqual(@as(u32, 0x9ABCDEF0), a.lo());
+
+    const b = Uint64.fromHiLo(0x12345678, 0x9ABCDEF0);
+    try testing.expectEqual(@as(u64, 0x123456789ABCDEF0), b.value);
+}
+```

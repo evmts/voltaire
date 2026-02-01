@@ -1,0 +1,130 @@
+---
+title: ProtocolVersion
+description: Ethereum wire protocol version identifier for peer-to-peer communication
+---
+
+# ProtocolVersion
+
+Ethereum wire protocol version identifier for P2P network communication.
+
+## Overview
+
+ProtocolVersion represents the version of the Ethereum wire protocol used for peer-to-peer communication between nodes. Protocol versions define capabilities and message formats for node synchronization.
+
+## Type Definition
+
+```typescript
+type ProtocolVersionType = string & {
+  readonly __tag: "ProtocolVersion";
+};
+```
+
+## Protocol Versions
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `ETH_66` | `"eth/66"` | ETH66 protocol |
+| `ETH_67` | `"eth/67"` | ETH67 protocol |
+| `ETH_68` | `"eth/68"` | ETH68 protocol (current) |
+| `SNAP_1` | `"snap/1"` | Snapshot sync protocol |
+
+## Usage
+
+### Create Protocol Version
+
+```typescript
+import * as ProtocolVersion from './primitives/ProtocolVersion/index.js';
+
+const version = ProtocolVersion.from("eth/68");
+```
+
+### Use Constants
+
+```typescript
+import { ETH_68, SNAP_1 } from './primitives/ProtocolVersion/index.js';
+
+console.log(ETH_68);  // "eth/68"
+console.log(SNAP_1);  // "snap/1"
+```
+
+### Compare Versions
+
+```typescript
+const isEqual = ProtocolVersion.equals("eth/67", "eth/68");
+// false
+
+const comparison = ProtocolVersion.compare("eth/66", "eth/68");
+// -2 (eth/66 is 2 versions behind eth/68)
+```
+
+### Convert to String
+
+```typescript
+const str = ProtocolVersion.toString("eth/68");
+// "eth/68"
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `from(version)` | Create from version string |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `toString(v)` | Convert to string representation |
+| `equals(v1, v2)` | Check if versions are equal |
+| `compare(v1, v2)` | Compare version ordering (-1, 0, 1) |
+
+### Constants
+
+| Constant | Description |
+|----------|-------------|
+| `ETH_66` | ETH protocol version 66 |
+| `ETH_67` | ETH protocol version 67 |
+| `ETH_68` | ETH protocol version 68 |
+| `SNAP_1` | Snapshot sync protocol version 1 |
+
+## Protocol History
+
+### ETH/66 (Berlin)
+- Typed transactions support
+- Receipt status encoding
+
+### ETH/67 (London)
+- Removed `GetNodeData`/`NodeData` messages
+- Required for nodes after The Merge
+
+### ETH/68 (Current)
+- Transaction announcements include type and size
+- Improved transaction pool management
+
+### SNAP/1
+- Snapshot synchronization protocol
+- Fast state sync via state snapshots
+
+## Node Communication
+
+When connecting to peers, nodes exchange supported protocol versions:
+
+```typescript
+// Example peer capabilities
+const peerCaps = [
+  ProtocolVersion.from("eth/68"),
+  ProtocolVersion.from("eth/67"),
+  ProtocolVersion.from("snap/1"),
+];
+
+// Find highest compatible ETH version
+const ethVersions = peerCaps.filter(v => v.startsWith("eth/"));
+const highest = ethVersions.sort(ProtocolVersion.compare).pop();
+```
+
+## See Also
+
+- [Chain](/primitives/chain) - Chain configuration
+- [Hardfork](/primitives/hardfork) - Ethereum hardforks

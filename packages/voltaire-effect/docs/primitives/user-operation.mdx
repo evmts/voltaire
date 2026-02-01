@@ -1,0 +1,48 @@
+---
+title: UserOperation
+description: ERC-4337 user operation for smart contract wallets
+---
+
+```typescript
+import * as UserOperation from 'voltaire-effect/primitives/UserOperation'
+import { Effect } from 'effect'
+
+// Create
+const userOp = await Effect.runPromise(UserOperation.from({
+  sender: '0x...',
+  nonce: 0n,
+  initCode: '0x',
+  callData: '0x...',
+  callGasLimit: 100000n,
+  verificationGasLimit: 100000n,
+  preVerificationGas: 21000n,
+  maxFeePerGas: 1000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  paymasterAndData: '0x',
+  signature: '0x...',
+}))
+
+// Hash for signing
+const userOpHash = await Effect.runPromise(
+  UserOperation.hash(userOp, entryPointAddress, 1n)
+)
+
+// Pack for v0.7 format
+const packed = await Effect.runPromise(UserOperation.pack(userOp))
+```
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| sender | Address | Smart contract wallet |
+| nonce | bigint | Anti-replay nonce |
+| initCode | Uint8Array | Factory + init data |
+| callData | Uint8Array | Encoded call(s) |
+| callGasLimit | bigint | Execution gas |
+| verificationGasLimit | bigint | Verification gas |
+| preVerificationGas | bigint | Bundler overhead |
+| maxFeePerGas | bigint | EIP-1559 max fee |
+| maxPriorityFeePerGas | bigint | EIP-1559 priority |
+| paymasterAndData | Uint8Array | Paymaster + data |
+| signature | Uint8Array | Signature |

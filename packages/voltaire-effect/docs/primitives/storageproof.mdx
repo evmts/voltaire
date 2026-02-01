@@ -1,0 +1,37 @@
+---
+title: StorageProof
+description: Merkle Patricia trie storage proofs for eth_getProof
+---
+
+```typescript
+import { StorageProof } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+// Parse storage proof from eth_getProof response
+const proof = yield* StorageProof.from({
+  key: '0x0000...0001',
+  value: '0x0000...0064',
+  proof: ['0xf90211a0...', '0xf90211a0...']
+})
+
+// Compare proofs
+const isEqual = yield* StorageProof.equals(proofA, proofB)
+```
+
+## Structure
+
+```typescript
+{
+  key: Hex,           // Storage slot key
+  value: Hex,         // Value at slot
+  proof: Hex[]        // RLP-encoded proof nodes
+}
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(input) => Effect<StorageProofType, Error>` |
+| `equals` | `(a, b) => Effect<boolean>` |
+| `Schema` | Effect Schema for validation |

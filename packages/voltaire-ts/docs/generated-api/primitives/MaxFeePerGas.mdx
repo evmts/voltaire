@@ -1,0 +1,619 @@
+---
+title: "primitives/MaxFeePerGas"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/MaxFeePerGas
+
+# primitives/MaxFeePerGas
+
+## Type Aliases
+
+### MaxFeePerGasType
+
+> **MaxFeePerGasType** = `bigint` & `object`
+
+Defined in: [src/primitives/MaxFeePerGas/MaxFeePerGasType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/MaxFeePerGasType.ts#L10)
+
+Branded MaxFeePerGas type - EIP-1559 maximum fee per gas
+Represents the maximum total gas price user is willing to pay
+Must be >= baseFeePerGas + maxPriorityFeePerGas for inclusion
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"MaxFeePerGas"`
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-1559
+
+## Variables
+
+### MaxFeePerGas
+
+> `const` **MaxFeePerGas**: `object`
+
+Defined in: [src/primitives/MaxFeePerGas/index.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/index.ts#L53)
+
+#### Type Declaration
+
+##### compare()
+
+> **compare**: (`maxFee1`, `maxFee2`) => `number`
+
+###### Parameters
+
+###### maxFee1
+
+`string` | `number` | `bigint`
+
+###### maxFee2
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`number`
+
+##### equals()
+
+> **equals**: (`maxFee1`, `maxFee2`) => `boolean`
+
+###### Parameters
+
+###### maxFee1
+
+`string` | `number` | `bigint`
+
+###### maxFee2
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`MaxFeePerGasType`](#maxfeepergastype)
+
+Create MaxFeePerGas from bigint, number, or hex string
+
+###### Parameters
+
+###### value
+
+Max fee in Wei
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Branded max fee
+
+###### Throws
+
+If value is negative or invalid format
+
+###### Example
+
+```typescript
+const maxFee = MaxFeePerGas.from(100000000000n); // 100 Gwei
+const maxFee2 = MaxFeePerGas.from("0x174876e800");
+```
+
+##### fromGwei()
+
+> **fromGwei**: (`gwei`) => [`MaxFeePerGasType`](#maxfeepergastype)
+
+Create MaxFeePerGas from Gwei value
+
+###### Parameters
+
+###### gwei
+
+Value in Gwei
+
+`number` | `bigint`
+
+###### Returns
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Max fee in Wei
+
+###### Example
+
+```typescript
+const maxFee = MaxFeePerGas.fromGwei(100n); // 100 Gwei = 100000000000 Wei
+```
+
+##### fromWei()
+
+> **fromWei**: (`wei`) => [`MaxFeePerGasType`](#maxfeepergastype)
+
+Create MaxFeePerGas from Wei value (alias for from)
+
+###### Parameters
+
+###### wei
+
+Value in Wei
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Max fee
+
+###### Example
+
+```typescript
+const maxFee = MaxFeePerGas.fromWei(100000000000n);
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`maxFee`) => `bigint`
+
+###### Parameters
+
+###### maxFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`bigint`
+
+##### toGwei()
+
+> **toGwei**: (`maxFee`) => `bigint`
+
+###### Parameters
+
+###### maxFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`bigint`
+
+##### toNumber()
+
+> **toNumber**: (`maxFee`) => `number`
+
+###### Parameters
+
+###### maxFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`number`
+
+##### toWei()
+
+> **toWei**: (`maxFee`) => `bigint`
+
+###### Parameters
+
+###### maxFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`bigint`
+
+## Functions
+
+### \_compare()
+
+> **\_compare**(`this`, `other`): `number`
+
+Defined in: [src/primitives/MaxFeePerGas/compare.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/compare.js#L15)
+
+Compare two MaxFeePerGas values
+
+#### Parameters
+
+##### this
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+##### other
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Value to compare
+
+#### Returns
+
+`number`
+
+-1 if this < other, 0 if equal, 1 if this > other
+
+#### Example
+
+```typescript
+const fee1 = MaxFeePerGas.from(100000000000n);
+const fee2 = MaxFeePerGas.from(120000000000n);
+MaxFeePerGas.compare(fee1, fee2); // -1
+```
+
+***
+
+### \_equals()
+
+> **\_equals**(`this`, `other`): `boolean`
+
+Defined in: [src/primitives/MaxFeePerGas/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/equals.js#L15)
+
+Check if two MaxFeePerGas values are equal
+
+#### Parameters
+
+##### this
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+##### other
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Value to compare
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### Example
+
+```typescript
+const fee1 = MaxFeePerGas.from(100000000000n);
+const fee2 = MaxFeePerGas.from(100000000000n);
+MaxFeePerGas.equals(fee1, fee2); // true
+```
+
+***
+
+### \_toBigInt()
+
+> **\_toBigInt**(`this`): `bigint`
+
+Defined in: [src/primitives/MaxFeePerGas/toBigInt.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/toBigInt.js#L13)
+
+Convert MaxFeePerGas to bigint (identity function)
+
+#### Parameters
+
+##### this
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+#### Returns
+
+`bigint`
+
+Value as bigint
+
+#### Example
+
+```typescript
+const maxFee = MaxFeePerGas.from(100000000000n);
+MaxFeePerGas.toBigInt(maxFee); // 100000000000n
+```
+
+***
+
+### \_toGwei()
+
+> **\_toGwei**(`this`): `bigint`
+
+Defined in: [src/primitives/MaxFeePerGas/toGwei.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/toGwei.js#L13)
+
+Convert MaxFeePerGas to Gwei
+
+#### Parameters
+
+##### this
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+#### Returns
+
+`bigint`
+
+Value in Gwei
+
+#### Example
+
+```typescript
+const maxFee = MaxFeePerGas.from(100000000000n);
+MaxFeePerGas.toGwei(maxFee); // 100n Gwei
+```
+
+***
+
+### \_toNumber()
+
+> **\_toNumber**(`this`): `number`
+
+Defined in: [src/primitives/MaxFeePerGas/toNumber.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/toNumber.js#L14)
+
+Convert MaxFeePerGas to number
+WARNING: May lose precision for large values
+
+#### Parameters
+
+##### this
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+#### Returns
+
+`number`
+
+Value as number
+
+#### Example
+
+```typescript
+const maxFee = MaxFeePerGas.from(100000000000n);
+MaxFeePerGas.toNumber(maxFee); // 100000000000
+```
+
+***
+
+### \_toWei()
+
+> **\_toWei**(`this`): `bigint`
+
+Defined in: [src/primitives/MaxFeePerGas/toWei.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/toWei.js#L13)
+
+Convert MaxFeePerGas to Wei (identity function)
+
+#### Parameters
+
+##### this
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+#### Returns
+
+`bigint`
+
+Value in Wei
+
+#### Example
+
+```typescript
+const maxFee = MaxFeePerGas.from(100000000000n);
+MaxFeePerGas.toWei(maxFee); // 100000000000n Wei
+```
+
+***
+
+### compare()
+
+> **compare**(`maxFee1`, `maxFee2`): `number`
+
+Defined in: [src/primitives/MaxFeePerGas/index.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/index.ts#L42)
+
+#### Parameters
+
+##### maxFee1
+
+`string` | `number` | `bigint`
+
+##### maxFee2
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`number`
+
+***
+
+### equals()
+
+> **equals**(`maxFee1`, `maxFee2`): `boolean`
+
+Defined in: [src/primitives/MaxFeePerGas/index.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/index.ts#L35)
+
+#### Parameters
+
+##### maxFee1
+
+`string` | `number` | `bigint`
+
+##### maxFee2
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`MaxFeePerGasType`](#maxfeepergastype)
+
+Defined in: [src/primitives/MaxFeePerGas/from.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/from.js#L16)
+
+Create MaxFeePerGas from bigint, number, or hex string
+
+#### Parameters
+
+##### value
+
+Max fee in Wei
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Branded max fee
+
+#### Throws
+
+If value is negative or invalid format
+
+#### Example
+
+```typescript
+const maxFee = MaxFeePerGas.from(100000000000n); // 100 Gwei
+const maxFee2 = MaxFeePerGas.from("0x174876e800");
+```
+
+***
+
+### fromGwei()
+
+> **fromGwei**(`gwei`): [`MaxFeePerGasType`](#maxfeepergastype)
+
+Defined in: [src/primitives/MaxFeePerGas/fromGwei.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/fromGwei.js#L12)
+
+Create MaxFeePerGas from Gwei value
+
+#### Parameters
+
+##### gwei
+
+Value in Gwei
+
+`number` | `bigint`
+
+#### Returns
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Max fee in Wei
+
+#### Example
+
+```typescript
+const maxFee = MaxFeePerGas.fromGwei(100n); // 100 Gwei = 100000000000 Wei
+```
+
+***
+
+### fromWei()
+
+> **fromWei**(`wei`): [`MaxFeePerGasType`](#maxfeepergastype)
+
+Defined in: [src/primitives/MaxFeePerGas/fromWei.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/fromWei.js#L12)
+
+Create MaxFeePerGas from Wei value (alias for from)
+
+#### Parameters
+
+##### wei
+
+Value in Wei
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`MaxFeePerGasType`](#maxfeepergastype)
+
+Max fee
+
+#### Example
+
+```typescript
+const maxFee = MaxFeePerGas.fromWei(100000000000n);
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`maxFee`): `bigint`
+
+Defined in: [src/primitives/MaxFeePerGas/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/index.ts#L31)
+
+#### Parameters
+
+##### maxFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`bigint`
+
+***
+
+### toGwei()
+
+> **toGwei**(`maxFee`): `bigint`
+
+Defined in: [src/primitives/MaxFeePerGas/index.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/index.ts#L19)
+
+#### Parameters
+
+##### maxFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`bigint`
+
+***
+
+### toNumber()
+
+> **toNumber**(`maxFee`): `number`
+
+Defined in: [src/primitives/MaxFeePerGas/index.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/index.ts#L27)
+
+#### Parameters
+
+##### maxFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`number`
+
+***
+
+### toWei()
+
+> **toWei**(`maxFee`): `bigint`
+
+Defined in: [src/primitives/MaxFeePerGas/index.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MaxFeePerGas/index.ts#L23)
+
+#### Parameters
+
+##### maxFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`bigint`

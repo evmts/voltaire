@@ -1,0 +1,36 @@
+---
+title: "Concatenate Hex Strings"
+description: "Combine multiple hex strings into a single hex value"
+---
+
+Combine multiple hex strings into a single hex value
+
+```typescript
+import { Bytes } from '@tevm/voltaire/Bytes';
+import * as Hex from '@tevm/voltaire/Hex';
+
+// Create some hex strings
+const hex1 = Hex.from("0x1234");
+const hex2 = Hex.from("0x5678");
+const hex3 = Hex.from("0xabcd");
+
+// Concatenate them (variadic arguments)
+const combined = Hex.concat(hex1, hex2, hex3);
+
+// Can also concatenate with bytes converted to hex
+const bytes = Bytes.from([0x01, 0x02, 0x03]);
+const hexFromBytes = Hex.fromBytes(bytes);
+const withBytes = Hex.concat(hex1, hexFromBytes);
+
+// Concatenate just two
+const twoValues = Hex.concat("0xaa", "0xbb");
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/hex-and-bytes/hex-concatenate.ts`](https://github.com/evmts/voltaire/blob/main/examples/hex-and-bytes/hex-concatenate.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)

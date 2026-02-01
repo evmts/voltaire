@@ -1,0 +1,40 @@
+---
+title: '[TS/JS] src/jsonrpc/eth/blockNumber/eth_blockNumber.test.ts'
+source: 'src/jsonrpc/eth/blockNumber/eth_blockNumber.test.ts'
+---
+
+> Auto-generated from test file: src/jsonrpc/eth/blockNumber/eth_blockNumber.test.ts
+
+```typescript
+import { describe, expect, test } from "vitest";
+import { BlockNumberRequest, method } from "./eth_blockNumber.js";
+
+describe("eth_blockNumber", () => {
+	describe("Request Creation", () => {
+		test("creates request with no parameters", () => {
+			const req = BlockNumberRequest();
+			expect(req).toEqual({
+				method: "eth_blockNumber",
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_blockNumber");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type", () => {
+			const req = BlockNumberRequest();
+			expect(req).toHaveProperty("method");
+			expect(req.params).toBeUndefined();
+		});
+
+		test("method matches constant", () => {
+			const req = BlockNumberRequest();
+			expect(req.method).toBe(method);
+		});
+	});
+});
+
+```

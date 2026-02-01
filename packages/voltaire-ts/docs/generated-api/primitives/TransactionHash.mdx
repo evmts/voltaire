@@ -1,0 +1,280 @@
+---
+title: "primitives/TransactionHash"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/TransactionHash
+
+# primitives/TransactionHash
+
+## Classes
+
+### InvalidTransactionHashFormatError
+
+Defined in: [src/primitives/TransactionHash/errors.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L23)
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidTransactionHashFormatError**(`message`, `details?`): [`InvalidTransactionHashFormatError`](#invalidtransactionhashformaterror)
+
+Defined in: [src/primitives/TransactionHash/errors.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L28)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### details?
+
+[`ErrorDetails`](#errordetails)
+
+###### Returns
+
+[`InvalidTransactionHashFormatError`](#invalidtransactionhashformaterror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: [`ErrorDetails`](#errordetails)
+
+Defined in: [src/primitives/TransactionHash/errors.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L33)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/TransactionHash/errors.js:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L30)
+
+###### Inherited from
+
+`Error.name`
+
+***
+
+### InvalidTransactionHashLengthError
+
+Defined in: [src/primitives/TransactionHash/errors.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L8)
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidTransactionHashLengthError**(`message`, `details?`): [`InvalidTransactionHashLengthError`](#invalidtransactionhashlengtherror)
+
+Defined in: [src/primitives/TransactionHash/errors.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L13)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### details?
+
+[`ErrorDetails`](#errordetails)
+
+###### Returns
+
+[`InvalidTransactionHashLengthError`](#invalidtransactionhashlengtherror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: [`ErrorDetails`](#errordetails)
+
+Defined in: [src/primitives/TransactionHash/errors.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L18)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/TransactionHash/errors.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L15)
+
+###### Inherited from
+
+`Error.name`
+
+## Interfaces
+
+### ErrorDetails
+
+Defined in: [src/primitives/TransactionHash/errors.js:2](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L2)
+
+#### Properties
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/TransactionHash/errors.js:5](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L5)
+
+##### expected?
+
+> `optional` **expected**: `string`
+
+Defined in: [src/primitives/TransactionHash/errors.js:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L4)
+
+##### value?
+
+> `optional` **value**: `unknown`
+
+Defined in: [src/primitives/TransactionHash/errors.js:3](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/errors.js#L3)
+
+## Type Aliases
+
+### TransactionHashType
+
+> **TransactionHashType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/TransactionHash/TransactionHashType.ts:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/TransactionHashType.ts#L6)
+
+Transaction hash (32-byte identifier)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"TransactionHash"`
+
+##### length
+
+> `readonly` **length**: `32`
+
+## Variables
+
+### equals()
+
+> `const` **equals**: (`a`, `b`) => `boolean` = `_equals`
+
+Defined in: [src/primitives/TransactionHash/index.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/index.ts#L14)
+
+Check if two TransactionHashes are equal
+
+#### Parameters
+
+##### a
+
+[`TransactionHashType`](#transactionhashtype)
+
+##### b
+
+[`TransactionHashType`](#transactionhashtype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> `const` **from**: (`value`) => [`TransactionHashType`](#transactionhashtype) = `_from`
+
+Defined in: [src/primitives/TransactionHash/index.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/index.ts#L10)
+
+Create TransactionHash from various input types
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`TransactionHashType`](#transactionhashtype)
+
+#### Throws
+
+***
+
+### fromBytes()
+
+> `const` **fromBytes**: (`bytes`) => [`TransactionHashType`](#transactionhashtype) = `_fromBytes`
+
+Defined in: [src/primitives/TransactionHash/index.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/index.ts#L11)
+
+Create TransactionHash from bytes
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`TransactionHashType`](#transactionhashtype)
+
+#### Throws
+
+If bytes length is not 32
+
+***
+
+### fromHex()
+
+> `const` **fromHex**: (`hex`) => [`TransactionHashType`](#transactionhashtype) = `_fromHex`
+
+Defined in: [src/primitives/TransactionHash/index.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/index.ts#L12)
+
+Create TransactionHash from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+#### Returns
+
+[`TransactionHashType`](#transactionhashtype)
+
+#### Throws
+
+If hex format is invalid
+
+***
+
+### toHex()
+
+> `const` **toHex**: (`hash`) => `string` = `_toHex`
+
+Defined in: [src/primitives/TransactionHash/index.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TransactionHash/index.ts#L13)
+
+Convert TransactionHash to hex string
+
+#### Parameters
+
+##### hash
+
+[`TransactionHashType`](#transactionhashtype)
+
+#### Returns
+
+`string`

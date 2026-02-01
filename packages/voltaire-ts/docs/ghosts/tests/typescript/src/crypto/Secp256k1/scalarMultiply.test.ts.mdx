@@ -1,0 +1,152 @@
+---
+title: '[TS/JS] src/crypto/Secp256k1/scalarMultiply.test.ts'
+source: 'src/crypto/Secp256k1/scalarMultiply.test.ts'
+---
+
+> Auto-generated from test file: src/crypto/Secp256k1/scalarMultiply.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { Secp256k1 } from "./index.js";
+
+describe("Secp256k1.scalarMultiply", () => {
+	it("multiplies base point by scalar", () => {
+		const scalar = new Uint8Array(32);
+		scalar[31] = 1;
+
+		const result = Secp256k1.scalarMultiply(scalar);
+
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(64);
+		expect(Secp256k1.isValidPublicKey(result)).toBe(true);
+	});
+
+	it("scalar 1 produces generator point (same as derivePublicKey)", () => {
+		const scalar = new Uint8Array(32);
+		scalar[31] = 1;
+
+		const result = Secp256k1.scalarMultiply(scalar);
+		const expected = Secp256k1.derivePublicKey(scalar);
+
+		expect(result).toEqual(expected);
+	});
+
+	it("different scalars produce different results", () => {
+		const scalar1 = new Uint8Array(32);
+		scalar1[31] = 5;
+		const scalar2 = new Uint8Array(32);
+		scalar2[31] = 7;
+
+		const result1 = Secp256k1.scalarMultiply(scalar1);
+		const result2 = Secp256k1.scalarMultiply(scalar2);
+
+		expect(result1).not.toEqual(result2);
+		expect(Secp256k1.isValidPublicKey(result1)).toBe(true);
+		expect(Secp256k1.isValidPublicKey(result2)).toBe(true);
+	});
+
+	it("scalar multiplication is deterministic", () => {
+		const scalar = new Uint8Array(32);
+		for (let i = 0; i < 32; i++) {
+			scalar[i] = i + 1;
+		}
+
+		const result1 = Secp256k1.scalarMultiply(scalar);
+		const result2 = Secp256k1.scalarMultiply(scalar);
+
+		expect(result1).toEqual(result2);
+	});
+
+	it("throws on invalid scalar length", () => {
+		const invalidScalar = new Uint8Array(16);
+
+		expect(() => Secp256k1.scalarMultiply(invalidScalar)).toThrow(
+			"Scalar must be 32 bytes",
+		);
+	});
+
+	it("throws on zero scalar", () => {
+		const zeroScalar = new Uint8Array(32);
+
+		expect(() => Secp256k1.scalarMultiply(zeroScalar)).toThrow();
+	});
+
+	it("throws on scalar >= curve order", () => {
+		const largeScalar = new Uint8Array(32);
+		largeScalar.fill(0xff);
+
+		expect(() => Secp256k1.scalarMultiply(largeScalar)).toThrow();
+	});
+
+	it("handles maximum valid scalar", () => {
+		// secp256k1 order - 1
+		const maxScalar = new Uint8Array(32);
+		maxScalar.set(
+			[
+				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
+			],
+			0,
+		);
+
+		const result = Secp256k1.scalarMultiply(maxScalar);
+
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(64);
+		expect(Secp256k1.isValidPublicKey(result)).toBe(true);
+	});
+
+	it("verifies scalar multiplication with addition", () => {
+		// 2*G should equal G + G
+		const scalar2 = new Uint8Array(32);
+		scalar2[31] = 2;
+		const scalar1 = new Uint8Array(32);
+		scalar1[31] = 1;
+
+		const point2 = Secp256k1.scalarMultiply(scalar2);
+		const point1 = Secp256k1.scalarMultiply(scalar1);
+		const sum = Secp256k1.addPoints(point1, point1);
+
+		expect(point2).toEqual(sum);
+	});
+
+	it("verifies distributive property: (a+b)*G = a*G + b*G", () => {
+		const a = 3;
+		const b = 5;
+		const sum = a + b;
+
+		const scalarA = new Uint8Array(32);
+		scalarA[31] = a;
+		const scalarB = new Uint8Array(32);
+		scalarB[31] = b;
+		const scalarSum = new Uint8Array(32);
+		scalarSum[31] = sum;
+
+		const pointA = Secp256k1.scalarMultiply(scalarA);
+		const pointB = Secp256k1.scalarMultiply(scalarB);
+		const pointSum = Secp256k1.scalarMultiply(scalarSum);
+		const pointAddition = Secp256k1.addPoints(pointA, pointB);
+
+		expect(pointSum).toEqual(pointAddition);
+	});
+
+	it("produces valid public keys for random scalars", () => {
+		const testScalars = [1, 2, 10, 100, 255, 1000, 65535];
+
+		for (const n of testScalars) {
+			const scalar = new Uint8Array(32);
+			const view = new DataView(scalar.buffer);
+			if (n <= 255) {
+				scalar[31] = n;
+			} else {
+				view.setUint32(28, n, false);
+			}
+
+			const result = Secp256k1.scalarMultiply(scalar);
+			expect(Secp256k1.isValidPublicKey(result)).toBe(true);
+		}
+	});
+});
+
+```

@@ -1,0 +1,35 @@
+---
+title: MultiTokenId
+description: ERC-1155 multi-token identifiers
+---
+
+```typescript
+import * as MultiTokenId from 'voltaire-effect/MultiTokenId'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema: bigint, number, or hex string
+const id = Schema.decodeSync(MultiTokenId.BigInt)(1n)
+Schema.decodeSync(MultiTokenId.Number)(42)
+Schema.decodeSync(MultiTokenId.Hex)('0x1')
+
+// From hex
+Schema.decodeSync(MultiTokenId.FromHexSchema)('0x1234')
+
+// Effect constructors
+const program = MultiTokenId.from(1n)
+MultiTokenId.fromNumber(42)
+MultiTokenId.fromBigInt(1000n)
+MultiTokenId.fromHex('0xabcd')
+
+// Check token type
+const isFungible = Effect.runSync(MultiTokenId.isValidFungible(id))
+const isNFT = Effect.runSync(MultiTokenId.isValidNonFungible(id))
+```
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(MultiTokenId.from(-1n))
+if (result._tag === 'Failure') console.error(result.cause)
+```

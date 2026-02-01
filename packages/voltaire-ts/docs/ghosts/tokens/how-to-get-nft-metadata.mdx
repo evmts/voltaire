@@ -1,0 +1,58 @@
+---
+title: Get NFT Metadata
+description: Fetch NFT metadata URI using Voltaire's Contract module.
+---
+
+## Goal
+
+Get the metadata URI for an ERC721 NFT.
+
+Return URI as:
+
+ANSWER: `<uri>`
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@voltaire/contract'
+
+const erc721Abi = [
+  {
+    type: 'function',
+    name: 'tokenURI',
+    stateMutability: 'view',
+    inputs: [{ type: 'uint256', name: 'tokenId' }],
+    outputs: [{ type: 'string', name: '' }],
+  },
+  {
+    type: 'function',
+    name: 'name',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'string', name: '' }],
+  },
+  {
+    type: 'function',
+    name: 'symbol',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'string', name: '' }],
+  },
+] as const
+
+const bayc = Contract({
+  address: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+  abi: erc721Abi,
+  provider,
+})
+
+const tokenId = 1234n
+const uri = await bayc.read.tokenURI(tokenId)
+console.log(`ANSWER: ${uri}`)
+
+// Fetch and parse metadata JSON
+const response = await fetch(uri)
+const metadata = await response.json()
+console.log('Name:', metadata.name)
+console.log('Image:', metadata.image)
+```

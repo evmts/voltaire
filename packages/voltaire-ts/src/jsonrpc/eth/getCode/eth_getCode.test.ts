@@ -1,0 +1,72 @@
+import { describe, expect, test } from "vitest";
+import { GetCodeRequest, method } from "./eth_getCode.js";
+
+describe("eth_getCode", () => {
+	describe("Request Creation", () => {
+		test("creates request with address and default block", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const req = GetCodeRequest(address);
+			expect(req).toEqual({
+				method: "eth_getCode",
+				params: [address, "latest"],
+			});
+		});
+
+		test("creates request with address and explicit block", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const req = GetCodeRequest(address, "0x5678");
+			expect(req).toEqual({
+				method: "eth_getCode",
+				params: [address, "0x5678"],
+			});
+		});
+
+		test("creates request with block tag", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const req = GetCodeRequest(address, "earliest");
+			expect(req).toEqual({
+				method: "eth_getCode",
+				params: [address, "earliest"],
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_getCode");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type with params", () => {
+			const req = GetCodeRequest("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+			expect(req).toHaveProperty("method");
+			expect(req).toHaveProperty("params");
+			expect(Array.isArray(req.params)).toBe(true);
+			expect(req.params).toHaveLength(2);
+		});
+
+		test("method matches constant", () => {
+			const req = GetCodeRequest("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+			expect(req.method).toBe(method);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		test("handles contract address", () => {
+			const address = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
+			const req = GetCodeRequest(address);
+			expect(req.params?.[0]).toBe(address);
+		});
+
+		test("handles EOA address", () => {
+			const address = "0x0000000000000000000000000000000000000000";
+			const req = GetCodeRequest(address);
+			expect(req.params?.[0]).toBe(address);
+		});
+
+		test("handles pending block tag", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const req = GetCodeRequest(address, "pending");
+			expect(req.params?.[1]).toBe("pending");
+		});
+	});
+});

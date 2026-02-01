@@ -1,0 +1,59 @@
+---
+title: "Foundry Integration"
+description: "Use Voltaire with Foundry for testing and deployment"
+---
+
+<Warning>
+**Looking for Contributors** — This Skill needs implementation. If you're interested in building Foundry integration for Voltaire, [open an issue](https://github.com/evmts/voltaire/issues) or submit a PR.
+</Warning>
+
+# Foundry Integration
+
+This Skill will provide seamless integration between Voltaire and Foundry for Solidity development.
+
+## Planned Features
+
+- **Forge Test Helpers** — Use Voltaire primitives in Forge tests via FFI
+- **Anvil Integration** — Connect Voltaire providers to local Anvil nodes
+- **Cast Compatibility** — Share transaction building logic between Cast and Voltaire
+- **Script Interop** — Use Voltaire for complex off-chain logic in Forge scripts
+- **ABI Sync** — Automatic ABI import from Foundry's `out/` directory
+
+## Example Usage (Proposed)
+
+```typescript
+import { foundry } from "./skills/foundry/index.js";
+import * as Address from "@voltaire/primitives/Address";
+import * as Transaction from "@voltaire/primitives/Transaction";
+
+// Connect to local Anvil
+const anvil = foundry.anvil({ port: 8545 });
+
+// Load deployed contract from Foundry artifacts
+const contract = await foundry.loadContract("out/MyContract.sol/MyContract.json");
+
+// Build transaction using Voltaire
+const tx = Transaction.from({
+  to: Address.from(contract.address),
+  data: contract.interface.encodeFunctionData("mint", [100n]),
+});
+
+// Execute and get traces
+const result = await anvil.call(tx, { trace: true });
+```
+
+## Contributing
+
+To implement this Skill:
+
+1. Fork the [Voltaire repository](https://github.com/evmts/voltaire)
+2. Create `examples/foundry/` directory
+3. Implement the integration following [Skills Philosophy](/concepts/skills)
+4. Add tests and documentation
+5. Submit a PR
+
+Key implementation areas:
+- Anvil JSON-RPC client using Voltaire's provider primitives
+- Foundry artifact parser for ABI/bytecode extraction
+- FFI bridge for using Voltaire in Forge tests
+- Script execution context for off-chain computation

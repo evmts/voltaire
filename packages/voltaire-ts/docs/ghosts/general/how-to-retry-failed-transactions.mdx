@@ -1,0 +1,186 @@
+---
+title: Retry Failed Transactions
+description: Implement robust transaction retry logic with exponential backoff and nonce management.
+---
+
+## Retry Causes
+
+| Error Type | Retry? | Action |
+|------------|--------|--------|
+| Underpriced | Yes | Increase gas price |
+| Nonce too low | Yes | Fetch fresh nonce |
+| Nonce too high | Wait | Pending tx must confirm |
+| Reverted | No | Fix transaction logic |
+| Insufficient funds | No | Add funds first |
+
+## Basic Retry Pattern
+
+```typescript
+import { Uint256 } from '@voltaire/primitives/Uint'
+import { Gwei } from '@voltaire/primitives/Denomination'
+
+interface RetryConfig {
+  maxAttempts: number
+  baseDelayMs: number
+  gasPriceMultiplier: bigint  // e.g., 110n for 10% increase
+}
+
+async function sendWithRetry(
+  provider: Provider,
+  tx: TransactionRequest,
+  config: RetryConfig
+): Promise<TransactionReceipt> {
+  let lastError: Error | undefined
+  let currentGasPrice = tx.gasPrice ?? await provider.getGasPrice()
+
+  for (let attempt = 0; attempt < config.maxAttempts; attempt++) {
+    try {
+      const hash = await provider.sendTransaction({
+        ...tx,
+        gasPrice: currentGasPrice,
+        nonce: await provider.getTransactionCount(tx.from, 'pending')
+      })
+      return await provider.waitForTransaction(hash)
+    } catch (error) {
+      lastError = error as Error
+
+      if (!isRetryable(error)) {
+        throw error
+      }
+
+      // Exponential backoff
+      const delay = config.baseDelayMs * Math.pow(2, attempt)
+      await sleep(delay)
+
+      // Bump gas price
+      const gasPriceUint = Uint256.from(currentGasPrice)
+      const bumped = Uint256.dividedBy(
+        Uint256.times(gasPriceUint, Uint256.from(config.gasPriceMultiplier)),
+        Uint256.from(100n)
+      )
+      currentGasPrice = Uint256.toBigInt(bumped)
+    }
+  }
+
+  throw lastError ?? new Error('Max retry attempts exceeded')
+}
+
+function isRetryable(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : ''
+  return (
+    message.includes('underpriced') ||
+    message.includes('nonce too low') ||
+    message.includes('replacement transaction') ||
+    message.includes('timeout') ||
+    message.includes('network')
+  )
+}
+```
+
+## Replace Stuck Transaction
+
+```typescript
+async function replaceStuckTx(
+  provider: Provider,
+  originalTx: TransactionRequest,
+  newGasPriceGwei: bigint
+): Promise<string> {
+  const gwei = Gwei.from(newGasPriceGwei)
+  const newGasPrice = Gwei.toWei(gwei)
+
+  // Same nonce replaces the pending tx
+  return await provider.sendTransaction({
+    ...originalTx,
+    gasPrice: newGasPrice
+  })
+}
+
+// Cancel by sending 0 value to self
+async function cancelPendingTx(
+  provider: Provider,
+  from: string,
+  nonce: number,
+  gasPriceGwei: bigint
+): Promise<string> {
+  const gwei = Gwei.from(gasPriceGwei)
+
+  return await provider.sendTransaction({
+    from,
+    to: from,
+    value: 0n,
+    nonce,
+    gasPrice: Gwei.toWei(gwei),
+    gasLimit: 21000n
+  })
+}
+```
+
+## Queue-Based Retry
+
+```typescript
+class TransactionQueue {
+  private pending = new Map<number, TransactionRequest>()
+  private nextNonce: number
+
+  constructor(
+    private provider: Provider,
+    private from: string,
+    initialNonce: number
+  ) {
+    this.nextNonce = initialNonce
+  }
+
+  async enqueue(tx: Omit<TransactionRequest, 'nonce' | 'from'>): Promise<string> {
+    const nonce = this.nextNonce++
+    const fullTx = { ...tx, from: this.from, nonce }
+
+    this.pending.set(nonce, fullTx)
+
+    try {
+      const hash = await this.provider.sendTransaction(fullTx)
+      await this.provider.waitForTransaction(hash)
+      this.pending.delete(nonce)
+      return hash
+    } catch (error) {
+      // On failure, retry logic can access pending tx by nonce
+      throw error
+    }
+  }
+
+  getPending(nonce: number): TransactionRequest | undefined {
+    return this.pending.get(nonce)
+  }
+}
+```
+
+## Monitoring Pattern
+
+```typescript
+async function waitWithTimeout(
+  provider: Provider,
+  hash: string,
+  timeoutMs: number
+): Promise<TransactionReceipt | null> {
+  const timeoutPromise = sleep(timeoutMs).then(() => null)
+  const receiptPromise = provider.waitForTransaction(hash)
+
+  return Promise.race([receiptPromise, timeoutPromise])
+}
+
+async function sendAndMonitor(
+  provider: Provider,
+  tx: TransactionRequest,
+  timeoutMs = 120000
+): Promise<TransactionReceipt> {
+  const hash = await provider.sendTransaction(tx)
+
+  const receipt = await waitWithTimeout(provider, hash, timeoutMs)
+
+  if (!receipt) {
+    // Transaction stuck - caller decides to replace or wait
+    throw new TransactionTimeoutError(hash, tx.nonce!)
+  }
+
+  return receipt
+}
+```

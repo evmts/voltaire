@@ -1,0 +1,109 @@
+---
+title: '[TS/JS] voltaire-effect/src/primitives/ContractSignature/ContractSignature.test.ts'
+source: 'voltaire-effect/src/primitives/ContractSignature/ContractSignature.test.ts'
+---
+
+> Auto-generated from test file: voltaire-effect/src/primitives/ContractSignature/ContractSignature.test.ts
+
+```typescript
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Schema from "effect/Schema";
+import { describe, expect, it, vi } from "vitest";
+import { ProviderService } from "../../services/Provider/index.js";
+import * as ContractSignature from "./index.js";
+
+describe("ContractSignature.Struct", () => {
+	it("validates input structure", () => {
+		const input = {
+			hash: new Uint8Array(32).fill(1),
+			signature: new Uint8Array(65).fill(2),
+			expectedSigner: new Uint8Array(20).fill(3),
+			returnData: new Uint8Array(32).fill(4),
+		};
+		const result = Schema.decodeSync(ContractSignature.Struct)(input);
+		expect(result.hash).toEqual(input.hash);
+		expect(result.signature).toEqual(input.signature);
+	});
+});
+
+describe("ERC1271_MAGIC_VALUE", () => {
+	it("has correct value", () => {
+		expect(ContractSignature.ERC1271_MAGIC_VALUE).toBeDefined();
+	});
+});
+
+describe("checkReturnData", () => {
+	it("returns true for magic value", () => {
+		const magicValue = new Uint8Array([0x16, 0x26, 0xba, 0x7e]);
+		expect(ContractSignature.checkReturnData(magicValue)).toBe(true);
+	});
+
+	it("returns false for wrong value", () => {
+		const wrongValue = new Uint8Array([0x00, 0x00, 0x00, 0x00]);
+		expect(ContractSignature.checkReturnData(wrongValue)).toBe(false);
+	});
+
+	it("returns false for short data", () => {
+		const shortData = new Uint8Array([0x16, 0x26]);
+		expect(ContractSignature.checkReturnData(shortData)).toBe(false);
+	});
+});
+
+describe("verifySignature", () => {
+	const mockProvider = {
+		request: vi.fn(),
+	};
+
+	const _MockProviderLayer = Layer.succeed(
+		ProviderService,
+		mockProvider as any,
+	);
+
+	it("exports verifySignature function", () => {
+		expect(typeof ContractSignature.verifySignature).toBe("function");
+	});
+
+	it("exports SignatureVerificationError", () => {
+		expect(ContractSignature.SignatureVerificationError).toBeDefined();
+	});
+
+	it("exports InvalidSignatureFormatError", () => {
+		expect(ContractSignature.InvalidSignatureFormatError).toBeDefined();
+	});
+
+	it("SignatureVerificationError is catchable with Effect.catchTag", async () => {
+		const error = new ContractSignature.SignatureVerificationError({
+			input: { address: "0x123", hash: new Uint8Array(32) },
+			message: "test error",
+		});
+
+		const program = Effect.fail(error).pipe(
+			Effect.catchTag("SignatureVerificationError", (e) =>
+				Effect.succeed(`caught: ${e.message}`),
+			),
+		);
+
+		const result = await Effect.runPromise(program);
+		expect(result).toBe("caught: test error");
+	});
+
+	it("InvalidSignatureFormatError has correct _tag", () => {
+		const error = new ContractSignature.InvalidSignatureFormatError({
+			message: "bad format",
+		});
+		expect(error._tag).toBe("InvalidSignatureFormatError");
+		expect(error.name).toBe("InvalidSignatureFormatError");
+	});
+
+	it("SignatureVerificationError has correct _tag", () => {
+		const error = new ContractSignature.SignatureVerificationError({
+			input: { address: "0x123", hash: new Uint8Array(32) },
+			message: "verification failed",
+		});
+		expect(error._tag).toBe("SignatureVerificationError");
+		expect(error.name).toBe("SignatureVerificationError");
+	});
+});
+
+```

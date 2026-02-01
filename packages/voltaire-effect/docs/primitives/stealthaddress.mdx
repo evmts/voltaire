@@ -1,0 +1,39 @@
+---
+title: StealthAddress
+description: EIP-5564 stealth addresses for transaction privacy
+---
+
+```typescript
+import * as StealthAddress from 'voltaire-effect/primitives/StealthAddress'
+import * as S from 'effect/Schema'
+
+// Schema validation (66-byte meta-address)
+const metaAddress = S.decodeSync(StealthAddress.MetaAddress)(new Uint8Array(66))
+
+// Parse to extract keys
+const { spendingPubKey, viewingPubKey } = S.decodeSync(StealthAddress.ParsedMetaAddress)(metaAddress)
+```
+
+## Schemas
+
+**StealthAddress.MetaAddress** — Validates 66-byte meta-address.
+
+```typescript
+const metaAddress = S.decodeSync(StealthAddress.MetaAddress)(bytes)
+```
+
+**StealthAddress.ParsedMetaAddress** — Parses meta-address to extract keys.
+
+```typescript
+const parsed = S.decodeSync(StealthAddress.ParsedMetaAddress)(metaAddress)
+// { spendingPubKey: Uint8Array, viewingPubKey: Uint8Array }
+```
+
+## Error Handling
+
+```typescript
+import * as Effect from 'effect/Effect'
+
+const result = S.decodeEither(StealthAddress.MetaAddress)(new Uint8Array(10)) // wrong length
+// Either.left(ParseError)
+```

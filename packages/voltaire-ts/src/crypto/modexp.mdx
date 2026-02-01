@@ -1,0 +1,238 @@
+---
+title: ModExp
+description: Modular exponentiation with arbitrary-precision integers and EIP-198 gas calculation
+---
+
+## Overview
+
+The modexp module implements modular exponentiation for arbitrary-precision integers, computing (base^exponent) mod modulus efficiently. This operation is critical for RSA, Diffie-Hellman, and other cryptographic protocols, and is implemented as an Ethereum precompile.
+
+**Status:** UNAUDITED - Use at your own risk in production environments.
+
+## Key Functions
+
+### `unauditedModexp`
+
+Perform modular exponentiation with arbitrary-precision integers.
+
+```zig
+pub fn unauditedModexp(
+    allocator: std.mem.Allocator,
+    base: []const u8,
+    exponent: []const u8,
+    modulus: []const u8,
+) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `base` - Base value as big-endian bytes
+- `exponent` - Exponent value as big-endian bytes
+- `modulus` - Modulus value as big-endian bytes
+
+**Returns:** Result of (base^exponent) mod modulus as big-endian bytes
+
+**Precompile:** Address 0x05
+
+### `calculateModexpGas` (EIP-198)
+
+Calculate gas cost for modexp operation (original formula).
+
+```zig
+pub fn calculateModexpGas(
+    base_len: usize,
+    exp_len: usize,
+    mod_len: usize,
+    exponent: []const u8,
+) u64
+```
+
+**Parameters:**
+- `base_len` - Length of base in bytes
+- `exp_len` - Length of exponent in bytes
+- `mod_len` - Length of modulus in bytes
+- `exponent` - Exponent value for complexity calculation
+
+**Returns:** Gas cost in gas units
+
+### `calculateModexpGasEip2565`
+
+Calculate gas cost using EIP-2565 pricing (reduced costs).
+
+```zig
+pub fn calculateModexpGasEip2565(
+    base_len: usize,
+    exp_len: usize,
+    mod_len: usize,
+    exponent: []const u8,
+) u64
+```
+
+**Parameters:** Same as `calculateModexpGas`
+
+**Returns:** Gas cost using EIP-2565 pricing (cheaper than EIP-198)
+
+## Examples
+
+### Basic Modular Exponentiation
+
+```zig
+const modexp = @import("crypto").modexp;
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+
+// Compute 2^10 mod 1000 = 1024 mod 1000 = 24
+const base = [_]u8{2};
+const exponent = [_]u8{10};
+const modulus = [_]u8{0x03, 0xE8}; // 1000 in big-endian
+
+const result = try modexp.unauditedModexp(
+    allocator,
+    &base,
+    &exponent,
+    &modulus,
+);
+defer allocator.free(result);
+
+// result should be [24]
+std.debug.print("2^10 mod 1000 = {}\n", .{result[0]});
+```
+
+### RSA Signature Verification
+
+```zig
+// Verify RSA signature: signature^e mod n = message_hash
+const signature: []const u8 = ...; // RSA signature
+const exponent = [_]u8{0x01, 0x00, 0x01}; // 65537 (common RSA exponent)
+const modulus: []const u8 = ...; // RSA public key modulus (2048+ bits)
+
+const verified_hash = try modexp.unauditedModexp(
+    allocator,
+    signature,
+    &exponent,
+    modulus,
+);
+defer allocator.free(verified_hash);
+
+// Compare with original message hash
+if (std.mem.eql(u8, verified_hash, expected_hash)) {
+    std.debug.print("RSA signature valid!\n", .{});
+}
+```
+
+### Diffie-Hellman Key Exchange
+
+```zig
+// Compute g^private_key mod p
+const generator = [_]u8{2}; // Common DH generator
+const private_key: []const u8 = ...; // Secret exponent
+const prime: []const u8 = ...; // Large prime modulus
+
+const public_key = try modexp.unauditedModexp(
+    allocator,
+    &generator,
+    private_key,
+    prime,
+);
+defer allocator.free(public_key);
+
+// Compute shared secret: their_public^private_key mod p
+const their_public: []const u8 = ...;
+
+const shared_secret = try modexp.unauditedModexp(
+    allocator,
+    their_public,
+    private_key,
+    prime,
+);
+defer allocator.free(shared_secret);
+```
+
+### Gas Calculation
+
+```zig
+// Calculate gas cost for modexp operation
+const base_len = 256; // 2048-bit RSA
+const exp_len = 3;
+const mod_len = 256;
+const exp_bytes = [_]u8{0x01, 0x00, 0x01}; // 65537
+
+// EIP-198 pricing (pre-Berlin)
+const gas_eip198 = modexp.calculateModexpGas(
+    base_len,
+    exp_len,
+    mod_len,
+    &exp_bytes,
+);
+
+// EIP-2565 pricing (post-Berlin)
+const gas_eip2565 = modexp.calculateModexpGasEip2565(
+    base_len,
+    exp_len,
+    mod_len,
+    &exp_bytes,
+);
+
+std.debug.print("Gas (EIP-198): {}\n", .{gas_eip198});
+std.debug.print("Gas (EIP-2565): {}\n", .{gas_eip2565});
+```
+
+## Performance
+
+Modular exponentiation performance (approximate):
+
+| Key Size | Operation | Time | Gas (EIP-2565) |
+|----------|-----------|------|----------------|
+| 256-bit | base^exp mod m | TBD | ~200 gas |
+| 1024-bit | base^exp mod m | TBD | ~3,000 gas |
+| 2048-bit | base^exp mod m | TBD | ~12,000 gas |
+| 4096-bit | base^exp mod m | TBD | ~50,000 gas |
+
+**Algorithm:**
+- Uses Montgomery multiplication for efficiency
+- Square-and-multiply exponentiation
+- Optimized for large integers (1024+ bits)
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run modexp tests:
+
+```bash
+zig build test -Dtest-filter=modexp
+```
+
+Tests validate:
+- Small integer operations
+- Large integer operations (2048+ bit RSA)
+- Edge cases (zero base, zero exponent, modulus 1)
+- Gas calculation accuracy (both EIP-198 and EIP-2565)
+- Cross-validation with known test vectors
+
+## Security Considerations
+
+- **UNAUDITED**: This code has not undergone a formal security audit
+- **Timing attacks**: Large exponent operations may leak timing information
+- **Side-channel resistance**: Not constant-time, avoid using with secrets
+- **Input validation**: Verify modulus is not zero
+- **RSA security**: Use 2048+ bit keys for RSA
+- **Random exponents**: Use cryptographically secure random for DH keys
+- **Gas limits**: Large operations can exceed block gas limit
+- **Memory usage**: Large integers require significant memory
+- **Overflow handling**: Arbitrary precision prevents overflow
+
+## Related
+
+- [Crypto](/zig/crypto/crypto) - ECDSA operations
+- [BN254](/zig/crypto/bn254) - Elliptic curve alternative
+- [Precompiles](/zig/precompiles) - EVM precompile implementations
+
+## References
+
+- [EIP-198](https://eips.ethereum.org/EIPS/eip-198) - Big integer modular exponentiation
+- [EIP-2565](https://eips.ethereum.org/EIPS/eip-2565) - ModExp gas cost reduction
+- [RSA](https://en.wikipedia.org/wiki/RSA_(cryptosystem)) - RSA cryptosystem
+- [Diffie-Hellman](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange) - Key exchange protocol
+- [Montgomery Multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication) - Efficient modular arithmetic

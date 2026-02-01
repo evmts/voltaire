@@ -1,0 +1,70 @@
+---
+title: Event.getSignature
+description: Get canonical event signature string for hashing
+---
+
+<Tabs>
+
+</Tabs>
+
+## Usage Examples
+
+### Computing Event Selector
+
+```typescript
+import { Event } from 'tevm'
+import { Keccak256 } from 'tevm'
+
+const transferEvent = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value" }
+  ]
+})
+
+// Get signature
+const signature = transferEvent.getSignature()
+// "Transfer(address,address,uint256)"
+
+// Hash to get selector (topic 0)
+const selector = Keccak256.hash(signature)
+console.log(selector)
+// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+```
+
+### Signature Ignores Parameter Names
+
+```typescript
+import { Event } from 'tevm'
+
+const event1 = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value" }
+  ]
+})
+
+const event2 = new Event({
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "sender", indexed: true },
+    { type: "address", name: "recipient", indexed: true },
+    { type: "uint256", name: "amount" }
+  ]
+})
+
+// Same signature despite different names
+console.log(event1.getSignature() === event2.getSignature())  // true
+```
+
+## See Also
+
+- [getSelector](/primitives/abi/event/get-selector) - Get event selector hash
+- [encodeTopics](/primitives/abi/event/encode-topics) - Encode indexed parameters

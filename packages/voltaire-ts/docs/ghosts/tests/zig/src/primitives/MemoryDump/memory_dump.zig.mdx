@@ -1,0 +1,256 @@
+---
+title: '[Zig] src/primitives/MemoryDump/memory_dump.zig'
+source: 'src/primitives/MemoryDump/memory_dump.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/MemoryDump/memory_dump.zig
+
+### MemoryDump: basic creation
+
+```zig
+test "MemoryDump: basic creation" {
+    const data = [_]u8{ 0x00, 0x01, 0x02, 0x03 };
+    const dump = MemoryDump.from(&data);
+
+    try testing.expectEqual(@as(usize, 4), dump.length());
+    try testing.expectEqual(@as(usize, 1), dump.wordCount());
+    try testing.expect(!dump.isEmpty());
+}
+```
+
+### MemoryDump: empty
+
+```zig
+test "MemoryDump: empty" {
+    const dump = MemoryDump.empty();
+
+    try testing.expectEqual(@as(usize, 0), dump.length());
+    try testing.expectEqual(@as(usize, 0), dump.wordCount());
+    try testing.expect(dump.isEmpty());
+}
+```
+
+### MemoryDump: wordCount
+
+```zig
+test "MemoryDump: wordCount" {
+    const data1 = [_]u8{0} ** 32;
+    try testing.expectEqual(@as(usize, 1), MemoryDump.from(&data1).wordCount());
+
+    const data2 = [_]u8{0} ** 33;
+    try testing.expectEqual(@as(usize, 2), MemoryDump.from(&data2).wordCount());
+
+    const data3 = [_]u8{0} ** 64;
+    try testing.expectEqual(@as(usize, 2), MemoryDump.from(&data3).wordCount());
+
+    const data4 = [_]u8{0} ** 65;
+    try testing.expectEqual(@as(usize, 3), MemoryDump.from(&data4).wordCount());
+}
+```
+
+### MemoryDump: equality
+
+```zig
+test "MemoryDump: equality" {
+    const data1 = [_]u8{ 0x00, 0x01, 0x02, 0x03 };
+    const data2 = [_]u8{ 0x00, 0x01, 0x02, 0x03 };
+    const data3 = [_]u8{ 0x00, 0x01, 0x02, 0x04 };
+
+    try testing.expect(MemoryDump.from(&data1).equals(MemoryDump.from(&data2)));
+    try testing.expect(!MemoryDump.from(&data1).equals(MemoryDump.from(&data3)));
+}
+```
+
+### MemoryDump: readWord
+
+```zig
+test "MemoryDump: readWord" {
+    var data: [64]u8 = undefined;
+    @memset(&data, 0);
+    data[0] = 0xaa;
+    data[31] = 0xbb;
+    data[32] = 0xcc;
+    data[63] = 0xdd;
+
+    const dump = MemoryDump.from(&data);
+
+    const word0 = dump.readWord(0);
+    try testing.expectEqual(@as(u8, 0xaa), word0[0]);
+    try testing.expectEqual(@as(u8, 0xbb), word0[31]);
+
+    const word1 = dump.readWord(32);
+    try testing.expectEqual(@as(u8, 0xcc), word1[0]);
+    try testing.expectEqual(@as(u8, 0xdd), word1[31]);
+
+    // Read beyond bounds returns zeros
+    const word_oob = dump.readWord(64);
+    try testing.expectEqual(@as(u8, 0), word_oob[0]);
+    try testing.expectEqual(@as(u8, 0), word_oob[31]);
+}
+```
+
+### MemoryDump: readWord partial
+
+```zig
+test "MemoryDump: readWord partial" {
+    const data = [_]u8{ 0xaa, 0xbb, 0xcc };
+    const dump = MemoryDump.from(&data);
+
+    const word = dump.readWord(0);
+    try testing.expectEqual(@as(u8, 0xaa), word[0]);
+    try testing.expectEqual(@as(u8, 0xbb), word[1]);
+    try testing.expectEqual(@as(u8, 0xcc), word[2]);
+    try testing.expectEqual(@as(u8, 0), word[3]); // Zero-padded
+}
+```
+
+### MemoryDump: readByte
+
+```zig
+test "MemoryDump: readByte" {
+    const data = [_]u8{ 0xaa, 0xbb, 0xcc };
+    const dump = MemoryDump.from(&data);
+
+    try testing.expectEqual(@as(u8, 0xaa), dump.readByte(0));
+    try testing.expectEqual(@as(u8, 0xbb), dump.readByte(1));
+    try testing.expectEqual(@as(u8, 0xcc), dump.readByte(2));
+    try testing.expectEqual(@as(u8, 0), dump.readByte(3)); // Out of bounds
+    try testing.expectEqual(@as(u8, 0), dump.readByte(100)); // Way out of bounds
+}
+```
+
+### MemoryDump: slice
+
+```zig
+test "MemoryDump: slice" {
+    const data = [_]u8{ 0x00, 0x01, 0x02, 0x03, 0x04 };
+    const dump = MemoryDump.from(&data);
+
+    const s1 = dump.slice(0, 3);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x00, 0x01, 0x02 }, s1);
+
+    const s2 = dump.slice(2, 2);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x02, 0x03 }, s2);
+
+    // Slice beyond bounds
+    const s3 = dump.slice(3, 10);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x03, 0x04 }, s3);
+
+    // Start beyond bounds
+    const s4 = dump.slice(10, 5);
+    try testing.expectEqual(@as(usize, 0), s4.len);
+}
+```
+
+### MemoryDump: toChunks
+
+```zig
+test "MemoryDump: toChunks" {
+    const allocator = testing.allocator;
+
+    var data: [65]u8 = undefined;
+    @memset(&data, 0);
+    data[0] = 0xaa;
+    data[32] = 0xbb;
+    data[64] = 0xcc;
+
+    const dump = MemoryDump.from(&data);
+    const chunks = try dump.toChunks(allocator);
+    defer allocator.free(chunks);
+
+    try testing.expectEqual(@as(usize, 3), chunks.len);
+    try testing.expectEqual(@as(u8, 0xaa), chunks[0][0]);
+    try testing.expectEqual(@as(u8, 0xbb), chunks[1][0]);
+    try testing.expectEqual(@as(u8, 0xcc), chunks[2][0]);
+}
+```
+
+### MemoryDump: toHex
+
+```zig
+test "MemoryDump: toHex" {
+    const allocator = testing.allocator;
+    const data = [_]u8{ 0xaa, 0xbb, 0xcc };
+    const dump = MemoryDump.from(&data);
+
+    const hex = try dump.toHex(allocator);
+    defer allocator.free(hex);
+
+    try testing.expectEqualStrings("0xaabbcc", hex);
+}
+```
+
+### MemoryDump: toJson
+
+```zig
+test "MemoryDump: toJson" {
+    const allocator = testing.allocator;
+    const data = [_]u8{ 0x12, 0x34 };
+    const dump = MemoryDump.from(&data);
+
+    const json_str = try dump.toJson(allocator);
+    defer allocator.free(json_str);
+
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"data\":\"0x1234\"") != null);
+    try testing.expect(std.mem.indexOf(u8, json_str, "\"length\":2") != null);
+}
+```
+
+### MemoryDump: fromHex
+
+```zig
+test "MemoryDump: fromHex" {
+    const allocator = testing.allocator;
+
+    const dump = try MemoryDump.fromHex(allocator, "0xaabbcc");
+    defer allocator.free(@constCast(dump.data));
+
+    try testing.expectEqual(@as(usize, 3), dump.length());
+    try testing.expectEqual(@as(u8, 0xaa), dump.data[0]);
+    try testing.expectEqual(@as(u8, 0xbb), dump.data[1]);
+    try testing.expectEqual(@as(u8, 0xcc), dump.data[2]);
+}
+```
+
+### MemoryDump: WORD_SIZE constant
+
+```zig
+test "MemoryDump: WORD_SIZE constant" {
+    try testing.expectEqual(@as(usize, 32), MemoryDump.WORD_SIZE);
+}
+```
+
+### MemoryDump: fromJson
+
+```zig
+test "MemoryDump: fromJson" {
+    const allocator = testing.allocator;
+    const json_input = "{\"data\":\"0xaabbcc\",\"length\":3}";
+
+    const dump = try MemoryDump.fromJson(allocator, json_input);
+    defer allocator.free(@constCast(dump.data));
+
+    try testing.expectEqual(@as(usize, 3), dump.length());
+    try testing.expectEqual(@as(u8, 0xaa), dump.data[0]);
+    try testing.expectEqual(@as(u8, 0xbb), dump.data[1]);
+    try testing.expectEqual(@as(u8, 0xcc), dump.data[2]);
+}
+```
+
+### MemoryDump: toJson/fromJson roundtrip
+
+```zig
+test "MemoryDump: toJson/fromJson roundtrip" {
+    const allocator = testing.allocator;
+    const original_data = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
+    const original = MemoryDump.from(&original_data);
+
+    const json_str = try original.toJson(allocator);
+    defer allocator.free(json_str);
+
+    const parsed = try MemoryDump.fromJson(allocator, json_str);
+    defer allocator.free(@constCast(parsed.data));
+
+    try testing.expect(original.equals(parsed));
+}
+```

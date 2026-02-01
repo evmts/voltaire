@@ -1,0 +1,1564 @@
+---
+title: "crypto/KZG"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/KZG
+
+# crypto/KZG
+
+## Classes
+
+### KzgError
+
+Defined in: [src/crypto/KZG/errors.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L13)
+
+Base KZG error for polynomial commitment operations
+
+#### See
+
+https://voltaire.tevm.sh/crypto/kzg for KZG documentation
+
+#### Since
+
+0.0.0
+
+#### Extends
+
+- [`CryptoError`](../index/index.mdx#cryptoerror)
+
+#### Extended by
+
+- [`KzgNotInitializedError`](#kzgnotinitializederror)
+- [`KzgInvalidBlobError`](#kzginvalidbloberror)
+- [`KzgVerificationError`](#kzgverificationerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new KzgError**(`message`, `options?`): [`KzgError`](#kzgerror)
+
+Defined in: [src/crypto/KZG/errors.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L14)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`KzgError`](#kzgerror)
+
+###### Overrides
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`constructor`](../index/index.mdx#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`cause`](../index/index.mdx#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`code`](../index/index.mdx#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`context`](../index/index.mdx#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`docsPath`](../index/index.mdx#docspath-1)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`getErrorChain`](../index/index.mdx#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`toJSON`](../index/index.mdx#tojson-2)
+
+***
+
+### KzgInvalidBlobError
+
+Defined in: [src/crypto/KZG/errors.ts:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L70)
+
+Invalid blob error for EIP-4844 blob validation
+
+Thrown when blob data is malformed, wrong length, or contains invalid field elements
+
+#### See
+
+https://voltaire.tevm.sh/crypto/kzg/validate-blob
+
+#### Since
+
+0.0.0
+
+#### Extends
+
+- [`KzgError`](#kzgerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new KzgInvalidBlobError**(`message`, `options?`): [`KzgInvalidBlobError`](#kzginvalidbloberror)
+
+Defined in: [src/crypto/KZG/errors.ts:71](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L71)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`KzgInvalidBlobError`](#kzginvalidbloberror)
+
+###### Overrides
+
+[`KzgError`](#kzgerror).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`docsPath`](#docspath)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`toJSON`](#tojson)
+
+***
+
+### KzgNotInitializedError
+
+Defined in: [src/crypto/KZG/errors.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L41)
+
+Trusted setup not initialized error
+
+Thrown when KZG operations are attempted before loadTrustedSetup() is called
+
+#### See
+
+https://voltaire.tevm.sh/crypto/kzg/load-trusted-setup
+
+#### Since
+
+0.0.0
+
+#### Extends
+
+- [`KzgError`](#kzgerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new KzgNotInitializedError**(`message`, `options?`): [`KzgNotInitializedError`](#kzgnotinitializederror)
+
+Defined in: [src/crypto/KZG/errors.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L42)
+
+###### Parameters
+
+###### message
+
+`string` = `"KZG trusted setup not initialized"`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`KzgNotInitializedError`](#kzgnotinitializederror)
+
+###### Overrides
+
+[`KzgError`](#kzgerror).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`docsPath`](#docspath)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`toJSON`](#tojson)
+
+***
+
+### KzgVerificationError
+
+Defined in: [src/crypto/KZG/errors.ts:98](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L98)
+
+Verification error for KZG proof verification failures
+
+Thrown when proof verification fails or verification inputs are invalid
+
+#### See
+
+https://voltaire.tevm.sh/crypto/kzg/verify-blob-kzg-proof
+
+#### Since
+
+0.0.0
+
+#### Extends
+
+- [`KzgError`](#kzgerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new KzgVerificationError**(`message`, `options?`): [`KzgVerificationError`](#kzgverificationerror)
+
+Defined in: [src/crypto/KZG/errors.ts:99](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/errors.ts#L99)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`KzgVerificationError`](#kzgverificationerror)
+
+###### Overrides
+
+[`KzgError`](#kzgerror).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`docsPath`](#docspath)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`KzgError`](#kzgerror).[`toJSON`](#tojson)
+
+## Type Aliases
+
+### BlobType
+
+> **BlobType** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/KZG/BlobType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/BlobType.ts#L11)
+
+Branded type for Blob (EIP-4844)
+
+A blob is 131072 bytes (128 KB) containing 4096 field elements
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Blob"`
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+***
+
+### KzgCommitmentType
+
+> **KzgCommitmentType** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/KZG/KzgCommitmentType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KzgCommitmentType.ts#L11)
+
+Branded type for KZG Commitment (EIP-4844)
+
+A KZG commitment is 48 bytes representing a BLS12-381 G1 point
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"KzgCommitment"`
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+***
+
+### KzgProofType
+
+> **KzgProofType** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/KZG/KzgProofType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KzgProofType.ts#L11)
+
+Branded type for KZG Proof (EIP-4844)
+
+A KZG proof is 48 bytes representing a BLS12-381 G1 point
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"KzgProof"`
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### blobToKzgCommitment()
+
+> `const` **blobToKzgCommitment**: (`blob`) => `Uint8Array`
+
+Defined in: [src/crypto/KZG/KZG.js:60](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KZG.js#L60)
+
+Convert blob to KZG commitment
+
+#### Parameters
+
+##### blob
+
+`Uint8Array`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### BYTES\_PER\_BLOB
+
+> `const` **BYTES\_PER\_BLOB**: `number` = `131072`
+
+Defined in: [src/crypto/KZG/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/constants.js#L13)
+
+Total bytes per blob (128 KB)
+
+#### Since
+
+0.0.0
+
+***
+
+### BYTES\_PER\_COMMITMENT
+
+> `const` **BYTES\_PER\_COMMITMENT**: `number` = `48`
+
+Defined in: [src/crypto/KZG/constants.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/constants.js#L20)
+
+Bytes per KZG commitment (BLS12-381 G1 point)
+
+#### Since
+
+0.0.0
+
+***
+
+### BYTES\_PER\_FIELD\_ELEMENT
+
+> `const` **BYTES\_PER\_FIELD\_ELEMENT**: `number` = `32`
+
+Defined in: [src/crypto/KZG/constants.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/constants.js#L34)
+
+Bytes per field element
+
+#### Since
+
+0.0.0
+
+***
+
+### BYTES\_PER\_PROOF
+
+> `const` **BYTES\_PER\_PROOF**: `number` = `48`
+
+Defined in: [src/crypto/KZG/constants.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/constants.js#L27)
+
+Bytes per KZG proof (BLS12-381 G1 point)
+
+#### Since
+
+0.0.0
+
+***
+
+### computeBlobKzgProof()
+
+> `const` **computeBlobKzgProof**: (`blob`, `commitment`) => `Uint8Array`
+
+Defined in: [src/crypto/KZG/KZG.js:76](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KZG.js#L76)
+
+Compute KZG blob proof given commitment
+
+#### Parameters
+
+##### blob
+
+`Uint8Array`
+
+##### commitment
+
+`Uint8Array`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### computeKzgProof()
+
+> `const` **computeKzgProof**: (`blob`, `z`) => `object`
+
+Defined in: [src/crypto/KZG/KZG.js:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KZG.js#L68)
+
+Compute KZG proof for a blob at a given point
+
+#### Parameters
+
+##### blob
+
+`Uint8Array`
+
+##### z
+
+`Uint8Array`
+
+#### Returns
+
+`object`
+
+##### proof
+
+> **proof**: `Uint8Array`
+
+##### y
+
+> **y**: `Uint8Array`
+
+***
+
+### FIELD\_ELEMENTS\_PER\_BLOB
+
+> `const` **FIELD\_ELEMENTS\_PER\_BLOB**: `number` = `4096`
+
+Defined in: [src/crypto/KZG/constants.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/constants.js#L41)
+
+Number of field elements per blob
+
+#### Since
+
+0.0.0
+
+***
+
+### verifyBlobKzgProof()
+
+> `const` **verifyBlobKzgProof**: (`blob`, `commitment`, `proof`) => `boolean`
+
+Defined in: [src/crypto/KZG/KZG.js:92](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KZG.js#L92)
+
+Verify a KZG blob proof
+
+#### Parameters
+
+##### blob
+
+`Uint8Array`
+
+##### commitment
+
+`Uint8Array`
+
+##### proof
+
+`Uint8Array`
+
+#### Returns
+
+`boolean`
+
+***
+
+### verifyBlobKzgProofBatch()
+
+> `const` **verifyBlobKzgProofBatch**: (`blobs`, `commitments`, `proofs`) => `boolean`
+
+Defined in: [src/crypto/KZG/KZG.js:100](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KZG.js#L100)
+
+Verify multiple KZG blob proofs in batch
+
+#### Parameters
+
+##### blobs
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+##### commitments
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+##### proofs
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+#### Returns
+
+`boolean`
+
+***
+
+### verifyKzgProof()
+
+> `const` **verifyKzgProof**: (`commitment`, `z`, `y`, `proof`) => `boolean`
+
+Defined in: [src/crypto/KZG/KZG.js:84](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KZG.js#L84)
+
+Verify a KZG proof
+
+#### Parameters
+
+##### commitment
+
+`Uint8Array`
+
+##### z
+
+`Uint8Array`
+
+##### y
+
+`Uint8Array`
+
+##### proof
+
+`Uint8Array`
+
+#### Returns
+
+`boolean`
+
+## Functions
+
+### BlobToKzgCommitment()
+
+> **BlobToKzgCommitment**(`deps`): (`blob`) => `Uint8Array`
+
+Defined in: [src/crypto/KZG/blobToKzgCommitment.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/blobToKzgCommitment.js#L21)
+
+Factory: Convert blob to KZG commitment
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### blobToKzgCommitment
+
+(`blob`) => `Uint8Array`
+
+c-kzg blobToKzgCommitment function
+
+#### Returns
+
+Function that converts blob to KZG commitment
+
+> (`blob`): `Uint8Array`
+
+##### Parameters
+
+###### blob
+
+`Uint8Array`
+
+##### Returns
+
+`Uint8Array`
+
+#### Example
+
+```typescript
+import { BlobToKzgCommitment } from '@tevm/voltaire/crypto/KZG'
+import * as ckzg from 'c-kzg'
+
+const blobToKzgCommitment = BlobToKzgCommitment({ blobToKzgCommitment: ckzg.blobToKzgCommitment })
+const commitment = blobToKzgCommitment(blob)
+```
+
+***
+
+### ComputeBlobKzgProof()
+
+> **ComputeBlobKzgProof**(`deps`): (`blob`, `commitment`) => `Uint8Array`
+
+Defined in: [src/crypto/KZG/computeBlobKzgProof.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/computeBlobKzgProof.js#L28)
+
+Factory: Compute blob KZG proof for a blob given its commitment
+
+This is the optimized version for blob verification (EIP-4844).
+Unlike computeKzgProof which requires an evaluation point z,
+this function generates a proof that can be used with verifyBlobKzgProof.
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### computeBlobKzgProof
+
+(`blob`, `commitment`) => `Uint8Array`
+
+c-kzg computeBlobKzgProof function
+
+#### Returns
+
+Function that computes blob KZG proof
+
+> (`blob`, `commitment`): `Uint8Array`
+
+##### Parameters
+
+###### blob
+
+`Uint8Array`
+
+###### commitment
+
+`Uint8Array`
+
+##### Returns
+
+`Uint8Array`
+
+#### Example
+
+```typescript
+import { ComputeBlobKzgProof } from '@tevm/voltaire/crypto/KZG'
+import * as ckzg from 'c-kzg'
+
+const computeBlobKzgProof = ComputeBlobKzgProof({ computeBlobKzgProof: ckzg.computeBlobKzgProof })
+const commitment = KZG.blobToKzgCommitment(blob)
+const proof = computeBlobKzgProof(blob, commitment)
+// Use with verifyBlobKzgProof(blob, commitment, proof)
+```
+
+***
+
+### ComputeKzgProof()
+
+> **ComputeKzgProof**(`deps`): (`blob`, `z`) => `object`
+
+Defined in: [src/crypto/KZG/computeKzgProof.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/computeKzgProof.js#L22)
+
+Factory: Compute KZG proof for blob at evaluation point z
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### computeKzgProof
+
+(`blob`, `z`) => \[`Uint8Array`\<`ArrayBufferLike`\>, `Uint8Array`\<`ArrayBufferLike`\>\]
+
+c-kzg computeKzgProof function
+
+#### Returns
+
+Function that computes KZG proof
+
+> (`blob`, `z`): `object`
+
+##### Parameters
+
+###### blob
+
+`Uint8Array`
+
+###### z
+
+`Uint8Array`
+
+##### Returns
+
+`object`
+
+###### proof
+
+> **proof**: `Uint8Array`
+
+###### y
+
+> **y**: `Uint8Array`
+
+#### Example
+
+```typescript
+import { ComputeKzgProof } from '@tevm/voltaire/crypto/KZG'
+import * as ckzg from 'c-kzg'
+
+const computeKzgProof = ComputeKzgProof({ computeKzgProof: ckzg.computeKzgProof })
+const { proof, y } = computeKzgProof(blob, z)
+```
+
+***
+
+### createEmptyBlob()
+
+> **createEmptyBlob**(): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/KZG/createEmptyBlob.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/createEmptyBlob.js#L16)
+
+Create empty blob filled with zeros
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+New zero-filled blob
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { createEmptyBlob } from './crypto/KZG/index.js';
+const blob = createEmptyBlob();
+```
+
+***
+
+### freeTrustedSetup()
+
+> **freeTrustedSetup**(): `void`
+
+Defined in: [src/crypto/KZG/loadTrustedSetup.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/loadTrustedSetup.js#L53)
+
+Free trusted setup resources
+
+Call when KZG operations are no longer needed.
+
+#### Returns
+
+`void`
+
+#### See
+
+https://voltaire.tevm.sh/crypto/kzg
+
+#### Since
+
+0.0.0
+
+***
+
+### generateRandomBlob()
+
+> **generateRandomBlob**(`seed?`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/KZG/generateRandomBlob.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/generateRandomBlob.js#L23)
+
+Generate random valid blob (for testing)
+
+#### Parameters
+
+##### seed?
+
+`number`
+
+Optional seed for deterministic generation
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Random blob with valid field elements
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If crypto.getRandomValues not available
+
+#### Example
+
+```javascript
+import { generateRandomBlob } from './crypto/KZG/index.js';
+const blob = generateRandomBlob();
+const deterministicBlob = generateRandomBlob(12345);
+```
+
+***
+
+### isInitialized()
+
+> **isInitialized**(): `boolean`
+
+Defined in: [src/crypto/KZG/isInitialized.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/isInitialized.js#L18)
+
+Check if KZG is initialized
+
+#### Returns
+
+`boolean`
+
+true if trusted setup is loaded
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { isInitialized, loadTrustedSetup } from './crypto/KZG/index.js';
+if (!isInitialized()) {
+  loadTrustedSetup();
+}
+```
+
+***
+
+### loadTrustedSetup()
+
+> **loadTrustedSetup**(`_filePath?`): `void`
+
+Defined in: [src/crypto/KZG/loadTrustedSetup.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/loadTrustedSetup.js#L28)
+
+Load trusted setup from embedded data
+
+Uses the embedded trusted setup from c-kzg-4844.
+Call this once during application startup before using any KZG operations.
+
+Available in both native FFI and WASM environments.
+
+#### Parameters
+
+##### \_filePath?
+
+`string`
+
+Optional path (ignored, uses embedded setup)
+
+#### Returns
+
+`void`
+
+#### See
+
+https://voltaire.tevm.sh/crypto/kzg
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If loading fails
+
+#### Example
+
+```javascript
+import { loadTrustedSetup } from './crypto/KZG/index.js';
+
+loadTrustedSetup();
+```
+
+***
+
+### validateBlob()
+
+> **validateBlob**(`blob`): `void`
+
+Defined in: [src/crypto/KZG/validateBlob.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/validateBlob.js#L22)
+
+Validate blob format
+
+#### Parameters
+
+##### blob
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Blob to validate
+
+#### Returns
+
+`void`
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If blob is invalid
+
+#### Example
+
+```javascript
+import { validateBlob } from './crypto/KZG/index.js';
+validateBlob(blob); // throws if invalid
+```
+
+***
+
+### VerifyBlobKzgProof()
+
+> **VerifyBlobKzgProof**(`deps`): (`blob`, `commitment`, `proof`) => `boolean`
+
+Defined in: [src/crypto/KZG/verifyBlobKzgProof.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/verifyBlobKzgProof.js#L22)
+
+Factory: Verify blob KZG proof (optimized for blob verification)
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### verifyBlobKzgProof
+
+(`blob`, `commitment`, `proof`) => `boolean`
+
+c-kzg verifyBlobKzgProof function
+
+#### Returns
+
+Function that verifies blob KZG proof
+
+> (`blob`, `commitment`, `proof`): `boolean`
+
+##### Parameters
+
+###### blob
+
+`Uint8Array`
+
+###### commitment
+
+`Uint8Array`
+
+###### proof
+
+`Uint8Array`
+
+##### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+import { VerifyBlobKzgProof } from '@tevm/voltaire/crypto/KZG'
+import * as ckzg from 'c-kzg'
+
+const verifyBlobKzgProof = VerifyBlobKzgProof({ verifyBlobKzgProof: ckzg.verifyBlobKzgProof })
+const valid = verifyBlobKzgProof(blob, commitment, proof)
+```
+
+***
+
+### VerifyBlobKzgProofBatch()
+
+> **VerifyBlobKzgProofBatch**(`deps`): (`blobs`, `commitments`, `proofs`) => `boolean`
+
+Defined in: [src/crypto/KZG/verifyBlobKzgProofBatch.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/verifyBlobKzgProofBatch.js#L21)
+
+Factory: Verify multiple blob KZG proofs (batch verification)
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### verifyBlobKzgProofBatch
+
+(`blobs`, `commitments`, `proofs`) => `boolean`
+
+c-kzg verifyBlobKzgProofBatch function
+
+#### Returns
+
+Function that verifies batch of blob KZG proofs
+
+> (`blobs`, `commitments`, `proofs`): `boolean`
+
+##### Parameters
+
+###### blobs
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+###### commitments
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+###### proofs
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+##### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+import { VerifyBlobKzgProofBatch } from '@tevm/voltaire/crypto/KZG'
+import * as ckzg from 'c-kzg'
+
+const verifyBlobKzgProofBatch = VerifyBlobKzgProofBatch({ verifyBlobKzgProofBatch: ckzg.verifyBlobKzgProofBatch })
+const valid = verifyBlobKzgProofBatch(blobs, commitments, proofs)
+```
+
+***
+
+### VerifyKzgProof()
+
+> **VerifyKzgProof**(`deps`): (`commitment`, `z`, `y`, `proof`) => `boolean`
+
+Defined in: [src/crypto/KZG/verifyKzgProof.js:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/verifyKzgProof.js#L25)
+
+Factory: Verify KZG proof
+
+#### Parameters
+
+##### deps
+
+Crypto dependencies
+
+###### verifyKzgProof
+
+(`commitment`, `z`, `y`, `proof`) => `boolean`
+
+c-kzg verifyKzgProof function
+
+#### Returns
+
+Function that verifies KZG proof
+
+> (`commitment`, `z`, `y`, `proof`): `boolean`
+
+##### Parameters
+
+###### commitment
+
+`Uint8Array`
+
+###### z
+
+`Uint8Array`
+
+###### y
+
+`Uint8Array`
+
+###### proof
+
+`Uint8Array`
+
+##### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+import { VerifyKzgProof } from '@tevm/voltaire/crypto/KZG'
+import * as ckzg from 'c-kzg'
+
+const verifyKzgProof = VerifyKzgProof({ verifyKzgProof: ckzg.verifyKzgProof })
+const valid = verifyKzgProof(commitment, z, y, proof)
+```
+
+## References
+
+### InvalidFormatError
+
+Re-exports [InvalidFormatError](../index/index.mdx#invalidformaterror)
+
+***
+
+### InvalidLengthError
+
+Re-exports [InvalidLengthError](../index/index.mdx#invalidlengtherror)
+
+***
+
+### KZG
+
+Re-exports [KZG](../index/index.mdx#kzg)

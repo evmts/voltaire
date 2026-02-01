@@ -1,0 +1,488 @@
+---
+title: Encoding Mechanics
+description: Deep dive into ABI encoding rules and calldata construction
+---
+
+Understanding how parameters are encoded into calldata is essential for working with smart contracts at a low level.
+
+## ABI Encoding Overview
+
+The Contract ABI (Application Binary Interface) defines how to encode function calls and data. Every parameter is encoded to exactly 32 bytes (256 bits), with specific rules for different types.
+
+### Encoding Structure
+
+```
+[4 bytes: selector] + [32 bytes per static param] + [dynamic data]
+```
+
+**Static parameters**: Fixed-size types encoded in-place
+**Dynamic parameters**: Variable-size types with pointer + data
+
+## Basic Type Encoding
+
+### Integers (uint/int)
+
+Integers are **left-padded** with zeros to 32 bytes:
+
+```typescript
+import { Uint256 } from '@tevm/voltaire';
+
+// uint256(42)
+const value = Uint256.from(42n);
+console.log(value.toHex());
+// 0x000000000000000000000000000000000000000000000000000000000000002a
+```
+
+Smaller integer types follow the same padding:
+
+```typescript
+// uint8(255)
+// 0x00000000000000000000000000000000000000000000000000000000000000ff
+
+// uint128(1000)
+// 0x00000000000000000000000000000000000000000000000000000000000003e8
+```
+
+### Addresses
+
+Addresses are 20 bytes, **left-padded** to 32 bytes:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const addr = Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+console.log(addr.toBytes());
+// 0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8
+//   [12 zero bytes][20 address bytes]
+```
+
+### Booleans
+
+Booleans encoded as `uint256`:
+- `false` → `0x0000...0000`
+- `true` → `0x0000...0001`
+
+```typescript
+import { CallData, Abi } from '@tevm/voltaire';
+
+const abi = Abi([{
+  name: "setValue",
+  type: "function",
+  inputs: [{ name: "value", type: "bool" }]
+}]);
+
+const calldata = abi.setValue.encode(true);
+// Selector + 0x0000000000000000000000000000000000000000000000000000000000000001
+```
+
+### Fixed-Size Bytes (bytes1-bytes32)
+
+Fixed bytes are **right-padded** with zeros:
+
+```typescript
+import { Bytes32 } from '@tevm/voltaire';
+
+// bytes4 selector
+const selector = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);
+// Encoded as:
+// 0xa9059cbb000000000000000000000000000000000000000000000000000000000000
+//   [4 bytes][28 zero bytes]
+
+// bytes32 (no padding needed)
+const hash = Bytes32.from("0x1234...");
+// 0x1234... (32 bytes exactly)
+```
+
+## Dynamic Type Encoding
+
+Dynamic types (strings, bytes, arrays) use **offset-based encoding**:
+
+1. Static section contains offset pointer (32 bytes)
+2. Offset points to start of dynamic data
+3. Dynamic data starts with length, followed by content
+
+### Dynamic Bytes
+
+```typescript
+const abi = Abi([{
+  name: "setData",
+  type: "function",
+  inputs: [{ name: "data", type: "bytes" }]
+}]);
+
+const data = new Uint8Array([0x12, 0x34, 0x56]);
+const calldata = abi.setData.encode(data);
+
+// Result:
+// 0x36a58863  (selector)
+//   0000000000000000000000000000000000000000000000000000000000000020  (offset: 32)
+//   0000000000000000000000000000000000000000000000000000000000000003  (length: 3)
+//   1234560000000000000000000000000000000000000000000000000000000000  (data, right-padded)
+```
+
+**Offset**: Points to where length starts (byte 32 after selector)
+**Length**: Number of bytes in the data
+**Data**: Right-padded to 32-byte boundary
+
+### Strings
+
+Strings encoded identically to `bytes`:
+
+```typescript
+const abi = Abi([{
+  name: "setName",
+  type: "function",
+  inputs: [{ name: "name", type: "string" }]
+}]);
+
+const calldata = abi.setName.encode("hello");
+
+// 0xc47f0027  (selector)
+//   0000000000000000000000000000000000000000000000000000000000000020  (offset)
+//   0000000000000000000000000000000000000000000000000000000000000005  (length: 5)
+//   68656c6c6f000000000000000000000000000000000000000000000000000000  ("hello", right-padded)
+```
+
+### Arrays
+
+#### Fixed-Size Arrays
+
+Fixed arrays encoded like multiple static parameters:
+
+```typescript
+const abi = Abi([{
+  name: "setValues",
+  type: "function",
+  inputs: [{ name: "values", type: "uint256[3]" }]
+}]);
+
+const calldata = abi.setValues.encode([1n, 2n, 3n]);
+
+// 0x... (selector)
+//   0000000000000000000000000000000000000000000000000000000000000001  (values[0])
+//   0000000000000000000000000000000000000000000000000000000000000002  (values[1])
+//   0000000000000000000000000000000000000000000000000000000000000003  (values[2])
+```
+
+#### Dynamic Arrays
+
+Dynamic arrays use offset + length + elements:
+
+```typescript
+const abi = Abi([{
+  name: "setValues",
+  type: "function",
+  inputs: [{ name: "values", type: "uint256[]" }]
+}]);
+
+const calldata = abi.setValues.encode([1n, 2n]);
+
+// 0x... (selector)
+//   0000000000000000000000000000000000000000000000000000000000000020  (offset)
+//   0000000000000000000000000000000000000000000000000000000000000002  (length: 2)
+//   0000000000000000000000000000000000000000000000000000000000000001  (values[0])
+//   0000000000000000000000000000000000000000000000000000000000000002  (values[1])
+```
+
+## Complex Encoding
+
+### Multiple Parameters
+
+With multiple parameters, dynamic types use offsets relative to start of parameters section:
+
+```typescript
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },       // Static
+    { name: "amount", type: "uint256" },   // Static
+    { name: "data", type: "bytes" }        // Dynamic
+  ]
+}]);
+
+const calldata = abi.transfer.encode(
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  TokenBalance.fromUnits("1", 18),
+  new Uint8Array([0xab, 0xcd])
+);
+
+// 0x... (selector: 4 bytes)
+//   00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8  (to: 32 bytes)
+//   0000000000000000000000000000000000000000000000000de0b6b3a7640000  (amount: 32 bytes)
+//   0000000000000000000000000000000000000000000000000000000000000060  (offset to data: 96 bytes from start)
+//   0000000000000000000000000000000000000000000000000000000000000002  (data length)
+//   abcd000000000000000000000000000000000000000000000000000000000000  (data)
+```
+
+**Offset calculation**: Skip static params (2 * 32 = 64) + 32 for offset itself = 96 bytes (0x60)
+
+### Structs (Tuples)
+
+Structs encoded as if all fields were separate parameters:
+
+```typescript
+const abi = Abi([{
+  name: "swap",
+  type: "function",
+  inputs: [{
+    name: "params",
+    type: "tuple",
+    components: [
+      { name: "tokenIn", type: "address" },
+      { name: "tokenOut", type: "address" },
+      { name: "amountIn", type: "uint256" }
+    ]
+  }]
+}]);
+
+const params = {
+  tokenIn: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  tokenOut: Address("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+  amountIn: TokenBalance.fromUnits("1000", 6)
+};
+
+const calldata = abi.swap.encode(params);
+
+// 0x... (selector)
+//   0000000000000000000000000000000000000000000000000000000000000020  (tuple offset)
+//   000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48  (tokenIn)
+//   000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2  (tokenOut)
+//   00000000000000000000000000000000000000000000000000000000003d0900  (amountIn)
+```
+
+### Nested Arrays
+
+Arrays of dynamic types require nested offsets:
+
+```typescript
+const abi = Abi([{
+  name: "multicall",
+  type: "function",
+  inputs: [{ name: "calls", type: "bytes[]" }]
+}]);
+
+const calls = [
+  new Uint8Array([0x12, 0x34]),
+  new Uint8Array([0x56, 0x78, 0x9a])
+];
+
+const calldata = abi.multicall.encode(calls);
+
+// 0x... (selector)
+//   0000000000000000000000000000000000000000000000000000000000000020  (array offset)
+//   0000000000000000000000000000000000000000000000000000000000000002  (array length: 2)
+//   0000000000000000000000000000000000000000000000000000000000000040  (offset to calls[0])
+//   0000000000000000000000000000000000000000000000000000000000000080  (offset to calls[1])
+//   0000000000000000000000000000000000000000000000000000000000000002  (calls[0] length)
+//   1234000000000000000000000000000000000000000000000000000000000000  (calls[0] data)
+//   0000000000000000000000000000000000000000000000000000000000000003  (calls[1] length)
+//   56789a0000000000000000000000000000000000000000000000000000000000  (calls[1] data)
+```
+
+## Manual Encoding (Zig)
+
+<Tabs>
+<Tab title="Simple Function">
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+
+pub fn encodeTransfer(
+    allocator: std.mem.Allocator,
+    to: primitives.Address,
+    amount: primitives.Uint256,
+) !primitives.CallData {
+    // Compute selector
+    const signature = "transfer(address,uint256)";
+    var hash = try primitives.Keccak256.hashString(signature);
+    const selector = hash.bytes[0..4].*;
+
+    // Allocate calldata buffer
+    var data = std.ArrayList(u8){};
+    defer data.deinit(allocator);
+
+    // Write selector
+    try data.appendSlice(allocator, &selector);
+
+    // Write address (left-padded to 32 bytes)
+    var addr_buf: [32]u8 = [_]u8{0} ** 32;
+    @memcpy(addr_buf[12..32], &to.bytes);
+    try data.appendSlice(allocator, &addr_buf);
+
+    // Write uint256
+    try data.appendSlice(allocator, &amount.bytes);
+
+    return primitives.CallData{
+        .data = try data.toOwnedSlice(allocator),
+    };
+}
+```
+
+</Tab>
+<Tab title="With Dynamic Data">
+
+```zig
+pub fn encodeWithBytes(
+    allocator: std.mem.Allocator,
+    addr: primitives.Address,
+    bytes_data: []const u8,
+) !primitives.CallData {
+    var data = std.ArrayList(u8){};
+    defer data.deinit(allocator);
+
+    // Selector (assumed computed)
+    const selector = [_]u8{ 0x12, 0x34, 0x56, 0x78 };
+    try data.appendSlice(allocator, &selector);
+
+    // Address (static, 32 bytes)
+    var addr_buf: [32]u8 = [_]u8{0} ** 32;
+    @memcpy(addr_buf[12..32], &addr.bytes);
+    try data.appendSlice(allocator, &addr_buf);
+
+    // Offset to dynamic data (32 bytes after address)
+    const offset: u256 = 32;
+    var offset_buf: [32]u8 = undefined;
+    std.mem.writeInt(u256, &offset_buf, offset, .big);
+    try data.appendSlice(allocator, &offset_buf);
+
+    // Dynamic data length
+    const length: u256 = bytes_data.len;
+    var length_buf: [32]u8 = undefined;
+    std.mem.writeInt(u256, &length_buf, length, .big);
+    try data.appendSlice(allocator, &length_buf);
+
+    // Dynamic data (right-padded)
+    try data.appendSlice(allocator, bytes_data);
+    const padding = (32 - (bytes_data.len % 32)) % 32;
+    if (padding > 0) {
+        try data.appendNTimes(allocator, 0, padding);
+    }
+
+    return primitives.CallData{
+        .data = try data.toOwnedSlice(allocator),
+    };
+}
+```
+
+</Tab>
+</Tabs>
+
+## Encoding Rules Summary
+
+| Type | Size | Padding | Notes |
+|------|------|---------|-------|
+| `uint<N>` | 32 bytes | Left (zeros) | N ∈ [8, 256] step 8 |
+| `int<N>` | 32 bytes | Left (sign-extended) | Negative values |
+| `address` | 32 bytes | Left (zeros) | 20-byte value |
+| `bool` | 32 bytes | Left (zeros) | 0 or 1 |
+| `bytes<N>` | 32 bytes | Right (zeros) | N ∈ [1, 32] |
+| `bytes` | Variable | Right (zeros) | Offset + length + data |
+| `string` | Variable | Right (zeros) | UTF-8 encoded |
+| `T[]` | Variable | - | Offset + length + elements |
+| `T[k]` | k × 32 bytes | - | Fixed array inline |
+| `tuple` | Sum of fields | - | Encoded as struct |
+
+## Decoding Process
+
+Decoding reverses the encoding:
+
+<Tabs>
+<Tab title="TypeScript">
+
+```typescript
+import { CallData, Abi } from '@tevm/voltaire';
+
+function decodeTransfer(calldata: CallData) {
+  const abi = Abi([{
+    name: "transfer",
+    type: "function",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" }
+    ]
+  }]);
+
+  const decoded = CallData.decode(calldata, abi);
+
+  // Extract parameters
+  const to: Address = decoded.parameters[0];
+  const amount: Uint256 = decoded.parameters[1];
+
+  return { to, amount };
+}
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+pub fn decodeTransfer(
+    allocator: std.mem.Allocator,
+    calldata: primitives.CallData,
+) !struct { to: primitives.Address, amount: primitives.Uint256 } {
+    // Skip selector (first 4 bytes)
+    var offset: usize = 4;
+
+    // Read address (bytes 4-36, but address is last 20 bytes)
+    var to: primitives.Address = undefined;
+    @memcpy(&to.bytes, calldata.data[offset + 12 .. offset + 32]);
+    offset += 32;
+
+    // Read uint256 (bytes 36-68)
+    var amount: primitives.Uint256 = undefined;
+    @memcpy(&amount.bytes, calldata.data[offset .. offset + 32]);
+    offset += 32;
+
+    return .{ .to = to, .amount = amount };
+}
+```
+
+</Tab>
+</Tabs>
+
+## Validation
+
+Always validate encoded calldata:
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+function validateCallData(calldata: CallData): boolean {
+  // Must have at least selector
+  if (calldata.length < 4) {
+    return false;
+  }
+
+  // Must be 32-byte aligned after selector
+  if ((calldata.length - 4) % 32 !== 0) {
+    return false;
+  }
+
+  return true;
+}
+```
+
+## Gas Optimization Tips
+
+1. **Use smaller types**: `uint96` instead of `uint256` when possible
+2. **Minimize dynamic data**: Fixed arrays cheaper than dynamic
+3. **Pack structs**: Group small values to reduce padding
+4. **Order parameters**: Put dynamic types last to simplify offsets
+
+```typescript
+// Expensive: 3 separate uint256 parameters = 96 bytes
+function transfer(uint256 a, uint256 b, uint256 c) external;
+
+// Cheaper: Pack into single uint256 if values fit
+function transferPacked(uint256 packed) external;
+// Unpack: a = packed >> 128, b = (packed >> 64) & mask, c = packed & mask
+```
+
+## See Also
+
+- [Fundamentals](/primitives/calldata/fundamentals) - How the EVM processes calldata
+- [Decoded Form](/primitives/calldata/decoded) - CallDataDecoded structure
+- [Usage Patterns](/primitives/calldata/usage-patterns) - Common patterns
+- [Abi](/primitives/abi) - ABI encoding and decoding utilities

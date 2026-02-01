@@ -1,0 +1,214 @@
+/**
+ * Unit tests for decodeParams function
+ */
+
+import { describe, expect, it } from "vitest";
+import type { BrandedAddress } from "../../Address/AddressType.js";
+import { decodeParams } from "./decodeParams.js";
+import { encodeParams } from "./encodeParams.js";
+
+describe("decodeParams", () => {
+	it("decodes constructor with single parameter", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [{ type: "uint256", name: "initialSupply" }],
+		} as const;
+
+		const encoded = encodeParams(ctor, [1000n]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toEqual([1000n]);
+	});
+
+	it("decodes constructor with multiple parameters", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [
+				{ type: "string", name: "name" },
+				{ type: "string", name: "symbol" },
+				{ type: "uint8", name: "decimals" },
+			],
+		} as const;
+
+		// biome-ignore lint/suspicious/noExplicitAny: test needs type flexibility for mixed tuple args
+		const args = ["Token", "TKN", 18n] as any;
+		const encoded = encodeParams(ctor, args);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toEqual(args);
+	});
+
+	it("decodes constructor with no parameters", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [],
+		} as const;
+
+		const encoded = encodeParams(ctor, []);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toEqual([]);
+	});
+
+	it("decodes constructor with address parameter", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [{ type: "address", name: "owner" }],
+		} as const;
+
+		const addr = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as BrandedAddress;
+		const encoded = encodeParams(ctor, [addr]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded[0]).toBe(addr);
+	});
+
+	it("decodes constructor with bool parameter", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [{ type: "bool", name: "paused" }],
+		} as const;
+
+		const encoded = encodeParams(ctor, [true]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toEqual([true]);
+	});
+
+	it("decodes constructor with string parameter", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [{ type: "string", name: "message" }],
+		} as const;
+
+		const encoded = encodeParams(ctor, ["Hello"]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toEqual(["Hello"]);
+	});
+
+	it("decodes constructor with bytes parameter", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [{ type: "bytes", name: "data" }],
+		} as const;
+
+		const encoded = encodeParams(ctor, ["0x123456"]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toHaveLength(1);
+	});
+
+	it("decodes constructor with array parameter", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [{ type: "uint256[]", name: "values" }],
+		} as const;
+
+		const values = [1n, 2n, 3n];
+		const encoded = encodeParams(ctor, [values]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toEqual([values]);
+	});
+
+	it("decodes constructor with tuple parameter", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [
+				{
+					type: "tuple",
+					name: "config",
+					components: [
+						{ type: "address", name: "owner" },
+						{ type: "uint256", name: "fee" },
+					],
+				},
+			],
+		} as const;
+
+		const config = [
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3" as BrandedAddress,
+			100n,
+		];
+		const encoded = encodeParams(ctor, [config]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toHaveLength(1);
+		expect(Array.isArray(decoded[0])).toBe(true);
+	});
+
+	it("decodes payable constructor parameters", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "payable",
+			inputs: [{ type: "uint256", name: "value" }],
+		} as const;
+
+		const encoded = encodeParams(ctor, [42n]);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded).toEqual([42n]);
+	});
+
+	it("round-trips encoding and decoding", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [
+				{ type: "uint256", name: "a" },
+				{ type: "address", name: "b" },
+				{ type: "bool", name: "c" },
+			],
+		} as const;
+
+		const args = [
+			1000n,
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			true,
+			// biome-ignore lint/suspicious/noExplicitAny: test needs type flexibility for mixed tuple args
+		] as any;
+		const encoded = encodeParams(ctor, args);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded[0]).toBe(args[0]);
+		expect(decoded[1]).toBe(args[1]);
+		expect(decoded[2]).toBe(args[2]);
+	});
+
+	it("decodes complex ERC20 constructor", () => {
+		const ctor = {
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [
+				{ type: "string", name: "name" },
+				{ type: "string", name: "symbol" },
+				{ type: "uint256", name: "initialSupply" },
+				{ type: "address", name: "owner" },
+			],
+		} as const;
+
+		const args = [
+			"MyToken",
+			"MTK",
+			1000000n,
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3" as BrandedAddress,
+		];
+		const encoded = encodeParams(ctor, args);
+		const decoded = decodeParams(ctor, encoded);
+
+		expect(decoded[0]).toBe(args[0]);
+		expect(decoded[1]).toBe(args[1]);
+		expect(decoded[2]).toBe(args[2]);
+		expect(decoded[3]).toBe(args[3]);
+	});
+});

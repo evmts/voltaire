@@ -1,0 +1,297 @@
+---
+title: C-KZG
+description: KZG polynomial commitments for EIP-4844 blob transactions
+---
+
+## Overview
+
+The c_kzg module provides bindings to the official C-KZG library for computing KZG (Kate-Zaverucha-Goldberg) polynomial commitments. This is the cryptographic foundation for EIP-4844 blob transactions, enabling Ethereum to scale by separating data availability from execution.
+
+KZG commitments allow compact cryptographic proofs that a blob contains specific data, without needing to download the entire blob.
+
+## Key Types
+
+### `Blob`
+
+```zig
+pub const Blob = [BYTES_PER_BLOB]u8;
+// 131072 bytes (128 KB)
+```
+
+Data blob for EIP-4844 transactions.
+
+### `KZGCommitment`
+
+```zig
+pub const KZGCommitment = [BYTES_PER_COMMITMENT]u8;
+// 48 bytes
+```
+
+KZG commitment to a blob (G1 point on BLS12-381).
+
+### `KZGProof`
+
+```zig
+pub const KZGProof = [BYTES_PER_PROOF]u8;
+// 48 bytes
+```
+
+KZG proof for blob evaluation.
+
+### `Bytes32`
+
+```zig
+pub const Bytes32 = [32]u8;
+```
+
+32-byte value (evaluation point or result).
+
+## Key Constants
+
+```zig
+pub const BYTES_PER_BLOB = 131072;           // 128 KB
+pub const BYTES_PER_COMMITMENT = 48;         // G1 point
+pub const BYTES_PER_PROOF = 48;              // G1 point
+pub const BYTES_PER_FIELD_ELEMENT = 32;      // BLS12-381 field element
+pub const FIELD_ELEMENTS_PER_BLOB = 4096;    // 4096 * 32 = 128 KB
+```
+
+## Key Functions
+
+### `loadTrustedSetupFile`
+
+Load trusted setup from file (required before any operations).
+
+```zig
+pub fn loadTrustedSetupFile(
+    trusted_setup_path: []const u8,
+    precompute: u64,
+) !void
+```
+
+**Parameters:**
+- `trusted_setup_path` - Path to trusted setup file
+- `precompute` - Precompute level (0 = none, higher = faster)
+
+**Errors:**
+- `error.FileNotFound` - Trusted setup file not found
+- `error.MallocError` - Memory allocation failed
+
+### `freeTrustedSetup`
+
+Free the loaded trusted setup.
+
+```zig
+pub fn freeTrustedSetup() !void
+```
+
+Call this when done with KZG operations to free memory.
+
+### `blobToKzgCommitment`
+
+Compute KZG commitment for a blob.
+
+```zig
+pub fn blobToKzgCommitment(blob: *const Blob) !KZGCommitment
+```
+
+**Parameters:**
+- `blob` - Pointer to 128 KB blob
+
+**Returns:** 48-byte KZG commitment
+
+**Errors:**
+- `error.TrustedSetupNotLoaded` - Call `loadTrustedSetupFile` first
+
+### `computeKZGProof`
+
+Compute KZG proof for evaluation at point z.
+
+```zig
+pub fn computeKZGProof(
+    blob: *const Blob,
+    z: *const Bytes32,
+) !struct { proof: KZGProof, y: Bytes32 }
+```
+
+**Parameters:**
+- `blob` - Pointer to blob
+- `z` - Evaluation point
+
+**Returns:** Proof and evaluation result y = P(z)
+
+**Errors:**
+- `error.TrustedSetupNotLoaded` - Call `loadTrustedSetupFile` first
+
+### `verifyKZGProof`
+
+Verify a KZG proof.
+
+```zig
+pub fn verifyKZGProof(
+    commitment: *const KZGCommitment,
+    z: *const Bytes32,
+    y: *const Bytes32,
+    proof: *const KZGProof,
+) !bool
+```
+
+**Parameters:**
+- `commitment` - Blob commitment
+- `z` - Evaluation point
+- `y` - Claimed evaluation result
+- `proof` - KZG proof
+
+**Returns:** `true` if proof is valid, `false` otherwise
+
+## Examples
+
+### Commit to Blob
+
+```zig
+const c_kzg = @import("crypto").c_kzg;
+const std = @import("std");
+
+// Load trusted setup (required once)
+try c_kzg.loadTrustedSetupFile("trusted_setup.txt", 0);
+defer c_kzg.freeTrustedSetup() catch unreachable;
+
+// Create blob (example data)
+var blob: c_kzg.Blob = undefined;
+@memset(&blob, 0);
+// ... fill blob with actual data ...
+
+// Compute commitment
+const commitment = try c_kzg.blobToKzgCommitment(&blob);
+
+std.debug.print("Commitment: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&commitment)});
+```
+
+### Generate and Verify Proof
+
+```zig
+// Use embedded trusted setup for testing
+const ckzg = @import("c_kzg");
+try ckzg.loadTrustedSetupFromText(ckzg.embedded_trusted_setup, 0);
+defer c_kzg.freeTrustedSetup() catch unreachable;
+
+// Create blob with test data
+var blob: c_kzg.Blob = undefined;
+std.crypto.random.bytes(&blob);
+
+// Ensure blob has valid field elements (clear top bytes)
+for (0..c_kzg.FIELD_ELEMENTS_PER_BLOB) |i| {
+    blob[i * c_kzg.BYTES_PER_FIELD_ELEMENT] = 0;
+}
+
+// Compute commitment
+const commitment = try c_kzg.blobToKzgCommitment(&blob);
+
+// Choose evaluation point
+var z: c_kzg.Bytes32 = undefined;
+@memset(&z, 0x42);
+
+// Compute proof and evaluation
+const result = try c_kzg.computeKZGProof(&blob, &z);
+
+// Verify proof
+const is_valid = try c_kzg.verifyKZGProof(
+    &commitment,
+    &z,
+    &result.y,
+    &result.proof,
+);
+
+std.debug.assert(is_valid);
+std.debug.print("Proof verified!\n", .{});
+```
+
+### EIP-4844 Transaction Workflow
+
+```zig
+// 1. Rollup prepares blob with transaction data
+var blob: c_kzg.Blob = undefined;
+// ... encode rollup transactions into blob ...
+
+// 2. Compute commitment for inclusion in transaction
+const commitment = try c_kzg.blobToKzgCommitment(&blob);
+
+// 3. Compute proof for blob
+var z: c_kzg.Bytes32 = undefined;
+std.crypto.random.bytes(&z);
+const proof_result = try c_kzg.computeKZGProof(&blob, &z);
+
+// 4. Include in EIP-4844 transaction
+// tx.blobVersionedHashes = [keccak256(commitment)]
+// tx.blobs = [blob]
+// tx.commitments = [commitment]
+// tx.proofs = [proof_result.proof]
+
+// 5. Verifier checks proof (done by consensus layer)
+const verified = try c_kzg.verifyKZGProof(
+    &commitment,
+    &z,
+    &proof_result.y,
+    &proof_result.proof,
+);
+```
+
+## Performance
+
+KZG operation performance:
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| `blobToKzgCommitment` | TBD | FFT over 4096 elements |
+| `computeKZGProof` | TBD | Similar to commitment |
+| `verifyKZGProof` | TBD | Pairing check on BLS12-381 |
+
+**Performance notes:**
+- Uses BLS12-381 elliptic curve
+- FFT for polynomial operations
+- Precompute option speeds up operations
+- Optimized C implementation
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run C-KZG tests:
+
+```bash
+zig build test -Dtest-filter=c_kzg
+```
+
+Tests validate:
+- Commitment generation
+- Proof generation and verification
+- Invalid proof detection
+- Trusted setup loading
+- Known test vectors
+- Edge cases (zero blob, zero evaluation point)
+
+## Security Considerations
+
+- **Trusted setup**: Requires trusted ceremony (used Ethereum ceremony)
+- **Field element validation**: Ensure blob elements are valid BLS12-381 field elements
+- **Commitment binding**: Commitment cryptographically binds to blob
+- **Proof soundness**: Verifier can be confident about claimed evaluation
+- **BLS12-381 security**: ~128-bit security level
+- **Data availability**: KZG enables data availability sampling
+- **Not WASM-compatible**: Requires full BLS12-381 (stubbed in WASM builds)
+- **Memory requirements**: Large blobs (128 KB each)
+- **Trusted setup tampering**: If setup is compromised, security fails
+
+## Related
+
+- [BN254](/zig/crypto/bn254) - Alternative pairing curve
+- [Keccak](/zig/crypto/keccak) - Used for blob versioned hashes
+- [Transaction](/zig/primitives/transaction) - EIP-4844 blob transactions
+
+## References
+
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Shard blob transactions
+- [KZG Commitments](https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html) - Explanation
+- [BLS12-381](https://hackmd.io/@benjaminion/bls12-381) - Curve specification
+- [C-KZG Library](https://github.com/ethereum/c-kzg-4844) - Official implementation
+- [Trusted Setup Ceremony](https://ceremony.ethereum.org/) - Ethereum's trusted setup

@@ -1,0 +1,83 @@
+---
+title: Handle Provider Disconnection
+description: Detect and recover from provider disconnection events.
+---
+
+## Listen for Disconnect
+
+```typescript
+provider.on('disconnect', (error) => {
+  console.log('Disconnected:', error.message);
+  showReconnectUI();
+});
+```
+
+## WebSocket Auto-Reconnect
+
+```typescript
+import { WebSocketProvider } from '@tevm/voltaire/provider';
+
+const provider = new WebSocketProvider({
+  url: 'wss://eth.llamarpc.com',
+  reconnect: true,           // Enable auto-reconnect
+  reconnectDelay: 5000,      // 5 seconds between attempts
+  maxReconnectAttempts: 10   // Give up after 10 attempts (0 = infinite)
+});
+
+provider.on('disconnect', (error) => {
+  console.log('Connection lost, reconnecting...');
+});
+
+provider.on('connect', (info) => {
+  console.log('Reconnected to chain:', info.chainId);
+  refreshAppState();
+});
+```
+
+## Manual Reconnection
+
+```typescript
+class ConnectionManager {
+  private provider: WebSocketProvider;
+  private isReconnecting = false;
+
+  async reconnect() {
+    if (this.isReconnecting) return;
+    this.isReconnecting = true;
+
+    try {
+      this.provider.disconnect();
+      await this.provider.connect();
+      console.log('Reconnected successfully');
+    } catch (error) {
+      console.error('Reconnection failed:', error);
+      // Retry after delay
+      setTimeout(() => this.reconnect(), 5000);
+    } finally {
+      this.isReconnecting = false;
+    }
+  }
+}
+```
+
+## Browser Wallet Disconnect
+
+```typescript
+window.ethereum.on('disconnect', (error) => {
+  // Clean up app state
+  clearUserSession();
+  showConnectButton();
+});
+
+// Check connection on page load
+async function checkConnection() {
+  try {
+    const accounts = await window.ethereum.request({
+      method: 'eth_accounts'
+    });
+    return accounts.length > 0;
+  } catch {
+    return false;
+  }
+}
+```

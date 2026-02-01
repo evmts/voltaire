@@ -1,0 +1,454 @@
+---
+title: React with effect-atom
+description: Reactive Effect.ts integration for React using effect-atom
+---
+
+[effect-atom](https://github.com/tim-smart/effect-atom) provides first-class React integration for Effect.ts, making it easy to use voltaire-effect in React applications with automatic dependency injection, caching, and reactive updates.
+
+## Installation
+
+```bash
+npm install @effect-atom/atom @effect-atom/atom-react effect voltaire-effect
+```
+
+## Setup
+
+Wrap your app with `RegistryProvider` to enable atom reactivity:
+
+```tsx
+import { RegistryProvider } from "@effect-atom/atom-react"
+
+function App() {
+  return (
+    <RegistryProvider>
+      <YourApp />
+    </RegistryProvider>
+  )
+}
+```
+
+## Creating a Runtime with Layers
+
+Use `Atom.runtime` to create a runtime pre-configured with your Provider layer:
+
+```tsx
+import { Atom } from "@effect-atom/atom"
+import { Layer } from "effect"
+import { HttpProvider } from "voltaire-effect"
+
+// Create runtime with composed layers
+const runtime = Atom.runtime(
+  HttpProvider("https://eth.llamarpc.com")
+)
+```
+
+## Creating Atoms
+
+Atoms wrap Effect programs and make them reactive:
+
+```tsx
+import { Atom } from "@effect-atom/atom"
+import { getBalance, getBlockNumber } from "voltaire-effect"
+
+// Simple atom - fetches latest block number
+const blockNumberAtom = runtime.atom(getBlockNumber)
+
+// Parameterized atom factory - returns a new atom per address
+const balanceAtom = (address: `0x${string}`) =>
+  runtime.atom(getBalance(address, "latest"))
+```
+
+## Using Atoms in Components
+
+### Basic Usage with useAtomValue
+
+```tsx
+import { useAtomValue, Result } from "@effect-atom/atom-react"
+
+function Balance({ address }: { address: `0x${string}` }) {
+  const result = useAtomValue(balanceAtom(address))
+
+  return Result.match(result, {
+    onInitial: () => <div>Loading...</div>,
+    onSuccess: (balance) => (
+      <div>{(Number(balance) / 1e18).toFixed(4)} ETH</div>
+    ),
+    onFailure: (cause) => (
+      <div>Error: {cause._tag}</div>
+    ),
+  })
+}
+```
+
+### Result Builder Pattern
+
+For more complex rendering, use the builder pattern:
+
+```tsx
+import { Result } from "@effect-atom/atom-react"
+
+function BlockNumber() {
+  const result = useAtomValue(blockNumberAtom)
+
+  return Result.builder(result)
+    .onInitial(() => <span className="loading">...</span>)
+    .onSuccess((block) => <span>Block #{block.toString()}</span>)
+    .onFailure((cause) => <span className="error">Failed</span>)
+    .render()
+}
+```
+
+## Result Type
+
+The `Result` type represents async operation states:
+
+| State | Description | Properties |
+|-------|-------------|------------|
+| `Initial` | Effect hasn't started yet | `waiting: boolean` |
+| `Success` | Effect completed successfully | `value: A` |
+| `Failure` | Effect failed | `cause: Cause<E>` |
+
+### Result Refinements
+
+```tsx
+import { Result } from "@effect-atom/atom"
+
+if (Result.isInitial(result)) {
+  // Initial state - show loading
+}
+
+if (Result.isSuccess(result)) {
+  console.log(result.value) // Access the value
+}
+
+if (Result.isFailure(result)) {
+  console.log(Result.cause(result)) // Access error cause
+}
+
+if (Result.isWaiting(result)) {
+  // Re-fetching with previous value available
+}
+```
+
+### Result Accessors
+
+```tsx
+// Get value or default
+const balance = Result.getOrElse(result, () => 0n)
+
+// Get value or throw
+const balance = Result.getOrThrow(result)
+
+// Map over success value
+const formatted = Result.map(result, (balance) =>
+  (Number(balance) / 1e18).toFixed(4)
+)
+```
+
+## React Hooks Reference
+
+### useAtomValue
+
+Read the current value of an atom reactively:
+
+```tsx
+import { useAtomValue } from "@effect-atom/atom-react"
+
+function Component() {
+  const result = useAtomValue(myAtom)
+  // Re-renders when atom value changes
+}
+```
+
+### useAtomSet
+
+Get a setter function for writable atoms:
+
+```tsx
+import { useAtomSet } from "@effect-atom/atom-react"
+
+function Component() {
+  const setAddress = useAtomSet(addressAtom)
+  
+  return (
+    <input onChange={(e) => setAddress(e.target.value)} />
+  )
+}
+```
+
+### useAtom
+
+Combined read and write access:
+
+```tsx
+import { useAtom } from "@effect-atom/atom-react"
+
+function Component() {
+  const [value, setValue] = useAtom(myAtom)
+}
+```
+
+### useAtomRefresh
+
+Manually trigger re-execution of an effectful atom:
+
+```tsx
+import { useAtomRefresh, useAtomValue, Result } from "@effect-atom/atom-react"
+
+function BalanceWithRefresh({ address }: { address: `0x${string}` }) {
+  const result = useAtomValue(balanceAtom(address))
+  const refresh = useAtomRefresh(balanceAtom(address))
+
+  return (
+    <div>
+      {Result.match(result, {
+        onInitial: () => "Loading...",
+        onSuccess: (b) => `${(Number(b) / 1e18).toFixed(4)} ETH`,
+        onFailure: () => "Error",
+      })}
+      <button onClick={refresh}>Refresh</button>
+    </div>
+  )
+}
+```
+
+### useAtomSuspense
+
+Use with React Suspense for cleaner loading states:
+
+```tsx
+import { useAtomSuspense } from "@effect-atom/atom-react"
+import { Suspense } from "react"
+
+function BalanceSuspense({ address }: { address: `0x${string}` }) {
+  // Suspends until success, throws on failure
+  const balance = useAtomSuspense(balanceAtom(address))
+  
+  return <div>{(Number(balance) / 1e18).toFixed(4)} ETH</div>
+}
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BalanceSuspense address="0x..." />
+    </Suspense>
+  )
+}
+```
+
+## Derived Atoms
+
+Create atoms that derive from other atoms:
+
+```tsx
+import { Atom } from "@effect-atom/atom"
+import { Effect } from "effect"
+import { getBalance, getBlockNumber } from "voltaire-effect"
+
+// Derive from multiple atoms
+const accountSummaryAtom = (address: `0x${string}`) =>
+  runtime.atom(
+    Effect.all({
+      balance: getBalance(address, "latest"),
+      blockNumber: getBlockNumber,
+    })
+  )
+```
+
+## Multiple Chains
+
+Create separate runtimes for different networks:
+
+```tsx
+import { Atom } from "@effect-atom/atom"
+import { HttpProvider } from "voltaire-effect"
+
+const mainnetRuntime = Atom.runtime(
+  HttpProvider("https://eth.llamarpc.com")
+)
+
+const optimismRuntime = Atom.runtime(
+  HttpProvider("https://mainnet.optimism.io")
+)
+
+// Use in components
+const mainnetBalance = mainnetRuntime.atom(getBalance(addr, "latest"))
+const optimismBalance = optimismRuntime.atom(getBalance(addr, "latest"))
+```
+
+## Next.js Setup
+
+### App Router
+
+```tsx
+// app/providers.tsx
+"use client"
+
+import { RegistryProvider } from "@effect-atom/atom-react"
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return <RegistryProvider>{children}</RegistryProvider>
+}
+```
+
+```tsx
+// app/layout.tsx
+import { Providers } from "./providers"
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  )
+}
+```
+
+### Atoms Module
+
+```tsx
+// lib/atoms.ts
+import { Atom } from "@effect-atom/atom"
+import { HttpProvider, getBalance, getBlockNumber } from "voltaire-effect"
+
+const runtime = Atom.runtime(
+  HttpProvider(process.env.NEXT_PUBLIC_RPC_URL!)
+)
+
+export const blockNumberAtom = runtime.atom(getBlockNumber)
+
+export const balanceAtom = (address: `0x${string}`) =>
+  runtime.atom(getBalance(address, "latest"))
+```
+
+### Using in Pages
+
+```tsx
+// app/page.tsx
+"use client"
+
+import { useAtomValue, Result } from "@effect-atom/atom-react"
+import { blockNumberAtom, balanceAtom } from "@/lib/atoms"
+
+export default function Home() {
+  const blockResult = useAtomValue(blockNumberAtom)
+  const balanceResult = useAtomValue(
+    balanceAtom("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+  )
+
+  return (
+    <main>
+      <h1>Ethereum Dashboard</h1>
+      
+      <section>
+        <h2>Latest Block</h2>
+        {Result.match(blockResult, {
+          onInitial: () => <p>Loading...</p>,
+          onSuccess: (block) => <p>#{block.toString()}</p>,
+          onFailure: () => <p>Error loading block</p>,
+        })}
+      </section>
+
+      <section>
+        <h2>Vitalik's Balance</h2>
+        {Result.match(balanceResult, {
+          onInitial: () => <p>Loading...</p>,
+          onSuccess: (balance) => (
+            <p>{(Number(balance) / 1e18).toFixed(4)} ETH</p>
+          ),
+          onFailure: () => <p>Error loading balance</p>,
+        })}
+      </section>
+    </main>
+  )
+}
+```
+
+## Advanced: Scoped Effects with Cleanup
+
+Atoms automatically manage Effect scopes, running finalizers when unmounted:
+
+```tsx
+import { Atom } from "@effect-atom/atom"
+import { Effect } from "effect"
+import { watchBlocks, HttpProvider } from "voltaire-effect"
+
+// Block subscription with automatic cleanup
+const blockStreamAtom = runtime.atom(
+  Effect.gen(function* () {
+    const stream = yield* watchBlocks({ includeTransactions: false })
+    
+    // Add cleanup when atom is no longer used
+    yield* Effect.addFinalizer(() =>
+      Effect.sync(() => console.log("Cleaned up block subscription"))
+    )
+    
+    return stream
+  })
+)
+```
+
+## Error Handling
+
+Handle errors using Result pattern matching:
+
+```tsx
+import { Cause } from "effect"
+
+function ErrorAwareBalance({ address }: { address: `0x${string}` }) {
+  const result = useAtomValue(balanceAtom(address))
+
+  return Result.match(result, {
+    onInitial: () => <LoadingSpinner />,
+    onSuccess: (balance) => <BalanceDisplay balance={balance} />,
+    onFailure: (cause) => {
+      // Extract error details from Cause
+      const error = Cause.squash(cause)
+      
+      if (error._tag === "TransportError") {
+        return <div>Network error - check connection</div>
+      }
+      
+      return <div>Unknown error: {String(error)}</div>
+    },
+  })
+}
+```
+
+## Best Practices
+
+<Tip>
+**Atom Memoization**
+
+Parameterized atom factories return new atoms each call. Memoize when needed:
+
+```tsx
+const balanceAtoms = new Map<string, ReturnType<typeof balanceAtom>>()
+
+function getBalanceAtom(address: `0x${string}`) {
+  if (!balanceAtoms.has(address)) {
+    balanceAtoms.set(address, balanceAtom(address))
+  }
+  return balanceAtoms.get(address)!
+}
+```
+</Tip>
+
+<Warning>
+**Server Components**
+
+effect-atom hooks require client components. Use `"use client"` directive in Next.js App Router.
+</Warning>
+
+## Resources
+
+- [effect-atom Documentation](https://tim-smart.github.io/effect-atom/)
+- [Effect.ts Documentation](https://effect.website/)
+- [voltaire-effect Provider Guide](/jsonrpc-provider)
+- [TanStack Query Integration](/integrations/tanstack-query) - Alternative for non-Effect codebases

@@ -1,0 +1,713 @@
+import { describe, expect, it } from "@effect/vitest";
+import { Hash } from "@tevm/voltaire";
+import { PrivateKey } from "@tevm/voltaire/PrivateKey";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as BaseSignature from "@tevm/voltaire/Signature";
+import * as Effect from "effect/Effect";
+import * as Either from "effect/Either";
+import * as S from "effect/Schema";
+import * as Signature from "./index.js";
+
+const validR = "ab".repeat(32);
+const validS = "cd".repeat(32);
+const validSig65 = `0x${validR}${validS}1b`;
+const validSig64 = `0x${validR}${validS}`;
+const lowR = "11".repeat(32);
+const lowS = "22".repeat(32);
+
+const bigIntToBytes32 = (value: bigint): Uint8Array => {
+	const bytes = new Uint8Array(32);
+	let temp = value;
+	for (let i = 31; i >= 0; i -= 1) {
+		bytes[i] = Number(temp & 0xffn);
+		temp >>= 8n;
+	}
+	return bytes;
+};
+
+describe("Signature.Hex", () => {
+	describe("decode", () => {
+		it("parses 65-byte signature (stored as 64 with algorithm)", () => {
+			const sig = S.decodeSync(Signature.Hex)(validSig65);
+			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.length).toBeGreaterThanOrEqual(64);
+		});
+
+		it("parses 64-byte signature without recovery", () => {
+			const sig = S.decodeSync(Signature.Hex)(validSig64);
+			expect(sig).toBeInstanceOf(Uint8Array);
+			expect(sig.length).toBe(64);
+		});
+
+		it("fails on wrong length (too short)", () => {
+			expect(() => S.decodeSync(Signature.Hex)("0x1234")).toThrow();
+		});
+
+		it("fails on wrong length (too long)", () => {
+			expect(() =>
+				S.decodeSync(Signature.Hex)(`0x${validR}${validS}1b0000`),
+			).toThrow();
+		});
+
+		it("fails on invalid hex characters", () => {
+			expect(() =>
+				S.decodeSync(Signature.Hex)(`0x${"gg".repeat(32)}${validS}1b`),
+			).toThrow();
+		});
+
+		it("fails on empty string", () => {
+			expect(() => S.decodeSync(Signature.Hex)("")).toThrow();
+		});
+
+		it("fails on just prefix", () => {
+			expect(() => S.decodeSync(Signature.Hex)("0x")).toThrow();
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to lowercase hex with prefix", () => {
+			const sig = S.decodeSync(Signature.Hex)(validSig64);
+			const hex = S.encodeSync(Signature.Hex)(sig);
+			expect(hex.startsWith("0x")).toBe(true);
+			expect(hex).toBe(hex.toLowerCase());
+		});
+
+		it("round-trips correctly", () => {
+			const original = S.decodeSync(Signature.Hex)(validSig64);
+			const encoded = S.encodeSync(Signature.Hex)(original);
+			const decoded = S.decodeSync(Signature.Hex)(encoded);
+			expect(Signature.is(decoded)).toBe(true);
+			expect(decoded.length).toBe(original.length);
+		});
+	});
+});
+
+describe("Signature.Bytes", () => {
+	describe("decode", () => {
+		it("parses 65-byte array (extracts 64 bytes)", () => {
+			const bytes = new Uint8Array(65).fill(0xab);
+			bytes[64] = 27;
+			const sig = S.decodeSync(Signature.Bytes)(bytes);
+			expect(sig.length).toBeGreaterThanOrEqual(64);
+		});
+
+		it("parses 64-byte array", () => {
+			const bytes = new Uint8Array(64).fill(0xab);
+			const sig = S.decodeSync(Signature.Bytes)(bytes);
+			expect(sig.length).toBe(64);
+		});
+
+		it("fails on 63 bytes", () => {
+			const bytes = new Uint8Array(63);
+			expect(() => S.decodeSync(Signature.Bytes)(bytes)).toThrow();
+		});
+
+		it("fails on 66 bytes", () => {
+			const bytes = new Uint8Array(66);
+			expect(() => S.decodeSync(Signature.Bytes)(bytes)).toThrow();
+		});
+
+		it("fails on empty array", () => {
+			expect(() => S.decodeSync(Signature.Bytes)(new Uint8Array())).toThrow();
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to Uint8Array", () => {
+			const sig = S.decodeSync(Signature.Hex)(validSig64);
+			const bytes = S.encodeSync(Signature.Bytes)(sig);
+			expect(bytes).toBeInstanceOf(Uint8Array);
+			expect(bytes.length).toBeGreaterThanOrEqual(64);
+		});
+	});
+});
+
+describe("Signature.Compact", () => {
+	describe("decode", () => {
+		it("parses 64-byte compact signature", () => {
+			const bytes = new Uint8Array(64).fill(0xab);
+			const sig = S.decodeSync(Signature.Compact)(bytes);
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("fails on 63 bytes", () => {
+			const bytes = new Uint8Array(63);
+			expect(() => S.decodeSync(Signature.Compact)(bytes)).toThrow();
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to 64-byte compact format", () => {
+			const sig = S.decodeSync(Signature.Hex)(validSig64);
+			const compact = S.encodeSync(Signature.Compact)(sig);
+			expect(compact).toBeInstanceOf(Uint8Array);
+			expect(compact.length).toBe(64);
+		});
+
+		it("round-trips EIP-2098 compact signatures", () => {
+			const sig = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}1c`);
+			const compact = S.encodeSync(Signature.Compact)(sig);
+			const decoded = S.decodeSync(Signature.Compact)(compact);
+			const roundTrip = S.encodeSync(Signature.Compact)(decoded);
+			expect(roundTrip).toEqual(compact);
+			const [yParity] = S.encodeSync(Signature.Tuple)(decoded);
+			expect(yParity).toBe(1);
+		});
+	});
+});
+
+describe("Signature.DER", () => {
+	const validDER = new Uint8Array([
+		0x30,
+		0x44,
+		0x02,
+		0x20,
+		...new Uint8Array(32).fill(0x01),
+		0x02,
+		0x20,
+		...new Uint8Array(32).fill(0x02),
+	]);
+
+	describe("decode", () => {
+		it("parses valid DER signature", () => {
+			const sig = S.decodeSync(Signature.DER)(validDER);
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("fails on invalid DER (wrong tag)", () => {
+			const invalid = new Uint8Array(validDER);
+			invalid[0] = 0x31;
+			expect(() => S.decodeSync(Signature.DER)(invalid)).toThrow();
+		});
+
+		it("fails on too short", () => {
+			const bytes = new Uint8Array([0x30, 0x06]);
+			expect(() => S.decodeSync(Signature.DER)(bytes)).toThrow();
+		});
+
+		it("fails on empty", () => {
+			expect(() => S.decodeSync(Signature.DER)(new Uint8Array())).toThrow();
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to DER format", () => {
+			const sig = S.decodeSync(Signature.DER)(validDER);
+			const der = S.encodeSync(Signature.DER)(sig);
+			expect(der).toBeInstanceOf(Uint8Array);
+			expect(der[0]).toBe(0x30);
+		});
+	});
+});
+
+describe("Signature.Rpc", () => {
+	describe("decode", () => {
+		it("parses RPC format with yParity string", () => {
+			const sig = S.decodeSync(Signature.Rpc)({
+				r: `0x${validR}`,
+				s: `0x${validS}`,
+				yParity: "0x0",
+			});
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("parses RPC format with yParity number", () => {
+			const sig = S.decodeSync(Signature.Rpc)({
+				r: `0x${validR}`,
+				s: `0x${validS}`,
+				yParity: 0,
+			});
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("parses RPC format with v string", () => {
+			const sig = S.decodeSync(Signature.Rpc)({
+				r: `0x${validR}`,
+				s: `0x${validS}`,
+				v: "0x1b",
+			});
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("parses RPC format with v number", () => {
+			const sig = S.decodeSync(Signature.Rpc)({
+				r: `0x${validR}`,
+				s: `0x${validS}`,
+				v: 27,
+			});
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("fails on missing r", () => {
+			expect(() =>
+				S.decodeSync(Signature.Rpc)({
+					s: `0x${validS}`,
+					yParity: 0,
+				} as unknown as { r: string; s: string }),
+			).toThrow();
+		});
+
+		it("fails on missing s", () => {
+			expect(() =>
+				S.decodeSync(Signature.Rpc)({
+					r: `0x${validR}`,
+					yParity: 0,
+				} as unknown as { r: string; s: string }),
+			).toThrow();
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to RPC format", () => {
+			const sig = S.decodeSync(Signature.Hex)(validSig64);
+			const rpc = S.encodeSync(Signature.Rpc)(sig);
+			expect(rpc).toHaveProperty("r");
+			expect(rpc).toHaveProperty("s");
+			expect(typeof rpc.r).toBe("string");
+			expect(typeof rpc.s).toBe("string");
+		});
+
+		it("encodes EIP-2930/1559 yParity values", () => {
+			const sig0 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}00`);
+			const sig1 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}01`);
+			const rpc0 = S.encodeSync(Signature.Rpc)(sig0);
+			const rpc1 = S.encodeSync(Signature.Rpc)(sig1);
+			expect(rpc0.yParity).toBe("0x0");
+			expect(rpc1.yParity).toBe("0x1");
+			expect(rpc0.v).toBe("0x0");
+			expect(rpc1.v).toBe("0x1");
+		});
+
+		it("encodes large chainId v values (137, 56)", () => {
+			const r = new Uint8Array(32).fill(0x11);
+			const s = new Uint8Array(32).fill(0x22);
+			const sig137 = BaseSignature.fromTuple([0, r, s], 137);
+			const rpc137 = S.encodeSync(Signature.Rpc)(sig137);
+			expect(rpc137.yParity).toBe("0x0");
+			expect(rpc137.v).toBe(`0x${(137 * 2 + 35).toString(16)}`);
+
+			const sig56 = BaseSignature.fromTuple([1, r, s], 56);
+			const rpc56 = S.encodeSync(Signature.Rpc)(sig56);
+			expect(rpc56.yParity).toBe("0x1");
+			expect(rpc56.v).toBe(`0x${(56 * 2 + 36).toString(16)}`);
+		});
+	});
+});
+
+describe("Signature.Tuple", () => {
+	describe("decode", () => {
+		it("parses tuple [yParity, r, s]", () => {
+			const r = new Uint8Array(32).fill(0xab);
+			const s = new Uint8Array(32).fill(0xcd);
+			const sig = S.decodeSync(Signature.Tuple)([0, r, s]);
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("parses tuple with yParity=1", () => {
+			const r = new Uint8Array(32).fill(0xab);
+			const s = new Uint8Array(32).fill(0xcd);
+			const sig = S.decodeSync(Signature.Tuple)([1, r, s]);
+			expect(sig).toBeInstanceOf(Uint8Array);
+		});
+
+		it("fails on wrong r length", () => {
+			const r = new Uint8Array(31);
+			const s = new Uint8Array(32);
+			expect(() => S.decodeSync(Signature.Tuple)([0, r, s])).toThrow();
+		});
+
+		it("fails on wrong s length", () => {
+			const r = new Uint8Array(32);
+			const s = new Uint8Array(31);
+			expect(() => S.decodeSync(Signature.Tuple)([0, r, s])).toThrow();
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to tuple format", () => {
+			const sig = S.decodeSync(Signature.Hex)(validSig65);
+			const tuple = S.encodeSync(Signature.Tuple)(sig);
+			expect(Array.isArray(tuple)).toBe(true);
+			expect(tuple.length).toBe(3);
+			expect(typeof tuple[0]).toBe("number");
+			expect(tuple[1]).toBeInstanceOf(Uint8Array);
+			expect(tuple[2]).toBeInstanceOf(Uint8Array);
+		});
+
+		it("encodes EIP-2930/1559 v=0/1 as yParity", () => {
+			const sig0 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}00`);
+			const sig1 = S.decodeSync(Signature.Hex)(`0x${lowR}${lowS}01`);
+			const [yParity0] = S.encodeSync(Signature.Tuple)(sig0);
+			const [yParity1] = S.encodeSync(Signature.Tuple)(sig1);
+			expect(yParity0).toBe(0);
+			expect(yParity1).toBe(1);
+		});
+
+		it("derives yParity from large chainId v values (137, 56)", () => {
+			const r = new Uint8Array(32).fill(0x11);
+			const s = new Uint8Array(32).fill(0x22);
+			const sig137 = BaseSignature.fromTuple([0, r, s], 137);
+			const [yParity137] = S.encodeSync(Signature.Tuple)(sig137);
+			expect(yParity137).toBe(0);
+
+			const sig56 = BaseSignature.fromTuple([1, r, s], 56);
+			const [yParity56] = S.encodeSync(Signature.Tuple)(sig56);
+			expect(yParity56).toBe(1);
+		});
+	});
+});
+
+describe("pure functions", () => {
+	const sig = S.decodeSync(Signature.Hex)(validSig65);
+	const _sig2 = S.decodeSync(Signature.Hex)(validSig65);
+	const _differentSig = S.decodeSync(Signature.Hex)(
+		`0x${"11".repeat(32)}${"22".repeat(32)}1c`,
+	);
+
+	describe("is", () => {
+		it("returns true for valid signature", () => {
+			expect(Signature.is(sig)).toBe(true);
+		});
+
+		it("returns false for plain Uint8Array", () => {
+			expect(Signature.is(new Uint8Array(65))).toBe(false);
+		});
+
+		it("returns false for non-Uint8Array", () => {
+			expect(Signature.is("not a signature")).toBe(false);
+			expect(Signature.is(123)).toBe(false);
+			expect(Signature.is(null)).toBe(false);
+			expect(Signature.is(undefined)).toBe(false);
+			expect(Signature.is({})).toBe(false);
+		});
+	});
+
+	describe("isSignature", () => {
+		it("is alias for is", () => {
+			expect(Signature.isSignature(sig)).toBe(true);
+			expect(Signature.isSignature(new Uint8Array(65))).toBe(false);
+		});
+	});
+
+	describe("getAlgorithm", () => {
+		it("returns secp256k1 for Ethereum signatures", () => {
+			expect(Signature.getAlgorithm(sig)).toBe("secp256k1");
+		});
+	});
+
+	describe("isCanonical", () => {
+		it("returns boolean", () => {
+			const result = Signature.isCanonical(sig);
+			expect(typeof result).toBe("boolean");
+		});
+	});
+
+	describe("normalize", () => {
+		it("returns a signature", () => {
+			const normalized = Signature.normalize(sig);
+			expect(Signature.is(normalized)).toBe(true);
+		});
+
+		it("normalizes non-canonical signatures", () => {
+			const normalized = Signature.normalize(sig);
+			expect(Signature.isCanonical(normalized)).toBe(true);
+		});
+	});
+
+	describe("toCompact", () => {
+		it("returns 64-byte compact format", () => {
+			const compact = Signature.toCompact(sig);
+			expect(compact).toBeInstanceOf(Uint8Array);
+			expect(compact.length).toBe(64);
+		});
+	});
+});
+
+describe("Signature sign/verify/recover + serialize/deserialize", () => {
+	it("signs, serializes, deserializes, verifies, and recovers", () => {
+		const messageHash = Hash.from(new Uint8Array(32).fill(0x42));
+		const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1));
+		const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+		const secpSig = Secp256k1.sign(messageHash, privateKey);
+		const sig = BaseSignature.fromSecp256k1(secpSig.r, secpSig.s, secpSig.v);
+
+		const hex = S.encodeSync(Signature.Hex)(sig);
+		const decoded = S.decodeSync(Signature.Hex)(hex);
+
+		expect(BaseSignature.verify(decoded, messageHash, publicKey)).toBe(true);
+
+		const recovered = Secp256k1.recoverPublicKey(secpSig, messageHash);
+		expect([...recovered]).toEqual([...publicKey]);
+	});
+});
+
+describe("edge cases", () => {
+	it("handles all-zeros signature", () => {
+		const zeroBytes = new Uint8Array(64);
+		const sig = S.decodeSync(Signature.Bytes)(zeroBytes);
+		expect(sig.length).toBe(64);
+	});
+
+	it("handles max value bytes", () => {
+		const maxBytes = new Uint8Array(64).fill(0xff);
+		const sig = S.decodeSync(Signature.Bytes)(maxBytes);
+		expect(sig.length).toBe(64);
+	});
+
+	it("handles valid v values in 65-byte input", () => {
+		const bytes27 = new Uint8Array(65).fill(0xab);
+		bytes27[64] = 27;
+		const sig27 = S.decodeSync(Signature.Bytes)(bytes27);
+		expect(sig27.length).toBeGreaterThanOrEqual(64);
+
+		const bytes28 = new Uint8Array(65).fill(0xab);
+		bytes28[64] = 28;
+		const sig28 = S.decodeSync(Signature.Bytes)(bytes28);
+		expect(sig28.length).toBeGreaterThanOrEqual(64);
+	});
+});
+
+describe("signature component validation", () => {
+	const messageHash = Hash.from(new Uint8Array(32).fill(0x11));
+	const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1));
+	const publicKey = Secp256k1.derivePublicKey(privateKey);
+	const one = new Uint8Array(32).fill(1);
+	const zero = new Uint8Array(32);
+	const curveOrderBytes = bigIntToBytes32(Secp256k1.CURVE_ORDER);
+
+	it("rejects r=0", () => {
+		const sig = BaseSignature.fromSecp256k1(zero, one, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
+	});
+
+	it("rejects s=0", () => {
+		const sig = BaseSignature.fromSecp256k1(one, zero, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
+	});
+
+	it("rejects r >= curve order", () => {
+		const sig = BaseSignature.fromSecp256k1(curveOrderBytes, one, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
+	});
+
+	it("rejects s >= curve order", () => {
+		const sig = BaseSignature.fromSecp256k1(one, curveOrderBytes, 27);
+		expect(BaseSignature.verify(sig, messageHash, publicKey)).toBe(false);
+	});
+});
+
+describe("new pure functions", () => {
+	const sig = S.decodeSync(Signature.Hex)(validSig65);
+
+	describe("getR", () => {
+		it("returns 32-byte R component", () => {
+			const r = Signature.getR(sig);
+			expect(r).toBeInstanceOf(Uint8Array);
+			expect(r.length).toBe(32);
+		});
+	});
+
+	describe("getS", () => {
+		it("returns 32-byte S component", () => {
+			const s = Signature.getS(sig);
+			expect(s).toBeInstanceOf(Uint8Array);
+			expect(s.length).toBe(32);
+		});
+	});
+
+	describe("getV", () => {
+		it("returns recovery value for secp256k1", () => {
+			const v = Signature.getV(sig);
+			expect(v).toBe(27);
+		});
+
+		it("returns derived v for 64-byte signature", () => {
+			const sig64 = S.decodeSync(Signature.Hex)(validSig64);
+			const v = Signature.getV(sig64);
+			expect(typeof v === "number" || v === undefined).toBe(true);
+		});
+	});
+
+	describe("toHex", () => {
+		it("returns hex string with prefix", () => {
+			const hex = Signature.toHex(sig);
+			expect(hex.startsWith("0x")).toBe(true);
+			expect(hex.length).toBe(132); // 0x + 130 chars
+		});
+	});
+
+	describe("toDER", () => {
+		it("returns DER-encoded bytes", () => {
+			const der = Signature.toDER(sig);
+			expect(der).toBeInstanceOf(Uint8Array);
+			expect(der[0]).toBe(0x30); // DER sequence tag
+		});
+	});
+
+	describe("toRpc", () => {
+		it("returns RPC format object", () => {
+			const rpc = Signature.toRpc(sig);
+			expect(rpc.r).toBeDefined();
+			expect(rpc.s).toBeDefined();
+			expect(typeof rpc.r).toBe("string");
+			expect(typeof rpc.s).toBe("string");
+		});
+	});
+
+	describe("toTuple", () => {
+		it("returns [yParity, r, s] tuple", () => {
+			const tuple = Signature.toTuple(sig);
+			expect(Array.isArray(tuple)).toBe(true);
+			expect(tuple.length).toBe(3);
+			expect(typeof tuple[0]).toBe("number");
+			expect(tuple[1]).toBeInstanceOf(Uint8Array);
+			expect(tuple[2]).toBeInstanceOf(Uint8Array);
+		});
+	});
+
+	describe("verify", () => {
+		it("verifies valid signature", () => {
+			const messageHash = Hash.from(new Uint8Array(32).fill(0x42));
+			const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1));
+			const publicKey = Secp256k1.derivePublicKey(privateKey);
+			const secpSig = Secp256k1.sign(messageHash, privateKey);
+			const sig = BaseSignature.fromSecp256k1(secpSig.r, secpSig.s, secpSig.v);
+			expect(Signature.verify(sig, messageHash, publicKey)).toBe(true);
+		});
+
+		it("rejects invalid signature", () => {
+			const messageHash = Hash.from(new Uint8Array(32).fill(0x42));
+			const privateKey = PrivateKey.fromBytes(new Uint8Array(32).fill(1));
+			const publicKey = Secp256k1.derivePublicKey(privateKey);
+			const invalidSig = BaseSignature.fromSecp256k1(
+				new Uint8Array(32).fill(0x11),
+				new Uint8Array(32).fill(0x22),
+				27,
+			);
+			expect(Signature.verify(invalidSig, messageHash, publicKey)).toBe(false);
+		});
+	});
+});
+
+describe("Effect-wrapped from* functions", () => {
+	describe("fromHex", () => {
+		it.effect("parses valid hex", () =>
+			Effect.gen(function* () {
+				const sig = yield* Signature.fromHex(validSig65);
+				expect(Signature.is(sig)).toBe(true);
+			}),
+		);
+
+		it.effect("fails on invalid hex", () =>
+			Effect.gen(function* () {
+				const result = yield* Effect.either(Signature.fromHex("invalid"));
+				expect(Either.isLeft(result)).toBe(true);
+			}),
+		);
+	});
+
+	describe("fromBytes", () => {
+		it.effect("parses valid bytes", () =>
+			Effect.gen(function* () {
+				const bytes = new Uint8Array(64).fill(0xab);
+				const sig = yield* Signature.fromBytes(bytes);
+				expect(Signature.is(sig)).toBe(true);
+			}),
+		);
+	});
+
+	describe("fromCompact", () => {
+		it.effect("parses compact format", () =>
+			Effect.gen(function* () {
+				const compact = new Uint8Array(64).fill(0xab);
+				const sig = yield* Signature.fromCompact(compact, "secp256k1");
+				expect(Signature.is(sig)).toBe(true);
+			}),
+		);
+	});
+
+	describe("fromDER", () => {
+		it.effect("parses DER format", () =>
+			Effect.gen(function* () {
+				const validDER = new Uint8Array([
+					0x30,
+					0x44,
+					0x02,
+					0x20,
+					...new Uint8Array(32).fill(0x01),
+					0x02,
+					0x20,
+					...new Uint8Array(32).fill(0x02),
+				]);
+				const sig = yield* Signature.fromDER(validDER, "secp256k1");
+				expect(Signature.is(sig)).toBe(true);
+			}),
+		);
+	});
+
+	describe("fromRpc", () => {
+		it.effect("parses RPC format", () =>
+			Effect.gen(function* () {
+				const sig = yield* Signature.fromRpc({
+					r: `0x${validR}`,
+					s: `0x${validS}`,
+					yParity: 0,
+				});
+				expect(Signature.is(sig)).toBe(true);
+			}),
+		);
+	});
+
+	describe("fromTuple", () => {
+		it.effect("parses tuple format", () =>
+			Effect.gen(function* () {
+				const r = new Uint8Array(32).fill(0xab);
+				const s = new Uint8Array(32).fill(0xcd);
+				const sig = yield* Signature.fromTuple([0, r, s]);
+				expect(Signature.is(sig)).toBe(true);
+			}),
+		);
+	});
+
+	describe("from", () => {
+		it.effect("parses from bytes", () =>
+			Effect.gen(function* () {
+				const bytes = new Uint8Array(64).fill(0xab);
+				const sig = yield* Signature.from(bytes);
+				expect(Signature.is(sig)).toBe(true);
+			}),
+		);
+	});
+});
+
+describe("constructor functions", () => {
+	describe("fromSecp256k1", () => {
+		it("creates secp256k1 signature", () => {
+			const r = new Uint8Array(32).fill(0x11);
+			const s = new Uint8Array(32).fill(0x22);
+			const sig = Signature.fromSecp256k1(r, s, 27);
+			expect(Signature.is(sig)).toBe(true);
+			expect(Signature.getAlgorithm(sig)).toBe("secp256k1");
+		});
+	});
+
+	describe("fromP256", () => {
+		it("creates p256 signature", () => {
+			const r = new Uint8Array(32).fill(0x11);
+			const s = new Uint8Array(32).fill(0x22);
+			const sig = Signature.fromP256(r, s);
+			expect(Signature.is(sig)).toBe(true);
+			expect(Signature.getAlgorithm(sig)).toBe("p256");
+		});
+	});
+
+	describe("fromEd25519", () => {
+		it("creates ed25519 signature", () => {
+			const bytes = new Uint8Array(64).fill(0x33);
+			const sig = Signature.fromEd25519(bytes);
+			expect(Signature.is(sig)).toBe(true);
+			expect(Signature.getAlgorithm(sig)).toBe("ed25519");
+		});
+	});
+});

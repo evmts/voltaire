@@ -1,0 +1,182 @@
+---
+title: '[Zig] src/precompiles/blake2f.fuzz.zig'
+source: 'src/precompiles/blake2f.fuzz.zig'
+---
+
+> Auto-generated from Zig tests in: src/precompiles/blake2f.fuzz.zig
+
+### fuzz blake2f arbitrary valid input
+
+```zig
+test "fuzz blake2f arbitrary valid input" {
+    try testing.fuzz({}, fuzzArbitraryValidInput, .{});
+}
+```
+
+### fuzz blake2f invalid lengths
+
+```zig
+test "fuzz blake2f invalid lengths" {
+    try testing.fuzz({}, fuzzInvalidLengths, .{});
+}
+```
+
+### fuzz blake2f invalid final flag
+
+```zig
+test "fuzz blake2f invalid final flag" {
+    try testing.fuzz({}, fuzzInvalidFinalFlag, .{});
+}
+```
+
+### fuzz blake2f valid final flags
+
+```zig
+test "fuzz blake2f valid final flags" {
+    try testing.fuzz({}, fuzzValidFinalFlags, .{});
+}
+```
+
+### fuzz blake2f gas limits
+
+```zig
+test "fuzz blake2f gas limits" {
+    try testing.fuzz({}, fuzzGasLimits, .{});
+}
+```
+
+### fuzz blake2f exact gas
+
+```zig
+test "fuzz blake2f exact gas" {
+    try testing.fuzz({}, fuzzExactGas, .{});
+}
+```
+
+### fuzz blake2f insufficient gas
+
+```zig
+test "fuzz blake2f insufficient gas" {
+    try testing.fuzz({}, fuzzInsufficientGas, .{});
+}
+```
+
+### fuzz blake2f zero rounds
+
+```zig
+test "fuzz blake2f zero rounds" {
+    try testing.fuzz({}, fuzzZeroRounds, .{});
+}
+```
+
+### fuzz blake2f single round
+
+```zig
+test "fuzz blake2f single round" {
+    try testing.fuzz({}, fuzzSingleRound, .{});
+}
+```
+
+### fuzz blake2f maximum rounds
+
+```zig
+test "fuzz blake2f maximum rounds" {
+    try testing.fuzz({}, fuzzMaximumRounds, .{});
+}
+```
+
+### fuzz blake2f large rounds
+
+```zig
+test "fuzz blake2f large rounds" {
+    try testing.fuzz({}, fuzzLargeRounds, .{});
+}
+```
+
+### fuzz blake2f determinism
+
+```zig
+test "fuzz blake2f determinism" {
+    try testing.fuzz({}, fuzzDeterminism, .{});
+}
+```
+
+### fuzz blake2f output length
+
+```zig
+test "fuzz blake2f output length" {
+    try testing.fuzz({}, fuzzOutputLength, .{});
+}
+```
+
+### fuzz blake2f gas calculation
+
+```zig
+test "fuzz blake2f gas calculation" {
+    try testing.fuzz({}, fuzzGasCalculation, .{});
+}
+```
+
+### fuzz blake2f varying state
+
+```zig
+test "fuzz blake2f varying state" {
+    try testing.fuzz({}, fuzzVaryingState, .{});
+}
+```
+
+### fuzz blake2f varying message
+
+```zig
+test "fuzz blake2f varying message" {
+    try testing.fuzz({}, fuzzVaryingMessage, .{});
+}
+```
+
+### fuzz blake2f varying offset
+
+```zig
+test "fuzz blake2f varying offset" {
+    try testing.fuzz({}, fuzzVaryingOffset, .{});
+}
+```
+
+### fuzz blake2f extreme patterns
+
+```zig
+test "fuzz blake2f extreme patterns" {
+    try testing.fuzz({}, fuzzExtremePatterns, .{});
+}
+```
+
+### fuzz blake2f allocation stress
+
+```zig
+test "fuzz blake2f allocation stress" {
+    try testing.fuzz({}, fuzzAllocationStress, .{});
+}
+```
+
+### fuzz blake2f rounds boundaries
+
+```zig
+test "fuzz blake2f rounds boundaries" {
+    try testing.fuzz({}, fuzzRoundsBoundaries, .{});
+}
+```
+
+### fuzz blake2f final flag values
+
+```zig
+test "fuzz blake2f final flag values" {
+    try testing.fuzz({}, fuzzFinalFlagValues, .{});
+}
+```
+
+### fuzz blake2f zero vs nonzero fields
+
+```zig
+test "fuzz blake2f zero vs nonzero fields" {
+    try testing.fuzz({}, fuzzZeroVsNonzeroFields, .{});
+}
+```

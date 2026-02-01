@@ -1,0 +1,38 @@
+---
+title: PackedUserOperation
+description: Gas-optimized ERC-4337 v0.7 packed format
+---
+
+```typescript
+import * as PackedUserOperation from 'voltaire-effect/primitives/PackedUserOperation'
+import { Effect } from 'effect'
+
+// Create packed operation
+const packed = await Effect.runPromise(PackedUserOperation.from({
+  sender: '0x1234567890123456789012345678901234567890',
+  nonce: 0n,
+  initCode: '0x',
+  callData: '0xb61d27f6...',
+  accountGasLimits: new Uint8Array(32), // verificationGas[0:16] + callGas[16:32]
+  preVerificationGas: 21000n,
+  gasFees: new Uint8Array(32),          // priority[0:16] + maxFee[16:32]
+  paymasterAndData: '0x',
+  signature: '0x'
+}))
+
+// Hash for signing
+const userOpHash = await Effect.runPromise(
+  PackedUserOperation.hash(packed, '0x0000000071727De22E5E9d8BAf0edAc6f37da032', 1n)
+)
+
+// Unpack to full UserOperation
+const userOp = await Effect.runPromise(PackedUserOperation.unpack(packed))
+// userOp.verificationGasLimit, userOp.callGasLimit, etc.
+```
+
+## Packed Fields
+
+| Field | Bytes | Contents |
+|-------|-------|----------|
+| accountGasLimits | 32 | verificationGasLimit (16) + callGasLimit (16) |
+| gasFees | 32 | maxPriorityFeePerGas (16) + maxFeePerGas (16) |

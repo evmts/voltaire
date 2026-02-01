@@ -1,0 +1,41 @@
+---
+title: TraceResult
+description: EVM execution trace output
+---
+
+```typescript
+import * as TraceResult from 'voltaire-effect/primitives/TraceResult'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(TraceResult.from({
+  gas: 21000n,
+  failed: false,
+  returnValue: new Uint8Array([]),
+  callTrace: {
+    type: 'CALL',
+    from: '0x...',
+    to: '0x...',
+    gas: '0x5208',
+    input: '0x'
+  }
+}))
+```
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `gas` | `bigint` | Gas consumed |
+| `failed` | `boolean` | Execution reverted |
+| `returnValue` | `Uint8Array` | Return data |
+| `structLogs` | `any[]` | Step-by-step logs (structLog tracer) |
+| `callTrace` | `object` | Call tree (callTracer) |
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(TraceResult.from(invalid))
+if (result._tag === 'Failure') {
+  console.error(result.cause) // TraceResultError
+}
+```

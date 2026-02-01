@@ -1,0 +1,478 @@
+---
+title: "primitives/Slot"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Slot
+
+# primitives/Slot
+
+## Type Aliases
+
+### SlotType
+
+> **SlotType** = `bigint` & `object`
+
+Defined in: [src/primitives/Slot/SlotType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Slot/SlotType.ts#L13)
+
+Slot type
+
+Represents a consensus layer slot number (12 seconds per slot).
+Slots are the fundamental unit of time in Ethereum's proof-of-stake consensus.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Slot"`
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/slot for Slot documentation
+ - https://github.com/ethereum/consensus-specs for Consensus specifications
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### Slot
+
+> `const` **Slot**: `object`
+
+Defined in: [src/primitives/Slot/index.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Slot/index.ts#L11)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+Check if Slot values are equal
+
+###### Parameters
+
+###### a
+
+[`SlotType`](#slottype)
+
+First slot
+
+###### b
+
+[`SlotType`](#slottype)
+
+Second slot
+
+###### Returns
+
+`boolean`
+
+true if equal
+
+###### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const a = Slot.from(1000000n);
+const b = Slot.from(1000000n);
+const result = Slot.equals(a, b); // true
+```
+
+##### from()
+
+> **from**: (`value`) => [`SlotType`](#slottype)
+
+Create Slot from number, bigint, or string
+
+###### Parameters
+
+###### value
+
+Slot number (number, bigint, or decimal/hex string)
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`SlotType`](#slottype)
+
+Slot value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is negative or invalid
+
+###### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot1 = Slot.from(1000000n);
+const slot2 = Slot.from(1000000);
+const slot3 = Slot.from("0xf4240");
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`slot`) => `bigint`
+
+Convert Slot to bigint
+
+###### Parameters
+
+###### slot
+
+[`SlotType`](#slottype)
+
+Slot value
+
+###### Returns
+
+`bigint`
+
+BigInt representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot = Slot.from(1000000);
+const big = Slot.toBigInt(slot); // 1000000n
+```
+
+##### toEpoch()
+
+> **toEpoch**: (`slot`) => [`EpochType`](Epoch.mdx#epochtype)
+
+Convert Slot to its corresponding Epoch
+
+Each epoch contains 32 slots. This function performs integer division: epoch = slot / 32.
+
+###### Parameters
+
+###### slot
+
+[`SlotType`](#slottype)
+
+Slot value
+
+###### Returns
+
+[`EpochType`](Epoch.mdx#epochtype)
+
+Epoch value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot = Slot.from(96n); // slot 96
+const epoch = Slot.toEpoch(slot); // epoch 3 (96 / 32)
+```
+
+##### toNumber()
+
+> **toNumber**: (`slot`) => `number`
+
+Convert Slot to number
+
+###### Parameters
+
+###### slot
+
+[`SlotType`](#slottype)
+
+Slot value
+
+###### Returns
+
+`number`
+
+Number representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If slot exceeds safe integer range
+
+###### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot = Slot.from(1000000n);
+const num = Slot.toNumber(slot); // 1000000
+```
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Slot/equals.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Slot/equals.js#L18)
+
+Check if Slot values are equal
+
+#### Parameters
+
+##### a
+
+[`SlotType`](#slottype)
+
+First slot
+
+##### b
+
+[`SlotType`](#slottype)
+
+Second slot
+
+#### Returns
+
+`boolean`
+
+true if equal
+
+#### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const a = Slot.from(1000000n);
+const b = Slot.from(1000000n);
+const result = Slot.equals(a, b); // true
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`SlotType`](#slottype)
+
+Defined in: [src/primitives/Slot/from.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Slot/from.js#L17)
+
+Create Slot from number, bigint, or string
+
+#### Parameters
+
+##### value
+
+Slot number (number, bigint, or decimal/hex string)
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`SlotType`](#slottype)
+
+Slot value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is negative or invalid
+
+#### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot1 = Slot.from(1000000n);
+const slot2 = Slot.from(1000000);
+const slot3 = Slot.from("0xf4240");
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`slot`): `bigint`
+
+Defined in: [src/primitives/Slot/toBigInt.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Slot/toBigInt.js#L16)
+
+Convert Slot to bigint
+
+#### Parameters
+
+##### slot
+
+[`SlotType`](#slottype)
+
+Slot value
+
+#### Returns
+
+`bigint`
+
+BigInt representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot = Slot.from(1000000);
+const big = Slot.toBigInt(slot); // 1000000n
+```
+
+***
+
+### toEpoch()
+
+> **toEpoch**(`slot`): [`EpochType`](Epoch.mdx#epochtype)
+
+Defined in: [src/primitives/Slot/toEpoch.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Slot/toEpoch.js#L20)
+
+Convert Slot to its corresponding Epoch
+
+Each epoch contains 32 slots. This function performs integer division: epoch = slot / 32.
+
+#### Parameters
+
+##### slot
+
+[`SlotType`](#slottype)
+
+Slot value
+
+#### Returns
+
+[`EpochType`](Epoch.mdx#epochtype)
+
+Epoch value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot = Slot.from(96n); // slot 96
+const epoch = Slot.toEpoch(slot); // epoch 3 (96 / 32)
+```
+
+***
+
+### toNumber()
+
+> **toNumber**(`slot`): `number`
+
+Defined in: [src/primitives/Slot/toNumber.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Slot/toNumber.js#L16)
+
+Convert Slot to number
+
+#### Parameters
+
+##### slot
+
+[`SlotType`](#slottype)
+
+Slot value
+
+#### Returns
+
+`number`
+
+Number representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/slot for Slot documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If slot exceeds safe integer range
+
+#### Example
+
+```javascript
+import * as Slot from './primitives/Slot/index.js';
+const slot = Slot.from(1000000n);
+const num = Slot.toNumber(slot); // 1000000
+```

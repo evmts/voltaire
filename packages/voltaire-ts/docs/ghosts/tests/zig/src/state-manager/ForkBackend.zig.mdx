@@ -1,0 +1,35 @@
+---
+title: '[Zig] src/state-manager/ForkBackend.zig'
+source: 'src/state-manager/ForkBackend.zig'
+---
+
+> Auto-generated from Zig tests in: src/state-manager/ForkBackend.zig
+
+### ForkBackend - cache configuration
+
+```zig
+test "ForkBackend - cache configuration" {
+    const config_default = CacheConfig{};
+    try std.testing.expectEqual(@as(usize, 10000), config_default.max_size);
+    try std.testing.expectEqual(CacheConfig.EvictionPolicy.lru, config_default.eviction_policy);
+
+    const config_custom = CacheConfig{ .max_size = 5000, .eviction_policy = .none };
+    try std.testing.expectEqual(@as(usize, 5000), config_custom.max_size);
+    try std.testing.expectEqual(CacheConfig.EvictionPolicy.none, config_custom.eviction_policy);
+}
+```
+
+### ForkBackend - transport union
+
+```zig
+test "ForkBackend - transport union" {
+    const http_transport = Transport{ .http = .{ .url = "https://eth-mainnet.example.com" } };
+    try std.testing.expect(http_transport == .http);
+
+    const ws_transport = Transport{ .websocket = .{ .url = "wss://eth-mainnet.example.com" } };
+    try std.testing.expect(ws_transport == .websocket);
+
+    const ipc_transport = Transport{ .ipc = .{ .path = "/tmp/geth.ipc" } };
+    try std.testing.expect(ipc_transport == .ipc);
+}
+```

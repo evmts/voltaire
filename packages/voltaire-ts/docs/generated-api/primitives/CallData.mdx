@@ -1,0 +1,744 @@
+---
+title: "primitives/CallData"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/CallData
+
+# primitives/CallData
+
+## Classes
+
+### InvalidCallDataLengthError
+
+Defined in: [src/primitives/CallData/errors.ts:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L4)
+
+Error thrown when calldata is too short (must be at least 4 bytes for selector)
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidCallDataLengthError**(`message`, `options?`): [`InvalidCallDataLengthError`](#invalidcalldatalengtherror)
+
+Defined in: [src/primitives/CallData/errors.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### expected?
+
+`string`
+
+###### value?
+
+`unknown`
+
+###### Returns
+
+[`InvalidCallDataLengthError`](#invalidcalldatalengtherror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### code
+
+> `readonly` **code**: `"INVALID_CALLDATA_LENGTH"` = `"INVALID_CALLDATA_LENGTH"`
+
+Defined in: [src/primitives/CallData/errors.ts:5](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L5)
+
+##### expected
+
+> `readonly` **expected**: `string`
+
+Defined in: [src/primitives/CallData/errors.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L7)
+
+##### value
+
+> `readonly` **value**: `unknown`
+
+Defined in: [src/primitives/CallData/errors.ts:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L6)
+
+***
+
+### InvalidHexFormatError
+
+Defined in: [src/primitives/CallData/errors.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L23)
+
+Error thrown when hex string format is invalid
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidHexFormatError**(`message`): [`InvalidHexFormatError`](#invalidhexformaterror)
+
+Defined in: [src/primitives/CallData/errors.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L26)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### Returns
+
+[`InvalidHexFormatError`](#invalidhexformaterror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### code
+
+> `readonly` **code**: `"INVALID_HEX_FORMAT"` = `"INVALID_HEX_FORMAT"`
+
+Defined in: [src/primitives/CallData/errors.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L24)
+
+***
+
+### InvalidValueError
+
+Defined in: [src/primitives/CallData/errors.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L35)
+
+Error thrown when value type is unsupported
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidValueError**(`message`, `options?`): [`InvalidValueError`](#invalidvalueerror)
+
+Defined in: [src/primitives/CallData/errors.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L40)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### expected?
+
+`string`
+
+###### value?
+
+`unknown`
+
+###### Returns
+
+[`InvalidValueError`](#invalidvalueerror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### code
+
+> `readonly` **code**: `"INVALID_VALUE"` = `"INVALID_VALUE"`
+
+Defined in: [src/primitives/CallData/errors.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L36)
+
+##### expected?
+
+> `readonly` `optional` **expected**: `string`
+
+Defined in: [src/primitives/CallData/errors.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L38)
+
+##### value
+
+> `readonly` **value**: `unknown`
+
+Defined in: [src/primitives/CallData/errors.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/errors.ts#L37)
+
+## Interfaces
+
+### BaseCallData
+
+Defined in: [src/primitives/CallData/index.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L12)
+
+Base CallData interface with instance methods
+
+#### Extends
+
+- [`CallDataType`](#calldatatype)
+
+#### Indexable
+
+\[`index`: `number`\]: `number`
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"CallData"`
+
+Defined in: [src/primitives/CallData/CallDataType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/CallDataType.ts#L10)
+
+###### Inherited from
+
+`CallDataType.[brand]`
+
+#### Methods
+
+##### equals()
+
+> **equals**(`other`): `boolean`
+
+Defined in: [src/primitives/CallData/index.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L17)
+
+###### Parameters
+
+###### other
+
+[`CallDataType`](#calldatatype)
+
+###### Returns
+
+`boolean`
+
+##### getSelector()
+
+> **getSelector**(): `Uint8Array`
+
+Defined in: [src/primitives/CallData/index.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L15)
+
+###### Returns
+
+`Uint8Array`
+
+##### hasSelector()
+
+> **hasSelector**(`selector`): `boolean`
+
+Defined in: [src/primitives/CallData/index.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L16)
+
+###### Parameters
+
+###### selector
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+`boolean`
+
+##### toBytes()
+
+> **toBytes**(): `Uint8Array`
+
+Defined in: [src/primitives/CallData/index.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L14)
+
+###### Returns
+
+`Uint8Array`
+
+##### toHex()
+
+> **toHex**(): `string`
+
+Defined in: [src/primitives/CallData/index.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L13)
+
+Convert the Uint8Array to a hex encoded string
+
+###### Returns
+
+`string`
+
+The hex encoded string representation of the Uint8Array
+
+###### Overrides
+
+`CallDataType.toHex`
+
+## Type Aliases
+
+### CallDataType
+
+> **CallDataType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/CallData/CallDataType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/CallDataType.ts#L9)
+
+Branded CallData type for EVM transaction calldata
+
+CallData is a branded Uint8Array containing function selector (first 4 bytes)
+followed by ABI-encoded parameters.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"CallData"`
+
+## Variables
+
+### decode()
+
+> `const` **decode**: (`calldata`, `abi`) => `CallDataDecoded` = `BrandedCallData.decode`
+
+Defined in: [src/primitives/CallData/index.ts:118](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L118)
+
+Decode CallData to structured form
+
+#### Parameters
+
+##### calldata
+
+[`CallDataType`](#calldatatype)
+
+CallData to decode
+
+##### abi
+
+readonly `Item`[]
+
+ABI specification with function definitions
+
+#### Returns
+
+`CallDataDecoded`
+
+Decoded structure with selector, signature, and parameters
+
+#### Throws
+
+If function not found in ABI or decoding fails
+
+#### Example
+
+```javascript
+const abi = [{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}];
+
+const decoded = CallData.decode(calldata, abi);
+console.log(decoded.signature); // "transfer(address,uint256)"
+console.log(decoded.parameters[0]); // "0x..."
+console.log(decoded.parameters[1]); // bigint
+```
+
+***
+
+### encode()
+
+> `const` **encode**: (`signature`, `params`) => [`CallDataType`](#calldatatype) = `CallData.encode`
+
+Defined in: [src/primitives/CallData/index.ts:117](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L117)
+
+#### Parameters
+
+##### signature
+
+`string`
+
+##### params
+
+`unknown`[]
+
+#### Returns
+
+[`CallDataType`](#calldatatype)
+
+***
+
+### equals()
+
+> `const` **equals**: (`a`, `b`) => `boolean` = `BrandedCallData.equals`
+
+Defined in: [src/primitives/CallData/index.ts:114](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L114)
+
+Check if two CallData instances are equal (constant-time comparison)
+
+Uses constant-time comparison to prevent timing attacks.
+
+#### Parameters
+
+##### a
+
+[`CallDataType`](#calldatatype)
+
+First CallData
+
+##### b
+
+[`CallDataType`](#calldatatype)
+
+Second CallData
+
+#### Returns
+
+`boolean`
+
+True if instances are bytewise identical
+
+#### Example
+
+```javascript
+const calldata1 = CallData.from("0xa9059cbb...");
+const calldata2 = CallData.from("0xa9059cbb...");
+console.log(CallData.equals(calldata1, calldata2)); // true
+```
+
+***
+
+### from()
+
+> `const` **from**: (`value`) => [`CallDataType`](#calldatatype) = `CallData.from`
+
+Defined in: [src/primitives/CallData/index.ts:107](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L107)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`CallDataType`](#calldatatype)
+
+***
+
+### fromBytes()
+
+> `const` **fromBytes**: (`value`) => [`CallDataType`](#calldatatype) = `CallData.fromBytes`
+
+Defined in: [src/primitives/CallData/index.ts:109](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L109)
+
+#### Parameters
+
+##### value
+
+`Uint8Array`
+
+#### Returns
+
+[`CallDataType`](#calldatatype)
+
+***
+
+### fromHex()
+
+> `const` **fromHex**: (`value`) => [`CallDataType`](#calldatatype) = `CallData.fromHex`
+
+Defined in: [src/primitives/CallData/index.ts:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L108)
+
+#### Parameters
+
+##### value
+
+`string`
+
+#### Returns
+
+[`CallDataType`](#calldatatype)
+
+***
+
+### getSelector()
+
+> `const` **getSelector**: (`calldata`) => `Uint8Array`\<`ArrayBufferLike`\> = `BrandedCallData.getSelector`
+
+Defined in: [src/primitives/CallData/index.ts:112](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L112)
+
+Extract 4-byte function selector from CallData
+
+#### Parameters
+
+##### calldata
+
+[`CallDataType`](#calldatatype)
+
+CallData to extract selector from
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+4-byte array containing function selector (view, not copy)
+
+#### Example
+
+```javascript
+const calldata = CallData.from("0xa9059cbb...");
+const selector = CallData.getSelector(calldata);
+console.log(selector); // Uint8Array [0xa9, 0x05, 0x9c, 0xbb]
+```
+
+***
+
+### hasSelector()
+
+> `const` **hasSelector**: (`calldata`, `selector`) => `boolean` = `BrandedCallData.hasSelector`
+
+Defined in: [src/primitives/CallData/index.ts:113](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L113)
+
+Check if CallData matches a specific function selector
+
+Uses constant-time comparison to prevent timing attacks.
+
+#### Parameters
+
+##### calldata
+
+[`CallDataType`](#calldatatype)
+
+CallData to check
+
+##### selector
+
+Expected selector (hex string or bytes)
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`boolean`
+
+True if selector matches
+
+#### Example
+
+```javascript
+const calldata = CallData.from("0xa9059cbb...");
+
+// Check with hex string
+CallData.hasSelector(calldata, "0xa9059cbb"); // true
+
+// Check with bytes
+CallData.hasSelector(calldata, new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])); // true
+```
+
+***
+
+### is()
+
+> `const` **is**: (`value`) => `value is CallDataType` = `BrandedCallData.is`
+
+Defined in: [src/primitives/CallData/index.ts:115](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L115)
+
+Type guard to check if value is CallData
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`value is CallDataType`
+
+True if value is CallData
+
+#### Example
+
+```javascript
+if (CallData.is(value)) {
+  // value is CallDataType here (type narrowed)
+  const selector = CallData.getSelector(value);
+}
+```
+
+***
+
+### isValid()
+
+> `const` **isValid**: (`value`) => `boolean` = `BrandedCallData.isValid`
+
+Defined in: [src/primitives/CallData/index.ts:116](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L116)
+
+Check if value can be converted to CallData
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to validate
+
+#### Returns
+
+`boolean`
+
+True if value can be converted to CallData
+
+#### Example
+
+```javascript
+CallData.isValid("0xa9059cbb"); // true (valid 4-byte selector)
+CallData.isValid("0x1234"); // false (only 2 bytes)
+CallData.isValid("0xGGGG"); // false (invalid hex)
+CallData.isValid(null); // false
+```
+
+***
+
+### MIN\_SIZE
+
+> `const` **MIN\_SIZE**: `number` = `4`
+
+Defined in: [src/primitives/CallData/constants.js:5](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/constants.js#L5)
+
+Minimum size for calldata (4 bytes for function selector)
+
+***
+
+### SELECTOR\_SIZE
+
+> `const` **SELECTOR\_SIZE**: `number` = `4`
+
+Defined in: [src/primitives/CallData/constants.js:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/constants.js#L11)
+
+Size of function selector in bytes
+
+***
+
+### toBytes()
+
+> `const` **toBytes**: (`calldata`) => `Uint8Array`\<`ArrayBufferLike`\> = `BrandedCallData.toBytes`
+
+Defined in: [src/primitives/CallData/index.ts:111](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L111)
+
+Return the underlying Uint8Array representation (zero-copy)
+
+#### Parameters
+
+##### calldata
+
+[`CallDataType`](#calldatatype)
+
+CallData to convert
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Raw byte array (shares underlying buffer)
+
+#### Example
+
+```javascript
+const calldata = CallData.from("0xa9059cbb");
+const bytes = CallData.toBytes(calldata);
+console.log(bytes.length); // 4
+```
+
+***
+
+### toHex()
+
+> `const` **toHex**: (`calldata`) => [`HexType`](Hex.mdx#hextype) = `BrandedCallData.toHex`
+
+Defined in: [src/primitives/CallData/index.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L110)
+
+Convert CallData to hex string with 0x prefix
+
+#### Parameters
+
+##### calldata
+
+[`CallDataType`](#calldatatype)
+
+CallData to convert
+
+#### Returns
+
+[`HexType`](Hex.mdx#hextype)
+
+Lowercase hex string with 0x prefix
+
+#### Example
+
+```javascript
+const calldata = CallData.fromBytes(new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]));
+console.log(CallData.toHex(calldata)); // "0xa9059cbb"
+```
+
+## Functions
+
+### CallData()
+
+> **CallData**(`value`): [`BaseCallData`](#basecalldata)
+
+Defined in: [src/primitives/CallData/index.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/CallData/index.ts#L35)
+
+Creates CallData instances with prototype chain
+
+#### Parameters
+
+##### value
+
+Value to convert (hex string or bytes)
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`BaseCallData`](#basecalldata)
+
+CallData instance with prototype methods
+
+#### See
+
+https://voltaire.tevm.sh/primitives/calldata for CallData documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value format is invalid
+
+#### Example
+
+```typescript
+import { CallData } from './primitives/CallData/index.js';
+const calldata = CallData('0xa9059cbb...');
+console.log(calldata.toHex());
+```
+
+## References
+
+### default
+
+Renames and re-exports [CallData](#calldata)

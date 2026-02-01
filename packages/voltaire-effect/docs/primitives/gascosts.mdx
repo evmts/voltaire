@@ -1,0 +1,39 @@
+---
+title: GasCosts
+description: EVM gas cost tables by hardfork
+---
+
+Static tables for EVM gas costs - opcodes, block limits, transaction costs.
+
+```typescript
+import { GAS_COSTS, BLOCK_GAS_LIMITS, TRANSACTION_COSTS } from 'voltaire-effect/primitives/GasCosts'
+
+// Opcode costs
+GAS_COSTS.ADD          // 3n
+GAS_COSTS.MUL          // 5n
+GAS_COSTS.SLOAD        // 2100n (post-Berlin)
+GAS_COSTS.SSTORE       // 20000n (cold)
+
+// Block limits
+BLOCK_GAS_LIMITS.london   // 30000000n
+BLOCK_GAS_LIMITS.shanghai // 30000000n
+
+// Transaction costs
+TRANSACTION_COSTS.base          // 21000n
+TRANSACTION_COSTS.txDataZero    // 4n
+TRANSACTION_COSTS.txDataNonZero // 16n
+```
+
+## Usage
+
+```typescript
+const estimateDataCost = (data: Uint8Array) => {
+  let cost = TRANSACTION_COSTS.base
+  for (const byte of data) {
+    cost += byte === 0 
+      ? TRANSACTION_COSTS.txDataZero 
+      : TRANSACTION_COSTS.txDataNonZero
+  }
+  return cost
+}
+```

@@ -1,0 +1,21 @@
+```typescript
+import { Layer } from 'effect'
+import { Provider, Signer, HttpTransport, LocalAccount } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+// Provider layer
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// Full signer layer with all dependencies
+const SignerLayer = Layer.mergeAll(
+  Signer.fromPrivateKey(privateKey, Provider),
+  Secp256k1Live,
+  KeccakLive,
+  HttpTransport('https://eth.llamarpc.com')
+)
+
+// Use in program
+await Effect.runPromise(program.pipe(Effect.provide(SignerLayer)))
+```

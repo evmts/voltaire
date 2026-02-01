@@ -1,0 +1,45 @@
+---
+title: isDup()
+description: Check if opcode is DUP1-DUP16
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/opcode.ts">
+  Run Opcode examples in the interactive playground
+</Card>
+
+
+## Opcode.isDup()
+
+Check if opcode is DUP1-DUP16.
+
+<Tabs>
+
+<Tab title="Functional API">
+```typescript
+import { isDup, DUP1, DUP16 } from 'tevm/Opcode'
+
+isDup(DUP1)   // true
+isDup(DUP16)  // true
+```
+</Tab>
+
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`boolean` - True if DUP1-DUP16 (0x80-0x8F)
+
+## DUP Operations
+
+Duplicate stack item at depth 1-16:
+- **DUP1** (0x80): Duplicate top item
+- **DUP2** (0x81): Duplicate 2nd item
+- **DUP16** (0x8F): Duplicate 16th item
+
+## Related
+
+- [dupPosition()](/primitives/opcode/dup-position) - Get DUP stack position

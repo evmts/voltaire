@@ -1,0 +1,53 @@
+---
+title: '[TS/JS] voltaire-effect/src/primitives/Abi/encode.test.ts'
+source: 'voltaire-effect/src/primitives/Abi/encode.test.ts'
+---
+
+> Auto-generated from test file: voltaire-effect/src/primitives/Abi/encode.test.ts
+
+```typescript
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
+import { encode } from "./encode.js";
+
+const erc20Abi = S.decodeUnknownSync(fromArray)([
+	{
+		type: "function",
+		name: "transfer",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ name: "to", type: "address" },
+			{ name: "amount", type: "uint256" },
+		],
+		outputs: [{ type: "bool" }],
+	},
+]);
+
+describe("encode", () => {
+	describe("success cases", () => {
+		it.effect("encodes transfer function", () =>
+			Effect.gen(function* () {
+				const calldata = yield* encode(erc20Abi, "transfer", [
+					"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+					1000000000000000000n,
+				]);
+				expect(calldata).toBeInstanceOf(Uint8Array);
+				expect(calldata.length).toBeGreaterThan(4);
+			}),
+		);
+	});
+
+	describe("error cases", () => {
+		it("fails for unknown function", async () => {
+			const exit = await Effect.runPromiseExit(
+				encode(erc20Abi, "unknownFunction", []),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+	});
+});
+
+```

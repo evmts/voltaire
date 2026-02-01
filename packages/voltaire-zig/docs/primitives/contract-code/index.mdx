@@ -1,0 +1,81 @@
+---
+title: Overview
+description: Deployed contract bytecode with metadata
+---
+
+## Type Definition (Zig)
+
+```zig
+const ContractCode = @import("primitives").ContractCode;
+```
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Create">
+
+```zig
+const primitives = @import("primitives");
+const Hex = primitives.Hex;
+const allocator = std.testing.allocator;
+const bytes = try Hex.hexToBytes(allocator, "0x6001600155...");
+defer allocator.free(bytes);
+const code = primitives.ContractCode.from(bytes);
+```
+
+</Tab>
+<Tab title="Convert">
+
+```zig
+// To hex
+const hex = try code.toHex(std.testing.allocator);
+defer std.testing.allocator.free(hex);
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Create from hex string or Uint8Array
+- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
+
+### Metadata
+
+- [`hasMetadata(code)`](./hasMetadata) - Check if code contains compiler metadata
+- [`stripMetadata(code)`](./stripMetadata) - Remove Solidity metadata
+- [`extractRuntime(code)`](./extractRuntime) - Extract runtime code (alias for stripMetadata)
+
+### Utilities
+
+- [`toHex(code)`](./toHex) - Convert to hex string
+- [`equals(a, b)`](./equals) - Compare equality
+
+## Usage Patterns
+
+### Verifying Contract Code
+
+```zig
+// Fetch code with eth_getCode and convert hex -> bytes; compare to expected runtime
+// {"method":"eth_getCode","params":["0xCONTRACT","latest"]}
+```
+
+### Analyzing Contract Structure
+
+```zig
+// Solidity metadata lives at the end of bytecode (0xa165... marker); strip per toolchain.
+```
+
+## Related
+
+- [InitCode](/primitives/init-code) - Contract creation bytecode
+- [RuntimeCode](/primitives/runtime-code) - Pure runtime bytecode
+- [Metadata](/primitives/metadata) - Solidity compiler metadata
+- [Bytecode](/primitives/bytecode) - General bytecode analysis
+
+## Specification
+
+- [Solidity Metadata](https://docs.soliditylang.org/en/latest/metadata.html) - Compiler metadata format
+- [Contract Verification](https://docs.etherscan.io/tutorials/verifying-contracts-programmatically) - Etherscan verification guide

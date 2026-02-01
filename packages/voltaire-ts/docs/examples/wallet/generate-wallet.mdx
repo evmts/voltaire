@@ -1,0 +1,62 @@
+---
+title: "Generate Wallet from Mnemonic"
+description: "Generate HD wallet addresses from a BIP-39 mnemonic phrase"
+---
+
+Generate HD wallet addresses from a BIP-39 mnemonic phrase using BIP-32/BIP-44.
+
+```typescript
+import { Bip39 } from '@tevm/voltaire/Bip39';
+import { HDWallet } from '@tevm/voltaire/native';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Address } from '@tevm/voltaire/Address';
+
+// Generate a new 24-word mnemonic (256 bits of entropy)
+const mnemonic = Bip39.generateMnemonic(256);
+// Or use existing mnemonic
+// const mnemonic = "abandon abandon abandon ... about";
+
+// Validate the mnemonic
+const isValid = Bip39.validateMnemonic(mnemonic);
+if (!isValid) throw new Error("Invalid mnemonic");
+
+// Derive 512-bit seed from mnemonic (optional passphrase)
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+// With passphrase: await Bip39.mnemonicToSeed(mnemonic, "my secret passphrase");
+
+// Create HD wallet root from seed
+const root = HDWallet.fromSeed(seed);
+
+// Derive multiple Ethereum addresses using BIP-44 path
+// m/44'/60'/0'/0/x where x is the address index
+const addresses = [];
+for (let i = 0; i < 5; i++) {
+  const hdKey = HDWallet.deriveEthereum(root, 0, i);
+  const privateKey = HDWallet.getPrivateKey(hdKey);
+  if (!privateKey) continue;
+
+  const publicKey = Secp256k1.derivePublicKey(privateKey);
+  const address = Address.fromPublicKey(publicKey);
+  addresses.push({
+    path: `m/44'/60'/0'/0/${i}`,
+    address: Address.toChecksummed(address),
+    privateKey,
+  });
+}
+
+// Alternative: derive with explicit path
+const customPath = "m/44'/60'/0'/0/0";
+const hdKey = HDWallet.derivePath(root, customPath);
+const privateKey = HDWallet.getPrivateKey(hdKey);
+```
+
+<Tip>
+For 12-word mnemonics, use `Bip39.generateMnemonic(128)` instead of 256.
+</Tip>
+
+## Related
+
+- [Import Private Key](/examples/wallet/import-private-key)
+- [HDWallet API Reference](/crypto/hdwallet)
+- [Bip39 API Reference](/crypto/bip39)
+- [More Examples](/examples)

@@ -1,0 +1,249 @@
+---
+title: How to Batch Operations in One UserOp
+description: Execute multiple calls in a single ERC-4337 UserOperation.
+---
+
+## Overview
+
+Smart accounts can execute multiple operations atomically in one UserOperation. This enables:
+- **Gas efficiency** - Single validation for multiple calls
+- **Atomic execution** - All-or-nothing transactions
+- **Complex workflows** - Approve + swap, claim + stake, etc.
+
+## Batching Approaches
+
+| Method | Description |
+|--------|-------------|
+| `executeBatch` | Account's native batch execution |
+| Multicall | Target contract's multicall |
+| Account abstraction batch | Bundler-level batching |
+
+## Account executeBatch
+
+Most smart accounts implement `executeBatch`:
+
+```typescript
+import { Abi } from '@tevm/voltaire/primitives/Abi';
+
+// Prepare multiple calls
+const calls = [
+  {
+    target: tokenAddress,
+    value: 0n,
+    data: Abi.encodeFunction({
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [spenderAddress, amount],
+    }),
+  },
+  {
+    target: routerAddress,
+    value: 0n,
+    data: Abi.encodeFunction({
+      abi: routerAbi,
+      functionName: 'swap',
+      args: [tokenIn, tokenOut, amount, minOut],
+    }),
+  },
+];
+
+// Encode batch call
+const batchCallData = Abi.encodeFunction({
+  abi: accountAbi,
+  functionName: 'executeBatch',
+  args: [
+    calls.map(c => c.target),
+    calls.map(c => c.value),
+    calls.map(c => c.data),
+  ],
+});
+
+const userOp = UserOperation.from({
+  sender: smartAccountAddress,
+  nonce: 0n,
+  initCode: '0x',
+  callData: batchCallData,
+  // ... gas fields
+});
+```
+
+## Simple vs Safe Batch Interfaces
+
+Different accounts use different interfaces:
+
+```typescript
+// Simple Account (Infinitism)
+executeBatch(address[] targets, uint256[] values, bytes[] data)
+
+// Safe (Gnosis)
+multiSend(bytes transactions)
+
+// Kernel
+executeBatch(Call[] calls)
+
+// Biconomy
+executeBatch(address[] targets, bytes[] data)
+executeBatch_y6U(address[] targets, uint256[] values, bytes[] data)
+```
+
+## Safe multiSend Encoding
+
+For Safe accounts:
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Encode each operation
+function encodeMultiSendOp(operation, to, value, data) {
+  return Hex.concat([
+    Hex.fromNumber(operation, { size: 1 }), // 0 = call, 1 = delegatecall
+    to,
+    Hex.fromBigInt(value, { size: 32 }),
+    Hex.fromBigInt(BigInt(data.length / 2 - 1), { size: 32 }),
+    data,
+  ]);
+}
+
+const encodedOps = calls.map(call =>
+  encodeMultiSendOp(0, call.target, call.value, call.data)
+);
+
+const multiSendData = Abi.encodeFunction({
+  abi: multiSendAbi,
+  functionName: 'multiSend',
+  args: [Hex.concat(encodedOps)],
+});
+```
+
+## Approve + Swap Pattern
+
+Common DeFi pattern:
+
+```typescript
+const approveCall = {
+  target: tokenAddress,
+  value: 0n,
+  data: Abi.encodeFunction({
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [routerAddress, amountIn],
+  }),
+};
+
+const swapCall = {
+  target: routerAddress,
+  value: 0n,
+  data: Abi.encodeFunction({
+    abi: routerAbi,
+    functionName: 'exactInputSingle',
+    args: [{
+      tokenIn,
+      tokenOut,
+      fee: 3000,
+      recipient: smartAccountAddress,
+      amountIn,
+      amountOutMinimum: minAmountOut,
+      sqrtPriceLimitX96: 0n,
+    }],
+  }),
+};
+
+const batchCallData = Abi.encodeFunction({
+  abi: accountAbi,
+  functionName: 'executeBatch',
+  args: [
+    [approveCall.target, swapCall.target],
+    [approveCall.value, swapCall.value],
+    [approveCall.data, swapCall.data],
+  ],
+});
+```
+
+## Multi-token Transfer
+
+Send multiple tokens in one UserOp:
+
+```typescript
+const transfers = [
+  { token: usdcAddress, to: recipient1, amount: 100_000000n },
+  { token: daiAddress, to: recipient2, amount: 50_000000000000000000n },
+  { token: wethAddress, to: recipient3, amount: 1_000000000000000000n },
+];
+
+const calls = transfers.map(t => ({
+  target: t.token,
+  value: 0n,
+  data: Abi.encodeFunction({
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [t.to, t.amount],
+  }),
+}));
+
+const batchCallData = Abi.encodeFunction({
+  abi: accountAbi,
+  functionName: 'executeBatch',
+  args: [
+    calls.map(c => c.target),
+    calls.map(c => c.value),
+    calls.map(c => c.data),
+  ],
+});
+```
+
+## Gas Estimation for Batches
+
+Batch operations need accurate gas estimation:
+
+```typescript
+// Estimation will simulate entire batch
+const gasEstimate = await bundlerClient.request({
+  method: 'eth_estimateUserOperationGas',
+  params: [
+    { ...userOp, callData: batchCallData },
+    entryPointAddress,
+  ],
+});
+
+// Add buffer for complex batches
+const safeCallGasLimit = BigInt(
+  Math.ceil(Number(gasEstimate.callGasLimit) * 1.3) // 30% buffer
+);
+```
+
+## Atomic Execution Guarantee
+
+Batch calls are atomic - if any call fails, entire UserOp reverts:
+
+```typescript
+// This batch will revert if swap fails (insufficient output)
+const riskyBatch = [
+  approveCall,  // Succeeds
+  swapCall,     // Fails with slippage
+];
+// Result: approval is NOT persisted, full revert
+```
+
+## Partial Execution Patterns
+
+For non-atomic batches, use try/catch in account:
+
+```solidity
+// Account implements try/catch per call
+function executeBatchAllowFailure(
+    address[] calldata targets,
+    uint256[] calldata values,
+    bytes[] calldata data
+) external returns (bool[] memory results) {
+    results = new bool[](targets.length);
+    for (uint i = 0; i < targets.length; i++) {
+        (results[i],) = targets[i].call{value: values[i]}(data[i]);
+    }
+}
+```
+
+## Related
+
+- [Create UserOperation](/ghosts/account-abstraction/how-to-create-useroperation)
+- [Estimate UserOperation Gas](/ghosts/account-abstraction/how-to-estimate-userop-gas)
+- [UserOperation Reference](/primitives/user-operation)

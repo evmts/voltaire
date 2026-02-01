@@ -1,0 +1,75 @@
+---
+title: How to Get Current Gas Prices
+description: Query gas prices and priority fees for transactions
+---
+
+# Get Current Gas Prices
+
+## Legacy Gas Price
+
+```typescript
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com');
+
+const gasPriceHex = await provider.request(Rpc.Eth.GasPriceRequest());
+const gasPrice = BigInt(gasPriceHex);
+
+console.log('Gas price:', gasPrice, 'wei');
+console.log('Gas price:', Number(gasPrice) / 1e9, 'gwei');
+```
+
+## EIP-1559 Fees
+
+```typescript
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com');
+
+// Get priority fee (tip)
+const priorityFeeHex = await provider.request(
+  Rpc.Eth.MaxPriorityFeePerGasRequest()
+);
+const priorityFee = BigInt(priorityFeeHex);
+
+// Get base fee from latest block
+const block = await provider.request(
+  Rpc.Eth.GetBlockByNumberRequest('latest', false)
+);
+const baseFee = BigInt(block.baseFeePerGas);
+
+// Calculate max fee (2x base + priority for buffer)
+const maxFeePerGas = baseFee * 2n + priorityFee;
+
+console.log('Base fee:', Number(baseFee) / 1e9, 'gwei');
+console.log('Priority fee:', Number(priorityFee) / 1e9, 'gwei');
+console.log('Max fee:', Number(maxFeePerGas) / 1e9, 'gwei');
+```
+
+## Fee History
+
+```typescript
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com');
+
+const history = await provider.request(
+  Rpc.Eth.FeeHistoryRequest(
+    '0x10',        // Last 16 blocks
+    'latest',
+    [25, 50, 75]   // Percentiles for priority fees
+  )
+);
+
+console.log('Base fees:', history.baseFeePerGas);
+console.log('Gas used ratios:', history.gasUsedRatio);
+console.log('Priority fee percentiles:', history.reward);
+```
+
+## Related
+
+- [Fee Methods](/jsonrpc-provider/eth-methods/fees) - All fee methods
+- [How to Estimate Base Fee](/ghosts/network/how-to-estimate-base-fee)

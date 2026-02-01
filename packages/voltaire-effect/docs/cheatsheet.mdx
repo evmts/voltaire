@@ -1,0 +1,323 @@
+---
+title: Cheatsheet
+description: Quick reference for common voltaire-effect patterns
+---
+
+Quick reference for common voltaire-effect patterns. See [Getting Started](/getting-started) for full installation guide and [Effect Documentation](https://effect.website/docs/getting-started/introduction/) for Effect basics.
+
+## Install
+
+<CodeGroup>
+```bash bun
+bun add voltaire-effect @tevm/voltaire effect
+```
+
+```bash pnpm
+pnpm add voltaire-effect @tevm/voltaire effect
+```
+
+```bash npm
+npm install voltaire-effect @tevm/voltaire effect
+```
+</CodeGroup>
+
+## Import Pattern
+
+```typescript
+import { Effect, Layer, Schedule } from 'effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import { getBalance, getBlockNumber, getBlock, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
+```
+
+## Decode → Use → Provide
+
+```typescript
+import { Layer } from 'effect'
+
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = Effect.gen(function* () {
+  const addr = yield* S.decode(Address.Hex)(input)     // decode
+  return yield* getBalance(addr, 'latest')             // use free function
+})
+
+await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
+```
+
+## Schema Operations
+
+| Operation | Code |
+|-----------|------|
+| Decode sync | `S.decodeSync(Address.Hex)('0x...')` |
+| Decode effect | `S.decode(Address.Hex)('0x...')` |
+| Decode either | `S.decodeEither(Address.Hex)('0x...')` |
+| Encode sync | `S.encodeSync(Address.Hex)(addr)` |
+| Encode effect | `S.encode(Address.Checksummed)(addr)` |
+
+## Error Handling
+
+```typescript
+program.pipe(
+  Effect.catchTag('ParseError', (e) => Effect.succeed(fallback)),
+  Effect.catchTag('TransportError', (e) => Effect.succeed(0n)),
+  Effect.catchTags({
+    ParseError: () => ...,
+    TransportError: () => ...,
+    ProviderResponseError: () => ...,
+  })
+)
+```
+
+## Service Pattern
+
+```typescript
+const program = Effect.gen(function* () {
+  // Use free functions instead of yielding ProviderService
+  const balance = yield* getBalance(addr)
+  const block = yield* getBlockNumber()
+
+  // For signer, still use the service
+  const signer = yield* SignerService
+})
+```
+
+## Layer Composition
+
+```typescript
+// Provider layer
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// Full signer layer with crypto
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const SignerLayer = Layer.mergeAll(
+  Signer.Live,
+  CryptoLayer,
+  ProviderLayer
+).pipe(Layer.provideMerge(LocalAccount(privateKey)))
+
+// Provide once at the edge
+await Effect.runPromise(program.pipe(Effect.provide(SignerLayer)))
+```
+
+## Common Queries
+
+```typescript
+import {
+  getBlockNumber, getBalance, getBlock, getTransaction,
+  getTransactionReceipt, getLogs, call, estimateGas
+} from 'voltaire-effect'
+
+yield* getBlockNumber()
+yield* getBalance(addr, 'latest')
+yield* getBlock({ blockTag: 'latest' })
+yield* getTransaction(txHash)
+yield* getTransactionReceipt(txHash)
+yield* getLogs({ address, topics, fromBlock, toBlock })
+yield* call({ to, data })
+yield* estimateGas({ to, data, value })
+```
+
+## Send Transaction
+
+```typescript
+const signer = yield* SignerService
+
+yield* signer.sendTransaction({ to, value: 1000000000000000000n })
+yield* signer.signMessage(Hex.fromString('Hello'))
+yield* signer.signTypedData(typedData)
+```
+
+## Contract Interaction
+
+```typescript
+const token = yield* Contract(address, erc20Abi)
+
+yield* token.read.balanceOf(user)
+yield* token.write.transfer(to, amount)
+yield* token.simulate.transfer(to, amount)
+yield* token.getEvents('Transfer', { fromBlock, toBlock })
+```
+
+## Parallel & Collection Operations
+
+| Pattern | Use Case |
+|---------|----------|
+| `Effect.all({ a, b, c })` | Run named effects, destructure results (PREFERRED) |
+| `Effect.all([a, b, c])` | Homogeneous collection where index matters |
+| `Effect.forEach(items, fn)` | Transform collection with effects |
+
+```typescript
+import { getBlockNumber, getBalance, getChainId } from 'voltaire-effect'
+
+// Named effects - use object notation for self-documenting code
+const { blockNumber, balance, chainId } = yield* Effect.all({
+  blockNumber: getBlockNumber(),
+  balance: getBalance(addr),
+  chainId: getChainId()
+})
+
+// Transform collection - use Effect.forEach (NOT Effect.all with .map)
+yield* Effect.forEach(addresses, (addr) => getBalance(addr))
+
+// With concurrency
+yield* Effect.forEach(addresses, (addr) => getBalance(addr), { concurrency: 5 })
+
+// With index
+yield* Effect.forEach(items, (item, index) => processItem(item, index))
+
+// Discard results (side effects only)
+yield* Effect.forEach(items, (item) => logItem(item), { discard: true })
+```
+
+## Retry & Timeout
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { getBalance, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+// Per-request overrides (preferred)
+getBalance(addr).pipe(withTimeout("5 seconds"))
+getBalance(addr).pipe(withRetrySchedule(Schedule.recurs(1)))
+
+// Exponential backoff with jitter
+getBalance(addr).pipe(
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(5))
+    )
+  )
+)
+```
+
+## Streaming
+
+```typescript
+import { Stream } from 'effect'
+import { makeBlockStream } from 'voltaire-effect/services'
+
+const blockStream = yield* makeBlockStream()
+yield* Stream.runForEach(
+  blockStream.watch({ include: 'transactions' }),
+  (event) => Effect.log(`Block ${event.blocks[0]?.header.number}`)
+)
+```
+
+## Debug / Engine APIs
+
+```typescript
+const debug = yield* DebugService
+const trace = yield* debug.traceTransaction('0x...')
+
+const engine = yield* EngineApiService
+const caps = yield* engine.exchangeCapabilities(['engine_newPayloadV3'])
+```
+
+## Testing
+
+```typescript
+import { Layer } from 'effect'
+import { TestTransport, Provider } from 'voltaire-effect'
+
+// Mock transport layer for testing
+const mockTransport = TestTransport({
+  eth_blockNumber: () => '0x3039', // 12345
+  eth_getBalance: () => '0xde0b6b3a7640000' // 1 ETH
+})
+
+// Compose test layer
+const TestLayer = Provider.pipe(Layer.provide(mockTransport))
+
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
+```
+
+## Crypto Services
+
+```typescript
+import { CryptoLive, KeccakService, Secp256k1Service } from 'voltaire-effect/crypto'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const secp = yield* Secp256k1Service
+  
+  const hash = yield* keccak.hash(data)
+  const sig = yield* secp.sign(hash, privateKey)
+}).pipe(Effect.provide(CryptoLive))
+```
+
+## Transport Options
+
+```typescript
+import { Schedule } from 'effect'
+
+// HTTP
+HttpTransport('https://eth.llamarpc.com')
+
+// HTTP with Duration timeout and Schedule retries
+HttpTransport({
+  url: '...',
+  timeout: '60 seconds',
+  retrySchedule: Schedule.exponential('500 millis').pipe(
+    Schedule.jittered,
+    Schedule.compose(Schedule.recurs(5))
+  )
+})
+
+// HTTP with batching
+HttpTransport({ url: '...', batch: { batchSize: 50, wait: 10 } })
+
+// WebSocket
+WebSocketTransport('wss://eth.llamarpc.com')
+
+// Browser (window.ethereum)
+BrowserTransport
+```
+
+## Type Patterns
+
+```typescript
+// Address from hex
+const addr = S.decodeSync(Address.Hex)('0x...')
+
+// Hex from string
+const hex = Hex.fromString('hello')
+
+// Hex from bytes
+const hex = Hex.fromBytes(new Uint8Array([1, 2, 3]))
+
+// Address to hex string
+Address.toHex(addr)
+
+// Check zero address
+Address.isZero(addr)
+```
+
+## Running Effects
+
+```typescript
+// Promise
+await Effect.runPromise(effect)
+
+// Sync (throws if async or error)
+Effect.runSync(effect)
+
+// Exit (captures success or failure)
+const exit = await Effect.runPromiseExit(effect)
+Exit.match(exit, { onSuccess: ..., onFailure: ... })
+```
+
+## See Also
+
+- [Getting Started](/getting-started) — Full installation and setup
+- [API Reference](/api-reference) — All imports and exports
+- [Effect Primer](/concepts/effect-primer) — 5-minute Effect intro
+- [Layers](/layers) — Schema, Effect, and Service layers
+- [Examples](/examples/index) — Complete working examples
+- [Recipes](/recipes) — Copy-paste solutions
+- [Troubleshooting](/troubleshooting) — Common issues and solutions
+- [Effect Documentation](https://effect.website/docs/getting-started/introduction/) — Official Effect docs

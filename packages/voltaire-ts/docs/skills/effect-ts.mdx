@@ -1,0 +1,263 @@
+---
+title: Effect.ts Integration
+description: Build type-safe, composable Ethereum applications with Effect.ts and Voltaire
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [react-query Skill](/skills/react-query) for an example of a framework integration Skill.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Effect.ts provides a powerful foundation for building type-safe, composable applications. Combined with Voltaire's branded types and typed errors, you get full type safety across your entire Ethereum application—including error channels.
+
+## Why Effect.ts + Voltaire?
+
+### Type-Safe Error Channels
+
+Voltaire's errors all have a typesafe `name` property, making them perfect for Effect's typed error channels:
+
+```typescript
+import { Effect, Schema } from "effect";
+import * as Address from "@tevm/voltaire/Address";
+import { InvalidFormatError, InvalidLengthError } from "@tevm/voltaire/errors";
+
+// Effect knows exactly what errors can occur
+const parseAddress = (input: string): Effect.Effect<
+  Address.Address,
+  InvalidFormatError | InvalidLengthError
+> =>
+  Effect.try({
+    try: () => Address.from(input),
+    catch: (e) => e as InvalidFormatError | InvalidLengthError,
+  });
+```
+
+### Schema Validation for Branded Types
+
+Use Effect Schema to validate and decode branded types:
+
+```typescript
+import { Effect, ParseResult } from "effect";
+import * as Schema from "effect/Schema";
+import * as Address from "@tevm/voltaire/Address";
+import * as Hex from "@tevm/voltaire/Hex";
+
+// Schema for Address validation
+const AddressSchema = Schema.transformOrFail(
+  Schema.String,
+  Schema.instanceOf(Uint8Array),
+  {
+    decode: (s) =>
+      Effect.try({
+        try: () => Address.from(s),
+        catch: () => new ParseResult.Type(Schema.String.ast, s),
+      }),
+    encode: (a) => Effect.succeed(Address.toHex(a)),
+  }
+);
+
+// Schema for Hex validation
+const HexSchema = Schema.transformOrFail(
+  Schema.String,
+  Schema.instanceOf(Uint8Array),
+  {
+    decode: (s) =>
+      Effect.try({
+        try: () => Hex.from(s),
+        catch: () => new ParseResult.Type(Schema.String.ast, s),
+      }),
+    encode: (h) => Effect.succeed(Hex.toHex(h)),
+  }
+);
+```
+
+## Planned Implementation
+
+### Effect Wrappers for Voltaire Functions
+
+```typescript
+// effectify.ts - Convert throwing functions to Effects
+import { Effect } from "effect";
+
+export const effectify = <A, E extends Error, Args extends unknown[]>(
+  fn: (...args: Args) => A,
+  errorType: new (...args: any[]) => E
+) =>
+  (...args: Args): Effect.Effect<A, E> =>
+    Effect.try({
+      try: () => fn(...args),
+      catch: (e) => e as E,
+    });
+```
+
+### Address Module with Effect
+
+```typescript
+import { Effect } from "effect";
+import * as Address from "@tevm/voltaire/Address";
+import {
+  InvalidFormatError,
+  InvalidLengthError,
+  InvalidChecksumError,
+} from "@tevm/voltaire/Address/errors";
+
+export const from = effectify(
+  Address.from,
+  InvalidFormatError
+);
+
+export const fromHex = effectify(
+  Address.fromHex,
+  InvalidFormatError
+);
+
+export const assert = effectify(
+  Address.assert,
+  InvalidChecksumError
+);
+```
+
+### Transaction Pipeline
+
+```typescript
+import { Effect, pipe } from "effect";
+import * as Transaction from "@tevm/voltaire/Transaction";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+
+type TransactionError =
+  | InvalidFormatError
+  | InvalidSignatureError
+  | InvalidPrivateKeyError;
+
+const buildAndSignTransaction = (
+  params: TransactionParams,
+  privateKey: Uint8Array
+): Effect.Effect<SignedTransaction, TransactionError> =>
+  pipe(
+    // Build transaction
+    Effect.try({
+      try: () => Transaction.from(params),
+      catch: (e) => e as InvalidFormatError,
+    }),
+    // Hash for signing
+    Effect.map(Transaction.hash),
+    // Sign
+    Effect.flatMap((hash) =>
+      Effect.try({
+        try: () => Secp256k1.sign(hash, privateKey),
+        catch: (e) => e as InvalidSignatureError | InvalidPrivateKeyError,
+      })
+    ),
+    // Create signed transaction
+    Effect.map((signature) => ({ ...params, signature }))
+  );
+```
+
+### Provider with Effect
+
+```typescript
+import { Effect, Schedule, Duration } from "effect";
+import { TransportError } from "voltaire-effect";
+
+const fetchBalance = (
+  provider: JsonRpcProvider,
+  address: Address.Address
+): Effect.Effect<bigint, TransportError> =>
+  pipe(
+    Effect.tryPromise({
+      try: () => provider.request({ method: "eth_getBalance", params: [Address.toHex(address), "latest"] }),
+      catch: (e) =>
+        new TransportError(
+          { code: -32000, message: "Failed to fetch balance" },
+          undefined,
+          { cause: e }
+        ),
+    }),
+    Effect.map((hex) => BigInt(hex)),
+    // Automatic retry with exponential backoff
+    Effect.retry(
+      Schedule.exponential(Duration.millis(100)).pipe(
+        Schedule.compose(Schedule.recurs(3))
+      )
+    )
+  );
+```
+
+### Error Recovery
+
+```typescript
+import { Effect, Match } from "effect";
+
+const handleAddressError = Effect.catchAll(
+  parseAddress("invalid"),
+  (error) =>
+    Match.value(error).pipe(
+      Match.when({ name: "InvalidFormatError" }, () =>
+        Effect.succeed(Address.zero())
+      ),
+      Match.when({ name: "InvalidLengthError" }, () =>
+        Effect.fail(new UserError("Address must be 20 bytes"))
+      ),
+      Match.exhaustive
+    )
+);
+```
+
+## Key Benefits
+
+| Feature | Benefit |
+|---------|---------|
+| Typed Errors | Know exactly what can fail at compile time |
+| Composable | Chain operations with `pipe` and `flatMap` |
+| Retries | Built-in retry policies for network operations |
+| Interruption | Cancel long-running operations cleanly |
+| Concurrency | Parallel operations with resource limits |
+| Telemetry | Built-in tracing and metrics |
+
+## Error Types Reference
+
+Voltaire's errors are organized hierarchically, making them easy to match:
+
+```typescript
+// Base errors
+PrimitiveError
+├── ValidationError
+│   ├── InvalidFormatError
+│   ├── InvalidLengthError
+│   ├── InvalidRangeError
+│   └── InvalidChecksumError
+├── SerializationError
+│   ├── EncodingError
+│   └── DecodingError
+├── CryptoError
+│   ├── InvalidSignatureError
+│   ├── InvalidPublicKeyError
+│   └── InvalidPrivateKeyError
+└── TransactionError
+    ├── InvalidTransactionTypeError
+    └── InvalidSignerError
+```
+
+All errors have:
+- `name`: Typesafe discriminator (e.g., `"InvalidFormatError"`)
+- `code`: Programmatic error code (e.g., `"INVALID_FORMAT"`)
+- `message`: Human-readable description
+- `context`: Optional debugging metadata
+
+## Related
+
+- [react-query](/skills/react-query) — React integration
+- [ethers-provider](/skills/ethers-provider) — Provider implementation
+- [sign-verify-messages](/skills/sign-verify-messages) — Message signing

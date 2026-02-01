@@ -1,0 +1,71 @@
+---
+title: Receipt
+description: Effect-based schemas for Ethereum transaction receipts and event logs
+---
+
+```typescript
+import * as Receipt from 'voltaire-effect/primitives/Receipt'
+import * as Schema from 'effect/Schema'
+
+const receipt = Schema.decodeSync(Receipt.JSON)(receiptData)
+```
+
+## Schemas
+
+**ReceiptSchema** — Full receipt: status, gas usage, logs.
+
+```typescript
+Schema.decodeSync(Receipt.JSON)({
+  transactionHash: txHash,
+  blockNumber: 12345n,
+  blockHash: blockHash,
+  transactionIndex: 0,
+  from: '0x1234567890123456789012345678901234567890',
+  to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+  cumulativeGasUsed: 21000n,
+  gasUsed: 21000n,
+  contractAddress: null,
+  logs: [],
+  logsBloom: new Uint8Array(256),
+  status: 1
+})
+```
+
+**LogSchema** — Event log emitted during execution.
+
+## Types
+
+```typescript
+interface ReceiptType {
+  readonly transactionHash: HashType
+  readonly blockNumber: bigint
+  readonly blockHash: HashType
+  readonly transactionIndex: number
+  readonly from: AddressType
+  readonly to: AddressType | null
+  readonly cumulativeGasUsed: bigint
+  readonly gasUsed: bigint
+  readonly contractAddress: AddressType | null
+  readonly logs: readonly LogType[]
+  readonly logsBloom: Uint8Array
+  readonly status: 0 | 1  // 0 = failed, 1 = success
+}
+
+interface LogType {
+  readonly address: AddressType
+  readonly topics: readonly HashType[]
+  readonly data: Uint8Array
+  readonly blockNumber: bigint
+  readonly transactionHash: HashType
+  readonly transactionIndex: number
+  readonly blockHash: HashType
+  readonly logIndex: number
+  readonly removed: boolean
+}
+```
+
+## See Also
+
+- [Transaction](/primitives/transaction) - Transaction that produced this receipt
+- [EventLog](/primitives/eventlog) - Decoded event logs
+- [GasUsed](/primitives/gasused) - Gas consumption tracking

@@ -1,0 +1,264 @@
+---
+title: OpStep
+description: Single opcode execution step with typed EVM state
+---
+
+# OpStep
+
+Represents a single opcode execution step with strongly-typed EVM state (stack, memory, storage, gas).
+
+## Overview
+
+OpStep captures the EVM state at a specific instruction. It's the typed equivalent of StructLog with proper types for stack/memory/storage instead of hex strings.
+
+## Type Definition
+
+```typescript
+type OpStepType = {
+  readonly pc: number;                           // Program counter (bytecode offset)
+  readonly op: OpcodeType;                       // Opcode number (0x00-0xFF)
+  readonly gas: Uint256Type;                     // Remaining gas before this op
+  readonly gasCost: Uint256Type;                 // Gas cost for this op
+  readonly depth: number;                        // Call depth (0 for top-level)
+  readonly stack?: readonly Uint256Type[];       // Stack state (top to bottom)
+  readonly memory?: Uint8Array;                  // Memory state (raw bytes)
+  readonly storage?: Record<string, Uint256Type>; // Storage changes (key -> value)
+  readonly error?: string;                       // Error message if failed
+};
+```
+
+## Usage
+
+### Creating OpSteps
+
+```typescript
+import * as OpStep from '@tevm/primitives/OpStep';
+
+// Basic OpStep
+const step = OpStep.from({
+  pc: 0,
+  op: 0x60,          // PUSH1
+  gas: 1000000n,
+  gasCost: 3n,
+  depth: 0,
+});
+
+// OpStep with stack
+const addStep = OpStep.from({
+  pc: 2,
+  op: 0x01,          // ADD
+  gas: 999997n,
+  gasCost: 3n,
+  depth: 0,
+  stack: [5n, 10n],  // Top of stack first
+});
+
+// OpStep with memory
+const mstoreStep = OpStep.from({
+  pc: 10,
+  op: 0x52,          // MSTORE
+  gas: 999900n,
+  gasCost: 6n,
+  depth: 0,
+  memory: new Uint8Array([0x60, 0x40]),
+});
+
+// OpStep with storage
+const sstoreStep = OpStep.from({
+  pc: 20,
+  op: 0x55,          // SSTORE
+  gas: 980000n,
+  gasCost: 20000n,
+  depth: 0,
+  storage: { "0x01": 100n },
+});
+
+// OpStep with error
+const revertStep = OpStep.from({
+  pc: 100,
+  op: 0xfd,          // REVERT
+  gas: 50000n,
+  gasCost: 0n,
+  depth: 0,
+  error: "execution reverted",
+});
+```
+
+### Checking for Errors
+
+```typescript
+import * as OpStep from '@tevm/primitives/OpStep';
+
+if (OpStep.hasError(step)) {
+  console.error(`Error at PC ${step.pc}: ${step.error}`);
+}
+```
+
+## Common Patterns
+
+### Analyzing Stack Operations
+
+```typescript
+// Find stack underflows
+function findUnderflows(steps: OpStepType[]): OpStepType[] {
+  return steps.filter(step =>
+    OpStep.hasError(step) &&
+    step.error?.includes("stack underflow")
+  );
+}
+
+// Track stack depth over time
+function analyzeStackDepth(steps: OpStepType[]): number[] {
+  return steps.map(step => step.stack?.length ?? 0);
+}
+```
+
+### Memory Analysis
+
+```typescript
+// Find memory expansions
+function findMemoryExpansions(steps: OpStepType[]): OpStepType[] {
+  let maxSize = 0;
+  const expansions: OpStepType[] = [];
+
+  for (const step of steps) {
+    const size = step.memory?.length ?? 0;
+    if (size > maxSize) {
+      expansions.push(step);
+      maxSize = size;
+    }
+  }
+
+  return expansions;
+}
+```
+
+### Storage Access Patterns
+
+```typescript
+// Find all storage writes
+function findStorageWrites(steps: OpStepType[]): OpStepType[] {
+  return steps.filter(step =>
+    step.storage && Object.keys(step.storage).length > 0
+  );
+}
+
+// Count SSTORE operations
+function countSStores(steps: OpStepType[]): number {
+  return steps.filter(step => step.op === 0x55).length;
+}
+```
+
+### Gas Analysis
+
+```typescript
+// Find most expensive operations
+function findMostExpensive(steps: OpStepType[], n: number = 10): OpStepType[] {
+  return [...steps]
+    .sort((a, b) => Number(b.gasCost - a.gasCost))
+    .slice(0, n);
+}
+
+// Calculate total gas used
+function calculateGasUsed(steps: OpStepType[]): bigint {
+  return steps.reduce((sum, step) => sum + step.gasCost, 0n);
+}
+
+// Find gas-heavy loops
+function findHotLoops(steps: OpStepType[]): Map<number, bigint> {
+  const pcGas = new Map<number, bigint>();
+
+  for (const step of steps) {
+    const current = pcGas.get(step.pc) ?? 0n;
+    pcGas.set(step.pc, current + step.gasCost);
+  }
+
+  return pcGas;
+}
+```
+
+## Call Depth Tracking
+
+```typescript
+// Track call depth changes
+function analyzeCallDepth(steps: OpStepType[]): {
+  maxDepth: number;
+  calls: OpStepType[];
+  returns: OpStepType[];
+} {
+  let maxDepth = 0;
+  const calls: OpStepType[] = [];
+  const returns: OpStepType[] = [];
+  let prevDepth = 0;
+
+  for (const step of steps) {
+    maxDepth = Math.max(maxDepth, step.depth);
+
+    if (step.depth > prevDepth) {
+      calls.push(step);
+    } else if (step.depth < prevDepth) {
+      returns.push(step);
+    }
+
+    prevDepth = step.depth;
+  }
+
+  return { maxDepth, calls, returns };
+}
+```
+
+## Opcode Categories
+
+```typescript
+// Categorize opcodes by type
+function categorizeOpcode(op: number): string {
+  if (op >= 0x00 && op <= 0x0f) return "arithmetic";
+  if (op >= 0x10 && op <= 0x1f) return "comparison";
+  if (op >= 0x20 && op <= 0x2f) return "crypto";
+  if (op >= 0x30 && op <= 0x3f) return "environmental";
+  if (op >= 0x40 && op <= 0x4f) return "block";
+  if (op >= 0x50 && op <= 0x5f) return "stack/memory/storage";
+  if (op >= 0x60 && op <= 0x7f) return "push";
+  if (op >= 0x80 && op <= 0x8f) return "dup";
+  if (op >= 0x90 && op <= 0x9f) return "swap";
+  if (op >= 0xa0 && op <= 0xaf) return "log";
+  if (op >= 0xf0 && op <= 0xff) return "system";
+  return "unknown";
+}
+
+// Analyze opcode distribution
+function analyzeOpcodes(steps: OpStepType[]): Map<string, number> {
+  const distribution = new Map<string, number>();
+
+  for (const step of steps) {
+    const category = categorizeOpcode(step.op);
+    distribution.set(category, (distribution.get(category) ?? 0) + 1);
+  }
+
+  return distribution;
+}
+```
+
+## Converting from StructLog
+
+```typescript
+import * as StructLog from '@tevm/primitives/StructLog';
+
+// StructLog.toOpStep converts hex strings to typed values
+const structLog = /* ... from RPC ... */;
+const opStep = StructLog.toOpStep(structLog);
+```
+
+## Performance Tips
+
+- OpStep with stack/memory/storage consumes significant memory
+- Use TraceConfig to disable tracking you don't need
+- Process steps in streaming fashion for large traces
+- Consider sampling for performance profiling (every Nth step)
+
+## See Also
+
+- [StructLog](/primitives/struct-log) - Geth-style hex string format
+- [TraceResult](/primitives/trace-result) - Complete trace result
+- [TraceConfig](/primitives/trace-config) - Trace configuration
+- [Opcode](/primitives/opcode) - Opcode definitions

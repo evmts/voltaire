@@ -1,0 +1,119 @@
+---
+title: Bundler
+description: ERC-4337 bundler node address type
+---
+
+# Bundler
+
+Bundler is a branded [Address](/primitives/address) type representing an ERC-4337 bundler node. Bundlers aggregate user operations from the mempool and submit them to the EntryPoint contract for execution.
+
+## Quick Start
+
+```typescript
+import { Bundler } from '@tevm/voltaire/primitives/Bundler';
+
+// Create bundler address
+const bundler = Bundler.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+
+// Convert to hex
+console.log(Bundler.toHex(bundler));
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+
+// Compare addresses
+const same = Bundler.equals(bundler, "0x742d35Cc...");
+```
+
+## Type Definition
+
+```typescript
+import type { AddressType } from '../Address/AddressType.js';
+import type { brand } from '../../brand.js';
+
+export type BundlerType = AddressType & { readonly [brand]: "Bundler" };
+```
+
+## API Reference
+
+### from
+
+Create Bundler from address input.
+
+```typescript
+function from(
+  value: number | bigint | string | Uint8Array | AddressType
+): BundlerType
+```
+
+### toHex
+
+Convert Bundler to hex string.
+
+```typescript
+function toHex(
+  bundler: number | bigint | string | Uint8Array | AddressType
+): string
+```
+
+### equals
+
+Check if two Bundler addresses are equal.
+
+```typescript
+function equals(
+  bundler1: number | bigint | string | Uint8Array | AddressType,
+  bundler2: number | bigint | string | Uint8Array | AddressType
+): boolean
+```
+
+## Bundler Responsibilities
+
+Bundlers perform critical functions in the ERC-4337 ecosystem:
+
+1. **Mempool monitoring**: Watch for new user operations
+2. **Simulation**: Validate operations will succeed
+3. **Aggregation**: Bundle multiple operations into transactions
+4. **Submission**: Submit bundles to the EntryPoint contract
+5. **Gas optimization**: Optimize bundle ordering for gas efficiency
+
+## Bundler RPC Methods
+
+Standard bundler RPC methods for interacting with bundlers:
+
+```typescript
+// Submit user operation
+await bundler.request({
+  method: "eth_sendUserOperation",
+  params: [userOp, entryPointAddress],
+});
+
+// Estimate gas
+const gasEstimate = await bundler.request({
+  method: "eth_estimateUserOperationGas",
+  params: [userOp, entryPointAddress],
+});
+
+// Get user operation by hash
+const receipt = await bundler.request({
+  method: "eth_getUserOperationByHash",
+  params: [userOpHash],
+});
+
+// Get user operation receipt
+const receipt = await bundler.request({
+  method: "eth_getUserOperationReceipt",
+  params: [userOpHash],
+});
+```
+
+## Related Types
+
+- [Bundler (Effect)](https://voltaire-effect.tevm.sh/primitives/bundler) - Effect.ts integration with Schema validation
+- [UserOperation](/primitives/user-operation) - Operations bundlers process
+- [EntryPoint](/primitives/entry-point) - Contract bundlers submit to
+- [Paymaster](/primitives/paymaster) - Gas sponsorship
+- [Address](/primitives/address) - Base address type
+
+## References
+
+- [ERC-4337 Specification](https://eips.ethereum.org/EIPS/eip-4337)
+- [Bundler RPC Methods](https://eips.ethereum.org/EIPS/eip-4337#rpc-methods-eth-namespace)

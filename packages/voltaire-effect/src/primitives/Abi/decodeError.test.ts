@@ -1,0 +1,117 @@
+import { describe, expect, it } from "@effect/vitest";
+import { Hex } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
+import { decodeError } from "./decodeError.js";
+import { encodeError } from "./encodeError.js";
+
+const customAbi = S.decodeUnknownSync(fromArray)([
+	{
+		type: "error",
+		name: "InsufficientBalance",
+		inputs: [
+			{ name: "available", type: "uint256" },
+			{ name: "required", type: "uint256" },
+		],
+	},
+	{
+		type: "error",
+		name: "Unauthorized",
+		inputs: [{ name: "caller", type: "address" }],
+	},
+	{
+		type: "error",
+		name: "InvalidAmount",
+		inputs: [],
+	},
+]);
+
+describe("decodeError", () => {
+	describe("encode/decode round-trips", () => {
+		it.effect("round-trips InsufficientBalance error", () =>
+			Effect.gen(function* () {
+				const available = 100n;
+				const required = 200n;
+				const encoded = yield* encodeError(customAbi, "InsufficientBalance", [
+					available,
+					required,
+				]);
+				const decoded = yield* decodeError(
+					customAbi,
+					"InsufficientBalance",
+					encoded,
+				);
+				expect(decoded[0]).toBe(available);
+				expect(decoded[1]).toBe(required);
+			}),
+		);
+
+		it.effect("round-trips Unauthorized error with address", () =>
+			Effect.gen(function* () {
+				const caller = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+				const encoded = yield* encodeError(customAbi, "Unauthorized", [caller]);
+				const decoded = yield* decodeError(customAbi, "Unauthorized", encoded);
+				expect((decoded[0] as string).toLowerCase()).toBe(caller.toLowerCase());
+			}),
+		);
+
+		it.effect("round-trips error with no inputs", () =>
+			Effect.gen(function* () {
+				const encoded = yield* encodeError(customAbi, "InvalidAmount", []);
+				const decoded = yield* decodeError(customAbi, "InvalidAmount", encoded);
+				expect(decoded.length).toBe(0);
+			}),
+		);
+
+		it.effect("round-trips with zero values", () =>
+			Effect.gen(function* () {
+				const encoded = yield* encodeError(customAbi, "InsufficientBalance", [
+					0n,
+					0n,
+				]);
+				const decoded = yield* decodeError(
+					customAbi,
+					"InsufficientBalance",
+					encoded,
+				);
+				expect(decoded[0]).toBe(0n);
+				expect(decoded[1]).toBe(0n);
+			}),
+		);
+
+		it.effect("round-trips with max uint256", () =>
+			Effect.gen(function* () {
+				const maxUint256 = 2n ** 256n - 1n;
+				const encoded = yield* encodeError(customAbi, "InsufficientBalance", [
+					maxUint256,
+					maxUint256,
+				]);
+				const decoded = yield* decodeError(
+					customAbi,
+					"InsufficientBalance",
+					encoded,
+				);
+				expect(decoded[0]).toBe(maxUint256);
+				expect(decoded[1]).toBe(maxUint256);
+			}),
+		);
+	});
+
+	describe("error cases", () => {
+		it("fails for unknown error", async () => {
+			const exit = await Effect.runPromiseExit(
+				decodeError(customAbi, "UnknownError", Hex("0x00000000")),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with empty ABI", async () => {
+			const exit = await Effect.runPromiseExit(
+				decodeError([], "InsufficientBalance", Hex("0x00000000")),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+	});
+});

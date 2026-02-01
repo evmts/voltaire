@@ -1,0 +1,63 @@
+/**
+ * WASM bindings for access-list primitive (EIP-2930)
+ * Provides lightweight bindings to Zig implementation via WASM
+ */
+
+import * as loader from "../../wasm-loader/loader.js";
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/Hash.js";
+import type { BrandedAccessList as AccessListType } from "./AccessListType.js";
+
+/**
+ * Calculate total gas cost for access list
+ * @param accessList - Access list to calculate cost for
+ * @returns Gas cost as bigint
+ */
+export function gasCostWasm(accessList: AccessListType): bigint {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
+	return loader.accessListGasCost(accessList as any);
+}
+
+/**
+ * Calculate gas savings from using access list
+ * @param accessList - Access list to calculate savings for
+ * @returns Gas savings as bigint
+ */
+export function gasSavingsWasm(accessList: AccessListType): bigint {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
+	return loader.accessListGasSavings(accessList as any);
+}
+
+/**
+ * Check if address is in access list
+ * @param accessList - Access list to check
+ * @param address - Address to look for
+ * @returns True if address is in list
+ */
+export function includesAddressWasm(
+	accessList: AccessListType,
+	address: BrandedAddress,
+): boolean {
+	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
+	return loader.accessListIncludesAddress(accessList as any, address);
+}
+
+/**
+ * Check if storage key is in access list for address
+ * @param accessList - Access list to check
+ * @param address - Address to look for
+ * @param storageKey - Storage key to look for
+ * @returns True if storage key is in list for address
+ */
+export function includesStorageKeyWasm(
+	accessList: AccessListType,
+	address: BrandedAddress,
+	storageKey: HashType,
+): boolean {
+	return loader.accessListIncludesStorageKey(
+		// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
+		accessList as any,
+		address,
+		storageKey,
+	);
+}

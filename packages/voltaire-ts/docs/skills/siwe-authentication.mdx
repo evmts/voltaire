@@ -1,0 +1,431 @@
+---
+title: "Sign-In with Ethereum"
+description: "Implement SIWE authentication in your application"
+---
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Sign-In with Ethereum (SIWE) enables passwordless authentication using Ethereum accounts. Users prove ownership of their address by signing a structured message (EIP-4361).
+
+## Overview
+
+SIWE authentication flow:
+1. Server generates a unique nonce
+2. Client creates a SIWE message with the nonce
+3. User signs the message with their wallet
+4. Server verifies the signature matches the address in the message
+5. Server creates a session for the authenticated user
+
+## Creating SIWE Messages
+
+Use `Siwe.create()` to construct a message with required fields:
+
+```typescript
+import { Siwe, Address } from "@tevm/voltaire";
+
+// Create the user's address
+const userAddress = Address("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+
+// Create a basic SIWE message
+const message = Siwe.create({
+  domain: "myapp.com",
+  address: userAddress,
+  uri: "https://myapp.com/login",
+  chainId: 1,
+});
+
+// Message automatically includes:
+// - nonce (randomly generated)
+// - issuedAt (current timestamp)
+// - version ("1")
+```
+
+### Adding Optional Fields
+
+Include statement, expiration, and resources for enhanced messages:
+
+```typescript
+const message = Siwe.create({
+  domain: "myapp.com",
+  address: userAddress,
+  uri: "https://myapp.com/login",
+  chainId: 1,
+  statement: "Sign in to access your dashboard",
+  expirationTime: new Date(Date.now() + 3600000).toISOString(), // 1 hour
+  notBefore: new Date().toISOString(),
+  requestId: "unique-request-123",
+  resources: [
+    "https://myapp.com/api/profile",
+    "https://myapp.com/api/settings",
+  ],
+});
+```
+
+### Custom Nonce
+
+For server-generated nonces, pass your own value:
+
+```typescript
+// Generate nonce on server
+const serverNonce = Siwe.generateNonce(); // 16 alphanumeric chars
+
+// Pass to client, then create message with it
+const message = Siwe.create({
+  domain: "myapp.com",
+  address: userAddress,
+  uri: "https://myapp.com/login",
+  chainId: 1,
+  nonce: serverNonce,
+});
+```
+
+## Formatting Messages for Signing
+
+Convert the message object to the EIP-4361 text format for wallet signing:
+
+```typescript
+const messageText = Siwe.format(message);
+console.log(messageText);
+```
+
+Output:
+```
+myapp.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+
+Sign in to access your dashboard
+
+URI: https://myapp.com/login
+Version: 1
+Chain ID: 1
+Nonce: abc123xyz789
+Issued At: 2024-01-15T10:30:00.000Z
+Expiration Time: 2024-01-15T11:30:00.000Z
+```
+
+## Signing SIWE Messages
+
+The message hash uses EIP-191 personal sign format. Sign with any Ethereum wallet:
+
+### Using PrivateKeySigner (Server-side or Testing)
+
+```typescript
+import { Siwe, Address } from "@tevm/voltaire";
+import { PrivateKeySignerImpl } from "@tevm/voltaire/crypto";
+
+// Create signer from private key
+const signer = PrivateKeySignerImpl.fromPrivateKey({
+  privateKey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+});
+
+// Create and format the message
+const message = Siwe.create({
+  domain: "myapp.com",
+  address: Address(signer.address),
+  uri: "https://myapp.com/login",
+  chainId: 1,
+});
+
+const messageText = Siwe.format(message);
+
+// Sign the message (returns hex string)
+const signatureHex = await signer.signMessage(messageText);
+
+// Convert to Uint8Array for verification
+const signature = new Uint8Array(
+  signatureHex.slice(2).match(/.{2}/g)!.map((byte) => parseInt(byte, 16))
+);
+```
+
+### Using Browser Wallet (Client-side)
+
+```typescript
+import { Siwe, Address } from "@tevm/voltaire";
+
+// Get address from connected wallet
+const accounts = await window.ethereum.request({
+  method: "eth_requestAccounts",
+});
+const userAddress = Address(accounts[0]);
+
+// Create message
+const message = Siwe.create({
+  domain: window.location.host,
+  address: userAddress,
+  uri: window.location.origin,
+  chainId: 1,
+  statement: "Sign in to MyApp",
+});
+
+// Format and sign
+const messageText = Siwe.format(message);
+const signatureHex = await window.ethereum.request({
+  method: "personal_sign",
+  params: [messageText, accounts[0]],
+});
+
+// Convert signature for verification
+const signature = new Uint8Array(
+  signatureHex.slice(2).match(/.{2}/g).map((byte) => parseInt(byte, 16))
+);
+```
+
+## Verifying SIWE Signatures
+
+### Basic Verification
+
+`Siwe.verify()` checks that the signature was created by the address in the message:
+
+```typescript
+const isValid = Siwe.verify(message, signature);
+
+if (isValid) {
+  console.log("Signature valid - user authenticated");
+} else {
+  console.log("Invalid signature");
+}
+```
+
+### Full Message Verification
+
+`Siwe.verifyMessage()` validates both the signature and message constraints (expiration, notBefore):
+
+```typescript
+const result = Siwe.verifyMessage(message, signature);
+
+if (result.valid) {
+  // User authenticated, create session
+  createSession(message.address, message.nonce);
+} else {
+  // Handle specific error
+  console.error(result.error.type, result.error.message);
+}
+```
+
+### Validation Without Signature
+
+Validate message structure and timestamps before signature verification:
+
+```typescript
+const validation = Siwe.validate(message);
+
+if (!validation.valid) {
+  switch (validation.error.type) {
+    case "expired":
+      console.error("Message has expired");
+      break;
+    case "not_yet_valid":
+      console.error("Message is not yet valid");
+      break;
+    case "invalid_nonce":
+      console.error("Nonce must be at least 8 characters");
+      break;
+    case "invalid_domain":
+      console.error("Domain is required");
+      break;
+    default:
+      console.error(validation.error.message);
+  }
+}
+```
+
+### Testing with Custom Time
+
+For testing expiration logic:
+
+```typescript
+const futureTime = new Date(Date.now() + 7200000); // 2 hours from now
+const result = Siwe.validate(message, { now: futureTime });
+
+if (!result.valid && result.error.type === "expired") {
+  console.log("Message would be expired at that time");
+}
+```
+
+## Session Management Patterns
+
+### Server-Side Session Flow
+
+```typescript
+// 1. Generate nonce endpoint
+app.get("/auth/nonce", (req, res) => {
+  const nonce = Siwe.generateNonce();
+  // Store nonce in session or database with expiration
+  req.session.siweNonce = nonce;
+  res.json({ nonce });
+});
+
+// 2. Verify endpoint
+app.post("/auth/verify", (req, res) => {
+  const { messageText, signature } = req.body;
+
+  // Parse the message from text
+  const message = Siwe.parse(messageText);
+
+  // Verify nonce matches what we generated
+  if (message.nonce !== req.session.siweNonce) {
+    return res.status(401).json({ error: "Invalid nonce" });
+  }
+
+  // Verify domain matches our domain
+  if (message.domain !== "myapp.com") {
+    return res.status(401).json({ error: "Invalid domain" });
+  }
+
+  // Convert signature to Uint8Array
+  const sigBytes = new Uint8Array(
+    signature.slice(2).match(/.{2}/g).map((b) => parseInt(b, 16))
+  );
+
+  // Verify signature and message validity
+  const result = Siwe.verifyMessage(message, sigBytes);
+
+  if (!result.valid) {
+    return res.status(401).json({ error: result.error.message });
+  }
+
+  // Create authenticated session
+  req.session.address = message.address;
+  req.session.chainId = message.chainId;
+
+  // Clear used nonce
+  delete req.session.siweNonce;
+
+  res.json({ success: true });
+});
+```
+
+### Parsing Messages
+
+Parse a formatted message string back to an object:
+
+```typescript
+const messageText = `myapp.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+
+Sign in to access your account
+
+URI: https://myapp.com/login
+Version: 1
+Chain ID: 1
+Nonce: abc123xyz789
+Issued At: 2024-01-15T10:30:00.000Z`;
+
+const message = Siwe.parse(messageText);
+console.log(message.domain); // "myapp.com"
+console.log(message.statement); // "Sign in to access your account"
+```
+
+## Domain Binding Security
+
+Always verify the domain matches your application to prevent phishing:
+
+```typescript
+function verifyDomain(message: SiweMessageType): boolean {
+  const allowedDomains = ["myapp.com", "www.myapp.com", "staging.myapp.com"];
+  return allowedDomains.includes(message.domain);
+}
+
+// In verification flow
+const message = Siwe.parse(messageText);
+if (!verifyDomain(message)) {
+  throw new Error("Message domain does not match application");
+}
+```
+
+## Complete Example
+
+Full client-server authentication flow:
+
+```typescript
+// === Client Side ===
+import { Siwe, Address } from "@tevm/voltaire";
+
+async function signIn() {
+  // 1. Get nonce from server
+  const nonceRes = await fetch("/auth/nonce");
+  const { nonce } = await nonceRes.json();
+
+  // 2. Connect wallet
+  const accounts = await window.ethereum.request({
+    method: "eth_requestAccounts",
+  });
+  const address = Address(accounts[0]);
+
+  // 3. Create message
+  const message = Siwe.create({
+    domain: window.location.host,
+    address,
+    uri: window.location.origin,
+    chainId: 1,
+    statement: "Sign in to MyApp",
+    nonce,
+    expirationTime: new Date(Date.now() + 300000).toISOString(), // 5 min
+  });
+
+  // 4. Sign message
+  const messageText = Siwe.format(message);
+  const signature = await window.ethereum.request({
+    method: "personal_sign",
+    params: [messageText, accounts[0]],
+  });
+
+  // 5. Send to server for verification
+  const verifyRes = await fetch("/auth/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messageText, signature }),
+  });
+
+  if (verifyRes.ok) {
+    console.log("Authenticated!");
+    // Redirect to dashboard
+  }
+}
+```
+
+## Error Handling
+
+Handle all validation error types:
+
+```typescript
+import type { ValidationError } from "@tevm/voltaire";
+
+function handleValidationError(error: ValidationError): string {
+  const messages: Record<ValidationError["type"], string> = {
+    invalid_domain: "Invalid domain in message",
+    invalid_address: "Invalid Ethereum address format",
+    invalid_uri: "URI is required",
+    invalid_version: "Unsupported SIWE version",
+    invalid_chain_id: "Invalid chain ID",
+    invalid_nonce: "Nonce must be at least 8 characters",
+    invalid_timestamp: "Invalid timestamp format",
+    expired: "Authentication request has expired",
+    not_yet_valid: "Authentication request is not yet valid",
+    signature_mismatch: "Signature does not match address",
+  };
+  return messages[error.type] || error.message;
+}
+```
+
+## API Reference
+
+| Function | Description |
+|----------|-------------|
+| `Siwe.create(params)` | Create a new SIWE message |
+| `Siwe.format(message)` | Convert message to EIP-4361 text |
+| `Siwe.parse(text)` | Parse EIP-4361 text to message object |
+| `Siwe.validate(message, options?)` | Validate message structure and timestamps |
+| `Siwe.verify(message, signature)` | Verify signature matches address |
+| `Siwe.verifyMessage(message, signature, options?)` | Full validation + signature verification |
+| `Siwe.generateNonce(length?)` | Generate random alphanumeric nonce |
+| `Siwe.getMessageHash(message)` | Get EIP-191 hash for signing |
+
+## Related Resources
+
+- [EIP-4361: Sign-In with Ethereum](https://eips.ethereum.org/EIPS/eip-4361)
+- [EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191)
+- [Signers Documentation](/crypto/signers/index)
+- [Address Primitive](/primitives/address)

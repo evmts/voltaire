@@ -1,0 +1,153 @@
+---
+title: Blob.estimateBlobCount
+description: Estimate number of blobs needed for data
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/blob.ts">
+  Run Blob examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Calculation
+
+Each blob stores up to 131,064 bytes of data:
+
+```typescript
+import { Blob } from 'tevm';
+
+const maxPerBlob = Blob.SIZE - 8; // 131,064 bytes
+console.log(`Max per blob: ${maxPerBlob}`);
+
+// Formula: ceil(dataLength / maxPerBlob)
+function estimate(dataLength: number): number {
+  return Math.ceil(dataLength / maxPerBlob);
+}
+
+// Examples
+console.log(estimate(1));         // 1 blob
+console.log(estimate(131_064));   // 1 blob (exactly fits)
+console.log(estimate(131_065));   // 2 blobs (1 byte over)
+console.log(estimate(262_128));   // 2 blobs
+console.log(estimate(300_000));   // 3 blobs
+console.log(estimate(786_384));   // 6 blobs (max)
+```
+
+## Size Limits
+
+```typescript
+import { Blob } from 'tevm';
+
+const maxPerBlob = Blob.SIZE - 8;
+const maxData = maxPerBlob * Blob.MAX_PER_TRANSACTION;
+
+console.log(`Max per blob: ${maxPerBlob} bytes`);       // 131,064
+console.log(`Max per transaction: ${maxData} bytes`);    // 786,384
+console.log(`Max blobs per transaction: ${Blob.MAX_PER_TRANSACTION}`); // 6
+
+// At limit
+console.log(Blob.estimateBlobCount(maxData));     // 6
+
+// Over limit (would fail in splitData)
+console.log(Blob.estimateBlobCount(maxData + 1)); // 7
+```
+
+## Use Cases
+
+### Pre-Flight Validation
+
+```typescript
+import { Blob } from 'tevm';
+
+function canFitInTransaction(data: Uint8Array): boolean {
+  const blobCount = Blob.estimateBlobCount(data);
+  return blobCount <= Blob.MAX_PER_TRANSACTION;
+}
+
+if (!canFitInTransaction(largeData)) {
+  console.error('Data too large for single transaction');
+  // Split into multiple transactions or compress
+}
+```
+
+### Cost Estimation
+
+```typescript
+import { Blob } from 'tevm';
+
+async function estimateBlobCost(
+  data: Uint8Array,
+  provider: any
+): Promise<bigint> {
+  const blobCount = Blob.estimateBlobCount(data);
+  const blobBaseFee = await provider.getBlobBaseFee();
+
+  return Blob.calculateGas(blobCount, blobBaseFee);
+}
+
+const cost = await estimateBlobCost(data, provider);
+console.log(`Estimated cost: ${cost / 10n**9n} gwei`);
+```
+
+### Batch Planning
+
+```typescript
+import { Blob } from 'tevm';
+
+function planBatches(items: Uint8Array[]): Uint8Array[][] {
+  const batches: Uint8Array[][] = [];
+  let currentBatch: Uint8Array[] = [];
+  let currentBlobCount = 0;
+
+  for (const item of items) {
+    const itemBlobCount = Blob.estimateBlobCount(item);
+
+    if (currentBlobCount + itemBlobCount > Blob.MAX_PER_TRANSACTION) {
+      // Start new batch
+      batches.push(currentBatch);
+      currentBatch = [item];
+      currentBlobCount = itemBlobCount;
+    } else {
+      // Add to current batch
+      currentBatch.push(item);
+      currentBlobCount += itemBlobCount;
+    }
+  }
+
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
+  }
+
+  return batches;
+}
+```
+
+## Edge Cases
+
+```typescript
+import { Blob } from 'tevm';
+
+// Empty data
+console.log(Blob.estimateBlobCount(0)); // 1 blob (minimum)
+
+// Exactly 1 blob
+const exactlyOne = new Uint8Array(131_064);
+console.log(Blob.estimateBlobCount(exactlyOne)); // 1
+
+// 1 byte over
+const oneOver = new Uint8Array(131_065);
+console.log(Blob.estimateBlobCount(oneOver)); // 2
+
+// Maximum
+const maxData = new Uint8Array(786_384);
+console.log(Blob.estimateBlobCount(maxData)); // 6
+```
+
+## See Also
+
+- [splitData](./splitData) - Split data into blobs
+- [calculateGas](./calculateGas) - Calculate gas cost
+- [fromData](./fromData) - Create single blob

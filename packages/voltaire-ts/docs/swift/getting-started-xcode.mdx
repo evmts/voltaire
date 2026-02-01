@@ -1,0 +1,51 @@
+---
+title: Xcode Integration (Swift)
+description: Add the Voltaire Swift package to Xcode apps
+---
+
+# Xcode Integration
+
+Integrate the Swift package in an Xcode project for macOS or iOS.
+
+## 1) Build the Native Library
+
+From the repo root, build the native Zig library the Swift package links against:
+
+```bash
+zig build build-ts-native
+```
+
+This installs `libprimitives_ts_native` under `zig-out/native`.
+
+## 2) Add Local Swift Package
+
+- In Xcode: File → Add Packages… → Add Local… → select the `swift` directory.
+- Choose the `Voltaire` library product for your app target.
+
+The package already sets link and rpath flags to look in `../zig-out/native`.
+
+## 3) macOS App Runtime Linking
+
+For macOS apps, ensure the dynamic library is available at runtime:
+
+- Option A: Add a Run Script build phase to copy the `.dylib` into the app bundle’s `Frameworks` folder.
+
+```bash
+mkdir -p "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+cp -f "${SRCROOT}/../zig-out/native/libprimitives_ts_native.dylib" "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/"
+```
+
+- Option B: Add `../zig-out/native` to your target’s Runpath Search Paths or DYLD path while developing.
+
+## 4) iOS Targets
+
+For iOS (device/simulator), you must link a library built for the appropriate Apple platform/architecture. Cross-compiling the Zig library for iOS is possible but requires additional build steps not covered here. If you need iOS builds, please open an issue and we’ll add turnkey scripts and docs.
+
+## 5) Verify
+
+```bash
+swift build && swift test
+```
+
+If you see a “Library not loaded: libprimitives_ts_native.dylib” error at runtime, see Troubleshooting.
+

@@ -1,0 +1,93 @@
+import { describe, expect, it } from "vitest";
+
+describe("Bytecode.fromHex (docs/primitives/bytecode/fromHex.mdx)", () => {
+	describe("Basic Usage", () => {
+		it("should construct from 0x-prefixed hex", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode.fromHex("0x600100");
+
+			expect(code).toBeInstanceOf(Uint8Array);
+			expect(code.length).toBe(3);
+			expect(code[0]).toBe(0x60);
+			expect(code[1]).toBe(0x01);
+			expect(code[2]).toBe(0x00);
+		});
+
+		it("should construct from non-prefixed hex", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode.fromHex("600100");
+
+			expect(code.length).toBe(3);
+		});
+
+		it("should handle empty hex string", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode.fromHex("0x");
+
+			expect(code.length).toBe(0);
+		});
+
+		it("should handle lowercase hex", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode.fromHex("0xabcdef");
+
+			expect(code.length).toBe(3);
+			expect(code[0]).toBe(0xab);
+			expect(code[1]).toBe(0xcd);
+			expect(code[2]).toBe(0xef);
+		});
+
+		it("should handle uppercase hex", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode.fromHex("0xABCDEF");
+
+			expect(code.length).toBe(3);
+			expect(code[0]).toBe(0xab);
+			expect(code[1]).toBe(0xcd);
+			expect(code[2]).toBe(0xef);
+		});
+
+		it("should handle mixed case hex", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode.fromHex("0xAbCdEf");
+
+			expect(code.length).toBe(3);
+		});
+	});
+
+	describe("Real Bytecode Examples", () => {
+		it("should parse simple contract bytecode", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x80, PUSH1 0x40, MSTORE - common Solidity preamble
+			const code = Bytecode.fromHex("0x6080604052");
+
+			expect(code.length).toBe(5);
+			expect(code[0]).toBe(0x60); // PUSH1
+			expect(code[1]).toBe(0x80); // 0x80 (128)
+			expect(code[2]).toBe(0x60); // PUSH1
+			expect(code[3]).toBe(0x40); // 0x40 (64)
+			expect(code[4]).toBe(0x52); // MSTORE
+		});
+	});
+});

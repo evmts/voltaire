@@ -1,0 +1,277 @@
+---
+title: '[TS/JS] src/primitives/Abi/Item/getItem.test.ts'
+source: 'src/primitives/Abi/Item/getItem.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Abi/Item/getItem.test.ts
+
+```typescript
+/**
+ * Unit tests for getItem function
+ */
+
+import { describe, expect, it } from "vitest";
+import { getItem } from "./getItem.js";
+
+describe("getItem", () => {
+	const abi = [
+		{
+			type: "function",
+			name: "transfer",
+			stateMutability: "nonpayable",
+			inputs: [
+				{ type: "address", name: "to" },
+				{ type: "uint256", name: "amount" },
+			],
+			outputs: [{ type: "bool", name: "" }],
+		},
+		{
+			type: "function",
+			name: "balanceOf",
+			stateMutability: "view",
+			inputs: [{ type: "address", name: "account" }],
+			outputs: [{ type: "uint256", name: "" }],
+		},
+		{
+			type: "event",
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		},
+		{
+			type: "event",
+			name: "Approval",
+			inputs: [
+				{ type: "address", name: "owner", indexed: true },
+				{ type: "address", name: "spender", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		},
+		{
+			type: "error",
+			name: "InsufficientBalance",
+			inputs: [
+				{ type: "uint256", name: "available" },
+				{ type: "uint256", name: "required" },
+			],
+		},
+		{
+			type: "error",
+			name: "Unauthorized",
+			inputs: [],
+		},
+		{
+			type: "constructor",
+			stateMutability: "nonpayable",
+			inputs: [
+				{ type: "string", name: "name" },
+				{ type: "string", name: "symbol" },
+			],
+		},
+		{
+			type: "fallback",
+			stateMutability: "payable",
+		},
+		{
+			type: "receive",
+			stateMutability: "payable",
+		},
+	] as const;
+
+	describe("finding by name only", () => {
+		it("finds function by name", () => {
+			const item = getItem(abi, "transfer");
+			expect(item).toBeDefined();
+			expect(item?.type).toBe("function");
+			expect(item?.name).toBe("transfer");
+		});
+
+		it("finds event by name", () => {
+			const item = getItem(abi, "Transfer");
+			expect(item).toBeDefined();
+			expect(item?.type).toBe("event");
+			expect(item?.name).toBe("Transfer");
+		});
+
+		it("finds error by name", () => {
+			const item = getItem(abi, "Unauthorized");
+			expect(item).toBeDefined();
+			expect(item?.type).toBe("error");
+			expect(item?.name).toBe("Unauthorized");
+		});
+
+		it("returns undefined for missing item", () => {
+			const item = getItem(abi, "nonexistent");
+			expect(item).toBeUndefined();
+		});
+
+		it("returns first match when multiple items have same name", () => {
+			const abiWithDuplicates = [
+				{
+					type: "function",
+					name: "test",
+					stateMutability: "pure",
+					inputs: [],
+					outputs: [],
+				},
+				{
+					type: "event",
+					name: "test",
+					inputs: [],
+				},
+			] as const;
+
+			const item = getItem(abiWithDuplicates, "test");
+			expect(item?.type).toBe("function");
+		});
+	});
+
+	describe("finding by name and type", () => {
+		it("finds function by name and type", () => {
+			const item = getItem(abi, "balanceOf", "function");
+			expect(item).toBeDefined();
+			expect(item?.type).toBe("function");
+			expect(item?.name).toBe("balanceOf");
+		});
+
+		it("finds event by name and type", () => {
+			const item = getItem(abi, "Approval", "event");
+			expect(item).toBeDefined();
+			expect(item?.type).toBe("event");
+			expect(item?.name).toBe("Approval");
+		});
+
+		it("finds error by name and type", () => {
+			const item = getItem(abi, "InsufficientBalance", "error");
+			expect(item).toBeDefined();
+			expect(item?.type).toBe("error");
+			expect(item?.name).toBe("InsufficientBalance");
+		});
+
+		it("returns undefined when type does not match", () => {
+			const item = getItem(abi, "Transfer", "function");
+			expect(item).toBeUndefined();
+		});
+
+		it("returns undefined when name does not match", () => {
+			const item = getItem(abi, "nonexistent", "function");
+			expect(item).toBeUndefined();
+		});
+
+		it("disambiguates when name exists for multiple types", () => {
+			const abiWithDuplicates = [
+				{
+					type: "function",
+					name: "test",
+					stateMutability: "pure",
+					inputs: [],
+					outputs: [],
+				},
+				{
+					type: "event",
+					name: "test",
+					inputs: [],
+				},
+			] as const;
+
+			const funcItem = getItem(abiWithDuplicates, "test", "function");
+			expect(funcItem?.type).toBe("function");
+
+			const eventItem = getItem(abiWithDuplicates, "test", "event");
+			expect(eventItem?.type).toBe("event");
+		});
+
+		it("cannot find constructor by name since it has no name field", () => {
+			// Constructor has no name field, so getItem cannot find it
+			const item = getItem(abi, "constructor", "constructor");
+			expect(item).toBeUndefined();
+		});
+	});
+
+	describe("edge cases", () => {
+		it("works with empty ABI", () => {
+			const item = getItem([], "anything");
+			expect(item).toBeUndefined();
+		});
+
+		it("works with ABI containing only unnamed items", () => {
+			const abiUnnamed = [
+				{
+					type: "fallback",
+					stateMutability: "payable",
+				},
+				{
+					type: "receive",
+					stateMutability: "payable",
+				},
+			] as const;
+
+			const item = getItem(abiUnnamed, "fallback");
+			expect(item).toBeUndefined();
+		});
+
+		it("is case-sensitive", () => {
+			const item1 = getItem(abi, "Transfer");
+			expect(item1).toBeDefined();
+
+			const item2 = getItem(abi, "transfer");
+			expect(item2).toBeDefined();
+			expect(item1?.type).not.toBe(item2?.type);
+		});
+
+		it("handles whitespace in names", () => {
+			const abiWithSpaces = [
+				{
+					type: "function",
+					name: " transfer ",
+					stateMutability: "nonpayable",
+					inputs: [],
+					outputs: [],
+				},
+			] as const;
+
+			const item = getItem(abiWithSpaces, " transfer ");
+			expect(item).toBeDefined();
+		});
+
+		it("handles unicode characters in names", () => {
+			const abiUnicode = [
+				{
+					type: "function",
+					name: "trànsfer",
+					stateMutability: "nonpayable",
+					inputs: [],
+					outputs: [],
+				},
+			] as const;
+
+			const item = getItem(abiUnicode, "trànsfer");
+			expect(item).toBeDefined();
+		});
+
+		it("does not match partial names", () => {
+			const item = getItem(abi, "trans");
+			expect(item).toBeUndefined();
+		});
+
+		it("handles very long ABIs efficiently", () => {
+			const largeAbi = Array.from({ length: 1000 }, (_, i) => ({
+				type: "function",
+				name: `func${i}`,
+				stateMutability: "pure",
+				inputs: [],
+				outputs: [],
+				// biome-ignore lint/suspicious/noExplicitAny: test fixture for large ABI performance
+			})) as any;
+
+			const item = getItem(largeAbi, "func999");
+			expect(item).toBeDefined();
+			expect(item?.name).toBe("func999");
+		});
+	});
+});
+
+```

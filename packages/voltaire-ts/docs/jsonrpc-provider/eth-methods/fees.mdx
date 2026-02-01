@@ -1,0 +1,176 @@
+---
+title: Fee Methods
+description: Gas price and fee estimation methods (4 methods)
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+# Fee Methods
+
+The `eth` namespace provides 4 methods for querying gas prices and fee history to estimate transaction costs.
+
+## Overview
+
+Access fee methods directly on the provider:
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+
+// Get current gas price
+const gasPrice = await provider.eth_gasPrice();
+
+// Get EIP-1559 priority fee
+const priorityFee = await provider.eth_maxPriorityFeePerGas();
+
+// Get historical fee data
+const history = await provider.eth_feeHistory(
+  Quantity(10),    // Block count
+  'latest',        // Newest block
+  [25, 50, 75]     // Percentiles
+);
+```
+
+## Usage Patterns
+
+### Estimate Transaction Costs
+
+Calculate gas costs for legacy transactions:
+
+```typescript
+const gasPrice = await provider.eth_gasPrice();
+const gasLimit = Quantity(21000);
+
+// Total cost in wei
+const cost = BigInt(gasPrice.data) * BigInt(gasLimit);
+```
+
+### Calculate EIP-1559 Fees
+
+Build EIP-1559 transaction fees with historical data:
+
+```typescript
+// Get base fee from latest block
+const block = await provider.eth_getBlockByNumber('latest', false);
+const baseFee = block.data.baseFeePerGas;
+
+// Get suggested priority fee
+const priorityFee = await provider.eth_maxPriorityFeePerGas();
+
+// Set max fees
+const maxPriorityFeePerGas = priorityFee.data;
+const maxFeePerGas = Quantity(
+  BigInt(baseFee) * 2n + BigInt(maxPriorityFeePerGas)
+);
+```
+
+### Monitor Gas Prices
+
+Track fee trends over time:
+
+```typescript
+const history = await provider.eth_feeHistory(
+  Quantity(100),   // Last 100 blocks
+  'latest',
+  [10, 50, 90]    // Low, medium, high
+);
+
+// Analyze fee trends
+const recentFees = history.data.baseFeePerGas.slice(-10);
+const avgBaseFee = recentFees.reduce(
+  (sum, fee) => sum + BigInt(fee),
+  0n
+) / BigInt(recentFees.length);
+```
+
+## Methods
+
+### eth_gasPrice
+
+Get current gas price in wei.
+
+```typescript
+const gasPrice = await provider.eth_gasPrice();
+// Response<Quantity>
+```
+
+**Returns:** Current gas price in wei as a `Quantity`.
+
+**Use Case:** Legacy (non-EIP-1559) transaction fee estimation.
+
+---
+
+### eth_maxPriorityFeePerGas
+
+Get current max priority fee per gas (EIP-1559).
+
+```typescript
+const priorityFee = await provider.eth_maxPriorityFeePerGas();
+// Response<Quantity>
+```
+
+**Returns:** Suggested max priority fee per gas in wei as a `Quantity`.
+
+**Use Case:** EIP-1559 transaction fee calculation. This is the "tip" paid to validators.
+
+<Tip>
+For EIP-1559 transactions, set `maxFeePerGas` to at least `baseFee + maxPriorityFeePerGas` to ensure inclusion.
+</Tip>
+
+---
+
+### eth_feeHistory
+
+Get historical gas fee data for a range of blocks.
+
+```typescript
+const history = await provider.eth_feeHistory(
+  Quantity(10),    // Block count
+  'latest',        // Newest block
+  [25, 50, 75]     // Percentiles
+);
+// Response<FeeHistory>
+```
+
+**Parameters:**
+- `blockCount: Quantity` - Number of blocks to query (max varies by node)
+- `newestBlock: BlockTag | Quantity` - Highest block to query
+- `rewardPercentiles?: number[]` - Priority fee percentiles (0-100)
+
+**Returns:** `FeeHistory` object containing:
+- `oldestBlock: Quantity` - First block in range
+- `baseFeePerGas: Quantity[]` - Base fee per block
+- `gasUsedRatio: number[]` - Fraction of gas limit used
+- `reward?: Quantity[][]` - Priority fees at requested percentiles
+
+**Use Case:** Analyze fee trends, predict optimal gas prices, calculate EIP-1559 fees with historical context.
+
+<Warning>
+The `rewardPercentiles` parameter is only applicable for EIP-1559 blocks. For pre-EIP-1559 blocks, the `reward` field will be empty.
+</Warning>
+
+---
+
+### eth_blobBaseFee
+
+Get current blob base fee for EIP-4844 transactions.
+
+```typescript
+const blobFee = await provider.eth_blobBaseFee();
+// Response<Quantity>
+```
+
+**Returns:** Current blob base fee in wei as a `Quantity`.
+
+**Use Case:** Calculate costs for EIP-4844 blob transactions. Blob fees are separate from execution gas fees.
+
+<Note>
+This method is only available on networks that have activated EIP-4844 (Cancun upgrade). It will error on pre-Cancun networks.
+</Note>
+
+## Related Methods
+
+- [eth_getBlockByNumber](/jsonrpc-provider/eth-methods/index#eth_getblockbynumber) - Get block with base fee
+- [eth_estimateGas](/jsonrpc-provider/eth-methods/index#eth_estimategas) - Estimate gas limit
+- [eth_sendTransaction](/jsonrpc-provider/eth-methods/index#eth_sendtransaction) - Send transaction with fees

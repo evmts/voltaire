@@ -1,0 +1,63 @@
+/**
+ * Tests for docs/primitives/eventlog/getSignature.mdx
+ * Tests the code examples from the EventLog.getSignature() documentation
+ */
+
+import { describe, expect, it } from "vitest";
+
+describe("EventLog getSignature.mdx documentation examples", () => {
+	describe("getSignature() is alias for getTopic0()", () => {
+		it("both methods return the same result", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+
+			const log = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [TRANSFER_SIG, Hash.from("0x" + "11".repeat(32))],
+				data: new Uint8Array([]),
+			});
+
+			// Both equivalent
+			// NOTE: Docs show log.getTopic0() and log.getSignature()
+			// Actual API: EventLog.getTopic0(log) and EventLog.getSignature(log)
+			const sig1 = EventLog.getTopic0(log);
+			const sig2 = EventLog.getSignature(log);
+
+			expect(sig1).toBeDefined();
+			expect(sig2).toBeDefined();
+			expect(Hash.equals(sig1!, sig2!)).toBe(true);
+		});
+	});
+
+	describe("Usage context", () => {
+		it("getSignature emphasizes event signature semantics", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+
+			const log = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [TRANSFER_SIG],
+				data: new Uint8Array([]),
+			});
+
+			// The name "signature" emphasizes that topic0 typically contains
+			// the event signature hash for non-anonymous events
+			const signature = EventLog.getSignature(log);
+			expect(Hash.equals(signature!, TRANSFER_SIG)).toBe(true);
+		});
+	});
+});

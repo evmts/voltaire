@@ -1,0 +1,244 @@
+---
+title: "primitives/ErrorSignature"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/ErrorSignature
+
+# primitives/ErrorSignature
+
+## Type Aliases
+
+### ErrorSignatureLike
+
+> **ErrorSignatureLike** = [`ErrorSignatureType`](#errorsignaturetype) \| `string` \| `Uint8Array`
+
+Defined in: [src/primitives/ErrorSignature/ErrorSignatureType.ts:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/ErrorSignatureType.ts#L8)
+
+***
+
+### ErrorSignatureType
+
+> **ErrorSignatureType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/ErrorSignature/ErrorSignatureType.ts:3](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/ErrorSignatureType.ts#L3)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"ErrorSignature"`
+
+##### length
+
+> `readonly` **length**: `4`
+
+## Variables
+
+### ErrorSignature
+
+> `const` **ErrorSignature**: `object`
+
+Defined in: [src/primitives/ErrorSignature/index.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/index.ts#L54)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+Check if two ErrorSignatures are equal
+
+###### Parameters
+
+###### a
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+###### b
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`ErrorSignatureType`](#errorsignaturetype)
+
+Create ErrorSignature from various input types
+
+###### Parameters
+
+###### value
+
+[`ErrorSignatureLike`](#errorsignaturelike)
+
+###### Returns
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => [`ErrorSignatureType`](#errorsignaturetype)
+
+Create ErrorSignature from hex string
+
+###### Parameters
+
+###### hex
+
+`string`
+
+###### Returns
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+##### fromSignature()
+
+> **fromSignature**: (`signature`) => [`ErrorSignatureType`](#errorsignaturetype)
+
+Compute ErrorSignature from error signature string
+
+###### Parameters
+
+###### signature
+
+`string`
+
+###### Returns
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+##### toHex()
+
+> **toHex**: (`signature`) => `string`
+
+Convert ErrorSignature to hex string
+
+###### Parameters
+
+###### signature
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+###### Returns
+
+`string`
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `4` = `4`
+
+Defined in: [src/primitives/ErrorSignature/ErrorSignatureType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/ErrorSignatureType.ts#L10)
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/ErrorSignature/index.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/index.ts#L49)
+
+Check if two ErrorSignatures are equal
+
+#### Parameters
+
+##### a
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+##### b
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`ErrorSignatureType`](#errorsignaturetype)
+
+Defined in: [src/primitives/ErrorSignature/index.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/index.ts#L21)
+
+Create ErrorSignature from various input types
+
+#### Parameters
+
+##### value
+
+[`ErrorSignatureLike`](#errorsignaturelike)
+
+#### Returns
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`ErrorSignatureType`](#errorsignaturetype)
+
+Defined in: [src/primitives/ErrorSignature/index.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/index.ts#L28)
+
+Create ErrorSignature from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+#### Returns
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+***
+
+### fromSignature()
+
+> **fromSignature**(`signature`): [`ErrorSignatureType`](#errorsignaturetype)
+
+Defined in: [src/primitives/ErrorSignature/index.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/index.ts#L35)
+
+Compute ErrorSignature from error signature string
+
+#### Parameters
+
+##### signature
+
+`string`
+
+#### Returns
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+***
+
+### toHex()
+
+> **toHex**(`signature`): `string`
+
+Defined in: [src/primitives/ErrorSignature/index.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ErrorSignature/index.ts#L42)
+
+Convert ErrorSignature to hex string
+
+#### Parameters
+
+##### signature
+
+[`ErrorSignatureType`](#errorsignaturetype)
+
+#### Returns
+
+`string`

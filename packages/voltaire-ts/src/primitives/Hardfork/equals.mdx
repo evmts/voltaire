@@ -1,0 +1,134 @@
+---
+title: Hardfork.equals
+description: Check if two hardforks are equal (handles aliases)
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/hardfork.ts">
+  Run Hardfork examples in the interactive playground
+</Card>
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+<Tabs>
+
+</Tabs>
+
+## Alias Handling
+
+`equals` correctly handles hardfork aliases:
+
+```typescript
+import { Hardfork } from 'tevm'
+
+const merge = Hardfork.fromString("merge")
+const paris = Hardfork.fromString("paris")
+
+// Both refer to same hardfork
+Hardfork.equals(merge, paris)  // true
+```
+
+### Supported Aliases
+
+| Canonical Name | Alias | Reason |
+|---------------|-------|--------|
+| merge | paris | Consensus layer name |
+| petersburg | constantinoplefix | Alternative name |
+
+## Usage Patterns
+
+### Configuration Validation
+
+Compare user input against expected version:
+
+```typescript
+import * as Hardfork from 'voltaire/primitives/Hardfork'
+
+function validateConfig(config: Config) {
+  const fork = Hardfork.fromString(config.hardfork)
+
+  if (!Hardfork.equals(fork, Hardfork.CANCUN)) {
+    throw new Error(`Expected Cancun, got ${Hardfork.toString(fork)}`)
+  }
+}
+```
+
+### Network Configuration
+
+Check if networks use same hardfork:
+
+```typescript
+import * as Hardfork from 'voltaire/primitives/Hardfork'
+
+function networksCompatible(net1: Network, net2: Network): boolean {
+  const fork1 = Hardfork.fromString(net1.hardfork)
+  const fork2 = Hardfork.fromString(net2.hardfork)
+
+  return Hardfork.equals(fork1, fork2)
+}
+```
+
+### Conditional Logic
+
+Branch based on specific hardfork:
+
+```typescript
+import * as Hardfork from 'voltaire/primitives/Hardfork'
+
+function getConsensusInfo(fork: HardforkType) {
+  if (Hardfork.equals(fork, Hardfork.MERGE)) {
+    return {
+      name: "The Merge",
+      consensus: "Proof of Stake",
+      date: "September 15, 2022"
+    }
+  }
+  // ...
+}
+```
+
+## String Comparison Caveat
+
+**Don't** compare hardfork strings directly with `===`:
+
+```typescript
+import * as Hardfork from 'voltaire/primitives/Hardfork'
+
+const merge = Hardfork.fromString("merge")
+const paris = Hardfork.fromString("paris")
+
+// Bad - fails with aliases
+merge === paris  // false (different strings)
+
+// Good - handles aliases
+Hardfork.equals(merge, paris)  // true (same hardfork)
+```
+
+## Normalization
+
+For storing or comparing, normalize to canonical name:
+
+```typescript
+import * as Hardfork from 'voltaire/primitives/Hardfork'
+
+function normalizeHardfork(input: string): string {
+  const fork = Hardfork.fromString(input)
+  return Hardfork.toString(fork)
+}
+
+normalizeHardfork("merge")  // "merge"
+normalizeHardfork("paris")  // "merge" (canonical)
+normalizeHardfork("Merge")  // "merge" (lowercase)
+```
+
+## Performance
+
+**Time Complexity:** O(1) - Direct comparison
+
+**Typical Time:** ~10-20ns per call
+
+## See Also
+
+- [compare](/primitives/hardfork/compare) - Three-way comparison
+- [toString](/primitives/hardfork/to-string) - Get canonical name

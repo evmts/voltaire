@@ -1,0 +1,51 @@
+---
+title: ForwardRequest
+description: ERC-2771 meta-transaction requests
+---
+
+Meta-transactions via trusted forwarders.
+
+```typescript
+import * as ForwardRequest from 'voltaire-effect/primitives/ForwardRequest'
+import { Effect } from 'effect'
+
+const req = await Effect.runPromise(
+  ForwardRequest.from({
+    from: '0x1234567890123456789012345678901234567890',
+    to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    value: 0n,
+    gas: 100000n,
+    nonce: 0n,
+    deadline: 1700000000n,
+    data: '0xa9059cbb...'
+  })
+)
+
+// Validate and check expiry
+await Effect.runPromise(ForwardRequest.validate(req))
+const expired = ForwardRequest.isExpired(req, BigInt(Date.now()) / 1000n)
+
+// Convert to hex
+const hex = await Effect.runPromise(ForwardRequest.toHex(req))
+```
+
+## Schema
+
+```typescript
+import { ForwardRequestSchema } from 'voltaire-effect/primitives/ForwardRequest'
+import * as Schema from 'effect/Schema'
+
+const req = Schema.decodeSync(ForwardRequestSchema)({
+  from: '0x...', to: '0x...', value: '0',
+  gas: '100000', nonce: '0', deadline: '1700000000', data: '0x'
+})
+```
+
+## Types
+
+- **Input**: string addresses, `bigint|number|string` numerics
+- **Output**: `AddressType` bytes, `bigint` values, `Uint8Array` data
+
+## Errors
+
+Returns `ForwardRequestError` on invalid addresses, negative values, or zero gas.

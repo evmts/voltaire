@@ -1,0 +1,581 @@
+---
+title: Usage Patterns
+description: Common patterns for working with CallData in practice
+---
+
+Common patterns and best practices for working with CallData in production applications.
+
+## Function Call Encoding
+
+### Single Function Calls
+
+<Tabs>
+<Tab title="Property-Based API">
+
+```zig
+import { Abi, Address, TokenBalance } from '@tevm/voltaire';
+
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+}]);
+
+// Property-based encoding (recommended)
+const calldata = abi.transfer.encode(
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  TokenBalance.fromUnits("1", 18)
+);
+```
+
+**Benefits:**
+- Type-safe parameters
+- IDE autocomplete
+- Compile-time validation
+
+</Tab>
+<Tab title="Manual Encoding">
+
+```zig
+import { CallData, Keccak256, Address, Uint256 } from '@tevm/voltaire';
+
+// Compute selector
+const signature = "transfer(address,uint256)";
+const hash = Keccak256.hashString(signature);
+const selector = hash.slice(0, 4);
+
+// Encode parameters manually
+const recipient = Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+const amount = Uint256.from(1000000000000000000n);
+
+const calldata = CallData.concat([
+  selector,
+  recipient.toBytes(),
+  amount.toBytes()
+]);
+```
+
+**Use when:**
+- No ABI available
+- Building custom encoding
+- Performance optimization needed
+
+</Tab>
+</Tabs>
+
+### Dynamic Parameters
+
+<Tabs>
+<Tab title="Arrays">
+
+```zig
+import { Abi, Address } from '@tevm/voltaire';
+
+const abi = Abi([{
+  name: "batchTransfer",
+  type: "function",
+  inputs: [
+    { name: "recipients", type: "address[]" },
+    { name: "amounts", type: "uint256[]" }
+  ]
+}]);
+
+const recipients = [
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+  Address("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"),
+];
+
+const amounts = [
+  TokenBalance.fromUnits("1", 18),
+  TokenBalance.fromUnits("2", 18),
+];
+
+const calldata = abi.batchTransfer.encode(recipients, amounts);
+```
+
+</Tab>
+<Tab title="Structs">
+
+```zig
+const abi = Abi([{
+  name: "swap",
+  type: "function",
+  inputs: [{
+    name: "params",
+    type: "tuple",
+    components: [
+      { name: "tokenIn", type: "address" },
+      { name: "tokenOut", type: "address" },
+      { name: "amountIn", type: "uint256" },
+      { name: "minAmountOut", type: "uint256" },
+      { name: "deadline", type: "uint256" }
+    ]
+  }]
+}]);
+
+const params = {
+  tokenIn: Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  tokenOut: Address("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+  amountIn: TokenBalance.fromUnits("1000", 6),
+  minAmountOut: TokenBalance.fromUnits("0.3", 18),
+  deadline: Uint256.from(Date.now() + 3600000)
+};
+
+const calldata = abi.swap.encode(params);
+```
+
+</Tab>
+</Tabs>
+
+## Function Routing
+
+### Selector Matching
+
+<Tabs>
+<Tab title="Switch Pattern">
+
+```zig
+import { CallData } from '@tevm/voltaire';
+
+const ERC20_SELECTORS = {
+  TRANSFER: "0xa9059cbb",
+  APPROVE: "0x095ea7b3",
+  TRANSFER_FROM: "0x23b872dd",
+  BALANCE_OF: "0x70a08231",
+};
+
+function routeERC20Call(calldata: CallData) {
+  const selector = CallData.getSelector(calldata);
+  const selectorHex = Hex.fromBytes(selector);
+
+  switch (selectorHex) {
+    case ERC20_SELECTORS.TRANSFER:
+      return handleTransfer(calldata);
+    case ERC20_SELECTORS.APPROVE:
+      return handleApprove(calldata);
+    case ERC20_SELECTORS.TRANSFER_FROM:
+      return handleTransferFrom(calldata);
+    case ERC20_SELECTORS.BALANCE_OF:
+      return handleBalanceOf(calldata);
+    default:
+      throw new Error(`Unknown function: ${selectorHex}`);
+  }
+}
+```
+
+</Tab>
+<Tab title="Map Pattern">
+
+```zig
+type CallHandler = (calldata: CallData) => Promise<void>;
+
+const FUNCTION_HANDLERS = new Map<string, CallHandler>([
+  ["0xa9059cbb", handleTransfer],
+  ["0x095ea7b3", handleApprove],
+  ["0x23b872dd", handleTransferFrom],
+  ["0x70a08231", handleBalanceOf],
+]);
+
+async function routeCall(calldata: CallData) {
+  const selector = CallData.getSelector(calldata);
+  const selectorHex = Hex.fromBytes(selector);
+
+  const handler = FUNCTION_HANDLERS.get(selectorHex);
+  if (!handler) {
+    throw new Error(`Unknown function: ${selectorHex}`);
+  }
+
+  return handler(calldata);
+}
+```
+
+</Tab>
+</Tabs>
+
+### Decoding by Selector
+
+```zig
+import { CallData, Abi } from '@tevm/voltaire';
+
+const ERC20_ABI = Abi([
+  {
+    name: "transfer",
+    type: "function",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" }
+    ]
+  },
+  {
+    name: "approve",
+    type: "function",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" }
+    ]
+  }
+]);
+
+function decodeERC20Call(calldata: CallData) {
+  const decoded = CallData.decode(calldata, ERC20_ABI);
+
+  switch (decoded.signature) {
+    case "transfer(address,uint256)": {
+      const [to, amount] = decoded.parameters;
+      return { type: "transfer", to, amount };
+    }
+    case "approve(address,uint256)": {
+      const [spender, amount] = decoded.parameters;
+      return { type: "approve", spender, amount };
+    }
+    default:
+      throw new Error(`Unknown function: ${decoded.signature}`);
+  }
+}
+```
+
+## Multicall Patterns
+
+### Batch Encoding
+
+```zig
+import { CallData, Abi } from '@tevm/voltaire';
+
+const multicallAbi = Abi([{
+  name: "multicall",
+  type: "function",
+  inputs: [
+    { name: "calls", type: "bytes[]" }
+  ]
+}]);
+
+// Encode individual calls
+const call1 = erc20Abi.balanceOf.encode(
+  Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+);
+
+const call2 = erc20Abi.balanceOf.encode(
+  Address("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
+);
+
+const call3 = erc20Abi.transfer.encode(
+  Address("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"),
+  TokenBalance.fromUnits("100", 18)
+);
+
+// Batch into multicall
+const multicallData = multicallAbi.multicall.encode([call1, call2, call3]);
+```
+
+### Decoding Multicall Results
+
+```zig
+function decodeMulticallResults(
+  results: Uint8Array[],
+  expectedTypes: string[]
+): unknown[] {
+  return results.map((result, i) => {
+    const abi = Abi([{
+      name: "result",
+      type: "function",
+      outputs: [{ name: "value", type: expectedTypes[i] }]
+    }]);
+
+    const decoded = CallData.decode(result, abi);
+    return decoded.parameters[0];
+  });
+}
+
+// Usage
+const results = await multicall(multicallData);
+const [balance1, balance2, transferSuccess] = decodeMulticallResults(
+  results,
+  ["uint256", "uint256", "bool"]
+);
+```
+
+## Gas Optimization
+
+### Zero Byte Optimization
+
+CallData costs 4 gas per zero byte, 16 gas per non-zero byte:
+
+```zig
+// Expensive (padding creates non-zero bytes)
+const amount = Uint256.from(1n);
+// Encoded: 0x0000000000000000000000000000000000000000000000000000000000000001
+
+// Consider using smaller types when possible
+const abi = Abi([{
+  name: "transfer",
+  type: "function",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint96" }  // Smaller type
+  ]
+}]);
+```
+
+### Calldata Compression
+
+```zig
+// Pack multiple values into single uint256
+function packAddressAndAmount(addr: Address, amount: bigint): Uint256 {
+  // Address (20 bytes) + Amount (12 bytes) = 32 bytes
+  const addrBigint = BigInt(addr.toHex());
+  const packed = (addrBigint << 96n) | (amount & ((1n << 96n) - 1n));
+  return Uint256.from(packed);
+}
+
+// Unpack on-chain
+// address addr = address(uint160(packed >> 96));
+// uint96 amount = uint96(packed);
+```
+
+## Error Handling
+
+### Validation Before Encoding
+
+```zig
+import { CallData, Address, TokenBalance } from '@tevm/voltaire';
+
+function encodeTransfer(
+  to: string,
+  amount: string,
+  decimals: number
+): CallData {
+  // Validate inputs
+  if (!Address.isValid(to)) {
+    throw new Error(`Invalid address: ${to}`);
+  }
+
+  const recipient = Address(to);
+
+  try {
+    const tokenAmount = TokenBalance.fromUnits(amount, decimals);
+    return abi.transfer.encode(recipient, tokenAmount);
+  } catch (error) {
+    throw new Error(`Invalid amount: ${amount}`);
+  }
+}
+```
+
+### Decoding with Fallback
+
+```zig
+function safeDecodeCallData(
+  calldata: CallData,
+  abi: Abi
+): CallDataDecoded | null {
+  try {
+    return CallData.decode(calldata, abi);
+  } catch (error) {
+    console.warn("Failed to decode calldata:", error);
+    return null;
+  }
+}
+
+// Usage with fallback
+const decoded = safeDecodeCallData(calldata, abi);
+if (decoded) {
+  console.log("Function:", decoded.signature);
+  console.log("Parameters:", decoded.parameters);
+} else {
+  console.log("Raw selector:", CallData.getSelector(calldata));
+}
+```
+
+## Transaction Construction
+
+### Complete Flow
+
+<Tabs>
+<Tab title="TypeScript">
+
+```zig
+import {
+  Transaction, CallData, Address, Abi,
+  TokenBalance, Nonce, GasLimit, Wei, Gwei, ChainId
+} from '@tevm/voltaire';
+
+async function createERC20Transfer(
+  token: Address,
+  to: Address,
+  amount: TokenBalance,
+  signer: Signer
+): Promise<Transaction> {
+  // Encode transfer call
+  const abi = Abi([{
+    name: "transfer",
+    type: "function",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" }
+    ]
+  }]);
+
+  const calldata: CallData = abi.transfer.encode(to, amount);
+
+  // Create transaction
+  const tx = Transaction({
+    type: Transaction.Type.EIP1559,
+    to: token,
+    value: Wei(0),
+    chainId: ChainId(1),
+    nonce: await signer.getNonce(),
+    maxFeePerGas: Gwei(30),
+    maxPriorityFeePerGas: Gwei(2),
+    gasLimit: GasLimit(100000),
+    data: calldata,
+  });
+
+  // Sign and return
+  return signer.sign(tx);
+}
+```
+
+</Tab>
+<Tab title="Zig">
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const CallData = primitives.CallData;
+const Transaction = primitives.Transaction;
+
+pub fn createERC20Transfer(
+    allocator: std.mem.Allocator,
+    token: primitives.Address,
+    to: primitives.Address,
+    amount: primitives.Uint256,
+    signer: *const Signer,
+) !Transaction {
+    // Encode transfer call
+    var calldata = try encodeTransfer(allocator, to, amount);
+    defer calldata.deinit(allocator);
+
+    // Create transaction
+    var tx = Transaction{
+        .type = .EIP1559,
+        .to = token,
+        .value = 0,
+        .chain_id = 1,
+        .nonce = try signer.getNonce(),
+        .max_fee_per_gas = 30_000_000_000,
+        .max_priority_fee_per_gas = 2_000_000_000,
+        .gas_limit = 100_000,
+        .data = calldata.data,
+    };
+
+    // Sign and return
+    return try signer.sign(allocator, &tx);
+}
+```
+
+</Tab>
+</Tabs>
+
+## Testing Patterns
+
+### Mock CallData
+
+```zig
+import { CallData, Address, TokenBalance } from '@tevm/voltaire';
+import { describe, it, expect } from 'vitest';
+
+describe('CallData routing', () => {
+  it('routes transfer correctly', () => {
+    const calldata = abi.transfer.encode(
+      Address("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+      TokenBalance.fromUnits("1", 18)
+    );
+
+    const route = getRoute(calldata);
+    expect(route).toBe('transfer');
+  });
+
+  it('rejects unknown selector', () => {
+    // Create calldata with unknown selector
+    const calldata = CallData.fromHex("0x12345678");
+
+    expect(() => getRoute(calldata)).toThrow('Unknown function');
+  });
+});
+```
+
+### Selector Constants
+
+```zig
+// Define as constants for testing and routing
+export const SELECTORS = {
+  TRANSFER: [0xa9, 0x05, 0x9c, 0xbb] as [number, number, number, number],
+  APPROVE: [0x09, 0x5e, 0xa7, 0xb3] as [number, number, number, number],
+  TRANSFER_FROM: [0x23, 0xb8, 0x72, 0xdd] as [number, number, number, number],
+} as const;
+
+// Usage in tests
+import { SELECTORS } from './constants.js';
+
+it('computes transfer selector correctly', () => {
+  const calldata = abi.transfer.encode(addr, amount);
+  const selector = CallData.getSelector(calldata);
+
+  expect(selector).toEqual(SELECTORS.TRANSFER);
+});
+```
+
+## Memory Management (Zig)
+
+### Proper Cleanup
+
+```zig
+pub fn processCallData(
+    allocator: std.mem.Allocator,
+    calldata: CallData,
+) !void {
+    // Decode owns memory
+    var decoded = try calldata.decode(allocator);
+    defer decoded.deinit(); // Always cleanup
+
+    // Process parameters
+    for (decoded.parameters) |param| {
+        switch (param) {
+            .address => |addr| try handleAddress(addr),
+            .uint256 => |val| try handleUint256(val),
+            else => return error.UnsupportedType,
+        }
+    }
+}
+```
+
+### Arena Allocator Pattern
+
+```zig
+pub fn batchProcessCalls(
+    allocator: std.mem.Allocator,
+    calls: []const CallData,
+) !void {
+    // Use arena for batch processing
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit(); // Free all at once
+
+    const arena_allocator = arena.allocator();
+
+    for (calls) |call| {
+        var decoded = try call.decode(arena_allocator);
+        // No need for individual deinit
+        try processDecoded(decoded);
+    }
+    // Arena cleanup frees everything
+}
+```
+
+## See Also
+
+- [Fundamentals](/primitives/calldata/fundamentals) - How calldata works
+- [Encoding](/primitives/calldata/encoding) - ABI encoding details
+- [Decoded Form](/primitives/calldata/decoded) - CallDataDecoded structure
+- [Transaction](/primitives/transaction) - Building transactions

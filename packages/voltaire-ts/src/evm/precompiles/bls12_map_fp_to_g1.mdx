@@ -1,0 +1,71 @@
+---
+title: BLS12-381 Map Fp to G1 (0x12)
+description: BLS12-381 hash-to-curve mapping to G1 precompile
+---
+
+# BLS12-381 Map Fp to G1
+
+BLS12-381 hash-to-curve mapping from field element to G1 point.
+
+## Overview
+
+The BLS12-381 Map Fp to G1 precompile provides:
+- **Hash-to-Curve**: Map field element to G1 point
+- **Deterministic Mapping**: Same input always gives same output
+- **BLS Signatures**: Used in hash_to_curve for message signing
+- **C Library**: Uses blst for performance
+- **Address**: 0x0000000000000000000000000000000000000012
+- **Since**: Prague (EIP-2537)
+
+**Source**: `src/precompiles/bls12_map_fp_to_g1.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: 64 bytes (field element in F_p)
+- `gas_limit`: Maximum gas available
+
+**Input Format** (64 bytes):
+- Field element u ∈ F_p (64 bytes, big-endian)
+
+**Returns:** 128 bytes (G1 point)
+
+**Errors:** `OutOfGas`, `InvalidInput`
+
+## Gas Costs
+
+**Fixed Cost:** 5500 gas
+
+## Performance
+
+**Native (ReleaseFast)**: ~50-100 μs
+**WASM (ReleaseFast)**: Not supported (uses C library)
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=bls12_map_fp_to_g1
+```
+
+## Related
+
+- [BLS12-381 Map Fp2 to G2](/zig/precompiles/bls12_map_fp2_to_g2/) - Map to G2 (0x13)
+- [BLS12-381 G1 Add](/zig/precompiles/bls12_g1_add/) - G1 addition (0x0B)
+
+## References
+
+- [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) - Precompile for BLS12-381 curve operations
+- [Hash-to-Curve](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve) - Hashing to elliptic curves

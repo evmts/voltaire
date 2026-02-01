@@ -1,0 +1,51 @@
+---
+title: RelayData
+description: GSN relay transaction metadata
+---
+
+Gas Station Network relay data.
+
+```typescript
+import * as RelayData from 'voltaire-effect/primitives/RelayData'
+import { Effect } from 'effect'
+
+const data = await Effect.runPromise(
+  RelayData.from({
+    maxFeePerGas: 1000000000n,
+    maxPriorityFeePerGas: 100000000n,
+    transactionCalldataGasUsed: 21000n,
+    relayWorker: '0x1234567890123456789012345678901234567890',
+    paymaster: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    paymasterData: '0x',
+    clientId: 1n
+  })
+)
+
+// Validate and convert
+await Effect.runPromise(RelayData.validate(data))
+const hex = await Effect.runPromise(RelayData.toHex(data))
+```
+
+## Schema
+
+```typescript
+import { RelayDataSchema } from 'voltaire-effect/primitives/RelayData'
+import * as Schema from 'effect/Schema'
+
+const data = Schema.decodeSync(RelayDataSchema)({
+  maxFeePerGas: '1000000000',
+  maxPriorityFeePerGas: '100000000',
+  transactionCalldataGasUsed: '21000',
+  relayWorker: '0x...',
+  paymaster: '0x...',
+  paymasterData: '0x',
+  clientId: '1'
+})
+```
+
+## Errors
+
+Returns `RelayDataError`:
+- `maxFeePerGas must be non-negative`
+- `maxPriorityFeePerGas cannot exceed maxFeePerGas`
+- `transactionCalldataGasUsed must be non-negative`

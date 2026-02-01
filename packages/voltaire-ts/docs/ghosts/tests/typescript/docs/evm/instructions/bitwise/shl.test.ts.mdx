@@ -1,0 +1,155 @@
+---
+title: '[TS/JS] docs/evm/instructions/bitwise/shl.test.ts'
+source: 'docs/evm/instructions/bitwise/shl.test.ts'
+---
+
+> Auto-generated from test file: docs/evm/instructions/bitwise/shl.test.ts
+
+```typescript
+/**
+ * Test file for SHL (0x1b) documentation examples
+ * Tests examples from shl.mdx
+ *
+ * NOTE: Stack order is [bottom, ..., top] - pop() returns the last element.
+ * For SHL(shift, value): stack should be [value, shift] so pop() returns shift first.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("SHL (0x1b) - Documentation Examples", async () => {
+	const { SHL } = await import("../../../../src/evm/bitwise/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	const MAX = (1n << 256n) - 1n;
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Basic Left Shift", () => {
+		it("shifts 0xFF left by 8 bits", () => {
+			const frame = createFrame([0xffn, 8n]);
+			const err = SHL(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0xff00n]);
+		});
+	});
+
+	describe("Multiply by Power of 2", () => {
+		it("5 << 3 = 5 * 8 = 40", () => {
+			const frame = createFrame([5n, 3n]);
+			SHL(frame);
+
+			expect(frame.stack).toEqual([40n]);
+		});
+	});
+
+	describe("Zero Shift (Identity)", () => {
+		it("shift by 0 returns original value", () => {
+			const value = 0x123456n;
+			const frame = createFrame([value, 0n]);
+			SHL(frame);
+
+			expect(frame.stack).toEqual([value]);
+		});
+	});
+
+	describe("Maximum Shift (Overflow)", () => {
+		it("shift >= 256 results in 0", () => {
+			const value = 0xffffffffn;
+			const frame = createFrame([value, 256n]);
+			SHL(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("large shift amount results in 0", () => {
+			for (const shift of [256n, 257n, 1000n]) {
+				const frame = createFrame([0xffffn, shift]);
+				SHL(frame);
+				expect(frame.stack).toEqual([0n]);
+			}
+		});
+	});
+
+	describe("Partial Overflow", () => {
+		it("high bits are discarded", () => {
+			// Shift MAX by 4: lower 4 bits become 0, top 4 bits discarded
+			const frame = createFrame([MAX, 4n]);
+			SHL(frame);
+
+			// Result: all 1s except lower 4 bits which are 0
+			const expected = MAX - 0xfn;
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Shift to MSB", () => {
+		it("1 << 255 shifts to MSB position", () => {
+			const frame = createFrame([1n, 255n]);
+			SHL(frame);
+
+			const expected = 1n << 255n;
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Zero Value", () => {
+		it("shifting zero yields zero", () => {
+			const frame = createFrame([0n, 100n]);
+			SHL(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Shift by 1 (Double)", () => {
+		it("shifts left by 1 doubles the value", () => {
+			const frame = createFrame([42n, 1n]);
+			SHL(frame);
+
+			expect(frame.stack).toEqual([84n]);
+		});
+	});
+
+	describe("Large Value, Small Shift", () => {
+		it("MAX shifted by 1 loses MSB", () => {
+			const frame = createFrame([MAX, 1n]);
+			SHL(frame);
+
+			// All bits except LSB (which is now 0)
+			expect(frame.stack).toEqual([MAX - 1n]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("returns StackUnderflow with insufficient stack", () => {
+			const frame = createFrame([8n]);
+			const err = SHL(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+
+		it("returns OutOfGas when insufficient gas", () => {
+			const frame = createFrame([0xffn, 8n], 2n);
+			const err = SHL(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+			expect(frame.gasRemaining).toBe(0n);
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 3 gas (GasFastestStep)", () => {
+			const frame = createFrame([0xffn, 8n], 100n);
+			const err = SHL(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(97n);
+		});
+	});
+});
+
+```

@@ -1,0 +1,18 @@
+import XCTest
+@testable import Voltaire
+
+final class HashEdgeTests: XCTestCase {
+    func testInitInvalidBytesLength() {
+        XCTAssertThrowsError(try Hash(bytes: []))
+        XCTAssertThrowsError(try Hash(bytes: [0x00]))
+        XCTAssertThrowsError(try Hash(bytes: Array(repeating: 0, count: 31)))
+        XCTAssertThrowsError(try Hash(bytes: Array(repeating: 0, count: 33)))
+    }
+
+    func testUnicodeInputHashing() {
+        // Non-ASCII content should still hash to 32 bytes
+        let hash = Keccak256.hash("👋🏽 hello 世界")
+        XCTAssertEqual(hash.bytes.count, 32)
+    }
+}
+

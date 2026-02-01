@@ -1,0 +1,127 @@
+---
+title: AES-GCM
+description: Authenticated symmetric encryption
+---
+
+AES-GCM encryption with integrity verification and optional AAD.
+
+## Quick Start
+
+```typescript
+import { AesGcmService, AesGcmLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const aes = yield* AesGcmService
+    const key = yield* aes.generateKey(256)
+    const nonce = yield* aes.generateNonce()
+    const ciphertext = yield* aes.encrypt(key, plaintext, nonce)
+    const decrypted = yield* aes.decrypt(key, ciphertext, nonce)
+    return decrypted
+  }).pipe(Effect.provide(AesGcmLive))
+)
+```
+
+## Encrypting Private Keys
+
+Secure storage of private keys for wallet backup:
+
+```typescript
+import { AesGcmService, AesGcmLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+import * as Keccak256 from 'voltaire-effect/crypto/Keccak256'
+
+const encryptPrivateKey = (privateKey: Uint8Array, password: string) =>
+  Effect.gen(function* () {
+    const aes = yield* AesGcmService
+    const keccak = yield* Keccak256.KeccakService
+    
+    // Derive key from password (simple example - use PBKDF2/scrypt in production)
+    const passwordBytes = new TextEncoder().encode(password)
+    const key = yield* keccak.hash(passwordBytes) // 32 bytes for AES-256
+    
+    const nonce = yield* aes.generateNonce()
+    const ciphertext = yield* aes.encrypt(key, privateKey, nonce)
+    
+    // Store nonce + ciphertext together
+    const encrypted = new Uint8Array(nonce.length + ciphertext.length)
+    encrypted.set(nonce, 0)
+    encrypted.set(ciphertext, nonce.length)
+    
+    return encrypted
+  })
+
+const EncryptionLayer = Layer.mergeAll(AesGcmLive, Keccak256.KeccakLive)
+// Usage: encryptPrivateKey(pk, pwd).pipe(Effect.provide(EncryptionLayer))
+```
+
+## Additional Authenticated Data
+
+Bind ciphertext to unencrypted metadata:
+
+```typescript
+const aad = new TextEncoder().encode('metadata')
+const ciphertext = yield* aes.encrypt(key, plaintext, nonce, aad)
+const decrypted = yield* aes.decrypt(key, ciphertext, nonce, aad)
+```
+
+## Encrypt JSON Data
+
+```typescript
+const encryptWalletData = (data: object, key: Uint8Array) =>
+  Effect.gen(function* () {
+    const aes = yield* AesGcmService
+    const nonce = yield* aes.generateNonce()
+    const plaintext = new TextEncoder().encode(JSON.stringify(data))
+    const ciphertext = yield* aes.encrypt(key, plaintext, nonce)
+    return { nonce, ciphertext }
+  }).pipe(Effect.provide(AesGcmLive))
+
+const decryptWalletData = (ciphertext: Uint8Array, nonce: Uint8Array, key: Uint8Array) =>
+  Effect.gen(function* () {
+    const aes = yield* AesGcmService
+    const plaintext = yield* aes.decrypt(key, ciphertext, nonce)
+    return JSON.parse(new TextDecoder().decode(plaintext))
+  }).pipe(Effect.provide(AesGcmLive))
+```
+
+## Testing
+
+```typescript
+import { AesGcmTest } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(AesGcmTest))
+```
+
+## Error Handling
+
+```typescript
+const program = Effect.gen(function* () {
+  const aes = yield* AesGcmService
+  return yield* aes.decrypt(key, ciphertext, nonce)
+}).pipe(
+  Effect.provide(AesGcmLive),
+  Effect.catchAll((error) => {
+    // Decryption failed - wrong key, corrupted data, or tampered ciphertext
+    return Effect.succeed(null)
+  })
+)
+```
+
+## Interface
+
+```typescript
+interface AesGcmServiceShape {
+  readonly encrypt: (key: Uint8Array, plaintext: Uint8Array, nonce: Uint8Array, aad?: Uint8Array) => Effect.Effect<Uint8Array, Error>
+  readonly decrypt: (key: Uint8Array, ciphertext: Uint8Array, nonce: Uint8Array, aad?: Uint8Array) => Effect.Effect<Uint8Array, Error>
+  readonly generateKey: (bits?: 128 | 256) => Effect.Effect<Uint8Array, Error>
+  readonly generateNonce: () => Effect.Effect<Uint8Array, Error>
+}
+```
+
+## Security Notes
+
+- **Never reuse nonces** with the same key - this completely breaks security
+- **Use 256-bit keys** for maximum security
+- **Store nonces with ciphertext** - they don't need to be secret but must be unique
+- **AAD is not encrypted** but is authenticated - tampering with it invalidates decryption

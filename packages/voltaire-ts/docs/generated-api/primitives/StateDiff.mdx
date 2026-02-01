@@ -1,0 +1,440 @@
+---
+title: "primitives/StateDiff"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/StateDiff
+
+# primitives/StateDiff
+
+## Type Aliases
+
+### AccountDiff
+
+> **AccountDiff** = `object`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L37)
+
+Account state changes during transaction execution
+
+Captures all state modifications for a single account.
+Used extensively by debug_traceTransaction with prestateTracer.
+
+#### Properties
+
+##### balance?
+
+> `readonly` `optional` **balance**: [`BalanceChange`](#balancechange)
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L38)
+
+##### code?
+
+> `readonly` `optional` **code**: [`CodeChange`](#codechange)
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L40)
+
+##### nonce?
+
+> `readonly` `optional` **nonce**: [`NonceChange`](#noncechange)
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L39)
+
+##### storage?
+
+> `readonly` `optional` **storage**: `ReadonlyMap`\<[`StorageKeyType`](State.mdx#storagekeytype), \{ `from`: [`StorageValueType`](StorageValue.mdx#storagevaluetype) \| `null`; `to`: [`StorageValueType`](StorageValue.mdx#storagevaluetype) \| `null`; \}\>
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L41)
+
+***
+
+### BalanceChange
+
+> **BalanceChange** = `object`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L10)
+
+Balance change (before/after)
+
+#### Properties
+
+##### from
+
+> `readonly` **from**: [`WeiType`](../index/namespaces/BrandedWei.mdx#weitype) \| `null`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L11)
+
+##### to
+
+> `readonly` **to**: [`WeiType`](../index/namespaces/BrandedWei.mdx#weitype) \| `null`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L12)
+
+***
+
+### CodeChange
+
+> **CodeChange** = `object`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L26)
+
+Code change (before/after)
+
+#### Properties
+
+##### from
+
+> `readonly` **from**: `Uint8Array` \| `null`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L27)
+
+##### to
+
+> `readonly` **to**: `Uint8Array` \| `null`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L28)
+
+***
+
+### NonceChange
+
+> **NonceChange** = `object`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L18)
+
+Nonce change (before/after)
+
+#### Properties
+
+##### from
+
+> `readonly` **from**: [`NonceType`](Nonce.mdx#noncetype) \| `null`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L19)
+
+##### to
+
+> `readonly` **to**: [`NonceType`](Nonce.mdx#noncetype) \| `null`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L20)
+
+***
+
+### StateDiffType
+
+> **StateDiffType** = `object`
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:71](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L71)
+
+Complete state changes across all accounts
+
+Represents full state diff from debug_traceTransaction prestateTracer.
+Maps addresses to their account-level changes.
+
+#### Example
+
+```typescript
+const stateDiff: StateDiffType = {
+  accounts: new Map([
+    [address1, {
+      balance: { from: oldBalance, to: newBalance },
+      nonce: { from: 0n, to: 1n },
+      storage: new Map([
+        [key, { from: null, to: value }]
+      ])
+    }]
+  ])
+};
+```
+
+#### Properties
+
+##### accounts
+
+> `readonly` **accounts**: `ReadonlyMap`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>
+
+Defined in: [src/primitives/StateDiff/StateDiffType.ts:75](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/StateDiffType.ts#L75)
+
+Map of account addresses to their state changes
+
+## Variables
+
+### StateDiff
+
+> `const` **StateDiff**: `object`
+
+Defined in: [src/primitives/StateDiff/index.ts:59](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/index.ts#L59)
+
+#### Type Declaration
+
+##### from()
+
+> **from**: (`value`) => [`StateDiffType`](#statedifftype) = `_from`
+
+Create StateDiff from account changes
+
+###### Parameters
+
+###### value
+
+Account changes map, array, or object
+
+`Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\> | \[[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\][] | \{ `accounts`: `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>; \}
+
+###### Returns
+
+[`StateDiffType`](#statedifftype)
+
+StateDiff
+
+###### Example
+
+```typescript
+const diff = StateDiff.from(new Map([[address, { balance: { from: 0n, to: 100n } }]]));
+const diff2 = StateDiff.from([[address, { nonce: { from: 0n, to: 1n } }]]);
+const diff3 = StateDiff.from({ accounts: accountsMap });
+```
+
+##### getAccount()
+
+> **getAccount**: (`diff`, `address`) => [`AccountDiff`](#accountdiff) \| `undefined`
+
+###### Parameters
+
+###### diff
+
+[`StateDiffType`](#statedifftype) | `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+[`AccountDiff`](#accountdiff) \| `undefined`
+
+##### getAddresses()
+
+> **getAddresses**: (`diff`) => [`AddressType`](Address.mdx#addresstype)[]
+
+###### Parameters
+
+###### diff
+
+[`StateDiffType`](#statedifftype) | `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>
+
+###### Returns
+
+[`AddressType`](Address.mdx#addresstype)[]
+
+##### isEmpty()
+
+> **isEmpty**: (`diff`) => `boolean`
+
+###### Parameters
+
+###### diff
+
+[`StateDiffType`](#statedifftype) | `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>
+
+###### Returns
+
+`boolean`
+
+## Functions
+
+### \_getAccount()
+
+> **\_getAccount**(`diff`, `address`): [`AccountDiff`](#accountdiff) \| `undefined`
+
+Defined in: [src/primitives/StateDiff/getAccount.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/getAccount.js#L16)
+
+Get account diff for a specific address
+
+#### Parameters
+
+##### diff
+
+[`StateDiffType`](#statedifftype)
+
+State diff
+
+##### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+Address to look up
+
+#### Returns
+
+[`AccountDiff`](#accountdiff) \| `undefined`
+
+Account diff or undefined
+
+#### Example
+
+```typescript
+const accountDiff = StateDiff.getAccount(diff, address);
+if (accountDiff?.balance) {
+  console.log(`Balance: ${accountDiff.balance.from} -> ${accountDiff.balance.to}`);
+}
+```
+
+***
+
+### \_getAddresses()
+
+> **\_getAddresses**(`diff`): [`AddressType`](Address.mdx#addresstype)[]
+
+Defined in: [src/primitives/StateDiff/getAddresses.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/getAddresses.js#L15)
+
+Get all addresses with state changes
+
+#### Parameters
+
+##### diff
+
+[`StateDiffType`](#statedifftype)
+
+State diff
+
+#### Returns
+
+[`AddressType`](Address.mdx#addresstype)[]
+
+Array of addresses
+
+#### Example
+
+```typescript
+const addresses = StateDiff.getAddresses(diff);
+for (const addr of addresses) {
+  console.log(`Account ${Address.toHex(addr)} changed`);
+}
+```
+
+***
+
+### \_isEmpty()
+
+> **\_isEmpty**(`diff`): `boolean`
+
+Defined in: [src/primitives/StateDiff/isEmpty.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/isEmpty.js#L14)
+
+Check if state diff has any changes
+
+#### Parameters
+
+##### diff
+
+[`StateDiffType`](#statedifftype)
+
+State diff
+
+#### Returns
+
+`boolean`
+
+True if no accounts have changes
+
+#### Example
+
+```typescript
+if (!StateDiff.isEmpty(diff)) {
+  console.log("State was modified");
+}
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`StateDiffType`](#statedifftype)
+
+Defined in: [src/primitives/StateDiff/from.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/from.js#L14)
+
+Create StateDiff from account changes
+
+#### Parameters
+
+##### value
+
+Account changes map, array, or object
+
+`Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\> | \[[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\][] | \{ `accounts`: `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>; \}
+
+#### Returns
+
+[`StateDiffType`](#statedifftype)
+
+StateDiff
+
+#### Example
+
+```typescript
+const diff = StateDiff.from(new Map([[address, { balance: { from: 0n, to: 100n } }]]));
+const diff2 = StateDiff.from([[address, { nonce: { from: 0n, to: 1n } }]]);
+const diff3 = StateDiff.from({ accounts: accountsMap });
+```
+
+***
+
+### getAccount()
+
+> **getAccount**(`diff`, `address`): [`AccountDiff`](#accountdiff) \| `undefined`
+
+Defined in: [src/primitives/StateDiff/index.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/index.ts#L18)
+
+#### Parameters
+
+##### diff
+
+[`StateDiffType`](#statedifftype) | `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>
+
+##### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+[`AccountDiff`](#accountdiff) \| `undefined`
+
+***
+
+### getAddresses()
+
+> **getAddresses**(`diff`): [`AddressType`](Address.mdx#addresstype)[]
+
+Defined in: [src/primitives/StateDiff/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/index.ts#L31)
+
+#### Parameters
+
+##### diff
+
+[`StateDiffType`](#statedifftype) | `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>
+
+#### Returns
+
+[`AddressType`](Address.mdx#addresstype)[]
+
+***
+
+### isEmpty()
+
+> **isEmpty**(`diff`): `boolean`
+
+Defined in: [src/primitives/StateDiff/index.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateDiff/index.ts#L43)
+
+#### Parameters
+
+##### diff
+
+[`StateDiffType`](#statedifftype) | `Map`\<[`AddressType`](Address.mdx#addresstype), [`AccountDiff`](#accountdiff)\>
+
+#### Returns
+
+`boolean`

@@ -1,0 +1,95 @@
+---
+title: Contract Call Methods
+description: Execute contract calls, estimate gas, and simulate transactions
+---
+
+<Warning>
+TypeScript-first: In Zig, build the same JSON-RPC payloads with `std.json` and POST with `std.http.Client`. Use `primitives.AbiEncoding` to encode `data` and decode results.
+</Warning>
+
+# Contract Call Methods
+
+Methods for executing contract calls and transaction simulations.
+
+## eth_call
+
+Execute a read-only contract call without creating a transaction.
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+
+pub fn buildEthCall(allocator: std.mem.Allocator, from: []const u8, to: []const u8, data: []const u8) ![]u8 {
+    var s = std.json.Stringify.init(allocator);
+    defer s.deinit();
+    try s.beginObject();
+    try s.field("jsonrpc", "2.0");
+    try s.field("id", 1);
+    try s.field("method", "eth_call");
+    try s.field("params", .{ .{ .from = from, .to = to, .data = data }, "latest" });
+    try s.endObject();
+    return allocator.dupe(u8, s.buf.*);
+}
+
+// Example: balanceOf(address)
+pub fn balanceOfCalldata(allocator: std.mem.Allocator, owner_hex: []const u8) ![]u8 {
+    const func = Abi.FunctionDefinition{
+        .name = "balanceOf",
+        .inputs = &[_]Abi.AbiType{ .address },
+        .outputs = &[_]Abi.AbiType{ .uint256 },
+        .state_mutability = .view,
+    };
+    const owner = try primitives.Address.fromHex(owner_hex);
+    const args = [_]Abi.AbiValue{ Abi.addressValue(owner) };
+    return try func.encode_params(allocator, &args);
+}
+
+// Decode uint256 output
+pub fn decodeUint256(allocator: std.mem.Allocator, result_bytes: []const u8) !u256 {
+    const values = try Abi.decodeFunctionResult(allocator, result_bytes, &[_]Abi.AbiType{ .uint256 });
+    defer allocator.free(values);
+    return values[0].uint256;
+}
+```
+
+## eth_estimateGas
+
+Estimate gas required for a transaction.
+
+```zig
+// {"method":"eth_estimateGas","params":[{"from":"0x...","to":"0x...","value":"0xDE0B6B3A7640000","data":"0x..."}]}
+```
+
+### Estimating with Buffer Pattern
+
+```zig
+// parse quantity hex → u256, then add 10–20% buffer
+```
+
+## eth_createAccessList
+
+Generate an access list for a transaction (EIP-2930).
+
+```zig
+// {"method":"eth_createAccessList","params":[{"from":"0x...","to":"0x...","data":"0x..."},"latest"]}
+```
+
+## eth_simulateV1
+
+Simulate multiple transactions in sequence (EIP-not-yet-finalized).
+
+```zig
+// {"method":"eth_simulateV1","params":[{"blockOverrides":{...},"calls":[{"from":"0x...","to":"0x...","data":"0x..."}]} , true]}
+```
+
+<Warning>
+`eth_simulateV1` comes from a draft EIP and may change; not all providers support it.
+</Warning>
+
+## Related
+
+- [State Query Methods](/jsonrpc-provider/eth-methods/state)
+- [Transaction Methods](/jsonrpc-provider/eth-methods/transactions)
+- [Usage Patterns](/jsonrpc-provider/usage-patterns)
+- [Error Handling](/jsonrpc-provider/error-handling)

@@ -1,0 +1,102 @@
+---
+title: State Query Methods
+description: Query Ethereum state with eth_getBalance, eth_getCode, eth_getStorageAt, eth_getProof
+---
+
+<Warning>
+TypeScript-first: In Zig, build these JSON-RPC payloads with `std.json` and POST via `std.http.Client`. Quantities are hex strings.
+</Warning>
+
+State methods query account balances, contract bytecode, storage, and Merkle proofs at specific block heights.
+
+## eth_getBalance
+
+Get ether balance of an address.
+
+```zig
+// {"method":"eth_getBalance","params":["0xADDRESS","latest"]}
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```zig
+// Parse balance hex into u256 after request
+```
+
+## eth_getCode
+
+Get contract bytecode at an address.
+
+```zig
+// {"method":"eth_getCode","params":["0xADDRESS","latest"]}
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```zig
+// If result != "0x" then address has code (contract)
+```
+
+## eth_getStorageAt
+
+Get value from a contract storage slot.
+
+```zig
+// {"method":"eth_getStorageAt","params":["0xADDRESS","0x0","latest"]}
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `position: Quantity` - Storage slot
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```zig
+// Build multiple eth_getStorageAt requests by hex-encoding slot numbers
+```
+
+## eth_getProof
+
+Get Merkle proof for account and storage values.
+
+```zig
+// {"method":"eth_getProof","params":["0xADDRESS",["0x0","0x1"],"latest"]}
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `storageKeys: Quantity[]` - Storage slots to prove
+- `blockTag: BlockTag` - Block to query
+
+**Usage:**
+```zig
+// Response contains accountProof (Hex[]), storageProof entries, and account fields
+```
+
+**Proof structure:**
+```zig
+// Proof object fields: address, accountProof[], balance, codeHash, nonce, storageHash, storageProof[]
+```
+
+## Common Patterns
+
+### Check account type
+```zig
+// Parallel requests to eth_getBalance and eth_getCode; check code != "0x" to detect contracts
+```
+
+### Verify state proof
+```zig
+// Fetch proof then stateRoot via eth_getBlockByNumber and verify per your proof verifier
+```
+
+### Read contract state
+```zig
+// Batch multiple eth_getStorageAt requests and collect slot->hex mapping
+```

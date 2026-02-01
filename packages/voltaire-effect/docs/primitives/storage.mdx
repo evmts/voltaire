@@ -1,0 +1,20 @@
+---
+title: Storage
+description: 32-byte EVM storage slot identifiers
+---
+
+```typescript
+import { Storage } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+const slot = yield* Storage.from(0n)
+const slotFromHex = yield* Storage.from('0x0000...0001')
+const slotFromNumber = yield* Storage.from(1)
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(input) => Effect<StorageSlotType, StorageError>` |
+| `StorageSlotSchema` | Accepts bigint, number, string, Uint8Array |

@@ -1,0 +1,198 @@
+---
+title: Error Handling
+description: Composable error handling patterns
+---
+
+## Catch Specific Errors
+
+```typescript
+import { Effect, Schedule, Layer } from 'effect'
+import { getBalance, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* getBalance('0x...', 'latest')
+}).pipe(
+  withTimeout('5 seconds'),
+  Effect.catchTags({
+    TransportError: () => Effect.succeed(0n),
+    ProviderResponseError: () => Effect.succeed(0n)
+  }),
+  Effect.provide(ProviderLayer)
+)
+```
+
+## Handle Multiple Error Types
+
+```typescript
+import { Layer } from 'effect'
+import { Contract, ContractCallError, ContractWriteError, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose all layers first
+const TransportLayer = HttpTransport({ url: 'https://...' })
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const SignerLayer = Layer.mergeAll(
+  Signer.Live,
+  LocalAccount(privateKey),
+  ProviderLayer
+)
+
+const program = Effect.gen(function* () {
+  const token = yield* Contract(tokenAddress, erc20Abi)
+  const balance = yield* token.read.balanceOf(userAddress)
+  const txHash = yield* token.write.transfer(recipient, amount)
+  return { balance, txHash }
+}).pipe(
+  Effect.catchTags({
+    ContractCallError: () => Effect.fail(new Error('Read failed')),
+    ContractWriteError: () => Effect.fail(new Error('Write failed'))
+  }),
+  Effect.provide(SignerLayer)
+)
+```
+
+## Retry with Backoff
+
+```typescript
+import { Effect, Schedule, Layer } from 'effect'
+import { getBlockNumber, Provider, HttpTransport, withRetrySchedule } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* getBlockNumber()
+}).pipe(
+  withRetrySchedule(Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(5))),
+  Effect.provide(ProviderLayer)
+)
+```
+
+## Timeout
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getBlock, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* getBlock({ blockTag: 'latest', includeTransactions: true })
+}).pipe(
+  withTimeout('10 seconds'),
+  Effect.catchTag('TimeoutException', () => Effect.succeed(null)),
+  Effect.provide(ProviderLayer)
+)
+```
+
+## Fallback RPC
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getBlockNumber, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers for each provider
+const PrimaryLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
+const BackupLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const primary = Effect.gen(function* () {
+  return yield* getBlockNumber()
+}).pipe(
+  withTimeout('3 seconds'),
+  Effect.provide(PrimaryLayer)
+)
+
+const backup = Effect.gen(function* () {
+  return yield* getBlockNumber()
+}).pipe(Effect.provide(BackupLayer))
+
+const program = primary.pipe(Effect.orElse(() => backup))
+```
+
+## Graceful Degradation
+
+```typescript
+import { Effect, Option, Layer } from 'effect'
+import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
+const program = Effect.gen(function* () {
+  const balance = yield* getBalance(address, 'latest').pipe(
+    Effect.map(Option.some),
+    Effect.catchAll(() => Effect.succeed(Option.none()))
+  )
+
+  return { address, balance: Option.getOrElse(balance, () => 0n) }
+}).pipe(Effect.provide(ProviderLayer))
+```
+
+## Custom Error Types
+
+```typescript
+import { Effect, Data, Layer } from 'effect'
+import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
+
+class InsufficientBalance extends Data.TaggedError('InsufficientBalance')<{
+  readonly required: bigint
+  readonly available: bigint
+}> {}
+
+const address = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+const requiredAmount = 1_000_000_000_000_000_000n  // 1 ETH
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+)
+
+const program = Effect.gen(function* () {
+  const balance = yield* getBalance(address, 'latest')
+
+  if (balance < requiredAmount) {
+    return yield* Effect.fail(new InsufficientBalance({ required: requiredAmount, available: balance }))
+  }
+  return balance
+}).pipe(
+  Effect.catchTag('InsufficientBalance', (e) => Effect.succeed(e.available)),
+  Effect.provide(ProviderLayer)
+)
+```
+
+## Inspect Exit
+
+```typescript
+import { Effect, Exit } from 'effect'
+
+const exit = await Effect.runPromiseExit(program)
+
+Exit.match(exit, {
+  onSuccess: (balance) => console.log('Balance:', balance),
+  onFailure: (cause) => console.error('Error:', cause)
+})
+```
+
+## See Also
+
+- [Error Handling Concepts](/concepts/error-handling) — Typed error patterns
+- [Troubleshooting](/troubleshooting) — Common issues and solutions
+- [Debugging](/guides/debugging) — Debug Effect programs
+- [Testing](/testing) — Mock services for tests
+- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — Official Effect docs

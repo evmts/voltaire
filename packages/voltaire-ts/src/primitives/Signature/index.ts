@@ -1,0 +1,103 @@
+// Type exports
+
+export * from "./constants.js";
+
+// Export errors and constants
+export * from "./errors.js";
+export type {
+	SignatureAlgorithm,
+	SignatureType,
+} from "./SignatureType.js";
+
+// Import all functions
+import { equals } from "./equals.js";
+import { from } from "./from.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromCompact } from "./fromCompact.js";
+import { fromDER } from "./fromDER.js";
+import { fromEd25519 } from "./fromEd25519.js";
+import { fromHex } from "./fromHex.js";
+import { fromP256 } from "./fromP256.js";
+import { fromRpc } from "./fromRpc.js";
+import { fromSecp256k1 } from "./fromSecp256k1.js";
+import { fromTuple } from "./fromTuple.js";
+import { getAlgorithm } from "./getAlgorithm.js";
+import { getR } from "./getR.js";
+import { getS } from "./getS.js";
+import { getV } from "./getV.js";
+import { is } from "./is.js";
+import { isCanonical } from "./isCanonical.js";
+import { isSignature } from "./isSignature.js";
+import { normalize } from "./normalize.js";
+import { toBytes } from "./toBytes.js";
+import { toCompact } from "./toCompact.js";
+import { toDER } from "./toDER.js";
+import { toHex } from "./toHex.js";
+import { toRpc } from "./toRpc.js";
+import { toTuple } from "./toTuple.js";
+import { verify } from "./verify.js";
+
+// Export individual functions
+export {
+	from,
+	fromBytes,
+	fromSecp256k1,
+	fromP256,
+	fromEd25519,
+	fromCompact,
+	fromDER,
+	fromHex,
+	fromRpc,
+	fromTuple,
+	toBytes,
+	toCompact,
+	toDER,
+	toHex,
+	toRpc,
+	toTuple,
+	getAlgorithm,
+	getR,
+	getS,
+	getV,
+	isCanonical,
+	normalize,
+	verify,
+	is,
+	isSignature,
+	equals,
+};
+
+// Default export for dynamic imports
+const Signature = {
+	from,
+	fromBytes,
+	fromSecp256k1,
+	fromP256,
+	fromEd25519,
+	fromCompact,
+	fromDER,
+	fromHex,
+	fromRpc,
+	fromTuple,
+	toBytes,
+	toCompact,
+	toDER,
+	toHex,
+	toRpc,
+	toTuple,
+	getAlgorithm,
+	getR,
+	getS,
+	getV,
+	isCanonical,
+	normalize,
+	verify,
+	is,
+	isSignature,
+	equals,
+};
+
+export default Signature;
+
+// Namespace export for tree-shakable API
+export { Signature };

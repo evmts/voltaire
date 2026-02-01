@@ -1,0 +1,305 @@
+---
+title: Block Methods
+description: Query blocks, receipts, and transaction counts (8 methods)
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+# Block Methods
+
+8 methods for querying block data, receipts, and transaction counts.
+
+## Overview
+
+Block methods provide access to block headers, full blocks, transaction receipts, and metadata. Use these methods to query blockchain state at specific block heights or hashes.
+
+## Methods
+
+<Accordion title="eth_blockNumber">
+
+Get the most recent block number.
+
+**Returns:** `Quantity`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
+
+console.log('Current block:', blockNumber);
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockByNumber">
+
+Get block by number with full transactions or hashes.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query (`'latest'`, `'earliest'`, `'pending'`, or block number) |
+| `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
+
+**Returns:** `Block`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+// Get latest block with full transaction objects
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', true));
+
+console.log('Block number:', block.number);
+console.log('Transaction count:', block.transactions.length);
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockByHash">
+
+Get block by hash with full transactions or hashes.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+| `fullTransactions` | `boolean` | `true` for full tx objects, `false` for hashes only |
+
+**Returns:** `Block`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const blockHash = Keccak256.from('0x...');
+
+const block = await provider.request(Rpc.Eth.GetBlockByHashRequest(blockHash, false));
+
+console.log('Block:', block);
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockReceipts">
+
+Get all transaction receipts for a block.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `TransactionReceipt[]`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
+
+console.log('Receipts:', receipts.length);
+receipts.forEach((receipt, i) => {
+  console.log(`TX ${i} status:`, receipt.status);
+});
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockTransactionCountByHash">
+
+Get transaction count in a block by hash.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+
+**Returns:** `Quantity`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const blockHash = Keccak256.from('0x...');
+
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByHashRequest(blockHash));
+
+console.log('Transaction count:', count);
+```
+
+</Accordion>
+
+<Accordion title="eth_getBlockTransactionCountByNumber">
+
+Get transaction count in a block by number.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `Quantity`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByNumberRequest('latest'));
+
+console.log('Transaction count:', count);
+```
+
+</Accordion>
+
+<Accordion title="eth_getUncleCountByBlockHash">
+
+Get uncle count for a block by hash.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockHash` | `Hash` | Block hash to query |
+
+**Returns:** `Quantity`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const blockHash = Keccak256.from('0x...');
+
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockHashRequest(blockHash));
+
+console.log('Uncle count:', count);
+```
+
+<Note>
+Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge). This method returns 0 for post-merge blocks.
+</Note>
+
+</Accordion>
+
+<Accordion title="eth_getUncleCountByBlockNumber">
+
+Get uncle count for a block by number.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blockTag` | `BlockTag` | Block to query |
+
+**Returns:** `Quantity`
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockNumberRequest('latest'));
+
+console.log('Uncle count:', count);
+```
+
+<Note>
+Uncle blocks were removed in Ethereum's transition to Proof of Stake (The Merge). This method returns 0 for post-merge blocks.
+</Note>
+
+</Accordion>
+
+## Usage Patterns
+
+### Get Latest Block with Transactions
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', true));
+
+console.log('Block:', block.number);
+console.log('Gas used:', block.gasUsed);
+console.log('Transactions:', block.transactions.length);
+
+// Get receipts for all transactions
+const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
+const gasUsedTotal = receipts.reduce(
+  (sum, r) => sum + BigInt(r.gasUsed),
+  0n
+);
+console.log('Total gas used:', gasUsedTotal);
+```
+
+### Query Historical Block
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+import * as Quantity from '@tevm/voltaire/primitives/Quantity';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+// Query specific block number
+const blockNumber = Quantity(18000000n);
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest(blockNumber, false));
+
+console.log('Timestamp:', block.timestamp);
+console.log('Miner:', block.miner);
+
+// Get transaction count
+const txCount = await provider.request(Rpc.Eth.GetBlockTransactionCountByNumberRequest(blockNumber));
+console.log('Transactions:', txCount);
+```
+
+### Check Block Finality
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const provider = new Provider({ url: 'https://mainnet.infura.io' });
+
+// Get latest and finalized blocks
+const [latest, finalized] = await Promise.all([
+  provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', false)),
+  provider.request(Rpc.Eth.GetBlockByNumberRequest('finalized', false))
+]);
+
+const latestNum = BigInt(latest.number);
+const finalizedNum = BigInt(finalized.number);
+const confirmations = latestNum - finalizedNum;
+
+console.log('Latest block:', latestNum);
+console.log('Finalized block:', finalizedNum);
+console.log('Blocks until finalized:', confirmations);
+```
+
+## Related
+
+- [eth Methods](/jsonrpc-provider/eth-methods/index) - All eth namespace methods
+- [Transaction Methods](/jsonrpc-provider/eth-methods/transactions) - Transaction queries and submission
+- [State Methods](/jsonrpc-provider/eth-methods/state) - Account and storage queries
+- [Block JSON-RPC Types](/jsonrpc/eth/types/block) - Block type definitions

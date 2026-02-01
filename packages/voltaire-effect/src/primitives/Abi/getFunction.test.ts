@@ -1,0 +1,116 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
+import { getFunction } from "./getFunction.js";
+
+const erc20Abi = S.decodeUnknownSync(fromArray)([
+	{
+		type: "function",
+		name: "transfer",
+		inputs: [
+			{ name: "to", type: "address" },
+			{ name: "amount", type: "uint256" },
+		],
+		outputs: [{ type: "bool" }],
+		stateMutability: "nonpayable",
+	},
+	{
+		type: "function",
+		name: "balanceOf",
+		inputs: [{ name: "account", type: "address" }],
+		outputs: [{ type: "uint256" }],
+		stateMutability: "view",
+	},
+	{
+		type: "function",
+		name: "approve",
+		inputs: [
+			{ name: "spender", type: "address" },
+			{ name: "amount", type: "uint256" },
+		],
+		outputs: [{ type: "bool" }],
+		stateMutability: "nonpayable",
+	},
+	{
+		type: "event",
+		name: "Transfer",
+		inputs: [
+			{ name: "from", type: "address", indexed: true },
+			{ name: "to", type: "address", indexed: true },
+			{ name: "value", type: "uint256", indexed: false },
+		],
+	},
+]);
+
+describe("getFunction", () => {
+	describe("success cases", () => {
+		it.effect("gets transfer function", () =>
+			Effect.gen(function* () {
+				const fn = yield* getFunction(erc20Abi, "transfer");
+				expect(fn.name).toBe("transfer");
+				expect(fn.type).toBe("function");
+				expect(fn.inputs.length).toBe(2);
+				expect(fn.outputs?.length).toBe(1);
+			}),
+		);
+
+		it.effect("gets balanceOf function", () =>
+			Effect.gen(function* () {
+				const fn = yield* getFunction(erc20Abi, "balanceOf");
+				expect(fn.name).toBe("balanceOf");
+				expect(fn.stateMutability).toBe("view");
+			}),
+		);
+
+		it.effect("gets approve function", () =>
+			Effect.gen(function* () {
+				const fn = yield* getFunction(erc20Abi, "approve");
+				expect(fn.name).toBe("approve");
+				expect(fn.inputs.length).toBe(2);
+			}),
+		);
+	});
+
+	describe("error cases", () => {
+		it("fails for unknown function", async () => {
+			const exit = await Effect.runPromiseExit(
+				getFunction(erc20Abi, "unknownFunction"),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails for event name (not a function)", async () => {
+			const exit = await Effect.runPromiseExit(
+				getFunction(erc20Abi, "Transfer"),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with empty ABI", async () => {
+			const exit = await Effect.runPromiseExit(getFunction([], "transfer"));
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with case-sensitive mismatch", async () => {
+			const exit = await Effect.runPromiseExit(
+				getFunction(erc20Abi, "Transfer"),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+	});
+
+	describe("error handling", () => {
+		it.effect("can catch error with Effect.catchAll", () =>
+			Effect.gen(function* () {
+				const result = yield* getFunction(erc20Abi, "unknown").pipe(
+					Effect.catchAll(() =>
+						Effect.succeed({ name: "fallback", type: "function" as const }),
+					),
+				);
+				expect(result.name).toBe("fallback");
+			}),
+		);
+	});
+});

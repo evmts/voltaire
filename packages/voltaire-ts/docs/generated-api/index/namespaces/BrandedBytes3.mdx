@@ -1,0 +1,396 @@
+---
+title: "BrandedBytes3"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBytes3
+
+# BrandedBytes3
+
+## Variables
+
+### BytesType3
+
+> `const` **BytesType3**: `object`
+
+Defined in: [src/primitives/Bytes/Bytes3/index.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/index.ts#L16)
+
+#### Type Declaration
+
+##### clone()
+
+> **clone**: (`bytes`) => [`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Clone Bytes3
+
+###### Parameters
+
+###### bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3 to clone
+
+###### Returns
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Cloned Bytes3
+
+###### Example
+
+```typescript
+const copy = Bytes3.clone(bytes);
+```
+
+##### compare()
+
+> **compare**: (`a`, `b`) => `-1` \| `0` \| `1`
+
+###### Parameters
+
+###### a
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+###### b
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+###### Returns
+
+`-1` \| `0` \| `1`
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+###### b
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+###### Parameters
+
+###### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => [`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+###### Parameters
+
+###### hex
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+###### Returns
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+##### size()
+
+> **size**: (`_bytes`) => `3`
+
+Get size of Bytes3 (always 3)
+
+###### Parameters
+
+###### \_bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3
+
+###### Returns
+
+`3`
+
+Size (always 3)
+
+###### Example
+
+```typescript
+const size = Bytes3.size(bytes); // 3
+```
+
+##### toBytes()
+
+> **toBytes**: (`bytes`) => [`BytesType`](../../primitives/Bytes.mdx#bytestype)
+
+Convert Bytes3 to generic Bytes
+
+###### Parameters
+
+###### bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3 to convert
+
+###### Returns
+
+[`BytesType`](../../primitives/Bytes.mdx#bytestype)
+
+Generic Bytes
+
+###### Example
+
+```typescript
+const genericBytes = Bytes3.toBytes(bytes);
+```
+
+##### toHex()
+
+> **toHex**: (`bytes`) => [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Convert Bytes3 to hex string
+
+###### Parameters
+
+###### bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3 to convert
+
+###### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+###### Example
+
+```typescript
+const hex = Bytes3.toHex(bytes);
+```
+
+## Functions
+
+### clone()
+
+> **clone**(`bytes`): [`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Defined in: [src/primitives/Bytes/Bytes3/clone.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/clone.js#L12)
+
+Clone Bytes3
+
+#### Parameters
+
+##### bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3 to clone
+
+#### Returns
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Cloned Bytes3
+
+#### Example
+
+```typescript
+const copy = Bytes3.clone(bytes);
+```
+
+***
+
+### compare()
+
+> **compare**(`a`, `b`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Bytes/Bytes3/compare.js:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/compare.js#L6)
+
+#### Parameters
+
+##### a
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+##### b
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Bytes/Bytes3/equals.js:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/equals.js#L6)
+
+#### Parameters
+
+##### a
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+##### b
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Defined in: [src/primitives/Bytes/Bytes3/from.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/from.js#L8)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Defined in: [src/primitives/Bytes/Bytes3/fromHex.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/fromHex.js#L8)
+
+#### Parameters
+
+##### hex
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+#### Returns
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+***
+
+### size()
+
+> **size**(`_bytes`): `3`
+
+Defined in: [src/primitives/Bytes/Bytes3/size.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/size.js#L12)
+
+Get size of Bytes3 (always 3)
+
+#### Parameters
+
+##### \_bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3
+
+#### Returns
+
+`3`
+
+Size (always 3)
+
+#### Example
+
+```typescript
+const size = Bytes3.size(bytes); // 3
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`bytes`): [`BytesType`](../../primitives/Bytes.mdx#bytestype)
+
+Defined in: [src/primitives/Bytes/Bytes3/toBytes.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/toBytes.js#L12)
+
+Convert Bytes3 to generic Bytes
+
+#### Parameters
+
+##### bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3 to convert
+
+#### Returns
+
+[`BytesType`](../../primitives/Bytes.mdx#bytestype)
+
+Generic Bytes
+
+#### Example
+
+```typescript
+const genericBytes = Bytes3.toBytes(bytes);
+```
+
+***
+
+### toHex()
+
+> **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/Bytes/Bytes3/toHex.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/toHex.js#L12)
+
+Convert Bytes3 to hex string
+
+#### Parameters
+
+##### bytes
+
+[`Bytes3Type`](../../primitives/Bytes.mdx#bytes3type)
+
+Bytes3 to convert
+
+#### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+#### Example
+
+```typescript
+const hex = Bytes3.toHex(bytes);
+```
+
+## References
+
+### Bytes3Type
+
+Re-exports [Bytes3Type](../../primitives/Bytes.mdx#bytes3type)

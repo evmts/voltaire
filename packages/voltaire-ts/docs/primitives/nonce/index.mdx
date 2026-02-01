@@ -1,0 +1,324 @@
+---
+title: Nonce
+description: Transaction nonces for replay protection
+---
+
+# Nonce
+
+Type-safe transaction nonces for Ethereum transaction ordering and replay protection.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `bigint` type representing a transaction nonce. Nonces are sequential counters that ensure transactions from an account are processed in order and prevent replay attacks. Each account has a nonce that increments with each transaction.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+// Create nonce from various types
+const nonce = Nonce.from(42)
+const fromBigInt = Nonce.from(42n)
+const fromHex = Nonce.from("0x2a")
+
+// Convert to number/bigint
+Nonce.toNumber(nonce)  // 42
+Nonce.toBigInt(nonce)  // 42n
+
+// Increment nonce
+const nextNonce = Nonce.increment(nonce)
+Nonce.toNumber(nextNonce)  // 43
+```
+</Tab>
+<Tab title="Transaction Building">
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+// Get nonce from RPC
+async function getAccountNonce(
+  rpcUrl: string,
+  address: string
+): Promise<Nonce.NonceType> {
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getTransactionCount',
+      params: [address, 'pending'],
+      id: 1
+    })
+  })
+  const { result } = await response.json()
+  return Nonce.from(result)
+}
+
+// Build transaction with nonce
+const nonce = await getAccountNonce(rpcUrl, myAddress)
+const tx = {
+  nonce: Nonce.toNumber(nonce),
+  to: recipient,
+  value: amount,
+  // ... other tx fields
+}
+```
+</Tab>
+<Tab title="Nonce Management">
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+class NonceManager {
+  private currentNonce: Nonce.NonceType
+
+  constructor(initialNonce: number | bigint) {
+    this.currentNonce = Nonce.from(initialNonce)
+  }
+
+  getNext(): Nonce.NonceType {
+    const nonce = this.currentNonce
+    this.currentNonce = Nonce.increment(this.currentNonce)
+    return nonce
+  }
+
+  current(): number {
+    return Nonce.toNumber(this.currentNonce)
+  }
+
+  reset(nonce: number | bigint) {
+    this.currentNonce = Nonce.from(nonce)
+  }
+}
+
+const manager = new NonceManager(0)
+console.log(manager.getNext())  // 0
+console.log(manager.getNext())  // 1
+console.log(manager.getNext())  // 2
+```
+</Tab>
+</Tabs>
+
+## How Nonces Work
+
+Every Ethereum account has a nonce that:
+1. Starts at 0 for new accounts
+2. Increments by 1 with each transaction sent
+3. Must be used exactly once (no gaps, no reuse)
+4. Determines transaction ordering from an account
+
+```
+Account: 0x123...
+Nonce: 5 (has sent 5 transactions: 0, 1, 2, 3, 4)
+
+Next valid transaction must have nonce = 5
+Transaction with nonce 6 will be pending until nonce 5 is mined
+Transaction with nonce 4 will be rejected (already used)
+```
+
+## API Reference
+
+### Constructors
+
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+// Universal constructor
+const nonce = Nonce.from(42)
+
+// Various input types
+Nonce.from(42)        // from number
+Nonce.from(42n)       // from bigint
+Nonce.from("42")      // from string
+Nonce.from("0x2a")    // from hex string
+```
+
+### Conversions
+
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+const nonce = Nonce.from(42)
+
+// To number
+Nonce.toNumber(nonce)  // 42
+
+// To bigint
+Nonce.toBigInt(nonce)  // 42n
+```
+
+### Operations
+
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+const nonce = Nonce.from(42)
+
+// Increment by 1
+const next = Nonce.increment(nonce)
+Nonce.toNumber(next)  // 43
+```
+
+## Use Cases
+
+### Sequential Transaction Sending
+
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+async function sendMultipleTransactions(
+  rpcUrl: string,
+  from: string,
+  transactions: { to: string; value: bigint }[]
+) {
+  // Get current nonce
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getTransactionCount',
+      params: [from, 'pending'],
+      id: 1
+    })
+  })
+  const { result } = await response.json()
+  let nonce = Nonce.from(result)
+
+  // Send each transaction with incrementing nonce
+  for (const tx of transactions) {
+    await sendTransaction({
+      from,
+      to: tx.to,
+      value: tx.value,
+      nonce: Nonce.toNumber(nonce)
+    })
+    nonce = Nonce.increment(nonce)
+  }
+}
+```
+
+### Transaction Replacement (Speed Up / Cancel)
+
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+// To replace a pending transaction, use the same nonce
+// with higher gas price
+async function speedUpTransaction(
+  originalTx: { nonce: number; gasPrice: bigint },
+  newGasPrice: bigint
+) {
+  const nonce = Nonce.from(originalTx.nonce)
+
+  return {
+    nonce: Nonce.toNumber(nonce),  // Same nonce!
+    gasPrice: newGasPrice,         // Higher gas price
+    // ... other fields
+  }
+}
+
+// To cancel, send 0 value to yourself with same nonce
+async function cancelTransaction(
+  originalNonce: number,
+  from: string,
+  gasPrice: bigint
+) {
+  const nonce = Nonce.from(originalNonce)
+
+  return {
+    nonce: Nonce.toNumber(nonce),
+    to: from,              // Send to self
+    value: 0n,             // Zero value
+    gasPrice: gasPrice,    // Higher than original
+  }
+}
+```
+
+### Pending Transaction Detection
+
+```typescript
+import * as Nonce from '@tevm/voltaire/Nonce'
+
+async function getPendingTransactionCount(
+  rpcUrl: string,
+  address: string
+): Promise<number> {
+  // Get confirmed nonce
+  const confirmedResponse = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getTransactionCount',
+      params: [address, 'latest'],
+      id: 1
+    })
+  })
+  const { result: confirmed } = await confirmedResponse.json()
+
+  // Get pending nonce
+  const pendingResponse = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getTransactionCount',
+      params: [address, 'pending'],
+      id: 2
+    })
+  })
+  const { result: pending } = await pendingResponse.json()
+
+  const confirmedNonce = Nonce.from(confirmed)
+  const pendingNonce = Nonce.from(pending)
+
+  return Nonce.toNumber(pendingNonce) - Nonce.toNumber(confirmedNonce)
+}
+```
+
+## Common Issues
+
+### Nonce Too Low
+
+```typescript
+// Error: "nonce too low" or "replacement transaction underpriced"
+// Cause: Trying to use a nonce that was already used
+// Solution: Fetch current nonce from network
+
+const nonce = await getAccountNonce(rpcUrl, address)
+```
+
+### Nonce Gap
+
+```typescript
+// Transaction stuck in pending
+// Cause: Earlier nonce transaction failed/missing
+// Solution: Fill the gap or cancel all pending
+
+// If nonce 5 is pending but nonce 4 is missing,
+// submit a transaction with nonce 4 first
+```
+
+### Concurrent Transactions
+
+```typescript
+// Problem: Multiple parts of app sending transactions
+// Solution: Use a centralized nonce manager
+
+// Bad: Each component fetches its own nonce
+// Good: Single nonce manager tracks and assigns nonces
+```
+
+## Related
+
+- [Nonce (Effect)](https://voltaire-effect.tevm.sh/primitives/nonce) - Effect.ts integration with Schema validation
+- [Transaction](/primitives/transaction) - Transaction structure
+- [Address](/primitives/address) - Account addresses
+- [TransactionHash](/primitives/transaction-hash) - Transaction identifiers
+
+## References
+
+- [Ethereum Accounts](https://ethereum.org/en/developers/docs/accounts/) - Account model
+- [Transactions](https://ethereum.org/en/developers/docs/transactions/) - Transaction structure
+- [eth_getTransactionCount](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount) - RPC method

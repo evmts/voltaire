@@ -1,0 +1,27 @@
+---
+title: Epoch
+description: Beacon chain epoch numbers
+---
+
+```typescript
+import * as Epoch from 'voltaire-effect/Epoch'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const epoch = Schema.decodeSync(Epoch.BigInt)(123456n)
+
+// Effect constructor
+const program = Epoch.from(123456n)
+const result = Effect.runSync(program)
+
+// Conversions
+Epoch.toNumber(epoch)  // number
+Epoch.toBigInt(epoch)  // bigint
+Epoch.toSlot(epoch)    // starting slot number
+
+// Comparison
+Epoch.equals(epoch1, epoch2)
+```
+
+Epochs group 32 slots (~6.4 minutes). Convert to starting slot with `toSlot`.

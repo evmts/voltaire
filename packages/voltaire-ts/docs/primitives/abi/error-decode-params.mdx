@@ -1,0 +1,45 @@
+---
+title: Error.decodeParams
+description: Decode custom error data from revert payload
+---
+
+## Overview
+
+`Error.decodeParams` decodes **custom error revert data** and validates the selector. Pass the full error data (selector + params).
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const InsufficientBalance = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
+
+const revertData = Abi.Error.encodeParams(InsufficientBalance, [100n, 1000n]);
+const decoded = Abi.Error.decodeParams(InsufficientBalance, revertData);
+// [100n, 1000n]
+```
+
+## Decode Without Selector
+
+If you already sliced the selector, decode just the parameters:
+
+```typescript
+const params = Abi.decodeParameters(InsufficientBalance.inputs, revertData.slice(4));
+```
+
+## Error Handling
+
+- `AbiDecodingError` when data is too short or malformed
+- `AbiInvalidSelectorError` when the selector does not match the error definition
+
+## See Also
+
+- [encodeParams](/primitives/abi/error/encode-params) - Encode error data
+- [getSelector](/primitives/abi/error/get-selector) - Compute error selector

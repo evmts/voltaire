@@ -1,0 +1,147 @@
+---
+title: '[TS/JS] docs/evm/instructions/arithmetic/signextend.test.ts'
+source: 'docs/evm/instructions/arithmetic/signextend.test.ts'
+---
+
+> Auto-generated from test file: docs/evm/instructions/arithmetic/signextend.test.ts
+
+```typescript
+/**
+ * Test file for SIGNEXTEND (0x0b) documentation examples
+ * Tests examples from signextend.mdx
+ *
+ * NOTE: Stack order is [bottom, ..., top] - pop() returns the last element.
+ * For SIGNEXTEND(byteIndex, value): byteIndex is popped first, value second.
+ * So stack should be [value, byteIndex].
+ */
+import { describe, expect, it } from "vitest";
+
+describe("SIGNEXTEND (0x0b) - Documentation Examples", async () => {
+	const { signextend } = await import(
+		"../../../../src/evm/arithmetic/index.js"
+	);
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	const MAX_U256 = (1n << 256n) - 1n;
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Extend 1-Byte Signed Value", () => {
+		it("positive int8 value 0x7F stays same", () => {
+			const frame = createFrame([0x7fn, 0n]);
+			const err = signextend(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0x7fn]);
+		});
+
+		it("negative int8 value 0xFF extends to all 1s", () => {
+			const frame = createFrame([0xffn, 0n]);
+			const err = signextend(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([MAX_U256]); // All bits set (two's complement -1)
+		});
+	});
+
+	describe("Extend 2-Byte Signed Value", () => {
+		it("positive int16 value 0x7FFF stays same", () => {
+			const frame = createFrame([0x7fffn, 1n]);
+			signextend(frame);
+			expect(frame.stack).toEqual([0x7fffn]);
+		});
+
+		it("negative int16 value 0x8000 extends with 1s", () => {
+			const frame = createFrame([0x8000n, 1n]);
+			signextend(frame);
+
+			// Sign bit at position 15 is set, extend with 1s
+			const expected = (MAX_U256 & ~0x7fffn) | 0x8000n;
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Clear Upper Bits (Positive Values)", () => {
+		it("0x123 with byte_index 0 keeps only lower 8 bits", () => {
+			const frame = createFrame([0x123n, 0n]);
+			signextend(frame);
+
+			expect(frame.stack).toEqual([0x23n]);
+		});
+	});
+
+	describe("No Extension Needed", () => {
+		it("byte_index >= 31 returns value unchanged", () => {
+			const frame = createFrame([MAX_U256, 31n]);
+			signextend(frame);
+
+			expect(frame.stack).toEqual([MAX_U256]);
+		});
+
+		it("byte_index > 31 returns value unchanged", () => {
+			const frame = createFrame([0xffn, 32n]);
+			signextend(frame);
+
+			expect(frame.stack).toEqual([0xffn]);
+		});
+
+		it("very large byte_index returns value unchanged", () => {
+			const frame = createFrame([0xffn, 1000n]);
+			signextend(frame);
+
+			expect(frame.stack).toEqual([0xffn]);
+		});
+	});
+
+	describe("Zero Value", () => {
+		it("sign extending 0 always gives 0", () => {
+			const frame = createFrame([0n, 0n]);
+			signextend(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Sign Bit at Boundary", () => {
+		it("0x80 (byte 0, bit 7 set) extends with 1s", () => {
+			const frame = createFrame([0x80n, 0n]);
+			signextend(frame);
+
+			// 0x80 = 10000000, sign bit set
+			const expected = (MAX_U256 & ~0x7fn) | 0x80n;
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("returns StackUnderflow with insufficient stack", () => {
+			const frame = createFrame([0n]);
+			const err = signextend(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+
+		it("returns OutOfGas when insufficient gas", () => {
+			const frame = createFrame([0x7fn, 0n], 4n);
+			const err = signextend(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 5 gas (GasFastStep)", () => {
+			const frame = createFrame([0x7fn, 0n], 100n);
+			const err = signextend(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(95n);
+		});
+	});
+});
+
+```

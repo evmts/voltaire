@@ -1,0 +1,309 @@
+---
+title: Address.of
+description: Create address from individual byte arguments (variadic)
+---
+
+
+<Tabs>
+
+<Tab title="Rust">
+
+## Rust Pattern: Array Literals
+
+Rust uses array literals for byte construction. No special `of` method needed.
+
+**Example:**
+
+```rust
+// Direct byte array
+let addr: [u8; 20] = [
+    0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53,
+    0x29, 0x25, 0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75,
+    0x95, 0xf2, 0x51, 0xe3,
+];
+
+// Zero address
+let zero = [0u8; 20];
+
+// Max address
+let max = [0xffu8; 20];
+
+// Sequential bytes
+let seq: [u8; 20] = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+];
+
+// From expression
+let dynamic: [u8; 20] = core::array::from_fn(|i| i as u8);
+```
+
+</Tab>
+</Tabs>
+
+## Common Use Cases
+
+### Testing with Known Byte Patterns
+
+Create addresses with predictable byte patterns for testing:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Sequential bytes
+const sequential = Address.of(
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+  10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+)
+
+// Repeating pattern
+const pattern = Address.of(
+  0xaa, 0xbb, 0xaa, 0xbb, 0xaa, 0xbb, 0xaa, 0xbb,
+  0xaa, 0xbb, 0xaa, 0xbb, 0xaa, 0xbb, 0xaa, 0xbb,
+  0xaa, 0xbb, 0xaa, 0xbb
+)
+
+// Alternating high/low
+const alternating = Address.of(
+  0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff,
+  0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff,
+  0x00, 0xff, 0x00, 0xff
+)
+```
+
+### DSL and Builder Patterns
+
+Build addresses programmatically with explicit byte control:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Custom DSL for address generation
+function createTestAddress(prefix: number, id: number): Address {
+  return Address.of(
+    prefix, 0x00, 0x00, 0x00,
+    (id >> 24) & 0xff,
+    (id >> 16) & 0xff,
+    (id >> 8) & 0xff,
+    id & 0xff,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00
+  )
+}
+
+const testAddr1 = createTestAddress(0x01, 100)
+const testAddr2 = createTestAddress(0x02, 200)
+```
+
+### Manual Construction from Binary Data
+
+Construct addresses from parsed binary protocols:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Parse from custom binary format
+function parseAddressFromProtocol(data: Uint8Array, offset: number): Address {
+  return Address.of(
+    data[offset + 0], data[offset + 1], data[offset + 2], data[offset + 3],
+    data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7],
+    data[offset + 8], data[offset + 9], data[offset + 10], data[offset + 11],
+    data[offset + 12], data[offset + 13], data[offset + 14], data[offset + 15],
+    data[offset + 16], data[offset + 17], data[offset + 18], data[offset + 19]
+  )
+}
+```
+
+### Specific Byte Value Testing
+
+Test edge cases with specific byte combinations:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+describe('address edge cases', () => {
+  it('handles first byte set', () => {
+    const addr = Address.of(
+      0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    )
+    expect(addr[0]).toBe(0xff)
+  })
+
+  it('handles last byte set', () => {
+    const addr = Address.of(
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff
+    )
+    expect(addr[19]).toBe(0xff)
+  })
+
+  it('handles middle bytes set', () => {
+    const addr = Address.of(
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0x42,
+      0x43, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    )
+    expect(addr[9]).toBe(0x42)
+    expect(addr[10]).toBe(0x43)
+  })
+})
+```
+
+## Behavior Notes
+
+### Byte Value Truncation
+
+Values outside 0-255 range are truncated to lower 8 bits:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Values > 255 are truncated
+const addr = Address.of(
+  256, 257, 258, 259, 260, 261, 262, 263,
+  264, 265, 266, 267, 268, 269, 270, 271,
+  272, 273, 274, 275
+)
+
+console.log(addr[0])  // 0 (256 & 0xff)
+console.log(addr[1])  // 1 (257 & 0xff)
+console.log(addr[19]) // 19 (275 & 0xff)
+```
+
+### Negative Values
+
+Negative values are treated as unsigned:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Negative values wrap around
+const addr = Address.of(
+  -1, -2, -3, -4, -5, -6, -7, -8,
+  -9, -10, -11, -12, -13, -14, -15, -16,
+  -17, -18, -19, -20
+)
+
+console.log(addr[0]) // 255 (-1 as u8)
+console.log(addr[1]) // 254 (-2 as u8)
+```
+
+### Exact Count Required
+
+Must provide exactly 20 byte values:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Too few - throws InvalidAddressLengthError
+try {
+  Address.of(1, 2, 3)
+} catch (e) {
+  console.log(e.message) // "Address must be 20 bytes, got 3"
+}
+
+// Too many - throws InvalidAddressLengthError
+try {
+  Address.of(
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21 // Extra byte
+  )
+} catch (e) {
+  console.log(e.message) // "Address must be 20 bytes, got 21"
+}
+
+// Zero bytes - throws InvalidAddressLengthError
+try {
+  Address.of()
+} catch (e) {
+  console.log(e.message) // "Address must be 20 bytes, got 0"
+}
+```
+
+## When to Use
+
+**Use `Address.of` when:**
+- Writing tests with explicit byte patterns
+- Building DSLs that construct addresses programmatically
+- Parsing binary protocols where you extract bytes individually
+- Need absolute control over each byte value
+- Documenting specific byte layouts in code
+
+**Use `Address.fromBytes` instead when:**
+- Already have `Uint8Array` available
+- Working with buffer operations
+- Converting from other typed arrays
+- Need better performance (avoids variadic overhead)
+
+**Use `Address.fromHex` instead when:**
+- Working with hex strings
+- Interfacing with JSON-RPC
+- Human-readable addresses in config/tests
+
+## Comparison with Other Constructors
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// All produce the same address:
+const bytes = new Uint8Array([
+  0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53,
+  0x29, 0x25, 0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75,
+  0x95, 0xf2, 0x51, 0xe3
+])
+
+const addr1 = Address.of(
+  0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53,
+  0x29, 0x25, 0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75,
+  0x95, 0xf2, 0x51, 0xe3
+)
+
+const addr2 = Address(bytes)
+const addr3 = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
+
+console.log(addr1.equals(addr2)) // true
+console.log(addr1.equals(addr3)) // true
+```
+
+**Performance considerations:**
+- `fromBytes`: Fastest (direct copy)
+- `fromHex`: Fast (parsing overhead minimal)
+- `of`: Slowest (variadic function, spread operator)
+
+**Readability:**
+- `fromHex`: Most readable for humans
+- `of`: Best for explicit byte documentation
+- `fromBytes`: Most concise when bytes available
+
+## Integration with Uint8Array.of
+
+`Address.of` mirrors the standard `Uint8Array.of` API:
+
+```zig
+// Standard Uint8Array.of
+const bytes = Uint8Array.of(1, 2, 3, 4)
+
+// Address.of adds validation
+const addr = Address.of(
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+)
+
+// Both are Uint8Array instances
+console.log(bytes instanceof Uint8Array) // true
+console.log(addr instanceof Uint8Array)  // true
+
+// But Address.of enforces 20-byte constraint
+console.log(bytes.length) // 4 (flexible)
+console.log(addr.length)  // 20 (fixed)
+```
+
+## See Also
+
+- [fromBytes](/primitives/address/from-bytes) - Create from Uint8Array
+- [fromHex](/primitives/address/from-hex) - Create from hex string
+- [from](/primitives/address/from) - Universal constructor
+- [zero](/primitives/address/zero) - Create zero address
+- [Uint8Array.of](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/of) - Standard API reference

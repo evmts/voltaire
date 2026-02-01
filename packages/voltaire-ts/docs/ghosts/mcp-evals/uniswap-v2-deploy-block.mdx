@@ -1,0 +1,45 @@
+---
+title: Uniswap V2 Factory — Deployment Block Number
+description: Find the block number where the Uniswap V2 Factory contract was deployed.
+---
+
+## Goal
+
+Given the Uniswap V2 Factory contract address, find the block number it was deployed at.
+
+Return as:
+
+ANSWER: `<block_number>`
+
+## Contract
+
+- Uniswap V2 Factory: 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
+
+## Approach
+
+1. Binary search over blocks for the earliest non-empty `eth_getCode` result.
+2. Or scan logs for a known factory event and fetch the block number of the first occurrence.
+
+## Example (TypeScript + Voltaire JSON-RPC)
+
+```ts
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+const provider = createJsonRpcProvider(process.env.ETHEREUM_RPC_URL!)
+const FACTORY = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
+
+async function deployedAt(): Promise<bigint> {
+  let lo = 0n
+  let hi = BigInt(await provider.eth_blockNumber())
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1n
+    const code = await provider.eth_getCode(FACTORY, `0x${mid.toString(16)}`)
+    if (code && code !== '0x') hi = mid
+    else lo = mid + 1n
+  }
+  return lo
+}
+
+const blockNumber = await deployedAt()
+console.log(`ANSWER: ${blockNumber.toString()}`)
+```

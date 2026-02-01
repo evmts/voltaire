@@ -1,0 +1,25 @@
+---
+title: Item.isReceive
+description: Type guard for receive ABI items
+---
+
+## Overview
+
+`Item.isReceive` checks whether an ABI item represents a receive function (payable, no data).
+
+## Example
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const item = { type: 'receive', stateMutability: 'payable' } as const;
+
+if (Abi.Item.isReceive(item)) {
+  // Handle receive definition
+}
+```
+
+## See Also
+
+- [Item.isFallback](/primitives/abi/item-is-fallback)
+- [Item.isFunction](/primitives/abi/item-is-function)

@@ -1,0 +1,12 @@
+{
+	"linter": {
+		"rules": {
+			"style": {
+				"noArguments": "off"
+			},
+			"correctness": {
+				"noConstructorReturn": "off"
+			}
+		}
+	}
+}

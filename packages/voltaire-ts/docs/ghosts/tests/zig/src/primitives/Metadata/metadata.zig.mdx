@@ -1,0 +1,218 @@
+---
+title: '[Zig] src/primitives/Metadata/metadata.zig'
+source: 'src/primitives/Metadata/metadata.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Metadata/metadata.zig
+
+### Metadata.from creates metadata
+
+```zig
+test "Metadata.from creates metadata" {
+    const raw = [_]u8{ 0xa2, 0x65, 0x73, 0x6f, 0x6c, 0x63 };
+    const meta = from(.{
+        .raw = &raw,
+        .solc = "0.8.19",
+    });
+
+    try std.testing.expectEqualStrings("0.8.19", meta.solc.?);
+}
+```
+
+### Metadata.fromRaw creates metadata from raw bytes
+
+```zig
+test "Metadata.fromRaw creates metadata from raw bytes" {
+    const raw = [_]u8{ 0xa1, 0x64, 0x69, 0x70, 0x66, 0x73 };
+    const meta = fromRaw(&raw);
+
+    try std.testing.expectEqualSlices(u8, &raw, meta.raw);
+    try std.testing.expect(meta.solc == null);
+}
+```
+
+### Metadata accessors work correctly
+
+```zig
+test "Metadata accessors work correctly" {
+    const raw = [_]u8{ 0xa2, 0x65, 0x73, 0x6f, 0x6c, 0x63 };
+    const meta = from(.{
+        .raw = &raw,
+        .solc = "0.8.19",
+        .ipfs = "QmTest",
+        .experimental = true,
+    });
+
+    try std.testing.expectEqualSlices(u8, &raw, getRaw(meta));
+    try std.testing.expectEqualStrings("0.8.19", getSolc(meta).?);
+    try std.testing.expectEqualStrings("QmTest", getIpfs(meta).?);
+    try std.testing.expect(isExperimental(meta));
+}
+```
+
+### Metadata.hasSolc
+
+```zig
+test "Metadata.hasSolc" {
+    const raw = [_]u8{0xa0};
+    const with_solc = from(.{
+        .raw = &raw,
+        .solc = "0.8.19",
+    });
+
+    const without_solc = from(.{
+        .raw = &raw,
+    });
+
+    try std.testing.expect(hasSolc(with_solc));
+    try std.testing.expect(!hasSolc(without_solc));
+}
+```
+
+### Metadata.hasIpfs
+
+```zig
+test "Metadata.hasIpfs" {
+    const raw = [_]u8{0xa0};
+    const with_ipfs = from(.{
+        .raw = &raw,
+        .ipfs = "QmTest",
+    });
+
+    const without_ipfs = from(.{
+        .raw = &raw,
+    });
+
+    try std.testing.expect(hasIpfs(with_ipfs));
+    try std.testing.expect(!hasIpfs(without_ipfs));
+}
+```
+
+### Metadata.hasSwarm
+
+```zig
+test "Metadata.hasSwarm" {
+    const raw = [_]u8{0xa0};
+    const with_bzzr0 = from(.{
+        .raw = &raw,
+        .bzzr0 = "0x123",
+    });
+
+    const with_bzzr1 = from(.{
+        .raw = &raw,
+        .bzzr1 = "0x456",
+    });
+
+    const without_swarm = from(.{
+        .raw = &raw,
+    });
+
+    try std.testing.expect(hasSwarm(with_bzzr0));
+    try std.testing.expect(hasSwarm(with_bzzr1));
+    try std.testing.expect(!hasSwarm(without_swarm));
+}
+```
+
+### Metadata.equals compares metadata
+
+```zig
+test "Metadata.equals compares metadata" {
+    const raw1 = [_]u8{ 0xa1, 0x65, 0x73, 0x6f, 0x6c, 0x63 };
+    const raw2 = [_]u8{ 0xa1, 0x65, 0x73, 0x6f, 0x6c, 0x63 };
+    const raw3 = [_]u8{ 0xa2, 0x65, 0x73, 0x6f, 0x6c, 0x64 };
+
+    const meta1 = fromRaw(&raw1);
+    const meta2 = fromRaw(&raw2);
+    const meta3 = fromRaw(&raw3);
+
+    try std.testing.expect(equals(meta1, meta2));
+    try std.testing.expect(!equals(meta1, meta3));
+}
+```
+
+### Metadata.getMetadataLength
+
+```zig
+test "Metadata.getMetadataLength" {
+    // Bytecode with metadata length 0x0033 (51 bytes)
+    var bytecode: [100]u8 = undefined;
+    bytecode[98] = 0x00;
+    bytecode[99] = 0x33;
+
+    const len = getMetadataLength(&bytecode);
+    try std.testing.expect(len != null);
+    try std.testing.expectEqual(@as(u16, 0x33), len.?);
+}
+```
+
+### Metadata.getMetadataLength with short bytecode
+
+```zig
+test "Metadata.getMetadataLength with short bytecode" {
+    const bytecode = [_]u8{0x60};
+    const len = getMetadataLength(&bytecode);
+    try std.testing.expect(len == null);
+}
+```
+
+### Metadata.fromBytecode extracts metadata
+
+```zig
+test "Metadata.fromBytecode extracts metadata" {
+    // Simulate bytecode: [code...][metadata (5 bytes)][length (0x0005)]
+    var bytecode: [10]u8 = undefined;
+    bytecode[0] = 0x60; // code
+    bytecode[1] = 0x80; // code
+    bytecode[2] = 0x60; // code
+    bytecode[3] = 0xa2; // metadata start
+    bytecode[4] = 0x65;
+    bytecode[5] = 0x73;
+    bytecode[6] = 0x6f;
+    bytecode[7] = 0x6c;
+    bytecode[8] = 0x00; // length high byte
+    bytecode[9] = 0x05; // length low byte (5)
+
+    const meta = fromBytecode(&bytecode);
+    try std.testing.expect(meta != null);
+    try std.testing.expectEqual(@as(usize, 5), meta.?.raw.len);
+}
+```
+
+### Metadata.stripMetadata removes metadata
+
+```zig
+test "Metadata.stripMetadata removes metadata" {
+    // Simulate bytecode: [code (3 bytes)][metadata (5 bytes)][length (0x0005)]
+    var bytecode: [10]u8 = undefined;
+    bytecode[0] = 0x60; // code
+    bytecode[1] = 0x80; // code
+    bytecode[2] = 0x60; // code
+    bytecode[3] = 0xa2; // metadata
+    bytecode[4] = 0x65;
+    bytecode[5] = 0x73;
+    bytecode[6] = 0x6f;
+    bytecode[7] = 0x6c;
+    bytecode[8] = 0x00; // length high byte
+    bytecode[9] = 0x05; // length low byte
+
+    const stripped = stripMetadata(&bytecode);
+    try std.testing.expect(stripped != null);
+    try std.testing.expectEqual(@as(usize, 3), stripped.?.len);
+    try std.testing.expectEqual(@as(u8, 0x60), stripped.?[0]);
+    try std.testing.expectEqual(@as(u8, 0x80), stripped.?[1]);
+    try std.testing.expectEqual(@as(u8, 0x60), stripped.?[2]);
+}
+```
+
+### Metadata.isExperimental default false
+
+```zig
+test "Metadata.isExperimental default false" {
+    const raw = [_]u8{0xa0};
+    const meta = from(.{
+        .raw = &raw,
+    });
+
+    try std.testing.expect(!isExperimental(meta));
+}
+```

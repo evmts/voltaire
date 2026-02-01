@@ -1,0 +1,320 @@
+---
+title: '[TS/JS] src/primitives/Block/rpc.test.ts'
+source: 'src/primitives/Block/rpc.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Block/rpc.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as BlockBody from "../BlockBody/index.js";
+import * as BlockHeader from "../BlockHeader/index.js";
+import * as Withdrawal from "../Withdrawal/index.js";
+import * as Block from "./index.js";
+
+describe("Block.fromRpc", () => {
+	// Sample RPC block response (simplified, based on real mainnet data)
+	const minimalRpcBlock = {
+		// Header fields
+		parentHash:
+			"0x1234567890123456789012345678901234567890123456789012345678901234",
+		sha3Uncles:
+			"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+		miner: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+		stateRoot:
+			"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+		transactionsRoot:
+			"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+		receiptsRoot:
+			"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+		logsBloom: `0x${"00".repeat(256)}`,
+		difficulty: "0x0",
+		number: "0x12d687",
+		gasLimit: "0x1c9c380",
+		gasUsed: "0x5208",
+		timestamp: "0x5f5e100",
+		extraData: "0x",
+		mixHash:
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+		nonce: "0x0000000000000000",
+		// Block metadata
+		hash: "0xabababababababababababababababababababababababababababababababab",
+		size: "0x400",
+		// Body
+		transactions: [],
+		uncles: [],
+	};
+
+	it("parses minimal post-merge block", () => {
+		const block = Block.fromRpc(minimalRpcBlock);
+
+		expect(block.header.number).toBe(0x12d687n);
+		expect(block.header.gasLimit).toBe(0x1c9c380n);
+		expect(block.header.gasUsed).toBe(0x5208n);
+		expect(block.header.timestamp).toBe(0x5f5e100n);
+		expect(block.header.difficulty).toBe(0n);
+		expect(block.size).toBe(0x400n);
+		expect(block.body.transactions).toHaveLength(0);
+	});
+
+	it("parses block with EIP-1559 fields", () => {
+		const rpcBlock = {
+			...minimalRpcBlock,
+			baseFeePerGas: "0x3b9aca00",
+		};
+
+		const block = Block.fromRpc(rpcBlock);
+
+		expect(block.header.baseFeePerGas).toBe(0x3b9aca00n);
+	});
+
+	it("parses block with EIP-4844 fields", () => {
+		const rpcBlock = {
+			...minimalRpcBlock,
+			baseFeePerGas: "0x3b9aca00",
+			blobGasUsed: "0x20000",
+			excessBlobGas: "0x0",
+			parentBeaconBlockRoot:
+				"0xdef0def0def0def0def0def0def0def0def0def0def0def0def0def0def0def0",
+		};
+
+		const block = Block.fromRpc(rpcBlock);
+
+		expect(block.header.blobGasUsed).toBe(0x20000n);
+		expect(block.header.excessBlobGas).toBe(0n);
+		expect(block.header.parentBeaconBlockRoot).toBeDefined();
+	});
+
+	it("parses block with withdrawals", () => {
+		const rpcBlock = {
+			...minimalRpcBlock,
+			baseFeePerGas: "0x3b9aca00",
+			withdrawalsRoot:
+				"0xdef0def0def0def0def0def0def0def0def0def0def0def0def0def0def0def0",
+			withdrawals: [
+				{
+					index: "0x1",
+					validatorIndex: "0x2",
+					address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+					amount: "0x773594000",
+				},
+			],
+		};
+
+		const block = Block.fromRpc(rpcBlock);
+
+		expect(block.header.withdrawalsRoot).toBeDefined();
+		expect(block.body.withdrawals).toHaveLength(1);
+		// WithdrawalIndexType is bigint
+		expect(block.body.withdrawals?.[0].index).toBe(1n);
+		// ValidatorIndexType is number (safe integer constraint)
+		expect(block.body.withdrawals?.[0].validatorIndex).toBe(2);
+		// GweiType is string
+		expect(block.body.withdrawals?.[0].amount).toBe("32000000000");
+	});
+
+	it("parses block with transactions", () => {
+		const rpcBlock = {
+			...minimalRpcBlock,
+			baseFeePerGas: "0x3b9aca00",
+			transactions: [
+				{
+					type: "0x2",
+					chainId: "0x1",
+					nonce: "0x0",
+					maxPriorityFeePerGas: "0x3b9aca00",
+					maxFeePerGas: "0x4a817c800",
+					gas: "0x5208",
+					to: `0x${"12".repeat(20)}`,
+					value: "0xde0b6b3a7640000",
+					input: "0x",
+					accessList: [],
+					yParity: "0x0",
+					r: `0x${"11".repeat(32)}`,
+					s: `0x${"22".repeat(32)}`,
+				},
+			],
+		};
+
+		const block = Block.fromRpc(rpcBlock);
+
+		expect(block.body.transactions).toHaveLength(1);
+		expect(block.body.transactions[0].type).toBe(2);
+		expect(block.body.transactions[0].nonce).toBe(0n);
+		expect(block.body.transactions[0].value).toBe(0xde0b6b3a7640000n);
+	});
+
+	it("parses block with totalDifficulty (pre-merge)", () => {
+		const rpcBlock = {
+			...minimalRpcBlock,
+			difficulty: "0x2000000000000",
+			totalDifficulty: "0x36e1945c08bf2ab5",
+		};
+
+		const block = Block.fromRpc(rpcBlock);
+
+		expect(block.header.difficulty).toBe(0x2000000000000n);
+		expect(block.totalDifficulty).toBe(0x36e1945c08bf2ab5n);
+	});
+});
+
+describe("BlockHeader.fromRpc", () => {
+	const minimalRpcHeader = {
+		parentHash:
+			"0x1234567890123456789012345678901234567890123456789012345678901234",
+		sha3Uncles:
+			"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+		miner: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+		stateRoot:
+			"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+		transactionsRoot:
+			"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+		receiptsRoot:
+			"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+		logsBloom: `0x${"00".repeat(256)}`,
+		difficulty: "0x0",
+		number: "0x1",
+		gasLimit: "0x1c9c380",
+		gasUsed: "0x0",
+		timestamp: "0x5f5e100",
+		extraData: "0x",
+		mixHash:
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+		nonce: "0x0000000000000000",
+	};
+
+	it("parses minimal header", () => {
+		const header = BlockHeader.fromRpc(minimalRpcHeader);
+
+		expect(header.number).toBe(1n);
+		expect(header.gasLimit).toBe(0x1c9c380n);
+		expect(header.difficulty).toBe(0n);
+		expect(header.logsBloom).toHaveLength(256);
+		expect(header.nonce).toHaveLength(8);
+	});
+
+	it("maps RPC field names correctly", () => {
+		const header = BlockHeader.fromRpc(minimalRpcHeader);
+
+		// sha3Uncles -> ommersHash
+		expect(header.ommersHash).toBeDefined();
+		// miner -> beneficiary
+		expect(header.beneficiary).toBeDefined();
+	});
+
+	it("handles optional EIP-1559 baseFeePerGas", () => {
+		const header = BlockHeader.fromRpc({
+			...minimalRpcHeader,
+			baseFeePerGas: "0x3b9aca00",
+		});
+
+		expect(header.baseFeePerGas).toBe(1000000000n);
+	});
+
+	it("handles optional EIP-4844 fields", () => {
+		const header = BlockHeader.fromRpc({
+			...minimalRpcHeader,
+			baseFeePerGas: "0x3b9aca00",
+			blobGasUsed: "0x20000",
+			excessBlobGas: "0x40000",
+			parentBeaconBlockRoot:
+				"0xdef0def0def0def0def0def0def0def0def0def0def0def0def0def0def0def0",
+		});
+
+		expect(header.blobGasUsed).toBe(0x20000n);
+		expect(header.excessBlobGas).toBe(0x40000n);
+		expect(header.parentBeaconBlockRoot).toBeDefined();
+	});
+});
+
+describe("BlockBody.fromRpc", () => {
+	it("parses empty body", () => {
+		const body = BlockBody.fromRpc({
+			transactions: [],
+			uncles: [],
+		});
+
+		expect(body.transactions).toHaveLength(0);
+		expect(body.ommers).toHaveLength(0);
+		expect(body.withdrawals).toBeUndefined();
+	});
+
+	it("parses body with withdrawals", () => {
+		const body = BlockBody.fromRpc({
+			transactions: [],
+			uncles: [],
+			withdrawals: [
+				{
+					index: "0xa",
+					validatorIndex: "0x14",
+					address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+					amount: "0x773594000",
+				},
+			],
+		});
+
+		expect(body.withdrawals).toHaveLength(1);
+		// WithdrawalIndexType is bigint
+		expect(body.withdrawals?.[0].index).toBe(10n);
+		// ValidatorIndexType is number
+		expect(body.withdrawals?.[0].validatorIndex).toBe(20);
+	});
+
+	it("parses body with legacy transaction", () => {
+		const body = BlockBody.fromRpc({
+			transactions: [
+				{
+					type: "0x0",
+					nonce: "0x1",
+					gasPrice: "0x4a817c800",
+					gas: "0x5208",
+					to: `0x${"12".repeat(20)}`,
+					value: "0xde0b6b3a7640000",
+					data: "0xabcd",
+					v: "0x1b",
+					r: `0x${"11".repeat(32)}`,
+					s: `0x${"22".repeat(32)}`,
+				},
+			],
+			uncles: [],
+		});
+
+		expect(body.transactions).toHaveLength(1);
+		expect(body.transactions[0].type).toBe(0);
+		expect(body.transactions[0].gasLimit).toBe(21000n);
+	});
+});
+
+describe("Withdrawal.fromRpc", () => {
+	it("parses withdrawal", () => {
+		const withdrawal = Withdrawal.fromRpc({
+			index: "0x1",
+			validatorIndex: "0x1e240",
+			address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			amount: "0x773594000",
+		});
+
+		// WithdrawalIndexType is bigint
+		expect(withdrawal.index).toBe(1n);
+		// ValidatorIndexType is number (safe integer constraint)
+		expect(withdrawal.validatorIndex).toBe(123456);
+		// GweiType is string
+		expect(withdrawal.amount).toBe("32000000000");
+	});
+
+	it("handles large index values", () => {
+		const withdrawal = Withdrawal.fromRpc({
+			index: "0xffffffffffffffff",
+			validatorIndex: "0x7fffffff", // Use safe integer (max signed 32-bit)
+			address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			amount: "0xffffffffffffffff",
+		});
+
+		// WithdrawalIndexType is bigint - can handle large values
+		expect(withdrawal.index).toBe(0xffffffffffffffffn);
+		// ValidatorIndexType is number - must be safe integer
+		expect(withdrawal.validatorIndex).toBe(0x7fffffff);
+	});
+});
+
+```

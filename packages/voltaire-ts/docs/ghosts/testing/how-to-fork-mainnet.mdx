@@ -1,0 +1,69 @@
+---
+title: How to Fork Mainnet
+description: Fork Ethereum mainnet locally for testing against real state.
+---
+
+## Goal
+
+Create a local fork of mainnet at a specific block to test against real contract state.
+
+## Using Hardhat
+
+```typescript
+import { createProvider } from '@tevm/voltaire/provider'
+
+const provider = createProvider('http://localhost:8545')
+
+// Fork mainnet at specific block
+await provider.request({
+  method: 'hardhat_reset',
+  params: [{
+    forking: {
+      jsonRpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY',
+      blockNumber: 19000000
+    }
+  }]
+})
+
+// Now interact with mainnet state
+const balance = await provider.request({
+  method: 'eth_getBalance',
+  params: ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest']
+})
+```
+
+## Using Anvil CLI
+
+```bash
+# Start Anvil with mainnet fork
+anvil --fork-url https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY --fork-block-number 19000000
+```
+
+Then connect:
+
+```typescript
+import { createProvider } from '@tevm/voltaire/provider'
+
+const provider = createProvider('http://127.0.0.1:8545')
+
+// Mainnet state available at block 19000000
+const code = await provider.request({
+  method: 'eth_getCode',
+  params: ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', 'latest'] // WETH
+})
+```
+
+## Reset to Different Block
+
+```typescript
+// Re-fork at different block
+await provider.request({
+  method: 'hardhat_reset',
+  params: [{
+    forking: {
+      jsonRpcUrl: process.env.MAINNET_RPC,
+      blockNumber: 18500000
+    }
+  }]
+})
+```

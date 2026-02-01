@@ -1,0 +1,264 @@
+/**
+ * Tests for docs/primitives/eventlog/isRemoved.mdx
+ * Tests the code examples from the EventLog.isRemoved() documentation
+ */
+
+import { describe, expect, it } from "vitest";
+
+describe("EventLog isRemoved.mdx documentation examples", () => {
+	describe("Chain Reorganizations", () => {
+		it("detects logs removed due to reorg", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const TRANSFER_SIG = Hash.from(
+				"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+			);
+			const tokenAddress = Address.Address(
+				"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+			);
+			const fromHash = Hash.from("0x" + "11".repeat(32));
+			const toHash = Hash.from("0x" + "22".repeat(32));
+			const blockHash = Hash.from("0x" + "ab".repeat(32));
+
+			// Original log (in canonical chain)
+			const log = EventLog.create({
+				address: tokenAddress,
+				topics: [TRANSFER_SIG, fromHash, toHash],
+				data: new Uint8Array([]),
+				blockNumber: 18000000n,
+				blockHash: blockHash,
+				removed: false,
+			});
+
+			expect(EventLog.isRemoved(log)).toBe(false);
+
+			// After reorg, RPC marks log as removed
+			const updatedLog = EventLog.create({
+				address: tokenAddress,
+				topics: [TRANSFER_SIG, fromHash, toHash],
+				data: new Uint8Array([]),
+				blockNumber: 18000000n,
+				blockHash: blockHash,
+				removed: true,
+			});
+
+			expect(EventLog.isRemoved(updatedLog)).toBe(true);
+		});
+	});
+
+	describe("Filtering Active Logs", () => {
+		it("removes invalidated logs from array", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const allLogs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					removed: false,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "11".repeat(32))],
+					data: new Uint8Array([]),
+					removed: true,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "22".repeat(32))],
+					data: new Uint8Array([]),
+					removed: false,
+				}),
+			];
+
+			// Remove invalidated logs
+			// NOTE: Docs show allLogs.filter(log => !log.isRemoved())
+			// Actual API: allLogs.filter(log => !EventLog.isRemoved(log))
+			const activeLogs = allLogs.filter((log) => !EventLog.isRemoved(log));
+
+			expect(activeLogs.length).toBe(2);
+		});
+	});
+
+	describe("Detecting Reorgs", () => {
+		it("detects and handles chain reorganizations", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			type EventLogType = ReturnType<typeof EventLog.create>;
+
+			function detectReorg(newLogs: EventLogType[]): {
+				hasReorg: boolean;
+				removedCount: number;
+				affectedBlocks: Set<bigint | undefined>;
+			} {
+				const removed = newLogs.filter((log) => EventLog.isRemoved(log));
+
+				if (removed.length > 0) {
+					// Reprocess affected blocks
+					const affectedBlocks = new Set(
+						removed.map((log) => log.blockNumber).filter((n) => n !== undefined),
+					);
+
+					return {
+						hasReorg: true,
+						removedCount: removed.length,
+						affectedBlocks,
+					};
+				}
+
+				return {
+					hasReorg: false,
+					removedCount: 0,
+					affectedBlocks: new Set(),
+				};
+			}
+
+			const latestLogs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 100n,
+					removed: true,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "11".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 101n,
+					removed: true,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "22".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 102n,
+					removed: false,
+				}),
+			];
+
+			const result = detectReorg(latestLogs);
+
+			expect(result.hasReorg).toBe(true);
+			expect(result.removedCount).toBe(2);
+			expect(result.affectedBlocks.has(100n)).toBe(true);
+			expect(result.affectedBlocks.has(101n)).toBe(true);
+		});
+	});
+
+	describe("Processing with Reorg Handling", () => {
+		it("skips removed logs during processing", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			type EventLogType = ReturnType<typeof EventLog.create>;
+
+			const processedLogs: EventLogType[] = [];
+
+			function processLogs(logs: EventLogType[]): void {
+				for (const log of logs) {
+					if (EventLog.isRemoved(log)) {
+						// Skip removed log
+						continue;
+					}
+
+					// Process active log
+					processedLogs.push(log);
+				}
+			}
+
+			const allLogs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					removed: false,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "11".repeat(32))],
+					data: new Uint8Array([]),
+					removed: true,
+				}),
+			];
+
+			processLogs(allLogs);
+
+			expect(processedLogs.length).toBe(1);
+		});
+	});
+
+	describe("Default Behavior", () => {
+		it("logs without removed field default to active", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const log = EventLog.create({
+				address: Address.Address(
+					"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+				),
+				topics: [
+					Hash.from(
+						"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+					),
+				],
+				data: new Uint8Array([]),
+				// No removed field
+			});
+
+			// create() defaults removed to false
+			expect(log.removed).toBe(false);
+			expect(EventLog.isRemoved(log)).toBe(false); // treats undefined as false
+		});
+	});
+
+	describe("RPC Integration", () => {
+		it("handles removed flag from RPC response", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+			const Hex = await import("../../../src/primitives/Hex/index.js");
+
+			// RPC response includes removed flag
+			const rpcLog = {
+				address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+				topics: [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+				],
+				data: "0x0000000000000000000000000000000000000000000000000000000000000001",
+				blockNumber: "0x112a880",
+				removed: true, // Set by RPC after reorg
+			};
+
+			const log = EventLog.create({
+				address: Address.Address(rpcLog.address),
+				topics: rpcLog.topics.map((t) => Hash.from(t)),
+				data: Hex.toBytes(rpcLog.data),
+				blockNumber: BigInt(rpcLog.blockNumber),
+				removed: rpcLog.removed,
+			});
+
+			expect(EventLog.isRemoved(log)).toBe(true);
+		});
+	});
+});

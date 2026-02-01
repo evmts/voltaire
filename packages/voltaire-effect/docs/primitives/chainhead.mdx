@@ -1,0 +1,28 @@
+---
+title: ChainHead
+description: Blockchain head information
+---
+
+```typescript
+import * as ChainHead from 'voltaire-effect/ChainHead'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const head = Schema.decodeSync(ChainHead.JSON)({
+  number: 19000000n,
+  hash: '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6',
+  timestamp: 1700000000n,
+  difficulty: 1000000n,        // optional
+  totalDifficulty: 58750000n,  // optional
+})
+
+// Effect constructor
+const result = await Effect.runPromise(ChainHead.from({
+  number: 19000000n,
+  hash: '0x...',
+  timestamp: 1700000000n,
+}))
+```
+
+Block number, hash, timestamp, and optional difficulty fields.

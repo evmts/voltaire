@@ -1,0 +1,245 @@
+---
+title: TransactionUrl
+description: ERC-681 transaction URL format for QR codes and deep links
+icon: link
+---
+
+Standard URL format for representing Ethereum transactions in QR codes, deep links, and wallet integrations.
+
+<Tip title="ERC Reference">
+Implements [ERC-681](https://eips.ethereum.org/EIPS/eip-681) transaction URL specification.
+</Tip>
+
+## Overview
+
+ERC-681 defines a URI scheme for Ethereum transactions, enabling:
+- QR codes for payment requests
+- Deep links to wallet apps
+- Embeddable payment buttons
+- Standardized transaction sharing
+
+**Format:**
+```
+ethereum:<address>[@<chainId>][/<function>][?<params>]
+```
+
+## Quick Start
+
+<Tabs>
+<Tab title="Parse URL">
+
+```typescript
+import * as TransactionUrl from '@tevm/voltaire/TransactionUrl';
+
+// Simple ETH transfer
+const url1 = 'ethereum:0x1234567890123456789012345678901234567890@1?value=1000000000000000000';
+const parsed1 = TransactionUrl.parse(url1);
+
+console.log(parsed1.target); // Address
+console.log(parsed1.chainId); // 1n
+console.log(parsed1.value); // 1000000000000000000n (1 ETH)
+
+// Contract function call
+const url2 = 'ethereum:0xToken@1/transfer?address=0x5678&uint256=100';
+const parsed2 = TransactionUrl.parse(url2);
+
+console.log(parsed2.functionName); // 'transfer'
+console.log(parsed2.functionParams); // { address: '0x5678', uint256: '100' }
+```
+
+</Tab>
+<Tab title="Format URL">
+
+```typescript
+import * as TransactionUrl from '@tevm/voltaire/TransactionUrl';
+import { Address } from '@tevm/voltaire/Address';
+
+// ETH transfer
+const url1 = TransactionUrl.format({
+  target: Address.from('0x1234...'),
+  chainId: 1n,
+  value: 1000000000000000000n // 1 ETH
+});
+// 'ethereum:0x1234...@1?value=1000000000000000000'
+
+// Contract call with gas params
+const url2 = TransactionUrl.format({
+  target: Address.from('0xToken...'),
+  chainId: 1n,
+  functionName: 'approve',
+  functionParams: {
+    spender: '0x5678...',
+    amount: '1000000'
+  },
+  gas: 50000n,
+  gasPrice: 20000000000n
+});
+// 'ethereum:0xToken...@1/approve?spender=0x5678&amount=1000000&gas=50000&gasPrice=20000000000'
+```
+
+</Tab>
+<Tab title="QR Code">
+
+```typescript
+import * as TransactionUrl from '@tevm/voltaire/TransactionUrl';
+import { Address } from '@tevm/voltaire/Address';
+import QRCode from 'qrcode';
+
+// Create payment request
+const paymentUrl = TransactionUrl.format({
+  target: Address.from('0x1234...'),
+  chainId: 1n,
+  value: 1000000000000000000n, // 1 ETH
+  gas: 21000n
+});
+
+// Generate QR code
+const qrCode = await QRCode.toDataURL(paymentUrl);
+
+// Display in HTML
+document.getElementById('qr').src = qrCode;
+
+// User scans with wallet app → auto-fills transaction
+```
+
+</Tab>
+</Tabs>
+
+## URL Components
+
+### Required
+
+- **address**: Target Ethereum address (20 bytes, checksummed or lowercase)
+
+### Optional
+
+- **chainId**: Network identifier (e.g., 1 for mainnet, 137 for Polygon)
+- **functionName**: Contract function to call
+- **functionParams**: Function parameters as key-value pairs
+- **value**: ETH amount in wei
+- **gas**: Gas limit
+- **gasPrice**: Gas price in wei
+- **data**: Raw hex-encoded calldata (overrides function encoding)
+
+## API Documentation
+
+<CardGroup cols={3}>
+  <Card title="parse" icon="magnifying-glass" href="/primitives/transactionurl/parse">
+    Parse ERC-681 URL into components
+  </Card>
+  <Card title="format" icon="code" href="/primitives/transactionurl/format">
+    Format components into ERC-681 URL
+  </Card>
+  <Card title="from" icon="plus" href="/primitives/transactionurl/from">
+    Create branded TransactionUrl type
+  </Card>
+</CardGroup>
+
+## Usage Patterns
+
+### Payment Request
+
+```typescript
+import * as TransactionUrl from '@tevm/voltaire/TransactionUrl';
+import { Address } from '@tevm/voltaire/Address';
+
+function createPaymentRequest(
+  recipient: string,
+  amountEth: string,
+  chainId: number
+) {
+  const amountWei = BigInt(parseFloat(amountEth) * 1e18);
+
+  return TransactionUrl.format({
+    target: Address.from(recipient),
+    chainId: BigInt(chainId),
+    value: amountWei,
+    gas: 21000n // Standard ETH transfer
+  });
+}
+
+// Generate URL
+const url = createPaymentRequest(
+  '0x1234567890123456789012345678901234567890',
+  '1.5', // 1.5 ETH
+  1 // Mainnet
+);
+
+console.log(url);
+// ethereum:0x1234...@1?value=1500000000000000000&gas=21000
+```
+
+### Token Approval Deep Link
+
+```typescript
+import * as TransactionUrl from '@tevm/voltaire/TransactionUrl';
+import { Address } from '@tevm/voltaire/Address';
+
+function createApprovalLink(
+  tokenAddress: string,
+  spenderAddress: string,
+  amount: string
+) {
+  return TransactionUrl.format({
+    target: Address.from(tokenAddress),
+    chainId: 1n,
+    functionName: 'approve',
+    functionParams: {
+      spender: spenderAddress,
+      amount: amount
+    },
+    gas: 50000n
+  });
+}
+
+// Create approval URL
+const url = createApprovalLink(
+  '0xTokenAddress...',
+  '0xSpenderAddress...',
+  '1000000000000000000000' // 1000 tokens
+);
+
+// User clicks link → wallet opens with pre-filled approval transaction
+```
+
+### Invoice with Memo
+
+```typescript
+import * as TransactionUrl from '@tevm/voltaire/TransactionUrl';
+import { Address } from '@tevm/voltaire/Address';
+
+function createInvoice(
+  recipient: string,
+  amount: bigint,
+  invoiceId: string
+) {
+  // Encode invoice ID in transaction data (non-standard but common)
+  const memo = Buffer.from(`Invoice: ${invoiceId}`, 'utf8');
+  const data = '0x' + memo.toString('hex');
+
+  return TransactionUrl.format({
+    target: Address.from(recipient),
+    chainId: 1n,
+    value: amount,
+    data
+  });
+}
+
+const invoice = createInvoice(
+  '0x1234...',
+  1000000000000000000n, // 1 ETH
+  'INV-2024-001'
+);
+```
+
+## Specification References
+
+- [ERC-681](https://eips.ethereum.org/EIPS/eip-681) - Transaction URL format
+- [EIP-681](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-681.md) - Full specification
+- [URI Scheme](https://www.iana.org/assignments/uri-schemes/prov/ethereum) - IANA registration
+
+## Related
+
+- [Address](/primitives/address) - Ethereum address handling
+- [Abi](/primitives/abi) - Function encoding for contract calls
+- [Transaction](/primitives/transaction) - Transaction types

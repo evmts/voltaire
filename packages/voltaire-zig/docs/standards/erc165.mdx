@@ -1,0 +1,194 @@
+---
+title: ERC-165
+description: ERC-165 standard interface detection
+---
+
+# ERC-165
+
+ERC-165 provides a standard method for detecting which interfaces a smart contract implements. Essential for checking token standard support.
+
+## Function Selector
+
+```zig
+import { ERC165 } from '@tevm/primitives';
+
+// supportsInterface(bytes4)
+ERC165.SELECTOR // 0x01ffc9a7
+```
+
+## Known Interface IDs
+
+Interface IDs are computed as the XOR of all function selectors in the interface:
+
+```zig
+// Core standards
+ERC165.INTERFACE_IDS.ERC165            // 0x01ffc9a7
+ERC165.INTERFACE_IDS.ERC20             // 0x36372b07
+ERC165.INTERFACE_IDS.ERC721            // 0x80ac58cd
+ERC165.INTERFACE_IDS.ERC1155           // 0xd9b67a26
+
+// Extensions
+ERC165.INTERFACE_IDS.ERC721Metadata    // 0x5b5e139f
+ERC165.INTERFACE_IDS.ERC721Enumerable  // 0x780e9d63
+ERC165.INTERFACE_IDS.ERC1155MetadataURI // 0x0e89341c
+
+// Other standards
+ERC165.INTERFACE_IDS.ERC2981           // 0x2a55205a (NFT Royalty)
+ERC165.INTERFACE_IDS.ERC4906           // 0x49064906 (Metadata Update)
+```
+
+## Checking Interface Support
+
+### Single Interface
+
+```zig
+import { ERC165 } from '@tevm/primitives';
+
+const contract = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'; // BAYC
+
+// Check if contract supports ERC-721
+const supportsERC721 = await ERC165.supportsInterface(
+  provider,
+  contract,
+  ERC165.INTERFACE_IDS.ERC721
+);
+
+console.log(`Supports ERC-721: ${supportsERC721}`);
+```
+
+### Detect All Interfaces
+
+```zig
+// Detect all supported interfaces
+const interfaces = await ERC165.detectInterfaces(provider, contract);
+
+console.log('Supported interfaces:', interfaces);
+// ['ERC165', 'ERC721', 'ERC721Metadata', 'ERC721Enumerable']
+```
+
+## Manual Interface Checking
+
+### Encode Query
+
+```zig
+// Encode supportsInterface(bytes4) calldata
+const calldata = ERC165.encodeSupportsInterface(ERC165.INTERFACE_IDS.ERC721);
+// 0x01ffc9a7000000000000000000000000000000000000000000000000000000080ac58cd
+
+// Execute call
+const result = await provider.request({
+  method: 'eth_call',
+  params: [{ to: contract, data: calldata }, 'latest'],
+});
+
+// Decode result
+const supported = ERC165.decodeSupportsInterface(result);
+```
+
+## Complete Example
+
+```zig
+import { ERC165, ERC721, ERC1155 } from '@tevm/primitives';
+
+async function identifyToken(provider, contract: string) {
+  // Check if contract implements ERC-165
+  const supportsERC165 = await ERC165.supportsInterface(
+    provider,
+    contract,
+    ERC165.INTERFACE_IDS.ERC165
+  );
+
+  if (!supportsERC165) {
+    console.log('Contract does not implement ERC-165');
+    return null;
+  }
+
+  // Check token standards
+  const isERC721 = await ERC165.supportsInterface(
+    provider,
+    contract,
+    ERC165.INTERFACE_IDS.ERC721
+  );
+
+  const isERC1155 = await ERC165.supportsInterface(
+    provider,
+    contract,
+    ERC165.INTERFACE_IDS.ERC1155
+  );
+
+  if (isERC721) {
+    console.log('Token is ERC-721 (NFT)');
+
+    // Check extensions
+    const hasMetadata = await ERC165.supportsInterface(
+      provider,
+      contract,
+      ERC165.INTERFACE_IDS.ERC721Metadata
+    );
+
+    const hasEnumerable = await ERC165.supportsInterface(
+      provider,
+      contract,
+      ERC165.INTERFACE_IDS.ERC721Enumerable
+    );
+
+    return {
+      standard: 'ERC-721',
+      metadata: hasMetadata,
+      enumerable: hasEnumerable,
+    };
+  }
+
+  if (isERC1155) {
+    console.log('Token is ERC-1155 (Multi-token)');
+    return { standard: 'ERC-1155' };
+  }
+
+  console.log('Unknown token standard');
+  return null;
+}
+
+// Usage
+const tokenInfo = await identifyToken(provider, '0x...');
+```
+
+## Computing Interface IDs
+
+Interface IDs are the XOR of function selectors:
+
+```zig
+// ERC-721 interface ID computation:
+// balanceOf(address)                     0x70a08231
+// ownerOf(uint256)                       0x6352211e
+// safeTransferFrom(address,address,uint256) 0x42842e0e
+// transferFrom(address,address,uint256)  0x23b872dd
+// approve(address,uint256)               0x095ea7b3
+// setApprovalForAll(address,bool)        0xa22cb465
+// getApproved(uint256)                   0x081812fc
+// isApprovedForAll(address,address)      0xe985e9c5
+//
+// XOR result: 0x80ac58cd
+```
+
+## Error Handling
+
+```zig
+try {
+  const supported = await ERC165.supportsInterface(
+    provider,
+    contract,
+    ERC165.INTERFACE_IDS.ERC721
+  );
+} catch (error) {
+  // Contract doesn't implement ERC-165 or call reverted
+  console.log('Interface check failed:', error);
+}
+```
+
+The `supportsInterface` function returns `false` instead of throwing for contracts that don't implement ERC-165.
+
+## References
+
+- [EIP-165: Standard Interface Detection](https://eips.ethereum.org/EIPS/eip-165)
+- [ERC-721](/standards/erc721)
+- [ERC-1155](/standards/erc1155)

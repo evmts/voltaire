@@ -1,0 +1,312 @@
+/**
+ * Tests for code examples in docs/crypto/kzg/eip-4844.mdx
+ *
+ * Note: This MDX file is a placeholder with no code examples.
+ * Tests here cover EIP-4844 blob transaction functionality.
+ *
+ * API Discrepancies documented:
+ * - Docs are placeholder with no actual examples yet
+ */
+
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { hasNativeKzg } from "./test-utils.js";
+
+describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/eip-4844.mdx - EIP-4844 Blob Transactions", async () => {
+	const {
+		KZG,
+		BYTES_PER_BLOB,
+		BYTES_PER_COMMITMENT,
+		BYTES_PER_PROOF,
+		BYTES_PER_FIELD_ELEMENT,
+		FIELD_ELEMENTS_PER_BLOB,
+	} = await import("../../../src/crypto/KZG/index.js");
+
+	beforeAll(() => {
+		KZG.loadTrustedSetup();
+	});
+
+	afterAll(() => {
+		KZG.freeTrustedSetup();
+	});
+
+	describe("EIP-4844 Constants", () => {
+		/**
+		 * From index.mdx:
+		 * Blob Format:
+		 * - Size: 131,072 bytes (~126 KB)
+		 * - Structure: 4,096 field elements × 32 bytes
+		 * - Constraint: Each element < BLS12-381 scalar field modulus
+		 */
+		it("should have correct blob constants", () => {
+			expect(BYTES_PER_BLOB).toBe(131072);
+			expect(FIELD_ELEMENTS_PER_BLOB).toBe(4096);
+			expect(BYTES_PER_FIELD_ELEMENT).toBe(32);
+			expect(FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT).toBe(BYTES_PER_BLOB);
+		});
+
+		it("should have correct commitment/proof sizes", () => {
+			expect(BYTES_PER_COMMITMENT).toBe(48);
+			expect(BYTES_PER_PROOF).toBe(48);
+		});
+	});
+
+	describe("Blob Transaction Sidecar", () => {
+		/**
+		 * From index.mdx:
+		 * Type 3 (Blob Transaction) includes:
+		 * - blobs: Blob[] (sidecar)
+		 * - commitments: KZGCommitment[] (sidecar)
+		 * - proofs: KZGProof[] (sidecar)
+		 */
+		it("should create valid sidecar with single blob", () => {
+			const blob = KZG.generateRandomBlob();
+			const commitment = KZG.Commitment(blob);
+			const proof = KZG.computeBlobKzgProof(blob, commitment);
+
+			// Sidecar components
+			const blobs = [blob];
+			const commitments = [commitment];
+			const proofs = [proof];
+
+			expect(blobs.length).toBe(1);
+			expect(commitments.length).toBe(1);
+			expect(proofs.length).toBe(1);
+
+			// Verify proof
+			const valid = KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+			expect(valid).toBe(true);
+		});
+
+		it("should create valid sidecar with multiple blobs", () => {
+			const numBlobs = 3;
+			const blobs: Uint8Array[] = [];
+			const commitments: Uint8Array[] = [];
+			const proofs: Uint8Array[] = [];
+
+			for (let i = 0; i < numBlobs; i++) {
+				const blob = KZG.generateRandomBlob(i);
+				const commitment = KZG.Commitment(blob);
+				const proof = KZG.computeBlobKzgProof(blob, commitment);
+
+				blobs.push(blob);
+				commitments.push(commitment);
+				proofs.push(proof);
+			}
+
+			// Batch verification
+			const valid = KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+			expect(valid).toBe(true);
+		});
+	});
+
+	describe("Blob Limits Per Block", () => {
+		/**
+		 * From index.mdx:
+		 * - Target: 3 blobs per block (~393 KB)
+		 * - Max: 6 blobs per block (~786 KB)
+		 */
+		it("should support target blobs per block (3)", () => {
+			const targetBlobs = 3;
+			const blobs = Array.from({ length: targetBlobs }, (_, i) =>
+				KZG.generateRandomBlob(i),
+			);
+			const commitments = blobs.map((b) => KZG.Commitment(b));
+			const proofs = blobs.map((b, i) =>
+				KZG.computeBlobKzgProof(b, commitments[i]!),
+			);
+
+			const valid = KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+			expect(valid).toBe(true);
+
+			// Verify total size
+			const totalSize = targetBlobs * BYTES_PER_BLOB;
+			expect(totalSize).toBe(393216); // ~393 KB
+		});
+
+		it("should support max blobs per block (6)", () => {
+			const maxBlobs = 6;
+			const blobs = Array.from({ length: maxBlobs }, (_, i) =>
+				KZG.generateRandomBlob(i),
+			);
+			const commitments = blobs.map((b) => KZG.Commitment(b));
+			const proofs = blobs.map((b, i) =>
+				KZG.computeBlobKzgProof(b, commitments[i]!),
+			);
+
+			const valid = KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+			expect(valid).toBe(true);
+
+			// Verify total size
+			const totalSize = maxBlobs * BYTES_PER_BLOB;
+			expect(totalSize).toBe(786432); // ~786 KB
+		});
+	});
+
+	describe("Blob Lifecycle", () => {
+		/**
+		 * From index.mdx:
+		 * 1. Submission: Rollup creates blob transaction with KZG commitments
+		 * 2. Inclusion: Block proposer includes in block
+		 * 3. Verification: Nodes verify KZG proofs ensure commitment correctness
+		 * 4. Availability: Blobs available for 18 days
+		 * 5. Pruning: After 18 days, blobs deleted (commitments remain)
+		 */
+		it("should simulate blob submission workflow", () => {
+			// 1. Rollup creates blob with data
+			const rollupData = KZG.generateRandomBlob(12345);
+
+			// 2. Compute KZG commitment
+			const commitment = KZG.Commitment(rollupData);
+			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
+
+			// 3. Compute proof for verification
+			const proof = KZG.computeBlobKzgProof(rollupData, commitment);
+			expect(proof.length).toBe(BYTES_PER_PROOF);
+
+			// 4. Nodes verify the proof
+			const valid = KZG.verifyBlobKzgProof(rollupData, commitment, proof);
+			expect(valid).toBe(true);
+		});
+
+		it("should produce unique commitments for different rollup data", () => {
+			const rollup1Data = KZG.generateRandomBlob(1);
+			const rollup2Data = KZG.generateRandomBlob(2);
+
+			const commitment1 = KZG.Commitment(rollup1Data);
+			const commitment2 = KZG.Commitment(rollup2Data);
+
+			// Commitments should be unique
+			expect(commitment1).not.toEqual(commitment2);
+		});
+	});
+
+	describe("Versioned Hash Pattern", () => {
+		/**
+		 * From index.mdx:
+		 * blobVersionedHashes: Hash[] - KZG commitment hashes
+		 * versionedHash = sha256(0x01 || commitment)
+		 */
+		it("should produce 48-byte commitment for versioned hash input", () => {
+			const blob = KZG.generateRandomBlob();
+			const commitment = KZG.Commitment(blob);
+
+			// Commitment is 48 bytes, used as input to versioned hash
+			expect(commitment.length).toBe(48);
+
+			// In practice: versionedHash = sha256(concat([0x01], commitment))
+			// This produces a 32-byte hash for the transaction
+		});
+
+		it("should ensure commitment uniqueness for versioned hashes", () => {
+			const blobs = Array.from({ length: 6 }, (_, i) =>
+				KZG.generateRandomBlob(i),
+			);
+			const commitments = blobs.map((b) => KZG.Commitment(b));
+
+			// All commitments should be unique
+			const uniqueCommitments = new Set(commitments.map((c) => c.toString()));
+			expect(uniqueCommitments.size).toBe(commitments.length);
+		});
+	});
+
+	describe("Field Element Constraints", () => {
+		/**
+		 * From index.mdx:
+		 * Constraint: Each element < BLS12-381 scalar field modulus
+		 * High byte of each 32-byte field element must be 0
+		 */
+		it("should produce valid field elements in generated blobs", () => {
+			const blob = KZG.generateRandomBlob();
+
+			// Check all field elements have high byte = 0
+			for (let i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+				const highByte = blob[i * BYTES_PER_FIELD_ELEMENT];
+				expect(highByte).toBe(0);
+			}
+		});
+
+		it("should validate field element constraints", () => {
+			// Valid blob - all field elements have high byte = 0
+			const validBlob = KZG.createEmptyBlob();
+			expect(() => KZG.validateBlob(validBlob)).not.toThrow();
+
+			// Invalid blob - field element with high byte != 0
+			const invalidBlob = new Uint8Array(BYTES_PER_BLOB);
+			invalidBlob[0] = 1; // First field element has invalid high byte
+			expect(() => KZG.validateBlob(invalidBlob)).toThrow();
+		});
+	});
+
+	describe("Gas Economics", () => {
+		/**
+		 * From index.mdx:
+		 * Cost Comparison:
+		 * - Calldata: ~16 gas/byte × 131KB = ~2.1M gas (~$100-500)
+		 * - Blob: ~50K gas per blob (~$1-5)
+		 * Savings: 100-200x reduction
+		 */
+		it("should verify blob size for gas calculations", () => {
+			expect(BYTES_PER_BLOB).toBe(131072);
+
+			// Calldata cost estimate: 16 gas/byte
+			const calldataCost = 16 * BYTES_PER_BLOB;
+			expect(calldataCost).toBe(2097152); // ~2.1M gas
+
+			// Blob cost: ~50K gas per blob (fixed)
+			const blobCost = 50000;
+
+			// Savings ratio
+			const savingsRatio = calldataCost / blobCost;
+			expect(savingsRatio).toBeGreaterThan(40); // At least 40x cheaper
+		});
+	});
+
+	describe("Rollup Integration", () => {
+		/**
+		 * From index.mdx:
+		 * Optimistic Rollups: Post transaction data as blobs, fraud proofs reference blob data
+		 * ZK Rollups: Post full transaction data, validity proofs verify state transition
+		 */
+		it("should handle optimistic rollup blob pattern", () => {
+			// Simulate optimistic rollup posting transaction batch as blob
+			const txBatch = KZG.generateRandomBlob(1001);
+			const commitment = KZG.Commitment(txBatch);
+			const proof = KZG.computeBlobKzgProof(txBatch, commitment);
+
+			// Verification for fraud proofs
+			const valid = KZG.verifyBlobKzgProof(txBatch, commitment, proof);
+			expect(valid).toBe(true);
+		});
+
+		it("should handle ZK rollup blob pattern", () => {
+			// Simulate ZK rollup posting batch data as blob
+			const zkBatchData = KZG.generateRandomBlob(2002);
+			const commitment = KZG.Commitment(zkBatchData);
+
+			// ZK rollup uses commitment in validity proof
+			expect(commitment.length).toBe(BYTES_PER_COMMITMENT);
+
+			// Data availability verification
+			const proof = KZG.computeBlobKzgProof(zkBatchData, commitment);
+			const valid = KZG.verifyBlobKzgProof(zkBatchData, commitment, proof);
+			expect(valid).toBe(true);
+		});
+
+		it("should support data availability sampling pattern", () => {
+			const blob = KZG.generateRandomBlob();
+			const commitment = KZG.Commitment(blob);
+
+			// Light client samples random evaluation points
+			const samplePoints = [0x11, 0x22, 0x33, 0x44, 0x55];
+
+			for (const p of samplePoints) {
+				const z = new Uint8Array(32);
+				z[31] = p;
+
+				const { proof, y } = KZG.Proof(blob, z);
+				const valid = KZG.verifyKzgProof(commitment, z, y, proof);
+				expect(valid).toBe(true);
+			}
+		});
+	});
+});

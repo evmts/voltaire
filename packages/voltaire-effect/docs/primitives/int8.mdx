@@ -1,0 +1,34 @@
+---
+title: Int8
+description: Signed 8-bit integer (-128 to 127)
+---
+
+Signed 8-bit integer with overflow checking.
+
+```typescript
+import * as Int8 from 'voltaire-effect/Int8'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const value = Schema.decodeSync(Int8.Number)(42)
+const negative = Schema.decodeSync(Int8.Number)(-100)
+
+// Arithmetic
+const a = Effect.runSync(Int8.from(10))
+const b = Effect.runSync(Int8.from(20))
+const sum = Effect.runSync(Int8.plus(a, b))   // 30
+const diff = Effect.runSync(Int8.minus(a, b)) // -10
+```
+
+## API
+
+| Function | Returns |
+|----------|---------|
+| `toNumber(v)` | number |
+| `toHex(v)` | `'0x7f'` (two's complement) |
+| `equals(a, b)` | boolean |
+
+## Constants
+
+`INT8_MIN = -128`, `INT8_MAX = 127`

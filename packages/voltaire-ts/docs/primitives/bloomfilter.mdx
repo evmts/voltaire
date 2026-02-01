@@ -1,0 +1,352 @@
+---
+title: "BloomFilter"
+description: "Ethereum log bloom filters for efficient log filtering"
+---
+
+## Overview
+
+BloomFilter implements the 2048-bit bloom filter used in Ethereum block headers for efficient log filtering. Each block header contains a logs bloom that allows quick elimination of blocks that definitely don't contain logs matching a filter query.
+
+```typescript
+import * as BloomFilter from '@tevm/voltaire/primitives/BloomFilter'
+import { BITS, DEFAULT_HASH_COUNT } from '@tevm/voltaire/primitives/BloomFilter'
+
+// Create standard Ethereum bloom filter (2048 bits, 3 hash functions)
+const bloom = BloomFilter.create(BITS, DEFAULT_HASH_COUNT)
+
+// Add address and topics from a log
+BloomFilter.add(bloom, address)
+BloomFilter.add(bloom, topic0)
+BloomFilter.add(bloom, topic1)
+
+// Check if a filter query might match
+if (BloomFilter.contains(bloom, targetAddress)) {
+  // Might match - need to check actual logs
+} else {
+  // Definitely no match - skip this block
+}
+```
+
+## Ethereum Bloom Filters
+
+Ethereum uses bloom filters in block headers to enable efficient log queries:
+
+- **Size**: 256 bytes (2048 bits)
+- **Hash functions**: 3
+- **Purpose**: Quick elimination of non-matching blocks
+
+When querying logs by address or topics, nodes check the bloom filter first. A negative result means the block definitely doesn't contain matching logs. A positive result means it *might* contain matches (requires full scan).
+
+## API
+
+### Constants
+
+```typescript
+import { SIZE, BITS, DEFAULT_HASH_COUNT } from '@tevm/voltaire/primitives/BloomFilter'
+
+SIZE              // 256 (bytes)
+BITS              // 2048 (bits)
+DEFAULT_HASH_COUNT // 3
+```
+
+### create
+
+Create a new bloom filter with specified parameters.
+
+```typescript
+function create(m: number, k: number): BloomFilterType
+
+// Standard Ethereum bloom
+const bloom = BloomFilter.create(2048, 3)
+
+// Custom size (larger = lower false positive rate)
+const largeBloom = BloomFilter.create(4096, 5)
+```
+
+**Parameters:**
+- `m` - Number of bits in the filter (must be positive)
+- `k` - Number of hash functions (must be positive)
+
+**Throws:** `InvalidBloomFilterParameterError` if parameters are invalid
+
+### add
+
+Add an item to the bloom filter. Mutates the filter in place.
+
+```typescript
+function add(filter: BloomFilterType, item: Uint8Array): void
+
+const filter = BloomFilter.create(2048, 3)
+const address = new Uint8Array(20) // Contract address
+const topic = new Uint8Array(32)   // Event topic hash
+
+BloomFilter.add(filter, address)
+BloomFilter.add(filter, topic)
+```
+
+Adding is idempotent - adding the same item twice has no additional effect.
+
+### contains
+
+Check if an item might be in the filter.
+
+```typescript
+function contains(filter: BloomFilterType, item: Uint8Array): boolean
+
+// Returns false = definitely not present
+// Returns true = possibly present (check actual data)
+
+if (BloomFilter.contains(bloom, targetAddress)) {
+  // Might match - need to check actual logs
+  const logs = await fetchBlockLogs(blockNumber)
+  // ... filter logs
+} else {
+  // Definitely no match - skip this block entirely
+}
+```
+
+**Important:** Bloom filters have no false negatives but can have false positives. A `true` result requires verification against actual data.
+
+### merge
+
+Combine two bloom filters using bitwise OR. Both filters must have the same parameters.
+
+```typescript
+function merge(
+  filter1: BloomFilterType,
+  filter2: BloomFilterType
+): BloomFilterType
+
+const blockBloom1 = BloomFilter.create(2048, 3)
+const blockBloom2 = BloomFilter.create(2048, 3)
+
+// Add items to each
+BloomFilter.add(blockBloom1, addr1)
+BloomFilter.add(blockBloom2, addr2)
+
+// Combine into single bloom covering both blocks
+const rangeBloom = BloomFilter.merge(blockBloom1, blockBloom2)
+```
+
+**Throws:** `InvalidBloomFilterParameterError` if filters have different `m` or `k` values
+
+### combine
+
+Combine multiple bloom filters into one.
+
+```typescript
+function combine(...filters: BloomFilterType[]): BloomFilterType
+
+// Combine blooms from a range of blocks
+const blockBlooms = await Promise.all(
+  blockNumbers.map(n => fetchBlockBloom(n))
+)
+const rangeBloom = BloomFilter.combine(...blockBlooms)
+
+// Now rangeBloom can filter entire range at once
+if (!BloomFilter.contains(rangeBloom, targetAddress)) {
+  // No logs in entire range - skip it
+}
+```
+
+**Throws:** `InvalidBloomFilterParameterError` if filters have different parameters or array is empty
+
+### toHex
+
+Convert bloom filter to hex string.
+
+```typescript
+function toHex(filter: BloomFilterType): string
+
+const hex = BloomFilter.toHex(bloom)
+// "0x00000000...00000000" (512 hex chars for 256 bytes)
+```
+
+### fromHex
+
+Create bloom filter from hex string.
+
+```typescript
+function fromHex(hex: string, m: number, k: number): BloomFilterType
+
+// Parse bloom from block header
+const bloom = BloomFilter.fromHex(
+  blockHeader.logsBloom,
+  2048,  // m
+  3      // k
+)
+```
+
+**Throws:** `InvalidBloomFilterLengthError` if hex length doesn't match expected size
+
+### isEmpty
+
+Check if all bits are zero (no items added).
+
+```typescript
+function isEmpty(filter: BloomFilterType): boolean
+
+const bloom = BloomFilter.create(2048, 3)
+BloomFilter.isEmpty(bloom) // true
+
+BloomFilter.add(bloom, someItem)
+BloomFilter.isEmpty(bloom) // false
+```
+
+### density
+
+Calculate the percentage of bits set (0 to 1).
+
+```typescript
+function density(filter: BloomFilterType): number
+
+const bloom = BloomFilter.create(2048, 3)
+BloomFilter.density(bloom) // 0
+
+// Add items
+for (let i = 0; i < 100; i++) {
+  BloomFilter.add(bloom, new TextEncoder().encode(`item${i}`))
+}
+
+const d = BloomFilter.density(bloom) // ~0.15 (15% of bits set)
+```
+
+Higher density means higher false positive rate.
+
+### expectedFalsePositiveRate
+
+Calculate theoretical false positive probability.
+
+```typescript
+function expectedFalsePositiveRate(
+  filter: BloomFilterType,
+  itemCount: number
+): number
+
+const bloom = BloomFilter.create(2048, 3)
+
+// With 100 items in a 2048-bit filter with 3 hash functions
+BloomFilter.expectedFalsePositiveRate(bloom, 100)  // ~0.0009 (0.09%)
+
+// With 500 items (higher density)
+BloomFilter.expectedFalsePositiveRate(bloom, 500)  // ~0.11 (11%)
+```
+
+Formula: `(1 - e^(-k*n/m))^k` where k = hash functions, n = items, m = bits
+
+## Type
+
+```typescript
+type BloomFilterType = Uint8Array & {
+  readonly __tag: "BloomFilter"
+  readonly k: number  // Hash function count
+  readonly m: number  // Bit count
+  toHex(this: BloomFilterType): string
+}
+```
+
+BloomFilter is a branded `Uint8Array` with attached `k` and `m` parameters.
+
+## Use Cases
+
+### Block Range Queries
+
+Combine blooms to filter entire block ranges:
+
+```typescript
+async function findLogsInRange(
+  fromBlock: bigint,
+  toBlock: bigint,
+  targetAddress: Uint8Array
+): Promise<Log[]> {
+  const logs: Log[] = []
+
+  for (let block = fromBlock; block <= toBlock; block++) {
+    const header = await fetchBlockHeader(block)
+    const bloom = BloomFilter.fromHex(header.logsBloom, 2048, 3)
+
+    // Skip blocks that definitely don't have our address
+    if (!BloomFilter.contains(bloom, targetAddress)) {
+      continue
+    }
+
+    // Bloom matched - fetch actual logs
+    const blockLogs = await fetchBlockLogs(block)
+    logs.push(...blockLogs.filter(log =>
+      arraysEqual(log.address, targetAddress)
+    ))
+  }
+
+  return logs
+}
+```
+
+### Log Subscription Filtering
+
+Filter incoming logs efficiently:
+
+```typescript
+const subscriptionFilter = BloomFilter.create(2048, 3)
+
+// Add all addresses and topics we're interested in
+for (const addr of watchedAddresses) {
+  BloomFilter.add(subscriptionFilter, addr)
+}
+for (const topic of watchedTopics) {
+  BloomFilter.add(subscriptionFilter, topic)
+}
+
+// Check incoming blocks
+function shouldProcessBlock(blockBloom: BloomFilterType): boolean {
+  // If any of our items might be in the block
+  for (const addr of watchedAddresses) {
+    if (BloomFilter.contains(blockBloom, addr)) {
+      return true
+    }
+  }
+  for (const topic of watchedTopics) {
+    if (BloomFilter.contains(blockBloom, topic)) {
+      return true
+    }
+  }
+  return false
+}
+```
+
+## Error Handling
+
+```typescript
+import {
+  InvalidBloomFilterParameterError,
+  InvalidBloomFilterLengthError
+} from '@tevm/voltaire/primitives/BloomFilter'
+
+try {
+  const bloom = BloomFilter.create(0, 3)
+} catch (e) {
+  if (e instanceof InvalidBloomFilterParameterError) {
+    console.log(e.message) // "Bloom filter parameters must be positive"
+  }
+}
+
+try {
+  const bloom = BloomFilter.fromHex("0x1234", 2048, 3)
+} catch (e) {
+  if (e instanceof InvalidBloomFilterLengthError) {
+    console.log(e.message) // "Expected 512 hex chars, got 4"
+  }
+}
+```
+
+## Performance Notes
+
+- **O(k)** for add and contains operations where k = hash function count
+- **O(n)** for merge/combine where n = filter byte size
+- No allocations for add/contains (mutates in place or returns boolean)
+- Merge/combine allocate new filter
+
+## See Also
+
+- [EventLog](/primitives/eventlog) - Log type used in transactions
+- [Keccak256](/crypto/keccak256) - Hash function for topics
+- [Address](/primitives/address) - Address type for log filtering

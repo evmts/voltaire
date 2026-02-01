@@ -1,0 +1,537 @@
+---
+title: Hex
+description: Hex string primitives with type-safe branded strings
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/hex.ts">
+  Run Hex examples in the interactive playground
+</Card>
+
+## Overview
+
+Hex provides type-safe hex string primitives for Ethereum development. Unlike byte-array primitives, Hex values are branded `0x${string}` types that preserve the string representation while providing compile-time type safety.
+
+<Warning>
+WASM performance note: Hex string conversions and lightweight helpers (`toBytes`, `toNumber`, `toBigInt`, `toBoolean`, `concat/slice/pad`, and `toHex()` from other primitives) rarely benefit from WASM. The JS↔WASM call overhead typically outweighs the work, and JavaScript built-ins for string/number formatting are already very fast. Prefer the default JS entrypoint for these operations; use WASM for compute-heavy tasks like Keccak256 hashing, ABI/RLP encoding/decoding, or elliptic-curve crypto.
+
+Voltaire’s WASM implementations optimize for a balance of performance and bundle size. If you need maximum performance, build from source with the performance-optimized WASM target. See `/dev/build-system#typescript-targets` and `/dev/wasm#build-modes`.
+</Warning>
+
+<Tabs>
+<Tab title="Type Definition">
+
+```typescript
+import type { brand } from './brand.js'
+
+// Base unsized hex type
+export type HexType = `0x${string}` & { readonly [brand]: "Hex" }
+
+// Sized hex with specific byte count
+export type Sized<TSize extends number = number> = `0x${string}` & {
+  readonly [brand]: "Hex"
+  readonly size: TSize
+}
+
+// Alias for Sized
+export type Bytes<N extends number> = Sized<N>
+```
+
+Hex is a branded template literal type. TypeScript enforces type safety through a unique Symbol brand, preventing accidental mixing with regular strings while maintaining zero runtime overhead.
+
+</Tab>
+</Tabs>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Usage">
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Create from string or bytes
+const hex = Hex('0x1234');
+const fromBytes = Hex.fromBytes(new Uint8Array([0x12, 0x34]));
+
+// Convert to bytes
+const bytes = Hex.toBytes(hex); // Uint8Array([0x12, 0x34])
+
+// Check size
+console.log(Hex.size(hex)); // 2
+
+// Validate hex string
+console.log(Hex.isHex('0x1234')); // true
+console.log(Hex.isHex('1234'));   // false (missing 0x)
+```
+
+</Tab>
+<Tab title="Numeric Conversions">
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+
+// From numbers
+const fromNum = Hex.fromNumber(255);      // '0xff'
+const padded = Hex.fromNumber(255, 2);    // '0x00ff' (2 bytes)
+
+// From bigint
+const fromBig = Hex.fromBigInt(255n);     // '0xff'
+const big32 = Hex.fromBigInt(255n, 32);   // 32-byte padded
+
+// To numbers
+const num = Hex.toNumber(Hex('0xff'));    // 255
+const big = Hex.toBigInt(Hex('0xff'));    // 255n
+```
+
+</Tab>
+<Tab title="Manipulation">
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Concatenate
+const combined = Hex.concat(
+  Hex('0x12'),
+  Hex('0x34'),
+  Hex('0x56')
+); // '0x123456'
+
+// Slice
+const sliced = Hex.slice(Hex('0x123456'), 1);    // '0x3456'
+const range = Hex.slice(Hex('0x123456'), 0, 2);  // '0x1234'
+
+// Padding
+const left = Hex.pad(Hex('0x1234'), 4);       // '0x00001234'
+const right = Hex.padRight(Hex('0x1234'), 4); // '0x12340000'
+
+// Trim leading zeros
+const trimmed = Hex.trim(Hex('0x00001234')); // '0x1234'
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`Hex(value)`](#hex-constructor) - Create from string or bytes
+- [`fromBytes(bytes)`](#frombytes) - Convert Uint8Array to hex
+- [`fromNumber(value, size?)`](#fromnumber) - Convert number to hex
+- [`fromBigInt(value, size?)`](#frombigint) - Convert bigint to hex
+- [`fromString(value)`](#fromstring) - Create from raw string
+- [`fromBoolean(value)`](#fromboolean) - Convert boolean to hex
+- [`random(size)`](#random) - Generate random hex
+- [`zero(size)`](#zero) - Create zero-filled hex
+
+### Conversions
+
+- [`toBytes(hex)`](#tobytes) - Convert to Uint8Array
+- [`toNumber(hex)`](#tonumber) - Convert to number
+- [`toBigInt(hex)`](#tobigint) - Convert to bigint
+- [`toString(hex)`](#tostring) - Get string representation
+- [`toBoolean(hex)`](#toboolean) - Convert to boolean
+
+### Validation
+
+- [`isHex(value)`](#ishex) - Check if valid hex string
+- [`validate(value)`](#validate) - Validate and return typed hex
+- [`isSized(hex, size)`](#issized) - Check byte size
+- [`assertSize(hex, size)`](#assertsize) - Assert byte size
+
+### Manipulation
+
+- [`concat(...hexes)`](#concat) - Concatenate hex strings
+- [`slice(hex, start, end?)`](#slice) - Slice by byte index
+- [`pad(hex, size)`](#pad) - Left-pad with zeros
+- [`padRight(hex, size)`](#padright) - Right-pad with zeros
+- [`trim(hex)`](#trim) - Remove leading zeros
+- [`xor(hex, other)`](#xor) - XOR two hex strings
+- [`clone(hex)`](#clone) - Create a copy
+
+### Comparison
+
+- [`equals(a, b)`](#equals) - Check equality (case-insensitive)
+- [`size(hex)`](#size) - Get byte size
+
+---
+
+## Constructors
+
+### Hex Constructor
+
+Create a hex value from a string or bytes.
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+
+const hex = Hex('0x1234');
+const fromBytes = Hex(new Uint8Array([0x12, 0x34]));
+```
+
+### fromBytes
+
+Convert a Uint8Array to hex string.
+
+```typescript
+const hex = Hex.fromBytes(new Uint8Array([0x12, 0x34])); // '0x1234'
+```
+
+### fromNumber
+
+Convert a number to hex with optional size padding.
+
+```typescript
+Hex.fromNumber(255);     // '0xff'
+Hex.fromNumber(255, 2);  // '0x00ff'
+Hex.fromNumber(0x1234);  // '0x1234'
+```
+
+<Warning>
+Numbers must be non-negative safe integers. For values larger than `Number.MAX_SAFE_INTEGER`, use `Hex.fromBigInt()`.
+</Warning>
+
+### fromBigInt
+
+Convert a bigint to hex with optional size padding.
+
+```typescript
+Hex.fromBigInt(255n);      // '0xff'
+Hex.fromBigInt(255n, 32);  // 32-byte hex (64 chars + 0x)
+```
+
+### fromBoolean
+
+Convert a boolean to single-byte hex.
+
+```typescript
+Hex.fromBoolean(true);   // '0x01'
+Hex.fromBoolean(false);  // '0x00'
+```
+
+### random
+
+Generate cryptographically random hex of specified size.
+
+```typescript
+const random32 = Hex.random(32); // Random 32-byte hex
+```
+
+### zero
+
+Create zero-filled hex of specified size.
+
+```typescript
+Hex.zero(4);  // '0x00000000'
+Hex.zero(32); // 32 zero bytes
+```
+
+---
+
+## Conversions
+
+### toBytes
+
+Convert hex to Uint8Array.
+
+```typescript
+const bytes = Hex.toBytes(Hex('0x1234'));
+// Uint8Array([0x12, 0x34])
+```
+
+<Warning>
+Throws `InvalidFormatError` if missing 0x prefix or contains invalid characters.
+Throws `InvalidLengthError` if hex has odd number of digits.
+</Warning>
+
+### toNumber
+
+Convert hex to JavaScript number.
+
+```typescript
+Hex.toNumber(Hex('0xff'));   // 255
+Hex.toNumber(Hex('0x1234')); // 4660
+```
+
+### toBigInt
+
+Convert hex to bigint.
+
+```typescript
+Hex.toBigInt(Hex('0xff'));   // 255n
+Hex.toBigInt(Hex('0x' + 'ff'.repeat(32))); // Large number
+```
+
+### toBoolean
+
+Convert hex to boolean.
+
+```typescript
+Hex.toBoolean(Hex('0x01')); // true
+Hex.toBoolean(Hex('0x00')); // false
+```
+
+---
+
+## Validation
+
+### isHex
+
+Check if a string is valid hex format.
+
+```typescript
+Hex.isHex('0x1234');   // true
+Hex.isHex('1234');     // false (no prefix)
+Hex.isHex('0xZZZZ');   // false (invalid chars)
+Hex.isHex('0x');       // false (empty)
+```
+
+### validate
+
+Validate and return typed hex, throws on invalid input.
+
+```typescript
+const hex = Hex.validate('0x1234'); // HexType
+Hex.validate('invalid'); // throws InvalidFormatError
+```
+
+### isSized
+
+Check if hex has specific byte size (type guard).
+
+```typescript
+const hex = Hex('0x1234');
+if (Hex.isSized(hex, 2)) {
+  // hex is Sized<2>
+}
+```
+
+### assertSize
+
+Assert hex has specific byte size, returns sized type.
+
+```typescript
+const hex = Hex('0x1234');
+const sized = Hex.assertSize(hex, 2); // Sized<2>
+Hex.assertSize(hex, 4); // throws InvalidLengthError
+```
+
+---
+
+## Manipulation
+
+### concat
+
+Concatenate multiple hex strings.
+
+```typescript
+Hex.concat(
+  Hex('0x12'),
+  Hex('0x34'),
+  Hex('0x56')
+); // '0x123456'
+```
+
+### slice
+
+Slice hex by byte indices.
+
+```typescript
+const hex = Hex('0x123456');
+Hex.slice(hex, 1);     // '0x3456' (from byte 1)
+Hex.slice(hex, 0, 2);  // '0x1234' (bytes 0-1)
+Hex.slice(hex, 1, 2);  // '0x34'   (byte 1 only)
+```
+
+### pad
+
+Left-pad hex to target byte size.
+
+```typescript
+Hex.pad(Hex('0x1234'), 4);  // '0x00001234'
+Hex.pad(Hex('0x1234'), 1);  // throws (exceeds target)
+```
+
+### padRight
+
+Right-pad hex to target byte size.
+
+```typescript
+Hex.padRight(Hex('0x1234'), 4); // '0x12340000'
+```
+
+### trim
+
+Remove leading zero bytes.
+
+```typescript
+Hex.trim(Hex('0x00001234')); // '0x1234'
+Hex.trim(Hex('0x00000000')); // '0x'
+```
+
+### xor
+
+XOR two hex strings of same length.
+
+```typescript
+Hex.xor(Hex('0x12'), Hex('0x34')); // '0x26'
+Hex.xor(Hex('0xff'), Hex('0xff')); // '0x00'
+```
+
+### clone
+
+Create a copy of a hex string.
+
+```typescript
+const hex1 = Hex('0x1234');
+const hex2 = Hex.clone(hex1);
+Hex.equals(hex1, hex2); // true
+```
+
+---
+
+## Comparison
+
+### equals
+
+Check equality (case-insensitive).
+
+```typescript
+Hex.equals(Hex('0x1234'), Hex('0x1234')); // true
+Hex.equals(Hex('0xABCD'), Hex('0xabcd')); // true
+```
+
+### size
+
+Get byte size of hex.
+
+```typescript
+Hex.size(Hex('0x1234'));   // 2
+Hex.size(Hex('0x'));       // 0
+Hex.size(Hex('0x123456')); // 3
+```
+
+---
+
+## Types
+
+<Tabs>
+<Tab title="HexType">
+
+```typescript
+type HexType = `0x${string}` & { readonly [brand]: "Hex" }
+```
+
+Base branded hex type. Any length, validated at creation.
+
+</Tab>
+<Tab title="Sized">
+
+```typescript
+type Sized<TSize extends number = number> = `0x${string}` & {
+  readonly [brand]: "Hex"
+  readonly size: TSize
+}
+```
+
+Sized hex with compile-time size information. Used with `assertSize()` and `isSized()`.
+
+</Tab>
+<Tab title="Bytes">
+
+```typescript
+type Bytes<N extends number> = Sized<N>
+```
+
+Alias for `Sized<N>`. Useful for fixed-size hex values.
+
+</Tab>
+</Tabs>
+
+## Error Handling
+
+Hex operations throw typed errors for invalid inputs. All errors extend base classes from `@tevm/voltaire/errors`:
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+import {
+  InvalidFormatError,
+  InvalidCharacterError,
+  OddLengthError,
+  SizeExceededError,
+  InvalidBooleanHexError
+} from '@tevm/voltaire/Hex/errors';
+
+try {
+  Hex.validate('invalid'); // missing 0x
+} catch (e) {
+  if (e instanceof InvalidFormatError) {
+    console.log(e.name);    // 'InvalidHexFormatError'
+    console.log(e.code);    // 'HEX_MISSING_PREFIX'
+    console.log(e.value);   // 'invalid'
+  }
+}
+
+try {
+  Hex.validate('0xZZ'); // invalid characters
+} catch (e) {
+  if (e instanceof InvalidCharacterError) {
+    console.log(e.name);  // 'InvalidHexCharacterError'
+    console.log(e.code);  // 'HEX_INVALID_CHARACTER'
+  }
+}
+
+try {
+  Hex.pad(Hex('0x1234'), 1); // exceeds target size
+} catch (e) {
+  if (e instanceof SizeExceededError) {
+    console.log(e.name);  // 'HexSizeExceededError'
+    console.log(e.code);  // 'HEX_SIZE_EXCEEDED'
+  }
+}
+```
+
+### Error Types
+
+| Error Class | name Property | Code | Description |
+|-------------|---------------|------|-------------|
+| `InvalidFormatError` | `InvalidHexFormatError` | `HEX_MISSING_PREFIX` | Missing `0x` prefix |
+| `InvalidCharacterError` | `InvalidHexCharacterError` | `HEX_INVALID_CHARACTER` | Non-hex character found |
+| `OddLengthError` | `OddLengthHexError` | `HEX_ODD_LENGTH` | Odd number of hex digits |
+| `InvalidLengthError` | `InvalidHexLengthError` | `HEX_INVALID_LENGTH` | Invalid length |
+| `SizeExceededError` | `HexSizeExceededError` | `HEX_SIZE_EXCEEDED` | Size exceeds target |
+| `InvalidBooleanHexError` | `InvalidBooleanHexError` | `HEX_INVALID_BOOLEAN` | Invalid boolean value |
+| `NegativeNumberError` | `NegativeNumberError` | `HEX_NEGATIVE_NUMBER` | Negative number |
+| `UnsafeIntegerError` | `UnsafeIntegerError` | `HEX_UNSAFE_INTEGER` | Exceeds MAX_SAFE_INTEGER |
+| `NonIntegerError` | `NonIntegerError` | `HEX_NON_INTEGER` | Non-integer value |
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { fromBytes, toBytes, concat } from '@tevm/voltaire/Hex';
+
+const hex = fromBytes(new Uint8Array([0x12, 0x34]));
+const bytes = toBytes(hex);
+const combined = concat(hex, hex);
+
+// Only these 3 functions included in bundle
+```
+
+<Tip title="Bundle Impact">
+Importing from `@tevm/voltaire/Hex` instead of the main entry point enables tree-shaking. Functions like `xor`, `random`, and numeric conversions are excluded if unused.
+</Tip>
+
+## Related
+
+- [Hex (Effect)](https://voltaire-effect.tevm.sh/primitives/hex) - Effect.ts integration with Schema validation
+- [Address](/primitives/address/index) - 20-byte Ethereum addresses (uses Hex internally)
+- [Bytes](/primitives/bytes/index) - Fixed-size byte arrays
+- [Keccak256](/crypto/keccak256) - Hash functions that produce hex output
+
+## Specification References
+
+- [Ethereum Hex Encoding](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/) - Hex format in Ethereum
+- [JSON-RPC Hex](https://ethereum.org/en/developers/docs/apis/json-rpc/) - Hex string conventions in JSON-RPC

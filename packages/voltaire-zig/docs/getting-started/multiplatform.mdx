@@ -1,0 +1,146 @@
+---
+title: Multiplatform
+description: Works everywhere - TypeScript, Zig, and any language with C-FFI
+---
+
+Works everywhere. TypeScript, Zig, any language with C-FFI.
+
+<CardGroup cols={2}>
+  <Card title="First Class Support" icon="star">
+    TypeScript, Zig, and C - fully supported with complete APIs and documentation
+  </Card>
+  <Card title="C-FFI Support" icon="globe">
+    Swift, Go, Python, Kotlin, and any language with foreign function interface support
+  </Card>
+</CardGroup>
+
+<Warning>
+C-FFI bindings require manual memory management. Always call corresponding `_free` functions to prevent leaks.
+</Warning>
+
+## Consistent API
+
+The Tevm API is consistent across all languages.
+
+<Tabs>
+<Tab title="TypeScript">
+
+```zig
+import { Address } from '@tevm/voltaire';
+
+function main() {
+  const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+
+  address.toChecksummed();
+  address.toHex();
+  address.isZero();
+  address.equals(otherAddress);
+}
+```
+
+</Tab>
+
+<Tab title="Zig">
+
+```zig
+const Address = @import("primitives").Address;
+
+pub fn main() !void {
+    const address = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+    _ = address.toChecksummed();
+    _ = address.toHex();
+    _ = address.isZero();
+    _ = address.equals(otherAddress);
+}
+```
+
+</Tab>
+
+<Tab title="C">
+
+```c
+#include "primitives.h"
+
+int main() {
+    Address* address = tevm_address_from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+    char* checksummed = tevm_address_to_checksummed(address);
+    char* hex = tevm_address_to_hex(address);
+    bool is_zero = tevm_address_is_zero(address);
+    bool equal = tevm_address_equals(address, other_address);
+
+    // Free memory
+    tevm_string_free(checksummed);
+    tevm_string_free(hex);
+    tevm_address_free(address);
+}
+```
+
+</Tab>
+
+<Tab title="Swift">
+
+```swift
+import Foundation
+import Tevm
+
+// Idiomatic Swift wrapper using C-FFI
+class Address {
+    private let ptr: OpaquePointer
+
+    init(_ hex: String) throws {
+        guard let ptr = tevm_address_from_hex(hex) else {
+            throw TevmError.invalidAddress
+        }
+        self.ptr = ptr
+    }
+
+    deinit {
+        tevm_address_free(ptr)
+    }
+
+    func toChecksummed() -> String {
+        let result = tevm_address_to_checksummed(ptr)
+        defer { tevm_string_free(result) }
+        return String(cString: result!)
+    }
+
+    func toHex() -> String {
+        let result = tevm_address_to_hex(ptr)
+        defer { tevm_string_free(result) }
+        return String(cString: result!)
+    }
+
+    func isZero() -> Bool {
+        return tevm_address_is_zero(ptr)
+    }
+
+    func equals(_ other: Address) -> Bool {
+        return tevm_address_equals(ptr, other.ptr)
+    }
+}
+
+// Usage matches TypeScript API
+let address = try Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+address.toChecksummed()
+address.toHex()
+address.isZero()
+address.equals(otherAddress)
+```
+
+</Tab>
+</Tabs>
+
+## Looking for Help
+
+We're looking for contributors to help build idiomatic wrappers for:
+
+- **Go** - Native bindings via cgo
+- **Python** - Bindings via ctypes/cffi
+- **Swift** - iOS/macOS wrapper with automatic memory management
+- **Kotlin** - Android/JVM bindings
+
+<Tip>
+Interested in contributing? Check out [src/c_api.zig](https://github.com/evmts/voltaire/blob/main/src/c_api.zig) for the C-FFI interface and [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h) for the generated C header. Join our [Telegram](https://t.me/+ANThR9bHDLAwMjUx) or open an issue on [GitHub](https://github.com/evmts/voltaire/issues).
+</Tip>

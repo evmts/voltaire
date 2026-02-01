@@ -1,0 +1,31 @@
+---
+title: Abi.Error.GetSelector
+description: Build a selector function with a custom keccak256 implementation
+---
+
+## Overview
+
+`Error.GetSelector` builds a selector function using a custom `keccak256String` implementation. Use this for alternate runtimes or WASM/native hashing.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const getSelector = Abi.Error.GetSelector({
+  keccak256String: (value) => myKeccak256String(value)
+});
+
+const error = {
+  type: 'error',
+  name: 'Unauthorized',
+  inputs: []
+} as const;
+
+const selector = getSelector(error);
+```
+
+## See Also
+
+- [getSelector](/primitives/abi/error/get-selector) - Default selector implementation
+- [getSignature](/primitives/abi/error/get-signature) - Error signature string

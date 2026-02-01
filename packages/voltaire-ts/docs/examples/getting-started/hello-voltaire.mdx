@@ -1,0 +1,26 @@
+---
+title: "Hello Voltaire"
+description: "Your first Voltaire example - hashing a simple string with Keccak256"
+---
+
+Your first Voltaire example - hashing a simple string with Keccak256
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Hash a string using Keccak256
+const hash = Keccak256("Hello, Voltaire!");
+
+// The hash is returned as a Uint8Array - convert to hex
+const hexHash = Hex.fromBytes(hash);
+```
+
+<Tip>
+This is a fully executable example. View the complete source with test assertions at [`examples/getting-started/hello-voltaire.ts`](https://github.com/evmts/voltaire/blob/main/examples/getting-started/hello-voltaire.ts).
+</Tip>
+
+## Related
+
+- [API Reference](/primitives)
+- [More Examples](/examples)

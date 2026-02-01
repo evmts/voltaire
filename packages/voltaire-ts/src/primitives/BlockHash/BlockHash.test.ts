@@ -1,0 +1,186 @@
+import { describe, expect, it } from "vitest";
+import {
+	InvalidBlockHashFormatError,
+	InvalidBlockHashLengthError,
+} from "./errors.js";
+import * as BlockHash from "./index.js";
+
+describe("BlockHash", () => {
+	const testHash =
+		"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+	const testBytes = new Uint8Array([
+		0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12,
+		0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90,
+		0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90,
+	]);
+
+	describe("from", () => {
+		it("creates from hex string", () => {
+			const hash = BlockHash.from(testHash);
+			expect(hash).toHaveLength(32);
+		});
+
+		it("creates from bytes", () => {
+			const hash = BlockHash.from(testBytes);
+			expect(hash).toHaveLength(32);
+		});
+
+		it("throws on invalid type", () => {
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				BlockHash.from(123 as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockHashFormatError);
+				expect((e as InvalidBlockHashFormatError).name).toBe(
+					"InvalidBlockHashFormatError",
+				);
+				expect((e as InvalidBlockHashFormatError).message).toContain(
+					"Unsupported BlockHash value type",
+				);
+			}
+		});
+	});
+
+	describe("fromHex", () => {
+		it("parses valid hex", () => {
+			const hash = BlockHash.fromHex(testHash);
+			expect(hash).toHaveLength(32);
+		});
+
+		it("parses hex without 0x prefix", () => {
+			const hash = BlockHash.fromHex(testHash.slice(2));
+			expect(hash).toHaveLength(32);
+		});
+
+		it("throws on wrong length", () => {
+			try {
+				BlockHash.fromHex("0x1234");
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockHashFormatError);
+				expect((e as InvalidBlockHashFormatError).name).toBe(
+					"InvalidBlockHashFormatError",
+				);
+				expect((e as InvalidBlockHashFormatError).message).toContain(
+					"must be 64 characters",
+				);
+			}
+		});
+
+		it("throws on invalid characters", () => {
+			try {
+				BlockHash.fromHex(
+					"0xgg34567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockHashFormatError);
+				expect((e as InvalidBlockHashFormatError).name).toBe(
+					"InvalidBlockHashFormatError",
+				);
+				expect((e as InvalidBlockHashFormatError).message).toContain(
+					"invalid characters",
+				);
+			}
+		});
+	});
+
+	describe("fromBytes", () => {
+		it("throws on wrong length", () => {
+			try {
+				BlockHash.fromBytes(new Uint8Array(31));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockHashLengthError);
+				expect((e as InvalidBlockHashLengthError).name).toBe(
+					"InvalidBlockHashLengthError",
+				);
+				expect((e as InvalidBlockHashLengthError).message).toContain(
+					"must be 32 bytes",
+				);
+			}
+
+			try {
+				BlockHash.fromBytes(new Uint8Array(33));
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockHashLengthError);
+				expect((e as InvalidBlockHashLengthError).name).toBe(
+					"InvalidBlockHashLengthError",
+				);
+			}
+		});
+
+		it("accepts 32 bytes", () => {
+			const hash = BlockHash.fromBytes(testBytes);
+			expect(hash).toHaveLength(32);
+		});
+
+		it("returns a copy, not a reference to the input", () => {
+			const input = new Uint8Array(32);
+			input[0] = 0xaa;
+			const hash = BlockHash.fromBytes(input);
+
+			// Verify initial value
+			expect(hash[0]).toBe(0xaa);
+
+			// Mutate the original input
+			input[0] = 0xbb;
+
+			// BlockHash should not be affected by mutation of input
+			expect(hash[0]).toBe(0xaa);
+
+			// Verify they are different array instances
+			expect(hash).not.toBe(input);
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts to hex", () => {
+			const hash = BlockHash.fromBytes(testBytes);
+			const hex = BlockHash.toHex(hash);
+			expect(hex).toBe(testHash);
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal hashes", () => {
+			const a = BlockHash.fromHex(testHash);
+			const b = BlockHash.fromHex(testHash);
+			expect(BlockHash.equals(a, b)).toBe(true);
+		});
+
+		it("returns false for different hashes", () => {
+			const a = BlockHash.fromHex(testHash);
+			const b = BlockHash.fromHex(
+				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			);
+			expect(BlockHash.equals(a, b)).toBe(false);
+		});
+	});
+
+	describe("error properties", () => {
+		it("InvalidBlockHashLengthError has correct properties", () => {
+			const error = new InvalidBlockHashLengthError("Test message", {
+				value: new Uint8Array(10),
+				expected: "32 bytes",
+			});
+			expect(error.name).toBe("InvalidBlockHashLengthError");
+			expect(error.code).toBe("INVALID_BLOCK_HASH_LENGTH");
+			expect(error.value).toEqual(new Uint8Array(10));
+			expect(error.expected).toBe("32 bytes");
+		});
+
+		it("InvalidBlockHashFormatError has correct properties", () => {
+			const error = new InvalidBlockHashFormatError("Test message", {
+				value: "0xinvalid",
+				expected: "valid hex",
+			});
+			expect(error.name).toBe("InvalidBlockHashFormatError");
+			expect(error.code).toBe("INVALID_BLOCK_HASH_FORMAT");
+			expect(error.value).toBe("0xinvalid");
+			expect(error.expected).toBe("valid hex");
+		});
+	});
+});

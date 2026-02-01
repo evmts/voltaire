@@ -1,0 +1,312 @@
+---
+title: Rlp.encode
+description: Universal encoder for converting data to RLP format
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/rlp.ts">
+  Run RLP examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Encodable Type
+
+`Encodable` is a union type accepting any input that can be encoded to RLP:
+
+```typescript
+type Encodable =
+  | Uint8Array
+  | BrandedRlp
+  | Array<Uint8Array | BrandedRlp | any>
+```
+
+### Accepted Types
+
+**Uint8Array** - Raw byte arrays (encoded as RLP strings):
+```typescript
+const bytes = new Uint8Array([1, 2, 3])
+const encoded = Rlp.encode(bytes)
+// => Uint8Array([0x83, 1, 2, 3])
+```
+
+**BrandedRlp** - RLP data structures:
+```typescript
+const data = Rlp(new Uint8Array([1, 2, 3]))
+const encoded = Rlp.encode(data)
+```
+
+**Arrays** - Encoded as RLP lists:
+```typescript
+const list = [new Uint8Array([1]), new Uint8Array([2])]
+const encoded = Rlp.encode(list)
+// => Uint8Array([0xc4, 0x01, 0x02])
+```
+
+**Nested Arrays** - Arbitrary nesting supported:
+```typescript
+const nested = [
+  new Uint8Array([1]),
+  [
+    new Uint8Array([2]),
+    [new Uint8Array([3])]
+  ]
+]
+const encoded = Rlp.encode(nested)
+```
+
+## Usage Patterns
+
+### Transaction Encoding
+
+Ethereum transactions use RLP encoding for signing and broadcasting:
+
+```typescript
+import { Rlp } from 'tevm'
+
+// Legacy transaction: [nonce, gasPrice, gas, to, value, data, v, r, s]
+const txData = [
+  new Uint8Array([0x00]),                    // nonce
+  new Uint8Array([0x04, 0xa8, 0x17, 0xc8]),  // gasPrice: 78000000
+  new Uint8Array([0x52, 0x08]),               // gas: 21000
+  new Uint8Array(20).fill(0x01),              // to (address)
+  new Uint8Array([0x00]),                    // value: 0
+  Bytes(),                         // data: empty
+  new Uint8Array([0x1b]),                    // v: 27
+  Bytes32().fill(0x02),              // r: signature r
+  Bytes32().fill(0x03)               // s: signature s
+]
+
+const encoded = Rlp.encode(txData)
+// Ready for broadcast or signature verification
+```
+
+### Block Encoding
+
+Block headers are RLP-encoded lists:
+
+```typescript
+import { Rlp } from 'tevm'
+
+// Simplified block header
+const header = [
+  Bytes32().fill(0x01),  // parentHash
+  Bytes32().fill(0x02),  // uncleHash
+  new Uint8Array(20).fill(0x03),  // coinbase (miner address)
+  Bytes32().fill(0x04),  // stateRoot
+  Bytes32().fill(0x05),  // transactionsRoot
+  Bytes32().fill(0x06),  // receiptsRoot
+  new Uint8Array(256).fill(0x00), // logsBloom
+  new Uint8Array([0x01]),         // difficulty
+  new Uint8Array([0x01]),         // number
+  new Uint8Array([0x5f, 0x5e, 0x100]), // gasLimit
+  new Uint8Array([0x00]),         // gasUsed
+  Bytes4(),              // timestamp
+  Bytes()              // extraData
+]
+
+const encoded = Rlp.encode(header)
+// Use for block hash calculation
+const blockHash = keccak256(encoded)
+```
+
+### Custom Schema
+
+Define typed structures with RLP encoding:
+
+```typescript
+import { Rlp } from 'tevm'
+
+interface StorageProof {
+  key: Uint8Array
+  value: Uint8Array
+  proof: Uint8Array[]
+}
+
+function encodeStorageProof(proof: StorageProof): Uint8Array {
+  return Rlp.encode([
+    proof.key,
+    proof.value,
+    proof.proof  // Nested list of proof nodes
+  ])
+}
+
+const proof: StorageProof = {
+  key: new Uint8Array([0x01, 0x02]),
+  value: new Uint8Array([0x03, 0x04]),
+  proof: [
+    Bytes32().fill(0x05),
+    Bytes32().fill(0x06)
+  ]
+}
+
+const encoded = encodeStorageProof(proof)
+```
+
+## Encoding Rules
+
+RLP encoding uses the first byte (prefix) to indicate data type and length:
+
+### Single Byte (0x00-0x7f)
+
+Bytes with value < 0x80 encode as themselves:
+
+```typescript
+const byte = new Uint8Array([0x7f])
+const encoded = Rlp.encode(byte)
+// => Uint8Array([0x7f])  (no prefix)
+```
+
+### Short String (0-55 bytes)
+
+For byte arrays 0-55 bytes, prefix with `0x80 + length`:
+
+```typescript
+// Empty bytes
+const empty = Bytes()
+const encoded = Rlp.encode(empty)
+// => Uint8Array([0x80])
+
+// 3 bytes
+const bytes = new Uint8Array([1, 2, 3])
+const encoded = Rlp.encode(bytes)
+// => Uint8Array([0x83, 1, 2, 3])
+// 0x83 = 0x80 + 3
+```
+
+### Long String (56+ bytes)
+
+For byte arrays 56+ bytes, use long form: `[0xb7 + length_of_length, ...length_bytes, ...bytes]`
+
+```typescript
+// 56 bytes (minimum for long form)
+const long = new Uint8Array(56).fill(0x42)
+const encoded = Rlp.encode(long)
+// => Uint8Array([0xb8, 56, ...long])
+// 0xb8 = 0xb7 + 1 (length needs 1 byte)
+
+// 256 bytes (length needs 2 bytes)
+const longer = new Uint8Array(256).fill(0x42)
+const encoded = Rlp.encode(longer)
+// => Uint8Array([0xb9, 0x01, 0x00, ...longer])
+// 0xb9 = 0xb7 + 2 (length needs 2 bytes)
+// [0x01, 0x00] = 256 in big-endian
+```
+
+### Short List (< 56 bytes total)
+
+For lists with total payload < 56 bytes, prefix with `0xc0 + total_length`:
+
+```typescript
+// Empty list
+const empty = []
+const encoded = Rlp.encode(empty)
+// => Uint8Array([0xc0])
+
+// List with 2 single bytes
+const list = [new Uint8Array([0x01]), new Uint8Array([0x02])]
+const encoded = Rlp.encode(list)
+// => Uint8Array([0xc2, 0x01, 0x02])
+// 0xc2 = 0xc0 + 2
+```
+
+### Long List (56+ bytes total)
+
+For lists with total payload >= 56 bytes, use long form: `[0xf7 + length_of_length, ...length_bytes, ...encoded_items]`
+
+```typescript
+// Create list with 60 bytes total payload
+const items = Array({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
+const encoded = Rlp.encode(items)
+// First bytes: [0xf8, 60, ...]
+// 0xf8 = 0xf7 + 1 (length needs 1 byte)
+```
+
+## Algorithm
+
+The `encode` method dispatches to specialized encoders:
+
+1. **Uint8Array** → Uses byte string encoding
+2. **BrandedRlp (bytes)** → Encodes as byte string
+3. **BrandedRlp (list)** → Encodes as list
+4. **Array** → Recursively encodes each element as list
+
+```typescript
+// These are equivalent
+const manual = Rlp.encodeList([
+  Rlp.encodeBytes(new Uint8Array([1])),
+  Rlp.encodeBytes(new Uint8Array([2]))
+])
+
+const automatic = Rlp.encode([
+  new Uint8Array([1]),
+  new Uint8Array([2])
+])
+```
+
+<Tip>
+Use `encode` for general-purpose encoding. Use `encodeBytes` or `encodeList` when you know the specific type for slightly better performance.
+</Tip>
+
+## Performance
+
+### Pre-sizing Buffers
+
+Calculate size before encoding for better performance:
+
+```typescript
+import { Rlp } from 'tevm'
+
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+]
+
+// Calculate size without encoding
+const size = Rlp.getEncodedLength(items)
+console.log(`Will need ${size} bytes`)
+
+// Then encode
+const encoded = Rlp.encode(items)
+```
+
+### Tree-shaking
+
+Use specific encoders when type is known:
+
+```typescript
+import { encodeBytes, encodeList } from 'tevm/BrandedRlp'
+
+// More efficient than generic encode()
+const bytesEncoded = encodeBytes(new Uint8Array([1, 2, 3]))
+const listEncoded = encodeList([bytes1, bytes2])
+```
+
+### Caching
+
+Cache encoded results when encoding the same data multiple times:
+
+```typescript
+const data = new Uint8Array([1, 2, 3])
+const encoded = Rlp.encode(data)
+
+// Reuse cached result
+for (let i = 0; i < 1000; i++) {
+  processEncoded(encoded)  // No re-encoding
+}
+```
+
+<Warning>
+Encoding is allocation-heavy for large data structures. Consider using WASM implementation for performance-critical operations.
+</Warning>
+
+## See Also
+
+- [decode](/primitives/rlp/decode) - Decode RLP-encoded bytes
+- [encodeBytes](/primitives/rlp/encode-bytes) - Encode byte string
+- [encodeList](/primitives/rlp/encode-list) - Encode list
+- [encodeArray](/primitives/rlp/encode-array) - Encode with schema
+- [Algorithm](/primitives/rlp/algorithm) - RLP specification
+- [WASM](/primitives/rlp/wasm) - High-performance WASM encoder

@@ -1,0 +1,488 @@
+/**
+ * Tests for docs/primitives/chain/index.mdx
+ *
+ * Validates that all code examples in the Chain documentation work correctly.
+ * Chain provides Ethereum chain configuration and network metadata.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Chain Documentation - index.mdx", () => {
+	describe("Chain Constructor", () => {
+		it("should create Chain with Chain() constructor", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			// Create a minimal chain configuration
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: ["https://mainnet.infura.io/v3/"],
+				nativeCurrency: {
+					name: "Ether",
+					symbol: "ETH",
+					decimals: 18,
+				},
+			};
+
+			const chain = Chain(chainConfig);
+
+			expect(chain).toBeDefined();
+			expect(chain.chainId).toBe(1);
+			expect(chain.name).toBe("Ethereum Mainnet");
+		});
+
+		it("should create Chain with Chain.from()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Sepolia",
+				chain: "ETH",
+				chainId: 11155111,
+				shortName: "sep",
+				rpc: ["https://sepolia.infura.io/v3/"],
+				nativeCurrency: {
+					name: "Sepolia Ether",
+					symbol: "ETH",
+					decimals: 18,
+				},
+			};
+
+			const chain = Chain.from(chainConfig);
+
+			expect(chain).toBeDefined();
+			expect(chain.chainId).toBe(11155111);
+		});
+	});
+
+	describe("Chain Lookup", () => {
+		it("should look up chain by ID with fromId()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			// Look up Ethereum mainnet
+			const mainnet = Chain.fromId(1);
+
+			// May return undefined if chain not in lookup
+			if (mainnet) {
+				expect(mainnet.chainId).toBe(1);
+				expect(mainnet.name).toContain("Ethereum");
+			}
+		});
+
+		it("should return undefined for unknown chain ID", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const unknown = Chain.fromId(999999999);
+
+			expect(unknown).toBeUndefined();
+		});
+
+		it("should have byId lookup record", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(Chain.byId).toBeDefined();
+			expect(typeof Chain.byId).toBe("object");
+		});
+	});
+
+	describe("Chain Metadata Methods", () => {
+		it("should get chain name with getName()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const name = Chain.getName(chainConfig);
+			expect(name).toBe("Ethereum Mainnet");
+		});
+
+		it("should get short name with getShortName()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const shortName = Chain.getShortName(chainConfig);
+			expect(shortName).toBe("eth");
+		});
+
+		it("should get native currency symbol with getSymbol()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const symbol = Chain.getSymbol(chainConfig);
+			expect(symbol).toBe("ETH");
+		});
+	});
+
+	describe("Network URLs", () => {
+		it("should get RPC URL with getRpcUrl()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: ["https://mainnet.infura.io/v3/"],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const rpcUrl = Chain.getRpcUrl(chainConfig);
+			expect(typeof rpcUrl).toBe("string");
+		});
+
+		it("should get explorer URL with getExplorerUrl()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+				explorers: [
+					{
+						name: "Etherscan",
+						url: "https://etherscan.io",
+						standard: "EIP3091",
+					},
+				],
+			};
+
+			const explorerUrl = Chain.getExplorerUrl(chainConfig);
+			if (explorerUrl) {
+				expect(explorerUrl).toContain("etherscan");
+			}
+		});
+
+		it("should get websocket URL with getWebsocketUrl()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: ["wss://mainnet.infura.io/ws/v3/"],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const wsUrl = Chain.getWebsocketUrl(chainConfig);
+			// May return undefined, array, or string depending on implementation
+			expect(
+				wsUrl === undefined ||
+					typeof wsUrl === "string" ||
+					Array.isArray(wsUrl),
+			).toBe(true);
+		});
+	});
+
+	describe("Chain Classification", () => {
+		it("should check if chain is testnet with isTestnet()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const mainnet = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const sepolia = {
+				name: "Sepolia",
+				chain: "ETH",
+				chainId: 11155111,
+				shortName: "sep",
+				rpc: [],
+				nativeCurrency: {
+					name: "Sepolia Ether",
+					symbol: "ETH",
+					decimals: 18,
+				},
+				testnet: true,
+			};
+
+			expect(Chain.isTestnet(mainnet)).toBe(false);
+			expect(Chain.isTestnet(sepolia)).toBe(true);
+		});
+
+		it("should check if chain is L2 with isL2()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const mainnet = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const isL2 = Chain.isL2(mainnet);
+			expect(typeof isL2).toBe("boolean");
+		});
+
+		it("should get L1 chain with getL1Chain()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const optimism = {
+				name: "Optimism",
+				chain: "ETH",
+				chainId: 10,
+				shortName: "oeth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+				parent: {
+					chain: "eip155-1",
+					type: "L2",
+				},
+			};
+
+			const l1Chain = Chain.getL1Chain(optimism);
+			// May return undefined or the L1 chain
+			expect(l1Chain === undefined || typeof l1Chain === "object").toBe(
+				true,
+			);
+		});
+	});
+
+	describe("Hardfork Information", () => {
+		it("should get latest hardfork with getLatestHardfork()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const hardfork = Chain.getLatestHardfork(chainConfig);
+			// May return undefined or a hardfork name
+			expect(
+				hardfork === undefined || typeof hardfork === "string",
+			).toBe(true);
+		});
+
+		it("should get hardfork block with getHardforkBlock()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const block = Chain.getHardforkBlock(chainConfig, "london");
+			// May return undefined or a block number
+			expect(
+				block === undefined ||
+					typeof block === "number" ||
+					typeof block === "bigint",
+			).toBe(true);
+		});
+
+		it("should check hardfork support with supportsHardfork()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const supportsLondon = Chain.supportsHardfork(
+				chainConfig,
+				"london",
+			);
+			expect(typeof supportsLondon).toBe("boolean");
+		});
+	});
+
+	describe("Chain Constants", () => {
+		it("should get block time with getBlockTime()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const blockTime = Chain.getBlockTime(chainConfig);
+			expect(typeof blockTime).toBe("number");
+		});
+
+		it("should get gas limit with getGasLimit()", async () => {
+			const { Chain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			const chainConfig = {
+				name: "Ethereum Mainnet",
+				chain: "ETH",
+				chainId: 1,
+				shortName: "eth",
+				rpc: [],
+				nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+			};
+
+			const gasLimit = Chain.getGasLimit(chainConfig);
+			// Gas limit may be number or bigint depending on implementation
+			expect(typeof gasLimit === "number" || typeof gasLimit === "bigint").toBe(true);
+		});
+	});
+
+	describe("Metadata Exports", () => {
+		it("should export CHAIN_METADATA", async () => {
+			const { CHAIN_METADATA } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(CHAIN_METADATA).toBeDefined();
+		});
+
+		it("should export DEFAULT_METADATA", async () => {
+			const { DEFAULT_METADATA } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(DEFAULT_METADATA).toBeDefined();
+		});
+	});
+
+	describe("BrandedChain Namespace", () => {
+		it("should export BrandedChain namespace", async () => {
+			const { BrandedChain } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(BrandedChain).toBeDefined();
+			expect(typeof BrandedChain.from).toBe("function");
+			expect(typeof BrandedChain.fromId).toBe("function");
+			expect(BrandedChain.byId).toBeDefined();
+		});
+	});
+
+	describe("Direct Function Exports", () => {
+		it("should export from() function directly", async () => {
+			const { from } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(typeof from).toBe("function");
+
+			const chainConfig = {
+				name: "Test Chain",
+				chain: "TEST",
+				chainId: 12345,
+				shortName: "test",
+				rpc: [],
+				nativeCurrency: { name: "Test", symbol: "TEST", decimals: 18 },
+			};
+
+			const chain = from(chainConfig);
+			expect(chain.chainId).toBe(12345);
+		});
+
+		it("should export fromId() function directly", async () => {
+			const { fromId } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(typeof fromId).toBe("function");
+		});
+
+		it("should export byId record directly", async () => {
+			const { byId } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(byId).toBeDefined();
+			expect(typeof byId).toBe("object");
+		});
+	});
+
+	describe("Internal Exports", () => {
+		it("should export internal functions with underscore prefix", async () => {
+			const { _from, _fromId, _byId } = await import(
+				"../../../src/primitives/Chain/index.js"
+			);
+
+			expect(typeof _from).toBe("function");
+			expect(typeof _fromId).toBe("function");
+			expect(_byId).toBeDefined();
+		});
+	});
+});

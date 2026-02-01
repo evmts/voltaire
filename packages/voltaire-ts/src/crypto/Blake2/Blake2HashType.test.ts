@@ -1,0 +1,205 @@
+import { describe, expectTypeOf, it } from "vitest";
+import type { Blake2Hash } from "./Blake2HashType.js";
+import { SIZE } from "./Blake2HashType.js";
+
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
+
+describe("Blake2HashType", () => {
+	describe("type structure", () => {
+		it("Blake2Hash is Uint8Array with brand", () => {
+			expectTypeOf<Blake2Hash>().toMatchTypeOf<Uint8Array>();
+		});
+
+		it("Blake2Hash has readonly brand property", () => {
+			type HasBrand = Blake2Hash extends { readonly [key: symbol]: string }
+				? true
+				: false;
+			const result: HasBrand = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+
+		it("Blake2Hash is not plain Uint8Array", () => {
+			type NotPlainArray = Equals<Blake2Hash, Uint8Array>;
+			const result: NotPlainArray = false;
+			expectTypeOf(result).toEqualTypeOf<false>();
+		});
+	});
+
+	describe("SIZE constant", () => {
+		it("SIZE is number literal type", () => {
+			expectTypeOf<typeof SIZE>().toEqualTypeOf<64>();
+		});
+
+		it("SIZE equals 64", () => {
+			type Test = typeof SIZE extends 64 ? true : false;
+			const result: Test = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+
+		it("SIZE is literal type", () => {
+			expectTypeOf(SIZE).toEqualTypeOf<64>();
+		});
+	});
+
+	describe("branded type safety", () => {
+		it("prevents direct assignment from Uint8Array", () => {
+			const arr = new Uint8Array(64);
+			// @ts-expect-error - Uint8Array cannot be assigned to Blake2Hash
+			const hash: Blake2Hash = arr;
+			expectTypeOf(hash).toMatchTypeOf<Uint8Array>();
+		});
+
+		it("requires explicit type assertion", () => {
+			const arr = new Uint8Array(64);
+			const hash = arr as Blake2Hash;
+			expectTypeOf(hash).toEqualTypeOf<Blake2Hash>();
+		});
+
+		it("prevents assignment of differently branded types", () => {
+			type OtherHash = Uint8Array & { readonly __tag: "OtherHash" };
+			const otherHash = new Uint8Array(64) as OtherHash;
+			// @ts-expect-error - OtherHash cannot be assigned to Blake2Hash
+			const blake2Hash: Blake2Hash = otherHash;
+			expectTypeOf(blake2Hash).toMatchTypeOf<Uint8Array>();
+		});
+	});
+
+	describe("usage patterns", () => {
+		it("Blake2Hash for function parameters", () => {
+			function acceptsHash(_value: Blake2Hash): void {}
+			expectTypeOf(acceptsHash).parameter(0).toMatchTypeOf<Blake2Hash>();
+		});
+
+		it("Blake2Hash for function returns", () => {
+			function returnsHash(): Blake2Hash {
+				return new Uint8Array(64) as Blake2Hash;
+			}
+			expectTypeOf(returnsHash).returns.toEqualTypeOf<Blake2Hash>();
+		});
+
+		it("Blake2Hash in arrays", () => {
+			type HashArray = Blake2Hash[];
+			expectTypeOf<HashArray>().toEqualTypeOf<Blake2Hash[]>();
+		});
+
+		it("Blake2Hash in objects", () => {
+			type HashContainer = { hash: Blake2Hash };
+			expectTypeOf<HashContainer>().toEqualTypeOf<{ hash: Blake2Hash }>();
+		});
+
+		it("Blake2Hash in tuples", () => {
+			type HashTuple = [Blake2Hash, Blake2Hash];
+			expectTypeOf<HashTuple>().toEqualTypeOf<[Blake2Hash, Blake2Hash]>();
+		});
+	});
+
+	describe("type narrowing", () => {
+		it("narrows from Uint8Array to Blake2Hash", () => {
+			function isBlake2Hash(value: Uint8Array): value is Blake2Hash {
+				return value.length >= 1 && value.length <= 64;
+			}
+			expectTypeOf(isBlake2Hash).returns.toEqualTypeOf<boolean>();
+		});
+
+		it("discriminates union types", () => {
+			type Result = Blake2Hash | Error;
+			function isHash(value: Result): value is Blake2Hash {
+				return value instanceof Uint8Array;
+			}
+			expectTypeOf(isHash).returns.toEqualTypeOf<boolean>();
+		});
+	});
+
+	describe("readonly behavior", () => {
+		it("brand property is readonly", () => {
+			type BrandIsReadonly = Blake2Hash extends {
+				readonly [key: symbol]: string;
+			}
+				? true
+				: false;
+			const result: BrandIsReadonly = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+
+		it("preserves Uint8Array mutability", () => {
+			const hash = new Uint8Array(64) as Blake2Hash;
+			expectTypeOf(hash[0]).toEqualTypeOf<number>();
+		});
+	});
+
+	describe("compatibility", () => {
+		it("accepts as Uint8Array parameter", () => {
+			function acceptsUint8Array(_value: Uint8Array): void {}
+			const hash = new Uint8Array(64) as Blake2Hash;
+			expectTypeOf(hash).toMatchTypeOf<
+				Parameters<typeof acceptsUint8Array>[0]
+			>();
+		});
+
+		it("compatible with ArrayLike", () => {
+			type IsArrayLike = Blake2Hash extends ArrayLike<number> ? true : false;
+			const result: IsArrayLike = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+
+		it("has length property", () => {
+			const hash = new Uint8Array(64) as Blake2Hash;
+			expectTypeOf(hash.length).toEqualTypeOf<number>();
+		});
+	});
+
+	describe("variable length support", () => {
+		it("supports variable-length hashes (1-64 bytes)", () => {
+			const hash1 = new Uint8Array(1) as Blake2Hash;
+			const hash32 = new Uint8Array(32) as Blake2Hash;
+			const hash64 = new Uint8Array(64) as Blake2Hash;
+
+			expectTypeOf(hash1).toEqualTypeOf<Blake2Hash>();
+			expectTypeOf(hash32).toEqualTypeOf<Blake2Hash>();
+			expectTypeOf(hash64).toEqualTypeOf<Blake2Hash>();
+		});
+
+		it("different lengths are same type", () => {
+			type Hash1 = Uint8Array & { readonly [brand]: "Blake2Hash" };
+			type Hash64 = Uint8Array & { readonly [brand]: "Blake2Hash" };
+			type SameType = Equals<Hash1, Hash64>;
+			const result: SameType = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+	});
+
+	describe("invalid cases", () => {
+		it("rejects plain object", () => {
+			// @ts-expect-error - plain object is not Blake2Hash
+			const test: Blake2Hash = {};
+			expectTypeOf(test).not.toEqualTypeOf<object>();
+		});
+
+		it("rejects number array", () => {
+			// @ts-expect-error - number[] is not Blake2Hash
+			const test: Blake2Hash = [1, 2, 3];
+			expectTypeOf(test).not.toEqualTypeOf<number[]>();
+		});
+
+		it("rejects string", () => {
+			// @ts-expect-error - string is not Blake2Hash
+			const test: Blake2Hash = "hash";
+			expectTypeOf(test).not.toEqualTypeOf<string>();
+		});
+
+		it("rejects null", () => {
+			// @ts-expect-error - null is not Blake2Hash
+			const test: Blake2Hash = null;
+			expectTypeOf(test).not.toEqualTypeOf<null>();
+		});
+
+		it("rejects undefined", () => {
+			// @ts-expect-error - undefined is not Blake2Hash
+			const test: Blake2Hash = undefined;
+			expectTypeOf(test).not.toEqualTypeOf<undefined>();
+		});
+	});
+});

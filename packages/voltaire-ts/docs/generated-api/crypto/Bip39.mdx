@@ -1,0 +1,1776 @@
+---
+title: "crypto/Bip39"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/Bip39
+
+# crypto/Bip39
+
+## Classes
+
+### Bip39Error
+
+Defined in: [src/crypto/Bip39/errors.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L21)
+
+Base error for BIP-39 operations
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { Bip39Error } from './crypto/Bip39/index.js';
+throw new Bip39Error('BIP-39 operation failed', {
+  code: 'BIP39_ERROR',
+  context: { operation: 'generate' },
+  docsPath: '/crypto/bip39#error-handling',
+  cause: originalError
+});
+```
+
+#### Extends
+
+- [`CryptoError`](../index/index.mdx#cryptoerror)
+
+#### Extended by
+
+- [`InvalidEntropyError`](#invalidentropyerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new Bip39Error**(`message?`, `options?`): [`Bip39Error`](#bip39error)
+
+Defined in: [src/crypto/Bip39/errors.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L26)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`Bip39Error`](#bip39error)
+
+###### Overrides
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`constructor`](../index/index.mdx#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`cause`](../index/index.mdx#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`code`](../index/index.mdx#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`context`](../index/index.mdx#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`docsPath`](../index/index.mdx#docspath-1)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bip39/errors.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L33)
+
+###### Inherited from
+
+`CryptoError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`getErrorChain`](../index/index.mdx#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`toJSON`](../index/index.mdx#tojson-2)
+
+***
+
+### InvalidEntropyError
+
+Defined in: [src/crypto/Bip39/errors.js:87](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L87)
+
+Error thrown when entropy is invalid
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidEntropyError } from './crypto/Bip39/index.js';
+throw new InvalidEntropyError('Invalid entropy size', {
+  code: 'BIP39_INVALID_ENTROPY_SIZE',
+  context: { size: 15, expected: '16, 20, 24, 28, or 32 bytes' },
+  docsPath: '/crypto/bip39/entropy-to-mnemonic#error-handling'
+});
+```
+
+#### Extends
+
+- [`Bip39Error`](#bip39error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidEntropyError**(`message?`, `options?`): [`InvalidEntropyError`](#invalidentropyerror)
+
+Defined in: [src/crypto/Bip39/errors.js:92](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L92)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidEntropyError`](#invalidentropyerror)
+
+###### Overrides
+
+[`Bip39Error`](#bip39error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`Bip39Error`](#bip39error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`Bip39Error`](#bip39error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`Bip39Error`](#bip39error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`Bip39Error`](#bip39error).[`docsPath`](#docspath)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bip39/errors.js:99](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L99)
+
+###### Inherited from
+
+[`Bip39Error`](#bip39error).[`name`](#name)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`Bip39Error`](#bip39error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`Bip39Error`](#bip39error).[`toJSON`](#tojson)
+
+***
+
+### InvalidMnemonicError
+
+Defined in: [src/crypto/Bip39/errors.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L53)
+
+Error thrown when mnemonic is invalid
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidMnemonicError } from './crypto/Bip39/index.js';
+throw new InvalidMnemonicError('Invalid BIP-39 mnemonic phrase', {
+  code: 'BIP39_INVALID_MNEMONIC',
+  context: { wordCount: 11 },
+  docsPath: '/crypto/bip39/validate-mnemonic#error-handling'
+});
+```
+
+#### Extends
+
+- [`InvalidFormatError`](../index/index.mdx#invalidformaterror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidMnemonicError**(`message?`, `options?`): [`InvalidMnemonicError`](#invalidmnemonicerror)
+
+Defined in: [src/crypto/Bip39/errors.js:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L58)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidMnemonicError`](#invalidmnemonicerror)
+
+###### Overrides
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`constructor`](../index/index.mdx#constructor-7)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`cause`](../index/index.mdx#cause-7)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`code`](../index/index.mdx#code-7)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`context`](../index/index.mdx#context-7)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`docsPath`](../index/index.mdx#docspath-7)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`expected`](../index/index.mdx#expected-3)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bip39/errors.js:67](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/errors.js#L67)
+
+###### Inherited from
+
+`InvalidFormatError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`value`](../index/index.mdx#value-3)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`getErrorChain`](../index/index.mdx#geterrorchain-14)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`toJSON`](../index/index.mdx#tojson-14)
+
+## Type Aliases
+
+### Entropy
+
+> **Entropy** = `Uint8Array`
+
+Defined in: [src/crypto/Bip39/EntropyType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/EntropyType.ts#L13)
+
+Entropy bytes for BIP-39 mnemonic generation
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```typescript
+import type { Entropy } from './crypto/Bip39/EntropyType.js';
+const entropy: Entropy = crypto.getRandomValues(new Uint8Array(32));
+```
+
+***
+
+### Mnemonic
+
+> **Mnemonic** = `string`
+
+Defined in: [src/crypto/Bip39/MnemonicType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/MnemonicType.ts#L13)
+
+BIP-39 mnemonic phrase (12-24 words)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```typescript
+import type { Mnemonic } from './crypto/Bip39/MnemonicType.js';
+const mnemonic: Mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+```
+
+***
+
+### Seed
+
+> **Seed** = `Uint8Array`
+
+Defined in: [src/crypto/Bip39/SeedType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/SeedType.ts#L13)
+
+BIP-39 seed (64 bytes / 512 bits)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```typescript
+import type { Seed } from './crypto/Bip39/SeedType.js';
+const seed: Seed = new Uint8Array(64);
+```
+
+## Variables
+
+### Bip39
+
+> `const` **Bip39**: `object`
+
+Defined in: [src/crypto/Bip39/Bip39.js:59](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/Bip39.js#L59)
+
+BIP-39 Mnemonic Implementation
+
+Provides mnemonic generation, validation, and seed derivation
+following the BIP-39 standard for deterministic key generation.
+
+#### Type Declaration
+
+##### assertValidMnemonic()
+
+> **assertValidMnemonic**: (`mnemonic`, `wl?`) => `void`
+
+Validate mnemonic or throw error
+
+###### Parameters
+
+###### mnemonic
+
+`string`
+
+Mnemonic phrase to validate
+
+###### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+###### Returns
+
+`void`
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If mnemonic is invalid
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+try {
+  Bip39.assertValidMnemonic(mnemonic);
+} catch (e) {
+  console.error("Invalid mnemonic:", e.message);
+}
+```
+
+##### ENTROPY\_128
+
+> **ENTROPY\_128**: `number`
+
+128 bits entropy = 12 words
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_128);
+```
+
+##### ENTROPY\_160
+
+> **ENTROPY\_160**: `number`
+
+160 bits entropy = 15 words
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_160);
+```
+
+##### ENTROPY\_192
+
+> **ENTROPY\_192**: `number`
+
+192 bits entropy = 18 words
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_192);
+```
+
+##### ENTROPY\_224
+
+> **ENTROPY\_224**: `number`
+
+224 bits entropy = 21 words
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_224);
+```
+
+##### ENTROPY\_256
+
+> **ENTROPY\_256**: `number`
+
+256 bits entropy = 24 words
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_256);
+```
+
+##### entropyToMnemonic()
+
+> **entropyToMnemonic**: (`entropy`, `wl?`) => `string`
+
+Generate mnemonic from custom entropy
+
+###### Parameters
+
+###### entropy
+
+[`Entropy`](#entropy)
+
+Entropy bytes (16, 20, 24, 28, or 32 bytes)
+
+###### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+###### Returns
+
+`string`
+
+Mnemonic phrase
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If entropy size is invalid
+
+###### Throws
+
+If conversion fails
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const entropy = crypto.getRandomValues(new Uint8Array(32));
+const mnemonic = Bip39.entropyToMnemonic(entropy);
+```
+
+##### generateMnemonic()
+
+> **generateMnemonic**: (`strength?`, `wl?`) => `string`
+
+Generate a BIP-39 mnemonic phrase
+
+###### Parameters
+
+###### strength?
+
+Entropy strength in bits (128=12 words, 256=24 words)
+
+`128` | `160` | `192` | `224` | `256`
+
+###### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+###### Returns
+
+`string`
+
+Mnemonic phrase
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If mnemonic generation fails
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+// Generate 12-word mnemonic (128 bits)
+const mnemonic12 = Bip39.generateMnemonic(128);
+// Generate 24-word mnemonic (256 bits)
+const mnemonic24 = Bip39.generateMnemonic(256);
+```
+
+##### getEntropyBits()
+
+> **getEntropyBits**: (`wordCount`) => `number`
+
+Get entropy bits from word count
+
+###### Parameters
+
+###### wordCount
+
+`number`
+
+Number of words
+
+###### Returns
+
+`number`
+
+Entropy in bits
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If word count is invalid
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+Bip39.getEntropyBits(12); // 128
+Bip39.getEntropyBits(24); // 256
+```
+
+##### getWordCount()
+
+> **getWordCount**: (`entropyBits`) => `number`
+
+Get word count from entropy bits
+
+###### Parameters
+
+###### entropyBits
+
+`number`
+
+Entropy in bits
+
+###### Returns
+
+`number`
+
+Number of words in mnemonic
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If entropy bits value is invalid
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+Bip39.getWordCount(128); // 12
+Bip39.getWordCount(256); // 24
+```
+
+##### mnemonicToSeed()
+
+> **mnemonicToSeed**: (`mnemonic`, `passphrase?`) => `Promise`\<[`Seed`](#seed)\>
+
+Convert mnemonic to seed (async)
+
+###### Parameters
+
+###### mnemonic
+
+`string`
+
+BIP-39 mnemonic phrase
+
+###### passphrase?
+
+`string` = `""`
+
+Optional passphrase for additional security
+
+###### Returns
+
+`Promise`\<[`Seed`](#seed)\>
+
+64-byte seed
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If mnemonic is invalid
+
+###### Throws
+
+If seed derivation fails
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const seed = await Bip39.mnemonicToSeed(mnemonic, "my passphrase");
+```
+
+##### mnemonicToSeedSync()
+
+> **mnemonicToSeedSync**: (`mnemonic`, `passphrase?`) => [`Seed`](#seed)
+
+Convert mnemonic to seed (sync)
+
+###### Parameters
+
+###### mnemonic
+
+`string`
+
+BIP-39 mnemonic phrase
+
+###### passphrase?
+
+`string` = `""`
+
+Optional passphrase for additional security
+
+###### Returns
+
+[`Seed`](#seed)
+
+64-byte seed
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If mnemonic is invalid
+
+###### Throws
+
+If seed derivation fails
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const seed = Bip39.mnemonicToSeedSync(mnemonic);
+```
+
+##### SEED\_LENGTH
+
+> **SEED\_LENGTH**: `number`
+
+BIP-39 seed length (512 bits / 64 bytes)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+console.log(seed.length === Bip39.SEED_LENGTH);
+```
+
+##### validateMnemonic()
+
+> **validateMnemonic**: (`mnemonic`, `wl?`) => `boolean`
+
+Validate a BIP-39 mnemonic phrase
+
+###### Parameters
+
+###### mnemonic
+
+`string`
+
+Mnemonic phrase to validate
+
+###### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+###### Returns
+
+`boolean`
+
+True if valid, false otherwise
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+if (Bip39.validateMnemonic(mnemonic)) {
+  console.log("Valid mnemonic");
+}
+```
+
+#### Example
+
+```typescript
+import { Bip39 } from './Bip39.js';
+
+// Generate 12-word mnemonic
+const mnemonic = Bip39.generateMnemonic(128);
+console.log(mnemonic); // "abandon abandon abandon..."
+
+// Validate mnemonic
+const isValid = Bip39.validateMnemonic(mnemonic);
+
+// Derive seed
+const seed = await Bip39.mnemonicToSeed(mnemonic, "optional passphrase");
+```
+
+***
+
+### ENTROPY\_128
+
+> `const` **ENTROPY\_128**: `128` = `128`
+
+Defined in: [src/crypto/Bip39/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/constants.js#L13)
+
+128 bits entropy = 12 words
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_128);
+```
+
+***
+
+### ENTROPY\_160
+
+> `const` **ENTROPY\_160**: `160` = `160`
+
+Defined in: [src/crypto/Bip39/constants.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/constants.js#L27)
+
+160 bits entropy = 15 words
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_160);
+```
+
+***
+
+### ENTROPY\_192
+
+> `const` **ENTROPY\_192**: `192` = `192`
+
+Defined in: [src/crypto/Bip39/constants.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/constants.js#L41)
+
+192 bits entropy = 18 words
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_192);
+```
+
+***
+
+### ENTROPY\_224
+
+> `const` **ENTROPY\_224**: `224` = `224`
+
+Defined in: [src/crypto/Bip39/constants.js:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/constants.js#L55)
+
+224 bits entropy = 21 words
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_224);
+```
+
+***
+
+### ENTROPY\_256
+
+> `const` **ENTROPY\_256**: `256` = `256`
+
+Defined in: [src/crypto/Bip39/constants.js:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/constants.js#L69)
+
+256 bits entropy = 24 words
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = Bip39.generateMnemonic(Bip39.ENTROPY_256);
+```
+
+***
+
+### SEED\_LENGTH
+
+> `const` **SEED\_LENGTH**: `64` = `64`
+
+Defined in: [src/crypto/Bip39/constants.js:84](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/constants.js#L84)
+
+BIP-39 seed length (512 bits / 64 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+console.log(seed.length === Bip39.SEED_LENGTH);
+```
+
+## Functions
+
+### assertValidMnemonic()
+
+> **assertValidMnemonic**(`mnemonic`, `wl?`): `void`
+
+Defined in: [src/crypto/Bip39/assertValidMnemonic.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/assertValidMnemonic.js#L24)
+
+Validate mnemonic or throw error
+
+#### Parameters
+
+##### mnemonic
+
+`string`
+
+Mnemonic phrase to validate
+
+##### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+#### Returns
+
+`void`
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If mnemonic is invalid
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+try {
+  Bip39.assertValidMnemonic(mnemonic);
+} catch (e) {
+  console.error("Invalid mnemonic:", e.message);
+}
+```
+
+***
+
+### entropyToMnemonic()
+
+> **entropyToMnemonic**(`entropy`, `wl?`): `string`
+
+Defined in: [src/crypto/Bip39/entropyToMnemonic.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/entropyToMnemonic.js#L22)
+
+Generate mnemonic from custom entropy
+
+#### Parameters
+
+##### entropy
+
+[`Entropy`](#entropy)
+
+Entropy bytes (16, 20, 24, 28, or 32 bytes)
+
+##### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+#### Returns
+
+`string`
+
+Mnemonic phrase
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If entropy size is invalid
+
+#### Throws
+
+If conversion fails
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const entropy = crypto.getRandomValues(new Uint8Array(32));
+const mnemonic = Bip39.entropyToMnemonic(entropy);
+```
+
+***
+
+### generateMnemonic()
+
+> **generateMnemonic**(`strength?`, `wl?`): `string`
+
+Defined in: [src/crypto/Bip39/generateMnemonic.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/generateMnemonic.js#L23)
+
+Generate a BIP-39 mnemonic phrase
+
+#### Parameters
+
+##### strength?
+
+Entropy strength in bits (128=12 words, 256=24 words)
+
+`128` | `160` | `192` | `224` | `256`
+
+##### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+#### Returns
+
+`string`
+
+Mnemonic phrase
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If mnemonic generation fails
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+// Generate 12-word mnemonic (128 bits)
+const mnemonic12 = Bip39.generateMnemonic(128);
+// Generate 24-word mnemonic (256 bits)
+const mnemonic24 = Bip39.generateMnemonic(256);
+```
+
+***
+
+### getEntropyBits()
+
+> **getEntropyBits**(`wordCount`): `number`
+
+Defined in: [src/crypto/Bip39/getEntropyBits.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/getEntropyBits.js#L18)
+
+Get entropy bits from word count
+
+#### Parameters
+
+##### wordCount
+
+`number`
+
+Number of words
+
+#### Returns
+
+`number`
+
+Entropy in bits
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If word count is invalid
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+Bip39.getEntropyBits(12); // 128
+Bip39.getEntropyBits(24); // 256
+```
+
+***
+
+### getWordCount()
+
+> **getWordCount**(`entropyBits`): `number`
+
+Defined in: [src/crypto/Bip39/getWordCount.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/getWordCount.js#L18)
+
+Get word count from entropy bits
+
+#### Parameters
+
+##### entropyBits
+
+`number`
+
+Entropy in bits
+
+#### Returns
+
+`number`
+
+Number of words in mnemonic
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If entropy bits value is invalid
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+Bip39.getWordCount(128); // 12
+Bip39.getWordCount(256); // 24
+```
+
+***
+
+### mnemonicToSeed()
+
+> **mnemonicToSeed**(`mnemonic`, `passphrase?`): `Promise`\<[`Seed`](#seed)\>
+
+Defined in: [src/crypto/Bip39/mnemonicToSeed.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/mnemonicToSeed.js#L21)
+
+Convert mnemonic to seed (async)
+
+#### Parameters
+
+##### mnemonic
+
+`string`
+
+BIP-39 mnemonic phrase
+
+##### passphrase?
+
+`string` = `""`
+
+Optional passphrase for additional security
+
+#### Returns
+
+`Promise`\<[`Seed`](#seed)\>
+
+64-byte seed
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If mnemonic is invalid
+
+#### Throws
+
+If seed derivation fails
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const seed = await Bip39.mnemonicToSeed(mnemonic, "my passphrase");
+```
+
+***
+
+### mnemonicToSeedSync()
+
+> **mnemonicToSeedSync**(`mnemonic`, `passphrase?`): [`Seed`](#seed)
+
+Defined in: [src/crypto/Bip39/mnemonicToSeedSync.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/mnemonicToSeedSync.js#L21)
+
+Convert mnemonic to seed (sync)
+
+#### Parameters
+
+##### mnemonic
+
+`string`
+
+BIP-39 mnemonic phrase
+
+##### passphrase?
+
+`string` = `""`
+
+Optional passphrase for additional security
+
+#### Returns
+
+[`Seed`](#seed)
+
+64-byte seed
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If mnemonic is invalid
+
+#### Throws
+
+If seed derivation fails
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const seed = Bip39.mnemonicToSeedSync(mnemonic);
+```
+
+***
+
+### validateMnemonic()
+
+> **validateMnemonic**(`mnemonic`, `wl?`): `boolean`
+
+Defined in: [src/crypto/Bip39/validateMnemonic.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bip39/validateMnemonic.js#L22)
+
+Validate a BIP-39 mnemonic phrase
+
+#### Parameters
+
+##### mnemonic
+
+`string`
+
+Mnemonic phrase to validate
+
+##### wl?
+
+`string`[] = `wordlist`
+
+Optional wordlist (defaults to English)
+
+#### Returns
+
+`boolean`
+
+True if valid, false otherwise
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as Bip39 from './crypto/Bip39/index.js';
+const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+if (Bip39.validateMnemonic(mnemonic)) {
+  console.log("Valid mnemonic");
+}
+```

@@ -1,0 +1,117 @@
+/**
+ * Test file for SUB (0x03) documentation examples
+ * Tests examples from sub.mdx
+ *
+ * NOTE: Stack order is [bottom, ..., top] - pop() returns the last element.
+ * For SUB(a, b): a is popped first (top), b second. Result = a - b.
+ * So stack should be [b, a] to compute a - b.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("SUB (0x03) - Documentation Examples", async () => {
+	const { sub } = await import("../../../../src/evm/arithmetic/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Basic Subtraction", () => {
+		it("10 - 5 = 5", () => {
+			// Stack [5n, 10n]: 10n is top (popped first), 5n is second
+			// Result = 10 - 5 = 5
+			const frame = createFrame([5n, 10n]);
+			const err = sub(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([5n]);
+		});
+	});
+
+	describe("Underflow Wrapping", () => {
+		it("0 - 1 wraps to MAX", () => {
+			// Stack [1n, 0n]: 0n is top (popped first), 1n is second
+			// Result = 0 - 1 = MAX (wrapping)
+			const frame = createFrame([1n, 0n]);
+			const err = sub(frame);
+
+			const MAX = (1n << 256n) - 1n;
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([MAX]);
+		});
+	});
+
+	describe("Large Underflow", () => {
+		it("5 - 10 wraps to MAX - 4", () => {
+			// Stack [10n, 5n]: 5n is top (popped first), 10n is second
+			// Result = 5 - 10 = -5 = MAX - 4 (wrapping)
+			const frame = createFrame([10n, 5n]);
+			const err = sub(frame);
+
+			const MAX = (1n << 256n) - 1n;
+			expect(err).toBeNull();
+			// Result: 2^256 - 5 = MAX - 4
+			expect(frame.stack).toEqual([MAX - 4n]);
+		});
+	});
+
+	describe("Identity Element", () => {
+		it("42 - 0 = 42", () => {
+			// Stack [0n, 42n]: 42n is top (popped first), 0n is second
+			// Result = 42 - 0 = 42
+			const frame = createFrame([0n, 42n]);
+			const err = sub(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([42n]);
+		});
+	});
+
+	describe("Self-Subtraction", () => {
+		it("x - x = 0", () => {
+			const frame = createFrame([42n, 42n]);
+			const err = sub(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("0 - MAX = 1", () => {
+			const MAX = (1n << 256n) - 1n;
+			// Stack [MAX, 0n]: 0n is top, MAX is second
+			// Result = 0 - MAX = 1 (wrapping)
+			const frame = createFrame([MAX, 0n]);
+			sub(frame);
+
+			expect(frame.stack).toEqual([1n]);
+		});
+
+		it("0 - 0 = 0", () => {
+			const frame = createFrame([0n, 0n]);
+			sub(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("returns StackUnderflow with insufficient stack", () => {
+			const frame = createFrame([5n]);
+			const err = sub(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 3 gas (GasFastestStep)", () => {
+			const frame = createFrame([10n, 5n], 100n);
+			const err = sub(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(97n);
+		});
+	});
+});

@@ -1,0 +1,28 @@
+---
+title: ProtocolVersion
+description: Ethereum wire protocol version (eth/66, snap/1)
+---
+
+```typescript
+import * as ProtocolVersion from 'voltaire-effect/primitives/ProtocolVersion'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const version = Schema.decodeSync(ProtocolVersion.String)('eth/67')
+
+// Effect constructor
+const program = ProtocolVersion.from('eth/67')
+Effect.runSync(program)
+
+// Version negotiation
+const negotiate = (versions: string[]) =>
+  Effect.forEach(versions, (v) => ProtocolVersion.from(v))
+```
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(ProtocolVersion.from('invalid'))
+// result._tag === 'Failure' → ProtocolVersionError
+```

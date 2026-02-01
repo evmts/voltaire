@@ -1,0 +1,245 @@
+/**
+ * Tests for docs/crypto/bn254/g2-operations.mdx code examples
+ *
+ * NOTE: This documentation page is marked as "planned and under active development"
+ * with placeholder content. Tests below cover expected G2 operations that should
+ * be documented once the page is complete.
+ *
+ * Import path: ../../../src/crypto/bn254/BN254.js
+ */
+
+import { describe, expect, it } from "vitest";
+
+describe("docs/crypto/bn254/g2-operations.mdx", () => {
+	/**
+	 * API DISCREPANCY NOTE:
+	 * The docs page is a placeholder. The actual BN254.G2 API includes:
+	 * - generator(): G2PointType
+	 * - infinity(): G2PointType
+	 * - add(a, b): G2PointType
+	 * - double(p): G2PointType
+	 * - negate(p): G2PointType
+	 * - mul(p, scalar): G2PointType
+	 * - isZero(p): boolean
+	 * - isOnCurve(p): boolean
+	 * - isInSubgroup(p): boolean
+	 * - equal(a, b): boolean
+	 * - toAffine(p): G2PointType
+	 * - fromAffine(x, y): G2PointType
+	 * - frobenius(p): G2PointType
+	 *
+	 * G2 operates over Fp2 extension field (a + bi)
+	 */
+
+	describe("G2 Point Creation", () => {
+		it("should create generator point", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			expect(BN254.G2.isOnCurve(gen)).toBe(true);
+			expect(BN254.G2.isZero(gen)).toBe(false);
+		});
+
+		it("should create infinity point", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const inf = BN254.G2.infinity();
+			expect(BN254.G2.isZero(inf)).toBe(true);
+			expect(BN254.G2.isOnCurve(inf)).toBe(true);
+		});
+	});
+
+	describe("G2 Point Validation", () => {
+		it("should validate on-curve points", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			expect(BN254.G2.isOnCurve(gen)).toBe(true);
+
+			const mul = BN254.G2.mul(gen, 7n);
+			expect(BN254.G2.isOnCurve(mul)).toBe(true);
+		});
+
+		it("should validate subgroup membership", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			// Generator is in subgroup
+			const gen = BN254.G2.generator();
+			expect(BN254.G2.isInSubgroup(gen)).toBe(true);
+		});
+
+		it("should validate multiples are in subgroup", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const scalars = [2n, 7n, 13n, 99n];
+
+			for (const scalar of scalars) {
+				const point = BN254.G2.mul(gen, scalar);
+				expect(BN254.G2.isInSubgroup(point)).toBe(true);
+			}
+		});
+	});
+
+	describe("G2 Point Addition", () => {
+		it("should add two points", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const doubled = BN254.G2.double(gen);
+			const sum = BN254.G2.add(gen, gen);
+			expect(BN254.G2.equal(doubled, sum)).toBe(true);
+		});
+
+		it("should handle addition with infinity", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const inf = BN254.G2.infinity();
+
+			// P + O = P
+			const result = BN254.G2.add(gen, inf);
+			expect(BN254.G2.equal(result, gen)).toBe(true);
+		});
+
+		it("should be commutative", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const p1 = BN254.G2.mul(gen, 11n);
+			const p2 = BN254.G2.mul(gen, 13n);
+
+			const sum1 = BN254.G2.add(p1, p2);
+			const sum2 = BN254.G2.add(p2, p1);
+			expect(BN254.G2.equal(sum1, sum2)).toBe(true);
+		});
+	});
+
+	describe("G2 Point Doubling", () => {
+		it("should double a point", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const doubled = BN254.G2.double(gen);
+			const manual = BN254.G2.add(gen, gen);
+			expect(BN254.G2.equal(doubled, manual)).toBe(true);
+		});
+	});
+
+	describe("G2 Point Negation", () => {
+		it("should negate a point", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const neg = BN254.G2.negate(gen);
+			const sum = BN254.G2.add(gen, neg);
+			expect(BN254.G2.isZero(sum)).toBe(true);
+		});
+	});
+
+	describe("G2 Scalar Multiplication", () => {
+		it("should multiply by scalar", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const result = BN254.G2.mul(gen, 3n);
+
+			// 3*G = G + G + G
+			const manual = BN254.G2.add(BN254.G2.add(gen, gen), gen);
+			expect(BN254.G2.equal(result, manual)).toBe(true);
+		});
+
+		it("should multiply by zero", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const result = BN254.G2.mul(gen, 0n);
+			expect(BN254.G2.isZero(result)).toBe(true);
+		});
+
+		it("should multiply by one", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const result = BN254.G2.mul(gen, 1n);
+			expect(BN254.G2.equal(result, gen)).toBe(true);
+		});
+
+		it("should multiply by curve order to get infinity", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+			const { FR_MOD } = await import("../../../src/crypto/bn254/constants.js");
+
+			const gen = BN254.G2.generator();
+			const result = BN254.G2.mul(gen, FR_MOD);
+			expect(BN254.G2.isZero(result)).toBe(true);
+		});
+	});
+
+	describe("G2 Coordinate Conversion", () => {
+		it("should convert to affine coordinates", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const point = BN254.G2.mul(gen, 19n);
+			const affine = BN254.G2.toAffine(point);
+
+			// z = 1 + 0i for affine
+			expect(affine.z.c0).toBe(1n);
+			expect(affine.z.c1).toBe(0n);
+			expect(BN254.G2.equal(point, affine)).toBe(true);
+		});
+	});
+
+	describe("G2 Serialization", () => {
+		it("should serialize to 128 bytes", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const bytes = BN254.serializeG2(gen);
+
+			// G2 points are 128 bytes (4 x 32 bytes for Fp2 coords)
+			expect(bytes.length).toBe(128);
+		});
+
+		it("should round-trip through serialization", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const point = BN254.G2.mul(gen, 42n);
+
+			const bytes = BN254.serializeG2(point);
+			const deserialized = BN254.deserializeG2(bytes);
+
+			expect(BN254.G2.equal(point, deserialized)).toBe(true);
+		});
+
+		it("should serialize infinity correctly", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const inf = BN254.G2.infinity();
+			const bytes = BN254.serializeG2(inf);
+			const deserialized = BN254.deserializeG2(bytes);
+
+			expect(BN254.G2.isZero(deserialized)).toBe(true);
+		});
+	});
+
+	describe("Fp2 Extension Field", () => {
+		/**
+		 * G2 operates over Fp2 = Fp[i] / (i^2 + 1)
+		 * Elements are a + bi where a, b in Fp
+		 */
+		it("should have Fp2 coordinates for G2 points", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const gen = BN254.G2.generator();
+			const affine = BN254.G2.toAffine(gen);
+
+			// x and y are Fp2 elements with c0 and c1 components
+			expect(typeof affine.x.c0).toBe("bigint");
+			expect(typeof affine.x.c1).toBe("bigint");
+			expect(typeof affine.y.c0).toBe("bigint");
+			expect(typeof affine.y.c1).toBe("bigint");
+		});
+	});
+});

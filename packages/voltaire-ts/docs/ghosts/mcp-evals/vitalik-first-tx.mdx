@@ -1,0 +1,51 @@
+---
+title: Vitalik — First Transaction Hash
+description: Discover the transaction hash of Vitalik Buterin’s first mainnet transaction.
+---
+
+## Goal
+
+Given Vitalik’s address, find the first mainnet transaction hash.
+
+Return as:
+
+ANSWER: 0x...
+
+## Address
+
+- Vitalik: 0xab5801a7d398351b8be11c439e05c5b3259aec9b
+
+## Approach
+
+- Query earliest historical transactions via an indexer-like approach if available; otherwise, use RPC with range scans and `eth_getLogs` on Transfer-like events if relevant.
+- If an archive node is available, scanning from genesis with stepping is feasible.
+
+## Example (TypeScript + Voltaire JSON-RPC)
+
+```ts
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+const provider = createJsonRpcProvider(process.env.ETHEREUM_RPC_URL!)
+const VITALIK = '0xab5801a7d398351b8be11c439e05c5b3259aec9b'
+
+// Pseudocode for plain-RPC scan: walk blocks, fetch transactions, filter by from.
+async function findFirstTx(): Promise<string> {
+  let from = 0n
+  const step = 50_000n
+  while (true) {
+    const to = from + step
+    const block = await provider.eth_getBlockByNumber(`0x${to.toString(16)}`, false).catch(() => null)
+    if (!block) break
+    for (let i = from; i <= to; i++) {
+      const b = await provider.eth_getBlockByNumber(`0x${i.toString(16)}`, true)
+      const tx = b.transactions.find((t: any) => (t.from || '').toLowerCase() === VITALIK)
+      if (tx) return tx.hash
+    }
+    from = to + 1n
+  }
+  throw new Error('not found in searched range')
+}
+
+const hash = await findFirstTx()
+console.log(`ANSWER: ${hash}`)
+```

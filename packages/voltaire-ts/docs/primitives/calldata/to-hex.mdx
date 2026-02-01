@@ -1,0 +1,286 @@
+---
+title: toHex
+description: Convert CallData to hex string
+---
+
+Converts CallData to a hex-encoded string with `0x` prefix. Primary method for serializing calldata for display or transmission.
+
+<Warning>
+WASM performance note: Simple string/hex conversions like `toHex()` usually do not get faster under WASM. Crossing the JS↔WASM boundary adds overhead, and JavaScript already has very fast built-ins for hex/string formatting. Prefer the default JS entrypoint for `toHex()`-style operations; reserve WASM for compute-heavy tasks (e.g., Keccak256 hashing, ABI/RLP encoding/decoding, secp256k1/BLS) where it shines.
+
+Voltaire’s WASM builds intentionally balance performance and bundle size. For maximum performance, build from source using the performance-optimized WASM target. See Build from Source: `/dev/build-system#typescript-targets` and WASM Build Modes: `/dev/wasm#build-modes`.
+</Warning>
+
+## Signature
+
+<Tabs>
+<Tab title="Namespace">
+
+```typescript
+function toHex(calldata: CallDataType): string
+```
+
+</Tab>
+<Tab title="Class">
+
+```typescript
+calldata.toHex(): string
+```
+
+</Tab>
+</Tabs>
+
+## Parameters
+
+- **calldata** - CallData instance to convert
+
+## Returns
+
+`string` - Hex-encoded string with `0x` prefix
+
+## Examples
+
+<Tabs>
+<Tab title="Basic Usage">
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+const calldata = CallData("0xa9059cbb...");
+const hex = CallData.toHex(calldata);
+
+console.log(hex);
+// "0xa9059cbb000000000000000000000000..."
+```
+
+</Tab>
+<Tab title="Transaction Serialization">
+
+```typescript
+import { CallData, Transaction } from '@tevm/voltaire';
+
+const calldata = abi.transfer.encode(recipient, amount);
+
+const tx = Transaction({
+  to: tokenAddress,
+  data: calldata,
+  // ... other fields
+});
+
+// Serialize transaction
+const txData = {
+  to: tx.to.toHex(),
+  data: CallData.toHex(tx.data), // Hex for JSON-RPC
+  value: tx.value.toString(),
+};
+```
+
+</Tab>
+<Tab title="Class API">
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+const calldata = CallData("0xa9059cbb...");
+const hex = calldata.toHex(); // Method on instance
+
+console.log(hex);
+```
+
+</Tab>
+</Tabs>
+
+## Format
+
+Output always includes `0x` prefix and lowercase hex:
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+const calldata = CallData.fromBytes(
+  new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
+);
+
+console.log(CallData.toHex(calldata));
+// "0xa9059cbb" (lowercase, with prefix)
+```
+
+## Use Cases
+
+### JSON-RPC Transactions
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+async function sendTransaction(calldata: CallDataType) {
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_sendTransaction',
+      params: [{
+        to: tokenAddress.toHex(),
+        data: CallData.toHex(calldata), // Required hex format
+      }],
+    }),
+  });
+
+  return response.json();
+}
+```
+
+### Logging and Debugging
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+function logCallData(calldata: CallDataType) {
+  const hex = CallData.toHex(calldata);
+  const selector = CallData.getSelector(calldata);
+
+  console.log("CallData:", hex);
+  console.log("Selector:", Hex.fromBytes(selector));
+  console.log("Size:", calldata.length, "bytes");
+}
+```
+
+### Block Explorers
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+function generateExplorerLink(
+  tx: Transaction,
+  chainId: number
+): string {
+  const calldata = CallData.toHex(tx.data);
+  const baseUrl = getExplorerUrl(chainId);
+
+  return `${baseUrl}/tx/${tx.hash}?data=${calldata}`;
+}
+```
+
+### Storage and Caching
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+class CallDataCache {
+  private cache = new Map<string, CallDataDecoded>();
+
+  async get(calldata: CallDataType): Promise<CallDataDecoded> {
+    const key = CallData.toHex(calldata);
+
+    if (this.cache.has(key)) {
+      return this.cache.get(key)!;
+    }
+
+    const decoded = CallData.decode(calldata, abi);
+    this.cache.set(key, decoded);
+    return decoded;
+  }
+}
+```
+
+## Performance
+
+String conversion is optimized but has overhead:
+
+```typescript
+// Benchmark: 1M iterations
+const calldata = CallData.fromBytes(
+  new Uint8Array(68) // 4 + 32 + 32 bytes
+);
+
+console.time("toHex");
+for (let i = 0; i < 1_000_000; i++) {
+  CallData.toHex(calldata);
+}
+console.timeEnd("toHex");
+
+// Pure JS: ~120ms
+// Native: ~45ms (2.7x faster)
+```
+
+For performance-critical paths, keep data as `Uint8Array`:
+
+```typescript
+// Faster: Work with bytes
+function processCallData(calldata: CallDataType) {
+  const selector = CallData.getSelector(calldata); // No conversion
+  // Process bytes directly
+}
+
+// Slower: Convert to hex first
+function processCallDataSlow(calldata: CallDataType) {
+  const hex = CallData.toHex(calldata); // Conversion overhead
+  const selector = hex.slice(0, 10); // String manipulation
+}
+```
+
+## Comparison with toBytes
+
+<Tabs>
+<Tab title="toHex">
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+const calldata = CallData.fromBytes(
+  new Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
+);
+
+const hex = CallData.toHex(calldata);
+console.log(hex); // "0xa9059cbb"
+console.log(typeof hex); // "string"
+```
+
+**Use when:**
+- Displaying to users
+- Sending over JSON-RPC
+- Storing as text
+- Logging/debugging
+
+</Tab>
+<Tab title="toBytes">
+
+```typescript
+import { CallData } from '@tevm/voltaire';
+
+const calldata = CallData("0xa9059cbb");
+const bytes = CallData.toBytes(calldata);
+
+console.log(bytes); // Uint8Array(4) [169, 5, 156, 187]
+console.log(bytes instanceof Uint8Array); // true
+```
+
+**Use when:**
+- Binary protocols
+- Performance-critical
+- Direct byte manipulation
+- WASM interop
+
+</Tab>
+</Tabs>
+
+## Type Safety
+
+Output is plain string (no branding):
+
+```typescript
+import { CallData, type CallDataType } from '@tevm/voltaire';
+
+const calldata: CallDataType = CallData("0xa9059cbb");
+const hex: string = CallData.toHex(calldata);
+
+// Cannot convert back without constructor
+const calldata2: CallDataType = hex; // ❌ Type error
+const calldata3: CallDataType = CallData(hex); // ✅ Correct
+```
+
+## Related
+
+- [toBytes](/primitives/calldata/to-bytes) - Convert to Uint8Array
+- [fromHex](/primitives/calldata/from-hex) - Parse hex string
+- [Hex](/primitives/hex) - Hex encoding utilities
+- [decode](/primitives/calldata/decode) - Decode to structured form

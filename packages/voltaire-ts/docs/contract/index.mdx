@@ -1,0 +1,379 @@
+---
+title: Contract Pattern
+description: A copyable, ethers-style contract abstraction built on Voltaire primitives
+---
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+# Source & Tests
+
+<Info>
+Source: [Contract.js](https://github.com/evmts/voltaire/blob/main/src/contract/Contract.js) • [EventStream.js](https://github.com/evmts/voltaire/blob/main/src/contract/EventStream.js)
+
+Tests: [Contract.test.ts](https://github.com/evmts/voltaire/blob/main/src/contract/Contract.test.ts) • [EventStream.test.ts](https://github.com/evmts/voltaire/blob/main/src/contract/EventStream.test.ts)
+</Info>
+
+# Contract Pattern
+
+A typed contract abstraction you copy into your codebase. Built on Voltaire primitives, customizable for your needs.
+
+<Note>
+This is a **Skill**, not a library export. Copy the code below into your project and modify as needed. See [Skills Philosophy](/concepts/skills) for why Voltaire uses copyable implementations instead of rigid library abstractions.
+</Note>
+
+## Why Copy Instead of Import?
+
+| Benefit | Description |
+|---------|-------------|
+| **AI Context** | LLMs see your full implementation, can modify and debug it |
+| **Customizable** | Add methods, change error handling, add caching |
+| **No Lock-in** | Modify freely, no library updates to worry about |
+| **Right-sized** | Remove what you don't need |
+
+<Tip>
+This implementation follows ethers.js patterns (`contract.read.method()`, `contract.write.method()`). LLMs have extensive training data on ethers and will write better code with familiar APIs.
+</Tip>
+
+## Quick Start
+
+```typescript
+import { Contract } from './Contract.js';  // Your local copy
+
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+
+// Read
+const balance = await usdc.read.balanceOf('0x...');
+
+// Write
+const txHash = await usdc.write.transfer('0x...', 1000n);
+
+// Estimate gas
+const gas = await usdc.estimateGas.transfer('0x...', 1000n);
+
+// Stream events
+const stream = usdc.events.Transfer({ from: '0x...' });
+for await (const { log } of stream.backfill({ fromBlock: 18000000n, toBlock: 19000000n })) {
+  console.log(log.args.value);
+}
+```
+
+## Implementation
+
+Copy these files into your project:
+
+<Tabs>
+  <Tab title="Contract.js">
+```javascript
+/**
+ * Contract Factory
+ *
+ * Creates typed contract instances for interacting with deployed smart contracts.
+ */
+
+import { Abi } from '@tevm/voltaire/Abi';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
+import * as TransactionHash from '@tevm/voltaire/TransactionHash';
+// If you copied EventStream from this guide, import locally:
+import { EventStream } from './EventStream.js';
+
+class ContractFunctionNotFoundError extends Error {
+  name = 'ContractFunctionNotFoundError';
+  constructor(functionName) {
+    super(`Function "${functionName}" not found in contract ABI`);
+  }
+}
+
+class ContractEventNotFoundError extends Error {
+  name = 'ContractEventNotFoundError';
+  constructor(eventName) {
+    super(`Event "${eventName}" not found in contract ABI`);
+  }
+}
+
+class ContractReadError extends Error {
+  name = 'ContractReadError';
+  constructor(functionName, cause) {
+    super(`Failed to read "${functionName}" from contract`);
+    this.cause = cause;
+  }
+}
+
+class ContractWriteError extends Error {
+  name = 'ContractWriteError';
+  constructor(functionName, cause) {
+    super(`Failed to write "${functionName}" to contract`);
+    this.cause = cause;
+  }
+}
+
+export function Contract(options) {
+  const { abi: abiItems, provider } = options;
+  const address = Address.from(options.address);
+  const abi = Abi(abiItems);
+  const addressHex = Hex.fromBytes(address);
+
+  // Read methods (view/pure) via eth_call
+  const read = new Proxy({}, {
+    get(_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      const functionName = prop;
+
+      return async (...args) => {
+        const fn = abi.getFunction(functionName);
+        if (!fn || (fn.stateMutability !== 'view' && fn.stateMutability !== 'pure')) {
+          throw new ContractFunctionNotFoundError(functionName);
+        }
+
+        try {
+          const data = abi.encode(functionName, args);
+          const result = await provider.request({
+            method: 'eth_call',
+            params: [{ to: addressHex, data: Hex.fromBytes(data) }, 'latest'],
+          });
+          const decoded = abi.decode(functionName, Hex.toBytes(result));
+          return decoded.length === 1 ? decoded[0] : decoded;
+        } catch (error) {
+          if (error instanceof ContractFunctionNotFoundError) throw error;
+          throw new ContractReadError(functionName, error);
+        }
+      };
+    },
+  });
+
+  // Write methods (nonpayable/payable) via eth_sendTransaction
+  const write = new Proxy({}, {
+    get(_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      const functionName = prop;
+
+      return async (...args) => {
+        const fn = abi.getFunction(functionName);
+        if (!fn || (fn.stateMutability !== 'nonpayable' && fn.stateMutability !== 'payable')) {
+          throw new ContractFunctionNotFoundError(functionName);
+        }
+
+        try {
+          const data = abi.encode(functionName, args);
+          const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ to: addressHex, data: Hex.fromBytes(data) }],
+          });
+          return TransactionHash.fromHex(txHash);
+        } catch (error) {
+          if (error instanceof ContractFunctionNotFoundError) throw error;
+          throw new ContractWriteError(functionName, error);
+        }
+      };
+    },
+  });
+
+  // Gas estimation via eth_estimateGas
+  const estimateGas = new Proxy({}, {
+    get(_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      const functionName = prop;
+
+      return async (...args) => {
+        const fn = abi.getFunction(functionName);
+        if (!fn || (fn.stateMutability !== 'nonpayable' && fn.stateMutability !== 'payable')) {
+          throw new ContractFunctionNotFoundError(functionName);
+        }
+
+        const data = abi.encode(functionName, args);
+        const gasHex = await provider.request({
+          method: 'eth_estimateGas',
+          params: [{ to: addressHex, data: Hex.fromBytes(data) }],
+        });
+        return BigInt(gasHex);
+      };
+    },
+  });
+
+  // Events - returns EventStream instances
+  const events = new Proxy({}, {
+    get(_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      const eventName = prop;
+
+      return (filter) => {
+        const event = abi.getEvent(eventName);
+        if (!event) throw new ContractEventNotFoundError(eventName);
+        return EventStream({ provider, address, event, filter });
+      };
+    },
+  });
+
+  return { address, abi, read, write, estimateGas, events };
+}
+```
+  </Tab>
+  <Tab title="ContractType.ts">
+```typescript
+/**
+ * Contract Type Definitions
+ */
+
+import type { Abi, Item, Parameter, ParametersToObject, ParametersToPrimitiveTypes } from '@tevm/voltaire/Abi';
+import type { EncodeTopicsArgs, EventType } from '@tevm/voltaire/Abi/event';
+import type { FunctionType } from '@tevm/voltaire/Abi/function';
+import type { AddressType } from '@tevm/voltaire/Address';
+import type { BlockNumberType } from '@tevm/voltaire/BlockNumber';
+import type { HashType } from '@tevm/voltaire/Hash';
+import type { TransactionHashType } from '@tevm/voltaire/TransactionHash';
+import type { TypedProvider } from '@tevm/voltaire/provider';
+import type { EventStream } from './EventStream.js';
+
+export type ExtractReadFunctions<TAbi extends readonly Item[]> = Extract<
+  TAbi[number],
+  FunctionType<string, 'view' | 'pure', readonly Parameter[], readonly Parameter[]>
+>;
+
+export type ExtractWriteFunctions<TAbi extends readonly Item[]> = Extract<
+  TAbi[number],
+  FunctionType<string, 'nonpayable' | 'payable', readonly Parameter[], readonly Parameter[]>
+>;
+
+export type ExtractEvents<TAbi extends readonly Item[]> = Extract<
+  TAbi[number],
+  EventType<string, readonly Parameter[]>
+>;
+
+type UnwrapSingleOutput<T extends readonly unknown[]> = T extends readonly [infer Single] ? Single : T;
+
+export type ContractReadMethods<TAbi extends readonly Item[]> = {
+  [TFunc in ExtractReadFunctions<TAbi> as TFunc['name']]: (
+    ...args: ParametersToPrimitiveTypes<TFunc['inputs']>
+  ) => Promise<UnwrapSingleOutput<ParametersToPrimitiveTypes<TFunc['outputs']>>>;
+};
+
+export type ContractWriteMethods<TAbi extends readonly Item[]> = {
+  [TFunc in ExtractWriteFunctions<TAbi> as TFunc['name']]: (
+    ...args: ParametersToPrimitiveTypes<TFunc['inputs']>
+  ) => Promise<TransactionHashType>;
+};
+
+export type ContractEstimateGasMethods<TAbi extends readonly Item[]> = {
+  [TFunc in ExtractWriteFunctions<TAbi> as TFunc['name']]: (
+    ...args: ParametersToPrimitiveTypes<TFunc['inputs']>
+  ) => Promise<bigint>;
+};
+
+export type DecodedEventLog<TEvent extends EventType> = {
+  eventName: TEvent['name'];
+  args: ParametersToObject<TEvent['inputs']>;
+  blockNumber: BlockNumberType;
+  blockHash: HashType;
+  transactionHash: TransactionHashType;
+  logIndex: number;
+};
+
+export type ContractEventFilters<TAbi extends readonly Item[]> = {
+  [TEvent in ExtractEvents<TAbi> as TEvent['name']]: (
+    filter?: EncodeTopicsArgs<TEvent['inputs']>,
+  ) => EventStream<TEvent>;
+};
+
+export type ContractInstance<TAbi extends readonly Item[]> = {
+  readonly address: AddressType;
+  readonly abi: Abi<TAbi>;
+  readonly read: ContractReadMethods<TAbi>;
+  readonly write: ContractWriteMethods<TAbi>;
+  readonly estimateGas: ContractEstimateGasMethods<TAbi>;
+  readonly events: ContractEventFilters<TAbi>;
+};
+
+export type ContractOptions<TAbi extends readonly Item[]> = {
+  address: AddressType | `0x${string}`;
+  abi: TAbi;
+  provider: TypedProvider;
+};
+```
+  </Tab>
+</Tabs>
+
+## API Reference
+
+### Contract Factory
+
+```typescript
+function Contract<TAbi extends readonly Item[]>(options: {
+  address: AddressType | `0x${string}`;
+  abi: TAbi;
+  provider: TypedProvider;
+}): ContractInstance<TAbi>;
+```
+
+### ContractInstance
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `address` | `AddressType` | Contract address |
+| `abi` | `Abi<TAbi>` | ABI instance with encode/decode methods |
+| `read` | `ContractReadMethods<TAbi>` | View/pure function calls |
+| `write` | `ContractWriteMethods<TAbi>` | State-changing transactions |
+| `estimateGas` | `ContractEstimateGasMethods<TAbi>` | Gas estimation |
+| `events` | `ContractEventFilters<TAbi>` | Event streaming |
+
+## Customization Ideas
+
+### Add Caching
+
+```javascript
+const read = new Proxy({}, {
+  get(_target, prop) {
+    // ... existing code ...
+    return async (...args) => {
+      const cacheKey = `${functionName}:${JSON.stringify(args)}`;
+      if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+      const result = /* ... call eth_call ... */;
+      cache.set(cacheKey, result);
+      return result;
+    };
+  },
+});
+```
+
+### Add Retry Logic
+
+```javascript
+const result = await retry(
+  () => provider.request({ method: 'eth_call', params }),
+  { retries: 3, delay: 1000 }
+);
+```
+
+### Add Custom Methods
+
+```javascript
+return {
+  address, abi, read, write, estimateGas, events,
+
+  // Custom: Get all token info at once
+  async getTokenInfo() {
+    const [name, symbol, decimals] = await Promise.all([
+      this.read.name(),
+      this.read.symbol(),
+      this.read.decimals(),
+    ]);
+    return { name, symbol, decimals };
+  },
+};
+```
+
+## Related
+
+- [Primitives Philosophy](/concepts/primitives-philosophy) - Why copy instead of import
+- [Read Methods](/contract/read) - Using view/pure functions
+- [Write Methods](/contract/write) - Sending transactions
+- [Events](/contract/events) - Streaming contract events
+- [Gas Estimation](/contract/gas-estimation) - Estimating gas costs
+- [Abi](/primitives/abi) - Low-level ABI encoding/decoding
+- [EventStream](/primitives/eventstream) - Event streaming primitive

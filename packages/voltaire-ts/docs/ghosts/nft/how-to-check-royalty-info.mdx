@@ -1,0 +1,65 @@
+---
+title: Check Royalty Info (ERC2981)
+description: Query royalty recipient and amount for an NFT using the ERC2981 standard.
+---
+
+## Goal
+
+Given an NFT contract and token ID, get the royalty recipient and percentage for a sale price.
+
+Return as:
+
+```
+RECIPIENT: 0x...
+ROYALTY: X.XX%
+```
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@voltaire/contract'
+
+const ERC2981_ABI = [
+  {
+    type: 'function',
+    name: 'royaltyInfo',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'salePrice', type: 'uint256' }
+    ],
+    outputs: [
+      { name: 'receiver', type: 'address' },
+      { name: 'royaltyAmount', type: 'uint256' }
+    ]
+  },
+  {
+    type: 'function',
+    name: 'supportsInterface',
+    stateMutability: 'view',
+    inputs: [{ name: 'interfaceId', type: 'bytes4' }],
+    outputs: [{ name: '', type: 'bool' }]
+  }
+] as const
+
+const nft = Contract({
+  address: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+  abi: ERC2981_ABI,
+  provider
+})
+
+// Check if contract supports ERC2981 (interfaceId: 0x2a55205a)
+const supportsRoyalties = await nft.read.supportsInterface('0x2a55205a')
+if (!supportsRoyalties) {
+  console.log('Contract does not support ERC2981')
+} else {
+  const tokenId = 1234n
+  const salePrice = 1000000000000000000n // 1 ETH in wei
+
+  const [receiver, royaltyAmount] = await nft.read.royaltyInfo(tokenId, salePrice)
+  const percentage = (Number(royaltyAmount) / Number(salePrice)) * 100
+
+  console.log(`RECIPIENT: ${receiver}`)
+  console.log(`ROYALTY: ${percentage.toFixed(2)}%`)
+}
+```

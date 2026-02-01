@@ -1,0 +1,155 @@
+---
+title: '[Zig] src/primitives/ContractCode/contract_code.zig'
+source: 'src/primitives/ContractCode/contract_code.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/ContractCode/contract_code.zig
+
+### ContractCode.from - creates from bytes
+
+```zig
+test "ContractCode.from - creates from bytes" {
+    const bytecode = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
+    const code = ContractCode.from(&bytecode);
+
+    try std.testing.expectEqual(@as(usize, 5), code.len());
+    try std.testing.expect(!code.isEmpty());
+}
+```
+
+### ContractCode.from - empty bytecode
+
+```zig
+test "ContractCode.from - empty bytecode" {
+    const bytecode = [_]u8{};
+    const code = ContractCode.from(&bytecode);
+
+    try std.testing.expectEqual(@as(usize, 0), code.len());
+    try std.testing.expect(code.isEmpty());
+}
+```
+
+### ContractCode.fromHex - valid hex
+
+```zig
+test "ContractCode.fromHex - valid hex" {
+    const result = try ContractCode.fromHex(std.testing.allocator, "0x6080604052");
+    defer std.testing.allocator.free(result.bytes);
+
+    try std.testing.expectEqual(@as(usize, 5), result.code.len());
+    try std.testing.expectEqual(@as(u8, 0x60), result.code.bytes[0]);
+}
+```
+
+### ContractCode.fromHex - without prefix
+
+```zig
+test "ContractCode.fromHex - without prefix" {
+    const result = try ContractCode.fromHex(std.testing.allocator, "0x6080");
+    defer std.testing.allocator.free(result.bytes);
+
+    try std.testing.expectEqual(@as(usize, 2), result.code.len());
+}
+```
+
+### ContractCode.toHex - converts to hex string
+
+```zig
+test "ContractCode.toHex - converts to hex string" {
+    const bytecode = [_]u8{ 0x60, 0x80 };
+    const code = ContractCode.from(&bytecode);
+
+    const hex = try code.toHex(std.testing.allocator);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqualStrings("0x6080", hex);
+}
+```
+
+### ContractCode.hash - computes keccak256
+
+```zig
+test "ContractCode.hash - computes keccak256" {
+    const bytecode = [_]u8{ 0x60, 0x80, 0x60, 0x40 };
+    const code = ContractCode.from(&bytecode);
+
+    const code_hash = code.hash();
+
+    // Hash should be 32 bytes
+    try std.testing.expectEqual(@as(usize, 32), code_hash.len);
+
+    // Verify it's not all zeros
+    var all_zero = true;
+    for (code_hash) |b| {
+        if (b != 0) {
+            all_zero = false;
+            break;
+        }
+    }
+    try std.testing.expect(!all_zero);
+}
+```
+
+### ContractCode.equals - same bytecode
+
+```zig
+test "ContractCode.equals - same bytecode" {
+    const bytecode1 = [_]u8{ 0x60, 0x80 };
+    const bytecode2 = [_]u8{ 0x60, 0x80 };
+
+    const code1 = ContractCode.from(&bytecode1);
+    const code2 = ContractCode.from(&bytecode2);
+
+    try std.testing.expect(code1.equals(code2));
+}
+```
+
+### ContractCode.equals - different bytecode
+
+```zig
+test "ContractCode.equals - different bytecode" {
+    const bytecode1 = [_]u8{ 0x60, 0x80 };
+    const bytecode2 = [_]u8{ 0x60, 0x40 };
+
+    const code1 = ContractCode.from(&bytecode1);
+    const code2 = ContractCode.from(&bytecode2);
+
+    try std.testing.expect(!code1.equals(code2));
+}
+```
+
+### ContractCode.equals - different lengths
+
+```zig
+test "ContractCode.equals - different lengths" {
+    const bytecode1 = [_]u8{ 0x60, 0x80 };
+    const bytecode2 = [_]u8{ 0x60, 0x80, 0x60 };
+
+    const code1 = ContractCode.from(&bytecode1);
+    const code2 = ContractCode.from(&bytecode2);
+
+    try std.testing.expect(!code1.equals(code2));
+}
+```
+
+### ContractCode.hasMetadata - no metadata
+
+```zig
+test "ContractCode.hasMetadata - no metadata" {
+    const bytecode = [_]u8{ 0x60, 0x80, 0x60, 0x40 };
+    const code = ContractCode.from(&bytecode);
+
+    try std.testing.expect(!code.hasMetadata());
+}
+```
+
+### ContractCode.hasMetadata - too short
+
+```zig
+test "ContractCode.hasMetadata - too short" {
+    const bytecode = [_]u8{0x60};
+    const code = ContractCode.from(&bytecode);
+
+    try std.testing.expect(!code.hasMetadata());
+}
+```

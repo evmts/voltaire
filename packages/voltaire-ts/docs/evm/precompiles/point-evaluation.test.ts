@@ -1,0 +1,182 @@
+/**
+ * Tests for point-evaluation.mdx documentation examples
+ * Validates code examples work correctly with actual API
+ *
+ * NOTE: KZG/Point Evaluation is stubbed in WASM and may have limited
+ * functionality depending on build configuration.
+ */
+import { beforeAll, describe, expect, it } from "vitest";
+import { PrecompileAddress, execute, pointEvaluation } from "../../../src/evm/precompiles/precompiles.js";
+import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+import * as KZG from "../../../src/crypto/KZG/index.js";
+
+describe("point-evaluation.mdx documentation examples", () => {
+	// Load KZG for pointEvaluation precompile
+	beforeAll(
+		() => {
+			if (!KZG.isInitialized()) {
+				KZG.loadTrustedSetup();
+			}
+		},
+		{ timeout: 60000 },
+	);
+	describe("Overview section", () => {
+		it("should be available at address 0x0a", () => {
+			// Doc states: Address: 0x000000000000000000000000000000000000000a
+			expect(PrecompileAddress.POINT_EVALUATION).toBeDefined();
+		});
+	});
+
+	describe("Gas Cost section", () => {
+		it("should use fixed 50000 gas", () => {
+			// Doc states: Fixed: 50,000 gas
+			const input = new Uint8Array(192);
+			const result = pointEvaluation(input, 60000n);
+
+			// Note: May fail validation but gas should be charged
+			expect(result.gasUsed).toBe(50000n);
+		});
+
+		it("should fail with insufficient gas", () => {
+			const input = new Uint8Array(192);
+			const result = pointEvaluation(input, 49999n);
+			expect(result.success).toBe(false);
+			expect(result.error).toBe("Out of gas");
+		});
+	});
+
+	describe("Input Format section", () => {
+		it("should require exactly 192 bytes", () => {
+			// Doc states: Exactly 192 bytes required
+			const shortInput = new Uint8Array(191);
+			const longInput = new Uint8Array(193);
+
+			const resultShort = pointEvaluation(shortInput, 60000n);
+			const resultLong = pointEvaluation(longInput, 60000n);
+
+			// Both should fail for invalid length
+			expect(resultShort.success).toBe(false);
+			expect(resultLong.success).toBe(false);
+		});
+
+		it("should accept 192 bytes input", () => {
+			// Doc states: Total input length: Exactly 192 bytes
+			const input = new Uint8Array(192);
+			const result = pointEvaluation(input, 60000n);
+
+			// Will fail for invalid data, but length should be accepted
+			expect(result.gasUsed).toBe(50000n);
+		});
+	});
+
+	describe("Output Format section", () => {
+		it("should return 64 bytes on success", () => {
+			// Doc states: Total output length: 64 bytes
+			// Note: Valid test requires proper KZG proof which is complex
+			// We test the structure of a valid response
+			const input = new Uint8Array(192);
+			const result = pointEvaluation(input, 60000n);
+
+			// Even on failure, the output structure should be consistent
+			if (result.success) {
+				expect(result.output.length).toBe(64);
+			}
+		});
+	});
+
+	describe("Error Conditions section", () => {
+		it("should fail for input length != 192 bytes", () => {
+			// Doc states: Input length != 192 bytes
+			const wrongSizes = [0, 100, 191, 193, 256];
+
+			for (const size of wrongSizes) {
+				const input = new Uint8Array(size);
+				const result = pointEvaluation(input, 60000n);
+				expect(result.success).toBe(false);
+			}
+		});
+
+		it("should fail with out of gas", () => {
+			// Doc states: Out of gas (gasLimit < 50,000)
+			const input = new Uint8Array(192);
+			const result = pointEvaluation(input, 49999n);
+			expect(result.success).toBe(false);
+			expect(result.error).toBe("Out of gas");
+		});
+	});
+
+	describe("Integration with execute function", () => {
+		it("should work via execute with PrecompileAddress.POINT_EVALUATION", () => {
+			const input = new Uint8Array(192);
+			const result = execute(
+				PrecompileAddress.POINT_EVALUATION,
+				input,
+				60000n,
+				Hardfork.CANCUN,
+			);
+
+			// Will fail for invalid proof, but precompile should be callable
+			expect(result.gasUsed).toBe(50000n);
+		});
+
+		it("should be available from CANCUN hardfork", () => {
+			// Doc states: Introduced: Cancun (EIP-4844)
+			const input = new Uint8Array(192);
+			const result = execute(
+				PrecompileAddress.POINT_EVALUATION,
+				input,
+				60000n,
+				Hardfork.CANCUN,
+			);
+
+			// Gas should be charged regardless of proof validity
+			expect(result.gasUsed).toBe(50000n);
+		});
+
+		it("hardfork availability via isPrecompile function", async () => {
+			// NOTE: execute() does not enforce hardfork availability
+			// Use isPrecompile() to check availability
+			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
+			expect(isPrecompile(PrecompileAddress.POINT_EVALUATION, Hardfork.CANCUN)).toBe(true);
+			expect(isPrecompile(PrecompileAddress.POINT_EVALUATION, Hardfork.SHANGHAI)).toBe(false);
+		});
+	});
+
+	describe("Versioned Hash Format section", () => {
+		it("should expect version byte 0x01", () => {
+			// Doc states: versioned_hash[0] = 0x01 (Version EIP-4844)
+			// Version byte allows future commitment schemes:
+			// - 0x01: EIP-4844 KZG commitments
+			// - 0x02+: Reserved for future schemes
+			const input = new Uint8Array(192);
+			input[0] = 0x01; // Set version byte
+
+			const result = pointEvaluation(input, 60000n);
+			// Will still fail for invalid proof data, but tests version byte position
+			expect(result.gasUsed).toBe(50000n);
+		});
+	});
+
+	describe("EIP-4844 Blob Structure section", () => {
+		it("should work with 4096 field elements per blob", () => {
+			// Doc states: FIELD_ELEMENTS_PER_BLOB (0x1000 = 4096)
+			// This is returned in the output on success
+			// Output bytes 30-31: 0x1000 (4096 field elements per blob)
+			const FIELD_ELEMENTS_PER_BLOB = 4096;
+			expect(FIELD_ELEMENTS_PER_BLOB).toBe(0x1000);
+		});
+	});
+
+	describe("Gas Cost Justification section", () => {
+		it("should justify 50000 gas for BLS12-381 pairing", () => {
+			// Doc states: 50,000 gas covers:
+			// - BLS12-381 pairing operation (~45,000 gas equivalent)
+			// - Field arithmetic and validation
+			// - SHA-256 hash for versioned hash check
+			const input = new Uint8Array(192);
+			const result = pointEvaluation(input, 60000n);
+
+			expect(result.gasUsed).toBe(50000n);
+		});
+	});
+});

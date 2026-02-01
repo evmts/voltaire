@@ -1,0 +1,223 @@
+---
+title: Usage Patterns
+description: BLS12-381 usage patterns for consensus client development
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/bls12381.ts">
+  Run BLS12-381 examples in the interactive playground
+</Card>
+
+# Usage Patterns
+
+Common usage patterns for BLS12-381 in Ethereum consensus layer development.
+
+<Warning>
+**Consensus Client Development Only** - These patterns are for building Ethereum consensus clients (Prysm, Lighthouse, Teku, Nimbus). Application developers should use [secp256k1](/crypto/secp256k1) for signatures and [BN254](/crypto/bn254) for zkSNARKs.
+</Warning>
+
+## Validator Key Management
+
+### Generate Validator Keypair
+
+```zig
+const Bls12381 = @import("crypto").Bls12381;
+
+// Generate random secret key (32 bytes)
+var secret_key: [32]u8 = undefined;
+crypto.random.bytes(&secret_key);
+
+// Derive public key (G1 point, 48 bytes compressed)
+const public_key = Bls12381.G1.mulGenerator(secret_key);
+
+// Serialize for storage
+const pk_compressed = Bls12381.G1.compress(public_key);
+```
+
+### Key Derivation (EIP-2333)
+
+Hierarchical deterministic key derivation for validator keys:
+
+```zig
+// Derive child key from master seed
+const path = [_]u32{ 12381, 3600, 0, 0, 0 }; // m/12381/3600/0/0/0
+const child_key = Bls12381.deriveChild(master_seed, &path);
+```
+
+## Signature Operations
+
+### Sign a Message
+
+```zig
+// Hash message to G2 (domain separation)
+const domain = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+const message_point = Bls12381.G2.hashToCurve(message, domain);
+
+// Sign: multiply by secret key
+const signature = Bls12381.G2.mul(message_point, secret_key);
+```
+
+### Verify a Signature
+
+```zig
+// Verify: e(P, H(m)) == e(G1, σ)
+const is_valid = Bls12381.Pairing.verify(
+    public_key,     // G1 point
+    message_hash,   // G2 point
+    signature,      // G2 point
+);
+```
+
+## Signature Aggregation
+
+### Aggregate Multiple Signatures
+
+The key benefit of BLS - combine N signatures into one:
+
+```zig
+// Aggregate signatures (simple addition in G2)
+var aggregated_sig = Bls12381.G2.identity();
+for (signatures) |sig| {
+    aggregated_sig = Bls12381.G2.add(aggregated_sig, sig);
+}
+// Result: 96 bytes regardless of N
+```
+
+### Aggregate Public Keys
+
+```zig
+// Aggregate public keys (addition in G1)
+var aggregated_pk = Bls12381.G1.identity();
+for (public_keys) |pk| {
+    aggregated_pk = Bls12381.G1.add(aggregated_pk, pk);
+}
+```
+
+### Verify Aggregated Signature
+
+```zig
+// Verify: e(agg_pk, H(m)) == e(G1, agg_sig)
+const is_valid = Bls12381.Pairing.verify(
+    aggregated_pk,
+    message_hash,
+    aggregated_signature,
+);
+```
+
+## Beacon Chain Patterns
+
+### Attestation Aggregation
+
+```zig
+// Attestation contains: data + aggregation_bits + signature
+pub const Attestation = struct {
+    data: AttestationData,
+    aggregation_bits: Bitlist,
+    signature: [96]u8, // Aggregated BLS signature
+};
+
+// Aggregate attestations with same data
+fn aggregateAttestations(attestations: []Attestation) Attestation {
+    var result = attestations[0];
+    for (attestations[1..]) |att| {
+        // Merge aggregation bits
+        result.aggregation_bits.merge(att.aggregation_bits);
+        // Aggregate signatures
+        result.signature = Bls12381.G2.add(
+            result.signature.toG2(),
+            att.signature.toG2(),
+        ).compress();
+    }
+    return result;
+}
+```
+
+### Sync Committee Signatures
+
+```zig
+// Sync committee: 512 validators, aggregated signature
+pub const SyncAggregate = struct {
+    sync_committee_bits: [64]u8, // 512 bits
+    sync_committee_signature: [96]u8,
+};
+
+// Verify sync committee signature
+fn verifySyncAggregate(
+    aggregate: SyncAggregate,
+    committee: []const [48]u8, // Public keys
+    message: [32]u8,
+) bool {
+    // Get participating public keys
+    var participating_pks = std.ArrayList(G1Point).init(allocator);
+    for (committee, 0..) |pk, i| {
+        if (aggregate.sync_committee_bits.isSet(i)) {
+            participating_pks.append(Bls12381.G1.decompress(pk));
+        }
+    }
+
+    // Aggregate and verify
+    const agg_pk = Bls12381.G1.sum(participating_pks.items);
+    return Bls12381.Pairing.verify(
+        agg_pk,
+        Bls12381.G2.hashToCurve(message, domain),
+        Bls12381.G2.decompress(aggregate.sync_committee_signature),
+    );
+}
+```
+
+## Batch Verification
+
+### Verify Multiple Signatures Efficiently
+
+```zig
+// Batch verify N signatures with random linear combination
+fn batchVerify(
+    public_keys: []const G1Point,
+    messages: []const G2Point,
+    signatures: []const G2Point,
+) bool {
+    // Generate random scalars for linear combination
+    var randoms: [N]Fr = undefined;
+    for (&randoms) |*r| r.* = Fr.random();
+
+    // Compute: e(Σ rᵢ·Pᵢ, H(mᵢ)) == e(G1, Σ rᵢ·σᵢ)
+    // Uses multi-pairing for efficiency
+    return Bls12381.Pairing.batchVerify(
+        public_keys,
+        messages,
+        signatures,
+        randoms,
+    );
+}
+```
+
+## Domain Separation
+
+Different signing domains prevent cross-protocol attacks:
+
+```zig
+pub const Domain = enum {
+    beacon_proposer,
+    beacon_attester,
+    randao,
+    deposit,
+    voluntary_exit,
+    selection_proof,
+    aggregate_and_proof,
+    sync_committee,
+    sync_committee_selection_proof,
+    contribution_and_proof,
+    bls_to_execution_change,
+};
+
+fn computeSigningRoot(data: anytype, domain: Domain) [32]u8 {
+    const domain_bytes = computeDomain(domain);
+    return hash(data ++ domain_bytes);
+}
+```
+
+## Related
+
+- [BLS12-381 Overview](/crypto/bls12-381) - Curve fundamentals
+- [Security](/crypto/bls12-381/security) - Security considerations
+- [Performance](/crypto/bls12-381/performance) - Benchmarks
+- [BN254](/crypto/bn254) - For execution layer zkSNARKs

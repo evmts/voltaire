@@ -1,0 +1,26 @@
+```typescript
+import { Effect, Schedule, Duration } from 'effect'
+
+// Retry with exponential backoff
+program.pipe(
+  Effect.retry(
+    Schedule.exponential('100 millis').pipe(
+      Schedule.compose(Schedule.recurs(5)),
+      Schedule.jittered
+    )
+  )
+)
+
+// Timeout with error handling
+program.pipe(
+  Effect.timeout(Duration.seconds(10)),
+  Effect.catchTag('TimeoutException', () => 
+    Effect.fail(new Error('Operation timed out'))
+  )
+)
+
+// Fallback to alternative
+program.pipe(
+  Effect.orElse(() => fallbackProgram)
+)
+```

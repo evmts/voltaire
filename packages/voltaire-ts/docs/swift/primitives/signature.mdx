@@ -1,0 +1,34 @@
+---
+title: Signature (Swift)
+description: ECDSA secp256k1 signatures (r, s, v)
+---
+
+# Signature
+
+ECDSA signatures over secp256k1 with recovery and normalization.
+
+## Quick Start
+
+```swift
+import Voltaire
+
+// Parse compact signature (64 or 65 bytes)
+var r = [UInt8](repeating: 0, count: 31) + [0x01]
+var s = [UInt8](repeating: 0, count: 31) + [0x02]
+let sig = try Signature(compact: r + s)
+
+// Normalize (low-s) and serialize
+let normalized = sig.normalized()
+let compact64 = normalized.serialize(includeV: false)
+
+// Validate r/s are within curve order
+XCTAssertTrue(normalized.isValid)
+
+// Recover public key / address from message hash
+let msg = Keccak256.hash("hello")
+if normalized.v == 0 || normalized.v == 27 || normalized.v == 28 {
+  let pub = try normalized.recoverPublicKey(messageHash: msg)
+  let addr = try normalized.recoverAddress(messageHash: msg)
+  print(pub.uncompressed.count, addr.hex)
+}
+```

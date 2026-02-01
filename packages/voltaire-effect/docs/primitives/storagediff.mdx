@@ -1,0 +1,37 @@
+---
+title: StorageDiff
+description: Track contract storage slot changes
+---
+
+```typescript
+import { StorageDiff } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+// From Map
+const diff = yield* StorageDiff.from(
+  addressBytes,
+  new Map([[slot, { from: oldValue, to: newValue }]])
+)
+
+// From array of tuples
+const diff2 = yield* StorageDiff.from(
+  addressBytes,
+  [[slot1, change1], [slot2, change2]]
+)
+```
+
+## Structure
+
+```typescript
+{
+  address: Uint8Array,                    // 20 bytes
+  changes: Map<slot, { from, to }>        // Slot value changes
+}
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(address, changes) => Effect<StorageDiffType, StorageDiffError>` |
+| `StorageDiffSchema` | Effect Schema for validation |

@@ -1,0 +1,64 @@
+---
+title: "Uppercase"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [BrandedAddress](../index.mdx) / Uppercase
+
+# Uppercase
+
+## Type Aliases
+
+### Uppercase
+
+> **Uppercase**\<\> = [`HexType`](../../../../primitives/Hex.mdx#hextype) & `object`
+
+Defined in: [src/primitives/Address/UppercaseAddress.js:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/UppercaseAddress.js#L4)
+
+#### Type Declaration
+
+##### \_\_uppercase
+
+> `readonly` **\_\_uppercase**: `true`
+
+##### \_\_variant
+
+> `readonly` **\_\_variant**: `"Address"`
+
+#### Type Parameters
+
+## Functions
+
+### from()
+
+> **from**(`addr`): [`Uppercase`](#uppercase)
+
+Defined in: [src/primitives/Address/UppercaseAddress.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/UppercaseAddress.js#L20)
+
+Create uppercase address hex string from Address
+
+#### Parameters
+
+##### addr
+
+[`AddressType`](../../../../primitives/Address.mdx#addresstype)
+
+Address to format
+
+#### Returns
+
+[`Uppercase`](#uppercase)
+
+Uppercase address hex string
+
+#### Example
+
+```typescript
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+const upper = Uppercase.from(addr);
+// "0x742D35CC6634C0532925A3B844BC9E7595F251E3"
+```

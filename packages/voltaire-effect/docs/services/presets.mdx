@@ -1,0 +1,199 @@
+---
+title: Presets
+description: Pre-composed provider layers for common configurations
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { getChainId, MainnetProvider } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  return yield* getChainId()
+}).pipe(Effect.provide(MainnetProvider('https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY')))
+
+await Effect.runPromise(program)
+```
+
+## MainnetProvider
+
+Simple provider with HTTP transport:
+
+```typescript
+import { MainnetProvider } from 'voltaire-effect'
+
+const provider = MainnetProvider('https://eth.llamarpc.com')
+// Provides: ProviderService
+```
+
+## createProvider
+
+Generic version for any network:
+
+```typescript
+import { createProvider } from 'voltaire-effect'
+
+const arbitrumProvider = createProvider('https://arb1.arbitrum.io/rpc')
+const optimismProvider = createProvider('https://mainnet.optimism.io')
+const baseProvider = createProvider('https://mainnet.base.org')
+```
+
+## Chain-Specific Providers
+
+Full providers with all composed services:
+
+```typescript
+import { 
+  OptimismProvider,
+  ArbitrumProvider,
+  BaseProvider,
+  SepoliaProvider,
+  PolygonProvider,
+  MainnetFullProvider
+} from 'voltaire-effect'
+
+// Each provides: ProviderService, FormatterService, TransactionSerializerService,
+//                FeeEstimatorService, NonceManagerService, CacheService,
+//                ChainService, BlockExplorerService, ContractsService
+
+const op = OptimismProvider('https://mainnet.optimism.io')
+const arb = ArbitrumProvider('https://arb1.arbitrum.io/rpc')
+const base = BaseProvider('https://mainnet.base.org')
+const sepolia = SepoliaProvider('https://sepolia.infura.io/v3/YOUR_KEY')
+const polygon = PolygonProvider('https://polygon-rpc.com')
+const mainnet = MainnetFullProvider('https://eth.llamarpc.com')
+```
+
+## MainnetFullProvider
+
+Enhanced mainnet provider with all services:
+
+```typescript
+import { Effect } from 'effect'
+import {
+  getBlockNumber,
+  ChainService,
+  FeeEstimatorService,
+  NonceManagerService,
+  MainnetFullProvider
+} from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const chain = yield* ChainService
+  const feeEstimator = yield* FeeEstimatorService
+  const nonceManager = yield* NonceManagerService
+
+  const blockNumber = yield* getBlockNumber()
+  const fees = yield* feeEstimator.estimate()
+  const nonce = yield* nonceManager.getNextNonce('0x...')
+
+  return {
+    chain: chain.name,
+    blockNumber,
+    fees,
+    nonce
+  }
+}).pipe(Effect.provide(MainnetFullProvider('https://eth.llamarpc.com')))
+```
+
+## ComposedServices Type
+
+All chain presets provide these services:
+
+```typescript
+type ComposedServices =
+  | ProviderService
+  | FormatterService
+  | TransactionSerializerService
+  | FeeEstimatorService
+  | NonceManagerService
+  | CacheService
+  | ChainService
+  | BlockExplorerService
+  | ContractsService
+```
+
+## When to Use Presets vs Manual Composition
+
+### Use Presets When:
+
+- Building applications that target a specific chain
+- Need common services without boilerplate
+- Want sensible defaults for production use
+
+```typescript
+// Simple: one line setup
+const program = myEffect.pipe(
+  Effect.provide(MainnetFullProvider('https://eth.llamarpc.com'))
+)
+```
+
+### Use Manual Composition When:
+
+- Need custom service implementations
+- Want fine-grained control over dependencies
+- Building chain-agnostic libraries
+- Need to swap implementations for testing
+
+```typescript
+import { Layer } from 'effect'
+import { 
+  Provider, 
+  HttpTransport,
+  DefaultFormatter,
+  DefaultTransactionSerializer,
+  mainnet 
+} from 'voltaire-effect'
+
+// Manual: full control
+const customStack = Layer.mergeAll(
+  Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com'))),
+  DefaultFormatter,
+  DefaultTransactionSerializer.Live,
+  mainnet,
+  MyCustomFeeEstimator,  // Custom implementation
+  MyCustomNonceManager   // Custom implementation
+)
+```
+
+## Configuration with FiberRef Helpers
+
+Presets work with FiberRef helpers for per-request configuration:
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { getBlockNumber, getBalance, getChainId, MainnetFullProvider, withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  // Fast timeout for time-sensitive operations
+  const blockNumber = yield* getBlockNumber().pipe(
+    withTimeout('5 seconds')
+  )
+
+  // Skip cache for fresh data
+  const freshBalance = yield* getBalance('0x...').pipe(withoutCache)
+
+  // Custom retry for flaky endpoints
+  const chainId = yield* getChainId().pipe(
+    withRetrySchedule(Schedule.recurs(3))
+  )
+}).pipe(Effect.provide(MainnetFullProvider('https://eth.llamarpc.com')))
+```
+
+## Testing with Presets
+
+Replace transport for testing:
+
+```typescript
+import { Layer } from 'effect'
+import { Provider, ProviderService } from 'voltaire-effect'
+
+const MockTransport = Layer.succeed(TransportService, {
+  request: (method, params) => Effect.succeed(mockResponses[method])
+})
+
+const TestProvider = Provider.pipe(Layer.provide(MockTransport))
+
+const testProgram = myEffect.pipe(Effect.provide(TestProvider))
+```

@@ -1,0 +1,338 @@
+---
+title: '[TS/JS] src/primitives/PublicKey/toHex.test.js'
+source: 'src/primitives/PublicKey/toHex.test.js'
+---
+
+> Auto-generated from test file: src/primitives/PublicKey/toHex.test.js
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { from as privateKeyFrom } from "../PrivateKey/from.js";
+import { from } from "./from.js";
+import { fromPrivateKey } from "./fromPrivateKey.js";
+import { toHex } from "./toHex.js";
+
+/** @type {(bytes: Uint8Array) => import('./PublicKeyType.js').PublicKeyType} */
+const asPublicKey = (bytes) => /** @type {any} */ (bytes);
+
+describe("PublicKey.toHex", () => {
+	describe("conversion tests", () => {
+		it("converts public key to hex", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBeDefined();
+			expect(typeof hex).toBe("string");
+			expect(hex.startsWith("0x")).toBe(true);
+		});
+
+		it("converts to 128 hex characters plus prefix", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(hex.length).toBe(130);
+		});
+
+		it("converts all zero public key", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBe(`0x${"00".repeat(64)}`);
+		});
+
+		it("converts all max public key", () => {
+			const pubkey = asPublicKey(new Uint8Array(64).fill(0xff));
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBe(`0x${"ff".repeat(64)}`);
+		});
+
+		it("converts known public key", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(hex.startsWith("0x")).toBe(true);
+			expect(hex.length).toBe(130);
+		});
+
+		it("pads single digit bytes with zero", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			pubkey[0] = 0x01;
+			pubkey[32] = 0x0f;
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toContain("01");
+			expect(hex).toContain("0f");
+			expect(hex.slice(2, 4)).toBe("01");
+		});
+	});
+
+	describe("format tests", () => {
+		it("returns hex string with 0x prefix", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(hex.startsWith("0x")).toBe(true);
+		});
+
+		it("returns lowercase hex", () => {
+			const pubkey = asPublicKey(new Uint8Array(64).fill(0xab));
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBe(`0x${"ab".repeat(64)}`);
+			expect(hex).not.toContain("A");
+			expect(hex).not.toContain("B");
+		});
+
+		it("returns exactly 130 characters", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(hex.length).toBe(130);
+		});
+
+		it("returns valid hex string", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(/^0x[0-9a-f]{128}$/.test(hex)).toBe(true);
+		});
+	});
+
+	describe("round-trip tests", () => {
+		it("round-trips with from", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey1 = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey1);
+			const pubkey2 = from(hex);
+
+			expect(pubkey2.every((b, i) => b === pubkey1[i])).toBe(true);
+		});
+
+		it("round-trips zero key", () => {
+			const pubkey1 = asPublicKey(new Uint8Array(64));
+			const hex = toHex.call(pubkey1);
+			const pubkey2 = from(hex);
+
+			expect(pubkey2.every((b, i) => b === pubkey1[i])).toBe(true);
+		});
+
+		it("round-trips max key", () => {
+			const pubkey1 = asPublicKey(new Uint8Array(64).fill(0xff));
+			const hex = toHex.call(pubkey1);
+			const pubkey2 = from(hex);
+
+			expect(pubkey2.every((b, i) => b === pubkey1[i])).toBe(true);
+		});
+
+		it("preserves all byte values", () => {
+			const pubkey1 = asPublicKey(new Uint8Array(64));
+			for (let i = 0; i < 64; i++) {
+				pubkey1[i] = i;
+			}
+			const hex = toHex.call(pubkey1);
+			const pubkey2 = from(hex);
+
+			for (let i = 0; i < 64; i++) {
+				expect(pubkey2[i]).toBe(pubkey1[i]);
+			}
+		});
+	});
+
+	describe("determinism tests", () => {
+		it("produces same output for same input", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex1 = toHex.call(pubkey);
+			const hex2 = toHex.call(pubkey);
+
+			expect(hex1).toBe(hex2);
+		});
+
+		it("produces different output for different input", () => {
+			const pk1 = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pk2 = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff81",
+			);
+			const pubkey1 = fromPrivateKey(pk1);
+			const pubkey2 = fromPrivateKey(pk2);
+			const hex1 = toHex.call(pubkey1);
+			const hex2 = toHex.call(pubkey2);
+
+			expect(hex1).not.toBe(hex2);
+		});
+
+		it("distinguishes keys differing by one byte", () => {
+			const pubkey1 = asPublicKey(new Uint8Array(64).fill(0xaa));
+			const pubkey2 = asPublicKey(new Uint8Array(64).fill(0xaa));
+			pubkey2[32] = 0xab;
+
+			const hex1 = toHex.call(pubkey1);
+			const hex2 = toHex.call(pubkey2);
+
+			expect(hex1).not.toBe(hex2);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles all zeros", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000" +
+					"0000000000000000000000000000000000000000000000000000000000000000",
+			);
+		});
+
+		it("handles all ones", () => {
+			const pubkey = asPublicKey(new Uint8Array(64).fill(0xff));
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBe(
+				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+					"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			);
+		});
+
+		it("handles alternating bytes", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			for (let i = 0; i < 64; i++) {
+				pubkey[i] = i % 2 === 0 ? 0xaa : 0x55;
+			}
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toContain("aa");
+			expect(hex).toContain("55");
+		});
+
+		it("handles sequential bytes", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			for (let i = 0; i < 64; i++) {
+				pubkey[i] = i;
+			}
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toContain("00");
+			expect(hex).toContain("3f");
+		});
+
+		it("handles x coordinate all zeros", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			for (let i = 32; i < 64; i++) {
+				pubkey[i] = 0xff;
+			}
+			const hex = toHex.call(pubkey);
+
+			expect(hex.slice(2, 66)).toBe("0".repeat(64));
+			expect(hex.slice(66)).toBe("f".repeat(64));
+		});
+
+		it("handles y coordinate all zeros", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			for (let i = 0; i < 32; i++) {
+				pubkey[i] = 0xff;
+			}
+			const hex = toHex.call(pubkey);
+
+			expect(hex.slice(2, 66)).toBe("f".repeat(64));
+			expect(hex.slice(66)).toBe("0".repeat(64));
+		});
+	});
+
+	describe("coordinate tests", () => {
+		it("encodes x coordinate in first half", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			pubkey[0] = 0x12;
+			pubkey[31] = 0x34;
+			const hex = toHex.call(pubkey);
+
+			expect(hex.slice(2, 4)).toBe("12");
+			expect(hex.slice(64, 66)).toBe("34");
+		});
+
+		it("encodes y coordinate in second half", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			pubkey[32] = 0x56;
+			pubkey[63] = 0x78;
+			const hex = toHex.call(pubkey);
+
+			expect(hex.slice(66, 68)).toBe("56");
+			expect(hex.slice(128, 130)).toBe("78");
+		});
+
+		it("correctly positions both coordinates", () => {
+			const pubkey = asPublicKey(new Uint8Array(64));
+			for (let i = 0; i < 32; i++) {
+				pubkey[i] = 0xaa;
+			}
+			for (let i = 32; i < 64; i++) {
+				pubkey[i] = 0xbb;
+			}
+			const hex = toHex.call(pubkey);
+
+			expect(hex.slice(2, 66)).toBe("aa".repeat(32));
+			expect(hex.slice(66, 130)).toBe("bb".repeat(32));
+		});
+	});
+
+	describe("usage tests", () => {
+		it("can be called with this context", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBeDefined();
+			expect(typeof hex).toBe("string");
+		});
+
+		it("produces string that can be parsed", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(() => from(hex)).not.toThrow();
+		});
+
+		it("works with derived public keys", () => {
+			const pk = privateKeyFrom(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+			);
+			const pubkey = fromPrivateKey(pk);
+			const hex = toHex.call(pubkey);
+
+			expect(hex).toBeDefined();
+			expect(hex.length).toBe(130);
+		});
+	});
+});
+
+```

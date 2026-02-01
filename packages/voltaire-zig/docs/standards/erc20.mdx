@@ -1,0 +1,243 @@
+title: ERC-20
+description: ERC-20 fungible token standard interface
+---
+
+# ERC-20
+
+ERC-20 is the standard interface for fungible tokens on Ethereum. In Zig, use ABI helpers to compute selectors, build calldata, and decode results/events.
+
+<Tip>
+Zig does not ship a high-level `ERC20` module. Use `primitives.AbiEncoding` with function definitions to encode/decode, and `EventSignature`/`EventLog` to work with events.
+</Tip>
+
+## Function Selectors
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+
+// Precomputed common selectors
+const SELECTOR_TRANSFER      = Abi.CommonSelectors.ERC20_TRANSFER;      // 0xa9059cbb
+const SELECTOR_BALANCE_OF    = Abi.CommonSelectors.ERC20_BALANCE_OF;    // 0x70a08231
+const SELECTOR_APPROVE       = Abi.CommonSelectors.ERC20_APPROVE;       // 0x095ea7b3
+const SELECTOR_TOTAL_SUPPLY  = Abi.CommonSelectors.ERC20_TOTAL_SUPPLY;  // 0x18160ddd
+
+// Or compute from function definitions
+pub fn main() !void {
+    const allocator = std.heap.page_allocator;
+
+    const transfer = Abi.CommonPatterns.erc20_transfer();
+    const transfer_selector = try transfer.get_selector(allocator);
+    defer allocator.free(transfer_selector);
+
+    // transfer_selector == 0xa9059cbb
+}
+```
+
+## Event Signatures
+
+```zig
+const primitives = @import("primitives");
+const EventSignature = primitives.EventSignature;
+
+// Transfer(address,address,uint256)
+const TRANSFER_TOPIC  = EventSignature.fromSignature("Transfer(address,address,uint256)");
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+
+// Approval(address,address,uint256)
+const APPROVAL_TOPIC  = EventSignature.fromSignature("Approval(address,address,uint256)");
+// 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925
+```
+
+## Encoding Calldata
+
+### transfer
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+
+pub fn encodeTransfer(allocator: std.mem.Allocator, to_hex: []const u8, amount: u256) ![]u8 {
+    const to = try primitives.Address.fromHex(to_hex);
+
+    const transfer = Abi.CommonPatterns.erc20_transfer();
+    const args = [_]Abi.AbiValue{
+        Abi.addressValue(to),
+        Abi.uint256_value(amount),
+    };
+
+    const data = try transfer.encode_params(allocator, &args);
+    // data = 4-byte selector + encoded params
+    return data;
+}
+```
+
+### approve
+
+```zig
+pub fn encodeApprove(allocator: std.mem.Allocator, spender_hex: []const u8, amount: u256) ![]u8 {
+    const spender = try primitives.Address.fromHex(spender_hex);
+    const approve = Abi.CommonPatterns.erc20_approve();
+    const args = [_]Abi.AbiValue{ Abi.addressValue(spender), Abi.uint256_value(amount) };
+    return approve.encode_params(allocator, &args);
+}
+```
+
+### transferFrom
+
+```zig
+pub fn encodeTransferFrom(allocator: std.mem.Allocator, from_hex: []const u8, to_hex: []const u8, amount: u256) ![]u8 {
+    const from = try primitives.Address.fromHex(from_hex);
+    const to = try primitives.Address.fromHex(to_hex);
+
+    const func = Abi.FunctionDefinition{
+        .name = "transferFrom",
+        .inputs = &[_]Abi.AbiType{ .address, .address, .uint256 },
+        .outputs = &[_]Abi.AbiType{ .bool },
+        .state_mutability = .nonpayable,
+    };
+
+    const args = [_]Abi.AbiValue{ Abi.addressValue(from), Abi.addressValue(to), Abi.uint256_value(amount) };
+    return func.encode_params(allocator, &args);
+}
+```
+
+### balanceOf
+
+```zig
+pub fn encodeBalanceOf(allocator: std.mem.Allocator, owner_hex: []const u8) ![]u8 {
+    const owner = try primitives.Address.fromHex(owner_hex);
+    const balance_of = Abi.CommonPatterns.erc20_balance_of();
+    const args = [_]Abi.AbiValue{ Abi.addressValue(owner) };
+    return balance_of.encode_params(allocator, &args);
+}
+```
+
+### allowance
+
+```zig
+pub fn encodeAllowance(allocator: std.mem.Allocator, owner_hex: []const u8, spender_hex: []const u8) ![]u8 {
+    const owner = try primitives.Address.fromHex(owner_hex);
+    const spender = try primitives.Address.fromHex(spender_hex);
+
+    const func = Abi.FunctionDefinition{
+        .name = "allowance",
+        .inputs = &[_]Abi.AbiType{ .address, .address },
+        .outputs = &[_]Abi.AbiType{ .uint256 },
+        .state_mutability = .view,
+    };
+
+    const args = [_]Abi.AbiValue{ Abi.addressValue(owner), Abi.addressValue(spender) };
+    return func.encode_params(allocator, &args);
+}
+```
+
+## Decoding Events
+
+### Transfer Event
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+
+// Define event signature
+const TransferSig = primitives.EventLog.EventSignature{
+    .name = "Transfer",
+    .inputs = &[_]primitives.EventLog.EventInput{
+        .{ .name = "from", .type = .address, .indexed = true },
+        .{ .name = "to", .type = .address, .indexed = true },
+        .{ .name = "value", .type = .uint256, .indexed = false },
+    },
+};
+
+pub fn decodeTransferEvent(allocator: std.mem.Allocator, log: primitives.EventLog.EventLog) !struct { from: primitives.Address, to: primitives.Address, value: u256 } {
+    const values = try primitives.EventLog.parseEventLog(allocator, log, TransferSig);
+    defer allocator.free(values);
+
+    return .{
+        .from = values[0].address,
+        .to = values[1].address,
+        .value = values[2].uint256,
+    };
+}
+```
+
+### Approval Event
+
+```zig
+const ApprovalSig = primitives.EventLog.EventSignature{
+    .name = "Approval",
+    .inputs = &[_]primitives.EventLog.EventInput{
+        .{ .name = "owner", .type = .address, .indexed = true },
+        .{ .name = "spender", .type = .address, .indexed = true },
+        .{ .name = "value", .type = .uint256, .indexed = false },
+    },
+};
+
+pub fn decodeApprovalEvent(allocator: std.mem.Allocator, log: primitives.EventLog.EventLog) !struct { owner: primitives.Address, spender: primitives.Address, value: u256 } {
+    const values = try primitives.EventLog.parseEventLog(allocator, log, ApprovalSig);
+    defer allocator.free(values);
+    return .{ .owner = values[0].address, .spender = values[1].address, .value = values[2].uint256 };
+}
+```
+
+## Decoding Return Values
+
+```zig
+const Abi = @import("primitives").AbiEncoding;
+
+// Example: decode balanceOf(address) result (uint256)
+pub fn decodeBalanceResult(allocator: std.mem.Allocator, data: []const u8) !u256 {
+    const values = try Abi.decodeFunctionResult(allocator, data, &[_]Abi.AbiType{ .uint256 });
+    defer allocator.free(values);
+    return values[0].uint256;
+}
+
+// Example: decode transfer/approve return (bool)
+pub fn decodeBoolResult(allocator: std.mem.Allocator, data: []const u8) !bool {
+    const values = try Abi.decodeFunctionResult(allocator, data, &[_]Abi.AbiType{ .bool });
+    defer allocator.free(values);
+    return values[0].bool;
+}
+```
+
+## Complete Example
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Abi = primitives.AbiEncoding;
+
+pub fn main() !void {
+    const gpa = std.heap.page_allocator;
+
+    const token = try primitives.Address.fromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // USDC
+    const to = try primitives.Address.fromHex("0x0000000000000000000000000000000000000001");
+
+    // Encode transfer(to, amount)
+    const transfer = Abi.CommonPatterns.erc20_transfer();
+    const args = [_]Abi.AbiValue{ Abi.addressValue(to), Abi.uint256_value(1_000_000) }; // 1 USDC (6 decimals)
+    const data = try transfer.encode_params(gpa, &args);
+    defer gpa.free(data);
+
+    // Send JSON-RPC request using your HTTP client of choice
+    // POST {"jsonrpc":"2.0","id":1,"method":"eth_sendTransaction","params":[{ "to": token, "data": hex(data) }]}
+
+    // Encode balanceOf(to)
+    const bal_of = Abi.CommonPatterns.erc20_balance_of();
+    const bal_args = [_]Abi.AbiValue{ Abi.addressValue(to) };
+    const bal_data = try bal_of.encode_params(gpa, &bal_args);
+    defer gpa.free(bal_data);
+
+    // Then call `eth_call` and decode with:
+    // const value = try Abi.decodeFunctionResult(gpa, return_bytes, &[_]Abi.AbiType{ .uint256 });
+}
+```
+
+## References
+
+- [EIP-20: Token Standard](https://eips.ethereum.org/EIPS/eip-20)
+- [EIP-2612: Permit Extension](/primitives/permit)

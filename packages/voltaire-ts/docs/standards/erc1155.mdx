@@ -1,0 +1,183 @@
+---
+title: ERC-1155
+description: ERC-1155 multi-token standard interface
+---
+
+# ERC-1155
+
+ERC-1155 is a multi-token standard supporting both fungible and non-fungible tokens in a single contract. It enables efficient batch operations.
+
+## Function Selectors
+
+```typescript
+import { ERC1155 } from '@tevm/primitives';
+
+// Core functions
+ERC1155.SELECTORS.balanceOf              // 0x00fdd58e
+ERC1155.SELECTORS.balanceOfBatch         // 0x4e1273f4
+ERC1155.SELECTORS.setApprovalForAll      // 0xa22cb465
+ERC1155.SELECTORS.isApprovedForAll       // 0xe985e9c5
+ERC1155.SELECTORS.safeTransferFrom       // 0xf242432a
+ERC1155.SELECTORS.safeBatchTransferFrom  // 0x2eb2c2d6
+
+// Metadata extension
+ERC1155.SELECTORS.uri                    // 0x0e89341c
+```
+
+## Event Signatures
+
+```typescript
+// TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)
+ERC1155.EVENTS.TransferSingle
+
+// TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)
+ERC1155.EVENTS.TransferBatch
+
+// ApprovalForAll(address indexed account, address indexed operator, bool approved)
+ERC1155.EVENTS.ApprovalForAll
+
+// URI(string value, uint256 indexed id)
+ERC1155.EVENTS.URI
+```
+
+## Encoding Calldata
+
+### balanceOf
+
+```typescript
+import { ERC1155 } from '@tevm/primitives';
+import * as Address from '@tevm/primitives/Address';
+import * as Uint256 from '@tevm/primitives/Uint256';
+
+const account = Address.fromHex('0x...');
+const id = Uint256.fromBigInt(1n);
+
+const calldata = ERC1155.encodeBalanceOf(account, id);
+```
+
+### safeTransferFrom
+
+```typescript
+const from = Address.fromHex('0x...');
+const to = Address.fromHex('0x...');
+const id = Uint256.fromBigInt(1n);
+const amount = Uint256.fromBigInt(100n);
+const data = new Uint8Array(0); // Optional callback data
+
+const calldata = ERC1155.encodeSafeTransferFrom(from, to, id, amount, data);
+```
+
+### setApprovalForAll
+
+```typescript
+const operator = Address.fromHex('0x...');
+const approved = true;
+
+const calldata = ERC1155.encodeSetApprovalForAll(operator, approved);
+```
+
+### isApprovedForAll
+
+```typescript
+const account = Address.fromHex('0x...');
+const operator = Address.fromHex('0x...');
+
+const calldata = ERC1155.encodeIsApprovedForAll(account, operator);
+```
+
+### uri
+
+```typescript
+const id = Uint256.fromBigInt(1n);
+const calldata = ERC1155.encodeURI(id);
+```
+
+## Decoding Events
+
+### TransferSingle Event
+
+```typescript
+const log = {
+  topics: [
+    ERC1155.EVENTS.TransferSingle,
+    '0x000...operator',
+    '0x000...from',
+    '0x000...to',
+  ],
+  data: '0x...id...value',
+};
+
+const { operator, from, to, id, value } = ERC1155.decodeTransferSingleEvent(log);
+```
+
+### ApprovalForAll Event
+
+```typescript
+const { account, operator, approved } = ERC1155.decodeApprovalForAllEvent(log);
+```
+
+## Complete Example
+
+```typescript
+import { ERC1155 } from '@tevm/primitives';
+import * as Address from '@tevm/primitives/Address';
+import * as Uint256 from '@tevm/primitives/Uint256';
+
+// Multi-token contract
+const contract = '0x...';
+const account = Address.fromHex('0x...');
+const tokenId = Uint256.fromBigInt(1n);
+
+// Query balance
+const balanceCalldata = ERC1155.encodeBalanceOf(account, tokenId);
+const result = await provider.request({
+  method: 'eth_call',
+  params: [{ to: contract, data: balanceCalldata }, 'latest'],
+});
+const balance = ERC20.decodeUint256(result);
+
+// Transfer tokens
+const from = account;
+const to = Address.fromHex('0x...');
+const amount = Uint256.fromBigInt(10n);
+
+const transferCalldata = ERC1155.encodeSafeTransferFrom(
+  from,
+  to,
+  tokenId,
+  amount,
+  new Uint8Array(0)
+);
+
+await provider.request({
+  method: 'eth_sendTransaction',
+  params: [{ to: contract, data: transferCalldata }],
+});
+
+// Query metadata URI
+const uriCalldata = ERC1155.encodeURI(tokenId);
+const uriResult = await provider.request({
+  method: 'eth_call',
+  params: [{ to: contract, data: uriCalldata }, 'latest'],
+});
+const uri = ERC20.decodeString(uriResult);
+console.log(`Token URI: ${uri}`);
+```
+
+## Batch Operations
+
+ERC-1155's key advantage is efficient batch transfers:
+
+```typescript
+// Single transaction for multiple tokens
+const ids = [1n, 2n, 3n].map(id => Uint256.fromBigInt(id));
+const amounts = [10n, 20n, 30n].map(amt => Uint256.fromBigInt(amt));
+
+// Use safeBatchTransferFrom for multiple tokens at once
+// (Encoding not shown - requires dynamic array encoding)
+```
+
+## References
+
+- [EIP-1155: Multi Token Standard](https://eips.ethereum.org/EIPS/eip-1155)
+- [ERC-165: Interface Detection](/standards/erc165)

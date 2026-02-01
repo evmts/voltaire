@@ -1,0 +1,236 @@
+---
+title: "BrandedBytes4"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBytes4
+
+# BrandedBytes4
+
+## Functions
+
+### Bytes4()
+
+> **Bytes4**(`value`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Defined in: [src/primitives/Bytes/Bytes4/index.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/index.ts#L18)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+***
+
+### clone()
+
+> **clone**(`bytes`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Defined in: [src/primitives/Bytes/Bytes4/clone.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/clone.js#L12)
+
+Clone Bytes4
+
+#### Parameters
+
+##### bytes
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Bytes4 to clone
+
+#### Returns
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Cloned Bytes4
+
+#### Example
+
+```typescript
+const copy = Bytes4.clone(bytes);
+```
+
+***
+
+### compare()
+
+> **compare**(`a`, `b`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Bytes/Bytes4/compare.js:2](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/compare.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Bytes/Bytes4/equals.js:2](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/equals.js#L2)
+
+#### Parameters
+
+##### a
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+##### b
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Defined in: [src/primitives/Bytes/Bytes4/from.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/from.js#L8)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Defined in: [src/primitives/Bytes/Bytes4/fromHex.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/fromHex.js#L8)
+
+#### Parameters
+
+##### hex
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+#### Returns
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+***
+
+### size()
+
+> **size**(`_bytes`): `4`
+
+Defined in: [src/primitives/Bytes/Bytes4/size.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/size.js#L12)
+
+Get size of Bytes4 (always 4)
+
+#### Parameters
+
+##### \_bytes
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Bytes4
+
+#### Returns
+
+`4`
+
+Size (always 4)
+
+#### Example
+
+```typescript
+const size = Bytes4.size(bytes); // 4
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`bytes`): [`BytesType`](../../primitives/Bytes.mdx#bytestype)
+
+Defined in: [src/primitives/Bytes/Bytes4/toBytes.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/toBytes.js#L12)
+
+Convert Bytes4 to generic Bytes
+
+#### Parameters
+
+##### bytes
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Bytes4 to convert
+
+#### Returns
+
+[`BytesType`](../../primitives/Bytes.mdx#bytestype)
+
+Generic Bytes
+
+#### Example
+
+```typescript
+const genericBytes = Bytes4.toBytes(bytes);
+```
+
+***
+
+### toHex()
+
+> **toHex**(`bytes`): [`HexType`](../../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/Bytes/Bytes4/toHex.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes4/toHex.js#L12)
+
+Convert Bytes4 to hex string
+
+#### Parameters
+
+##### bytes
+
+[`Bytes4Type`](../../primitives/Bytes.mdx#bytes4type)
+
+Bytes4 to convert
+
+#### Returns
+
+[`HexType`](../../primitives/Hex.mdx#hextype)
+
+Hex string
+
+#### Example
+
+```typescript
+const hex = Bytes4.toHex(bytes);
+```
+
+## References
+
+### Bytes4Type
+
+Re-exports [Bytes4Type](../../primitives/Bytes.mdx#bytes4type)

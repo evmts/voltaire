@@ -1,0 +1,122 @@
+/**
+ * Test file for EQ (0x14) documentation examples
+ * Tests examples from eq.mdx
+ */
+import { describe, expect, it } from "vitest";
+
+describe("EQ (0x14) - Documentation Examples", async () => {
+	const { EQ } = await import("../../../../src/evm/comparison/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Basic Equality", () => {
+		it("42 == 42 = 1 (true)", () => {
+			const frame = createFrame([42n, 42n]);
+			const err = EQ(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Inequality", () => {
+		it("10 == 20 = 0 (false)", () => {
+			const frame = createFrame([10n, 20n]);
+			const err = EQ(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Zero Equality", () => {
+		it("0 == 0 = 1 (true)", () => {
+			const frame = createFrame([0n, 0n]);
+			EQ(frame);
+			expect(frame.stack).toEqual([1n]);
+		});
+
+		it("0 == 1 = 0 (false)", () => {
+			const frame = createFrame([0n, 1n]);
+			EQ(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Maximum Value", () => {
+		it("MAX == MAX = 1 (true)", () => {
+			const MAX = (1n << 256n) - 1n;
+			const frame = createFrame([MAX, MAX]);
+			EQ(frame);
+
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Address Comparison", () => {
+		it("matching addresses return 1", () => {
+			const addr1 = 0x742d35cc6634c0532925a3b844bc9e7595f0beb3n;
+			const addr2 = 0x742d35cc6634c0532925a3b844bc9e7595f0beb3n;
+			const frame = createFrame([addr1, addr2]);
+			EQ(frame);
+
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Sign-Independent", () => {
+		it("all bits set equals all bits set", () => {
+			const value1 = (1n << 256n) - 1n;
+			const value2 = (1n << 256n) - 1n;
+			const frame = createFrame([value1, value2]);
+			EQ(frame);
+
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("different values are never equal", () => {
+			const frame = createFrame([1n, 2n]);
+			EQ(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("MAX != MAX - 1", () => {
+			const MAX = (1n << 256n) - 1n;
+			const frame = createFrame([MAX, MAX - 1n]);
+			EQ(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("returns StackUnderflow with insufficient stack", () => {
+			const frame = createFrame([42n]);
+			const err = EQ(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+
+		it("returns OutOfGas when insufficient gas", () => {
+			const frame = createFrame([42n, 42n], 2n);
+			const err = EQ(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+			expect(frame.gasRemaining).toBe(0n);
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 3 gas (GasFastestStep)", () => {
+			const frame = createFrame([42n, 42n], 100n);
+			const err = EQ(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(97n);
+		});
+	});
+});

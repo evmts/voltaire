@@ -1,0 +1,33 @@
+---
+title: Uint64
+description: 64-bit unsigned integer (0 to 2⁶⁴-1)
+---
+
+64-bit unsigned integer. Use `toBigInt` for values exceeding JS safe integer range.
+
+```typescript
+import * as Uint64 from 'voltaire-effect/primitives/Uint64'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const value = Schema.decodeSync(Uint64.BigInt)(18446744073709551615n)
+
+// Effect with arithmetic
+const a = Effect.runSync(Uint64.from(10000000000000000000n))
+const b = Effect.runSync(Uint64.from(5000000000000000000n))
+const sum = Effect.runSync(Uint64.plus(a, b)) // 15000000000000000000n
+```
+
+## API
+
+| Function | Returns |
+|----------|---------|
+| `toBigInt(v)` | bigint (lossless) |
+| `toNumber(v)` | number (may lose precision) |
+| `toHex(v)` | hex string |
+| `equals(a, b)` | boolean |
+
+## Constants
+
+`MAX = 18446744073709551615n`, `MIN = 0n`, `ZERO`, `ONE`

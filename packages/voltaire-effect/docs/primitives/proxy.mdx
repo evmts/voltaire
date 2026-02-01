@@ -1,0 +1,39 @@
+---
+title: Proxy
+description: ERC-1167 minimal proxy detection and generation
+---
+
+```typescript
+import * as Proxy from 'voltaire-effect/primitives/Proxy'
+import { Effect } from 'effect'
+import * as Schema from 'effect/Schema'
+
+// Check if bytecode is ERC-1167 proxy
+const isProxy = Effect.runSync(Proxy.isErc1167('0x363d3d373d3d3d363d73...'))
+
+// Extract implementation address (20 bytes or null)
+const impl = Effect.runSync(Proxy.parseErc1167(proxyBytecode))
+
+// Generate ERC-1167 bytecode (55 bytes)
+const bytecode = Effect.runSync(
+  Proxy.generateErc1167('0x1234567890123456789012345678901234567890')
+)
+
+// Schema for 32-byte EIP-1967 storage slots
+const slot = Schema.decodeSync(Proxy.Bytes)(slotBytes)
+```
+
+## Practical Example
+
+```typescript
+const analyzeContract = (bytecode: string) =>
+  Effect.gen(function* () {
+    const isProxy = yield* Proxy.isErc1167(bytecode)
+    if (!isProxy) return { type: 'regular' }
+    const impl = yield* Proxy.parseErc1167(bytecode)
+    return { type: 'erc1167', implementation: impl }
+  })
+
+const result = await Effect.runPromiseExit(Proxy.generateErc1167('invalid'))
+if (result._tag === 'Failure') console.error(result.cause) // ProxyError
+```

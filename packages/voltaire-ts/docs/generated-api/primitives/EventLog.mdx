@@ -1,0 +1,2496 @@
+---
+title: "primitives/EventLog"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/EventLog
+
+# primitives/EventLog
+
+## Interfaces
+
+### EventLogConstructor()
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L42)
+
+> **EventLogConstructor**(`params`): `EventLogPrototype`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L43)
+
+#### Parameters
+
+##### params
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### blockHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### blockNumber?
+
+`bigint`
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### logIndex?
+
+`number`
+
+###### removed?
+
+`boolean`
+
+###### topics
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+###### transactionHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### transactionIndex?
+
+`number`
+
+#### Returns
+
+`EventLogPrototype`
+
+#### Properties
+
+##### clone()
+
+> **clone**: \<`T`\>(`log`) => `T`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L58)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+`T`
+
+##### copy()
+
+> **copy**: \<`T`\>(`log`) => `T`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:59](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L59)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+`T`
+
+##### filter()
+
+> **filter**: \<`T`\>(`logs`, `filter`) => `T`[]
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:61](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L61)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### logs
+
+readonly `T`[]
+
+###### filter
+
+[`Filter`](#filter-1)\<[`AddressType`](Address.mdx#addresstype) \| [`AddressType`](Address.mdx#addresstype)[] \| `undefined`, readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[] \| `undefined`\>
+
+###### Returns
+
+`T`[]
+
+##### filterLogs()
+
+> **filterLogs**: \<`T`\>(`logs`, `filter`) => `T`[]
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:60](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L60)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### logs
+
+readonly `T`[]
+
+###### filter
+
+[`Filter`](#filter-1)\<[`AddressType`](Address.mdx#addresstype) \| [`AddressType`](Address.mdx#addresstype)[] \| `undefined`, readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[] \| `undefined`\>
+
+###### Returns
+
+`T`[]
+
+##### getIndexed()
+
+> **getIndexed**: \<`T`\>(`log`) => readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L49)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+##### getIndexedTopics()
+
+> **getIndexedTopics**: \<`T`\>(`log`) => readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L47)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+##### getSignature()
+
+> **getSignature**: \<`T`\>(`log`) => [`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:48](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L48)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+##### getTopic0()
+
+> **getTopic0**: \<`T`\>(`log`) => [`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L46)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+##### isRemoved()
+
+> **isRemoved**: \<`T`\>(`log`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L56)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+`boolean`
+
+##### matches()
+
+> **matches**: \<`T`\>(`log`, `filterTopics`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L51)
+
+Check if log matches topic filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filterTopics
+
+readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[]
+
+Topic filter array
+
+###### Returns
+
+`boolean`
+
+True if log matches topic filter
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesTopics(log, [topic0, null, topic2]);
+```
+
+##### matchesAddr()
+
+> **matchesAddr**: \<`T`\>(`log`, `filterAddress`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L53)
+
+Check if log matches address filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filterAddress
+
+Address or array of addresses to match
+
+[`AddressType`](Address.mdx#addresstype) | [`AddressType`](Address.mdx#addresstype)[]
+
+###### Returns
+
+`boolean`
+
+True if log matches address filter
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesAddress(log, Address.from("0x..."));
+```
+
+##### matchesAddress()
+
+> **matchesAddress**: \<`T`\>(`log`, `filterAddress`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L52)
+
+Check if log matches address filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filterAddress
+
+Address or array of addresses to match
+
+[`AddressType`](Address.mdx#addresstype) | [`AddressType`](Address.mdx#addresstype)[]
+
+###### Returns
+
+`boolean`
+
+True if log matches address filter
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesAddress(log, Address.from("0x..."));
+```
+
+##### matchesAll()
+
+> **matchesAll**: \<`T`\>(`log`, `filter`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L55)
+
+Check if log matches complete filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filter
+
+`Filter`
+
+Complete filter object
+
+###### Returns
+
+`boolean`
+
+True if log matches all filter criteria
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesFilter(log, {
+  address: Address.from("0x..."),
+  topics: [topic0, null, topic2],
+  fromBlock: 100n,
+  toBlock: 200n,
+});
+```
+
+##### matchesFilter()
+
+> **matchesFilter**: \<`T`\>(`log`, `filter`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L54)
+
+Check if log matches complete filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filter
+
+`Filter`
+
+Complete filter object
+
+###### Returns
+
+`boolean`
+
+True if log matches all filter criteria
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesFilter(log, {
+  address: Address.from("0x..."),
+  topics: [topic0, null, topic2],
+  fromBlock: 100n,
+  toBlock: 200n,
+});
+```
+
+##### matchesTopics()
+
+> **matchesTopics**: \<`T`\>(`log`, `filterTopics`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L50)
+
+Check if log matches topic filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filterTopics
+
+readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[]
+
+Topic filter array
+
+###### Returns
+
+`boolean`
+
+True if log matches topic filter
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesTopics(log, [topic0, null, topic2]);
+```
+
+##### prototype
+
+> **prototype**: `EventLogPrototype`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L44)
+
+##### sort()
+
+> **sort**: \<`T`\>(`logs`) => `T`[]
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L63)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### logs
+
+readonly `T`[]
+
+###### Returns
+
+`T`[]
+
+##### sortLogs()
+
+> **sortLogs**: \<`T`\>(`logs`) => `T`[]
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:62](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L62)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### logs
+
+readonly `T`[]
+
+###### Returns
+
+`T`[]
+
+##### wasRemoved()
+
+> **wasRemoved**: \<`T`\>(`log`) => `boolean`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:57](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L57)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)
+
+###### Parameters
+
+###### log
+
+`T`
+
+###### Returns
+
+`boolean`
+
+#### Methods
+
+##### create()
+
+> **create**(`params`): `EventLogPrototype`
+
+Defined in: [src/primitives/EventLog/EventLogConstructor.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogConstructor.ts#L45)
+
+###### Parameters
+
+###### params
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### blockHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### blockNumber?
+
+`bigint`
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### logIndex?
+
+`number`
+
+###### removed?
+
+`boolean`
+
+###### topics
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+###### transactionHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### transactionIndex?
+
+`number`
+
+###### Returns
+
+`EventLogPrototype`
+
+## Type Aliases
+
+### EventLogType
+
+> **EventLogType**\<`TAddress`, `TTopics`\> = `object` & `object`
+
+Defined in: [src/primitives/EventLog/EventLogType.ts:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogType.ts#L8)
+
+Branded EventLog type
+
+#### Type Declaration
+
+##### address
+
+> **address**: `TAddress`
+
+Contract address that emitted the log
+
+##### blockHash?
+
+> `optional` **blockHash**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Block hash
+
+##### blockNumber?
+
+> `optional` **blockNumber**: `bigint`
+
+Block number where log was emitted
+
+##### data
+
+> **data**: `Uint8Array`
+
+Event data (non-indexed parameters)
+
+##### logIndex?
+
+> `optional` **logIndex**: `number`
+
+Log index in block
+
+##### removed?
+
+> `optional` **removed**: `boolean`
+
+Log removed due to chain reorganization
+
+##### topics
+
+> **topics**: `TTopics`
+
+Event topics (topic0 = event signature, topic1-3 = indexed parameters)
+
+##### transactionHash?
+
+> `optional` **transactionHash**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Transaction hash that generated the log
+
+##### transactionIndex?
+
+> `optional` **transactionIndex**: `number`
+
+Transaction index in block
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"EventLog"`
+
+#### Type Parameters
+
+##### TAddress
+
+`TAddress` *extends* [`AddressType`](Address.mdx#addresstype) = [`AddressType`](Address.mdx#addresstype)
+
+##### TTopics
+
+`TTopics` *extends* readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] = readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+***
+
+### Filter
+
+> **Filter**\<`TAddress`, `TTopics`\> = `object`
+
+Defined in: [src/primitives/EventLog/EventLogType.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogType.ts#L53)
+
+Event log filter for querying logs
+
+#### Type Parameters
+
+##### TAddress
+
+`TAddress` *extends* [`AddressType`](Address.mdx#addresstype) \| [`AddressType`](Address.mdx#addresstype)[] \| `undefined` = [`AddressType`](Address.mdx#addresstype) \| [`AddressType`](Address.mdx#addresstype)[] \| `undefined`
+
+##### TTopics
+
+`TTopics` *extends* readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[] \| `undefined` = readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[] \| `undefined`
+
+#### Properties
+
+##### address?
+
+> `optional` **address**: `TAddress`
+
+Defined in: [src/primitives/EventLog/EventLogType.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogType.ts#L63)
+
+Contract address(es) to filter by
+
+##### blockHash?
+
+> `optional` **blockHash**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/EventLog/EventLogType.ts:71](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogType.ts#L71)
+
+Block hash to filter by (alternative to fromBlock/toBlock)
+
+##### fromBlock?
+
+> `optional` **fromBlock**: `bigint`
+
+Defined in: [src/primitives/EventLog/EventLogType.ts:67](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogType.ts#L67)
+
+Starting block number
+
+##### toBlock?
+
+> `optional` **toBlock**: `bigint`
+
+Defined in: [src/primitives/EventLog/EventLogType.ts:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogType.ts#L69)
+
+Ending block number
+
+##### topics?
+
+> `optional` **topics**: `TTopics`
+
+Defined in: [src/primitives/EventLog/EventLogType.ts:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/EventLogType.ts#L65)
+
+Topic filters (null entries match any topic, arrays match any of the hashes)
+
+## Variables
+
+### BrandedEventLog
+
+> `const` **BrandedEventLog**: `object`
+
+Defined in: [src/primitives/EventLog/index.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/index.ts#L50)
+
+#### Type Declaration
+
+##### clone()
+
+> **clone**: \<`T`\>(`log`) => `T`
+
+Clone event log with deep copy of topics and data
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+`T`
+
+Cloned log
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const cloned = EventLog.clone(log);
+```
+
+##### copy()
+
+> **copy**: \<`T`\>(`log`) => `T`
+
+Copy event log (alias for clone)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+`T`
+
+Copied log
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const copied = EventLog.copy(log);
+```
+
+##### create()
+
+> **create**: (`params`) => [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+Create event log
+
+###### Parameters
+
+###### params
+
+Event log parameters
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+Contract address
+
+###### blockHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Block hash
+
+###### blockNumber?
+
+`bigint`
+
+Block number
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Event data
+
+###### logIndex?
+
+`number`
+
+Log index
+
+###### removed?
+
+`boolean`
+
+Whether log was removed
+
+###### topics
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Event topics
+
+###### transactionHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Transaction hash
+
+###### transactionIndex?
+
+`number`
+
+Transaction index
+
+###### Returns
+
+[`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+EventLog object
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const log = EventLog.create({
+  address: Address.from("0x..."),
+  topics: [Hash.from("0x...")],
+  data: new Uint8Array([1, 2, 3]),
+});
+```
+
+##### filterLogs()
+
+> **filterLogs**: \<`T`\>(`logs`, `filter`) => `T`[]
+
+Filter array of logs by filter criteria
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### logs
+
+readonly `T`[]
+
+Array of event logs
+
+###### filter
+
+`Filter`
+
+Filter criteria
+
+###### Returns
+
+`T`[]
+
+Filtered array of logs
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const logs = [log1, log2, log3];
+const filtered = EventLog.filterLogs(logs, {
+  address: Address.from("0x..."),
+  topics: [topic0, null],
+});
+```
+
+##### from()
+
+> **from**: (`params`) => `BrandedEventLog`
+
+Create EventLog from parameters
+
+###### Parameters
+
+###### params
+
+Event log parameters
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### blockHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### blockNumber?
+
+`bigint`
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### logIndex?
+
+`number`
+
+###### removed?
+
+`boolean`
+
+###### topics
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+###### transactionHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### transactionIndex?
+
+`number`
+
+###### Returns
+
+`BrandedEventLog`
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const log = EventLog.from({
+  address: Address.from("0x..."),
+  topics: [Hash.from("0x...")],
+  data: new Uint8Array([1, 2, 3]),
+});
+```
+
+##### getIndexed()
+
+> **getIndexed**: \<`T`\>(`log`) => readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Get indexed parameters (alias for getIndexedTopics)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Array of indexed topic hashes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const indexed = EventLog.getIndexed(log);
+```
+
+##### getIndexedTopics()
+
+> **getIndexedTopics**: \<`T`\>(`log`) => readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Get indexed topics (topic1-topic3) from log
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Array of indexed topic hashes
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const indexed = EventLog.getIndexedTopics(log);
+```
+
+##### getSignature()
+
+> **getSignature**: \<`T`\>(`log`) => [`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Get event signature (alias for getTopic0)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Event signature hash or undefined if no topics
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const sig = EventLog.getSignature(log);
+```
+
+##### getTopic0()
+
+> **getTopic0**: \<`T`\>(`log`) => [`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Get topic0 (event signature) from log
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Topic0 hash or undefined if no topics
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const topic0 = EventLog.getTopic0(log);
+```
+
+##### isRemoved()
+
+> **isRemoved**: \<`T`\>(`log`) => `boolean`
+
+Check if log was removed
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+`boolean`
+
+True if log was removed
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data, removed: true });
+const removed = EventLog.isRemoved(log);
+```
+
+##### matchesAddress()
+
+> **matchesAddress**: \<`T`\>(`log`, `filterAddress`) => `boolean`
+
+Check if log matches address filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filterAddress
+
+Address or array of addresses to match
+
+[`AddressType`](Address.mdx#addresstype) | [`AddressType`](Address.mdx#addresstype)[]
+
+###### Returns
+
+`boolean`
+
+True if log matches address filter
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesAddress(log, Address.from("0x..."));
+```
+
+##### matchesFilter()
+
+> **matchesFilter**: \<`T`\>(`log`, `filter`) => `boolean`
+
+Check if log matches complete filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filter
+
+`Filter`
+
+Complete filter object
+
+###### Returns
+
+`boolean`
+
+True if log matches all filter criteria
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesFilter(log, {
+  address: Address.from("0x..."),
+  topics: [topic0, null, topic2],
+  fromBlock: 100n,
+  toBlock: 200n,
+});
+```
+
+##### matchesTopics()
+
+> **matchesTopics**: \<`T`\>(`log`, `filterTopics`) => `boolean`
+
+Check if log matches topic filter
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log to check
+
+###### filterTopics
+
+readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[]
+
+Topic filter array
+
+###### Returns
+
+`boolean`
+
+True if log matches topic filter
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesTopics(log, [topic0, null, topic2]);
+```
+
+##### sortLogs()
+
+> **sortLogs**: \<`T`\>(`logs`) => `T`[]
+
+Sort logs by block number and log index
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+###### Parameters
+
+###### logs
+
+readonly `T`[]
+
+Array of event logs
+
+###### Returns
+
+`T`[]
+
+Sorted array of logs
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const logs = [log3, log1, log2];
+const sorted = EventLog.sortLogs(logs);
+```
+
+##### wasRemoved()
+
+> **wasRemoved**: \<`T`\>(`log`) => `boolean`
+
+Check if log was removed (alias for isRemoved)
+
+###### Type Parameters
+
+###### T
+
+`T` *extends* `BrandedEventLog`
+
+###### Parameters
+
+###### log
+
+`T`
+
+Event log
+
+###### Returns
+
+`boolean`
+
+True if log was removed
+
+###### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data, removed: true });
+const removed = EventLog.wasRemoved(log);
+```
+
+## Functions
+
+### clone()
+
+> **clone**\<`T`\>(`log`): `T`
+
+Defined in: [src/primitives/EventLog/clone.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/clone.js#L21)
+
+Clone event log with deep copy of topics and data
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+`T`
+
+Cloned log
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const cloned = EventLog.clone(log);
+```
+
+***
+
+### copy()
+
+> **copy**\<`T`\>(`log`): `T`
+
+Defined in: [src/primitives/EventLog/copy.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/copy.js#L23)
+
+Copy event log (alias for clone)
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+`T`
+
+Copied log
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const copied = EventLog.copy(log);
+```
+
+***
+
+### create()
+
+> **create**(`params`): [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+Defined in: [src/primitives/EventLog/create.js:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/create.js#L36)
+
+Create event log
+
+#### Parameters
+
+##### params
+
+Event log parameters
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+Contract address
+
+###### blockHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Block hash
+
+###### blockNumber?
+
+`bigint`
+
+Block number
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Event data
+
+###### logIndex?
+
+`number`
+
+Log index
+
+###### removed?
+
+`boolean`
+
+Whether log was removed
+
+###### topics
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Event topics
+
+###### transactionHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Transaction hash
+
+###### transactionIndex?
+
+`number`
+
+Transaction index
+
+#### Returns
+
+[`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+EventLog object
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const log = EventLog.create({
+  address: Address.from("0x..."),
+  topics: [Hash.from("0x...")],
+  data: new Uint8Array([1, 2, 3]),
+});
+```
+
+***
+
+### filterLogs()
+
+> **filterLogs**\<`T`\>(`logs`, `filter`): `T`[]
+
+Defined in: [src/primitives/EventLog/filterLogs.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/filterLogs.js#L28)
+
+Filter array of logs by filter criteria
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### logs
+
+readonly `T`[]
+
+Array of event logs
+
+##### filter
+
+`Filter`
+
+Filter criteria
+
+#### Returns
+
+`T`[]
+
+Filtered array of logs
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const logs = [log1, log2, log3];
+const filtered = EventLog.filterLogs(logs, {
+  address: Address.from("0x..."),
+  topics: [topic0, null],
+});
+```
+
+***
+
+### from()
+
+> **from**(`params`): `BrandedEventLog`
+
+Defined in: [src/primitives/EventLog/from.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/from.js#L27)
+
+Create EventLog from parameters
+
+#### Parameters
+
+##### params
+
+Event log parameters
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### blockHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### blockNumber?
+
+`bigint`
+
+###### data
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### logIndex?
+
+`number`
+
+###### removed?
+
+`boolean`
+
+###### topics
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+###### transactionHash?
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### transactionIndex?
+
+`number`
+
+#### Returns
+
+`BrandedEventLog`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as Hash from './primitives/Hash/index.js';
+const log = EventLog.from({
+  address: Address.from("0x..."),
+  topics: [Hash.from("0x...")],
+  data: new Uint8Array([1, 2, 3]),
+});
+```
+
+***
+
+### getIndexed()
+
+> **getIndexed**\<`T`\>(`log`): readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Defined in: [src/primitives/EventLog/getIndexed.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/getIndexed.js#L24)
+
+Get indexed parameters (alias for getIndexedTopics)
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Array of indexed topic hashes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const indexed = EventLog.getIndexed(log);
+```
+
+***
+
+### getIndexedTopics()
+
+> **getIndexedTopics**\<`T`\>(`log`): readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Defined in: [src/primitives/EventLog/getIndexedTopics.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/getIndexedTopics.js#L22)
+
+Get indexed topics (topic1-topic3) from log
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]
+
+Array of indexed topic hashes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const indexed = EventLog.getIndexedTopics(log);
+```
+
+***
+
+### getSignature()
+
+> **getSignature**\<`T`\>(`log`): [`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Defined in: [src/primitives/EventLog/getSignature.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/getSignature.js#L24)
+
+Get event signature (alias for getTopic0)
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Event signature hash or undefined if no topics
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const sig = EventLog.getSignature(log);
+```
+
+***
+
+### getTopic0()
+
+> **getTopic0**\<`T`\>(`log`): [`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Defined in: [src/primitives/EventLog/getTopic0.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/getTopic0.js#L22)
+
+Get topic0 (event signature) from log
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype) \| `undefined`
+
+Topic0 hash or undefined if no topics
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const topic0 = EventLog.getTopic0(log);
+```
+
+***
+
+### isRemoved()
+
+> **isRemoved**\<`T`\>(`log`): `boolean`
+
+Defined in: [src/primitives/EventLog/isRemoved.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/isRemoved.js#L21)
+
+Check if log was removed
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+`boolean`
+
+True if log was removed
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data, removed: true });
+const removed = EventLog.isRemoved(log);
+```
+
+***
+
+### matchesAddress()
+
+> **matchesAddress**\<`T`\>(`log`, `filterAddress`): `boolean`
+
+Defined in: [src/primitives/EventLog/matchesAddress.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/matchesAddress.js#L26)
+
+Check if log matches address filter
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log to check
+
+##### filterAddress
+
+Address or array of addresses to match
+
+[`AddressType`](Address.mdx#addresstype) | [`AddressType`](Address.mdx#addresstype)[]
+
+#### Returns
+
+`boolean`
+
+True if log matches address filter
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesAddress(log, Address.from("0x..."));
+```
+
+***
+
+### matchesFilter()
+
+> **matchesFilter**\<`T`\>(`log`, `filter`): `boolean`
+
+Defined in: [src/primitives/EventLog/matchesFilter.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/matchesFilter.js#L34)
+
+Check if log matches complete filter
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log to check
+
+##### filter
+
+`Filter`
+
+Complete filter object
+
+#### Returns
+
+`boolean`
+
+True if log matches all filter criteria
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+import * as Address from './primitives/Address/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesFilter(log, {
+  address: Address.from("0x..."),
+  topics: [topic0, null, topic2],
+  fromBlock: 100n,
+  toBlock: 200n,
+});
+```
+
+***
+
+### matchesTopics()
+
+> **matchesTopics**\<`T`\>(`log`, `filterTopics`): `boolean`
+
+Defined in: [src/primitives/EventLog/matchesTopics.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/matchesTopics.js#L26)
+
+Check if log matches topic filter
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log to check
+
+##### filterTopics
+
+readonly ([`HashType`](../index/namespaces/HashType.mdx#hashtype) \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)[] \| `null`)[]
+
+Topic filter array
+
+#### Returns
+
+`boolean`
+
+True if log matches topic filter
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data });
+const matches = EventLog.matchesTopics(log, [topic0, null, topic2]);
+```
+
+***
+
+### sortLogs()
+
+> **sortLogs**\<`T`\>(`logs`): `T`[]
+
+Defined in: [src/primitives/EventLog/sortLogs.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/sortLogs.js#L21)
+
+Sort logs by block number and log index
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* [`EventLogType`](#eventlogtype)\<[`AddressType`](Address.mdx#addresstype), readonly [`HashType`](../index/namespaces/HashType.mdx#hashtype)[]\>
+
+#### Parameters
+
+##### logs
+
+readonly `T`[]
+
+Array of event logs
+
+#### Returns
+
+`T`[]
+
+Sorted array of logs
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const logs = [log3, log1, log2];
+const sorted = EventLog.sortLogs(logs);
+```
+
+***
+
+### wasRemoved()
+
+> **wasRemoved**\<`T`\>(`log`): `boolean`
+
+Defined in: [src/primitives/EventLog/wasRemoved.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EventLog/wasRemoved.js#L23)
+
+Check if log was removed (alias for isRemoved)
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BrandedEventLog`
+
+#### Parameters
+
+##### log
+
+`T`
+
+Event log
+
+#### Returns
+
+`boolean`
+
+True if log was removed
+
+#### See
+
+https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as EventLog from './primitives/EventLog/index.js';
+const log = EventLog.create({ address, topics, data, removed: true });
+const removed = EventLog.wasRemoved(log);
+```
+
+## References
+
+### BrandedEventLogType
+
+Renames and re-exports [EventLogType](#eventlogtype)

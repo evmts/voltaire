@@ -1,0 +1,135 @@
+---
+title: '[Zig] src/primitives/Nonce/Nonce.zig'
+source: 'src/primitives/Nonce/Nonce.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Nonce/Nonce.zig
+
+### Nonce.from creates nonce from u64
+
+```zig
+test "Nonce.from creates nonce from u64" {
+    const nonce = from(42);
+    try std.testing.expectEqual(@as(u64, 42), nonce);
+}
+```
+
+### Nonce.from handles zero
+
+```zig
+test "Nonce.from handles zero" {
+    const nonce = from(0);
+    try std.testing.expectEqual(@as(u64, 0), nonce);
+}
+```
+
+### Nonce.from handles max u64
+
+```zig
+test "Nonce.from handles max u64" {
+    const nonce = from(std.math.maxInt(u64));
+    try std.testing.expectEqual(std.math.maxInt(u64), nonce);
+}
+```
+
+### Nonce.fromBigInt converts u256 to nonce
+
+```zig
+test "Nonce.fromBigInt converts u256 to nonce" {
+    const nonce = fromBigInt(42);
+    try std.testing.expectEqual(@as(u64, 42), nonce);
+}
+```
+
+### Nonce.fromBigInt truncates large values
+
+```zig
+test "Nonce.fromBigInt truncates large values" {
+    const large_value: u256 = std.math.maxInt(u64) + 1;
+    const nonce = fromBigInt(large_value);
+    // Will truncate to 0 due to overflow
+    try std.testing.expectEqual(@as(u64, 0), nonce);
+}
+```
+
+### Nonce.toBigInt converts nonce to u256
+
+```zig
+test "Nonce.toBigInt converts nonce to u256" {
+    const nonce = from(42);
+    const result = toBigInt(nonce);
+    try std.testing.expectEqual(@as(u256, 42), result);
+}
+```
+
+### Nonce.toBigInt handles max u64
+
+```zig
+test "Nonce.toBigInt handles max u64" {
+    const nonce = from(std.math.maxInt(u64));
+    const result = toBigInt(nonce);
+    try std.testing.expectEqual(@as(u256, std.math.maxInt(u64)), result);
+}
+```
+
+### Nonce.toNumber converts nonce to u64
+
+```zig
+test "Nonce.toNumber converts nonce to u64" {
+    const nonce = from(42);
+    const result = toNumber(nonce);
+    try std.testing.expectEqual(@as(u64, 42), result);
+}
+```
+
+### Nonce.toNumber is identity function
+
+```zig
+test "Nonce.toNumber is identity function" {
+    const nonce = from(12345);
+    const result = toNumber(nonce);
+    try std.testing.expectEqual(nonce, result);
+}
+```
+
+### Nonce.increment adds 1 to nonce
+
+```zig
+test "Nonce.increment adds 1 to nonce" {
+    const nonce = from(42);
+    const result = increment(nonce);
+    try std.testing.expectEqual(@as(u64, 43), result);
+}
+```
+
+### Nonce.increment handles zero
+
+```zig
+test "Nonce.increment handles zero" {
+    const nonce = from(0);
+    const result = increment(nonce);
+    try std.testing.expectEqual(@as(u64, 1), result);
+}
+```
+
+### Nonce.increment near max u64
+
+```zig
+test "Nonce.increment near max u64" {
+    const nonce = from(std.math.maxInt(u64) - 1);
+    const result = increment(nonce);
+    try std.testing.expectEqual(std.math.maxInt(u64), result);
+}
+```
+
+### Nonce.increment chain multiple times
+
+```zig
+test "Nonce.increment chain multiple times" {
+    var nonce = from(0);
+    nonce = increment(nonce);
+    nonce = increment(nonce);
+    nonce = increment(nonce);
+    try std.testing.expectEqual(@as(u64, 3), nonce);
+}
+```

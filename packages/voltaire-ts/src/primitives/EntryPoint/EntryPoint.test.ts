@@ -1,0 +1,41 @@
+import { describe, expect, test } from "vitest";
+import * as EntryPoint from "./index.js";
+
+describe("EntryPoint", () => {
+	test("creates EntryPoint from address string", () => {
+		const addr = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+		const entryPoint = EntryPoint.from(addr);
+		expect(entryPoint).toBeInstanceOf(Uint8Array);
+		expect(entryPoint.length).toBe(20);
+	});
+
+	test("converts EntryPoint to hex", () => {
+		const addr = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+		const entryPoint = EntryPoint.from(addr);
+		const hex = EntryPoint.toHex(entryPoint);
+		expect(hex).toBe("0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789");
+	});
+
+	test("compares EntryPoint addresses", () => {
+		const addr1 = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+		const addr2 = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+		const addr3 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
+
+		expect(EntryPoint.equals(addr1, addr2)).toBe(true);
+		expect(EntryPoint.equals(addr1, addr3)).toBe(false);
+	});
+
+	test("has v0.6 entry point constant", () => {
+		expect(EntryPoint.ENTRYPOINT_V06).toBeInstanceOf(Uint8Array);
+		expect(EntryPoint.toHex(EntryPoint.ENTRYPOINT_V06)).toBe(
+			"0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789",
+		);
+	});
+
+	test("has v0.7 entry point constant", () => {
+		expect(EntryPoint.ENTRYPOINT_V07).toBeInstanceOf(Uint8Array);
+		expect(EntryPoint.toHex(EntryPoint.ENTRYPOINT_V07)).toBe(
+			"0x0000000071727de22e5e9d8baf0edac6f37da032",
+		);
+	});
+});

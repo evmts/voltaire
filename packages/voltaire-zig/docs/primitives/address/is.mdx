@@ -1,0 +1,360 @@
+---
+title: Address.is
+description: Type guard for runtime validation of AddressType values
+---
+
+
+<Tip>
+View the complete executable example at [`playground/src/examples/primitives/address/is-address.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/primitives/address/is-address.ts).
+</Tip>
+
+## C FFI
+
+### `primitives_address_is_valid(const PrimitivesAddress* addr): bool`
+
+Validate address pointer is non-null (size already enforced by struct).
+
+**Parameters:**
+- `addr: const PrimitivesAddress*` - Address pointer to check
+
+**Returns:** `bool` - `true` if pointer is non-null
+
+**Example:**
+
+```c
+#include "primitives.h"
+
+// Validate before use
+void processAddress(const PrimitivesAddress* addr) {
+    if (!primitives_address_is_valid(addr)) {
+        // Handle null pointer
+        return;
+    }
+
+    // Safe to use addr
+    char hex[43]; // 0x + 40 chars + null
+    primitives_address_to_hex(addr, hex);
+}
+
+// Size enforced by struct (always 20 bytes)
+PrimitivesAddress addr;
+// sizeof(addr) == 20 guaranteed
+```
+
+**Note:** C struct definition enforces 20-byte size. Runtime check only validates pointer.
+
+## TypeScript Type Predicates
+
+Type guards use TypeScript's `is` operator to narrow types:
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+// Type predicate signature
+function is(value: unknown): value is AddressType {
+  return value instanceof Uint8Array && value.length === 20
+}
+
+// Before type guard
+function example1(value: unknown) {
+  const hex = value.toHex() // Type error: unknown not assignable
+}
+
+// After type guard
+function example2(value: unknown) {
+  if (Address.is(value)) {
+    // Type narrowed to AddressType
+    const hex = value.toHex() // OK
+    const checksummed = value.toChecksummed() // OK
+  }
+}
+```
+
+**Benefits:**
+- Type safety without type assertions
+- Catches errors at compile time
+- No runtime overhead (inline check)
+- Works with TypeScript's control flow analysis
+
+## Type Narrowing
+
+Type guards enable safe handling of unknown values:
+
+### Basic Narrowing
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+function handleUnknown(value: unknown) {
+  if (Address.is(value)) {
+    // Type: AddressType
+    console.log(value.length) // 20
+    const hex = value.toHex()
+  } else {
+    // Type: unknown
+    console.log("Not an address")
+  }
+}
+```
+
+### Union Type Narrowing
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+import * as Hash from '@tevm/voltaire/Hash'
+
+type AddressOrHash = AddressType | Hash
+
+function process(value: AddressOrHash) {
+  if (Address.is(value)) {
+    // Narrowed to AddressType
+    console.log("Address:", value.toHex())
+  } else {
+    // Narrowed to Hash
+    console.log("Hash:", value.toHex())
+  }
+}
+```
+
+### Array Filtering
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+const mixed: unknown[] = [
+  Address(69n),
+  "not an address",
+  Address.zero(),
+  42,
+  Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+]
+
+// Filter to only addresses
+const addresses = mixed.filter(Address.is)
+// Type: AddressType[]
+
+addresses.forEach(addr => {
+  console.log(addr.toHex()) // Type-safe
+})
+```
+
+## Defensive Programming
+
+Type guards enable validation at system boundaries:
+
+### API Input Validation
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+function transferTokens(to: unknown, amount: bigint) {
+  if (!Address.is(to)) {
+    throw new Error("Invalid recipient address")
+  }
+
+  // Type-safe operations
+  if (to.equals(Address.zero())) {
+    throw new Error("Cannot transfer to zero address")
+  }
+
+  // Process transfer...
+}
+```
+
+### User Input Sanitization
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+function parseUserInput(input: string): AddressType {
+  try {
+    const addr = Address(input)
+
+    if (!Address.is(addr)) {
+      throw new Error("Invalid address format")
+    }
+
+    return addr
+  } catch (e) {
+    throw new Error(`Failed to parse address: ${e.message}`)
+  }
+}
+```
+
+### External Data Validation
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+interface Transaction {
+  from: unknown
+  to: unknown
+  value: bigint
+}
+
+function validateTransaction(tx: Transaction): boolean {
+  // Validate both addresses
+  if (!Address.is(tx.from) || !Address.is(tx.to)) {
+    return false
+  }
+
+  // Validate not zero addresses
+  if (tx.from.equals(Address.zero())) {
+    return false
+  }
+
+  return true
+}
+```
+
+## Implementation Details
+
+**Check logic:**
+```javascript
+export function is(value) {
+  return value instanceof Uint8Array && value.length === 20
+}
+```
+
+**Two conditions:**
+1. `instanceof Uint8Array` - Must be Uint8Array (not regular Array)
+2. `length === 20` - Exactly 20 bytes (not 19, not 21)
+
+**What it accepts:**
+```zig
+Address.is(new Uint8Array(20))           // true
+Address.is(Address(69n))            // true
+Address.is(Address.zero())               // true
+```
+
+**What it rejects:**
+```zig
+Address.is(new Uint8Array(19))           // false (wrong length)
+Address.is(Bytes32())           // false (wrong length)
+Address.is("0x742d35...")               // false (string)
+Address.is(42n)                          // false (bigint)
+Address.is(null)                         // false (null)
+Address.is(undefined)                    // false (undefined)
+Address.is({})                           // false (object)
+Address.is(new Array(20).fill(0))       // false (Array not Uint8Array)
+```
+
+## Use Cases
+
+### Function Overloading
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+function normalize(value: unknown): AddressType {
+  if (Address.is(value)) {
+    // Already valid address
+    return value
+  }
+
+  if (typeof value === 'string') {
+    return Address(value)
+  }
+
+  if (typeof value === 'bigint' || typeof value === 'number') {
+    return Address(value)
+  }
+
+  throw new Error("Cannot convert to address")
+}
+```
+
+### Safe Deserialization
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+interface SerializedTransaction {
+  from: Uint8Array
+  to: Uint8Array
+  value: string
+}
+
+function deserialize(data: unknown): Transaction | null {
+  if (!isSerializedTransaction(data)) {
+    return null
+  }
+
+  // Validate addresses
+  if (!Address.is(data.from) || !Address.is(data.to)) {
+    return null
+  }
+
+  return {
+    from: data.from,
+    to: data.to,
+    value: BigInt(data.value)
+  }
+}
+```
+
+### Collection Validation
+
+```zig
+import * as Address from '@tevm/voltaire/Address'
+
+function validateWhitelist(addresses: unknown[]): AddressType[] {
+  const valid: AddressType[] = []
+
+  for (const addr of addresses) {
+    if (Address.is(addr)) {
+      valid.push(addr)
+    } else {
+      console.warn("Skipping invalid address:", addr)
+    }
+  }
+
+  return valid
+}
+```
+
+## Comparison with Other Validators
+
+### vs `Address.isValid(hex)`
+
+`isValid` validates hex string format:
+```zig
+Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3") // true
+Address.is("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")      // false (string)
+```
+
+`is` validates AddressType type:
+```zig
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+Address.is(addr)      // true (AddressType)
+Address.isValid(addr) // false (not string)
+```
+
+### vs `Address.isValidChecksum(hex)`
+
+`isValidChecksum` validates EIP-55 checksumming:
+```zig
+Address.isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3") // true
+Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") // false
+```
+
+`is` doesn't validate checksum:
+```zig
+const lower = Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksum = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")
+Address.is(lower)    // true (valid AddressType)
+Address.is(checksum) // true (valid AddressType)
+```
+
+**Summary:**
+- `Address.is(value)` - Runtime type guard for AddressType
+- `Address.isValid(hex)` - Validates hex string format
+- `Address.isValidChecksum(hex)` - Validates EIP-55 checksum
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [isValid](/primitives/address/is-valid) - Validate hex string format
+- [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
+- [equals](/primitives/address/equals) - Compare two addresses
+- [AddressType](/primitives/address/branded-address) - Type definition

@@ -1,0 +1,243 @@
+---
+title: TraceConfig
+description: Configuration options for debug_traceTransaction and debug_traceCall
+---
+
+# TraceConfig
+
+Configuration options for Ethereum execution tracing via `debug_traceTransaction` and `debug_traceCall` RPC methods.
+
+## Overview
+
+TraceConfig controls what data is collected during transaction execution tracing. Different options trade off between detail and performance.
+
+## Type Definition
+
+```zig
+type TraceConfigType = {
+  readonly disableStorage?: boolean;     // Don't track storage changes
+  readonly disableStack?: boolean;       // Don't track stack
+  readonly disableMemory?: boolean;      // Don't track memory
+  readonly enableMemory?: boolean;       // Track memory
+  readonly enableReturnData?: boolean;   // Track return data
+  readonly tracer?: string;              // Tracer name
+  readonly timeout?: string;             // Timeout (e.g., "5s")
+  readonly tracerConfig?: Record<string, unknown>; // Tracer-specific config
+};
+```
+
+## Usage
+
+### Basic Configuration
+
+```zig
+import * as TraceConfig from '@tevm/primitives/TraceConfig';
+
+// Minimal config for maximum performance
+const minimalConfig = TraceConfig.from({
+  disableStorage: true,
+  disableMemory: true,
+  disableStack: true,
+});
+
+// Full detail (slow but comprehensive)
+const fullConfig = TraceConfig.from({
+  enableMemory: true,
+  enableReturnData: true,
+});
+```
+
+### Using Tracers
+
+```zig
+// Use callTracer for call tree
+const callConfig = TraceConfig.withTracer({}, "callTracer");
+
+// callTracer with options
+const topCallConfig = TraceConfig.withTracer(
+  {},
+  "callTracer",
+  { onlyTopCall: true }
+);
+
+// Use prestateTracer for state access
+const prestateConfig = TraceConfig.withTracer({}, "prestateTracer");
+```
+
+### Performance Optimization
+
+```zig
+// Disable all tracking for fastest tracing
+const fastConfig = TraceConfig.disableAll();
+
+// Disable all but enable return data
+const returnOnlyConfig = TraceConfig.disableAll({
+  enableReturnData: true,
+});
+```
+
+## Built-in Tracers
+
+### callTracer
+Traces the call tree structure. Returns nested calls with gas usage, errors, and return data.
+
+```zig
+const config = TraceConfig.withTracer({}, "callTracer");
+// Result: CallTrace with nested calls
+```
+
+### prestateTracer
+Captures pre-execution state for all accessed accounts and storage slots.
+
+```zig
+const config = TraceConfig.withTracer({}, "prestateTracer");
+// Result: Account balances, nonces, code, storage before execution
+```
+
+### 4byteTracer
+Counts function selector usage (first 4 bytes of calldata).
+
+```zig
+const config = TraceConfig.withTracer({}, "4byteTracer");
+// Result: Map of selectors to call counts
+```
+
+### opcodeTracer
+Default tracer that logs every opcode execution.
+
+```zig
+const config = TraceConfig.from({}); // Default tracer
+// Result: TraceResult with structLogs
+```
+
+## Performance Considerations
+
+### Memory Overhead
+
+- **disableMemory: true** - Saves significant memory for contracts with large memory usage
+- **enableMemory: true** - Required for debugging memory-related issues
+- Default: Memory tracking disabled
+
+### Storage Overhead
+
+- **disableStorage: true** - Reduces trace size for contracts with heavy SSTORE/SLOAD
+- Default: Storage tracking enabled
+
+### Stack Overhead
+
+- **disableStack: true** - Minimal savings, stack is usually small
+- Default: Stack tracking enabled
+
+### Recommended Configurations
+
+```zig
+// Debugging reverts (fast, minimal data)
+const revertConfig = TraceConfig.from({
+  disableStorage: true,
+  disableMemory: true,
+  enableReturnData: true,
+});
+
+// Gas optimization analysis (need full stack)
+const gasConfig = TraceConfig.from({
+  disableMemory: true,
+});
+
+// Security analysis (need everything)
+const securityConfig = TraceConfig.from({
+  enableMemory: true,
+  enableReturnData: true,
+});
+
+// Call tree only (very fast)
+const callTreeConfig = TraceConfig.withTracer(
+  TraceConfig.disableAll(),
+  "callTracer"
+);
+```
+
+## Use Cases
+
+### Debugging Transaction Reverts
+
+```zig
+import * as TraceConfig from '@tevm/primitives/TraceConfig';
+
+// Get revert reason from failed transaction
+const config = TraceConfig.from({
+  disableStorage: true,
+  disableMemory: true,
+  enableReturnData: true,
+});
+
+// Use with RPC: debug_traceTransaction(txHash, config)
+```
+
+### Gas Profiling
+
+```zig
+// Trace all opcodes to find gas hotspots
+const config = TraceConfig.from({
+  disableMemory: true, // Memory not needed for gas analysis
+});
+
+// Analyze structLogs to find expensive operations
+```
+
+### Call Tree Analysis
+
+```zig
+// Get complete call hierarchy
+const config = TraceConfig.withTracer({}, "callTracer");
+
+// Find nested call that failed
+// Result.callTrace contains full tree with gas usage
+```
+
+### State Access Patterns
+
+```zig
+// See what storage slots were read/written
+const config = TraceConfig.withTracer({}, "prestateTracer");
+
+// Useful for optimizing storage layout
+```
+
+## RPC Methods
+
+TraceConfig is used with these Geth debug RPC methods:
+
+### debug_traceTransaction
+```zig
+debug_traceTransaction(txHash: string, config: TraceConfigType): TraceResult
+```
+
+Traces an already-mined transaction.
+
+### debug_traceCall
+```zig
+debug_traceCall(call: TransactionRequest, blockNumber: string, config: TraceConfigType): TraceResult
+```
+
+Traces a call without mining it.
+
+### debug_traceBlockByNumber
+```zig
+debug_traceBlockByNumber(blockNumber: string, config: TraceConfigType): TraceResult[]
+```
+
+Traces all transactions in a block.
+
+### debug_traceBlockByHash
+```zig
+debug_traceBlockByHash(blockHash: string, config: TraceConfigType): TraceResult[]
+```
+
+Traces all transactions in a block by hash.
+
+## See Also
+
+- [TraceResult](/primitives/trace-result) - Execution trace result
+- [StructLog](/primitives/struct-log) - Opcode-level trace entry
+- [CallTrace](/primitives/call-trace) - Call tree structure
+- [OpStep](/primitives/op-step) - Single opcode step

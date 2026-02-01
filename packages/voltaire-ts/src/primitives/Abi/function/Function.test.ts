@@ -1,0 +1,457 @@
+/**
+ * Unit tests for Function factory and static methods
+ */
+
+import { describe, expect, it } from "vitest";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: intentionally named Function for ABI function namespace
+import { Function } from "./Function.js";
+
+describe("Function", () => {
+	describe("factory function", () => {
+		it("creates function from object", () => {
+			const func = Function({
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			});
+
+			expect(func.type).toBe("function");
+			expect(func.name).toBe("transfer");
+			expect(func.stateMutability).toBe("nonpayable");
+		});
+
+		it("returns same reference", () => {
+			const input = {
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [],
+				outputs: [],
+			} as const;
+
+			const result = Function(input);
+			expect(result).toBe(input);
+		});
+
+		it("handles function with no inputs", () => {
+			const func = Function({
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [],
+				outputs: [],
+			});
+
+			expect(func.inputs).toHaveLength(0);
+		});
+
+		it("handles function with no outputs", () => {
+			const func = Function({
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "uint256", name: "value" }],
+				outputs: [],
+			});
+
+			expect(func.outputs).toHaveLength(0);
+		});
+
+		it("handles view function", () => {
+			const func = Function({
+				type: "function",
+				name: "balanceOf",
+				stateMutability: "view",
+				inputs: [{ type: "address", name: "account" }],
+				outputs: [{ type: "uint256", name: "" }],
+			});
+
+			expect(func.stateMutability).toBe("view");
+		});
+
+		it("handles pure function", () => {
+			const func = Function({
+				type: "function",
+				name: "calculate",
+				stateMutability: "pure",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			});
+
+			expect(func.stateMutability).toBe("pure");
+		});
+
+		it("handles payable function", () => {
+			const func = Function({
+				type: "function",
+				name: "deposit",
+				stateMutability: "payable",
+				inputs: [],
+				outputs: [],
+			});
+
+			expect(func.stateMutability).toBe("payable");
+		});
+	});
+
+	describe("static method: getSignature", () => {
+		it("has getSignature static method", () => {
+			expect(typeof Function.getSignature).toBe("function");
+		});
+
+		it("generates signature via static method", () => {
+			const func = {
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+			} as const;
+
+			const sig = Function.getSignature(func);
+			expect(sig).toBe("transfer(address,uint256)");
+		});
+	});
+
+	describe("static method: getSelector", () => {
+		it("has getSelector static method", () => {
+			expect(typeof Function.getSelector).toBe("function");
+		});
+
+		it("generates selector via static method", () => {
+			const func = {
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+			} as const;
+
+			const selector = Function.getSelector(func);
+			expect(selector).toBeInstanceOf(Uint8Array);
+			expect(selector.length).toBe(4);
+		});
+	});
+
+	describe("static method: encodeParams", () => {
+		it("has encodeParams static method", () => {
+			expect(typeof Function.encodeParams).toBe("function");
+		});
+
+		it("encodes params via static method", () => {
+			const func = {
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+			} as const;
+
+			const encoded = Function.encodeParams(func, [
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+				100n,
+			]);
+			expect(encoded).toBeInstanceOf(Uint8Array);
+		});
+	});
+
+	describe("static method: decodeParams", () => {
+		it("has decodeParams static method", () => {
+			expect(typeof Function.decodeParams).toBe("function");
+		});
+
+		it("decodes params via static method", () => {
+			const func = {
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+			} as const;
+
+			const encoded = Function.encodeParams(func, [
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+				100n,
+			]);
+			const decoded = Function.decodeParams(func, encoded);
+			expect(decoded).toHaveLength(2);
+			expect(decoded[1]).toBe(100n);
+		});
+	});
+
+	describe("static method: encodeResult", () => {
+		it("has encodeResult static method", () => {
+			expect(typeof Function.encodeResult).toBe("function");
+		});
+
+		it("encodes result via static method", () => {
+			const func = {
+				type: "function",
+				name: "getValue",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const encoded = Function.encodeResult(func, [100n]);
+			expect(encoded).toBeInstanceOf(Uint8Array);
+		});
+	});
+
+	describe("static method: decodeResult", () => {
+		it("has decodeResult static method", () => {
+			expect(typeof Function.decodeResult).toBe("function");
+		});
+
+		it("decodes result via static method", () => {
+			const func = {
+				type: "function",
+				name: "getValue",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const encoded = Function.encodeResult(func, [100n]);
+			const decoded = Function.decodeResult(func, encoded);
+			expect(decoded).toEqual([100n]);
+		});
+	});
+
+	describe("constructor-style aliases", () => {
+		it("has Signature alias", () => {
+			expect(typeof Function.Signature).toBe("function");
+			expect(Function.Signature).toBe(Function.getSignature);
+		});
+
+		it("has Params alias", () => {
+			expect(typeof Function.Params).toBe("function");
+			expect(Function.Params).toBe(Function.encodeParams);
+		});
+
+		it("has DecodeParams alias", () => {
+			expect(typeof Function.DecodeParams).toBe("function");
+			expect(Function.DecodeParams).toBe(Function.decodeParams);
+		});
+
+		it("has Result alias", () => {
+			expect(typeof Function.Result).toBe("function");
+			expect(Function.Result).toBe(Function.encodeResult);
+		});
+
+		it("has DecodeResult alias", () => {
+			expect(typeof Function.DecodeResult).toBe("function");
+			expect(Function.DecodeResult).toBe(Function.decodeResult);
+		});
+	});
+
+	describe("factory method: GetSelector", () => {
+		it("has GetSelector factory", () => {
+			expect(typeof Function.GetSelector).toBe("function");
+		});
+	});
+
+	describe("integration tests", () => {
+		it("round-trips encode/decode params", () => {
+			const func = {
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "addr" },
+					{ type: "uint256", name: "value" },
+				],
+				outputs: [],
+			} as const;
+
+			const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+			const value = 42n;
+
+			const encoded = Function.encodeParams(func, [addr, value]);
+			const decoded = Function.decodeParams(func, encoded);
+
+			expect(decoded[0]).toBe(addr.toLowerCase());
+			expect(decoded[1]).toBe(value);
+		});
+
+		it("round-trips encode/decode result", () => {
+			const func = {
+				type: "function",
+				name: "test",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			const value = 42n;
+
+			const encoded = Function.encodeResult(func, [value]);
+			const decoded = Function.decodeResult(func, encoded);
+
+			expect(decoded[0]).toBe(value);
+		});
+
+		it("works with all static methods in sequence", () => {
+			const func = Function({
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			});
+
+			// Get signature
+			const sig = Function.getSignature(func);
+			expect(sig).toBe("transfer(address,uint256)");
+
+			// Get selector
+			const selector = Function.getSelector(func);
+			expect(selector[0]).toBe(0xa9);
+
+			// Encode params
+			const encoded = Function.encodeParams(func, [
+				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+				100n,
+			]);
+			expect(encoded.length).toBeGreaterThan(4);
+
+			// Decode params
+			const decoded = Function.decodeParams(func, encoded);
+			expect(decoded[1]).toBe(100n);
+
+			// Encode result
+			const resultEncoded = Function.encodeResult(func, [true]);
+			expect(resultEncoded.length).toBe(32);
+
+			// Decode result
+			const resultDecoded = Function.decodeResult(func, resultEncoded);
+			expect(resultDecoded[0]).toBe(true);
+		});
+	});
+
+	describe("real-world examples", () => {
+		it("creates ERC20 transfer function", () => {
+			const transfer = Function({
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			});
+
+			expect(transfer.name).toBe("transfer");
+			expect(transfer.inputs).toHaveLength(2);
+			expect(transfer.outputs).toHaveLength(1);
+		});
+
+		it("creates ERC20 balanceOf function", () => {
+			const balanceOf = Function({
+				type: "function",
+				name: "balanceOf",
+				stateMutability: "view",
+				inputs: [{ type: "address", name: "account" }],
+				outputs: [{ type: "uint256", name: "" }],
+			});
+
+			expect(balanceOf.name).toBe("balanceOf");
+			expect(balanceOf.stateMutability).toBe("view");
+		});
+
+		it("creates payable deposit function", () => {
+			const deposit = Function({
+				type: "function",
+				name: "deposit",
+				stateMutability: "payable",
+				inputs: [],
+				outputs: [],
+			});
+
+			expect(deposit.name).toBe("deposit");
+			expect(deposit.stateMutability).toBe("payable");
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles function with complex tuple inputs", () => {
+			const func = Function({
+				type: "function",
+				name: "processData",
+				stateMutability: "nonpayable",
+				inputs: [
+					{
+						type: "tuple",
+						name: "data",
+						components: [
+							{ type: "address", name: "addr" },
+							{ type: "uint256", name: "value" },
+							{
+								type: "tuple",
+								name: "nested",
+								components: [{ type: "bool", name: "flag" }],
+							},
+						],
+					},
+				],
+				outputs: [],
+			});
+
+			expect(func.inputs).toHaveLength(1);
+			expect(func.inputs[0].type).toBe("tuple");
+		});
+
+		it("handles function with array inputs", () => {
+			const func = Function({
+				type: "function",
+				name: "batchTransfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address[]", name: "recipients" },
+					{ type: "uint256[]", name: "amounts" },
+				],
+				outputs: [],
+			});
+
+			expect(func.inputs).toHaveLength(2);
+			expect(func.inputs[0].type).toBe("address[]");
+		});
+
+		it("handles function with unnamed parameters", () => {
+			const func = Function({
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "uint256", name: "" },
+					{ type: "address", name: "" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			});
+
+			expect(func.inputs[0].name).toBe("");
+			expect(func.inputs[1].name).toBe("");
+		});
+	});
+});

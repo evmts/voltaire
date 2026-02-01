@@ -1,0 +1,353 @@
+---
+title: Address
+description: 20-byte Ethereum addresses with EIP-55 checksumming and contract address derivation
+---
+
+Ethereum addresses are 20-byte identifiers for accounts and contracts. The Address primitive provides type-safe construction, validation, EIP-55 checksumming, and contract address derivation.
+
+## Overview
+
+Address is a [branded](/concepts/branded-types) `Uint8Array` type representing Ethereum addresses. It provides compile-time type safety while maintaining zero runtime overhead.
+
+<Tabs>
+<Tab title="Type Definition">
+
+```typescript
+type AddressType = Uint8Array & {
+  readonly __tag: "Address";
+};
+```
+
+</Tab>
+<Tab title="Constants">
+
+```typescript
+SIZE = 20;                    // Address size in bytes
+HEX_SIZE = 42;                // Hex string size (including 0x)
+
+// ERC-7528 Native Asset Address
+NATIVE_ASSET_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+```
+
+</Tab>
+</Tabs>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Create Address">
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+// From hex string
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// From bytes
+const fromBytes = Address.fromBytes(new Uint8Array(20));
+
+// From number/bigint
+const fromNumber = Address.fromNumber(0x123n);
+
+// Zero address
+const zero = Address.zero();
+```
+
+</Tab>
+<Tab title="Convert & Format">
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Hex representations
+addr.toHex();           // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+addr.toLowercase();     // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+addr.toUppercase();     // "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"
+addr.toShortHex();      // "0x742d...1e3e"
+
+// Numeric representation
+addr.toU256();          // bigint (left-padded to 256 bits)
+
+// ABI encoding
+addr.toAbiEncoded();    // 32-byte Uint8Array (left-padded)
+```
+
+</Tab>
+<Tab title="Checksum (EIP-55)">
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+
+// Create with crypto dependency for checksum methods
+const addr = Address(
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  { keccak256 }
+);
+
+// Get checksummed representation
+addr.toChecksummed();  // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Validate checksum
+Address.isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"); // true
+Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // false
+```
+
+</Tab>
+</Tabs>
+
+## Why keccak256 Must Be Passed Explicitly
+
+Voltaire requires you to pass `keccak256` explicitly for checksumming and contract address derivation. This is intentional:
+
+**Tree-shaking**: Keccak256 adds ~5-10 KB to your bundle. By requiring explicit injection, bundlers can eliminate this code entirely if you never use checksum methods. Libraries that hardcode crypto dependencies force you to ship code you may never use.
+
+**No global crypto dependencies**: Voltaire avoids global singletons and hidden imports. Every dependency is explicit in your code, making the dependency graph predictable and auditable.
+
+**Flexibility**: You can inject any keccak256 implementation - the native Zig/WASM version, a pure JS fallback, or a Web Crypto wrapper. Your choice.
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+
+// Methods that DON'T need keccak256 - no injection required
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+addr.toHex();        // works
+addr.toLowercase();  // works
+addr.equals(other);  // works
+
+// Methods that DO need keccak256 - inject via options
+const addrWithCrypto = Address(
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  { keccak256 }
+);
+addrWithCrypto.toChecksummed();           // works
+addrWithCrypto.calculateCreate2Address(); // works
+```
+
+## API Reference
+
+### Constructors
+
+| Method | Description |
+|--------|-------------|
+| `Address(value)` | **Primary constructor** - create from hex string, bytes, or number |
+| `Address.fromHex(hex)` | Create from hex string |
+| `Address.fromBytes(bytes)` | Create from Uint8Array |
+| `Address.fromNumber(n)` | Create from number or bigint |
+| `Address.fromBase64(b64)` | Create from Base64 string |
+| `Address.fromAbiEncoded(data)` | Create from 32-byte ABI-encoded data |
+| `Address.fromPublicKey(pubKey)` | Derive from secp256k1 public key |
+| `Address.fromPrivateKey(privKey)` | Derive from secp256k1 private key |
+| `Address.zero()` | Create zero address (0x000...000) |
+| `Address.of(...bytes)` | Create from individual byte values |
+
+### Conversion Methods
+
+| Method | Description |
+|--------|-------------|
+| `toHex()` | Convert to lowercase hex string |
+| `toLowercase()` | Convert to lowercase hex string |
+| `toUppercase()` | Convert to uppercase hex string |
+| `toChecksummed()` | Convert to EIP-55 checksummed hex (requires keccak256) |
+| `toShortHex(start?, end?)` | Abbreviated hex (e.g., "0x742d...1e3e") |
+| `toU256()` | Convert to bigint (left-padded to 256 bits) |
+| `toAbiEncoded()` | Convert to 32-byte ABI encoding |
+| `toBytes()` | Get underlying Uint8Array |
+| `clone()` | Create a copy |
+
+### Comparison Methods
+
+| Method | Description |
+|--------|-------------|
+| `equals(other)` | Check equality |
+| `compare(other)` | Compare (-1, 0, 1) for sorting |
+| `lessThan(other)` | Check if less than other |
+| `greaterThan(other)` | Check if greater than other |
+| `isZero()` | Check if zero address |
+
+### Validation Methods
+
+| Method | Description |
+|--------|-------------|
+| `Address.is(value)` | Type guard for AddressType |
+| `Address.isValid(value)` | Check if value is valid address format |
+| `Address.isValidChecksum(hex)` | Validate EIP-55 checksum |
+| `Address.assert(value)` | Throw if invalid |
+
+### Contract Address Derivation
+
+| Method | Description |
+|--------|-------------|
+| `calculateCreateAddress(nonce)` | Derive CREATE address (requires keccak256 + rlpEncode) |
+| `calculateCreate2Address(salt, initCode)` | Derive CREATE2 address (requires keccak256) |
+
+### Batch Operations
+
+| Method | Description |
+|--------|-------------|
+| `Address.sortAddresses(addresses)` | Sort array of addresses |
+| `Address.deduplicateAddresses(addresses)` | Remove duplicates |
+
+### Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `SIZE` | `20` | Address size in bytes |
+| `HEX_SIZE` | `42` | Hex string length (with 0x) |
+| `NATIVE_ASSET_ADDRESS` | `0xEeee...EEeE` | ERC-7528 native ETH address |
+
+## Practical Examples
+
+### Deriving Contract Addresses
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+import { rlpEncode } from '@tevm/voltaire/Rlp';
+
+// Create address with full crypto support
+const deployer = Address(
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  { keccak256, rlpEncode }
+);
+
+// CREATE address (deployed via regular transaction)
+const contractAddr = deployer.calculateCreateAddress(0n);
+const secondContract = deployer.calculateCreateAddress(1n);
+
+// CREATE2 address (deterministic deployment)
+import * as Hash from '@tevm/voltaire/Hash';
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const salt = Hash("0x" + "00".repeat(32));
+const initCode = Bytecode("0x6080604052...");
+const create2Addr = deployer.calculateCreate2Address(salt, initCode);
+```
+
+### Comparing and Sorting Addresses
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+const addr1 = Address("0x1111111111111111111111111111111111111111");
+const addr2 = Address("0x2222222222222222222222222222222222222222");
+
+// Direct comparison
+addr1.equals(addr2);      // false
+addr1.lessThan(addr2);    // true
+addr1.greaterThan(addr2); // false
+addr1.compare(addr2);     // -1
+
+// Sort array of addresses
+const addresses = [addr2, addr1];
+const sorted = Address.sortAddresses(addresses);
+// [addr1, addr2]
+
+// Remove duplicates
+const unique = Address.deduplicateAddresses([addr1, addr1, addr2]);
+// [addr1, addr2]
+```
+
+### ABI Encoding for Contract Calls
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+const recipient = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Left-padded to 32 bytes for ABI encoding
+const encoded = recipient.toAbiEncoded();
+// Uint8Array(32) [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x74, 0x2d, ...]
+
+// Decode ABI-encoded address
+const decoded = Address.fromAbiEncoded(encoded);
+```
+
+### Deriving from Keys
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+// From 65-byte uncompressed public key (0x04 prefix + 64 bytes)
+const pubKey = new Uint8Array(65);
+pubKey[0] = 0x04;
+// ... set x and y coordinates
+const fromPubKey = Address.fromPublicKey(pubKey);
+
+// From 32-byte private key
+const privateKey = new Uint8Array(32);
+// ... fill with private key bytes
+const fromPrivKey = Address.fromPrivateKey(privateKey);
+
+// From x,y coordinates as bigints
+const x = 0x1234...n;
+const y = 0x5678...n;
+const fromCoords = Address.fromPublicKey(x, y);
+```
+
+## Error Handling
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import {
+  InvalidHexFormatError,
+  InvalidAddressLengthError,
+  InvalidChecksumError
+} from '@tevm/voltaire/Address';
+
+try {
+  // Invalid hex format
+  Address("not-an-address");
+} catch (e) {
+  if (e instanceof InvalidHexFormatError) {
+    console.log(e.code);     // "INVALID_HEX_FORMAT"
+    console.log(e.expected); // "0x-prefixed hex string"
+  }
+}
+
+try {
+  // Wrong length
+  Address("0x1234");
+} catch (e) {
+  if (e instanceof InvalidAddressLengthError) {
+    console.log(e.expected); // "20 bytes"
+  }
+}
+```
+
+## Type Safety
+
+The branded type prevents mixing addresses with other byte arrays:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const addr: AddressType = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const hash: HashType = Hash("0x" + "ab".repeat(32));
+
+// TypeScript error: Address and Hash are incompatible
+// even though both are Uint8Array at runtime
+function processAddress(a: AddressType) { ... }
+processAddress(hash); // Error!
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Keccak256" icon="hashtag" href="/crypto/keccak256">
+    Required for checksumming and contract address derivation
+  </Card>
+  <Card title="RLP" icon="layer-group" href="/primitives/rlp">
+    Required for CREATE address derivation
+  </Card>
+  <Card title="Signature" icon="pen" href="/crypto/secp256k1">
+    Recover addresses from signatures
+  </Card>
+  <Card title="Branded Types" icon="shield" href="/concepts/branded-types">
+    Type-safe primitives with zero overhead
+  </Card>
+</CardGroup>

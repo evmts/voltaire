@@ -1,0 +1,40 @@
+---
+title: Constructor.encodeParams
+description: Encode constructor parameters for contract deployment
+---
+
+<Tabs>
+
+</Tabs>
+
+## Usage Examples
+
+### Deploy ERC20 Contract
+
+```typescript
+import { Constructor } from 'tevm'
+
+const constructorDef = new Constructor({
+  type: "constructor",
+  inputs: [
+    { type: "string", name: "name" },
+    { type: "string", name: "symbol" },
+    { type: "uint8", name: "decimals" }
+  ]
+})
+
+const encoded = constructorDef.encodeParams(["MyToken", "MTK", 18])
+
+// Create deployment transaction
+const tx = {
+  data: contractBytecode + encoded.slice(2),
+  value: 0n
+}
+
+const receipt = await wallet.sendTransaction(tx)
+console.log("Contract deployed at:", receipt.contractAddress)
+```
+
+## See Also
+
+- [decodeParams](/primitives/abi/constructor/decode-params) - Decode constructor parameters

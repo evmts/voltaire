@@ -1,0 +1,58 @@
+/**
+ * Tests for Hardfork.hasEIP1153 (Transient Storage)
+ */
+
+import { describe, expect, it } from "vitest";
+import { hasEIP1153 } from "./hasEIP1153.js";
+import * as Hardfork from "./index.js";
+
+describe("Hardfork.hasEIP1153", () => {
+	it("returns false for Shanghai", () => {
+		expect(hasEIP1153(Hardfork.SHANGHAI)).toBe(false);
+	});
+
+	it("returns false for Merge", () => {
+		expect(hasEIP1153(Hardfork.MERGE)).toBe(false);
+	});
+
+	it("returns false for London", () => {
+		expect(hasEIP1153(Hardfork.LONDON)).toBe(false);
+	});
+
+	it("returns false for Berlin", () => {
+		expect(hasEIP1153(Hardfork.BERLIN)).toBe(false);
+	});
+
+	it("returns true for Cancun", () => {
+		expect(hasEIP1153(Hardfork.CANCUN)).toBe(true);
+	});
+
+	it("returns true for Prague", () => {
+		expect(hasEIP1153(Hardfork.PRAGUE)).toBe(true);
+	});
+
+	it("returns false for all pre-Cancun hardforks", () => {
+		const preCancun = [
+			Hardfork.FRONTIER,
+			Hardfork.HOMESTEAD,
+			Hardfork.DAO,
+			Hardfork.TANGERINE_WHISTLE,
+			Hardfork.SPURIOUS_DRAGON,
+			Hardfork.BYZANTIUM,
+			Hardfork.CONSTANTINOPLE,
+			Hardfork.PETERSBURG,
+			Hardfork.ISTANBUL,
+			Hardfork.MUIR_GLACIER,
+			Hardfork.BERLIN,
+			Hardfork.LONDON,
+			Hardfork.ARROW_GLACIER,
+			Hardfork.GRAY_GLACIER,
+			Hardfork.MERGE,
+			Hardfork.SHANGHAI,
+		];
+
+		for (const fork of preCancun) {
+			expect(hasEIP1153(fork)).toBe(false);
+		}
+	});
+});

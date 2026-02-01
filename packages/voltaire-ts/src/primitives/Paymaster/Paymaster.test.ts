@@ -1,0 +1,27 @@
+import { describe, expect, test } from "vitest";
+import * as Paymaster from "./index.js";
+
+describe("Paymaster", () => {
+	test("creates Paymaster from address string", () => {
+		const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+		const paymaster = Paymaster.from(addr);
+		expect(paymaster).toBeInstanceOf(Uint8Array);
+		expect(paymaster.length).toBe(20);
+	});
+
+	test("converts Paymaster to hex", () => {
+		const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+		const paymaster = Paymaster.from(addr);
+		const hex = Paymaster.toHex(paymaster);
+		expect(hex).toBe("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+	});
+
+	test("compares Paymaster addresses", () => {
+		const addr1 = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+		const addr2 = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3";
+		const addr3 = "0x1234567890123456789012345678901234567890";
+
+		expect(Paymaster.equals(addr1, addr2)).toBe(true);
+		expect(Paymaster.equals(addr1, addr3)).toBe(false);
+	});
+});

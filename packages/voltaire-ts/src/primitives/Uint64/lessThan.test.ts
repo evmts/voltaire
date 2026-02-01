@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
+import { from } from "./from.js";
+import { lessThan } from "./lessThan.js";
+
+describe("Uint64.lessThan", () => {
+	describe("true cases", () => {
+		it("0 < 1", () => {
+			expect(lessThan(ZERO, ONE)).toBe(true);
+		});
+
+		it("1 < 2", () => {
+			expect(lessThan(ONE, from(2n))).toBe(true);
+		});
+
+		it("42 < 43", () => {
+			expect(lessThan(from(42n), from(43n))).toBe(true);
+		});
+
+		it("MAX - 1 < MAX", () => {
+			expect(lessThan(from(MAX - 1n), MAX)).toBe(true);
+		});
+
+		it("small < large", () => {
+			expect(lessThan(from(100n), from(1000000n))).toBe(true);
+		});
+	});
+
+	describe("false cases", () => {
+		it("1 < 0 is false", () => {
+			expect(lessThan(ONE, ZERO)).toBe(false);
+		});
+
+		it("1 < 1 is false", () => {
+			expect(lessThan(ONE, ONE)).toBe(false);
+		});
+
+		it("43 < 42 is false", () => {
+			expect(lessThan(from(43n), from(42n))).toBe(false);
+		});
+
+		it("MAX < MAX is false", () => {
+			expect(lessThan(MAX, MAX)).toBe(false);
+		});
+
+		it("MAX < 0 is false", () => {
+			expect(lessThan(MAX, ZERO)).toBe(false);
+		});
+	});
+
+	describe("properties", () => {
+		it("irreflexive: not(a < a)", () => {
+			const a = from(42n);
+			expect(lessThan(a, a)).toBe(false);
+		});
+
+		it("asymmetric: a < b implies not(b < a)", () => {
+			const a = from(10n);
+			const b = from(20n);
+			if (lessThan(a, b)) {
+				expect(lessThan(b, a)).toBe(false);
+			}
+		});
+
+		it("transitive: a < b and b < c implies a < c", () => {
+			const a = from(10n);
+			const b = from(20n);
+			const c = from(30n);
+			if (lessThan(a, b) && lessThan(b, c)) {
+				expect(lessThan(a, c)).toBe(true);
+			}
+		});
+	});
+});

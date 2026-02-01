@@ -1,0 +1,206 @@
+---
+title: "Building an Ethers-style Contract"
+description: "A guide to building a reference implementation of ethers v6 Contract patterns using Voltaire primitives"
+---
+
+<Info>
+**Skill Guide** — This guide walks you through building a copyable reference implementation. For the final, production-ready code, see the [full implementation](#full-reference-implementation). Also see the [Skills Philosophy](/concepts/skills).
+</Info>
+
+# Building an Ethers-style Contract
+
+This guide demonstrates how to build a type-safe, ethers-v6-compatible `Contract` abstraction using low-level `@tevm/voltaire` primitives. This approach gives you a powerful, fully-customizable contract wrapper that you own and control.
+
+## Philosophy
+
+Instead of providing a rigid, one-size-fits-all `Contract` object, Voltaire gives you the tools to build your own. You get an ethers-compatible API without the dependency, allowing you to tailor it to your specific needs.
+
+## Core Primitives
+
+We'll use a few key Voltaire primitives to build our contract:
+
+-   [`Abi`](/docs/primitives/abi): For encoding and decoding ABI data.
+-   [`Hex`](/docs/primitives/hex): For working with hexadecimal strings.
+-   A JSON-RPC `runner` (like a provider or signer) that can make `request()` calls.
+
+## Building `EthersContract`
+
+Let's start with a simplified `EthersContract` implementation. Our goal is a function that takes a contract `target`, `abi`, and a `runner`, and returns an object that lets us call contract methods.
+
+We can achieve this using a `Proxy`, which intercepts calls to methods that don't exist on our object and interprets them as contract calls.
+
+```typescript
+import { Abi, Hex } from '@tevm/voltaire';
+
+/**
+ * @typedef {import('./EthersContractTypes.js').ContractRunner} ContractRunner
+ * @typedef {import('@tevm/voltaire').Item} Item
+ */
+
+/**
+ * A simplified EthersContract implementation
+ * @param {{ target: string, abi: readonly Item[], runner: ContractRunner }} options
+ */
+export function SimpleEthersContract({ target, abi, runner }) {
+  const abiInterface = Abi(abi);
+
+  return new Proxy({}, {
+    get(_target, prop, receiver) {
+      if (typeof prop !== 'string') {
+        return Reflect.get(_target, prop, receiver);
+      }
+
+      // Check if the property is a function in the ABI
+      const fragment = abiInterface.getFunction(prop);
+
+      if (!fragment) {
+        // Not a contract method, return undefined or throw
+        return undefined;
+      }
+
+      // This is a contract method, return an async function to call it
+      return async (...args) => {
+        // 1. Encode the function call data
+        const data = Hex.fromBytes(abiInterface.encode(prop, args));
+
+        if (fragment.stateMutability === 'view' || fragment.stateMutability === 'pure') {
+          // 2a. For read-only calls, use `eth_call`
+          const resultHex = await runner.request({
+            method: 'eth_call',
+            params: [{ to: target, data }, 'latest']
+          });
+
+          // 3a. Decode the result
+          const decoded = abiInterface.decode(prop, Hex.toBytes(resultHex));
+          return decoded.length === 1 ? decoded[0] : decoded;
+
+        } else {
+          // 2b. For state-changing calls, use `eth_sendTransaction`
+          const txHash = await runner.request({
+            method: 'eth_sendTransaction',
+            params: [{ to: target, data }]
+          });
+          // For simplicity, we return the hash. A full implementation
+          // would return a transaction response object.
+          return txHash;
+        }
+      };
+    }
+  });
+}
+```
+
+This simplified version demonstrates the core logic:
+1.  **ABI Parsing**: `Abi(abi)` creates a reusable interface for encoding/decoding.
+2.  **Proxy Interception**: The `Proxy` catches calls like `usdc.balanceOf(...)`.
+3.  **Encoding**: `abiInterface.encode()` creates the `data` payload for the JSON-RPC request.
+4.  **RPC Calls**: It uses the `runner` to send either `eth_call` or `eth_sendTransaction`.
+5.  **Decoding**: `abiInterface.decode()` parses the `eth_call` result.
+
+## Building a `ContractFactory`
+
+To deploy contracts, we need a `ContractFactory`. It takes the ABI and bytecode, and its `deploy` method encodes constructor arguments and sends a transaction with the combined bytecode.
+
+Here's a simplified example:
+
+```typescript
+import { Abi, Hex } from '@tevm/voltaire';
+
+/**
+ * A simplified ContractFactory implementation
+ * @param {{ abi: readonly Item[], bytecode: string, runner: ContractRunner }} options
+ */
+export function SimpleContractFactory({ abi, bytecode, runner }) {
+  const abiInterface = Abi(abi);
+
+  return {
+    async deploy(...args) {
+      const constructorFragment = abiInterface.getConstructor();
+      let data = bytecode;
+
+      if (constructorFragment && args.length > 0) {
+        // Encode constructor arguments and append to bytecode
+        const encodedArgs = abiInterface.encode(constructorFragment, args);
+        data += Hex.fromBytes(encodedArgs).slice(2);
+      }
+
+      const txHash = await runner.request({
+        method: 'eth_sendTransaction',
+        params: [{ data }] // from is implicitly from the runner/signer
+      });
+
+      // A full implementation would calculate the deployed address
+      // and return an EthersContract instance.
+      return txHash;
+    }
+  };
+}
+```
+
+## Type Safety
+
+Validate your ABI with Effect Schema to catch shape errors early before wiring it into a contract. The full reference implementation includes comprehensive types that provide autocomplete and type-checking for function arguments and return values.
+
+```typescript
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
+
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+  {
+    type: 'function',
+    name: 'balanceOf',
+    // ...
+  },
+]);
+
+const usdc = EthersContract({
+  target: '0x...',
+  abi: erc20Abi,
+  runner: provider,
+});
+
+// TypeScript knows `balanceOf` takes an address and returns a Promise<bigint>
+const balance = await usdc.balanceOf('0x...');
+```
+
+## Full Reference Implementation
+
+The simplified examples above illustrate the core concepts. The full implementation in `examples/ethers-contract/` is production-ready and includes many more features:
+
+-   Explicit `staticCall`, `send`, `estimateGas`, and `populateTransaction` methods.
+-   Event filtering and querying (`queryFilter`).
+-   Event subscriptions (`on`, `once`, `off`).
+-   Robust error handling and revert reason decoding.
+-   Deployment address calculation.
+-   Comprehensive TypeScript types.
+
+### Installation
+
+To use the full implementation, copy the `examples/ethers-contract/` directory into your project:
+
+```
+your-project/
+  lib/
+    ethers-contract/
+      EthersContract.js
+      ContractFactory.js
+      EthersContractTypes.ts
+      errors.ts
+      index.ts
+```
+
+You can then import it into your application code:
+
+```typescript
+import { EthersContract } from './lib/ethers-contract';
+
+const contract = EthersContract({ ... });
+```
+
+This gives you a fully-featured, ethers-compatible contract API that you can modify and extend to fit your exact needs.
+
+## See Also
+
+- [Abi Primitive](/docs/primitives/abi)
+- [Hex Primitive](/docs/primitives/hex)
+- [JSON-RPC Transport](/docs/jsonrpc)

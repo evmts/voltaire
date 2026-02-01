@@ -1,0 +1,332 @@
+---
+title: Transaction Hashing
+description: Compute transaction and signing hashes
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/transaction.ts">
+  Run Transaction examples in the interactive playground
+</Card>
+
+
+# Transaction Hashing
+
+Keccak256 hashing for transaction identification and signing.
+
+## hash
+
+Compute transaction hash (keccak256 of serialized transaction).
+
+<Tabs>
+
+</Tabs>
+
+## getSigningHash
+
+Get hash that should be signed (excludes signature fields).
+
+<Tabs>
+
+</Tabs>
+
+## Hash vs Signing Hash
+
+The difference between `hash` and `getSigningHash`:
+
+### Transaction Hash
+
+`hash(tx)` computes hash of **complete** transaction including signature:
+
+```typescript
+// Legacy format
+hash = keccak256(rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s]))
+                                                                  ^^^^^^^
+                                                                  includes signature
+
+// EIP-1559 format
+hash = keccak256(0x02 || rlp([chainId, nonce, ..., yParity, r, s]))
+                                                    ^^^^^^^^^^^^^^^^
+                                                    includes signature
+```
+
+Used as transaction identifier in:
+- Block transactions
+- Transaction receipts
+- eth_getTransactionByHash RPC
+
+### Signing Hash
+
+`getSigningHash(tx)` computes hash **without** signature fields:
+
+```typescript
+// Legacy format (EIP-155)
+signingHash = keccak256(rlp([nonce, gasPrice, gasLimit, to, value, data, chainId, 0, 0]))
+                                                                          ^^^^^^^^^^^^^^^
+                                                                          no signature, chain ID added
+
+// EIP-1559 format
+signingHash = keccak256(0x02 || rlp([chainId, nonce, ..., accessList]))
+                                                          ^^^^^^^^^^
+                                                          no signature fields
+```
+
+Used for:
+- Creating signatures
+- Verifying signatures
+- Recovering sender address
+
+## Type-Specific Hashing
+
+### Transaction.Legacy.hash
+
+```typescript
+function hash(tx: BrandedTransactionLegacy): HashType
+
+// Usage
+import { Legacy } from 'tevm/Transaction'
+const txHash = Legacy.hash.call(legacyTx)
+```
+
+### Transaction.Legacy.getSigningHash
+
+```typescript
+function getSigningHash(tx: BrandedTransactionLegacy): HashType
+
+// Usage
+import { Legacy } from 'tevm/Transaction'
+const signingHash = Legacy.getSigningHash.call(legacyTx)
+```
+
+### Transaction.EIP1559.hash
+
+```typescript
+function hash(tx: BrandedTransactionEIP1559): HashType
+
+// Usage
+import { EIP1559 } from 'tevm/Transaction'
+const txHash = EIP1559.hash(eip1559Tx)
+```
+
+### Transaction.EIP1559.getSigningHash
+
+```typescript
+function getSigningHash(tx: BrandedTransactionEIP1559): HashType
+
+// Usage
+import { EIP1559 } from 'tevm/Transaction'
+const signingHash = EIP1559.getSigningHash(eip1559Tx)
+```
+
+Similar methods exist for EIP2930, EIP4844, and EIP7702.
+
+## Hash Usage Patterns
+
+### Transaction Identification
+
+```typescript
+import { hash } from 'tevm/Transaction'
+
+// Store in database
+const txHash = hash(tx)
+await db.transactions.put(txHash, tx)
+
+// Retrieve by hash
+const retrievedTx = await db.transactions.get(txHash)
+```
+
+### Block Transaction List
+
+```typescript
+import { hash } from 'tevm/Transaction'
+
+const block = {
+  number: 18000000n,
+  transactions: txList.map(tx => hash(tx)),
+  // ... other block fields
+}
+```
+
+### Transaction Pool
+
+```typescript
+import { hash } from 'tevm/Transaction'
+
+class TransactionPool {
+  private txs = new Map<string, Transaction.Any>()
+
+  add(tx: Transaction.Any) {
+    const txHash = Hex(hash(tx))
+    this.txs.set(txHash, tx)
+  }
+
+  get(txHash: string): Transaction.Any | undefined {
+    return this.txs.get(txHash)
+  }
+}
+```
+
+### Signing Workflow
+
+```typescript
+import { getSigningHash, hash } from 'tevm/Transaction'
+
+// 1. Create unsigned transaction
+const unsignedTx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: Bytes32(),
+  s: Bytes32(),
+}
+
+// 2. Get signing hash
+const signingHash = getSigningHash(unsignedTx)
+
+// 3. Sign
+const { r, s, recovery } = sign(signingHash, privateKey)
+
+// 4. Create signed transaction
+const signedTx = {
+  ...unsignedTx,
+  yParity: recovery,
+  r,
+  s,
+}
+
+// 5. Compute final transaction hash
+const txHash = hash(signedTx)
+console.log('Transaction hash:', Hex(txHash))
+```
+
+### Signature Verification
+
+```typescript
+import { getSigningHash, getSender } from 'tevm/Transaction'
+import { InvalidSignerError } from 'tevm/errors'
+
+// Verify signature by recovering sender
+const signingHash = getSigningHash(tx)
+const recoveredSender = getSender(tx)
+
+// Or verify manually
+const expectedSender = recoverAddress(signingHash, {
+  r: tx.r,
+  s: tx.s,
+  v: tx.yParity
+})
+
+if (!Address.equals(recoveredSender, expectedSender)) {
+  throw new InvalidSignerError('Invalid signature', {
+    code: 'SIGNATURE_MISMATCH',
+    context: { recovered: recoveredSender, expected: expectedSender }
+  })
+}
+```
+
+## Legacy Transaction Signing Hash
+
+Legacy transactions have special signing hash logic for EIP-155:
+
+```typescript
+// Pre-EIP-155 (v = 27 or 28)
+signingHash = keccak256(rlp([nonce, gasPrice, gasLimit, to, value, data]))
+
+// Post-EIP-155 (v = chainId * 2 + 35 + yParity)
+signingHash = keccak256(rlp([nonce, gasPrice, gasLimit, to, value, data, chainId, 0, 0]))
+                                                                          ^^^^^^^^^^^^^^
+                                                                          adds chain ID + zeros
+```
+
+Example:
+```typescript
+import { Legacy } from 'tevm/Transaction'
+
+const legacyTx: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  v: 37n,  // Chain ID 1: (37 - 35) / 2 = 1
+  r: signatureR,
+  s: signatureS,
+}
+
+// Signing hash includes chain ID
+const signingHash = Legacy.getSigningHash.call(legacyTx)
+// keccak256(rlp([..., 1, 0, 0]))
+```
+
+## EIP-4844 Signing Hash
+
+EIP-4844 blob transactions exclude blob versioned hashes from signing hash:
+
+```typescript
+// Transaction hash (includes blobs)
+hash = keccak256(0x03 || rlp([..., maxFeePerBlobGas, blobVersionedHashes, yParity, r, s]))
+
+// Signing hash (excludes signature but includes blobs)
+signingHash = keccak256(0x03 || rlp([..., maxFeePerBlobGas, blobVersionedHashes]))
+```
+
+Blob hashes ARE included in signing hash, but the actual blob data is not.
+
+## Performance Considerations
+
+Hashing is cryptographically expensive (keccak256):
+
+```typescript
+import { hash } from 'tevm/Transaction'
+
+// Cache hashes for repeated use
+const cache = new Map<Transaction.Any, HashType>()
+
+function getCachedHash(tx: Transaction.Any): HashType {
+  if (!cache.has(tx)) {
+    cache.set(tx, hash(tx))
+  }
+  return cache.get(tx)!
+}
+```
+
+For batch processing:
+```typescript
+// Parallelize if possible
+const hashes = await Promise.all(
+  transactions.map(tx => Promise.resolve(hash(tx)))
+)
+```
+
+## Implementation Status
+
+| Type | hash | getSigningHash | Status |
+|------|------|----------------|--------|
+| Legacy | Partial | Partial | In progress |
+| EIP-2930 | Partial | Partial | In progress |
+| EIP-1559 | Partial | Partial | In progress |
+| EIP-4844 | Partial | Partial | In progress |
+| EIP-7702 | Partial | Partial | In progress |
+
+Many methods currently throw "Not implemented" - check test files for implementation status.
+
+## See Also
+
+- [Serialization](/primitives/transaction/serialization) - RLP encode and decode transactions
+- [Signing](/primitives/transaction/signing) - Signature verification and sender recovery
+- [Keccak256](/crypto/keccak256) - 32-byte hash primitive
+- [Secp256k1](/crypto/secp256k1) - ECDSA signature operations
+
+## EIP References
+
+- [EIP-155: Simple replay attack protection](https://eips.ethereum.org/EIPS/eip-155)
+- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
+- [Yellow Paper: Transaction signing](https://ethereum.github.io/yellowpaper/paper.pdf)

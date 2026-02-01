@@ -1,0 +1,26 @@
+---
+title: PeerId
+description: P2P peer identifier (base58/multibase encoded)
+---
+
+```typescript
+import * as PeerId from 'voltaire-effect/primitives/PeerId'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const peerId = Schema.decodeSync(PeerId.String)(
+  'QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wU2s7tVqYoC9z'
+)
+
+// Effect constructor
+const program = PeerId.from('QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wU2s7tVqYoC9z')
+Effect.runSync(program)
+```
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(PeerId.from('invalid'))
+// result._tag === 'Failure' → PeerIdError
+```

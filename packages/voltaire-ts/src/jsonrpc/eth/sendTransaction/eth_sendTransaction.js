@@ -1,0 +1,42 @@
+/**
+ * @fileoverview eth_sendTransaction JSON-RPC method
+ */
+
+/**
+ * @typedef {import('../../../primitives/Address/AddressType.js').AddressType} Address
+ * @typedef {import('../../index.js').Hash} Hash
+ * @typedef {import('../../index.js').Quantity} Quantity
+ * @typedef {import('../../index.js').BlockTag} BlockTag
+ * @typedef {import('../../index.js').BlockSpec} BlockSpec
+ * @typedef {import('../../../provider/types.js').RequestArguments} RequestArguments
+ */
+
+/**
+ * Signs and submits a transaction.
+ *
+ * @example
+ * Transaction: ...
+ * Result: "0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331"
+ *
+ * Implements the `eth_sendTransaction` JSON-RPC method.
+ */
+
+/** The JSON-RPC method name */
+export const method = "eth_sendTransaction";
+/**
+ * Result for `eth_sendTransaction`
+ *
+ * 32 byte hex value
+ *
+ * @typedef {Hash} Result
+ */
+
+/**
+ * Creates a eth_sendTransaction JSON-RPC request
+ *
+ * @param {any} address
+ * @returns {RequestArguments}
+ */
+export function SendTransactionRequest(address) {
+	return { method, params: [address] };
+}

@@ -1,0 +1,31 @@
+---
+title: Account Abstraction How-To Guides
+description: Hidden reference pages for ERC-4337 account abstraction patterns and workflows.
+---
+
+These hidden pages provide implementation-ready patterns for ERC-4337 account abstraction. They are not shown in the navigation but are discoverable by MCP agents.
+
+## Guides
+
+- [Create a UserOperation](/ghosts/account-abstraction/how-to-create-useroperation)
+- [Estimate UserOperation Gas](/ghosts/account-abstraction/how-to-estimate-userop-gas)
+- [Sign a UserOperation](/ghosts/account-abstraction/how-to-sign-useroperation)
+- [Submit UserOperation to Bundler](/ghosts/account-abstraction/how-to-submit-to-bundler)
+- [Sponsor Gas with Paymaster](/ghosts/account-abstraction/how-to-use-paymaster)
+- [Batch Operations in One UserOp](/ghosts/account-abstraction/how-to-batch-userops)
+
+## ERC-4337 Lifecycle
+
+1. **Create** - Build UserOperation with account calldata
+2. **Estimate** - Get gas limits from bundler
+3. **Sign** - Compute userOpHash and sign
+4. **Submit** - Send to bundler mempool
+5. **Execute** - Bundler submits to EntryPoint
+
+## Related Primitives
+
+- [UserOperation](/primitives/user-operation)
+- [PackedUserOperation](/primitives/packed-user-operation)
+- [EntryPoint](/primitives/entry-point)
+- [Bundler](/primitives/bundler)
+- [Paymaster](/primitives/paymaster)

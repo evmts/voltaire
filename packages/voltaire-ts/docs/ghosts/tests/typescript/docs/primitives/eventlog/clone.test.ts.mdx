@@ -1,0 +1,186 @@
+---
+title: '[TS/JS] docs/primitives/eventlog/clone.test.ts'
+source: 'docs/primitives/eventlog/clone.test.ts'
+---
+
+> Auto-generated from test file: docs/primitives/eventlog/clone.test.ts
+
+```typescript
+/**
+ * Tests for docs/primitives/eventlog/clone.mdx
+ * Tests the code examples from the EventLog.clone() documentation
+ */
+
+import { describe, expect, it } from "vitest";
+
+describe("EventLog clone.mdx documentation examples", () => {
+	describe("Clone Behavior", () => {
+		it("creates deep copies of mutable fields", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const topic0 = Hash.from("0x" + "00".repeat(32));
+			const topic1 = Hash.from("0x" + "11".repeat(32));
+			const contractAddress = Address.Address.zero();
+
+			const original = EventLog.create({
+				address: contractAddress,
+				topics: [topic0, topic1],
+				data: new Uint8Array([1, 2, 3]),
+				blockNumber: 100n,
+			});
+
+			const cloned = EventLog.clone(original);
+
+			// Topics array is independent
+			expect(cloned.topics).toEqual(original.topics);
+			expect(cloned.topics).not.toBe(original.topics);
+
+			// Data is independent
+			cloned.data[0] = 99;
+			expect(original.data[0]).toBe(1); // unchanged
+			expect(cloned.data[0]).toBe(99);
+
+			// Immutable fields are shared (same reference for primitives)
+			expect(original.blockNumber).toBe(cloned.blockNumber);
+		});
+	});
+
+	describe("Cloning for Modification", () => {
+		it("clone before modifying preserves original", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const log = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [Hash.from("0x" + "00".repeat(32))],
+				data: new Uint8Array([1, 2, 3]),
+				removed: false,
+			});
+
+			// Clone before modifying
+			const modified = EventLog.clone(log);
+			// NOTE: Docs show (modified as any).removed = true
+			// This works since we have a plain object
+			(modified as any).removed = true;
+
+			expect(log.removed).toBe(false); // original unchanged
+			expect(modified.removed).toBe(true);
+		});
+	});
+
+	describe("Cloning Collection", () => {
+		it("clones array of logs using map", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const logs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([1]),
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "11".repeat(32))],
+					data: new Uint8Array([2]),
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "22".repeat(32))],
+					data: new Uint8Array([3]),
+				}),
+			];
+
+			// Clone all logs
+			// NOTE: Docs show logs.map(log => log.clone())
+			// Actual API: logs.map(log => EventLog.clone(log))
+			const cloned = logs.map((log) => EventLog.clone(log));
+
+			expect(cloned.length).toBe(3);
+			expect(cloned[0]).not.toBe(logs[0]);
+			expect(cloned[0]?.data).toEqual(logs[0]?.data);
+
+			// Or using static method directly
+			const cloned2 = logs.map(EventLog.clone);
+			expect(cloned2.length).toBe(3);
+		});
+	});
+
+	describe("Preventing Mutation", () => {
+		it("clone to prevent external mutations", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			type EventLogType = ReturnType<typeof EventLog.create>;
+
+			function processLog(log: EventLogType): number {
+				// Clone to prevent external mutations
+				// NOTE: Docs show log.clone()
+				// Actual API: EventLog.clone(log)
+				const safeCopy = EventLog.clone(log);
+
+				// Modify safely
+				safeCopy.data[0] = 255;
+
+				return safeCopy.data[0]!;
+			}
+
+			const original = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [Hash.from("0x" + "00".repeat(32))],
+				data: new Uint8Array([1, 2, 3]),
+			});
+
+			const result = processLog(original);
+
+			// original is unchanged
+			expect(original.data[0]).toBe(1);
+			expect(result).toBe(255);
+		});
+	});
+
+	describe("Clone vs reference", () => {
+		it("clone creates independent object", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const original = EventLog.create({
+				address: Address.Address.zero(),
+				topics: [Hash.from("0x" + "00".repeat(32))],
+				data: new Uint8Array([1, 2, 3]),
+				blockNumber: 100n,
+				logIndex: 5,
+			});
+
+			const cloned = EventLog.clone(original);
+
+			// Objects are equal but not identical
+			expect(cloned).toEqual(original);
+			expect(cloned).not.toBe(original);
+
+			// Topics array is copied
+			expect(cloned.topics).not.toBe(original.topics);
+
+			// Data array is copied
+			expect(cloned.data).not.toBe(original.data);
+		});
+	});
+});
+
+```

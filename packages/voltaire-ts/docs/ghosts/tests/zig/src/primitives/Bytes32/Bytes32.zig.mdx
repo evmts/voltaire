@@ -1,0 +1,389 @@
+---
+title: '[Zig] src/primitives/Bytes32/Bytes32.zig'
+source: 'src/primitives/Bytes32/Bytes32.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Bytes32/Bytes32.zig
+
+### fromBytes - valid 32 bytes
+
+```zig
+test "fromBytes - valid 32 bytes" {
+    const bytes = [_]u8{1} ** SIZE;
+    const b32 = fromBytes(&bytes);
+    try std.testing.expectEqual(SIZE, b32.len);
+    try std.testing.expectEqual(@as(u8, 1), b32[0]);
+    try std.testing.expectEqual(@as(u8, 1), b32[31]);
+}
+```
+
+### fromBytes - creates independent copy
+
+```zig
+test "fromBytes - creates independent copy" {
+    var bytes = [_]u8{42} ** SIZE;
+    const b32 = fromBytes(&bytes);
+    bytes[0] = 99;
+    try std.testing.expectEqual(@as(u8, 42), b32[0]);
+}
+```
+
+### fromHex - with 0x prefix
+
+```zig
+test "fromHex - with 0x prefix" {
+    const hex = "0x" ++ ("ab" ** SIZE);
+    const b32 = try fromHex(hex);
+    try std.testing.expectEqual(@as(u8, 0xab), b32[0]);
+    try std.testing.expectEqual(@as(u8, 0xab), b32[31]);
+}
+```
+
+### fromHex - without 0x prefix
+
+```zig
+test "fromHex - without 0x prefix" {
+    const hex = "cd" ** SIZE;
+    const b32 = try fromHex(hex);
+    try std.testing.expectEqual(@as(u8, 0xcd), b32[0]);
+}
+```
+
+### fromHex - invalid length
+
+```zig
+test "fromHex - invalid length" {
+    const hex = "0xaabb";
+    try std.testing.expectError(error.InvalidBytes32Length, fromHex(hex));
+}
+```
+
+### fromHex - invalid hex chars
+
+```zig
+test "fromHex - invalid hex chars" {
+    const hex = "0x" ++ ("zz" ** SIZE);
+    try std.testing.expectError(error.InvalidHexCharacter, fromHex(hex));
+}
+```
+
+### fromNumber - zero
+
+```zig
+test "fromNumber - zero" {
+    const b32 = fromNumber(0);
+    try std.testing.expect(isZero(&b32));
+}
+```
+
+### fromNumber - small number
+
+```zig
+test "fromNumber - small number" {
+    const b32 = fromNumber(42);
+    try std.testing.expectEqual(@as(u8, 0), b32[0]);
+    try std.testing.expectEqual(@as(u8, 42), b32[31]);
+}
+```
+
+### fromNumber - large number
+
+```zig
+test "fromNumber - large number" {
+    const b32 = fromNumber(0x123456789ABCDEF0);
+    try std.testing.expectEqual(@as(u8, 0x12), b32[24]);
+    try std.testing.expectEqual(@as(u8, 0xF0), b32[31]);
+}
+```
+
+### fromBigint - zero
+
+```zig
+test "fromBigint - zero" {
+    const b32 = fromBigint(0);
+    try std.testing.expect(isZero(&b32));
+}
+```
+
+### fromBigint - max u256
+
+```zig
+test "fromBigint - max u256" {
+    const max = std.math.maxInt(u256);
+    const b32 = fromBigint(max);
+    try std.testing.expectEqual(@as(u8, 0xff), b32[0]);
+    try std.testing.expectEqual(@as(u8, 0xff), b32[31]);
+}
+```
+
+### fromBigint - mid value
+
+```zig
+test "fromBigint - mid value" {
+    const b32 = fromBigint(0x1234567890ABCDEF);
+    try std.testing.expectEqual(@as(u8, 0x12), b32[24]);
+    try std.testing.expectEqual(@as(u8, 0xEF), b32[31]);
+}
+```
+
+### from - Bytes32 passthrough
+
+```zig
+test "from - Bytes32 passthrough" {
+    const b1: Bytes32 = ZERO;
+    const b2 = try from(b1);
+    try std.testing.expectEqualSlices(u8, &b1, &b2);
+}
+```
+
+### from - raw bytes
+
+```zig
+test "from - raw bytes" {
+    const bytes = [_]u8{42} ** SIZE;
+    const b32 = try from(bytes[0..]);
+    try std.testing.expectEqual(@as(u8, 42), b32[0]);
+}
+```
+
+### from - hex with 0x
+
+```zig
+test "from - hex with 0x" {
+    const hex = "0x" ++ ("ef" ** SIZE);
+    const b32 = try from(hex);
+    try std.testing.expectEqual(@as(u8, 0xef), b32[0]);
+}
+```
+
+### from - hex without 0x
+
+```zig
+test "from - hex without 0x" {
+    const hex = "12" ** SIZE;
+    const b32 = try from(hex);
+    try std.testing.expectEqual(@as(u8, 0x12), b32[0]);
+}
+```
+
+### zero - returns all zeros
+
+```zig
+test "zero - returns all zeros" {
+    const b32 = zero();
+    try std.testing.expect(isZero(&b32));
+}
+```
+
+### toBytes - returns correct slice
+
+```zig
+test "toBytes - returns correct slice" {
+    var b32: Bytes32 = undefined;
+    @memset(&b32, 0xaa);
+    const bytes = toBytes(&b32);
+    try std.testing.expectEqual(SIZE, bytes.len);
+    try std.testing.expectEqual(@as(u8, 0xaa), bytes[0]);
+    try std.testing.expectEqual(@as(u8, 0xaa), bytes[31]);
+}
+```
+
+### toUint8Array - same as toBytes
+
+```zig
+test "toUint8Array - same as toBytes" {
+    var b32: Bytes32 = undefined;
+    @memset(&b32, 0xbb);
+    const arr = toUint8Array(&b32);
+    try std.testing.expectEqual(SIZE, arr.len);
+    try std.testing.expectEqual(@as(u8, 0xbb), arr[0]);
+}
+```
+
+### toHex - with 0x prefix
+
+```zig
+test "toHex - with 0x prefix" {
+    var b32: Bytes32 = undefined;
+    @memset(&b32, 0xff);
+    const hex = try toHex(&b32, std.testing.allocator);
+    defer std.testing.allocator.free(hex);
+
+    try std.testing.expectEqual(2 + SIZE * 2, hex.len);
+    try std.testing.expect(std.mem.startsWith(u8, hex, "0x"));
+    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ ("ff" ** SIZE)));
+}
+```
+
+### toBigint - zero
+
+```zig
+test "toBigint - zero" {
+    const b32 = ZERO;
+    try std.testing.expectEqual(@as(u256, 0), toBigint(&b32));
+}
+```
+
+### toBigint - small value
+
+```zig
+test "toBigint - small value" {
+    var b32 = ZERO;
+    b32[31] = 42;
+    try std.testing.expectEqual(@as(u256, 42), toBigint(&b32));
+}
+```
+
+### toBigint - roundtrip
+
+```zig
+test "toBigint - roundtrip" {
+    const value: u256 = 0x123456789ABCDEF0;
+    const b32 = fromBigint(value);
+    try std.testing.expectEqual(value, toBigint(&b32));
+}
+```
+
+### toBigint - max u256
+
+```zig
+test "toBigint - max u256" {
+    const max = std.math.maxInt(u256);
+    const b32 = fromBigint(max);
+    try std.testing.expectEqual(max, toBigint(&b32));
+}
+```
+
+### toHash - conversion
+
+```zig
+test "toHash - conversion" {
+    var b32: Bytes32 = undefined;
+    @memset(&b32, 0xcc);
+    const hash = toHash(&b32);
+    try std.testing.expectEqual(@as(u8, 0xcc), hash[0]);
+    try std.testing.expectEqual(@as(u8, 0xcc), hash[31]);
+}
+```
+
+### toAddress - extracts last 20 bytes
+
+```zig
+test "toAddress - extracts last 20 bytes" {
+    var b32: Bytes32 = ZERO;
+    // Set last 20 bytes to 0xff
+    for (SIZE - Address.SIZE..SIZE) |i| {
+        b32[i] = 0xff;
+    }
+    const addr = toAddress(&b32);
+    try std.testing.expectEqual(@as(u8, 0), b32[0]); // First bytes still zero
+    try std.testing.expectEqual(@as(u8, 0xff), addr[0]); // Address is last 20
+    try std.testing.expectEqual(@as(u8, 0xff), addr[19]);
+}
+```
+
+### equals - same
+
+```zig
+test "equals - same" {
+    const b32: Bytes32 = [_]u8{42} ** SIZE;
+    try std.testing.expect(equals(&b32, &b32));
+}
+```
+
+### equals - identical
+
+```zig
+test "equals - identical" {
+    const b1: Bytes32 = [_]u8{99} ** SIZE;
+    const b2: Bytes32 = [_]u8{99} ** SIZE;
+    try std.testing.expect(equals(&b1, &b2));
+}
+```
+
+### equals - different
+
+```zig
+test "equals - different" {
+    const b1: Bytes32 = [_]u8{1} ** SIZE;
+    const b2: Bytes32 = [_]u8{2} ** SIZE;
+    try std.testing.expect(!equals(&b1, &b2));
+}
+```
+
+### compare - equal
+
+```zig
+test "compare - equal" {
+    const b1: Bytes32 = [_]u8{42} ** SIZE;
+    const b2: Bytes32 = [_]u8{42} ** SIZE;
+    try std.testing.expectEqual(@as(i8, 0), compare(&b1, &b2));
+}
+```
+
+### compare - less
+
+```zig
+test "compare - less" {
+    var b1: Bytes32 = [_]u8{42} ** SIZE;
+    var b2: Bytes32 = [_]u8{42} ** SIZE;
+    b1[0] = 1;
+    b2[0] = 2;
+    try std.testing.expectEqual(@as(i8, -1), compare(&b1, &b2));
+}
+```
+
+### compare - greater
+
+```zig
+test "compare - greater" {
+    var b1: Bytes32 = [_]u8{42} ** SIZE;
+    var b2: Bytes32 = [_]u8{42} ** SIZE;
+    b1[0] = 3;
+    b2[0] = 2;
+    try std.testing.expectEqual(@as(i8, 1), compare(&b1, &b2));
+}
+```
+
+### isZero - zero
+
+```zig
+test "isZero - zero" {
+    const b32: Bytes32 = ZERO;
+    try std.testing.expect(isZero(&b32));
+}
+```
+
+### isZero - non-zero
+
+```zig
+test "isZero - non-zero" {
+    var b32: Bytes32 = ZERO;
+    b32[31] = 1;
+    try std.testing.expect(!isZero(&b32));
+}
+```
+
+### size - always 32
+
+```zig
+test "size - always 32" {
+    const b32: Bytes32 = ZERO;
+    try std.testing.expectEqual(@as(usize, 32), size(&b32));
+}
+```
+
+### clone - creates independent copy
+
+```zig
+test "clone - creates independent copy" {
+    var original: Bytes32 = [_]u8{42} ** SIZE;
+    var copy = clone(&original);
+    try std.testing.expect(equals(&original, &copy));
+
+    // Modify original
+    original[0] = 99;
+    try std.testing.expect(!equals(&original, &copy));
+    try std.testing.expectEqual(@as(u8, 42), copy[0]);
+}
+```

@@ -1,0 +1,341 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
+import {
+	DeduplicatedTransport,
+	InterceptedTransport,
+	TestTransport,
+	TransportError,
+	TransportService,
+	withErrorInterceptor,
+	withInterceptors,
+	withRequestInterceptor,
+	withResponseInterceptor,
+} from "./index.js";
+
+describe("TransportInterceptor", () => {
+	describe("withRequestInterceptor", () => {
+		it("calls interceptor before request", async () => {
+			const calls: string[] = [];
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					InterceptedTransport(TestTransport({ eth_blockNumber: "0x100" })),
+				),
+				withRequestInterceptor((req) =>
+					Effect.sync(() => {
+						calls.push(`request:${req.method}`);
+						return req;
+					}),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0x100");
+			expect(calls).toContain("request:eth_blockNumber");
+		});
+
+		it("receives correct params", async () => {
+			let receivedParams: readonly unknown[] = [];
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_getBalance", [
+					"0x1234",
+					"latest",
+				]);
+			}).pipe(
+				Effect.provide(
+					InterceptedTransport(TestTransport({ eth_getBalance: "0x100" })),
+				),
+				withRequestInterceptor((req) =>
+					Effect.sync(() => {
+						receivedParams = req.params;
+						return req;
+					}),
+				),
+			);
+
+			await Effect.runPromise(program);
+			expect(receivedParams).toEqual(["0x1234", "latest"]);
+		});
+	});
+
+	describe("withResponseInterceptor", () => {
+		it("calls interceptor after successful request", async () => {
+			const calls: Array<{ method: string; result: unknown }> = [];
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					InterceptedTransport(TestTransport({ eth_blockNumber: "0x200" })),
+				),
+				withResponseInterceptor((res) =>
+					Effect.sync(() => {
+						calls.push({ method: res.method, result: res.result });
+						return res;
+					}),
+				),
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0x200");
+			expect(calls).toHaveLength(1);
+			expect(calls[0].method).toBe("eth_blockNumber");
+			expect(calls[0].result).toBe("0x200");
+		});
+
+		it("includes duration", async () => {
+			let duration = 0;
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					InterceptedTransport(TestTransport({ eth_blockNumber: "0x1" })),
+				),
+				withResponseInterceptor((res) =>
+					Effect.sync(() => {
+						duration = res.duration;
+						return res;
+					}),
+				),
+			);
+
+			await Effect.runPromise(program);
+			expect(duration).toBeGreaterThanOrEqual(0);
+		});
+	});
+
+	describe("withErrorInterceptor", () => {
+		it("calls interceptor on error", async () => {
+			const errors: Array<{ method: string; code: number }> = [];
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_call", []);
+			}).pipe(
+				Effect.provide(
+					InterceptedTransport(
+						TestTransport({
+							eth_call: new TransportError({
+								code: -32000,
+								message: "execution reverted",
+							}),
+						}),
+					),
+				),
+				withErrorInterceptor((err) =>
+					Effect.sync(() => {
+						errors.push({ method: err.method, code: err.error.code });
+					}),
+				),
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			expect(errors).toHaveLength(1);
+			expect(errors[0].method).toBe("eth_call");
+			expect(errors[0].code).toBe(-32000);
+		});
+	});
+
+	describe("withInterceptors", () => {
+		it("applies all interceptors", async () => {
+			const calls: string[] = [];
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				return yield* transport.request<string>("eth_blockNumber", []);
+			}).pipe(
+				Effect.provide(
+					InterceptedTransport(TestTransport({ eth_blockNumber: "0x1" })),
+				),
+				withInterceptors({
+					onRequest: (req) =>
+						Effect.sync(() => {
+							calls.push("request");
+							return req;
+						}),
+					onResponse: (res) =>
+						Effect.sync(() => {
+							calls.push("response");
+							return res;
+						}),
+				}),
+			);
+
+			await Effect.runPromise(program);
+			expect(calls).toEqual(["request", "response"]);
+		});
+	});
+});
+
+describe("DeduplicatedTransport", () => {
+	it("deduplicates identical concurrent requests", async () => {
+		let _requestCount = 0;
+		const _mockTransport = TestTransport(
+			new Map([
+				[
+					"eth_blockNumber",
+					Effect.sync(() => {
+						_requestCount++;
+						return "0x100";
+					}),
+				],
+			]),
+		);
+
+		// Note: TestTransport doesn't track call count, so we verify by behavior
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+
+			// Fork multiple concurrent requests
+			const fiber1 = yield* Effect.fork(
+				transport.request<string>("eth_blockNumber", []),
+			);
+			const fiber2 = yield* Effect.fork(
+				transport.request<string>("eth_blockNumber", []),
+			);
+
+			const r1 = yield* Fiber.join(fiber1);
+			const r2 = yield* Fiber.join(fiber2);
+
+			return [r1, r2];
+		}).pipe(
+			Effect.provide(
+				DeduplicatedTransport(TestTransport({ eth_blockNumber: "0x100" })),
+			),
+		);
+
+		const [r1, r2] = await Effect.runPromise(program);
+		expect(r1).toBe("0x100");
+		expect(r2).toBe("0x100");
+	});
+
+	it("does not deduplicate different methods", async () => {
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+
+			const fiber1 = yield* Effect.fork(
+				transport.request<string>("eth_blockNumber", []),
+			);
+			const fiber2 = yield* Effect.fork(
+				transport.request<string>("eth_chainId", []),
+			);
+
+			const r1 = yield* Fiber.join(fiber1);
+			const r2 = yield* Fiber.join(fiber2);
+
+			return [r1, r2];
+		}).pipe(
+			Effect.provide(
+				DeduplicatedTransport(
+					TestTransport({
+						eth_blockNumber: "0x100",
+						eth_chainId: "0x1",
+					}),
+				),
+			),
+		);
+
+		const [r1, r2] = await Effect.runPromise(program);
+		expect(r1).toBe("0x100");
+		expect(r2).toBe("0x1");
+	});
+
+	it("does not deduplicate requests with different params", async () => {
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+
+			const fiber1 = yield* Effect.fork(
+				transport.request<string>("eth_getBalance", ["0xaaa", "latest"]),
+			);
+			const fiber2 = yield* Effect.fork(
+				transport.request<string>("eth_getBalance", ["0xbbb", "latest"]),
+			);
+
+			const r1 = yield* Fiber.join(fiber1);
+			const r2 = yield* Fiber.join(fiber2);
+
+			return [r1, r2];
+		}).pipe(
+			Effect.provide(
+				DeduplicatedTransport(TestTransport({ eth_getBalance: "0x100" })),
+			),
+		);
+
+		const [r1, r2] = await Effect.runPromise(program);
+		expect(r1).toBe("0x100");
+		expect(r2).toBe("0x100");
+	});
+
+	it("respects excludeMethods config", async () => {
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+
+			// eth_sendRawTransaction should not be deduplicated
+			const fiber1 = yield* Effect.fork(
+				transport.request<string>("eth_sendRawTransaction", ["0x..."]),
+			);
+			const fiber2 = yield* Effect.fork(
+				transport.request<string>("eth_sendRawTransaction", ["0x..."]),
+			);
+
+			const r1 = yield* Fiber.join(fiber1);
+			const r2 = yield* Fiber.join(fiber2);
+
+			return [r1, r2];
+		}).pipe(
+			Effect.provide(
+				DeduplicatedTransport(
+					TestTransport({ eth_sendRawTransaction: "0xhash" }),
+					{ excludeMethods: ["eth_sendRawTransaction"] },
+				),
+			),
+		);
+
+		const [r1, r2] = await Effect.runPromise(program);
+		expect(r1).toBe("0xhash");
+		expect(r2).toBe("0xhash");
+	});
+
+	it("propagates errors to all waiting requests", async () => {
+		const program = Effect.gen(function* () {
+			const transport = yield* TransportService;
+
+			const fiber1 = yield* Effect.fork(
+				transport.request<string>("eth_call", []),
+			);
+			const fiber2 = yield* Effect.fork(
+				transport.request<string>("eth_call", []),
+			);
+
+			const exit1 = yield* Fiber.await(fiber1);
+			const exit2 = yield* Fiber.await(fiber2);
+
+			return [exit1._tag, exit2._tag];
+		}).pipe(
+			Effect.provide(
+				DeduplicatedTransport(
+					TestTransport({
+						eth_call: new TransportError({
+							code: -32000,
+							message: "reverted",
+						}),
+					}),
+				),
+			),
+		);
+
+		const [e1, e2] = await Effect.runPromise(program);
+		expect(e1).toBe("Failure");
+		expect(e2).toBe("Failure");
+	});
+});

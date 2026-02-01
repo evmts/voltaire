@@ -1,0 +1,3 @@
+// Stub module for Playground type imports
+export default {};
+export const __placeholder = true;

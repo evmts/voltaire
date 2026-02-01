@@ -1,0 +1,137 @@
+---
+title: Overview
+description: Contract creation bytecode (constructor + runtime)
+---
+
+## Type Definition
+
+[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) representing contract creation bytecode deployed during contract creation transactions.
+
+```typescript
+import type { brand } from '@tevm/voltaire/brand';
+
+export type InitCodeType = Uint8Array & {
+  readonly [brand]: "InitCode";
+};
+```
+
+Init code contains:
+1. Constructor logic
+2. Constructor arguments (if any)
+3. Runtime bytecode (returned by constructor)
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Create">
+
+```typescript
+import * as InitCode from '@tevm/voltaire/InitCode';
+
+// From hex string
+const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
+
+// From Uint8Array
+const init = InitCode.from(new Uint8Array([0x60, 0x80, ...]));
+```
+
+</Tab>
+<Tab title="Extract">
+
+```typescript
+// Extract runtime code at known offset
+const runtime = InitCode.extractRuntime(init, constructorLength);
+
+// Estimate gas cost
+const gas = InitCode.estimateGas(init);
+console.log(`Creation gas: ${gas}`);
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Create from hex string or Uint8Array
+- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
+
+### Analysis
+
+- [`extractRuntime(init, offset)`](./extractRuntime) - Extract runtime code at offset
+- [`estimateGas(init)`](./estimateGas) - Estimate creation gas cost
+
+### Utilities
+
+- [`toHex(init)`](./toHex) - Convert to hex string
+- [`equals(a, b)`](./equals) - Compare equality
+
+## Usage Patterns
+
+### Deploying Contract
+
+```typescript
+import * as InitCode from '@tevm/voltaire/InitCode';
+
+// Get init code from compilation output
+const init = InitCode.from(compiledOutput.bytecode);
+
+// Estimate gas
+const estimatedGas = InitCode.estimateGas(init);
+console.log(`Estimated gas: ${estimatedGas}`);
+
+// Deploy
+const tx = await signer.sendTransaction({
+  data: InitCode.toHex(init),
+  gasLimit: estimatedGas + 50000n, // Add buffer
+});
+```
+
+### Analyzing Creation Bytecode
+
+```typescript
+import * as InitCode from '@tevm/voltaire/InitCode';
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const init = InitCode.from(creationBytecode);
+
+// Analyze constructor
+const analysis = Bytecode.analyze(init);
+console.log(`Constructor instructions: ${analysis.instructions.length}`);
+
+// Find constructor length (usually ends with RETURN or STOP)
+// then extract runtime code
+const runtime = InitCode.extractRuntime(init, constructorLength);
+```
+
+### Gas Estimation
+
+```typescript
+import * as InitCode from '@tevm/voltaire/InitCode';
+
+const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
+
+// Base gas cost (data + creation)
+const gas = InitCode.estimateGas(init);
+
+// Gas breakdown:
+// - 21000: Base transaction cost
+// - 32000: CREATE operation
+// - 16 per non-zero byte
+// - 4 per zero byte
+console.log(`Total creation gas: ${gas}`);
+```
+
+## Related
+
+- [ContractCode](/primitives/contract-code) - Deployed contract bytecode
+- [RuntimeCode](/primitives/runtime-code) - Pure runtime bytecode
+- [Bytecode](/primitives/bytecode) - General bytecode analysis
+- [Transaction](/primitives/transaction) - Transaction types
+
+## Specification
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Contract creation semantics
+- [EVM Opcodes](https://www.evm.codes/) - CREATE and CREATE2 operations
+- [EIP-2028](https://eips.ethereum.org/EIPS/eip-2028) - Calldata gas cost reduction

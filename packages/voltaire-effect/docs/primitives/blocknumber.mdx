@@ -1,0 +1,36 @@
+---
+title: BlockNumber
+description: Non-negative Ethereum block number
+---
+
+Non-negative bigint representing a block number.
+
+```typescript
+import * as BlockNumber from 'voltaire-effect/primitives/BlockNumber'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema: number or bigint
+const blockNum = Schema.decodeSync(BlockNumber.Number)(19000000)
+const fromBigInt = Schema.decodeSync(BlockNumber.BigInt)(19000000n)
+
+// Effect
+const program = BlockNumber.from(19000000n)
+// Effect.Effect<BlockNumberType, InvalidBlockNumberError>
+```
+
+## Usage
+
+```typescript
+const validateRange = (start: bigint, end: bigint) =>
+  Effect.gen(function* () {
+    const startBlock = yield* BlockNumber.from(start)
+    const endBlock = yield* BlockNumber.from(end)
+    if (startBlock > endBlock) {
+      return yield* Effect.fail(new Error('Start must be <= end'))
+    }
+    return { start: startBlock, end: endBlock }
+  })
+```
+
+Fails on negative values.

@@ -1,0 +1,35 @@
+---
+title: Uint128
+description: 128-bit unsigned integer (0 to 2¹²⁸-1)
+---
+
+128-bit unsigned integer with overflow checking.
+
+```typescript
+import * as Uint128 from 'voltaire-effect/Uint128'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const value = Schema.decodeSync(Uint128.BigInt)(1000000000000n)
+
+// Effect with arithmetic
+const program = Effect.gen(function* () {
+  const a = yield* Uint128.from(1000n)
+  const b = yield* Uint128.from(500n)
+  return yield* Uint128.plus(a, b) // 1500n
+})
+```
+
+## API
+
+| Function | Returns |
+|----------|---------|
+| `toBigInt(v)` | bigint |
+| `toNumber(v)` | number |
+| `toHex(v)` | hex string |
+| `equals(a, b)` | boolean |
+
+## Constants
+
+`MAX`, `MIN`, `ZERO`, `ONE`

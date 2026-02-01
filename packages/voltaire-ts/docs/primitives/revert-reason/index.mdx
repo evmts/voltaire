@@ -1,0 +1,77 @@
+---
+title: "RevertReason"
+description: "Decoded revert information from contract execution"
+---
+
+# RevertReason
+
+Union type representing different types of contract reverts: Error(string), Panic(uint256), custom errors, or unknown reverts.
+
+## Type
+
+```typescript
+type RevertReasonType =
+  | { type: "Error"; message: string }
+  | { type: "Panic"; code: number; description: string }
+  | { type: "Custom"; selector: string; data: Uint8Array }
+  | { type: "Unknown"; data: Uint8Array };
+```
+
+## Selectors
+
+```typescript
+ERROR_SELECTOR = "0x08c379a0";  // Error(string)
+PANIC_SELECTOR = "0x4e487b71";  // Panic(uint256)
+```
+
+## Panic Codes
+
+| Code | Description |
+|------|-------------|
+| 0x00 | Generic panic |
+| 0x01 | Assertion failed |
+| 0x11 | Arithmetic overflow/underflow |
+| 0x12 | Division by zero |
+| 0x21 | Invalid enum value |
+| 0x22 | Invalid storage encoding |
+| 0x31 | Array pop on empty array |
+| 0x32 | Array out of bounds |
+| 0x41 | Out of memory |
+| 0x51 | Invalid internal function |
+
+## Construction
+
+```typescript
+import * as RevertReason from '@tevm/voltaire/primitives/RevertReason';
+import * as ReturnData from '@tevm/voltaire/primitives/ReturnData';
+
+// From return data
+const returnData = ReturnData.fromHex("0x08c379a0...");
+const reason = RevertReason.fromReturnData(returnData);
+```
+
+## Example
+
+```typescript
+import * as RevertReason from '@tevm/voltaire/primitives/RevertReason';
+
+const reason = RevertReason.from("0x08c379a0...");
+
+switch (reason.type) {
+  case "Error":
+    console.log("Error:", reason.message);
+    break;
+  case "Panic":
+    console.log(`Panic(0x${reason.code.toString(16)}): ${reason.description}`);
+    break;
+  case "Custom":
+    console.log("Custom error:", reason.selector);
+    break;
+  case "Unknown":
+    console.log("Unknown revert");
+    break;
+}
+
+// Format as string
+console.log(RevertReason.toString(reason));
+```

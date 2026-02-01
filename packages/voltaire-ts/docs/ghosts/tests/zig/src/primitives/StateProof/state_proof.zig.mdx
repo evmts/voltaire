@@ -1,0 +1,471 @@
+---
+title: '[Zig] src/primitives/StateProof/state_proof.zig'
+source: 'src/primitives/StateProof/state_proof.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/StateProof/state_proof.zig
+
+### StateProof.init - creates non-owning proof
+
+```zig
+test "StateProof.init - creates non-owning proof" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000, // 1 ETH
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(Address.equals(addr, proof.address));
+    try std.testing.expectEqual(@as(u256, 1000000000000000000), proof.balance);
+    try std.testing.expectEqual(@as(u64, 5), proof.nonce);
+    try std.testing.expectEqual(false, proof._owned);
+}
+```
+
+### StateProof.from - creates owning copy
+
+```zig
+test "StateProof.from - creates owning copy" {
+    const allocator = std.testing.allocator;
+
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof = try StateProof.from(
+        allocator,
+        addr,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+    defer proof.deinit(allocator);
+
+    try std.testing.expectEqual(@as(u256, 1000000000000000000), proof.balance);
+    try std.testing.expectEqual(true, proof._owned);
+}
+```
+
+### StateProof.forEOA - creates EOA proof
+
+```zig
+test "StateProof.forEOA - creates EOA proof" {
+    const allocator = std.testing.allocator;
+
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+
+    const proof = try StateProof.forEOA(
+        allocator,
+        addr,
+        &account_proof,
+        1000000000000000000,
+        5,
+    );
+    defer proof.deinit(allocator);
+
+    try std.testing.expect(proof.isEOA());
+    try std.testing.expect(!proof.isContract());
+    try std.testing.expect(Hash.equals(&proof.code_hash, &State.EMPTY_CODE_HASH));
+    try std.testing.expect(Hash.equals(&proof.storage_hash, &State.EMPTY_TRIE_ROOT));
+}
+```
+
+### StateProof.equals - identical proofs
+
+```zig
+test "StateProof.equals - identical proofs" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof1 = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+    const proof2 = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(StateProof.equals(&proof1, &proof2));
+}
+```
+
+### StateProof.equals - different addresses
+
+```zig
+test "StateProof.equals - different addresses" {
+    const addr1 = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const addr2 = try Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof1 = StateProof.init(
+        addr1,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+    const proof2 = StateProof.init(
+        addr2,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(!StateProof.equals(&proof1, &proof2));
+}
+```
+
+### StateProof.equals - different balances
+
+```zig
+test "StateProof.equals - different balances" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof1 = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+    const proof2 = StateProof.init(
+        addr,
+        &account_proof,
+        2000000000000000000, // Different balance
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(!StateProof.equals(&proof1, &proof2));
+}
+```
+
+### StateProof.equals - different nonces
+
+```zig
+test "StateProof.equals - different nonces" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof1 = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+    const proof2 = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        6, // Different nonce
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(!StateProof.equals(&proof1, &proof2));
+}
+```
+
+### StateProof.isEmptyAccount - empty account
+
+```zig
+test "StateProof.isEmptyAccount - empty account" {
+    const addr = try Address.fromHex("0x0000000000000000000000000000000000000000");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof = StateProof.init(
+        addr,
+        &account_proof,
+        0, // Zero balance
+        State.EMPTY_CODE_HASH,
+        0, // Zero nonce
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(proof.isEmptyAccount());
+}
+```
+
+### StateProof.isEmptyAccount - non-empty account
+
+```zig
+test "StateProof.isEmptyAccount - non-empty account" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000, // Has balance
+        State.EMPTY_CODE_HASH,
+        0,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(!proof.isEmptyAccount());
+}
+```
+
+### StateProof.isContract - contract account
+
+```zig
+test "StateProof.isContract - contract account" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+    const contract_code_hash = [_]u8{0xab} ** 32; // Non-empty code hash
+
+    const proof = StateProof.init(
+        addr,
+        &account_proof,
+        0,
+        contract_code_hash,
+        1,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    try std.testing.expect(proof.isContract());
+    try std.testing.expect(!proof.isEOA());
+}
+```
+
+### StateProof.storageProofCount - returns correct count
+
+```zig
+test "StateProof.storageProofCount - returns correct count" {
+    const allocator = std.testing.allocator;
+
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+
+    // Create some storage proofs
+    const storage_addr = [_]u8{0x42} ** 20;
+    const key1 = State.StorageKey{ .address = storage_addr, .slot = 0 };
+    const key2 = State.StorageKey{ .address = storage_addr, .slot = 1 };
+    const value = @import("../StorageValue/StorageValue.zig").ZERO;
+    const empty_proof: []const []const u8 = &.{};
+
+    const sp1 = StorageProof.init(key1, value, empty_proof);
+    const sp2 = StorageProof.init(key2, value, empty_proof);
+    const storage_proofs = [_]StorageProof{ sp1, sp2 };
+
+    const proof = try StateProof.from(
+        allocator,
+        addr,
+        &account_proof,
+        0,
+        State.EMPTY_CODE_HASH,
+        0,
+        State.EMPTY_TRIE_ROOT,
+        &storage_proofs,
+    );
+    defer proof.deinit(allocator);
+
+    try std.testing.expectEqual(@as(usize, 2), proof.storageProofCount());
+}
+```
+
+### StateProof.getStorageProofForSlot - finds existing slot
+
+```zig
+test "StateProof.getStorageProofForSlot - finds existing slot" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+
+    const storage_addr = [_]u8{0x42} ** 20;
+    const key1 = State.StorageKey{ .address = storage_addr, .slot = 42 };
+    const key2 = State.StorageKey{ .address = storage_addr, .slot = 100 };
+    const value = @import("../StorageValue/StorageValue.zig").ZERO;
+    const empty_proof: []const []const u8 = &.{};
+
+    const sp1 = StorageProof.init(key1, value, empty_proof);
+    const sp2 = StorageProof.init(key2, value, empty_proof);
+    const storage_proofs = [_]StorageProof{ sp1, sp2 };
+
+    const proof = StateProof.init(
+        addr,
+        &account_proof,
+        0,
+        State.EMPTY_CODE_HASH,
+        0,
+        State.EMPTY_TRIE_ROOT,
+        &storage_proofs,
+    );
+
+    const found = proof.getStorageProofForSlot(42);
+    try std.testing.expect(found != null);
+    try std.testing.expectEqual(@as(u256, 42), found.?.key.slot);
+
+    const not_found = proof.getStorageProofForSlot(999);
+    try std.testing.expect(not_found == null);
+}
+```
+
+### StateProof.computeAddressHash - computes keccak256 of address
+
+```zig
+test "StateProof.computeAddressHash - computes keccak256 of address" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof = StateProof.init(
+        addr,
+        &account_proof,
+        0,
+        State.EMPTY_CODE_HASH,
+        0,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    const hash = proof.computeAddressHash();
+    const expected = Hash.keccak256(&addr.bytes);
+
+    try std.testing.expect(Hash.equals(&hash, &expected));
+}
+```
+
+### StateProof.clone - creates independent copy
+
+```zig
+test "StateProof.clone - creates independent copy" {
+    const allocator = std.testing.allocator;
+
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const original = StateProof.init(
+        addr,
+        &account_proof,
+        1000000000000000000,
+        State.EMPTY_CODE_HASH,
+        5,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    const cloned = try original.clone(allocator);
+    defer cloned.deinit(allocator);
+
+    try std.testing.expect(StateProof.equals(&original, &cloned));
+    try std.testing.expectEqual(true, cloned._owned);
+}
+```
+
+### StateProof.from - rejects too deep proof
+
+```zig
+test "StateProof.from - rejects too deep proof" {
+    const allocator = std.testing.allocator;
+
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const storage_proofs: []const StorageProof = &.{};
+
+    // Create array of 257 nodes (exceeds MAX_PROOF_DEPTH)
+    var nodes: [MAX_PROOF_DEPTH + 1][32]u8 = undefined;
+    var node_slices: [MAX_PROOF_DEPTH + 1][]const u8 = undefined;
+    for (&nodes, 0..) |*node, i| {
+        @memset(node, @as(u8, @intCast(i % 256)));
+        node_slices[i] = node;
+    }
+
+    const result = StateProof.from(
+        allocator,
+        addr,
+        &node_slices,
+        0,
+        State.EMPTY_CODE_HASH,
+        0,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+    try std.testing.expectError(error.ProofTooDeep, result);
+}
+```
+
+### StateProof.addressHex - returns hex string
+
+```zig
+test "StateProof.addressHex - returns hex string" {
+    const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
+    const node1 = [_]u8{0xf8} ** 32;
+    const account_proof = [_][]const u8{&node1};
+    const storage_proofs: []const StorageProof = &.{};
+
+    const proof = StateProof.init(
+        addr,
+        &account_proof,
+        0,
+        State.EMPTY_CODE_HASH,
+        0,
+        State.EMPTY_TRIE_ROOT,
+        storage_proofs,
+    );
+
+    const hex = proof.addressHex();
+    try std.testing.expect(std.mem.startsWith(u8, &hex, "0x"));
+    try std.testing.expectEqual(@as(usize, 42), hex.len);
+}
+```

@@ -1,0 +1,225 @@
+---
+title: Address.isValid
+description: Validate address string format
+---
+
+
+<Tabs>
+
+</Tabs>
+
+## Validation Rules
+
+**With `0x` prefix:**
+- Exactly 42 characters total
+- First 2 characters: `0x`
+- Next 40 characters: valid hex (0-9, a-f, A-F)
+
+**Without `0x` prefix:**
+- Exactly 40 characters total
+- All characters: valid hex (0-9, a-f, A-F)
+
+**Case insensitive:**
+- Accepts lowercase, uppercase, or mixed case
+- Does not validate EIP-55 checksum
+
+## Use Cases
+
+### Input Validation
+
+Validate user input before parsing:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+function parseUserAddress(input: string): Address {
+  if (!Address.isValid(input)) {
+    throw new Error('Invalid address format')
+  }
+
+  return Address(input)
+}
+
+// Safe to parse
+try {
+  const addr = parseUserAddress(userInput)
+  console.log('Address:', addr.toHex())
+} catch (e) {
+  console.error('Invalid input:', e.message)
+}
+```
+
+### Form Validation
+
+Validate addresses in forms:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+function validateAddressField(value: string): string | null {
+  if (!value) {
+    return 'Address is required'
+  }
+
+  if (!Address.isValid(value)) {
+    return 'Invalid address format. Expected 40 hex characters with optional 0x prefix.'
+  }
+
+  return null // Valid
+}
+
+// React example
+function AddressInput() {
+  const [value, setValue] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value
+    setValue(input)
+    setError(validateAddressField(input))
+  }
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={value}
+        onChange={handleChange}
+        placeholder="0x..."
+      />
+      {error && <span className="error">{error}</span>}
+    </div>
+  )
+}
+```
+
+### API Input Validation
+
+Validate addresses in API requests:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+app.post('/transfer', (req, res) => {
+  const { to, amount } = req.body
+
+  if (!Address.isValid(to)) {
+    return res.status(400).json({
+      error: 'Invalid recipient address'
+    })
+  }
+
+  const recipient = Address(to)
+  // Process transfer...
+})
+```
+
+### Defensive Programming
+
+Check before processing:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+function processAddresses(addresses: string[]) {
+  const valid = addresses.filter(Address.isValid)
+  const invalid = addresses.filter(addr => !Address.isValid(addr))
+
+  console.log(`Valid: ${valid.length}, Invalid: ${invalid.length}`)
+
+  return valid.map(Address.fromHex)
+}
+```
+
+## Common Invalid Inputs
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Too short
+console.log(Address.isValid("0x742d35"))                    // false
+
+// Too long
+console.log(Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3XX")) // false
+
+// Invalid characters
+console.log(Address.isValid("0xGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")) // false
+console.log(Address.isValid("0x742d35Cc 6634C0532925a3b844Bc9e7595f251e3")) // false (space)
+
+// Wrong prefix
+console.log(Address.isValid("x742d35Cc6634C0532925a3b844Bc9e7595f251e3"))  // false
+
+// Empty
+console.log(Address.isValid(""))                            // false
+console.log(Address.isValid("0x"))                          // false
+```
+
+## Validation Without Checksum
+
+`isValid()` does NOT validate EIP-55 checksums:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Valid format, but wrong checksum
+const addr = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"  // all lowercase
+console.log(Address.isValid(addr))          // true (format valid)
+console.log(Address.isValidChecksum(addr))  // false (checksum incorrect)
+
+// To validate checksum, use isValidChecksum()
+if (Address.isValid(addr) && Address.isValidChecksum(addr)) {
+  console.log('Valid address with correct checksum')
+}
+```
+
+## Performance
+
+**Fast validation:** Checks length and character ranges only.
+
+**No parsing:** Does not allocate or parse hex values.
+
+**Use before parsing:** Validate first to avoid exceptions:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Efficient: validate before parsing
+if (Address.isValid(input)) {
+  const addr = Address(input)
+  // Process addr...
+}
+
+// Inefficient: use try/catch for validation
+try {
+  const addr = Address(input)
+  // Process addr...
+} catch (e) {
+  // Handle invalid format
+}
+```
+
+## Type Narrowing
+
+Use as type guard in TypeScript:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+function processInput(input: string | Address) {
+  if (typeof input === 'string') {
+    if (!Address.isValid(input)) {
+      throw new Error('Invalid address string')
+    }
+    return Address(input)
+  }
+
+  return input // Already an Address
+}
+```
+
+## See Also
+
+- [isValidChecksum](/primitives/address/is-valid-checksum) - Validate EIP-55 checksum
+- [fromHex](/primitives/address/from-hex) - Parse address from hex
+- [from](/primitives/address/from) - Universal constructor
+- [EIP-55: Mixed-case checksum](https://eips.ethereum.org/EIPS/eip-55)

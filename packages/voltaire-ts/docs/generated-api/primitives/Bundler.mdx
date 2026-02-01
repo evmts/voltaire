@@ -1,0 +1,253 @@
+---
+title: "primitives/Bundler"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Bundler
+
+# primitives/Bundler
+
+## Type Aliases
+
+### BundlerType
+
+> **BundlerType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Bundler/BundlerType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundler/BundlerType.ts#L13)
+
+Bundler address type - ERC-4337 bundler node
+
+Bundlers aggregate user operations and submit them to the EntryPoint contract.
+They monitor the mempool, simulate operations, and bundle them into transactions.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Bundler"`
+
+#### See
+
+ - https://eips.ethereum.org/EIPS/eip-4337
+ - https://voltaire.tevm.sh/primitives/bundler for Bundler documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### Bundler
+
+> `const` **Bundler**: `object`
+
+Defined in: [src/primitives/Bundler/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundler/index.ts#L31)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`bundler1`, `bundler2`) => `boolean`
+
+###### Parameters
+
+###### bundler1
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### bundler2
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`BundlerType`](#bundlertype)
+
+Create Bundler from address input
+
+###### Parameters
+
+###### value
+
+Address value
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+[`BundlerType`](#bundlertype)
+
+Bundler address
+
+###### Throws
+
+If address format is invalid
+
+###### Example
+
+```typescript
+const bundler = Bundler.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+```
+
+##### toHex()
+
+> **toHex**: (`bundler`) => `string`
+
+###### Parameters
+
+###### bundler
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+`string`
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Bundler/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundler/equals.js#L15)
+
+Check if two Bundler addresses are equal
+
+#### Parameters
+
+##### a
+
+[`BundlerType`](#bundlertype)
+
+First Bundler
+
+##### b
+
+[`BundlerType`](#bundlertype)
+
+Second Bundler
+
+#### Returns
+
+`boolean`
+
+True if addresses are equal
+
+#### Example
+
+```typescript
+const isEqual = Bundler.equals(bundler1, bundler2);
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`bundler`): `string`
+
+Defined in: [src/primitives/Bundler/toHex.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundler/toHex.js#L15)
+
+Convert Bundler to hex string
+
+#### Parameters
+
+##### bundler
+
+[`BundlerType`](#bundlertype)
+
+Bundler address
+
+#### Returns
+
+`string`
+
+Hex string (0x-prefixed)
+
+#### Example
+
+```typescript
+const hex = Bundler.toHex(bundler);
+console.log(hex); // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+```
+
+***
+
+### equals()
+
+> **equals**(`bundler1`, `bundler2`): `boolean`
+
+Defined in: [src/primitives/Bundler/index.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundler/index.ts#L20)
+
+#### Parameters
+
+##### bundler1
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+##### bundler2
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`BundlerType`](#bundlertype)
+
+Defined in: [src/primitives/Bundler/from.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundler/from.js#L15)
+
+Create Bundler from address input
+
+#### Parameters
+
+##### value
+
+Address value
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+[`BundlerType`](#bundlertype)
+
+Bundler address
+
+#### Throws
+
+If address format is invalid
+
+#### Example
+
+```typescript
+const bundler = Bundler.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+```
+
+***
+
+### toHex()
+
+> **toHex**(`bundler`): `string`
+
+Defined in: [src/primitives/Bundler/index.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bundler/index.ts#L14)
+
+#### Parameters
+
+##### bundler
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+`string`

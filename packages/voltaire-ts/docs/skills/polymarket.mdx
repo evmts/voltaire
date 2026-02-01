@@ -1,0 +1,87 @@
+---
+title: Polymarket
+description: Prediction market trading on Polymarket
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [ethers-provider Skill](https://github.com/evmts/voltaire/tree/main/examples/ethers-provider) for an example of a complete Skill implementation.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Trade prediction market outcomes on Polymarket's CTF Exchange.
+
+## Planned Implementation
+
+### Market Interaction
+
+```typescript
+import { Polymarket } from './Polymarket.js';
+
+const poly = Polymarket({
+  provider,
+  ctfExchange: CTF_EXCHANGE_ADDRESS,
+});
+
+// Get market info
+const market = await poly.getMarket(conditionId);
+console.log('Outcomes:', market.outcomes);
+console.log('Prices:', market.prices);
+
+// Buy outcome tokens
+await poly.buy({
+  conditionId,
+  outcomeIndex: 0, // YES
+  amount: parseUnits('100', 6), // 100 USDC
+  minOutcomeTokens: parseEther('150'),
+  signer,
+});
+```
+
+### Order Book
+
+```typescript
+// Place limit order
+await poly.placeLimitOrder({
+  conditionId,
+  outcomeIndex: 0,
+  side: 'BUY',
+  price: 0.65, // 65 cents
+  size: parseUnits('100', 6),
+  signer,
+});
+
+// Cancel order
+await poly.cancelOrder({ orderId, signer });
+```
+
+### Redeem
+
+```typescript
+// Redeem winning outcome tokens after resolution
+await poly.redeemPositions({
+  conditionId,
+  indexSets: [1], // Outcome 0 won
+  signer,
+});
+```
+
+## Resources
+
+- [Polymarket Documentation](https://docs.polymarket.com/)
+- [CTF Exchange](https://github.com/Polymarket/ctf-exchange)
+
+## Related
+
+- [eip1193-provider](/skills/eip1193-provider) — Wallet connection

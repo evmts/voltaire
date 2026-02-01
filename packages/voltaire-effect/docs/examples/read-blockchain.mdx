@@ -1,0 +1,178 @@
+---
+title: Read Blockchain Data
+description: Query blocks, balances, transactions and logs
+---
+
+## Get Block Number
+
+```typescript
+import { Effect, Duration, Schedule, Layer } from 'effect'
+import { getBlockNumber, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({
+    url: 'https://eth.llamarpc.com',
+    timeout: '30 seconds'
+  }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* getBlockNumber()
+}).pipe(Effect.provide(ProviderLayer))
+
+const blockNumber = await Effect.runPromise(program)
+```
+
+## Get Balance
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getBalance, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
+}).pipe(
+  withTimeout('5 seconds'),
+  Effect.provide(ProviderLayer)
+)
+```
+
+## Get Block with Transactions
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getBlock, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const program = Effect.gen(function* () {
+  const block = yield* getBlock({ blockTag: 'latest', includeTransactions: true })
+  return { number: block.number, hash: block.hash, txCount: block.transactions.length }
+}).pipe(Effect.provide(ProviderLayer))
+```
+
+## Query Event Logs
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getLogs, Provider, HttpTransport } from 'voltaire-effect'
+
+const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const program = Effect.gen(function* () {
+  const logs = yield* getLogs({
+    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    topics: [TRANSFER_TOPIC],
+    fromBlock: '0x1312D00',
+    toBlock: 'latest'
+  })
+  return logs.map(log => ({ from: log.topics[1], to: log.topics[2], blockNumber: log.blockNumber }))
+}).pipe(Effect.provide(ProviderLayer))
+```
+
+## Wait for Confirmation
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { waitForTransactionReceipt, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* waitForTransactionReceipt('0x1234...', { confirmations: 3, timeout: '60 seconds' })
+}).pipe(Effect.provide(ProviderLayer))
+```
+
+## Estimate Gas
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { estimateGas, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* estimateGas({
+    from: '0xYourAddress...',
+    to: '0xRecipient...',
+    value: 1000000000000000000n
+  })
+}).pipe(Effect.provide(ProviderLayer))
+```
+
+## Get Gas Prices (EIP-1559)
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { getGasPrice, getMaxPriorityFeePerGas, getFeeHistory, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* Effect.all({
+    gasPrice: getGasPrice(),
+    maxPriorityFee: getMaxPriorityFeePerGas(),
+    feeHistory: getFeeHistory(4, 'latest', [25, 50, 75])
+  })
+}).pipe(Effect.provide(ProviderLayer))
+```
+
+## Parallel Queries with Retry
+
+```typescript
+import { Effect, Schedule, Layer } from 'effect'
+import { getBalance, Provider, HttpTransport, withRetrySchedule } from 'voltaire-effect'
+
+const addresses = [
+  '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3'
+]
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+)
+
+const program = Effect.gen(function* () {
+  return yield* Effect.all(
+    addresses.map(addr => getBalance(addr, 'latest')),
+    { concurrency: 'unbounded' }
+  )
+}).pipe(
+  withRetrySchedule(Schedule.exponential('500 millis').pipe(Schedule.jittered, Schedule.recurs(5))),
+  Effect.provide(ProviderLayer)
+)
+```
+
+## See Also
+
+- [Provider Service](/services/provider) — Provider operations and free functions
+- [Multicall](/examples/multicall) — Batch multiple reads into one RPC call
+- [Contract Interactions](/examples/contract-interactions) — Read contract state
+- [Block Streaming](/examples/block-streaming) — Real-time block updates
+- [Voltaire Docs](https://voltaire.tevm.sh) — Core primitives documentation
+- [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) — JSON-RPC specification

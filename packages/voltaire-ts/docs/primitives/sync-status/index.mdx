@@ -1,0 +1,255 @@
+---
+title: SyncStatus
+description: Node synchronization status from eth_syncing RPC
+icon: sync
+---
+
+# SyncStatus
+
+Node synchronization status and progress from eth_syncing RPC method.
+
+## Overview
+
+SyncStatus represents whether a node is syncing and its progress. Returns false when synced, or progress information when actively syncing.
+
+## Type Definition
+
+```typescript
+type SyncProgress = {
+  readonly startingBlock: BlockNumber;
+  readonly currentBlock: BlockNumber;
+  readonly highestBlock: BlockNumber;
+  readonly pulledStates?: Uint256;  // State trie entries downloaded
+  readonly knownStates?: Uint256;   // Total state trie entries
+};
+
+type SyncStatusType = false | SyncProgress;
+```
+
+## Usage
+
+### Checking Sync Status
+
+```typescript
+import { SyncStatus } from '@tevm/voltaire/primitives';
+
+// Get status from RPC
+const rpcResponse = await rpc.eth_syncing();
+const status = SyncStatus.from(rpcResponse);
+
+// Check if syncing
+if (SyncStatus.isSyncing(status)) {
+  console.log('Node is syncing...');
+
+  // Get progress
+  const progress = SyncStatus.getProgress(status);
+  console.log(`Progress: ${progress.toFixed(2)}%`);
+
+  // Show details
+  console.log(`Block ${status.currentBlock} / ${status.highestBlock}`);
+} else {
+  console.log('Node is fully synced');
+}
+```
+
+### Progress Monitoring
+
+```typescript
+// Poll sync status
+async function monitorSync() {
+  const status = SyncStatus.from(await rpc.eth_syncing());
+
+  if (SyncStatus.isSyncing(status)) {
+    const progress = SyncStatus.getProgress(status);
+    const remaining = status.highestBlock - status.currentBlock;
+
+    console.log(`Syncing: ${progress.toFixed(2)}%`);
+    console.log(`Remaining: ${remaining} blocks`);
+
+    // State trie sync
+    if (status.pulledStates && status.knownStates) {
+      const stateProgress = (Number(status.pulledStates) / Number(status.knownStates)) * 100;
+      console.log(`State trie: ${stateProgress.toFixed(2)}%`);
+    }
+  }
+}
+
+setInterval(monitorSync, 5000);
+```
+
+## RPC Integration
+
+### eth_syncing
+
+Primary RPC method for sync status:
+
+```typescript
+// Not syncing
+const response = false;
+const status = SyncStatus.from(response);
+console.log(SyncStatus.isSyncing(status));  // false
+
+// Syncing
+const response = {
+  startingBlock: '0x0',
+  currentBlock: '0x3e8',     // 1000
+  highestBlock: '0x7d0',     // 2000
+  pulledStates: '0x2710',    // 10000
+  knownStates: '0x4e20'      // 20000
+};
+const status = SyncStatus.from(response);
+console.log(SyncStatus.getProgress(status));  // 50
+```
+
+## Sync Phases
+
+### Block Sync
+
+Download and validate blocks:
+
+```typescript
+if (SyncStatus.isSyncing(status)) {
+  const blocksRemaining = status.highestBlock - status.currentBlock;
+  console.log(`${blocksRemaining} blocks remaining`);
+}
+```
+
+### State Sync
+
+Download state trie (fast sync/snap sync):
+
+```typescript
+if (status.pulledStates && status.knownStates) {
+  const stateRemaining = status.knownStates - status.pulledStates;
+  console.log(`${stateRemaining} state entries remaining`);
+}
+```
+
+## Sync Strategies
+
+### Full Sync
+
+Download and execute all blocks from genesis:
+
+```typescript
+// Full sync shows every block
+if (status.startingBlock === 0n) {
+  console.log('Full sync from genesis');
+}
+```
+
+### Fast Sync
+
+Download blocks + recent state:
+
+```typescript
+// Fast sync starts from recent checkpoint
+if (status.startingBlock > 0n) {
+  console.log(`Fast sync from block ${status.startingBlock}`);
+}
+```
+
+### Snap Sync
+
+Download state snapshots + recent blocks:
+
+```typescript
+// Snap sync focuses on state trie
+if (status.pulledStates && status.knownStates) {
+  console.log('Snap sync in progress');
+  console.log(`${status.pulledStates} / ${status.knownStates} state entries`);
+}
+```
+
+## Wait for Sync
+
+Block until node is synced:
+
+```typescript
+async function waitForSync(rpc, pollInterval = 5000) {
+  while (true) {
+    const status = SyncStatus.from(await rpc.eth_syncing());
+
+    if (!SyncStatus.isSyncing(status)) {
+      console.log('Node is synced');
+      return;
+    }
+
+    const progress = SyncStatus.getProgress(status);
+    console.log(`Syncing: ${progress.toFixed(2)}%`);
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+}
+
+await waitForSync(rpc);
+```
+
+## Network Comparison
+
+Different networks sync differently:
+
+```typescript
+// Mainnet: Large state, slow sync
+// Sepolia: Smaller state, faster sync
+// Private network: Instant sync
+
+if (status.highestBlock > 15000000n) {
+  console.log('Syncing mainnet (may take hours/days)');
+} else {
+  console.log('Syncing testnet');
+}
+```
+
+## Common Patterns
+
+### Ready Check
+
+Wait for node before operations:
+
+```typescript
+async function ensureReady(rpc) {
+  const status = SyncStatus.from(await rpc.eth_syncing());
+
+  if (SyncStatus.isSyncing(status)) {
+    throw new Error(`Node still syncing: ${SyncStatus.getProgress(status)}%`);
+  }
+}
+```
+
+### Progress Bar
+
+Visual sync progress:
+
+```typescript
+function renderProgressBar(status) {
+  if (!SyncStatus.isSyncing(status)) {
+    return '█████████████████████ 100%';
+  }
+
+  const progress = SyncStatus.getProgress(status);
+  const filled = Math.floor(progress / 5);
+  const empty = 20 - filled;
+
+  return '█'.repeat(filled) + '░'.repeat(empty) + ` ${progress.toFixed(1)}%`;
+}
+
+console.log(renderProgressBar(status));
+```
+
+## API Reference
+
+### Constructors
+
+- `SyncStatus.from(rpcResponse)` - Create from eth_syncing response
+
+### Methods
+
+- `SyncStatus.isSyncing(status)` - Check if actively syncing
+- `SyncStatus.getProgress(status)` - Get percentage (0-100)
+
+## See Also
+
+- [BlockNumber](/primitives/block-number) - Block heights
+- [ChainHead](/primitives/chain-head) - Current chain tip
+- [NodeInfo](/primitives/node-info) - Node information

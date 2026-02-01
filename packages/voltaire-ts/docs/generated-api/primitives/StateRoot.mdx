@@ -1,0 +1,189 @@
+---
+title: "primitives/StateRoot"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/StateRoot
+
+# primitives/StateRoot
+
+## Type Aliases
+
+### StateRootLike
+
+> **StateRootLike** = [`StateRootType`](#stateroottype) \| `string` \| `Uint8Array`
+
+Defined in: [src/primitives/StateRoot/StateRootType.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateRoot/StateRootType.ts#L23)
+
+Inputs that can be converted to StateRoot
+
+***
+
+### StateRootType
+
+> **StateRootType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/StateRoot/StateRootType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateRoot/StateRootType.ts#L15)
+
+Branded StateRoot type - represents a 32-byte Merkle Patricia Trie root hash
+of the global Ethereum state.
+
+The state root is the root hash of the state trie, which contains mappings
+from addresses to account states. It uniquely identifies the entire global
+state at a given block.
+
+Per the Yellow Paper, the state trie encodes mappings between addresses
+(160-bit identifiers) and account states. The state root is included in
+every block header.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"StateRoot"`
+
+##### length
+
+> `readonly` **length**: `32`
+
+## Variables
+
+### SIZE
+
+> `const` **SIZE**: `32` = `32`
+
+Defined in: [src/primitives/StateRoot/StateRootType.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateRoot/StateRootType.ts#L25)
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/StateRoot/equals.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateRoot/equals.js#L20)
+
+Compares two StateRoots for equality.
+Uses constant-time comparison to prevent timing attacks.
+
+#### Parameters
+
+##### a
+
+[`StateRootType`](#stateroottype)
+
+First StateRoot
+
+##### b
+
+[`StateRootType`](#stateroottype)
+
+Second StateRoot
+
+#### Returns
+
+`boolean`
+
+- True if equal
+
+#### Example
+
+```typescript
+const isEqual = StateRoot.equals(root1, root2);
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`StateRootType`](#stateroottype)
+
+Defined in: [src/primitives/StateRoot/from.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateRoot/from.js#L21)
+
+Creates a StateRoot from various input types.
+Accepts hex strings, Uint8Array, or existing StateRoot instances.
+
+#### Parameters
+
+##### value
+
+[`StateRootLike`](#staterootlike)
+
+The value to convert
+
+#### Returns
+
+[`StateRootType`](#stateroottype)
+
+- A branded StateRoot
+
+#### Example
+
+```typescript
+const root = StateRoot.from("0x1234...");
+const root2 = StateRoot.from(new Uint8Array(32));
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`StateRootType`](#stateroottype)
+
+Defined in: [src/primitives/StateRoot/fromHex.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateRoot/fromHex.js#L18)
+
+Creates a StateRoot from a hex string.
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+#### Returns
+
+[`StateRootType`](#stateroottype)
+
+- A branded StateRoot
+
+#### Example
+
+```typescript
+const root = StateRoot.fromHex("0x1234...");
+```
+
+***
+
+### toHex()
+
+> **toHex**(`stateRoot`): `string`
+
+Defined in: [src/primitives/StateRoot/toHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/StateRoot/toHex.js#L19)
+
+Converts a StateRoot to a hex string.
+
+#### Parameters
+
+##### stateRoot
+
+[`StateRootType`](#stateroottype)
+
+The StateRoot to convert
+
+#### Returns
+
+`string`
+
+- Hex string with 0x prefix
+
+#### Example
+
+```typescript
+const hex = StateRoot.toHex(root);
+// "0x1234..."
+```

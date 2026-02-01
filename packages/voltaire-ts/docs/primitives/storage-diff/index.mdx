@@ -1,0 +1,203 @@
+---
+title: StorageDiff
+description: Track storage slot changes for contract state analysis
+icon: database-diff
+---
+
+# StorageDiff
+
+Storage slot changes for a single contract address during transaction execution.
+
+## Overview
+
+StorageDiff tracks before/after values for storage slots. Used extensively with debug_traceTransaction prestateTracer to analyze state modifications.
+
+## Type Definition
+
+```typescript
+type StorageChange = {
+  readonly from: StorageValue | null;  // null = didn't exist
+  readonly to: StorageValue | null;    // null = deleted
+};
+
+type StorageDiffType = {
+  readonly address: Address;
+  readonly changes: ReadonlyMap<StorageKey, StorageChange>;
+};
+```
+
+## Usage
+
+### Creating Storage Diffs
+
+```typescript
+import { StorageDiff } from '@tevm/voltaire/primitives';
+
+// From Map
+const changes = new Map([
+  [storageKey, { from: null, to: newValue }]
+]);
+const diff = StorageDiff.from(contractAddress, changes);
+
+// From array
+const changesArray = [
+  [key1, { from: oldValue, to: newValue }],
+  [key2, { from: value, to: null }]  // Deletion
+];
+const diff2 = StorageDiff.from(contractAddress, changesArray);
+```
+
+### Querying Changes
+
+```typescript
+// Get specific slot change
+const change = StorageDiff.getChange(diff, storageKey);
+if (change) {
+  console.log(`${change.from} -> ${change.to}`);
+}
+
+// Get all changed slots
+const keys = StorageDiff.getKeys(diff);
+for (const key of keys) {
+  console.log(`Slot ${key.slot} changed`);
+}
+
+// Count changes
+const count = StorageDiff.size(diff);
+console.log(`${count} slots modified`);
+```
+
+## Storage Changes
+
+### New Slots
+
+Slot created during execution:
+
+```typescript
+const change = {
+  from: null,              // Didn't exist
+  to: storageValue        // Now has value
+};
+```
+
+### Updates
+
+Existing slot modified:
+
+```typescript
+const change = {
+  from: oldValue,
+  to: newValue
+};
+```
+
+### Deletions
+
+Slot cleared (SSTORE 0):
+
+```typescript
+const change = {
+  from: existingValue,
+  to: null                // Deleted
+};
+```
+
+## Debug Tracing
+
+StorageDiff used with prestateTracer:
+
+```typescript
+// Trace with prestate
+const trace = await rpc.debug_traceTransaction(txHash, {
+  tracer: 'prestateTracer'
+});
+
+// Analyze storage changes per account
+for (const [address, account] of Object.entries(trace)) {
+  if (account.storage) {
+    const changes = new Map();
+    for (const [slot, value] of Object.entries(account.storage)) {
+      const key = { address: Address.from(address), slot: BigInt(slot) };
+      changes.set(key, { from: null, to: StorageValue.from(value) });
+    }
+    const diff = StorageDiff.from(Address.from(address), changes);
+    console.log(`${StorageDiff.size(diff)} storage changes`);
+  }
+}
+```
+
+## Gas Analysis
+
+Storage operations have significant gas costs:
+
+### SSTORE Gas Costs
+
+- **Set (0 → non-zero)**: 20,000 gas
+- **Update (non-zero → non-zero)**: 5,000 gas
+- **Clear (non-zero → 0)**: 15,000 gas refund
+- **Cold access**: +2,100 gas
+
+```typescript
+// Calculate gas costs from diff
+let totalGas = 0;
+for (const [key, change] of diff.changes) {
+  if (change.from === null && change.to !== null) {
+    totalGas += 20000;  // New slot
+  } else if (change.from !== null && change.to !== null) {
+    totalGas += 5000;   // Update
+  } else if (change.to === null) {
+    totalGas -= 15000;  // Refund
+  }
+}
+```
+
+## Common Patterns
+
+### State Variable Tracking
+
+Map contract state variables to storage slots:
+
+```typescript
+// Track balance changes (slot 0)
+const balanceKey = { address: tokenAddress, slot: 0n };
+const balanceChange = StorageDiff.getChange(diff, balanceKey);
+
+if (balanceChange) {
+  console.log(`Balance: ${balanceChange.from} -> ${balanceChange.to}`);
+}
+```
+
+### Mapping Storage
+
+Solidity mappings use keccak256(key || slot):
+
+```typescript
+// mapping(address => uint256) balances at slot 1
+const userAddress = Address.from('0x...');
+const slot = 1n;
+const storageSlot = keccak256(
+  concat([pad(userAddress), pad(toBytes(slot))])
+);
+
+const key = { address: tokenAddress, slot: BigInt('0x' + storageSlot) };
+const change = StorageDiff.getChange(diff, key);
+```
+
+## API Reference
+
+### Constructors
+
+- `StorageDiff.from(address, changes)` - Create from address and changes
+
+### Methods
+
+- `StorageDiff.getChange(diff, key)` - Get change for specific slot
+- `StorageDiff.getKeys(diff)` - Get all changed slots
+- `StorageDiff.size(diff)` - Count changed slots
+
+## See Also
+
+- [StateDiff](/primitives/state-diff) - Complete state changes
+- [StorageValue](/primitives/storage-value) - 32-byte storage values
+- [StorageKey](/primitives/state) - Address + slot composite key
+- [Address](/primitives/address) - Contract addresses

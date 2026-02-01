@@ -1,0 +1,350 @@
+---
+title: '[Zig] src/primitives/Bundle/Bundle.zig'
+source: 'src/primitives/Bundle/Bundle.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Bundle/Bundle.zig
+
+### init - creates empty bundle
+
+```zig
+test "init - creates empty bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    try std.testing.expectEqual(@as(usize, 0), size(&bundle));
+    try std.testing.expect(bundle.block_number == null);
+}
+```
+
+### from - creates bundle with transactions
+
+```zig
+test "from - creates bundle with transactions" {
+    const tx1 = &[_]u8{ 0x01, 0x02, 0x03 };
+    const tx2 = &[_]u8{ 0x04, 0x05, 0x06 };
+    const txs = [_][]const u8{ tx1, tx2 };
+
+    var bundle = try from(std.testing.allocator, &txs);
+    defer bundle.deinit();
+
+    try std.testing.expectEqual(@as(usize, 2), size(&bundle));
+}
+```
+
+### from - empty transactions
+
+```zig
+test "from - empty transactions" {
+    const txs = [_][]const u8{};
+    var bundle = try from(std.testing.allocator, &txs);
+    defer bundle.deinit();
+    try std.testing.expectEqual(@as(usize, 0), size(&bundle));
+}
+```
+
+### addTransaction - adds to bundle
+
+```zig
+test "addTransaction - adds to bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    const tx = &[_]u8{ 0xde, 0xad, 0xbe, 0xef };
+    try addTransaction(&bundle, tx);
+
+    try std.testing.expectEqual(@as(usize, 1), size(&bundle));
+}
+```
+
+### addTransaction - preserves order
+
+```zig
+test "addTransaction - preserves order" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    const tx1 = &[_]u8{0x01};
+    const tx2 = &[_]u8{0x02};
+    const tx3 = &[_]u8{0x03};
+
+    try addTransaction(&bundle, tx1);
+    try addTransaction(&bundle, tx2);
+    try addTransaction(&bundle, tx3);
+
+    try std.testing.expectEqual(@as(u8, 0x01), bundle.transactions.items[0][0]);
+    try std.testing.expectEqual(@as(u8, 0x02), bundle.transactions.items[1][0]);
+    try std.testing.expectEqual(@as(u8, 0x03), bundle.transactions.items[2][0]);
+}
+```
+
+### addRevertingTxHash - adds to list
+
+```zig
+test "addRevertingTxHash - adds to list" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    const hash = [_]u8{0xaa} ** 32;
+    try addRevertingTxHash(&bundle, hash);
+
+    try std.testing.expectEqual(@as(usize, 1), bundle.reverting_tx_hashes.items.len);
+}
+```
+
+### size - empty bundle
+
+```zig
+test "size - empty bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    try std.testing.expectEqual(@as(usize, 0), size(&bundle));
+}
+```
+
+### size - with transactions
+
+```zig
+test "size - with transactions" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    try addTransaction(&bundle, &[_]u8{0x01});
+    try addTransaction(&bundle, &[_]u8{0x02});
+
+    try std.testing.expectEqual(@as(usize, 2), size(&bundle));
+}
+```
+
+### getTransaction - valid index
+
+```zig
+test "getTransaction - valid index" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    const tx = &[_]u8{ 0xde, 0xad };
+    try addTransaction(&bundle, tx);
+
+    const result = getTransaction(&bundle, 0);
+    try std.testing.expect(result != null);
+    try std.testing.expectEqualSlices(u8, tx, result.?);
+}
+```
+
+### getTransaction - invalid index
+
+```zig
+test "getTransaction - invalid index" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    const result = getTransaction(&bundle, 0);
+    try std.testing.expect(result == null);
+}
+```
+
+### isEmpty - empty bundle
+
+```zig
+test "isEmpty - empty bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    try std.testing.expect(isEmpty(&bundle));
+}
+```
+
+### isEmpty - non-empty bundle
+
+```zig
+test "isEmpty - non-empty bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    try addTransaction(&bundle, &[_]u8{0x01});
+    try std.testing.expect(!isEmpty(&bundle));
+}
+```
+
+### toHash - empty bundle
+
+```zig
+test "toHash - empty bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    const hash = toHash(&bundle);
+    try std.testing.expectEqual(BundleHash.SIZE, hash.len);
+}
+```
+
+### toHash - deterministic
+
+```zig
+test "toHash - deterministic" {
+    var bundle1 = init(std.testing.allocator);
+    defer bundle1.deinit();
+    try addTransaction(&bundle1, &[_]u8{ 0x01, 0x02 });
+
+    var bundle2 = init(std.testing.allocator);
+    defer bundle2.deinit();
+    try addTransaction(&bundle2, &[_]u8{ 0x01, 0x02 });
+
+    const hash1 = toHash(&bundle1);
+    const hash2 = toHash(&bundle2);
+    try std.testing.expect(BundleHash.equals(&hash1, &hash2));
+}
+```
+
+### toHash - different for different bundles
+
+```zig
+test "toHash - different for different bundles" {
+    var bundle1 = init(std.testing.allocator);
+    defer bundle1.deinit();
+    try addTransaction(&bundle1, &[_]u8{0x01});
+
+    var bundle2 = init(std.testing.allocator);
+    defer bundle2.deinit();
+    try addTransaction(&bundle2, &[_]u8{0x02});
+
+    const hash1 = toHash(&bundle1);
+    const hash2 = toHash(&bundle2);
+    try std.testing.expect(!BundleHash.equals(&hash1, &hash2));
+}
+```
+
+### toFlashbotsParams - converts bundle
+
+```zig
+test "toFlashbotsParams - converts bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    const tx = &[_]u8{0x01};
+    try addTransaction(&bundle, tx);
+    bundle.block_number = 12345678;
+
+    const params = toFlashbotsParams(&bundle);
+    try std.testing.expectEqual(@as(usize, 1), params.txs.len);
+    try std.testing.expectEqual(@as(?u64, 12345678), params.block_number);
+}
+```
+
+### validate - valid bundle
+
+```zig
+test "validate - valid bundle" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    try addTransaction(&bundle, &[_]u8{0x01});
+
+    try validate(&bundle);
+}
+```
+
+### validate - empty bundle fails
+
+```zig
+test "validate - empty bundle fails" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+
+    try std.testing.expectError(error.EmptyBundle, validate(&bundle));
+}
+```
+
+### validate - invalid timestamp range
+
+```zig
+test "validate - invalid timestamp range" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    try addTransaction(&bundle, &[_]u8{0x01});
+
+    bundle.min_timestamp = 200;
+    bundle.max_timestamp = 100;
+
+    try std.testing.expectError(error.InvalidTimestampRange, validate(&bundle));
+}
+```
+
+### validate - valid timestamp range
+
+```zig
+test "validate - valid timestamp range" {
+    var bundle = init(std.testing.allocator);
+    defer bundle.deinit();
+    try addTransaction(&bundle, &[_]u8{0x01});
+
+    bundle.min_timestamp = 100;
+    bundle.max_timestamp = 200;
+
+    try validate(&bundle);
+}
+```
+
+### equals - same bundles
+
+```zig
+test "equals - same bundles" {
+    var a = init(std.testing.allocator);
+    defer a.deinit();
+    try addTransaction(&a, &[_]u8{0x01});
+    a.block_number = 123;
+
+    var b = init(std.testing.allocator);
+    defer b.deinit();
+    try addTransaction(&b, &[_]u8{0x01});
+    b.block_number = 123;
+
+    try std.testing.expect(equals(&a, &b));
+}
+```
+
+### equals - different transactions
+
+```zig
+test "equals - different transactions" {
+    var a = init(std.testing.allocator);
+    defer a.deinit();
+    try addTransaction(&a, &[_]u8{0x01});
+
+    var b = init(std.testing.allocator);
+    defer b.deinit();
+    try addTransaction(&b, &[_]u8{0x02});
+
+    try std.testing.expect(!equals(&a, &b));
+}
+```
+
+### equals - different block number
+
+```zig
+test "equals - different block number" {
+    var a = init(std.testing.allocator);
+    defer a.deinit();
+    try addTransaction(&a, &[_]u8{0x01});
+    a.block_number = 123;
+
+    var b = init(std.testing.allocator);
+    defer b.deinit();
+    try addTransaction(&b, &[_]u8{0x01});
+    b.block_number = 456;
+
+    try std.testing.expect(!equals(&a, &b));
+}
+```
+
+### clone - creates independent copy
+
+```zig
+test "clone - creates independent copy" {
+    var original = init(std.testing.allocator);
+    defer original.deinit();
+    try addTransaction(&original, &[_]u8{0x01});
+    original.block_number = 123;
+
+    var copy = try clone(std.testing.allocator, &original);
+    defer copy.deinit();
+
+    try std.testing.expect(equals(&original, &copy));
+}
+```

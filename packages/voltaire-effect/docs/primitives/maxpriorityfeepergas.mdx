@@ -1,0 +1,34 @@
+---
+title: MaxPriorityFeePerGas
+description: EIP-1559 priority fee (tip)
+---
+
+```typescript
+import * as MaxPriorityFeePerGas from 'voltaire-effect/MaxPriorityFeePerGas'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema: validate wei values
+const tip = Schema.decodeSync(MaxPriorityFeePerGas.MaxPriorityFeePerGasSchema)(2000000000n)
+
+// Schema: convert from gwei (2 gwei → 2000000000 wei)
+const tipFromGwei = Schema.decodeSync(MaxPriorityFeePerGas.MaxPriorityFeePerGasFromGweiSchema)(2)
+
+// Effect: create with error handling
+const program = MaxPriorityFeePerGas.from(2000000000n)
+const priorityFee = Effect.runSync(program)
+
+// Effect: from gwei
+const fromGwei = MaxPriorityFeePerGas.fromGwei(2)
+
+// Pure: convert to gwei
+const gwei = MaxPriorityFeePerGas.toGwei(priorityFee)
+```
+
+## API
+
+| Function | Input | Output |
+|----------|-------|--------|
+| `from` | `bigint \| number \| string` | `Effect<MaxPriorityFeePerGasType, UintError>` |
+| `fromGwei` | `number` | `Effect<MaxPriorityFeePerGasType, Error>` |
+| `toGwei` | `MaxPriorityFeePerGasType` | `bigint` |

@@ -1,0 +1,188 @@
+---
+title: StateProof
+description: EIP-1186 account proof with storage proofs for trustless state verification
+---
+
+# StateProof
+
+EIP-1186 account proof for trustless Ethereum state verification.
+
+## Overview
+
+StateProof represents an EIP-1186 account proof with optional storage proofs. It enables light clients and trustless systems to verify account data without executing transactions or trusting external providers.
+
+## Type Definition
+
+```typescript
+type StateProofType = {
+  /** The address of the account being proven */
+  readonly address: AddressType;
+
+  /** RLP-encoded Merkle Patricia Trie nodes (root to leaf) */
+  readonly accountProof: readonly Uint8Array[];
+
+  /** Account balance in Wei */
+  readonly balance: WeiType;
+
+  /** Keccak256 hash of account bytecode */
+  readonly codeHash: HashType;
+
+  /** Transaction count (EOA) or creation count (contract) */
+  readonly nonce: NonceType;
+
+  /** Root hash of account's storage trie */
+  readonly storageHash: StateRootType;
+
+  /** Array of storage slot proofs */
+  readonly storageProof: readonly StorageProofType[];
+};
+```
+
+## Usage
+
+### Create StateProof
+
+```typescript
+import * as StateProof from './primitives/StateProof/index.js';
+
+const proof = StateProof.from({
+  address: "0x1234...",
+  accountProof: [/* RLP-encoded trie nodes */],
+  balance: 1000000000000000000n,
+  codeHash: "0x...",
+  nonce: 5n,
+  storageHash: "0x...",
+  storageProof: [],
+});
+```
+
+### Compare Proofs
+
+```typescript
+const isEqual = StateProof.equals(proof1, proof2);
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `from(proof)` | Create from StateProofLike object |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `equals(a, b)` | Check if two proofs are equal |
+
+## Obtaining Proofs
+
+Use `eth_getProof` JSON-RPC method:
+
+```typescript
+const proof = await provider.send("eth_getProof", [
+  "0x1234...",           // address
+  ["0x0", "0x1"],        // storage slots to prove
+  "latest"              // block number
+]);
+
+const stateProof = StateProof.from(proof);
+```
+
+## Proof Structure
+
+```
+State Trie
+    |
+    |-- accountProof (path from root to account leaf)
+    |
+    v
+Account Node
+    |-- nonce
+    |-- balance
+    |-- codeHash
+    |-- storageHash --> Storage Trie
+                            |
+                            |-- storageProof[0]
+                            |-- storageProof[1]
+                            ...
+```
+
+## Verification Process
+
+1. **Verify account proof** against known state root
+2. **Reconstruct account** from proof nodes
+3. **Compare account fields** (balance, nonce, etc.)
+4. **Verify storage proofs** against account's storage root
+
+```typescript
+import * as StateRoot from './primitives/StateRoot/index.js';
+
+function verifyAccountProof(
+  proof: StateProofType,
+  stateRoot: StateRootType
+): boolean {
+  // Verify Merkle proof from state root to account
+  // RLP decode and walk the trie path
+  // Compare computed root with expected stateRoot
+
+  // Then verify each storage proof against storageHash
+  for (const sp of proof.storageProof) {
+    // Verify storage slot proof against proof.storageHash
+  }
+
+  return true;
+}
+```
+
+## Use Cases
+
+### Light Client Verification
+
+```typescript
+// Light client receives block header (trusted)
+const stateRoot = blockHeader.stateRoot;
+
+// Query account state with proof
+const proof = await getProofFromFullNode(address);
+
+// Verify locally without trusting full node
+const isValid = verifyAccountProof(proof, stateRoot);
+```
+
+### Cross-Chain Proofs
+
+```typescript
+// Prove account state on L1 for L2 verification
+const l1Proof = await l1Provider.send("eth_getProof", [address, [], "latest"]);
+
+// Submit proof to L2 contract
+await l2Contract.verifyL1State(l1Proof.accountProof, l1StateRoot);
+```
+
+### Trustless Balance Verification
+
+```typescript
+const proof = await provider.send("eth_getProof", [
+  tokenHolder,
+  [],
+  blockNumber
+]);
+
+// Verify balance without trusting provider
+assert(verifyAccountProof(proof, trustedStateRoot));
+console.log(`Verified balance: ${proof.balance}`);
+```
+
+## Specification
+
+- **EIP-1186**: https://eips.ethereum.org/EIPS/eip-1186
+- **JSON-RPC**: `eth_getProof` method
+
+## See Also
+
+- [StorageProof](/primitives/storage-proof) - Storage slot proofs
+- [StateRoot](/primitives/state-root) - State trie root
+- [Proof](/primitives/proof) - Generic Merkle proof
+- [RLP](/primitives/rlp) - RLP encoding for trie nodes

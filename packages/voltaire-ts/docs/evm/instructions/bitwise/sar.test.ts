@@ -1,0 +1,160 @@
+/**
+ * Test file for SAR (0x1d) documentation examples
+ * Tests examples from sar.mdx
+ *
+ * NOTE: Stack order is [bottom, ..., top] - pop() returns the last element.
+ * For SAR(shift, value): stack should be [value, shift] so pop() returns shift first.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("SAR (0x1d) - Documentation Examples", async () => {
+	const { SAR, SHR } = await import("../../../../src/evm/bitwise/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	const MAX = (1n << 256n) - 1n;
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Positive Value (Same as SHR)", () => {
+		it("positive value shifts same as SHR", () => {
+			const value = 0x1000n; // MSB = 0 (positive)
+			const frame = createFrame([value, 4n]);
+			const err = SAR(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0x100n]);
+		});
+	});
+
+	describe("Negative Value (Sign Extension)", () => {
+		it("negative value preserves sign", () => {
+			const negValue = 1n << 255n; // MSB set (negative)
+			const frame = createFrame([negValue, 1n]);
+			SAR(frame);
+
+			// Result should have both bit 255 and 254 set (sign-extended)
+			const expected = (1n << 255n) | (1n << 254n);
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Divide Negative by Power of 2", () => {
+		it("-16 / 4 = -4", () => {
+			const minus16 = MAX - 15n; // Two's complement of -16
+			const frame = createFrame([minus16, 2n]);
+			SAR(frame);
+
+			const minus4 = MAX - 3n; // Two's complement of -4
+			expect(frame.stack).toEqual([minus4]);
+		});
+	});
+
+	describe("Maximum Shift on Negative", () => {
+		it("shift >= 256 on negative returns -1 (all ones)", () => {
+			const negValue = 1n << 255n;
+			const frame = createFrame([negValue, 256n]);
+			SAR(frame);
+
+			expect(frame.stack).toEqual([MAX]); // -1
+		});
+	});
+
+	describe("Maximum Shift on Positive", () => {
+		it("shift >= 256 on positive returns 0", () => {
+			const posValue = 1n << 254n;
+			const frame = createFrame([posValue, 256n]);
+			SAR(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Zero Shift (Identity)", () => {
+		it("shift by 0 returns original value", () => {
+			const value = 0x123456n;
+			const frame = createFrame([value, 0n]);
+			SAR(frame);
+
+			expect(frame.stack).toEqual([value]);
+		});
+	});
+
+	describe("Zero Value", () => {
+		it("shifting zero yields zero", () => {
+			const frame = createFrame([0n, 100n]);
+			SAR(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("-1 Remains -1", () => {
+		it("-1 shifted by any amount remains -1", () => {
+			const minusOne = MAX;
+			const frame = createFrame([minusOne, 100n]);
+			SAR(frame);
+
+			expect(frame.stack).toEqual([MAX]);
+		});
+	});
+
+	describe("MIN_INT256", () => {
+		it("-2^255 / 2 = -2^254 (sign-extended)", () => {
+			const MIN_INT = 1n << 255n;
+			const frame = createFrame([MIN_INT, 1n]);
+			SAR(frame);
+
+			const expected = (1n << 255n) | (1n << 254n);
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("SAR vs SHR Difference", () => {
+		it("differs from SHR on negative values", () => {
+			const negValue = 1n << 255n;
+
+			// SHR: logical (zero-fill)
+			const frameSHR = createFrame([negValue, 1n]);
+			SHR(frameSHR);
+
+			// SAR: arithmetic (sign-fill)
+			const frameSAR = createFrame([negValue, 1n]);
+			SAR(frameSAR);
+
+			expect(frameSHR.stack[0]).not.toBe(frameSAR.stack[0]);
+			expect(frameSHR.stack[0]).toBe(1n << 254n); // Positive
+			expect(frameSAR.stack[0]).toBe((1n << 255n) | (1n << 254n)); // Still negative
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("returns StackUnderflow with insufficient stack", () => {
+			const frame = createFrame([4n]);
+			const err = SAR(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+
+		it("returns OutOfGas when insufficient gas", () => {
+			const frame = createFrame([0xff00n, 4n], 2n);
+			const err = SAR(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+			expect(frame.gasRemaining).toBe(0n);
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 3 gas (GasFastestStep)", () => {
+			const frame = createFrame([0x1000n, 4n], 100n);
+			const err = SAR(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(97n);
+		});
+	});
+});

@@ -1,0 +1,209 @@
+---
+title: "Sha256Wasm"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../../index.mdx) / [index](../../../index.mdx) / [wasm](../index.mdx) / Sha256Wasm
+
+# Sha256Wasm
+
+SHA256 hash function implemented using WASM Zig code
+
+## Variables
+
+### BLOCK\_SIZE
+
+> `const` **BLOCK\_SIZE**: `64` = `64`
+
+Defined in: [src/crypto/sha256.wasm.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L20)
+
+SHA256 block size in bytes
+
+***
+
+### OUTPUT\_SIZE
+
+> `const` **OUTPUT\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/sha256.wasm.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L15)
+
+SHA256 output size in bytes (256 bits / 8)
+
+## Functions
+
+### create()
+
+> **create**(): `object`
+
+Defined in: [src/crypto/sha256.wasm.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L110)
+
+Incremental hasher for streaming data
+
+Note: This implementation uses a simple buffer accumulator.
+For truly large streaming data, consider using the Noble.js implementation.
+
+#### Returns
+
+##### digest()
+
+> **digest**(): `Uint8Array`
+
+Finalize and get hash
+
+###### Returns
+
+`Uint8Array`
+
+##### update()
+
+> **update**(`data`): `void`
+
+Update hasher with new data
+
+###### Parameters
+
+###### data
+
+`Uint8Array`
+
+###### Returns
+
+`void`
+
+#### Example
+
+```typescript
+const hasher = Sha256Wasm.create();
+hasher.update(chunk1);
+hasher.update(chunk2);
+const hash = hasher.digest();
+```
+
+***
+
+### hash()
+
+> **hash**(`data`): `Uint8Array`
+
+Defined in: [src/crypto/sha256.wasm.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L34)
+
+Compute SHA256 hash of input data
+
+#### Parameters
+
+##### data
+
+`Uint8Array`
+
+Input data as Uint8Array
+
+#### Returns
+
+`Uint8Array`
+
+32-byte hash
+
+#### Example
+
+```typescript
+const hash = Sha256Wasm.hash(new Uint8Array([1, 2, 3]));
+// Uint8Array(32) [...]
+```
+
+***
+
+### hashHex()
+
+> **hashHex**(`hex`): `Uint8Array`
+
+Defined in: [src/crypto/sha256.wasm.ts:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L68)
+
+Compute SHA256 hash of hex string (without 0x prefix)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+#### Returns
+
+`Uint8Array`
+
+32-byte hash
+
+#### Example
+
+```typescript
+const hash = Sha256Wasm.hashHex("0xdeadbeef");
+// Uint8Array(32) [...]
+```
+
+***
+
+### hashString()
+
+> **hashString**(`str`): `Uint8Array`
+
+Defined in: [src/crypto/sha256.wasm.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L50)
+
+Compute SHA256 hash of UTF-8 string
+
+#### Parameters
+
+##### str
+
+`string`
+
+Input string
+
+#### Returns
+
+`Uint8Array`
+
+32-byte hash
+
+#### Example
+
+```typescript
+const hash = Sha256Wasm.hashString("hello world");
+// Uint8Array(32) [0xb9, 0x4d, 0x27, ...]
+```
+
+***
+
+### toHex()
+
+> **toHex**(`hash`): `string`
+
+Defined in: [src/crypto/sha256.wasm.ts:90](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/sha256.wasm.ts#L90)
+
+Convert hash output to hex string
+
+#### Parameters
+
+##### hash
+
+`Uint8Array`
+
+Hash bytes
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### Example
+
+```typescript
+const hash = Sha256Wasm.hash(data);
+const hexStr = Sha256Wasm.toHex(hash);
+// "0x..."
+```

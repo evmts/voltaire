@@ -1,0 +1,712 @@
+---
+title: "precompiles"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / precompiles
+
+# precompiles
+
+## Enumerations
+
+### PrecompileAddress
+
+Defined in: [src/evm/precompiles/precompiles.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L18)
+
+#### Enumeration Members
+
+##### BLAKE2F
+
+> **BLAKE2F**: `"0x0000000000000000000000000000000000000009"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L27)
+
+##### BLS12\_G1\_ADD
+
+> **BLS12\_G1\_ADD**: `"0x000000000000000000000000000000000000000b"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L29)
+
+##### BLS12\_G1\_MSM
+
+> **BLS12\_G1\_MSM**: `"0x000000000000000000000000000000000000000d"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L31)
+
+##### BLS12\_G1\_MUL
+
+> **BLS12\_G1\_MUL**: `"0x000000000000000000000000000000000000000c"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L30)
+
+##### BLS12\_G2\_ADD
+
+> **BLS12\_G2\_ADD**: `"0x000000000000000000000000000000000000000e"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L32)
+
+##### BLS12\_G2\_MSM
+
+> **BLS12\_G2\_MSM**: `"0x0000000000000000000000000000000000000010"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L34)
+
+##### BLS12\_G2\_MUL
+
+> **BLS12\_G2\_MUL**: `"0x000000000000000000000000000000000000000f"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L33)
+
+##### BLS12\_MAP\_FP\_TO\_G1
+
+> **BLS12\_MAP\_FP\_TO\_G1**: `"0x0000000000000000000000000000000000000012"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L36)
+
+##### BLS12\_MAP\_FP2\_TO\_G2
+
+> **BLS12\_MAP\_FP2\_TO\_G2**: `"0x0000000000000000000000000000000000000013"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L37)
+
+##### BLS12\_PAIRING
+
+> **BLS12\_PAIRING**: `"0x0000000000000000000000000000000000000011"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L35)
+
+##### BN254\_ADD
+
+> **BN254\_ADD**: `"0x0000000000000000000000000000000000000006"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L24)
+
+##### BN254\_MUL
+
+> **BN254\_MUL**: `"0x0000000000000000000000000000000000000007"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L25)
+
+##### BN254\_PAIRING
+
+> **BN254\_PAIRING**: `"0x0000000000000000000000000000000000000008"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L26)
+
+##### ECRECOVER
+
+> **ECRECOVER**: `"0x0000000000000000000000000000000000000001"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L19)
+
+##### IDENTITY
+
+> **IDENTITY**: `"0x0000000000000000000000000000000000000004"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L22)
+
+##### MODEXP
+
+> **MODEXP**: `"0x0000000000000000000000000000000000000005"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L23)
+
+##### POINT\_EVALUATION
+
+> **POINT\_EVALUATION**: `"0x000000000000000000000000000000000000000a"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L28)
+
+##### RIPEMD160
+
+> **RIPEMD160**: `"0x0000000000000000000000000000000000000003"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L21)
+
+##### SHA256
+
+> **SHA256**: `"0x0000000000000000000000000000000000000002"`
+
+Defined in: [src/evm/precompiles/precompiles.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L20)
+
+## Interfaces
+
+### PrecompileResult
+
+Defined in: [src/evm/precompiles/precompiles.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L40)
+
+#### Properties
+
+##### error?
+
+> `optional` **error**: `string`
+
+Defined in: [src/evm/precompiles/precompiles.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L44)
+
+##### gasUsed
+
+> **gasUsed**: `bigint`
+
+Defined in: [src/evm/precompiles/precompiles.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L43)
+
+##### output
+
+> **output**: `Uint8Array`
+
+Defined in: [src/evm/precompiles/precompiles.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L42)
+
+##### success
+
+> **success**: `boolean`
+
+Defined in: [src/evm/precompiles/precompiles.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L41)
+
+## Functions
+
+### blake2f()
+
+> **blake2f**(`_input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:684](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L684)
+
+BLAKE2F precompile (0x09)
+Blake2 F compression function per EIP-152
+
+Input format (213 bytes):
+- rounds (4 bytes, big-endian) - number of compression rounds
+- h (64 bytes) - state vector
+- m (128 bytes) - message block
+- t (16 bytes) - offset counters
+- f (1 byte) - final block flag (must be 0 or 1)
+
+#### Parameters
+
+##### \_input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-152
+
+***
+
+### bls12G1Add()
+
+> **bls12G1Add**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:811](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L811)
+
+BLS12_G1_ADD precompile (0x0b)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12G1Msm()
+
+> **bls12G1Msm**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:931](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L931)
+
+BLS12_G1_MSM precompile (0x0d)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12G1Mul()
+
+> **bls12G1Mul**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:860](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L860)
+
+BLS12_G1_MUL precompile (0x0c)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12G2Add()
+
+> **bls12G2Add**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:992](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L992)
+
+BLS12_G2_ADD precompile (0x0e)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12G2Msm()
+
+> **bls12G2Msm**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:1095](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L1095)
+
+BLS12_G2_MSM precompile (0x10)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12G2Mul()
+
+> **bls12G2Mul**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:1041](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L1041)
+
+BLS12_G2_MUL precompile (0x0f)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12MapFp2ToG2()
+
+> **bls12MapFp2ToG2**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:1292](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L1292)
+
+BLS12_MAP_FP2_TO_G2 precompile (0x13)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12MapFpToG1()
+
+> **bls12MapFpToG1**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:1244](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L1244)
+
+BLS12_MAP_FP_TO_G1 precompile (0x12)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bls12Pairing()
+
+> **bls12Pairing**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:1156](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L1156)
+
+BLS12_PAIRING precompile (0x11)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bn254Add()
+
+> **bn254Add**(`_input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:545](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L545)
+
+BN254_ADD precompile (0x06)
+BN254 elliptic curve addition
+
+#### Parameters
+
+##### \_input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bn254Mul()
+
+> **bn254Mul**(`_input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:583](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L583)
+
+BN254_MUL precompile (0x07)
+BN254 elliptic curve multiplication
+
+#### Parameters
+
+##### \_input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### bn254Pairing()
+
+> **bn254Pairing**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:621](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L621)
+
+BN254_PAIRING precompile (0x08)
+BN254 pairing check
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### ecrecover()
+
+> **ecrecover**(`_input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:354](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L354)
+
+ECRECOVER precompile (0x01)
+Recover signer address from signature
+
+#### Parameters
+
+##### \_input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### execute()
+
+> **execute**(`address`, `input`, `gasLimit`, `_hardfork`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:274](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L274)
+
+Execute a precompile
+
+#### Parameters
+
+##### address
+
+`string`
+
+Precompile address
+
+##### input
+
+`Uint8Array`
+
+Input data
+
+##### gasLimit
+
+`bigint`
+
+Gas limit for execution
+
+##### \_hardfork
+
+[`HardforkType`](../../primitives/Hardfork.mdx#hardforktype)
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+Precompile execution result
+
+***
+
+### identity()
+
+> **identity**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:436](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L436)
+
+IDENTITY precompile (0x04)
+Returns input data unchanged
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### isPrecompile()
+
+> **isPrecompile**(`address`, `hardfork`): `boolean`
+
+Defined in: [src/evm/precompiles/precompiles.ts:200](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L200)
+
+Check if an address is a precompile for a given hardfork
+
+#### Parameters
+
+##### address
+
+`string`
+
+##### hardfork
+
+[`HardforkType`](../../primitives/Hardfork.mdx#hardforktype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### modexp()
+
+> **modexp**(`_input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:456](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L456)
+
+MODEXP precompile (0x05)
+Modular exponentiation
+
+#### Parameters
+
+##### \_input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### pointEvaluation()
+
+> **pointEvaluation**(`_input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:750](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L750)
+
+POINT_EVALUATION precompile (0x0a)
+KZG point evaluation (EIP-4844)
+
+Input format (192 bytes per EIP-4844):
+- versioned_hash (32 bytes) - hash of the blob commitment
+- z (32 bytes) - evaluation point
+- y (32 bytes) - claimed evaluation result
+- commitment (48 bytes) - KZG commitment
+- proof (48 bytes) - KZG proof
+
+#### Parameters
+
+##### \_input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### ripemd160()
+
+> **ripemd160**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:411](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L411)
+
+RIPEMD160 precompile (0x03)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)
+
+***
+
+### sha256()
+
+> **sha256**(`input`, `gasLimit`): [`PrecompileResult`](#precompileresult)
+
+Defined in: [src/evm/precompiles/precompiles.ts:393](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/precompiles/precompiles.ts#L393)
+
+SHA256 precompile (0x02)
+
+#### Parameters
+
+##### input
+
+`Uint8Array`
+
+##### gasLimit
+
+`bigint`
+
+#### Returns
+
+[`PrecompileResult`](#precompileresult)

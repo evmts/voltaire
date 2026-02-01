@@ -1,0 +1,40 @@
+---
+title: '[TS/JS] src/jsonrpc/eth/getWork/eth_getWork.test.ts'
+source: 'src/jsonrpc/eth/getWork/eth_getWork.test.ts'
+---
+
+> Auto-generated from test file: src/jsonrpc/eth/getWork/eth_getWork.test.ts
+
+```typescript
+import { describe, expect, test } from "vitest";
+import { GetWorkRequest, method } from "./eth_getWork.js";
+
+describe("eth_getWork", () => {
+	describe("Request Creation", () => {
+		test("creates request with no parameters", () => {
+			const req = GetWorkRequest();
+			expect(req).toEqual({
+				method: "eth_getWork",
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_getWork");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type", () => {
+			const req = GetWorkRequest();
+			expect(req).toHaveProperty("method");
+			expect(req.params).toBeUndefined();
+		});
+
+		test("method matches constant", () => {
+			const req = GetWorkRequest();
+			expect(req.method).toBe(method);
+		});
+	});
+});
+
+```

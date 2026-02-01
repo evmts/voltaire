@@ -1,0 +1,306 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import { hash, hashSync, KeccakLive, KeccakService, KeccakTest } from "./index.js";
+
+const bytesToHex = (bytes: Uint8Array): string => {
+	return (
+		"0x" +
+		Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+	);
+};
+
+describe("KeccakService", () => {
+	describe("KeccakLive", () => {
+		it.effect("hashes data using Voltaire Keccak256", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array([1, 2, 3]));
+				expect(result).toBeInstanceOf(Uint8Array);
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("produces correct hash for known input", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array([]));
+				expect(result[0]).toBe(0xc5);
+				expect(result[1]).toBe(0xd2);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+	});
+
+	describe("Known Vector Tests", () => {
+		it.effect("matches known vector: empty string", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(0));
+				expect(bytesToHex(result)).toBe(
+					"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+				);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect('matches known vector: "hello"', () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(
+					new Uint8Array([0x68, 0x65, 0x6c, 0x6c, 0x6f]),
+				);
+				expect(bytesToHex(result)).toBe(
+					"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+				);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect('matches known vector: "Hello, World!"', () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const input = new TextEncoder().encode("Hello, World!");
+				const result = yield* keccak.hash(input);
+				expect(bytesToHex(result)).toBe(
+					"0xacaf3289d7b601cbd114fb36c4d29c85bbfd5e133f14cb355c3fd8d99367964f",
+				);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("matches known vector: single zero byte", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array([0x00]));
+				expect(bytesToHex(result)).toBe(
+					"0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+				);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("matches known vector: 0xff byte", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array([0xff]));
+				expect(bytesToHex(result)).toBe(
+					"0x8b1a944cf13a9a1c08facb2c9e98623ef3254d2ddb48113885c3e8e97fec8db9",
+				);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect(
+			'matches known vector: "The quick brown fox jumps over the lazy dog"',
+			() =>
+				Effect.gen(function* () {
+					const keccak = yield* KeccakService;
+					const input = new TextEncoder().encode(
+						"The quick brown fox jumps over the lazy dog",
+					);
+					const result = yield* keccak.hash(input);
+					expect(bytesToHex(result)).toBe(
+						"0x4d741b6f1eb29cb2a9b9911c82f56fa8d73b04959d3d9d222895df6c0b28aa15",
+					);
+				}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("matches known vector: 32 bytes of 0xab", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(32).fill(0xab));
+				expect(result).toBeInstanceOf(Uint8Array);
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+	});
+
+	describe("Input size variations", () => {
+		it.effect("hashes empty input", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(0));
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("hashes single byte", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array([0x42]));
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("hashes 64 bytes (block size)", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(64).fill(0x11));
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("hashes 136 bytes (keccak-256 rate)", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(136).fill(0x22));
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("hashes 137 bytes (rate + 1)", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(137).fill(0x33));
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("hashes 1KB input", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(1024).fill(0x44));
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("hashes 64KB input", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array(65536).fill(0x55));
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("hashes 1MB input", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(
+					new Uint8Array(1024 * 1024).fill(0x66),
+				);
+				expect(result.length).toBe(32);
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+	});
+
+	describe("Determinism", () => {
+		it.effect("produces same hash for same input", () =>
+			Effect.gen(function* () {
+				const input = new Uint8Array([1, 2, 3, 4, 5]);
+				const keccak = yield* KeccakService;
+				const hash1 = yield* keccak.hash(input);
+				const hash2 = yield* keccak.hash(input);
+				expect(bytesToHex(hash1)).toBe(bytesToHex(hash2));
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("produces different hash for different input", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const hash1 = yield* keccak.hash(new Uint8Array([1, 2, 3]));
+				const hash2 = yield* keccak.hash(new Uint8Array([1, 2, 4]));
+				expect(bytesToHex(hash1)).not.toBe(bytesToHex(hash2));
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+
+		it.effect("is sensitive to single bit change", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const hash1 = yield* keccak.hash(new Uint8Array([0b00000000]));
+				const hash2 = yield* keccak.hash(new Uint8Array([0b00000001]));
+				expect(bytesToHex(hash1)).not.toBe(bytesToHex(hash2));
+			}).pipe(Effect.provide(KeccakLive)),
+		);
+	});
+
+	describe("KeccakTest", () => {
+		it.effect("returns deterministic zero-filled hash", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const result = yield* keccak.hash(new Uint8Array([1, 2, 3]));
+				expect(result).toBeInstanceOf(Uint8Array);
+				expect(result.length).toBe(32);
+				expect(result.every((b) => b === 0)).toBe(true);
+			}).pipe(Effect.provide(KeccakTest)),
+		);
+
+		it.effect("returns same result for different inputs", () =>
+			Effect.gen(function* () {
+				const keccak = yield* KeccakService;
+				const hash1 = yield* keccak.hash(new Uint8Array([1, 2, 3]));
+				const hash2 = yield* keccak.hash(new Uint8Array([4, 5, 6]));
+				expect(bytesToHex(hash1)).toBe(bytesToHex(hash2));
+			}).pipe(Effect.provide(KeccakTest)),
+		);
+	});
+});
+
+describe("hash", () => {
+	it.effect("hashes data with KeccakService dependency", () =>
+		Effect.gen(function* () {
+			const data = new Uint8Array([104, 101, 108, 108, 111]);
+			const result = yield* hash(data);
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(32);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	it.effect("works with test layer", () =>
+		Effect.gen(function* () {
+			const data = new Uint8Array([1, 2, 3]);
+			const result = yield* hash(data);
+			expect(result.every((b) => b === 0)).toBe(true);
+		}).pipe(Effect.provide(KeccakTest)),
+	);
+
+	it("matches service result", async () => {
+		const data = new Uint8Array([104, 101, 108, 108, 111]);
+		const [hashResult, serviceResult] = await Promise.all([
+			Effect.runPromise(hash(data).pipe(Effect.provide(KeccakLive))),
+			Effect.runPromise(
+				Effect.gen(function* () {
+					const keccak = yield* KeccakService;
+					return yield* keccak.hash(data);
+				}).pipe(Effect.provide(KeccakLive)),
+			),
+		]);
+		expect(bytesToHex(hashResult)).toBe(bytesToHex(serviceResult));
+	});
+});
+
+describe("hashSync", () => {
+	it("hashes data synchronously without Effect service", () => {
+		const data = new Uint8Array([104, 101, 108, 108, 111]); // "hello"
+		const result = hashSync(data);
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(32);
+		expect(bytesToHex(result)).toBe(
+			"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+		);
+	});
+
+	it("matches Effect-based hash result", async () => {
+		const data = new Uint8Array([1, 2, 3]);
+		const syncResult = hashSync(data);
+		const effectResult = await Effect.runPromise(
+			hash(data).pipe(Effect.provide(KeccakLive)),
+		);
+		expect(bytesToHex(syncResult)).toBe(bytesToHex(effectResult));
+	});
+
+	it("works with empty input", () => {
+		const result = hashSync(new Uint8Array(0));
+		expect(bytesToHex(result)).toBe(
+			"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+		);
+	});
+
+	it("works with large input", () => {
+		const result = hashSync(new Uint8Array(1024).fill(0x42));
+		expect(result).toBeInstanceOf(Uint8Array);
+		expect(result.length).toBe(32);
+	});
+
+	it("is deterministic", () => {
+		const data = new Uint8Array([1, 2, 3, 4, 5]);
+		const hash1 = hashSync(data);
+		const hash2 = hashSync(data);
+		expect(bytesToHex(hash1)).toBe(bytesToHex(hash2));
+	});
+});

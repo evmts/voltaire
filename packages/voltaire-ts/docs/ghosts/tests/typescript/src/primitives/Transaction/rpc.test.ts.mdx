@@ -1,0 +1,249 @@
+---
+title: '[TS/JS] src/primitives/Transaction/rpc.test.ts'
+source: 'src/primitives/Transaction/rpc.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Transaction/rpc.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import {
+	InvalidLengthError,
+	InvalidTransactionTypeError,
+} from "../errors/index.js";
+import { fromRpc } from "./fromRpc.js";
+import { toRpc } from "./toRpc.js";
+import { Type } from "./types.js";
+
+describe("Transaction RPC format", () => {
+	describe("toRpc", () => {
+		it("converts legacy transaction", () => {
+			const tx = {
+				type: Type.Legacy,
+				nonce: 1n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: new Uint8Array(20).fill(0x12),
+				value: 1000000000000000000n,
+				data: new Uint8Array([0xab, 0xcd]),
+				v: 27n,
+				r: new Uint8Array(32).fill(0x11),
+				s: new Uint8Array(32).fill(0x22),
+			};
+
+			const rpc = toRpc(tx);
+
+			expect(rpc.type).toBe("0x0");
+			expect(rpc.nonce).toBe("0x1");
+			expect(rpc.gasPrice).toBe("0x4a817c800");
+			expect(rpc.gasLimit).toBe("0x5208");
+			expect(rpc.value).toBe("0xde0b6b3a7640000");
+			expect(rpc.v).toBe("0x1b");
+		});
+
+		it("converts EIP-1559 transaction", () => {
+			const tx = {
+				type: Type.EIP1559,
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: new Uint8Array(20).fill(0x12),
+				value: 0n,
+				data: new Uint8Array([]),
+				accessList: [],
+				yParity: 0,
+				r: new Uint8Array(32).fill(0x11),
+				s: new Uint8Array(32).fill(0x22),
+			};
+
+			const rpc = toRpc(tx);
+
+			expect(rpc.type).toBe("0x2");
+			expect(rpc.chainId).toBe("0x1");
+			expect(rpc.maxPriorityFeePerGas).toBe("0x3b9aca00");
+			expect(rpc.maxFeePerGas).toBe("0x4a817c800");
+			expect(rpc.yParity).toBe("0x0");
+		});
+
+		it("converts access list", () => {
+			const tx = {
+				type: Type.EIP2930,
+				chainId: 1n,
+				nonce: 0n,
+				gasPrice: 20000000000n,
+				gasLimit: 21000n,
+				to: new Uint8Array(20).fill(0x12),
+				value: 0n,
+				data: new Uint8Array([]),
+				accessList: [
+					{
+						address: new Uint8Array(20).fill(0xaa),
+						storageKeys: [new Uint8Array(32).fill(0xbb)],
+					},
+				],
+				yParity: 1,
+				r: new Uint8Array(32).fill(0x11),
+				s: new Uint8Array(32).fill(0x22),
+			};
+
+			const rpc = toRpc(tx);
+
+			expect(rpc.accessList).toHaveLength(1);
+			expect(rpc.accessList[0].storageKeys).toHaveLength(1);
+		});
+	});
+
+	describe("fromRpc", () => {
+		it("parses legacy transaction", () => {
+			const rpc = {
+				type: "0x0",
+				nonce: "0x1",
+				gasPrice: "0x4a817c800",
+				gas: "0x5208",
+				to: `0x${"12".repeat(20)}`,
+				value: "0xde0b6b3a7640000",
+				data: "0xabcd",
+				v: "0x1b",
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
+			};
+
+			const tx = fromRpc(rpc);
+
+			expect(tx.type).toBe(Type.Legacy);
+			expect(tx.nonce).toBe(1n);
+			expect(tx.gasPrice).toBe(20000000000n);
+			expect(tx.gasLimit).toBe(21000n);
+			expect(tx.v).toBe(27n);
+		});
+
+		it("parses EIP-1559 transaction", () => {
+			const rpc = {
+				type: "0x2",
+				chainId: "0x1",
+				nonce: "0x0",
+				maxPriorityFeePerGas: "0x3b9aca00",
+				maxFeePerGas: "0x4a817c800",
+				gas: "0x5208",
+				to: `0x${"12".repeat(20)}`,
+				value: "0x0",
+				input: "0x",
+				accessList: [],
+				yParity: "0x0",
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
+			};
+
+			const tx = fromRpc(rpc);
+
+			expect(tx.type).toBe(Type.EIP1559);
+			expect(tx.chainId).toBe(1n);
+			expect(tx.maxPriorityFeePerGas).toBe(1000000000n);
+			expect(tx.yParity).toBe(0);
+		});
+
+		it("handles null to address", () => {
+			const rpc = {
+				type: "0x0",
+				nonce: "0x0",
+				gasPrice: "0x1",
+				gas: "0x5208",
+				to: null,
+				value: "0x0",
+				data: "0x",
+				v: "0x1b",
+				r: "0x1",
+				s: "0x1",
+			};
+
+			const tx = fromRpc(rpc);
+			expect(tx.to).toBeNull();
+		});
+	});
+
+	describe("round-trip", () => {
+		it("round-trips EIP-1559 transaction", () => {
+			const original = {
+				type: Type.EIP1559,
+				chainId: 1n,
+				nonce: 5n,
+				maxPriorityFeePerGas: 1000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 21000n,
+				to: new Uint8Array(20).fill(0x12),
+				value: 1000000000000000000n,
+				data: new Uint8Array([0xab, 0xcd]),
+				accessList: [],
+				yParity: 1,
+				r: new Uint8Array(32).fill(0x11),
+				s: new Uint8Array(32).fill(0x22),
+			};
+
+			const rpc = toRpc(original);
+			const restored = fromRpc(rpc);
+
+			expect(restored.type).toBe(original.type);
+			expect(restored.chainId).toBe(original.chainId);
+			expect(restored.nonce).toBe(original.nonce);
+			expect(restored.maxPriorityFeePerGas).toBe(original.maxPriorityFeePerGas);
+			expect(restored.maxFeePerGas).toBe(original.maxFeePerGas);
+			expect(restored.gasLimit).toBe(original.gasLimit);
+			expect(restored.value).toBe(original.value);
+			expect(restored.yParity).toBe(original.yParity);
+		});
+	});
+
+	describe("error handling", () => {
+		it("throws InvalidTransactionTypeError for unknown transaction type", () => {
+			const rpc = {
+				type: "0xff",
+				nonce: "0x0",
+				gasPrice: "0x1",
+				gas: "0x5208",
+				to: `0x${"12".repeat(20)}`,
+				value: "0x0",
+				data: "0x",
+				v: "0x1b",
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
+			};
+
+			try {
+				fromRpc(rpc);
+				expect.fail("Expected to throw");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidTransactionTypeError);
+				expect((e as InvalidTransactionTypeError).name).toBe(
+					"InvalidTransactionTypeError",
+				);
+			}
+		});
+
+		it("throws InvalidLengthError for invalid address length", () => {
+			const rpc = {
+				type: "0x0",
+				nonce: "0x0",
+				gasPrice: "0x1",
+				gas: "0x5208",
+				to: "0x1234", // Invalid - only 2 bytes
+				value: "0x0",
+				data: "0x",
+				v: "0x1b",
+				r: `0x${"11".repeat(32)}`,
+				s: `0x${"22".repeat(32)}`,
+			};
+
+			try {
+				fromRpc(rpc);
+				expect.fail("Expected to throw");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidLengthError);
+				expect((e as InvalidLengthError).name).toBe("InvalidLengthError");
+			}
+		});
+	});
+});
+
+```

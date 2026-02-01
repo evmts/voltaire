@@ -1,0 +1,32 @@
+---
+title: Proof
+description: Merkle proof validation
+---
+
+```typescript
+import { Proof } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+// Create and verify a proof
+const program = Effect.gen(function* () {
+  const proof = yield* Proof.from({
+    value: valueBytes,
+    proof: [node1, node2]
+  })
+  
+  const result = yield* Proof.verify(proof)
+  return result.valid
+})
+
+// Compare proofs
+const areEqual = yield* Proof.equals(proof1, proof2)
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(input) => Effect<ProofType, Error>` |
+| `verify` | `(proof) => Effect<{ valid: boolean }, Error>` |
+| `equals` | `(a, b) => Effect<boolean>` |
+| `Schema` | Effect Schema for validation |

@@ -1,0 +1,2624 @@
+---
+title: "primitives/Address"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Address
+
+# primitives/Address
+
+## Classes
+
+### InvalidAddressError
+
+Defined in: [src/primitives/Address/errors.js:159](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L159)
+
+Error thrown when address is invalid
+
+#### Throws
+
+#### Extends
+
+- [`ValidationError`](../index/index.mdx#validationerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidAddressError**(`message?`, `options?`): [`InvalidAddressError`](#invalidaddresserror)
+
+Defined in: [src/primitives/Address/errors.js:170](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L170)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+Error message
+
+###### options?
+
+Error options
+
+###### cause?
+
+`Error`
+
+Root cause error
+
+###### code?
+
+`string`
+
+Error code
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+Additional context
+
+###### docsPath?
+
+`string`
+
+Documentation path
+
+###### expected?
+
+`string`
+
+Expected format
+
+###### value?
+
+`unknown`
+
+Invalid value
+
+###### Returns
+
+[`InvalidAddressError`](#invalidaddresserror)
+
+###### Overrides
+
+[`ValidationError`](../index/index.mdx#validationerror).[`constructor`](../index/index.mdx#constructor-20)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`cause`](../index/index.mdx#cause-19)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`code`](../index/index.mdx#code-19)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`context`](../index/index.mdx#context-19)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`docsPath`](../index/index.mdx#docspath-19)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`expected`](../index/index.mdx#expected-7)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Address/errors.js:180](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L180)
+
+###### Inherited from
+
+`ValidationError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`value`](../index/index.mdx#value-7)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`getErrorChain`](../index/index.mdx#geterrorchain-38)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`toJSON`](../index/index.mdx#tojson-38)
+
+***
+
+### InvalidAddressLengthError
+
+Defined in: [src/primitives/Address/errors.js:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L74)
+
+Error thrown when address has invalid length
+
+#### Throws
+
+#### Extends
+
+- [`InvalidLengthError`](../index/index.mdx#invalidlengtherror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidAddressLengthError**(`message?`, `options?`): [`InvalidAddressLengthError`](#invalidaddresslengtherror)
+
+Defined in: [src/primitives/Address/errors.js:85](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L85)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+Error message
+
+###### options?
+
+Error options
+
+###### cause?
+
+`Error`
+
+Root cause error
+
+###### code?
+
+`string`
+
+Error code
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+Additional context
+
+###### docsPath?
+
+`string`
+
+Documentation path
+
+###### expected?
+
+`string`
+
+Expected length
+
+###### value?
+
+`unknown`
+
+Invalid value
+
+###### Returns
+
+[`InvalidAddressLengthError`](#invalidaddresslengtherror)
+
+###### Overrides
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`constructor`](../index/index.mdx#constructor-8)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`cause`](../index/index.mdx#cause-8)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`code`](../index/index.mdx#code-8)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`context`](../index/index.mdx#context-8)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`docsPath`](../index/index.mdx#docspath-8)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`expected`](../index/index.mdx#expected-4)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Address/errors.js:95](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L95)
+
+###### Inherited from
+
+`InvalidLengthError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`value`](../index/index.mdx#value-4)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`getErrorChain`](../index/index.mdx#geterrorchain-16)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidLengthError`](../index/index.mdx#invalidlengtherror).[`toJSON`](../index/index.mdx#tojson-16)
+
+***
+
+### InvalidChecksumError
+
+Defined in: [src/primitives/Address/errors.js:189](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L189)
+
+Error thrown when address checksum is invalid
+
+#### Throws
+
+#### Extends
+
+- [`ValidationError`](../index/index.mdx#validationerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidChecksumError**(`message?`, `options?`): [`InvalidChecksumError`](#invalidchecksumerror)
+
+Defined in: [src/primitives/Address/errors.js:200](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L200)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+Error message
+
+###### options?
+
+Error options
+
+###### cause?
+
+`Error`
+
+Root cause error
+
+###### code?
+
+`string`
+
+Error code
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+Additional context
+
+###### docsPath?
+
+`string`
+
+Documentation path
+
+###### expected?
+
+`string`
+
+Expected checksum
+
+###### value?
+
+`unknown`
+
+Invalid value
+
+###### Returns
+
+[`InvalidChecksumError`](#invalidchecksumerror)
+
+###### Overrides
+
+[`ValidationError`](../index/index.mdx#validationerror).[`constructor`](../index/index.mdx#constructor-20)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`cause`](../index/index.mdx#cause-19)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`code`](../index/index.mdx#code-19)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`context`](../index/index.mdx#context-19)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`docsPath`](../index/index.mdx#docspath-19)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`expected`](../index/index.mdx#expected-7)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Address/errors.js:210](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L210)
+
+###### Inherited from
+
+`ValidationError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`value`](../index/index.mdx#value-7)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`getErrorChain`](../index/index.mdx#geterrorchain-38)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`toJSON`](../index/index.mdx#tojson-38)
+
+***
+
+### InvalidHexFormatError
+
+Defined in: [src/primitives/Address/errors.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L13)
+
+Error thrown when address hex format is invalid
+
+#### Throws
+
+#### Extends
+
+- [`InvalidFormatError`](../index/index.mdx#invalidformaterror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidHexFormatError**(`message?`, `options?`): [`InvalidHexFormatError`](#invalidhexformaterror)
+
+Defined in: [src/primitives/Address/errors.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L24)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+Error message
+
+###### options?
+
+Error options
+
+###### cause?
+
+`Error`
+
+Root cause error
+
+###### code?
+
+`string`
+
+Error code
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+Additional context
+
+###### docsPath?
+
+`string`
+
+Documentation path
+
+###### expected?
+
+`string`
+
+Expected format
+
+###### value?
+
+`unknown`
+
+Invalid value
+
+###### Returns
+
+[`InvalidHexFormatError`](#invalidhexformaterror)
+
+###### Overrides
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`constructor`](../index/index.mdx#constructor-7)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`cause`](../index/index.mdx#cause-7)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`code`](../index/index.mdx#code-7)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`context`](../index/index.mdx#context-7)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`docsPath`](../index/index.mdx#docspath-7)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`expected`](../index/index.mdx#expected-3)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Address/errors.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L34)
+
+###### Inherited from
+
+`InvalidFormatError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`value`](../index/index.mdx#value-3)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`getErrorChain`](../index/index.mdx#geterrorchain-14)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`toJSON`](../index/index.mdx#tojson-14)
+
+***
+
+### InvalidHexStringError
+
+Defined in: [src/primitives/Address/errors.js:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L43)
+
+Error thrown when hex string contains invalid characters
+
+#### Throws
+
+#### Extends
+
+- [`InvalidFormatError`](../index/index.mdx#invalidformaterror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidHexStringError**(`message?`, `options?`): [`InvalidHexStringError`](#invalidhexstringerror)
+
+Defined in: [src/primitives/Address/errors.js:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L54)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+Error message
+
+###### options?
+
+Error options
+
+###### cause?
+
+`Error`
+
+Root cause error
+
+###### code?
+
+`string`
+
+Error code
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+Additional context
+
+###### docsPath?
+
+`string`
+
+Documentation path
+
+###### expected?
+
+`string`
+
+Expected format
+
+###### value?
+
+`unknown`
+
+Invalid value
+
+###### Returns
+
+[`InvalidHexStringError`](#invalidhexstringerror)
+
+###### Overrides
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`constructor`](../index/index.mdx#constructor-7)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`cause`](../index/index.mdx#cause-7)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`code`](../index/index.mdx#code-7)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`context`](../index/index.mdx#context-7)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`docsPath`](../index/index.mdx#docspath-7)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`expected`](../index/index.mdx#expected-3)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Address/errors.js:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L65)
+
+###### Inherited from
+
+`InvalidFormatError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`value`](../index/index.mdx#value-3)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`getErrorChain`](../index/index.mdx#geterrorchain-14)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`toJSON`](../index/index.mdx#tojson-14)
+
+***
+
+### InvalidValueError
+
+Defined in: [src/primitives/Address/errors.js:104](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L104)
+
+Error thrown when value is invalid
+
+#### Throws
+
+#### Extends
+
+- [`ValidationError`](../index/index.mdx#validationerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidValueError**(`message`, `options?`): [`InvalidValueError`](#invalidvalueerror)
+
+Defined in: [src/primitives/Address/errors.js:115](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L115)
+
+###### Parameters
+
+###### message
+
+`string`
+
+Error message
+
+###### options?
+
+Error options
+
+###### cause?
+
+`Error`
+
+Root cause error
+
+###### code?
+
+`string`
+
+Error code
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+Additional context
+
+###### docsPath?
+
+`string`
+
+Documentation path
+
+###### expected?
+
+`string`
+
+Expected value
+
+###### value?
+
+`unknown`
+
+Invalid value
+
+###### Returns
+
+[`InvalidValueError`](#invalidvalueerror)
+
+###### Overrides
+
+[`ValidationError`](../index/index.mdx#validationerror).[`constructor`](../index/index.mdx#constructor-20)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`cause`](../index/index.mdx#cause-19)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`code`](../index/index.mdx#code-19)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`context`](../index/index.mdx#context-19)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`docsPath`](../index/index.mdx#docspath-19)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`expected`](../index/index.mdx#expected-7)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Address/errors.js:125](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L125)
+
+###### Inherited from
+
+`ValidationError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`value`](../index/index.mdx#value-7)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`getErrorChain`](../index/index.mdx#geterrorchain-38)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ValidationError`](../index/index.mdx#validationerror).[`toJSON`](../index/index.mdx#tojson-38)
+
+***
+
+### NotImplementedError
+
+Defined in: [src/primitives/Address/errors.js:134](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L134)
+
+Error thrown when feature is not implemented
+
+#### Throws
+
+#### Extends
+
+- [`PrimitiveError`](../index/index.mdx#primitiveerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new NotImplementedError**(`message?`, `options?`): [`NotImplementedError`](#notimplementederror)
+
+Defined in: [src/primitives/Address/errors.js:143](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L143)
+
+###### Parameters
+
+###### message?
+
+`string`
+
+Error message
+
+###### options?
+
+Error options
+
+###### cause?
+
+`Error`
+
+Root cause error
+
+###### code?
+
+`string`
+
+Error code
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+Additional context
+
+###### docsPath?
+
+`string`
+
+Documentation path
+
+###### Returns
+
+[`NotImplementedError`](#notimplementederror)
+
+###### Overrides
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`constructor`](../index/index.mdx#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`cause`](../index/index.mdx#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`code`](../index/index.mdx#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`context`](../index/index.mdx#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`docsPath`](../index/index.mdx#docspath-16)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Address/errors.js:150](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/errors.js#L150)
+
+###### Inherited from
+
+`PrimitiveError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`getErrorChain`](../index/index.mdx#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](../index/index.mdx#primitiveerror).[`toJSON`](../index/index.mdx#tojson-32)
+
+## Interfaces
+
+### AddressCrypto
+
+Defined in: [src/primitives/Address/index.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L23)
+
+Crypto dependencies for Address operations
+
+#### Properties
+
+##### keccak256()?
+
+> `optional` **keccak256**: (`data`) => `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L24)
+
+###### Parameters
+
+###### data
+
+`Uint8Array`
+
+###### Returns
+
+`Uint8Array`
+
+##### rlpEncode()?
+
+> `optional` **rlpEncode**: (`items`) => `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L25)
+
+###### Parameters
+
+###### items
+
+`unknown`[]
+
+###### Returns
+
+`Uint8Array`
+
+***
+
+### AddressWithFullCrypto
+
+Defined in: [src/primitives/Address/index.ts:61](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L61)
+
+Address with full crypto support (enables all contract address methods)
+
+#### Extends
+
+- [`AddressWithKeccak`](#addresswithkeccak)
+
+#### Indexable
+
+\[`index`: `number`\]: `number`
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Address"`
+
+Defined in: [src/primitives/Address/AddressType.ts:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/AddressType.ts#L4)
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`[brand]`](#brand-1)
+
+#### Methods
+
+##### calculateCreate2Address()
+
+> **calculateCreate2Address**(`salt`, `initCode`): [`AddressType`](#addresstype)
+
+Defined in: [src/primitives/Address/index.ts:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L52)
+
+###### Parameters
+
+###### salt
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### initCode
+
+`BrandedBytecode`
+
+###### Returns
+
+[`AddressType`](#addresstype)
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`calculateCreate2Address`](#calculatecreate2address-2)
+
+##### calculateCreateAddress()
+
+> **calculateCreateAddress**(`nonce`): [`AddressType`](#addresstype)
+
+Defined in: [src/primitives/Address/index.ts:62](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L62)
+
+###### Parameters
+
+###### nonce
+
+`bigint`
+
+###### Returns
+
+[`AddressType`](#addresstype)
+
+##### clone()
+
+> **clone**(): [`AddressType`](#addresstype)
+
+Defined in: [src/primitives/Address/index.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L41)
+
+###### Returns
+
+[`AddressType`](#addresstype)
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`clone`](#clone-2)
+
+##### compare()
+
+> **compare**(`other`): `number`
+
+Defined in: [src/primitives/Address/index.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L42)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`number`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`compare`](#compare-2)
+
+##### equals()
+
+> **equals**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L39)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`equals`](#equals-2)
+
+##### greaterThan()
+
+> **greaterThan**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L44)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`greaterThan`](#greaterthan-2)
+
+##### isZero()
+
+> **isZero**(): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L38)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`isZero`](#iszero-2)
+
+##### lessThan()
+
+> **lessThan**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L43)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`lessThan`](#lessthan-2)
+
+##### toAbiEncoded()
+
+> **toAbiEncoded**(): `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L36)
+
+###### Returns
+
+`Uint8Array`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toAbiEncoded`](#toabiencoded-2)
+
+##### toBytes()
+
+> **toBytes**(): `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L40)
+
+###### Returns
+
+`Uint8Array`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toBytes`](#tobytes-2)
+
+##### toChecksummed()
+
+> **toChecksummed**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L51)
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toChecksummed`](#tochecksummed-2)
+
+##### toHex()
+
+> **toHex**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L32)
+
+Convert the Uint8Array to a hex encoded string
+
+###### Returns
+
+`string`
+
+The hex encoded string representation of the Uint8Array
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toHex`](#tohex-2)
+
+##### toLowercase()
+
+> **toLowercase**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L33)
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toLowercase`](#tolowercase-2)
+
+##### toShortHex()
+
+> **toShortHex**(`startLength?`, `endLength?`): `string`
+
+Defined in: [src/primitives/Address/index.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L37)
+
+###### Parameters
+
+###### startLength?
+
+`number`
+
+###### endLength?
+
+`number`
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toShortHex`](#toshorthex-2)
+
+##### toU256()
+
+> **toU256**(): `bigint`
+
+Defined in: [src/primitives/Address/index.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L35)
+
+###### Returns
+
+`bigint`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toU256`](#tou256-2)
+
+##### toUppercase()
+
+> **toUppercase**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L34)
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AddressWithKeccak`](#addresswithkeccak).[`toUppercase`](#touppercase-2)
+
+***
+
+### AddressWithKeccak
+
+Defined in: [src/primitives/Address/index.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L50)
+
+Address with keccak256 support (enables checksum methods)
+
+#### Extends
+
+- [`BaseAddress`](#baseaddress)
+
+#### Extended by
+
+- [`AddressWithFullCrypto`](#addresswithfullcrypto)
+
+#### Indexable
+
+\[`index`: `number`\]: `number`
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Address"`
+
+Defined in: [src/primitives/Address/AddressType.ts:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/AddressType.ts#L4)
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`[brand]`](#brand-2)
+
+#### Methods
+
+##### calculateCreate2Address()
+
+> **calculateCreate2Address**(`salt`, `initCode`): [`AddressType`](#addresstype)
+
+Defined in: [src/primitives/Address/index.ts:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L52)
+
+###### Parameters
+
+###### salt
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### initCode
+
+`BrandedBytecode`
+
+###### Returns
+
+[`AddressType`](#addresstype)
+
+##### clone()
+
+> **clone**(): [`AddressType`](#addresstype)
+
+Defined in: [src/primitives/Address/index.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L41)
+
+###### Returns
+
+[`AddressType`](#addresstype)
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`clone`](#clone-4)
+
+##### compare()
+
+> **compare**(`other`): `number`
+
+Defined in: [src/primitives/Address/index.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L42)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`number`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`compare`](#compare-4)
+
+##### equals()
+
+> **equals**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L39)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`equals`](#equals-4)
+
+##### greaterThan()
+
+> **greaterThan**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L44)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`greaterThan`](#greaterthan-4)
+
+##### isZero()
+
+> **isZero**(): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L38)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`isZero`](#iszero-4)
+
+##### lessThan()
+
+> **lessThan**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L43)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`lessThan`](#lessthan-4)
+
+##### toAbiEncoded()
+
+> **toAbiEncoded**(): `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L36)
+
+###### Returns
+
+`Uint8Array`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`toAbiEncoded`](#toabiencoded-4)
+
+##### toBytes()
+
+> **toBytes**(): `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L40)
+
+###### Returns
+
+`Uint8Array`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`toBytes`](#tobytes-4)
+
+##### toChecksummed()
+
+> **toChecksummed**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L51)
+
+###### Returns
+
+`string`
+
+##### toHex()
+
+> **toHex**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L32)
+
+Convert the Uint8Array to a hex encoded string
+
+###### Returns
+
+`string`
+
+The hex encoded string representation of the Uint8Array
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`toHex`](#tohex-4)
+
+##### toLowercase()
+
+> **toLowercase**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L33)
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`toLowercase`](#tolowercase-4)
+
+##### toShortHex()
+
+> **toShortHex**(`startLength?`, `endLength?`): `string`
+
+Defined in: [src/primitives/Address/index.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L37)
+
+###### Parameters
+
+###### startLength?
+
+`number`
+
+###### endLength?
+
+`number`
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`toShortHex`](#toshorthex-4)
+
+##### toU256()
+
+> **toU256**(): `bigint`
+
+Defined in: [src/primitives/Address/index.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L35)
+
+###### Returns
+
+`bigint`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`toU256`](#tou256-4)
+
+##### toUppercase()
+
+> **toUppercase**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L34)
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`BaseAddress`](#baseaddress).[`toUppercase`](#touppercase-4)
+
+***
+
+### BaseAddress
+
+Defined in: [src/primitives/Address/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L31)
+
+Base Address type without crypto-dependent methods
+
+#### Extends
+
+- [`AddressType`](#addresstype)
+
+#### Extended by
+
+- [`AddressWithKeccak`](#addresswithkeccak)
+
+#### Indexable
+
+\[`index`: `number`\]: `number`
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Address"`
+
+Defined in: [src/primitives/Address/AddressType.ts:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/AddressType.ts#L4)
+
+###### Inherited from
+
+`AddressType.[brand]`
+
+#### Methods
+
+##### clone()
+
+> **clone**(): [`AddressType`](#addresstype)
+
+Defined in: [src/primitives/Address/index.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L41)
+
+###### Returns
+
+[`AddressType`](#addresstype)
+
+##### compare()
+
+> **compare**(`other`): `number`
+
+Defined in: [src/primitives/Address/index.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L42)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`number`
+
+##### equals()
+
+> **equals**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L39)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+##### greaterThan()
+
+> **greaterThan**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L44)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+##### isZero()
+
+> **isZero**(): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L38)
+
+###### Returns
+
+`boolean`
+
+##### lessThan()
+
+> **lessThan**(`other`): `boolean`
+
+Defined in: [src/primitives/Address/index.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L43)
+
+###### Parameters
+
+###### other
+
+[`AddressType`](#addresstype)
+
+###### Returns
+
+`boolean`
+
+##### toAbiEncoded()
+
+> **toAbiEncoded**(): `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L36)
+
+###### Returns
+
+`Uint8Array`
+
+##### toBytes()
+
+> **toBytes**(): `Uint8Array`
+
+Defined in: [src/primitives/Address/index.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L40)
+
+###### Returns
+
+`Uint8Array`
+
+##### toHex()
+
+> **toHex**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L32)
+
+Convert the Uint8Array to a hex encoded string
+
+###### Returns
+
+`string`
+
+The hex encoded string representation of the Uint8Array
+
+###### Overrides
+
+`AddressType.toHex`
+
+##### toLowercase()
+
+> **toLowercase**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L33)
+
+###### Returns
+
+`string`
+
+##### toShortHex()
+
+> **toShortHex**(`startLength?`, `endLength?`): `string`
+
+Defined in: [src/primitives/Address/index.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L37)
+
+###### Parameters
+
+###### startLength?
+
+`number`
+
+###### endLength?
+
+`number`
+
+###### Returns
+
+`string`
+
+##### toU256()
+
+> **toU256**(): `bigint`
+
+Defined in: [src/primitives/Address/index.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L35)
+
+###### Returns
+
+`bigint`
+
+##### toUppercase()
+
+> **toUppercase**(): `string`
+
+Defined in: [src/primitives/Address/index.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L34)
+
+###### Returns
+
+`string`
+
+## Type Aliases
+
+### AddressType
+
+> **AddressType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Address/AddressType.ts:3](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/AddressType.ts#L3)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Address"`
+
+## Variables
+
+### equals()
+
+> `const` **equals**: (`address`, `other`) => `boolean` = `Address.equals`
+
+Defined in: [src/primitives/Address/index.ts:262](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L262)
+
+Check if two addresses are equal
+
+#### Parameters
+
+##### address
+
+[`AddressType`](#addresstype)
+
+First address
+
+##### other
+
+[`AddressType`](#addresstype)
+
+Address to compare with
+
+#### Returns
+
+`boolean`
+
+True if addresses are identical
+
+#### Example
+
+```typescript
+if (Address.equals(addr1, addr2)) {
+  console.log("Addresses match");
+}
+```
+
+***
+
+### fromHex()
+
+> `const` **fromHex**: (`value`, `crypto?`) => [`AddressType`](#addresstype) = `Address.fromHex`
+
+Defined in: [src/primitives/Address/index.ts:261](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L261)
+
+#### Parameters
+
+##### value
+
+`string`
+
+##### crypto?
+
+[`AddressCrypto`](#addresscrypto)
+
+#### Returns
+
+[`AddressType`](#addresstype)
+
+***
+
+### fromPublicKey()
+
+> `const` **fromPublicKey**: \{(`x`, `y`): [`AddressType`](#addresstype); (`publicKey`): [`AddressType`](#addresstype); \} = `Address.fromPublicKey`
+
+Defined in: [src/primitives/Address/index.ts:186](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L186)
+
+#### Call Signature
+
+> (`x`, `y`): [`AddressType`](#addresstype)
+
+##### Parameters
+
+###### x
+
+`bigint`
+
+###### y
+
+`bigint`
+
+##### Returns
+
+[`AddressType`](#addresstype)
+
+#### Call Signature
+
+> (`publicKey`): [`AddressType`](#addresstype)
+
+##### Parameters
+
+###### publicKey
+
+`Uint8Array`
+
+##### Returns
+
+[`AddressType`](#addresstype)
+
+***
+
+### HEX\_SIZE
+
+> `const` **HEX\_SIZE**: `42` = `42`
+
+Defined in: [src/primitives/Address/constants.js:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/constants.js#L11)
+
+Address hex string size (including 0x prefix)
+
+***
+
+### NATIVE\_ASSET\_ADDRESS
+
+> `const` **NATIVE\_ASSET\_ADDRESS**: `string` = `"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"`
+
+Defined in: [src/primitives/Address/constants.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/constants.js#L19)
+
+Native ETH address constant as defined in ERC-7528
+Used to represent native ETH in token-related operations
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-7528
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `20` = `20`
+
+Defined in: [src/primitives/Address/constants.js:5](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/constants.js#L5)
+
+Address size in bytes
+
+***
+
+### toHex()
+
+> `const` **toHex**: (`address`) => [`HexType`](Hex.mdx#hextype) = `BrandedAddress.toHex`
+
+Defined in: [src/primitives/Address/index.ts:260](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L260)
+
+Convert Address to hex string
+
+#### Parameters
+
+##### address
+
+[`AddressType`](#addresstype)
+
+Address to convert
+
+#### Returns
+
+[`HexType`](Hex.mdx#hextype)
+
+Lowercase hex string with 0x prefix
+
+#### Example
+
+```typescript
+const hex = Address.toHex(addr);
+// "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+```
+
+## Functions
+
+### Address()
+
+#### Call Signature
+
+> **Address**(`value`): [`BaseAddress`](#baseaddress)
+
+Defined in: [src/primitives/Address/index.ts:80](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L80)
+
+Creates Address instances with prototype chain
+
+##### Parameters
+
+###### value
+
+Value to convert (hex string, bytes, or number)
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\>
+
+##### Returns
+
+[`BaseAddress`](#baseaddress)
+
+Address instance with prototype methods
+
+##### See
+
+https://voltaire.tevm.sh/primitives/address for Address documentation
+
+##### Since
+
+0.0.0
+
+##### Throws
+
+If value format is invalid
+
+##### Example
+
+```typescript
+import { Address } from './primitives/Address/index.js';
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+console.log(addr.toHex());
+```
+
+#### Call Signature
+
+> **Address**(`value`, `crypto`): [`AddressWithKeccak`](#addresswithkeccak)
+
+Defined in: [src/primitives/Address/index.ts:91](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L91)
+
+Creates Address with keccak256 support
+
+##### Parameters
+
+###### value
+
+Value to convert
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### crypto
+
+Crypto dependencies with keccak256
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+##### Returns
+
+[`AddressWithKeccak`](#addresswithkeccak)
+
+Address with checksum methods
+
+#### Call Signature
+
+> **Address**(`value`, `crypto`): [`AddressWithFullCrypto`](#addresswithfullcrypto)
+
+Defined in: [src/primitives/Address/index.ts:103](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L103)
+
+Creates Address with full crypto support
+
+##### Parameters
+
+###### value
+
+Value to convert
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### crypto
+
+Crypto dependencies with keccak256 and rlpEncode
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+###### rlpEncode
+
+(`items`) => `Uint8Array`
+
+##### Returns
+
+[`AddressWithFullCrypto`](#addresswithfullcrypto)
+
+Address with all contract address methods
+
+***
+
+### deduplicateAddresses()
+
+> **deduplicateAddresses**(`addresses`): [`AddressType`](#addresstype)[]
+
+Defined in: [src/primitives/Address/index.ts:251](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L251)
+
+#### Parameters
+
+##### addresses
+
+[`AddressType`](#addresstype)[]
+
+#### Returns
+
+[`AddressType`](#addresstype)[]
+
+***
+
+### sortAddresses()
+
+> **sortAddresses**(`addresses`): [`AddressType`](#addresstype)[]
+
+Defined in: [src/primitives/Address/index.ts:244](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Address/index.ts#L244)
+
+#### Parameters
+
+##### addresses
+
+[`AddressType`](#addresstype)[]
+
+#### Returns
+
+[`AddressType`](#addresstype)[]
+
+## References
+
+### BrandedAddress
+
+Renames and re-exports [AddressType](#addresstype)
+
+***
+
+### default
+
+Renames and re-exports [Address](#address)

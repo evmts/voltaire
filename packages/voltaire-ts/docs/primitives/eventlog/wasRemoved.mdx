@@ -1,0 +1,30 @@
+---
+title: EventLog.wasRemoved
+description: Alias for isRemoved
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/event-log.ts">
+  Run EventLog examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Usage Notes
+
+`wasRemoved()` is functionally identical to `isRemoved()`:
+
+```typescript
+// Both equivalent
+const removed1 = log.isRemoved();
+const removed2 = log.wasRemoved();
+```
+
+Use whichever name is clearer in context. `wasRemoved()` emphasizes past tense; `isRemoved()` emphasizes current state.
+
+## See Also
+
+- [isRemoved](/primitives/eventlog/isremoved) - Primary method with full documentation
+- [Fundamentals](/primitives/eventlog/fundamentals) - Chain reorganizations

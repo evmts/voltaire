@@ -1,0 +1,222 @@
+import * as FileSystem from "@effect/platform/FileSystem";
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
+import * as Layer from "effect/Layer";
+import { makeMockIpcSocket } from "./__testUtils__/mockIpcSocket.js";
+import { IpcTransport } from "./IpcTransport.js";
+import { TransportError } from "./TransportError.js";
+import { TransportService } from "./TransportService.js";
+
+describe("IpcTransport", () => {
+	describe("configuration", () => {
+		it("accepts string path configuration", () => {
+			const layer = IpcTransport("/tmp/geth.ipc");
+			expect(Layer.isLayer(layer)).toBe(true);
+		});
+
+		it("accepts object configuration with options", () => {
+			const layer = IpcTransport({
+				path: "/tmp/geth.ipc",
+				timeout: 60000,
+				reconnect: { maxAttempts: 2, delay: 1000 },
+			});
+			expect(Layer.isLayer(layer)).toBe(true);
+		});
+	});
+
+	describe("Request/response correlation", () => {
+		it("matches responses to requests by ID (out of order)", async () => {
+			const pending: Array<{ id: number; method: string }> = [];
+			const { socketFactory, sockets } = makeMockIpcSocket({
+				onWrite: (_socket, data) => {
+					const line = String(data).trim();
+					if (!line) return;
+					const req = JSON.parse(line) as { id: number; method: string };
+					pending.push({ id: req.id, method: req.method });
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+
+				const fiber1 = yield* Effect.fork(
+					transport.request<string>("eth_blockNumber"),
+				);
+				const fiber2 = yield* Effect.fork(
+					transport.request<string>("eth_chainId"),
+				);
+
+				yield* Effect.sleep(10);
+
+				if (sockets[0] && pending.length >= 2) {
+					const req1 = pending.find((r) => r.method === "eth_blockNumber")!;
+					const req2 = pending.find((r) => r.method === "eth_chainId")!;
+
+					sockets[0].emitMessage({
+						jsonrpc: "2.0",
+						id: req2.id,
+						result: "0x1",
+					});
+					sockets[0].emitMessage({
+						jsonrpc: "2.0",
+						id: req1.id,
+						result: "0xabc",
+					});
+				}
+
+				const [result1, result2] = yield* Effect.all([
+					Fiber.join(fiber1),
+					Fiber.join(fiber2),
+				]);
+
+				return { result1, result2 };
+			}).pipe(
+				Effect.provide(
+					Layer.provide(
+						IpcTransport({
+							path: "/tmp/geth.ipc",
+							reconnect: false,
+							socketFactory,
+						}),
+						FileSystem.layerNoop(),
+					),
+				),
+				Effect.scoped,
+			);
+
+			const { result1, result2 } = await Effect.runPromise(program);
+			expect(result1).toBe("0xabc");
+			expect(result2).toBe("0x1");
+		});
+	});
+
+	describe("timeout handling", () => {
+		it("fails with timeout when no response received", async () => {
+			const { socketFactory, sockets } = makeMockIpcSocket();
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				while (sockets.length === 0) {
+					yield* Effect.sleep(1);
+				}
+				return yield* transport.request<string>("eth_blockNumber");
+			}).pipe(
+				Effect.provide(
+					Layer.provide(
+						IpcTransport({
+							path: "/tmp/geth.ipc",
+							timeout: 20,
+							reconnect: false,
+							socketFactory,
+						}),
+						FileSystem.layerNoop(),
+					),
+				),
+				Effect.scoped,
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(TransportError);
+				expect(exit.cause.error.message).toContain("timeout");
+			}
+		});
+	});
+
+	describe("JSON-RPC error handling", () => {
+		it("propagates error code, message, and data", async () => {
+			const { socketFactory, sockets } = makeMockIpcSocket({
+				onWrite: (socket, data) => {
+					const req = JSON.parse(String(data).trim()) as { id: number };
+					queueMicrotask(() => {
+						socket.emitMessage({
+							jsonrpc: "2.0",
+							id: req.id,
+							error: {
+								code: -32602,
+								message: "Invalid params",
+								data: { hint: "bad address" },
+							},
+						});
+					});
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+				while (sockets.length === 0) {
+					yield* Effect.sleep(1);
+				}
+				return yield* transport.request<string>("eth_getBalance", ["0x123"]);
+			}).pipe(
+				Effect.provide(
+					Layer.provide(
+						IpcTransport({
+							path: "/tmp/geth.ipc",
+							reconnect: false,
+							socketFactory,
+						}),
+						FileSystem.layerNoop(),
+					),
+				),
+				Effect.scoped,
+			);
+
+			const exit = await Effect.runPromiseExit(program);
+			expect(exit._tag).toBe("Failure");
+			if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+				expect(exit.cause.error).toBeInstanceOf(TransportError);
+				expect(exit.cause.error.input.code).toBe(-32602);
+				expect(exit.cause.error.message).toBe("Invalid params");
+				expect(exit.cause.error.data).toEqual({ hint: "bad address" });
+			}
+		});
+	});
+
+	describe("reconnect behavior", () => {
+		it("queues requests during reconnection", async () => {
+			const { socketFactory, sockets } = makeMockIpcSocket({
+				onWrite: (socket, data) => {
+					const req = JSON.parse(String(data).trim()) as { id: number };
+					queueMicrotask(() => {
+						socket.emitMessage({
+							jsonrpc: "2.0",
+							id: req.id,
+							result: `0x${socket.index}`,
+						});
+					});
+				},
+			});
+
+			const program = Effect.gen(function* () {
+				const transport = yield* TransportService;
+
+				while (sockets.length === 0) {
+					yield* Effect.sleep(1);
+				}
+
+				sockets[0].emitClose();
+				yield* Effect.sleep(5);
+
+				return yield* transport.request<string>("eth_blockNumber");
+			}).pipe(
+				Effect.provide(
+					Layer.provide(
+						IpcTransport({
+							path: "/tmp/geth.ipc",
+							reconnect: { maxAttempts: 3, delay: 20, maxDelay: 50 },
+							socketFactory,
+						}),
+						FileSystem.layerNoop(),
+					),
+				),
+				Effect.scoped,
+			);
+
+			const result = await Effect.runPromise(program);
+			expect(result).toBe("0x1");
+		});
+	});
+});

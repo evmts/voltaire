@@ -1,0 +1,249 @@
+---
+title: Cache Service
+description: Key-value caching with LRU eviction and TTL support
+---
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import { CacheService, MemoryCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set('balance:0x123', 1000n, 30_000) // 30s TTL (ms)
+  const balance = yield* cache.get<bigint>('balance:0x123')
+  return balance // Option.some(1000n)
+}).pipe(
+  Effect.provide(MemoryCache({ maxSize: 500 }))
+)
+```
+
+## MemoryCache
+
+In-memory LRU cache with TTL support:
+
+```typescript
+import { MemoryCache } from 'voltaire-effect'
+
+const cacheLayer = MemoryCache({
+  maxSize: 1000,           // Max entries (default: 1000)
+  defaultTtl: 5 * 60_000   // 5 min default TTL (ms)
+})
+```
+
+### Per-Entry TTL
+
+```typescript
+const cache = yield* CacheService
+
+// Use default TTL
+yield* cache.set('key', 'value')
+
+// Override with 1 hour TTL (ms)
+yield* cache.set('key2', 'value2', 60 * 60_000)
+
+// No expiration (undefined TTL)
+yield* cache.set('key3', 'value3', undefined)
+```
+
+## NoopCache
+
+No-op implementation for testing or disabling cache:
+
+```typescript
+import { NoopCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+  yield* cache.set('key', 'value')
+  const result = yield* cache.get('key')
+  return result // Always Option.none()
+}).pipe(
+  Effect.provide(NoopCache)
+)
+```
+
+### Conditional Cache
+
+```typescript
+const cacheLayer = process.env.DISABLE_CACHE
+  ? NoopCache
+  : MemoryCache({ maxSize: 1000 })
+
+const program = myEffect.pipe(Effect.provide(cacheLayer))
+```
+
+## LookupCacheService
+
+Effect-native lookup-based caching using `effect/Cache`. Automatically computes values on cache miss and deduplicates concurrent requests.
+
+```typescript
+import { Effect, Duration } from 'effect'
+import { LookupCacheService, makeLookupCache } from 'voltaire-effect'
+import type { GetBlockError } from 'voltaire-effect/services'
+
+// Define typed cache tag
+const BlockCache = LookupCacheService<bigint, Block, GetBlockError>()
+
+// Create layer with lookup function
+const BlockCacheLayer = makeLookupCache(BlockCache, {
+  capacity: 1000,
+  timeToLive: Duration.minutes(5),
+  lookup: (blockNumber) => rpcClient.getBlock(blockNumber)
+})
+
+const program = Effect.gen(function* () {
+  const cache = yield* BlockCache
+  // First call fetches from RPC, subsequent calls return cached
+  const block = yield* cache.get(123n)
+  return block
+}).pipe(
+  Effect.provide(BlockCacheLayer)
+)
+```
+
+### LookupCache Methods
+
+```typescript
+const cache = yield* BlockCache
+
+// Get (computes on miss)
+const block = yield* cache.get(123n)
+
+// Get only if cached (no lookup)
+const cached = yield* cache.getOption(123n)
+
+// Manual set
+yield* cache.set(123n, block)
+
+// Force recompute
+yield* cache.refresh(123n)
+
+// Invalidate
+yield* cache.invalidate(123n)
+yield* cache.invalidateAll
+
+// Stats
+const stats = yield* cache.stats
+const size = yield* cache.size
+```
+
+### When to Use Which
+
+| Use Case | Service |
+|----------|---------|
+| Manual get/set control | `CacheService` + `MemoryCache` |
+| Auto-compute on miss | `LookupCacheService` |
+| Dedupe concurrent requests | `LookupCacheService` |
+| External data sources | `CacheService` |
+
+## Methods
+
+### get
+
+```typescript
+readonly get: <T>(key: string) => Effect.Effect<Option.Option<T>>
+```
+
+Returns `Option.some(value)` if found and not expired, `Option.none()` otherwise.
+
+### set
+
+```typescript
+readonly set: <T>(key: string, value: T, ttlMs?: number) => Effect.Effect<void>
+```
+
+Sets a value with optional TTL in milliseconds. Uses `defaultTtl` if not specified.
+
+### delete
+
+```typescript
+readonly delete: (key: string) => Effect.Effect<boolean>
+```
+
+Returns `true` if key existed and was deleted.
+
+### clear
+
+```typescript
+readonly clear: () => Effect.Effect<void>
+```
+
+Removes all entries from the cache.
+
+## withoutCache
+
+For RPC requests using LookupCacheService internally, disable caching per-request:
+
+```typescript
+import { Effect } from 'effect'
+import { getBlockNumber, withoutCache } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  // Force fresh fetch, bypassing any request cache
+  const blockNum = yield* getBlockNumber().pipe(withoutCache)
+  return blockNum
+})
+```
+
+## Layer Composition
+
+```typescript
+import { Layer } from 'effect'
+import { Provider, MemoryCache, HttpTransport, getBlockNumber, CacheService } from 'voltaire-effect'
+
+// Compose cache with provider
+const AppLayer = Layer.merge(
+  Provider,
+  MemoryCache({ maxSize: 1000 })
+).pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = Effect.gen(function* () {
+  const cache = yield* CacheService
+
+  // Check cache first
+  const cached = yield* cache.get<bigint>('blockNumber')
+  if (Option.isSome(cached)) return cached.value
+
+  // Fetch and cache
+  const blockNum = yield* getBlockNumber()
+  yield* cache.set('blockNumber', blockNum, 10_000)
+  return blockNum
+}).pipe(Effect.provide(AppLayer))
+```
+
+## Service Interface
+
+```typescript
+type CacheShape = {
+  readonly get: <T>(key: string) => Effect.Effect<Option.Option<T>>
+  readonly set: <T>(key: string, value: T, ttlMs?: number) => Effect.Effect<void>
+  readonly delete: (key: string) => Effect.Effect<boolean>
+  readonly clear: () => Effect.Effect<void>
+}
+
+interface MemoryCacheOptions {
+  readonly maxSize?: number      // Default: 1000
+  readonly defaultTtl?: number   // Default: undefined (no expiration)
+}
+
+type LookupCacheShape<Key, Value, Error = never> = {
+  readonly get: (key: Key) => Effect.Effect<Value, Error>
+  readonly getOption: (key: Key) => Effect.Effect<Option.Option<Value>, Error>
+  readonly set: (key: Key, value: Value) => Effect.Effect<void>
+  readonly refresh: (key: Key) => Effect.Effect<void, Error>
+  readonly invalidate: (key: Key) => Effect.Effect<void>
+  readonly invalidateAll: Effect.Effect<void>
+  readonly stats: Effect.Effect<Cache.CacheStats>
+  readonly size: Effect.Effect<number>
+}
+
+interface LookupCacheOptions<Key, Value, Error, R> {
+  readonly capacity: number
+  readonly timeToLive: Duration.DurationInput
+  readonly lookup: (key: Key) => Effect.Effect<Value, Error, R>
+}
+```

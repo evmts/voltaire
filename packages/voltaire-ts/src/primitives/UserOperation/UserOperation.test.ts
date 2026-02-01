@@ -1,0 +1,67 @@
+import { describe, expect, test } from "vitest";
+import * as EntryPoint from "../EntryPoint/index.js";
+import * as UserOperation from "./index.js";
+
+describe("UserOperation", () => {
+	const mockUserOp = {
+		sender: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+		nonce: 0n,
+		initCode: "0x",
+		callData: "0x",
+		callGasLimit: 100000n,
+		verificationGasLimit: 200000n,
+		preVerificationGas: 50000n,
+		maxFeePerGas: 1000000000n,
+		maxPriorityFeePerGas: 1000000000n,
+		paymasterAndData: "0x",
+		signature: "0x",
+	};
+
+	test("creates UserOperation from params", () => {
+		const userOp = UserOperation.from(mockUserOp);
+		expect(userOp.sender).toBeInstanceOf(Uint8Array);
+		expect(userOp.sender.length).toBe(20);
+		expect(typeof userOp.nonce).toBe("bigint");
+		expect(userOp.initCode).toBeInstanceOf(Uint8Array);
+		expect(userOp.callData).toBeInstanceOf(Uint8Array);
+		expect(typeof userOp.callGasLimit).toBe("bigint");
+		expect(typeof userOp.verificationGasLimit).toBe("bigint");
+		expect(typeof userOp.preVerificationGas).toBe("bigint");
+		expect(typeof userOp.maxFeePerGas).toBe("bigint");
+		expect(typeof userOp.maxPriorityFeePerGas).toBe("bigint");
+		expect(userOp.paymasterAndData).toBeInstanceOf(Uint8Array);
+		expect(userOp.signature).toBeInstanceOf(Uint8Array);
+	});
+
+	test("computes userOpHash", () => {
+		const userOp = UserOperation.from(mockUserOp);
+		const hash = UserOperation.hash(userOp, EntryPoint.ENTRYPOINT_V06, 1);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
+	});
+
+	test("packs UserOperation to PackedUserOperation", () => {
+		const userOp = UserOperation.from(mockUserOp);
+		const packed = UserOperation.pack(userOp);
+		expect(packed.sender).toEqual(userOp.sender);
+		expect(packed.nonce).toBe(userOp.nonce);
+		expect(packed.accountGasLimits).toBeInstanceOf(Uint8Array);
+		expect(packed.accountGasLimits.length).toBe(32);
+		expect(packed.gasFees).toBeInstanceOf(Uint8Array);
+		expect(packed.gasFees.length).toBe(32);
+	});
+
+	test("handles hex string inputs", () => {
+		const userOp = UserOperation.from({
+			...mockUserOp,
+			initCode: "0x1234",
+			callData: "0xabcd",
+			paymasterAndData: "0xef01",
+			signature: "0x9876",
+		});
+		expect(userOp.initCode).toEqual(new Uint8Array([0x12, 0x34]));
+		expect(userOp.callData).toEqual(new Uint8Array([0xab, 0xcd]));
+		expect(userOp.paymasterAndData).toEqual(new Uint8Array([0xef, 0x01]));
+		expect(userOp.signature).toEqual(new Uint8Array([0x98, 0x76]));
+	});
+});

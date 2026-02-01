@@ -1,0 +1,198 @@
+---
+title: '[Zig] src/evm/arithmetic/handlers_arithmetic.zig.md'
+source: 'src/evm/arithmetic/handlers_arithmetic.zig.md'
+---
+
+> Auto-generated from Zig tests in: src/evm/arithmetic/handlers_arithmetic.zig.md
+
+### ADD: basic addition
+
+```zig
+test "ADD: basic addition" {
+    // Test: 5 + 3 = 8
+    // Test: 0 + 0 = 0
+    // Test: MAX_U256 + 1 = 0 (wrapping)
+}
+```
+
+### MUL: multiplication edge cases
+
+```zig
+test "MUL: multiplication edge cases" {
+    // Test: 2 * 3 = 6
+    // Test: 0 * 100 = 0
+    // Test: MAX_U256 * 2 wraps correctly
+}
+```
+
+### SUB: subtraction with underflow
+
+```zig
+test "SUB: subtraction with underflow" {
+    // Test: 5 - 3 = 2
+    // Test: 0 - 1 wraps to MAX_U256
+}
+```
+
+### DIV: division by zero returns 0
+
+```zig
+test "DIV: division by zero returns 0" {
+    // Test: 10 / 0 = 0 (EVM spec)
+    // Test: 0 / 0 = 0
+}
+```
+
+### MOD: modulo by zero returns 0
+
+```zig
+test "MOD: modulo by zero returns 0" {
+    // Test: 10 % 0 = 0
+}
+```
+
+### SDIV: signed division by zero
+
+```zig
+test "SDIV: signed division by zero" {
+    // Test: -10 / 0 = 0
+}
+```
+
+### SMOD: signed modulo by zero
+
+```zig
+test "SMOD: signed modulo by zero" {
+    // Test: -10 % 0 = 0
+}
+```
+
+### SDIV: MIN_SIGNED / -1 = MIN_SIGNED
+
+```zig
+test "SDIV: MIN_SIGNED / -1 = MIN_SIGNED" {
+    // Test the overflow edge case
+    const MIN_SIGNED = @as(u256, 1) << 255;
+    // Input: MIN_SIGNED, -1 (as u256: maxInt(u256))
+    // Expected: MIN_SIGNED
+}
+```
+
+### SMOD: signed modulo edge cases
+
+```zig
+test "SMOD: signed modulo edge cases" {
+    // Test: -10 % 3 = -1 (sign of dividend)
+    // Test: 10 % -3 = 1 (sign of dividend)
+    // Test: MIN_SIGNED % -1 behavior
+}
+```
+
+### SIGNEXTEND: various byte indices
+
+```zig
+test "SIGNEXTEND: various byte indices" {
+    // Test: byte_index = 0 (extend from byte 0)
+    // Test: byte_index = 15 (extend from byte 15)
+    // Test: byte_index >= 31 (no extension)
+    // Test: negative sign bit (0xFF prefix)
+    // Test: positive sign bit (0x00 prefix)
+}
+```
+
+### EXP: basic exponentiation
+
+```zig
+test "EXP: basic exponentiation" {
+    // Test: 2^3 = 8
+    // Test: 10^0 = 1
+    // Test: 0^5 = 0
+    // Test: 0^0 = 1 (mathematical convention)
+}
+```
+
+### EXP: overflow behavior
+
+```zig
+test "EXP: overflow behavior" {
+    // Test: 2^256 wraps correctly
+    // Test: large base, large exponent
+}
+```
+
+### EXP: gas calculation by byte length
+
+```zig
+test "EXP: gas calculation by byte length" {
+    // Test: exponent = 0xFF (1 byte) → 10 + 50*1 = 60 gas
+    // Test: exponent = 0x1FF (2 bytes) → 10 + 50*2 = 110 gas
+    // Test: exponent = 0 (0 bytes) → 10 + 50*0 = 10 gas
+}
+```
+
+### ADDMOD: modular addition
+
+```zig
+test "ADDMOD: modular addition" {
+    // Test: (5 + 7) % 10 = 2
+    // Test: (MAX_U256 + 5) % 100 wraps correctly via u512
+    // Test: addmod with n=0 returns 0
+}
+```
+
+### MULMOD: modular multiplication
+
+```zig
+test "MULMOD: modular multiplication" {
+    // Test: (3 * 4) % 5 = 2
+    // Test: (MAX_U256 * MAX_U256) % 1000 via u512
+    // Test: mulmod with n=0 returns 0
+}
+```
+
+### gas costs match GasConstants
+
+```zig
+test "gas costs match GasConstants" {
+    // Verify each opcode charges correct amount
+    // Test: ADD charges GasFastestStep (3)
+    // Test: MUL charges GasFastStep (5)
+    // Test: ADDMOD charges GasMidStep (8)
+    // Test: EXP charges GasSlowStep (10) + dynamic
+}
+```
+
+### gas charged before operation
+
+```zig
+test "gas charged before operation" {
+    // Verify gas is charged even if operation fails
+    // Test: stack underflow still charges gas (once fixed per 1.1)
+}
+```
+
+### stack depth changes correctly
+
+```zig
+test "stack depth changes correctly" {
+    // Test: ADD consumes 2, produces 1 (net -1)
+    // Test: ADDMOD consumes 3, produces 1 (net -2)
+}
+```
+
+### stack underflow error
+
+```zig
+test "stack underflow error" {
+    // Test: ADD with empty stack returns StackUnderflow
+    // Test: ADD with 1 item returns StackUnderflow
+}
+```
+
+### PC incremented after execution
+
+```zig
+test "PC incremented after execution" {
+    // Verify PC += 1 for all opcodes
+}
+```

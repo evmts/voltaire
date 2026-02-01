@@ -1,0 +1,198 @@
+---
+title: Contract Call Methods
+description: Execute contract calls, estimate gas, and simulate transactions
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+# Contract Call Methods
+
+Methods for executing contract calls and transaction simulations.
+
+## eth_call
+
+Execute a read-only contract call without creating a transaction.
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
+
+const result = await provider.eth_call({
+  from: Address('0x742d35Cc6634C0532925a3b844Bc454e4438f44e'),
+  to: Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+  data: Hex('0x70a08231000000000000000000000000742d35cc6634c0532925a3b844bc454e4438f44e')  // balanceOf(address)
+}, 'latest');
+
+if (!result.error) {
+  console.log('Balance:', result.result);
+}
+// Response<Hex>
+```
+
+**Parameters:**
+- `callParams: CallParams` - Transaction call parameters
+  - `from?: Address` - Sender address (optional)
+  - `to: Address` - Contract address
+  - `data: Hex` - Encoded function call
+  - `gas?: Quantity` - Gas limit (optional)
+  - `gasPrice?: Quantity` - Gas price (optional)
+  - `value?: Quantity` - ETH value (optional)
+- `blockTag: BlockTag` - Block to execute against (`'latest'`, `'earliest'`, `'pending'`, or block number/hash)
+
+**Returns:** `Response<Hex>` - Encoded return data
+
+**Common use cases:**
+- Call contract view functions
+- Query contract state
+- Validate transaction execution before sending
+- Simulate complex contract interactions
+
+## eth_estimateGas
+
+Estimate gas required for a transaction.
+
+```typescript
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
+
+const gas = await provider.eth_estimateGas({
+  from: Address('0x742d35Cc6634C0532925a3b844Bc454e4438f44e'),
+  to: Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+  value: Quantity(1000000000000000000n),  // 1 ETH
+  data: Hex('0xa9059cbb...')
+});
+
+if (!gas.error) {
+  const estimate = BigInt(gas.result);
+  const withBuffer = estimate * 120n / 100n;  // Add 20% buffer
+  console.log('Estimated gas:', estimate);
+  console.log('With buffer:', withBuffer);
+}
+// Response<Quantity>
+```
+
+**Parameters:**
+- `callParams: CallParams` - Transaction parameters (same as `eth_call`)
+
+**Returns:** `Response<Quantity>` - Estimated gas amount
+
+**Best practices:**
+- Always add a buffer (10-20%) to estimates
+- Handle estimation failures gracefully
+- Consider network congestion in final gas limits
+- Test with realistic transaction data
+
+### Estimating with Buffer Pattern
+
+```typescript
+async function estimateGasWithBuffer(
+  provider: Provider,
+  params: {
+    from: Address.AddressType;
+    to: Address.AddressType;
+    data: Hex.HexType;
+  }
+): Promise<bigint | null> {
+  const response = await provider.eth_estimateGas(params);
+
+  if (response.error) {
+    return null;
+  }
+
+  const estimate = BigInt(response.result);
+  return estimate * 120n / 100n; // Add 20% buffer
+}
+```
+
+## eth_createAccessList
+
+Generate an access list for a transaction to optimize gas costs (EIP-2930).
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+import * as Hex from '@tevm/voltaire/Hex';
+
+const accessList = await provider.eth_createAccessList({
+  from: Address('0x742d35Cc6634C0532925a3b844Bc454e4438f44e'),
+  to: Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+  data: Hex('0xa9059cbb...')
+}, 'latest');
+
+if (!accessList.error) {
+  console.log('Access list:', accessList.result.accessList);
+  console.log('Gas used:', accessList.result.gasUsed);
+}
+// Response<AccessListResult>
+```
+
+**Parameters:**
+- `callParams: CallParams` - Transaction parameters
+- `blockTag: BlockTag` - Block to execute against
+
+**Returns:** `Response<AccessListResult>`
+- `accessList: AccessList` - Generated access list
+- `gasUsed: Quantity` - Gas that would be used
+- `error?: string` - Optional error message
+
+**Benefits:**
+- Reduces gas costs for complex transactions
+- Makes gas costs more predictable
+- Required for some contract interactions post-EIP-2930
+
+**When to use:**
+- Multi-contract interactions
+- Transactions touching many storage slots
+- Gas optimization for frequent operations
+
+## eth_simulateV1
+
+Simulate multiple transactions in sequence (EIP-not-yet-finalized).
+
+```typescript
+const simulation = await provider.eth_simulateV1({
+  blockStateCalls: [
+    {
+      blockOverrides: {
+        number: '0x1234567',
+        timestamp: '0x5678'
+      },
+      calls: [
+        {
+          from: Address('0x...'),
+          to: Address('0x...'),
+          data: Hex('0x...')
+        }
+      ]
+    }
+  ],
+  validation: true
+});
+// Response<SimulationResult>
+```
+
+**Parameters:**
+- `params: SimulationParams` - Simulation configuration
+  - `blockStateCalls: BlockStateCall[]` - Transactions to simulate
+  - `validation: boolean` - Enable validation
+  - `returnFullTransactionObjects?: boolean` - Include full tx objects
+
+**Returns:** `Response<SimulationResult>` - Simulation results for each transaction
+
+**Use cases:**
+- Test transaction sequences
+- Validate multi-step operations
+- Debug complex contract interactions
+- Estimate total gas for batched transactions
+
+<Warning>
+`eth_simulateV1` is from an EIP that's not yet finalized. The API may change and not all providers support it.
+</Warning>
+
+## Related
+
+- [State Query Methods](/jsonrpc-provider/eth-methods/state) - Query account and storage
+- [Transaction Methods](/jsonrpc-provider/eth-methods/transactions) - Send and query transactions
+- [Usage Patterns](/jsonrpc-provider/usage-patterns) - Common recipes including gas estimation
+- [Error Handling](/jsonrpc-provider/error-handling) - Handle RPC errors

@@ -1,0 +1,40 @@
+---
+title: '[Zig] src/crypto/bn254/benchmarks.zig'
+source: 'src/crypto/bn254/benchmarks.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/bn254/benchmarks.zig
+
+### BN254 Comprehensive Performance Benchmarks
+
+```zig
+test "BN254 Comprehensive Performance Benchmarks" {
+    try runComprehensiveBenchmarks(std.testing.allocator);
+}
+```
+
+### BN254 Quick Performance Check
+
+```zig
+test "BN254 Quick Performance Check" {
+    // Initialize pre-generated inputs
+    _ = getInputs();
+
+    const quick_benchmarks = [_]struct { name: []const u8, func: BenchmarkFunctionWithSamples, sample_size: usize }{
+        .{ .name = "Fp Multiplication", .func = benchFpMul, .sample_size = operation_sample_sizes.fp_mul },
+        .{ .name = "G1 Addition", .func = benchG1Add, .sample_size = operation_sample_sizes.g1_add },
+        .{ .name = "Full Pairing", .func = benchPairing, .sample_size = operation_sample_sizes.pairing },
+    };
+
+    std.debug.print("\nQuick Performance Check:\n", .{});
+    std.debug.print("========================\n", .{});
+
+    const quick_time_budget = 100000000; // 100ms for quick check
+    for (quick_benchmarks) |bench_spec| {
+        const stats = try benchmarkWithSamples(std.testing.allocator, bench_spec.name, bench_spec.func, bench_spec.sample_size, quick_time_budget);
+        const time_unit = if (stats.mean_ns < 1000) "ns" else if (stats.mean_ns < 1000000) "μs" else "ms";
+        const divisor: f64 = if (stats.mean_ns < 1000) 1.0 else if (stats.mean_ns < 1000000) 1000.0 else 1000000.0;
+        std.debug.print("{s}: {d:.1} {s}/op\n", .{ stats.name, stats.mean_ns / divisor, time_unit });
+    }
+}
+```

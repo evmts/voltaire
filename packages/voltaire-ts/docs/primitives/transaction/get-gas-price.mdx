@@ -1,0 +1,191 @@
+---
+title: Transaction.getGasPrice
+description: Get effective gas price for transaction
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/transaction.ts">
+  Run Transaction examples in the interactive playground
+</Card>
+
+
+# getGasPrice
+
+Get effective gas price for transaction.
+
+<Tabs>
+
+</Tabs>
+
+## Gas Price Calculation
+
+### Legacy & EIP-2930 Transactions
+
+Fixed gas price model:
+
+```typescript
+getGasPrice(tx) = tx.gasPrice
+```
+
+Simple and predictable - users specify exact gas price willing to pay.
+
+### EIP-1559, EIP-4844, EIP-7702 Transactions
+
+Dynamic fee market:
+
+```typescript
+effectiveGasPrice = min(
+  maxFeePerGas,
+  baseFee + maxPriorityFeePerGas
+)
+```
+
+**Components:**
+- `baseFee` - Current network base fee (burned)
+- `maxPriorityFeePerGas` - Maximum tip to miner
+- `maxFeePerGas` - Maximum total willing to pay
+
+**Examples:**
+
+```typescript
+// Scenario 1: Normal conditions
+baseFee = 15 gwei
+maxPriorityFeePerGas = 2 gwei
+maxFeePerGas = 30 gwei
+
+effectiveGasPrice = min(30, 15 + 2) = 17 gwei
+
+// Scenario 2: High congestion
+baseFee = 100 gwei
+maxPriorityFeePerGas = 2 gwei
+maxFeePerGas = 30 gwei
+
+effectiveGasPrice = min(30, 100 + 2) = 30 gwei  // Capped at maxFee
+
+// Scenario 3: Priority fee adjustment
+baseFee = 20 gwei
+maxPriorityFeePerGas = 15 gwei
+maxFeePerGas = 50 gwei
+
+effectiveGasPrice = min(50, 20 + 15) = 35 gwei
+```
+
+## Usage Patterns
+
+### Transaction Cost Estimation
+
+```typescript
+import { getGasPrice } from 'tevm/Transaction'
+
+async function estimateTransactionCost(
+  tx: Transaction.Any,
+  baseFee?: bigint
+): Promise<bigint> {
+  const gasPrice = getGasPrice(tx, baseFee)
+  const gasLimit = tx.gasLimit
+
+  return gasPrice * gasLimit + tx.value
+}
+
+// Usage
+const cost = await estimateTransactionCost(tx, currentBaseFee)
+console.log(`Estimated cost: ${cost} wei`)
+```
+
+### Gas Price Comparison
+
+```typescript
+import { getGasPrice } from 'tevm/Transaction'
+
+function compareGasPrices(
+  tx1: Transaction.Any,
+  tx2: Transaction.Any,
+  baseFee: bigint
+): number {
+  const price1 = getGasPrice(tx1, baseFee)
+  const price2 = getGasPrice(tx2, baseFee)
+
+  if (price1 < price2) return -1
+  if (price1 > price2) return 1
+  return 0
+}
+
+// Sort transactions by gas price
+const sorted = transactions.sort((a, b) =>
+  compareGasPrices(a, b, currentBaseFee)
+)
+```
+
+### Balance Validation
+
+```typescript
+import { getGasPrice } from 'tevm/Transaction'
+
+async function validateBalance(
+  tx: Transaction.Any,
+  senderAddress: AddressType,
+  baseFee: bigint
+): Promise<boolean> {
+  const balance = await getBalance(senderAddress)
+  const gasPrice = getGasPrice(tx, baseFee)
+  const totalCost = gasPrice * tx.gasLimit + tx.value
+
+  return balance >= totalCost
+}
+```
+
+### Transaction Pool Sorting
+
+```typescript
+import { getGasPrice } from 'tevm/Transaction'
+
+class TransactionPool {
+  sortByGasPrice(baseFee: bigint): Transaction.Any[] {
+    return this.transactions.sort((a, b) => {
+      const priceA = getGasPrice(a, baseFee)
+      const priceB = getGasPrice(b, baseFee)
+      return Number(priceB - priceA)  // Descending order
+    })
+  }
+}
+```
+
+## EIP-1559 Gas Price Components
+
+```typescript
+import { getGasPrice } from 'tevm/Transaction'
+
+function getGasPriceBreakdown(
+  tx: Transaction.EIP1559,
+  baseFee: bigint
+) {
+  const effectiveGasPrice = getGasPrice(tx, baseFee)
+  const effectivePriorityFee = effectiveGasPrice - baseFee
+
+  return {
+    baseFee,
+    priorityFee: effectivePriorityFee,
+    totalGasPrice: effectiveGasPrice,
+    maxFeePerGas: tx.maxFeePerGas,
+    maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+    refund: tx.maxFeePerGas - effectiveGasPrice  // Amount refunded
+  }
+}
+
+// Usage
+const breakdown = getGasPriceBreakdown(tx, baseFee)
+console.log(`Paying: ${breakdown.totalGasPrice} wei/gas`)
+console.log(`Refund: ${breakdown.refund} wei/gas`)
+```
+
+## See Also
+
+- [getChainId](/primitives/transaction/get-chain-id) - Extract chain ID from transaction
+- [format](/primitives/transaction/format) - Format transaction for display
+- [FeeMarket](/primitives/feemarket) - Base fee and priority fee calculations
+- [GasConstants](/primitives/gasconstants) - Gas cost constants
+
+## References
+
+- [EIP-1559: Fee market change for ETH 1.0 chain](https://eips.ethereum.org/EIPS/eip-1559)
+- [EIP-2930: Optional access lists](https://eips.ethereum.org/EIPS/eip-2930)
+- [Yellow Paper: Transaction Gas](https://ethereum.github.io/yellowpaper/paper.pdf)

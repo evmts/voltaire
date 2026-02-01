@@ -1,0 +1,41 @@
+import { describe, expect, it } from "@effect/vitest";
+import { Address, Bytes, Selector } from "@tevm/voltaire";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import { decodeWrappedError } from "./decodeWrappedError.js";
+import { encodeWrappedError } from "./encodeWrappedError.js";
+
+describe("decodeWrappedError", () => {
+	describe("success cases", () => {
+		it.effect("decodes encoded wrapped error", () =>
+			Effect.gen(function* () {
+				const original = {
+					target: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+					selector: Selector.fromHex("0xa9059cbb"),
+					reason: Bytes.from(new Uint8Array([1, 2, 3])),
+					details: Bytes.from(new Uint8Array([4, 5, 6])),
+				};
+				const encoded = yield* encodeWrappedError(original);
+				const decoded = yield* decodeWrappedError(encoded);
+				expect(decoded.target).toBeDefined();
+				expect(decoded.selector).toBeDefined();
+			}),
+		);
+	});
+
+	describe("error cases", () => {
+		it("fails for data too short", async () => {
+			const exit = await Effect.runPromiseExit(
+				decodeWrappedError(new Uint8Array(2)),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails for invalid selector", async () => {
+			const exit = await Effect.runPromiseExit(
+				decodeWrappedError(new Uint8Array(100)),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+	});
+});

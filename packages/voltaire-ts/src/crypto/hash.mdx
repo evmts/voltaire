@@ -1,0 +1,132 @@
+---
+title: Hash
+description: Unified hashing interface supporting multiple cryptographic hash algorithms
+---
+
+## Overview
+
+The hash module provides a unified interface for cryptographic hash functions used in Ethereum and blockchain applications. It supports multiple algorithms including Keccak-256, SHA-256, Blake2, and RIPEMD-160.
+
+## Key Functions
+
+### `hash`
+
+Compute a hash using the specified algorithm.
+
+```zig
+pub fn hash(allocator: std.mem.Allocator, algorithm: HashAlgorithm, data: []const u8) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `algorithm` - Hash algorithm to use
+- `data` - Input data to hash
+
+**Returns:** Hash digest as allocated byte array (length depends on algorithm)
+
+### `hashFixed`
+
+Compute a hash with compile-time known output size.
+
+```zig
+pub fn hashFixed(comptime algorithm: HashAlgorithm, data: []const u8) [algorithm.digestLength()]u8
+```
+
+**Parameters:**
+- `algorithm` - Hash algorithm (comptime)
+- `data` - Input data to hash
+
+**Returns:** Fixed-size hash digest
+
+## Examples
+
+### Hash with Keccak-256
+
+```zig
+const hash_mod = @import("crypto").hash;
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+const data = "Hello, Ethereum!";
+
+// Dynamic allocation
+const result = try hash_mod.hash(allocator, .Keccak256, data);
+defer allocator.free(result);
+
+// Fixed-size (no allocation)
+const fixed_result = hash_mod.hashFixed(.Keccak256, data);
+```
+
+### Multiple Hash Algorithms
+
+```zig
+const algorithms = [_]HashAlgorithm{
+    .Keccak256,
+    .SHA256,
+    .Blake2b256,
+    .RIPEMD160,
+};
+
+for (algorithms) |algo| {
+    const digest = try hash_mod.hash(allocator, algo, data);
+    defer allocator.free(digest);
+
+    std.debug.print("{s}: {x}\n", .{
+        @tagName(algo),
+        std.fmt.fmtSliceHexLower(digest),
+    });
+}
+```
+
+## Performance
+
+Performance characteristics vary by algorithm:
+
+| Algorithm | Time | Output Size | Notes |
+|-----------|------|-------------|-------|
+| Keccak-256 | TBD | 32 bytes | Assembly-optimized |
+| SHA-256 | TBD | 32 bytes | Hardware-accelerated |
+| Blake2b-256 | TBD | 32 bytes | Fast software implementation |
+| RIPEMD-160 | TBD | 20 bytes | Bitcoin-compatible |
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run hash module tests:
+
+```bash
+zig build test -Dtest-filter=hash
+```
+
+Tests validate:
+- Correct digest lengths for each algorithm
+- Known test vectors
+- Consistency between dynamic and fixed-size functions
+- Empty input handling
+- Large input handling
+
+## Security Considerations
+
+- **Algorithm selection**: Choose appropriate algorithm for use case
+- **Keccak-256**: Use for Ethereum compatibility
+- **SHA-256**: Widely standardized, hardware support
+- **Blake2**: Fast, modern alternative to SHA-2
+- **RIPEMD-160**: Legacy, primarily for Bitcoin compatibility
+- **Collision resistance**: All algorithms provide cryptographic security
+- **Output truncation**: Be careful when truncating hash outputs
+
+## Related
+
+- [Keccak](/zig/crypto/keccak) - Keccak-256 implementation
+- [SHA256](/zig/crypto/sha256) - SHA-256 implementation
+- [Blake2](/zig/crypto/blake2) - Blake2 implementation
+- [RIPEMD160](/zig/crypto/ripemd160) - RIPEMD-160 implementation
+- [Hash Algorithms](/zig/crypto/hash_algorithms) - Algorithm definitions
+
+## References
+
+- [Keccak](https://keccak.team/keccak.html) - Keccak team specifications
+- [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf) - SHA-2 family
+- [RFC 7693](https://www.rfc-editor.org/rfc/rfc7693) - BLAKE2 specification
+- [RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html) - Original specification

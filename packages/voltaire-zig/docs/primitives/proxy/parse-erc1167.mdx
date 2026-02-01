@@ -1,0 +1,42 @@
+---
+title: parseErc1167
+description: Extract implementation address from ERC-1167 bytecode
+icon: magnifying-glass
+---
+
+## `parseErc1167(bytecode: Uint8Array): Uint8Array | null`
+
+Extracts the implementation address from ERC-1167 minimal proxy bytecode.
+
+**Parameters:**
+- `bytecode: Uint8Array` - Proxy bytecode (45 or 55 bytes)
+
+**Returns:** `Uint8Array | null` - 20-byte implementation address or null if invalid
+
+**Example:**
+
+```zig
+import { parseErc1167 } from '@tevm/voltaire/Proxy';
+import { Address } from '@tevm/voltaire/Address';
+
+// Get deployed code
+const code = await eth_getCode('0xCloneAddress...');
+const codeBytes = Buffer.from(code.slice(2), 'hex');
+
+// Extract implementation
+const implementation = parseErc1167(codeBytes);
+
+if (implementation) {
+  console.log('Implementation:', implementation.toHex());
+} else {
+  console.log('Not a valid ERC-1167 proxy');
+}
+```
+
+**Defined in:** [src/primitives/Proxy/parseErc1167.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Proxy/parseErc1167.js)
+
+## See Also
+
+- [generateErc1167](/primitives/proxy/generate-erc1167)
+- [isErc1167](/primitives/proxy/is-erc1167)
+- [ERC-1167 Specification](https://eips.ethereum.org/EIPS/eip-1167)

@@ -1,0 +1,66 @@
+/**
+ * Unit tests for BrandedEvent (deprecated re-export)
+ */
+
+import { describe, expect, it } from "vitest";
+import * as BrandedEvent from "./BrandedEvent.js";
+import type { EventType } from "./EventType.js";
+
+describe("BrandedEvent", () => {
+	it("re-exports EventType", () => {
+		// BrandedEvent is a deprecated re-export of EventType
+		// Just verify the module can be imported
+		expect(BrandedEvent).toBeDefined();
+	});
+
+	it("allows EventType to be used from BrandedEvent module", () => {
+		const event: EventType = {
+			type: "event",
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from" },
+				{ type: "address", name: "to" },
+				{ type: "uint256", name: "value" },
+			],
+		};
+
+		expect(event.type).toBe("event");
+		expect(event.name).toBe("Transfer");
+		expect(event.inputs.length).toBe(3);
+	});
+
+	it("supports anonymous events via EventType", () => {
+		const event: EventType = {
+			type: "event",
+			name: "AnonymousLog",
+			anonymous: true,
+			inputs: [{ type: "bytes32", name: "data" }],
+		};
+
+		expect(event.anonymous).toBe(true);
+	});
+
+	it("supports indexed parameters via EventType", () => {
+		const event: EventType = {
+			type: "event",
+			name: "IndexedEvent",
+			inputs: [
+				{ type: "address", name: "user", indexed: true },
+				{ type: "uint256", name: "amount", indexed: false },
+			],
+		};
+
+		expect(event.inputs[0]?.indexed).toBe(true);
+		expect(event.inputs[1]?.indexed).toBe(false);
+	});
+
+	it("supports events with no inputs via EventType", () => {
+		const event: EventType = {
+			type: "event",
+			name: "Ping",
+			inputs: [],
+		};
+
+		expect(event.inputs.length).toBe(0);
+	});
+});

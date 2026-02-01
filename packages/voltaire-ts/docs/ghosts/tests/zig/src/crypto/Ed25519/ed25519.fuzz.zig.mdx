@@ -1,0 +1,558 @@
+---
+title: '[Zig] src/crypto/Ed25519/ed25519.fuzz.zig'
+source: 'src/crypto/Ed25519/ed25519.fuzz.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/Ed25519/ed25519.fuzz.zig
+
+### fuzz seed boundaries
+
+```zig
+test "fuzz seed boundaries" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+    var seed: [32]u8 = undefined;
+    @memcpy(&seed, input[0..32]);
+
+    // Test specific boundary seeds
+    const test_seed = switch (input[0] & 0x7) {
+        0 => seed, // Normal fuzz input
+        1 => [_]u8{0} ** 32, // All zeros
+        2 => [_]u8{0xFF} ** 32, // All ones
+        3 => [_]u8{1} ++ [_]u8{0} ** 31, // Minimal non-zero
+        4 => [_]u8{0} ** 31 ++ [_]u8{1}, // Single bit at end
+        5 => blk: { // Alternating pattern
+            var tmp: [32]u8 = undefined;
+            for (&tmp, 0..) |*byte, i| {
+                byte.* = if (i % 2 == 0) 0xAA else 0x55;
+            }
+            break :blk tmp;
+        },
+        6 => blk: { // Near order edge
+            var tmp = [_]u8{0xFF} ** 32;
+            tmp[0] = 0x7F;
+            break :blk tmp;
+        },
+        7 => seed, // Use fuzz input directly
+        else => unreachable,
+    };
+
+    // Keypair generation should handle all seeds
+    const kp_result = ed25519.keypairFromSeed(&test_seed);
+    if (kp_result) |kp| {
+        // Verify keypair is valid
+        const pk_bytes = kp.public_key.toBytes();
+        const sk_bytes = kp.secret_key.toBytes();
+
+        try std.testing.expectEqual(@as(usize, 32), pk_bytes.len);
+        try std.testing.expectEqual(@as(usize, 64), sk_bytes.len);
+    } else |err| {
+        switch (err) {
+            error.InvalidSeedLength,
+            error.IdentityElement,
+            error.WeakPublicKey,
+            => {},
+            else => return err,
+        }
+    }
+}
+```
+
+### fuzz scalar near curve order
+
+```zig
+test "fuzz scalar near curve order" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    // Ed25519 order L (curve order)
+    // L = 2^252 + 27742317777372353535851937790883648493
+    var near_order_seed = [_]u8{0} ** 32;
+    // Set to value near order
+    near_order_seed[31] = 0x10; // 2^252 approximation
+
+    // Mix with fuzz input
+    for (0..8) |i| {
+        near_order_seed[i] ^= input[i];
+    }
+
+    const kp_result = ed25519.keypairFromSeed(&near_order_seed);
+    if (kp_result) |kp| {
+        const message = "test";
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+            _ = ed25519.verify(sig, message, &kp.public_key.toBytes()) catch {};
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz high-bit scalars
+
+```zig
+test "fuzz high-bit scalars" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    // Test seeds with high bit set (potential clamping issues)
+    var high_bit_seed: [32]u8 = undefined;
+    @memcpy(&high_bit_seed, input[0..32]);
+    high_bit_seed[31] |= 0x80; // Set high bit
+
+    const kp_result = ed25519.keypairFromSeed(&high_bit_seed);
+    if (kp_result) |kp| {
+        // Should handle high-bit seeds correctly
+        const pk = kp.public_key.toBytes();
+        try std.testing.expect(pk.len == 32);
+    } else |_| {}
+}
+```
+
+### fuzz malformed signatures
+
+```zig
+test "fuzz malformed signatures" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 96) return;
+
+    const seed = input[0..32];
+    const message = input[32..64];
+    var sig_bytes: [64]u8 = undefined;
+    @memcpy(&sig_bytes, input[64..128] orelse input[32..96]);
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const pubkey = kp.public_key.toBytes();
+
+        // Test various malformed signature patterns
+        const sig_patterns = [_][64]u8{
+            sig_bytes, // Fuzz input
+            [_]u8{0} ** 64, // All zeros
+            [_]u8{0xFF} ** 64, // All ones
+            blk: { // R all zeros, S from fuzz
+                var tmp = [_]u8{0} ** 64;
+                @memcpy(tmp[32..64], input[0..32]);
+                break :blk tmp;
+            },
+            blk: { // R from fuzz, S all zeros
+                var tmp = [_]u8{0} ** 64;
+                @memcpy(tmp[0..32], input[0..32]);
+                break :blk tmp;
+            },
+            blk: { // High S value
+                var tmp: [64]u8 = undefined;
+                @memcpy(tmp[0..32], input[0..32]);
+                @memset(tmp[32..64], 0xFF);
+                break :blk tmp;
+            },
+        };
+
+        for (sig_patterns) |sig| {
+            // Verification should handle malformed signatures gracefully
+            _ = ed25519.verify(&sig, message, &pubkey) catch |err| {
+                switch (err) {
+                    error.InvalidSignatureLength,
+                    error.InvalidPublicKeyLength,
+                    error.SignatureVerificationFailed,
+                    error.WeakPublicKey,
+                    error.NonCanonicalS,
+                    => {},
+                    else => return err,
+                }
+            };
+        }
+    } else |_| {}
+}
+```
+
+### fuzz signature R component
+
+```zig
+test "fuzz signature R component" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 64) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message = "test message";
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Mutate R component
+            var mutated_sig: [64]u8 = undefined;
+            @memcpy(&mutated_sig, sig);
+
+            // Flip bits in R based on fuzz input
+            for (0..32) |i| {
+                mutated_sig[i] ^= input[i % input.len];
+            }
+
+            // Should detect invalid R
+            const valid = ed25519.verify(&mutated_sig, message, &kp.public_key.toBytes()) catch false;
+            try std.testing.expect(!valid or std.mem.eql(u8, &mutated_sig, sig));
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz signature S component
+
+```zig
+test "fuzz signature S component" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 64) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message = "test message";
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Mutate S component
+            var mutated_sig: [64]u8 = undefined;
+            @memcpy(&mutated_sig, sig);
+
+            // Flip bits in S based on fuzz input
+            for (0..32) |i| {
+                mutated_sig[32 + i] ^= input[i % input.len];
+            }
+
+            // Should detect invalid S
+            const valid = ed25519.verify(&mutated_sig, message, &kp.public_key.toBytes()) catch false;
+            try std.testing.expect(!valid or std.mem.eql(u8, &mutated_sig, sig));
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz invalid public key formats
+
+```zig
+test "fuzz invalid public key formats" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 96) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message = "test";
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Test various invalid public key patterns
+            const pubkey_patterns = [_][32]u8{
+                [_]u8{0} ** 32, // All zeros (identity)
+                [_]u8{0xFF} ** 32, // All ones (off-curve)
+                input[64..96].*, // Random bytes
+                blk: { // High order point
+                    var tmp = [_]u8{0} ** 32;
+                    tmp[0] = 1;
+                    break :blk tmp;
+                },
+                blk: { // Invalid torsion
+                    var tmp = input[32..64].*;
+                    tmp[31] |= 0x80; // Set high bit
+                    break :blk tmp;
+                },
+            };
+
+            for (pubkey_patterns) |pubkey| {
+                _ = ed25519.verify(sig, message, &pubkey) catch |err| {
+                    switch (err) {
+                        error.InvalidSignatureLength,
+                        error.InvalidPublicKeyLength,
+                        error.SignatureVerificationFailed,
+                        error.WeakPublicKey,
+                        error.NonCanonicalEncoding,
+                        => {},
+                        else => return err,
+                    }
+                };
+            }
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz off-curve public keys
+
+```zig
+test "fuzz off-curve public keys" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 96) return;
+
+    const allocator = std.testing.allocator;
+    var pubkey: [32]u8 = undefined;
+    @memcpy(&pubkey, input[0..32]);
+
+    // Create signature from valid keypair
+    const seed = input[32..64];
+    const message = "test";
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Try to verify with potentially off-curve public key
+            _ = ed25519.verify(sig, message, &pubkey) catch {};
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz identity point handling
+
+```zig
+test "fuzz identity point handling" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+    const identity_point = [_]u8{0} ** 32;
+    const message = "test message";
+
+    // Identity point should be rejected as public key
+    const seed = input[0..32];
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+            _ = ed25519.verify(sig, message, &identity_point) catch |_| {};
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz low-order points
+
+```zig
+test "fuzz low-order points" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 64) return;
+
+    const allocator = std.testing.allocator;
+
+    // Known low-order points in Ed25519 (8-torsion)
+    const low_order_points = [_][32]u8{
+        [_]u8{0} ** 32, // Identity
+        [_]u8{1} ++ [_]u8{0} ** 31, // Small order
+        [_]u8{ 0xec, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f }, // 2-torsion
+    };
+
+    const seed = input[0..32];
+    const message = "test";
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            for (low_order_points) |pubkey| {
+                // Should reject low-order points
+                _ = ed25519.verify(sig, message, &pubkey) catch |_| {};
+            }
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz random signature mutations
+
+```zig
+test "fuzz random signature mutations" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 64) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message = "authentic message";
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Mutate random byte(s)
+            var mutated: [64]u8 = undefined;
+            @memcpy(&mutated, sig);
+
+            const num_mutations = (input[0] % 8) + 1;
+            for (0..num_mutations) |i| {
+                const idx = input[(i + 1) % input.len] % 64;
+                const xor_val = input[(i + 2) % input.len];
+                mutated[idx] ^= xor_val;
+            }
+
+            // Mutated signature should fail (unless we got lucky)
+            const valid = ed25519.verify(&mutated, message, &kp.public_key.toBytes()) catch false;
+            if (valid and !std.mem.eql(u8, &mutated, sig)) {
+                // Extremely unlikely - found a collision
+                try std.testing.expect(false);
+            }
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz bit flips in signature
+
+```zig
+test "fuzz bit flips in signature" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message = "test message";
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Flip single bit
+            const byte_idx = input[0] % 64;
+            const bit_idx = input[1] % 8;
+
+            var flipped: [64]u8 = undefined;
+            @memcpy(&flipped, sig);
+            flipped[byte_idx] ^= @as(u8, 1) << @intCast(bit_idx);
+
+            // Should detect single bit flip
+            const valid = ed25519.verify(&flipped, message, &kp.public_key.toBytes()) catch false;
+            try std.testing.expect(!valid);
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz message variations
+
+```zig
+test "fuzz message variations" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 64) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message1 = input[32..64];
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message1, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Try different message
+            var message2 = [_]u8{0} ** 32;
+            @memcpy(&message2, message1);
+            message2[0] ^= 0x01; // Change one byte
+
+            // Signature should fail on different message
+            const valid = ed25519.verify(sig, &message2, &kp.public_key.toBytes()) catch false;
+            try std.testing.expect(!valid or std.mem.eql(u8, message1, &message2));
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz signature determinism
+
+```zig
+test "fuzz signature determinism" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 64) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message = input[32..64];
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig1_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        const sig2_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+
+        if (sig1_result) |sig1| {
+            defer allocator.free(sig1);
+            if (sig2_result) |sig2| {
+                defer allocator.free(sig2);
+                // Property: Ed25519 signing is deterministic
+                try std.testing.expectEqualSlices(u8, sig1, sig2);
+            } else |_| {}
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz public key derivation consistency
+
+```zig
+test "fuzz public key derivation consistency" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+
+    const kp1_result = ed25519.keypairFromSeed(seed);
+    const kp2_result = ed25519.keypairFromSeed(seed);
+
+    if (kp1_result) |kp1| {
+        if (kp2_result) |kp2| {
+            const pk1 = kp1.public_key.toBytes();
+            const pk2 = kp2.public_key.toBytes();
+            // Property: Keypair generation is deterministic
+            try std.testing.expectEqualSlices(u8, &pk1, &pk2);
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz signature roundtrip
+
+```zig
+test "fuzz signature roundtrip" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 64) return;
+
+    const allocator = std.testing.allocator;
+    const seed = input[0..32];
+    const message = input[32..64];
+
+    const kp_result = ed25519.keypairFromSeed(seed);
+    if (kp_result) |kp| {
+        const sig_result = ed25519.sign(allocator, message, &kp.secret_key.toBytes());
+        if (sig_result) |sig| {
+            defer allocator.free(sig);
+
+            // Property: Valid signatures verify successfully
+            const valid = ed25519.verify(sig, message, &kp.public_key.toBytes()) catch false;
+            try std.testing.expect(valid);
+        } else |_| {}
+    } else |_| {}
+}
+```

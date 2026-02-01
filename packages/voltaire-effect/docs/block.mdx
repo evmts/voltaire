@@ -1,0 +1,196 @@
+---
+title: Block Module
+description: Effect-wrapped block utilities for fetching blocks, receipts, and reorg handling
+---
+
+## Overview
+
+The block module provides Effect-wrapped utilities for fetching blockchain blocks. These are standalone functions that work with `TransportService`, useful for one-off block fetches without needing streaming helpers.
+
+For continuous block streaming with reorg detection, use [`makeBlockStream`](/services/block-stream).
+
+## Quick Start
+
+```typescript
+import { Effect } from 'effect'
+import * as Block from 'voltaire-effect/block'
+import { HttpTransport, TransportService } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const block = yield* Block.fetchBlock(18000000n, 'header')
+  console.log('Block hash:', block.hash)
+}).pipe(
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+```
+
+## Functions
+
+### fetchBlock
+
+Fetch a block by number with optional transaction inclusion.
+
+```typescript
+import * as Block from 'voltaire-effect/block'
+
+// Header only (minimal data)
+const headerOnly = yield* Block.fetchBlock(18000000n, 'header')
+
+// With full transactions
+const withTxs = yield* Block.fetchBlock(18000000n, 'transactions')
+
+// With transactions and receipts
+const withReceipts = yield* Block.fetchBlock(18000000n, 'receipts')
+
+// With retry configuration
+const robust = yield* Block.fetchBlock(18000000n, 'header', {
+  maxRetries: 5,
+  initialDelay: 500,
+  maxDelay: 10000
+})
+```
+
+**Parameters:**
+- `blockNumber: bigint` - Block number to fetch
+- `include: 'header' | 'transactions' | 'receipts'` - Content level
+- `retryOptions?: RetryOptions` - Optional retry configuration
+
+**Returns:** `Effect<StreamBlock<TInclude>, BlockError, TransportService>`
+
+### fetchBlockByHash
+
+Fetch a block by its hash.
+
+```typescript
+const block = yield* Block.fetchBlockByHash(
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+  'transactions'
+)
+```
+
+**Parameters:**
+- `blockHash: string` - Block hash (hex string)
+- `include: 'header' | 'transactions' | 'receipts'` - Content level
+- `retryOptions?: RetryOptions` - Optional retry configuration
+
+**Returns:** `Effect<StreamBlock<TInclude>, BlockError, TransportService>`
+
+### fetchBlockReceipts
+
+Fetch receipts for a block. Automatically falls back to individual receipt fetching if `eth_getBlockReceipts` is not supported.
+
+```typescript
+const block = { hash: '0x...', transactions: [...] }
+const receipts = yield* Block.fetchBlockReceipts(block)
+```
+
+**Parameters:**
+- `block: { hash: string; transactions?: Transaction[] }` - Block object with hash and optional transactions
+
+**Returns:** `Effect<Receipt[], BlockError, TransportService>`
+
+### toLightBlock
+
+Convert a full block to a lightweight block for tracking (pure function, no Effect).
+
+```typescript
+import * as Block from 'voltaire-effect/block'
+
+const light = Block.toLightBlock(fullBlock)
+// { number: 18000000n, hash: '0x...', parentHash: '0x...', timestamp: 1695000000n }
+```
+
+**Returns:** `LightBlock` with number, hash, parentHash, and timestamp
+
+## Types
+
+### BlockInclude
+
+Content level for block fetching:
+
+```typescript
+type BlockInclude = 'header' | 'transactions' | 'receipts'
+```
+
+### LightBlock
+
+Minimal block info for reorg tracking:
+
+```typescript
+interface LightBlock {
+  readonly number: bigint
+  readonly hash: BlockHashType
+  readonly parentHash: BlockHashType
+  readonly timestamp: bigint
+}
+```
+
+### RetryOptions
+
+Retry configuration for RPC calls:
+
+```typescript
+interface RetryOptions {
+  maxRetries?: number      // Default: 3
+  initialDelay?: number    // Default: 1000ms
+  maxDelay?: number        // Default: 30000ms
+}
+```
+
+## Error Handling
+
+All functions return `BlockError` in the error channel:
+
+```typescript
+import { BlockError } from 'voltaire-effect/block'
+
+program.pipe(
+  Effect.catchTag('BlockError', (e) => {
+    console.error('Block fetch failed:', e.message)
+    return Effect.succeed(null)
+  })
+)
+```
+
+Specific error types:
+- `BlockNotFoundError` - Block doesn't exist
+- `BlockStreamAbortedError` - Operation was cancelled
+- `BlockRangeTooLargeError` - RPC rejected range as too large
+
+## Layer Composition
+
+Works with any TransportService implementation:
+
+```typescript
+import { HttpTransport, WebSocketTransport } from 'voltaire-effect'
+
+// HTTP
+const httpProgram = program.pipe(
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// WebSocket
+const wsProgram = program.pipe(
+  Effect.provide(WebSocketTransport('wss://eth.llamarpc.com'))
+)
+```
+
+## Comparison with makeBlockStream
+
+| Feature | Block module | makeBlockStream |
+|---------|--------------|-----------------|
+| One-off fetches | ✅ Ideal | Overkill |
+| Continuous streaming | ❌ Manual | ✅ Built-in |
+| Reorg detection | ❌ Manual | ✅ Automatic |
+| Backfill | ❌ Loop manually | ✅ `backfill()` |
+| Watch mode | ❌ Not supported | ✅ `watch()` |
+
+Use the block module for simple one-off fetches. Use makeBlockStream for production block indexing with reorg handling.
+
+## See Also
+
+- [Block Streaming](/services/block-stream) — Continuous block streaming with reorg detection
+- [Block Streaming Example](/examples/block-streaming) — Complete streaming examples
+- [Provider Service](/services/provider) — `getBlock` method for one-off fetches
+- [Stream Errors](/stream) — Error types for streaming operations
+- [Voltaire Block](https://voltaire.tevm.sh/primitives/block) — Core block documentation

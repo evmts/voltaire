@@ -1,0 +1,17 @@
+---
+title: '[Zig] src/crypto/bn254_arkworks.zig'
+source: 'src/crypto/bn254_arkworks.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/bn254_arkworks.zig
+
+### constants are correct
+
+```zig
+test "constants are correct" {
+    try std.testing.expect(ecmulOutputSize() == 64);
+    try std.testing.expect(ecpairingOutputSize() == 32);
+    try std.testing.expect(bls12381G1OutputSize() == 128);
+    try std.testing.expect(bls12381PairingOutputSize() == 32);
+}
+```

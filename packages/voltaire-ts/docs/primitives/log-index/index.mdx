@@ -1,0 +1,92 @@
+---
+title: "LogIndex"
+description: "Log position in receipt (0-based)"
+---
+
+## Overview
+
+LogIndex is a branded `number` type representing a log's position within a transaction receipt. Indices start at 0 for the first log emitted.
+
+```typescript
+import * as LogIndex from '@tevm/primitives/LogIndex'
+
+const index = LogIndex.from(2)
+```
+
+## Type Definition
+
+```typescript
+type LogIndexType = number & {
+  readonly [brand]: "LogIndex";
+}
+```
+
+## Creating LogIndexes
+
+### from
+
+Create from number or bigint.
+
+```typescript
+// From number
+const idx1 = LogIndex.from(2)
+
+// From bigint
+const idx2 = LogIndex.from(2n)
+
+// First log
+const first = LogIndex.from(0)
+```
+
+**Validation**: Must be non-negative integer.
+
+## Converting LogIndexes
+
+### toNumber
+
+Convert to number (zero-cost).
+
+```typescript
+const num = LogIndex.toNumber(index)
+// 2
+```
+
+## Comparing LogIndexes
+
+### equals
+
+Check equality.
+
+```typescript
+const a = LogIndex.from(2)
+const b = LogIndex.from(2)
+
+if (LogIndex.equals(a, b)) {
+  console.log('Indexes are equal')
+}
+```
+
+## Usage in Event Logs
+
+LogIndex appears in event logs to indicate position within a receipt:
+
+```typescript
+import * as EventLog from '@tevm/primitives/EventLog'
+
+const log = {
+  logIndex: LogIndex.from(2),
+  address: contractAddress,
+  topics: [eventSignature],
+  data: eventData
+}
+```
+
+## Errors
+
+**InvalidLogIndexError**: Invalid value (negative, non-integer, wrong type).
+
+## See Also
+
+- [EventLog](/primitives/eventlog) - Event logs
+- [Receipt](/primitives/receipt) - Transaction receipts
+- [TransactionIndex](/primitives/transaction-index) - Transaction position

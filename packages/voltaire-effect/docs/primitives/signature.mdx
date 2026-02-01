@@ -1,0 +1,121 @@
+---
+title: Signature
+description: Effect-based cryptographic signature schemas for secp256k1, P-256, and Ed25519
+---
+
+```typescript
+import { Signature } from 'voltaire-effect'
+import * as S from 'effect/Schema'
+import { Effect } from 'effect'
+```
+
+## Schemas
+
+| Schema | Input | Output | Description |
+|--------|-------|--------|-------------|
+| `Signature.Hex` | hex string | SignatureType | 64/65-byte signature as hex |
+| `Signature.Bytes` | Uint8Array | SignatureType | Raw signature bytes |
+| `Signature.Compact` | Uint8Array | SignatureType | EIP-2098 compact format |
+| `Signature.DER` | Uint8Array | SignatureType | DER encoding |
+| `Signature.Rpc` | {r, s, yParity?, v?} | SignatureType | Ethereum RPC format |
+| `Signature.Tuple` | [yParity, r, s] | SignatureType | Tuple format |
+
+```typescript
+// Decode hex signature
+const sig = S.decodeSync(Signature.Hex)('0x' + 'ab'.repeat(32) + 'cd'.repeat(32) + '1b')
+
+// Encode to different formats
+const hex = S.encodeSync(Signature.Hex)(sig)
+const compact = S.encodeSync(Signature.Compact)(sig)
+const rpc = S.encodeSync(Signature.Rpc)(sig)
+const tuple = S.encodeSync(Signature.Tuple)(sig)
+```
+
+## Pure Functions
+
+| Function | Description |
+|----------|-------------|
+| `equals(a, b)` | Compare two signatures |
+| `is(value)` | Type guard for SignatureType |
+| `isSignature(value)` | Alias for `is` |
+| `isCanonical(sig)` | Check if s ≤ n/2 |
+| `getAlgorithm(sig)` | Get algorithm: 'secp256k1' \| 'p256' \| 'ed25519' |
+| `getR(sig)` | Get 32-byte R component |
+| `getS(sig)` | Get 32-byte S component |
+| `getV(sig)` | Get recovery value (27, 28, or undefined) |
+| `normalize(sig)` | Normalize to canonical form |
+| `toBytes(sig)` | Convert to raw bytes |
+| `toCompact(sig)` | Convert to EIP-2098 compact |
+| `toDER(sig)` | Convert to DER encoding |
+| `toHex(sig)` | Convert to hex string |
+| `toRpc(sig)` | Convert to RPC format |
+| `toTuple(sig)` | Convert to [yParity, r, s] tuple |
+| `verify(sig, hash, pubkey)` | Verify signature |
+
+```typescript
+import { Signature } from 'voltaire-effect'
+
+Signature.getAlgorithm(sig)  // 'secp256k1'
+Signature.getR(sig)          // Uint8Array (32 bytes)
+Signature.getS(sig)          // Uint8Array (32 bytes)
+Signature.getV(sig)          // 27 | 28 | undefined
+Signature.isCanonical(sig)   // true
+Signature.verify(sig, messageHash, publicKey)  // true
+```
+
+## Effect-wrapped Functions
+
+Parsing operations that can fail return `Effect<SignatureType, Error>`:
+
+```typescript
+import { Signature } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+// Parse with Effect error handling
+const sig = Effect.runSync(Signature.fromHex('0x...'))
+
+// Or handle errors
+Effect.runSync(
+  Effect.catchAll(Signature.fromHex('invalid'), (e) =>
+    Effect.succeed(fallbackSig)
+  )
+)
+```
+
+| Function | Description |
+|----------|-------------|
+| `from(input)` | Parse from hex, bytes, or RPC object |
+| `fromHex(hex)` | Parse from hex string |
+| `fromBytes(bytes)` | Parse from raw bytes |
+| `fromCompact(bytes)` | Parse from EIP-2098 compact |
+| `fromDER(bytes)` | Parse from DER encoding |
+| `fromRpc(rpc, chainId?)` | Parse from RPC format |
+| `fromTuple(tuple, chainId?)` | Parse from [yParity, r, s] |
+
+## Constructor Functions
+
+For known-valid inputs, use pure constructors:
+
+```typescript
+import { Signature } from 'voltaire-effect'
+
+const secp = Signature.fromSecp256k1(r, s, 27)
+const p256 = Signature.fromP256(r, s)
+const ed = Signature.fromEd25519(sigBytes)
+```
+
+## Errors
+
+Re-exported from `@tevm/voltaire/Signature`:
+
+- `InvalidAlgorithmError`
+- `InvalidDERError`
+- `InvalidSignatureFormatError`
+- `InvalidSignatureLengthError`
+- `NonCanonicalSignatureError`
+
+## See Also
+
+- [PrivateKey](/primitives/privatekey) - Sign messages with private keys
+- [PublicKey](/primitives/publickey) - Verify signatures with public keys
+- [Address](/primitives/address) - Derive address from signature recovery

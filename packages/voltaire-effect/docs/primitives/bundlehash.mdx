@@ -1,0 +1,25 @@
+---
+title: BundleHash
+description: 32-byte identifier for submitted bundles
+---
+
+```typescript
+import * as BundleHash from 'voltaire-effect/primitives/BundleHash'
+import { Effect } from 'effect'
+
+// Create from hex, bytes, or bigint
+const hash = await Effect.runPromise(
+  BundleHash.from('0x1234567890abcdef...')
+)
+
+// Convert to hex
+const hex = await Effect.runPromise(BundleHash.toHex(hash))
+
+// Compare
+const same = await Effect.runPromise(BundleHash.equals(hash1, hash2))
+
+// Check zero
+const zero = await Effect.runPromise(BundleHash.isZero(hash))
+```
+
+32-byte branded type: `Bytes32Type & { readonly __tag: 'BundleHash' }`

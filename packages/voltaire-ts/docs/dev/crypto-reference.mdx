@@ -1,0 +1,455 @@
+---
+title: Crypto Reference
+description: Complete inventory of all cryptographic modules currently implemented
+---
+
+# Crypto Reference
+
+All crypto modules in `src/crypto/`. Implementations use Zig core with Rust/C for complex curves.
+
+## Hash Functions
+
+### Keccak256
+Primary Ethereum hash function. Used for addresses, transaction hashes, storage keys.
+
+```typescript
+import * as Keccak256 from "@voltaire/crypto/Keccak256";
+
+// For string input, use hashString
+const hash = Keccak256.hashString("hello");
+// For Uint8Array input, use hash
+const hash2 = Keccak256.hash(new Uint8Array([1, 2, 3]));
+// For hex input, use hashHex
+Keccak256.hashHex("0x1234");
+```
+
+**Files**:
+- `Keccak256/index.ts` - TypeScript API
+- `keccak256.wasm.ts` - WASM variant
+- `keccak256_accel.zig` - Hardware-accelerated implementation
+- `keccak_asm.zig` - Assembly-optimized
+- `keccak_wrapper.rs` - Rust keccak-asm wrapper
+
+**Performance**: ~500ns native, ~2μs WASM
+
+### SHA256
+SHA-256 for EVM precompile and general use.
+
+```typescript
+import * as SHA256 from "@voltaire/crypto/SHA256";
+
+const hash = SHA256.hash(data);
+SHA256.hashHex(data);
+```
+
+**Files**:
+- `SHA256/index.ts` - TypeScript API
+- `sha256.wasm.ts` - WASM variant
+- `sha256_accel.zig` - Hardware-accelerated (SHA-NI)
+
+### Blake2
+Blake2b hashing (EVM precompile 0x09).
+
+```typescript
+import * as Blake2 from "@voltaire/crypto/Blake2";
+
+Blake2.hash(data, { digestLength: 32 });
+Blake2.f(rounds, h, m, t, f);  // Blake2f compression function
+```
+
+**Files**:
+- `Blake2/index.ts` - TypeScript API
+- `blake2.zig` - Zig implementation
+- `blake2_c.zig` - C bindings (optional)
+- `blake2.fuzz.zig` - Fuzz tests
+
+### Ripemd160
+RIPEMD-160 for Bitcoin compatibility (EVM precompile 0x03).
+
+```typescript
+import * as Ripemd160 from "@voltaire/crypto/Ripemd160";
+
+const hash = Ripemd160.hash(data);
+```
+
+**Files**:
+- `Ripemd160/index.ts` - TypeScript API
+- `ripemd160.zig` - Zig implementation
+- `ripemd160_c.zig` - C bindings
+
+---
+
+## Digital Signatures
+
+### Secp256k1
+Bitcoin/Ethereum ECDSA curve. Core signing primitive.
+
+```typescript
+import * as Secp256k1 from "@voltaire/crypto/Secp256k1";
+
+// Sign message hash
+const signature = Secp256k1.sign(messageHash, privateKey);
+
+// Verify signature
+const valid = Secp256k1.verify(signature, messageHash, publicKey);
+
+// Recover public key from signature
+const pubkey = Secp256k1.recover(signature, messageHash, recoveryId);
+
+// Key operations
+const pubkey = Secp256k1.derivePublicKey(privateKey);
+const compressed = Secp256k1.compressPublicKey(pubkey);
+const uncompressed = Secp256k1.decompressPublicKey(compressed);
+```
+
+**Methods**:
+- `sign(hash, privateKey)` - ECDSA sign
+- `verify(signature, hash, publicKey)` - Verify signature
+- `recover(signature, hash, v)` - Recover public key
+- `getPublicKey(privateKey)` - Derive public key
+- `compressPublicKey(pubkey)` - Compress to 33 bytes
+- `decompressPublicKey(pubkey)` - Decompress to 65 bytes
+- `isValidPrivateKey(key)` - Validate private key
+- `isValidPublicKey(key)` - Validate public key
+
+**Files**:
+- `Secp256k1/index.ts` - TypeScript API
+- `secp256k1.zig` - Zig implementation
+- `secp256k1.wasm.ts` - WASM variant
+- `secp256k1.bench.zig` - Benchmarks
+- `secp256k1.fuzz.zig` - Fuzz tests
+
+### Ed25519
+EdDSA signatures. Used by some L2s and alt chains.
+
+```typescript
+import * as Ed25519 from "@voltaire/crypto/Ed25519";
+
+const signature = Ed25519.sign(message, privateKey);
+const valid = Ed25519.verify(signature, message, publicKey);
+const pubkey = Ed25519.getPublicKey(privateKey);
+```
+
+**Files**:
+- `Ed25519/index.ts` - TypeScript API
+- `ed25519.zig` - Zig implementation
+- `ed25519.wasm.ts` - WASM variant
+
+### P256
+NIST P-256 (secp256r1). Used by hardware wallets and WebAuthn.
+
+```typescript
+import * as P256 from "@voltaire/crypto/P256";
+
+const signature = P256.sign(hash, privateKey);
+const valid = P256.verify(signature, hash, publicKey);
+```
+
+**Files**:
+- `P256/index.ts` - TypeScript API
+- `p256.zig` - Zig implementation
+- `p256.wasm.ts` - WASM variant
+
+---
+
+## Elliptic Curves & Pairings
+
+### BN254
+BN254 (alt_bn128) curve for zkSNARKs. Used by EVM precompiles 0x06-0x08.
+
+```typescript
+import * as BN254 from "@voltaire/crypto/BN254";
+
+// G1 operations
+const sum = BN254.g1Add(p1, p2);
+const product = BN254.g1Mul(point, scalar);
+
+// G2 operations
+const g2Sum = BN254.g2Add(p1, p2);
+const g2Product = BN254.g2Mul(point, scalar);
+
+// Pairing check
+const valid = BN254.pairing(g1Points, g2Points);
+```
+
+**Implementation**: Dual implementation
+- `bn254.zig` - Pure Zig implementation
+- `bn254_arkworks.zig` - Rust arkworks wrapper (higher performance)
+- `bn254_ark_c.zig` - C interface to Rust
+- `bn254_wrapper.rs` - Rust arkworks bindings
+
+**Files**:
+- `bn254.ts` - TypeScript API (auto-selects best impl)
+- `bn254.wasm.ts` - WASM variant
+- `bn254.ark.ts` - arkworks-specific exports
+
+### BLS12-381
+BLS12-381 curve for beacon chain consensus. EVM precompiles 0x0B-0x13 (Prague).
+
+Uses `blst` C library for production performance.
+
+```typescript
+// Via precompiles (no direct TS API yet)
+import { execute } from "@voltaire/evm/precompiles";
+
+// G1 operations via precompile
+const result = execute(0x0B, g1AddInput);  // BLS12_G1_ADD
+```
+
+**Precompile Operations**:
+| Address | Operation |
+|---------|-----------|
+| 0x0B | G1 Add |
+| 0x0C | G1 Mul |
+| 0x0D | G1 MSM (multi-scalar multiplication) |
+| 0x0E | G2 Add |
+| 0x0F | G2 Mul |
+| 0x10 | G2 MSM |
+| 0x11 | Pairing |
+| 0x12 | Map Fp to G1 |
+| 0x13 | Map Fp2 to G2 |
+
+**Files** (in `src/evm/precompiles/`):
+- `bls12_g1_add.zig`, `bls12_g1_mul.zig`, `bls12_g1_msm.zig`
+- `bls12_g2_add.zig`, `bls12_g2_mul.zig`, `bls12_g2_msm.zig`
+- `bls12_pairing.zig`
+- `bls12_map_fp_to_g1.zig`, `bls12_map_fp2_to_g2.zig`
+
+---
+
+## KZG Commitments
+
+### KZG
+Kate-Zaverucha-Goldberg polynomial commitments for EIP-4844 blob transactions.
+
+```typescript
+import * as KZG from "@voltaire/crypto/KZG";
+
+// Blob to commitment
+const commitment = KZG.blobToCommitment(blob);
+
+// Compute proof
+const proof = KZG.computeProof(blob, z);
+
+// Verify proof
+const valid = KZG.verifyProof(commitment, z, y, proof);
+
+// Batch verification
+const valid = KZG.verifyBlobProof(blob, commitment, proof);
+```
+
+**Dependencies**:
+- `c-kzg-4844` - C library (lib/c-kzg-4844)
+- Trusted setup: `kzg_trusted_setup.zig`
+
+**Limitation**: Not available in WASM (library too large, requires trusted setup file)
+
+**Files**:
+- `KZG/index.ts` - TypeScript API
+- `c_kzg.zig` - C bindings
+- `kzg_setup.zig` - Setup loading
+- `kzg_trusted_setup.zig` - Embedded trusted setup
+
+---
+
+## Typed Data (EIP-712)
+
+### EIP712
+Typed structured data hashing and signing.
+
+```typescript
+import * as EIP712 from "@voltaire/crypto/EIP712";
+
+const domain = {
+  name: "MyContract",
+  version: "1",
+  chainId: 1n,
+  verifyingContract: "0x...",
+};
+
+const types = {
+  Person: [
+    { name: "name", type: "string" },
+    { name: "wallet", type: "address" },
+  ],
+};
+
+const message = {
+  name: "Alice",
+  wallet: "0x...",
+};
+
+// Hash typed data
+const hash = EIP712.hashTypedData({ domain, types, primaryType: "Person", message });
+
+// Sign
+const signature = EIP712.signTypedData({ domain, types, primaryType: "Person", message, privateKey });
+```
+
+**Files**:
+- `EIP712/index.ts` - TypeScript API (placeholder/WIP)
+- `eip712.zig` - Zig implementation
+- `eip712.wasm.ts` - WASM variant
+
+---
+
+## Symmetric Encryption
+
+### AesGcm
+AES-256-GCM authenticated encryption.
+
+```typescript
+import * as AesGcm from "@voltaire/crypto/AesGcm";
+
+// Encrypt
+const { ciphertext, tag } = AesGcm.encrypt(plaintext, key, nonce);
+
+// Decrypt
+const plaintext = AesGcm.decrypt(ciphertext, key, nonce, tag);
+```
+
+**Files**:
+- `AesGcm/index.ts` - TypeScript API
+- `aes_gcm.zig` - Zig implementation
+
+### X25519
+Elliptic curve Diffie-Hellman key exchange.
+
+```typescript
+import * as X25519 from "@voltaire/crypto/X25519";
+
+// Generate key pair
+const { publicKey, privateKey } = X25519.generateKeyPair();
+
+// Compute shared secret
+const sharedSecret = X25519.sharedSecret(myPrivateKey, theirPublicKey);
+```
+
+**Files**:
+- `X25519/index.ts` - TypeScript API
+- `x25519.zig` - Zig implementation
+- `x25519.wasm.ts` - WASM variant
+
+---
+
+## Wallet Derivation
+
+### Bip39
+Mnemonic seed phrase generation and validation.
+
+```typescript
+import * as Bip39 from "@voltaire/crypto/Bip39";
+
+// Generate mnemonic
+const mnemonic = Bip39.generateMnemonic(128);  // 12 words
+
+// Validate
+const valid = Bip39.validateMnemonic(mnemonic);
+
+// To seed
+const seed = Bip39.mnemonicToSeed(mnemonic, passphrase);
+```
+
+**Files**:
+- `Bip39/index.ts` - TypeScript API (uses @scure/bip39)
+- `bip39.test.ts` - Tests
+
+### HDWallet
+Hierarchical Deterministic wallet derivation (BIP-32).
+
+```typescript
+import * as HDWallet from "@voltaire/crypto/HDWallet";
+
+// From seed
+const master = HDWallet.fromSeed(seed);
+
+// Derive path
+const account = HDWallet.derive(master, "m/44'/60'/0'/0/0");
+
+// Get keys
+const privateKey = HDWallet.privateKey(account);
+const publicKey = HDWallet.publicKey(account);
+const address = HDWallet.address(account);
+```
+
+**Files**:
+- `HDWallet/index.ts` - TypeScript API (uses @scure/bip32)
+- `hdwallet.test.ts` - Tests
+- `signers/` - Hardware wallet signers (Ledger, Trezor)
+
+---
+
+## Hardware Acceleration
+
+### CPU Feature Detection
+Detects available CPU features for optimal implementation selection.
+
+```zig
+// cpu_features.zig
+const features = cpu_features.detect();
+if (features.sha) {
+    // Use SHA-NI instructions
+}
+if (features.aes) {
+    // Use AES-NI instructions
+}
+```
+
+### Accelerated Implementations
+
+| Algorithm | Acceleration | Speedup |
+|-----------|-------------|---------|
+| Keccak256 | Assembly (keccak-asm) | 3-5x |
+| SHA256 | SHA-NI instructions | 4-6x |
+| AES-GCM | AES-NI instructions | 5-10x |
+
+**Files**:
+- `cpu_features.zig` - Feature detection
+- `keccak256_accel.zig` - Accelerated Keccak
+- `sha256_accel.zig` - Accelerated SHA256
+- `keccak_asm.zig` - Assembly Keccak
+
+---
+
+## Modular Exponentiation
+
+### ModExp
+Modular exponentiation for MODEXP precompile (0x05).
+
+```zig
+// modexp.zig
+const result = modexp.calculate(base, exp, mod);
+```
+
+**Files**:
+- `modexp.zig` - Zig implementation
+
+---
+
+## Module Summary
+
+| Module | Purpose | Native | WASM |
+|--------|---------|--------|------|
+| Keccak256 | Ethereum hash | ✅ | ✅ |
+| SHA256 | SHA-2 hash | ✅ | ✅ |
+| Blake2 | Blake2b hash | ✅ | ✅ |
+| Ripemd160 | Legacy hash | ✅ | ✅ |
+| Secp256k1 | ECDSA signing | ✅ | ✅ |
+| Ed25519 | EdDSA signing | ✅ | ✅ |
+| P256 | NIST curve | ✅ | ✅ |
+| BN254 | zkSNARK curve | ✅ | ✅ |
+| BLS12-381 | Consensus curve | ✅ | ❌ |
+| KZG | Blob commitments | ✅ | ❌ |
+| EIP712 | Typed data | ✅ | ✅ |
+| AesGcm | Encryption | ✅ | ✅ |
+| X25519 | Key exchange | ✅ | ✅ |
+| Bip39 | Mnemonics | ✅ | ✅ |
+| HDWallet | Key derivation | ✅ | ✅ |
+
+<Tip>
+Native indicates the <strong>Bun</strong> native bindings. In <strong>Node.js</strong>, use the regular TypeScript API or the <strong>WASM</strong> variants.
+</Tip>
+
+**WASM Limitations**:
+- BLS12-381: Requires blst C library
+- KZG: Requires trusted setup file and c-kzg library

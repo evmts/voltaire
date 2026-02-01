@@ -1,0 +1,319 @@
+---
+title: Gas Estimation
+description: Estimate gas and set EIP-1559 transaction fees
+---
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+# Gas Estimation and EIP-1559 Fees
+
+This guide covers estimating gas for transactions and setting appropriate EIP-1559 fees using Voltaire's provider and FeeMarket primitives.
+
+## EIP-1559 Fee Model
+
+EIP-1559 replaced legacy gas price auctions with a predictable fee structure:
+
+| Parameter | Description |
+|-----------|-------------|
+| `baseFee` | Minimum fee per gas, set by the protocol based on block utilization |
+| `maxPriorityFeePerGas` | Tip to validators for faster inclusion |
+| `maxFeePerGas` | Maximum total fee per gas you're willing to pay |
+
+The actual fee paid is: `min(maxFeePerGas, baseFee + maxPriorityFeePerGas)`.
+
+## Getting Current Gas Prices
+
+Fetch current network fee data using provider methods:
+
+```typescript
+import { HttpProvider } from '@voltaire/provider';
+
+const provider = HttpProvider({ url: 'https://eth.llamarpc.com' });
+
+// Get legacy gas price (works for all transaction types)
+const gasPrice = await provider.request({ method: 'eth_gasPrice' });
+console.log(`Gas price: ${BigInt(gasPrice)} wei`);
+
+// Get EIP-1559 priority fee suggestion
+const priorityFee = await provider.request({ method: 'eth_maxPriorityFeePerGas' });
+console.log(`Priority fee: ${BigInt(priorityFee)} wei`);
+
+// Get current base fee from latest block
+const block = await provider.request({
+  method: 'eth_getBlockByNumber',
+  params: ['latest', false]
+});
+const baseFee = BigInt(block.baseFeePerGas);
+console.log(`Base fee: ${baseFee} wei`);
+```
+
+## Estimating Gas for a Transaction
+
+Use `eth_estimateGas` to simulate transaction execution and get the required gas:
+
+```typescript
+// Estimate gas for an ETH transfer
+const gasEstimate = await provider.request({
+  method: 'eth_estimateGas',
+  params: [{
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f5fE15',
+    to: '0x8ba1f109551bD432803012645Ac136ddd64DBA72',
+    value: '0xde0b6b3a7640000' // 1 ETH
+  }]
+});
+console.log(`Estimated gas: ${BigInt(gasEstimate)}`);
+// Standard ETH transfer: 21000 gas
+
+// Estimate gas for a contract call
+const contractGas = await provider.request({
+  method: 'eth_estimateGas',
+  params: [{
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f5fE15',
+    to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+    data: '0xa9059cbb000000000000000000000000...' // transfer() calldata
+  }]
+});
+```
+
+<Tip>
+Add a 20% buffer to gas estimates to account for state changes between estimation and execution:
+`gasLimit = gasEstimate * 120n / 100n`
+</Tip>
+
+## Using GasEstimate Primitive
+
+Voltaire provides a branded `GasEstimate` type for type-safe gas handling:
+
+```typescript
+import * as GasEstimate from '@voltaire/primitives/GasEstimate';
+
+// Create from RPC result
+const estimate = GasEstimate.from('0xc350'); // 50000
+
+// Add buffer for safety
+const withBuffer = GasEstimate.withBuffer(estimate, 20); // +20%
+console.log(GasEstimate.toBigInt(withBuffer)); // 60000n
+
+// Convert to gas limit for transaction
+const gasLimit = GasEstimate.toGasLimit(estimate);
+```
+
+## Calculating EIP-1559 Fees
+
+Use the FeeMarket primitive to calculate effective fees:
+
+```typescript
+import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+
+// Get current network state
+const block = await provider.request({
+  method: 'eth_getBlockByNumber',
+  params: ['latest', false]
+});
+const baseFee = BigInt(block.baseFeePerGas);
+
+// Calculate fee breakdown
+const txFee = FeeMarket.calculateTxFee({
+  maxFeePerGas: 50_000_000_000n,        // 50 gwei max
+  maxPriorityFeePerGas: 2_000_000_000n, // 2 gwei tip
+  baseFee: baseFee
+});
+
+console.log(`Effective gas price: ${txFee.effectiveGasPrice}`);
+console.log(`Priority fee paid: ${txFee.priorityFee}`);
+console.log(`Base fee (burned): ${txFee.baseFee}`);
+```
+
+## Setting Appropriate Fees
+
+Choose fee parameters based on urgency:
+
+```typescript
+async function getFeeParams(urgency: 'low' | 'standard' | 'high') {
+  const [block, priorityFee] = await Promise.all([
+    provider.request({ method: 'eth_getBlockByNumber', params: ['latest', false] }),
+    provider.request({ method: 'eth_maxPriorityFeePerGas' })
+  ]);
+
+  const baseFee = BigInt(block.baseFeePerGas);
+  const suggestedPriority = BigInt(priorityFee);
+
+  switch (urgency) {
+    case 'low':
+      return {
+        maxPriorityFeePerGas: suggestedPriority / 2n,
+        maxFeePerGas: baseFee + suggestedPriority / 2n
+      };
+    case 'standard':
+      return {
+        maxPriorityFeePerGas: suggestedPriority,
+        maxFeePerGas: baseFee * 2n + suggestedPriority
+      };
+    case 'high':
+      return {
+        maxPriorityFeePerGas: suggestedPriority * 2n,
+        maxFeePerGas: baseFee * 3n + suggestedPriority * 2n
+      };
+  }
+}
+
+const fees = await getFeeParams('standard');
+```
+
+## Predicting Future Base Fees
+
+Use `FeeMarket.BaseFee` to calculate what the next block's base fee will be:
+
+```typescript
+import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+
+const block = await provider.request({
+  method: 'eth_getBlockByNumber',
+  params: ['latest', false]
+});
+
+// Calculate next block's base fee
+const nextBaseFee = FeeMarket.BaseFee(
+  BigInt(block.gasUsed),      // parent gas used
+  BigInt(block.gasLimit),     // parent gas limit
+  BigInt(block.baseFeePerGas) // parent base fee
+);
+
+console.log(`Current base fee: ${BigInt(block.baseFeePerGas)}`);
+console.log(`Next base fee: ${nextBaseFee}`);
+```
+
+The base fee adjusts by up to 12.5% per block based on utilization:
+- Block 100% full: base fee increases 12.5%
+- Block 50% full (target): base fee unchanged
+- Block 0% full: base fee decreases 12.5%
+
+## Using Fee History
+
+Get historical fee data to understand network conditions:
+
+```typescript
+const feeHistory = await provider.request({
+  method: 'eth_feeHistory',
+  params: [
+    '0xa',           // 10 blocks
+    'latest',        // up to latest
+    [25, 50, 75]     // percentiles for priority fees
+  ]
+});
+
+console.log('Base fees:', feeHistory.baseFeePerGas.map(BigInt));
+console.log('Gas used ratios:', feeHistory.gasUsedRatio);
+console.log('Priority fee percentiles:', feeHistory.reward);
+
+// Calculate average base fee
+const baseFees = feeHistory.baseFeePerGas.map(BigInt);
+const avgBaseFee = baseFees.reduce((a, b) => a + b, 0n) / BigInt(baseFees.length);
+```
+
+## Complete Transaction Cost Estimation
+
+Combine gas estimation with fee calculation:
+
+```typescript
+async function estimateTransactionCost(tx: {
+  from: string;
+  to: string;
+  data?: string;
+  value?: string;
+}) {
+  // Get gas estimate
+  const gasEstimate = await provider.request({
+    method: 'eth_estimateGas',
+    params: [tx]
+  });
+  const gasLimit = BigInt(gasEstimate) * 120n / 100n; // 20% buffer
+
+  // Get fee data
+  const [block, priorityFee] = await Promise.all([
+    provider.request({ method: 'eth_getBlockByNumber', params: ['latest', false] }),
+    provider.request({ method: 'eth_maxPriorityFeePerGas' })
+  ]);
+
+  const baseFee = BigInt(block.baseFeePerGas);
+  const priority = BigInt(priorityFee);
+
+  // Calculate costs
+  const minCost = gasLimit * baseFee;
+  const expectedCost = gasLimit * (baseFee + priority);
+  const maxCost = gasLimit * (baseFee * 2n + priority);
+
+  return {
+    gasLimit,
+    baseFee,
+    priorityFee: priority,
+    minCostWei: minCost,
+    expectedCostWei: expectedCost,
+    maxCostWei: maxCost,
+    expectedCostEth: Number(expectedCost) / 1e18
+  };
+}
+
+const cost = await estimateTransactionCost({
+  from: '0x742d35Cc6634C0532925a3b844Bc9e7595f5fE15',
+  to: '0x8ba1f109551bD432803012645Ac136ddd64DBA72',
+  value: '0xde0b6b3a7640000'
+});
+
+console.log(`Gas limit: ${cost.gasLimit}`);
+console.log(`Expected cost: ${cost.expectedCostEth.toFixed(6)} ETH`);
+```
+
+## Blob Fees (EIP-4844)
+
+For blob transactions, there's a separate fee market:
+
+```typescript
+// Get current blob base fee
+const blobBaseFee = await provider.request({ method: 'eth_blobBaseFee' });
+console.log(`Blob base fee: ${BigInt(blobBaseFee)} wei per blob gas`);
+
+// Calculate blob fee for 3 blobs
+const BLOB_GAS_PER_BLOB = 131072n;
+const blobCount = 3n;
+const blobCost = BigInt(blobBaseFee) * BLOB_GAS_PER_BLOB * blobCount;
+```
+
+<Note>
+`eth_blobBaseFee` is only available on networks with EIP-4844 (post-Cancun upgrade). It will error on older networks.
+</Note>
+
+## Contract Gas Estimation
+
+For contract interactions, use the Contract module's built-in estimation:
+
+```typescript
+import { Contract } from '@voltaire/contract';
+
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+
+// Estimate gas for transfer
+const gas = await usdc.estimateGas.transfer(
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f5fE15',
+  1000000n
+);
+
+// Add buffer and send
+const txHash = await usdc.write.transfer(
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f5fE15',
+  1000000n,
+  { gas: gas * 120n / 100n }
+);
+```
+
+## Related
+
+- [Contract Gas Estimation](/contract/gas-estimation) - Contract-specific gas estimation
+- [Fee Methods](/jsonrpc-provider/eth-methods/fees) - Provider fee RPC methods
+- [FeeMarket Fundamentals](/primitives/feemarket/fundamentals) - EIP-1559 mechanics in depth

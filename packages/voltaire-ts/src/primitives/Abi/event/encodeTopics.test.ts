@@ -1,0 +1,322 @@
+/**
+ * Unit tests for encodeTopics factory function
+ */
+
+import { describe, expect, it } from "vitest";
+import * as Hash from "../../Hash/index.js";
+import * as Hex from "../../Hex/index.js";
+import { EncodeTopics } from "./encodeTopics.js";
+
+describe("EncodeTopics", () => {
+	const encodeTopics = EncodeTopics({
+		keccak256: Hash.keccak256,
+		keccak256String: Hash.keccak256String,
+	});
+
+	it("encodes topics for non-anonymous event with indexed parameters", () => {
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			from: "0x0000000000000000000000000000000000000001",
+			to: "0x0000000000000000000000000000000000000002",
+		});
+
+		expect(topics.length).toBe(3);
+		expect(topics[0]).toBeInstanceOf(Uint8Array); // selector
+		expect(topics[1]).toBeInstanceOf(Uint8Array); // from
+		expect(topics[2]).toBeInstanceOf(Uint8Array); // to
+	});
+
+	it("includes selector as first topic for non-anonymous event", () => {
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			from: "0x0000000000000000000000000000000000000001",
+			to: "0x0000000000000000000000000000000000000002",
+		});
+
+		// First topic should be the Transfer event selector
+		const expected = new Uint8Array([
+			0xdd, 0xf2, 0x52, 0xad, 0x1b, 0xe2, 0xc8, 0x9b, 0x69, 0xc2, 0xb0, 0x68,
+			0xfc, 0x37, 0x8d, 0xaa, 0x95, 0x2b, 0xa7, 0xf1, 0x63, 0xc4, 0xa1, 0x16,
+			0x28, 0xf5, 0x5a, 0x4d, 0xf5, 0x23, 0xb3, 0xef,
+		]);
+
+		expect(topics[0]).toEqual(expected);
+	});
+
+	it("excludes selector for anonymous event", () => {
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			anonymous: true,
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			from: "0x0000000000000000000000000000000000000001",
+			to: "0x0000000000000000000000000000000000000002",
+		});
+
+		expect(topics.length).toBe(2);
+		// No selector, just the two indexed addresses
+	});
+
+	it("encodes static types directly", () => {
+		const event = {
+			type: "event" as const,
+			name: "ValueChanged",
+			inputs: [{ type: "uint256", name: "newValue", indexed: true }],
+		};
+
+		const topics = encodeTopics(event, { newValue: 42n });
+
+		expect(topics.length).toBe(2); // selector + value
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+		expect(topics[1]?.length).toBe(32);
+	});
+
+	it("hashes dynamic types (string)", () => {
+		const event = {
+			type: "event" as const,
+			name: "Message",
+			inputs: [{ type: "string", name: "text", indexed: true }],
+		};
+
+		const topics = encodeTopics(event, { text: "hello" });
+
+		expect(topics.length).toBe(2); // selector + hashed string
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+		expect(topics[1]?.length).toBe(32);
+	});
+
+	it("hashes dynamic types (bytes)", () => {
+		const event = {
+			type: "event" as const,
+			name: "Data",
+			inputs: [{ type: "bytes", name: "data", indexed: true }],
+		};
+
+		const topics = encodeTopics(event, { data: "0x123456" });
+
+		expect(topics.length).toBe(2); // selector + hashed bytes
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+		expect(topics[1]?.length).toBe(32);
+	});
+
+	it("hashes dynamic types (array)", () => {
+		const event = {
+			type: "event" as const,
+			name: "Values",
+			inputs: [{ type: "uint256[]", name: "values", indexed: true }],
+		};
+
+		const topics = encodeTopics(event, { values: [1n, 2n, 3n] });
+
+		expect(topics.length).toBe(2); // selector + hashed array
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+		expect(topics[1]?.length).toBe(32);
+	});
+
+	it("returns null for undefined indexed parameters", () => {
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			from: "0x0000000000000000000000000000000000000001",
+		});
+
+		expect(topics.length).toBe(3);
+		expect(topics[0]).toBeInstanceOf(Uint8Array); // selector
+		expect(topics[1]).toBeInstanceOf(Uint8Array); // from
+		expect(topics[2]).toBe(null); // to is undefined
+	});
+
+	it("returns null for null indexed parameters", () => {
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			from: "0x0000000000000000000000000000000000000001",
+			// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+			to: null as any,
+		});
+
+		expect(topics.length).toBe(3);
+		expect(topics[0]).toBeInstanceOf(Uint8Array); // selector
+		expect(topics[1]).toBeInstanceOf(Uint8Array); // from
+		expect(topics[2]).toBe(null); // to is null
+	});
+
+	it("ignores non-indexed parameters", () => {
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: false },
+				{ type: "uint256", name: "value", indexed: false },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			from: "0x0000000000000000000000000000000000000001",
+			to: "0x0000000000000000000000000000000000000002",
+			value: 1000n,
+		});
+
+		expect(topics.length).toBe(2); // selector + from only
+	});
+
+	it("handles event with no indexed parameters", () => {
+		const event = {
+			type: "event" as const,
+			name: "Log",
+			inputs: [
+				{ type: "string", name: "message", indexed: false },
+				{ type: "uint256", name: "timestamp", indexed: false },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			message: "test",
+			timestamp: 123456n,
+		});
+
+		expect(topics.length).toBe(1); // only selector
+		expect(topics[0]).toBeInstanceOf(Uint8Array);
+	});
+
+	it("handles event with all indexed parameters", () => {
+		const event = {
+			type: "event" as const,
+			name: "MultiIndexed",
+			inputs: [
+				{ type: "address", name: "a", indexed: true },
+				{ type: "address", name: "b", indexed: true },
+				{ type: "address", name: "c", indexed: true },
+			],
+		};
+
+		const topics = encodeTopics(event, {
+			a: "0x0000000000000000000000000000000000000001",
+			b: "0x0000000000000000000000000000000000000002",
+			c: "0x0000000000000000000000000000000000000003",
+		});
+
+		expect(topics.length).toBe(4); // selector + 3 indexed addresses
+	});
+
+	it("encodes bool type", () => {
+		const event = {
+			type: "event" as const,
+			name: "FlagChanged",
+			inputs: [{ type: "bool", name: "flag", indexed: true }],
+		};
+
+		const topics = encodeTopics(event, { flag: true });
+
+		expect(topics.length).toBe(2);
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+	});
+
+	it("encodes address type", () => {
+		const event = {
+			type: "event" as const,
+			name: "AddressSet",
+			inputs: [{ type: "address", name: "addr", indexed: true }],
+		};
+
+		const topics = encodeTopics(event, {
+			addr: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+		});
+
+		expect(topics.length).toBe(2);
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+		expect(topics[1]?.length).toBe(32);
+	});
+
+	it("encodes bytes32 type", () => {
+		const event = {
+			type: "event" as const,
+			name: "HashSet",
+			inputs: [{ type: "bytes32", name: "hash", indexed: true }],
+		};
+
+		const hash = Hex.from(
+			"0x0000000000000000000000000000000000000000000000000000000000000001",
+		);
+		const topics = encodeTopics(event, { hash });
+
+		expect(topics.length).toBe(2);
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+	});
+
+	it("handles empty args object", () => {
+		const event = {
+			type: "event" as const,
+			name: "Transfer",
+			inputs: [
+				{ type: "address", name: "from", indexed: true },
+				{ type: "address", name: "to", indexed: true },
+			],
+		};
+
+		const topics = encodeTopics(event, {});
+
+		expect(topics.length).toBe(3);
+		expect(topics[0]).toBeInstanceOf(Uint8Array); // selector
+		expect(topics[1]).toBe(null);
+		expect(topics[2]).toBe(null);
+	});
+
+	it("works with factory pattern allowing custom crypto functions", () => {
+		const customEncodeTopics = EncodeTopics({
+			keccak256: Hash.keccak256,
+			keccak256String: Hash.keccak256String,
+		});
+
+		const event = {
+			type: "event" as const,
+			name: "Test",
+			inputs: [{ type: "uint256", name: "value", indexed: true }],
+		};
+
+		const topics = customEncodeTopics(event, { value: 42n });
+
+		expect(topics.length).toBe(2);
+		expect(topics[0]).toBeInstanceOf(Uint8Array);
+		expect(topics[1]).toBeInstanceOf(Uint8Array);
+	});
+});

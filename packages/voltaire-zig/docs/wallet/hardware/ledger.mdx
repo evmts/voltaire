@@ -1,0 +1,377 @@
+---
+title: "Ledger Integration"
+description: "Integrate Ledger hardware wallets for secure transaction signing"
+---
+
+# Ledger Hardware Wallet
+
+Ledger integration provides secure transaction signing through Ledger devices (Nano S, Nano S Plus, Nano X, Stax) using WebUSB.
+
+## Installation
+
+Hardware wallet dependencies are included:
+
+```bash
+bun add @tevm/voltaire
+# Includes @ledgerhq/hw-app-eth and @ledgerhq/hw-transport-webusb
+```
+
+## Quick Start
+
+```zig
+import { createLedger } from '@tevm/voltaire/native';
+
+const ledger = createLedger();
+
+// Connect to device
+await ledger.connect();
+
+// Get address
+const address = await ledger.getAddress("m/44'/60'/0'/0/0");
+
+// Sign transaction
+const signature = await ledger.signTransaction("m/44'/60'/0'/0/0", tx);
+
+// Clean up
+await ledger.disconnect();
+```
+
+## Connection
+
+### WebUSB Setup
+
+Ledger uses WebUSB for browser connections:
+
+```zig
+import { LedgerWallet } from '@tevm/voltaire/native';
+
+const ledger = new LedgerWallet();
+
+try {
+  // Request USB device access (shows browser permission prompt)
+  await ledger.connect();
+
+  console.log('Connected to Ledger');
+  console.log('Connected:', ledger.isConnected());
+} catch (error) {
+  console.error('Failed to connect:', error.message);
+}
+```
+
+**Requirements:**
+1. Ledger device connected via USB
+2. Ethereum app opened on Ledger
+3. Browser with WebUSB support (Chrome, Edge, Opera)
+4. HTTPS or localhost (WebUSB security requirement)
+
+**Browser Compatibility:**
+- Chrome/Chromium 61+
+- Edge 79+
+- Opera 48+
+- NOT supported: Firefox, Safari (no WebUSB)
+
+### Connection Troubleshooting
+
+```zig
+try {
+  await ledger.connect();
+} catch (error) {
+  if (error.message.includes('No device selected')) {
+    console.error('User cancelled device selection');
+  } else if (error.message.includes('SECURITY_ERROR')) {
+    console.error('HTTPS required for WebUSB');
+  } else if (error.message.includes('0x6e00')) {
+    console.error('Ethereum app not opened on Ledger');
+  } else if (error.message.includes('0x5515')) {
+    console.error('Device is locked (enter PIN)');
+  } else {
+    console.error('Connection error:', error);
+  }
+}
+```
+
+**Common Error Codes:**
+- `0x6e00`: App not opened or wrong app
+- `0x5515`: Device locked
+- `0x6985`: User rejected on device
+- `0x6a80`: Invalid data
+
+## Address Derivation
+
+### Single Address
+
+```zig
+// Get address (displayed on Ledger screen for verification)
+const address = await ledger.getAddress("m/44'/60'/0'/0/0");
+
+// User should verify address matches Ledger display
+console.log('Verify address on Ledger:', address);
+```
+
+### Multiple Addresses
+
+```zig
+// Get first 10 addresses
+const addresses = await ledger.getAddresses("m/44'/60'/0'/0", 10);
+
+addresses.forEach((addr, i) => {
+  console.log(`Address ${i}: ${addr}`);
+});
+
+// Common derivation paths
+const ledgerLive = await ledger.getAddress("m/44'/60'/0'/0/0");      // Ledger Live
+const ledgerLegacy = await ledger.getAddress("m/44'/60'/0'/0");      // Legacy
+const metamask = await ledger.getAddress("m/44'/60'/0'/0/0");        // MetaMask compatible
+```
+
+### Path Compatibility
+
+Ledger supports multiple derivation schemes:
+
+| Scheme | Path | Used By |
+|--------|------|---------|
+| BIP-44 Standard | `m/44'/60'/0'/0/n` | Ledger Live, MetaMask |
+| Legacy | `m/44'/60'/0'/n` | Older Ledger Live versions |
+| Custom | `m/44'/60'/x'/0/n` | Multiple accounts |
+
+## Transaction Signing
+
+### Legacy Transactions
+
+```zig
+const tx = {
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  value: 1000000000000000000n, // 1 ETH
+  gas: 21000n,
+  gasPrice: 20000000000n, // 20 gwei
+  nonce: 0n,
+  chainId: 1
+};
+
+// User must confirm on Ledger device
+const signature = await ledger.signTransaction("m/44'/60'/0'/0/0", tx);
+```
+
+### EIP-1559 Transactions
+
+```zig
+const eip1559Tx = {
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  value: 1000000000000000000n,
+  gas: 21000n,
+  maxFeePerGas: 30000000000n,        // 30 gwei
+  maxPriorityFeePerGas: 1000000000n, // 1 gwei
+  nonce: 0n,
+  chainId: 1
+};
+
+const signature = await ledger.signTransaction("m/44'/60'/0'/0/0", eip1559Tx);
+```
+
+### Contract Interaction
+
+```zig
+import * as Abi from '@tevm/voltaire/Abi';
+
+// Encode function call
+const data = Abi.encodeFunctionData({
+  abi: contractAbi,
+  functionName: 'transfer',
+  args: ['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', 1000000n]
+});
+
+const tx = {
+  to: tokenAddress,
+  value: 0n,
+  gas: 100000n,
+  maxFeePerGas: 30000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  nonce: 0n,
+  chainId: 1,
+  data
+};
+
+// Ledger displays contract interaction details
+const signature = await ledger.signTransaction("m/44'/60'/0'/0/0", tx);
+```
+
+## Message Signing
+
+### Personal Messages (EIP-191)
+
+```zig
+// Sign text message
+const message = new TextEncoder().encode('Sign in to MyApp');
+const signature = await ledger.signMessage("m/44'/60'/0'/0/0", message);
+
+// User confirms message on Ledger screen
+// Message is hashed with Ethereum prefix: "\x19Ethereum Signed Message:\n32"
+```
+
+### Typed Data (EIP-712)
+
+```zig
+const typedData = {
+  types: {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' }
+    ],
+    Transfer: [
+      { name: 'from', type: 'address' },
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ]
+  },
+  primaryType: 'Transfer',
+  domain: {
+    name: 'MyToken',
+    version: '1',
+    chainId: 1
+  },
+  message: {
+    from: '0xaaa...',
+    to: '0xbbb...',
+    amount: '1000000000000000000'
+  }
+};
+
+// Ledger Nano S Plus and newer display full typed data
+// Older devices show structured hash
+const signature = await ledger.signTypedData("m/44'/60'/0'/0/0", typedData);
+```
+
+**Device Support:**
+- **Nano S**: Shows hash only (blind signing)
+- **Nano S Plus/X/Stax**: Full typed data display
+
+## Device Features
+
+### Get Device Info
+
+```zig
+const info = await ledger.getDeviceInfo();
+
+console.log(info.manufacturer); // "Ledger"
+console.log(info.model);        // Device model (may require additional calls)
+console.log(info.version);      // Ethereum app version (e.g., "1.10.0")
+```
+
+### Blind Signing
+
+Some operations require blind signing to be enabled in Ledger settings:
+
+```zig
+// Enable in Ledger Ethereum app settings:
+// Settings > Blind signing > Enabled
+
+// Required for:
+// - Complex contract interactions
+// - Unknown contract calls
+// - Custom EIP-712 types
+```
+
+## Complete Example
+
+```zig
+import { createLedger } from '@tevm/voltaire/native';
+import * as Transaction from '@tevm/voltaire/Transaction';
+
+async function sendWithLedger() {
+  const ledger = createLedger();
+
+  try {
+    // 1. Connect to Ledger
+    console.log('Connect your Ledger and open Ethereum app...');
+    await ledger.connect();
+
+    // 2. Get address
+    const address = await ledger.getAddress("m/44'/60'/0'/0/0");
+    console.log('Using address:', address);
+
+    // 3. Build transaction
+    const tx = {
+      to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+      value: 1000000000000000000n,
+      gas: 21000n,
+      maxFeePerGas: 30000000000n,
+      maxPriorityFeePerGas: 1000000000n,
+      nonce: 0n,
+      chainId: 1
+    };
+
+    // 4. Sign on device
+    console.log('Please confirm on Ledger...');
+    const signature = await ledger.signTransaction("m/44'/60'/0'/0/0", tx);
+
+    // 5. Create signed transaction
+    const signedTx = Transaction.sign(tx, signature);
+    const serialized = Transaction.serialize(signedTx);
+
+    console.log('Signed transaction:', serialized);
+
+    // 6. Broadcast (using your preferred method)
+    // await provider.sendRawTransaction(serialized);
+
+  } catch (error) {
+    console.error('Error:', error.message);
+  } finally {
+    await ledger.disconnect();
+  }
+}
+```
+
+## Best Practices
+
+1. **Always verify addresses on device**
+   - Address should match Ledger screen exactly
+   - Prevents address substitution attacks
+
+2. **Handle user rejections gracefully**
+   ```zig
+   try {
+     const sig = await ledger.signTransaction(path, tx);
+   } catch (error) {
+     if (error.statusCode === 0x6985) {
+       console.log('User rejected transaction on Ledger');
+     }
+   }
+   ```
+
+3. **Check device state before operations**
+   ```zig
+   if (!ledger.isConnected()) {
+     await ledger.connect();
+   }
+   ```
+
+4. **Clear instructions for users**
+   - "Connect Ledger and open Ethereum app"
+   - "Please confirm on your Ledger device"
+   - "Verify address matches Ledger screen"
+
+5. **Disconnect when done**
+   ```zig
+   try {
+     // ... operations
+   } finally {
+     await ledger.disconnect();
+   }
+   ```
+
+## Limitations
+
+- **WebUSB only**: No Node.js support (use HID transport for Node)
+- **HTTPS required**: WebUSB security restriction
+- **Browser support**: Chrome/Chromium only
+- **One app at a time**: Close other apps using Ledger
+- **Blind signing**: Required for complex contracts
+
+## See Also
+
+- [Hardware Wallet Overview](./index)
+- [Trezor Integration](./trezor)
+- [Transaction Signing](/Transaction)
+- [HD Wallet Derivation](/HDWallet)
+- [Ledger Developer Docs](https://developers.ledger.com/)

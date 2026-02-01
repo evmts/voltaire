@@ -1,0 +1,107 @@
+---
+title: Slot
+description: Consensus layer slot number (12 seconds per slot)
+---
+
+## Overview
+
+Slot represents a consensus layer slot number in Ethereum's proof-of-stake system. Each slot is 12 seconds and represents an opportunity for a validator to propose a block.
+
+**Type:** `bigint & { readonly [brand]: "Slot" }`
+
+## Key Concepts
+
+- **Duration**: Each slot is exactly 12 seconds
+- **Epochs**: 32 slots = 1 epoch (6.4 minutes)
+- **Validator duties**: Validators are assigned to propose/attest in specific slots
+- **Post-merge**: Slots are the fundamental unit of time in PoS Ethereum
+
+## Methods
+
+### `Slot.from(value)`
+
+Create Slot from number, bigint, or string.
+
+```zig
+import { Slot } from '@tevm/primitives';
+
+const slot1 = Slot.from(1000000n);
+const slot2 = Slot.from(1000000);
+const slot3 = Slot.from("0xf4240");
+```
+
+### `Slot.toNumber(slot)`
+
+Convert Slot to number. Throws if exceeds MAX_SAFE_INTEGER.
+
+```zig
+const slot = Slot.from(1000000n);
+const num = Slot.toNumber(slot); // 1000000
+```
+
+### `Slot.toBigInt(slot)`
+
+Convert Slot to bigint.
+
+```zig
+const slot = Slot.from(1000000);
+const big = Slot.toBigInt(slot); // 1000000n
+```
+
+### `Slot.equals(a, b)`
+
+Check if two slots are equal.
+
+```zig
+const a = Slot.from(1000000n);
+const b = Slot.from(1000000n);
+Slot.equals(a, b); // true
+```
+
+### `Slot.toEpoch(slot)`
+
+Convert slot to its corresponding epoch (slot / 32).
+
+```zig
+const slot = Slot.from(96n);
+const epoch = Slot.toEpoch(slot); // Epoch 3
+```
+
+## Usage Examples
+
+### Calculate slot timing
+
+```zig
+import { Slot } from '@tevm/primitives';
+
+const genesisTime = 1606824023; // Beacon chain genesis
+const slot = Slot.from(1000000n);
+
+// Calculate timestamp for this slot
+const slotTime = genesisTime + Number(slot) * 12;
+console.log(`Slot ${slot} occurred at: ${new Date(slotTime * 1000)}`);
+```
+
+### Work with epochs
+
+```zig
+import { Slot, Epoch } from '@tevm/primitives';
+
+const slot = Slot.from(100n);
+const epoch = Slot.toEpoch(slot); // Epoch 3
+
+// Get first slot of next epoch
+const nextEpoch = Epoch.from(epoch + 1n);
+const nextEpochSlot = Epoch.toSlot(nextEpoch); // Slot 128
+```
+
+## Related Types
+
+- [Epoch](/primitives/epoch) - 32 slots grouped into an epoch
+- [ValidatorIndex](/primitives/validator-index) - Validator registry index
+- [BeaconBlockRoot](/primitives/beacon-block-root) - Beacon block root hash
+
+## References
+
+- [Ethereum Consensus Specs](https://github.com/ethereum/consensus-specs)
+- [EIP-4788](https://eips.ethereum.org/EIPS/eip-4788) - Beacon block root in EVM

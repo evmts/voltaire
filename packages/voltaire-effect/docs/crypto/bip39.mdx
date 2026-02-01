@@ -1,0 +1,176 @@
+---
+title: BIP-39
+description: Mnemonic phrase generation and seed derivation
+---
+
+BIP-39 enables wallet backup and recovery using human-readable mnemonic phrases.
+
+```typescript
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const bip39 = yield* Bip39Service
+    const mnemonic = yield* bip39.generateMnemonic(256)  // 24 words
+    const isValid = yield* bip39.validateMnemonic(mnemonic)
+    const seed = yield* bip39.mnemonicToSeed(mnemonic)
+    return { mnemonic, isValid, seed }
+  }).pipe(Effect.provide(Bip39Live))
+)
+```
+
+## Generate Mnemonic
+
+```typescript
+import { Bip39Service, Bip39Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+// 12 words (128 bits) - minimum recommended
+const mnemonic12 = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  return yield* bip39.generateMnemonic(128)
+}).pipe(Effect.provide(Bip39Live))
+
+// 24 words (256 bits) - maximum security
+const mnemonic24 = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  return yield* bip39.generateMnemonic(256)
+}).pipe(Effect.provide(Bip39Live))
+```
+
+## Entropy Strengths
+
+| Bits | Words | Security |
+|------|-------|----------|
+| 128 | 12 | Standard |
+| 160 | 15 | Enhanced |
+| 192 | 18 | High |
+| 224 | 21 | Very High |
+| 256 | 24 | Maximum |
+
+## Validate Mnemonic
+
+Check if a mnemonic is valid (correct words, checksum):
+
+```typescript
+const validateUserInput = (input: string) =>
+  Effect.gen(function* () {
+    const bip39 = yield* Bip39Service
+    const isValid = yield* bip39.validateMnemonic(input)
+    if (!isValid) {
+      return yield* Effect.fail(new Error('Invalid mnemonic'))
+    }
+    return input
+  }).pipe(Effect.provide(Bip39Live))
+```
+
+## Derive Seed
+
+Convert mnemonic to 64-byte seed for HD wallet derivation:
+
+```typescript
+const deriveSeed = (mnemonic: string, passphrase?: string) =>
+  Effect.gen(function* () {
+    const bip39 = yield* Bip39Service
+    return yield* bip39.mnemonicToSeed(mnemonic, passphrase ?? '')
+  }).pipe(Effect.provide(Bip39Live))
+```
+
+## With Passphrase (25th Word)
+
+Add extra security with a passphrase:
+
+```typescript
+const mnemonic = "test test test test test test test test test test test junk"
+
+// Without passphrase
+const seed1 = await Effect.runPromise(deriveSeed(mnemonic))
+
+// With passphrase - produces completely different seed
+const seed2 = await Effect.runPromise(deriveSeed(mnemonic, "my secret"))
+
+// Different seeds = different addresses
+```
+
+Passphrases add plausible deniability: the same mnemonic with different passphrases produces different wallets.
+
+## Complete Wallet Creation
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { Bip39Service, Bip39Live, Secp256k1Service, Secp256k1Live, 
+         KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+import { HDWallet, Address } from 'voltaire-effect/native'
+
+// Compose layers once
+const WalletCryptoLayer = Layer.mergeAll(Bip39Live, Secp256k1Live, KeccakLive)
+
+const createWallet = Effect.gen(function* () {
+  const bip39 = yield* Bip39Service
+  const secp = yield* Secp256k1Service
+  const keccak = yield* KeccakService
+
+  // Generate mnemonic
+  const mnemonic = yield* bip39.generateMnemonic(256)
+  
+  // Derive seed
+  const seed = yield* bip39.mnemonicToSeed(mnemonic)
+  
+  // Create HD wallet
+  const root = HDWallet.fromSeed(seed)
+  const account = HDWallet.deriveEthereum(root, 0, 0)
+  const privateKey = HDWallet.getPrivateKey(account)
+  
+  if (!privateKey) {
+    return yield* Effect.fail(new Error('Key derivation failed'))
+  }
+  
+  // Get address
+  const publicKey = yield* secp.getPublicKey(privateKey)
+  const hash = yield* keccak.hash(publicKey.slice(1))
+  const address = Address.fromBytes(hash.slice(-20))
+
+  return {
+    mnemonic,
+    address: Address.toHex(address)
+  }
+}).pipe(Effect.provide(WalletCryptoLayer))
+```
+
+## Testing
+
+```typescript
+import { Bip39Test } from 'voltaire-effect/crypto'
+
+myProgram.pipe(Effect.provide(Bip39Test))
+// Returns deterministic 'abandon abandon abandon ... about'
+```
+
+## Interface
+
+```typescript
+type MnemonicStrength = 128 | 160 | 192 | 224 | 256
+
+interface Bip39ServiceShape {
+  readonly generateMnemonic: (strength?: MnemonicStrength) => Effect.Effect<string>
+  readonly validateMnemonic: (mnemonic: string) => Effect.Effect<boolean>
+  readonly mnemonicToSeed: (mnemonic: string, passphrase?: string) => Effect.Effect<Uint8Array>
+  readonly mnemonicToSeedSync: (mnemonic: string, passphrase?: string) => Effect.Effect<Uint8Array>
+  readonly getWordCount: (entropyBits: MnemonicStrength) => Effect.Effect<number>
+}
+```
+
+## Security Notes
+
+- **Never log or expose mnemonics.** They provide full wallet access.
+- **Store securely.** Use environment variables or encrypted storage.
+- **Use passphrases** for high-value wallets.
+- **Verify backups.** Test restoration before relying on a backup.
+- **Use 24 words** for maximum entropy.
+
+## Related
+
+- [HD Wallet Guide](/guides/hd-wallet) - Complete wallet integration
+- [HDWallet](/crypto/hdwallet) - Key derivation from seed
+- [Keystore](/crypto/keystore) - Encrypted key storage

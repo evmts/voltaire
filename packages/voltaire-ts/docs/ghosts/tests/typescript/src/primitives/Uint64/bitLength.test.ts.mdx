@@ -1,0 +1,90 @@
+---
+title: '[TS/JS] src/primitives/Uint64/bitLength.test.ts'
+source: 'src/primitives/Uint64/bitLength.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Uint64/bitLength.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { bitLength } from "./bitLength.js";
+import { MAX, ONE, ZERO } from "./constants.js";
+import { from } from "./from.js";
+
+describe("Uint64.bitLength", () => {
+	describe("known values", () => {
+		it("0 has bit length 0", () => {
+			expect(bitLength(ZERO)).toBe(0);
+		});
+
+		it("1 has bit length 1", () => {
+			expect(bitLength(ONE)).toBe(1);
+		});
+
+		it("2 has bit length 2", () => {
+			expect(bitLength(from(2n))).toBe(2);
+		});
+
+		it("3 has bit length 2", () => {
+			expect(bitLength(from(3n))).toBe(2);
+		});
+
+		it("4 has bit length 3", () => {
+			expect(bitLength(from(4n))).toBe(3);
+		});
+
+		it("7 has bit length 3", () => {
+			expect(bitLength(from(7n))).toBe(3);
+		});
+
+		it("8 has bit length 4", () => {
+			expect(bitLength(from(8n))).toBe(4);
+		});
+
+		it("15 has bit length 4", () => {
+			expect(bitLength(from(15n))).toBe(4);
+		});
+
+		it("16 has bit length 5", () => {
+			expect(bitLength(from(16n))).toBe(5);
+		});
+
+		it("255 has bit length 8", () => {
+			expect(bitLength(from(255n))).toBe(8);
+		});
+
+		it("256 has bit length 9", () => {
+			expect(bitLength(from(256n))).toBe(9);
+		});
+	});
+
+	describe("powers of 2", () => {
+		it("2^10 has bit length 11", () => {
+			expect(bitLength(from(1n << 10n))).toBe(11);
+		});
+
+		it("2^32 has bit length 33", () => {
+			expect(bitLength(from(1n << 32n))).toBe(33);
+		});
+
+		it("2^63 has bit length 64", () => {
+			expect(bitLength(from(1n << 63n))).toBe(64);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("MAX has bit length 64", () => {
+			expect(bitLength(MAX)).toBe(64);
+		});
+
+		it("MAX - 1 has bit length 64", () => {
+			expect(bitLength(from(MAX - 1n))).toBe(64);
+		});
+
+		it("2^63 - 1 has bit length 63", () => {
+			expect(bitLength(from((1n << 63n) - 1n))).toBe(63);
+		});
+	});
+});
+
+```

@@ -1,0 +1,105 @@
+import { describe, expect, it } from "vitest";
+import { Address } from "../../Address/index.js";
+import { InvalidRangeError } from "../../errors/index.js";
+import { Hash } from "../../Hash/index.js";
+import { TransactionEIP4844 } from "./TransactionEIP4844.js";
+
+describe("TransactionEIP4844 constructor", () => {
+	it("creates valid transaction", () => {
+		const tx = TransactionEIP4844({
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 1000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+		expect(tx.chainId).toBe(1n);
+	});
+
+	it("rejects maxPriorityFeePerGas > maxFeePerGas", () => {
+		expect(() =>
+			TransactionEIP4844({
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 30000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 100000n,
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				maxFeePerBlobGas: 2000000000n,
+				blobVersionedHashes: [
+					Hash(
+						"0x0100000000000000000000000000000000000000000000000000000000000001",
+					),
+				],
+				yParity: 0,
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(2),
+			}),
+		).toThrow(InvalidRangeError);
+	});
+
+	it("rejects maxPriorityFeePerGas > maxFeePerGas with correct error message", () => {
+		expect(() =>
+			TransactionEIP4844({
+				chainId: 1n,
+				nonce: 0n,
+				maxPriorityFeePerGas: 30000000000n,
+				maxFeePerGas: 20000000000n,
+				gasLimit: 100000n,
+				to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+				value: 0n,
+				data: new Uint8Array(),
+				accessList: [],
+				maxFeePerBlobGas: 2000000000n,
+				blobVersionedHashes: [
+					Hash(
+						"0x0100000000000000000000000000000000000000000000000000000000000001",
+					),
+				],
+				yParity: 0,
+				r: new Uint8Array(32).fill(1),
+				s: new Uint8Array(32).fill(2),
+			}),
+		).toThrow("Max priority fee per gas cannot exceed max fee per gas");
+	});
+
+	it("accepts maxPriorityFeePerGas equal to maxFeePerGas", () => {
+		const tx = TransactionEIP4844({
+			chainId: 1n,
+			nonce: 0n,
+			maxPriorityFeePerGas: 20000000000n,
+			maxFeePerGas: 20000000000n,
+			gasLimit: 100000n,
+			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
+			value: 0n,
+			data: new Uint8Array(),
+			accessList: [],
+			maxFeePerBlobGas: 2000000000n,
+			blobVersionedHashes: [
+				Hash(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
+			yParity: 0,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		});
+		expect(tx.maxPriorityFeePerGas).toBe(tx.maxFeePerGas);
+	});
+});

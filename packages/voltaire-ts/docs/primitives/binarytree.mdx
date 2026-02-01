@@ -1,0 +1,293 @@
+---
+title: "BinaryTree"
+description: "Binary State Tree (EIP-7864) for Ethereum state storage"
+---
+
+## Overview
+
+BinaryTree implements the Binary State Tree structure proposed in [EIP-7864](https://eips.ethereum.org/EIPS/eip-7864). It provides a unified tree structure for Ethereum state using BLAKE3 hashing with stem-based key organization.
+
+```typescript
+import * as BinaryTree from '@tevm/voltaire/BinaryTree'
+
+// Create empty tree
+const tree = BinaryTree.init()
+
+// Insert key-value pair
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+value[0] = 0x42
+
+const updated = BinaryTree.insert(tree, key, value)
+
+// Retrieve value
+const retrieved = BinaryTree.get(updated, key)
+
+// Compute root hash
+const hash = BinaryTree.rootHash(updated)
+```
+
+## Tree Structure
+
+The tree consists of four node types:
+
+| Node Type | Description |
+|-----------|-------------|
+| `empty` | Empty node (zero hash) |
+| `internal` | Internal node with left/right child hashes |
+| `stem` | Stem node with 31-byte stem and 256 value slots |
+| `leaf` | Leaf node with raw value |
+
+```typescript
+type Node =
+  | { type: 'empty' }
+  | { type: 'internal'; left: Uint8Array; right: Uint8Array }
+  | { type: 'stem'; stem: Uint8Array; values: (Uint8Array | null)[] }
+  | { type: 'leaf'; value: Uint8Array }
+```
+
+## Key Methods
+
+### init
+
+Create an empty tree.
+
+```typescript
+const tree = BinaryTree.init()
+console.log(tree.root.type) // 'empty'
+```
+
+### insert
+
+Insert a value at a 32-byte key. Returns a new tree (immutable).
+
+```typescript
+const key = new Uint8Array(32)
+key[0] = 0x01
+
+const value = new Uint8Array(32)
+value[0] = 0xAB
+
+const updated = BinaryTree.insert(tree, key, value)
+```
+
+Keys are split into:
+- **Stem** (31 bytes) - path through the tree
+- **Subindex** (1 byte) - slot index within stem node (0-255)
+
+### get
+
+Retrieve a value by key. Returns `null` if not found.
+
+```typescript
+const value = BinaryTree.get(tree, key)
+if (value) {
+  console.log('Found:', value)
+}
+```
+
+### rootHash
+
+Compute the 32-byte root hash of the tree.
+
+```typescript
+const hash = BinaryTree.rootHash(tree)
+console.log(hash.length) // 32
+```
+
+### rootHashHex
+
+Get root hash as hex string.
+
+```typescript
+const hex = BinaryTree.rootHashHex(tree)
+console.log(hex) // "0x0000...0000" (empty tree)
+```
+
+## Key Utilities
+
+### addressToKey
+
+Convert a 20-byte Ethereum address to a 32-byte key (pads with 12 zero bytes).
+
+```typescript
+const address = new Uint8Array(20)
+address[0] = 0x42
+
+const key = BinaryTree.addressToKey(address)
+console.log(key.length) // 32
+console.log(key[12]) // 0x42
+```
+
+### splitKey
+
+Split a 32-byte key into stem (31 bytes) and subindex (1 byte).
+
+```typescript
+const key = new Uint8Array(32)
+key[31] = 0x42
+
+const { stem, idx } = BinaryTree.splitKey(key)
+console.log(stem.length) // 31
+console.log(idx) // 0x42
+```
+
+### getStemBit
+
+Get bit value at position in a stem (for tree traversal).
+
+```typescript
+const stem = new Uint8Array(31)
+stem[0] = 0b10101010
+
+console.log(BinaryTree.getStemBit(stem, 0)) // 1
+console.log(BinaryTree.getStemBit(stem, 1)) // 0
+console.log(BinaryTree.getStemBit(stem, 2)) // 1
+```
+
+## Hashing Functions
+
+All hashing uses BLAKE3. Factory functions allow dependency injection for tree-shaking.
+
+### hashNode
+
+Hash any node type. Returns 32-byte hash.
+
+```typescript
+// With auto-injected crypto (convenient)
+const hash = BinaryTree.hashNode(node)
+
+// With explicit dependency injection (tree-shakeable)
+import { HashNode } from '@tevm/voltaire/BinaryTree'
+import { blake3 } from '@noble/hashes/blake3'
+
+const hashNode = HashNode({ blake3 })
+const hash = hashNode(node)
+```
+
+### hashInternal
+
+Hash an internal node (concatenates left and right hashes).
+
+```typescript
+const left = new Uint8Array(32)
+const right = new Uint8Array(32)
+const hash = BinaryTree.hashInternal(left, right)
+
+// If both children are zero, returns zero hash
+console.log(hash.every(b => b === 0)) // true
+```
+
+### hashStem
+
+Hash a stem node (concatenates stem + all 256 values).
+
+```typescript
+const node = {
+  type: 'stem' as const,
+  stem: new Uint8Array(31),
+  values: new Array(256).fill(null)
+}
+node.values[0] = new Uint8Array(32)
+
+const hash = BinaryTree.hashStem(node)
+```
+
+### hashLeaf
+
+Hash a leaf node (hashes the value directly).
+
+```typescript
+const node = {
+  type: 'leaf' as const,
+  value: new Uint8Array(32)
+}
+const hash = BinaryTree.hashLeaf(node)
+```
+
+## Types
+
+### BinaryTree
+
+The tree container type.
+
+```typescript
+interface BinaryTree {
+  readonly root: Node
+}
+```
+
+### AccountData
+
+Layout for account data stored at index 0 of stem nodes.
+
+```typescript
+interface AccountData {
+  readonly version: number    // 1 byte
+  readonly codeSize: number   // 3 bytes
+  readonly nonce: bigint      // 8 bytes
+  readonly balance: bigint    // 16 bytes
+}
+```
+
+## Error Handling
+
+```typescript
+import {
+  InvalidAddressLengthError,
+  InvalidKeyLengthError,
+  InvalidTreeStateError
+} from '@tevm/voltaire/BinaryTree'
+
+try {
+  // Invalid address (not 20 bytes)
+  BinaryTree.addressToKey(new Uint8Array(10))
+} catch (e) {
+  if (e instanceof InvalidAddressLengthError) {
+    console.log('Address must be 20 bytes')
+  }
+}
+
+try {
+  // Invalid key (not 32 bytes)
+  BinaryTree.splitKey(new Uint8Array(16))
+} catch (e) {
+  if (e instanceof InvalidKeyLengthError) {
+    console.log('Key must be 32 bytes')
+  }
+}
+```
+
+## Example: State Storage
+
+```typescript
+import * as BinaryTree from '@tevm/voltaire/BinaryTree'
+
+// Create tree and store account data
+let tree = BinaryTree.init()
+
+// Convert address to key
+const address = new Uint8Array(20)
+address[0] = 0x42
+const accountKey = BinaryTree.addressToKey(address)
+
+// Store balance at account key
+const balance = new Uint8Array(32)
+balance[31] = 0x64 // 100 wei
+
+tree = BinaryTree.insert(tree, accountKey, balance)
+
+// Verify storage
+const stored = BinaryTree.get(tree, accountKey)
+console.log(stored?.[31]) // 100
+
+// Get merkle root
+const root = BinaryTree.rootHashHex(tree)
+console.log('State root:', root)
+```
+
+## See Also
+
+- [EIP-7864: Binary State Tree](https://eips.ethereum.org/EIPS/eip-7864) - Specification
+- [State](/primitives/state) - Ethereum state primitives
+- [Keccak256](/crypto/keccak256) - Alternative hashing (Ethereum standard)

@@ -1,0 +1,42 @@
+---
+title: Chain
+description: Ethereum chain configuration
+---
+
+Chain configuration with ID, name, currency, RPC URLs, and explorers.
+
+```typescript
+import * as Chain from 'voltaire-effect/primitives/Chain'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const chain = Schema.decodeSync(Chain.JSON)({
+  id: 1,
+  name: 'Ethereum',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }
+})
+
+// Effect with full config
+const optimism = Effect.runSync(Chain.from({
+  id: 10,
+  name: 'Optimism',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { default: { http: ['https://mainnet.optimism.io'] } },
+  blockExplorers: { default: { name: 'Etherscan', url: 'https://optimistic.etherscan.io' } }
+}))
+```
+
+## Types
+
+```typescript
+interface ChainType {
+  id: number
+  name: string
+  nativeCurrency: { name: string; symbol: string; decimals: number }
+  rpcUrls?: { default: { http: readonly string[] } }
+  blockExplorers?: { default: { name: string; url: string } }
+}
+```
+
+Fails on invalid chain ID (must be positive integer).

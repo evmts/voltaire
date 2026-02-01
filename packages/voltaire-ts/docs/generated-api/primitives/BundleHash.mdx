@@ -1,0 +1,304 @@
+---
+title: "primitives/BundleHash"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/BundleHash
+
+# primitives/BundleHash
+
+## Classes
+
+### InvalidBundleHashError
+
+Defined in: [src/primitives/BundleHash/errors.js:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/errors.js#L4)
+
+Error thrown when BundleHash operations fail
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidBundleHashError**(`message`, `details?`): [`InvalidBundleHashError`](#invalidbundlehasherror)
+
+Defined in: [src/primitives/BundleHash/errors.js:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/errors.js#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+Error message
+
+###### details?
+
+`Record`\<`string`, `unknown`\>
+
+Error details
+
+###### Returns
+
+[`InvalidBundleHashError`](#invalidbundlehasherror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### details
+
+> **details**: `Record`\<`string`, `unknown`\> \| `undefined`
+
+Defined in: [src/primitives/BundleHash/errors.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/errors.js#L12)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/BundleHash/errors.js:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/errors.js#L11)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### BundleHashLike
+
+> **BundleHashLike** = [`BundleHashType`](#bundlehashtype) \| `string` \| `Uint8Array`
+
+Defined in: [src/primitives/BundleHash/BundleHashType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/BundleHashType.ts#L22)
+
+Inputs that can be converted to BundleHash
+
+***
+
+### BundleHashType
+
+> **BundleHashType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/BundleHash/BundleHashType.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/BundleHashType.ts#L14)
+
+BundleHash type
+
+Unique identifier for a transaction bundle. Computed as keccak256 of the
+bundle contents (concatenated transaction hashes). Used to track bundle
+status through MEV relays and block builders.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"BundleHash"`
+
+##### length
+
+> `readonly` **length**: `32`
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/bundle-hash for BundleHash documentation
+ - https://docs.flashbots.net/flashbots-auction/overview for Flashbots Auction
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### SIZE
+
+> `const` **SIZE**: `32` = `32`
+
+Defined in: [src/primitives/BundleHash/BundleHashType.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/BundleHashType.ts#L24)
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/BundleHash/equals.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/equals.js#L17)
+
+Checks if two BundleHashes are equal
+
+#### Parameters
+
+##### a
+
+[`BundleHashType`](#bundlehashtype)
+
+First hash
+
+##### b
+
+[`BundleHashType`](#bundlehashtype)
+
+Second hash
+
+#### Returns
+
+`boolean`
+
+True if hashes are equal
+
+#### Example
+
+```typescript
+import * as BundleHash from './BundleHash/index.js';
+const equal = BundleHash.equals(hash1, hash2);
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`BundleHashType`](#bundlehashtype)
+
+Defined in: [src/primitives/BundleHash/from.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/from.js#L21)
+
+Creates a BundleHash from various input types
+
+#### Parameters
+
+##### value
+
+[`BundleHashLike`](#bundlehashlike)
+
+BundleHash input (hex string or bytes)
+
+#### Returns
+
+[`BundleHashType`](#bundlehashtype)
+
+BundleHash instance
+
+#### Throws
+
+If input format is invalid
+
+#### Example
+
+```typescript
+import * as BundleHash from './BundleHash/index.js';
+const hash = BundleHash.from("0x1234...");
+```
+
+***
+
+### fromBundle()
+
+> **fromBundle**(`bundle`, `crypto`): [`BundleHashType`](#bundlehashtype)
+
+Defined in: [src/primitives/BundleHash/fromBundle.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/fromBundle.js#L20)
+
+Computes BundleHash from a Bundle
+
+#### Parameters
+
+##### bundle
+
+[`BundleType`](Bundle.mdx#bundletype)
+
+Bundle instance
+
+##### crypto
+
+Crypto dependencies
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+Keccak256 function
+
+#### Returns
+
+[`BundleHashType`](#bundlehashtype)
+
+Bundle hash
+
+#### Example
+
+```typescript
+import * as BundleHash from './BundleHash/index.js';
+import { keccak256 } from './crypto/keccak256.js';
+const hash = BundleHash.fromBundle(bundle, { keccak256 });
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`value`): [`BundleHashType`](#bundlehashtype)
+
+Defined in: [src/primitives/BundleHash/fromHex.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/fromHex.js#L20)
+
+Creates BundleHash from hex string
+
+#### Parameters
+
+##### value
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+#### Returns
+
+[`BundleHashType`](#bundlehashtype)
+
+BundleHash instance
+
+#### Throws
+
+If hex format is invalid
+
+#### Example
+
+```typescript
+import * as BundleHash from './BundleHash/index.js';
+const hash = BundleHash.fromHex("0x1234...");
+```
+
+***
+
+### toHex()
+
+> **toHex**(`hash`): `string`
+
+Defined in: [src/primitives/BundleHash/toHex.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BundleHash/toHex.js#L17)
+
+Converts BundleHash to hex string
+
+#### Parameters
+
+##### hash
+
+[`BundleHashType`](#bundlehashtype)
+
+BundleHash instance
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### Example
+
+```typescript
+import * as BundleHash from './BundleHash/index.js';
+const hex = BundleHash.toHex(hash);
+console.log(hex); // "0x1234..."
+```

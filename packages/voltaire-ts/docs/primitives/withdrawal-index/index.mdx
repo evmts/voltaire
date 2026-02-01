@@ -1,0 +1,104 @@
+---
+title: WithdrawalIndex
+description: Global withdrawal counter (EIP-4895)
+---
+
+## Overview
+
+WithdrawalIndex represents the global withdrawal counter in the beacon chain. This counter increments monotonically for each withdrawal processed, providing a unique identifier for every withdrawal since the Shanghai/Capella upgrade.
+
+**Type:** `bigint & { readonly [brand]: "WithdrawalIndex" }`
+
+## Key Concepts
+
+- **Monotonic**: Always increases, never resets
+- **Global**: Single counter for all withdrawals across all validators
+- **EIP-4895**: Introduced in Shanghai/Capella upgrade
+- **Unique**: Each withdrawal has a unique index
+
+## Methods
+
+### `WithdrawalIndex.from(value)`
+
+Create WithdrawalIndex from number, bigint, or string.
+
+```typescript
+import { WithdrawalIndex } from '@tevm/primitives';
+
+const idx1 = WithdrawalIndex.from(1000000n);
+const idx2 = WithdrawalIndex.from(1000000);
+const idx3 = WithdrawalIndex.from("0xf4240");
+```
+
+### `WithdrawalIndex.toNumber(index)`
+
+Convert WithdrawalIndex to number. Throws if exceeds MAX_SAFE_INTEGER.
+
+```typescript
+const idx = WithdrawalIndex.from(1000000n);
+const num = WithdrawalIndex.toNumber(idx); // 1000000
+```
+
+### `WithdrawalIndex.toBigInt(index)`
+
+Convert WithdrawalIndex to bigint.
+
+```typescript
+const idx = WithdrawalIndex.from(1000000);
+const big = WithdrawalIndex.toBigInt(idx); // 1000000n
+```
+
+### `WithdrawalIndex.equals(a, b)`
+
+Check if two withdrawal indices are equal.
+
+```typescript
+const a = WithdrawalIndex.from(1000000n);
+const b = WithdrawalIndex.from(1000000n);
+WithdrawalIndex.equals(a, b); // true
+```
+
+## Usage Examples
+
+### Track withdrawal history
+
+```typescript
+import { WithdrawalIndex, ValidatorIndex } from '@tevm/primitives';
+
+interface WithdrawalRecord {
+  index: WithdrawalIndex;
+  validatorIndex: ValidatorIndex;
+  timestamp: number;
+  amount: bigint;
+}
+
+const withdrawal: WithdrawalRecord = {
+  index: WithdrawalIndex.from(1000000n),
+  validatorIndex: ValidatorIndex.from(123456),
+  timestamp: Date.now(),
+  amount: 32000000000n, // 32 ETH in Gwei
+};
+```
+
+### Query withdrawal range
+
+```typescript
+import { WithdrawalIndex } from '@tevm/primitives';
+
+const startIndex = WithdrawalIndex.from(1000000n);
+const endIndex = WithdrawalIndex.from(1001000n);
+
+// Query withdrawals in range [startIndex, endIndex]
+const count = Number(endIndex - startIndex); // 1000 withdrawals
+```
+
+## Related Types
+
+- [Withdrawal](/primitives/withdrawal) - Complete withdrawal structure
+- [ValidatorIndex](/primitives/validator-index) - Validator receiving withdrawal
+- [Slot](/primitives/slot) - Slot where withdrawal occurred
+
+## References
+
+- [EIP-4895](https://eips.ethereum.org/EIPS/eip-4895) - Beacon chain push withdrawals
+- [Ethereum Consensus Specs](https://github.com/ethereum/consensus-specs)

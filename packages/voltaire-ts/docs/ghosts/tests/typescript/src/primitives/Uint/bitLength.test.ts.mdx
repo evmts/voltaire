@@ -1,0 +1,101 @@
+---
+title: '[TS/JS] src/primitives/Uint/bitLength.test.ts'
+source: 'src/primitives/Uint/bitLength.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Uint/bitLength.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { bitLength } from "./bitLength.js";
+import { MAX, ONE, ZERO } from "./constants.js";
+import { from } from "./from.js";
+
+describe("Uint256.bitLength", () => {
+	describe("known values", () => {
+		it("bitLength(0) = 0", () => {
+			expect(bitLength(ZERO)).toBe(0);
+		});
+
+		it("bitLength(1) = 1", () => {
+			expect(bitLength(ONE)).toBe(1);
+		});
+
+		it("bitLength(2) = 2", () => {
+			expect(bitLength(from(2n))).toBe(2);
+		});
+
+		it("bitLength(3) = 2", () => {
+			expect(bitLength(from(3n))).toBe(2);
+		});
+
+		it("bitLength(4) = 3", () => {
+			expect(bitLength(from(4n))).toBe(3);
+		});
+
+		it("bitLength(255) = 8", () => {
+			expect(bitLength(from(255n))).toBe(8);
+		});
+
+		it("bitLength(256) = 9", () => {
+			expect(bitLength(from(256n))).toBe(9);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("bitLength(MAX) = 256", () => {
+			expect(bitLength(MAX)).toBe(256);
+		});
+
+		it("bitLength(MAX - 1) = 256", () => {
+			expect(bitLength(MAX - 1n)).toBe(256);
+		});
+	});
+
+	describe("powers of 2", () => {
+		it("bitLength(2^n) = n + 1", () => {
+			for (let n = 0; n < 256; n++) {
+				const value = from(1n << BigInt(n));
+				expect(bitLength(value)).toBe(n + 1);
+			}
+		});
+
+		it("bitLength(2^n - 1) = n for n > 0", () => {
+			const cases = [
+				{ n: 8, expected: 8 },
+				{ n: 16, expected: 16 },
+				{ n: 32, expected: 32 },
+				{ n: 64, expected: 64 },
+				{ n: 128, expected: 128 },
+			];
+			for (const { n, expected } of cases) {
+				const value = from((1n << BigInt(n)) - 1n);
+				expect(bitLength(value)).toBe(expected);
+			}
+		});
+	});
+
+	describe("properties", () => {
+		it("bitLength is monotonic: a < b implies bitLength(a) <= bitLength(b)", () => {
+			const values = [1n, 2n, 3n, 10n, 100n, 1000n, 10000n];
+			for (let i = 0; i < values.length - 1; i++) {
+				const a = from(values[i]);
+				const b = from(values[i + 1]);
+				expect(bitLength(a)).toBeLessThanOrEqual(bitLength(b));
+			}
+		});
+
+		it("bitLength(0) = 0", () => {
+			expect(bitLength(ZERO)).toBe(0);
+		});
+
+		it("bitLength(x) <= 256 for all x", () => {
+			const values = [ZERO, ONE, from(255n), from(1n << 128n), MAX];
+			for (const v of values) {
+				expect(bitLength(v)).toBeLessThanOrEqual(256);
+			}
+		});
+	});
+});
+
+```

@@ -1,0 +1,113 @@
+---
+title: Hash
+description: Effect-based schemas for 32-byte Ethereum hash values
+---
+
+```typescript
+import * as Hash from 'voltaire-effect/primitives/Hash'
+import { Effect } from 'effect'
+
+const hash = await Effect.runPromise(
+  Hash.fromHex('0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b')
+)
+```
+
+## Schemas
+
+| Schema | Input | Output |
+|--------|-------|--------|
+| `Hash.Hex` | hex string | HashType |
+| `Hash.Bytes` | Uint8Array | HashType |
+
+```typescript
+import * as S from 'effect/Schema'
+
+const hash = S.decodeSync(Hash.Hex)(
+  '0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b'
+)
+```
+
+## Constructors (Effect)
+
+| Function | Input | Description |
+|----------|-------|-------------|
+| `from(value)` | string \| Uint8Array | Create from hex or bytes |
+| `fromHex(hex)` | string | Create from 66-char hex string |
+| `fromBytes(bytes)` | Uint8Array | Create from 32-byte array |
+
+```typescript
+const hash = Effect.runSync(Hash.from('0x' + 'ab'.repeat(32)))
+const hash2 = Effect.runSync(Hash.fromBytes(new Uint8Array(32)))
+```
+
+## Validation
+
+| Function | Description |
+|----------|-------------|
+| `isHash(value)` | Type guard (pure sync) |
+| `isValidHex(hex)` | Check if hex is valid hash format |
+| `isZero(hash)` | Check if hash is all zeros |
+| `assert(hash)` | Assert value is valid hash |
+
+```typescript
+if (Hash.isHash(value)) {
+  // value is HashType
+}
+```
+
+## Operations (Effect)
+
+| Function | Description |
+|----------|-------------|
+| `clone(hash)` | Create independent copy |
+| `concat(...hashes)` | Concatenate and hash |
+| `equals(a, b)` | Compare two hashes |
+| `slice(hash, start?, end?)` | Extract byte range |
+
+```typescript
+const copy = Effect.runSync(Hash.clone(hash))
+const combined = Effect.runSync(Hash.concat(hash1, hash2))
+```
+
+## Conversions
+
+| Function | Description |
+|----------|-------------|
+| `toHex(hash)` | Convert to hex string (pure sync) |
+| `toBytes(hash)` | Convert to Uint8Array (pure sync) |
+| `toString(hash)` | Same as toHex (Effect) |
+| `format(hash)` | Format for display (Effect) |
+
+```typescript
+const hex = Hash.toHex(hash)  // "0x..."
+const bytes = Hash.toBytes(hash)
+```
+
+## Crypto (Effect)
+
+| Function | Description |
+|----------|-------------|
+| `keccak256(data)` | Hash bytes |
+| `keccak256Hex(hex)` | Hash hex string |
+| `keccak256String(str)` | Hash UTF-8 string |
+| `merkleRoot(leaves)` | Compute merkle root |
+| `random()` | Generate random hash |
+
+```typescript
+const hash = Effect.runSync(Hash.keccak256String('hello'))
+```
+
+## Common Uses
+
+- Transaction hashes (`eth_getTransactionByHash`)
+- Block hashes (`eth_getBlockByHash`)
+- State roots, receipts roots, transactions roots
+- Storage slots
+
+## See Also
+
+- [TransactionHash](/primitives/transactionhash) — Transaction hash type
+- [BlockHash](/primitives/blockhash) — Block hash type
+- [Keccak256](/crypto/keccak256) — Compute hashes
+- [Voltaire Hash](https://voltaire.tevm.sh/primitives/hash) — Core Hash documentation
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Effect Schema validation

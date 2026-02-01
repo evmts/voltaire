@@ -1,0 +1,43 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as S from "effect/Schema";
+import * as ReturnData from "./index.js";
+
+describe("ReturnData.Hex", () => {
+	describe("decode", () => {
+		it("decodes hex string", () => {
+			const result = S.decodeSync(ReturnData.Hex)("0xabcd1234");
+			expect(result).toBeInstanceOf(Uint8Array);
+		});
+
+		it("handles empty hex string", () => {
+			const result = S.decodeSync(ReturnData.Hex)("0x");
+			expect(result.length).toBe(0);
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to hex string", () => {
+			const data = S.decodeSync(ReturnData.Hex)("0xabcd1234");
+			const hex = S.encodeSync(ReturnData.Hex)(data);
+			expect(hex).toBe("0xabcd1234");
+		});
+	});
+});
+
+describe("ReturnData.Bytes", () => {
+	describe("decode", () => {
+		it("decodes Uint8Array", () => {
+			const input = new Uint8Array([0xab, 0xcd, 0x12, 0x34]);
+			const result = S.decodeSync(ReturnData.Bytes)(input);
+			expect([...result]).toEqual([...input]);
+		});
+	});
+
+	describe("encode", () => {
+		it("encodes to Uint8Array", () => {
+			const data = S.decodeSync(ReturnData.Hex)("0xabcd");
+			const bytes = S.encodeSync(ReturnData.Bytes)(data);
+			expect(bytes).toBeInstanceOf(Uint8Array);
+		});
+	});
+});

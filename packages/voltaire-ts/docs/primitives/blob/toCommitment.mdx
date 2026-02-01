@@ -1,0 +1,107 @@
+---
+title: Blob.toCommitment
+description: Compute 48-byte KZG commitment for blob
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/blob.ts">
+  Run Blob examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+<Tab title="Standard API">
+
+```typescript
+import { Kzg, Blob } from 'tevm';
+
+const blob = Blob.fromData(data);
+const commitment = Kzg.Commitment(blob);
+
+console.log(commitment.length); // 48
+console.log(Blob.Commitment.isValid(commitment)); // true
+```
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
+<Tab title="Factory API">
+
+## `ToCommitment({ blobToKzgCommitment })(blob): Commitment`
+
+Tree-shakeable factory pattern with explicit KZG dependency.
+
+**Dependencies:**
+- `blobToKzgCommitment: (blob: Uint8Array) => Uint8Array` - KZG commitment function from c-kzg-4844
+
+**Example:**
+
+```typescript
+import { Kzg } from 'tevm'
+import { blobToKzgCommitment } from 'c-kzg'
+
+const Commitment = Kzg.CommitmentFactory({ blobToKzgCommitment })
+const commitment = Commitment(blob)
+```
+
+**Bundle size:** KZG crypto only included if you import it explicitly.
+
+**Note:** Requires c-kzg-4844 library integration (coming soon).
+
+</Tab>
+
+</Tabs>
+
+## KZG Commitment Scheme
+
+KZG commitments use polynomial commitment scheme over BLS12-381 curve:
+
+1. **Blob as Polynomial** - 4096 field elements become polynomial coefficients
+2. **Commitment** - Evaluate polynomial at secret point (from trusted setup)
+3. **Binding** - Computationally infeasible to find different blob with same commitment
+
+### Security Properties
+
+```typescript
+import { Kzg, Blob } from 'tevm';
+
+// Different data = different commitments
+const blob1 = Blob.fromData(data1);
+const blob2 = Blob.fromData(data2);
+
+const commitment1 = Kzg.Commitment(blob1);
+const commitment2 = Kzg.Commitment(blob2);
+
+// Commitments differ (binding property)
+console.log(Blob.equals(commitment1, commitment2)); // false
+
+// Cannot forge commitment for different data
+const proof1 = Kzg.Proof(blob1);
+console.log(Kzg.verify(blob1, commitment1, proof1)); // true
+console.log(Kzg.verify(blob2, commitment1, proof1)); // false (wrong blob)
+```
+
+## Commitment Utilities
+
+### Blob.Commitment Namespace
+
+```typescript
+import { Kzg, Blob } from 'tevm';
+
+const commitment = Kzg.Commitment(blob);
+
+// Validate commitment size
+console.log(Blob.Commitment.isValid(commitment)); // true
+
+// Convert to versioned hash
+const versionedHash = Blob.toVersionedHash(commitment);
+console.log(versionedHash[0]); // 0x01 (version byte)
+```
+
+## See Also
+
+- [toProof](./toProof) - Generate KZG proof
+- [verify](./verify) - Verify commitment and proof
+- [toVersionedHash](./toVersionedHash) - Compute versioned hash
+- [KZG](/primitives/blob/kzg) - KZG commitment scheme details

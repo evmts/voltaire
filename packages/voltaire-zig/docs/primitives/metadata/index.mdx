@@ -1,0 +1,170 @@
+---
+title: Overview
+description: Solidity compiler metadata (CBOR-encoded)
+---
+
+## Type Definition
+
+Object representing Solidity compiler metadata embedded in contract bytecode. Encoded in CBOR format and appended to deployed bytecode.
+
+```zig
+export type Metadata = {
+  readonly raw: Uint8Array;
+  readonly solc?: string;           // Compiler version
+  readonly ipfs?: string;            // IPFS content hash
+  readonly bzzr0?: string;           // Swarm hash (legacy)
+  readonly bzzr1?: string;           // Swarm hash v1
+  readonly experimental?: boolean;   // Experimental features flag
+};
+```
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Extract">
+
+```zig
+import * as Metadata from '@tevm/voltaire/Metadata';
+
+// From contract bytecode
+const meta = Metadata.fromBytecode(contractCode);
+if (meta) {
+  console.log(`Compiler: ${meta.solc}`);
+  console.log(`IPFS: ${meta.ipfs}`);
+}
+```
+
+</Tab>
+<Tab title="Decode">
+
+```zig
+// Decode CBOR metadata
+const meta = Metadata.decode(cborBytes);
+
+// Access fields
+console.log(meta.solc);     // "0.8.19"
+console.log(meta.ipfs);     // "0x1234..."
+console.log(meta.experimental); // true/false
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(raw)`](./from) - Create from raw CBOR bytes
+- [`fromBytecode(bytecode)`](./fromBytecode) - Extract from contract bytecode
+
+### Processing
+
+- [`decode(raw)`](./decode) - Decode CBOR to metadata object
+- [`encode(metadata)`](./encode) - Encode metadata to CBOR
+
+## Usage Patterns
+
+### Extracting Compiler Information
+
+```zig
+import * as Metadata from '@tevm/voltaire/Metadata';
+import * as ContractCode from '@tevm/voltaire/ContractCode';
+
+// Get deployed contract code
+const code = ContractCode.from(await provider.getCode(address));
+
+// Extract metadata
+const meta = Metadata.fromBytecode(code);
+if (meta) {
+  console.log(`Compiled with Solidity ${meta.solc}`);
+
+  if (meta.ipfs) {
+    console.log(`Source IPFS: ${meta.ipfs}`);
+    // Fetch source from IPFS
+    const source = await fetchFromIpfs(meta.ipfs);
+  }
+
+  if (meta.experimental) {
+    console.log("Contract uses experimental features");
+  }
+}
+```
+
+### Contract Verification
+
+```zig
+import * as Metadata from '@tevm/voltaire/Metadata';
+
+// Extract metadata from deployed contract
+const deployedMeta = Metadata.fromBytecode(deployedCode);
+
+// Compare with expected metadata
+const expectedMeta = Metadata.decode(compiledMetadata);
+
+if (deployedMeta?.ipfs === expectedMeta?.ipfs) {
+  console.log("Source code verified via IPFS hash");
+}
+
+if (deployedMeta?.solc === expectedMeta?.solc) {
+  console.log("Compiler versions match");
+}
+```
+
+### Creating Custom Metadata
+
+```zig
+import * as Metadata from '@tevm/voltaire/Metadata';
+
+// Create metadata
+const meta: Metadata.Metadata = {
+  raw: new Uint8Array(),
+  solc: "0.8.19",
+  ipfs: "0x1234567890abcdef...",
+  experimental: false,
+};
+
+// Encode to CBOR
+const encoded = Metadata.encode(meta);
+
+// Append to bytecode
+const withMetadata = new Uint8Array([
+  ...runtimeCode,
+  ...encoded,
+  0x00,
+  encoded.length, // Length marker
+]);
+```
+
+## Metadata Format
+
+Solidity appends CBOR-encoded metadata to bytecode:
+
+```
+[runtime bytecode] [CBOR metadata] [0x00] [length_byte]
+```
+
+The CBOR map contains:
+- `ipfs`: IPFS hash of source metadata JSON (32 bytes)
+- `bzzr0`/`bzzr1`: Swarm hashes (legacy, 32 bytes)
+- `solc`: Compiler version string
+- `experimental`: Boolean flag
+
+Example bytecode ending:
+```
+... a2 64 69 70 66 73 58 22 12 20 ... [IPFS hash] ... 00 33
+    |                                                  |  |
+    CBOR map start                                     |  Length (51 bytes)
+                                                       0x00 marker
+```
+
+## Related
+
+- [ContractCode](/primitives/contract-code) - Full deployed bytecode
+- [RuntimeCode](/primitives/runtime-code) - Bytecode without metadata
+- [SourceMap](/primitives/source-map) - Source code mapping
+
+## Specification
+
+- [Solidity Metadata](https://docs.soliditylang.org/en/latest/metadata.html) - Official metadata format
+- [CBOR](https://cbor.io/) - Concise Binary Object Representation
+- [IPFS](https://ipfs.io/) - InterPlanetary File System

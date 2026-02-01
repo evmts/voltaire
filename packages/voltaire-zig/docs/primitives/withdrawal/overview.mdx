@@ -1,0 +1,190 @@
+---
+title: Withdrawal
+description: Validator withdrawal structure (EIP-4895)
+---
+
+## Overview
+
+Withdrawal represents a validator withdrawal from the beacon chain to the execution layer. Introduced in EIP-4895 (Shanghai/Capella upgrade), withdrawals enable validators to exit with their stake or receive periodic reward payments.
+
+**Type:** Object containing index, validatorIndex, address, and amount
+
+## Structure
+
+```zig
+type Withdrawal = {
+  readonly index: WithdrawalIndex;        // Global withdrawal counter
+  readonly validatorIndex: ValidatorIndex; // Validator receiving withdrawal
+  readonly address: Address;               // Recipient address (execution layer)
+  readonly amount: Gwei;                   // Amount in Gwei (NOT Wei!)
+};
+```
+
+## Key Concepts
+
+- **Amount**: Specified in **Gwei** (10^9 wei), not Wei
+- **Two types**: Full exits (32 ETH) and partial withdrawals (rewards)
+- **Automatic**: No transaction needed, processed by protocol
+- **Rate limited**: Maximum 16 withdrawals per block
+
+## Methods
+
+### `Withdrawal.from(params)`
+
+Create Withdrawal from components.
+
+```zig
+import { Withdrawal } from '@tevm/primitives';
+
+const withdrawal = Withdrawal.from({
+  index: 1000000n,
+  validatorIndex: 123456,
+  address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+  amount: 32000000000n, // 32 ETH in Gwei
+});
+```
+
+### `Withdrawal.equals(a, b)`
+
+Check if two withdrawals are equal.
+
+```zig
+const a = Withdrawal.from({ /* ... */ });
+const b = Withdrawal.from({ /* ... */ });
+Withdrawal.equals(a, b); // true if all fields match
+```
+
+## Usage Examples
+
+### Process validator exit
+
+```zig
+import { Withdrawal, ValidatorIndex, WithdrawalIndex } from '@tevm/primitives';
+
+interface ValidatorExit {
+  validator: ValidatorIndex;
+  withdrawalAddress: string;
+  balance: bigint; // In Gwei
+}
+
+function createExitWithdrawal(
+  exit: ValidatorExit,
+  currentIndex: WithdrawalIndex
+): Withdrawal {
+  return Withdrawal.from({
+    index: currentIndex,
+    validatorIndex: exit.validator,
+    address: exit.withdrawalAddress,
+    amount: exit.balance,
+  });
+}
+
+const exit: ValidatorExit = {
+  validator: ValidatorIndex.from(123456),
+  withdrawalAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+  balance: 32000000000n, // 32 ETH
+};
+
+const withdrawal = createExitWithdrawal(
+  exit,
+  WithdrawalIndex.from(1000000n)
+);
+```
+
+### Track partial withdrawals
+
+```zig
+import { Withdrawal } from '@tevm/primitives';
+
+interface PartialWithdrawal {
+  withdrawal: Withdrawal;
+  isPartial: boolean;
+  epoch: bigint;
+}
+
+function identifyPartialWithdrawals(
+  withdrawals: Withdrawal[]
+): PartialWithdrawal[] {
+  return withdrawals.map(w => ({
+    withdrawal: w,
+    // Partial withdrawals typically < 32 ETH
+    isPartial: w.amount < 32000000000n,
+    epoch: calculateEpoch(w.index),
+  }));
+}
+```
+
+### Convert amounts
+
+```zig
+import { Withdrawal } from '@tevm/primitives';
+
+function gweiToWei(gwei: bigint): bigint {
+  return gwei * 1_000_000_000n;
+}
+
+function weiToGwei(wei: bigint): bigint {
+  return wei / 1_000_000_000n;
+}
+
+const withdrawal = Withdrawal.from({
+  index: 1000000n,
+  validatorIndex: 123456,
+  address: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+  amount: 32000000000n, // 32 ETH in Gwei
+});
+
+// Convert to Wei for execution layer
+const amountWei = gweiToWei(withdrawal.amount); // 32000000000000000000n
+```
+
+### Build withdrawal tree
+
+```zig
+import { Withdrawal } from '@tevm/primitives';
+
+interface WithdrawalBlock {
+  blockNumber: bigint;
+  withdrawals: Withdrawal[];
+  withdrawalsRoot: string;
+}
+
+function processWithdrawalBlock(block: WithdrawalBlock) {
+  console.log(`Block ${block.blockNumber}`);
+  console.log(`Total withdrawals: ${block.withdrawals.length}`);
+
+  let totalGwei = 0n;
+  for (const w of block.withdrawals) {
+    totalGwei += w.amount;
+    console.log(
+      `  Validator ${w.validatorIndex}: ${w.amount} Gwei → ${w.address}`
+    );
+  }
+
+  const totalEth = Number(totalGwei) / 1_000_000_000;
+  console.log(`Total: ${totalEth} ETH`);
+}
+```
+
+## Important Notes
+
+<Warning>
+**Amount is in Gwei, not Wei!** Always multiply by 10^9 when converting to Wei for execution layer operations.
+</Warning>
+
+<Tip>
+**Maximum 16 withdrawals per block** - The protocol rate-limits withdrawals to prevent excessive state changes.
+</Tip>
+
+## Related Types
+
+- [WithdrawalIndex](/primitives/withdrawal-index) - Global withdrawal counter
+- [ValidatorIndex](/primitives/validator-index) - Validator identifier
+- [Address](/primitives/address) - Withdrawal recipient
+- [Gwei](/primitives/denomination) - Amount denomination
+
+## References
+
+- [EIP-4895](https://eips.ethereum.org/EIPS/eip-4895) - Beacon chain push withdrawals
+- [Ethereum Consensus Specs](https://github.com/ethereum/consensus-specs)
+- [Withdrawal Processing](https://ethereum.org/en/staking/withdrawals/)

@@ -1,0 +1,146 @@
+---
+title: Pack and Unpack ABI-Encoded Data
+description: Encode and decode function calls and parameters using ABI encoding.
+---
+
+## Encode Function Call
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+const abi = [{
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { name: 'to', type: 'address' },
+    { name: 'amount', type: 'uint256' }
+  ]
+}]
+
+const encoded = Abi.encodeFunction(
+  abi,
+  'transfer',
+  ['0x742d35cc6634c0532925a3b844bc9e7595f2bd6e', 1000n]
+)
+// Uint8Array: selector + encoded params
+```
+
+## Decode Function Result
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+const abi = [{
+  type: 'function',
+  name: 'balanceOf',
+  inputs: [{ name: 'account', type: 'address' }],
+  outputs: [{ name: '', type: 'uint256' }]
+}]
+
+const returnData = /* bytes from eth_call */
+const [balance] = Abi.decode(abi, 'balanceOf', returnData)
+```
+
+## Encode Parameters Only
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+// Encode without function selector
+const encoded = Abi.encodeParameters(
+  ['address', 'uint256'],
+  ['0x742d35cc6634c0532925a3b844bc9e7595f2bd6e', 1000n]
+)
+```
+
+## Decode Parameters
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+const types = ['address', 'uint256', 'bool']
+const data = /* ABI-encoded bytes */
+const [addr, amount, flag] = Abi.decodeParameters(types, data)
+```
+
+## Decode Calldata
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+const abi = [/* function definitions */]
+const calldata = /* 0x... transaction input */
+
+const { functionName, args } = Abi.decodeData(abi, calldata)
+console.log(`Called ${functionName} with`, args)
+```
+
+## Encode Constructor
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+const abi = [{
+  type: 'constructor',
+  inputs: [
+    { name: 'name', type: 'string' },
+    { name: 'symbol', type: 'string' }
+  ]
+}]
+
+const encoded = Abi.Constructor.encodeParams(
+  abi[0],
+  ['MyToken', 'MTK']
+)
+// Append to bytecode for deployment
+```
+
+## Working with Events
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+const abi = [{
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false }
+  ]
+}]
+
+const logs = /* from eth_getLogs */
+const parsed = Abi.parseLogs(abi, logs)
+// [{ eventName: 'Transfer', args: { from, to, value } }]
+```
+
+## Complex Types
+
+```ts
+import * as Abi from '@voltaire/primitives/Abi'
+
+// Tuple
+Abi.encodeParameters(
+  ['(address,uint256)'],
+  [['0x...', 100n]]
+)
+
+// Dynamic array
+Abi.encodeParameters(
+  ['uint256[]'],
+  [[1n, 2n, 3n]]
+)
+
+// Fixed array
+Abi.encodeParameters(
+  ['uint256[3]'],
+  [[1n, 2n, 3n]]
+)
+
+// Bytes
+Abi.encodeParameters(
+  ['bytes', 'bytes32'],
+  [new Uint8Array([1, 2, 3]), new Uint8Array(32)]
+)
+```

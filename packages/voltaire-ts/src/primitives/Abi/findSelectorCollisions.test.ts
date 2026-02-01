@@ -1,0 +1,228 @@
+import { describe, expect, it } from "vitest";
+import {
+	findSelectorCollisions,
+	hasSelectorCollisions,
+} from "./findSelectorCollisions.js";
+
+describe("findSelectorCollisions", () => {
+	it("returns empty array for ABI with no collisions", () => {
+		const abi = [
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool" }],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "balanceOf",
+				inputs: [{ type: "address", name: "account" }],
+				outputs: [{ type: "uint256" }],
+				stateMutability: "view" as const,
+			},
+		];
+
+		const collisions = findSelectorCollisions(abi);
+		expect(collisions).toEqual([]);
+	});
+
+	it("detects duplicate functions (same signature)", () => {
+		const abi = [
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool" }],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "value" },
+				],
+				outputs: [{ type: "bool" }],
+				stateMutability: "nonpayable" as const,
+			},
+		];
+
+		const collisions = findSelectorCollisions(abi);
+		expect(collisions.length).toBe(1);
+		expect(collisions[0].selector).toBe("0xa9059cbb"); // transfer(address,uint256)
+		expect(collisions[0].functions.length).toBe(2);
+	});
+
+	it("ignores non-function items", () => {
+		const abi = [
+			{
+				type: "event" as const,
+				name: "Transfer",
+				inputs: [
+					{ type: "address", name: "from", indexed: true },
+					{ type: "address", name: "to", indexed: true },
+					{ type: "uint256", name: "value" },
+				],
+			},
+			{
+				type: "error" as const,
+				name: "InsufficientBalance",
+				inputs: [{ type: "uint256", name: "balance" }],
+			},
+		];
+
+		const collisions = findSelectorCollisions(abi);
+		expect(collisions).toEqual([]);
+	});
+
+	it("handles empty ABI", () => {
+		const collisions = findSelectorCollisions([]);
+		expect(collisions).toEqual([]);
+	});
+
+	it("detects multiple collision groups", () => {
+		const abi = [
+			// First collision group: transfer(address,uint256)
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "value" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+			// Second collision group: approve(address,uint256)
+			{
+				type: "function" as const,
+				name: "approve",
+				inputs: [
+					{ type: "address", name: "spender" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "approve",
+				inputs: [
+					{ type: "address", name: "delegate" },
+					{ type: "uint256", name: "value" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+		];
+
+		const collisions = findSelectorCollisions(abi);
+		expect(collisions.length).toBe(2);
+	});
+
+	it("detects three functions with same selector", () => {
+		const abi = [
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "value" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "dest" },
+					{ type: "uint256", name: "qty" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+		];
+
+		const collisions = findSelectorCollisions(abi);
+		expect(collisions.length).toBe(1);
+		expect(collisions[0].functions.length).toBe(3);
+	});
+});
+
+describe("hasSelectorCollisions", () => {
+	it("returns false for ABI with no collisions", () => {
+		const abi = [
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+		];
+
+		expect(hasSelectorCollisions(abi)).toBe(false);
+	});
+
+	it("returns true when collisions exist", () => {
+		const abi = [
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "transfer",
+				inputs: [
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "value" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+		];
+
+		expect(hasSelectorCollisions(abi)).toBe(true);
+	});
+
+	it("returns false for empty ABI", () => {
+		expect(hasSelectorCollisions([])).toBe(false);
+	});
+});

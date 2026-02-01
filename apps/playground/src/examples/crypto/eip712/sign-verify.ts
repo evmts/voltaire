@@ -1,0 +1,42 @@
+import { Address, EIP712, Hex, Secp256k1 } from "@tevm/voltaire";
+// EIP-712: Sign and verify typed data
+
+// Generate keypair
+const privateKey = Secp256k1.PrivateKey.random();
+const publicKey = Secp256k1.PrivateKey.toPublicKey(privateKey);
+const signerAddress = Secp256k1.PublicKey.toAddress(publicKey);
+
+// Define typed data
+const typedData = {
+	domain: {
+		name: "Authentication",
+		version: "1",
+		chainId: 1n,
+	},
+	types: {
+		Login: [
+			{ name: "user", type: "address" },
+			{ name: "action", type: "string" },
+			{ name: "nonce", type: "uint256" },
+		],
+	},
+	primaryType: "Login",
+	message: {
+		user: signerAddress,
+		action: "authenticate",
+		nonce: 42n,
+	},
+};
+
+// Sign typed data - produces ECDSA signature
+const signature = EIP712.signTypedData(typedData, privateKey);
+
+// Recover signer address from signature
+const recoveredAddress = EIP712.recoverAddress(signature, typedData);
+
+// Verify signature matches expected signer
+const isValid = EIP712.verifyTypedData(signature, typedData, signerAddress);
+
+// Verify with wrong address fails
+const wrongAddress = Address("0x0000000000000000000000000000000000000001");
+const invalidCheck = EIP712.verifyTypedData(signature, typedData, wrongAddress);

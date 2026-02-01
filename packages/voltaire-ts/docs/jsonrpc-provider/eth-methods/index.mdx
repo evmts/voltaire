@@ -1,0 +1,571 @@
+---
+title: eth Methods
+description: Standard Ethereum JSON-RPC methods (40 methods)
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+# eth Methods
+
+The `eth` namespace provides 40 standard Ethereum JSON-RPC methods for blocks, transactions, state queries, and more.
+
+## Overview
+
+Access eth methods via the EIP-1193 `request` API:
+
+```typescript
+import { Provider } from '@tevm/voltaire/provider';
+import * as Address from '@tevm/voltaire/Address';
+import * as Rpc from '@tevm/voltaire/jsonrpc';
+
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+// Call eth methods
+const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
+const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+const tx = await provider.request(Rpc.Eth.GetTransactionByHashRequest(txHash));
+```
+
+## Block Methods
+
+### eth_blockNumber
+
+Get the most recent block number.
+
+```typescript
+const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
+// Quantity
+```
+
+### eth_getBlockByNumber
+
+Get block by number with full transactions or hashes.
+
+```typescript
+const block = await provider.request(Rpc.Eth.GetBlockByNumberRequest('latest', true));
+// Block
+```
+
+**Parameters:**
+- `blockTag: BlockTag` - Block to query
+- `fullTransactions: boolean` - true for full tx objects, false for hashes
+
+### eth_getBlockByHash
+
+Get block by hash.
+
+```typescript
+const block = await provider.request(Rpc.Eth.GetBlockByHashRequest(blockHash, false));
+// Block
+```
+
+**Parameters:**
+- `blockHash: Hash` - Block hash
+- `fullTransactions: boolean` - true for full tx objects, false for hashes
+
+### eth_getBlockReceipts
+
+Get all transaction receipts for a block.
+
+```typescript
+const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
+// TransactionReceipt[]
+```
+
+### eth_getBlockTransactionCountByHash
+
+Get transaction count in a block by hash.
+
+```typescript
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByHashRequest(blockHash));
+// Quantity
+```
+
+### eth_getBlockTransactionCountByNumber
+
+Get transaction count in a block by number.
+
+```typescript
+const count = await provider.request(Rpc.Eth.GetBlockTransactionCountByNumberRequest('latest'));
+// Quantity
+```
+
+### eth_getUncleCountByBlockHash
+
+Get uncle count for a block by hash.
+
+```typescript
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockHashRequest(blockHash));
+// Quantity
+```
+
+### eth_getUncleCountByBlockNumber
+
+Get uncle count for a block by number.
+
+```typescript
+const count = await provider.request(Rpc.Eth.GetUncleCountByBlockNumberRequest('latest'));
+// Quantity
+```
+
+## Transaction Methods
+
+### eth_sendRawTransaction
+
+Submit a signed transaction to the network.
+
+```typescript
+const txHash = await provider.request(Rpc.Eth.SendRawTransactionRequest(signedTx));
+// Hash
+```
+
+**Parameters:**
+- `signedTransaction: Hex` - Signed transaction bytes
+
+### eth_sendTransaction
+
+Sign and send a transaction (requires unlocked account).
+
+```typescript
+const txHash = await provider.request(Rpc.Eth.SendTransactionRequest({
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: Quantity(1000000000000000000n),
+  data: Hex('0x...')
+}));
+// Hash
+```
+
+### eth_getTransactionByHash
+
+Get transaction by hash.
+
+```typescript
+const tx = await provider.request(Rpc.Eth.GetTransactionByHashRequest(txHash));
+// Transaction
+```
+
+### eth_getTransactionByBlockHashAndIndex
+
+Get transaction by block hash and index.
+
+```typescript
+const tx = await provider.request(Rpc.Eth.GetTransactionByBlockHashAndIndexRequest(
+  blockHash,
+  Quantity(0)
+));
+// Transaction
+```
+
+### eth_getTransactionByBlockNumberAndIndex
+
+Get transaction by block number and index.
+
+```typescript
+const tx = await provider.request(Rpc.Eth.GetTransactionByBlockNumberAndIndexRequest(
+  'latest',
+  Quantity(0)
+));
+// Transaction
+```
+
+### eth_getTransactionReceipt
+
+Get transaction receipt (includes logs and status).
+
+```typescript
+const receipt = await provider.request(Rpc.Eth.GetTransactionReceiptRequest(txHash));
+// TransactionReceipt
+```
+
+### eth_getTransactionCount
+
+Get transaction count (nonce) for an address.
+
+```typescript
+const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
+// Quantity
+```
+
+## State Methods
+
+### eth_getBalance
+
+Get ether balance of an address.
+
+```typescript
+const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
+// Quantity
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `blockTag: BlockTag` - Block to query
+
+### eth_getCode
+
+Get contract bytecode at an address.
+
+```typescript
+const code = await provider.request(Rpc.Eth.GetCodeRequest(address, 'latest'));
+// Hex
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `blockTag: BlockTag` - Block to query
+
+### eth_getStorageAt
+
+Get value from a contract storage slot.
+
+```typescript
+const value = await provider.request(Rpc.Eth.GetStorageAtRequest(
+  address,
+  Quantity(0),
+  'latest'
+));
+// Hex
+```
+
+**Parameters:**
+- `address: Address` - Contract address
+- `position: Quantity` - Storage slot
+- `blockTag: BlockTag` - Block to query
+
+### eth_getProof
+
+Get Merkle proof for account and storage values.
+
+```typescript
+const proof = await provider.request(Rpc.Eth.GetProofRequest(
+  address,
+  [Quantity(0), Quantity(1)],
+  'latest'
+));
+// Proof
+```
+
+**Parameters:**
+- `address: Address` - Account address
+- `storageKeys: Quantity[]` - Storage slots to prove
+- `blockTag: BlockTag` - Block to query
+
+## Call Methods
+
+### eth_call
+
+Execute a read-only contract call without creating a transaction.
+
+```typescript
+const result = await provider.request(Rpc.Eth.CallRequest({
+  from: Address('0x...'),
+  to: Address('0x...'),
+  data: Hex('0x70a08231...')  // balanceOf(address)
+}, 'latest'));
+// Hex
+```
+
+**Parameters:**
+- `callParams: CallParams` - Transaction parameters
+- `blockTag: BlockTag` - Block to execute against
+
+### eth_estimateGas
+
+Estimate gas required for a transaction.
+
+```typescript
+const gas = await provider.request(Rpc.Eth.EstimateGasRequest({
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: Quantity(1000000000000000000n),
+  data: Hex('0x...')
+}));
+// Quantity
+```
+
+### eth_createAccessList
+
+Generate an access list for a transaction.
+
+```typescript
+const accessList = await provider.request(Rpc.Eth.CreateAccessListRequest({
+  from: Address('0x...'),
+  to: Address('0x...'),
+  data: Hex('0x...')
+}, 'latest'));
+// AccessList
+```
+
+### eth_simulateV1
+
+Simulate multiple transactions (EIP-not-yet-finalized).
+
+```typescript
+const simulation = await provider.request(Rpc.Eth.SimulateV1Request(params));
+// SimulationResult
+```
+
+## Log & Filter Methods
+
+### eth_getLogs
+
+Query event logs matching a filter.
+
+```typescript
+const logs = await provider.request(Rpc.Eth.GetLogsRequest({
+  fromBlock: 'earliest',
+  toBlock: 'latest',
+  address: Address('0x...'),
+  topics: [Hash('0x...')]  // Event signature
+}));
+// Log[]
+```
+
+### eth_newFilter
+
+Create a new log filter.
+
+```typescript
+const filterId = await provider.request(Rpc.Eth.NewFilterRequest({
+  fromBlock: 'latest',
+  toBlock: 'latest',
+  address: Address('0x...'),
+  topics: []
+}));
+// Quantity
+```
+
+### eth_newBlockFilter
+
+Create a filter for new blocks.
+
+```typescript
+const filterId = await provider.request(Rpc.Eth.NewBlockFilterRequest());
+// Quantity
+```
+
+### eth_newPendingTransactionFilter
+
+Create a filter for pending transactions.
+
+```typescript
+const filterId = await provider.request(Rpc.Eth.NewPendingTransactionFilterRequest());
+// Quantity
+```
+
+### eth_getFilterChanges
+
+Get new entries for a filter since last poll.
+
+```typescript
+const changes = await provider.request(Rpc.Eth.GetFilterChangesRequest(filterId));
+// Log[] | Hash[]
+```
+
+### eth_getFilterLogs
+
+Get all logs matching a filter.
+
+```typescript
+const logs = await provider.request(Rpc.Eth.GetFilterLogsRequest(filterId));
+// Log[]
+```
+
+### eth_uninstallFilter
+
+Remove a filter.
+
+```typescript
+const success = await provider.request(Rpc.Eth.UninstallFilterRequest(filterId));
+// boolean
+```
+
+## Fee Methods
+
+### eth_gasPrice
+
+Get current gas price.
+
+```typescript
+const gasPrice = await provider.request(Rpc.Eth.GasPriceRequest());
+// Quantity
+```
+
+### eth_maxPriorityFeePerGas
+
+Get current max priority fee per gas (EIP-1559).
+
+```typescript
+const priorityFee = await provider.request(Rpc.Eth.MaxPriorityFeePerGasRequest());
+// Quantity
+```
+
+### eth_feeHistory
+
+Get historical gas fee data.
+
+```typescript
+const history = await provider.request(Rpc.Eth.FeeHistoryRequest(
+  Quantity(10),  // Block count
+  'latest',      // Newest block
+  [25, 50, 75]   // Percentiles
+));
+// FeeHistory
+```
+
+### eth_blobBaseFee
+
+Get current blob base fee (EIP-4844).
+
+```typescript
+const blobFee = await provider.request(Rpc.Eth.BlobBaseFeeRequest());
+// Quantity
+```
+
+## Network Methods
+
+### eth_chainId
+
+Get the chain ID.
+
+```typescript
+const chainId = await provider.request(Rpc.Eth.ChainIdRequest());
+// Quantity
+```
+
+### eth_syncing
+
+Get sync status (false if not syncing).
+
+```typescript
+const syncStatus = await provider.request(Rpc.Eth.SyncingRequest());
+// SyncStatus | false
+```
+
+### eth_coinbase
+
+Get the coinbase address (miner/validator).
+
+```typescript
+const coinbase = await provider.request(Rpc.Eth.CoinbaseRequest());
+// Address
+```
+
+## Account Methods
+
+### eth_accounts
+
+List available accounts (if wallet is connected).
+
+```typescript
+const accounts = await provider.request(Rpc.Eth.AccountsRequest());
+// Address[]
+```
+
+### eth_sign
+
+Sign data with an account (requires unlocked account).
+
+```typescript
+const signature = await provider.request(Rpc.Eth.SignRequest(
+  Address('0x...'),
+  Hex('0x...')
+));
+// Hex
+```
+
+<Warning>
+`eth_sign` is dangerous and deprecated. Use typed signing methods like EIP-712 instead.
+</Warning>
+
+### eth_signTransaction
+
+Sign a transaction (requires unlocked account).
+
+```typescript
+const signedTx = await provider.request(Rpc.Eth.SignTransactionRequest({
+  from: Address('0x...'),
+  to: Address('0x...'),
+  value: Quantity(1000000000000000000n)
+}));
+// Hex
+```
+
+## Usage Patterns
+
+### Check Balance and Nonce
+
+```typescript
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+
+try {
+  const [balance, nonce] = await Promise.all([
+    provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest')),
+    provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'))
+  ]);
+
+  console.log('Balance:', balance);
+  console.log('Nonce:', nonce);
+} catch (error) {
+  console.error('Failed to fetch account data:', error);
+}
+```
+
+### Query Contract State
+
+```typescript
+try {
+  // Get contract code
+  const code = await provider.request(Rpc.Eth.GetCodeRequest(contractAddress, 'latest'));
+
+  if (code !== '0x') {
+    // Contract exists, call a method
+    const result = await provider.request(Rpc.Eth.CallRequest({
+      to: contractAddress,
+      data: Hex('0x18160ddd')  // totalSupply()
+    }, 'latest'));
+    console.log('Total supply:', result);
+  }
+} catch (error) {
+  console.error('Failed to query contract:', error);
+}
+```
+
+### Monitor Transaction
+
+```typescript
+try {
+  // Submit transaction
+  const txHash = await provider.request(Rpc.Eth.SendRawTransactionRequest(signedTx));
+
+  // Poll for receipt
+  let receipt = null;
+  while (!receipt) {
+    try {
+      receipt = await provider.request(Rpc.Eth.GetTransactionReceiptRequest(txHash));
+      if (receipt) {
+        console.log('Transaction mined in block:', receipt.blockNumber);
+      }
+    } catch (error) {
+      // Receipt not yet available, continue polling
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+} catch (error) {
+  console.error('Failed to submit transaction:', error);
+}
+```
+
+## Type Reference
+
+All parameter and return types are defined in the [JSON-RPC types](/jsonrpc/eth) module.
+
+## Next Steps
+
+- [Method API](/provider/methods) - Learn about the method-based API
+- [debug Methods](/provider/debug-methods) - Debugging methods
+- [engine Methods](/provider/engine-methods) - Consensus layer methods
+- [Events](/provider/events) - Subscribe to blockchain events

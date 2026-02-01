@@ -1,0 +1,1437 @@
+---
+title: "primitives/Int8"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Int8
+
+# primitives/Int8
+
+## Type Aliases
+
+### BrandedInt8
+
+> **BrandedInt8** = `number` & `object`
+
+Defined in: [src/primitives/Int8/Int8Type.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/Int8Type.ts#L24)
+
+A signed 8-bit integer branded type.
+Internally a JavaScript number constrained to [-128, 127].
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Int8"`
+
+***
+
+### Int8Input
+
+> **Int8Input** = `number` \| `bigint` \| `string` \| [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L63)
+
+## Variables
+
+### INT8\_MAX
+
+> `const` **INT8\_MAX**: `127` = `127`
+
+Defined in: [src/primitives/Int8/Int8Type.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/Int8Type.ts#L29)
+
+***
+
+### INT8\_MIN
+
+> `const` **INT8\_MIN**: `-128` = `-128`
+
+Defined in: [src/primitives/Int8/Int8Type.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/Int8Type.ts#L28)
+
+## Functions
+
+### \_abs()
+
+> **\_abs**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/arithmetic.js:86](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/arithmetic.js#L86)
+
+Absolute value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_and()
+
+> **\_and**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/bitwise.js:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/bitwise.js#L7)
+
+Bitwise AND
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_bitLength()
+
+> **\_bitLength**(`value`): `number`
+
+Defined in: [src/primitives/Int8/utilities.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/utilities.js#L8)
+
+Get bit length (number of bits needed to represent value)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`number`
+
+***
+
+### \_dividedBy()
+
+> **\_dividedBy**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/arithmetic.js:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/arithmetic.js#L51)
+
+Divide two BrandedInt8 values (EVM SDIV semantics - truncate toward zero)
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int8/comparison.js:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L7)
+
+Check if two BrandedInt8 values are equal
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`boolean`
+
+***
+
+### \_greaterThan()
+
+> **\_greaterThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int8/comparison.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L27)
+
+Check if a > b
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`boolean`
+
+***
+
+### \_isNegative()
+
+> **\_isNegative**(`value`): `boolean`
+
+Defined in: [src/primitives/Int8/comparison.js:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L45)
+
+Check if value is negative
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`boolean`
+
+***
+
+### \_isPositive()
+
+> **\_isPositive**(`value`): `boolean`
+
+Defined in: [src/primitives/Int8/comparison.js:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L54)
+
+Check if value is positive (> 0)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`boolean`
+
+***
+
+### \_isZero()
+
+> **\_isZero**(`value`): `boolean`
+
+Defined in: [src/primitives/Int8/comparison.js:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L36)
+
+Check if value is zero
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`boolean`
+
+***
+
+### \_leadingZeros()
+
+> **\_leadingZeros**(`value`): `number`
+
+Defined in: [src/primitives/Int8/utilities.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/utilities.js#L20)
+
+Count leading zeros in binary representation
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`number`
+
+***
+
+### \_lessThan()
+
+> **\_lessThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int8/comparison.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L17)
+
+Check if a < b
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`boolean`
+
+***
+
+### \_maximum()
+
+> **\_maximum**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/comparison.js:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L74)
+
+Get maximum of two values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_minimum()
+
+> **\_minimum**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/comparison.js:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L64)
+
+Get minimum of two values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_minus()
+
+> **\_minus**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/arithmetic.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/arithmetic.js#L23)
+
+Subtract two BrandedInt8 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_modulo()
+
+> **\_modulo**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/arithmetic.js:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/arithmetic.js#L72)
+
+Modulo operation (EVM SMOD semantics - sign follows dividend)
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_negate()
+
+> **\_negate**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/arithmetic.js:100](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/arithmetic.js#L100)
+
+Negate value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_not()
+
+> **\_not**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/bitwise.js:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/bitwise.js#L50)
+
+Bitwise NOT
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_or()
+
+> **\_or**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/bitwise.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/bitwise.js#L23)
+
+Bitwise OR
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_plus()
+
+> **\_plus**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/arithmetic.js:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/arithmetic.js#L9)
+
+Add two BrandedInt8 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_popCount()
+
+> **\_popCount**(`value`): `number`
+
+Defined in: [src/primitives/Int8/utilities.js:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/utilities.js#L37)
+
+Count set bits (population count)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`number`
+
+***
+
+### \_shiftLeft()
+
+> **\_shiftLeft**(`value`, `shift`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/bitwise.js:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/bitwise.js#L63)
+
+Left shift
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+##### shift
+
+`number`
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_shiftRight()
+
+> **\_shiftRight**(`value`, `shift`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/bitwise.js:79](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/bitwise.js#L79)
+
+Arithmetic right shift (preserves sign bit)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+##### shift
+
+`number`
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_sign()
+
+> **\_sign**(`value`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Int8/comparison.js:83](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/comparison.js#L83)
+
+Get sign of value (-1, 0, or 1)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+***
+
+### \_times()
+
+> **\_times**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/arithmetic.js:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/arithmetic.js#L37)
+
+Multiply two BrandedInt8 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### \_toBigint()
+
+> **\_toBigint**(`value`): `bigint`
+
+Defined in: [src/primitives/Int8/conversions.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/conversions.js#L15)
+
+Convert BrandedInt8 to bigint
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`bigint`
+
+***
+
+### \_toBytes()
+
+> **\_toBytes**(`value`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Int8/conversions.js:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/conversions.js#L35)
+
+Convert BrandedInt8 to bytes (two's complement)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`value`): `string`
+
+Defined in: [src/primitives/Int8/conversions.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/conversions.js#L24)
+
+Convert BrandedInt8 to hex string (two's complement)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`string`
+
+***
+
+### \_toNumber()
+
+> **\_toNumber**(`value`): `number`
+
+Defined in: [src/primitives/Int8/conversions.js:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/conversions.js#L6)
+
+Convert BrandedInt8 to number
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`number`
+
+***
+
+### \_toString()
+
+> **\_toString**(`value`): `string`
+
+Defined in: [src/primitives/Int8/conversions.js:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/conversions.js#L46)
+
+Convert BrandedInt8 to string
+
+#### Parameters
+
+##### value
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+`string`
+
+***
+
+### \_xor()
+
+> **\_xor**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/bitwise.js:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/bitwise.js#L37)
+
+Bitwise XOR
+
+#### Parameters
+
+##### a
+
+[`BrandedInt8`](#brandedint8)
+
+##### b
+
+[`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### abs()
+
+> **abs**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:106](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L106)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### and()
+
+> **and**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:150](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L150)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### bitLength()
+
+> **bitLength**(`value`): `number`
+
+Defined in: [src/primitives/Int8/index.ts:174](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L174)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`number`
+
+***
+
+### dividedBy()
+
+> **dividedBy**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:98](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L98)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int8/index.ts:114](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L114)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/from.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/from.js#L8)
+
+Create a BrandedInt8 from a number, bigint, hex string, or another BrandedInt8
+
+#### Parameters
+
+##### value
+
+`string` | `number` | `bigint` | [`BrandedInt8`](#brandedint8)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### fromBigint()
+
+> **fromBigint**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/from.js:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/from.js#L44)
+
+Create a BrandedInt8 from a bigint
+
+#### Parameters
+
+##### value
+
+`bigint`
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/from.js:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/from.js#L74)
+
+Create a BrandedInt8 from bytes (two's complement)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+single byte
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/from.js:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/from.js#L58)
+
+Create a BrandedInt8 from a hex string (two's complement)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+"0xFF" for -1, "0x80" for -128, "0x7F" for 127
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### fromNumber()
+
+> **fromNumber**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/from.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/from.js#L27)
+
+Create a BrandedInt8 from a number
+
+#### Parameters
+
+##### value
+
+`number`
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### greaterThan()
+
+> **greaterThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int8/index.ts:122](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L122)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isNegative()
+
+> **isNegative**(`value`): `boolean`
+
+Defined in: [src/primitives/Int8/index.ts:130](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L130)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isPositive()
+
+> **isPositive**(`value`): `boolean`
+
+Defined in: [src/primitives/Int8/index.ts:134](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L134)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`boolean`
+
+***
+
+### isValid()
+
+> **isValid**(`value`): `boolean`
+
+Defined in: [src/primitives/Int8/utilities.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/utilities.js#L53)
+
+Validate if number is valid Int8
+
+#### Parameters
+
+##### value
+
+`number`
+
+#### Returns
+
+`boolean`
+
+***
+
+### isZero()
+
+> **isZero**(`value`): `boolean`
+
+Defined in: [src/primitives/Int8/index.ts:126](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L126)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`boolean`
+
+***
+
+### leadingZeros()
+
+> **leadingZeros**(`value`): `number`
+
+Defined in: [src/primitives/Int8/index.ts:178](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L178)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`number`
+
+***
+
+### lessThan()
+
+> **lessThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int8/index.ts:118](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L118)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`boolean`
+
+***
+
+### maximum()
+
+> **maximum**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:142](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L142)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### minimum()
+
+> **minimum**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:138](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L138)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### minus()
+
+> **minus**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:90](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L90)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### modulo()
+
+> **modulo**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:102](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L102)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### negate()
+
+> **negate**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L110)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### not()
+
+> **not**(`value`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:162](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L162)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### or()
+
+> **or**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:154](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L154)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### plus()
+
+> **plus**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:86](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L86)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### popCount()
+
+> **popCount**(`value`): `number`
+
+Defined in: [src/primitives/Int8/index.ts:182](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L182)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`number`
+
+***
+
+### shiftLeft()
+
+> **shiftLeft**(`value`, `shift`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:166](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L166)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+##### shift
+
+`number`
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### shiftRight()
+
+> **shiftRight**(`value`, `shift`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:170](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L170)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+##### shift
+
+`number`
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### sign()
+
+> **sign**(`value`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Int8/index.ts:146](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L146)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+***
+
+### times()
+
+> **times**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L94)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)
+
+***
+
+### toBigint()
+
+> **toBigint**(`value`): `bigint`
+
+Defined in: [src/primitives/Int8/index.ts:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L69)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`bigint`
+
+***
+
+### toBytes()
+
+> **toBytes**(`value`): `Uint8Array`
+
+Defined in: [src/primitives/Int8/index.ts:77](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L77)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### toHex()
+
+> **toHex**(`value`): `string`
+
+Defined in: [src/primitives/Int8/index.ts:73](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L73)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`string`
+
+***
+
+### toNumber()
+
+> **toNumber**(`value`): `number`
+
+Defined in: [src/primitives/Int8/index.ts:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L65)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`number`
+
+***
+
+### toString()
+
+> **toString**(`value`): `string`
+
+Defined in: [src/primitives/Int8/index.ts:82](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L82)
+
+#### Parameters
+
+##### value
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+`string`
+
+***
+
+### xor()
+
+> **xor**(`a`, `b`): [`BrandedInt8`](#brandedint8)
+
+Defined in: [src/primitives/Int8/index.ts:158](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/index.ts#L158)
+
+#### Parameters
+
+##### a
+
+[`Int8Input`](#int8input)
+
+##### b
+
+[`Int8Input`](#int8input)
+
+#### Returns
+
+[`BrandedInt8`](#brandedint8)

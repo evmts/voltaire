@@ -1,0 +1,29 @@
+// @title Hash String with Keccak256
+// @description Hash a UTF-8 string using Keccak256 and get the result as hex
+
+// SNIPPET:START
+import { Hex, Keccak256 } from "@tevm/voltaire";
+
+// Hash a simple string
+const message = "Hello, World!";
+const hash = Keccak256(message);
+const hexHash = Hex.fromBytes(hash);
+
+// Hash an empty string
+const emptyHash = Keccak256("");
+const emptyHexHash = Hex.fromBytes(emptyHash);
+// SNIPPET:END
+
+// Test assertions
+import { strict as assert } from "node:assert";
+
+assert.equal(
+	hexHash,
+	"0xacaf3289d7b601cbd114fb36c4d29c85bbfd5e133f14cb355c3fd8d99367964f",
+);
+assert.equal(hash.length, 32);
+assert.equal(
+	emptyHexHash,
+	"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+);
+process.exit(0);

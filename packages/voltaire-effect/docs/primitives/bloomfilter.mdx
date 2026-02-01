@@ -1,0 +1,34 @@
+---
+title: BloomFilter
+description: Probabilistic log membership testing
+---
+
+```typescript
+import * as BloomFilter from 'voltaire-effect/primitives/BloomFilter'
+import { Effect } from 'effect'
+
+const filter = yield* BloomFilter.create(2048, 3)  // m=2048 bits, k=3 hashes
+yield* BloomFilter.add(filter, topicBytes)
+
+if (BloomFilter.contains(filter, topicBytes)) {
+  // might be in filter (possible false positive, never false negative)
+}
+```
+
+## Functions
+
+| Function | Description |
+|----------|-------------|
+| `create(m, k)` | New empty filter |
+| `fromHex(hex, m, k)` | Restore from hex |
+| `add(filter, item)` | Add item (mutates) |
+| `contains(filter, item)` | Check membership |
+| `toHex(filter)` | Serialize to hex |
+| `isEmpty(filter)` | Check if empty |
+
+## Serialization
+
+```typescript
+const hex = BloomFilter.toHex(filter)
+const restored = yield* BloomFilter.fromHex(hex, 2048, 3)
+```

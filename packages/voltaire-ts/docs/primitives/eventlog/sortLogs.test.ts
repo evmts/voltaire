@@ -1,0 +1,364 @@
+/**
+ * Tests for docs/primitives/eventlog/sortLogs.mdx
+ * Tests the code examples from the EventLog.sortLogs() documentation
+ */
+
+import { describe, expect, it } from "vitest";
+
+describe("EventLog sortLogs.mdx documentation examples", () => {
+	describe("Primary: Block Number", () => {
+		it("sorts by block number ascending (earliest blocks first)", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const logs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 18000003n,
+					logIndex: 0,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 18000001n,
+					logIndex: 0,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 18000002n,
+					logIndex: 0,
+				}),
+			];
+
+			const sorted = EventLog.sortLogs(logs);
+
+			// Result in ascending order
+			expect(sorted[0]?.blockNumber).toBe(18000001n);
+			expect(sorted[1]?.blockNumber).toBe(18000002n);
+			expect(sorted[2]?.blockNumber).toBe(18000003n);
+		});
+	});
+
+	describe("Secondary: Log Index", () => {
+		it("within same block, sorts by log index ascending", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const logs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 18000000n,
+					logIndex: 10,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 18000000n,
+					logIndex: 2,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 18000000n,
+					logIndex: 5,
+				}),
+			];
+
+			const sorted = EventLog.sortLogs(logs);
+
+			// Result in ascending order by logIndex
+			expect(sorted[0]?.logIndex).toBe(2);
+			expect(sorted[1]?.logIndex).toBe(5);
+			expect(sorted[2]?.logIndex).toBe(10);
+		});
+	});
+
+	describe("Missing Values", () => {
+		it("logs without blockNumber or logIndex treated as 0", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const logs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 100n,
+					logIndex: 5,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					// no blockNumber, no logIndex
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 50n,
+					logIndex: 2,
+				}),
+			];
+
+			const sorted = EventLog.sortLogs(logs);
+
+			// Result:
+			// 1. No blockNumber (treated as 0)
+			// 2. blockNumber: 50n, logIndex: 2
+			// 3. blockNumber: 100n, logIndex: 5
+			expect(sorted[0]?.blockNumber).toBeUndefined();
+			expect(sorted[1]?.blockNumber).toBe(50n);
+			expect(sorted[2]?.blockNumber).toBe(100n);
+		});
+	});
+
+	describe("Chronological Processing", () => {
+		it("sorts before processing in blockchain order", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const allLogs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 300n,
+					logIndex: 0,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 100n,
+					logIndex: 0,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 200n,
+					logIndex: 0,
+				}),
+			];
+
+			// Sort before processing
+			const sorted = EventLog.sortLogs(allLogs);
+
+			const processedBlocks: bigint[] = [];
+			for (const log of sorted) {
+				processedBlocks.push(log.blockNumber ?? 0n);
+			}
+
+			expect(processedBlocks).toEqual([100n, 200n, 300n]);
+		});
+	});
+
+	describe("Finding Latest/Earliest Log", () => {
+		it("finds latest and earliest logs after sorting", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const logs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 200n,
+					logIndex: 5,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 100n,
+					logIndex: 0,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 300n,
+					logIndex: 10,
+				}),
+			];
+
+			const sorted = EventLog.sortLogs(logs);
+
+			// Finding earliest
+			const earliest = sorted[0];
+			expect(earliest?.blockNumber).toBe(100n);
+
+			// Finding latest
+			const latest = sorted[sorted.length - 1];
+			expect(latest?.blockNumber).toBe(300n);
+		});
+	});
+
+	describe("Does Not Mutate Original", () => {
+		it("sort does not mutate original array", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			const logs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 103n,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 100n,
+				}),
+			];
+
+			const sorted = EventLog.sortLogs(logs);
+
+			expect(logs[0]?.blockNumber).toBe(103n); // Original unchanged
+			expect(sorted[0]?.blockNumber).toBe(100n); // Sorted result
+			expect(sorted).not.toBe(logs);
+		});
+	});
+
+	describe("Grouping by Block", () => {
+		it("groups logs by block after sorting", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			type EventLogType = ReturnType<typeof EventLog.create>;
+
+			const allLogs = [
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 100n,
+					logIndex: 0,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "11".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 200n,
+					logIndex: 0,
+				}),
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "22".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: 100n,
+					logIndex: 5,
+				}),
+			];
+
+			const sorted = EventLog.sortLogs(allLogs);
+
+			// Group by block
+			const byBlock = new Map<bigint, EventLogType[]>();
+
+			for (const log of sorted) {
+				const blockNum = log.blockNumber ?? 0n;
+				if (!byBlock.has(blockNum)) {
+					byBlock.set(blockNum, []);
+				}
+				byBlock.get(blockNum)!.push(log);
+			}
+
+			expect(byBlock.size).toBe(2);
+			expect(byBlock.get(100n)?.length).toBe(2);
+			expect(byBlock.get(200n)?.length).toBe(1);
+
+			// Block 100 logs should be sorted by logIndex
+			const block100Logs = byBlock.get(100n)!;
+			expect(block100Logs[0]?.logIndex).toBe(0);
+			expect(block100Logs[1]?.logIndex).toBe(5);
+		});
+	});
+
+	describe("Pagination", () => {
+		it("paginates sorted logs", async () => {
+			const EventLog = await import(
+				"../../../src/primitives/EventLog/index.js"
+			);
+			const Address = await import("../../../src/primitives/Address/index.js");
+			const Hash = await import("../../../src/primitives/Hash/index.js");
+
+			type EventLogType = ReturnType<typeof EventLog.create>;
+
+			function paginateLogs(
+				logs: EventLogType[],
+				page: number,
+				pageSize: number,
+			) {
+				const sorted = EventLog.sortLogs(logs);
+				const start = page * pageSize;
+				const end = start + pageSize;
+
+				return {
+					logs: sorted.slice(start, end),
+					total: sorted.length,
+					page,
+					pageSize,
+					hasMore: end < sorted.length,
+					hasLess: start > 0,
+				};
+			}
+
+			const allLogs = Array.from({ length: 5 }, (_, i) =>
+				EventLog.create({
+					address: Address.Address.zero(),
+					topics: [Hash.from("0x" + "00".repeat(32))],
+					data: new Uint8Array([]),
+					blockNumber: BigInt(100 + i),
+					logIndex: 0,
+				}),
+			);
+
+			const result = paginateLogs(allLogs, 0, 2);
+
+			expect(result.logs.length).toBe(2);
+			expect(result.total).toBe(5);
+			expect(result.hasMore).toBe(true);
+			expect(result.hasLess).toBe(false);
+
+			// Page 2
+			const result2 = paginateLogs(allLogs, 1, 2);
+			expect(result2.logs.length).toBe(2);
+			expect(result2.hasMore).toBe(true);
+			expect(result2.hasLess).toBe(true);
+		});
+	});
+});
