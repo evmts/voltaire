@@ -91,6 +91,7 @@
 		"@effect/platform": "^0.94.0",
 		"@effect/platform-node": "^0.104.0",
 		"@effect/vitest": "^0.27.0",
+		"@types/node": "^22.0.0",
 		"astro": "^5.0.0",
 		"effect": "^3.19.0",
 		"tsup": "^8.4.0",

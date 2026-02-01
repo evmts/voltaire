@@ -1,5 +1,5 @@
 // Ensure WASM is available so wasm API calls work synchronously
-import { loadWasm } from "../../../src/wasm-loader/loader.js";
+import { loadWasm } from "../../../../packages/voltaire-ts/src/wasm-loader/loader.js";
 /**
  * Executor - Bundles and executes user TypeScript code using esbuild-wasm
  *

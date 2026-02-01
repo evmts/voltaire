@@ -1,1 +1,1 @@
-../../../src/primitives/Hash/Hash.swift
+../../../voltaire-ts/src/primitives/Hash/Hash.swift

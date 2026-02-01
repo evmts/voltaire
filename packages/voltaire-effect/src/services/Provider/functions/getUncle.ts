@@ -5,6 +5,7 @@
  * @since 0.4.0
  */
 
+import { Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { ProviderService } from "../ProviderService.js";
 import {
@@ -54,7 +55,7 @@ export const getUncle = (
 			const hash =
 				typeof args.blockHash === "string"
 					? args.blockHash
-					: `0x${Buffer.from(args.blockHash).toString("hex")}`;
+					: Hex(args.blockHash);
 			return svc
 				.request<UncleBlockType | null>("eth_getUncleByBlockHashAndIndex", [
 					hash,

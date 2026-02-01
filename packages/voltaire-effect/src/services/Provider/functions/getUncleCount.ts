@@ -5,6 +5,7 @@
  * @since 0.4.0
  */
 
+import { Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { ProviderService } from "../ProviderService.js";
 import {
@@ -49,7 +50,7 @@ export const getUncleCount = (
 			const hash =
 				typeof args.blockHash === "string"
 					? args.blockHash
-					: `0x${Buffer.from(args.blockHash).toString("hex")}`;
+					: Hex(args.blockHash);
 			return svc
 				.request<string>("eth_getUncleCountByBlockHash", [hash])
 				.pipe(

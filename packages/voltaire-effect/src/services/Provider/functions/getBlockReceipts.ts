@@ -5,6 +5,7 @@
  * @since 0.4.0
  */
 
+import { Hex } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
 import { ProviderService } from "../ProviderService.js";
 import {
@@ -57,7 +58,7 @@ export const getBlockReceipts = (
 			blockId =
 				typeof args.blockHash === "string"
 					? args.blockHash
-					: `0x${Buffer.from(args.blockHash).toString("hex")}`;
+					: Hex(args.blockHash);
 		} else if ("blockNumber" in args && args.blockNumber !== undefined) {
 			blockId = `0x${args.blockNumber.toString(16)}`;
 		} else {

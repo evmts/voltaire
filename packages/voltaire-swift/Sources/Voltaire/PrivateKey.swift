@@ -1,1 +1,1 @@
-../../../src/primitives/PrivateKey/PrivateKey.swift
+../../../voltaire-ts/src/primitives/PrivateKey/PrivateKey.swift

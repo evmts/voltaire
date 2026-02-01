@@ -1,1 +1,1 @@
-../../../src/primitives/Bytes32/Bytes32.swift
+../../../voltaire-ts/src/primitives/Bytes32/Bytes32.swift

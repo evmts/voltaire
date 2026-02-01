@@ -152,7 +152,7 @@ export const deployContract = <TAbi extends Abi>(
 			WaitForTransactionReceiptError,
 			ProviderService
 		> = Effect.gen(function* () {
-			const hashHex = `0x${Buffer.from(hash).toString("hex")}` as `0x${string}`;
+			const hashHex = Hex(hash) as `0x${string}`;
 			const receipt = yield* waitForTransactionReceipt(hashHex);
 			if (!receipt.contractAddress) {
 				return yield* Effect.fail(

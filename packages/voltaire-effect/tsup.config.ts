@@ -9,8 +9,8 @@ export default defineConfig({
 		"src/native/index.ts",
 	],
 	format: ["esm"],
-	// TODO: Re-enable once type issues in services/presets are fixed
-	// Types have export mismatches with @tevm/voltaire and @effect/platform
+	// DTS disabled due to @effect/platform module resolution issues with bundler moduleResolution
+	// TODO: Fix when @effect/platform types resolve correctly
 	dts: false,
 	clean: true,
 	splitting: false,
