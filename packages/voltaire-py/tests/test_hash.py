@@ -413,3 +413,193 @@ class TestRipemd160:
         # Then RIPEMD160
         hash160 = ripemd160(sha_hash.to_bytes())
         assert len(hash160) == 20
+
+
+class TestSolidityKeccak256:
+    """Tests for Solidity-compatible keccak256(abi.encodePacked(...))."""
+
+    def test_empty_parameters(self):
+        """Empty parameters produces empty keccak256 hash."""
+        from voltaire.hash import solidity_keccak256
+        h = solidity_keccak256([], [])
+        # keccak256 of empty data
+        expected = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+        assert h.to_hex() == expected
+
+    def test_single_uint8(self):
+        """Single uint8 value."""
+        from voltaire.hash import solidity_keccak256
+        h = solidity_keccak256(["uint8"], [0x42])
+        # keccak256(0x42) - single byte
+        assert len(h.to_bytes()) == 32
+
+    def test_multiple_uint_types(self):
+        """Multiple uint types concatenated compactly."""
+        from voltaire.hash import solidity_keccak256
+        # uint8 (1 byte) + uint16 (2 bytes) = 3 bytes total packed
+        h = solidity_keccak256(["uint8", "uint16"], [0x12, 0x3456])
+        # Should hash: 0x123456
+        assert len(h.to_bytes()) == 32
+
+    def test_address_type(self):
+        """Address type (20 bytes)."""
+        from voltaire.hash import solidity_keccak256
+        addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+        h = solidity_keccak256(["address"], [addr])
+        assert len(h.to_bytes()) == 32
+
+    def test_address_and_uint256(self):
+        """Address + uint256 combination."""
+        from voltaire.hash import solidity_keccak256
+        addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+        amount = 1000
+        h = solidity_keccak256(["address", "uint256"], [addr, amount])
+        assert len(h.to_bytes()) == 32
+
+    def test_string_type(self):
+        """String type (UTF-8 encoded, no length prefix)."""
+        from voltaire.hash import solidity_keccak256
+        h = solidity_keccak256(["string"], ["hello"])
+        # keccak256(0x68656c6c6f) - "hello" in UTF-8
+        expected = keccak256("hello")
+        assert h == expected
+
+    def test_bytes_type(self):
+        """Dynamic bytes type."""
+        from voltaire.hash import solidity_keccak256
+        h = solidity_keccak256(["bytes"], [b"\x01\x02\x03"])
+        expected = keccak256(b"\x01\x02\x03")
+        assert h == expected
+
+    def test_bytes32_type(self):
+        """Fixed bytes32 type."""
+        from voltaire.hash import solidity_keccak256
+        data = "0x" + "ff" * 32
+        h = solidity_keccak256(["bytes32"], [data])
+        assert len(h.to_bytes()) == 32
+
+    def test_bool_type(self):
+        """Bool type (1 byte)."""
+        from voltaire.hash import solidity_keccak256
+        h_true = solidity_keccak256(["bool"], [True])
+        h_false = solidity_keccak256(["bool"], [False])
+        assert h_true != h_false
+
+    def test_matches_manual_encode_packed(self):
+        """Result matches Abi.encode_packed + keccak256."""
+        from voltaire.hash import solidity_keccak256
+        from voltaire.abi import Abi
+
+        types = ["uint8", "address", "uint256"]
+        values = [0x42, "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3", 1000]
+
+        # Manual approach
+        packed = Abi.encode_packed(types, values)
+        expected = keccak256(packed)
+
+        # Convenience function
+        h = solidity_keccak256(types, values)
+
+        assert h == expected
+
+    def test_create2_address_components(self):
+        """CREATE2 address derivation pattern."""
+        from voltaire.hash import solidity_keccak256
+
+        prefix = 0xff
+        deployer = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+        salt = 0x0000000000000000000000000000000000000000000000000000000000000001
+        bytecode_hash = "0x" + "aa" * 32
+
+        h = solidity_keccak256(
+            ["uint8", "address", "uint256", "bytes32"],
+            [prefix, deployer, salt, bytecode_hash]
+        )
+        assert len(h.to_bytes()) == 32
+
+    def test_deterministic(self):
+        """Same inputs produce same hash."""
+        from voltaire.hash import solidity_keccak256
+        h1 = solidity_keccak256(["uint256"], [42])
+        h2 = solidity_keccak256(["uint256"], [42])
+        assert h1 == h2
+
+    def test_different_values_different_hashes(self):
+        """Different values produce different hashes."""
+        from voltaire.hash import solidity_keccak256
+        h1 = solidity_keccak256(["uint256"], [1])
+        h2 = solidity_keccak256(["uint256"], [2])
+        assert h1 != h2
+
+    def test_type_value_count_mismatch(self):
+        """Type/value count mismatch raises error."""
+        from voltaire.hash import solidity_keccak256
+        from voltaire.errors import InvalidInputError
+
+        with pytest.raises(InvalidInputError):
+            solidity_keccak256(["uint256", "address"], [42])
+
+
+class TestSoliditySha256:
+    """Tests for Solidity-compatible sha256(abi.encodePacked(...))."""
+
+    def test_empty_parameters(self):
+        """Empty parameters produces empty sha256 hash."""
+        from voltaire.hash import solidity_sha256
+        h = solidity_sha256([], [])
+        # sha256 of empty data
+        expected = "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        assert h.to_hex() == expected
+
+    def test_single_uint8(self):
+        """Single uint8 value."""
+        from voltaire.hash import solidity_sha256
+        h = solidity_sha256(["uint8"], [0x42])
+        assert len(h.to_bytes()) == 32
+
+    def test_address_and_uint256(self):
+        """Address + uint256 combination."""
+        from voltaire.hash import solidity_sha256
+        addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+        amount = 1000
+        h = solidity_sha256(["address", "uint256"], [addr, amount])
+        assert len(h.to_bytes()) == 32
+
+    def test_string_type(self):
+        """String type."""
+        from voltaire.hash import solidity_sha256
+        h = solidity_sha256(["string"], ["hello"])
+        expected = sha256("hello")
+        assert h == expected
+
+    def test_matches_manual_encode_packed(self):
+        """Result matches Abi.encode_packed + sha256."""
+        from voltaire.hash import solidity_sha256
+        from voltaire.abi import Abi
+
+        types = ["uint8", "address"]
+        values = [0x42, "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"]
+
+        # Manual approach
+        packed = Abi.encode_packed(types, values)
+        expected = sha256(packed)
+
+        # Convenience function
+        h = solidity_sha256(types, values)
+
+        assert h == expected
+
+    def test_deterministic(self):
+        """Same inputs produce same hash."""
+        from voltaire.hash import solidity_sha256
+        h1 = solidity_sha256(["uint256"], [42])
+        h2 = solidity_sha256(["uint256"], [42])
+        assert h1 == h2
+
+    def test_type_value_count_mismatch(self):
+        """Type/value count mismatch raises error."""
+        from voltaire.hash import solidity_sha256
+        from voltaire.errors import InvalidInputError
+
+        with pytest.raises(InvalidInputError):
+            solidity_sha256(["uint256", "address"], [42])

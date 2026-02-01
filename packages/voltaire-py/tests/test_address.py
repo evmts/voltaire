@@ -2,7 +2,7 @@
 
 import pytest
 from voltaire.address import Address
-from voltaire.errors import InvalidHexError, InvalidLengthError
+from voltaire.errors import InvalidHexError, InvalidLengthError, InvalidValueError
 
 
 class TestFromHex:
@@ -263,3 +263,171 @@ class TestRepr:
         """str returns checksummed address."""
         addr = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
         assert str(addr) == "0xA0Cf798816D4b9b9866b5330EEa46a18382f251e"
+
+
+class TestCalculateCreateAddress:
+    """Tests for Address.calculate_create_address (CREATE opcode)."""
+
+    def test_known_vector_nonce_0(self):
+        """Test known CREATE address for nonce 0."""
+        # From Zig test vectors
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        contract = Address.calculate_create_address(deployer, 0)
+        expected = Address.from_hex("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d")
+        assert contract == expected
+
+    def test_known_vector_nonce_1(self):
+        """Test known CREATE address for nonce 1."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        contract = Address.calculate_create_address(deployer, 1)
+        expected = Address.from_hex("0x343c43a37d37dff08ae8c4a11544c718abb4fcf8")
+        assert contract == expected
+
+    def test_known_vector_nonce_2(self):
+        """Test known CREATE address for nonce 2."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        contract = Address.calculate_create_address(deployer, 2)
+        expected = Address.from_hex("0xf778b86fa74e846c4f0a1fbd1335fe81c00a0c91")
+        assert contract == expected
+
+    def test_known_vector_nonce_3(self):
+        """Test known CREATE address for nonce 3."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        contract = Address.calculate_create_address(deployer, 3)
+        expected = Address.from_hex("0xfffd933a0bc612844eaf0c6fe3e5b8e9b6c1d19c")
+        assert contract == expected
+
+    def test_different_nonces_produce_different_addresses(self):
+        """Different nonces produce different addresses."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        addr0 = Address.calculate_create_address(deployer, 0)
+        addr1 = Address.calculate_create_address(deployer, 1)
+        assert addr0 != addr1
+
+    def test_different_senders_produce_different_addresses(self):
+        """Different senders produce different addresses."""
+        sender1 = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        sender2 = Address.from_hex("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
+        addr1 = Address.calculate_create_address(sender1, 0)
+        addr2 = Address.calculate_create_address(sender2, 0)
+        assert addr1 != addr2
+
+    def test_deterministic(self):
+        """Same inputs produce same outputs."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        addr1 = Address.calculate_create_address(deployer, 42)
+        addr2 = Address.calculate_create_address(deployer, 42)
+        assert addr1 == addr2
+
+    def test_zero_address_sender(self):
+        """Zero address as sender works."""
+        sender = Address.zero()
+        contract = Address.calculate_create_address(sender, 0)
+        assert contract.to_bytes() is not None
+        assert len(contract.to_bytes()) == 20
+
+    def test_large_nonce(self):
+        """Large nonce values work."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        contract = Address.calculate_create_address(deployer, 1000000)
+        assert len(contract.to_bytes()) == 20
+
+    def test_max_u64_nonce(self):
+        """Maximum u64 nonce works."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        contract = Address.calculate_create_address(deployer, 0xFFFFFFFFFFFFFFFF)
+        assert len(contract.to_bytes()) == 20
+
+    def test_negative_nonce_raises(self):
+        """Negative nonce raises InvalidValueError."""
+        deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        with pytest.raises(InvalidValueError):
+            Address.calculate_create_address(deployer, -1)
+
+
+class TestCalculateCreate2Address:
+    """Tests for Address.calculate_create2_address (CREATE2 opcode)."""
+
+    def test_known_vector_zero_inputs(self):
+        """Test CREATE2 with zero address, zero salt, empty init code."""
+        # From Zig test: deployer=0x00..00, salt=0, init_code=empty
+        deployer = Address.zero()
+        salt = bytes(32)  # 32 zero bytes
+        init_code = b""
+
+        contract = Address.calculate_create2_address(deployer, salt, init_code)
+        expected = Address.from_hex("0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38")
+        assert contract == expected
+
+    def test_deterministic(self):
+        """Same inputs produce same outputs."""
+        factory = Address.from_hex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+        salt = b"\x12\x34\x56\x78" + bytes(28)
+        init_code = b"\x60\x80\x60\x40\x52"
+
+        addr1 = Address.calculate_create2_address(factory, salt, init_code)
+        addr2 = Address.calculate_create2_address(factory, salt, init_code)
+        assert addr1 == addr2
+
+    def test_different_salts_produce_different_addresses(self):
+        """Different salts produce different addresses."""
+        factory = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        init_code = b"\x60\x00"
+
+        salt1 = b"\x01" + bytes(31)
+        salt2 = b"\x02" + bytes(31)
+
+        addr1 = Address.calculate_create2_address(factory, salt1, init_code)
+        addr2 = Address.calculate_create2_address(factory, salt2, init_code)
+        assert addr1 != addr2
+
+    def test_different_init_code_produces_different_addresses(self):
+        """Different init code produces different addresses."""
+        factory = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        salt = bytes(32)
+
+        init_code1 = b"\x60\x00"
+        init_code2 = b"\x60\x01"
+
+        addr1 = Address.calculate_create2_address(factory, salt, init_code1)
+        addr2 = Address.calculate_create2_address(factory, salt, init_code2)
+        assert addr1 != addr2
+
+    def test_different_senders_produce_different_addresses(self):
+        """Different senders produce different addresses."""
+        sender1 = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+        sender2 = Address.from_hex("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
+        salt = bytes(32)
+        init_code = b""
+
+        addr1 = Address.calculate_create2_address(sender1, salt, init_code)
+        addr2 = Address.calculate_create2_address(sender2, salt, init_code)
+        assert addr1 != addr2
+
+    def test_with_bytecode(self):
+        """Test with actual contract bytecode."""
+        factory = Address.zero()
+        salt = bytes(32)
+        # Simple EVM bytecode
+        init_code = bytes.fromhex("6080604052")
+
+        contract = Address.calculate_create2_address(factory, salt, init_code)
+        assert len(contract.to_bytes()) == 20
+
+    def test_invalid_salt_length_short(self):
+        """Salt shorter than 32 bytes raises InvalidLengthError."""
+        factory = Address.zero()
+        salt = bytes(31)  # Too short
+        init_code = b""
+
+        with pytest.raises(InvalidLengthError):
+            Address.calculate_create2_address(factory, salt, init_code)
+
+    def test_invalid_salt_length_long(self):
+        """Salt longer than 32 bytes raises InvalidLengthError."""
+        factory = Address.zero()
+        salt = bytes(33)  # Too long
+        init_code = b""
+
+        with pytest.raises(InvalidLengthError):
+            Address.calculate_create2_address(factory, salt, init_code)
