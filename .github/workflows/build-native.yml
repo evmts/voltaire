@@ -92,7 +92,7 @@ jobs:
       - name: Build libwally-core dependency
         shell: bash
         run: |
-          cd lib/libwally-core
+          cd packages/voltaire-zig/lib/libwally-core
           zig build install
 
       - name: Build native library
