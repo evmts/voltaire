@@ -7,7 +7,9 @@
     <a href="https://voltaire.tevm.sh">
       <img width="512" height="512" alt="voltaire-logo" src="https://github.com/user-attachments/assets/409b49cb-113b-4b76-989d-762f6294e26a" />
     </a>
-  <sup>
+  <br/>
+  <br/>
+  <p>
     <a href="https://www.npmjs.com/package/@tevm/voltaire">
        <img src="https://img.shields.io/npm/v/@tevm/voltaire.svg" alt="npm version" />
     </a>
@@ -23,7 +25,7 @@
     <a href="https://github.com/evmts/voltaire/releases">
       <img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Status: Beta" />
     </a>
-  </sup>
+  </p>
   <br/>
   <a href="https://playground.tevm.sh"><strong>Try it now in live playground →</strong></a>
   <strong>For application development, we recommend <a href="https://voltaire-effect.tevm.sh">voltaire-effect</a> — Effect.ts integration with typed errors, services, and composable operations.</strong>
