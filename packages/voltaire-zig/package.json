@@ -1,40 +1,40 @@
 {
-	"name": "@tevm/voltaire-zig",
-	"version": "0.2.28",
-	"private": false,
-	"description": "Zig core for Voltaire - Ethereum primitives, cryptography, and precompiles",
-	"keywords": [
-		"ethereum",
-		"zig",
-		"primitives",
-		"crypto",
-		"wasm",
-		"ffi"
-	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/evmts/voltaire.git",
-		"directory": "packages/voltaire-zig"
-	},
-	"license": "MIT",
-	"type": "module",
-	"main": "wasm/primitives.wasm",
-	"files": [
-		"wasm",
-		"src",
-		"lib",
-		"build.zig",
-		"build.zig.zon"
-	],
-	"publishConfig": {
-		"access": "public"
-	},
-	"scripts": {
-		"build": "zig build",
-		"build:wasm": "zig build build-ts-wasm && zig build build-ts-wasm-fast",
-		"test": "zig build test",
-		"format": "zig build format",
-		"format:check": "zig build format-check",
-		"bench": "zig build bench -Dwith-benches=true"
-	}
+  "name": "@tevm/zig",
+  "version": "0.2.28",
+  "private": false,
+  "description": "Zig core for Voltaire - Ethereum primitives, cryptography, and precompiles",
+  "keywords": [
+    "ethereum",
+    "zig",
+    "primitives",
+    "crypto",
+    "wasm",
+    "ffi"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evmts/voltaire.git",
+    "directory": "packages/voltaire-zig"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "wasm/primitives.wasm",
+  "files": [
+    "wasm",
+    "src",
+    "lib",
+    "build.zig",
+    "build.zig.zon"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "zig build",
+    "build:wasm": "zig build build-ts-wasm && zig build build-ts-wasm-fast",
+    "test": "zig build test",
+    "format": "zig build format",
+    "format:check": "zig build format-check",
+    "bench": "zig build bench -Dwith-benches=true"
+  }
 }
