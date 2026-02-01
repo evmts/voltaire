@@ -80,7 +80,7 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, t
     if (is_wasm) {
         const filter_wasm_archive = b.addSystemCommand(&[_][]const u8{
             "python3",
-            "packages/voltaire-zig/scripts/filter-wasm-archive.py",
+            "scripts/filter-wasm-archive.py",
             "target/wasm32-unknown-unknown/release/libcrypto_wrappers.a",
         });
         filter_wasm_archive.step.dependOn(&cargo_build.step);
