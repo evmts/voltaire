@@ -14,12 +14,12 @@ import * as TraceConfig from "./index.js";
 
 // Pre-created configs
 const defaultConfig = TraceConfig.from();
-const minimalConfig = TraceConfig.disableAll();
-const callTracerConfig = TraceConfig.withTracer(
+const _minimalConfig = TraceConfig.disableAll();
+const _callTracerConfig = TraceConfig.withTracer(
 	TraceConfig.from(),
 	"callTracer",
 );
-const prestateTracerConfig = TraceConfig.withTracer(
+const _prestateTracerConfig = TraceConfig.withTracer(
 	TraceConfig.from(),
 	"prestateTracer",
 	{ diffMode: true },

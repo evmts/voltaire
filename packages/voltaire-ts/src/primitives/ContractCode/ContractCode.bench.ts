@@ -32,7 +32,7 @@ const codeWithMetadata =
 const codeWithoutMetadata = "0x608060405234801561001057600080fd5b00";
 
 // Bytes versions
-const simpleBytes = new Uint8Array([
+const _simpleBytes = new Uint8Array([
 	0x60, 0x80, 0x60, 0x40, 0x52, 0x60, 0x00, 0x80, 0xfd, 0x00,
 ]);
 

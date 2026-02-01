@@ -4,7 +4,6 @@
  */
 
 import { bench, run } from "mitata";
-import { encodeFunctionData as viemEncodeFunctionData } from "viem";
 import * as CallData from "./index.js";
 
 // ============================================================================
@@ -42,7 +41,7 @@ const emptyCalldata = "0x";
 const transferInstance = CallData.from(transferCalldata);
 const approveInstance = CallData.from(approveCalldata);
 const swapInstance = CallData.from(swapCalldata);
-const minimalInstance = CallData.from(minimalCalldata);
+const _minimalInstance = CallData.from(minimalCalldata);
 
 // Selector bytes
 const transferSelectorBytes = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]);

@@ -1,9 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vitest";
-import {
-	InvalidPrivateKeyError,
-	InvalidRangeError,
-} from "../../primitives/errors/index.js";
+import { InvalidRangeError } from "../../primitives/errors/index.js";
 import { PrivateKey } from "../../primitives/PrivateKey/index.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 

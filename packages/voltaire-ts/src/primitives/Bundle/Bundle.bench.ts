@@ -6,8 +6,8 @@
 
 import { bench, run } from "mitata";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
-import * as Bundle from "./index.js";
 import type { BundleType } from "./BundleType.js";
+import * as Bundle from "./index.js";
 
 // ============================================================================
 // Test Data - Realistic transaction bundles

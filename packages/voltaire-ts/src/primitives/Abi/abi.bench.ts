@@ -8,14 +8,14 @@ import { bench, run } from "mitata";
 import {
 	decodeAbiParameters,
 	encodeAbiParameters,
-	encodeFunctionData as viemEncodeFunctionData,
 	decodeFunctionData as viemDecodeFunctionData,
 	decodeFunctionResult as viemDecodeFunctionResult,
+	encodeFunctionData as viemEncodeFunctionData,
 	encodeFunctionResult as viemEncodeFunctionResult,
 } from "viem";
 import { Address } from "../Address/index.js";
-import * as Abi from "./index.js";
 import type { FunctionType } from "./function/FunctionType.js";
+import * as Abi from "./index.js";
 
 // ============================================================================
 // Test Data
@@ -46,7 +46,7 @@ const balanceOfAbi = [
 	},
 ] as const;
 
-const complexAbi = [
+const _complexAbi = [
 	{
 		type: "function",
 		name: "processOrder",

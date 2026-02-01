@@ -26,7 +26,7 @@ const rpcBlock = {
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 	receiptsRoot:
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-	logsBloom: "0x" + "00".repeat(256),
+	logsBloom: `0x${"00".repeat(256)}`,
 	difficulty: "0x0",
 	number: "0x1234567",
 	gasLimit: "0x1c9c380",
@@ -136,7 +136,7 @@ const rpcHeader = {
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 	receiptsRoot:
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-	logsBloom: "0x" + "00".repeat(256),
+	logsBloom: `0x${"00".repeat(256)}`,
 	difficulty: "0x0",
 	number: "0x1234567",
 	gasLimit: "0x1c9c380",
@@ -173,7 +173,7 @@ const preLondonHeader = {
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 	receiptsRoot:
 		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-	logsBloom: "0x" + "00".repeat(256),
+	logsBloom: `0x${"00".repeat(256)}`,
 	difficulty: "0x1000000",
 	number: "0x100000",
 	gasLimit: "0x1c9c380",

@@ -14,11 +14,11 @@ const highFee = 100000000000n; // 100 gwei
 
 // String inputs
 const feeString = "30000000000";
-const gweiString = "30";
+const _gweiString = "30";
 
 // Pre-created fees for conversion benchmarks
-const fee1 = BaseFeePerGas.from(mediumFee);
-const fee2 = BaseFeePerGas.from(highFee);
+const _fee1 = BaseFeePerGas.from(mediumFee);
+const _fee2 = BaseFeePerGas.from(highFee);
 
 // ============================================================================
 // from (constructor)

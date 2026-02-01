@@ -10,17 +10,15 @@ import { bench, run } from "mitata";
 
 // viem comparison
 import { publicKeyToAddress } from "viem/utils";
-
 // Use dist build to avoid source module issues
 import * as PublicKey from "../../../dist/primitives/PublicKey/index.js";
-import * as PrivateKey from "../../../dist/primitives/PrivateKey/index.js";
 
 // ============================================================================
 // Test Data
 // ============================================================================
 
 // Standard test private key for deriving public key
-const TEST_PRIVATE_KEY =
+const _TEST_PRIVATE_KEY =
 	"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 const TEST_PRIVATE_KEY_BYTES = new Uint8Array([
@@ -80,7 +78,7 @@ const TEST_PUBLIC_KEY_BYTES = new Uint8Array([
 ]);
 
 // Pre-created instances
-const voltairePublicKey = PublicKey.from(TEST_PUBLIC_KEY_HEX);
+const _voltairePublicKey = PublicKey.from(TEST_PUBLIC_KEY_HEX);
 
 // ============================================================================
 // Construction: from (hex string)
@@ -121,7 +119,7 @@ bench("PublicKey.toAddress - voltaire", () => {
 });
 
 // viem's publicKeyToAddress expects 0x04 prefixed key
-const viemPubKey = ("0x04" + TEST_PUBLIC_KEY_HEX.slice(2)) as `0x${string}`;
+const viemPubKey = `0x04${TEST_PUBLIC_KEY_HEX.slice(2)}` as `0x${string}`;
 
 bench("publicKeyToAddress - viem", () => {
 	publicKeyToAddress(viemPubKey);

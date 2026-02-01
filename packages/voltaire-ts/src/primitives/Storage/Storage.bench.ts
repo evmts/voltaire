@@ -35,7 +35,7 @@ const customNamespace2 = "myapp.storage.Marketplace";
 const customNamespace3 = "myapp.storage.Governance.Voting.v2";
 
 // Unicode/special character namespaces (edge cases)
-const unicodeNamespace = "storage.namespace.test123";
+const _unicodeNamespace = "storage.namespace.test123";
 const longNumericNamespace = "storage.slot.0x1234567890abcdef";
 
 // ============================================================================

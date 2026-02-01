@@ -9,13 +9,13 @@ import * as RelayData from "./index.js";
 // Test data - realistic relay configurations
 const flashbotsRelay = {
 	name: "Flashbots",
-	pubkey: "0x" + "ab".repeat(48),
+	pubkey: `0x${"ab".repeat(48)}`,
 	url: "https://relay.flashbots.net",
 };
 
 const bloxrouteRelay = {
 	name: "bloXroute Max Profit",
-	pubkey: "0x" + "cd".repeat(48),
+	pubkey: `0x${"cd".repeat(48)}`,
 	url: "https://relay.bloxroute.com",
 };
 

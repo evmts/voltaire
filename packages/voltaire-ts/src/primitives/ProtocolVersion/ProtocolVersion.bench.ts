@@ -19,10 +19,10 @@ const ETH_68_STR = "eth/68";
 const SNAP_1_STR = "snap/1";
 
 // Pre-created versions
-const eth66 = ProtocolVersion.from(ETH_66_STR);
-const eth67 = ProtocolVersion.from(ETH_67_STR);
-const eth68 = ProtocolVersion.from(ETH_68_STR);
-const snap1 = ProtocolVersion.from(SNAP_1_STR);
+const _eth66 = ProtocolVersion.from(ETH_66_STR);
+const _eth67 = ProtocolVersion.from(ETH_67_STR);
+const _eth68 = ProtocolVersion.from(ETH_68_STR);
+const _snap1 = ProtocolVersion.from(SNAP_1_STR);
 
 // ============================================================================
 // from benchmarks (creation)

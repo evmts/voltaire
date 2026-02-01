@@ -10,7 +10,7 @@ import * as Ens from "./index.js";
 // Test data
 const simpleName = "vitalik.eth";
 const complexName = "sub.domain.example.eth";
-const unicodeName = "brantly.eth";
+const _unicodeName = "brantly.eth";
 const longName = "this.is.a.very.long.subdomain.chain.example.eth";
 
 // Pre-normalized names for namehash benchmarks

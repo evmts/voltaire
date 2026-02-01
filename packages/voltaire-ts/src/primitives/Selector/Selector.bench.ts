@@ -8,14 +8,13 @@
  * - ethers (reference)
  */
 
+// ethers comparison
+import { id as ethersId } from "ethers";
 import { bench, run } from "mitata";
-import * as Selector from "./index.js";
 
 // viem comparison
 import { toFunctionSelector } from "viem";
-
-// ethers comparison
-import { id as ethersId } from "ethers";
+import * as Selector from "./index.js";
 
 // ============================================================================
 // Test Data

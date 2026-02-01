@@ -46,7 +46,7 @@ const RANDOM_TOPIC = hexToHash(
 
 // Test log topics
 const transferLogTopics = [TRANSFER_TOPIC, FROM_TOPIC, TO_TOPIC] as HashType[];
-const swapLogTopics = [
+const _swapLogTopics = [
 	SWAP_TOPIC,
 	FROM_TOPIC,
 	TO_TOPIC,

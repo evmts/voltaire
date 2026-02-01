@@ -21,7 +21,7 @@ const publicKey1 = Bls12381.derivePublicKey(privateKey1);
 const publicKey2 = Bls12381.derivePublicKey(privateKey2);
 
 const message = new TextEncoder().encode("Hello, Ethereum Consensus!");
-const message2 = new TextEncoder().encode("Different message for testing");
+const _message2 = new TextEncoder().encode("Different message for testing");
 
 // Pre-compute signatures for verification benchmarks
 const signature1 = Bls12381.sign(message, privateKey1);

@@ -8,18 +8,15 @@
  * - ethers (reference)
  */
 
-import { bench, run } from "mitata";
-import * as Signature from "./index.js";
-
-// voltaire-effect
-import * as SignatureEffect from "../../../voltaire-effect/src/primitives/Signature/index.js";
 import * as Effect from "effect/Effect";
-
-// viem comparison
-import { parseSignature, serializeSignature } from "viem";
-
 // ethers comparison
 import { Signature as EthersSignature } from "ethers";
+import { bench, run } from "mitata";
+// viem comparison
+import { parseSignature, serializeSignature } from "viem";
+// voltaire-effect
+import * as SignatureEffect from "../../../voltaire-effect/src/primitives/Signature/index.js";
+import * as Signature from "./index.js";
 
 // =============================================================================
 // Test Data

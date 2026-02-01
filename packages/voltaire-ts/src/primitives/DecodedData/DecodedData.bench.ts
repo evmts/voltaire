@@ -52,12 +52,12 @@ const emptyValues = [] as const;
 const emptyTypes = [] as const;
 
 // Pre-created instances
-const singleInstance = DecodedData.from(singleValue, singleTypes);
+const _singleInstance = DecodedData.from(singleValue, singleTypes);
 const multipleInstance = DecodedData.from(multipleValues, multipleTypes);
-const arrayInstance = DecodedData.from(arrayValues, arrayTypes);
-const stringInstance = DecodedData.from(stringValues, stringTypes);
-const largeInstance = DecodedData.from(largeValues, largeTypes);
-const emptyInstance = DecodedData.from(emptyValues, emptyTypes);
+const _arrayInstance = DecodedData.from(arrayValues, arrayTypes);
+const _stringInstance = DecodedData.from(stringValues, stringTypes);
+const _largeInstance = DecodedData.from(largeValues, largeTypes);
+const _emptyInstance = DecodedData.from(emptyValues, emptyTypes);
 
 // ============================================================================
 // DecodedData.from - construction

@@ -195,10 +195,7 @@ export function blake2b(data: Uint8Array): Uint8Array;
  * @param outputLength - Output length in bytes (1-64)
  * @returns BLAKE2b hash of specified length
  */
-export function blake2Hash(
-	data: Uint8Array,
-	outputLength: number,
-): Uint8Array;
+export function blake2Hash(data: Uint8Array, outputLength: number): Uint8Array;
 
 /**
  * Compute Solidity-style Keccak-256 hash of tightly packed data

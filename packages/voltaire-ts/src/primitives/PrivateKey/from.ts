@@ -1,9 +1,9 @@
+import { isValidPrivateKey } from "../../crypto/Secp256k1/isValidPrivateKey.js";
 import {
 	InvalidFormatError,
 	InvalidLengthError,
 	InvalidRangeError,
 } from "../errors/ValidationError.js";
-import { isValidPrivateKey } from "../../crypto/Secp256k1/isValidPrivateKey.js";
 import type { PrivateKeyType } from "./PrivateKeyType.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;

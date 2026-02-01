@@ -7,12 +7,12 @@ import { bench, run } from "mitata";
 import * as BuilderBid from "./index.js";
 
 // Test data - realistic builder bid
-const parentHash = "0x" + "ab".repeat(32);
-const blockHash = "0x" + "cd".repeat(32);
-const builderPubkey = "0x" + "11".repeat(48);
-const proposerPubkey = "0x" + "22".repeat(48);
-const proposerFeeRecipient = "0x" + "33".repeat(20);
-const signature = "0x" + "44".repeat(96);
+const parentHash = `0x${"ab".repeat(32)}`;
+const blockHash = `0x${"cd".repeat(32)}`;
+const builderPubkey = `0x${"11".repeat(48)}`;
+const proposerPubkey = `0x${"22".repeat(48)}`;
+const proposerFeeRecipient = `0x${"33".repeat(20)}`;
+const signature = `0x${"44".repeat(96)}`;
 
 const bidInputHex = {
 	slot: 1000000n,

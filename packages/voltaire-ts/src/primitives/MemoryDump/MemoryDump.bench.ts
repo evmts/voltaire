@@ -40,7 +40,7 @@ for (let i = 0; i < 4096; i++) {
 const smallDump = MemoryDump.from(smallMemory);
 const mediumDump = MemoryDump.from(mediumMemory);
 const largeDump = MemoryDump.from(largeMemory);
-const veryLargeDump = MemoryDump.from(veryLargeMemory);
+const _veryLargeDump = MemoryDump.from(veryLargeMemory);
 
 // ============================================================================
 // from benchmarks (creation)

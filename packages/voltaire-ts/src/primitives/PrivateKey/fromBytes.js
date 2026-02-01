@@ -1,5 +1,5 @@
-import { InvalidLengthError, InvalidRangeError } from "../errors/index.js";
 import { isValidPrivateKey } from "../../crypto/Secp256k1/isValidPrivateKey.js";
+import { InvalidLengthError, InvalidRangeError } from "../errors/index.js";
 
 /**
  * Create PrivateKey from raw bytes

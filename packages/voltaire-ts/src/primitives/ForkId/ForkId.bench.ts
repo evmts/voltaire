@@ -40,10 +40,10 @@ const SEPOLIA_CANCUN = {
 };
 
 // Pre-created ForkIds
-const cancunFork = ForkId.from(CANCUN_FORK_ID);
-const shanghaiFork = ForkId.from(SHANGHAI_FORK_ID);
-const parisFork = ForkId.from(PARIS_FORK_ID);
-const londonFork = ForkId.from(LONDON_FORK_ID);
+const _cancunFork = ForkId.from(CANCUN_FORK_ID);
+const _shanghaiFork = ForkId.from(SHANGHAI_FORK_ID);
+const _parisFork = ForkId.from(PARIS_FORK_ID);
+const _londonFork = ForkId.from(LONDON_FORK_ID);
 
 // ============================================================================
 // from benchmarks (creation)

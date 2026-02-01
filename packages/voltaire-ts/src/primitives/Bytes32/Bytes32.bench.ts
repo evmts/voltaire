@@ -7,7 +7,6 @@ import { bench, run } from "mitata";
 import {
 	bytesToHex as viemBytesToHex,
 	hexToBytes as viemHexToBytes,
-	isBytes as viemIsBytes,
 } from "viem";
 import { Bytes32 } from "./index.js";
 

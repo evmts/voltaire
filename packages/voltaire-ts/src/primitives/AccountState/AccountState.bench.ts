@@ -6,9 +6,8 @@
  */
 
 import { bench, run } from "mitata";
-import { from } from "./from.js";
 import { equals } from "./equals.js";
-import type { AccountStateType } from "./AccountStateType.js";
+import { from } from "./from.js";
 
 // ============================================================================
 // Test Data - Realistic account states

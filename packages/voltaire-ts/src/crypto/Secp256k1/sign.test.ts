@@ -3,7 +3,6 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
 import {
 	InvalidLengthError,
-	InvalidPrivateKeyError,
 	InvalidRangeError,
 } from "../../primitives/errors/index.js";
 import { Hash } from "../../primitives/Hash/index.js";

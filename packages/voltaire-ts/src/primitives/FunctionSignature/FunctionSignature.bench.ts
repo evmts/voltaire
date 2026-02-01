@@ -27,7 +27,7 @@ const PERMIT_SIG =
 
 // Pre-computed selectors for from benchmarks
 const TRANSFER_SELECTOR = "0xa9059cbb";
-const APPROVE_SELECTOR = "0x095ea7b3";
+const _APPROVE_SELECTOR = "0x095ea7b3";
 
 // Pre-created signatures
 const transferSig = FunctionSignature.fromSignature(TRANSFER_SIG);

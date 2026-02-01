@@ -12,12 +12,12 @@ import * as Int256 from "./index.js";
 // Test Data
 // ============================================================================
 
-const MAX = Int256.MAX;
-const MIN = Int256.MIN;
+const _MAX = Int256.MAX;
+const _MIN = Int256.MIN;
 const LARGE_POS = Int256.from(2n ** 200n);
 const LARGE_NEG = Int256.from(-(2n ** 200n));
 const MEDIUM_POS = Int256.from(1n << 128n);
-const MEDIUM_NEG = Int256.from(-(1n << 128n));
+const _MEDIUM_NEG = Int256.from(-(1n << 128n));
 const SMALL_POS = Int256.from(100n);
 const SMALL_NEG = Int256.from(-100n);
 

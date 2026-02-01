@@ -15,8 +15,8 @@ const enodeSame =
 	"enode://abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123def456abc123de@192.168.1.1:30303";
 
 // Pre-created peer IDs
-const peerId1 = PeerId.from(enode1);
-const peerId2 = PeerId.from(enode2);
+const _peerId1 = PeerId.from(enode1);
+const _peerId2 = PeerId.from(enode2);
 
 // ============================================================================
 // from (constructor)
@@ -67,7 +67,7 @@ await run();
 // ============================================================================
 
 bench("PeerId workflow - from + parse - voltaire", () => {
-	const peer = PeerId.from(enode1);
+	const _peer = PeerId.from(enode1);
 	PeerId.parse(enode1);
 });
 

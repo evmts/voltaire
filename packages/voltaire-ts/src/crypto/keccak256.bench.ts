@@ -7,8 +7,8 @@ import { keccak256 as ethersKeccak256 } from "ethers";
 import { bench, run } from "mitata";
 import { keccak256 as viemKeccak256 } from "viem";
 import { Keccak256 } from "./Keccak256/index.js";
-import { Keccak256Wasm } from "./keccak256.wasm.js";
 import * as Keccak256Native from "./Keccak256/Keccak256.native.js";
+import { Keccak256Wasm } from "./keccak256.wasm.js";
 
 // Initialize WASM
 await Keccak256Wasm.init();

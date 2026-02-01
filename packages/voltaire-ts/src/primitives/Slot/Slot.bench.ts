@@ -16,7 +16,7 @@ import type { SlotType } from "./SlotType.js";
 const currentSlot = 8000000n;
 
 // Genesis slot
-const genesisSlot = 0n;
+const _genesisSlot = 0n;
 
 // First slot after merge (Bellatrix)
 const mergeSlot = 4700000n;

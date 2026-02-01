@@ -5,9 +5,9 @@
  */
 
 import { bench, run } from "mitata";
+import { WRAPPED_ERROR_SELECTOR } from "./constants.js";
 import { decodeWrappedError } from "./decodeWrappedError.js";
 import { encodeWrappedError } from "./encodeWrappedError.js";
-import { WRAPPED_ERROR_SELECTOR } from "./constants.js";
 
 // ============================================================================
 // Test Data
@@ -212,7 +212,7 @@ await run();
 
 bench("selector check - valid", () => {
 	const slice = encodedSimple.slice(0, 4);
-	const match =
+	const _match =
 		slice[0] === WRAPPED_ERROR_SELECTOR[0] &&
 		slice[1] === WRAPPED_ERROR_SELECTOR[1] &&
 		slice[2] === WRAPPED_ERROR_SELECTOR[2] &&
@@ -221,7 +221,7 @@ bench("selector check - valid", () => {
 
 bench("selector check - invalid", () => {
 	const invalid = new Uint8Array([0x00, 0x00, 0x00, 0x00]);
-	const match =
+	const _match =
 		invalid[0] === WRAPPED_ERROR_SELECTOR[0] &&
 		invalid[1] === WRAPPED_ERROR_SELECTOR[1] &&
 		invalid[2] === WRAPPED_ERROR_SELECTOR[2] &&

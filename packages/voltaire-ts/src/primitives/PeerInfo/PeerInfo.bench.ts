@@ -22,7 +22,7 @@ const peerInfoData = {
 	protocols: {
 		eth: {
 			difficulty: 1000000n,
-			head: "0x" + "ab".repeat(32),
+			head: `0x${"ab".repeat(32)}`,
 			version: 67,
 		},
 	},

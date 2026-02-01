@@ -8,14 +8,13 @@
  * - viem (reference)
  */
 
+import * as Effect from "effect/Effect";
 import { bench, run } from "mitata";
+// voltaire-effect re-exports same functions, pure functions have no Effect overhead
+import * as UintEffect from "../../../voltaire-effect/src/primitives/Uint/index.js";
 import * as loader from "../../wasm-loader/loader.js";
 import * as Uint from "./index.js";
 import * as UintWasm from "./Uint256.wasm.js";
-
-// voltaire-effect re-exports same functions, pure functions have no Effect overhead
-import * as UintEffect from "../../../voltaire-effect/src/primitives/Uint/index.js";
-import * as Effect from "effect/Effect";
 
 // Initialize WASM
 await loader.loadWasm(
@@ -42,12 +41,12 @@ const HEX_SMALL =
 const tsSmall = Uint.from(SMALL_VALUE);
 const tsMedium = Uint.from(MEDIUM_VALUE);
 const tsLarge = Uint.from(LARGE_VALUE);
-const tsMax = Uint.MAX;
+const _tsMax = Uint.MAX;
 
 const wasmSmall = UintWasm.u256FromBigInt(SMALL_VALUE);
-const wasmMedium = UintWasm.u256FromBigInt(MEDIUM_VALUE);
+const _wasmMedium = UintWasm.u256FromBigInt(MEDIUM_VALUE);
 const wasmLarge = UintWasm.u256FromBigInt(LARGE_VALUE);
-const wasmMax = UintWasm.u256FromBigInt(MAX_U256);
+const _wasmMax = UintWasm.u256FromBigInt(MAX_U256);
 
 // ============================================================================
 // Construction: from

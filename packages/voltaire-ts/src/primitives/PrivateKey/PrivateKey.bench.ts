@@ -7,13 +7,11 @@
  * - ethers (reference)
  */
 
-import { bench, run } from "mitata";
-
-// viem comparison
-import { privateKeyToAccount } from "viem/accounts";
-
 // ethers comparison
 import { Wallet } from "ethers";
+import { bench, run } from "mitata";
+// viem comparison
+import { privateKeyToAccount } from "viem/accounts";
 
 // Use dist build to avoid source module issues
 import * as PrivateKey from "../../../dist/primitives/PrivateKey/index.js";

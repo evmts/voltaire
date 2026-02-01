@@ -46,7 +46,7 @@ const arrayEncoded =
 	"0000000000000000000000000000000000000000000000000000000000000003";
 
 // Large encoded data (~1KB)
-const largeEncoded = "0x" + "00".repeat(32) + "ab".repeat(480);
+const largeEncoded = `0x${"00".repeat(32)}${"ab".repeat(480)}`;
 
 // Empty encoded data
 const emptyEncoded = "0x";
@@ -59,8 +59,8 @@ uint256Bytes.set([0x0d, 0xe0, 0xb6, 0xb3, 0xa7, 0x64, 0x00, 0x00], 24);
 const uint256Instance = EncodedData.from(uint256Encoded);
 const addressInstance = EncodedData.from(addressEncoded);
 const multipleInstance = EncodedData.from(multipleEncoded);
-const stringInstance = EncodedData.from(stringEncoded);
-const bytesInstance = EncodedData.from(bytesEncoded);
+const _stringInstance = EncodedData.from(stringEncoded);
+const _bytesInstance = EncodedData.from(bytesEncoded);
 const arrayInstance = EncodedData.from(arrayEncoded);
 const largeInstance = EncodedData.from(largeEncoded);
 const emptyInstance = EncodedData.from(emptyEncoded);

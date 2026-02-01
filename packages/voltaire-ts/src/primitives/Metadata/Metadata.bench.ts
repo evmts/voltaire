@@ -8,15 +8,15 @@ import * as Metadata from "./index.js";
 
 // Test metadata object with hex-prefixed values (as expected by encoder)
 const simpleMetadata = {
-	ipfs: "0x" + "ab".repeat(34), // IPFS CID as hex
+	ipfs: `0x${"ab".repeat(34)}`, // IPFS CID as hex
 	solc: "0.8.20",
 };
 
 const complexMetadata = {
-	ipfs: "0x" + "ab".repeat(34),
+	ipfs: `0x${"ab".repeat(34)}`,
 	solc: "0.8.20",
 	experimental: true,
-	bzzr1: "0x" + "cd".repeat(32),
+	bzzr1: `0x${"cd".repeat(32)}`,
 };
 
 // Pre-encode metadata for decode benchmarks

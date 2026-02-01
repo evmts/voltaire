@@ -1,8 +1,8 @@
+import { isValidPublicKey } from "../../crypto/Secp256k1/isValidPublicKey.js";
 import {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../errors/ValidationError.js";
-import { isValidPublicKey } from "../../crypto/Secp256k1/isValidPublicKey.js";
 import type { PublicKeyType } from "./PublicKeyType.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;

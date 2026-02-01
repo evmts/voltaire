@@ -6,11 +6,11 @@
 import { bench, run } from "mitata";
 import {
 	bytesToHex as viemBytesToHex,
-	hexToBytes as viemHexToBytes,
 	concat as viemConcat,
-	slice as viemSlice,
+	hexToBytes as viemHexToBytes,
 	isBytes as viemIsBytes,
 	pad as viemPad,
+	slice as viemSlice,
 	trim as viemTrim,
 } from "viem";
 import { Bytes } from "./Bytes.js";
@@ -19,7 +19,7 @@ import { Bytes } from "./Bytes.js";
 const smallBytes = new Uint8Array(32).fill(0x42);
 const mediumBytes = new Uint8Array(256).fill(0x43);
 const largeBytes = new Uint8Array(1024).fill(0x44);
-const xlargeBytes = new Uint8Array(4096).fill(0x45);
+const _xlargeBytes = new Uint8Array(4096).fill(0x45);
 
 const smallHex = `0x${"42".repeat(32)}`;
 const mediumHex = `0x${"43".repeat(256)}`;

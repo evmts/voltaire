@@ -15,8 +15,8 @@ const maxPriorityFee = 2000000000n; // 2 gwei
 const effectivePrice = 32000000000n; // baseFee + priorityFee (capped)
 
 // Pre-created for conversion benchmarks
-const price1 = EffectiveGasPrice.from(effectivePrice);
-const price2 = EffectiveGasPrice.from(50000000000n);
+const _price1 = EffectiveGasPrice.from(effectivePrice);
+const _price2 = EffectiveGasPrice.from(50000000000n);
 
 // ============================================================================
 // from (constructor)

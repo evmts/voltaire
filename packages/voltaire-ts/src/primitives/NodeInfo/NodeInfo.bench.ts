@@ -22,8 +22,8 @@ const nodeInfoData = {
 		eth: {
 			network: 1,
 			difficulty: 1000000n,
-			genesis: "0x" + "ab".repeat(32),
-			head: "0x" + "cd".repeat(32),
+			genesis: `0x${"ab".repeat(32)}`,
+			head: `0x${"cd".repeat(32)}`,
 		},
 		snap: {
 			network: 1,

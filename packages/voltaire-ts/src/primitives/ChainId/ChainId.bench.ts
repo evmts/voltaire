@@ -12,9 +12,9 @@ const arbitrumId = 42161;
 const unknownId = 999999;
 
 // Pre-created chain IDs for comparison
-const chainId1 = ChainId.from(1);
-const chainId2 = ChainId.from(10);
-const chainIdSame = ChainId.from(1);
+const _chainId1 = ChainId.from(1);
+const _chainId2 = ChainId.from(10);
+const _chainIdSame = ChainId.from(1);
 
 // ============================================================================
 // from (constructor)

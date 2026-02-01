@@ -7,7 +7,7 @@
 import { bench, run } from "mitata";
 import type { AddressType } from "../Address/AddressType.js";
 import * as StateDiff from "./index.js";
-import type { AccountDiff, StateDiffType } from "./StateDiffType.js";
+import type { AccountDiff } from "./StateDiffType.js";
 
 // ============================================================================
 // Test Data - Realistic state diffs

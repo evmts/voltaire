@@ -12,15 +12,15 @@ import * as Nonce from "./index.js";
 // Test Data
 // ============================================================================
 
-const SMALL_NONCE = 0;
+const _SMALL_NONCE = 0;
 const MEDIUM_NONCE = 1000;
 const LARGE_NONCE = 1_000_000;
-const BIGINT_NONCE = 2n ** 64n;
+const _BIGINT_NONCE = 2n ** 64n;
 
 // Pre-created instances
-const nonce0 = Nonce.from(0);
+const _nonce0 = Nonce.from(0);
 const nonce100 = Nonce.from(100);
-const nonceLarge = Nonce.from(LARGE_NONCE);
+const _nonceLarge = Nonce.from(LARGE_NONCE);
 
 // ============================================================================
 // Construction: from
