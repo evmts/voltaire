@@ -79,6 +79,12 @@ class InvalidAuthorizationError(VoltaireError):
     pass
 
 
+class InvalidValueError(VoltaireError):
+    """Invalid value (e.g., negative nonce)."""
+
+    pass
+
+
 # Error code to exception mapping
 _ERROR_MAP: dict[int, type[VoltaireError]] = {
     -1: InvalidHexError,

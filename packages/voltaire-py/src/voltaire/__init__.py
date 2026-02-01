@@ -41,8 +41,26 @@ except (ImportError, NotImplementedError):
     pass
 
 try:
-    from voltaire.hash import Hash, keccak256, sha256, eip191_hash_message, blake2b, ripemd160
-    __all__.extend(["Hash", "keccak256", "sha256", "eip191_hash_message", "blake2b", "ripemd160"])
+    from voltaire.hash import (
+        Hash,
+        keccak256,
+        sha256,
+        eip191_hash_message,
+        blake2b,
+        ripemd160,
+        solidity_keccak256,
+        solidity_sha256,
+    )
+    __all__.extend([
+        "Hash",
+        "keccak256",
+        "sha256",
+        "eip191_hash_message",
+        "blake2b",
+        "ripemd160",
+        "solidity_keccak256",
+        "solidity_sha256",
+    ])
 except (ImportError, NotImplementedError):
     pass
 
@@ -80,8 +98,26 @@ except (ImportError, NotImplementedError):
 
 # Transaction utilities
 try:
-    from voltaire.transaction import Transaction, TransactionType
-    __all__.extend(["Transaction", "TransactionType"])
+    from voltaire.transaction import (
+        Transaction,
+        TransactionType,
+        LegacyTransaction,
+        EIP2930Transaction,
+        EIP1559Transaction,
+        EIP4844Transaction,
+        EIP7702Transaction,
+        decode_transaction,
+    )
+    __all__.extend([
+        "Transaction",
+        "TransactionType",
+        "LegacyTransaction",
+        "EIP2930Transaction",
+        "EIP1559Transaction",
+        "EIP4844Transaction",
+        "EIP7702Transaction",
+        "decode_transaction",
+    ])
 except (ImportError, NotImplementedError):
     pass
 

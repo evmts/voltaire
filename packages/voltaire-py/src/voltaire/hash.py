@@ -297,3 +297,57 @@ def ripemd160(data: bytes | str) -> bytes:
     check_error(code, "ripemd160")
 
     return bytes(out_hash)
+
+
+def solidity_keccak256(types: list[str], values: list) -> Hash:
+    """
+    Compute keccak256(abi.encodePacked(values)).
+
+    This matches Solidity's keccak256(abi.encodePacked(...)) behavior.
+    Values are packed without padding (except array elements) and then hashed.
+
+    Args:
+        types: List of Solidity types (e.g., ["address", "uint256"]).
+        values: List of values matching the types.
+
+    Returns:
+        32-byte Hash.
+
+    Raises:
+        InvalidInputError: If type/value count mismatch or invalid types/values.
+
+    Example:
+        >>> solidity_keccak256(["address", "uint256"], ["0x123...", 100])
+    """
+    from voltaire.abi import Abi
+
+    # Abi.encode_packed handles validation and raises InvalidInputError on mismatch
+    packed = Abi.encode_packed(types, values)
+    return keccak256(packed)
+
+
+def solidity_sha256(types: list[str], values: list) -> Hash:
+    """
+    Compute sha256(abi.encodePacked(values)).
+
+    This matches Solidity's sha256(abi.encodePacked(...)) behavior.
+    Values are packed without padding (except array elements) and then hashed.
+
+    Args:
+        types: List of Solidity types (e.g., ["address", "uint256"]).
+        values: List of values matching the types.
+
+    Returns:
+        32-byte Hash.
+
+    Raises:
+        InvalidInputError: If type/value count mismatch or invalid types/values.
+
+    Example:
+        >>> solidity_sha256(["address", "uint256"], ["0x123...", 100])
+    """
+    from voltaire.abi import Abi
+
+    # Abi.encode_packed handles validation and raises InvalidInputError on mismatch
+    packed = Abi.encode_packed(types, values)
+    return sha256(packed)

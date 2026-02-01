@@ -3,10 +3,11 @@ Address - 20-byte Ethereum address with EIP-55 checksum support.
 """
 
 import ctypes
+from ctypes import POINTER, c_uint8, c_uint64
 from typing import ClassVar
 
 from voltaire._ffi import PrimitivesAddress, get_lib
-from voltaire.errors import check_error, InvalidLengthError
+from voltaire.errors import check_error, InvalidLengthError, InvalidValueError
 
 
 class Address:
@@ -95,6 +96,88 @@ class Address:
             ctypes.memset(addr.bytes, 0, 20)
             cls._ZERO = cls(addr)
         return cls._ZERO
+
+    @classmethod
+    def calculate_create_address(cls, sender: "Address", nonce: int) -> "Address":
+        """
+        Calculate contract address for CREATE opcode.
+
+        address = keccak256(rlp([sender, nonce]))[12:]
+
+        Args:
+            sender: Deployer address
+            nonce: Transaction nonce (must be non-negative)
+
+        Returns:
+            Contract address that will be created
+
+        Raises:
+            InvalidValueError: If nonce is negative
+        """
+        if nonce < 0:
+            raise InvalidValueError(
+                f"Address.calculate_create_address: nonce must be non-negative, got {nonce}"
+            )
+
+        lib = get_lib()
+        out_addr = PrimitivesAddress()
+
+        result = lib.primitives_calculate_create_address(
+            ctypes.byref(sender._data),
+            c_uint64(nonce),
+            ctypes.byref(out_addr),
+        )
+        check_error(result, "Address.calculate_create_address")
+
+        return cls(out_addr)
+
+    @classmethod
+    def calculate_create2_address(
+        cls, sender: "Address", salt: bytes, init_code: bytes
+    ) -> "Address":
+        """
+        Calculate contract address for CREATE2 opcode.
+
+        address = keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]
+
+        Args:
+            sender: Factory contract address
+            salt: 32-byte salt value
+            init_code: Contract initialization code
+
+        Returns:
+            Deterministic contract address
+
+        Raises:
+            InvalidLengthError: If salt is not exactly 32 bytes
+        """
+        if len(salt) != 32:
+            raise InvalidLengthError(
+                f"Address.calculate_create2_address: salt must be 32 bytes, got {len(salt)}"
+            )
+
+        lib = get_lib()
+        out_addr = PrimitivesAddress()
+
+        # Convert salt to ctypes array
+        salt_array = (c_uint8 * 32)(*salt)
+
+        # Convert init_code to ctypes pointer
+        if len(init_code) > 0:
+            init_code_ptr = (c_uint8 * len(init_code))(*init_code)
+        else:
+            init_code_ptr = None
+
+        result = lib.primitives_calculate_create2_address(
+            ctypes.byref(sender._data),
+            ctypes.byref(salt_array),
+            ctypes.cast(init_code_ptr, POINTER(c_uint8)) if init_code_ptr else None,
+            len(init_code),
+            ctypes.byref(out_addr),
+        )
+        check_error(result, "Address.calculate_create2_address")
+
+        return cls(out_addr)
 
     def to_hex(self) -> str:
         """

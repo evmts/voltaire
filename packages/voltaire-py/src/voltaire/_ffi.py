@@ -63,6 +63,53 @@ class PrimitivesSignature(Structure):
     ]
 
 
+class PrimitivesAccessListEntry(Structure):
+    """Access list entry (EIP-2930)."""
+
+    _fields_ = [
+        ("address", PrimitivesAddress),
+        ("storage_keys_ptr", POINTER(PrimitivesHash)),
+        ("storage_keys_len", c_size_t),
+    ]
+
+
+class PrimitivesAuthorization(Structure):
+    """Authorization structure (EIP-7702)."""
+
+    _fields_ = [
+        ("chain_id", c_uint64),
+        ("address", PrimitivesAddress),
+        ("nonce", c_uint64),
+        ("v", c_uint64),
+        ("r", c_uint8 * 32),
+        ("s", c_uint8 * 32),
+    ]
+
+
+class InstructionData(Structure):
+    """Bytecode instruction data (packed struct)."""
+
+    _pack_ = 1
+    _fields_ = [
+        ("pc", c_uint32),
+        ("opcode", c_uint8),
+        ("push_size", c_uint8),
+        ("_padding", c_uint8 * 2),
+    ]
+
+
+class FusionPattern(Structure):
+    """Bytecode fusion pattern (packed struct)."""
+
+    _pack_ = 1
+    _fields_ = [
+        ("pc", c_uint32),
+        ("pattern_type", c_uint8),
+        ("first_opcode", c_uint8),
+        ("second_opcode", c_uint8),
+    ]
+
+
 def _find_library() -> Optional[Path]:
     """
     Find the Voltaire shared library.
@@ -214,6 +261,17 @@ def _setup_function_signatures(lib: ctypes.CDLL) -> None:
         POINTER(c_uint8 * 64),
     ]
     lib.primitives_secp256k1_pubkey_from_private.restype = c_int
+
+    # Key generation
+    lib.primitives_generate_private_key.argtypes = [POINTER(c_uint8 * 32)]
+    lib.primitives_generate_private_key.restype = c_int
+
+    # Public key compression
+    lib.primitives_compress_public_key.argtypes = [
+        POINTER(c_uint8 * 64),  # uncompressed
+        POINTER(c_uint8 * 33),  # out_compressed
+    ]
+    lib.primitives_compress_public_key.restype = c_int
 
     # CREATE address
     lib.primitives_calculate_create_address.argtypes = [
@@ -394,6 +452,151 @@ def _setup_function_signatures(lib: ctypes.CDLL) -> None:
     lib.primitives_blob_calculate_excess_gas.argtypes = [c_uint64, c_uint64]
     lib.primitives_blob_calculate_excess_gas.restype = c_uint64
 
+    # Signature utilities
+    lib.primitives_secp256k1_validate_signature.argtypes = [
+        POINTER(c_uint8 * 32),  # r
+        POINTER(c_uint8 * 32),  # s
+    ]
+    lib.primitives_secp256k1_validate_signature.restype = c_bool
+
+    lib.primitives_signature_normalize.argtypes = [
+        POINTER(c_uint8 * 32),  # r (unused but required)
+        POINTER(c_uint8 * 32),  # s (modified in place)
+    ]
+    lib.primitives_signature_normalize.restype = c_bool
+
+    lib.primitives_signature_is_canonical.argtypes = [
+        POINTER(c_uint8 * 32),  # r
+        POINTER(c_uint8 * 32),  # s
+    ]
+    lib.primitives_signature_is_canonical.restype = c_bool
+
+    lib.primitives_signature_parse.argtypes = [
+        c_uint8_p,              # sig_data
+        c_size_t,               # sig_len
+        POINTER(c_uint8 * 32),  # out_r
+        POINTER(c_uint8 * 32),  # out_s
+        POINTER(c_uint8),       # out_v
+    ]
+    lib.primitives_signature_parse.restype = c_int
+
+    lib.primitives_signature_serialize.argtypes = [
+        POINTER(c_uint8 * 32),  # r
+        POINTER(c_uint8 * 32),  # s
+        c_uint8,                # v
+        c_bool,                 # include_v
+        c_uint8_p,              # out_buf
+    ]
+    lib.primitives_signature_serialize.restype = c_int
+
+    # Wallet generation
+    lib.primitives_generate_private_key.argtypes = [
+        POINTER(c_uint8 * 32),  # out_private_key
+    ]
+    lib.primitives_generate_private_key.restype = c_int
+
+    lib.primitives_compress_public_key.argtypes = [
+        POINTER(c_uint8 * 64),  # uncompressed
+        POINTER(c_uint8 * 33),  # out_compressed
+    ]
+    lib.primitives_compress_public_key.restype = c_int
+
+    # Solidity-style hashing
+    lib.primitives_solidity_keccak256.argtypes = [
+        c_uint8_p,              # packed_data
+        c_size_t,               # data_len
+        POINTER(PrimitivesHash),  # out_hash
+    ]
+    lib.primitives_solidity_keccak256.restype = c_int
+
+    lib.primitives_solidity_sha256.argtypes = [
+        c_uint8_p,              # packed_data
+        c_size_t,               # data_len
+        POINTER(c_uint8 * 32),  # out_hash
+    ]
+    lib.primitives_solidity_sha256.restype = c_int
+
+    # Event log matching
+    lib.primitives_eventlog_matches_address.argtypes = [
+        POINTER(c_uint8 * 20),  # log_address
+        c_uint8_p,              # filter_addresses (array of 20-byte addresses)
+        c_size_t,               # filter_count
+    ]
+    lib.primitives_eventlog_matches_address.restype = c_int
+
+    lib.primitives_eventlog_matches_topic.argtypes = [
+        POINTER(c_uint8 * 32),  # log_topic
+        POINTER(c_uint8 * 32),  # filter_topic
+        c_int,                  # null_topic (1 = null filter, 0 = specific filter)
+    ]
+    lib.primitives_eventlog_matches_topic.restype = c_int
+
+    lib.primitives_eventlog_matches_topics.argtypes = [
+        c_uint8_p,              # log_topics (array of 32-byte topics)
+        c_size_t,               # log_topic_count
+        c_uint8_p,              # filter_topics (array of 32-byte topics)
+        POINTER(c_int),         # filter_nulls (array of int flags)
+        c_size_t,               # filter_count
+    ]
+    lib.primitives_eventlog_matches_topics.restype = c_int
+
+    # Version
+    lib.primitives_version_string.argtypes = []
+    lib.primitives_version_string.restype = c_char_p
+
+    # Access list (EIP-2930)
+    lib.primitives_access_list_gas_cost.argtypes = [
+        POINTER(PrimitivesAccessListEntry),  # entries
+        c_size_t,                            # entries_len
+        POINTER(c_uint64),                   # out_cost
+    ]
+    lib.primitives_access_list_gas_cost.restype = c_int
+
+    # Authorization (EIP-7702)
+    lib.primitives_authorization_validate.argtypes = [
+        POINTER(PrimitivesAuthorization),  # auth_ptr
+    ]
+    lib.primitives_authorization_validate.restype = c_int
+
+    lib.primitives_authorization_signing_hash.argtypes = [
+        c_uint64,                   # chain_id
+        POINTER(PrimitivesAddress), # address_ptr
+        c_uint64,                   # nonce
+        POINTER(PrimitivesHash),    # out_hash
+    ]
+    lib.primitives_authorization_signing_hash.restype = c_int
+
+    lib.primitives_authorization_authority.argtypes = [
+        POINTER(PrimitivesAuthorization),  # auth_ptr
+        POINTER(PrimitivesAddress),        # out_address
+    ]
+    lib.primitives_authorization_authority.restype = c_int
+
+    lib.primitives_authorization_gas_cost.argtypes = [
+        c_size_t,  # count
+        c_size_t,  # empty_accounts
+    ]
+    lib.primitives_authorization_gas_cost.restype = c_uint64
+
+    # Advanced bytecode analysis
+    lib.primitives_bytecode_scan.argtypes = [
+        c_uint8_p,          # code
+        c_size_t,           # code_len
+        c_uint32,           # start_pc
+        c_uint32,           # end_pc
+        c_uint8_p,          # out_instructions (InstructionData array)
+        POINTER(c_size_t),  # out_len (in: buffer size, out: bytes written)
+    ]
+    lib.primitives_bytecode_scan.restype = c_int
+
+    lib.primitives_bytecode_detect_fusions.argtypes = [
+        c_uint8_p,          # code
+        c_size_t,           # code_len
+        c_uint8_p,          # out_fusions (FusionPattern array)
+        POINTER(c_size_t),  # out_len (in: buffer size, out: bytes written)
+    ]
+    lib.primitives_bytecode_detect_fusions.restype = c_int
+
 
 # Lazy-loaded library instance
 _lib: Optional[ctypes.CDLL] = None
@@ -405,3 +608,9 @@ def get_lib() -> ctypes.CDLL:
     if _lib is None:
         _lib = _load_library()
     return _lib
+
+
+def get_version() -> str:
+    """Get Voltaire native library version."""
+    lib = get_lib()
+    return lib.primitives_version_string().decode("utf-8")

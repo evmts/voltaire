@@ -274,3 +274,74 @@ class Secp256k1:
                 ctypes.byref(s_arr),
             )
         )
+
+    @staticmethod
+    def generate_private_key() -> bytes:
+        """
+        Generate a cryptographically secure random private key.
+
+        Returns:
+            32-byte private key suitable for secp256k1
+
+        Notes:
+            - Uses OS-provided CSPRNG
+            - Key is guaranteed to be in valid range (1 to N-1)
+            - Never returns zero or values >= curve order
+        """
+        lib = get_lib()
+
+        c_uint8_array_32 = c_uint8 * 32
+        out_key = c_uint8_array_32()
+
+        result = lib.primitives_generate_private_key(ctypes.byref(out_key))
+
+        if result != 0:
+            raise InvalidInputError(
+                f"Failed to generate private key (error code: {result})"
+            )
+
+        return bytes(out_key)
+
+    @staticmethod
+    def compress_public_key(uncompressed: bytes) -> bytes:
+        """
+        Compress a 64-byte uncompressed public key to 33 bytes.
+
+        Args:
+            uncompressed: 64-byte public key (x || y coordinates)
+
+        Returns:
+            33-byte compressed key (prefix byte + x coordinate)
+
+        Raises:
+            InvalidLengthError: If input is not 64 bytes
+
+        Notes:
+            - Prefix 0x02 if y coordinate is even
+            - Prefix 0x03 if y coordinate is odd
+            - x coordinate is preserved in bytes 1-33
+        """
+        if len(uncompressed) != 64:
+            raise InvalidLengthError(
+                f"uncompressed public key must be 64 bytes, got {len(uncompressed)}"
+            )
+
+        lib = get_lib()
+
+        c_uint8_array_64 = c_uint8 * 64
+        c_uint8_array_33 = c_uint8 * 33
+
+        in_arr = c_uint8_array_64(*uncompressed)
+        out_compressed = c_uint8_array_33()
+
+        result = lib.primitives_compress_public_key(
+            ctypes.byref(in_arr),
+            ctypes.byref(out_compressed),
+        )
+
+        if result != 0:
+            raise InvalidInputError(
+                f"Failed to compress public key (error code: {result})"
+            )
+
+        return bytes(out_compressed)
