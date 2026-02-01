@@ -70,8 +70,7 @@ export * as P256 from "./crypto/P256/index.js";
 export * as Ripemd160 from "./crypto/Ripemd160/index.js";
 export * as Secp256k1 from "./crypto/Secp256k1/index.js";
 export * as SHA256 from "./crypto/SHA256/index.js";
-// Signers temporarily disabled - requires @tevm/voltaire exports update
-// export * as Signers from "./crypto/Signers/index.js";
+export * as Signers from "./crypto/Signers/index.js";
 export * as X25519 from "./crypto/X25519/index.js";
 // JSON-RPC module
 export * as JsonRpc from "./jsonrpc/index.js";
