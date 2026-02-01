@@ -1,0 +1,1 @@
+{"version":3,"file":"popStack.d.ts","sourceRoot":"","sources":["../../../src/evm/Frame/popStack.js"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,gCAHW,OAAO,gBAAgB,EAAE,YAAY,GACnC;IAAC,KAAK,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,IAAI,CAAA;CAAC,GAAG;IAAC,KAAK,EAAE,IAAI,CAAC;IAAC,KAAK,EAAE,OAAO,gBAAgB,EAAE,QAAQ,CAAA;CAAC,CAQlG"}

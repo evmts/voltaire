@@ -1,0 +1,16 @@
+import type { BrandedAccessList } from "./AccessListType.js";
+/**
+ * Count total addresses in access list
+ *
+ * @param list - Access list to count
+ * @returns Number of unique addresses
+ *
+ * @example
+ * ```typescript
+ * const list = AccessList([{ address, storageKeys: [] }]);
+ * const count = AccessList.addressCount(list); // Static call
+ * const count2 = list.addressCount(); // Instance call
+ * ```
+ */
+export declare function addressCount(list: BrandedAccessList): number;
+//# sourceMappingURL=addressCount.d.ts.map

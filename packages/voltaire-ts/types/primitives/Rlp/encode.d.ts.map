@@ -1,0 +1,1 @@
+{"version":3,"file":"encode.d.ts","sourceRoot":"","sources":["../../../src/primitives/Rlp/encode.js"],"names":[],"mappings":"AAqBA;;;;;;;;;;;;;;;;;;;;;;;;GAwBG;AACH,6BApBW,SAAS,GACP,UAAU,CAmCtB;wBAzDY,UAAU,GAAG,OAAO,cAAc,EAAE,UAAU,GAAG,KAAK,CAAC,UAAU,GAAG,OAAO,cAAc,EAAE,UAAU,GAAG,GAAG,CAAC"}

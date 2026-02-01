@@ -1,0 +1,146 @@
+---
+title: KZG Commitments
+description: EIP-4844 KZG polynomial commitments
+---
+
+KZG (Kate-Zaverucha-Goldberg) commitments for blob verification.
+
+## Constants
+
+```c
+#define KZG_BLOB_SIZE 131072        // 128 KB
+#define KZG_COMMITMENT_SIZE 48      // G1 point
+#define KZG_PROOF_SIZE 48           // G1 point
+```
+
+## Initialization
+
+### kzg_load_trusted_setup
+
+Load embedded trusted setup. Must call before any KZG operations.
+
+```c
+int kzg_load_trusted_setup(void);
+```
+
+### kzg_free_trusted_setup
+
+Free trusted setup resources.
+
+```c
+int kzg_free_trusted_setup(void);
+```
+
+## Functions
+
+### kzg_blob_to_commitment
+
+Compute KZG commitment for blob.
+
+```c
+int kzg_blob_to_commitment(
+    const unsigned char blob[131072],
+    unsigned char out_commitment[48]
+);
+```
+
+### kzg_compute_proof
+
+Compute KZG proof at evaluation point.
+
+```c
+int kzg_compute_proof(
+    const unsigned char blob[131072],
+    const unsigned char z[32],         // evaluation point
+    unsigned char out_proof[48],
+    unsigned char out_y[32]            // evaluation result
+);
+```
+
+### kzg_compute_blob_proof
+
+Compute blob KZG proof.
+
+```c
+int kzg_compute_blob_proof(
+    const unsigned char blob[131072],
+    const unsigned char commitment[48],
+    unsigned char out_proof[48]
+);
+```
+
+### kzg_verify_proof
+
+Verify KZG proof.
+
+```c
+int kzg_verify_proof(
+    const unsigned char commitment[48],
+    const unsigned char z[32],
+    const unsigned char y[32],
+    const unsigned char proof[48]
+);
+```
+
+**Returns:** 1 if valid, 0 if invalid, negative on error.
+
+### kzg_verify_blob_proof
+
+Verify blob KZG proof.
+
+```c
+int kzg_verify_blob_proof(
+    const unsigned char blob[131072],
+    const unsigned char commitment[48],
+    const unsigned char proof[48]
+);
+```
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| -20 | KZG_NOT_LOADED - Trusted setup not loaded |
+| -21 | KZG_INVALID_BLOB - Invalid blob data |
+| -22 | KZG_INVALID_PROOF - Invalid proof |
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Load trusted setup
+    if (kzg_load_trusted_setup() != 0) {
+        printf("Failed to load trusted setup\n");
+        return 1;
+    }
+
+    // Create blob from data
+    unsigned char blob[131072] = {0};
+    memcpy(blob + 8, "test data", 9);
+    *((uint64_t*)blob) = 9;  // length prefix
+
+    // Compute commitment
+    unsigned char commitment[48];
+    kzg_blob_to_commitment(blob, commitment);
+
+    // Compute proof
+    unsigned char proof[48];
+    kzg_compute_blob_proof(blob, commitment, proof);
+
+    // Verify
+    int valid = kzg_verify_blob_proof(blob, commitment, proof);
+    printf("Proof valid: %d\n", valid);
+
+    // Cleanup
+    kzg_free_trusted_setup();
+
+    return 0;
+}
+```
+
+## Note
+
+KZG operations are not available in WASM builds. The trusted setup is embedded in native builds.

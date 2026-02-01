@@ -1,0 +1,105 @@
+---
+title: RLP Encoding
+description: Recursive Length Prefix encoding/decoding
+---
+
+RLP is Ethereum's serialization format for transactions and state.
+
+## Functions
+
+### primitives_rlp_encode_bytes
+
+Encode bytes as RLP.
+
+```c
+int primitives_rlp_encode_bytes(
+    const unsigned char* data,
+    size_t data_len,
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+**Returns:** Number of bytes written, or negative error code.
+
+```c
+unsigned char data[] = "hello";
+unsigned char rlp[100];
+int len = primitives_rlp_encode_bytes(data, 5, rlp, sizeof(rlp));
+```
+
+### primitives_rlp_encode_uint
+
+Encode U256 as RLP (minimal encoding).
+
+```c
+int primitives_rlp_encode_uint(
+    const unsigned char value_bytes[32],  // big-endian u256
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+### primitives_rlp_to_hex
+
+Convert RLP bytes to hex string.
+
+```c
+int primitives_rlp_to_hex(
+    const unsigned char* rlp_data,
+    size_t rlp_len,
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+### primitives_rlp_from_hex
+
+Convert hex string to RLP bytes.
+
+```c
+int primitives_rlp_from_hex(
+    const char* hex,
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+## RLP Encoding Rules
+
+| Type | Encoding |
+|------|----------|
+| Single byte 0x00-0x7f | As-is |
+| String 0-55 bytes | 0x80 + len, then data |
+| String 56+ bytes | 0xb7 + len bytes, len, data |
+| List 0-55 bytes total | 0xc0 + total len, then items |
+| List 56+ bytes total | 0xf7 + len bytes, len, items |
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Encode a string
+    const char* str = "dog";
+    unsigned char encoded[100];
+    int len = primitives_rlp_encode_bytes((unsigned char*)str, 3, encoded, sizeof(encoded));
+    // encoded = [0x83, 'd', 'o', 'g'], len = 4
+
+    // Encode a number
+    unsigned char value[32] = {0};
+    value[31] = 0x42;  // 66 in big-endian
+    unsigned char num_encoded[100];
+    int num_len = primitives_rlp_encode_uint(value, num_encoded, sizeof(num_encoded));
+    // num_encoded = [0x42], num_len = 1
+
+    // Convert to hex
+    unsigned char hex[100];
+    primitives_rlp_to_hex(encoded, len, hex, sizeof(hex));
+    printf("RLP hex: %s\n", hex);
+
+    return 0;
+}
+```

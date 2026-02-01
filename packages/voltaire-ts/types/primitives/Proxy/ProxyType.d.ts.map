@@ -1,0 +1,1 @@
+{"version":3,"file":"ProxyType.d.ts","sourceRoot":"","sources":["../../../src/primitives/Proxy/ProxyType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;GAIG;AACH,MAAM,MAAM,aAAa,GAAG,UAAU,GAAG;IACxC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,WAAW,CAAC;CAC9B,CAAC"}

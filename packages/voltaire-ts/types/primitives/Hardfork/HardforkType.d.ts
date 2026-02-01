@@ -1,0 +1,12 @@
+import type { brand } from "../../brand.js";
+/**
+ * Branded Hardfork type
+ *
+ * Hardfork is a branded string type that represents Ethereum protocol upgrades.
+ * Each hardfork represents a protocol upgrade that changes EVM behavior,
+ * gas costs, or adds new features.
+ */
+export type HardforkType = string & {
+    readonly [brand]: "Hardfork";
+};
+//# sourceMappingURL=HardforkType.d.ts.map

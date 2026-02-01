@@ -1,0 +1,1 @@
+{"version":3,"file":"toRpc.d.ts","sourceRoot":"","sources":["../../../src/primitives/Signature/toRpc.js"],"names":[],"mappings":"AAKA;;;;;;;;;;;;;;GAcG;AACH,iCAZW,OAAO,oBAAoB,EAAE,aAAa,GACxC;IAAE,CAAC,EAAE,MAAM,CAAC;IAAC,CAAC,EAAE,MAAM,CAAC;IAAC,OAAO,EAAE,MAAM,CAAC;IAAC,CAAC,CAAC,EAAE,MAAM,CAAA;CAAE,CA8DjE"}

@@ -12,6 +12,84 @@ patchedDependencies:
 importers:
 
   .:
+    devDependencies:
+      '@changesets/changelog-github':
+        specifier: ^0.5.2
+        version: 0.5.2
+      '@changesets/cli':
+        specifier: ^2.29.8
+        version: 2.29.8(@types/node@25.0.3)
+
+  apps/playground:
+    dependencies:
+      esbuild-wasm:
+        specifier: ^0.27.2
+        version: 0.27.2
+      modern-monaco:
+        specifier: ^0.3.6
+        version: 0.3.6(typescript@5.9.3)
+      monaco-editor:
+        specifier: ^0.55.1
+        version: 0.55.1
+      monaco-vim:
+        specifier: ^0.4.4
+        version: 0.4.4(monaco-editor@0.55.1)
+    devDependencies:
+      '@tevm/tsconfig':
+        specifier: 1.0.0-next.142
+        version: 1.0.0-next.142
+      jsdom:
+        specifier: ^27.4.0
+        version: 27.4.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.0
+        version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.2)
+
+  packages/voltaire-effect:
+    dependencies:
+      '@shazow/whatsabi':
+        specifier: ^0.25.0
+        version: 0.25.0(@noble/hashes@2.0.1)(typescript@5.9.3)(zod@3.25.76)
+      '@tevm/voltaire':
+        specifier: workspace:*
+        version: link:../voltaire-ts
+    devDependencies:
+      '@effect/platform':
+        specifier: ^0.94.0
+        version: 0.94.2(effect@3.19.13)
+      '@effect/vitest':
+        specifier: ^0.27.0
+        version: 0.27.0(effect@3.19.13)(vitest@2.1.9(@types/node@25.0.3)(happy-dom@20.0.11)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1))
+      astro:
+        specifier: ^5.0.0
+        version: 5.16.6(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.54.0)(terser@5.44.1)(typescript@5.9.3)(yaml@2.8.2)
+      effect:
+        specifier: ^3.19.0
+        version: 3.19.13
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.0.3)(happy-dom@20.0.11)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1)
+    optionalDependencies:
+      '@effect/platform-browser':
+        specifier: ^0.74.0
+        version: 0.74.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13)
+      '@effect/platform-bun':
+        specifier: ^0.87.0
+        version: 0.87.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
+      '@effect/platform-node':
+        specifier: ^0.104.0
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
+
+  packages/voltaire-ts:
     dependencies:
       '@adraffy/ens-normalize':
         specifier: ^1.11.1
@@ -44,12 +122,6 @@ importers:
       '@biomejs/biome':
         specifier: ^2.3.10
         version: 2.3.10
-      '@changesets/changelog-github':
-        specifier: ^0.5.2
-        version: 0.5.2
-      '@changesets/cli':
-        specifier: ^2.29.8
-        version: 2.29.8(@types/node@25.0.3)
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.0.1
@@ -151,74 +223,7 @@ importers:
         specifier: ^3.19.13
         version: 3.19.13
 
-  playground:
-    dependencies:
-      esbuild-wasm:
-        specifier: ^0.27.2
-        version: 0.27.2
-      modern-monaco:
-        specifier: ^0.3.6
-        version: 0.3.6(typescript@5.9.3)
-      monaco-editor:
-        specifier: ^0.55.1
-        version: 0.55.1
-      monaco-vim:
-        specifier: ^0.4.4
-        version: 0.4.4(monaco-editor@0.55.1)
-    devDependencies:
-      '@tevm/tsconfig':
-        specifier: 1.0.0-next.142
-        version: 1.0.0-next.142
-      jsdom:
-        specifier: ^27.4.0
-        version: 27.4.0
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      vite:
-        specifier: ^7.3.0
-        version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.2)
-
-  voltaire-effect:
-    dependencies:
-      '@shazow/whatsabi':
-        specifier: ^0.25.0
-        version: 0.25.0(@noble/hashes@2.0.1)(typescript@5.9.3)(zod@3.25.76)
-      '@tevm/voltaire':
-        specifier: workspace:*
-        version: link:..
-    devDependencies:
-      '@effect/platform':
-        specifier: ^0.94.0
-        version: 0.94.2(effect@3.19.13)
-      '@effect/vitest':
-        specifier: ^0.27.0
-        version: 0.27.0(effect@3.19.13)(vitest@2.1.9(@types/node@25.0.3)(happy-dom@20.0.11)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1))
-      astro:
-        specifier: ^5.0.0
-        version: 5.16.6(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.54.0)(terser@5.44.1)(typescript@5.9.3)(yaml@2.8.2)
-      effect:
-        specifier: ^3.19.0
-        version: 3.19.13
-      tsup:
-        specifier: ^8.4.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@25.0.3)(happy-dom@20.0.11)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1)
-    optionalDependencies:
-      '@effect/platform-browser':
-        specifier: ^0.74.0
-        version: 0.74.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13)
-      '@effect/platform-bun':
-        specifier: ^0.87.0
-        version: 0.87.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
-      '@effect/platform-node':
-        specifier: ^0.104.0
-        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
+  packages/voltaire-zig: {}
 
 packages:
 
@@ -291,10 +296,6 @@ packages:
 
   '@asyncapi/specs@6.10.0':
     resolution: {integrity: sha512-vB5oKLsdrLUORIZ5BXortZTlVyGWWMC1Nud/0LtgxQ3Yn2738HigAD6EVqScvpPsDUI/bcLVsYEXN4dtXQHVng==}
-
-  '@babel/code-frame@7.27.1':
-    resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/code-frame@7.28.6':
     resolution: {integrity: sha512-JYgintcMjRiCvS8mMECzaEn+m3PfoQiyqukOMCCVQtoJGYJw8j/8LBJEiqkHLkfwCcs74E3pbAUFNg7d9VNJ+Q==}
@@ -6674,7 +6675,6 @@ packages:
   tar@6.1.15:
     resolution: {integrity: sha512-/zKt9UyngnxIT/EAGYuxaMYgOIJiP81ab9ZfkILq4oNLPFX50qyYmu7jRj9qeXoxmJHjGlbH0+cm2uy1WCs10A==}
     engines: {node: '>=10'}
-    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   term-size@2.2.1:
     resolution: {integrity: sha512-wK0Ri4fOGjv/XPy8SBHZChl8CM7uMc5VML7SqiQ0zG7+J5Vr+RMQDoHa2CNT6KHUnTGIXH34UDMkPzAUyapBZg==}
@@ -7701,7 +7701,7 @@ snapshots:
       ajv-errors: 3.0.0(ajv@8.17.1)
       ajv-formats: 2.1.1(ajv@8.17.1)
       avsc: 5.7.9
-      js-yaml: 4.1.0
+      js-yaml: 4.1.1
       jsonpath-plus: 10.3.0
       node-fetch: 2.6.7
     transitivePeerDependencies:
@@ -7710,12 +7710,6 @@ snapshots:
   '@asyncapi/specs@6.10.0':
     dependencies:
       '@types/json-schema': 7.0.15
-
-  '@babel/code-frame@7.27.1':
-    dependencies:
-      '@babel/helper-validator-identifier': 7.28.5
-      js-tokens: 4.0.0
-      picocolors: 1.1.1
 
   '@babel/code-frame@7.28.6':
     dependencies:
@@ -7755,7 +7749,7 @@ snapshots:
 
   '@babel/helper-annotate-as-pure@7.27.3':
     dependencies:
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
 
   '@babel/helper-compilation-targets@7.28.6':
     dependencies:
@@ -7783,7 +7777,7 @@ snapshots:
   '@babel/helper-member-expression-to-functions@7.28.5':
     dependencies:
       '@babel/traverse': 7.28.6
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
     transitivePeerDependencies:
       - supports-color
 
@@ -7805,7 +7799,7 @@ snapshots:
 
   '@babel/helper-optimise-call-expression@7.27.1':
     dependencies:
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
 
   '@babel/helper-plugin-utils@7.28.6': {}
 
@@ -7821,7 +7815,7 @@ snapshots:
   '@babel/helper-skip-transparent-expression-wrappers@7.27.1':
     dependencies:
       '@babel/traverse': 7.28.6
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
     transitivePeerDependencies:
       - supports-color
 
@@ -8617,8 +8611,7 @@ snapshots:
     dependencies:
       hono: 4.11.3
 
-  '@img/colour@1.0.0':
-    optional: true
+  '@img/colour@1.0.0': {}
 
   '@img/sharp-darwin-arm64@0.33.5':
     optionalDependencies:
@@ -13312,7 +13305,7 @@ snapshots:
       '@types/mdast': 4.0.4
       escape-string-regexp: 5.0.0
       unist-util-is: 6.0.1
-      unist-util-visit-parents: 6.0.1
+      unist-util-visit-parents: 6.0.2
 
   mdast-util-from-markdown@2.0.2:
     dependencies:
@@ -13679,8 +13672,8 @@ snapshots:
 
   micromark-extension-mdxjs@3.0.0:
     dependencies:
-      acorn: 8.11.2
-      acorn-jsx: 5.3.2(acorn@8.11.2)
+      acorn: 8.15.0
+      acorn-jsx: 5.3.2(acorn@8.15.0)
       micromark-extension-mdx-expression: 3.0.1
       micromark-extension-mdx-jsx: 3.0.1
       micromark-extension-mdx-md: 2.0.0
@@ -13974,7 +13967,7 @@ snapshots:
 
   next-mdx-remote-client@1.1.4(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(unified@11.0.5):
     dependencies:
-      '@babel/code-frame': 7.27.1
+      '@babel/code-frame': 7.28.6
       '@mdx-js/mdx': 3.1.1
       '@mdx-js/react': 3.1.1(@types/react@19.2.7)(react@19.2.3)
       react: 19.2.3
@@ -14289,7 +14282,7 @@ snapshots:
 
   parse-json@5.2.0:
     dependencies:
-      '@babel/code-frame': 7.27.1
+      '@babel/code-frame': 7.28.6
       error-ex: 1.3.4
       json-parse-even-better-errors: 2.3.1
       lines-and-columns: 1.2.4
@@ -14742,7 +14735,7 @@ snapshots:
   remark-gfm@4.0.0:
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-gfm: 3.0.0
+      mdast-util-gfm: 3.1.0
       micromark-extension-gfm: 3.0.0
       remark-parse: 11.0.0
       remark-stringify: 11.0.0
@@ -15087,7 +15080,7 @@ snapshots:
     dependencies:
       decode-ico: 0.4.1
       ico-endec: 0.1.6
-      sharp: 0.33.5
+      sharp: 0.34.5
 
   sharp@0.33.5:
     dependencies:
@@ -15145,7 +15138,6 @@ snapshots:
       '@img/sharp-win32-arm64': 0.34.5
       '@img/sharp-win32-ia32': 0.34.5
       '@img/sharp-win32-x64': 0.34.5
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:
@@ -15838,7 +15830,7 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       unist-util-is: 6.0.1
-      unist-util-visit-parents: 6.0.1
+      unist-util-visit-parents: 6.0.2
 
   unist-util-stringify-position@4.0.0:
     dependencies:

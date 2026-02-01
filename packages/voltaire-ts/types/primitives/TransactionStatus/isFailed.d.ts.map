@@ -1,0 +1,1 @@
+{"version":3,"file":"isFailed.d.ts","sourceRoot":"","sources":["../../../src/primitives/TransactionStatus/isFailed.js"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,iCAHW,OAAO,4BAA4B,EAAE,qBAAqB,GACxD,MAAM,IAAI;IAAE,QAAQ,CAAC,IAAI,EAAE,QAAQ,CAAC;IAAC,QAAQ,CAAC,YAAY,CAAC,EAAE,MAAM,CAAA;CAAE,CAIjF"}

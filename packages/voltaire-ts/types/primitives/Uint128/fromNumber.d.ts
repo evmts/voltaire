@@ -1,0 +1,16 @@
+/**
+ * Create Uint128 from number
+ *
+ * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
+ * @since 0.0.0
+ * @param {number} value - Number value
+ * @returns {import('./Uint128Type.js').Uint128Type} Uint128 value
+ * @throws {Error} If value is not an integer or out of range
+ * @example
+ * ```javascript
+ * import * as Uint128 from './primitives/Uint128/index.js';
+ * const value = Uint128.fromNumber(255);
+ * ```
+ */
+export function fromNumber(value: number): import("./Uint128Type.js").Uint128Type;
+//# sourceMappingURL=fromNumber.d.ts.map

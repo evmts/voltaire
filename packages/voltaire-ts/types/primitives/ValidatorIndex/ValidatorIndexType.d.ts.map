@@ -1,0 +1,1 @@
+{"version":3,"file":"ValidatorIndexType.d.ts","sourceRoot":"","sources":["../../../src/primitives/ValidatorIndex/ValidatorIndexType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;;;;GASG;AACH,MAAM,MAAM,kBAAkB,GAAG,MAAM,GAAG;IACzC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,gBAAgB,CAAC;CACnC,CAAC"}

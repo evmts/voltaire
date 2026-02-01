@@ -1,0 +1,1 @@
+{"version":3,"file":"ProtocolVersionType.d.ts","sourceRoot":"","sources":["../../../src/primitives/ProtocolVersion/ProtocolVersionType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;;;;;GAUG;AACH,MAAM,MAAM,mBAAmB,GAAG,MAAM,GAAG;IAC1C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,iBAAiB,CAAC;CACpC,CAAC"}

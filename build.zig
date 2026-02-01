@@ -1,5 +1,5 @@
 const std = @import("std");
-const lib_build = @import("lib/c_libs.zig");
+const lib_build = @import("packages/voltaire-zig/lib/c_libs.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -30,18 +30,18 @@ pub fn build(b: *std.Build) void {
 
     // Create c_kzg module with proper bindings root
     const c_kzg_mod = b.addModule("c_kzg", .{
-        .root_source_file = b.path("lib/c-kzg-4844/bindings/zig/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/root.zig"),
         .target = target,
         .optimize = optimize,
     });
     c_kzg_mod.linkLibrary(c_kzg_lib);
     c_kzg_mod.linkLibrary(blst_lib);
-    c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/src"));
-    c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+    c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
+    c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
 
     // Crypto module - export for external packages
     const crypto_mod = b.addModule("crypto", .{
-        .root_source_file = b.path("src/crypto/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/crypto/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -66,7 +66,7 @@ pub fn build(b: *std.Build) void {
 
     // Primitives module - export for external packages (includes Hardfork)
     const primitives_mod = b.addModule("primitives", .{
-        .root_source_file = b.path("src/primitives/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/primitives/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -78,7 +78,7 @@ pub fn build(b: *std.Build) void {
 
     // State manager module
     const state_manager_mod = b.addModule("state-manager", .{
-        .root_source_file = b.path("src/state-manager/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/state-manager/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -87,7 +87,7 @@ pub fn build(b: *std.Build) void {
 
     // Blockchain module
     const blockchain_mod = b.addModule("blockchain", .{
-        .root_source_file = b.path("src/blockchain/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/blockchain/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -137,7 +137,7 @@ pub fn build(b: *std.Build) void {
 
     // Precompiles module - export for external packages
     const precompiles_mod = b.addModule("precompiles", .{
-        .root_source_file = b.path("src/evm/precompiles/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/evm/precompiles/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -172,7 +172,7 @@ pub fn build(b: *std.Build) void {
 
     // Extra primitives boundary tests (separate test runner that imports primitives)
     const primitives_extra_mod = b.createModule(.{
-        .root_source_file = b.path("src/primitives/tests_runner.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/primitives/tests_runner.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -205,7 +205,7 @@ pub fn build(b: *std.Build) void {
 
     // Example: Keccak-256 hashing demonstration
     const keccak256_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/keccak256.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/keccak256.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -228,7 +228,7 @@ pub fn build(b: *std.Build) void {
 
     // ABI encoding/decoding example
     const abi_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/abi.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/abi.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -251,7 +251,7 @@ pub fn build(b: *std.Build) void {
 
     // secp256k1 ECDSA signature operations example
     const secp256k1_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/secp256k1.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/secp256k1.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -275,7 +275,7 @@ pub fn build(b: *std.Build) void {
 
     // Address primitive example
     const address_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/address.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/address.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -298,7 +298,7 @@ pub fn build(b: *std.Build) void {
 
     // Hex utilities example
     const hex_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/hex.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/hex.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -321,7 +321,7 @@ pub fn build(b: *std.Build) void {
 
     // RLP encoding/decoding example
     const rlp_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/rlp.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/rlp.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -344,7 +344,7 @@ pub fn build(b: *std.Build) void {
 
     // EIP-712 typed data signing example
     const eip712_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/eip712.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/eip712.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -368,7 +368,7 @@ pub fn build(b: *std.Build) void {
 
     // Transaction operations example
     const transaction_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/transaction.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/transaction.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -392,7 +392,7 @@ pub fn build(b: *std.Build) void {
 
     // EIP-4844 blob transaction example
     const eip4844_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/eip4844_blob_transaction.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/eip4844_blob_transaction.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -416,7 +416,7 @@ pub fn build(b: *std.Build) void {
 
     // EIP-7702 authorization transaction example
     const eip7702_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/eip7702_authorization.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/eip7702_authorization.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -440,7 +440,7 @@ pub fn build(b: *std.Build) void {
 
     // ABI workflow example
     const abi_workflow_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/abi_workflow.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/abi_workflow.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -464,7 +464,7 @@ pub fn build(b: *std.Build) void {
 
     // Signature recovery workflow example
     const sig_recovery_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/signature_recovery.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/signature_recovery.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -488,7 +488,7 @@ pub fn build(b: *std.Build) void {
 
     // BLS12-381 operations example
     const bls_operations_example_mod = b.createModule(.{
-        .root_source_file = b.path("examples/bls_operations.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/examples/bls_operations.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -514,7 +514,7 @@ pub fn build(b: *std.Build) void {
     const generate_header = b.addExecutable(.{
         .name = "generate_c_header",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("scripts/generate_c_header.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/scripts/generate_c_header.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -529,7 +529,7 @@ pub fn build(b: *std.Build) void {
     const generate_jsonrpc = b.addExecutable(.{
         .name = "generate_jsonrpc",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("tools/jsonrpc/generate.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/tools/jsonrpc/generate.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -544,7 +544,7 @@ pub fn build(b: *std.Build) void {
     const clean_jsonrpc = b.addExecutable(.{
         .name = "clean_jsonrpc",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("tools/jsonrpc/clean.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/tools/jsonrpc/clean.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -563,7 +563,7 @@ pub fn build(b: *std.Build) void {
             .name = "primitives_c",
             .linkage = .static,
             .root_module = b.createModule(.{
-                .root_source_file = b.path("src/c_api.zig"),
+                .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
                 .target = target,
                 .optimize = optimize,
             }),
@@ -586,7 +586,7 @@ pub fn build(b: *std.Build) void {
             .name = "primitives_c",
             .linkage = .dynamic,
             .root_module = b.createModule(.{
-                .root_source_file = b.path("src/c_api.zig"),
+                .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
                 .target = target,
                 .optimize = optimize,
             }),
@@ -605,7 +605,7 @@ pub fn build(b: *std.Build) void {
         b.installArtifact(c_api_shared);
 
         // Install C API header for external consumers (depends on generation)
-        const install_header = b.addInstallFile(b.path("src/primitives.h"), "include/primitives.h");
+        const install_header = b.addInstallFile(b.path("packages/voltaire-zig/src/primitives.h"), "include/primitives.h");
         install_header.step.dependOn(&run_generate_header.step);
         b.getInstallStep().dependOn(&install_header.step);
 
@@ -618,7 +618,7 @@ pub fn build(b: *std.Build) void {
             }),
         });
         c_example.addCSourceFile(.{
-            .file = b.path("examples/c/basic_usage.c"),
+            .file = b.path("packages/voltaire-zig/examples/c/basic_usage.c"),
         });
         c_example.addIncludePath(b.path("src")); // For primitives.h
         c_example.linkLibrary(c_api_lib);
@@ -639,7 +639,7 @@ pub fn build(b: *std.Build) void {
             .name = "voltaire_state_manager",
             .linkage = .dynamic,
             .root_module = b.createModule(.{
-                .root_source_file = b.path("src/state-manager/c_api.zig"),
+                .root_source_file = b.path("packages/voltaire-zig/src/state-manager/c_api.zig"),
                 .target = target,
                 .optimize = optimize,
             }),
@@ -663,7 +663,7 @@ pub fn build(b: *std.Build) void {
             .name = "voltaire_blockchain",
             .linkage = .dynamic,
             .root_module = b.createModule(.{
-                .root_source_file = b.path("src/blockchain/c_api.zig"),
+                .root_source_file = b.path("packages/voltaire-zig/src/blockchain/c_api.zig"),
                 .target = target,
                 .optimize = optimize,
             }),
@@ -714,18 +714,18 @@ pub fn build(b: *std.Build) void {
 
     // Create WASM-targeted c_kzg module
     const wasm_c_kzg_mod = b.addModule("c_kzg_wasm", .{
-        .root_source_file = b.path("lib/c-kzg-4844/bindings/zig/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
     });
     wasm_c_kzg_mod.linkLibrary(wasm_c_kzg_lib);
     wasm_c_kzg_mod.linkLibrary(wasm_blst_lib);
-    wasm_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/src"));
-    wasm_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+    wasm_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
+    wasm_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
 
     // Create WASM-targeted crypto module
     const wasm_crypto_mod = b.addModule("crypto_wasm", .{
-        .root_source_file = b.path("src/crypto/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/crypto/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
     });
@@ -734,7 +734,7 @@ pub fn build(b: *std.Build) void {
 
     // Create WASM-targeted primitives module
     const wasm_primitives_mod = b.addModule("primitives_wasm", .{
-        .root_source_file = b.path("src/primitives/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/primitives/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
     });
@@ -745,7 +745,7 @@ pub fn build(b: *std.Build) void {
     wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
 
     const wasm_state_manager_mod = b.addModule("state_manager_wasm", .{
-        .root_source_file = b.path("src/state-manager/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/state-manager/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
     });
@@ -753,7 +753,7 @@ pub fn build(b: *std.Build) void {
     wasm_state_manager_mod.addImport("crypto", wasm_crypto_mod);
 
     const wasm_blockchain_mod = b.addModule("blockchain_wasm", .{
-        .root_source_file = b.path("src/blockchain/root.zig"),
+        .root_source_file = b.path("packages/voltaire-zig/src/blockchain/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
     });
@@ -809,7 +809,7 @@ fn buildBenchmarks(
     cargo_build_step: *std.Build.Step,
 ) void {
     // Try to open bench directory
-    const bench_dir = std.fs.cwd().openDir("bench", .{ .iterate = true }) catch return;
+    const bench_dir = std.fs.cwd().openDir("packages/voltaire-zig/bench", .{ .iterate = true }) catch return;
     var walker = bench_dir.walk(b.allocator) catch return;
     defer walker.deinit();
 
@@ -823,7 +823,7 @@ fn buildBenchmarks(
         }
 
         // Build path: bench/[path].zig
-        const bench_path = b.fmt("bench/{s}", .{entry.path});
+        const bench_path = b.fmt("packages/voltaire-zig/bench/{s}", .{entry.path});
         const bench_name_raw = entry.basename[0 .. entry.basename.len - 4]; // Remove .zig
         const bench_name = b.fmt("bench-{s}", .{bench_name_raw});
 
@@ -883,7 +883,7 @@ fn buildZBenchmarks(
     const bench_step = b.step("bench", "Run zbench performance benchmarks");
 
     // Recursively find all *.bench.zig files in src/
-    const src_dir = std.fs.cwd().openDir("src", .{ .iterate = true }) catch return;
+    const src_dir = std.fs.cwd().openDir("packages/voltaire-zig/src", .{ .iterate = true }) catch return;
     var walker = src_dir.walk(b.allocator) catch return;
     defer walker.deinit();
 
@@ -898,7 +898,7 @@ fn buildZBenchmarks(
         }
 
         // Build path: src/[path].bench.zig
-        const bench_path = b.fmt("src/{s}", .{entry.path});
+        const bench_path = b.fmt("packages/voltaire-zig/src/{s}", .{entry.path});
         const bench_name_raw = entry.basename[0 .. entry.basename.len - 10]; // Remove .bench.zig
         const bench_name = b.fmt("zbench-{s}", .{bench_name_raw});
 
@@ -975,7 +975,7 @@ fn addTypeScriptNativeBuild(
         .name = "primitives_ts_native",
         .linkage = .dynamic,
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/c_api.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
             .target = ts_target,
             .optimize = .ReleaseFast, // Maximum performance for native
         }),
@@ -989,7 +989,7 @@ fn addTypeScriptNativeBuild(
     ts_native_lib.addObjectFile(rust_crypto_lib_path);
     ts_native_lib.linkLibrary(libwally_core_lib);
     ts_native_lib.addIncludePath(b.path("lib"));
-    ts_native_lib.addIncludePath(b.path("lib/libwally-core/include"));
+    ts_native_lib.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
     ts_native_lib.step.dependOn(cargo_build_step);
     ts_native_lib.linkLibC();
 
@@ -1019,7 +1019,7 @@ fn addTypeScriptWasmBuild(
     const ts_wasm_exe = b.addExecutable(.{
         .name = "primitives_ts_wasm",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/c_api.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseSmall, // Minimal size for WASM
         }),
@@ -1056,7 +1056,7 @@ fn addTypeScriptWasmBuild(
     const state_manager_wasm_exe = b.addExecutable(.{
         .name = "state_manager_wasm",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/state-manager/c_api.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/state-manager/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseSmall,
         }),
@@ -1087,7 +1087,7 @@ fn addTypeScriptWasmBuild(
     const blockchain_wasm_exe = b.addExecutable(.{
         .name = "blockchain_wasm",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/blockchain/c_api.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/blockchain/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseSmall,
         }),
@@ -1118,7 +1118,7 @@ fn addTypeScriptWasmBuild(
     const ts_wasm_fast_exe = b.addExecutable(.{
         .name = "primitives_ts_wasm_fast",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/c_api.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseFast, // Maximum performance for benchmarking
         }),
@@ -1243,10 +1243,10 @@ fn addTypeScriptSteps(b: *std.Build) void {
         "zig",
         "fmt",
         "build.zig",
-        "src",
-        "lib",
-        "examples",
-        "scripts",
+        "packages/voltaire-zig/src",
+        "packages/voltaire-zig/lib",
+        "packages/voltaire-zig/examples",
+        "packages/voltaire-zig/scripts",
     });
     format_zig_cmd.setName("format-zig");
     format_step.dependOn(&format_zig_cmd.step);
@@ -1262,10 +1262,10 @@ fn addTypeScriptSteps(b: *std.Build) void {
         "fmt",
         "--check",
         "build.zig",
-        "src",
-        "lib",
-        "examples",
-        "scripts",
+        "packages/voltaire-zig/src",
+        "packages/voltaire-zig/lib",
+        "packages/voltaire-zig/examples",
+        "packages/voltaire-zig/scripts",
     });
     format_check_zig_cmd.setName("format-check-zig");
     format_check_step.dependOn(&format_check_zig_cmd.step);
@@ -1403,18 +1403,18 @@ fn addCrossPlatformNativeBuilds(
 
         // Create target-specific c_kzg module
         const target_c_kzg_mod = b.addModule(b.fmt("c_kzg_{s}", .{platform.name}), .{
-            .root_source_file = b.path("lib/c-kzg-4844/bindings/zig/root.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/root.zig"),
             .target = target,
             .optimize = .ReleaseFast,
         });
         target_c_kzg_mod.linkLibrary(target_c_kzg_lib);
         target_c_kzg_mod.linkLibrary(target_blst_lib);
-        target_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/src"));
-        target_c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
+        target_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
+        target_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
 
         // Create target-specific crypto module
         const target_crypto_mod = b.addModule(b.fmt("crypto_{s}", .{platform.name}), .{
-            .root_source_file = b.path("src/crypto/root.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/crypto/root.zig"),
             .target = target,
             .optimize = .ReleaseFast,
         });
@@ -1430,7 +1430,7 @@ fn addCrossPlatformNativeBuilds(
 
         // Create target-specific primitives module
         const target_primitives_mod = b.addModule(b.fmt("primitives_{s}", .{platform.name}), .{
-            .root_source_file = b.path("src/primitives/root.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/primitives/root.zig"),
             .target = target,
             .optimize = .ReleaseFast,
         });
@@ -1442,7 +1442,7 @@ fn addCrossPlatformNativeBuilds(
 
         // Create target-specific state-manager module
         const target_state_manager_mod = b.addModule(b.fmt("state-manager_{s}", .{platform.name}), .{
-            .root_source_file = b.path("src/state-manager/root.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/state-manager/root.zig"),
             .target = target,
             .optimize = .ReleaseFast,
         });
@@ -1451,7 +1451,7 @@ fn addCrossPlatformNativeBuilds(
 
         // Create target-specific blockchain module
         const target_blockchain_mod = b.addModule(b.fmt("blockchain_{s}", .{platform.name}), .{
-            .root_source_file = b.path("src/blockchain/root.zig"),
+            .root_source_file = b.path("packages/voltaire-zig/src/blockchain/root.zig"),
             .target = target,
             .optimize = .ReleaseFast,
         });
@@ -1469,7 +1469,7 @@ fn addCrossPlatformNativeBuilds(
             .name = "voltaire_native",
             .linkage = .dynamic,
             .root_module = b.createModule(.{
-                .root_source_file = b.path("src/c_api.zig"),
+                .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
                 .target = target,
                 .optimize = .ReleaseFast,
             }),
@@ -1483,7 +1483,7 @@ fn addCrossPlatformNativeBuilds(
         native_lib.addObjectFile(target_rust_crypto_lib_path);
         native_lib.linkLibrary(libwally_core_lib);
         native_lib.addIncludePath(b.path("lib"));
-        native_lib.addIncludePath(b.path("lib/libwally-core/include"));
+        native_lib.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
         native_lib.step.dependOn(target_cargo_build_step);
         native_lib.linkLibC();
 

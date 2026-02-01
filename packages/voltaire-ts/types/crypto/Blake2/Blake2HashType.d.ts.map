@@ -1,0 +1,1 @@
+{"version":3,"file":"Blake2HashType.d.ts","sourceRoot":"","sources":["../../../src/crypto/Blake2/Blake2HashType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;;;;;;;;;;GAeG;AACH,MAAM,MAAM,UAAU,GAAG,UAAU,GAAG;IACrC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,YAAY,CAAC;CAC/B,CAAC;AAEF,eAAO,MAAM,IAAI,KAAK,CAAC"}

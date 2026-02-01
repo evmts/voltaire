@@ -1,0 +1,1 @@
+{"version":3,"file":"ecdh.d.ts","sourceRoot":"","sources":["../../../src/crypto/Secp256k1/ecdh.js"],"names":[],"mappings":"AASA;;;;;;;;;;;;;;;;;;;;;;;GAuBG;AACH,iCAfW,OAAO,+CAA+C,EAAE,cAAc,aACtE,OAAO,6BAA6B,EAAE,sBAAsB,GAC1D,UAAU,CAwDtB"}

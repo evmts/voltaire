@@ -1,0 +1,1 @@
+{"version":3,"file":"getSelector.d.ts","sourceRoot":"","sources":["../../../src/primitives/Abi/getSelector.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;GAcG;AACH,iDAZG;IAA0C,eAAe,EAAjD,CAAC,GAAG,EAAE,MAAM,KAAK,UAAU;CACnC,GAAU,CAAC,SAAS,EAAE,MAAM,EAAE,OAAO,CAAC,EAAE;IAAE,IAAI,CAAC,EAAE,UAAU,GAAG,OAAO,GAAG,OAAO,CAAA;CAAE,KAAK,OAAO,iBAAiB,EAAE,OAAO,CAuBzH"}

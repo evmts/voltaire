@@ -1,0 +1,151 @@
+import { InvalidPublicKeyError as BaseInvalidPublicKeyError, InvalidSignatureError as BaseInvalidSignatureError, CryptoError, InvalidPrivateKeyError, } from "../../primitives/errors/CryptoError.js";
+/**
+ * Base error class for Ed25519 operations
+ *
+ * @example
+ * ```javascript
+ * throw new Ed25519Error('Ed25519 operation failed', {
+ *   code: -32000,
+ *   context: { operation: 'sign' },
+ *   docsPath: '/crypto/ed25519#error-handling',
+ *   cause: originalError
+ * })
+ * ```
+ */
+export class Ed25519Error extends CryptoError {
+    /**
+     * @override
+     * @readonly
+     * @type {string}
+     */
+    _tag = "Ed25519Error";
+    /**
+     * @param {string} message
+     * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+     */
+    constructor(message, options) {
+        super(message, {
+            code: options?.code ?? -32000,
+            context: options?.context,
+            docsPath: options?.docsPath,
+            cause: options?.cause,
+        });
+        this.name = "Ed25519Error";
+    }
+}
+/**
+ * Error thrown when signature is invalid
+ *
+ * @example
+ * ```javascript
+ * throw new InvalidSignatureError('Ed25519 signature must be 64 bytes', {
+ *   code: -32001,
+ *   context: { length: 32, expected: 64 },
+ *   docsPath: '/crypto/ed25519/verify#error-handling'
+ * })
+ * ```
+ */
+export class InvalidSignatureError extends BaseInvalidSignatureError {
+    /** @override @readonly */
+    _tag = "InvalidSignatureError";
+    /**
+     * @param {string} message
+     * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+     */
+    constructor(message, options) {
+        super(message, {
+            code: options?.code ?? -32001,
+            context: options?.context,
+            docsPath: options?.docsPath,
+            cause: options?.cause,
+        });
+        this.name = "InvalidSignatureError";
+    }
+}
+/**
+ * Error thrown when public key is invalid
+ *
+ * @example
+ * ```javascript
+ * throw new InvalidPublicKeyError('Ed25519 public key must be 32 bytes', {
+ *   code: -32002,
+ *   context: { length: 64, expected: 32 },
+ *   docsPath: '/crypto/ed25519/verify#error-handling'
+ * })
+ * ```
+ */
+export class InvalidPublicKeyError extends BaseInvalidPublicKeyError {
+    /** @override @readonly */
+    _tag = "InvalidPublicKeyError";
+    /**
+     * @param {string} message
+     * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+     */
+    constructor(message, options) {
+        super(message, {
+            code: options?.code ?? -32002,
+            context: options?.context,
+            docsPath: options?.docsPath,
+            cause: options?.cause,
+        });
+        this.name = "InvalidPublicKeyError";
+    }
+}
+/**
+ * Error thrown when secret key is invalid
+ *
+ * @example
+ * ```javascript
+ * throw new InvalidSecretKeyError('Ed25519 secret key must be 32 bytes', {
+ *   code: -32003,
+ *   context: { length: 64, expected: 32 },
+ *   docsPath: '/crypto/ed25519/sign#error-handling'
+ * })
+ * ```
+ */
+export class InvalidSecretKeyError extends InvalidPrivateKeyError {
+    /** @override @readonly */
+    _tag = "InvalidSecretKeyError";
+    /**
+     * @param {string} message
+     * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+     */
+    constructor(message, options) {
+        super(message, {
+            code: options?.code ?? -32003,
+            context: options?.context,
+            docsPath: options?.docsPath,
+            cause: options?.cause,
+        });
+        this.name = "InvalidSecretKeyError";
+    }
+}
+/**
+ * Error thrown when seed is invalid
+ *
+ * @example
+ * ```javascript
+ * throw new InvalidSeedError('Ed25519 seed must be 32 bytes', {
+ *   code: -32004,
+ *   context: { length: 16, expected: 32 },
+ *   docsPath: '/crypto/ed25519/keypair-from-seed#error-handling'
+ * })
+ * ```
+ */
+export class InvalidSeedError extends Ed25519Error {
+    /** @override @readonly */
+    _tag = "InvalidSeedError";
+    /**
+     * @param {string} message
+     * @param {{code?: number, context?: Record<string, unknown>, docsPath?: string, cause?: Error}} [options]
+     */
+    constructor(message, options) {
+        super(message, {
+            code: options?.code ?? -32004,
+            context: options?.context,
+            docsPath: options?.docsPath,
+            cause: options?.cause,
+        });
+        this.name = "InvalidSeedError";
+    }
+}

@@ -1,0 +1,17 @@
+/**
+ * Try to create Uint128, returns null on failure
+ *
+ * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
+ * @since 0.0.0
+ * @param {bigint | number | string} value - Value to convert
+ * @returns {import('./Uint128Type.js').Uint128Type | null} Uint128 value or null
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as Uint128 from './primitives/Uint128/index.js';
+ * const valid = Uint128.tryFrom(100n); // 100n
+ * const invalid = Uint128.tryFrom(-1); // null
+ * ```
+ */
+export function tryFrom(value: bigint | number | string): import("./Uint128Type.js").Uint128Type | null;
+//# sourceMappingURL=tryFrom.d.ts.map

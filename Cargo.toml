@@ -9,7 +9,7 @@ edition = "2021"
 [lib]
 name = "crypto_wrappers"
 crate-type = ["staticlib"]
-path = "src/crypto/lib.rs"
+path = "packages/voltaire-zig/src/crypto/lib.rs"
 
 [dependencies]
 # Arkworks dependencies for elliptic curve operations

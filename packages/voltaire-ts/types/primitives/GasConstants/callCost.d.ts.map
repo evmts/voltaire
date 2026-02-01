@@ -1,0 +1,1 @@
+{"version":3,"file":"callCost.d.ts","sourceRoot":"","sources":["../../../src/primitives/GasConstants/callCost.js"],"names":[],"mappings":"AAEA;;;;;GAKG;AACH;YAHoB,OAAO;cAAY,OAAO;kBAAgB,OAAO;kBAAgB,MAAM;IAC9E;IAAE,IAAI,EAAE,MAAM,CAAC;IAAC,OAAO,EAAE,MAAM,CAAC;IAAC,OAAO,EAAE,MAAM,CAAC;IAAC,SAAS,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,MAAM,CAAA;CAAE,CAShG"}

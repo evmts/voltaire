@@ -55,7 +55,7 @@
             .hash = "z_ens_normalize-0.0.0-Iv6nMI2_AgCrLtEnZZnoeP87kZtP-36iIWzj3cD3v-vd",
         },
         .libwally_core = .{
-            .path = "lib/libwally-core",
+            .path = "packages/voltaire-zig/lib/libwally-core",
         },
     },
 
@@ -70,8 +70,9 @@
     .paths = .{
         "build.zig",
         "build.zig.zon",
-        "src",
-        "lib",
+        "packages/voltaire-zig/src",
+        "packages/voltaire-zig/lib",
+        "packages/voltaire-zig/examples",
         "Cargo.toml",
         "Cargo.lock",
         "LICENSE",

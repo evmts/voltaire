@@ -1,0 +1,1 @@
+{"version":3,"file":"errors.d.ts","sourceRoot":"","sources":["../../../src/primitives/Receipt/errors.js"],"names":[],"mappings":"AAEA;;;;GAIG;AACH;IACC;;;;;;OAMG;IACH,qBANW,MAAM,YAEd;QAA0B,KAAK,GAAvB,OAAO;QACU,QAAQ;QACS,OAAO;KAAC,EAcpD;IAFC;gBAdS,OAAO;;;kBAcM;CAGxB;AAED;;;;GAIG;AACH;IACC;;;;OAIG;IACH,mBAJW,MAAM,YACN,MAAM,UACN,MAAM,EAWhB;CACD;mCAnDsD,oBAAoB;mCAApB,oBAAoB"}

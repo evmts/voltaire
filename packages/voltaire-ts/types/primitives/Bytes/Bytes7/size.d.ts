@@ -1,0 +1,13 @@
+/**
+ * Get size of Bytes7 (always 7)
+ *
+ * @param {import('./Bytes7Type.js').Bytes7Type} _bytes - Bytes7
+ * @returns {7} Size (always 7)
+ *
+ * @example
+ * ```typescript
+ * const size = Bytes7.size(bytes); // 7
+ * ```
+ */
+export function size(_bytes: import("./Bytes7Type.js").Bytes7Type): 7;
+//# sourceMappingURL=size.d.ts.map

@@ -1,0 +1,19 @@
+/**
+ * Check if value is a power of 2
+ *
+ * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
+ * @since 0.0.0
+ * @param {import('./Uint128Type.js').Uint128Type} uint - Value to check
+ * @returns {boolean} True if power of 2
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as Uint128 from './primitives/Uint128/index.js';
+ * const a = Uint128.from(16n);
+ * Uint128.isPowerOf2(a); // true
+ * const b = Uint128.from(15n);
+ * Uint128.isPowerOf2(b); // false
+ * ```
+ */
+export function isPowerOf2(uint: import("./Uint128Type.js").Uint128Type): boolean;
+//# sourceMappingURL=isPowerOf2.d.ts.map

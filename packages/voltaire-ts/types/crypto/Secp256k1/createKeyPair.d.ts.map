@@ -1,0 +1,1 @@
+{"version":3,"file":"createKeyPair.d.ts","sourceRoot":"","sources":["../../../src/crypto/Secp256k1/createKeyPair.js"],"names":[],"mappings":"AAGA;;;;;;;;;;GAUG;AACH,iCARa;IAAE,UAAU,EAAE,UAAU,CAAC;IAAC,SAAS,EAAE,UAAU,CAAA;CAAE,CAgB7D"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"fromRpc.d.ts","sourceRoot":"","sources":["../../../src/primitives/Signature/fromRpc.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;;GAeG;AACH,6BAbW;IAAE,CAAC,EAAE,MAAM,CAAC;IAAC,CAAC,EAAE,MAAM,CAAC;IAAC,OAAO,CAAC,EAAE,MAAM,GAAG,MAAM,CAAC;IAAC,CAAC,CAAC,EAAE,MAAM,GAAG,MAAM,CAAA;CAAE,GACtE,OAAO,oBAAoB,EAAE,aAAa,CA0CtD"}

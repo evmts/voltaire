@@ -1,0 +1,4 @@
+/**
+ * HD Wallet types
+ */
+export {};

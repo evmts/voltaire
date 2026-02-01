@@ -1,0 +1,1 @@
+{"version":3,"file":"SignedDataType.d.ts","sourceRoot":"","sources":["../../../src/primitives/SignedData/SignedDataType.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;GAUG;AACH,MAAM,MAAM,cAAc,GAAG,UAAU,GAAG;IACzC,QAAQ,CAAC,KAAK,EAAE,YAAY,CAAC;CAC7B,CAAC;AAEF;;;;;;;GAOG;AACH,MAAM,MAAM,iBAAiB,GAAG,IAAI,GAAG,IAAI,GAAG,IAAI,CAAC"}

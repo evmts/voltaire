@@ -1,0 +1,134 @@
+---
+title: Address
+description: Ethereum address operations
+---
+
+20-byte Ethereum addresses with checksum validation.
+
+## Types
+
+```c
+typedef struct {
+    unsigned char bytes[20];
+} PrimitivesAddress;
+```
+
+## Functions
+
+### primitives_address_from_hex
+
+Parse address from hex string.
+
+```c
+int primitives_address_from_hex(
+    const char* hex,           // null-terminated hex (with or without 0x)
+    PrimitivesAddress* out     // output address
+);
+```
+
+**Returns:** `PRIMITIVES_SUCCESS` or `PRIMITIVES_ERROR_INVALID_HEX`
+
+```c
+PrimitivesAddress addr;
+int result = primitives_address_from_hex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", &addr);
+```
+
+### primitives_address_to_hex
+
+Convert address to lowercase hex string.
+
+```c
+int primitives_address_to_hex(
+    const PrimitivesAddress* address,  // input address
+    unsigned char* buf                  // 42-byte output buffer
+);
+```
+
+Buffer receives `0x` + 40 hex chars.
+
+### primitives_address_to_checksum_hex
+
+Convert to EIP-55 checksummed hex.
+
+```c
+int primitives_address_to_checksum_hex(
+    const PrimitivesAddress* address,
+    unsigned char* buf                  // 42-byte output buffer
+);
+```
+
+### primitives_address_is_zero
+
+Check if address is zero address.
+
+```c
+bool primitives_address_is_zero(const PrimitivesAddress* address);
+```
+
+### primitives_address_equals
+
+Compare two addresses for equality.
+
+```c
+bool primitives_address_equals(
+    const PrimitivesAddress* a,
+    const PrimitivesAddress* b
+);
+```
+
+### primitives_address_validate_checksum
+
+Validate EIP-55 checksum.
+
+```c
+bool primitives_address_validate_checksum(const char* hex);
+```
+
+### primitives_calculate_create_address
+
+Calculate CREATE contract address.
+
+```c
+int primitives_calculate_create_address(
+    const PrimitivesAddress* sender,
+    uint64_t nonce,
+    PrimitivesAddress* out
+);
+```
+
+### primitives_calculate_create2_address
+
+Calculate CREATE2 contract address.
+
+```c
+int primitives_calculate_create2_address(
+    const PrimitivesAddress* sender,
+    const unsigned char salt[32],
+    const unsigned char* init_code,
+    size_t init_code_len,
+    PrimitivesAddress* out
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+
+int main() {
+    PrimitivesAddress sender, contract;
+
+    // Parse sender address
+    primitives_address_from_hex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", &sender);
+
+    // Calculate CREATE address for nonce 0
+    primitives_calculate_create_address(&sender, 0, &contract);
+
+    // Print checksummed address
+    unsigned char hex[42];
+    primitives_address_to_checksum_hex(&contract, hex);
+    printf("Contract: %s\n", hex);
+
+    return 0;
+}
+```

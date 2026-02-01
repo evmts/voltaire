@@ -1,0 +1,29 @@
+[package]
+name = "voltaire"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+authors = ["Voltaire Contributors"]
+description = "Idiomatic Rust bindings for Voltaire Ethereum primitives"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/roninjin10/voltaire"
+documentation = "https://docs.rs/voltaire"
+keywords = ["ethereum", "crypto", "primitives", "blockchain"]
+categories = ["cryptography", "data-structures"]
+
+[lib]
+crate-type = ["lib"]
+
+[features]
+default = ["std"]
+std = []
+# Link against native Voltaire FFI library
+native = []
+
+[dependencies]
+# Core
+thiserror = "2"
+hex = "0.4"
+
+[dev-dependencies]
+proptest = "1"

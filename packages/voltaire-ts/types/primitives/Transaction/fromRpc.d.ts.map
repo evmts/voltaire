@@ -1,0 +1,1 @@
+{"version":3,"file":"fromRpc.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/fromRpc.js"],"names":[],"mappings":"AAqGA;;;;;;;;;;;;;;;;;;;;;;GAsBG;AAEH;;;;;;;;;;;;;;;;;;GAkBG;AAEH,6BAjBW,cAAc,GACZ,OAAO,YAAY,EAAE,GAAG,CA2JpC;;;;;;;;;;;;;;;;;;;;iBApK6B,MAAM;sBAAgB,MAAM,EAAE;;;;iBAE9B,MAAM;iBAAW,MAAM;eAAS,MAAM;iBAAW,MAAM;WAAK,MAAM;WAAK,MAAM"}

@@ -1,0 +1,115 @@
+---
+title: Blob Operations
+description: EIP-4844 blob transaction support
+---
+
+Work with EIP-4844 blobs for rollup data availability.
+
+## Constants
+
+```c
+#define BYTES_PER_BLOB 131072    // 128 KB
+#define BLOB_GAS_PER_BLOB 131072 // 2^17
+```
+
+## Functions
+
+### primitives_blob_from_data
+
+Encode data as blob with length prefix.
+
+```c
+int primitives_blob_from_data(
+    const unsigned char* data,
+    size_t data_len,              // max BYTES_PER_BLOB - 8
+    unsigned char out_blob[131072]
+);
+```
+
+### primitives_blob_to_data
+
+Extract original data from blob.
+
+```c
+int primitives_blob_to_data(
+    const unsigned char blob[131072],
+    unsigned char* out_data,
+    size_t* out_len
+);
+```
+
+### primitives_blob_is_valid
+
+Check if blob size is valid.
+
+```c
+int primitives_blob_is_valid(size_t blob_len);
+```
+
+**Returns:** 1 if valid (131072 bytes), 0 otherwise.
+
+### primitives_blob_calculate_gas
+
+Calculate total blob gas for N blobs.
+
+```c
+uint64_t primitives_blob_calculate_gas(uint32_t blob_count);
+```
+
+### primitives_blob_estimate_count
+
+Estimate blobs needed for data size.
+
+```c
+uint32_t primitives_blob_estimate_count(size_t data_size);
+```
+
+### primitives_blob_calculate_gas_price
+
+Calculate blob gas price from excess blob gas.
+
+```c
+uint64_t primitives_blob_calculate_gas_price(uint64_t excess_blob_gas);
+```
+
+### primitives_blob_calculate_excess_gas
+
+Calculate next block's excess blob gas.
+
+```c
+uint64_t primitives_blob_calculate_excess_gas(
+    uint64_t parent_excess,
+    uint64_t parent_used
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Data to encode
+    const char* data = "Hello, rollup world!";
+    size_t data_len = strlen(data);
+
+    // Encode as blob
+    unsigned char blob[131072];
+    primitives_blob_from_data((unsigned char*)data, data_len, blob);
+
+    // Decode
+    unsigned char decoded[131072];
+    size_t decoded_len;
+    primitives_blob_to_data(blob, decoded, &decoded_len);
+
+    printf("Decoded: %.*s\n", (int)decoded_len, decoded);
+
+    // Calculate gas
+    uint32_t blob_count = primitives_blob_estimate_count(data_len);
+    uint64_t gas = primitives_blob_calculate_gas(blob_count);
+    printf("Blobs: %u, Gas: %llu\n", blob_count, gas);
+
+    return 0;
+}
+```

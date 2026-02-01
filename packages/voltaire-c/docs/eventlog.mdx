@@ -1,0 +1,102 @@
+---
+title: Event Logs
+description: Event log filtering operations
+---
+
+Filter and match event logs.
+
+## Functions
+
+### primitives_eventlog_matches_address
+
+Check if log matches address filter.
+
+```c
+int primitives_eventlog_matches_address(
+    const unsigned char log_address[20],
+    const unsigned char (*filter_addresses)[20],
+    size_t filter_count
+);
+```
+
+**Returns:** 1 if matches, 0 if not.
+
+If `filter_count` is 0, matches all addresses.
+
+### primitives_eventlog_matches_topic
+
+Check if log matches single topic filter.
+
+```c
+int primitives_eventlog_matches_topic(
+    const unsigned char log_topic[32],
+    const unsigned char filter_topic[32],
+    int null_topic                         // 1 if filter is null (match any)
+);
+```
+
+### primitives_eventlog_matches_topics
+
+Check if log matches topic array filter.
+
+```c
+int primitives_eventlog_matches_topics(
+    const unsigned char (*log_topics)[32],
+    size_t log_topic_count,
+    const unsigned char (*filter_topics)[32],
+    const int* filter_nulls,              // 1 for null (match any), 0 for exact
+    size_t filter_count
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Log data
+    unsigned char log_addr[20];
+    primitives_address_from_hex("0x...", (PrimitivesAddress*)log_addr);
+
+    unsigned char log_topics[4][32];
+    // topic0 = Transfer event signature
+    // topic1 = from address (padded)
+    // topic2 = to address (padded)
+
+    // Filter: match specific contract
+    unsigned char filter_addr[1][20];
+    memcpy(filter_addr[0], log_addr, 20);
+
+    int matches = primitives_eventlog_matches_address(
+        log_addr,
+        filter_addr,
+        1
+    );
+    printf("Address matches: %d\n", matches);
+
+    // Filter: match Transfer event (topic0), any from (topic1 null), specific to (topic2)
+    unsigned char filter_topics[3][32];
+    int filter_nulls[3] = {0, 1, 0};  // exact, any, exact
+
+    // Set topic0 to Transfer signature
+    primitives_keccak256((unsigned char*)"Transfer(address,address,uint256)", 34, (PrimitivesHash*)filter_topics[0]);
+
+    // topic1 = null (match any)
+    // topic2 = specific address
+    memset(filter_topics[2], 0, 12);  // pad with zeros
+    memcpy(filter_topics[2] + 12, log_addr, 20);
+
+    matches = primitives_eventlog_matches_topics(
+        log_topics,
+        3,
+        filter_topics,
+        filter_nulls,
+        3
+    );
+    printf("Topics match: %d\n", matches);
+
+    return 0;
+}
+```

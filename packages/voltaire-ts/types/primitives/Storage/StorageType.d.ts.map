@@ -1,0 +1,1 @@
+{"version":3,"file":"StorageType.d.ts","sourceRoot":"","sources":["../../../src/primitives/Storage/StorageType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;GAGG;AACH,MAAM,MAAM,eAAe,GAAG,UAAU,GAAG;IAC1C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,aAAa,CAAC;CAChC,CAAC"}

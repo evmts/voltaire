@@ -1,0 +1,117 @@
+---
+title: Hex Utilities
+description: Hex encoding and decoding
+---
+
+Convert between bytes and hex strings.
+
+## Types
+
+```c
+typedef struct {
+    unsigned char bytes[32];
+} PrimitivesU256;
+```
+
+## Functions
+
+### primitives_hex_to_bytes
+
+Convert hex string to bytes.
+
+```c
+int primitives_hex_to_bytes(
+    const char* hex,           // null-terminated hex string
+    unsigned char* out_buf,    // output buffer
+    size_t buf_len             // buffer size
+);
+```
+
+**Returns:** Number of bytes written, or negative error code.
+
+```c
+unsigned char bytes[100];
+int len = primitives_hex_to_bytes("0xdeadbeef", bytes, sizeof(bytes));
+// len = 4, bytes = [0xde, 0xad, 0xbe, 0xef]
+```
+
+### primitives_bytes_to_hex
+
+Convert bytes to hex string.
+
+```c
+int primitives_bytes_to_hex(
+    const unsigned char* data,
+    size_t data_len,
+    unsigned char* out_buf,    // output buffer
+    size_t buf_len             // must be >= 2 + data_len * 2 + 1
+);
+```
+
+**Returns:** Number of characters written (including `0x` prefix).
+
+```c
+unsigned char data[] = {0xde, 0xad, 0xbe, 0xef};
+unsigned char hex[12];
+primitives_bytes_to_hex(data, 4, hex, sizeof(hex));
+// hex = "0xdeadbeef\0"
+```
+
+## U256 Operations
+
+### primitives_u256_from_hex
+
+Parse hex string as 256-bit big-endian integer.
+
+```c
+int primitives_u256_from_hex(
+    const char* hex,
+    PrimitivesU256* out_u256
+);
+```
+
+```c
+PrimitivesU256 value;
+primitives_u256_from_hex("0x1234", &value);
+```
+
+### primitives_u256_to_hex
+
+Convert U256 to padded 66-character hex string.
+
+```c
+int primitives_u256_to_hex(
+    const PrimitivesU256* value,
+    unsigned char* buf,        // 66+ bytes
+    size_t buf_len
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+
+int main() {
+    // Bytes to hex
+    unsigned char data[] = {0x12, 0x34, 0x56};
+    unsigned char hex[10];
+    primitives_bytes_to_hex(data, 3, hex, sizeof(hex));
+    printf("Hex: %s\n", hex);  // "0x123456"
+
+    // Hex to bytes
+    unsigned char decoded[10];
+    int len = primitives_hex_to_bytes("0xabcdef", decoded, sizeof(decoded));
+    printf("Decoded %d bytes\n", len);  // 3
+
+    // U256
+    PrimitivesU256 value;
+    primitives_u256_from_hex("0x1", &value);
+
+    unsigned char u256_hex[67];
+    primitives_u256_to_hex(&value, u256_hex, sizeof(u256_hex));
+    printf("U256: %s\n", u256_hex);
+
+    return 0;
+}
+```

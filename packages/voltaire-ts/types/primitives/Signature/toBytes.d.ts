@@ -1,0 +1,14 @@
+/**
+ * Convert Signature to raw bytes (without metadata)
+ *
+ * @param {import('./SignatureType.js').SignatureType} signature - Signature to convert
+ * @returns {Uint8Array} Raw signature bytes
+ *
+ * @example
+ * ```typescript
+ * const bytes = Signature.toBytes(sig);
+ * // Returns r + s (64 bytes) for ECDSA or signature (64 bytes) for Ed25519
+ * ```
+ */
+export function toBytes(signature: import("./SignatureType.js").SignatureType): Uint8Array;
+//# sourceMappingURL=toBytes.d.ts.map

@@ -1,0 +1,15 @@
+import type { brand } from "../../brand.js";
+/**
+ * Paymaster address type - ERC-4337 paymaster contract
+ *
+ * Paymasters sponsor gas fees for user operations, enabling gasless transactions
+ * or allowing users to pay gas in ERC-20 tokens.
+ *
+ * @see https://eips.ethereum.org/EIPS/eip-4337
+ * @see https://voltaire.tevm.sh/primitives/paymaster for Paymaster documentation
+ * @since 0.0.0
+ */
+export type PaymasterType = Uint8Array & {
+    readonly [brand]: "Paymaster";
+};
+//# sourceMappingURL=PaymasterType.d.ts.map

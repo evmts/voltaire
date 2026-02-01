@@ -1,0 +1,1 @@
+{"version":3,"file":"WithdrawalIndexType.d.ts","sourceRoot":"","sources":["../../../src/primitives/WithdrawalIndex/WithdrawalIndexType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;;;;GASG;AACH,MAAM,MAAM,mBAAmB,GAAG,MAAM,GAAG;IAC1C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,iBAAiB,CAAC;CACpC,CAAC"}

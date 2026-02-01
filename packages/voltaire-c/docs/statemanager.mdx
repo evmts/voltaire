@@ -1,0 +1,456 @@
+---
+title: State Manager
+description: EVM state management with fork support
+---
+
+Manage EVM state (balances, nonces, storage, code) with optional RPC fork support.
+
+## Handle Types
+
+```c
+typedef void* StateManagerHandle;
+typedef void* ForkBackendHandle;
+```
+
+## Error Codes
+
+```c
+#define STATE_MANAGER_SUCCESS              0
+#define STATE_MANAGER_ERROR_INVALID_INPUT  -1
+#define STATE_MANAGER_ERROR_OUT_OF_MEMORY  -2
+#define STATE_MANAGER_ERROR_INVALID_SNAPSHOT -3
+#define STATE_MANAGER_ERROR_RPC_FAILED     -4
+#define STATE_MANAGER_ERROR_INVALID_HEX    -5
+#define STATE_MANAGER_ERROR_RPC_PENDING    -6
+#define STATE_MANAGER_ERROR_NO_PENDING_REQUEST -7
+#define STATE_MANAGER_ERROR_OUTPUT_TOO_SMALL -8
+#define STATE_MANAGER_ERROR_INVALID_REQUEST -9
+```
+
+## State Manager Lifecycle
+
+### state_manager_create
+
+Create in-memory state manager (no fork).
+
+```c
+StateManagerHandle state_manager_create(void);
+```
+
+### state_manager_create_with_fork
+
+Create state manager with fork backend for RPC fetching.
+
+```c
+StateManagerHandle state_manager_create_with_fork(
+    ForkBackendHandle fork_backend
+);
+```
+
+### state_manager_destroy
+
+Free state manager and associated resources.
+
+```c
+void state_manager_destroy(StateManagerHandle handle);
+```
+
+## Fork Backend Lifecycle
+
+### fork_backend_create
+
+Create fork backend for async RPC fetching.
+
+```c
+ForkBackendHandle fork_backend_create(
+    void* rpc_client_ptr,              // ignored (ABI compat)
+    void* rpc_vtable,                  // ignored (ABI compat)
+    const char* block_tag,             // "latest", "0x123...", etc.
+    size_t max_cache_size
+);
+```
+
+### fork_backend_destroy
+
+Free fork backend.
+
+```c
+void fork_backend_destroy(ForkBackendHandle handle);
+```
+
+### fork_backend_clear_cache
+
+Clear all cached data.
+
+```c
+void fork_backend_clear_cache(ForkBackendHandle handle);
+```
+
+## Async RPC Pattern
+
+### fork_backend_next_request
+
+Get next pending RPC request.
+
+```c
+int fork_backend_next_request(
+    ForkBackendHandle handle,
+    uint64_t* out_request_id,
+    unsigned char* out_method,
+    size_t method_buf_len,
+    size_t* out_method_len,
+    unsigned char* out_params,
+    size_t params_buf_len,
+    size_t* out_params_len
+);
+```
+
+Methods returned: `eth_getProof`, `eth_getCode`
+
+### fork_backend_continue
+
+Continue with RPC response.
+
+```c
+int fork_backend_continue(
+    ForkBackendHandle handle,
+    uint64_t request_id,
+    const unsigned char* response,
+    size_t response_len
+);
+```
+
+## Balance Operations
+
+### state_manager_get_balance_sync
+
+Get account balance.
+
+```c
+int state_manager_get_balance_sync(
+    StateManagerHandle handle,
+    const char* address_hex,           // "0x..." format
+    unsigned char* out_buffer,         // at least 67 bytes
+    size_t buffer_len
+);
+```
+
+Returns hex string like `"0x0000...0001"`.
+
+**Returns:** `RPC_PENDING` if needs async fetch.
+
+### state_manager_set_balance
+
+Set account balance.
+
+```c
+int state_manager_set_balance(
+    StateManagerHandle handle,
+    const char* address_hex,
+    const char* balance_hex            // "0x..." or decimal
+);
+```
+
+## Nonce Operations
+
+### state_manager_get_nonce_sync
+
+Get account nonce.
+
+```c
+int state_manager_get_nonce_sync(
+    StateManagerHandle handle,
+    const char* address_hex,
+    uint64_t* out_nonce
+);
+```
+
+### state_manager_set_nonce
+
+Set account nonce.
+
+```c
+int state_manager_set_nonce(
+    StateManagerHandle handle,
+    const char* address_hex,
+    uint64_t nonce
+);
+```
+
+## Storage Operations
+
+### state_manager_get_storage_sync
+
+Get storage slot value.
+
+```c
+int state_manager_get_storage_sync(
+    StateManagerHandle handle,
+    const char* address_hex,
+    const char* slot_hex,              // "0x..." or decimal
+    unsigned char* out_buffer,         // at least 67 bytes
+    size_t buffer_len
+);
+```
+
+### state_manager_set_storage
+
+Set storage slot value.
+
+```c
+int state_manager_set_storage(
+    StateManagerHandle handle,
+    const char* address_hex,
+    const char* slot_hex,
+    const char* value_hex
+);
+```
+
+## Code Operations
+
+### state_manager_get_code_len_sync
+
+Get contract code length.
+
+```c
+int state_manager_get_code_len_sync(
+    StateManagerHandle handle,
+    const char* address_hex,
+    size_t* out_len
+);
+```
+
+### state_manager_get_code_sync
+
+Get contract code bytes.
+
+```c
+int state_manager_get_code_sync(
+    StateManagerHandle handle,
+    const char* address_hex,
+    unsigned char* out_buffer,
+    size_t buffer_len
+);
+```
+
+### state_manager_set_code
+
+Set contract code.
+
+```c
+int state_manager_set_code(
+    StateManagerHandle handle,
+    const char* address_hex,
+    const unsigned char* code,
+    size_t code_len
+);
+```
+
+## Checkpoint/Revert
+
+### state_manager_checkpoint
+
+Create checkpoint for later revert.
+
+```c
+int state_manager_checkpoint(StateManagerHandle handle);
+```
+
+### state_manager_revert
+
+Revert to last checkpoint.
+
+```c
+void state_manager_revert(StateManagerHandle handle);
+```
+
+### state_manager_commit
+
+Commit changes (discard checkpoint).
+
+```c
+void state_manager_commit(StateManagerHandle handle);
+```
+
+## Snapshots
+
+### state_manager_snapshot
+
+Take snapshot, returns snapshot ID.
+
+```c
+int state_manager_snapshot(
+    StateManagerHandle handle,
+    uint64_t* out_snapshot_id
+);
+```
+
+### state_manager_revert_to_snapshot
+
+Revert to specific snapshot.
+
+```c
+int state_manager_revert_to_snapshot(
+    StateManagerHandle handle,
+    uint64_t snapshot_id
+);
+```
+
+## Cache Management
+
+### state_manager_clear_caches
+
+Clear all in-memory caches.
+
+```c
+void state_manager_clear_caches(StateManagerHandle handle);
+```
+
+### state_manager_clear_fork_cache
+
+Clear fork cache only.
+
+```c
+void state_manager_clear_fork_cache(StateManagerHandle handle);
+```
+
+## Mock Data (Testing)
+
+### mock_data_load
+
+Load recorded mock data for testing.
+
+```c
+void mock_data_load(
+    uint32_t num_accounts,
+    uint32_t num_blocks,
+    uint64_t fork_block_number,
+    const unsigned char* data,
+    size_t data_len
+);
+```
+
+### mock_data_clear
+
+Clear loaded mock data.
+
+```c
+void mock_data_clear(void);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Create state manager
+    StateManagerHandle sm = state_manager_create();
+    if (!sm) {
+        printf("Failed to create state manager\n");
+        return 1;
+    }
+
+    // Set balance
+    state_manager_set_balance(sm,
+        "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "0x1000000000000000000"  // 1 ETH in wei
+    );
+
+    // Get balance
+    char balance[67];
+    state_manager_get_balance_sync(sm,
+        "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        (unsigned char*)balance, sizeof(balance)
+    );
+    printf("Balance: %s\n", balance);
+
+    // Checkpoint, modify, revert
+    state_manager_checkpoint(sm);
+
+    state_manager_set_balance(sm,
+        "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "0x0"
+    );
+
+    state_manager_revert(sm);  // balance restored
+
+    // Cleanup
+    state_manager_destroy(sm);
+
+    return 0;
+}
+```
+
+## Async Fork Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+// Simulated RPC function
+void do_rpc(const char* method, const char* params, char* response) {
+    // Your RPC implementation here
+    // Call eth_getProof, eth_getCode, etc.
+}
+
+int main() {
+    // Create fork backend
+    ForkBackendHandle fork = fork_backend_create(
+        NULL, NULL,
+        "latest",
+        1000  // cache size
+    );
+
+    // Create state manager with fork
+    StateManagerHandle sm = state_manager_create_with_fork(fork);
+
+    // Try to get balance (may need RPC)
+    char balance[67];
+    int result = state_manager_get_balance_sync(sm,
+        "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        (unsigned char*)balance, sizeof(balance)
+    );
+
+    while (result == STATE_MANAGER_ERROR_RPC_PENDING) {
+        // Get pending request
+        uint64_t request_id;
+        char method[64], params[1024];
+        size_t method_len, params_len;
+
+        fork_backend_next_request(fork,
+            &request_id,
+            (unsigned char*)method, sizeof(method), &method_len,
+            (unsigned char*)params, sizeof(params), &params_len
+        );
+
+        // Perform RPC
+        char response[4096];
+        do_rpc(method, params, response);
+
+        // Continue
+        fork_backend_continue(fork, request_id,
+            (unsigned char*)response, strlen(response)
+        );
+
+        // Retry
+        result = state_manager_get_balance_sync(sm,
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            (unsigned char*)balance, sizeof(balance)
+        );
+    }
+
+    printf("Balance: %s\n", balance);
+
+    // Cleanup
+    state_manager_destroy(sm);
+    fork_backend_destroy(fork);
+
+    return 0;
+}
+```
+
+## Note
+
+State manager is for native builds only, not available in WASM.

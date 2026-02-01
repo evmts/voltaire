@@ -1,0 +1,1 @@
+{"version":3,"file":"getAuthorizations.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/getAuthorizations.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,iBAAiB,EAAE,OAAO,EAAE,MAAM,YAAY,CAAC;AAE7D;;;;GAIG;AACH,wBAAgB,iBAAiB,CAAC,IAAI,EAAE,OAAO,GAAG,iBAAiB,CAElE"}

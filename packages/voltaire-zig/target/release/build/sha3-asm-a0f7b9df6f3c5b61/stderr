@@ -1,0 +1,4 @@
+selected cryptogams script: cryptogams/arm/keccak1600-armv8.pl
+selected cryptogams script flavor: Some("ios64+sha3")
+running script: "perl" "cryptogams/arm/keccak1600-armv8.pl" "ios64+sha3" "/Users/williamcory/voltaire/packages/voltaire-zig/target/release/build/sha3-asm-a0f7b9df6f3c5b61/out/keccak1600-armv8.S"
+stdout for cryptogams/arm/keccak1600-armv8.pl is empty: file "/Users/williamcory/voltaire/packages/voltaire-zig/target/release/build/sha3-asm-a0f7b9df6f3c5b61/out/keccak1600-armv8.S" was written by perl script

@@ -1,0 +1,1 @@
+{"version":3,"file":"isSuccess.d.ts","sourceRoot":"","sources":["../../../src/primitives/TransactionStatus/isSuccess.js"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,kCAHW,OAAO,4BAA4B,EAAE,qBAAqB,GACxD,MAAM,IAAI;IAAE,QAAQ,CAAC,IAAI,EAAE,SAAS,CAAC;IAAC,QAAQ,CAAC,OAAO,EAAE,OAAO,wBAAwB,EAAE,WAAW,CAAA;CAAE,CAIlH"}

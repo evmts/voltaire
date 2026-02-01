@@ -1,0 +1,1 @@
+{"version":3,"file":"fromRpc.d.ts","sourceRoot":"","sources":["../../../src/primitives/BlockBody/fromRpc.js"],"names":[],"mappings":"AAIA;;;GAGG;AAEH;;;;;GAKG;AAEH;;;;;;;;;;;;;;;;;;;;;;;;;;GA0BG;AACH,6BAnBW,YAAY,GACV,OAAO,oBAAoB,EAAE,aAAa,CAiCtD;6BArDY,OAAO,2BAA2B,EAAE,cAAc;4BAClD,OAAO,0BAA0B,EAAE,aAAa;;;;;kBAK/C,cAAc,EAAE"}

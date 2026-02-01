@@ -1,0 +1,1 @@
+{"version":3,"file":"PrivateKeyType.d.ts","sourceRoot":"","sources":["../../../src/primitives/PrivateKey/PrivateKeyType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;GAGG;AACH,MAAM,MAAM,cAAc,GAAG,UAAU,GAAG;IACzC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,YAAY,CAAC;IAC/B,QAAQ,CAAC,MAAM,EAAE,EAAE,CAAC;CACpB,CAAC"}

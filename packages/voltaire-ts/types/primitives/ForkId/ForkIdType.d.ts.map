@@ -1,0 +1,1 @@
+{"version":3,"file":"ForkIdType.d.ts","sourceRoot":"","sources":["../../../src/primitives/ForkId/ForkIdType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,mCAAmC,CAAC;AAEzE;;;;;GAKG;AACH,MAAM,MAAM,UAAU,GAAG;IACxB;;OAEG;IACH,QAAQ,CAAC,IAAI,EAAE,UAAU,CAAC;IAE1B;;OAEG;IACH,QAAQ,CAAC,IAAI,EAAE,eAAe,CAAC;CAC/B,CAAC"}

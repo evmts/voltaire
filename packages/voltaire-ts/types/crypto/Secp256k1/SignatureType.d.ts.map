@@ -1,0 +1,1 @@
+{"version":3,"file":"SignatureType.d.ts","sourceRoot":"","sources":["../../../src/crypto/Secp256k1/SignatureType.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;;;;GAoBG;AACH,MAAM,WAAW,sBAAsB;IACtC,CAAC,EAAE,OAAO,gCAAgC,EAAE,QAAQ,CAAC;IACrD,CAAC,EAAE,OAAO,gCAAgC,EAAE,QAAQ,CAAC;IACrD,CAAC,EAAE,MAAM,CAAC;CACV;AAED;;GAEG;AACH,MAAM,MAAM,gBAAgB,GAAG,sBAAsB,CAAC"}

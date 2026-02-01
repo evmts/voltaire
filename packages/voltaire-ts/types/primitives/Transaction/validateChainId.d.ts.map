@@ -1,0 +1,1 @@
+{"version":3,"file":"validateChainId.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/validateChainId.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,OAAO,EAAE,OAAO,EAAE,OAAO,EAAE,OAAO,EAAE,MAAM,YAAY,CAAC;AAErE;;;;GAIG;AACH,wBAAgB,eAAe,CAC9B,IAAI,EAAE,OAAO,GAAG,OAAO,GAAG,OAAO,GAAG,OAAO,GACzC,IAAI,CAoBN"}

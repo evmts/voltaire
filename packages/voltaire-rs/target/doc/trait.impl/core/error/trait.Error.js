@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["hex",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"hex/enum.FromHexError.html\" title=\"enum hex::FromHexError\">FromHexError</a>"]]],["proc_macro2",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"struct\" href=\"proc_macro2/struct.LexError.html\" title=\"struct proc_macro2::LexError\">LexError</a>"]]],["syn",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"struct\" href=\"syn/struct.Error.html\" title=\"struct syn::Error\">Error</a>"]]],["voltaire",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"voltaire/error/enum.Error.html\" title=\"enum voltaire::error::Error\">Error</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"voltaire/primitives/rlp/enum.RlpError.html\" title=\"enum voltaire::primitives::rlp::RlpError\">RlpError</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[260,279,246,549]}

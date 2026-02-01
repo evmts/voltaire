@@ -1,0 +1,176 @@
+---
+title: Hash Algorithms
+description: Keccak256, SHA256, RIPEMD160, Blake2b
+---
+
+Cryptographic hash functions used in Ethereum.
+
+## Types
+
+```c
+typedef struct {
+    unsigned char bytes[32];
+} PrimitivesHash;
+```
+
+## Keccak-256
+
+Ethereum's primary hash function (different from SHA3-256).
+
+### primitives_keccak256
+
+```c
+int primitives_keccak256(
+    const unsigned char* data,
+    size_t data_len,
+    PrimitivesHash* out_hash
+);
+```
+
+```c
+PrimitivesHash hash;
+primitives_keccak256((unsigned char*)"hello", 5, &hash);
+```
+
+### primitives_eip191_hash_message
+
+Hash message with EIP-191 prefix: `"\x19Ethereum Signed Message:\n" + len + message`
+
+```c
+int primitives_eip191_hash_message(
+    const unsigned char* message,
+    size_t message_len,
+    PrimitivesHash* out_hash
+);
+```
+
+### primitives_solidity_keccak256
+
+Keccak256 of tightly packed data (for `abi.encodePacked`).
+
+```c
+int primitives_solidity_keccak256(
+    const unsigned char* packed_data,
+    size_t data_len,
+    PrimitivesHash* out_hash
+);
+```
+
+## SHA-256
+
+Standard SHA-256 (used by Bitcoin, HMAC).
+
+### primitives_sha256
+
+```c
+int primitives_sha256(
+    const unsigned char* data,
+    size_t data_len,
+    unsigned char out_hash[32]
+);
+```
+
+### primitives_solidity_sha256
+
+SHA256 of tightly packed data.
+
+```c
+int primitives_solidity_sha256(
+    const unsigned char* packed_data,
+    size_t data_len,
+    unsigned char out_hash[32]
+);
+```
+
+## RIPEMD-160
+
+20-byte hash (used in Bitcoin address derivation).
+
+### primitives_ripemd160
+
+```c
+int primitives_ripemd160(
+    const unsigned char* data,
+    size_t data_len,
+    unsigned char out_hash[20]
+);
+```
+
+## Blake2b
+
+64-byte hash (EIP-152 precompile).
+
+### primitives_blake2b
+
+```c
+int primitives_blake2b(
+    const unsigned char* data,
+    size_t data_len,
+    unsigned char out_hash[64]
+);
+```
+
+## Hash Utilities
+
+### primitives_hash_to_hex
+
+Convert 32-byte hash to hex string.
+
+```c
+int primitives_hash_to_hex(
+    const PrimitivesHash* hash,
+    unsigned char* buf          // 66-byte buffer (0x + 64 chars)
+);
+```
+
+### primitives_hash_from_hex
+
+Parse hex string to hash.
+
+```c
+int primitives_hash_from_hex(
+    const char* hex,
+    PrimitivesHash* out_hash
+);
+```
+
+### primitives_hash_equals
+
+Constant-time hash comparison.
+
+```c
+bool primitives_hash_equals(
+    const PrimitivesHash* a,
+    const PrimitivesHash* b
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    const char* message = "hello world";
+
+    // Keccak256
+    PrimitivesHash keccak;
+    primitives_keccak256((unsigned char*)message, strlen(message), &keccak);
+
+    // SHA256
+    unsigned char sha[32];
+    primitives_sha256((unsigned char*)message, strlen(message), sha);
+
+    // EIP-191 personal message
+    PrimitivesHash eip191;
+    primitives_eip191_hash_message((unsigned char*)message, strlen(message), &eip191);
+
+    // Convert to hex
+    unsigned char hex[66];
+    primitives_hash_to_hex(&keccak, hex);
+    printf("Keccak256: %s\n", hex);
+
+    return 0;
+}
+```

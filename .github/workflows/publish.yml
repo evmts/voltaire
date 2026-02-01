@@ -3,12 +3,12 @@
 # =============================================================================
 # HOW TO PUBLISH A NEW VERSION:
 #
-# 1. Bump version in BOTH package.json files:
-#    - npm version patch --no-git-tag-version  (in root)
-#    - cd voltaire-effect && npm version <same-version> --no-git-tag-version
+# 1. Bump version in package.json files:
+#    - cd packages/voltaire-ts && npm version patch --no-git-tag-version
+#    - cd packages/voltaire-effect && npm version <same-version> --no-git-tag-version
 #
 # 2. Commit the version bump:
-#    - git add package.json voltaire-effect/package.json
+#    - git add packages/voltaire/package.json packages/voltaire-effect/package.json
 #    - git commit -m "chore: bump version to X.Y.Z"
 #
 # 3. Create and push the tag:
@@ -83,14 +83,14 @@ jobs:
 
       - name: Typecheck
         if: matrix.shard == 1
-        run: pnpm run typecheck
+        run: pnpm -r run typecheck
 
       - name: Lint
         if: matrix.shard == 1
-        run: pnpm run lint:check
+        run: pnpm -r run lint:check
 
       - name: Test (Shard ${{ matrix.shard }}/8)
-        run: pnpm test:run --shard=${{ matrix.shard }}/8
+        run: pnpm --filter @tevm/voltaire test:run --shard=${{ matrix.shard }}/8
 
   publish-voltaire:
     name: Publish @tevm/voltaire
@@ -129,9 +129,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build TypeScript
-        run: pnpm run build
+        run: pnpm --filter @tevm/voltaire build
 
       - name: Publish @tevm/voltaire
+        working-directory: packages/voltaire-ts
         run: npm publish --provenance --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -173,7 +174,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build @tevm/voltaire
-        run: pnpm run build
+        run: pnpm --filter @tevm/voltaire build
 
       - name: Build voltaire-effect
         run: pnpm --filter voltaire-effect build

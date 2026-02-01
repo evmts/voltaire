@@ -1,0 +1,1 @@
+{"version":3,"file":"detectFusions.d.ts","sourceRoot":"","sources":["../../../src/primitives/Bytecode/detectFusions.js"],"names":[],"mappings":"AAmBA;;;;;;;;;;;;;;;;;GAiBG;AAEH,wCAZW,OAAO,mBAAmB,EAAE,eAAe,GACzC,KAAK,CAAC;IAAC,IAAI,EAAE,MAAM,CAAC;IAAC,EAAE,EAAE,MAAM,CAAC;IAAC,MAAM,EAAE,MAAM,CAAA;CAAC,CAAC,CAoK7D"}

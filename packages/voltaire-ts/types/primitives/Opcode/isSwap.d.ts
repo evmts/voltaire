@@ -1,0 +1,14 @@
+/**
+ * Check if opcode is a SWAP instruction
+ *
+ * @param {import('./OpcodeType.js').OpcodeType} opcode - Opcode to check
+ * @returns {boolean} True if SWAP1-SWAP16
+ *
+ * @example
+ * ```typescript
+ * Opcode.isSwap(Opcode.SWAP1); // true
+ * Opcode.isSwap(Opcode.ADD); // false
+ * ```
+ */
+export function isSwap(opcode: import("./OpcodeType.js").OpcodeType): boolean;
+//# sourceMappingURL=isSwap.d.ts.map

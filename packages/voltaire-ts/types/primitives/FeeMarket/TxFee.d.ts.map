@@ -1,0 +1,1 @@
+{"version":3,"file":"TxFee.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/TxFee.ts"],"names":[],"mappings":"AAAA;;GAEG;AACH,MAAM,MAAM,KAAK,GAAG;IACnB,6CAA6C;IAC7C,iBAAiB,EAAE,MAAM,CAAC;IAC1B,sCAAsC;IACtC,WAAW,EAAE,MAAM,CAAC;IACpB,kCAAkC;IAClC,OAAO,EAAE,MAAM,CAAC;CAChB,CAAC"}

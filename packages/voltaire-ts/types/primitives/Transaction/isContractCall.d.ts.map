@@ -1,0 +1,1 @@
+{"version":3,"file":"isContractCall.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/isContractCall.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,wBAAgB,cAAc,CAAC,IAAI,EAAE;IAAE,EAAE,EAAE,GAAG,CAAC;IAAC,IAAI,EAAE,UAAU,CAAA;CAAE,GAAG,OAAO,CAE3E"}

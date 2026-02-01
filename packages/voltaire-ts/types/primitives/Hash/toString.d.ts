@@ -1,0 +1,17 @@
+/**
+ * Convert Hash to string (alias for toHex)
+ *
+ * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
+ * @since 0.0.0
+ * @param {import('./HashType.js').HashType} hash - Hash to convert
+ * @returns {string} Hex string with 0x prefix
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as Hash from './primitives/Hash/index.js';
+ * const hash = Hash.from('0x1234...');
+ * const str = Hash.toString(hash);
+ * ```
+ */
+export function toString(hash: import("./HashType.js").HashType): string;
+//# sourceMappingURL=toString.d.ts.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"withAddress.d.ts","sourceRoot":"","sources":["../../../src/primitives/AccessList/withAddress.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,IAAI,cAAc,EAAE,MAAM,2BAA2B,CAAC;AAC/E,OAAO,KAAK,EAAE,iBAAiB,EAAE,MAAM,qBAAqB,CAAC;AAG7D;;;;;;;;;;;;;;;GAeG;AACH,wBAAgB,WAAW,CAC1B,IAAI,EAAE,iBAAiB,EACvB,OAAO,EAAE,cAAc,GACrB,iBAAiB,CAKnB"}

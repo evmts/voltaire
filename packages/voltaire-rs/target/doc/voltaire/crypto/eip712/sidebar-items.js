@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MessageValue"],"fn":["encode_type","encode_value","hash_domain","hash_struct","hash_type","sign_typed_data"],"struct":["Domain","TypeProperty","TypedData"],"type":["TypeDefinitions"]};

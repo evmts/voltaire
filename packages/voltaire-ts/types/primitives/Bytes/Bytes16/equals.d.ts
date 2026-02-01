@@ -1,0 +1,16 @@
+/**
+ * Check if two Bytes16 values are equal
+ *
+ * @see https://voltaire.tevm.sh/primitives/bytes/bytes16 for documentation
+ * @since 0.0.0
+ * @param {import('./Bytes16Type.js').Bytes16Type} a - First value
+ * @param {import('./Bytes16Type.js').Bytes16Type} b - Second value
+ * @returns {boolean} True if equal
+ * @example
+ * ```javascript
+ * import * as Bytes16 from './primitives/Bytes/Bytes16/index.js';
+ * const equal = Bytes16.equals(a, b);
+ * ```
+ */
+export function equals(a: import("./Bytes16Type.js").Bytes16Type, b: import("./Bytes16Type.js").Bytes16Type): boolean;
+//# sourceMappingURL=equals.d.ts.map

@@ -1,0 +1,15 @@
+/**
+ * Get size of Bytes64 (always 64)
+ *
+ * @see https://voltaire.tevm.sh/primitives/bytes/bytes64 for documentation
+ * @since 0.0.0
+ * @param {import('./Bytes64Type.js').Bytes64Type} _bytes - Bytes64 value
+ * @returns {64} Size in bytes
+ * @example
+ * ```javascript
+ * import * as Bytes64 from './primitives/Bytes/Bytes64/index.js';
+ * const s = Bytes64.size(bytes); // 64
+ * ```
+ */
+export function size(_bytes: import("./Bytes64Type.js").Bytes64Type): 64;
+//# sourceMappingURL=size.d.ts.map

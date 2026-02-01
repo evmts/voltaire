@@ -1,0 +1,379 @@
+import { describe, expect, it } from "vitest";
+import { Constructor } from "./Constructor.js";
+describe("Constructor", () => {
+    describe("factory function", () => {
+        it("creates Constructor from object", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256", name: "initialSupply" }],
+            });
+            expect(ctor.type).toBe("constructor");
+            expect(ctor.stateMutability).toBe("nonpayable");
+            expect(ctor.inputs.length).toBe(1);
+        });
+        it("creates Constructor with no parameters", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [],
+            });
+            expect(ctor.type).toBe("constructor");
+            expect(ctor.inputs.length).toBe(0);
+        });
+        it("creates payable Constructor", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "payable",
+                inputs: [],
+            });
+            expect(ctor.stateMutability).toBe("payable");
+        });
+        it("creates Constructor with multiple parameters", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [
+                    { type: "string", name: "name" },
+                    { type: "string", name: "symbol" },
+                    { type: "uint256", name: "initialSupply" },
+                ],
+            });
+            expect(ctor.inputs.length).toBe(3);
+        });
+        it("defaults type to constructor", () => {
+            const ctor = Constructor({
+                stateMutability: "nonpayable",
+                inputs: [],
+            });
+            expect(ctor.type).toBe("constructor");
+        });
+    });
+    describe("prototype setup", () => {
+        it("sets correct prototype", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [],
+            });
+            expect(Object.getPrototypeOf(ctor)).toBe(Constructor.prototype);
+            expect(Object.getPrototypeOf(Object.getPrototypeOf(ctor))).toBe(Object.prototype);
+        });
+    });
+    describe("static methods", () => {
+        it("has encodeParams method", () => {
+            expect(typeof Constructor.encodeParams).toBe("function");
+        });
+        it("has decodeParams method", () => {
+            expect(typeof Constructor.decodeParams).toBe("function");
+        });
+    });
+    describe("instance methods", () => {
+        const testConstructor = Constructor({
+            type: "constructor",
+            stateMutability: "nonpayable",
+            inputs: [
+                { type: "uint256", name: "initialSupply" },
+                { type: "string", name: "name" },
+            ],
+        });
+        describe("encodeParams", () => {
+            it("encodes constructor parameters", () => {
+                const encoded = testConstructor.encodeParams([1000n, "Token"]);
+                expect(encoded).toBeInstanceOf(Uint8Array);
+                expect(encoded.length).toBeGreaterThan(0);
+            });
+            it("encodes with no parameters", () => {
+                const ctor = Constructor({
+                    type: "constructor",
+                    stateMutability: "nonpayable",
+                    inputs: [],
+                });
+                const encoded = ctor.encodeParams([]);
+                expect(encoded).toBeInstanceOf(Uint8Array);
+            });
+            it("encodes single parameter", () => {
+                const ctor = Constructor({
+                    type: "constructor",
+                    stateMutability: "nonpayable",
+                    inputs: [{ type: "uint256", name: "value" }],
+                });
+                const encoded = ctor.encodeParams([42n]);
+                expect(encoded).toBeInstanceOf(Uint8Array);
+                expect(encoded.length).toBe(32);
+            });
+        });
+        describe("decodeParams", () => {
+            it("decodes constructor parameters", () => {
+                const encoded = testConstructor.encodeParams([1000n, "Token"]);
+                const decoded = testConstructor.decodeParams(encoded);
+                expect(decoded).toEqual([1000n, "Token"]);
+            });
+            it("decodes with no parameters", () => {
+                const ctor = Constructor({
+                    type: "constructor",
+                    stateMutability: "nonpayable",
+                    inputs: [],
+                });
+                const encoded = ctor.encodeParams([]);
+                /** @type {unknown[]} */
+                const decoded = ctor.decodeParams(encoded);
+                expect(decoded).toEqual([]);
+            });
+            it("round-trips encoding and decoding", () => {
+                const args = [500n, "MyToken"];
+                const encoded = testConstructor.encodeParams(args);
+                const decoded = testConstructor.decodeParams(encoded);
+                expect(decoded).toEqual(args);
+            });
+        });
+    });
+    describe("toString", () => {
+        it("returns string representation", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256" }],
+            });
+            const str = ctor.toString();
+            expect(str).toContain("Constructor");
+            expect(str).toContain("nonpayable");
+            expect(str).toContain("inputs: 1");
+        });
+        it("shows correct input count", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "payable",
+                inputs: [{ type: "uint256" }, { type: "string" }],
+            });
+            const str = ctor.toString();
+            expect(str).toContain("inputs: 2");
+        });
+        it("handles no inputs", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [],
+            });
+            const str = ctor.toString();
+            expect(str).toContain("inputs: 0");
+        });
+    });
+    describe("inspect", () => {
+        it("provides custom inspect output", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256" }],
+            });
+            const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
+            /** @type {(depth?: number, options?: unknown) => string} */
+            const inspected = /** @type {*} */ (ctor)[inspectSymbol]();
+            expect(inspected).toContain("Constructor");
+            expect(inspected).toContain("nonpayable");
+            expect(inspected).toContain("inputs: 1");
+        });
+    });
+    describe("real-world examples", () => {
+        it("creates ERC20 constructor", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [
+                    { type: "string", name: "name" },
+                    { type: "string", name: "symbol" },
+                    { type: "uint8", name: "decimals" },
+                    { type: "uint256", name: "initialSupply" },
+                ],
+            });
+            expect(ctor.inputs.length).toBe(4);
+            expect(ctor.stateMutability).toBe("nonpayable");
+        });
+        it("encodes and decodes ERC20 constructor parameters", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [
+                    { type: "string", name: "name" },
+                    { type: "string", name: "symbol" },
+                    { type: "uint256", name: "initialSupply" },
+                ],
+            });
+            const args = ["MyToken", "MTK", 1000000n];
+            const encoded = ctor.encodeParams(args);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual(args);
+        });
+        it("creates payable contract constructor", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "payable",
+                inputs: [{ type: "address", name: "owner" }],
+            });
+            expect(ctor.stateMutability).toBe("payable");
+            expect(ctor.inputs.length).toBe(1);
+        });
+    });
+    describe("parameter types", () => {
+        it("handles uint256 parameter", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256", name: "value" }],
+            });
+            const encoded = ctor.encodeParams([42n]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([42n]);
+        });
+        it("handles address parameter", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "address", name: "owner" }],
+            });
+            const addr = 
+            /** @type {import('../../Address/AddressType.js').AddressType} */ (
+            /** @type {unknown} */ ("0x742d35cc6634c0532925a3b844bc9e7595f251e3"));
+            const encoded = ctor.encodeParams([addr]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([addr]);
+        });
+        it("handles string parameter", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "string", name: "name" }],
+            });
+            const encoded = ctor.encodeParams(["Test"]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual(["Test"]);
+        });
+        it("handles bool parameter", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "bool", name: "flag" }],
+            });
+            const encoded = ctor.encodeParams([true]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([true]);
+        });
+        it("handles bytes parameter", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "bytes", name: "data" }],
+            });
+            const data = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+            const encoded = ctor.encodeParams([data]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(/** @type {*} */ (decoded)[0]).toEqual(data);
+        });
+        it("handles array parameter", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256[]", name: "values" }],
+            });
+            const values = [1n, 2n, 3n];
+            const encoded = ctor.encodeParams([values]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([values]);
+        });
+    });
+    describe("edge cases", () => {
+        it("handles empty inputs array", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [],
+            });
+            expect(ctor.inputs).toEqual([]);
+            const encoded = ctor.encodeParams([]);
+            expect(encoded.length).toBe(0);
+        });
+        it("handles many parameters", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: Array.from({ length: 10 }, (_, i) => ({
+                    type: "uint256",
+                    name: `param${i}`,
+                })),
+            });
+            const args = Array.from({ length: 10 }, (_, i) => BigInt(i));
+            const encoded = ctor.encodeParams(args);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual(args);
+        });
+        it("handles zero values", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256" }],
+            });
+            const encoded = ctor.encodeParams([0n]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([0n]);
+        });
+    });
+    describe("boundary values", () => {
+        it("handles max uint256", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256" }],
+            });
+            const maxUint256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+            const encoded = ctor.encodeParams([maxUint256]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([maxUint256]);
+        });
+        it("handles zero address", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "address" }],
+            });
+            const zeroAddr = 
+            /** @type {import('../../Address/AddressType.js').AddressType} */ (
+            /** @type {unknown} */ ("0x0000000000000000000000000000000000000000"));
+            const encoded = ctor.encodeParams([zeroAddr]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([zeroAddr]);
+        });
+        it("handles empty string", () => {
+            const ctor = Constructor({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "string" }],
+            });
+            const encoded = ctor.encodeParams([""]);
+            const decoded = ctor.decodeParams(encoded);
+            expect(decoded).toEqual([""]);
+        });
+    });
+    describe("static method usage", () => {
+        it("encodeParams works as static method", () => {
+            /** @type {import('./ConstructorType.js').ConstructorType<'nonpayable', [{ type: 'uint256' }]>} */
+            const constructorDef = /** @type {*} */ ({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256" }],
+            });
+            const encoded = Constructor.encodeParams(constructorDef, [42n]);
+            expect(encoded).toBeInstanceOf(Uint8Array);
+        });
+        it("decodeParams works as static method", () => {
+            /** @type {import('./ConstructorType.js').ConstructorType<'nonpayable', [{ type: 'uint256' }]>} */
+            const constructorDef = /** @type {*} */ ({
+                type: "constructor",
+                stateMutability: "nonpayable",
+                inputs: [{ type: "uint256" }],
+            });
+            const encoded = Constructor.encodeParams(constructorDef, [42n]);
+            const decoded = Constructor.decodeParams(constructorDef, encoded);
+            expect(decoded).toEqual([42n]);
+        });
+    });
+});

@@ -1,0 +1,1 @@
+{"version":3,"file":"BytesType.d.ts","sourceRoot":"","sources":["../../../src/primitives/Bytes/BytesType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C,MAAM,MAAM,SAAS,GAAG,UAAU,GAAG;IACpC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,OAAO,CAAC;CAC1B,CAAC"}

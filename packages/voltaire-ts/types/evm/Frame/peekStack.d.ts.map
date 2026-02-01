@@ -1,0 +1,1 @@
+{"version":3,"file":"peekStack.d.ts","sourceRoot":"","sources":["../../../src/evm/Frame/peekStack.js"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,iCAJW,OAAO,gBAAgB,EAAE,YAAY,SACrC,MAAM,GACJ;IAAC,KAAK,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,IAAI,CAAA;CAAC,GAAG;IAAC,KAAK,EAAE,IAAI,CAAC;IAAC,KAAK,EAAE,OAAO,gBAAgB,EAAE,QAAQ,CAAA;CAAC,CAUlG"}

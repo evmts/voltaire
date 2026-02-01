@@ -1,0 +1,1 @@
+{"version":3,"file":"generateKeypair.d.ts","sourceRoot":"","sources":["../../../src/crypto/X25519/generateKeypair.js"],"names":[],"mappings":"AAGA;;;;;;;;;;;;;;;;GAgBG;AACH,mCAVa;IAAC,SAAS,EAAE,OAAO,gBAAgB,EAAE,SAAS,CAAC;IAAC,SAAS,EAAE,OAAO,gBAAgB,EAAE,SAAS,CAAA;CAAC,CAa1G"}

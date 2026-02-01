@@ -1,0 +1,65 @@
+---
+title: Access List
+description: EIP-2930 access list operations
+---
+
+Work with EIP-2930 access lists for gas optimization.
+
+## Types
+
+```c
+typedef struct {
+    PrimitivesAddress address;
+    const PrimitivesHash* storage_keys_ptr;
+    size_t storage_keys_len;
+} PrimitivesAccessListEntry;
+```
+
+## Constants
+
+```c
+#define ACCESS_LIST_ADDRESS_COST 2400      // per address
+#define ACCESS_LIST_STORAGE_KEY_COST 1900  // per storage key
+```
+
+## Functions
+
+### primitives_access_list_gas_cost
+
+Calculate total gas cost for access list.
+
+```c
+int primitives_access_list_gas_cost(
+    const PrimitivesAccessListEntry* entries,
+    size_t entries_len,
+    uint64_t* out_cost
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+
+int main() {
+    // Create storage keys
+    PrimitivesHash keys[2];
+    memset(&keys[0], 0x01, 32);
+    memset(&keys[1], 0x02, 32);
+
+    // Create access list entry
+    PrimitivesAccessListEntry entry;
+    primitives_address_from_hex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", &entry.address);
+    entry.storage_keys_ptr = keys;
+    entry.storage_keys_len = 2;
+
+    // Calculate gas cost
+    uint64_t gas;
+    primitives_access_list_gas_cost(&entry, 1, &gas);
+
+    printf("Access list gas: %llu\n", gas);
+    // = 2400 (address) + 2 * 1900 (storage keys) = 6200
+
+    return 0;
+}
+```

@@ -1,0 +1,1 @@
+{"version":3,"file":"multiPairing.d.ts","sourceRoot":"","sources":["../../../../src/crypto/bn254/Pairing/multiPairing.js"],"names":[],"mappings":"AAKA;;;;;;;;;;;;;;;;;;;;;GAqBG;AACH,oCAfW,KAAK,CAAC,CAAC,OAAO,mBAAmB,EAAE,WAAW,EAAE,OAAO,mBAAmB,EAAE,WAAW,CAAC,CAAC,GACvF;IAAC,KAAK,EAAE,MAAM,CAAA;CAAC,CAuB3B"}

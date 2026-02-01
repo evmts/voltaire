@@ -3,11 +3,11 @@ name: voltaire-effect CI
 on:
   push:
     paths:
-      - 'voltaire-effect/**'
+      - 'packages/voltaire-effect/**'
       - '.github/workflows/voltaire-effect-ci.yml'
   pull_request:
     paths:
-      - 'voltaire-effect/**'
+      - 'packages/voltaire-effect/**'
       - '.github/workflows/voltaire-effect-ci.yml'
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build @tevm/voltaire types
-        run: pnpm build:types
+        run: pnpm --filter @tevm/voltaire build:types
 
       - name: Typecheck
         run: pnpm --filter voltaire-effect typecheck

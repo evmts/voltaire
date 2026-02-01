@@ -1,0 +1,1 @@
+{"version":3,"file":"KzgCommitmentType.d.ts","sourceRoot":"","sources":["../../../src/crypto/KZG/KzgCommitmentType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;;GAOG;AACH,MAAM,MAAM,iBAAiB,GAAG,UAAU,GAAG;IAC5C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,eAAe,CAAC;CAClC,CAAC"}

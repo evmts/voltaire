@@ -1,0 +1,1 @@
+{"version":3,"file":"gwei-toWei.d.ts","sourceRoot":"","sources":["../../../src/primitives/Denomination/gwei-toWei.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,QAAQ,IAAI,WAAW,EAAE,MAAM,eAAe,CAAC;AAC7D,OAAO,KAAK,EAAE,OAAO,IAAI,UAAU,EAAE,MAAM,cAAc,CAAC;AAI1D;;;;;;;;;;;;;;;;GAgBG;AACH,wBAAgB,KAAK,CAAC,IAAI,EAAE,WAAW,GAAG,UAAU,CAoBnD"}

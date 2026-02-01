@@ -1,0 +1,1 @@
+{"version":3,"file":"getEIP712DomainType.d.ts","sourceRoot":"","sources":["../../../src/primitives/Domain/getEIP712DomainType.js"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,4CAHW,OAAO,iBAAiB,EAAE,UAAU,GAClC,KAAK,CAAC;IAAC,IAAI,EAAE,MAAM,CAAC;IAAC,IAAI,EAAE,MAAM,CAAA;CAAC,CAAC,CAuB/C"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"BrandedHash.d.ts","sourceRoot":"","sources":["../../../../src/primitives/Hash/extensions/BrandedHash.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,mBAAmB,CAAC;AAE/C,MAAM,MAAM,QAAQ,GAAG,UAAU,GAAG;IACnC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,MAAM,CAAC;CACzB,CAAC;AAEF,eAAO,MAAM,IAAI,KAAK,CAAC"}

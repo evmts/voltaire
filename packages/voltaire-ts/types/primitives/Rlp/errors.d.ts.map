@@ -1,0 +1,1 @@
+{"version":3,"file":"errors.d.ts","sourceRoot":"","sources":["../../../src/primitives/Rlp/errors.js"],"names":[],"mappings":"AAUA;;GAEG;AAEH;;;GAGG;AAEH;IACC;;;OAGG;IACH,kBAHW,SAAS,YACT,MAAM,EAShB;IAFA,wBAAwB;IACxB,MADW,SAAS,CACJ;CAEjB;AAGD,oCAA8B;wBAxBjB,eAAe,GAAG,cAAc,GAAG,cAAc,GAAG,kBAAkB,GAAG,eAAe,GAAG,iBAAiB,GAAG,kBAAkB,GAAG,YAAY,GAAG,wBAAwB"}

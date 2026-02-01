@@ -1,0 +1,90 @@
+---
+title: Voltaire C API
+description: C bindings for Ethereum primitives and cryptography
+---
+
+Voltaire exports a C FFI API directly from Zig. No wrapper code needed.
+
+## Installation
+
+```bash
+# Build native library
+zig build build-ts-native
+
+# Build WASM
+zig build build-ts-wasm
+```
+
+## Quick Start
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+// Types
+typedef struct { unsigned char bytes[20]; } PrimitivesAddress;
+typedef struct { unsigned char bytes[32]; } PrimitivesHash;
+
+// Functions
+extern int primitives_address_from_hex(const char* hex, PrimitivesAddress* out);
+extern int primitives_keccak256(const unsigned char* data, size_t len, PrimitivesHash* out);
+
+int main() {
+    PrimitivesAddress addr;
+    primitives_address_from_hex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", &addr);
+
+    PrimitivesHash hash;
+    primitives_keccak256((unsigned char*)"hello", 5, &hash);
+
+    return 0;
+}
+```
+
+## API Sections
+
+### Primitives
+- [Address](/voltaire-c/address) - Ethereum address operations
+- [Hash](/voltaire-c/hash) - Keccak256, SHA256, RIPEMD160, Blake2
+- [Hex](/voltaire-c/hex) - Hex encoding/decoding
+- [RLP](/voltaire-c/rlp) - RLP encoding/decoding
+- [ABI](/voltaire-c/abi) - ABI encoding/decoding
+- [Transaction](/voltaire-c/transaction) - Transaction operations
+- [Access List](/voltaire-c/accesslist) - EIP-2930 access lists
+- [Authorization](/voltaire-c/authorization) - EIP-7702 authorizations
+- [Event Log](/voltaire-c/eventlog) - Event log filtering
+
+### Cryptography
+- [secp256k1](/voltaire-c/secp256k1) - ECDSA signatures
+- [Additional Crypto](/voltaire-c/crypto) - Ed25519, P256, X25519, AES-GCM
+- [HD Wallet](/voltaire-c/hdwallet) - BIP-32/39 hierarchical wallets
+- [KZG](/voltaire-c/kzg) - KZG commitments
+
+### EVM
+- [Bytecode](/voltaire-c/bytecode) - EVM bytecode analysis
+- [Blob](/voltaire-c/blob) - EIP-4844 blob operations
+
+### Advanced
+- [State Manager](/voltaire-c/statemanager) - EVM state management with fork support
+- [Blockchain](/voltaire-c/blockchain) - Blockchain and fork block cache
+
+## Version
+
+```c
+const char* primitives_version_string(void);
+```
+
+Returns the library version string.
+
+## Error Handling
+
+All functions return `int`. 0 = success, negative = error.
+
+```c
+#define PRIMITIVES_SUCCESS             0
+#define PRIMITIVES_ERROR_INVALID_HEX  -1
+#define PRIMITIVES_ERROR_INVALID_LENGTH -2
+#define PRIMITIVES_ERROR_INVALID_CHECKSUM -3
+#define PRIMITIVES_ERROR_OUT_OF_MEMORY -4
+#define PRIMITIVES_ERROR_INVALID_INPUT -5
+#define PRIMITIVES_ERROR_INVALID_SIGNATURE -6
+```

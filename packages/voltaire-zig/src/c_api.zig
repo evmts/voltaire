@@ -1094,6 +1094,13 @@ export fn primitives_abi_compute_selector(
 fn parseAbiType(allocator: std.mem.Allocator, type_str: []const u8) !primitives.Abi.AbiType {
     _ = allocator;
 
+    // Check for array types FIRST (before uint/int/bytes checks which use startsWith)
+    if (std.mem.eql(u8, type_str, "uint256[]")) return .@"uint256[]";
+    if (std.mem.eql(u8, type_str, "bytes32[]")) return .@"bytes32[]";
+    if (std.mem.eql(u8, type_str, "address[]")) return .@"address[]";
+    if (std.mem.eql(u8, type_str, "string[]")) return .@"string[]";
+    if (std.mem.eql(u8, type_str, "bool[]")) return .@"bool[]";
+
     // Basic types
     if (std.mem.eql(u8, type_str, "address")) return .address;
     if (std.mem.eql(u8, type_str, "bool")) return .bool;
@@ -1149,12 +1156,6 @@ fn parseAbiType(allocator: std.mem.Allocator, type_str: []const u8) !primitives.
             };
         }
     }
-
-    // Check for array types (supported: uint256[], bytes32[], address[], string[])
-    if (std.mem.eql(u8, type_str, "uint256[]")) return .@"uint256[]";
-    if (std.mem.eql(u8, type_str, "bytes32[]")) return .@"bytes32[]";
-    if (std.mem.eql(u8, type_str, "address[]")) return .@"address[]";
-    if (std.mem.eql(u8, type_str, "string[]")) return .@"string[]";
 
     return error.UnsupportedType;
 }
@@ -1529,10 +1530,65 @@ fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitive
         try result.append('"');
 
         switch (value) {
+            .uint8 => |val| {
+                var buf: [16]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .uint16 => |val| {
+                var buf: [16]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .uint32 => |val| {
+                var buf: [16]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .uint64 => |val| {
+                var buf: [24]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .uint128 => |val| {
+                var buf: [48]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
             .uint256 => |val| {
-                var buf: [66]u8 = undefined;
-                const hex = std.fmt.bufPrint(&buf, "0x{x}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(hex);
+                var buf: [80]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .int8 => |val| {
+                var buf: [16]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .int16 => |val| {
+                var buf: [16]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .int32 => |val| {
+                var buf: [16]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .int64 => |val| {
+                var buf: [24]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .int128 => |val| {
+                var buf: [48]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
+            },
+            .int256 => |val| {
+                var buf: [80]u8 = undefined;
+                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(str);
             },
             .address => |addr| {
                 const hex = addr.toHex();
@@ -1553,6 +1609,127 @@ fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitive
                 const hex = primitives.Hex.bytesToHex(temp_allocator, b) catch return error.OutOfMemory;
                 defer temp_allocator.free(hex);
                 try result.appendSlice(hex);
+            },
+            .bytes1 => |b| {
+                try result.appendSlice("0x");
+                for (b) |byte| {
+                    var hex_byte: [2]u8 = undefined;
+                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                    try result.appendSlice(&hex_byte);
+                }
+            },
+            .bytes2 => |b| {
+                try result.appendSlice("0x");
+                for (b) |byte| {
+                    var hex_byte: [2]u8 = undefined;
+                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                    try result.appendSlice(&hex_byte);
+                }
+            },
+            .bytes3 => |b| {
+                try result.appendSlice("0x");
+                for (b) |byte| {
+                    var hex_byte: [2]u8 = undefined;
+                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                    try result.appendSlice(&hex_byte);
+                }
+            },
+            .bytes4 => |b| {
+                try result.appendSlice("0x");
+                for (b) |byte| {
+                    var hex_byte: [2]u8 = undefined;
+                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                    try result.appendSlice(&hex_byte);
+                }
+            },
+            .bytes8 => |b| {
+                try result.appendSlice("0x");
+                for (b) |byte| {
+                    var hex_byte: [2]u8 = undefined;
+                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                    try result.appendSlice(&hex_byte);
+                }
+            },
+            .bytes16 => |b| {
+                try result.appendSlice("0x");
+                for (b) |byte| {
+                    var hex_byte: [2]u8 = undefined;
+                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                    try result.appendSlice(&hex_byte);
+                }
+            },
+            .bytes32 => |b| {
+                try result.appendSlice("0x");
+                for (b) |byte| {
+                    var hex_byte: [2]u8 = undefined;
+                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                    try result.appendSlice(&hex_byte);
+                }
+            },
+            .@"uint256[]" => |arr| {
+                result.items.len -= 1; // Remove opening quote added by outer loop
+                try result.append('[');
+                for (arr, 0..) |val, j| {
+                    if (j > 0) try result.append(',');
+                    var buf: [80]u8 = undefined;
+                    const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
+                    try result.appendSlice(str);
+                }
+                try result.append(']');
+                continue; // Skip the closing quote
+            },
+            .@"address[]" => |arr| {
+                result.items.len -= 1; // Remove opening quote
+                try result.append('[');
+                for (arr, 0..) |addr, j| {
+                    if (j > 0) try result.append(',');
+                    try result.append('"');
+                    const hex = addr.toHex();
+                    try result.appendSlice(&hex);
+                    try result.append('"');
+                }
+                try result.append(']');
+                continue;
+            },
+            .@"bool[]" => |arr| {
+                result.items.len -= 1; // Remove opening quote
+                try result.append('[');
+                for (arr, 0..) |b, j| {
+                    if (j > 0) try result.append(',');
+                    const str = if (b) "true" else "false";
+                    try result.appendSlice(str);
+                }
+                try result.append(']');
+                continue;
+            },
+            .@"bytes32[]" => |arr| {
+                result.items.len -= 1; // Remove opening quote
+                try result.append('[');
+                for (arr, 0..) |bytes, j| {
+                    if (j > 0) try result.append(',');
+                    try result.append('"');
+                    try result.appendSlice("0x");
+                    for (bytes) |byte| {
+                        var hex_byte: [2]u8 = undefined;
+                        _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
+                        try result.appendSlice(&hex_byte);
+                    }
+                    try result.append('"');
+                }
+                try result.append(']');
+                continue;
+            },
+            .@"string[]" => |arr| {
+                result.items.len -= 1; // Remove opening quote
+                try result.append('[');
+                for (arr, 0..) |s, j| {
+                    if (j > 0) try result.append(',');
+                    try result.append('"');
+                    try result.appendSlice(s);
+                    try result.append('"');
+                }
+                try result.append(']');
+                continue;
             },
             else => {
                 // For other types, just return "unsupported"

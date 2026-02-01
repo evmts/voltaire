@@ -1,0 +1,1 @@
+{"version":3,"file":"from.d.ts","sourceRoot":"","sources":["../../../src/primitives/StorageDiff/from.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;;GAYG;AACH,8BAVW,OAAO,2BAA2B,EAAE,WAAW,WAC/C,GAAG,CAAC,OAAO,4BAA4B,EAAE,cAAc,EAAE,OAAO,sBAAsB,EAAE,aAAa,CAAC,GAAG,KAAK,CAAC,CAAC,OAAO,4BAA4B,EAAE,cAAc,EAAE,OAAO,sBAAsB,EAAE,aAAa,CAAC,CAAC,GACjN,OAAO,sBAAsB,EAAE,eAAe,CAoB1D"}
