@@ -177,11 +177,97 @@ pubkey = b"..."  # public key bytes
 hash160 = ripemd160(sha256(pubkey).to_bytes())
 ```
 
+## Solidity-Compatible Hashing
+
+These functions match Solidity's `keccak256(abi.encodePacked(...))` and `sha256(abi.encodePacked(...))` behavior.
+
+### solidity_keccak256
+
+Compute `keccak256(abi.encodePacked(values))`.
+
+```python
+from voltaire import solidity_keccak256
+
+# Hash address + uint256 (like Solidity)
+h = solidity_keccak256(
+    ["address", "uint256"],
+    ["0x742d35Cc6634C0532925a3b844Bc9e7595f251e3", 1000]
+)
+print(h.to_hex())
+
+# Multiple uint types concatenated compactly
+h = solidity_keccak256(["uint8", "uint16"], [0x12, 0x3456])
+# Packs as: 0x12 ++ 0x3456 = 0x123456, then keccak256
+
+# String hashing
+h = solidity_keccak256(["string"], ["hello"])
+# Equivalent to keccak256(bytes("hello"))
+```
+
+### solidity_sha256
+
+Compute `sha256(abi.encodePacked(values))`.
+
+```python
+from voltaire import solidity_sha256
+
+# Hash packed data with SHA-256
+h = solidity_sha256(
+    ["address", "uint256"],
+    ["0x742d35Cc6634C0532925a3b844Bc9e7595f251e3", 1000]
+)
+print(h.to_hex())
+```
+
+### Packed Encoding Details
+
+Unlike standard ABI encoding, packed encoding:
+- Does NOT pad values to 32 bytes (except array elements)
+- Concatenates values directly
+- Does NOT include length prefixes for dynamic types
+
+```python
+from voltaire import solidity_keccak256, Abi
+
+# These are equivalent:
+packed = Abi.encode_packed(["uint8", "uint16"], [0x12, 0x3456])
+h1 = keccak256(packed)
+
+h2 = solidity_keccak256(["uint8", "uint16"], [0x12, 0x3456])
+
+assert h1 == h2
+```
+
+### Real-World Use Cases
+
+```python
+from voltaire import solidity_keccak256
+
+# CREATE2 address derivation
+prefix = 0xff
+deployer = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+salt = 0x0000000000000000000000000000000000000000000000000000000000000001
+bytecode_hash = "0x" + "aa" * 32
+h = solidity_keccak256(
+    ["uint8", "address", "uint256", "bytes32"],
+    [prefix, deployer, salt, bytecode_hash]
+)
+
+# Permit signature message
+owner = "0x0000000000000000000000000000000000000001"
+spender = "0x0000000000000000000000000000000000000002"
+value = 1000000000000000000
+h = solidity_keccak256(
+    ["address", "address", "uint256"],
+    [owner, spender, value]
+)
+```
+
 ## Error Handling
 
 ```python
 from voltaire import Hash
-from voltaire.errors import InvalidHexError, InvalidLengthError
+from voltaire.errors import InvalidHexError, InvalidLengthError, InvalidInputError
 
 # Invalid hex
 try:
@@ -193,5 +279,11 @@ except InvalidHexError:
 try:
     Hash.from_bytes(b"too short")
 except InvalidLengthError:
+    pass
+
+# Type/value mismatch in solidity hashing
+try:
+    solidity_keccak256(["uint256"], [])  # Missing value
+except InvalidInputError:
     pass
 ```

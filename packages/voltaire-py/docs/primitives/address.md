@@ -97,6 +97,73 @@ assert Address.zero().is_zero()
 assert not Address.from_hex("0x742d...").is_zero()
 ```
 
+### Class Methods
+
+#### `Address.calculate_create_address(sender: Address, nonce: int) -> Address`
+
+Calculate the contract address for a CREATE opcode deployment.
+
+The CREATE address is derived from: `keccak256(rlp([sender, nonce]))[12:]`
+
+```python
+from voltaire import Address
+
+# Calculate where a contract will be deployed
+deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+
+# First deployment (nonce 0)
+contract_addr = Address.calculate_create_address(deployer, 0)
+print(contract_addr.to_checksum())  # 0xCd234a471b72ba2f1ccf0a70fcaba648a5Eecd8D
+
+# Second deployment (nonce 1)
+contract_addr_2 = Address.calculate_create_address(deployer, 1)
+print(contract_addr_2.to_checksum())  # 0x343C43A37d37Dff08aE8c4a11544c718ABb4FcF8
+```
+
+**Args:**
+- `sender` - The deployer address
+- `nonce` - The transaction nonce (must be non-negative)
+
+**Returns:**
+- The contract address that will be created
+
+**Raises:**
+- `InvalidValueError` - If nonce is negative
+
+#### `Address.calculate_create2_address(sender: Address, salt: bytes, init_code: bytes) -> Address`
+
+Calculate the deterministic contract address for a CREATE2 opcode deployment.
+
+The CREATE2 address is derived from: `keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]`
+
+```python
+from voltaire import Address
+
+# Factory contract address
+factory = Address.from_hex("0x0000000000000000000000000000000000000000")
+
+# 32-byte salt
+salt = bytes(32)  # All zeros
+
+# Contract initialization code
+init_code = bytes.fromhex("608060405234801561001057600080fd5b50")
+
+# Calculate deterministic address
+contract_addr = Address.calculate_create2_address(factory, salt, init_code)
+print(contract_addr.to_checksum())
+```
+
+**Args:**
+- `sender` - The factory contract address
+- `salt` - Exactly 32 bytes of salt
+- `init_code` - The contract initialization bytecode
+
+**Returns:**
+- The deterministic contract address
+
+**Raises:**
+- `InvalidLengthError` - If salt is not exactly 32 bytes
+
 ### Static Methods
 
 #### `Address.validate_checksum(hex_str: str) -> bool`
@@ -217,4 +284,25 @@ def parse_address(user_input: str) -> Address | None:
     except (InvalidHexError, InvalidLengthError) as e:
         print(f"Invalid address: {e}")
         return None
+```
+
+### Contract Address Calculation
+
+```python
+from voltaire import Address
+
+# Predict CREATE address before deployment
+deployer = Address.from_hex("0xa0cf798816d4b9b9866b5330eea46a18382f251e")
+nonce = 0
+
+contract_addr = Address.calculate_create_address(deployer, nonce)
+print(f"Contract will deploy to: {contract_addr.to_checksum()}")
+
+# Predict CREATE2 address (deterministic deployment)
+factory = Address.from_hex("0x0000000000000000000000000000000000000000")
+salt = bytes(32)
+init_code = b""
+
+deterministic_addr = Address.calculate_create2_address(factory, salt, init_code)
+print(f"Deterministic address: {deterministic_addr.to_checksum()}")
 ```

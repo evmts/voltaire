@@ -5,9 +5,11 @@ secp256k1 elliptic curve cryptography for Ethereum signatures and key derivation
 ## Overview
 
 The `Secp256k1` module provides core cryptographic operations for Ethereum:
+- **Key generation**: Generate cryptographically secure random private key
+- **Key derivation**: Derive public key from private key
+- **Public key compression**: Compress 64-byte public key to 33 bytes
 - **Public key recovery**: Recover the signer's public key from a signature
 - **Address recovery**: Recover the signer's Ethereum address from a signature
-- **Key derivation**: Derive public key from private key
 - **Signature validation**: Check if signature components are valid
 
 ## Types
@@ -69,6 +71,32 @@ private_key = bytes.fromhex("0123456789abcdef0123456789abcdef0123456789abcdef012
 # Derive 64-byte uncompressed public key
 public_key = Secp256k1.public_key_from_private(private_key)
 print(f"Public key: {public_key.hex()}")
+```
+
+### Generate Private Key
+
+```python
+from voltaire import Secp256k1
+
+# Generate cryptographically secure 32-byte private key
+private_key = Secp256k1.generate_private_key()
+print(f"Private key: {private_key.hex()}")
+```
+
+### Compress Public Key
+
+```python
+from voltaire import Secp256k1
+
+# 64-byte uncompressed public key
+uncompressed = bytes.fromhex(
+    "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+    "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
+)
+
+# Compress to 33 bytes
+compressed = Secp256k1.compress_public_key(uncompressed)
+print(f"Compressed: {compressed.hex()}")  # 02 + x coordinate
 ```
 
 ### Validate Signature Components
@@ -156,10 +184,38 @@ Checks that:
 
 **Note:** This function enforces EIP-2's low-s requirement to prevent signature malleability. Use `SignatureUtils.normalize()` to convert high-s signatures to canonical form before validation.
 
+### `Secp256k1.generate_private_key() -> bytes`
+
+Generate a cryptographically secure random private key.
+
+**Returns:** 32-byte private key suitable for secp256k1
+
+**Security:**
+- Uses OS-provided CSPRNG
+- Key is guaranteed to be in valid range (1 to N-1)
+- Never returns zero or values >= curve order
+
+### `Secp256k1.compress_public_key(uncompressed) -> bytes`
+
+Compress a 64-byte uncompressed public key to 33 bytes.
+
+**Parameters:**
+- `uncompressed`: 64-byte public key (x || y coordinates)
+
+**Returns:** 33-byte compressed key (prefix byte + x coordinate)
+
+**Raises:**
+- `InvalidLengthError`: If input is not 64 bytes
+
+**Format:**
+- Prefix `0x02` if y coordinate is even
+- Prefix `0x03` if y coordinate is odd
+
 ## Notes
 
 - Recovery id `v` can be 0/1 (raw) or 27/28 (Ethereum convention)
 - All components use big-endian byte encoding
 - The secp256k1 curve order N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-- Public keys are uncompressed format (64 bytes: x || y)
+- Public keys are uncompressed format (64 bytes: x || y) or compressed (33 bytes: prefix + x)
 - For signature normalization (low-s), use `SignatureUtils.normalize()`
+- See [keys.md](./keys.md) for key generation workflow
