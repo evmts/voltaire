@@ -1,5 +1,4 @@
-// Abi module temporarily disabled - requires @tevm/voltaire subpath exports
-// export * as Abi from "./Abi/index.js";
+export * as Abi from "./Abi/index.js";
 export * as AccessList from "./AccessList/index.js";
 export * as AccountState from "./AccountState/index.js";
 export * as Address from "./Address/index.js";

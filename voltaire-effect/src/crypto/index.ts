@@ -217,17 +217,16 @@ export {
 	verifyMessage,
 	verifyTypedData as verifyTypedDataSignature,
 } from "./Signature/index.js";
-// Signers module temporarily disabled - requires @tevm/voltaire exports update
-// export {
-// 	fromPrivateKey,
-// 	getAddress as signersGetAddress,
-// 	recoverTransactionAddress,
-// 	type Signer,
-// 	SignersLive,
-// 	SignersService,
-// 	type SignersServiceShape,
-// 	SignersTest,
-// } from "./Signers/index.js";
+export {
+	fromPrivateKey,
+	getAddress as signersGetAddress,
+	recoverTransactionAddress,
+	type Signer,
+	SignersLive,
+	SignersService,
+	type SignersServiceShape,
+	SignersTest,
+} from "./Signers/index.js";
 export {
 	computeSecret as x25519ComputeSecret,
 	generateKeyPair as x25519GenerateKeyPair,

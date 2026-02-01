@@ -4,7 +4,7 @@
  * @since 0.0.1
  */
 
-import type { CryptoError, InvalidPrivateKeyError } from "@tevm/voltaire";
+import type { CryptoError, InvalidPrivateKeyError } from "./errors.js";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 
