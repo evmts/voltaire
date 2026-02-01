@@ -7,7 +7,7 @@
       <img width="512" height="512" alt="voltaire-logo" src="https://github.com/user-attachments/assets/409b49cb-113b-4b76-989d-762f6294e26a" />
     </a>
   </h1>
-  <strong>For application development, we recommend <a href="./voltaire-effect">voltaire-effect</a> — Effect.ts integration with typed errors, services, and composable operations.</strong>
+  <strong>For application development, we recommend <a href="https://voltaire-effect.tevm.sh">voltaire-effect</a> — Effect.ts integration with typed errors, services, and composable operations.</strong>
 </div>
 
 ## voltaire-effect: Production-Ready Contract Interactions
