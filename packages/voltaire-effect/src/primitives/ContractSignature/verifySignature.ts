@@ -12,6 +12,7 @@ import {
 	type BrandedAddress,
 	type BrandedHash,
 	ContractSignature,
+	Hex,
 	Secp256k1,
 } from "@tevm/voltaire";
 import * as Data from "effect/Data";
@@ -247,11 +248,8 @@ export const verifySignature = (
 		});
 
 		// Build EIP-1271 isValidSignature call data
-		const hashHex =
-			hash instanceof Uint8Array
-				? `0x${Buffer.from(hash).toString("hex")}`
-				: `0x${Buffer.from(hash).toString("hex")}`;
-		const sigHex = `0x${Buffer.from(signatureBytes).toString("hex")}`;
+		const hashHex = Hex(hash);
+		const sigHex = Hex(signatureBytes);
 
 		// isValidSignature(bytes32 hash, bytes signature) selector: 0x1626ba7e
 		// ABI encode: selector + hash (32 bytes) + offset to signature (32) + signature length (32) + signature data

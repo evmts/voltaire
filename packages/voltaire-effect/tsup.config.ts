@@ -9,7 +9,9 @@ export default defineConfig({
 		"src/native/index.ts",
 	],
 	format: ["esm"],
-	dts: true,
+	// TODO: Re-enable once type issues in services/presets are fixed
+	// Types have export mismatches with @tevm/voltaire and @effect/platform
+	dts: false,
 	clean: true,
 	splitting: false,
 	treeshake: true,
