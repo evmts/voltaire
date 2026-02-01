@@ -8,6 +8,8 @@
 //! - [`blake2b`], [`blake2s`] - BLAKE2 hash functions
 //! - [`hmac_sha256`], [`hmac_sha512`] - HMAC authentication
 //! - [`secp256k1`] - ECDSA signatures and key operations
+//! - [`P256`] - NIST P-256 (secp256r1) signatures and ECDH
+//! - [`bls12_381`] - BLS12-381 pairing curve signatures
 //! - [`eip191`] - EIP-191 personal message hashing
 //! - [`eip712`] - EIP-712 typed structured data hashing
 //!
@@ -17,6 +19,8 @@ mod keccak;
 mod sha256;
 mod ripemd160;
 mod secp256k1;
+mod p256;
+pub mod bls12_381;
 mod eip191;
 pub mod eip712;
 mod blake2;
@@ -33,3 +37,5 @@ pub use eip712::{
 };
 pub use blake2::{blake2b, blake2s, Blake2b, Blake2s};
 pub use hmac::{hmac_sha256, hmac_sha512, HmacSha256, HmacSha512};
+pub use bls12_381::{Bls12381, SecretKey as BlsSecretKey, PublicKey as BlsPublicKey, Signature as BlsSignature, G1Point, G2Point};
+pub use p256::{P256, SecretKey as P256SecretKey, PublicKey as P256PublicKey, CompressedPublicKey as P256CompressedPublicKey, Signature as P256Signature};

@@ -16,7 +16,55 @@ use crate::error::{Error, Result};
 use crate::primitives::{
     Address, Hash, U256,
     AccessList, SignedAuthorization,
+    rlp::{RlpItem, encode_list},
 };
+use crate::crypto::{keccak256, Secp256k1, Signature, RecoveryId};
+
+/// Encode a u64 as minimal bytes (no leading zeros).
+fn encode_uint_minimal(value: u64) -> Vec<u8> {
+    if value == 0 {
+        return vec![];
+    }
+    let bytes = value.to_be_bytes();
+    let first_nonzero = bytes.iter().position(|&b| b != 0).unwrap_or(bytes.len());
+    bytes[first_nonzero..].to_vec()
+}
+
+/// Convert U256 to minimal bytes (no leading zeros).
+fn u256_to_minimal_bytes(value: &U256) -> Vec<u8> {
+    let bytes = value.as_bytes();
+    let first_nonzero = bytes.iter().position(|&b| b != 0);
+    match first_nonzero {
+        Some(i) => bytes[i..].to_vec(),
+        None => vec![],
+    }
+}
+
+/// Strip leading zeros from a byte array.
+fn strip_leading_zeros(bytes: &[u8]) -> &[u8] {
+    let first_nonzero = bytes.iter().position(|&b| b != 0);
+    match first_nonzero {
+        Some(i) => &bytes[i..],
+        None => &[],
+    }
+}
+
+/// Encode an access list as RLP.
+fn encode_access_list(access_list: &AccessList) -> RlpItem {
+    let items: Vec<RlpItem> = access_list.entries().iter().map(|entry| {
+        let storage_keys: Vec<RlpItem> = entry.storage_keys.iter()
+            .map(|key| RlpItem::Bytes(key.to_vec()))
+            .collect();
+        RlpItem::List(vec![
+            RlpItem::Bytes(entry.address.as_bytes().to_vec()),
+            RlpItem::List(storage_keys),
+        ])
+    }).collect();
+    RlpItem::List(items)
+}
+
+/// Blob gas per blob (EIP-4844).
+pub const GAS_PER_BLOB: u64 = 131_072;
 
 /// Transaction envelope type.
 ///
@@ -216,6 +264,99 @@ impl LegacyTransaction {
             0
         }
     }
+
+    /// Serialize the transaction to RLP-encoded bytes.
+    ///
+    /// Returns the full RLP encoding including signature fields.
+    pub fn serialize(&self) -> Vec<u8> {
+        let items = vec![
+            RlpItem::Bytes(encode_uint_minimal(self.nonce)),
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.gas_price)),
+            RlpItem::Bytes(encode_uint_minimal(self.gas_limit)),
+            match &self.to {
+                Some(addr) => RlpItem::Bytes(addr.as_bytes().to_vec()),
+                None => RlpItem::Bytes(vec![]),
+            },
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.value)),
+            RlpItem::Bytes(self.data.clone()),
+            RlpItem::Bytes(encode_uint_minimal(self.v)),
+            RlpItem::Bytes(strip_leading_zeros(&self.r).to_vec()),
+            RlpItem::Bytes(strip_leading_zeros(&self.s).to_vec()),
+        ];
+        encode_list(&items)
+    }
+
+    /// Serialize the transaction for signing (EIP-155).
+    ///
+    /// For EIP-155 transactions, includes chain_id, 0, 0 instead of v, r, s.
+    /// For pre-EIP-155, excludes signature fields entirely.
+    pub fn serialize_for_signing(&self, chain_id: u64) -> Vec<u8> {
+        let mut items = vec![
+            RlpItem::Bytes(encode_uint_minimal(self.nonce)),
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.gas_price)),
+            RlpItem::Bytes(encode_uint_minimal(self.gas_limit)),
+            match &self.to {
+                Some(addr) => RlpItem::Bytes(addr.as_bytes().to_vec()),
+                None => RlpItem::Bytes(vec![]),
+            },
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.value)),
+            RlpItem::Bytes(self.data.clone()),
+        ];
+
+        // EIP-155: append chain_id, 0, 0
+        if chain_id > 0 {
+            items.push(RlpItem::Bytes(encode_uint_minimal(chain_id)));
+            items.push(RlpItem::Bytes(vec![])); // 0
+            items.push(RlpItem::Bytes(vec![])); // 0
+        }
+
+        encode_list(&items)
+    }
+
+    /// Compute the transaction hash.
+    pub fn hash(&self) -> Hash {
+        keccak256(&self.serialize())
+    }
+
+    /// Compute the hash used for signing.
+    pub fn signing_hash(&self, chain_id: u64) -> Hash {
+        keccak256(&self.serialize_for_signing(chain_id))
+    }
+
+    /// Recover the sender address from the signature.
+    pub fn get_sender(&self) -> Result<Address> {
+        if !self.is_signed() {
+            return Err(Error::invalid_signature("transaction is not signed"));
+        }
+
+        let chain_id = self.chain_id().unwrap_or(0);
+        let hash = self.signing_hash(chain_id);
+        let signature = Signature::new(self.r, self.s);
+        let recovery_id = RecoveryId::new(self.y_parity())?;
+
+        Secp256k1::recover_address(hash.as_bytes(), &signature, recovery_id)
+    }
+
+    /// Verify that the signature is valid.
+    pub fn verify_signature(&self) -> Result<bool> {
+        if !self.is_signed() {
+            return Ok(false);
+        }
+
+        // Check signature components are valid
+        let signature = Signature::new(self.r, self.s);
+        if !signature.is_valid() {
+            return Ok(false);
+        }
+
+        // Check signature is normalized (EIP-2)
+        if !signature.is_normalized() {
+            return Ok(false);
+        }
+
+        // Try to recover sender - if it succeeds, signature is valid
+        self.get_sender().map(|_| true)
+    }
 }
 
 /// EIP-2930 access list transaction (type 1).
@@ -280,6 +421,83 @@ impl Eip2930Transaction {
     #[inline]
     pub fn has_access_list(&self) -> bool {
         !self.access_list.is_empty()
+    }
+
+    /// Serialize the transaction to RLP-encoded bytes with type prefix.
+    pub fn serialize(&self) -> Vec<u8> {
+        let rlp = self.serialize_rlp_payload(true);
+        let mut result = vec![0x01]; // Type byte
+        result.extend(rlp);
+        result
+    }
+
+    /// Serialize the transaction for signing.
+    pub fn serialize_for_signing(&self, _chain_id: u64) -> Vec<u8> {
+        let rlp = self.serialize_rlp_payload(false);
+        let mut result = vec![0x01]; // Type byte
+        result.extend(rlp);
+        result
+    }
+
+    fn serialize_rlp_payload(&self, include_signature: bool) -> Vec<u8> {
+        let mut items = vec![
+            RlpItem::Bytes(encode_uint_minimal(self.chain_id)),
+            RlpItem::Bytes(encode_uint_minimal(self.nonce)),
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.gas_price)),
+            RlpItem::Bytes(encode_uint_minimal(self.gas_limit)),
+            match &self.to {
+                Some(addr) => RlpItem::Bytes(addr.as_bytes().to_vec()),
+                None => RlpItem::Bytes(vec![]),
+            },
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.value)),
+            RlpItem::Bytes(self.data.clone()),
+            encode_access_list(&self.access_list),
+        ];
+
+        if include_signature {
+            items.push(RlpItem::Bytes(encode_uint_minimal(self.y_parity as u64)));
+            items.push(RlpItem::Bytes(strip_leading_zeros(&self.r).to_vec()));
+            items.push(RlpItem::Bytes(strip_leading_zeros(&self.s).to_vec()));
+        }
+
+        encode_list(&items)
+    }
+
+    /// Compute the transaction hash.
+    pub fn hash(&self) -> Hash {
+        keccak256(&self.serialize())
+    }
+
+    /// Compute the hash used for signing.
+    pub fn signing_hash(&self, chain_id: u64) -> Hash {
+        keccak256(&self.serialize_for_signing(chain_id))
+    }
+
+    /// Recover the sender address from the signature.
+    pub fn get_sender(&self) -> Result<Address> {
+        if !self.is_signed() {
+            return Err(Error::invalid_signature("transaction is not signed"));
+        }
+
+        let hash = self.signing_hash(self.chain_id);
+        let signature = Signature::new(self.r, self.s);
+        let recovery_id = RecoveryId::new(self.y_parity)?;
+
+        Secp256k1::recover_address(hash.as_bytes(), &signature, recovery_id)
+    }
+
+    /// Verify that the signature is valid.
+    pub fn verify_signature(&self) -> Result<bool> {
+        if !self.is_signed() {
+            return Ok(false);
+        }
+
+        let signature = Signature::new(self.r, self.s);
+        if !signature.is_valid() || !signature.is_normalized() {
+            return Ok(false);
+        }
+
+        self.get_sender().map(|_| true)
     }
 }
 
@@ -365,6 +583,84 @@ impl Eip1559Transaction {
         } else {
             max_fee
         }
+    }
+
+    /// Serialize the transaction to RLP-encoded bytes with type prefix.
+    pub fn serialize(&self) -> Vec<u8> {
+        let rlp = self.serialize_rlp_payload(true);
+        let mut result = vec![0x02]; // Type byte
+        result.extend(rlp);
+        result
+    }
+
+    /// Serialize the transaction for signing.
+    pub fn serialize_for_signing(&self, _chain_id: u64) -> Vec<u8> {
+        let rlp = self.serialize_rlp_payload(false);
+        let mut result = vec![0x02]; // Type byte
+        result.extend(rlp);
+        result
+    }
+
+    fn serialize_rlp_payload(&self, include_signature: bool) -> Vec<u8> {
+        let mut items = vec![
+            RlpItem::Bytes(encode_uint_minimal(self.chain_id)),
+            RlpItem::Bytes(encode_uint_minimal(self.nonce)),
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.max_priority_fee_per_gas)),
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.max_fee_per_gas)),
+            RlpItem::Bytes(encode_uint_minimal(self.gas_limit)),
+            match &self.to {
+                Some(addr) => RlpItem::Bytes(addr.as_bytes().to_vec()),
+                None => RlpItem::Bytes(vec![]),
+            },
+            RlpItem::Bytes(u256_to_minimal_bytes(&self.value)),
+            RlpItem::Bytes(self.data.clone()),
+            encode_access_list(&self.access_list),
+        ];
+
+        if include_signature {
+            items.push(RlpItem::Bytes(encode_uint_minimal(self.y_parity as u64)));
+            items.push(RlpItem::Bytes(strip_leading_zeros(&self.r).to_vec()));
+            items.push(RlpItem::Bytes(strip_leading_zeros(&self.s).to_vec()));
+        }
+
+        encode_list(&items)
+    }
+
+    /// Compute the transaction hash.
+    pub fn hash(&self) -> Hash {
+        keccak256(&self.serialize())
+    }
+
+    /// Compute the hash used for signing.
+    pub fn signing_hash(&self, chain_id: u64) -> Hash {
+        keccak256(&self.serialize_for_signing(chain_id))
+    }
+
+    /// Recover the sender address from the signature.
+    pub fn get_sender(&self) -> Result<Address> {
+        if !self.is_signed() {
+            return Err(Error::invalid_signature("transaction is not signed"));
+        }
+
+        let hash = self.signing_hash(self.chain_id);
+        let signature = Signature::new(self.r, self.s);
+        let recovery_id = RecoveryId::new(self.y_parity)?;
+
+        Secp256k1::recover_address(hash.as_bytes(), &signature, recovery_id)
+    }
+
+    /// Verify that the signature is valid.
+    pub fn verify_signature(&self) -> Result<bool> {
+        if !self.is_signed() {
+            return Ok(false);
+        }
+
+        let signature = Signature::new(self.r, self.s);
+        if !signature.is_valid() || !signature.is_normalized() {
+            return Ok(false);
+        }
+
+        self.get_sender().map(|_| true)
     }
 }
 

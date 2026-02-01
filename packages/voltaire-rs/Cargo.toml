@@ -15,15 +15,21 @@ categories = ["cryptography", "data-structures"]
 crate-type = ["lib"]
 
 [features]
-default = ["std"]
+default = ["std", "getrandom"]
 std = []
 # Link against native Voltaire FFI library
 native = []
+# Enable random byte generation
+getrandom = ["dep:getrandom"]
 
 [dependencies]
 # Core
 thiserror = "2"
 hex = "0.4"
+getrandom = { version = "0.2", optional = true }
+
+# P-256 (secp256r1) curve
+p256 = { version = "0.13", features = ["ecdh", "ecdsa"] }
 
 [dev-dependencies]
 proptest = "1"

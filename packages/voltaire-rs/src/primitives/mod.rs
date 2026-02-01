@@ -10,6 +10,8 @@
 //! - [`Transaction`] - Unified transaction types (Legacy, EIP-2930, EIP-1559, EIP-4844, EIP-7702)
 //! - [`abi`] - ABI encoding/decoding for smart contract interaction
 //! - [`rlp`] - RLP (Recursive Length Prefix) encoding/decoding
+//! - [`bytecode`] - EVM bytecode analysis (JUMPDEST validation, opcode inspection)
+//! - [`blob`] - EIP-4844 blob utilities
 //!
 //! All types implement common traits like `Display`, `FromStr`, `From`/`TryFrom`,
 //! and provide constant-time equality where security-relevant.
@@ -18,6 +20,8 @@ pub mod abi;
 mod access_list;
 mod address;
 mod authorization;
+pub mod blob;
+pub mod bytecode;
 mod hash;
 mod hex;
 pub mod rlp;
@@ -25,7 +29,7 @@ mod transaction;
 mod u256;
 
 pub use access_list::{AccessList, AccessListEntry, MAX_ACCESS_LIST_ENTRIES, MAX_STORAGE_KEYS_PER_ENTRY};
-pub use address::Address;
+pub use address::{Address, sort_addresses, deduplicate_addresses};
 pub use authorization::{Authorization, AuthorizationList, SignedAuthorization, MAX_AUTHORIZATIONS};
 pub use hash::Hash;
 pub use hex::Hex;
