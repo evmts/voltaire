@@ -122,8 +122,8 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			const encoded = new Uint8Array(32);
 			encoded[31] = 42;
 			const decoded = abiDecodeParameters(encoded, ["uint256"]);
-			// WASM returns hex string format
-			expect(decoded).toEqual(["0x2a"]);
+			// Returns decimal string format
+			expect(decoded).toEqual(["42"]);
 		});
 
 		it("abiDecodeParameters decodes address", () => {
@@ -138,9 +138,9 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			const original = ["12345"];
 			const encoded = abiEncodeParameters(["uint256"], original);
 			const decoded = abiDecodeParameters(encoded, ["uint256"]);
-			// Result is in hex format
+			// Result is in decimal format
 			expect(decoded.length).toBe(1);
-			expect(decoded[0]).toMatch(/^0x[0-9a-f]+$/);
+			expect(decoded[0]).toBe("12345");
 		});
 
 		it("abiDecodeParameters round-trip address", () => {
@@ -156,8 +156,8 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			const encoded = abiEncodeParameters(types, values);
 			const decoded = abiDecodeParameters(encoded, types);
 			expect(decoded.length).toBe(2);
-			// uint256 returns as hex
-			expect(decoded[0]).toBe("0x2a");
+			// uint256 returns as decimal
+			expect(decoded[0]).toBe("42");
 			expect(decoded[1]?.toLowerCase()).toBe(values[1]?.toLowerCase());
 		});
 	});
@@ -783,8 +783,8 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			expect(decoded).toEqual(abiData);
 
 			const abiDecoded = abiDecodeParameters(decoded, ["uint256", "address"]);
-			// Returns hex format
-			expect(abiDecoded[0]).toBe("0x2a");
+			// Returns decimal format
+			expect(abiDecoded[0]).toBe("42");
 		});
 
 		it("authorization hash matches keccak256 pattern", () => {
