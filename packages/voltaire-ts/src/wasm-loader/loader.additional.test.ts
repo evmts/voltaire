@@ -713,8 +713,8 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			for (let i = 0; i < 10; i++) {
 				const encoded = abiEncodeParameters(["uint256"], [`${i}`]);
 				const decoded = abiDecodeParameters(encoded, ["uint256"]);
-				// Decoded returns hex format
-				expect(decoded[0]).toMatch(/^0x[0-9a-f]+$/);
+				// Decoded returns decimal format
+				expect(decoded[0]).toBe(`${i}`);
 			}
 		});
 
@@ -753,10 +753,8 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 				"115792089237316195423570985008687907853269984665640564039457584007913129639935";
 			const encoded = abiEncodeParameters(["uint256"], [max]);
 			const decoded = abiDecodeParameters(encoded, ["uint256"]);
-			// Returns hex format
-			expect(decoded[0]).toBe(
-				"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-			);
+			// Returns decimal format
+			expect(decoded[0]).toBe(max);
 		});
 
 		it("authorization with max chain ID", () => {
