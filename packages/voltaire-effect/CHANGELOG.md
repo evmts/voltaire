@@ -1,5 +1,16 @@
 # voltaire-effect
 
+## 0.3.1
+
+### Patch Changes
+
+- [`4db676d`](https://github.com/evmts/voltaire/commit/4db676d3527a250f377d314760ec64e26becf0c8) Thanks [@roninjin10](https://github.com/roninjin10)! - Enable previously disabled Signers and Abi modules. Fixed Signers error type imports to use local Effect-style TaggedError types instead of @tevm/voltaire class-based errors.
+
+- [`7217d2d`](https://github.com/evmts/voltaire/commit/7217d2d52772469a4d4261d88071d11560a3c45a) Thanks [@roninjin10](https://github.com/roninjin10)! - Fixing bad publish
+
+- Updated dependencies [[`7217d2d`](https://github.com/evmts/voltaire/commit/7217d2d52772469a4d4261d88071d11560a3c45a)]:
+  - @tevm/voltaire@0.2.29
+
 ## 0.3.0
 
 ### Minor Changes
