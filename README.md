@@ -48,7 +48,7 @@ Voltaire is an high performance robust Ethereum toolchain primarily built in Zig
 
 ## Featured API: voltaire-effect
 
-Voltaire Effect is the most robust typesafe way to build production grade ethereum applications and where we recomend most devs build their apps with.
+Voltaire Effect is the production grade robust abstraction layer for blockchain application development for the institutional era of ethereum
 
 ```typescript
 import { Effect } from "effect";
@@ -108,6 +108,28 @@ const program = Effect.gen(function* () {
 
 - [evmts/guillotine](https://github.com/evmts/guillotine) - EVM execution
 - [evmts/compiler](https://github.com/evmts/compiler) - Solidity compilation
+
+---
+
+## AI Agent Skills
+
+Install Voltaire skills for Claude Code, Codex, Cursor, and other AI agents:
+
+### Claude Code
+
+```bash
+git clone https://github.com/evmts/skills ~/.claude/skills/voltaire-skills
+```
+
+Then use `/voltaire` or `/voltaire-effect` in Claude Code.
+
+### OpenAI Codex
+
+```bash
+git clone https://github.com/evmts/skills ~/.codex/skills/voltaire-skills
+```
+
+See [evmts/skills](https://github.com/evmts/skills) for full installation instructions.
 
 ---
 

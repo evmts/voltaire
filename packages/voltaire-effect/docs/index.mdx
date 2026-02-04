@@ -3,6 +3,8 @@ title: voltaire-effect
 description: Effect.ts integration for Voltaire Ethereum primitives
 ---
 
+The production grade robust abstraction layer for blockchain application development for the institutional era of ethereum
+
 [Effect.ts](https://effect.website) integration for [Voltaire](https://voltaire.tevm.sh) Ethereum primitives. Type-safe contract interactions with composable, error-handled operations.
 
 <Tabs>
@@ -12,28 +14,29 @@ import { Effect, Layer } from 'effect'
 import { ContractRegistryService, makeContractRegistry, HttpProvider } from 'voltaire-effect'
 
 const Contracts = makeContractRegistry({
-  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
-  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
+USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
 })
 
 // Compose layers first
 const AppLayer = Contracts.pipe(
-  Layer.provide(HttpProvider('https://eth.llamarpc.com'))
+Layer.provide(HttpProvider('https://eth.llamarpc.com'))
 )
 
 const program = Effect.gen(function* () {
-  const { USDC, WETH } = yield* ContractRegistryService
-  const usdcBalance = yield* USDC.read.balanceOf(userAddress)
-  const wethBalance = yield* WETH.read.balanceOf(userAddress)
-  return { usdcBalance, wethBalance }
+const { USDC, WETH } = yield* ContractRegistryService
+const usdcBalance = yield* USDC.read.balanceOf(userAddress)
+const wethBalance = yield* WETH.read.balanceOf(userAddress)
+return { usdcBalance, wethBalance }
 }).pipe(
-  Effect.retry({ times: 3 }),           // explicit retry policy
-  Effect.timeout('10 seconds'),         // explicit timeout
-  Effect.provide(AppLayer)              // single provide
+Effect.retry({ times: 3 }), // explicit retry policy
+Effect.timeout('10 seconds'), // explicit timeout
+Effect.provide(AppLayer) // single provide
 )
 
 const { usdcBalance, wethBalance } = await Effect.runPromise(program)
-```
+
+````
   </Tab>
   <Tab title="viem">
 ```typescript
@@ -49,8 +52,10 @@ const balance = await client.readContract({
   functionName: 'balanceOf',
   args: [userAddress]
 })
-```
+````
+
 viem implicitly retries 3 times via transport config. voltaire-effect makes retry, timeout, and error handling explicit and composable.
+
   </Tab>
 </Tabs>
 
@@ -66,10 +71,11 @@ const address = Address.from('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
 const bytecode = Bytecode.from('0x608060405234801561001057600080fd5b50')
 
 await client.readContract({
-  address: bytecode,  // Type error: Bytecode is not assignable to Address
-  ...
+address: bytecode, // Type error: Bytecode is not assignable to Address
+...
 })
-```
+
+````
   </Tab>
   <Tab title="viem">
 ```typescript
@@ -85,8 +91,10 @@ await client.readContract({
   functionName: 'balanceOf',
   args: [address]
 })
-```
+````
+
 viem's `Address` and `Hex` are both `0x${string}` - TypeScript can't catch when you mix them up.
+
   </Tab>
 </Tabs>
 
@@ -101,30 +109,33 @@ import { Effect } from 'effect'
 import { encodeFunctionData } from 'voltaire-effect/primitives/Abi'
 
 const calldata = await Effect.runPromise(
-  encodeFunctionData(erc20Abi, 'transfer', [recipient, amount])
+encodeFunctionData(erc20Abi, 'transfer', [recipient, amount])
 )
 // Effect<Hex, AbiItemNotFoundError | AbiEncodingError>
 // Errors in type signature, not hidden exceptions
-```
+
+````
   </Tab>
   <Tab title="voltaire">
 ```typescript
 import * as Abi from '@tevm/voltaire/Abi'
 
 const calldata = Abi.encodeFunction(erc20Abi, 'transfer', [recipient, amount])
-```
+````
+
   </Tab>
   <Tab title="viem">
 ```typescript
 import { encodeFunctionData } from 'viem'
 
 const calldata = encodeFunctionData({
-  abi: erc20Abi,
-  functionName: 'transfer',
-  args: [recipient, amount]
+abi: erc20Abi,
+functionName: 'transfer',
+args: [recipient, amount]
 })
 // Throws on error - must wrap in try/catch
-```
+
+````
   </Tab>
 </Tabs>
 
@@ -158,7 +169,7 @@ Benchmarks on Apple M3 Max, bun 1.3.4. Voltaire uses WASM-compiled Zig keccak256
 <CodeGroup>
 ```bash pnpm
 pnpm add voltaire-effect @tevm/voltaire effect
-```
+````
 
 ```bash npm
 npm install voltaire-effect @tevm/voltaire effect
@@ -167,11 +178,10 @@ npm install voltaire-effect @tevm/voltaire effect
 ```bash bun
 bun add voltaire-effect @tevm/voltaire effect
 ```
+
 </CodeGroup>
 
-<Info>
-Requires **Effect 3.x**, **Voltaire 0.x**, and **TypeScript 5.4+**.
-</Info>
+<Info>Requires **Effect 3.x**, **Voltaire 0.x**, and **TypeScript 5.4+**.</Info>
 
 ## Key Features
 
@@ -180,10 +190,11 @@ Errors appear in the type signature, not as invisible exceptions. Use `catchTag`
 
 ```typescript
 S.decode(Address.Hex)(input).pipe(
-  Effect.catchTag('ParseError', (e) => Effect.succeed(fallback))
-)
+  Effect.catchTag("ParseError", (e) => Effect.succeed(fallback)),
+);
 // Effect<AddressType, ParseError, never>
 ```
+
 </Accordion>
 
 <Accordion title="Testable Services" icon="flask">
@@ -191,11 +202,12 @@ Swap production layers for test layers without changing business logic:
 
 ```typescript
 // Production
-await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
+await Effect.runPromise(program.pipe(Effect.provide(MainLayer)));
 
-// Test - same code, different wiring  
-await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
+// Test - same code, different wiring
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)));
 ```
+
 </Accordion>
 
 <Accordion title="Composable Operations" icon="puzzle-piece">
@@ -203,20 +215,29 @@ Built-in retry, timeout, and fallback. No external libraries needed:
 
 ```typescript
 getBlockNumber().pipe(
-  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
+  Effect.retry(Schedule.exponential("100 millis").pipe(Schedule.recurs(5))),
   Effect.timeout(Duration.seconds(10)),
-  Effect.orElse(() => getBlockNumber()) // with different provider layer
-)
+  Effect.orElse(() => getBlockNumber()), // with different provider layer
+);
 ```
+
 </Accordion>
 
 ## Ecosystem
 
 <CardGroup cols={3}>
-  <Card title="Voltaire" icon="arrow-up-right-from-square" href="https://voltaire.tevm.sh">
+  <Card
+    title="Voltaire"
+    icon="arrow-up-right-from-square"
+    href="https://voltaire.tevm.sh"
+  >
     Core Ethereum primitives and crypto
   </Card>
-  <Card title="Effect" icon="arrow-up-right-from-square" href="https://effect.website/docs/getting-started/introduction/">
+  <Card
+    title="Effect"
+    icon="arrow-up-right-from-square"
+    href="https://effect.website/docs/getting-started/introduction/"
+  >
     Typed errors, services, and composition
   </Card>
   <Card title="GitHub" icon="github" href="https://github.com/evmts/voltaire">
