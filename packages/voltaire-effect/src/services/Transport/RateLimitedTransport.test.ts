@@ -1,0 +1,118 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
+import * as TestClock from "effect/TestClock";
+import { DefaultRateLimiter } from "../RateLimiter/index.js";
+import {
+	RateLimitedTransport,
+	TestTransport,
+	TransportError,
+	TransportService,
+} from "./index.js";
+
+describe("RateLimitedTransport", () => {
+	it.effect("passes through when no rate limiter is provided", () =>
+		Effect.gen(function* () {
+			const transport = yield* TransportService;
+			const result = yield* transport.request<string>("eth_call", []);
+			expect(result).toBe("0x1");
+		}).pipe(
+			Effect.provide(RateLimitedTransport(TestTransport({ eth_call: "0x1" }))),
+		),
+	);
+
+	it.effect("fails fast when onExceeded is fail", () =>
+		Effect.gen(function* () {
+			const transport = yield* TransportService;
+			const first = yield* transport.request<string>("eth_call", []);
+			expect(first).toBe("0x1");
+
+			const error = yield* transport
+				.request<string>("eth_call", [])
+				.pipe(Effect.flip);
+			expect(error).toBeInstanceOf(TransportError);
+			expect(error.code).toBe(-32005);
+			expect(error.message).toMatch(/rate limit exceeded/i);
+		}).pipe(
+			Effect.scoped,
+			Effect.provide(RateLimitedTransport(TestTransport({ eth_call: "0x1" }))),
+			Effect.provide(
+				DefaultRateLimiter({
+					global: { limit: 1, interval: "1 seconds" },
+					onExceeded: "fail",
+				}),
+			),
+		),
+	);
+
+	it.effect("delays when onExceeded is delay", () =>
+		Effect.gen(function* () {
+			const transport = yield* TransportService;
+			const fiber1 = yield* Effect.fork(
+				transport.request<string>("eth_call", []),
+			);
+			const fiber2 = yield* Effect.fork(
+				transport.request<string>("eth_call", []),
+			);
+
+			yield* Effect.yieldNow();
+			yield* Effect.yieldNow();
+
+			const pending = yield* Fiber.poll(fiber2);
+			expect(pending._tag).toBe("None");
+
+			yield* TestClock.adjust(Duration.seconds(1));
+
+			const r1 = yield* Fiber.join(fiber1);
+			const r2 = yield* Fiber.join(fiber2);
+
+			expect(r1).toBe("0x1");
+			expect(r2).toBe("0x1");
+		}).pipe(
+			Effect.scoped,
+			Effect.provide(RateLimitedTransport(TestTransport({ eth_call: "0x1" }))),
+			Effect.provide(
+				DefaultRateLimiter({
+					global: { limit: 1, interval: "1 seconds" },
+					onExceeded: "delay",
+				}),
+			),
+		),
+	);
+
+	it.effect("applies per-method limits with fixed-window strategy", () =>
+		Effect.gen(function* () {
+			const transport = yield* TransportService;
+			const ok = yield* transport.request<string>("eth_chainId", []);
+			expect(ok).toBe("0x1");
+
+			yield* transport.request<string>("eth_call", []);
+			const error = yield* transport
+				.request<string>("eth_call", [])
+				.pipe(Effect.flip);
+
+			expect(error).toBeInstanceOf(TransportError);
+			expect(error.code).toBe(-32005);
+		}).pipe(
+			Effect.scoped,
+			Effect.provide(
+				RateLimitedTransport(
+					TestTransport({ eth_call: "0x1", eth_chainId: "0x1" }),
+				),
+			),
+			Effect.provide(
+				DefaultRateLimiter({
+					methods: {
+						eth_call: {
+							limit: 1,
+							interval: "1 seconds",
+							algorithm: "fixed-window",
+						},
+					},
+					onExceeded: "fail",
+				}),
+			),
+		),
+	);
+});

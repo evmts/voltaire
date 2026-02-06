@@ -1,0 +1,185 @@
+import * as ConfigProvider from "effect/ConfigProvider";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import { describe, expect, it } from "vitest";
+import { WebSocketTransportConfigSchema } from "./WebSocketTransportConfig.js";
+
+describe("WebSocketTransportConfigSchema", () => {
+	it("reads config from Map provider", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([
+				["ws.url", "wss://mainnet.infura.io/ws/v3/KEY"],
+				["ws.timeout", "60 seconds"],
+				["ws.reconnectEnabled", "true"],
+				["ws.reconnect.maxAttempts", "5"],
+				["ws.reconnect.delay", "2 seconds"],
+				["ws.reconnect.maxDelay", "60 seconds"],
+				["ws.reconnect.multiplier", "1.5"],
+				["ws.keepAlive", "30 seconds"],
+			]),
+		);
+
+		const result = await Effect.runPromise(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(result.url).toBe("wss://mainnet.infura.io/ws/v3/KEY");
+		expect(Duration.toMillis(result.timeout)).toBe(60000);
+		expect(result.reconnectEnabled).toBe(true);
+		expect(Option.isSome(result.reconnect)).toBe(true);
+		if (Option.isSome(result.reconnect)) {
+			expect(result.reconnect.value.maxAttempts).toBe(5);
+			expect(Duration.toMillis(result.reconnect.value.delay)).toBe(2000);
+			expect(Duration.toMillis(result.reconnect.value.maxDelay)).toBe(60000);
+			expect(result.reconnect.value.multiplier).toBe(1.5);
+		}
+		expect(Option.isSome(result.keepAlive)).toBe(true);
+		if (Option.isSome(result.keepAlive)) {
+			expect(Duration.toMillis(result.keepAlive.value)).toBe(30000);
+		}
+	});
+
+	it("uses defaults when optional values not provided", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([["ws.url", "wss://eth.llamarpc.com"]]),
+		);
+
+		const result = await Effect.runPromise(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(result.url).toBe("wss://eth.llamarpc.com");
+		expect(Duration.toMillis(result.timeout)).toBe(30000);
+		expect(result.reconnectEnabled).toBe(false);
+		expect(Option.isNone(result.protocols)).toBe(true);
+		expect(Option.isNone(result.keepAlive)).toBe(true);
+	});
+
+	it("validates URL must start with ws:// or wss://", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([["ws.url", "http://invalid-url"]]),
+		);
+
+		const result = await Effect.runPromiseExit(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("accepts ws:// URLs", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([["ws.url", "ws://localhost:8545"]]),
+		);
+
+		const result = await Effect.runPromise(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(result.url).toBe("ws://localhost:8545");
+	});
+
+	it("accepts wss:// URLs", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([["ws.url", "wss://mainnet.infura.io/ws/v3/KEY"]]),
+		);
+
+		const result = await Effect.runPromise(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(result.url).toBe("wss://mainnet.infura.io/ws/v3/KEY");
+	});
+
+	it("fails when required url is missing", async () => {
+		const configProvider = ConfigProvider.fromMap(new Map());
+
+		const result = await Effect.runPromiseExit(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("parses duration formats correctly", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([
+				["ws.url", "wss://eth.llamarpc.com"],
+				["ws.timeout", "1 minute"],
+				["ws.keepAlive", "500 millis"],
+			]),
+		);
+
+		const result = await Effect.runPromise(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(Duration.toMillis(result.timeout)).toBe(60000);
+		expect(Option.isSome(result.keepAlive)).toBe(true);
+		if (Option.isSome(result.keepAlive)) {
+			expect(Duration.toMillis(result.keepAlive.value)).toBe(500);
+		}
+	});
+
+	it("reads protocols as comma-separated string", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([
+				["ws.url", "wss://eth.llamarpc.com"],
+				["ws.protocols", "protocol1, protocol2, protocol3"],
+			]),
+		);
+
+		const result = await Effect.runPromise(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(Option.isSome(result.protocols)).toBe(true);
+		if (Option.isSome(result.protocols)) {
+			expect(result.protocols.value).toBe("protocol1, protocol2, protocol3");
+		}
+	});
+
+	it("uses reconnect defaults when reconnect enabled without options", async () => {
+		const configProvider = ConfigProvider.fromMap(
+			new Map([
+				["ws.url", "wss://eth.llamarpc.com"],
+				["ws.reconnectEnabled", "true"],
+			]),
+		);
+
+		const result = await Effect.runPromise(
+			WebSocketTransportConfigSchema.pipe(
+				Effect.provide(Layer.setConfigProvider(configProvider)),
+			),
+		);
+
+		expect(result.reconnectEnabled).toBe(true);
+		// When no reconnect options are provided, the nested config returns
+		// Some with default values (maxAttempts=10, delay=1s, maxDelay=30s, multiplier=2)
+		expect(Option.isSome(result.reconnect)).toBe(true);
+		if (Option.isSome(result.reconnect)) {
+			expect(result.reconnect.value.maxAttempts).toBe(10);
+			expect(Duration.toMillis(result.reconnect.value.delay)).toBe(1000);
+			expect(Duration.toMillis(result.reconnect.value.maxDelay)).toBe(30000);
+			expect(result.reconnect.value.multiplier).toBe(2);
+		}
+	});
+});
