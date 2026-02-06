@@ -1,0 +1,35 @@
+[package]
+name = "voltaire"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+authors = ["Voltaire Contributors"]
+description = "Idiomatic Rust bindings for Voltaire Ethereum primitives"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/roninjin10/voltaire"
+documentation = "https://docs.rs/voltaire"
+keywords = ["ethereum", "crypto", "primitives", "blockchain"]
+categories = ["cryptography", "data-structures"]
+
+[lib]
+crate-type = ["lib"]
+
+[features]
+default = ["std", "getrandom"]
+std = []
+# Link against native Voltaire FFI library
+native = []
+# Enable random byte generation
+getrandom = ["dep:getrandom"]
+
+[dependencies]
+# Core
+thiserror = "2"
+hex = "0.4"
+getrandom = { version = "0.2", optional = true }
+
+# P-256 (secp256r1) curve
+p256 = { version = "0.13", features = ["ecdh", "ecdsa"] }
+
+[dev-dependencies]
+proptest = "1"
