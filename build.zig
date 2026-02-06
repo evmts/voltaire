@@ -46,7 +46,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("c_kzg", c_kzg_mod);
-    crypto_mod.addIncludePath(b.path("lib")); // For keccak_wrapper.h
+    crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib")); // For keccak_wrapper.h
 
     // z-ens-normalize module
     const z_ens_normalize_dep = b.dependency("z_ens_normalize", .{
@@ -57,10 +57,10 @@ pub fn build(b: *std.Build) void {
 
     // libwally-core library (optional - only needed for C API)
     const libwally_core_lib = if (with_c_api) blk: {
-        const libwally_core_dep = b.dependency("libwally_core", .{
+        const libwally_core_dep = b.lazyDependency("libwally_core", .{
             .target = target,
             .optimize = optimize,
-        });
+        }) orelse break :blk null;
         break :blk libwally_core_dep.artifact("wallycore");
     } else null;
 
@@ -107,7 +107,7 @@ pub fn build(b: *std.Build) void {
     blockchain_tests.linkLibrary(c_kzg_lib);
     blockchain_tests.linkLibrary(blst_lib);
     blockchain_tests.addObjectFile(rust_crypto_lib_path);
-    blockchain_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    blockchain_tests.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     blockchain_tests.step.dependOn(cargo_build_step);
     blockchain_tests.linkLibC();
 
@@ -119,7 +119,7 @@ pub fn build(b: *std.Build) void {
     primitives_tests.linkLibrary(c_kzg_lib);
     primitives_tests.linkLibrary(blst_lib);
     primitives_tests.addObjectFile(rust_crypto_lib_path);
-    primitives_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    primitives_tests.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     primitives_tests.step.dependOn(cargo_build_step);
     primitives_tests.linkLibC();
 
@@ -131,7 +131,7 @@ pub fn build(b: *std.Build) void {
     crypto_tests.linkLibrary(c_kzg_lib);
     crypto_tests.linkLibrary(blst_lib);
     crypto_tests.addObjectFile(rust_crypto_lib_path);
-    crypto_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    crypto_tests.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     crypto_tests.step.dependOn(cargo_build_step);
     crypto_tests.linkLibC();
 
@@ -151,7 +151,7 @@ pub fn build(b: *std.Build) void {
     precompiles_tests.linkLibrary(c_kzg_lib);
     precompiles_tests.linkLibrary(blst_lib);
     precompiles_tests.addObjectFile(rust_crypto_lib_path);
-    precompiles_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    precompiles_tests.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     precompiles_tests.step.dependOn(cargo_build_step);
     precompiles_tests.linkLibC();
 
@@ -184,7 +184,7 @@ pub fn build(b: *std.Build) void {
     primitives_extra_tests.linkLibrary(c_kzg_lib);
     primitives_extra_tests.linkLibrary(blst_lib);
     primitives_extra_tests.addObjectFile(rust_crypto_lib_path);
-    primitives_extra_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    primitives_extra_tests.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     primitives_extra_tests.step.dependOn(cargo_build_step);
     primitives_extra_tests.linkLibC();
 
@@ -218,7 +218,7 @@ pub fn build(b: *std.Build) void {
     keccak256_example.linkLibrary(c_kzg_lib);
     keccak256_example.linkLibrary(blst_lib);
     keccak256_example.addObjectFile(rust_crypto_lib_path);
-    keccak256_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    keccak256_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     keccak256_example.step.dependOn(cargo_build_step);
     keccak256_example.linkLibC();
 
@@ -241,7 +241,7 @@ pub fn build(b: *std.Build) void {
     abi_example.linkLibrary(c_kzg_lib);
     abi_example.linkLibrary(blst_lib);
     abi_example.addObjectFile(rust_crypto_lib_path);
-    abi_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    abi_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     abi_example.step.dependOn(cargo_build_step);
     abi_example.linkLibC();
 
@@ -265,7 +265,7 @@ pub fn build(b: *std.Build) void {
     secp256k1_example.linkLibrary(c_kzg_lib);
     secp256k1_example.linkLibrary(blst_lib);
     secp256k1_example.addObjectFile(rust_crypto_lib_path);
-    secp256k1_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    secp256k1_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     secp256k1_example.step.dependOn(cargo_build_step);
     secp256k1_example.linkLibC();
 
@@ -288,7 +288,7 @@ pub fn build(b: *std.Build) void {
     address_example.linkLibrary(c_kzg_lib);
     address_example.linkLibrary(blst_lib);
     address_example.addObjectFile(rust_crypto_lib_path);
-    address_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    address_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     address_example.step.dependOn(cargo_build_step);
     address_example.linkLibC();
 
@@ -311,7 +311,7 @@ pub fn build(b: *std.Build) void {
     hex_example.linkLibrary(c_kzg_lib);
     hex_example.linkLibrary(blst_lib);
     hex_example.addObjectFile(rust_crypto_lib_path);
-    hex_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    hex_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     hex_example.step.dependOn(cargo_build_step);
     hex_example.linkLibC();
 
@@ -334,7 +334,7 @@ pub fn build(b: *std.Build) void {
     rlp_example.linkLibrary(c_kzg_lib);
     rlp_example.linkLibrary(blst_lib);
     rlp_example.addObjectFile(rust_crypto_lib_path);
-    rlp_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    rlp_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     rlp_example.step.dependOn(cargo_build_step);
     rlp_example.linkLibC();
 
@@ -358,7 +358,7 @@ pub fn build(b: *std.Build) void {
     eip712_example.linkLibrary(c_kzg_lib);
     eip712_example.linkLibrary(blst_lib);
     eip712_example.addObjectFile(rust_crypto_lib_path);
-    eip712_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    eip712_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     eip712_example.step.dependOn(cargo_build_step);
     eip712_example.linkLibC();
 
@@ -382,7 +382,7 @@ pub fn build(b: *std.Build) void {
     transaction_example.linkLibrary(c_kzg_lib);
     transaction_example.linkLibrary(blst_lib);
     transaction_example.addObjectFile(rust_crypto_lib_path);
-    transaction_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    transaction_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     transaction_example.step.dependOn(cargo_build_step);
     transaction_example.linkLibC();
 
@@ -406,7 +406,7 @@ pub fn build(b: *std.Build) void {
     eip4844_example.linkLibrary(c_kzg_lib);
     eip4844_example.linkLibrary(blst_lib);
     eip4844_example.addObjectFile(rust_crypto_lib_path);
-    eip4844_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    eip4844_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     eip4844_example.step.dependOn(cargo_build_step);
     eip4844_example.linkLibC();
 
@@ -430,7 +430,7 @@ pub fn build(b: *std.Build) void {
     eip7702_example.linkLibrary(c_kzg_lib);
     eip7702_example.linkLibrary(blst_lib);
     eip7702_example.addObjectFile(rust_crypto_lib_path);
-    eip7702_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    eip7702_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     eip7702_example.step.dependOn(cargo_build_step);
     eip7702_example.linkLibC();
 
@@ -454,7 +454,7 @@ pub fn build(b: *std.Build) void {
     abi_workflow_example.linkLibrary(c_kzg_lib);
     abi_workflow_example.linkLibrary(blst_lib);
     abi_workflow_example.addObjectFile(rust_crypto_lib_path);
-    abi_workflow_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    abi_workflow_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     abi_workflow_example.step.dependOn(cargo_build_step);
     abi_workflow_example.linkLibC();
 
@@ -478,7 +478,7 @@ pub fn build(b: *std.Build) void {
     sig_recovery_example.linkLibrary(c_kzg_lib);
     sig_recovery_example.linkLibrary(blst_lib);
     sig_recovery_example.addObjectFile(rust_crypto_lib_path);
-    sig_recovery_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    sig_recovery_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     sig_recovery_example.step.dependOn(cargo_build_step);
     sig_recovery_example.linkLibC();
 
@@ -502,7 +502,7 @@ pub fn build(b: *std.Build) void {
     bls_operations_example.linkLibrary(c_kzg_lib);
     bls_operations_example.linkLibrary(blst_lib);
     bls_operations_example.addObjectFile(rust_crypto_lib_path);
-    bls_operations_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    bls_operations_example.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     bls_operations_example.step.dependOn(cargo_build_step);
     bls_operations_example.linkLibC();
 
@@ -574,7 +574,7 @@ pub fn build(b: *std.Build) void {
         c_api_lib.linkLibrary(blst_lib);
         c_api_lib.addObjectFile(rust_crypto_lib_path);
         c_api_lib.linkLibrary(libwally_core_lib.?);
-        c_api_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
+        c_api_lib.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
         c_api_lib.step.dependOn(cargo_build_step);
         c_api_lib.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_lib.linkLibC();
@@ -597,7 +597,7 @@ pub fn build(b: *std.Build) void {
         c_api_shared.linkLibrary(blst_lib);
         c_api_shared.addObjectFile(rust_crypto_lib_path);
         c_api_shared.linkLibrary(libwally_core_lib.?);
-        c_api_shared.addIncludePath(b.path("lib")); // For Rust FFI headers
+        c_api_shared.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
         c_api_shared.step.dependOn(cargo_build_step);
         c_api_shared.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_shared.linkLibC();
@@ -964,10 +964,10 @@ fn addTypeScriptNativeBuild(
     cargo_build_step: *std.Build.Step,
 ) void {
     // Build libwally-core via dependency system
-    const libwally_core_dep = b.dependency("libwally_core", .{
+    const libwally_core_dep = b.lazyDependency("libwally_core", .{
         .target = ts_target,
         .optimize = .ReleaseFast,
-    });
+    }) orelse return;
     const libwally_core_lib = libwally_core_dep.artifact("wallycore");
 
     // Native TypeScript FFI library with ReleaseFast optimization
@@ -1458,49 +1458,50 @@ fn addCrossPlatformNativeBuilds(
         target_blockchain_mod.addImport("primitives", target_primitives_mod);
 
         // Build libwally-core for this target
-        const libwally_core_dep = b.dependency("libwally_core", .{
+        if (b.lazyDependency("libwally_core", .{
             .target = target,
             .optimize = .ReleaseFast,
-        });
-        const libwally_core_lib = libwally_core_dep.artifact("wallycore");
+        })) |libwally_core_dep| {
+            const libwally_core_lib = libwally_core_dep.artifact("wallycore");
 
-        // Build shared library with ReleaseFast
-        const native_lib = b.addLibrary(.{
-            .name = "voltaire_native",
-            .linkage = .dynamic,
-            .root_module = b.createModule(.{
-                .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
-                .target = target,
-                .optimize = .ReleaseFast,
-            }),
-        });
-        native_lib.root_module.addImport("primitives", target_primitives_mod);
-        native_lib.root_module.addImport("crypto", target_crypto_mod);
-        native_lib.root_module.addImport("state-manager", target_state_manager_mod);
-        native_lib.root_module.addImport("blockchain", target_blockchain_mod);
-        native_lib.linkLibrary(target_c_kzg_lib);
-        native_lib.linkLibrary(target_blst_lib);
-        native_lib.addObjectFile(target_rust_crypto_lib_path);
-        native_lib.linkLibrary(libwally_core_lib);
-        native_lib.addIncludePath(b.path("lib"));
-        native_lib.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
-        native_lib.step.dependOn(target_cargo_build_step);
-        native_lib.linkLibC();
+            // Build shared library with ReleaseFast
+            const native_lib = b.addLibrary(.{
+                .name = "voltaire_native",
+                .linkage = .dynamic,
+                .root_module = b.createModule(.{
+                    .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
+                    .target = target,
+                    .optimize = .ReleaseFast,
+                }),
+            });
+            native_lib.root_module.addImport("primitives", target_primitives_mod);
+            native_lib.root_module.addImport("crypto", target_crypto_mod);
+            native_lib.root_module.addImport("state-manager", target_state_manager_mod);
+            native_lib.root_module.addImport("blockchain", target_blockchain_mod);
+            native_lib.linkLibrary(target_c_kzg_lib);
+            native_lib.linkLibrary(target_blst_lib);
+            native_lib.addObjectFile(target_rust_crypto_lib_path);
+            native_lib.linkLibrary(libwally_core_lib);
+            native_lib.addIncludePath(b.path("lib"));
+            native_lib.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
+            native_lib.step.dependOn(target_cargo_build_step);
+            native_lib.linkLibC();
 
-        // Install to native/{platform}/ directory
-        const install_dir = b.fmt("native/{s}", .{platform.name});
-        const install_native = b.addInstallArtifact(native_lib, .{
-            .dest_dir = .{ .override = .{ .custom = install_dir } },
-        });
+            // Install to native/{platform}/ directory
+            const install_dir = b.fmt("native/{s}", .{platform.name});
+            const install_native = b.addInstallArtifact(native_lib, .{
+                .dest_dir = .{ .override = .{ .custom = install_dir } },
+            });
 
-        // Create individual build step for this platform
-        const step_name = b.fmt("build-native-{s}", .{platform.name});
-        const step_desc = b.fmt("Build native bindings for {s}", .{platform.name});
-        const platform_step = b.step(step_name, step_desc);
-        platform_step.dependOn(&install_native.step);
+            // Create individual build step for this platform
+            const step_name = b.fmt("build-native-{s}", .{platform.name});
+            const step_desc = b.fmt("Build native bindings for {s}", .{platform.name});
+            const platform_step = b.step(step_name, step_desc);
+            platform_step.dependOn(&install_native.step);
 
-        // Add to build-native-all
-        build_native_all.dependOn(&install_native.step);
+            // Add to build-native-all
+            build_native_all.dependOn(&install_native.step);
+        }
     }
 }
 

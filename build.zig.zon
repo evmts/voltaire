@@ -56,6 +56,7 @@
         },
         .libwally_core = .{
             .path = "packages/voltaire-zig/lib/libwally-core",
+            .lazy = true,
         },
     },
 
