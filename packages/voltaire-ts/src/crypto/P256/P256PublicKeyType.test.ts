@@ -1,0 +1,178 @@
+import { describe, expectTypeOf, it } from "vitest";
+import type { P256PublicKeyType } from "./P256PublicKeyType.js";
+
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
+
+describe("P256PublicKeyType", () => {
+	describe("type structure", () => {
+		it("P256PublicKeyType is Uint8Array", () => {
+			expectTypeOf<P256PublicKeyType>().toEqualTypeOf<Uint8Array>();
+		});
+
+		it("P256PublicKeyType matches Uint8Array exactly", () => {
+			type Test = Equals<P256PublicKeyType, Uint8Array>;
+			const result: Test = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+
+		it("accepts Uint8Array instances", () => {
+			const arr = new Uint8Array(64);
+			expectTypeOf(arr).toMatchTypeOf<P256PublicKeyType>();
+		});
+
+		it("is assignable to Uint8Array", () => {
+			type Test = P256PublicKeyType extends Uint8Array ? true : false;
+			const result: Test = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+	});
+
+	describe("usage patterns", () => {
+		it("P256PublicKeyType for function parameters", () => {
+			function acceptsPublicKey(_key: P256PublicKeyType): void {}
+			expectTypeOf(acceptsPublicKey)
+				.parameter(0)
+				.toEqualTypeOf<P256PublicKeyType>();
+		});
+
+		it("P256PublicKeyType for function returns", () => {
+			function returnsPublicKey(): P256PublicKeyType {
+				return new Uint8Array(64);
+			}
+			expectTypeOf(returnsPublicKey).returns.toEqualTypeOf<P256PublicKeyType>();
+		});
+
+		it("P256PublicKeyType in verification", () => {
+			type Verify = (
+				sig: unknown,
+				msg: Uint8Array,
+				pk: P256PublicKeyType,
+			) => boolean;
+			expectTypeOf<Verify>().parameter(2).toEqualTypeOf<P256PublicKeyType>();
+		});
+
+		it("P256PublicKeyType in ECDH", () => {
+			type ECDH = (sk: Uint8Array, pk: P256PublicKeyType) => Uint8Array;
+			expectTypeOf<ECDH>().parameter(1).toEqualTypeOf<P256PublicKeyType>();
+		});
+	});
+
+	describe("type compatibility", () => {
+		it("compatible with typed arrays", () => {
+			const key: P256PublicKeyType = new Uint8Array(64);
+			expectTypeOf(key).toEqualTypeOf<P256PublicKeyType>();
+		});
+
+		it("compatible with ArrayBuffer views", () => {
+			const buffer = new ArrayBuffer(64);
+			const key: P256PublicKeyType = new Uint8Array(buffer);
+			expectTypeOf(key).toEqualTypeOf<P256PublicKeyType>();
+		});
+
+		it("not compatible with string", () => {
+			// @ts-expect-error - string is not P256PublicKeyType
+			const key: P256PublicKeyType = "public key";
+			expectTypeOf(key).not.toEqualTypeOf<string>();
+		});
+
+		it("not compatible with bigint", () => {
+			// @ts-expect-error - bigint is not P256PublicKeyType
+			const key: P256PublicKeyType = 123n;
+			expectTypeOf(key).not.toEqualTypeOf<bigint>();
+		});
+
+		it("not compatible with compressed format (33 bytes)", () => {
+			const compressed = new Uint8Array(33);
+			// Type system allows this, but semantically it's wrong
+			const key: P256PublicKeyType = compressed as P256PublicKeyType;
+			expectTypeOf(key).toEqualTypeOf<P256PublicKeyType>();
+		});
+	});
+
+	describe("uncompressed format", () => {
+		it("represents x || y coordinates (64 bytes)", () => {
+			const publicKey: P256PublicKeyType = new Uint8Array(64);
+			const x = publicKey.slice(0, 32);
+			const y = publicKey.slice(32, 64);
+			expectTypeOf(x).toEqualTypeOf<Uint8Array>();
+			expectTypeOf(y).toEqualTypeOf<Uint8Array>();
+		});
+
+		it("supports coordinate extraction", () => {
+			function extractCoordinates(key: P256PublicKeyType): {
+				x: Uint8Array;
+				y: Uint8Array;
+			} {
+				return { x: key.slice(0, 32), y: key.slice(32, 64) };
+			}
+			expectTypeOf(extractCoordinates).returns.toEqualTypeOf<{
+				x: Uint8Array;
+				y: Uint8Array;
+			}>();
+		});
+
+		it("does not include 0x04 prefix", () => {
+			const key: P256PublicKeyType = new Uint8Array(64);
+			expectTypeOf(key.length).toEqualTypeOf<number>();
+		});
+	});
+
+	describe("WebCrypto compatibility", () => {
+		it("compatible with WebCrypto uncompressed format (minus prefix)", () => {
+			function toWebCrypto(key: P256PublicKeyType): Uint8Array {
+				const full = new Uint8Array(65);
+				full[0] = 0x04;
+				full.set(key, 1);
+				return full;
+			}
+			expectTypeOf(toWebCrypto).parameter(0).toEqualTypeOf<P256PublicKeyType>();
+		});
+
+		it("converts from WebCrypto format", () => {
+			function fromWebCrypto(key: Uint8Array): P256PublicKeyType {
+				return key.slice(1, 65);
+			}
+			expectTypeOf(fromWebCrypto).returns.toEqualTypeOf<P256PublicKeyType>();
+		});
+	});
+
+	describe("type narrowing", () => {
+		it("narrows from Uint8Array to P256PublicKeyType", () => {
+			function isP256PublicKey(value: Uint8Array): value is P256PublicKeyType {
+				return value.length === 64;
+			}
+			expectTypeOf(isP256PublicKey).returns.toEqualTypeOf<boolean>();
+		});
+
+		it("discriminates union types", () => {
+			type Result = P256PublicKeyType | Error;
+			function isKey(value: Result): value is P256PublicKeyType {
+				return value instanceof Uint8Array;
+			}
+			expectTypeOf(isKey).returns.toEqualTypeOf<boolean>();
+		});
+	});
+
+	describe("readonly and mutability", () => {
+		it("mutable by default", () => {
+			const key: P256PublicKeyType = new Uint8Array(64);
+			key[0] = 1;
+			expectTypeOf(key).toEqualTypeOf<P256PublicKeyType>();
+		});
+
+		it("can be made readonly", () => {
+			const key: Readonly<P256PublicKeyType> = new Uint8Array(64);
+			expectTypeOf(key).toEqualTypeOf<Readonly<P256PublicKeyType>>();
+		});
+
+		it("readonly prevents modification", () => {
+			const key: Readonly<P256PublicKeyType> = new Uint8Array(64);
+			// @ts-expect-error - readonly prevents assignment
+			key[0] = 1;
+			expectTypeOf(key).toMatchTypeOf<Readonly<Uint8Array>>();
+		});
+	});
+});

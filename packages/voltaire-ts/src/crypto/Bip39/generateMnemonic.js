@@ -1,0 +1,36 @@
+import { generateMnemonic as _generateMnemonic } from "@scure/bip39";
+import { wordlist } from "@scure/bip39/wordlists/english.js";
+import { Bip39Error } from "./errors.js";
+
+/**
+ * Generate a BIP-39 mnemonic phrase
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {128 | 160 | 192 | 224 | 256} [strength=256] - Entropy strength in bits (128=12 words, 256=24 words)
+ * @param {string[]} [wl] - Optional wordlist (defaults to English)
+ * @returns {import('./MnemonicType.js').Mnemonic} Mnemonic phrase
+ * @throws {Bip39Error} If mnemonic generation fails
+ * @example
+ * ```javascript
+ * import * as Bip39 from './crypto/Bip39/index.js';
+ * // Generate 12-word mnemonic (128 bits)
+ * const mnemonic12 = Bip39.generateMnemonic(128);
+ * // Generate 24-word mnemonic (256 bits)
+ * const mnemonic24 = Bip39.generateMnemonic(256);
+ * ```
+ */
+export function generateMnemonic(strength = 256, wl = wordlist) {
+	try {
+		return /** @type {import('./MnemonicType.js').Mnemonic} */ (
+			_generateMnemonic(wl, strength)
+		);
+	} catch (error) {
+		throw new Bip39Error(`Mnemonic generation failed: ${error}`, {
+			code: -32000,
+			context: { strength },
+			docsPath: "/crypto/bip39/generate-mnemonic#error-handling",
+			cause: /** @type {Error} */ (error),
+		});
+	}
+}

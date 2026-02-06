@@ -1,0 +1,186 @@
+---
+title: Hash Algorithms
+description: Hash algorithm enumeration and configuration for the unified hash interface
+---
+
+## Overview
+
+The hash_algorithms module defines the `HashAlgorithm` enum and associated metadata for all supported cryptographic hash functions. It provides compile-time configuration for hash operations.
+
+## Types
+
+### `HashAlgorithm`
+
+Enumeration of supported hash algorithms.
+
+```zig
+pub const HashAlgorithm = enum {
+    Keccak256,
+    SHA256,
+    Blake2b256,
+    Blake2b512,
+    RIPEMD160,
+
+    pub fn digestLength(self: HashAlgorithm) usize {
+        return switch (self) {
+            .Keccak256 => 32,
+            .SHA256 => 32,
+            .Blake2b256 => 32,
+            .Blake2b512 => 64,
+            .RIPEMD160 => 20,
+        };
+    }
+
+    pub fn name(self: HashAlgorithm) []const u8 {
+        return @tagName(self);
+    }
+};
+```
+
+## Key Functions
+
+### `digestLength`
+
+Returns the output size in bytes for a hash algorithm.
+
+```zig
+pub fn digestLength(self: HashAlgorithm) usize
+```
+
+**Returns:** Number of bytes in hash digest
+
+### `name`
+
+Returns the string name of a hash algorithm.
+
+```zig
+pub fn name(self: HashAlgorithm) []const u8
+```
+
+**Returns:** Algorithm name as string
+
+## Examples
+
+### Query Algorithm Properties
+
+```zig
+const hash_algorithms = @import("crypto").hash_algorithms;
+const std = @import("std");
+
+const algo = hash_algorithms.HashAlgorithm.Keccak256;
+
+std.debug.print("Algorithm: {s}\n", .{algo.name()});
+std.debug.print("Digest length: {} bytes\n", .{algo.digestLength()});
+```
+
+### Iterate All Algorithms
+
+```zig
+const algorithms = std.meta.tags(hash_algorithms.HashAlgorithm);
+
+for (algorithms) |algo| {
+    std.debug.print("{s}: {} bytes\n", .{
+        algo.name(),
+        algo.digestLength(),
+    });
+}
+```
+
+### Compile-Time Algorithm Selection
+
+```zig
+fn hashWithAlgorithm(comptime algo: HashAlgorithm, data: []const u8) [algo.digestLength()]u8 {
+    var digest: [algo.digestLength()]u8 = undefined;
+    // Implementation based on algorithm
+    return digest;
+}
+
+const keccak_hash = hashWithAlgorithm(.Keccak256, "test");
+const sha_hash = hashWithAlgorithm(.SHA256, "test");
+```
+
+## Algorithm Details
+
+### Keccak-256
+
+- **Digest Length:** 32 bytes (256 bits)
+- **Use Case:** Ethereum hashing standard
+- **Performance:** Assembly-optimized implementation
+- **Security:** SHA-3 finalist, cryptographically secure
+
+### SHA-256
+
+- **Digest Length:** 32 bytes (256 bits)
+- **Use Case:** Bitcoin, TLS, general-purpose hashing
+- **Performance:** Hardware-accelerated on modern CPUs
+- **Security:** NIST standard, extensively analyzed
+
+### Blake2b-256
+
+- **Digest Length:** 32 bytes (256 bits)
+- **Use Case:** Fast hashing, modern applications
+- **Performance:** Faster than SHA-2 in software
+- **Security:** Modern design, resistant to length-extension
+
+### Blake2b-512
+
+- **Digest Length:** 64 bytes (512 bits)
+- **Use Case:** Applications requiring longer digests
+- **Performance:** Optimized for 64-bit platforms
+- **Security:** Full Blake2b security strength
+
+### RIPEMD-160
+
+- **Digest Length:** 20 bytes (160 bits)
+- **Use Case:** Bitcoin address generation
+- **Performance:** Moderate speed
+- **Security:** Considered secure but less analyzed than SHA-2
+
+## Performance
+
+Algorithm selection impacts performance:
+
+| Algorithm | Relative Speed | Security Level | Use Case |
+|-----------|---------------|----------------|----------|
+| Keccak-256 | Fast (asm) | 256-bit | Ethereum |
+| SHA-256 | Fast (hw) | 256-bit | General |
+| Blake2b-256 | Very Fast | 256-bit | Modern apps |
+| Blake2b-512 | Fast | 512-bit | High security |
+| RIPEMD-160 | Moderate | 160-bit | Bitcoin compat |
+
+## Testing
+
+Run hash algorithm tests:
+
+```bash
+zig build test -Dtest-filter=hash_algorithms
+```
+
+Tests verify:
+- Correct digest lengths
+- Algorithm name consistency
+- Enum iteration
+- Compile-time properties
+
+## Security Considerations
+
+- **Algorithm strength**: All algorithms provide cryptographic security
+- **Digest length**: Longer digests provide higher collision resistance
+- **Keccak vs SHA-3**: Keccak-256 differs from NIST SHA-3 (padding)
+- **RIPEMD-160**: Shorter digest, use with caution for new applications
+- **Future-proofing**: Blake2 recommended for new designs
+
+## Related
+
+- [Hash](/zig/crypto/hash) - Unified hash interface
+- [Keccak](/zig/crypto/keccak) - Keccak implementation
+- [SHA256](/zig/crypto/sha256) - SHA-256 implementation
+- [Blake2](/zig/crypto/blake2) - Blake2 implementation
+- [RIPEMD160](/zig/crypto/ripemd160) - RIPEMD-160 implementation
+
+## References
+
+- [NIST Hash Functions](https://csrc.nist.gov/projects/hash-functions) - NIST standards
+- [Keccak](https://keccak.team/keccak.html) - Keccak specifications
+- [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf) - SHA-2 family
+- [RFC 7693](https://www.rfc-editor.org/rfc/rfc7693) - BLAKE2 specification
