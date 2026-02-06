@@ -1,0 +1,44 @@
+import { encode } from "../../Rlp/encode.js";
+import { Type } from "../types.js";
+import {
+	encodeAccessList,
+	encodeAddress,
+	encodeBigintCompact,
+} from "../utils.js";
+
+/**
+ * Serialize EIP-2930 transaction to RLP encoded bytes.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @param {import('./TransactionEIP2930Type.js').TransactionEIP2930Type} tx - Transaction to serialize
+ * @returns {Uint8Array} RLP encoded transaction bytes
+ * @throws {never} Never throws
+ * @example
+ * ```javascript
+ * import { serialize } from './primitives/Transaction/EIP2930/serialize.js';
+ * const bytes = serialize(tx);
+ * ```
+ */
+export function serialize(tx) {
+	const fields = [
+		encodeBigintCompact(tx.chainId),
+		encodeBigintCompact(tx.nonce),
+		encodeBigintCompact(tx.gasPrice),
+		encodeBigintCompact(tx.gasLimit),
+		encodeAddress(tx.to),
+		encodeBigintCompact(tx.value),
+		tx.data,
+		encodeAccessList(tx.accessList),
+		new Uint8Array([tx.yParity]),
+		tx.r,
+		tx.s,
+	];
+	const rlpEncoded = encode(fields);
+
+	// Prepend type byte 0x01
+	const result = new Uint8Array(1 + rlpEncoded.length);
+	result[0] = Type.EIP2930;
+	result.set(rlpEncoded, 1);
+	return result;
+}

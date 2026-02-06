@@ -1,0 +1,385 @@
+/**
+ * Unit tests for encodeFunction
+ */
+
+import { describe, expect, it } from "vitest";
+import type { BrandedAddress as Address } from "../Address/AddressType.js";
+import * as Hex from "../Hex/index.js";
+import type { Abi } from "./Abi.js";
+import { AbiItemNotFoundError } from "./Errors.js";
+import { encodeFunction } from "./encodeFunction.js";
+
+const mockAbi = [
+	{
+		type: "function",
+		name: "transfer",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ type: "address", name: "to" },
+			{ type: "uint256", name: "amount" },
+		],
+		outputs: [{ type: "bool", name: "" }],
+	},
+	{
+		type: "function",
+		name: "balanceOf",
+		stateMutability: "view",
+		inputs: [{ type: "address", name: "account" }],
+		outputs: [{ type: "uint256", name: "" }],
+	},
+	{
+		type: "function",
+		name: "approve",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ type: "address", name: "spender" },
+			{ type: "uint256", name: "amount" },
+		],
+		outputs: [{ type: "bool", name: "" }],
+	},
+	{
+		type: "event",
+		name: "Transfer",
+		inputs: [
+			{ type: "address", name: "from", indexed: true },
+			{ type: "address", name: "to", indexed: true },
+		],
+	},
+] as const satisfies Abi;
+
+describe("encodeFunction", () => {
+	it("encodes transfer function call", () => {
+		const to = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amount = 1000n;
+
+		const encoded = encodeFunction(mockAbi, "transfer", [to, amount]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+		expect(() => Hex.validate(encoded)).not.toThrow();
+		// Should have selector (8 hex chars) + params
+		expect(encoded.length).toBeGreaterThan(10);
+	});
+
+	it("encodes balanceOf function call", () => {
+		const account = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+
+		const encoded = encodeFunction(mockAbi, "balanceOf", [account]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+		// Selector (8 chars) + address param (64 chars) = 72 + 2 for 0x
+		expect(encoded.length).toBe(74);
+	});
+
+	it("encodes approve function call", () => {
+		const spender = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amount = 2000n;
+
+		const encoded = encodeFunction(mockAbi, "approve", [spender, amount]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+		// Selector + 2 params (address + uint256)
+		expect(encoded.length).toBe(138); // 0x + 8 + 128
+	});
+
+	it("includes correct function selector", () => {
+		const to = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amount = 1000n;
+
+		const encoded = encodeFunction(mockAbi, "transfer", [to, amount]);
+
+		// transfer(address,uint256) selector = 0xa9059cbb
+		expect(encoded.slice(0, 10).toLowerCase()).toBe("0xa9059cbb");
+	});
+
+	it("throws when function not found in ABI", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		expect(() => encodeFunction(mockAbi, "nonExistent" as any, [])).toThrow(
+			AbiItemNotFoundError,
+		);
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		expect(() => encodeFunction(mockAbi, "nonExistent" as any, [])).toThrow(
+			/not found in ABI/,
+		);
+	});
+
+	it("throws on empty ABI", () => {
+		const emptyAbi: Abi = [];
+
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		expect(() => encodeFunction(emptyAbi, "transfer" as any, [])).toThrow(
+			AbiItemNotFoundError,
+		);
+	});
+
+	it("handles function with no parameters", () => {
+		const noParamsAbi = [
+			{
+				type: "function",
+				name: "totalSupply",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			},
+		] as const satisfies Abi;
+
+		const encoded = encodeFunction(noParamsAbi, "totalSupply", []);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+		// Only selector (4 bytes = 8 hex chars + 0x)
+		expect(encoded.length).toBe(10);
+	});
+
+	it("handles function with multiple parameters", () => {
+		const multiParamAbi = [
+			{
+				type: "function",
+				name: "swap",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "tokenIn" },
+					{ type: "address", name: "tokenOut" },
+					{ type: "uint256", name: "amountIn" },
+					{ type: "uint256", name: "amountOutMin" },
+				],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const tokenIn = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const tokenOut = "0x0000000000000000000000000000000000000001" as Address;
+		const amountIn = 1000n;
+		const amountOutMin = 950n;
+
+		const encoded = encodeFunction(multiParamAbi, "swap", [
+			tokenIn,
+			tokenOut,
+			amountIn,
+			amountOutMin,
+		]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+		// Selector + 4 params (2 addresses + 2 uint256s) = 4 * 32 bytes = 128 bytes
+		expect(encoded.length).toBe(266); // 0x + 8 + 256
+	});
+
+	it("handles function with string parameter", () => {
+		const stringAbi = [
+			{
+				type: "function",
+				name: "setName",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "string", name: "name" }],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const encoded = encodeFunction(stringAbi, "setName", ["MyToken"]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("handles function with array parameter", () => {
+		const arrayAbi = [
+			{
+				type: "function",
+				name: "batchTransfer",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "uint256[]", name: "amounts" }],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const encoded = encodeFunction(arrayAbi, "batchTransfer", [
+			[1n, 2n, 3n, 4n, 5n],
+		]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("handles function with tuple parameter", () => {
+		const tupleAbi = [
+			{
+				type: "function",
+				name: "executeTrade",
+				stateMutability: "nonpayable",
+				inputs: [
+					{
+						type: "tuple",
+						name: "trade",
+						components: [
+							{ type: "address", name: "token" },
+							{ type: "uint256", name: "amount" },
+						],
+					},
+				],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const token = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amount = 1000n;
+
+		const encoded = encodeFunction(tupleAbi, "executeTrade", [[token, amount]]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("ignores non-function items in ABI", () => {
+		const to = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amount = 1000n;
+
+		// mockAbi has events mixed in
+		const encoded = encodeFunction(mockAbi, "transfer", [to, amount]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("returns consistent encoding for same inputs", () => {
+		const to = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amount = 1000n;
+
+		const encoded1 = encodeFunction(mockAbi, "transfer", [to, amount]);
+		const encoded2 = encodeFunction(mockAbi, "transfer", [to, amount]);
+
+		expect(encoded1).toBe(encoded2);
+	});
+
+	it("handles max uint256 value", () => {
+		const to = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const maxUint256 =
+			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+
+		const encoded = encodeFunction(mockAbi, "transfer", [to, maxUint256]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("handles zero values", () => {
+		const to = "0x0000000000000000000000000000000000000000" as Address;
+		const amount = 0n;
+
+		const encoded = encodeFunction(mockAbi, "transfer", [to, amount]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("handles bool parameters", () => {
+		const boolAbi = [
+			{
+				type: "function",
+				name: "setEnabled",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "bool", name: "enabled" }],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const encodedTrue = encodeFunction(boolAbi, "setEnabled", [true]);
+		const encodedFalse = encodeFunction(boolAbi, "setEnabled", [false]);
+
+		expect(encodedTrue).not.toBe(encodedFalse);
+		expect(encodedTrue.startsWith("0x")).toBe(true);
+		expect(encodedFalse.startsWith("0x")).toBe(true);
+	});
+
+	it("handles bytes parameters", () => {
+		const bytesAbi = [
+			{
+				type: "function",
+				name: "setData",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "bytes", name: "data" }],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const encoded = encodeFunction(bytesAbi, "setData", ["0x1234567890abcdef"]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("handles fixed bytes parameters", () => {
+		const fixedBytesAbi = [
+			{
+				type: "function",
+				name: "setHash",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "bytes32", name: "hash" }],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const hash = `0x${"ab".repeat(32)}`;
+		const encoded = encodeFunction(fixedBytesAbi, "setHash", [hash]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+
+	it("distinguishes between different functions", () => {
+		const to = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amount = 1000n;
+
+		const transferEncoded = encodeFunction(mockAbi, "transfer", [to, amount]);
+		const approveEncoded = encodeFunction(mockAbi, "approve", [to, amount]);
+
+		// Different selectors
+		expect(transferEncoded.slice(0, 10)).not.toBe(approveEncoded.slice(0, 10));
+		// But same parameter encoding after selector
+		expect(transferEncoded.slice(10)).toBe(approveEncoded.slice(10));
+	});
+
+	it("handles complex nested structures", () => {
+		const complexAbi = [
+			{
+				type: "function",
+				name: "execute",
+				stateMutability: "nonpayable",
+				inputs: [
+					{
+						type: "tuple",
+						name: "order",
+						components: [
+							{ type: "address", name: "maker" },
+							{ type: "uint256[]", name: "amounts" },
+							{
+								type: "tuple",
+								name: "fees",
+								components: [
+									{ type: "address", name: "recipient" },
+									{ type: "uint256", name: "amount" },
+								],
+							},
+						],
+					},
+				],
+				outputs: [],
+			},
+		] as const satisfies Abi;
+
+		const maker = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+		const amounts = [1n, 2n, 3n];
+		const feeRecipient =
+			"0x0000000000000000000000000000000000000001" as Address;
+		const feeAmount = 10n;
+
+		const encoded = encodeFunction(complexAbi, "execute", [
+			[maker, amounts, [feeRecipient, feeAmount]],
+		]);
+
+		expect(typeof encoded).toBe("string");
+		expect(encoded.startsWith("0x")).toBe(true);
+	});
+});

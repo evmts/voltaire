@@ -1,0 +1,33 @@
+---
+title: Item.getItem
+description: Find an ABI item by name and type (Item namespace)
+---
+
+## Overview
+
+`Item.getItem` is the Item namespace version of `Abi.getItem`. It searches an ABI array by name and optional type.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const abi = [
+  {
+    type: 'function',
+    name: 'transfer',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool' }]
+  }
+] as const;
+
+const transfer = Abi.Item.getItem(abi, 'transfer', 'function');
+```
+
+## See Also
+
+- [Abi.getItem](/primitives/abi/get-item) - Top-level helper
+- [Function.getSignature](/primitives/abi/function/get-signature) - Build canonical signatures

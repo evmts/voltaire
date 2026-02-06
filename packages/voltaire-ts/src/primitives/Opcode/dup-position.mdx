@@ -1,0 +1,46 @@
+---
+title: dupPosition()
+description: Get stack position duplicated by DUP opcode
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/opcode.ts">
+  Run Opcode examples in the interactive playground
+</Card>
+
+
+## Opcode.dupPosition()
+
+Get stack position duplicated by DUP opcode (1-16).
+
+<Tabs>
+
+<Tab title="Functional API">
+```typescript
+import { dupPosition, DUP1, DUP16 } from 'tevm/Opcode'
+
+dupPosition(DUP1)   // 1
+dupPosition(DUP16)  // 16
+```
+</Tab>
+
+</Tabs>
+
+## Parameters
+
+- `opcode: BrandedOpcode` - Opcode to check
+
+## Returns
+
+`number | undefined` - Position (1-16) or undefined if not DUP
+
+## Stack Semantics
+
+```
+DUP1:  [..., a] → [..., a, a]           (duplicate top)
+DUP2:  [..., b, a] → [..., b, a, b]     (duplicate 2nd)
+DUP16: [..., p, ..., a] → [..., p, ..., a, p]  (duplicate 16th)
+```
+
+## Related
+
+- [isDup()](/primitives/opcode/is-dup) - Check if DUP opcode

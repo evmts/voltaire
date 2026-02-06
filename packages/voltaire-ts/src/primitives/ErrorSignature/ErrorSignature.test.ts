@@ -1,0 +1,98 @@
+import { describe, expect, it } from "vitest";
+import * as ErrorSignature from "./index.js";
+
+describe("ErrorSignature", () => {
+	describe("from", () => {
+		it("creates error signature from Uint8Array", () => {
+			const bytes = new Uint8Array([0xcf, 0x47, 0x91, 0x81]);
+			const sig = ErrorSignature.from(bytes);
+			expect(sig).toEqual(bytes);
+			expect(sig.length).toBe(4);
+		});
+
+		it("creates error signature from hex string", () => {
+			const sig = ErrorSignature.from("0xcf479181");
+			expect(ErrorSignature.toHex(sig)).toBe("0xcf479181");
+		});
+
+		it("throws on invalid length", () => {
+			expect(() => ErrorSignature.from(new Uint8Array([0xcf, 0x47]))).toThrow(
+				"ErrorSignature must be exactly 4 bytes",
+			);
+		});
+	});
+
+	describe("fromHex", () => {
+		it("creates error signature from hex with 0x prefix", () => {
+			const sig = ErrorSignature.fromHex("0xcf479181");
+			expect(ErrorSignature.toHex(sig)).toBe("0xcf479181");
+		});
+
+		it("throws on hex without prefix", () => {
+			expect(() => ErrorSignature.fromHex("cf479181")).toThrow(
+				"Invalid hex format",
+			);
+		});
+
+		it("throws on invalid hex length", () => {
+			expect(() => ErrorSignature.fromHex("0xcf47")).toThrow(
+				"ErrorSignature hex must be exactly 4 bytes",
+			);
+		});
+	});
+
+	describe("fromSignature", () => {
+		it("computes InsufficientBalance(uint256,uint256) error signature", () => {
+			const sig = ErrorSignature.fromSignature(
+				"InsufficientBalance(uint256,uint256)",
+			);
+			expect(ErrorSignature.toHex(sig)).toBe("0xcf479181");
+		});
+
+		it("computes custom error with no params", () => {
+			const sig = ErrorSignature.fromSignature("Unauthorized()");
+			expect(ErrorSignature.toHex(sig)).toBe("0x82b42900");
+		});
+
+		it("computes custom error with complex types", () => {
+			const sig = ErrorSignature.fromSignature(
+				"InvalidSwap(address,uint256,bytes)",
+			);
+			// Verify it's a valid 4-byte selector
+			expect(ErrorSignature.toHex(sig)).toMatch(/^0x[0-9a-f]{8}$/);
+		});
+
+		it("computes standard Panic(uint256) error", () => {
+			const sig = ErrorSignature.fromSignature("Panic(uint256)");
+			expect(ErrorSignature.toHex(sig)).toBe("0x4e487b71");
+		});
+
+		it("computes standard Error(string) error", () => {
+			const sig = ErrorSignature.fromSignature("Error(string)");
+			expect(ErrorSignature.toHex(sig)).toBe("0x08c379a0");
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts error signature to hex string", () => {
+			const sig = ErrorSignature.fromSignature(
+				"InsufficientBalance(uint256,uint256)",
+			);
+			expect(ErrorSignature.toHex(sig)).toBe("0xcf479181");
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal signatures", () => {
+			const sig1 = ErrorSignature.fromSignature("Unauthorized()");
+			const sig2 = ErrorSignature.fromSignature("Unauthorized()");
+			expect(ErrorSignature.equals(sig1, sig2)).toBe(true);
+		});
+
+		it("returns false for different signatures", () => {
+			const sig1 = ErrorSignature.fromSignature("Unauthorized()");
+			const sig2 = ErrorSignature.fromSignature("Error(string)");
+			expect(ErrorSignature.equals(sig1, sig2)).toBe(false);
+		});
+	});
+});

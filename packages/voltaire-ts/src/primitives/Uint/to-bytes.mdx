@@ -1,0 +1,27 @@
+---
+title: Uint.toBytes
+description: Convert Uint256 to byte array in big-endian format
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/uint.ts">
+  Run Uint examples in the interactive playground
+</Card>
+
+
+<Tabs>
+<Tab title="Effect Schema">
+
+```ts
+import { UintSchema } from '@tevm/voltaire/Uint/effect'
+
+const u = UintSchema.from(1n)
+u.toBytes() // Uint8Array(32) [..., 1]
+```
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [fromBytes](/primitives/uint256/from-bytes) - Create from byte array
+- [toAbiEncoded](/primitives/uint256/to-abi-encoded) - Convert to ABI encoding

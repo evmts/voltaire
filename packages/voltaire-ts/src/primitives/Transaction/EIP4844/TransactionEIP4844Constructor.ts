@@ -1,0 +1,48 @@
+import type { AddressType as BrandedAddress } from "../../Address/AddressType.js";
+import type { AccessList, VersionedHash } from "../types.js";
+import type { getBlobGasCost } from "./getBlobGasCost.js";
+import type { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
+import type { getSender } from "./getSender.js";
+import type { getSigningHash } from "./getSigningHash.js";
+import type { hash } from "./hash.js";
+import type { serialize } from "./serialize.js";
+import type { TransactionEIP4844Type } from "./TransactionEIP4844Type.js";
+import type { verifySignature } from "./verifySignature.js";
+
+type TransactionEIP4844Prototype = TransactionEIP4844Type & {
+	serialize: typeof serialize;
+	hash: typeof hash;
+	getSigningHash: typeof getSigningHash;
+	getSender: typeof getSender;
+	verifySignature: typeof verifySignature;
+	getEffectiveGasPrice: typeof getEffectiveGasPrice;
+	getBlobGasCost: typeof getBlobGasCost;
+};
+
+export interface TransactionEIP4844Constructor {
+	(tx: {
+		chainId: bigint;
+		nonce: bigint;
+		maxPriorityFeePerGas: bigint;
+		maxFeePerGas: bigint;
+		gasLimit: bigint;
+		to: BrandedAddress;
+		value: bigint;
+		data: Uint8Array;
+		accessList: AccessList;
+		maxFeePerBlobGas: bigint;
+		blobVersionedHashes: readonly VersionedHash[];
+		yParity: number;
+		r: Uint8Array;
+		s: Uint8Array;
+	}): TransactionEIP4844Prototype;
+	prototype: TransactionEIP4844Prototype;
+	deserialize(bytes: Uint8Array): TransactionEIP4844Prototype;
+	serialize: typeof serialize;
+	hash: typeof hash;
+	getSigningHash: typeof getSigningHash;
+	getSender: typeof getSender;
+	verifySignature: typeof verifySignature;
+	getEffectiveGasPrice: typeof getEffectiveGasPrice;
+	getBlobGasCost: typeof getBlobGasCost;
+}

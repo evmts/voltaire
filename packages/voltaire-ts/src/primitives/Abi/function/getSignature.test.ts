@@ -1,0 +1,336 @@
+/**
+ * Unit tests for getSignature function
+ */
+
+import { describe, expect, it } from "vitest";
+import { getSignature } from "./getSignature.js";
+
+describe("getSignature", () => {
+	describe("basic function signatures", () => {
+		it("generates signature for function with no inputs", () => {
+			const func = {
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("test()");
+		});
+
+		it("generates signature for function with single input", () => {
+			const func = {
+				type: "function",
+				name: "balanceOf",
+				stateMutability: "view",
+				inputs: [{ type: "address", name: "account" }],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			expect(getSignature(func)).toBe("balanceOf(address)");
+		});
+
+		it("generates signature for function with multiple inputs", () => {
+			const func = {
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "to" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			expect(getSignature(func)).toBe("transfer(address,uint256)");
+		});
+	});
+
+	describe("array types", () => {
+		it("handles fixed-size arrays", () => {
+			const func = {
+				type: "function",
+				name: "processArray",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "uint256[3]", name: "data" }],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processArray(uint256[3])");
+		});
+
+		it("handles dynamic arrays", () => {
+			const func = {
+				type: "function",
+				name: "processDynamic",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "address[]", name: "addresses" }],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processDynamic(address[])");
+		});
+
+		it("handles nested arrays", () => {
+			const func = {
+				type: "function",
+				name: "processMatrix",
+				stateMutability: "nonpayable",
+				inputs: [{ type: "uint256[][]", name: "matrix" }],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processMatrix(uint256[][])");
+		});
+	});
+
+	describe("tuple types", () => {
+		it("handles simple tuple", () => {
+			const func = {
+				type: "function",
+				name: "processData",
+				stateMutability: "nonpayable",
+				inputs: [
+					{
+						type: "tuple",
+						name: "data",
+						components: [
+							{ type: "address", name: "addr" },
+							{ type: "uint256", name: "value" },
+						],
+					},
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processData((address,uint256))");
+		});
+
+		it("handles tuple array", () => {
+			const func = {
+				type: "function",
+				name: "processTuples",
+				stateMutability: "nonpayable",
+				inputs: [
+					{
+						type: "tuple[]",
+						name: "items",
+						components: [
+							{ type: "address", name: "addr" },
+							{ type: "uint256", name: "value" },
+						],
+					},
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processTuples((address,uint256)[])");
+		});
+
+		it("handles nested tuples", () => {
+			const func = {
+				type: "function",
+				name: "processNested",
+				stateMutability: "nonpayable",
+				inputs: [
+					{
+						type: "tuple",
+						name: "outer",
+						components: [
+							{
+								type: "tuple",
+								name: "inner",
+								components: [{ type: "uint256", name: "value" }],
+							},
+						],
+					},
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processNested(((uint256)))");
+		});
+	});
+
+	describe("multiple parameter types", () => {
+		it("handles mixed parameter types", () => {
+			const func = {
+				type: "function",
+				name: "complexFunction",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "addr" },
+					{ type: "uint256[]", name: "amounts" },
+					{ type: "bytes32", name: "hash" },
+					{ type: "bool", name: "flag" },
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe(
+				"complexFunction(address,uint256[],bytes32,bool)",
+			);
+		});
+
+		it("handles string and bytes types", () => {
+			const func = {
+				type: "function",
+				name: "processStrings",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "string", name: "text" },
+					{ type: "bytes", name: "data" },
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processStrings(string,bytes)");
+		});
+
+		it("handles fixed bytes types", () => {
+			const func = {
+				type: "function",
+				name: "processBytes",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "bytes1", name: "b1" },
+					{ type: "bytes4", name: "b4" },
+					{ type: "bytes32", name: "b32" },
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("processBytes(bytes1,bytes4,bytes32)");
+		});
+	});
+
+	describe("different state mutabilities", () => {
+		it("generates signature for view function", () => {
+			const func = {
+				type: "function",
+				name: "getValue",
+				stateMutability: "view",
+				inputs: [],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			expect(getSignature(func)).toBe("getValue()");
+		});
+
+		it("generates signature for pure function", () => {
+			const func = {
+				type: "function",
+				name: "calculate",
+				stateMutability: "pure",
+				inputs: [{ type: "uint256", name: "a" }],
+				outputs: [{ type: "uint256", name: "" }],
+			} as const;
+
+			expect(getSignature(func)).toBe("calculate(uint256)");
+		});
+
+		it("generates signature for payable function", () => {
+			const func = {
+				type: "function",
+				name: "deposit",
+				stateMutability: "payable",
+				inputs: [],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("deposit()");
+		});
+	});
+
+	describe("real-world examples", () => {
+		it("generates ERC20 transfer signature", () => {
+			const func = {
+				type: "function",
+				name: "transfer",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			expect(getSignature(func)).toBe("transfer(address,uint256)");
+		});
+
+		it("generates ERC20 approve signature", () => {
+			const func = {
+				type: "function",
+				name: "approve",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "spender" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			expect(getSignature(func)).toBe("approve(address,uint256)");
+		});
+
+		it("generates ERC20 transferFrom signature", () => {
+			const func = {
+				type: "function",
+				name: "transferFrom",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "sender" },
+					{ type: "address", name: "recipient" },
+					{ type: "uint256", name: "amount" },
+				],
+				outputs: [{ type: "bool", name: "" }],
+			} as const;
+
+			expect(getSignature(func)).toBe("transferFrom(address,address,uint256)");
+		});
+	});
+
+	describe("ignores parameter names", () => {
+		it("generates same signature regardless of parameter names", () => {
+			const func1 = {
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "foo" },
+					{ type: "uint256", name: "bar" },
+				],
+				outputs: [],
+			} as const;
+
+			const func2 = {
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "baz" },
+					{ type: "uint256", name: "qux" },
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func1)).toBe(getSignature(func2));
+		});
+
+		it("handles parameters with empty names", () => {
+			const func = {
+				type: "function",
+				name: "test",
+				stateMutability: "nonpayable",
+				inputs: [
+					{ type: "address", name: "" },
+					{ type: "uint256", name: "" },
+				],
+				outputs: [],
+			} as const;
+
+			expect(getSignature(func)).toBe("test(address,uint256)");
+		});
+	});
+});

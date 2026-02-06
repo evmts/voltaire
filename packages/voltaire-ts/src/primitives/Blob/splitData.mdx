@@ -1,0 +1,112 @@
+---
+title: Blob.splitData
+description: Split large data into multiple blobs
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/blob.ts">
+  Run Blob examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+</Tabs>
+
+## Data Distribution
+
+Each blob stores a chunk with encoding:
+
+```
+Blob 1: [length_1][chunk_1][padding]
+Blob 2: [length_2][chunk_2][padding]
+Blob 3: [length_3][chunk_3][padding]
+...
+
+Max per blob: 131,064 bytes (SIZE - 8 for length prefix)
+```
+
+### Example: Size Calculation
+
+```typescript
+import { Blob } from 'tevm';
+
+const maxPerBlob = Blob.SIZE - 8; // 131,064 bytes
+console.log(`Max data per blob: ${maxPerBlob}`);
+
+const data = new Uint8Array(300_000);
+const blobCount = Math.ceil(data.length / maxPerBlob);
+console.log(`Requires ${blobCount} blobs`); // 3
+
+// Verify with estimateBlobCount
+console.log(Blob.estimateBlobCount(data)); // 3
+```
+
+## Maximum Data Size
+
+```typescript
+import { Blob } from 'tevm';
+
+const maxPerBlob = Blob.SIZE - 8;
+const maxData = maxPerBlob * Blob.MAX_PER_TRANSACTION;
+
+console.log(`Max per blob: ${maxPerBlob} bytes`); // 131,064
+console.log(`Max per tx: ${maxData} bytes`); // 786,384
+console.log(`Max blobs per tx: ${Blob.MAX_PER_TRANSACTION}`); // 6
+
+// This succeeds (exactly at limit)
+const atLimit = new Uint8Array(maxData);
+const blobs = Blob.splitData(atLimit);
+console.log(blobs.length); // 6
+
+// This fails (exceeds limit)
+try {
+  const tooLarge = new Uint8Array(maxData + 1);
+  Blob.splitData(tooLarge);
+} catch (e) {
+  console.error(e); // "Data too large: requires 7 blobs (max 6)"
+}
+```
+
+## Reconstruction
+
+Use `joinData()` to reconstruct original data:
+
+```typescript
+import { Blob } from 'tevm';
+
+const original = new Uint8Array(300_000);
+// ... fill with data ...
+
+// Split
+const blobs = Blob.splitData(original);
+
+// Reconstruct
+const reconstructed = Blob.joinData(blobs);
+
+// Verify
+console.log(reconstructed.length === original.length); // true
+console.log(Blob.equals(reconstructed, original)); // true
+```
+
+## Gas Estimation
+
+```typescript
+import { Blob } from 'tevm';
+
+const data = new Uint8Array(300_000);
+const blobCount = Blob.estimateBlobCount(data);
+
+// Calculate gas cost
+const blobBaseFee = 50_000_000n; // 50 gwei
+const blobGas = Blob.calculateGas(blobCount, blobBaseFee);
+
+console.log(`${blobCount} blobs required`);
+console.log(`Blob gas cost: ${blobGas / 10n**9n} gwei`);
+```
+
+## See Also
+
+- [joinData](./joinData) - Reconstruct data from blobs
+- [estimateBlobCount](./estimateBlobCount) - Estimate blob count
+- [fromData](./fromData) - Encode single blob
+- [toData](./toData) - Extract blob data

@@ -1,0 +1,526 @@
+---
+title: Abi
+description: Application Binary Interface encoding and decoding for Ethereum smart contracts
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
+  Run ABI examples in the interactive playground
+</Card>
+
+# Abi
+
+Complete Application Binary Interface (ABI) encoding and decoding with type safety for Ethereum smart contracts.
+
+<Tip title="New to ABI encoding?">
+Start with [ABI Fundamentals](/primitives/abi/fundamentals) to learn about function selectors, encoding rules, and event structure.
+</Tip>
+
+## Overview
+
+Branded array of ABI items (functions, events, errors, constructors). Zero-overhead design supports both tree-shakeable methods and class instances, following the same pattern as [Address](/primitives/address).
+
+## Quick Start
+
+<Tabs>
+<Tab title="Encode Function Call">
+```typescript
+import * as Abi from 'tevm/Abi';
+
+// Define function ABI item
+const transferAbi = {
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'amount' }
+  ],
+  outputs: [{ type: 'bool' }],
+  stateMutability: 'nonpayable'
+} as const;
+
+// Get function selector (4 bytes)
+const selector = Abi.Function.getSelector(transferAbi);
+// 0xa9059cbb
+
+// Encode parameters
+const encoded = Abi.Function.encodeParams(transferAbi, [
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
+  1000000000000000000n
+]);
+```
+</Tab>
+<Tab title="Decode Event Log">
+```typescript
+import * as Abi from 'tevm/Abi';
+
+// Define event ABI item
+const transferEvent = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value', indexed: false }
+  ]
+} as const;
+
+// Decode log from transaction receipt
+const decoded = Abi.Event.decodeLog(transferEvent, {
+  topics: [
+    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e',
+    '0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045'
+  ],
+  data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'
+});
+// { from: '0x742d...', to: '0xd8dA...', value: 1000000000000000000n }
+```
+</Tab>
+<Tab title="Parse Full ABI">
+```typescript
+import * as Abi from 'tevm/Abi';
+
+// ERC-20 ABI (partial)
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'transfer',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value' }
+    ]
+  }
+] as const;
+
+// Get specific item by name and type
+const transferFn = Abi.getItem(erc20Abi, 'transfer', 'function');
+const transferEvt = Abi.getItem(erc20Abi, 'Transfer', 'event');
+```
+</Tab>
+</Tabs>
+
+## Types
+
+<Tabs>
+<Tab title="Abi">
+```typescript
+// Main ABI type: array of ABI items
+export type Abi = ReadonlyArray<
+  Function | Event | BrandedError | Constructor | Fallback | Receive
+>
+
+// Example ABI
+const erc20Abi: Abi = [
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" }
+    ],
+    outputs: [{ type: "bool" }]
+  },
+  {
+    type: "event",
+    name: "Transfer",
+    inputs: [
+      { type: "address", name: "from", indexed: true },
+      { type: "address", name: "to", indexed: true },
+      { type: "uint256", name: "value" }
+    ]
+  }
+]
+```
+
+Source: [Abi.ts:49-51](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Abi.ts#L49-L51)
+</Tab>
+<Tab title="Parameter">
+```typescript
+export type Parameter<
+  TType extends AbiType = AbiType,
+  TName extends string = string,
+  TInternalType extends string = string
+> = {
+  type: TType
+  name?: TName
+  internalType?: TInternalType
+  indexed?: boolean  // For event parameters
+  components?: readonly Parameter[]  // For tuples
+}
+
+// Type conversion utilities
+export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]>
+export type ParametersToObject<TParams extends readonly Parameter[]>
+```
+
+Source: [Parameter.ts:9-41](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Parameter.ts#L9-L41)
+</Tab>
+<Tab title="AbiType">
+```typescript
+// All supported Solidity types
+export type AbiType =
+  // Unsigned integers
+  | "uint" | "uint8" | "uint16" | "uint24" | "uint32" | "uint40"
+  | "uint48" | "uint56" | "uint64" | "uint72" | "uint80" | "uint88"
+  | "uint96" | "uint104" | "uint112" | "uint120" | "uint128" | "uint136"
+  | "uint144" | "uint152" | "uint160" | "uint168" | "uint176" | "uint184"
+  | "uint192" | "uint200" | "uint208" | "uint216" | "uint224" | "uint232"
+  | "uint240" | "uint248" | "uint256"
+  // Signed integers
+  | "int" | "int8" | "int16" | "int24" | "int32" | "int40"
+  | "int48" | "int56" | "int64" | "int72" | "int80" | "int88"
+  | "int96" | "int104" | "int112" | "int120" | "int128" | "int136"
+  | "int144" | "int152" | "int160" | "int168" | "int176" | "int184"
+  | "int192" | "int200" | "int208" | "int216" | "int224" | "int232"
+  | "int240" | "int248" | "int256"
+  // Other types
+  | "address" | "bool" | "string" | "bytes"
+  // Fixed-size bytes
+  | "bytes1" | "bytes2" | "bytes3" | "bytes4" | "bytes5" | "bytes6"
+  | "bytes7" | "bytes8" | "bytes9" | "bytes10" | "bytes11" | "bytes12"
+  | "bytes13" | "bytes14" | "bytes15" | "bytes16" | "bytes17" | "bytes18"
+  | "bytes19" | "bytes20" | "bytes21" | "bytes22" | "bytes23" | "bytes24"
+  | "bytes25" | "bytes26" | "bytes27" | "bytes28" | "bytes29" | "bytes30"
+  | "bytes31" | "bytes32"
+  // Tuple and arrays
+  | "tuple"
+  | `${string}[]`  // Dynamic arrays
+  | `${string}[${number}]`  // Fixed arrays
+```
+
+Source: [Type.ts:1-107](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Type.ts#L1-L107)
+</Tab>
+<Tab title="Item Types">
+```typescript
+// Function item
+export type Function<
+  TName extends string = string,
+  TStateMutability extends StateMutability = StateMutability,
+  TInputs extends readonly Parameter[] = readonly Parameter[],
+  TOutputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "function"
+  name: TName
+  stateMutability: TStateMutability
+  inputs: TInputs
+  outputs: TOutputs
+}
+
+// Event item
+export type Event<
+  TName extends string = string,
+  TInputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "event"
+  name: TName
+  inputs: TInputs
+  anonymous?: boolean
+}
+
+// Error item
+export type BrandedError<
+  TName extends string = string,
+  TInputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "error"
+  name: TName
+  inputs: TInputs
+}
+
+// Constructor item
+export type BrandedConstructor<
+  TStateMutability extends StateMutability = StateMutability,
+  TInputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "constructor"
+  stateMutability: TStateMutability
+  inputs: TInputs
+}
+
+// Fallback and Receive
+export type Fallback<
+  TStateMutability extends StateMutability = StateMutability
+> = {
+  type: "fallback"
+  stateMutability: TStateMutability
+}
+
+export type Receive = {
+  type: "receive"
+  stateMutability: "payable"
+}
+
+// State mutability
+export type StateMutability = "pure" | "view" | "nonpayable" | "payable"
+```
+</Tab>
+</Tabs>
+
+## API Documentation
+
+### Core Concepts
+
+<CardGroup cols={3}>
+  <Card title="Fundamentals" icon="book" href="/primitives/abi/fundamentals">
+    Learn ABI encoding structure, selectors, and data layout
+  </Card>
+  <Card title="ABI Types" icon="brackets-curly" href="/primitives/abi/types">
+    Function, Event, Error, Constructor type definitions
+  </Card>
+  <Card title="Encoding Guide" icon="code" href="/primitives/abi/encoding">
+    ABI encoding and decoding mechanics
+  </Card>
+  <Card title="Selectors & Signatures" icon="fingerprint" href="/primitives/abi/selectors">
+    Function selectors and event topic hashes
+  </Card>
+  <Card title="Usage Patterns" icon="lightbulb" href="/primitives/abi/usage-patterns">
+    Common patterns: contract calls, log parsing
+  </Card>
+</CardGroup>
+
+### Top-Level Methods
+
+<CardGroup cols={3}>
+  <Card title="format" icon="align-left" href="/primitives/abi/format">
+    Format ABI item to human-readable signature
+  </Card>
+  <Card title="formatWithArgs" icon="brackets-square" href="/primitives/abi/format-with-args">
+    Format with concrete argument values
+  </Card>
+  <Card title="getItem" icon="magnifying-glass" href="/primitives/abi/get-item">
+    Find ABI item by name and type
+  </Card>
+  <Card title="encode" icon="arrow-right" href="/primitives/abi/encode">
+    Generic ABI encoding for any item type
+  </Card>
+  <Card title="decode" icon="arrow-left" href="/primitives/abi/decode">
+    Generic ABI decoding for any item type
+  </Card>
+  <Card title="decodeData" icon="file-code" href="/primitives/abi/decode-data">
+    Decode without selector prefix
+  </Card>
+  <Card title="parseLogs" icon="list" href="/primitives/abi/parse-logs">
+    Parse multiple event logs using full ABI
+  </Card>
+</CardGroup>
+
+### Function Methods
+
+<CardGroup cols={3}>
+  <Card title="getSelector" icon="fingerprint" href="/primitives/abi/function-get-selector">
+    Get function selector (4 bytes)
+  </Card>
+  <Card title="getSignature" icon="signature" href="/primitives/abi/function-get-signature">
+    Get human-readable function signature
+  </Card>
+  <Card title="encodeParams" icon="arrow-right" href="/primitives/abi/function-encode-params">
+    Encode function input parameters
+  </Card>
+  <Card title="decodeParams" icon="arrow-left" href="/primitives/abi/function-decode-params">
+    Decode function input parameters
+  </Card>
+  <Card title="encodeResult" icon="arrow-up" href="/primitives/abi/function-encode-result">
+    Encode function return values
+  </Card>
+  <Card title="decodeResult" icon="arrow-down" href="/primitives/abi/function-decode-result">
+    Decode function return values
+  </Card>
+  <Card title="GetSelector" icon="gear" href="/primitives/abi/function-get-selector-factory">
+    Factory for custom keccak256
+  </Card>
+</CardGroup>
+
+### Event Methods
+
+<CardGroup cols={3}>
+  <Card title="getSelector" icon="fingerprint" href="/primitives/abi/event-get-selector">
+    Get event selector (32 bytes, topic0)
+  </Card>
+  <Card title="getSignature" icon="signature" href="/primitives/abi/event-get-signature">
+    Get human-readable event signature
+  </Card>
+  <Card title="encodeTopics" icon="hashtag" href="/primitives/abi/event-encode-topics">
+    Encode indexed parameters to topics
+  </Card>
+  <Card title="decodeLog" icon="file-lines" href="/primitives/abi/event-decode-log">
+    Decode event log data and topics
+  </Card>
+  <Card title="GetSelector" icon="gear" href="/primitives/abi/event-get-selector-factory">
+    Factory for custom keccak256
+  </Card>
+  <Card title="EncodeTopics" icon="gear" href="/primitives/abi/event-encode-topics-factory">
+    Factory for custom keccak256
+  </Card>
+</CardGroup>
+
+### Error Methods
+
+<CardGroup cols={3}>
+  <Card title="getSelector" icon="fingerprint" href="/primitives/abi/error-get-selector">
+    Get error selector (4 bytes)
+  </Card>
+  <Card title="getSignature" icon="signature" href="/primitives/abi/error-get-signature">
+    Get human-readable error signature
+  </Card>
+  <Card title="encodeParams" icon="arrow-right" href="/primitives/abi/error-encode-params">
+    Encode error parameters
+  </Card>
+  <Card title="decodeParams" icon="arrow-left" href="/primitives/abi/error-decode-params">
+    Decode error parameters
+  </Card>
+  <Card title="GetSelector" icon="gear" href="/primitives/abi/error-get-selector-factory">
+    Factory for custom keccak256
+  </Card>
+</CardGroup>
+
+### Constructor Methods
+
+<CardGroup cols={3}>
+  <Card title="encodeParams" icon="arrow-right" href="/primitives/abi/constructor-encode-params">
+    Encode constructor parameters for deployment
+  </Card>
+  <Card title="decodeParams" icon="arrow-left" href="/primitives/abi/constructor-decode-params">
+    Decode constructor parameters from bytecode
+  </Card>
+</CardGroup>
+
+### Item Utilities
+
+<CardGroup cols={3}>
+  <Card title="isFunction" icon="circle-check" href="/primitives/abi/item-is-function">
+    Type guard: check if item is function
+  </Card>
+  <Card title="isEvent" icon="circle-check" href="/primitives/abi/item-is-event">
+    Type guard: check if item is event
+  </Card>
+  <Card title="isError" icon="circle-check" href="/primitives/abi/item-is-error">
+    Type guard: check if item is error
+  </Card>
+  <Card title="isConstructor" icon="circle-check" href="/primitives/abi/item-is-constructor">
+    Type guard: check if item is constructor
+  </Card>
+  <Card title="isFallback" icon="circle-check" href="/primitives/abi/item-is-fallback">
+    Type guard: check if item is fallback
+  </Card>
+  <Card title="isReceive" icon="circle-check" href="/primitives/abi/item-is-receive">
+    Type guard: check if item is receive
+  </Card>
+  <Card title="format" icon="align-left" href="/primitives/abi/item-format">
+    Format ABI item to signature string
+  </Card>
+  <Card title="formatWithArgs" icon="brackets-square" href="/primitives/abi/item-format-with-args">
+    Format with concrete argument values
+  </Card>
+  <Card title="getItem" icon="magnifying-glass" href="/primitives/abi/item-get-item">
+    Get specific item from ABI by name/type
+  </Card>
+</CardGroup>
+
+## ABI JSON Format
+
+Contract ABIs are typically JSON arrays describing the contract interface:
+
+```typescript
+const abi = [
+  {
+    "type": "function",
+    "name": "transfer",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "type": "address", "name": "to" },
+      { "type": "uint256", "name": "amount" }
+    ],
+    "outputs": [{ "type": "bool" }]
+  },
+  {
+    "type": "event",
+    "name": "Transfer",
+    "inputs": [
+      { "type": "address", "name": "from", "indexed": true },
+      { "type": "address", "name": "to", "indexed": true },
+      { "type": "uint256", "name": "value", "indexed": false }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsufficientBalance",
+    "inputs": [
+      { "type": "uint256", "name": "balance" },
+      { "type": "uint256", "name": "required" }
+    ]
+  }
+]
+```
+
+## Error Types
+
+```typescript
+import {
+  AbiEncodingError,
+  AbiDecodingError,
+  AbiParameterMismatchError,
+  AbiItemNotFoundError,
+  AbiInvalidSelectorError
+} from '@tevm/primitives/Abi'
+
+try {
+  const encoded = encodeParameters(params, values)
+} catch (error) {
+  if (error instanceof AbiEncodingError) {
+    // Invalid encoding (out of range, wrong type, etc.)
+  } else if (error instanceof AbiParameterMismatchError) {
+    // Parameter count mismatch
+  }
+}
+```
+
+Source: [Errors.ts:1-35](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Errors.ts#L1-L35)
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific namespace
+import { Function } from '@tevm/primitives/Abi'
+
+// Or import individual functions
+import { encodeParameters, decodeParameters } from '@tevm/primitives/Abi'
+```
+
+## Sub-Namespaces
+
+The Abi module is organized into specialized sub-namespaces:
+
+- **Function** - Function encoding/decoding and selectors
+- **Event** - Event log encoding/decoding and topics
+- **Error** - Custom error encoding/decoding
+- **Constructor** - Constructor parameter encoding
+- **Wasm** - WASM-accelerated implementations
+
+Each namespace provides focused functionality with tree-shakeable exports.
+
+## Related Types
+
+- [Keccak256](/crypto/keccak256) - Keccak256 hashing used for selectors and signatures
+- [Address](/primitives/address) - 20-byte Ethereum addresses used in ABI encoding
+- [Uint](/primitives/uint) - Unsigned integer types used in ABI encoding
+- [Bytes](/primitives/bytes) - Fixed and dynamic byte arrays in ABI encoding
+
+## Specification References
+
+- [Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html) - Official ABI encoding specification
+- [Contract ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html#json) - JSON ABI format
+- [EIP-712](https://eips.ethereum.org/EIPS/eip-712) - Typed structured data hashing and signing

@@ -1,0 +1,34 @@
+---
+title: Item.formatWithArgs
+description: Format a single ABI item with concrete argument values
+---
+
+## Overview
+
+`Item.formatWithArgs` formats an ABI item by inserting argument values into the call string.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const transfer = {
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'amount' }
+  ]
+} as const;
+
+const formatted = Abi.Item.formatWithArgs(transfer, [
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
+  1000n
+]);
+// "transfer(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e, 1000)"
+```
+
+## See Also
+
+- [Item.format](/primitives/abi/item-format) - Format without arguments
+- [Abi.formatWithArgs](/primitives/abi/format-with-args) - Top-level formatter

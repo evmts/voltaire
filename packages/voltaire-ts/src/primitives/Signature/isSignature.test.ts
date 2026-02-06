@@ -1,0 +1,67 @@
+import { describe, expect, it } from "vitest";
+import * as Signature from "./index.js";
+import { isSignature } from "./isSignature.js";
+
+describe("isSignature", () => {
+	// Helper to create 32-byte Uint8Array from hex-like pattern
+	const bytes32 = (fill: number) => {
+		const arr = new Uint8Array(32);
+		arr.fill(fill);
+		return arr;
+	};
+
+	it("returns true for secp256k1 signature", () => {
+		const sig = Signature.fromSecp256k1(bytes32(0x12), bytes32(0xfe), 27);
+		expect(isSignature(sig)).toBe(true);
+	});
+
+	it("returns true for p256 signature", () => {
+		const sig = Signature.fromP256(bytes32(0x12), bytes32(0xfe));
+		expect(isSignature(sig)).toBe(true);
+	});
+
+	it("returns true for ed25519 signature", () => {
+		const sig = Signature.fromEd25519(new Uint8Array(64));
+		expect(isSignature(sig)).toBe(true);
+	});
+
+	it("returns false for plain Uint8Array", () => {
+		expect(isSignature(new Uint8Array(64))).toBe(false);
+		expect(isSignature(new Uint8Array(65))).toBe(false);
+	});
+
+	it("returns false for wrong length Uint8Array", () => {
+		expect(isSignature(new Uint8Array(32))).toBe(false);
+	});
+
+	it("returns false for null", () => {
+		expect(isSignature(null)).toBe(false);
+	});
+
+	it("returns false for undefined", () => {
+		expect(isSignature(undefined)).toBe(false);
+	});
+
+	it("returns false for object", () => {
+		expect(isSignature({})).toBe(false);
+		expect(isSignature({ algorithm: "secp256k1" })).toBe(false);
+	});
+
+	it("returns false for number", () => {
+		expect(isSignature(42)).toBe(false);
+	});
+
+	it("returns false for string", () => {
+		expect(isSignature("0x1234")).toBe(false);
+	});
+
+	it("can be used as type guard", () => {
+		const sig = Signature.fromSecp256k1(bytes32(0x12), bytes32(0xfe), 27);
+		const value: unknown = sig;
+		if (isSignature(value)) {
+			// TypeScript now knows value is SignatureType
+			// Signature is 64 bytes (r + s), v is stored as property
+			expect(value.length).toBe(64);
+		}
+	});
+});

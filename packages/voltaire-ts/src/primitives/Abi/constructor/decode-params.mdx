@@ -1,0 +1,58 @@
+---
+title: Constructor.decodeParams
+description: Decode constructor parameters from encoded deployment data
+---
+
+## Overview
+
+`Constructor.decodeParams` decodes constructor arguments from the encoded params **without** a selector. If you have full deployment data, slice off the creation bytecode first.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const ctor = {
+  type: 'constructor',
+  stateMutability: 'nonpayable',
+  inputs: [
+    { type: 'string', name: 'name' },
+    { type: 'string', name: 'symbol' },
+    { type: 'uint8', name: 'decimals' }
+  ]
+} as const;
+
+const params = Abi.Constructor.encodeParams(ctor, [
+  'MyToken',
+  'MTK',
+  18
+]);
+
+const decoded = Abi.Constructor.decodeParams(ctor, params);
+// ['MyToken', 'MTK', 18]
+```
+
+## Decoding from Deploy Data
+
+If you have `bytecode + params`, slice off the bytecode length first:
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+
+const bytecodeHex = '0x6001600080600a6000396000f3...';
+const deployData = Hex.concat(bytecodeHex, Hex.fromBytes(params));
+
+const paramsHex = Hex.slice(deployData, Hex.size(bytecodeHex));
+const paramsBytes = Hex.toBytes(paramsHex);
+
+const decoded = Abi.Constructor.decodeParams(ctor, paramsBytes);
+```
+
+## Error Handling
+
+`decodeParams` throws `AbiDecodingError` when the data does not match the constructor input types.
+
+## See Also
+
+- [encodeParams](/primitives/abi/constructor/encode-params) - Encode constructor parameters
+- [Encoding](/primitives/abi/encoding) - ABI encoding rules

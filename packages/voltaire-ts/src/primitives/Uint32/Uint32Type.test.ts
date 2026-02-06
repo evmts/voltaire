@@ -1,0 +1,42 @@
+import { describe, it } from "vitest";
+import type { Uint32Type } from "./Uint32Type.js";
+
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
+
+describe("Uint32Type type-level tests", () => {
+	it("should be a branded number type", () => {
+		type Test1 = Equals<Uint32Type, number>;
+		const _test1: Test1 = false;
+		_test1;
+
+		type Test2 = Uint32Type extends number ? true : false;
+		const _test2: Test2 = true;
+		_test2;
+	});
+
+	it("should be assignable to number", () => {
+		const value = 0 as Uint32Type;
+		const _num: number = value;
+	});
+
+	it("should not allow plain number assignment without cast", () => {
+		const num = 42;
+		// @ts-expect-error - plain number not assignable to branded type
+		const _value: Uint32Type = num;
+	});
+
+	it("should not allow other branded types", () => {
+		type OtherBrand = number & { readonly __tag: "Other" };
+		const other = 0 as OtherBrand;
+		// @ts-expect-error - different branded type not assignable
+		const _value: Uint32Type = other;
+	});
+
+	it("should maintain brand through const assertions", () => {
+		const value = 4000000000 as const as Uint32Type;
+		const _typed: Uint32Type = value;
+	});
+});

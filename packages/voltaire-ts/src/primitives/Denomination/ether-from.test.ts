@@ -1,0 +1,85 @@
+import { describe, expect, it } from "vitest";
+import { from } from "./ether-from.js";
+
+describe("from", () => {
+	describe("from bigint", () => {
+		it("creates Ether from bigint", () => {
+			const ether = from(1n);
+			expect(typeof ether).toBe("string");
+			expect(ether).toBe("1");
+		});
+
+		it("creates Ether from zero", () => {
+			const ether = from(0n);
+			expect(ether).toBe("0");
+		});
+
+		it("creates Ether from large value", () => {
+			const ether = from(1000n);
+			expect(ether).toBe("1000");
+		});
+	});
+
+	describe("from number", () => {
+		it("creates Ether from number", () => {
+			const ether = from(42);
+			expect(typeof ether).toBe("string");
+			expect(ether).toBe("42");
+		});
+
+		it("creates Ether from zero number", () => {
+			const ether = from(0);
+			expect(ether).toBe("0");
+		});
+	});
+
+	describe("from string", () => {
+		it("creates Ether from decimal string", () => {
+			const ether = from("1.5");
+			expect(typeof ether).toBe("string");
+			expect(ether).toBe("1.5");
+		});
+
+		it("creates Ether from fractional string", () => {
+			const ether = from("0.001");
+			expect(typeof ether).toBe("string");
+			expect(ether).toBe("0.001");
+		});
+
+		it("creates Ether from zero string", () => {
+			const ether = from("0");
+			expect(ether).toBe("0");
+		});
+	});
+
+	describe("edge cases", () => {
+		it("handles max safe integer", () => {
+			const ether = from(Number.MAX_SAFE_INTEGER);
+			expect(ether).toBe(Number.MAX_SAFE_INTEGER.toString());
+		});
+
+		it("handles very large bigint", () => {
+			const large = 2n ** 64n;
+			const ether = from(large);
+			expect(ether).toBe(large.toString());
+		});
+	});
+
+	describe("negative values", () => {
+		it("throws on negative bigint", () => {
+			expect(() => from(-1n)).toThrow("cannot be negative");
+		});
+
+		it("throws on negative number", () => {
+			expect(() => from(-1)).toThrow("cannot be negative");
+		});
+
+		it("throws on negative string", () => {
+			expect(() => from("-1")).toThrow("cannot be negative");
+		});
+
+		it("throws on negative decimal string", () => {
+			expect(() => from("-0.5")).toThrow("cannot be negative");
+		});
+	});
+});

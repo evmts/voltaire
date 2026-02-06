@@ -1,0 +1,72 @@
+import { describe, expect, it } from "vitest";
+import { MAX, ONE, ZERO } from "./constants.js";
+import { from } from "./from.js";
+import { popCount } from "./popCount.js";
+
+describe("Uint64.popCount", () => {
+	describe("known values", () => {
+		it("0 has 0 set bits", () => {
+			expect(popCount(ZERO)).toBe(0);
+		});
+
+		it("1 has 1 set bit", () => {
+			expect(popCount(ONE)).toBe(1);
+		});
+
+		it("3 (0b11) has 2 set bits", () => {
+			expect(popCount(from(3n))).toBe(2);
+		});
+
+		it("7 (0b111) has 3 set bits", () => {
+			expect(popCount(from(7n))).toBe(3);
+		});
+
+		it("15 (0b1111) has 4 set bits", () => {
+			expect(popCount(from(15n))).toBe(4);
+		});
+
+		it("255 (0xff) has 8 set bits", () => {
+			expect(popCount(from(255n))).toBe(8);
+		});
+
+		it("0b1010 has 2 set bits", () => {
+			expect(popCount(from(0b1010n))).toBe(2);
+		});
+
+		it("0b10101010 has 4 set bits", () => {
+			expect(popCount(from(0b10101010n))).toBe(4);
+		});
+	});
+
+	describe("powers of 2", () => {
+		it("2 (single bit) has 1 set bit", () => {
+			expect(popCount(from(2n))).toBe(1);
+		});
+
+		it("2^10 has 1 set bit", () => {
+			expect(popCount(from(1n << 10n))).toBe(1);
+		});
+
+		it("2^32 has 1 set bit", () => {
+			expect(popCount(from(1n << 32n))).toBe(1);
+		});
+
+		it("2^63 has 1 set bit", () => {
+			expect(popCount(from(1n << 63n))).toBe(1);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("MAX has 64 set bits", () => {
+			expect(popCount(MAX)).toBe(64);
+		});
+
+		it("MAX - 1 has 63 set bits", () => {
+			expect(popCount(from(MAX - 1n))).toBe(63);
+		});
+
+		it("0xffffffff has 32 set bits", () => {
+			expect(popCount(from(0xffffffffn))).toBe(32);
+		});
+	});
+});

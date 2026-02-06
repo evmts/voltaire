@@ -1,0 +1,37 @@
+---
+title: Parameter.from
+description: Create a branded ABI parameter definition
+---
+
+## Overview
+
+`Parameter.from` is a lightweight helper that brands a parameter object for TypeScript type inference. It does **not** validate types at runtime.
+
+## Quick Start
+
+```typescript
+import * as Parameter from '@tevm/voltaire/Abi/parameter';
+
+const amount = Parameter.from({ type: 'uint256', name: 'amount' });
+const owner = Parameter.from({ type: 'address', name: 'owner' });
+```
+
+## Tuples and Components
+
+```typescript
+import * as Parameter from '@tevm/voltaire/Abi/parameter';
+
+const position = Parameter.from({
+  type: 'tuple',
+  name: 'position',
+  components: [
+    { type: 'uint256', name: 'amount' },
+    { type: 'uint256', name: 'shares' }
+  ]
+});
+```
+
+## See Also
+
+- [Parameter.encode](/primitives/abi/parameter/encode) - Encoding note for single parameters
+- [ABI Types](/primitives/abi/types) - Parameter shape reference

@@ -1,0 +1,170 @@
+---
+title: Chain
+description: Ethereum chain configuration with network metadata
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/chain.ts">
+  Run Chain examples in the interactive playground
+</Card>
+
+
+# Chain
+
+Ethereum chain configuration objects with network metadata, RPC endpoints, and explorer information.
+
+<Tip title="New to chain IDs?">
+Learn about chain IDs, replay attack prevention, and network identification in the [Fundamentals guide](/primitives/chain/fundamentals).
+</Tip>
+
+## Overview
+
+[Branded](/getting-started/branded-types) type representing Ethereum chain configurations. Provides chain constants, metadata, and lookup utilities for Ethereum networks. Zero-overhead design supports both tree-shakeable namespace methods and class instances.
+
+## Quick Start
+
+<Tabs>
+
+</Tabs>
+
+## Types
+
+<Tabs>
+<Tab title="class Chain">
+```typescript
+class Chain {
+  // Constructors (→ /primitives/chain/constructors)
+  static from(chain: Chain): Chain
+  static fromId(id: number): Chain | undefined
+
+  // Lookup (→ /primitives/chain/chain-lookup)
+  static byId: Record<number, Chain>
+}
+```
+
+Source: [Chain.js:14-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js#L14-L36)
+</Tab>
+<Tab title="type Chain">
+```typescript
+export interface Chain {
+  name: string
+  chain: string
+  chainId: number
+  networkId?: number
+  shortName: string
+  rpc: string[]
+  nativeCurrency: NativeCurrency
+  infoURL?: string
+  explorers?: Explorer[]
+  [key: string]: any
+}
+
+export interface NativeCurrency {
+  name: string
+  symbol: string
+  decimals: number
+  [key: string]: any
+}
+
+export interface Explorer {
+  name: string
+  url: string
+  standard?: string
+  [key: string]: any
+}
+```
+
+Chain configuration object extending from [@tevm/chains](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains). Provides complete chain metadata including network name, chain ID, RPC endpoints, native currency details, and block explorer URLs.
+
+Source: [ChainType.ts:1](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/ChainType.ts#L1)
+</Tab>
+</Tabs>
+
+## Chain Constants
+
+Chain objects imported from [@tevm/chains](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains):
+
+```typescript
+import {
+  // Mainnets
+  flr14,
+  quai9,
+  injective1776,
+  ronin2020,
+  moca2288,
+
+  // Popular networks (via chain ID)
+  // Use Chain.fromId(id) or Chain.byId[id]
+} from '@tevm/chains'
+
+// Access chain metadata
+console.log(quai9.name)          // "Quai Mainnet"
+console.log(quai9.chainId)       // 9
+console.log(quai9.nativeCurrency.symbol) // "QUAI"
+
+// Use with Chain constructor
+const chain = Chain(quai9)
+```
+
+**Available constants:**
+- 800+ chain configurations from @tevm/chains
+- Includes testnets, mainnets, L2s, and sidechains
+- Each constant includes full metadata (RPC, explorer, currency)
+
+See [@tevm/chains documentation](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains) for complete list.
+
+## API Methods
+
+### Core Operations
+
+- [fundamentals](fundamentals) - Learn chain IDs, replay attack prevention, and network identification
+- [constructors](constructors) - Create Chain instances from chain objects and chain IDs
+- [chain-lookup](chain-lookup) - Look up chains by ID using fromId() and byId record
+- [metadata](metadata) - Access chain properties: name, chainId, RPC, explorers, currency
+
+### Advanced Features
+
+- [branded-chain](branded-chain) - Tree-shakeable functional API for minimal bundle size
+- [network-comparison](network-comparison) - Compare gas fees, costs, and characteristics across networks
+
+<Tip title="Chain objects are plain JavaScript objects">
+Chain is a lightweight wrapper around plain JavaScript objects from @tevm/chains. The Chain class adds prototype methods while keeping the underlying data structure simple and serializable.
+</Tip>
+
+## Related Types
+
+### Address
+
+Ethereum address type for contract and account addresses.
+
+    [View Address →](/primitives/address)
+
+### Branded Types
+
+Zero-overhead type branding pattern used throughout primitives.
+
+    [View Branded Types →](/getting-started/branded-types)
+
+### Denomination
+
+Wei, Gwei, and Ether types with currency conversions.
+
+    [View Denomination →](/primitives/denomination)
+
+### FeeMarket
+
+EIP-1559 gas pricing with base and priority fees.
+
+    [View FeeMarket →](/primitives/feemarket)
+
+### Hardfork
+
+Ethereum network upgrades and protocol versions.
+
+    [View Hardfork →](/primitives/hardfork)
+
+### Transaction
+
+Transaction creation and signing across networks.
+
+    [View Transaction →](/primitives/transaction)
+

@@ -1,0 +1,34 @@
+import { describe, expect, it } from "vitest";
+import { MAX, ZERO } from "./constants.js";
+import { from } from "./from.js";
+import { minimum } from "./minimum.js";
+
+describe("Uint64.minimum", () => {
+	it("returns smaller of two values", () => {
+		expect(minimum(from(10n), from(20n))).toBe(10n);
+	});
+
+	it("returns same value when equal", () => {
+		expect(minimum(from(42n), from(42n))).toBe(42n);
+	});
+
+	it("returns second when smaller", () => {
+		expect(minimum(from(100n), from(50n))).toBe(50n);
+	});
+
+	it("handles zero", () => {
+		expect(minimum(ZERO, from(1n))).toBe(0n);
+		expect(minimum(from(1n), ZERO)).toBe(0n);
+	});
+
+	it("handles MAX", () => {
+		expect(minimum(MAX, from(999n))).toBe(999n);
+		expect(minimum(from(999n), MAX)).toBe(999n);
+	});
+
+	it("commutative", () => {
+		const a = from(10n);
+		const b = from(20n);
+		expect(minimum(a, b)).toBe(minimum(b, a));
+	});
+});

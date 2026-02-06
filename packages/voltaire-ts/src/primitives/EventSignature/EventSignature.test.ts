@@ -1,0 +1,96 @@
+import { describe, expect, it } from "vitest";
+import * as EventSignature from "./index.js";
+
+describe("EventSignature", () => {
+	// Transfer(address,address,uint256) event signature
+	const transferEventHex =
+		"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+	const transferEventSig = "Transfer(address,address,uint256)";
+
+	describe("from", () => {
+		it("creates event signature from Uint8Array", () => {
+			const bytes = new Uint8Array(32);
+			const sig = EventSignature.from(bytes);
+			expect(sig).toEqual(bytes);
+			expect(sig.length).toBe(32);
+		});
+
+		it("creates event signature from hex string", () => {
+			const sig = EventSignature.from(transferEventHex);
+			expect(EventSignature.toHex(sig)).toBe(transferEventHex);
+		});
+
+		it("throws on invalid length", () => {
+			expect(() => EventSignature.from(new Uint8Array(16))).toThrow(
+				"EventSignature must be exactly 32 bytes",
+			);
+		});
+	});
+
+	describe("fromHex", () => {
+		it("creates event signature from hex with 0x prefix", () => {
+			const sig = EventSignature.fromHex(transferEventHex);
+			expect(EventSignature.toHex(sig)).toBe(transferEventHex);
+		});
+
+		it("throws on invalid hex length", () => {
+			expect(() => EventSignature.fromHex("0xa9059cbb")).toThrow(
+				"EventSignature hex must be exactly 32 bytes",
+			);
+		});
+	});
+
+	describe("fromSignature", () => {
+		it("computes Transfer(address,address,uint256) event signature", () => {
+			const sig = EventSignature.fromSignature(transferEventSig);
+			expect(EventSignature.toHex(sig)).toBe(transferEventHex);
+		});
+
+		it("computes Approval(address,address,uint256) event signature", () => {
+			const sig = EventSignature.fromSignature(
+				"Approval(address,address,uint256)",
+			);
+			expect(EventSignature.toHex(sig)).toBe(
+				"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+			);
+		});
+
+		it("computes event with no indexed params", () => {
+			const sig = EventSignature.fromSignature("Deposit(uint256)");
+			// This should compute correctly
+			expect(EventSignature.toHex(sig)).toMatch(/^0x[0-9a-f]{64}$/);
+		});
+
+		it("computes complex event signature", () => {
+			const sig = EventSignature.fromSignature(
+				"Swap(address,uint256,uint256,uint256,uint256,address)",
+			);
+			expect(EventSignature.toHex(sig)).toBe(
+				"0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",
+			);
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts event signature to hex string", () => {
+			const sig = EventSignature.fromSignature(transferEventSig);
+			expect(EventSignature.toHex(sig)).toBe(transferEventHex);
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal signatures", () => {
+			const sig1 = EventSignature.fromSignature(transferEventSig);
+			const sig2 = EventSignature.from(transferEventHex);
+			expect(EventSignature.equals(sig1, sig2)).toBe(true);
+		});
+
+		it("returns false for different signatures", () => {
+			const sig1 = EventSignature.fromSignature(transferEventSig);
+			const sig2 = EventSignature.fromSignature(
+				"Approval(address,address,uint256)",
+			);
+			expect(EventSignature.equals(sig1, sig2)).toBe(false);
+		});
+	});
+});
