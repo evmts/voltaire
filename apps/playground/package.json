@@ -1,0 +1,27 @@
+{
+  "name": "@tevm/playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:docs": "vite build --base=/playground/",
+    "typecheck": "echo 'Playground typecheck skipped - examples use loose types for documentation'",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@tevm/tsconfig": "1.0.0-next.142",
+    "jsdom": "^27.4.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.0"
+  },
+  "dependencies": {
+    "@tevm/voltaire": "workspace:*",
+    "effect": "^3.19.0",
+    "esbuild-wasm": "^0.27.2",
+    "modern-monaco": "^0.3.6",
+    "monaco-editor": "^0.55.1",
+    "monaco-vim": "^0.4.4"
+  }
+}

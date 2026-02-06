@@ -1,0 +1,52 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"useDefineForClassFields": true,
+		"module": "ESNext",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"types": ["vite/client"],
+		"skipLibCheck": true,
+
+		/* Bundler mode */
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": false,
+		"moduleDetection": "force",
+		"noEmit": true,
+
+		"baseUrl": ".",
+		/* Path mapping */
+		"paths": {
+			"@tevm/voltaire": ["../../packages/voltaire-ts/src/index.ts"],
+			"@tevm/voltaire/*": ["../../packages/voltaire-ts/src/*"],
+			"effect": ["../../node_modules/effect"],
+			"effect/*": ["../../node_modules/effect/*"],
+			"voltaire/primitives/Address": ["../../packages/voltaire-ts/src/primitives/Address/index.ts"],
+			"voltaire/primitives/Hex": ["../../packages/voltaire-ts/src/primitives/Hex/index.ts"],
+			"voltaire/primitives/Hash": ["../../packages/voltaire-ts/src/primitives/Hash/index.ts"],
+			"voltaire/primitives/RLP": ["../../packages/voltaire-ts/src/primitives/Rlp/index.ts"],
+			"voltaire/primitives/Rlp": ["../../packages/voltaire-ts/src/primitives/Rlp/index.ts"],
+			"voltaire/primitives/ABI": ["../../packages/voltaire-ts/src/primitives/Abi/index.ts"],
+			"voltaire/primitives/Abi": ["../../packages/voltaire-ts/src/primitives/Abi/index.ts"],
+			"voltaire/primitives/BloomFilter": [
+				"../../packages/voltaire-ts/src/primitives/BloomFilter/index.ts"
+			],
+			"voltaire/crypto/Keccak256": ["../../packages/voltaire-ts/src/crypto/Keccak256/index.ts"],
+			"voltaire/crypto/Secp256k1": ["../../packages/voltaire-ts/src/crypto/Secp256k1/index.ts"],
+			"voltaire/crypto/SHA256": ["../../packages/voltaire-ts/src/crypto/SHA256/index.ts"],
+			"voltaire/crypto/Blake2": ["../../packages/voltaire-ts/src/crypto/Blake2/index.ts"],
+			"voltaire/crypto/Ripemd160": ["../../packages/voltaire-ts/src/crypto/Ripemd160/index.ts"],
+			"voltaire/crypto/HDWallet": ["../../packages/voltaire-ts/src/crypto/HDWallet/index.ts"]
+		},
+
+		/* Linting */
+		"strict": true,
+		"allowJs": true,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"erasableSyntaxOnly": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedSideEffectImports": false
+	},
+	"include": ["src"]
+}
