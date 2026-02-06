@@ -1,0 +1,35 @@
+import { describe, test } from "vitest";
+
+describe("Address Primitive Examples", () => {
+	test("abi-encoding example works", async () => {
+		await import("./abi-encoding.js");
+	});
+
+	test("basic-usage example works", async () => {
+		await import("./basic-usage.js");
+	});
+
+	test("checksum-validation example works", async () => {
+		await import("./checksum-validation.js");
+	});
+
+	test("create-deployment example works", async () => {
+		await import("./create-deployment.js");
+	});
+
+	test("create2-deployment example works", async () => {
+		await import("./create2-deployment.js");
+	});
+
+	test("public-key-derivation example works", async () => {
+		await import("./public-key-derivation.js");
+	});
+
+	test("sorting-filtering example works", async () => {
+		await import("./sorting-filtering.js");
+	});
+
+	test("tree-shakeable-api example works", async () => {
+		await import("./tree-shakeable-api.js");
+	});
+});

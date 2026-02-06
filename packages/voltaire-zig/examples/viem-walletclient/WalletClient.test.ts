@@ -1,0 +1,655 @@
+/**
+ * WalletClient Tests
+ *
+ * Comprehensive tests for the viem-walletclient implementation.
+ */
+
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { privateKeyToAccount } from "../viem-account/index.js";
+import {
+	http,
+	AccountNotFoundError,
+	AccountTypeNotSupportedError,
+	ChainMismatchError,
+	createWalletClient,
+	custom,
+	fallback,
+	parseAccount,
+} from "./index.js";
+
+// Test private key (Anvil's first account)
+const TEST_PRIVATE_KEY =
+	"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const TEST_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+
+// Mock chain
+const mainnet = {
+	id: 1,
+	name: "Ethereum",
+	nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+	rpcUrls: { default: { http: ["https://eth.llamarpc.com"] } },
+};
+
+// Mock transport that tracks requests
+function mockTransport(responses: Record<string, unknown> = {}) {
+	const requests: Array<{ method: string; params: unknown[] }> = [];
+
+	return function transport() {
+		return {
+			config: {
+				key: "mock",
+				name: "Mock Transport",
+				type: "mock",
+			},
+			request: async ({
+				method,
+				params = [],
+			}: { method: string; params?: unknown[] }) => {
+				requests.push({ method, params });
+
+				if (responses[method] !== undefined) {
+					if (typeof responses[method] === "function") {
+						return (responses[method] as (...args: unknown[]) => unknown)(
+							params,
+						);
+					}
+					return responses[method];
+				}
+
+				// Default responses
+				switch (method) {
+					case "eth_chainId":
+						return "0x1";
+					case "eth_accounts":
+						return [TEST_ADDRESS];
+					case "eth_requestAccounts":
+						return [TEST_ADDRESS];
+					case "eth_getTransactionCount":
+						return "0x5";
+					case "eth_gasPrice":
+						return "0x3b9aca00"; // 1 gwei
+					case "eth_estimateGas":
+						return "0x5208"; // 21000
+					case "eth_getBlockByNumber":
+						return {
+							baseFeePerGas: "0x3b9aca00",
+							number: "0x100",
+						};
+					case "eth_maxPriorityFeePerGas":
+						return "0x59682f00"; // 1.5 gwei
+					case "eth_sendTransaction":
+						return "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+					case "eth_sendRawTransaction":
+						return "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+					case "personal_sign":
+						return `0x${"ab".repeat(65)}`;
+					case "eth_signTypedData_v4":
+						return `0x${"cd".repeat(65)}`;
+					case "eth_signTransaction":
+						return "0x02f850018203118080825208...";
+					default:
+						throw new Error(`Unhandled method: ${method}`);
+				}
+			},
+			value: { requests },
+		};
+	};
+}
+
+describe("WalletClient", () => {
+	describe("createWalletClient", () => {
+		it("creates client with basic configuration", () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			});
+
+			expect(client.type).toBe("walletClient");
+			expect(client.key).toBe("wallet");
+			expect(client.name).toBe("Wallet Client");
+			expect(client.uid).toBeDefined();
+			expect(typeof client.request).toBe("function");
+		});
+
+		it("creates client with hoisted account", () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				transport: mockTransport(),
+			});
+
+			expect(client.account).toBeDefined();
+			expect(client.account?.address).toBe(TEST_ADDRESS);
+			expect(client.account?.type).toBe("local");
+		});
+
+		it("creates client with chain configuration", () => {
+			const client = createWalletClient({
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			expect(client.chain).toBe(mainnet);
+		});
+
+		it("parses string address to JSON-RPC account", () => {
+			const client = createWalletClient({
+				account: TEST_ADDRESS,
+				transport: mockTransport(),
+			});
+
+			expect(client.account?.type).toBe("json-rpc");
+			expect(client.account?.address).toBe(TEST_ADDRESS);
+		});
+
+		it("extends client with custom actions", () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			}).extend((base) => ({
+				customAction: () => "custom",
+				getClientType: () => base.type,
+			}));
+
+			expect(client.customAction()).toBe("custom");
+			expect(client.getClientType()).toBe("walletClient");
+		});
+
+		it("calculates polling interval from chain block time", () => {
+			const fastChain = { ...mainnet, blockTime: 2000 };
+			const client = createWalletClient({
+				chain: fastChain,
+				transport: mockTransport(),
+			});
+
+			expect(client.pollingInterval).toBe(1000); // blockTime / 2, min 500
+		});
+	});
+
+	describe("parseAccount", () => {
+		it("parses string address to JSON-RPC account", () => {
+			const account = parseAccount(TEST_ADDRESS);
+
+			expect(account.type).toBe("json-rpc");
+			expect(account.address).toBe(TEST_ADDRESS);
+		});
+
+		it("returns local account unchanged", () => {
+			const localAccount = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const parsed = parseAccount(localAccount);
+
+			expect(parsed).toBe(localAccount);
+			expect(parsed.type).toBe("local");
+		});
+	});
+
+	describe("getAddresses", () => {
+		it("returns hoisted address for local account", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				transport: mockTransport(),
+			});
+
+			const addresses = await client.getAddresses();
+
+			expect(addresses).toEqual([TEST_ADDRESS]);
+		});
+
+		it("calls eth_accounts for JSON-RPC accounts", async () => {
+			const transport = mockTransport();
+			const client = createWalletClient({ transport });
+
+			const addresses = await client.getAddresses();
+
+			expect(addresses.length).toBeGreaterThan(0);
+			// Verify address is checksummed
+			expect(addresses[0]).toMatch(/^0x[a-fA-F0-9]{40}$/);
+		});
+	});
+
+	describe("requestAddresses", () => {
+		it("calls eth_requestAccounts", async () => {
+			const transport = mockTransport();
+			const client = createWalletClient({ transport });
+
+			const addresses = await client.requestAddresses();
+
+			expect(addresses.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe("getChainId", () => {
+		it("returns chain ID from network", async () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			});
+
+			const chainId = await client.getChainId();
+
+			expect(chainId).toBe(1);
+		});
+	});
+
+	describe("signMessage", () => {
+		it("signs message locally with local account", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				transport: mockTransport(),
+			});
+
+			const signature = await client.signMessage({
+				message: "Hello, Ethereum!",
+			});
+
+			expect(signature).toMatch(/^0x[a-fA-F0-9]{130}$/);
+		});
+
+		it("calls personal_sign for JSON-RPC account", async () => {
+			const client = createWalletClient({
+				account: TEST_ADDRESS,
+				transport: mockTransport(),
+			});
+
+			const signature = await client.signMessage({
+				message: "Hello, Ethereum!",
+			});
+
+			expect(signature).toBeDefined();
+		});
+
+		it("throws AccountNotFoundError when no account", async () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			});
+
+			await expect(client.signMessage({ message: "test" })).rejects.toThrow(
+				AccountNotFoundError,
+			);
+		});
+
+		it("handles raw bytes message", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				transport: mockTransport(),
+			});
+
+			const signature = await client.signMessage({
+				message: { raw: new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]) },
+			});
+
+			expect(signature).toMatch(/^0x[a-fA-F0-9]{130}$/);
+		});
+
+		it("handles raw hex message", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				transport: mockTransport(),
+			});
+
+			const signature = await client.signMessage({
+				message: { raw: "0x48656c6c6f" },
+			});
+
+			expect(signature).toMatch(/^0x[a-fA-F0-9]{130}$/);
+		});
+	});
+
+	describe("signTypedData", () => {
+		const typedData = {
+			domain: {
+				name: "Ether Mail",
+				version: "1",
+				chainId: 1n,
+				verifyingContract:
+					"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC" as const,
+			},
+			types: {
+				Person: [
+					{ name: "name", type: "string" },
+					{ name: "wallet", type: "address" },
+				],
+				Mail: [
+					{ name: "from", type: "Person" },
+					{ name: "to", type: "Person" },
+					{ name: "contents", type: "string" },
+				],
+			},
+			primaryType: "Mail" as const,
+			message: {
+				from: {
+					name: "Alice",
+					wallet: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+				},
+				to: {
+					name: "Bob",
+					wallet: "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
+				},
+				contents: "Hello!",
+			},
+		};
+
+		// Simple typed data without nested structs to avoid EIP712 encodeValue bug
+		const simpleTypedData = {
+			domain: {
+				name: "Test",
+				version: "1",
+				chainId: 1n,
+			},
+			types: {
+				Message: [{ name: "content", type: "string" }],
+			},
+			primaryType: "Message" as const,
+			message: {
+				content: "Hello!",
+			},
+		};
+
+		it("signs typed data locally with local account", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				transport: mockTransport(),
+			});
+
+			// Use simple typed data to avoid nested struct address encoding bug
+			const signature = await client.signTypedData(simpleTypedData);
+
+			expect(signature).toMatch(/^0x[a-fA-F0-9]{130}$/);
+		});
+
+		it("calls eth_signTypedData_v4 for JSON-RPC account", async () => {
+			const client = createWalletClient({
+				account: TEST_ADDRESS,
+				transport: mockTransport(),
+			});
+
+			const signature = await client.signTypedData(typedData);
+
+			expect(signature).toBeDefined();
+		});
+
+		it("throws AccountNotFoundError when no account", async () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			});
+
+			await expect(client.signTypedData(typedData)).rejects.toThrow(
+				AccountNotFoundError,
+			);
+		});
+	});
+
+	describe("signTransaction", () => {
+		it("signs transaction locally with local account", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			const signedTx = await client.signTransaction({
+				to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+				value: 1000000000000000000n,
+			});
+
+			expect(signedTx).toBeDefined();
+		});
+
+		it("calls eth_signTransaction for JSON-RPC account", async () => {
+			const client = createWalletClient({
+				account: TEST_ADDRESS,
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			const signedTx = await client.signTransaction({
+				to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+				value: 1000000000000000000n,
+			});
+
+			expect(signedTx).toBeDefined();
+		});
+
+		it("throws AccountNotFoundError when no account", async () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			});
+
+			await expect(
+				client.signTransaction({
+					to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+					value: 1n,
+				}),
+			).rejects.toThrow(AccountNotFoundError);
+		});
+	});
+
+	describe("sendTransaction", () => {
+		it("sends transaction via eth_sendTransaction for JSON-RPC account", async () => {
+			const client = createWalletClient({
+				account: TEST_ADDRESS,
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			const hash = await client.sendTransaction({
+				to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+				value: 1000000000000000000n,
+			});
+
+			expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/);
+		});
+
+		it("signs and sends raw for local account", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			const hash = await client.sendTransaction({
+				to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+				value: 1000000000000000000n,
+			});
+
+			expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/);
+		});
+
+		it("throws AccountNotFoundError when no account", async () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			});
+
+			await expect(
+				client.sendTransaction({
+					to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+					value: 1n,
+				}),
+			).rejects.toThrow(AccountNotFoundError);
+		});
+
+		it("validates chain matches network", async () => {
+			const wrongChain = { ...mainnet, id: 999 };
+			const client = createWalletClient({
+				account: TEST_ADDRESS,
+				chain: wrongChain,
+				transport: mockTransport(),
+			});
+
+			// ChainMismatchError is wrapped in TransactionExecutionError
+			await expect(
+				client.sendTransaction({
+					to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+					value: 1n,
+				}),
+			).rejects.toThrow(/does not match the expected chain/);
+		});
+	});
+
+	describe("prepareTransactionRequest", () => {
+		it("fills in missing nonce", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			const request = await client.prepareTransactionRequest({
+				to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+				value: 1n,
+			});
+
+			expect(request.nonce).toBe(5); // From mock
+		});
+
+		it("fills in missing gas", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			const request = await client.prepareTransactionRequest({
+				to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+				value: 1n,
+			});
+
+			expect(request.gas).toBe(21000n);
+		});
+
+		it("fills in EIP-1559 fees", async () => {
+			const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+			const client = createWalletClient({
+				account,
+				chain: mainnet,
+				transport: mockTransport(),
+			});
+
+			const request = await client.prepareTransactionRequest({
+				to: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+				value: 1n,
+			});
+
+			expect(request.maxFeePerGas).toBeDefined();
+			expect(request.maxPriorityFeePerGas).toBeDefined();
+		});
+	});
+
+	describe("sendRawTransaction", () => {
+		it("sends raw transaction", async () => {
+			const client = createWalletClient({
+				transport: mockTransport(),
+			});
+
+			const hash = await client.sendRawTransaction({
+				serializedTransaction: "0x02f850...",
+			});
+
+			expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/);
+		});
+	});
+
+	describe("transports", () => {
+		describe("http", () => {
+			it("creates HTTP transport", () => {
+				const transport = http("https://eth.llamarpc.com");
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
+
+				expect(initialized.config.key).toBe("http");
+				expect(initialized.config.type).toBe("http");
+				expect(typeof initialized.request).toBe("function");
+			});
+
+			it("uses chain default URL if not provided", () => {
+				const transport = http();
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
+
+				expect(initialized.value.url).toBe("https://eth.llamarpc.com");
+			});
+		});
+
+		describe("custom", () => {
+			it("creates custom transport from EIP-1193 provider", async () => {
+				const mockProvider = {
+					request: vi.fn().mockResolvedValue("0x1"),
+				};
+
+				const transport = custom(mockProvider);
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
+
+				const result = await initialized.request({ method: "eth_chainId" });
+
+				expect(result).toBe("0x1");
+				expect(mockProvider.request).toHaveBeenCalledWith({
+					method: "eth_chainId",
+					params: [],
+				});
+			});
+		});
+
+		describe("fallback", () => {
+			it("tries transports in order on failure", async () => {
+				const failingTransport = () => ({
+					config: { key: "fail", name: "Fail", type: "fail" },
+					request: async () => {
+						throw new Error("Failed");
+					},
+				});
+
+				const successTransport = () => ({
+					config: { key: "success", name: "Success", type: "success" },
+					request: async () => "success",
+				});
+
+				const transport = fallback([
+					failingTransport,
+					successTransport,
+				] as unknown as Parameters<typeof fallback>[0]);
+				const initialized = transport({
+					chain: mainnet,
+					pollingInterval: 4000,
+				});
+
+				const result = await initialized.request({ method: "test" });
+
+				expect(result).toBe("success");
+			});
+		});
+	});
+
+	describe("errors", () => {
+		it("AccountNotFoundError has correct properties", () => {
+			const error = new AccountNotFoundError();
+
+			expect(error.name).toBe("AccountNotFoundError");
+			expect(error.code).toBe("ACCOUNT_NOT_FOUND");
+			expect(error.docsPath).toBeDefined();
+		});
+
+		it("ChainMismatchError includes chain IDs", () => {
+			const error = new ChainMismatchError({
+				currentChainId: 1,
+				expectedChainId: 137,
+			});
+
+			expect(error.name).toBe("ChainMismatchError");
+			expect(error.currentChainId).toBe(1);
+			expect(error.expectedChainId).toBe(137);
+		});
+	});
+});

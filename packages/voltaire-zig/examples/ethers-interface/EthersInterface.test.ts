@@ -1,0 +1,826 @@
+import { describe, expect, it } from "vitest";
+import {
+	AmbiguousFragmentError,
+	ConstructorFragment,
+	ErrorDescription,
+	ErrorFragment,
+	EventFragment,
+	FragmentNotFoundError,
+	FunctionFragment,
+	Indexed,
+	Interface,
+	LogDescription,
+	ParamType,
+	TransactionDescription,
+} from "./index.js";
+
+// =============================================================================
+// Test ABI
+// =============================================================================
+
+const ERC20_ABI = [
+	{
+		type: "function",
+		name: "name",
+		inputs: [],
+		outputs: [{ type: "string", name: "" }],
+		stateMutability: "view",
+	},
+	{
+		type: "function",
+		name: "symbol",
+		inputs: [],
+		outputs: [{ type: "string", name: "" }],
+		stateMutability: "view",
+	},
+	{
+		type: "function",
+		name: "decimals",
+		inputs: [],
+		outputs: [{ type: "uint8", name: "" }],
+		stateMutability: "view",
+	},
+	{
+		type: "function",
+		name: "totalSupply",
+		inputs: [],
+		outputs: [{ type: "uint256", name: "" }],
+		stateMutability: "view",
+	},
+	{
+		type: "function",
+		name: "balanceOf",
+		inputs: [{ type: "address", name: "account" }],
+		outputs: [{ type: "uint256", name: "" }],
+		stateMutability: "view",
+	},
+	{
+		type: "function",
+		name: "transfer",
+		inputs: [
+			{ type: "address", name: "to" },
+			{ type: "uint256", name: "amount" },
+		],
+		outputs: [{ type: "bool", name: "" }],
+		stateMutability: "nonpayable",
+	},
+	{
+		type: "function",
+		name: "approve",
+		inputs: [
+			{ type: "address", name: "spender" },
+			{ type: "uint256", name: "amount" },
+		],
+		outputs: [{ type: "bool", name: "" }],
+		stateMutability: "nonpayable",
+	},
+	{
+		type: "function",
+		name: "transferFrom",
+		inputs: [
+			{ type: "address", name: "from" },
+			{ type: "address", name: "to" },
+			{ type: "uint256", name: "amount" },
+		],
+		outputs: [{ type: "bool", name: "" }],
+		stateMutability: "nonpayable",
+	},
+	{
+		type: "event",
+		name: "Transfer",
+		inputs: [
+			{ type: "address", name: "from", indexed: true },
+			{ type: "address", name: "to", indexed: true },
+			{ type: "uint256", name: "value", indexed: false },
+		],
+		anonymous: false,
+	},
+	{
+		type: "event",
+		name: "Approval",
+		inputs: [
+			{ type: "address", name: "owner", indexed: true },
+			{ type: "address", name: "spender", indexed: true },
+			{ type: "uint256", name: "value", indexed: false },
+		],
+		anonymous: false,
+	},
+	{
+		type: "error",
+		name: "InsufficientBalance",
+		inputs: [
+			{ type: "uint256", name: "available" },
+			{ type: "uint256", name: "required" },
+		],
+	},
+	{
+		type: "constructor",
+		inputs: [
+			{ type: "string", name: "name" },
+			{ type: "string", name: "symbol" },
+		],
+		stateMutability: "nonpayable",
+	},
+] as const;
+
+// =============================================================================
+// Interface Construction
+// =============================================================================
+
+describe("Interface Construction", () => {
+	it("should create from ABI array", () => {
+		const iface = new Interface(ERC20_ABI);
+
+		expect(iface.fragments.length).toBe(ERC20_ABI.length);
+		expect(iface.deploy).toBeInstanceOf(ConstructorFragment);
+	});
+
+	it("should create from JSON string", () => {
+		const iface = new Interface(JSON.stringify(ERC20_ABI));
+
+		expect(iface.fragments.length).toBe(ERC20_ABI.length);
+	});
+
+	it("should provide default constructor if none in ABI", () => {
+		const iface = new Interface([
+			{
+				type: "function",
+				name: "test",
+				inputs: [],
+				outputs: [],
+				stateMutability: "view",
+			},
+		]);
+
+		expect(iface.deploy).toBeInstanceOf(ConstructorFragment);
+		expect(iface.deploy.inputs.length).toBe(0);
+	});
+
+	it("should use Interface.from static method", () => {
+		const iface = Interface.from(ERC20_ABI);
+
+		expect(iface).toBeInstanceOf(Interface);
+		expect(iface.fragments.length).toBe(ERC20_ABI.length);
+	});
+
+	it("should return same instance from Interface.from when passed Interface", () => {
+		const iface = new Interface(ERC20_ABI);
+		const same = Interface.from(iface);
+
+		expect(same).toBe(iface);
+	});
+});
+
+// =============================================================================
+// Format Methods
+// =============================================================================
+
+describe("Format Methods", () => {
+	it("should format as human-readable (full)", () => {
+		const iface = new Interface(ERC20_ABI);
+		const formatted = iface.format(false);
+
+		expect(formatted).toContain(
+			"function transfer(address to, uint256 amount) returns (bool)",
+		);
+	});
+
+	it("should format as minimal", () => {
+		const iface = new Interface(ERC20_ABI);
+		const formatted = iface.format(true);
+
+		expect(formatted.some((f) => f.includes("transfer"))).toBe(true);
+	});
+
+	it("should format as JSON", () => {
+		const iface = new Interface(ERC20_ABI);
+		const json = iface.formatJson();
+		const parsed = JSON.parse(json);
+
+		expect(Array.isArray(parsed)).toBe(true);
+		expect(parsed.length).toBe(ERC20_ABI.length);
+	});
+});
+
+// =============================================================================
+// Function Methods
+// =============================================================================
+
+describe("Function Methods", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should get function by name", () => {
+		const fn = iface.getFunction("transfer");
+
+		expect(fn).toBeInstanceOf(FunctionFragment);
+		expect(fn?.name).toBe("transfer");
+	});
+
+	it("should get function by selector", () => {
+		const fn = iface.getFunction("0xa9059cbb");
+
+		expect(fn).toBeInstanceOf(FunctionFragment);
+		expect(fn?.name).toBe("transfer");
+	});
+
+	it("should return null for unknown function", () => {
+		const fn = iface.getFunction("nonexistent");
+
+		expect(fn).toBeNull();
+	});
+
+	it("should check hasFunction", () => {
+		expect(iface.hasFunction("transfer")).toBe(true);
+		expect(iface.hasFunction("nonexistent")).toBe(false);
+	});
+
+	it("should get function name", () => {
+		expect(iface.getFunctionName("transfer")).toBe("transfer");
+		expect(iface.getFunctionName("0xa9059cbb")).toBe("transfer");
+	});
+
+	it("should throw for unknown function name", () => {
+		expect(() => iface.getFunctionName("nonexistent")).toThrow(
+			FragmentNotFoundError,
+		);
+	});
+
+	it("should iterate forEachFunction", () => {
+		const names: string[] = [];
+		iface.forEachFunction((fragment) => {
+			names.push(fragment.name);
+		});
+
+		expect(names).toContain("transfer");
+		expect(names).toContain("balanceOf");
+		expect(names).toContain("approve");
+	});
+
+	it("should handle ambiguous function names", () => {
+		const ambiguousAbi = [
+			{
+				type: "function" as const,
+				name: "foo",
+				inputs: [{ type: "uint256", name: "x" }],
+				outputs: [],
+				stateMutability: "view" as const,
+			},
+			{
+				type: "function" as const,
+				name: "foo",
+				inputs: [
+					{ type: "uint256", name: "x" },
+					{ type: "uint256", name: "y" },
+				],
+				outputs: [],
+				stateMutability: "view" as const,
+			},
+		];
+		const ambiguousIface = new Interface(ambiguousAbi);
+
+		expect(() => ambiguousIface.getFunction("foo")).toThrow(
+			AmbiguousFragmentError,
+		);
+
+		// Should resolve with values
+		const fn = ambiguousIface.getFunction("foo", [1n]);
+		expect(fn?.inputs.length).toBe(1);
+	});
+});
+
+// =============================================================================
+// Event Methods
+// =============================================================================
+
+describe("Event Methods", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should get event by name", () => {
+		const ev = iface.getEvent("Transfer");
+
+		expect(ev).toBeInstanceOf(EventFragment);
+		expect(ev?.name).toBe("Transfer");
+	});
+
+	it("should get event by topic hash", () => {
+		const transfer = iface.getEvent("Transfer");
+		const ev = iface.getEvent(transfer?.topicHash);
+
+		expect(ev?.name).toBe("Transfer");
+	});
+
+	it("should check hasEvent", () => {
+		expect(iface.hasEvent("Transfer")).toBe(true);
+		expect(iface.hasEvent("NonExistent")).toBe(false);
+	});
+
+	it("should iterate forEachEvent", () => {
+		const names: string[] = [];
+		iface.forEachEvent((fragment) => {
+			names.push(fragment.name);
+		});
+
+		expect(names).toContain("Transfer");
+		expect(names).toContain("Approval");
+	});
+});
+
+// =============================================================================
+// Error Methods
+// =============================================================================
+
+describe("Error Methods", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should get error by name", () => {
+		const err = iface.getError("InsufficientBalance");
+
+		expect(err).toBeInstanceOf(ErrorFragment);
+		expect(err?.name).toBe("InsufficientBalance");
+	});
+
+	it("should get built-in Error", () => {
+		const err = iface.getError("Error");
+
+		expect(err).toBeInstanceOf(ErrorFragment);
+		expect(err?.name).toBe("Error");
+	});
+
+	it("should get built-in Panic", () => {
+		const err = iface.getError("Panic");
+
+		expect(err).toBeInstanceOf(ErrorFragment);
+		expect(err?.name).toBe("Panic");
+	});
+
+	it("should get error by selector", () => {
+		const err = iface.getError("0x08c379a0");
+
+		expect(err?.name).toBe("Error");
+	});
+
+	it("should iterate forEachError", () => {
+		const names: string[] = [];
+		iface.forEachError((fragment) => {
+			names.push(fragment.name);
+		});
+
+		expect(names).toContain("InsufficientBalance");
+	});
+});
+
+// =============================================================================
+// Function Encoding/Decoding
+// =============================================================================
+
+describe("Function Encoding/Decoding", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should encode function data", () => {
+		const data = iface.encodeFunctionData("transfer", [
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			1000n,
+		]);
+
+		expect(data.startsWith("0xa9059cbb")).toBe(true);
+		expect(data.length).toBe(2 + 8 + 64 * 2); // 0x + selector + 2 params
+	});
+
+	it("should decode function data", () => {
+		const data = iface.encodeFunctionData("transfer", [
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			1000n,
+		]);
+
+		const decoded = iface.decodeFunctionData("transfer", data);
+
+		// Voltaire returns lowercase addresses
+		expect((decoded[0] as string).toLowerCase()).toBe(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
+		expect(decoded[1]).toBe(1000n);
+	});
+
+	it("should encode/decode function result", () => {
+		const result = iface.encodeFunctionResult("balanceOf", [12345n]);
+		const decoded = iface.decodeFunctionResult("balanceOf", result);
+
+		expect(decoded[0]).toBe(12345n);
+	});
+
+	it("should handle view functions with no args", () => {
+		const data = iface.encodeFunctionData("name");
+
+		expect(data.length).toBe(10); // 0x + 8 hex selector
+	});
+});
+
+// =============================================================================
+// Event Encoding/Decoding
+// =============================================================================
+
+describe("Event Encoding/Decoding", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should encode event log", () => {
+		const { data, topics } = iface.encodeEventLog("Transfer", [
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			"0x1234567890123456789012345678901234567890",
+			1000n,
+		]);
+
+		expect(topics.length).toBe(3); // topic0 + 2 indexed
+		expect(data).not.toBe("0x"); // non-indexed value
+	});
+
+	it("should decode event log", () => {
+		const { data, topics } = iface.encodeEventLog("Transfer", [
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			"0x1234567890123456789012345678901234567890",
+			1000n,
+		]);
+
+		const decoded = iface.decodeEventLog("Transfer", data, topics);
+
+		// Voltaire returns lowercase addresses
+		expect((decoded[0] as string).toLowerCase()).toBe(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
+		expect((decoded[1] as string).toLowerCase()).toBe(
+			"0x1234567890123456789012345678901234567890",
+		);
+		expect(decoded[2]).toBe(1000n);
+	});
+
+	it("should encode filter topics", () => {
+		const topics = iface.encodeFilterTopics("Transfer", [
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			null, // any "to"
+		]);
+
+		expect(topics.length).toBe(2);
+		expect(topics[0]).toBe(iface.getEvent("Transfer")?.topicHash);
+		expect(typeof topics[1]).toBe("string");
+	});
+});
+
+// =============================================================================
+// Error Encoding/Decoding
+// =============================================================================
+
+describe("Error Encoding/Decoding", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should encode error result", () => {
+		const data = iface.encodeErrorResult("InsufficientBalance", [100n, 200n]);
+
+		expect(data.length).toBeGreaterThan(10);
+	});
+
+	it("should decode error result", () => {
+		const data = iface.encodeErrorResult("InsufficientBalance", [100n, 200n]);
+		const decoded = iface.decodeErrorResult("InsufficientBalance", data);
+
+		expect(decoded[0]).toBe(100n);
+		expect(decoded[1]).toBe(200n);
+	});
+
+	it("should encode/decode built-in Error", () => {
+		const data = iface.encodeErrorResult("Error", ["Something went wrong"]);
+		const decoded = iface.decodeErrorResult("Error", data);
+
+		expect(decoded[0]).toBe("Something went wrong");
+	});
+});
+
+// =============================================================================
+// Constructor Encoding
+// =============================================================================
+
+describe("Constructor Encoding", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should encode deploy arguments", () => {
+		const data = iface.encodeDeploy(["My Token", "MTK"]);
+
+		expect(data.length).toBeGreaterThan(2);
+	});
+
+	it("should handle empty constructor", () => {
+		const simpleIface = new Interface([]);
+		const data = simpleIface.encodeDeploy([]);
+
+		expect(data).toBe("0x");
+	});
+});
+
+// =============================================================================
+// Parsing Methods
+// =============================================================================
+
+describe("Parsing Methods", () => {
+	const iface = new Interface(ERC20_ABI);
+
+	it("should parse transaction", () => {
+		const data = iface.encodeFunctionData("transfer", [
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			1000n,
+		]);
+
+		const parsed = iface.parseTransaction({ data, value: 0n });
+
+		expect(parsed).toBeInstanceOf(TransactionDescription);
+		expect(parsed?.name).toBe("transfer");
+		// Voltaire returns lowercase addresses
+		expect((parsed?.args[0] as string).toLowerCase()).toBe(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
+		expect(parsed?.args[1]).toBe(1000n);
+		expect(parsed?.value).toBe(0n);
+	});
+
+	it("should return null for unknown transaction", () => {
+		const parsed = iface.parseTransaction({ data: "0x12345678" });
+
+		expect(parsed).toBeNull();
+	});
+
+	it("should parse log", () => {
+		const { data, topics } = iface.encodeEventLog("Transfer", [
+			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+			"0x1234567890123456789012345678901234567890",
+			1000n,
+		]);
+
+		const parsed = iface.parseLog({ topics, data });
+
+		expect(parsed).toBeInstanceOf(LogDescription);
+		expect(parsed?.name).toBe("Transfer");
+		expect(parsed?.args[2]).toBe(1000n);
+	});
+
+	it("should return null for unknown log", () => {
+		const parsed = iface.parseLog({
+			topics: [
+				"0x1234567890123456789012345678901234567890123456789012345678901234",
+			],
+			data: "0x",
+		});
+
+		expect(parsed).toBeNull();
+	});
+
+	it("should parse error", () => {
+		const data = iface.encodeErrorResult("InsufficientBalance", [100n, 200n]);
+		const parsed = iface.parseError(data);
+
+		expect(parsed).toBeInstanceOf(ErrorDescription);
+		expect(parsed?.name).toBe("InsufficientBalance");
+		expect(parsed?.args[0]).toBe(100n);
+		expect(parsed?.args[1]).toBe(200n);
+	});
+
+	it("should return null for unknown error", () => {
+		const parsed = iface.parseError("0x12345678");
+
+		expect(parsed).toBeNull();
+	});
+});
+
+// =============================================================================
+// ParamType
+// =============================================================================
+
+describe("ParamType", () => {
+	it("should create from simple type", () => {
+		const param = ParamType.from({ type: "uint256", name: "amount" });
+
+		expect(param.type).toBe("uint256");
+		expect(param.name).toBe("amount");
+		expect(param.baseType).toBe("uint256");
+	});
+
+	it("should create from array type", () => {
+		const param = ParamType.from({ type: "uint256[]", name: "values" });
+
+		expect(param.type).toBe("uint256[]");
+		expect(param.baseType).toBe("array");
+		expect(param.arrayLength).toBe(-1);
+		expect(param.arrayChildren?.type).toBe("uint256");
+	});
+
+	it("should create from fixed array type", () => {
+		const param = ParamType.from({ type: "address[3]", name: "addrs" });
+
+		expect(param.type).toBe("address[3]");
+		expect(param.baseType).toBe("array");
+		expect(param.arrayLength).toBe(3);
+	});
+
+	it("should create from tuple type", () => {
+		const param = ParamType.from({
+			type: "tuple",
+			name: "data",
+			components: [
+				{ type: "uint256", name: "x" },
+				{ type: "string", name: "y" },
+			],
+		});
+
+		expect(param.type).toBe("tuple");
+		expect(param.baseType).toBe("tuple");
+		expect(param.components?.length).toBe(2);
+	});
+
+	it("should format in different modes", () => {
+		const param = ParamType.from(
+			{
+				type: "uint256",
+				name: "amount",
+				indexed: true,
+			},
+			true,
+		);
+
+		expect(param.format("sighash")).toBe("uint256");
+		expect(param.format("minimal")).toBe("uint256 indexed");
+		expect(param.format("full")).toBe("uint256 indexed amount");
+	});
+
+	it("should detect array/tuple types", () => {
+		const arrayParam = ParamType.from({ type: "uint256[]", name: "" });
+		const tupleParam = ParamType.from({
+			type: "tuple",
+			name: "",
+			components: [{ type: "uint256", name: "" }],
+		});
+		const simpleParam = ParamType.from({ type: "address", name: "" });
+
+		expect(arrayParam.isArray()).toBe(true);
+		expect(tupleParam.isTuple()).toBe(true);
+		expect(simpleParam.isArray()).toBe(false);
+		expect(simpleParam.isTuple()).toBe(false);
+	});
+});
+
+// =============================================================================
+// Fragment Classes
+// =============================================================================
+
+describe("Fragment Classes", () => {
+	it("should create FunctionFragment", () => {
+		const fn = FunctionFragment.from({
+			type: "function",
+			name: "test",
+			inputs: [{ type: "uint256", name: "x" }],
+			outputs: [{ type: "bool", name: "" }],
+			stateMutability: "view",
+		});
+
+		expect(fn.name).toBe("test");
+		expect(fn.constant).toBe(true);
+		expect(fn.payable).toBe(false);
+		expect(fn.selector).toBe("0x29e99f07");
+	});
+
+	it("should create EventFragment", () => {
+		const ev = EventFragment.from({
+			type: "event",
+			name: "TestEvent",
+			inputs: [{ type: "uint256", name: "value", indexed: true }],
+			anonymous: false,
+		});
+
+		expect(ev.name).toBe("TestEvent");
+		expect(ev.anonymous).toBe(false);
+		expect(ev.topicHash.length).toBe(66);
+	});
+
+	it("should create ErrorFragment", () => {
+		const err = ErrorFragment.from({
+			type: "error",
+			name: "TestError",
+			inputs: [{ type: "string", name: "message" }],
+		});
+
+		expect(err.name).toBe("TestError");
+		expect(err.selector.length).toBe(10);
+	});
+
+	it("should create ConstructorFragment", () => {
+		const ctor = ConstructorFragment.from({
+			type: "constructor",
+			inputs: [{ type: "string", name: "name" }],
+			stateMutability: "payable",
+		});
+
+		expect(ctor.payable).toBe(true);
+		expect(ctor.inputs.length).toBe(1);
+	});
+});
+
+// =============================================================================
+// Indexed
+// =============================================================================
+
+describe("Indexed", () => {
+	it("should create Indexed value", () => {
+		const indexed = new Indexed(
+			"0x1234567890123456789012345678901234567890123456789012345678901234",
+		);
+
+		expect(indexed.hash).toBe(
+			"0x1234567890123456789012345678901234567890123456789012345678901234",
+		);
+		expect(indexed._isIndexed).toBe(true);
+	});
+
+	it("should detect Indexed with isIndexed", () => {
+		const indexed = new Indexed("0x1234");
+		const notIndexed = { hash: "0x1234" };
+
+		expect(Indexed.isIndexed(indexed)).toBe(true);
+		expect(Indexed.isIndexed(notIndexed)).toBe(false);
+		expect(Indexed.isIndexed(null)).toBe(false);
+	});
+});
+
+// =============================================================================
+// Edge Cases
+// =============================================================================
+
+describe("Edge Cases", () => {
+	it("should handle empty ABI", () => {
+		const iface = new Interface([]);
+
+		expect(iface.fragments.length).toBe(0);
+		expect(iface.deploy.inputs.length).toBe(0);
+	});
+
+	it("should handle complex tuple types", () => {
+		const complexAbi = [
+			{
+				type: "function" as const,
+				name: "complexFunc",
+				inputs: [
+					{
+						type: "tuple",
+						name: "data",
+						components: [
+							{ type: "uint256", name: "id" },
+							{
+								type: "tuple",
+								name: "nested",
+								components: [
+									{ type: "address", name: "addr" },
+									{ type: "bytes32", name: "hash" },
+								],
+							},
+							{ type: "string[]", name: "tags" },
+						],
+					},
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+		];
+
+		const iface = new Interface(complexAbi);
+		const fn = iface.getFunction("complexFunc");
+
+		expect(fn).toBeInstanceOf(FunctionFragment);
+		expect(fn?.inputs[0].type).toBe("tuple");
+	});
+
+	it("should handle function overloads by argument count", () => {
+		const overloadAbi = [
+			{
+				type: "function" as const,
+				name: "foo",
+				inputs: [{ type: "uint256", name: "x" }],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+			{
+				type: "function" as const,
+				name: "foo",
+				inputs: [
+					{ type: "uint256", name: "x" },
+					{ type: "uint256", name: "y" },
+					{ type: "uint256", name: "z" },
+				],
+				outputs: [],
+				stateMutability: "nonpayable" as const,
+			},
+		];
+
+		const iface = new Interface(overloadAbi);
+
+		// Should find correct overload by arg count (distinct counts)
+		const fn1 = iface.getFunction("foo", [1n]);
+		expect(fn1?.inputs.length).toBe(1);
+
+		const fn3 = iface.getFunction("foo", [1n, 2n, 3n]);
+		expect(fn3?.inputs.length).toBe(3);
+	});
+});
