@@ -650,7 +650,7 @@ pub fn build(b: *std.Build) void {
         state_manager_lib.linkLibrary(c_kzg_lib);
         state_manager_lib.linkLibrary(blst_lib);
         state_manager_lib.addObjectFile(rust_crypto_lib_path);
-        state_manager_lib.addIncludePath(b.path("lib"));
+        state_manager_lib.addIncludePath(b.path("packages/voltaire-zig/lib"));
         state_manager_lib.step.dependOn(cargo_build_step);
         state_manager_lib.linkLibC();
 
@@ -673,7 +673,7 @@ pub fn build(b: *std.Build) void {
         blockchain_lib.linkLibrary(c_kzg_lib);
         blockchain_lib.linkLibrary(blst_lib);
         blockchain_lib.addObjectFile(rust_crypto_lib_path);
-        blockchain_lib.addIncludePath(b.path("lib"));
+        blockchain_lib.addIncludePath(b.path("packages/voltaire-zig/lib"));
         blockchain_lib.step.dependOn(cargo_build_step);
         blockchain_lib.linkLibC();
 
@@ -730,7 +730,7 @@ pub fn build(b: *std.Build) void {
         .optimize = .ReleaseSmall,
     });
     wasm_crypto_mod.addImport("c_kzg", wasm_c_kzg_mod);
-    wasm_crypto_mod.addIncludePath(b.path("lib"));
+    wasm_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
 
     // Create WASM-targeted primitives module
     const wasm_primitives_mod = b.addModule("primitives_wasm", .{
@@ -845,7 +845,7 @@ fn buildBenchmarks(
         bench_exe.linkLibrary(c_kzg_lib);
         bench_exe.linkLibrary(blst_lib);
         bench_exe.addObjectFile(rust_crypto_lib_path);
-        bench_exe.addIncludePath(b.path("lib"));
+        bench_exe.addIncludePath(b.path("packages/voltaire-zig/lib"));
         bench_exe.step.dependOn(cargo_build_step);
         bench_exe.linkLibC();
 
@@ -921,7 +921,7 @@ fn buildZBenchmarks(
         bench_exe.linkLibrary(c_kzg_lib);
         bench_exe.linkLibrary(blst_lib);
         bench_exe.addObjectFile(rust_crypto_lib_path);
-        bench_exe.addIncludePath(b.path("lib"));
+        bench_exe.addIncludePath(b.path("packages/voltaire-zig/lib"));
         bench_exe.step.dependOn(cargo_build_step);
         bench_exe.linkLibC();
 
@@ -988,7 +988,7 @@ fn addTypeScriptNativeBuild(
     ts_native_lib.linkLibrary(blst_lib);
     ts_native_lib.addObjectFile(rust_crypto_lib_path);
     ts_native_lib.linkLibrary(libwally_core_lib);
-    ts_native_lib.addIncludePath(b.path("lib"));
+    ts_native_lib.addIncludePath(b.path("packages/voltaire-zig/lib"));
     ts_native_lib.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
     ts_native_lib.step.dependOn(cargo_build_step);
     ts_native_lib.linkLibC();
@@ -1029,7 +1029,7 @@ fn addTypeScriptWasmBuild(
     ts_wasm_exe.linkLibrary(c_kzg_lib);
     ts_wasm_exe.linkLibrary(blst_lib);
     ts_wasm_exe.addObjectFile(rust_crypto_lib_path);
-    ts_wasm_exe.addIncludePath(b.path("lib"));
+    ts_wasm_exe.addIncludePath(b.path("packages/voltaire-zig/lib"));
     ts_wasm_exe.step.dependOn(cargo_build_step);
     ts_wasm_exe.entry = .disabled; // WASM reactor (no main)
     ts_wasm_exe.rdynamic = true; // Export all symbols
@@ -1067,7 +1067,7 @@ fn addTypeScriptWasmBuild(
     state_manager_wasm_exe.linkLibrary(c_kzg_lib);
     state_manager_wasm_exe.linkLibrary(blst_lib);
     state_manager_wasm_exe.addObjectFile(rust_crypto_lib_path);
-    state_manager_wasm_exe.addIncludePath(b.path("lib"));
+    state_manager_wasm_exe.addIncludePath(b.path("packages/voltaire-zig/lib"));
     state_manager_wasm_exe.step.dependOn(cargo_build_step);
     state_manager_wasm_exe.entry = .disabled; // WASM reactor (no main)
     state_manager_wasm_exe.rdynamic = true;
@@ -1097,7 +1097,7 @@ fn addTypeScriptWasmBuild(
     blockchain_wasm_exe.linkLibrary(c_kzg_lib);
     blockchain_wasm_exe.linkLibrary(blst_lib);
     blockchain_wasm_exe.addObjectFile(rust_crypto_lib_path);
-    blockchain_wasm_exe.addIncludePath(b.path("lib"));
+    blockchain_wasm_exe.addIncludePath(b.path("packages/voltaire-zig/lib"));
     blockchain_wasm_exe.step.dependOn(cargo_build_step);
     blockchain_wasm_exe.entry = .disabled; // WASM reactor (no main)
     blockchain_wasm_exe.rdynamic = true;
@@ -1128,7 +1128,7 @@ fn addTypeScriptWasmBuild(
     ts_wasm_fast_exe.linkLibrary(c_kzg_lib);
     ts_wasm_fast_exe.linkLibrary(blst_lib);
     ts_wasm_fast_exe.addObjectFile(rust_crypto_lib_path);
-    ts_wasm_fast_exe.addIncludePath(b.path("lib"));
+    ts_wasm_fast_exe.addIncludePath(b.path("packages/voltaire-zig/lib"));
     ts_wasm_fast_exe.step.dependOn(cargo_build_step);
     ts_wasm_fast_exe.entry = .disabled; // WASM reactor (no main)
     ts_wasm_fast_exe.rdynamic = true;
@@ -1419,7 +1419,7 @@ fn addCrossPlatformNativeBuilds(
             .optimize = .ReleaseFast,
         });
         target_crypto_mod.addImport("c_kzg", target_c_kzg_mod);
-        target_crypto_mod.addIncludePath(b.path("lib"));
+        target_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
 
         // z-ens-normalize module for this target
         const z_ens_normalize_dep = b.dependency("z_ens_normalize", .{
@@ -1482,7 +1482,7 @@ fn addCrossPlatformNativeBuilds(
             native_lib.linkLibrary(target_blst_lib);
             native_lib.addObjectFile(target_rust_crypto_lib_path);
             native_lib.linkLibrary(libwally_core_lib);
-            native_lib.addIncludePath(b.path("lib"));
+            native_lib.addIncludePath(b.path("packages/voltaire-zig/lib"));
             native_lib.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
             native_lib.step.dependOn(target_cargo_build_step);
             native_lib.linkLibC();
