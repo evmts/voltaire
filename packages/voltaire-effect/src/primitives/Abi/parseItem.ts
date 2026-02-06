@@ -1,0 +1,76 @@
+/**
+ * @fileoverview Parses a single ABI item from JSON string.
+ * Provides Effect-based wrapper for parsing individual ABI items.
+ *
+ * @module Abi/parseItem
+ * @since 0.0.1
+ */
+
+import type { Item } from "@tevm/voltaire/Abi";
+import * as Data from "effect/Data";
+import * as Effect from "effect/Effect";
+
+/**
+ * Error thrown when ABI item parsing fails.
+ */
+export class AbiItemParseError extends Data.TaggedError("AbiItemParseError")<{
+	readonly message: string;
+	readonly code?: number;
+	readonly context?: Record<string, unknown>;
+	readonly cause?: unknown;
+}> {}
+
+/**
+ * Parses a JSON string to a single ABI item.
+ *
+ * @description
+ * Parses a JSON string representing a single Ethereum ABI item (function,
+ * event, error, etc.) into a structured ABI item object.
+ *
+ * @param {string} jsonString - The JSON string to parse.
+ * @returns {Effect.Effect<Item.ItemType, AbiItemParseError>}
+ *   Effect yielding the parsed ABI item.
+ *
+ * @example
+ * ```typescript
+ * import * as Effect from 'effect/Effect'
+ * import { parseItem } from 'voltaire-effect/primitives/Abi'
+ *
+ * const itemJson = '{"type":"function","name":"transfer","inputs":[],"outputs":[]}'
+ * const item = await Effect.runPromise(parseItem(itemJson))
+ * ```
+ *
+ * @since 0.0.1
+ */
+export const parseItem = (
+	jsonString: string,
+): Effect.Effect<Item.ItemType, AbiItemParseError> =>
+	Effect.try({
+		try: () => {
+			const parsed = JSON.parse(jsonString);
+			if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+				throw new Error("ABI item must be an object");
+			}
+			const parsedRecord = parsed as Record<string, unknown>;
+			if (typeof parsedRecord.type !== "string") {
+				throw new Error('ABI item must have a "type" property');
+			}
+			const validTypes = new Set([
+				"function",
+				"event",
+				"error",
+				"constructor",
+				"fallback",
+				"receive",
+			]);
+			if (!validTypes.has(parsedRecord.type)) {
+				throw new Error(`Invalid ABI item type: ${parsedRecord.type}`);
+			}
+			return parsed as Item.ItemType;
+		},
+		catch: (e) =>
+			new AbiItemParseError({
+				message: `Failed to parse ABI item JSON: ${e instanceof Error ? e.message : String(e)}`,
+				cause: e,
+			}),
+	});

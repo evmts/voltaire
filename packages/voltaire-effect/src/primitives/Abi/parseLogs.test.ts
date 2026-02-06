@@ -1,0 +1,37 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { fromArray } from "./AbiSchema.js";
+import { parseLogs } from "./parseLogs.js";
+
+const erc20Abi = S.decodeUnknownSync(fromArray)([
+	{
+		type: "event",
+		name: "Transfer",
+		inputs: [
+			{ name: "from", type: "address", indexed: true },
+			{ name: "to", type: "address", indexed: true },
+			{ name: "value", type: "uint256", indexed: false },
+		],
+	},
+]);
+
+describe("parseLogs", () => {
+	describe("success cases", () => {
+		it.effect("returns empty array for no matching logs", () =>
+			Effect.gen(function* () {
+				const parsed = yield* parseLogs(erc20Abi, [
+					{ data: new Uint8Array(32), topics: [new Uint8Array(32)] },
+				]);
+				expect(parsed).toEqual([]);
+			}),
+		);
+
+		it.effect("returns empty array for empty logs", () =>
+			Effect.gen(function* () {
+				const parsed = yield* parseLogs(erc20Abi, []);
+				expect(parsed).toEqual([]);
+			}),
+		);
+	});
+});

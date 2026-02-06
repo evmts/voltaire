@@ -1,0 +1,149 @@
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
+import { ErrorSchema, EventSchema, FunctionSchema } from "./AbiSchema.js";
+import { getSelector } from "./getSelector.js";
+
+describe("getSelector", () => {
+	describe("function selectors", () => {
+		it.effect("computes transfer selector correctly", () =>
+			Effect.gen(function* () {
+				const fn = S.decodeUnknownSync(FunctionSchema)({
+					type: "function",
+					name: "transfer",
+					stateMutability: "nonpayable",
+					inputs: [
+						{ name: "to", type: "address" },
+						{ name: "amount", type: "uint256" },
+					],
+					outputs: [],
+				});
+				const selector = yield* getSelector(fn);
+				expect(selector).toBe("0xa9059cbb");
+			}),
+		);
+
+		it.effect("computes balanceOf selector correctly", () =>
+			Effect.gen(function* () {
+				const fn = S.decodeUnknownSync(FunctionSchema)({
+					type: "function",
+					name: "balanceOf",
+					stateMutability: "view",
+					inputs: [{ name: "account", type: "address" }],
+					outputs: [],
+				});
+				const selector = yield* getSelector(fn);
+				expect(selector).toBe("0x70a08231");
+			}),
+		);
+
+		it.effect("computes approve selector correctly", () =>
+			Effect.gen(function* () {
+				const fn = S.decodeUnknownSync(FunctionSchema)({
+					type: "function",
+					name: "approve",
+					stateMutability: "nonpayable",
+					inputs: [
+						{ name: "spender", type: "address" },
+						{ name: "amount", type: "uint256" },
+					],
+					outputs: [],
+				});
+				const selector = yield* getSelector(fn);
+				expect(selector).toBe("0x095ea7b3");
+			}),
+		);
+
+		it.effect("function selector is 4 bytes (10 hex chars with 0x)", () =>
+			Effect.gen(function* () {
+				const fn = S.decodeUnknownSync(FunctionSchema)({
+					type: "function",
+					name: "transfer",
+					stateMutability: "nonpayable",
+					inputs: [
+						{ name: "to", type: "address" },
+						{ name: "amount", type: "uint256" },
+					],
+					outputs: [],
+				});
+				const selector = yield* getSelector(fn);
+				expect(selector.length).toBe(10);
+				expect(selector.startsWith("0x")).toBe(true);
+			}),
+		);
+	});
+
+	describe("event selectors", () => {
+		it.effect("computes Transfer event selector (32 bytes)", () =>
+			Effect.gen(function* () {
+				const evt = S.decodeUnknownSync(EventSchema)({
+					type: "event",
+					name: "Transfer",
+					inputs: [
+						{ name: "from", type: "address", indexed: true },
+						{ name: "to", type: "address", indexed: true },
+						{ name: "value", type: "uint256", indexed: false },
+					],
+				});
+				const selector = yield* getSelector(evt);
+				expect(selector.startsWith("0x")).toBe(true);
+				expect(selector.length).toBe(66);
+				expect(selector).toBe(
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+				);
+			}),
+		);
+
+		it.effect("computes Approval event selector", () =>
+			Effect.gen(function* () {
+				const evt = S.decodeUnknownSync(EventSchema)({
+					type: "event",
+					name: "Approval",
+					inputs: [
+						{ name: "owner", type: "address", indexed: true },
+						{ name: "spender", type: "address", indexed: true },
+						{ name: "value", type: "uint256", indexed: false },
+					],
+				});
+				const selector = yield* getSelector(evt);
+				expect(selector).toBe(
+					"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+				);
+			}),
+		);
+	});
+
+	describe("error selectors", () => {
+		it.effect("computes error selector (4 bytes)", () =>
+			Effect.gen(function* () {
+				const err = S.decodeUnknownSync(ErrorSchema)({
+					type: "error",
+					name: "InsufficientBalance",
+					inputs: [
+						{ name: "available", type: "uint256" },
+						{ name: "required", type: "uint256" },
+					],
+				});
+				const selector = yield* getSelector(err);
+				expect(selector.startsWith("0x")).toBe(true);
+				expect(selector.length).toBe(10);
+			}),
+		);
+	});
+
+	describe("is infallible", () => {
+		it.effect("never fails", () =>
+			Effect.gen(function* () {
+				const fn = S.decodeUnknownSync(FunctionSchema)({
+					type: "function",
+					name: "test",
+					stateMutability: "nonpayable",
+					inputs: [],
+					outputs: [],
+				});
+				const selector = yield* getSelector(fn);
+				expect(selector.startsWith("0x")).toBe(true);
+			}),
+		);
+	});
+});
