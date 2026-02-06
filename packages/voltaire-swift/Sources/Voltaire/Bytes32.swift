@@ -1,0 +1,1 @@
+../../../voltaire-ts/src/primitives/Bytes32/Bytes32.swift
