@@ -1,0 +1,27 @@
+import { InvalidLengthError } from "../errors/index.js";
+/**
+ * Create PrivateKey from raw bytes
+ *
+ * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
+ * @returns {import('./PrivateKeyType.js').PrivateKeyType} Private key
+ * @throws {InvalidLengthError} If bytes is not 32 bytes
+ *
+ * @example
+ * ```javascript
+ * import * as PrivateKey from './primitives/PrivateKey/index.js';
+ * const bytes = new Uint8Array(32);
+ * const privateKey = PrivateKey.fromBytes(bytes);
+ * ```
+ */
+export function fromBytes(bytes) {
+    if (bytes.length !== 32) {
+        throw new InvalidLengthError(`Private key must be 32 bytes, got ${bytes.length}`, {
+            code: -32602,
+            value: bytes,
+            expected: "32 bytes",
+            context: { actualLength: bytes.length },
+            docsPath: "/primitives/private-key",
+        });
+    }
+    return /** @type {import('./PrivateKeyType.js').PrivateKeyType} */ (new Uint8Array(bytes));
+}

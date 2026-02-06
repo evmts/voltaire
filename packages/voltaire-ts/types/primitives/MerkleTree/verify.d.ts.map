@@ -1,0 +1,1 @@
+{"version":3,"file":"verify.d.ts","sourceRoot":"","sources":["../../../src/primitives/MerkleTree/verify.js"],"names":[],"mappings":"AAEA;;;;;GAKG;AACH,sCAHG;IAA+C,SAAS,EAAhD,CAAC,IAAI,EAAE,UAAU,KAAK,UAAU;CACxC,GAAU,CAAC,KAAK,EAAE,OAAO,qBAAqB,EAAE,eAAe,EAAE,YAAY,EAAE,OAAO,qBAAqB,EAAE,QAAQ,KAAK,OAAO,CAgDnI"}

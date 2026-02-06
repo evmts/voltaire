@@ -1,0 +1,1 @@
+{"version":3,"file":"computeKzgProof.d.ts","sourceRoot":"","sources":["../../../src/crypto/KZG/computeKzgProof.js"],"names":[],"mappings":"AAKA;;;;;;;;;;;;;;;GAeG;AACH,0EAZG;IAA4E,eAAe,EAAnF,CAAC,IAAI,EAAE,UAAU,EAAE,CAAC,EAAE,UAAU,KAAK,CAAC,UAAU,EAAE,UAAU,CAAC;CACrE,GAAU,CAAC,IAAI,EAAE,UAAU,EAAE,CAAC,EAAE,UAAU,KAAK;IAAC,KAAK,EAAE,UAAU,CAAC;IAAC,CAAC,EAAE,UAAU,CAAA;CAAC,CAsDnF"}

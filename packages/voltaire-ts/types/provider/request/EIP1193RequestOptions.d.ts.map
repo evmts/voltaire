@@ -1,0 +1,1 @@
+{"version":3,"file":"EIP1193RequestOptions.d.ts","sourceRoot":"","sources":["../../../src/provider/request/EIP1193RequestOptions.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH;;;;;;;;;;GAUG;AACH,MAAM,WAAW,qBAAqB;IACrC,yCAAyC;IACzC,UAAU,CAAC,EAAE,MAAM,CAAC;IACpB,oDAAoD;IACpD,UAAU,CAAC,EAAE,MAAM,CAAC;IACpB,uCAAuC;IACvC,OAAO,CAAC,EAAE,MAAM,CAAC;CACjB"}

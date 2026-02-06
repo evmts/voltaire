@@ -1,0 +1,1 @@
+{"version":3,"file":"BlobTxFee.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/BlobTxFee.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,YAAY,CAAC;AAExC;;GAEG;AACH,MAAM,MAAM,SAAS,GAAG,KAAK,GAAG;IAC/B,6CAA6C;IAC7C,YAAY,EAAE,MAAM,CAAC;IACrB,2BAA2B;IAC3B,YAAY,EAAE,MAAM,CAAC;CACrB,CAAC"}

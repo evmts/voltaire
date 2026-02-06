@@ -1,0 +1,1 @@
+{"version":3,"file":"BlockNumberType.d.ts","sourceRoot":"","sources":["../../../src/primitives/BlockNumber/BlockNumberType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;GAEG;AACH,MAAM,MAAM,eAAe,GAAG,MAAM,GAAG;IACtC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,aAAa,CAAC;CAChC,CAAC"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"fetchBlockReceipts.d.ts","sourceRoot":"","sources":["../../src/block/fetchBlockReceipts.js"],"names":[],"mappings":"AAWA;;;;GAIG;AACH,mDAHW,GAAC,GACC,CAAC,KAAK,EAAE,GAAC,EAAE,YAAY,CAAC,EAAE,YAAY,EAAE,MAAM,CAAC,EAAE,WAAW,KAAK,OAAO,CAAC,GAAG,EAAE,CAAC,CAyG3F;2BAtHY,OAAO,sBAAsB,EAAE,YAAY"}

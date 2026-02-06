@@ -1,0 +1,20 @@
+import type { BrandedAccessList } from "./AccessListType.js";
+/**
+ * Check if access list is empty
+ *
+ * @param list - Access list to check
+ * @returns true if empty
+ *
+ * @example
+ * ```typescript
+ * const list = AccessList([]);
+ * if (AccessList.isEmpty(list)) { // Static call
+ *   console.log('No access list entries');
+ * }
+ * if (list.isEmpty()) { // Instance call
+ *   console.log('No access list entries');
+ * }
+ * ```
+ */
+export declare function isEmpty(list: BrandedAccessList): boolean;
+//# sourceMappingURL=isEmpty.d.ts.map

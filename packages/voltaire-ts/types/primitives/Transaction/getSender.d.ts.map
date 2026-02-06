@@ -1,0 +1,1 @@
+{"version":3,"file":"getSender.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/getSender.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,IAAI,cAAc,EAAE,MAAM,2BAA2B,CAAC;AAO/E,OAAO,EAAE,KAAK,GAAG,EAAQ,MAAM,YAAY,CAAC;AAE5C;;;;;;;;;;;;GAYG;AACH,wBAAgB,SAAS,CAAC,IAAI,EAAE,GAAG,GAAG,cAAc,CA6BnD"}

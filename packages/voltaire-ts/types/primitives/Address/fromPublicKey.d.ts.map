@@ -1,0 +1,1 @@
+{"version":3,"file":"fromPublicKey.d.ts","sourceRoot":"","sources":["../../../src/primitives/Address/fromPublicKey.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;;;;;;;GAoBG;AACH,6CAjBG;IAA+C,SAAS,EAAhD,CAAC,IAAI,EAAE,UAAU,KAAK,UAAU;CACxC,GAAU,CAAC,YAAY,EAAE,MAAM,GAAG,UAAU,EAAE,CAAC,CAAC,EAAE,MAAM,KAAK,OAAO,kBAAkB,EAAE,WAAW,CAsErG"}

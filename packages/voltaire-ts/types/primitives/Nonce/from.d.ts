@@ -1,0 +1,15 @@
+/**
+ * Create Nonce from number, bigint, or hex string
+ *
+ * @param {bigint | number | string} value - Value to convert
+ * @returns {import('./NonceType.js').NonceType} Nonce
+ *
+ * @example
+ * ```typescript
+ * const nonce1 = Nonce.from(0);
+ * const nonce2 = Nonce.from(42n);
+ * const nonce3 = Nonce.from("0x2a");
+ * ```
+ */
+export function from(value: bigint | number | string): import("./NonceType.js").NonceType;
+//# sourceMappingURL=from.d.ts.map

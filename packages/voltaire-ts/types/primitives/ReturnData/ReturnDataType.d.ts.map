@@ -1,0 +1,1 @@
+{"version":3,"file":"ReturnDataType.d.ts","sourceRoot":"","sources":["../../../src/primitives/ReturnData/ReturnDataType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;GAKG;AACH,MAAM,MAAM,cAAc,GAAG,UAAU,GAAG;IACzC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,YAAY,CAAC;CAC/B,CAAC"}

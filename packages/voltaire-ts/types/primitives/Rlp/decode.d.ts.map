@@ -1,0 +1,1 @@
+{"version":3,"file":"decode.d.ts","sourceRoot":"","sources":["../../../src/primitives/Rlp/decode.js"],"names":[],"mappings":"AA8CA;;;;;;;;;;;;;;;;;;;;;;;;;;GA0BG;AAEH,8BAvBW,UAAU,WACV,OAAO,GACL,OAAO,CA+EnB;sBA9HY;IACR,IAAI,EAAE,OAAO,cAAc,EAAE,UAAU,CAAC;IACxC,SAAS,EAAE,UAAU,CAAC;CACvB"}

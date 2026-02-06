@@ -1,0 +1,20 @@
+/**
+ * @typedef {import('./AccountStateType.js').AccountStateType} AccountStateType
+ */
+/**
+ * Checks if an AccountState represents a contract account.
+ *
+ * A contract account is identified by having a non-empty code hash, meaning
+ * it has associated bytecode that can be executed.
+ *
+ * @param {AccountStateType} state - The AccountState to check
+ * @returns {boolean} - True if the account is a contract
+ *
+ * @example
+ * ```typescript
+ * const isContract = AccountState.isContract(account);
+ * ```
+ */
+export function isContract(state: AccountStateType): boolean;
+export type AccountStateType = import("./AccountStateType.js").AccountStateType;
+//# sourceMappingURL=isContract.d.ts.map

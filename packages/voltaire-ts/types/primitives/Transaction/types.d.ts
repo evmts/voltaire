@@ -1,0 +1,143 @@
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/index.js";
+/**
+ * Transaction type discriminator
+ */
+export declare enum Type {
+    Legacy = 0,
+    EIP2930 = 1,
+    EIP1559 = 2,
+    EIP4844 = 3,
+    EIP7702 = 4
+}
+/**
+ * Access list item for EIP-2930 and later transactions
+ */
+export type AccessListItem = {
+    address: BrandedAddress;
+    storageKeys: readonly HashType[];
+};
+/**
+ * Access list (array of items)
+ */
+export type AccessList = readonly AccessListItem[];
+/**
+ * Authorization for EIP-7702 transactions
+ */
+export type Authorization = {
+    chainId: bigint;
+    address: BrandedAddress;
+    nonce: bigint;
+    yParity: number;
+    r: Uint8Array;
+    s: Uint8Array;
+};
+/**
+ * Authorization list (array of authorizations)
+ */
+export type AuthorizationList = readonly Authorization[];
+/**
+ * Versioned hash for EIP-4844 blob transactions
+ */
+export type VersionedHash = HashType;
+/**
+ * Signature components (ECDSA secp256k1)
+ */
+export type Signature = {
+    r: Uint8Array;
+    s: Uint8Array;
+};
+/**
+ * Legacy transaction (Type 0)
+ */
+export type Legacy = {
+    type: Type.Legacy;
+    nonce: bigint;
+    gasPrice: bigint;
+    gasLimit: bigint;
+    to: BrandedAddress | null;
+    value: bigint;
+    data: Uint8Array;
+    v: bigint;
+    r: Uint8Array;
+    s: Uint8Array;
+};
+/**
+ * EIP-2930 transaction (Type 1)
+ */
+export type EIP2930 = {
+    type: Type.EIP2930;
+    chainId: bigint;
+    nonce: bigint;
+    gasPrice: bigint;
+    gasLimit: bigint;
+    to: BrandedAddress | null;
+    value: bigint;
+    data: Uint8Array;
+    accessList: AccessList;
+    yParity: number;
+    r: Uint8Array;
+    s: Uint8Array;
+};
+/**
+ * EIP-1559 transaction (Type 2)
+ */
+export type EIP1559 = {
+    type: Type.EIP1559;
+    chainId: bigint;
+    nonce: bigint;
+    maxPriorityFeePerGas: bigint;
+    maxFeePerGas: bigint;
+    gasLimit: bigint;
+    to: BrandedAddress | null;
+    value: bigint;
+    data: Uint8Array;
+    accessList: AccessList;
+    yParity: number;
+    r: Uint8Array;
+    s: Uint8Array;
+};
+/**
+ * EIP-4844 transaction (Type 3)
+ */
+export type EIP4844 = {
+    type: Type.EIP4844;
+    chainId: bigint;
+    nonce: bigint;
+    maxPriorityFeePerGas: bigint;
+    maxFeePerGas: bigint;
+    gasLimit: bigint;
+    to: BrandedAddress;
+    value: bigint;
+    data: Uint8Array;
+    accessList: AccessList;
+    maxFeePerBlobGas: bigint;
+    blobVersionedHashes: readonly VersionedHash[];
+    yParity: number;
+    r: Uint8Array;
+    s: Uint8Array;
+};
+/**
+ * EIP-7702 transaction (Type 4)
+ */
+export type EIP7702 = {
+    type: Type.EIP7702;
+    chainId: bigint;
+    nonce: bigint;
+    maxPriorityFeePerGas: bigint;
+    maxFeePerGas: bigint;
+    gasLimit: bigint;
+    to: BrandedAddress | null;
+    value: bigint;
+    data: Uint8Array;
+    accessList: AccessList;
+    authorizationList: AuthorizationList;
+    yParity: number;
+    r: Uint8Array;
+    s: Uint8Array;
+};
+/**
+ * Any transaction type
+ */
+export type Any = Legacy | EIP2930 | EIP1559 | EIP4844 | EIP7702;
+//# sourceMappingURL=types.d.ts.map

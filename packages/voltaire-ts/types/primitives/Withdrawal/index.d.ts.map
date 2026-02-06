@@ -1,0 +1,1 @@
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/primitives/Withdrawal/index.ts"],"names":[],"mappings":"AAAA,YAAY,EAAE,cAAc,EAAE,MAAM,qBAAqB,CAAC;AAE1D,OAAO,EAAE,MAAM,EAAE,MAAM,aAAa,CAAC;AACrC,OAAO,EAAE,IAAI,EAAE,MAAM,WAAW,CAAC;AACjC,OAAO,EAAE,OAAO,EAAE,MAAM,cAAc,CAAC;AAEvC,OAAO,EAAE,IAAI,EAAE,MAAM,EAAE,OAAO,EAAE,CAAC;AAEjC,eAAO,MAAM,UAAU;;;;CAItB,CAAC"}

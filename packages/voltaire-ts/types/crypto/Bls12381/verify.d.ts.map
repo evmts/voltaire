@@ -1,0 +1,1 @@
+{"version":3,"file":"verify.d.ts","sourceRoot":"","sources":["../../../src/crypto/Bls12381/verify.js"],"names":[],"mappings":"AAiBA;;;;;;;;;;;;;;;;;;;;;;GAsBG;AACH,kCAlBW,UAAU,WACV,UAAU,aACV,UAAU,GACR,OAAO,CAwCnB;AAED;;;;;;;;;GASG;AACH,4CALW,OAAO,kBAAkB,EAAE,WAAW,gBACtC,OAAO,kBAAkB,EAAE,WAAW,kBACtC,OAAO,kBAAkB,EAAE,WAAW,GACpC,OAAO,CAgCnB"}

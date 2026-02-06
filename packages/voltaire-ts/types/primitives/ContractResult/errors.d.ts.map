@@ -1,0 +1,1 @@
+{"version":3,"file":"errors.d.ts","sourceRoot":"","sources":["../../../src/primitives/ContractResult/errors.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,cAAc,EAAE,MAAM,6BAA6B,CAAC;AAC7D,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,qCAAqC,CAAC;AAE5E;;GAEG;AACH,qBAAa,mBAAoB,SAAQ,cAAc;IACtD,SAAgB,YAAY,EAAE,gBAAgB,CAAC;gBAEnC,OAAO,EAAE,MAAM,EAAE,YAAY,EAAE,gBAAgB;CAK3D"}

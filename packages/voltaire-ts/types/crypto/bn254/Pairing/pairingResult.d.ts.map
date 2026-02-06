@@ -1,0 +1,1 @@
+{"version":3,"file":"pairingResult.d.ts","sourceRoot":"","sources":["../../../../src/crypto/bn254/Pairing/pairingResult.js"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH;;;;;;;;;;;;;;;;;;GAkBG;AACH,sCAdW;IAAC,KAAK,EAAE,MAAM,CAAA;CAAC,KACf;IAAC,KAAK,EAAE,MAAM,CAAA;CAAC,GACb,OAAO,CAcnB;AAED;;;;;;;;;;;;GAYG;AACH,oCARa;IAAC,KAAK,EAAE,MAAM,CAAA;CAAC,CAU3B"}

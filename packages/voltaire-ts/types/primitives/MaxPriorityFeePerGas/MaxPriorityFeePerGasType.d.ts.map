@@ -1,0 +1,1 @@
+{"version":3,"file":"MaxPriorityFeePerGasType.d.ts","sourceRoot":"","sources":["../../../src/primitives/MaxPriorityFeePerGas/MaxPriorityFeePerGasType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;GAMG;AACH,MAAM,MAAM,wBAAwB,GAAG,MAAM,GAAG;IAC/C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,sBAAsB,CAAC;CACzC,CAAC"}

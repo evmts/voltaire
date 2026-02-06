@@ -1,0 +1,1 @@
+{"version":3,"file":"BN254.d.ts","sourceRoot":"","sources":["../../../src/crypto/bn254/BN254.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;oBAoCoB,eAAe;qBACd,gBAAgB;oBACjB,eAAe;oBACf,eAAe;oBACf,eAAe;yBACV,oBAAoB;4BACjB,kBAAkB;8BARhB,oBAAoB;4BAStB,kBAAkB;8BARhB,oBAAoB"}

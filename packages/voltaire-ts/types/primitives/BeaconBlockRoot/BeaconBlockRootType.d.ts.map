@@ -1,0 +1,1 @@
+{"version":3,"file":"BeaconBlockRootType.d.ts","sourceRoot":"","sources":["../../../src/primitives/BeaconBlockRoot/BeaconBlockRootType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;;;;GASG;AACH,MAAM,MAAM,mBAAmB,GAAG,UAAU,GAAG;IAC9C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,iBAAiB,CAAC;IACpC,MAAM,EAAE,EAAE,CAAC;CACX,CAAC;AAEF,eAAO,MAAM,IAAI,KAAK,CAAC"}

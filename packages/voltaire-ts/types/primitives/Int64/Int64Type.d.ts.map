@@ -1,0 +1,1 @@
+{"version":3,"file":"Int64Type.d.ts","sourceRoot":"","sources":["../../../src/primitives/Int64/Int64Type.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;GAgBG;AAEH,OAAO,CAAC,MAAM,KAAK,EAAE,OAAO,MAAM,CAAC;AAEnC;;;GAGG;AACH,MAAM,MAAM,YAAY,GAAG,MAAM,GAAG;IACnC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,OAAO,CAAC;CAC1B,CAAC;AAEF,eAAO,MAAM,SAAS,wBAAwB,CAAC;AAC/C,eAAO,MAAM,SAAS,uBAAuB,CAAC"}

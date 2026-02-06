@@ -1,0 +1,43 @@
+export type { Bytes32Like, Bytes32Type } from "./Bytes32Type.js";
+import type { Bytes32Like, Bytes32Type } from "./Bytes32Type.js";
+export { SIZE } from "./Bytes32Type.js";
+export { ZERO } from "./constants.js";
+import { clone } from "./clone.js";
+import { compare } from "./compare.js";
+import { equals } from "./equals.js";
+import { from } from "./from.js";
+import { fromBigint } from "./fromBigint.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+import { fromNumber } from "./fromNumber.js";
+import { isZero } from "./isZero.js";
+import { size } from "./size.js";
+import { toAddress } from "./toAddress.js";
+import { toBigint } from "./toBigint.js";
+import { toHash } from "./toHash.js";
+import { toHex } from "./toHex.js";
+import { toUint8Array } from "./toUint8Array.js";
+import { zero } from "./zero.js";
+export { from, fromBytes, fromHex, fromNumber, fromBigint, toHex, toUint8Array, toBigint, toHash, toAddress, equals, compare, clone, size, zero, isZero, };
+export declare function Bytes32(value: Bytes32Like): Bytes32Type;
+export declare namespace Bytes32 {
+    var from: typeof import("./from.js").from;
+    var fromBytes: typeof import("./fromBytes.js").fromBytes;
+    var fromHex: typeof import("./fromHex.js").fromHex;
+    var fromNumber: typeof import("./fromNumber.js").fromNumber;
+    var fromBigint: typeof import("./fromBigint.js").fromBigint;
+    var zero: typeof import("./zero.js").zero;
+    var toHex: typeof import("./toHex.js").toHex;
+    var toUint8Array: typeof import("./toUint8Array.js").toUint8Array;
+    var toBigint: typeof import("./toBigint.js").toBigint;
+    var toHash: typeof import("./toHash.js").toHash;
+    var toAddress: typeof import("./toAddress.js").toAddress;
+    var equals: typeof import("./equals.js").equals;
+    var compare: typeof import("./compare.js").compare;
+    var clone: typeof import("./clone.js").clone;
+    var size: typeof import("./size.js").size;
+    var isZero: typeof import("./isZero.js").isZero;
+    var SIZE: number;
+    var ZERO: Bytes32Type;
+}
+//# sourceMappingURL=index.d.ts.map

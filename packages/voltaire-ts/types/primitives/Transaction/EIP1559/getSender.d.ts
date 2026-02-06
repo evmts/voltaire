@@ -1,0 +1,20 @@
+/**
+ * Get sender address from transaction signature (EIP-1559).
+ *
+ * Recovers the sender address from transaction signature components (r, s, yParity).
+ * Returns a BrandedAddress (20 bytes). Assumes transaction uses branded types
+ * with validated signature components.
+ *
+ * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
+ * @since 0.0.0
+ * @param {import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559} tx - Signed transaction with BrandedAddress fields
+ * @returns {import('../../Address/index.js').AddressType} Sender address (20 bytes, branded)
+ * @throws {Error} If signature recovery fails
+ * @example
+ * ```javascript
+ * import { getSender } from './primitives/Transaction/EIP1559/getSender.js';
+ * const sender = getSender(tx); // Returns BrandedAddress
+ * ```
+ */
+export function getSender(tx: import("./TransactionEIP1559Type.js").BrandedTransactionEIP1559): import("../../Address/index.js").AddressType;
+//# sourceMappingURL=getSender.d.ts.map

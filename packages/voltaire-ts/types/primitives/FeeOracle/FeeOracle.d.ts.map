@@ -1,0 +1,1 @@
+{"version":3,"file":"FeeOracle.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeOracle/FeeOracle.js"],"names":[],"mappings":"AAsBA;;;;;;;;;;;;;;;;;;;;GAoBG;AACH,mCAlBW,gBAAgB,GACd,iBAAiB,CAuK7B;+BAxLY,OAAO,oBAAoB,EAAE,gBAAgB;gCAC7C,OAAO,oBAAoB,EAAE,SAAS;0BACtC,OAAO,oBAAoB,EAAE,WAAW;iCACxC,OAAO,oBAAoB,EAAE,kBAAkB"}

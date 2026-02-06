@@ -1,0 +1,1 @@
+{"version":3,"file":"Secp256k1PublicKeyType.d.ts","sourceRoot":"","sources":["../../../src/crypto/Secp256k1/Secp256k1PublicKeyType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;;GAOG;AACH,MAAM,MAAM,sBAAsB,GAAG,UAAU,GAAG;IACjD,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,oBAAoB,CAAC;IACvC,QAAQ,CAAC,MAAM,EAAE,EAAE,CAAC;CACpB,CAAC"}

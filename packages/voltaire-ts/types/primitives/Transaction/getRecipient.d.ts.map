@@ -1,0 +1,1 @@
+{"version":3,"file":"getRecipient.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/getRecipient.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,IAAI,cAAc,EAAE,MAAM,2BAA2B,CAAC;AAC/E,OAAO,KAAK,EAAE,GAAG,EAAE,MAAM,YAAY,CAAC;AAEtC;;;;;;;;;;;;;;;GAeG;AACH,wBAAgB,YAAY,CAAC,IAAI,EAAE,GAAG,GAAG,cAAc,GAAG,IAAI,CAE7D"}

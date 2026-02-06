@@ -1,0 +1,1 @@
+{"version":3,"file":"wei-toU256.d.ts","sourceRoot":"","sources":["../../../src/primitives/Denomination/wei-toU256.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,wBAAwB,CAAC;AAC1D,OAAO,KAAK,EAAE,OAAO,IAAI,UAAU,EAAE,MAAM,cAAc,CAAC;AAE1D;;;;;;;;;;;;;;GAcG;AACH,wBAAgB,MAAM,CAAC,GAAG,EAAE,UAAU,GAAG,WAAW,CAEnD"}

@@ -1,0 +1,60 @@
+import type { AddressType } from "../Address/AddressType.js";
+import type { HashType } from "../Hash/HashType.js";
+import type { BrandedAccessList, Item } from "./AccessListType.js";
+export type { BrandedAccessList, Item } from "./AccessListType.js";
+import { ADDRESS_COST, COLD_ACCOUNT_ACCESS_COST, COLD_STORAGE_ACCESS_COST, STORAGE_KEY_COST, WARM_STORAGE_ACCESS_COST } from "./constants.js";
+export { ADDRESS_COST, COLD_ACCOUNT_ACCESS_COST, COLD_STORAGE_ACCESS_COST, STORAGE_KEY_COST, WARM_STORAGE_ACCESS_COST, };
+declare const from: (value: readonly Item[] | Uint8Array) => BrandedAccessList;
+declare const fromBytes: (bytes: Uint8Array) => BrandedAccessList;
+declare const is: (value: unknown) => value is BrandedAccessList;
+declare const isItem: (value: unknown) => value is Item;
+declare const create: () => BrandedAccessList;
+declare const merge: (...accessLists: BrandedAccessList[]) => BrandedAccessList;
+declare const gasCost: (list: BrandedAccessList) => bigint;
+declare const gasSavings: (list: BrandedAccessList) => bigint;
+declare const hasSavings: (list: BrandedAccessList) => boolean;
+declare const includesAddress: (list: BrandedAccessList, address: AddressType) => boolean;
+declare const includesStorageKey: (list: BrandedAccessList, address: AddressType, storageKey: HashType) => boolean;
+declare const keysFor: (list: BrandedAccessList, address: AddressType) => readonly HashType[] | undefined;
+declare const deduplicate: (list: BrandedAccessList) => BrandedAccessList;
+declare const withAddress: (list: BrandedAccessList, address: AddressType) => BrandedAccessList;
+declare const withStorageKey: (list: BrandedAccessList, address: AddressType, storageKey: HashType) => BrandedAccessList;
+declare const assertValid: (list: BrandedAccessList) => void;
+declare const toBytes: (list: BrandedAccessList) => Uint8Array;
+declare const addressCount: (list: BrandedAccessList) => number;
+declare const storageKeyCount: (list: BrandedAccessList) => number;
+declare const isEmpty: (list: BrandedAccessList) => boolean;
+export { from, fromBytes, is, isItem, create, merge, gasCost, gasSavings, hasSavings, includesAddress, includesStorageKey, keysFor, deduplicate, withAddress, withStorageKey, assertValid, toBytes, addressCount, storageKeyCount, isEmpty, };
+/**
+ * Namespace for AccessList operations
+ */
+declare const AccessList: {
+    from: (value: readonly Item[] | Uint8Array) => BrandedAccessList;
+    fromBytes: (bytes: Uint8Array) => BrandedAccessList;
+    is: (value: unknown) => value is BrandedAccessList;
+    isItem: (value: unknown) => value is Item;
+    create: () => BrandedAccessList;
+    merge: (...accessLists: BrandedAccessList[]) => BrandedAccessList;
+    gasCost: (list: BrandedAccessList) => bigint;
+    gasSavings: (list: BrandedAccessList) => bigint;
+    hasSavings: (list: BrandedAccessList) => boolean;
+    includesAddress: (list: BrandedAccessList, address: AddressType) => boolean;
+    includesStorageKey: (list: BrandedAccessList, address: AddressType, storageKey: HashType) => boolean;
+    keysFor: (list: BrandedAccessList, address: AddressType) => readonly HashType[] | undefined;
+    deduplicate: (list: BrandedAccessList) => BrandedAccessList;
+    withAddress: (list: BrandedAccessList, address: AddressType) => BrandedAccessList;
+    withStorageKey: (list: BrandedAccessList, address: AddressType, storageKey: HashType) => BrandedAccessList;
+    assertValid: (list: BrandedAccessList) => void;
+    toBytes: (list: BrandedAccessList) => Uint8Array;
+    addressCount: (list: BrandedAccessList) => number;
+    storageKeyCount: (list: BrandedAccessList) => number;
+    isEmpty: (list: BrandedAccessList) => boolean;
+    ADDRESS_COST: bigint;
+    STORAGE_KEY_COST: bigint;
+    COLD_ACCOUNT_ACCESS_COST: bigint;
+    COLD_STORAGE_ACCESS_COST: bigint;
+    WARM_STORAGE_ACCESS_COST: bigint;
+};
+export { AccessList };
+export type { AccessList as AccessListNamespace };
+//# sourceMappingURL=index.d.ts.map

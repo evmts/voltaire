@@ -1,0 +1,1 @@
+{"version":3,"file":"Eip1559State.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/Eip1559State.ts"],"names":[],"mappings":"AAAA;;GAEG;AACH,MAAM,MAAM,YAAY,GAAG;IAC1B,wBAAwB;IACxB,OAAO,EAAE,MAAM,CAAC;IAChB,yBAAyB;IACzB,QAAQ,EAAE,MAAM,CAAC;IACjB,6BAA6B;IAC7B,OAAO,EAAE,MAAM,CAAC;CAChB,CAAC"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"getMessageHash.d.ts","sourceRoot":"","sources":["../../../src/primitives/Siwe/getMessageHash.js"],"names":[],"mappings":"AAEA;;;;;GAKG;AACH,8CAHG;IAA+C,SAAS,EAAhD,CAAC,IAAI,EAAE,UAAU,KAAK,UAAU;CACxC,GAAU,CAAC,OAAO,EAAE,OAAO,sBAAsB,EAAE,eAAe,KAAK,UAAU,CAoDnF"}

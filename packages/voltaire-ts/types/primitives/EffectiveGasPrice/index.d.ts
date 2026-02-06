@@ -1,0 +1,32 @@
+export type { EffectiveGasPriceType } from "./EffectiveGasPriceType.js";
+import { calculate } from "./calculate.js";
+import { compare as _compare } from "./compare.js";
+import { equals as _equals } from "./equals.js";
+import { from } from "./from.js";
+import { fromGwei } from "./fromGwei.js";
+import { fromWei } from "./fromWei.js";
+import { toBigInt as _toBigInt } from "./toBigInt.js";
+import { toGwei as _toGwei } from "./toGwei.js";
+import { toNumber as _toNumber } from "./toNumber.js";
+import { toWei as _toWei } from "./toWei.js";
+export { from, fromGwei, fromWei, calculate };
+export declare function toGwei(effectivePrice: bigint | number | string): bigint;
+export declare function toWei(effectivePrice: bigint | number | string): bigint;
+export declare function toNumber(effectivePrice: bigint | number | string): number;
+export declare function toBigInt(effectivePrice: bigint | number | string): bigint;
+export declare function equals(effectivePrice1: bigint | number | string, effectivePrice2: bigint | number | string): boolean;
+export declare function compare(effectivePrice1: bigint | number | string, effectivePrice2: bigint | number | string): number;
+export { _toGwei, _toWei, _toNumber, _toBigInt, _equals, _compare };
+export declare const EffectiveGasPrice: {
+    from: typeof from;
+    fromGwei: typeof fromGwei;
+    fromWei: typeof fromWei;
+    calculate: typeof calculate;
+    toGwei: typeof toGwei;
+    toWei: typeof toWei;
+    toNumber: typeof toNumber;
+    toBigInt: typeof toBigInt;
+    equals: typeof equals;
+    compare: typeof compare;
+};
+//# sourceMappingURL=index.d.ts.map

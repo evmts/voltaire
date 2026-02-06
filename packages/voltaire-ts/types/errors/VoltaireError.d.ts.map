@@ -1,0 +1,1 @@
+{"version":3,"file":"VoltaireError.d.ts","sourceRoot":"","sources":["../../src/errors/VoltaireError.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;GAiBG;AACH,qBAAa,aAAc,SAAQ,KAAK;aAItB,KAAK,EAAE,OAAO;IAH/B,QAAQ,CAAC,IAAI,EAAE,MAAM,CAAC;gBAGL,KAAK,EAAE,OAAO,EAC9B,OAAO,CAAC,EAAE,MAAM,EAChB,KAAK,CAAC,EAAE,KAAK;CAOd"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"AddressType.d.ts","sourceRoot":"","sources":["../../../src/primitives/Address/AddressType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C,MAAM,MAAM,WAAW,GAAG,UAAU,GAAG;IACtC,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,SAAS,CAAC;CAC5B,CAAC"}

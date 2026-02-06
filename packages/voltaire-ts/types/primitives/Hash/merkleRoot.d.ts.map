@@ -1,0 +1,1 @@
+{"version":3,"file":"merkleRoot.d.ts","sourceRoot":"","sources":["../../../src/primitives/Hash/merkleRoot.js"],"names":[],"mappings":"AAGA;;;;;GAKG;AACH,0CAHG;IAA+C,SAAS,EAAhD,CAAC,IAAI,EAAE,UAAU,KAAK,UAAU;CACxC,GAAU,CAAC,MAAM,EAAE,OAAO,eAAe,EAAE,QAAQ,EAAE,KAAK,OAAO,eAAe,EAAE,QAAQ,CAoE5F"}

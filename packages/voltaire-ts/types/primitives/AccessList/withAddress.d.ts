@@ -1,0 +1,20 @@
+import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
+import type { BrandedAccessList } from "./AccessListType.js";
+/**
+ * Add address to access list
+ *
+ * Creates new entry if address doesn't exist, otherwise returns original list.
+ *
+ * @param list - Access list to add to
+ * @param address - Address to add
+ * @returns New access list with address added
+ *
+ * @example
+ * ```typescript
+ * const list = AccessList([]);
+ * const newList = AccessList.withAddress(list, address); // Static call
+ * const newList2 = list.withAddress(address); // Instance call
+ * ```
+ */
+export declare function withAddress(list: BrandedAccessList, address: BrandedAddress): BrandedAccessList;
+//# sourceMappingURL=withAddress.d.ts.map

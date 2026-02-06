@@ -1,0 +1,1 @@
+{"version":3,"file":"parse.d.ts","sourceRoot":"","sources":["../../../src/primitives/CompilerVersion/parse.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;GAcG;AACH,+BAZW,OAAO,0BAA0B,EAAE,mBAAmB,GACpD;IAAE,KAAK,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,MAAM,CAAC;IAAC,MAAM,CAAC,EAAE,MAAM,CAAC;IAAC,UAAU,CAAC,EAAE,MAAM,CAAA;CAAE,CAwDjG"}

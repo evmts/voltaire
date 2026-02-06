@@ -1,0 +1,1 @@
+{"version":3,"file":"ether-toWei.d.ts","sourceRoot":"","sources":["../../../src/primitives/Denomination/ether-toWei.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,SAAS,IAAI,YAAY,EAAE,MAAM,gBAAgB,CAAC;AAChE,OAAO,KAAK,EAAE,OAAO,IAAI,UAAU,EAAE,MAAM,cAAc,CAAC;AAI1D;;;;;;;;;;;;;;;;GAgBG;AACH,wBAAgB,KAAK,CAAC,KAAK,EAAE,YAAY,GAAG,UAAU,CAoBrD"}

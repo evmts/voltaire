@@ -1,0 +1,37 @@
+export * from "./EventLog.js";
+export type * from "./EventLogConstructor.js";
+export type { EventLogType, EventLogType as BrandedEventLogType, } from "./EventLogType.js";
+import { clone } from "./clone.js";
+import { copy } from "./copy.js";
+import { create } from "./create.js";
+import { filterLogs } from "./filterLogs.js";
+import { from } from "./from.js";
+import { getIndexed } from "./getIndexed.js";
+import { getIndexedTopics } from "./getIndexedTopics.js";
+import { getSignature } from "./getSignature.js";
+import { getTopic0 } from "./getTopic0.js";
+import { isRemoved } from "./isRemoved.js";
+import { matchesAddress } from "./matchesAddress.js";
+import { matchesFilter } from "./matchesFilter.js";
+import { matchesTopics } from "./matchesTopics.js";
+import { sortLogs } from "./sortLogs.js";
+import { wasRemoved } from "./wasRemoved.js";
+export { clone, copy, create, filterLogs, from, getIndexed, getIndexedTopics, getSignature, getTopic0, isRemoved, matchesAddress, matchesFilter, matchesTopics, sortLogs, wasRemoved, };
+export declare const BrandedEventLog: {
+    clone: typeof clone;
+    copy: typeof copy;
+    create: typeof create;
+    filterLogs: typeof filterLogs;
+    from: typeof from;
+    getIndexed: typeof getIndexed;
+    getIndexedTopics: typeof getIndexedTopics;
+    getSignature: typeof getSignature;
+    getTopic0: typeof getTopic0;
+    isRemoved: typeof isRemoved;
+    matchesAddress: typeof matchesAddress;
+    matchesFilter: typeof matchesFilter;
+    matchesTopics: typeof matchesTopics;
+    sortLogs: typeof sortLogs;
+    wasRemoved: typeof wasRemoved;
+};
+//# sourceMappingURL=index.d.ts.map

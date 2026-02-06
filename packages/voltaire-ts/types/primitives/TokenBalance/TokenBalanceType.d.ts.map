@@ -1,0 +1,1 @@
+{"version":3,"file":"TokenBalanceType.d.ts","sourceRoot":"","sources":["../../../src/primitives/TokenBalance/TokenBalanceType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;;GAMG;AACH,MAAM,MAAM,gBAAgB,GAAG,MAAM,GAAG;IAAE,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,cAAc,CAAA;CAAE,CAAC"}

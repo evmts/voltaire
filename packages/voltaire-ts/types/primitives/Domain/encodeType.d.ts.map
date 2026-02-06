@@ -1,0 +1,1 @@
+{"version":3,"file":"encodeType.d.ts","sourceRoot":"","sources":["../../../src/primitives/Domain/encodeType.js"],"names":[],"mappings":"AAAA;;;GAGG;AAEH;;;;;;;;GAQG;AACH,wCAJW,MAAM,SACN,WAAW,GACT,MAAM,CA2BlB;0BAtCY;IAAE,QAAQ,CAAC,IAAI,EAAE,MAAM,CAAC;IAAC,QAAQ,CAAC,IAAI,EAAE,MAAM,CAAA;CAAE;0BAChD,MAAM,CAAC,MAAM,EAAE,SAAS,WAAW,EAAE,CAAC"}

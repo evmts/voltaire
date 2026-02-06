@@ -1,0 +1,9 @@
+/**
+ * Shift Int32 left by n bits
+ *
+ * @param {import('./Int32Type.js').BrandedInt32} value - Value to shift
+ * @param {number} n - Number of bits to shift (0-31)
+ * @returns {import('./Int32Type.js').BrandedInt32} Result
+ */
+export function shiftLeft(value: import("./Int32Type.js").BrandedInt32, n: number): import("./Int32Type.js").BrandedInt32;
+//# sourceMappingURL=shiftLeft.d.ts.map

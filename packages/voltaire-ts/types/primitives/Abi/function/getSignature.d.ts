@@ -1,0 +1,28 @@
+/**
+ * Get function signature string (name(type1,type2,...))
+ *
+ * @template {string} TName
+ * @template {import('./statemutability.js').StateMutability} TStateMutability
+ * @template {readonly import('../Parameter.js').Parameter[]} TInputs
+ * @template {readonly import('../Parameter.js').Parameter[]} TOutputs
+ * @param {import('./FunctionType.js').FunctionType<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
+ * @returns {string} Function signature string
+ *
+ * @example
+ * ```typescript
+ * const func = {
+ *   type: "function",
+ *   name: "transfer",
+ *   stateMutability: "nonpayable",
+ *   inputs: [
+ *     { type: "address", name: "to" },
+ *     { type: "uint256", name: "amount" }
+ *   ],
+ *   outputs: []
+ * };
+ * const sig = getSignature(func);
+ * // "transfer(address,uint256)"
+ * ```
+ */
+export function getSignature<TName extends string, TStateMutability extends import("./statemutability.js").StateMutability, TInputs extends readonly import("../Parameter.js").Parameter[], TOutputs extends readonly import("../Parameter.js").Parameter[]>(fn: import("./FunctionType.js").FunctionType<TName, TStateMutability, TInputs, TOutputs>): string;
+//# sourceMappingURL=getSignature.d.ts.map

@@ -1,0 +1,30 @@
+export type { MaxPriorityFeePerGasType } from "./MaxPriorityFeePerGasType.js";
+import { compare as _compare } from "./compare.js";
+import { equals as _equals } from "./equals.js";
+import { from } from "./from.js";
+import { fromGwei } from "./fromGwei.js";
+import { fromWei } from "./fromWei.js";
+import { toBigInt as _toBigInt } from "./toBigInt.js";
+import { toGwei as _toGwei } from "./toGwei.js";
+import { toNumber as _toNumber } from "./toNumber.js";
+import { toWei as _toWei } from "./toWei.js";
+export { from, fromGwei, fromWei };
+export declare function toGwei(priorityFee: bigint | number | string): bigint;
+export declare function toWei(priorityFee: bigint | number | string): bigint;
+export declare function toNumber(priorityFee: bigint | number | string): number;
+export declare function toBigInt(priorityFee: bigint | number | string): bigint;
+export declare function equals(priorityFee1: bigint | number | string, priorityFee2: bigint | number | string): boolean;
+export declare function compare(priorityFee1: bigint | number | string, priorityFee2: bigint | number | string): number;
+export { _toGwei, _toWei, _toNumber, _toBigInt, _equals, _compare };
+export declare const MaxPriorityFeePerGas: {
+    from: typeof from;
+    fromGwei: typeof fromGwei;
+    fromWei: typeof fromWei;
+    toGwei: typeof toGwei;
+    toWei: typeof toWei;
+    toNumber: typeof toNumber;
+    toBigInt: typeof toBigInt;
+    equals: typeof equals;
+    compare: typeof compare;
+};
+//# sourceMappingURL=index.d.ts.map

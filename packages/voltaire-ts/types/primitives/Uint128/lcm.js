@@ -1,0 +1,28 @@
+import { dividedBy } from "./dividedBy.js";
+import { gcd } from "./gcd.js";
+import { times } from "./times.js";
+/**
+ * Calculate least common multiple
+ *
+ * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
+ * @since 0.0.0
+ * @param {import('./Uint128Type.js').Uint128Type} uint - First operand
+ * @param {import('./Uint128Type.js').Uint128Type} b - Second operand
+ * @returns {import('./Uint128Type.js').Uint128Type} LCM of uint and b
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as Uint128 from './primitives/Uint128/index.js';
+ * const a = Uint128.from(12n);
+ * const b = Uint128.from(18n);
+ * const result = Uint128.lcm(a, b); // 36n
+ * ```
+ */
+export function lcm(uint, b) {
+    if (uint === 0n || b === 0n) {
+        return /** @type {import('./Uint128Type.js').Uint128Type} */ (0n);
+    }
+    const product = times(uint, b);
+    const divisor = gcd(uint, b);
+    return dividedBy(product, divisor);
+}

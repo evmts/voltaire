@@ -1,0 +1,1 @@
+{"version":3,"file":"TransactionIndexType.d.ts","sourceRoot":"","sources":["../../../src/primitives/TransactionIndex/TransactionIndexType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;GAEG;AACH,MAAM,MAAM,oBAAoB,GAAG,MAAM,GAAG;IAC3C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,kBAAkB,CAAC;CACrC,CAAC"}

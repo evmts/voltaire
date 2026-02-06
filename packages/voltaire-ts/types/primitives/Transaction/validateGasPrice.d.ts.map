@@ -1,0 +1,1 @@
+{"version":3,"file":"validateGasPrice.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/validateGasPrice.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,OAAO,EAAE,OAAO,EAAE,OAAO,EAAE,OAAO,EAAE,MAAM,EAAE,MAAM,YAAY,CAAC;AAE7E;;;;GAIG;AACH,wBAAgB,gBAAgB,CAC/B,IAAI,EAAE,MAAM,GAAG,OAAO,GAAG,OAAO,GAAG,OAAO,GAAG,OAAO,GAClD,IAAI,CA8CN"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"BrandedTransactionEIP7702.d.ts","sourceRoot":"","sources":["../../../../src/primitives/Transaction/EIP7702/BrandedTransactionEIP7702.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,sBAAsB,EAAE,MAAM,6BAA6B,CAAC;AAE1E;;GAEG;AACH,MAAM,MAAM,yBAAyB,GAAG,sBAAsB,CAAC"}

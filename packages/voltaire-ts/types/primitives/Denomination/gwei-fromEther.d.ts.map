@@ -1,0 +1,1 @@
+{"version":3,"file":"gwei-fromEther.d.ts","sourceRoot":"","sources":["../../../src/primitives/Denomination/gwei-fromEther.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,SAAS,IAAI,YAAY,EAAE,MAAM,gBAAgB,CAAC;AAEhE,OAAO,KAAK,EAAE,QAAQ,IAAI,WAAW,EAAE,MAAM,eAAe,CAAC;AAE7D;;;;;;;;;;;;;;;;GAgBG;AACH,wBAAgB,SAAS,CAAC,KAAK,EAAE,YAAY,GAAG,WAAW,CAE1D"}

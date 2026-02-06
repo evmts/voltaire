@@ -1,0 +1,1 @@
+{"version":3,"file":"ether-toU256.d.ts","sourceRoot":"","sources":["../../../src/primitives/Denomination/ether-toU256.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,wBAAwB,CAAC;AAC1D,OAAO,KAAK,EAAE,SAAS,IAAI,YAAY,EAAE,MAAM,gBAAgB,CAAC;AAGhE;;;;;;;;;;;;;;;GAeG;AACH,wBAAgB,MAAM,CAAC,KAAK,EAAE,YAAY,GAAG,WAAW,CAEvD"}

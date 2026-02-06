@@ -1,0 +1,1 @@
+{"version":3,"file":"EncodedDataType.d.ts","sourceRoot":"","sources":["../../../src/primitives/EncodedData/EncodedDataType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,gBAAgB,CAAC;AAE5C;;;;;GAKG;AACH,MAAM,MAAM,eAAe,GAAG,KAAK,MAAM,EAAE,GAAG;IAC7C,QAAQ,CAAC,CAAC,KAAK,CAAC,EAAE,aAAa,CAAC;CAChC,CAAC"}

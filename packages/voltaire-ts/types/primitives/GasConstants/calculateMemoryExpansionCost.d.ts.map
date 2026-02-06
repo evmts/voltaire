@@ -1,0 +1,1 @@
+{"version":3,"file":"calculateMemoryExpansionCost.d.ts","sourceRoot":"","sources":["../../../src/primitives/GasConstants/calculateMemoryExpansionCost.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;GAYG;AACH,sDAVW,MAAM,WACN,MAAM,GACJ;IAAE,OAAO,EAAE,MAAM,CAAC;IAAC,OAAO,EAAE,MAAM,CAAC;IAAC,aAAa,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,MAAM,CAAA;CAAE,CAiBtF"}
