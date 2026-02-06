@@ -1,0 +1,238 @@
+.env
+.vercel
+dist/
+/types/
+
+.smithers
+
+modern-monaco
+tevm-monorepo
+effect-repo/
+
+.crush/
+
+.scratch/
+# Worktrees directory is temporarily ignored but compiled artifacts should still be prevented
+worktrees/
+
+macos
+
+/target/
+**/*.rs.bk
+
+# Compiled object files and libraries (ensure comprehensive coverage)
+*.o
+*.o.o  
+*.a
+*.a.o
+*.so
+*.dylib
+*.dll
+*.rlib
+
+# Tevm cache
+**/.tevm
+.nx
+
+**/debuglogs.txt
+
+cache/
+!**/src/**/Cache/
+forge-artifacts
+broadcast
+**/output
+
+# compiled output
+tmp
+/out-tsc
+**/tsconfig.tsbuildinfo
+
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+**/lcov.info
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# My personal files
+.zshrc
+/target
+_
+.direnv
+
+*.node
+
+./debug/
+**/*.pdb
+
+# zig
+.zig-cache/
+zig-out/
+zig-cache/
+/bin/
+/wasm/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+sdks/*/build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+TODO.md
+
+**/.claude/settings.local.json
+
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+go-ethereum/
+
+# Benchmark and test artifacts
+bench/official/orchestrator
+bench/official/evms/zig/bin/
+bench/official/diff_output/
+diff_output/
+
+# Test trace files
+trace_*.json
+*_trace*.json
+
+# Log files
+*.log
+diff-trace.log
+
+# Coordination docs
+coordinate.md
+
+# Apple Instruments profiling results
+*_profile.trace/
+*_summary.txt
+profile_results/
+advanced_cpu_profiles/*.trace/
+advanced_cpu_profiles/*_summary.txt
+
+# Go binaries
+apps/cli/guillotine-cli
+apps/cli/guil
+/guillotine-cli
+# Performance and comparison reports (generated files)
+EVM2_Performance_Report.md
+*-comparison.md
+
+# Swift build artifacts
+**/.build/
+
+# Kotlin/Gradle build artifacts
+kotlin/.gradle/
+kotlin/build/
+
+# Note: bun.lock is tracked to ensure consistent CI builds
+
+# TypeScript/JavaScript build artifacts
+**/src/core/
+**/src/test/
+
+# Compiled binaries without extensions (common in development)
+guillotine-cli
+test_hyperfine
+
+# KZG trusted setup file (large binary file)
+data/kzg/trusted_setup.txt
+trace*.json
+src/kzg/trusted_setup.txt
+
+# Benchmarks directory (cloned on demand)
+benchmarks/
+sdks/python/guillotine_evm/_ffi.c
+
+# Test fixtures
+test/execution-spec-tests/fixtures/
+
+# Solidity compilation artifacts
+data/fixtures/out/
+bubblesort_bytecode.txt
+
+# TypeScript wrapper build artifacts
+/native/
+dist/
+scripts/*.js
+
+# Documentation build artifacts
+.astro/
+
+# Temporarily cloned repositories
+tevm-monorepo/
+
+# Playwright MCP (testing artifacts)
+.playwright-mcp/
