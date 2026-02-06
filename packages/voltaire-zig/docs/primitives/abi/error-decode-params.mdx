@@ -1,0 +1,54 @@
+---
+title: Error.decodeParams
+description: Decode custom error parameters from revert data
+---
+
+<Tabs>
+
+</Tabs>
+
+## Usage Examples
+
+### Handling Contract Errors
+
+```typescript
+import { AbiError } from 'tevm'
+
+const errors = [
+  new AbiError({
+    type: "error",
+    name: "InsufficientBalance",
+    inputs: [
+      { type: "uint256", name: "balance" },
+      { type: "uint256", name: "required" }
+    ]
+  }),
+  new AbiError({
+    type: "error",
+    name: "Unauthorized",
+    inputs: [{ type: "address", name: "caller" }]
+  })
+]
+
+// Create error registry
+const errorRegistry = new Map(
+  errors.map(e => [e.getSelector(), e])
+)
+
+try {
+  await contract.call()
+} catch (error) {
+  const selector = error.data.slice(0, 10)
+  const abiError = errorRegistry.get(selector)
+
+  if (abiError) {
+    const params = abiError.decodeParams(error.data)
+    console.log(`Error: ${abiError.name}`, params)
+  }
+}
+```
+
+## See Also
+
+- [encodeParams](/primitives/abi/error/encode-params) - Encode error data
+- [getSelector](/primitives/abi/error/get-selector) - Get error selector

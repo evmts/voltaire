@@ -1,0 +1,167 @@
+---
+title: Agentic Coding
+description: Get maximum AI productivity with Voltaire using local context or MCP
+---
+
+## Recommended: Clone the Repo
+
+Top AI engineers get the best results by cloning the entire Voltaire repository locally. This provides maximum context for your AI coding assistant.
+
+<Tip>
+**This is the recommended approach.** Having the full source code locally gives AI assistants complete context - they can read implementations, understand patterns, and provide more accurate code.
+</Tip>
+
+```bash
+git clone https://github.com/evmts/voltaire.git
+```
+
+Once cloned, point your AI assistant to the repo when working on Ethereum projects. The codebase includes comprehensive inline documentation, tests, and examples.
+
+## llms.txt
+
+Voltaire provides machine-readable documentation at standard endpoints:
+
+- **[/llms.txt](https://voltaire.tevm.sh/llms.txt)** - Concise summary for quick context
+- **[/llms-full.txt](https://voltaire.tevm.sh/llms-full.txt)** - Complete documentation in plain text
+
+These follow the [llms.txt standard](https://llmstxt.org/) and can be fetched by AI assistants to understand Voltaire's API without needing the full repo.
+
+## MCP Server
+
+For AI assistants that support [Model Context Protocol](https://modelcontextprotocol.io/), Voltaire provides an MCP server with searchable documentation.
+
+<Tabs>
+<Tab title="Claude Code">
+
+```bash
+claude mcp add --transport http voltaire https://voltaire.tevm.sh/mcp
+```
+
+</Tab>
+<Tab title="Claude Desktop">
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+    }
+  }
+}
+```
+
+</Tab>
+<Tab title="Cursor">
+
+Add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+    }
+  }
+}
+```
+
+</Tab>
+<Tab title="Codex">
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.voltaire]
+url = "https://voltaire.tevm.sh/mcp"
+```
+
+</Tab>
+<Tab title="Amp">
+
+Add to `~/.config/amp/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "url": "https://voltaire.tevm.sh/mcp"
+    }
+  }
+}
+```
+
+</Tab>
+<Tab title="OpenCode">
+
+Add to `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "voltaire": {
+      "type": "remote",
+      "url": "https://voltaire.tevm.sh/mcp"
+    }
+  }
+}
+```
+
+</Tab>
+<Tab title="Windsurf">
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "voltaire": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://voltaire.tevm.sh/mcp"]
+    }
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+The MCP server provides a `SearchVoltaire` tool that searches across all documentation, returning relevant code examples and API references.
+
+## Why Local Context Works Best
+
+The MCP server is convenient, but cloning the repo locally provides:
+
+- **Full source code** - AI can read actual implementations, not just docs
+- **Test examples** - Real-world usage patterns in test files
+- **Type definitions** - Complete TypeScript types for accurate suggestions
+- **Build context** - Understanding of how modules connect
+
+Most production teams using AI-assisted development keep frequently-used libraries cloned locally for this reason.
+
+## API Design for AI
+
+Voltaire's API is designed to work well with AI assistants:
+
+**Mirrors Ethereum specs** - LLMs trained on Ethereum documentation can leverage that knowledge directly. No bespoke abstractions to learn.
+
+**Minimal abstraction** - What you pass to a function is what happens. No hidden retry policies, automatic caching, or magic behavior that confuses debugging.
+
+**Predictable patterns** - Every primitive follows the same conventions: `Type()` constructor, `.toHex()`, `.equals()`, etc.
+
+```zig
+// Voltaire Zig API maps directly to Ethereum concepts
+const primitives = @import("primitives");
+const crypto = @import("crypto");
+
+const address = try primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+var hash: [32]u8 = undefined;
+crypto.keccak256.hash("hello", &hash);
+```
+
+## Smart LLM Detection
+
+When AI assistants query Voltaire documentation, we detect the request and return optimized markdown instead of HTML. This reduces token usage and improves response quality.

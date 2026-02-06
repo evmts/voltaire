@@ -1,0 +1,372 @@
+---
+title: Branded Types Reference
+description: Complete guide to using branded types in Tevm
+---
+
+Tevm uses branded types to provide compile-time type safety with zero runtime overhead. This guide explains how branded types work and how to use them effectively.
+
+## Type Hierarchy
+
+Tevm provides three levels of types for each primitive:
+
+### 1. Branded Type (Strictest)
+
+The base branded type - a validated, immutable value:
+
+```zig
+import type { AddressType } from '@tevm/voltaire/Address';
+
+type AddressType = Uint8Array & { readonly [brand]: "Address" };
+```
+
+**Use when:**
+- You have a validated address and want type safety
+- You need maximum strictness
+- You want to ensure the value came from Tevm's validators
+
+**Properties:**
+- Runtime: Plain `Uint8Array` (20 bytes)
+- Validation: Already validated during construction
+- Methods: None (use namespace functions)
+- Overhead: Zero
+
+**Example:**
+
+```zig
+import { fromHex, toHex, equals } from '@tevm/voltaire/Address';
+import type { AddressType } from '@tevm/voltaire/Address';
+
+const addr: AddressType = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const hex = toHex(addr);
+const same = equals(addr, addr); // true
+```
+
+### 2. Class Instance (Most Convenient)
+
+Branded type with methods attached via prototype:
+
+```zig
+import { Address } from '@tevm/voltaire';
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+addr.toHex();        // Instance method
+addr.isZero();       // Instance method
+addr.equals(other);  // Instance method
+```
+
+**Use when:**
+- You want familiar OOP ergonomics
+- You prefer method chaining
+- Bundle size is not a primary concern
+
+**Properties:**
+- Runtime: `Uint8Array` with prototype methods
+- Validation: Validated during construction
+- Methods: Available as `addr.method()`
+- Overhead: Minimal (prototype chain)
+
+**Example:**
+
+```zig
+import { Address } from '@tevm/voltaire';
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Methods available on instance
+const hex = addr.toHex();
+const checksummed = addr.toChecksummed();
+const isZero = addr.isZero();
+const clone = addr.clone();
+
+// Still a Uint8Array
+console.log(addr instanceof Uint8Array); // true
+console.log(addr.length); // 20
+```
+
+### 3. Input Type (Loosest)
+
+**Note:** Tevm does not currently export `AddressLike` union types. The `Address()` constructor and `from()` functions accept multiple input types:
+
+```zig
+import { Address } from '@tevm/voltaire';
+
+// Accepts: string | Uint8Array | number | bigint
+Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");  // hex string
+Address(new Uint8Array(20));                            // bytes
+Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);  // bigint
+```
+
+For function parameters accepting flexible input, use the same union:
+
+```zig
+function process(input: string | Uint8Array | number | bigint) {
+  const addr = Address(input);
+  // Now you have a validated AddressType
+}
+```
+
+## API Patterns
+
+### Class API (OOP Style)
+
+```zig
+import { Address } from '@tevm/voltaire';
+
+// Constructor accepts multiple formats
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Instance methods
+addr.toHex();           // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+addr.toChecksummed();   // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+addr.isZero();          // false
+addr.equals(other);     // boolean
+
+// Static methods
+Address.fromHex("0x...");
+Address.fromBytes(bytes);
+Address.zero();
+```
+
+**Pros:**
+- Familiar OOP patterns
+- Method discovery via autocomplete
+- Method chaining
+
+**Cons:**
+- Imports entire class (~18 KB)
+- All methods included in bundle
+
+### Namespace API (Functional Style)
+
+```zig
+import * as Address from '@tevm/voltaire/Address';
+
+// Construction
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Functions (not methods)
+Address.toHex(addr);           // "0x742d35cc..."
+Address.toChecksummed(addr);   // "0x742d35Cc..."
+Address.isZero(addr);          // false
+Address.equals(addr, other);   // boolean
+```
+
+**Pros:**
+- Tree-shakeable (only bundle what you use)
+- Functional programming friendly
+- Explicit dependencies
+
+**Cons:**
+- More verbose
+- No method chaining
+- Must pass value as first argument
+
+### Tree-Shakeable Imports (Optimal Bundle Size)
+
+```zig
+import { fromHex, toHex, equals } from '@tevm/voltaire/Address';
+
+const addr = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const hex = toHex(addr);
+const same = equals(addr, addr);
+
+// Only these 3 functions in bundle (~500 bytes)
+// Unused methods excluded (toChecksummed, calculateCreateAddress, etc.)
+```
+
+## Brand Symbol
+
+All branded types use a shared `brand` symbol:
+
+```zig
+import { brand } from '@tevm/voltaire/brand';
+
+// This is what makes it "branded"
+type AddressType = Uint8Array & { readonly [brand]: "Address" };
+type HashType = Uint8Array & { readonly [brand]: "Hash" };
+```
+
+The `brand` symbol:
+- `unique symbol` - TypeScript ensures uniqueness
+- Compile-time only - erased at runtime
+- Shared across all primitives - consistent pattern
+
+## Type Variants
+
+### Hierarchical Types with Boolean Flags
+
+Some types have specialized variants using boolean flags:
+
+```zig
+// Base hex type
+type Hex = string & { readonly [brand]: "Hex" };
+
+// Variants with additional flags
+type ChecksumAddress = Hex & { readonly checksum: true };
+type LowercaseHex = Hex & { readonly lowercase: true };
+type UppercaseHex = Hex & { readonly uppercase: true };
+```
+
+**Example:**
+
+```zig
+import { Address } from '@tevm/voltaire';
+
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+const checksummed = addr.toChecksummed(); // ChecksumAddress
+const lowercase = addr.toLowercase();     // LowercaseHex
+const uppercase = addr.toUppercase();     // UppercaseHex
+
+// Type system enforces correctness
+function requireChecksum(hex: ChecksumAddress) { }
+
+requireChecksum(checksummed);  // ✓ Valid
+requireChecksum(lowercase);    // ✗ Error: missing checksum flag
+```
+
+## Validation
+
+All branded types are validated at construction:
+
+```zig
+import { Address } from '@tevm/voltaire';
+
+// Valid - creates AddressType
+Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Invalid - throws error
+Address("0xnot_valid");  // Error: Invalid hex
+Address("0x123");        // Error: Invalid length
+Address(new Uint8Array(10)); // Error: Must be 20 bytes
+```
+
+**If you have a `AddressType`, it's valid.** No need for runtime validation libraries like Zod.
+
+## Console Formatting
+
+Branded types display formatted in console:
+
+```zig
+const addr = Address(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en);
+console.log(addr);
+// Address("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+```
+
+This improves debugging while maintaining full `Uint8Array` performance.
+
+## Comparison Table
+
+| Feature | Class API | Namespace API | Tree-Shakeable |
+|---------|-----------|---------------|----------------|
+| Import | `import { Address }` | `import * as Address` | `import { fromHex, toHex }` |
+| Bundle Size | ~18 KB | ~18 KB | ~500 bytes (3 functions) |
+| Syntax | `addr.toHex()` | `Address.toHex(addr)` | `toHex(addr)` |
+| Type | Class instance | AddressType | AddressType |
+| Methods | Prototype | Functions | Functions |
+| Tree-shaking | ✗ No | ✗ No | ✓ Yes |
+| Performance | Fast | Fast | Fastest |
+
+## Migration Guide
+
+### From String Types
+
+```zig
+// Before - unsafe
+type Address = `0x${string}`;
+const addr: Address = "0x123"; // No validation
+
+// After - safe
+import { Address } from '@tevm/voltaire';
+const addr = Address("0x123"); // Throws error
+```
+
+### From Generic Uint8Array
+
+```zig
+// Before - no type safety
+function transfer(to: Uint8Array, amount: bigint) { }
+const hash = keccak256(data);
+transfer(hash, 100n); // Compiles but wrong!
+
+// After - type safe
+import type { AddressType } from '@tevm/voltaire/Address';
+function transfer(to: AddressType, amount: bigint) { }
+const hash = keccak256(data);
+transfer(hash, 100n); // ✗ Type error
+```
+
+## Best Practices
+
+### Use Branded Types for Function Parameters
+
+```zig
+import type { AddressType } from '@tevm/voltaire/Address';
+import type { HashType } from '@tevm/voltaire/Hash';
+
+// ✓ Good - explicit types
+function verify(addr: AddressType, hash: HashType) {
+  // addr and hash cannot be swapped
+}
+
+// ✗ Bad - generic types
+function verify(addr: Uint8Array, hash: Uint8Array) {
+  // Easy to swap arguments
+}
+```
+
+### Use Class API for Application Code
+
+```zig
+import { Address, Hash } from '@tevm/voltaire';
+
+const addr = Address("0x...");
+const hash = Hash("0x...");
+
+// Convenient method chaining
+const result = addr.toChecksummed();
+```
+
+### Use Tree-Shakeable for Libraries
+
+```zig
+import { fromHex, toHex } from '@tevm/voltaire/Address';
+
+// Minimal bundle impact
+export function formatAddress(input: string) {
+  const addr = fromHex(input);
+  return toHex(addr);
+}
+```
+
+### Validate at Boundaries
+
+```zig
+import { Address } from '@tevm/voltaire';
+import type { AddressType } from '@tevm/voltaire/Address';
+
+// Validate external input at boundary
+export function processRequest(req: { to: string, amount: string }) {
+  const to = Address(req.to); // Validate here
+  return transfer(to, BigInt(req.amount));
+}
+
+// Internal functions trust the type
+function transfer(to: AddressType, amount: bigint) {
+  // No validation needed - type guarantees it's valid
+}
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Why Branded Types?" icon="lightbulb" href="/getting-started/branded-types">
+    Benefits and motivation for branded types
+  </Card>
+  <Card title="Address Primitive" icon="cube" href="/primitives/address">
+    Complete Address API reference
+  </Card>
+  <Card title="TypeScript Branding" icon="book-open" href="https://prosopo.io/blog/typescript-branding/">
+    In-depth guide to branded types (Prosopo)
+  </Card>
+</CardGroup>

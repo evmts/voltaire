@@ -1,0 +1,122 @@
+---
+title: StateProof
+description: EIP-1186 account proof with storage proofs for trustless state verification
+---
+
+# StateProof
+
+EIP-1186 account proof for trustless Ethereum state verification.
+
+## Overview
+
+StateProof represents an EIP-1186 account proof with optional storage proofs. It enables light clients and trustless systems to verify account data without executing transactions or trusting external providers.
+
+## JSON Shape (from RPC)
+
+```zig
+// eth_getProof returns: address, accountProof (RLP nodes as hex), balance,
+// codeHash, nonce, storageHash, storageProof[]
+```
+
+## Usage
+
+### Create StateProof
+
+```zig
+// Build JSON payload in Zig and parse with std.json
+// {"method":"eth_getProof","params":["0xADDRESS",["0xSLOT1","0xSLOT2"],"latest"]}
+```
+
+### Compare Proofs
+
+```zig
+// Compare proof fields as needed (addresses, balances, roots, etc.).
+```
+
+## API Reference
+
+### Constructors
+
+| Function | Description |
+|----------|-------------|
+| `from(proof)` | Create from StateProofLike object |
+
+### Methods
+
+| Function | Description |
+|----------|-------------|
+| `equals(a, b)` | Check if two proofs are equal |
+
+## Obtaining Proofs
+
+Use `eth_getProof` JSON-RPC method:
+
+```zig
+// {"method":"eth_getProof","params":["0x1234...",["0x0","0x1"],"latest"]}
+```
+
+## Proof Structure
+
+```
+State Trie
+    |
+    |-- accountProof (path from root to account leaf)
+    |
+    v
+Account Node
+    |-- nonce
+    |-- balance
+    |-- codeHash
+    |-- storageHash --> Storage Trie
+                            |
+                            |-- storageProof[0]
+                            |-- storageProof[1]
+                            ...
+```
+
+## Verification Process
+
+1. **Verify account proof** against known state root
+2. **Reconstruct account** from proof nodes
+3. **Compare account fields** (balance, nonce, etc.)
+4. **Verify storage proofs** against account's storage root
+
+```zig
+// Verify account proof steps (outline):
+// 1) RLP-decode accountProof nodes
+// 2) Reconstruct Merkle Patricia path to account leaf
+// 3) Hash and compare with trusted stateRoot
+// 4) Verify each storageProof against storageHash
+```
+
+## Use Cases
+
+### Light Client Verification
+
+```zig
+// Obtain trusted stateRoot from a block header; verify proofs locally
+```
+
+### Cross-Chain Proofs
+
+```zig
+// Prove L1 account state for L2 verification: use eth_getProof on L1
+```
+
+### Trustless Balance Verification
+
+```zig
+// Trustless balance verification: check proof against trusted stateRoot
+```
+
+## Specification
+
+- **EIP-1186**: https://eips.ethereum.org/EIPS/eip-1186
+- **JSON-RPC**: `eth_getProof` method
+
+## See Also
+
+- [StorageProof](/primitives/storage-proof) - Storage slot proofs
+- [StateRoot](/primitives/state-root) - State trie root
+- [Proof](/primitives/proof) - Generic Merkle proof
+- [RLP](/primitives/rlp) - RLP encoding for trie nodes

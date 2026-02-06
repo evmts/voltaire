@@ -1,0 +1,43 @@
+---
+title: "ReturnData"
+description: "Raw bytes returned from contract calls"
+---
+
+# ReturnData
+
+Branded `Uint8Array` representing raw, uninterpreted return data from contract execution.
+
+## Type (Zig)
+
+```zig
+// Return data is []const u8. Use Hex to convert hex ⇄ bytes.
+```
+
+## Construction
+
+```zig
+const Hex = @import("primitives").Hex;
+const allocator = std.testing.allocator;
+
+// From hex string
+const data = try Hex.hexToBytes(allocator, "0x00000001");
+defer allocator.free(data);
+```
+
+## Methods
+
+- Use Hex.hexToBytes/bytesToHex for conversion
+- Compare slices with std.mem.eql
+- Check emptiness via `data.len == 0`
+
+## Example
+
+```zig
+const Hex = @import("primitives").Hex;
+const allocator = std.testing.allocator;
+const return_data = try Hex.hexToBytes(allocator, "0x...hex...");
+defer allocator.free(return_data);
+// Convert to hex
+const hex = try Hex.bytesToHex(allocator, return_data);
+defer allocator.free(hex);
+```

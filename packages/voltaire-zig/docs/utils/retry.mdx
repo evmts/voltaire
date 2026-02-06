@@ -1,0 +1,365 @@
+---
+title: "Retry with Exponential Backoff"
+description: "Automatically retry failed operations with exponential backoff and jitter"
+---
+
+
+# Retry with Exponential Backoff
+
+Automatically retry failed operations using exponential backoff with jitter. Essential for handling transient failures in network requests, RPC calls, and other unreliable operations common in Ethereum applications.
+
+## Overview
+
+The retry utilities implement exponential backoff with jitter:
+- **Exponential backoff**: Delay increases exponentially after each failure
+- **Jitter**: Adds randomness to prevent thundering herd
+- **Configurable**: Control max retries, delays, and retry conditions
+- **Type-safe**: Full TypeScript support with generics
+
+## Basic Usage
+
+### Simple Retry
+
+Retry an RPC call with default settings:
+
+```zig
+import { retryWithBackoff } from 'voltaire/utils';
+
+const blockNumber = await retryWithBackoff(
+  () => provider.eth_blockNumber()
+);
+```
+
+Default configuration:
+- **maxRetries**: 3
+- **initialDelay**: 1000ms
+- **factor**: 2 (doubles each time)
+- **maxDelay**: 30000ms
+- **jitter**: true
+
+### Custom Configuration
+
+Configure retry behavior:
+
+```zig
+const balance = await retryWithBackoff(
+  () => provider.eth_getBalance(address),
+  {
+    maxRetries: 5,
+    initialDelay: 500,
+    factor: 2,
+    maxDelay: 10000,
+    jitter: true
+  }
+);
+```
+
+## Retry Options
+
+### RetryOptions
+
+```zig
+interface RetryOptions {
+  maxRetries?: number;      // Maximum retry attempts (default: 3)
+  initialDelay?: number;    // Initial delay in ms (default: 1000)
+  factor?: number;          // Backoff factor (default: 2)
+  maxDelay?: number;        // Maximum delay cap in ms (default: 30000)
+  jitter?: boolean;         // Add random jitter (default: true)
+  shouldRetry?: (error: unknown, attempt: number) => boolean;
+  onRetry?: (error: unknown, attempt: number, nextDelay: number) => void;
+}
+```
+
+### Conditional Retry
+
+Only retry specific errors:
+
+```zig
+const data = await retryWithBackoff(
+  () => fetchData(),
+  {
+    maxRetries: 3,
+    shouldRetry: (error: any) => {
+      // Only retry on network errors
+      return error.code === 'NETWORK_ERROR' ||
+             error.code === 'TIMEOUT';
+    }
+  }
+);
+```
+
+### Retry Callbacks
+
+Monitor retry attempts:
+
+```zig
+const result = await retryWithBackoff(
+  () => provider.eth_call({ to, data }),
+  {
+    maxRetries: 5,
+    onRetry: (error, attempt, delay) => {
+      console.log(
+        `Retry ${attempt}/${maxRetries} after ${delay}ms: ${error.message}`
+      );
+    }
+  }
+);
+```
+
+## Exponential Backoff Algorithm
+
+The retry delay is calculated as:
+
+```
+delay = min(initialDelay * factor^attempt, maxDelay)
+```
+
+With jitter enabled (default), the delay is randomized:
+
+```
+delay = delay * (0.8 + random(0, 0.4))
+```
+
+### Example Timeline
+
+Configuration: `{ initialDelay: 1000, factor: 2, maxDelay: 10000, jitter: false }`
+
+| Attempt | Delay Calculation | Delay (ms) |
+|---------|------------------|------------|
+| 1st retry | 1000 * 2^0 | 1000 |
+| 2nd retry | 1000 * 2^1 | 2000 |
+| 3rd retry | 1000 * 2^2 | 4000 |
+| 4th retry | 1000 * 2^3 | 8000 |
+| 5th retry | min(1000 * 2^4, 10000) | 10000 (capped) |
+
+## Advanced Usage
+
+### Wrapping Functions
+
+Create reusable retry-wrapped functions:
+
+```zig
+import { withRetry } from 'voltaire/utils';
+
+// Wrap provider method
+const getBlockWithRetry = withRetry(
+  (provider: Provider) => provider.eth_blockNumber(),
+  { maxRetries: 5 }
+);
+
+const blockNumber = await getBlockWithRetry(provider);
+```
+
+### Custom Retry Logic
+
+Implement custom retry conditions:
+
+```zig
+const receipt = await retryWithBackoff(
+  () => provider.eth_getTransactionReceipt(txHash),
+  {
+    maxRetries: 20,
+    initialDelay: 500,
+    shouldRetry: (error, attempt) => {
+      // Retry on specific errors
+      if (error?.code === -32000) return true;
+
+      // Don't retry after 10 attempts if different error
+      if (attempt >= 10) return false;
+
+      return true;
+    }
+  }
+);
+```
+
+### Aggressive Retry
+
+For critical operations, use aggressive retry:
+
+```zig
+const criticalData = await retryWithBackoff(
+  () => fetchCriticalData(),
+  {
+    maxRetries: 10,
+    initialDelay: 100,
+    factor: 1.5,
+    maxDelay: 5000,
+    jitter: true
+  }
+);
+```
+
+## Integration with HttpProvider
+
+The HttpProvider already has basic retry built-in, but you can wrap it for more control:
+
+```zig
+import { retryWithBackoff } from 'voltaire/utils';
+import { HttpProvider } from 'voltaire/provider';
+
+const provider = new HttpProvider({
+  url: 'https://eth.llamarpc.com',
+  retry: 0  // Disable built-in retry
+});
+
+// Use custom retry logic
+const blockNumber = await retryWithBackoff(
+  () => provider.eth_blockNumber(),
+  {
+    maxRetries: 5,
+    initialDelay: 1000,
+    factor: 2,
+    jitter: true,
+    shouldRetry: (error: any) => {
+      // Custom retry logic
+      return error.code !== -32602; // Don't retry on invalid params
+    }
+  }
+);
+```
+
+## Common Patterns
+
+### Retry with Maximum Total Time
+
+Limit total retry duration:
+
+```zig
+const MAX_TOTAL_TIME = 30000; // 30 seconds
+const startTime = Date.now();
+
+const data = await retryWithBackoff(
+  () => fetchData(),
+  {
+    maxRetries: 10,
+    shouldRetry: (error, attempt) => {
+      const elapsed = Date.now() - startTime;
+      return elapsed < MAX_TOTAL_TIME;
+    }
+  }
+);
+```
+
+### Retry Different Operations
+
+Different retry strategies for different operations:
+
+```zig
+// Fast retry for quick operations
+const balance = await retryWithBackoff(
+  () => provider.eth_getBalance(address),
+  { maxRetries: 3, initialDelay: 500, factor: 2 }
+);
+
+// Slower retry for expensive operations
+const code = await retryWithBackoff(
+  () => provider.eth_getCode(address),
+  { maxRetries: 5, initialDelay: 2000, factor: 2 }
+);
+```
+
+### Combine with Timeout
+
+Retry with per-attempt timeout:
+
+```zig
+import { retryWithBackoff, withTimeout } from 'voltaire/utils';
+
+const data = await retryWithBackoff(
+  () => withTimeout(
+    fetchData(),
+    { ms: 5000 }
+  ),
+  {
+    maxRetries: 3,
+    shouldRetry: (error) => {
+      // Retry on timeout
+      return error.name === 'TimeoutError';
+    }
+  }
+);
+```
+
+## Best Practices
+
+### Choose Appropriate Delays
+
+- **Fast operations** (balance, blockNumber): 500-1000ms initial
+- **Medium operations** (calls, receipts): 1000-2000ms initial
+- **Slow operations** (logs, traces): 2000-5000ms initial
+
+### Set Reasonable Max Retries
+
+- **Public RPC**: 3-5 retries (may have rate limits)
+- **Private RPC**: 5-10 retries (more reliable)
+- **Critical operations**: 10+ retries
+
+### Use Jitter
+
+Always enable jitter (default) to prevent thundering herd problems when many clients retry simultaneously.
+
+### Monitor Retries
+
+Use `onRetry` callback for observability:
+
+```zig
+const result = await retryWithBackoff(
+  () => operation(),
+  {
+    onRetry: (error, attempt, delay) => {
+      // Log to monitoring service
+      logger.warn('Retry attempt', {
+        error: error.message,
+        attempt,
+        delay,
+        operation: 'eth_call'
+      });
+    }
+  }
+);
+```
+
+## API Reference
+
+### retryWithBackoff
+
+```zig
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  options?: RetryOptions
+): Promise<T>
+```
+
+Retry an async operation with exponential backoff.
+
+**Parameters:**
+- `fn`: Async function to retry
+- `options`: Retry configuration
+
+**Returns:** Promise resolving to operation result
+
+**Throws:** Last error if all retries exhausted
+
+### withRetry
+
+```zig
+function withRetry<TArgs extends any[], TReturn>(
+  fn: (...args: TArgs) => Promise<TReturn>,
+  options?: RetryOptions
+): (...args: TArgs) => Promise<TReturn>
+```
+
+Create a retry wrapper for a function.
+
+**Parameters:**
+- `fn`: Function to wrap with retry logic
+- `options`: Retry configuration
+
+**Returns:** Wrapped function with automatic retry
+
+## See Also
+
+- [Timeout utilities](/utils/timeout) - Add timeouts to retries
+- [Polling](/utils/polling) - Poll operations with backoff
+- [Rate Limiting](/utils/rate-limit) - Rate limit retry attempts

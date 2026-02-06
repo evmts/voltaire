@@ -1,0 +1,102 @@
+---
+title: Address.fromBytes
+description: Create address from raw byte array
+---
+
+
+<Tabs>
+
+</Tabs>
+
+## Length Validation
+
+The input must be exactly 20 bytes. Any other length throws an error:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+// Valid: 20 bytes
+const addr = Address(new Uint8Array(20)) // ✓
+
+// Invalid: too short
+try {
+  Address(new Uint8Array(19))
+} catch (e) {
+  console.error(e) // InvalidAddressLengthError
+}
+
+// Invalid: too long
+try {
+  Address(new Uint8Array(21))
+} catch (e) {
+  console.error(e) // InvalidAddressLengthError
+}
+```
+
+## Memory Behavior
+
+**TypeScript/JavaScript:**
+- Creates a new Uint8Array (copies input)
+- Safe to modify original bytes after creation
+- No aliasing between input and result
+
+```zig
+const original = new Uint8Array(20)
+const addr = Address(original)
+
+// Modifying original doesn't affect address
+original[0] = 0xFF
+console.log(addr[0]) // Still 0x00
+```
+
+**Zig:**
+- Copies to fixed-size array
+- Stack-allocated by default
+- No heap allocation required
+
+## Common Use Cases
+
+### Extracting from ABI Encoded Data
+
+```zig
+// ABI-encoded addresses are left-padded to 32 bytes
+const abiEncoded = new Uint8Array(32)
+// Last 20 bytes are the address
+const addr = Address(abiEncoded.slice(12, 32))
+```
+
+### Reading from Buffer
+
+```zig
+// Parse address from binary data stream
+const buffer = new Uint8Array(100)
+const offset = 40
+
+const addr = Address(buffer.slice(offset, offset + 20))
+```
+
+### Converting from Hash
+
+```zig
+import { keccak256 } from '@tevm/voltaire/crypto'
+
+// Take last 20 bytes of keccak256 hash
+const hash = keccak256(data) // 32 bytes
+const addr = Address(hash.slice(12, 32))
+```
+
+## Performance
+
+**Zero allocation overhead** - directly wraps the bytes into branded type.
+
+For repeated conversions, `fromBytes()` is the fastest constructor:
+- No hex parsing required
+- No numeric conversion
+- Direct memory operation
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [fromHex](/primitives/address/from-hex) - Parse from hex string
+- [toBytes](/primitives/address/to-bytes) - Convert to Uint8Array
+- [fromAbiEncoded](/primitives/address/constructors#fromabiencoded) - Extract from 32-byte ABI encoding

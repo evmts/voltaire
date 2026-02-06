@@ -1,0 +1,335 @@
+---
+title: Build System
+description: Zig build commands, bun scripts, and build outputs
+---
+
+# Build System
+
+Voltaire uses Zig's build system as the primary build tool, with Bun scripts for TypeScript-specific tasks.
+
+## Quick Reference
+
+```bash
+# Essential commands
+zig build                    # Full build (Zig + TS typecheck + C libs)
+zig build test               # All Zig tests
+bun run test:run             # All TS tests
+zig build check              # Quick validation (format + lint + typecheck)
+```
+
+## Zig Build Commands
+
+### Core Builds
+
+```bash
+# Full build - Zig, TypeScript, C libraries
+zig build
+
+# Specific optimizations
+zig build -Doptimize=Debug          # Debug symbols, no optimization
+zig build -Doptimize=ReleaseFast    # Maximum performance
+zig build -Doptimize=ReleaseSmall   # Minimum size
+zig build -Doptimize=ReleaseSafe    # Safety checks enabled
+```
+
+### Testing
+
+```bash
+# All Zig tests (primitives + crypto + precompiles)
+zig build test
+
+# Filter tests by name
+zig build -Dtest-filter=address
+zig build -Dtest-filter=keccak
+zig build -Dtest-filter="Address.fromHex"
+
+# TypeScript tests via Zig
+zig build test-ts              # All TS tests
+zig build test-ts-native       # Native FFI tests only
+zig build test-ts-wasm         # WASM tests only
+zig build test-integration     # Integration tests
+zig build test-security        # Security tests
+```
+
+### TypeScript Targets
+
+```bash
+# Native FFI library (.dylib/.so)
+zig build build-ts-native      # ReleaseFast optimization
+
+# WASM builds
+zig build build-ts-wasm        # ReleaseSmall (size-optimized)
+zig build build-ts-wasm-fast   # ReleaseFast (perf-optimized)
+zig build crypto-wasm          # Individual crypto modules (tree-shaking)
+```
+
+### Quality Checks
+
+```bash
+# Formatting
+zig build format               # Format Zig + TS (auto-fix)
+zig build format-check         # Check formatting (no changes)
+
+# Linting
+zig build lint                 # Lint TS (auto-fix)
+zig build lint-check           # Check linting (no changes)
+
+# All checks
+zig build check                # format + lint + typecheck
+zig build ci                   # Complete CI pipeline
+```
+
+### Benchmarks
+
+```bash
+# Zig benchmarks (zbench)
+zig build bench -Dwith-benches=true
+
+# Filter benchmarks
+zig build -Dwith-benches=true -Dfilter=keccak
+
+# TypeScript benchmarks
+zig build bench-ts
+```
+
+### Examples
+
+```bash
+# Run specific examples
+zig build example-keccak256
+zig build example-address
+zig build example-secp256k1
+zig build example-abi
+zig build example-rlp
+zig build example-transaction
+zig build example-eip712
+zig build example-eip4844
+zig build example-eip7702
+```
+
+### Utilities
+
+```bash
+# Clean build artifacts
+zig build clean                # Keep node_modules
+zig build clean-all            # Remove everything including node_modules
+
+# Dependencies
+zig build deps                 # Install/update all dependencies
+
+# Code generation
+zig build generate-header      # Generate C header from c_api.zig
+```
+
+## Bun/NPM Scripts
+
+### Building
+
+```bash
+bun run build                  # Full build (Zig + dist + types)
+bun run build:zig              # Just zig build
+bun run build:wasm             # Both WASM modes
+bun run build:dist             # TS bundling (tsup)
+bun run build:types            # Type generation
+```
+
+### Testing
+
+```bash
+bun run test                   # Vitest watch mode
+bun run test:run               # Vitest single run
+bun run test:coverage          # With coverage report
+bun run test:native            # Native FFI tests
+bun run test:wasm              # WASM tests
+```
+
+### Development
+
+```bash
+bun run docs:dev               # Mintlify dev server (localhost:3000)
+bun run mint:dev               # Alternative: cd docs && mint dev
+bun run mint:install           # Install/update Mintlify CLI
+```
+
+### Quality
+
+```bash
+bun run format                 # biome format
+bun run lint                   # biome lint
+bun run typecheck              # tsc --noEmit
+```
+
+### Analysis
+
+```bash
+bun run bench                  # Run benchmarks + generate BENCHMARKING.md
+bun run size                   # Bundle size analysis
+```
+
+## Build Outputs
+
+### Directory Structure
+
+```
+zig-out/
+├── lib/                       # Static libraries
+│   ├── libblst.a             # BLS12-381
+│   ├── libc_kzg.a            # KZG commitments
+│   └── libcrypto_wrappers.a  # Rust crypto
+├── native/
+│   └── libprimitives_ts_native.dylib  # Native FFI
+└── wasm/
+    ├── primitives.wasm       # ReleaseSmall (~385KB)
+    └── primitives-fast.wasm  # ReleaseFast (~500KB)
+
+dist/                          # JavaScript distribution
+├── index.js                   # ESM entry
+├── index.cjs                  # CommonJS entry
+├── index.d.ts                 # Type definitions
+└── ...
+
+wasm/                          # WASM loader + modules
+├── loader.ts                  # Instantiation code
+├── primitives.wasm
+└── crypto/                    # Individual tree-shakeable modules
+    ├── keccak256.wasm
+    ├── secp256k1.wasm
+    ├── blake2.wasm
+    ├── ripemd160.wasm
+    └── bn254.wasm
+
+native/                        # Platform-specific bindings
+├── darwin-arm64/
+├── darwin-x64/
+├── linux-arm64/
+├── linux-x64/
+└── win32-x64/
+```
+
+### Generated Files
+
+| File | Command | Description |
+|------|---------|-------------|
+| `src/primitives.h` | `zig build generate-header` | C API header |
+| `BENCHMARKING.md` | `bun run bench` | Performance results |
+| `BUNDLE-SIZES.md` | `bun run size` | Size analysis |
+
+## Build Configuration
+
+### build.zig.zon
+
+Zig dependencies:
+
+```zig
+.dependencies = .{
+    .zbench = .{ ... },      // Performance benchmarking
+    .clap = .{ ... },        // CLI argument parsing
+    .@"z-ens-normalize" = .{ ... },  // ENS normalization
+    .@"libwally-core" = .{ .path = "lib/libwally-core" },
+},
+```
+
+### Cargo.toml
+
+Rust dependencies for crypto:
+
+```toml
+[dependencies]
+ark-bn254 = "0.4"
+ark-bls12-381 = "0.4"
+ark-ec = "0.4"
+ark-ff = "0.4"
+
+[features]
+default = ["asm"]
+asm = ["keccak-asm"]          # Native: assembly-optimized
+portable = ["tiny-keccak"]     # WASM: pure Rust
+```
+
+### package.json Scripts
+
+```json
+{
+  "scripts": {
+    "build": "zig build && bun run build:dist",
+    "build:zig": "zig build",
+    "build:dist": "tsup",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "docs:dev": "cd docs && mint dev"
+  }
+}
+```
+
+## Cross-Compilation
+
+Build for specific targets:
+
+```bash
+# Native targets
+zig build -Dtarget=aarch64-macos      # macOS ARM64
+zig build -Dtarget=x86_64-macos       # macOS x64
+zig build -Dtarget=aarch64-linux      # Linux ARM64
+zig build -Dtarget=x86_64-linux       # Linux x64
+zig build -Dtarget=x86_64-windows     # Windows x64
+
+# WASM
+zig build -Dtarget=wasm32-wasi
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Build fails with missing C library:**
+```bash
+# Ensure submodules are initialized
+git submodule update --init --recursive
+
+# Rebuild C dependencies
+zig build deps
+```
+
+**WASM build fails:**
+```bash
+# Check WASI target support
+zig targets | grep wasm32-wasi
+
+# Build with explicit target
+zig build build-ts-wasm -Dtarget=wasm32-wasi
+```
+
+**Test filter not working:**
+```bash
+# Use quotes for patterns with spaces
+zig build -Dtest-filter="Address.fromHex"
+
+# Check available test names
+zig build test 2>&1 | grep "test"
+```
+
+### Debug Build
+
+```bash
+# Build with debug symbols
+zig build -Doptimize=Debug
+
+# Run with verbose output
+zig build test 2>&1 | head -200
+```
+
+## CI Pipeline
+
+The `zig build ci` command runs:
+
+1. Format check
+2. Lint check
+3. TypeScript typecheck
+4. All Zig tests
+5. All TypeScript tests
+6. Build verification
+
+```bash
+# Run locally before pushing
+zig build ci
+```

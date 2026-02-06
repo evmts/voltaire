@@ -1,0 +1,203 @@
+---
+title: License
+description: SPDX license identifiers for smart contract metadata
+---
+
+# License
+
+Type-safe SPDX license identifiers for smart contract metadata.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `string` type representing SPDX license identifiers. Used in Solidity source files and smart contract metadata to identify licensing terms. Includes validation for OSI-approved licenses.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Usage">
+```zig
+import * as License from '@tevm/voltaire/License'
+
+// Create license identifier
+const mit = License.from("MIT")
+const apache = License.from("Apache-2.0")
+const unlicensed = License.from("UNLICENSED")
+
+// Convert to string
+License.toString(mit)  // "MIT"
+
+// Check OSI approval
+License.isOSI("MIT")        // true
+License.isOSI("Apache-2.0") // true
+License.isOSI("UNLICENSED") // false
+```
+</Tab>
+<Tab title="Common Licenses">
+```zig
+import { COMMON_LICENSES, OSI_APPROVED_LICENSES } from '@tevm/voltaire/License'
+
+// Common SPDX identifiers
+COMMON_LICENSES
+// ["MIT", "Apache-2.0", "GPL-3.0", "GPL-2.0", "LGPL-3.0",
+//  "BSD-3-Clause", "BSD-2-Clause", "ISC", "MPL-2.0", "UNLICENSED"]
+
+// OSI-approved licenses
+OSI_APPROVED_LICENSES
+// ["MIT", "Apache-2.0", "GPL-3.0", "GPL-2.0", "LGPL-3.0",
+//  "LGPL-2.1", "BSD-3-Clause", "BSD-2-Clause", "ISC",
+//  "MPL-2.0", "AGPL-3.0", "EPL-2.0", "CC0-1.0"]
+```
+</Tab>
+<Tab title="Solidity Usage">
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract MyContract {
+    // Contract code
+}
+```
+
+```zig
+import * as License from '@tevm/voltaire/License'
+
+// Parse license from Solidity source
+const source = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;`
+
+const match = source.match(/SPDX-License-Identifier:\s*(\S+)/)
+if (match) {
+  const license = License.from(match[1])
+  console.log(License.isOSI(license))  // true
+}
+```
+</Tab>
+</Tabs>
+
+## Common Licenses
+
+| License | OSI Approved | Description |
+|---------|--------------|-------------|
+| MIT | Yes | Permissive, minimal restrictions |
+| Apache-2.0 | Yes | Permissive with patent grant |
+| GPL-3.0 | Yes | Strong copyleft |
+| GPL-2.0 | Yes | Strong copyleft (earlier version) |
+| LGPL-3.0 | Yes | Weak copyleft for libraries |
+| BSD-3-Clause | Yes | Permissive with attribution |
+| BSD-2-Clause | Yes | Simplified BSD |
+| ISC | Yes | Simplified BSD-like |
+| MPL-2.0 | Yes | Weak copyleft file-level |
+| AGPL-3.0 | Yes | Strong copyleft + network use |
+| UNLICENSED | No | Proprietary/no license |
+
+## API Reference
+
+### Constructors
+
+```zig
+import * as License from '@tevm/voltaire/License'
+
+// Create from SPDX identifier
+const license = License.from("MIT")
+```
+
+### Methods
+
+```zig
+import * as License from '@tevm/voltaire/License'
+
+const license = License.from("Apache-2.0")
+
+// Convert to string
+License.toString(license)  // "Apache-2.0"
+
+// Check if OSI-approved
+License.isOSI(license)     // true
+License.isOSI("GPL-3.0")   // true
+License.isOSI("UNLICENSED") // false
+```
+
+### Constants
+
+```zig
+import { COMMON_LICENSES, OSI_APPROVED_LICENSES } from '@tevm/voltaire/License'
+
+// Common SPDX license identifiers
+COMMON_LICENSES: string[]
+
+// OSI-approved open source licenses
+OSI_APPROVED_LICENSES: string[]
+```
+
+## Solidity License Identifier
+
+SPDX license identifiers are required in Solidity files since version 0.6.8:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+```
+
+The identifier appears in compiled contract metadata and can be used to:
+- Identify licensing terms programmatically
+- Filter contracts by license type
+- Ensure compliance with open source requirements
+
+## Use Cases
+
+### Contract Metadata Analysis
+
+```zig
+import * as License from '@tevm/voltaire/License'
+
+interface ContractMetadata {
+  license: string
+  compiler: string
+  source: string
+}
+
+function analyzeContract(metadata: ContractMetadata) {
+  const license = License.from(metadata.license)
+
+  return {
+    license: License.toString(license),
+    isOpenSource: License.isOSI(license),
+    isPermissive: ["MIT", "Apache-2.0", "BSD-3-Clause"].includes(
+      License.toString(license)
+    )
+  }
+}
+```
+
+### License Filtering
+
+```zig
+import * as License from '@tevm/voltaire/License'
+import { OSI_APPROVED_LICENSES } from '@tevm/voltaire/License'
+
+interface Contract {
+  address: string
+  license: string
+}
+
+function filterOpenSourceContracts(contracts: Contract[]): Contract[] {
+  return contracts.filter(c => License.isOSI(c.license))
+}
+
+function filterByLicense(contracts: Contract[], allowed: string[]): Contract[] {
+  return contracts.filter(c => allowed.includes(c.license))
+}
+
+// Only permissive licenses
+const permissive = filterByLicense(contracts, ["MIT", "Apache-2.0", "BSD-3-Clause"])
+```
+
+## Related
+
+- [SPDX License List](https://spdx.org/licenses/) - Full list of SPDX identifiers
+- [OSI Approved Licenses](https://opensource.org/licenses) - Open Source Initiative
+
+## References
+
+- [SPDX Specification](https://spdx.github.io/spdx-spec/) - SPDX license format
+- [Solidity License Identifiers](https://docs.soliditylang.org/en/latest/layout-of-source-files.html#spdx-license-identifier) - Solidity documentation

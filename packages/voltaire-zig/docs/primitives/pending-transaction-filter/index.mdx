@@ -1,0 +1,344 @@
+---
+title: PendingTransactionFilter
+description: Pending transaction hash filter for monitoring mempool activity
+---
+
+## Overview
+
+`PendingTransactionFilter` represents a filter created by `eth_newPendingTransactionFilter` that notifies of new pending transaction hashes. Used for monitoring mempool activity, MEV detection, and transaction tracking.
+
+## Type Definition
+
+```zig
+// Use primitives.FilterId.FilterId for filter identifiers returned by the node
+const FilterId = @import("primitives").FilterId.FilterId;
+```
+
+## Creating PendingTransactionFilter
+
+### from
+
+```zig
+// {"method":"eth_newPendingTransactionFilter","params":[]}
+// → returns filter id (hex string)
+```
+
+**Parameters:**
+- `filterId`: `FilterIdType` - Filter identifier from `eth_newPendingTransactionFilter`
+
+**Returns:** `PendingTransactionFilterType`
+
+## JSON-RPC Usage
+
+### Create Filter
+
+```zig
+// {"method":"eth_newPendingTransactionFilter","params":[]}
+```
+
+### Poll for Changes
+
+```zig
+// {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
+```
+
+### Uninstall Filter
+
+```zig
+// {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
+```
+
+## Example: Mempool Monitor
+
+```zig
+// 1) Install: {"method":"eth_newPendingTransactionFilter","params":[]}
+// 2) Poll:    {"method":"eth_getFilterChanges","params":["0xFILTER_ID"]}
+// 3) Details: {"method":"eth_getTransactionByHash","params":["0xTX_HASH"]}
+// 4) Remove:  {"method":"eth_uninstallFilter","params":["0xFILTER_ID"]}
+```
+
+## Example: High-Value Transaction Alert
+
+```zig
+// Alert threshold example (pseudocode):
+// - Parse tx.value hex → u256
+// - Compare against 100 ether (1e20 wei)
+```
+
+## Example: DEX Frontrun Detector
+
+```zig
+// Heuristic: detect higher-fee transactions with same selector (0x38ed1739)
+// by comparing `maxFeePerGas` or `gasPrice` fields from eth_getTransactionByHash.
+```
+
+## Comparison with eth_subscribe
+
+### PendingTransactionFilter (eth_newPendingTransactionFilter)
+
+**Pros:**
+- HTTP compatible (no WebSocket required)
+- Simple request-response pattern
+- Works with all RPC providers
+
+**Cons:**
+- Polling-based (less efficient)
+- Delayed notifications (poll interval)
+- Filter expiration if not polled
+- High volume (mainnet ~150 tx/s)
+
+```zig
+// HTTP polling
+const filterId = FilterId.from(await rpc.eth_newPendingTransactionFilter());
+setInterval(async () => {
+  const hashes = await rpc.eth_getFilterChanges(filterId);
+  // Process hashes...
+}, 5000);
+```
+
+### eth_subscribe
+
+**Pros:**
+- Real-time push notifications
+- More efficient (no polling)
+- No filter expiration
+
+**Cons:**
+- Requires WebSocket connection
+- Not supported by all providers
+- Still high volume
+
+```zig
+// WebSocket subscription
+const subscription = await ws.eth_subscribe('newPendingTransactions');
+subscription.on('data', (txHash) => {
+  console.log(`New pending tx: ${txHash}`);
+});
+```
+
+## Performance Considerations
+
+### High Volume
+
+Mainnet mempool produces ~150 transactions/second during busy periods:
+
+```zig
+// Calculate expected load
+const txPerSecond = 150;
+const pollInterval = 5; // seconds
+const expectedTxsPerPoll = txPerSecond * pollInterval; // ~750 txs
+
+console.log(`Expect ~${expectedTxsPerPoll} txs per poll`);
+```
+
+### Filtering Strategies
+
+Don't fetch all transaction details - filter by criteria:
+
+```zig
+// INEFFICIENT: Fetch all txs
+const hashes = await rpc.eth_getFilterChanges(filterId);
+for (const hash of hashes) {
+  const tx = await rpc.eth_getTransactionByHash(hash); // 750 requests!
+}
+
+// EFFICIENT: Filter by hash pattern first
+const hashes = await rpc.eth_getFilterChanges(filterId);
+const relevantHashes = hashes.filter(h => {
+  // Filter by some criteria before fetching
+  return h.startsWith('0xa');
+});
+
+// Then fetch only relevant txs
+for (const hash of relevantHashes) {
+  const tx = await rpc.eth_getTransactionByHash(hash);
+}
+```
+
+### Batch Requests
+
+Use JSON-RPC batching to fetch multiple transactions:
+
+```zig
+const hashes = await rpc.eth_getFilterChanges(filterId);
+
+// Batch request for all txs
+const batch = hashes.map(hash => ({
+  method: 'eth_getTransactionByHash',
+  params: [hash],
+  id: hash
+}));
+
+const txs = await rpc.batch(batch);
+```
+
+### Node Resource Limits
+
+Some nodes limit or disable pending transaction filters:
+- **Infura**: Disabled (use WebSocket subscriptions)
+- **Alchemy**: Limited rate
+- **Local node**: Configurable
+
+Check provider documentation before using.
+
+## Filter Expiration
+
+Pending transaction filters expire after inactivity (typically 5 minutes):
+
+```zig
+async function pollPendingTxFilter(filterId: FilterIdType) {
+  try {
+    const hashes = await rpc.eth_getFilterChanges(filterId);
+    return hashes;
+  } catch (error) {
+    if (error.message.includes('filter not found')) {
+      // Recreate filter
+      const newFilterId = FilterId.from(
+        await rpc.eth_newPendingTransactionFilter()
+      );
+      return pollPendingTxFilter(newFilterId);
+    }
+    throw error;
+  }
+}
+```
+
+## Use Cases
+
+### MEV Bot Detection
+
+```zig
+const filterId = FilterId.from(await rpc.eth_newPendingTransactionFilter());
+
+// Track MEV patterns
+const mevSignatures = [
+  "0x38ed1739", // Uniswap swap
+  "0x7ff36ab5", // swapExactETHForTokens
+  "0x18cbafe5"  // swapExactTokensForETH
+];
+
+setInterval(async () => {
+  const hashes = await rpc.eth_getFilterChanges(filterId);
+
+  for (const hash of hashes) {
+    const tx = await rpc.eth_getTransactionByHash(hash);
+
+    const isMEV = mevSignatures.some(sig =>
+      tx.input.startsWith(sig)
+    );
+
+    if (isMEV && tx.gasPrice > threshold) {
+      console.log(`Potential MEV: ${hash}`);
+      analyzeMEV(tx);
+    }
+  }
+}, 5000);
+```
+
+### Transaction Broadcaster
+
+```zig
+async function broadcastAndMonitor(signedTx: string) {
+  // Start monitoring before broadcast
+  const filterId = FilterId.from(
+    await rpc.eth_newPendingTransactionFilter()
+  );
+
+  // Broadcast transaction
+  const txHash = await rpc.eth_sendRawTransaction(signedTx);
+
+  // Monitor for inclusion
+  const interval = setInterval(async () => {
+    const hashes = await rpc.eth_getFilterChanges(filterId);
+
+    if (hashes.includes(txHash)) {
+      console.log(`Transaction ${txHash} seen in mempool`);
+    }
+
+    // Check if mined
+    const receipt = await rpc.eth_getTransactionReceipt(txHash);
+    if (receipt) {
+      console.log(`Transaction mined in block ${receipt.blockNumber}`);
+      clearInterval(interval);
+      await rpc.eth_uninstallFilter(filterId);
+    }
+  }, 5000);
+}
+```
+
+### Gas Price Oracle
+
+```zig
+const filterId = FilterId.from(await rpc.eth_newPendingTransactionFilter());
+
+// Track gas prices
+const gasPrices = [];
+
+setInterval(async () => {
+  const hashes = await rpc.eth_getFilterChanges(filterId);
+
+  // Sample first 50 txs
+  const sample = hashes.slice(0, 50);
+
+  for (const hash of sample) {
+    const tx = await rpc.eth_getTransactionByHash(hash);
+    const gasPrice = tx.maxFeePerGas || tx.gasPrice;
+    gasPrices.push(gasPrice);
+  }
+
+  // Keep last 1000 samples
+  if (gasPrices.length > 1000) {
+    gasPrices.splice(0, gasPrices.length - 1000);
+  }
+
+  // Calculate percentiles
+  const sorted = [...gasPrices].sort((a, b) => Number(a - b));
+  const p50 = sorted[Math.floor(sorted.length * 0.5)];
+  const p75 = sorted[Math.floor(sorted.length * 0.75)];
+  const p90 = sorted[Math.floor(sorted.length * 0.9)];
+
+  console.log(`Gas prices - P50: ${p50}, P75: ${p75}, P90: ${p90}`);
+}, 5000);
+```
+
+## Security Considerations
+
+### Privacy
+
+Pending transactions are publicly visible before mining:
+- Transaction details (from, to, value, data)
+- Gas prices (reveals urgency)
+- Nonce (reveals transaction ordering)
+
+### MEV Risks
+
+Monitoring the mempool exposes transactions to:
+- **Frontrunning**: Higher gas price to execute first
+- **Backrunning**: Execute after target transaction
+- **Sandwich attacks**: Frontrun + backrun
+
+**Mitigation:**
+- Use private mempools (Flashbots, Eden, etc.)
+- Encrypt transaction data
+- Use commit-reveal schemes
+
+## Related Types
+
+- [FilterId](/primitives/filter-id) - Filter identifier
+- [LogFilter](/primitives/log-filter) - Event log filter
+- [BlockFilter](/primitives/block-filter) - Block hash filter
+- [TransactionHash](/primitives/transaction-hash) - Transaction hash type
+
+## JSON-RPC Methods
+
+- `eth_newPendingTransactionFilter` - Create pending tx filter
+- `eth_getFilterChanges` - Poll for new pending txs
+- `eth_uninstallFilter` - Remove filter
+- `eth_getTransactionByHash` - Fetch transaction details
+- `eth_sendRawTransaction` - Broadcast transaction
+
+## See Also
+
+- [Ethereum JSON-RPC Specification](https://ethereum.github.io/execution-apis/api-documentation/)
+- [eth_subscribe (WebSocket alternative)](https://ethereum.github.io/execution-apis/api-documentation/#eth_subscribe)
+- [MEV-Boost Documentation](https://boost.flashbots.net/)

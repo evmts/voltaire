@@ -1,0 +1,197 @@
+---
+title: Overview
+description: Solidity source code mapping for debugging
+---
+
+## Type Definition
+
+Object representing Solidity source map that maps bytecode positions to source code locations.
+
+```zig
+export type SourceMapEntry = {
+  readonly start: number;          // Byte offset in source
+  readonly length: number;         // Length in source
+  readonly fileIndex: number;      // Source file index
+  readonly jump: "i" | "o" | "-"; // Jump type
+  readonly modifierDepth?: number; // Modifier depth
+};
+
+export type SourceMap = {
+  readonly raw: string;            // Raw semicolon-separated string
+  readonly entries: readonly SourceMapEntry[];
+};
+```
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Parse">
+
+```zig
+import * as SourceMap from '@tevm/voltaire/SourceMap';
+
+// Parse source map
+const map = SourceMap.from("0:50:0:-;51:100:0:-;151:25:0:o");
+
+// Access entries
+for (const entry of map.entries) {
+  console.log(`${entry.start}:${entry.length} in file ${entry.fileIndex}`);
+}
+```
+
+</Tab>
+<Tab title="Lookup">
+
+```zig
+// Get entry at specific bytecode position
+const entry = SourceMap.getEntryAt(map, pc);
+if (entry) {
+  console.log(`Source location: ${entry.start}-${entry.start + entry.length}`);
+  console.log(`Jump type: ${entry.jump}`);
+}
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(raw)`](./from) - Create from source map string
+- [`parse(raw)`](./parse) - Parse source map string
+
+### Access
+
+- [`getEntryAt(map, pc)`](./getEntryAt) - Get entry at bytecode position
+- [`toEntries(raw)`](./toEntries) - Convert string to entry array
+
+### Conversion
+
+- [`toString(map)`](./toString) - Convert to compressed string format
+
+## Usage Patterns
+
+### Debugging Contract Execution
+
+```zig
+import * as SourceMap from '@tevm/voltaire/SourceMap';
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+// Get source map from compilation output
+const sourceMap = SourceMap.from(compiledOutput.sourceMap);
+
+// Trace execution
+const instructions = Bytecode.parseInstructions(bytecode);
+for (const [i, instr] of instructions.entries()) {
+  const entry = SourceMap.getEntryAt(sourceMap, i);
+  if (entry) {
+    console.log(`PC ${i}: opcode ${instr.opcode}`);
+    console.log(`  Source: offset ${entry.start}, length ${entry.length}`);
+    console.log(`  File: ${entry.fileIndex}`);
+    console.log(`  Jump: ${entry.jump}`);
+  }
+}
+```
+
+### Error Location Mapping
+
+```zig
+import * as SourceMap from '@tevm/voltaire/SourceMap';
+
+// Map revert at PC to source location
+function getSourceLocation(pc: number, sourceMap: SourceMap.SourceMap) {
+  const entry = SourceMap.getEntryAt(sourceMap, pc);
+  if (!entry) return null;
+
+  return {
+    file: sourceFiles[entry.fileIndex],
+    start: entry.start,
+    end: entry.start + entry.length,
+    code: sourceFiles[entry.fileIndex]?.slice(entry.start, entry.start + entry.length),
+  };
+}
+
+// Use in error handling
+try {
+  // Execute contract call
+} catch (error) {
+  if (error.data?.revertPc) {
+    const location = getSourceLocation(error.data.revertPc, sourceMap);
+    console.log(`Reverted at: ${location?.file}:${location?.start}`);
+    console.log(`Code: ${location?.code}`);
+  }
+}
+```
+
+### Coverage Analysis
+
+```zig
+import * as SourceMap from '@tevm/voltaire/SourceMap';
+
+// Track executed PCs
+const executedPcs = new Set<number>();
+
+// During execution
+function recordExecution(pc: number) {
+  executedPcs.add(pc);
+}
+
+// Calculate coverage
+function calculateCoverage(sourceMap: SourceMap.SourceMap) {
+  const coveredLines = new Set<string>();
+
+  for (const pc of executedPcs) {
+    const entry = SourceMap.getEntryAt(sourceMap, pc);
+    if (entry) {
+      const key = `${entry.fileIndex}:${entry.start}`;
+      coveredLines.add(key);
+    }
+  }
+
+  const totalEntries = sourceMap.entries.length;
+  const coverage = (coveredLines.size / totalEntries) * 100;
+  console.log(`Coverage: ${coverage.toFixed(2)}%`);
+}
+```
+
+## Source Map Format
+
+Solidity source maps use semicolon-separated entries:
+
+```
+s:l:f:j:m;s:l:f:j:m;...
+```
+
+Where:
+- `s`: Start byte offset in source
+- `l`: Length in bytes
+- `f`: File index (0-based)
+- `j`: Jump type (`i` = into, `o` = out, `-` = regular)
+- `m`: Modifier depth (optional)
+
+### Compression
+
+Empty fields inherit from previous entry:
+```
+0:50:0:-;::1:i;
+```
+
+Second entry inherits start (0) and length (50), changes file to 1 and jump to `i`.
+
+### Jump Types
+
+- `-`: Regular instruction (no jump)
+- `i`: Jump into function/modifier (JUMP)
+- `o`: Jump out of function/modifier (return)
+
+## Related
+
+- [Bytecode](/primitives/bytecode) - Bytecode analysis
+- [Metadata](/primitives/metadata) - Compiler metadata
+- [ContractCode](/primitives/contract-code) - Deployed bytecode
+
+## Specification
+
+- [Solidity Source Mappings](https://docs.soliditylang.org/en/latest/internals/source_mappings.html) - Official format documentation
+- [Remix Debugger](https://remix-ide.readthedocs.io/en/latest/debugger.html) - Example usage

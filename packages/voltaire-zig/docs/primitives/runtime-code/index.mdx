@@ -1,0 +1,104 @@
+---
+title: Overview
+description: Pure runtime bytecode without constructor or metadata
+---
+
+## Type Definition (Zig)
+
+```zig
+// Use primitives.ContractCode for deployed runtime bytecode
+const ContractCode = @import("primitives").ContractCode;
+```
+
+Runtime code is the actual bytecode executed when calling a contract after deployment. It excludes:
+- Constructor logic
+- Solidity compiler metadata
+- Creation-time initialization
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Create">
+
+```zig
+const primitives = @import("primitives");
+const Hex = primitives.Hex;
+const allocator = std.testing.allocator;
+
+// From hex string
+const bytes = try Hex.hexToBytes(allocator, "0x6001600155");
+defer allocator.free(bytes);
+const code = primitives.ContractCode.from(bytes);
+```
+
+</Tab>
+<Tab title="Compare">
+
+```zig
+// Convert to hex
+const hex = try code.toHex(std.testing.allocator);
+defer std.testing.allocator.free(hex);
+// Compare byte slices directly
+const same = std.mem.eql(u8, code1.bytes, code2.bytes);
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Create from hex string or Uint8Array
+- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
+
+### Utilities
+
+- [`toHex(code)`](./toHex) - Convert to hex string
+- [`equals(a, b)`](./equals) - Compare equality
+
+## Usage Patterns
+
+### Contract Verification
+
+```zig
+// Build JSON payloads in Zig and compare code bytes against expected runtime
+// {"method":"eth_getCode","params":["0xCONTRACT","latest"]}
+// Strip constructor metadata according to your compiler toolchain before comparison.
+```
+
+### Bytecode Analysis
+
+```zig
+const primitives = @import("primitives");
+var bc = try primitives.Bytecode.init(std.testing.allocator, runtime_bytes);
+defer bc.deinit();
+// Iterate instructions
+var scan = bc.scan(0, @intCast(bc.len()));
+while (scan.next()) |inst| {
+    _ = inst; // inst.opcode, inst.push_value
+}
+// Static gas analysis
+const gas = bc.analyzeGasTotal();
+_ = gas;
+```
+
+### Comparing Contract Versions
+
+```zig
+// Compare two runtime bytecode buffers (v1 vs v2)
+const changed = !std.mem.eql(u8, v1_bytes, v2_bytes);
+```
+
+## Related
+
+- [ContractCode](/primitives/contract-code) - Full deployed bytecode
+- [InitCode](/primitives/init-code) - Creation bytecode
+- [Bytecode](/primitives/bytecode) - Bytecode analysis tools
+- [Metadata](/primitives/metadata) - Compiler metadata
+
+## Specification
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - EVM execution model
+- [EVM Opcodes](https://www.evm.codes/) - Instruction reference
+- [Solidity Internals](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html) - Contract structure

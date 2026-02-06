@@ -1,0 +1,280 @@
+---
+title: ChainHead
+description: Current blockchain tip information
+icon: link
+---
+
+# ChainHead
+
+Current chain head information representing the latest block at the tip of the blockchain.
+
+## Overview
+
+ChainHead captures essential information about the latest block: number, hash, timestamp, and difficulty. Typically obtained from eth_getBlockByNumber("latest").
+
+## Type Definition
+
+```zig
+type ChainHeadType = {
+  readonly number: BlockNumber;
+  readonly hash: BlockHash;
+  readonly timestamp: Uint256;        // Unix seconds
+  readonly difficulty?: Uint256;      // 0 post-merge
+  readonly totalDifficulty?: Uint256; // Cumulative from genesis
+};
+```
+
+## Usage
+
+### Getting Chain Head
+
+```zig
+import { ChainHead } from 'voltaire/primitives';
+
+// From RPC response
+const block = await rpc.eth_getBlockByNumber('latest', false);
+const head = ChainHead.from({
+  number: block.number,
+  hash: block.hash,
+  timestamp: block.timestamp
+});
+
+console.log(`Block ${head.number}`);
+console.log(`Hash: ${BlockHash.toHex(head.hash)}`);
+console.log(`Timestamp: ${head.timestamp}`);
+```
+
+### Post-Merge (PoS)
+
+Post-merge blocks have zero difficulty:
+
+```zig
+const head = ChainHead.from({
+  number: 18000000n,
+  hash: blockHash,
+  timestamp: 1699000000n,
+  difficulty: 0n  // Proof of Stake
+});
+
+console.log('Post-merge block (PoS)');
+```
+
+### Pre-Merge (PoW)
+
+Pre-merge blocks have non-zero difficulty:
+
+```zig
+const head = ChainHead.from({
+  number: 15000000n,
+  hash: blockHash,
+  timestamp: 1650000000n,
+  difficulty: 12000000000000000n,          // Block difficulty
+  totalDifficulty: 58750003716598352816469n // Cumulative
+});
+
+console.log(`Difficulty: ${head.difficulty}`);
+console.log(`Total difficulty: ${head.totalDifficulty}`);
+```
+
+## RPC Integration
+
+### eth_getBlockByNumber
+
+Get latest block:
+
+```zig
+// Get latest block
+const block = await rpc.eth_getBlockByNumber('latest', false);
+
+const head = ChainHead.from({
+  number: BigInt(block.number),
+  hash: block.hash,
+  timestamp: BigInt(block.timestamp),
+  difficulty: block.difficulty ? BigInt(block.difficulty) : undefined,
+  totalDifficulty: block.totalDifficulty ? BigInt(block.totalDifficulty) : undefined
+});
+```
+
+### eth_blockNumber
+
+Get just the latest block number:
+
+```zig
+const blockNumber = await rpc.eth_blockNumber();
+console.log(`Current block: ${blockNumber}`);
+```
+
+## Consensus Types
+
+### Proof of Stake (Post-Merge)
+
+The Merge (September 15, 2022) transitioned Ethereum to PoS:
+
+- Block 15537394+ have `difficulty: 0`
+- No mining, validators propose blocks
+- 12 second slot time
+
+```zig
+function isPostMerge(head) {
+  return head.difficulty === 0n;
+}
+```
+
+### Proof of Work (Pre-Merge)
+
+Pre-merge blocks had mining difficulty:
+
+- Variable block times (~13 seconds average)
+- Difficulty adjusted every 2016 blocks
+- Total difficulty tracked cumulative work
+
+```zig
+function isPreMerge(head) {
+  return head.difficulty && head.difficulty > 0n;
+}
+```
+
+## Time Analysis
+
+### Block Age
+
+Calculate block age:
+
+```zig
+const now = BigInt(Math.floor(Date.now() / 1000));
+const age = now - head.timestamp;
+
+console.log(`Block age: ${age} seconds`);
+console.log(`Block age: ${age / 60n} minutes`);
+```
+
+### Network Health
+
+Recent blocks indicate healthy network:
+
+```zig
+const now = BigInt(Math.floor(Date.now() / 1000));
+const age = now - head.timestamp;
+
+if (age < 30n) {
+  console.log('Network healthy: recent block');
+} else if (age < 300n) {
+  console.log('Network normal');
+} else {
+  console.log('Warning: stale block data');
+}
+```
+
+## Chain Reorganizations
+
+Track reorgs by monitoring chain head changes:
+
+```zig
+let previousHead = null;
+
+async function checkForReorg() {
+  const block = await rpc.eth_getBlockByNumber('latest', false);
+  const currentHead = ChainHead.from(block);
+
+  if (previousHead) {
+    // Same number but different hash = reorg
+    if (currentHead.number === previousHead.number &&
+        !BlockHash.equals(currentHead.hash, previousHead.hash)) {
+      console.log('Chain reorganization detected!');
+    }
+
+    // Number went backwards = deep reorg
+    if (currentHead.number < previousHead.number) {
+      console.log('Deep reorganization detected!');
+    }
+  }
+
+  previousHead = currentHead;
+}
+
+setInterval(checkForReorg, 12000);  // Check every 12 seconds
+```
+
+## Finality
+
+### Gasper Finality (PoS)
+
+Blocks finalized after 2 epochs (~12.8 minutes):
+
+```zig
+async function isFinalized(blockNumber, rpc) {
+  const latest = await rpc.eth_getBlockByNumber('latest', false);
+  const currentBlock = BigInt(latest.number);
+
+  // ~64 blocks per epoch, 2 epochs for finality
+  const finalityDistance = 128n;
+
+  return currentBlock - blockNumber >= finalityDistance;
+}
+```
+
+### Safe Block
+
+Safe block is justified (~1 epoch old):
+
+```zig
+const safeBlock = await rpc.eth_getBlockByNumber('safe', false);
+const safeHead = ChainHead.from(safeBlock);
+
+console.log(`Safe block: ${safeHead.number}`);
+```
+
+## Common Patterns
+
+### Wait for Block
+
+Wait for specific block number:
+
+```zig
+async function waitForBlock(targetBlock, rpc) {
+  while (true) {
+    const block = await rpc.eth_getBlockByNumber('latest', false);
+    const head = ChainHead.from(block);
+
+    if (head.number >= targetBlock) {
+      return head;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 12000));
+  }
+}
+```
+
+### Block Production Rate
+
+Calculate blocks per second:
+
+```zig
+async function getBlockRate(rpc, samples = 10) {
+  const latest = await rpc.eth_getBlockByNumber('latest', false);
+  const latestHead = ChainHead.from(latest);
+
+  const oldBlockNum = latestHead.number - BigInt(samples);
+  const old = await rpc.eth_getBlockByNumber(`0x${oldBlockNum.toString(16)}`, false);
+  const oldHead = ChainHead.from(old);
+
+  const timeDelta = latestHead.timestamp - oldHead.timestamp;
+  const blockDelta = latestHead.number - oldHead.number;
+
+  const blocksPerSecond = Number(blockDelta) / Number(timeDelta);
+  return blocksPerSecond;
+}
+```
+
+## API Reference
+
+### Constructors
+
+- `ChainHead.from({ number, hash, timestamp, difficulty?, totalDifficulty? })` - Create from block data
+
+## See Also
+
+- [BlockNumber](/primitives/block-number) - Block heights
+- [BlockHash](/primitives/block-hash) - Block identifiers
+- [SyncStatus](/primitives/sync-status) - Node sync progress
+- [BlockHeader](/primitives/block-header) - Full block headers

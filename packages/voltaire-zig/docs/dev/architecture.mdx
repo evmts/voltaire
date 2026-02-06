@@ -1,0 +1,234 @@
+---
+title: Architecture
+description: Voltaire codebase structure, module organization, and design principles
+---
+
+# Architecture
+
+Voltaire is a multi-language Ethereum primitives and cryptography library. This guide covers the codebase structure and key architectural decisions.
+
+## Directory Structure
+
+```
+voltaire/
+├── src/
+│   ├── primitives/          # Ethereum types (TS + Zig)
+│   │   ├── Address/
+│   │   ├── Hash/
+│   │   ├── Uint/
+│   │   ├── Rlp/
+│   │   ├── Abi/
+│   │   ├── Transaction/
+│   │   └── root.zig         # Module entry point
+│   ├── crypto/              # Cryptographic functions (TS + Zig + Rust)
+│   │   ├── Keccak256/
+│   │   ├── Secp256k1/
+│   │   ├── Bls12381/
+│   │   ├── Bn254/
+│   │   ├── Kzg/
+│   │   └── root.zig
+│   ├── evm/
+│   │   └── precompiles/     # EVM precompile implementations
+│   │       └── root.zig
+│   └── wasm-loader/         # WASM instantiation infrastructure
+├── lib/                     # C libraries (vendored)
+│   ├── blst/                # BLS12-381 signatures
+│   ├── c-kzg-4844/          # KZG commitments (EIP-4844)
+│   └── libwally-core/       # Wallet utilities (git submodule)
+├── docs/                    # Mintlify documentation
+├── examples/                # Usage examples
+├── wasm/                    # WASM output
+├── native/                  # Native FFI bindings
+├── build.zig                # Zig build system
+├── build.zig.zon            # Zig dependencies
+├── Cargo.toml               # Rust dependencies
+└── package.json             # Node dependencies
+```
+
+## Module System
+
+### Zig Modules
+
+Each major area has a `root.zig` entry point:
+
+```zig
+// src/primitives/root.zig
+pub const Address = @import("Address/address.zig").Address;
+pub const Hash = @import("Hash/hash.zig").Hash;
+pub const Uint256 = @import("Uint/uint256.zig").Uint256;
+// ...
+```
+
+### Import Convention
+
+<Warning>
+Never use relative imports across module boundaries.
+</Warning>
+
+```zig
+// ✅ Module imports (correct)
+const primitives = @import("primitives");
+const Address = primitives.Address;
+
+const crypto = @import("crypto");
+const Keccak256 = crypto.Keccak256;
+
+// ❌ Relative imports (wrong)
+const Address = @import("../primitives/Address/address.zig").Address;
+```
+
+This enables:
+- Clean dependency tracking
+- Easy refactoring
+- Consistent import style across codebase
+
+## File Colocation Pattern
+
+Each primitive type has colocated implementations:
+
+```
+src/primitives/Address/
+├── AddressType.ts         # Branded type definition
+├── Address.js             # Implementation (JSDoc types)
+├── Address.test.ts        # Vitest tests
+├── Address.wasm.ts        # WASM variant
+├── Address.wasm.test.ts   # WASM tests
+├── ChecksumAddress.js     # Branded variant
+├── LowercaseAddress.js    # Branded variant
+├── index.ts               # Dual exports + public API
+├── address.zig            # Zig implementation
+├── address.bench.zig      # zbench benchmarks
+├── address.fuzz.zig       # Fuzz tests
+└── address.mdx            # Documentation
+```
+
+### Why Colocation?
+
+1. **Discoverability**: Find all related code in one place
+2. **Consistency**: TS and Zig implementations stay synchronized
+3. **Testing**: Tests live next to implementation
+4. **Documentation**: Docs update with code changes
+
+## Layered Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    TypeScript API                    │
+│         (Branded types, namespace exports)           │
+├─────────────────────────────────────────────────────┤
+│                   FFI / WASM Layer                   │
+│         (Bun FFI, WASM instantiation)               │
+├─────────────────────────────────────────────────────┤
+│                      Zig Core                        │
+│      (primitives, crypto, precompiles)              │
+├─────────────────────────────────────────────────────┤
+│                   Native Libraries                   │
+│    (Rust crypto_wrappers, C libs: blst, c-kzg)      │
+└─────────────────────────────────────────────────────┘
+```
+
+### TypeScript Layer
+- Branded `Uint8Array` types for type safety
+- Namespace pattern for tree-shaking
+- Dual exports (internal `_method` + wrapper)
+
+### FFI/WASM Layer
+- Bun FFI for native performance
+- WASM fallback for browser/non-Bun environments
+- Automatic memory management
+
+### Zig Core
+- Performance-critical implementations
+- Direct memory control
+- Cross-compilation support
+
+### Native Libraries
+- Rust via Cargo: arkworks curves, keccak-asm
+- C libs: blst (BLS12-381), c-kzg-4844 (KZG)
+
+## Dependency Graph
+
+```
+┌─────────────┐
+│ precompiles │ ───depends on───┐
+└─────────────┘                 │
+                                ▼
+┌─────────────┐          ┌──────────┐
+│ primitives  │◄─────────│  crypto  │
+└─────────────┘          └──────────┘
+      │                        │
+      │                        ▼
+      │                 ┌────────────┐
+      └────────────────►│  C / Rust  │
+                        │  Libraries │
+                        └────────────┘
+```
+
+- `precompiles` depends on both `primitives` and `crypto`
+- `crypto` depends on `primitives` (for types like Hash)
+- Both depend on C/Rust libraries for performance-critical ops
+
+## Build Outputs
+
+```
+zig-out/
+├── lib/                    # Static libraries
+│   ├── libblst.a
+│   ├── libc_kzg.a
+│   └── libcrypto_wrappers.a
+├── native/                 # Native FFI
+│   └── libprimitives_ts_native.dylib
+└── wasm/                   # WASM artifacts
+    ├── primitives.wasm        # ReleaseSmall
+    └── primitives-fast.wasm   # ReleaseFast
+
+dist/                       # JS distribution
+├── index.js
+├── index.cjs
+└── index.d.ts
+
+wasm/                       # WASM loader + modules
+├── loader.ts
+├── primitives.wasm
+└── crypto/                 # Individual modules
+    ├── keccak256.wasm
+    ├── secp256k1.wasm
+    └── ...
+```
+
+## Platform Support
+
+| Platform | Native FFI | WASM |
+|----------|------------|------|
+| darwin-arm64 | ✅ | ✅ |
+| darwin-x64 | ✅ | ✅ |
+| linux-arm64 | ✅ | ✅ |
+| linux-x64 | ✅ | ✅ |
+| win32-x64 | ✅ | ✅ |
+| Browser | ❌ | ✅ |
+
+## Design Principles
+
+### 1. Zero-Cost Abstractions
+Branded types have no runtime cost. They're purely compile-time TypeScript constructs.
+
+### 2. Memory Ownership
+Zig code returns memory to caller. Caller is responsible for deallocation.
+
+```zig
+// Returns owned memory
+pub fn toHex(allocator: Allocator, address: Address) ![]u8 {
+    const result = try allocator.alloc(u8, 42);
+    // ... fill result ...
+    return result;  // Caller must free
+}
+```
+
+### 3. No Hidden Allocations
+Functions that allocate take an explicit allocator parameter.
+
+### 4. Fail Fast
+Invalid inputs cause immediate errors. No silent failures or defaults.
+
+### 5. Cross-Validate
+Implementations are tested against reference libraries (noble, ethers, viem).

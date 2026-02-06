@@ -1,0 +1,94 @@
+---
+title: Overview
+description: Contract creation bytecode (constructor + runtime)
+---
+
+## Type Definition (Zig)
+
+```zig
+// Represent init code as []const u8; use primitives.Hex to convert hex ⇄ bytes.
+```
+
+Init code contains:
+1. Constructor logic
+2. Constructor arguments (if any)
+3. Runtime bytecode (returned by constructor)
+
+## Quick Reference
+
+<Tabs>
+<Tab title="Create">
+
+```zig
+const Hex = @import("primitives").Hex;
+const allocator = std.testing.allocator;
+const init_bytes = try Hex.hexToBytes(allocator, "0x6080604052...");
+defer allocator.free(init_bytes);
+```
+
+</Tab>
+<Tab title="Extract">
+
+```zig
+// Extract runtime code at known offset: slice init code after constructor
+const runtime_bytes = init_bytes[constructor_len..];
+// Estimate creation gas: data cost + CREATE cost (documented in EIPs)
+```
+
+</Tab>
+</Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`from(value)`](./from) - Create from hex string or Uint8Array
+- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
+
+### Analysis
+
+- [`extractRuntime(init, offset)`](./extractRuntime) - Extract runtime code at offset
+- [`estimateGas(init)`](./estimateGas) - Estimate creation gas cost
+
+### Utilities
+
+- [`toHex(init)`](./toHex) - Convert to hex string
+- [`equals(a, b)`](./equals) - Compare equality
+
+## Usage Patterns
+
+### Deploying Contract (JSON-RPC)
+
+```zig
+// Build a raw transaction with init code as data (hex)
+// {"method":"eth_sendRawTransaction","params":["0xSIGNED_TX"]}
+```
+
+### Analyzing Creation Bytecode
+
+```zig
+const primitives = @import("primitives");
+var bc = try primitives.Bytecode.init(std.testing.allocator, init_bytes);
+defer bc.deinit();
+// Iterate through instructions until constructor RETURN; then slice to runtime.
+```
+
+### Gas Estimation
+
+```zig
+// Gas breakdown (reference):
+// - 21000 base tx, 32000 CREATE, 16 per non-zero byte, 4 per zero byte
+```
+
+## Related
+
+- [ContractCode](/primitives/contract-code) - Deployed contract bytecode
+- [RuntimeCode](/primitives/runtime-code) - Pure runtime bytecode
+- [Bytecode](/primitives/bytecode) - General bytecode analysis
+- [Transaction](/primitives/transaction) - Transaction types
+
+## Specification
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Contract creation semantics
+- [EVM Opcodes](https://www.evm.codes/) - CREATE and CREATE2 operations
+- [EIP-2028](https://eips.ethereum.org/EIPS/eip-2028) - Calldata gas cost reduction

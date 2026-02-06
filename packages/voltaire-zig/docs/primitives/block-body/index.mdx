@@ -1,0 +1,77 @@
+---
+title: "BlockBody"
+description: "Ethereum block body with transactions and withdrawals"
+---
+
+## Overview
+
+BlockBody contains the executable content of a block: transactions, uncle/ommer blocks, and (post-Shanghai) withdrawals.
+
+```zig
+// Obtain block body via eth_getBlockByNumber(..., true) for full transaction objects.
+```
+
+## Type Definition
+
+```zig
+// Transactions, ommers (pre-merge), withdrawals (post-Shanghai)
+```
+
+**Fields:**
+- `transactions` - Ordered list of transactions in the block
+- `ommers` - Uncle/ommer block headers (deprecated post-merge)
+- `withdrawals` - Beacon chain withdrawals (post-Shanghai)
+
+## Creating BlockBody
+
+### from
+
+Universal constructor from components.
+
+```zig
+// JSON: include 'withdrawals' for post-Shanghai blocks; 'ommers' for pre-merge
+```
+
+## Transaction Types
+
+BlockBody supports all transaction types:
+
+| Type | Description | Introduced |
+|------|-------------|------------|
+| Legacy | Original transaction format | Genesis |
+| EIP-2930 | Access list transactions | Berlin |
+| EIP-1559 | Fee market transactions | London |
+| EIP-4844 | Blob transactions | Cancun |
+| EIP-7702 | Account abstraction | Prague |
+
+```zig
+// Transaction types: 0 (legacy), 1 (EIP-2930), 2 (EIP-1559), 3 (EIP-4844)
+```
+
+## Ommers (Uncle Blocks)
+
+<Warning>
+Ommers are deprecated post-merge. Always use empty array for new blocks.
+</Warning>
+
+```zig
+// Ommers present only pre-merge; empty post-merge
+```
+
+## Withdrawals (Post-Shanghai)
+
+Withdrawals represent ETH being withdrawn from the beacon chain to execution layer.
+
+```zig
+// Withdrawal fields: index, validatorIndex, address, amount (Gwei)
+```
+
+<Note>
+Withdrawal amounts are in Gwei (10^9 Wei), not Wei!
+</Note>
+
+## See Also
+
+- [Block](/primitives/block) - Complete block type
+- [BlockHeader](/primitives/block-header) - Block header
+- [Transaction](/primitives/transaction) - Transaction types

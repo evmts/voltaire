@@ -1,0 +1,401 @@
+---
+title: Keystore Decryption
+description: How to decrypt Web3 Secret Storage keystores
+---
+
+## Overview
+
+Keystore decryption reverses the encryption process to recover a private key. It derives the same encryption key from the password, verifies the MAC to ensure correctness, then decrypts the ciphertext.
+
+## Decryption Process
+
+### Algorithm Flow
+
+```
+Password + Salt (from keystore)
+       │
+       ▼
+   ┌───────┐
+   │  KDF  │ (scrypt or PBKDF2)
+   └───────┘
+       │
+       ▼
+ Derived Key (32 bytes)
+       │
+       ├──────────────────┐
+       │                  │
+       ▼                  ▼
+ Encryption Key     MAC Key
+  (16 bytes)       (16 bytes)
+                          │
+   Ciphertext ───────────►│
+   (from keystore)        │
+                          ▼
+                   ┌─────────────┐
+                   │ Keccak256   │
+                   │(MAC Key +   │
+                   │ Ciphertext) │
+                   └─────────────┘
+                          │
+                          ▼
+                   Computed MAC
+                          │
+                          ▼
+            ┌─────────────────────────┐
+            │ Compare with stored MAC │
+            │   (constant-time)       │
+            └─────────────────────────┘
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+         MAC matches            MAC differs
+              │                       │
+              ▼                       ▼
+       ┌─────────────┐         InvalidMacError
+       │ AES-128-CTR │         (wrong password)
+       │  Decrypt    │
+       └─────────────┘
+              │
+              ▼
+         Private Key
+```
+
+### Step by Step
+
+1. **Validate keystore** version (must be 3) and KDF (scrypt or pbkdf2)
+2. **Extract parameters** from keystore (salt, IV, ciphertext, MAC)
+3. **Derive key** from password using same KDF and parameters
+4. **Split derived key**: first 16 bytes for decryption, next 16 for MAC verification
+5. **Compute expected MAC** as `keccak256(macKey || ciphertext)`
+6. **Verify MAC** using constant-time comparison
+7. **Decrypt ciphertext** with AES-128-CTR if MAC matches
+
+## Basic Decryption
+
+```zig
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
+
+// Load keystore (from file, localStorage, etc.)
+const keystore = {
+  version: 3,
+  id: 'e4b8a7c2-1234-5678-9abc-def012345678',
+  crypto: {
+    cipher: 'aes-128-ctr',
+    ciphertext: 'a7b8c9d0e1f2...',
+    cipherparams: { iv: '1a2b3c4d5e6f...' },
+    kdf: 'scrypt',
+    kdfparams: {
+      dklen: 32,
+      n: 262144,
+      r: 8,
+      p: 1,
+      salt: '9a8b7c6d5e4f...'
+    },
+    mac: 'f1e2d3c4b5a6...'
+  }
+};
+
+// Decrypt
+const privateKey = Keystore.decrypt(keystore, 'my-password');
+
+console.log(privateKey); // Uint8Array (32 bytes)
+```
+
+## Error Handling
+
+Decryption can fail for several reasons. Always handle errors:
+
+```zig
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
+
+try {
+  const privateKey = Keystore.decrypt(keystore, password);
+  console.log('Decryption successful');
+} catch (error) {
+  if (error instanceof Keystore.InvalidMacError) {
+    // Most common: wrong password
+    console.error('Invalid password or corrupted keystore');
+  } else if (error instanceof Keystore.UnsupportedVersionError) {
+    console.error('Keystore version not supported:', error.version);
+  } else if (error instanceof Keystore.UnsupportedKdfError) {
+    console.error('KDF not supported:', error.kdf);
+  } else if (error instanceof Keystore.DecryptionError) {
+    console.error('Decryption failed:', error.message);
+  }
+}
+```
+
+### Error Types
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `InvalidMacError` | Wrong password or corrupted data | Retry with correct password |
+| `UnsupportedVersionError` | Keystore version not 3 | Only v3 keystores supported |
+| `UnsupportedKdfError` | KDF not scrypt or pbkdf2 | Convert to supported format |
+| `DecryptionError` | General decryption failure | Check keystore integrity |
+
+## Security Features
+
+### Constant-Time MAC Comparison
+
+MAC verification uses constant-time comparison to prevent timing attacks:
+
+```zig
+// Internal implementation
+function constantTimeEqual(a, b) {
+  if (a.length !== b.length) return false;
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+
+  return result === 0;
+}
+```
+
+This ensures:
+- Attackers cannot determine how many bytes of the MAC matched
+- Password guessing attacks don't get timing hints
+- Both correct and incorrect passwords take the same time to compare
+
+### No Partial Decryption
+
+If MAC verification fails, no decryption attempt is made:
+
+```zig
+try {
+  const privateKey = Keystore.decrypt(keystore, 'wrong-password');
+} catch (error) {
+  // error instanceof InvalidMacError
+  // No plaintext data is leaked - decryption never occurred
+}
+```
+
+## Advanced Usage
+
+### Wallet Unlock Flow
+
+```zig
+async function unlockWallet(keystore, password) {
+  try {
+    const privateKey = Keystore.decrypt(keystore, password);
+
+    return {
+      success: true,
+      privateKey,
+      address: deriveAddress(privateKey)
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Keystore.InvalidMacError
+        ? 'Invalid password'
+        : 'Decryption failed'
+    };
+  }
+}
+
+// Usage with retry logic
+let attempts = 0;
+const MAX_ATTEMPTS = 3;
+
+while (attempts < MAX_ATTEMPTS) {
+  const password = await promptPassword();
+  const result = await unlockWallet(keystore, password);
+
+  if (result.success) {
+    console.log('Wallet unlocked:', result.address);
+    break;
+  }
+
+  attempts++;
+  console.error(`${result.error}. ${MAX_ATTEMPTS - attempts} attempts remaining.`);
+}
+```
+
+### Loading from File
+
+```zig
+import * as fs from 'fs';
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
+
+function loadAndDecrypt(filepath, password) {
+  // Read keystore file
+  const content = fs.readFileSync(filepath, 'utf8');
+  const keystore = JSON.parse(content);
+
+  // Validate structure
+  if (keystore.version !== 3) {
+    throw new Error(`Unsupported keystore version: ${keystore.version}`);
+  }
+
+  // Decrypt
+  return Keystore.decrypt(keystore, password);
+}
+
+// Usage
+const privateKey = loadAndDecrypt('./keystore.json', 'my-password');
+```
+
+### Browser localStorage
+
+```zig
+function loadFromStorage(key, password) {
+  const stored = localStorage.getItem(key);
+
+  if (!stored) {
+    throw new Error('No keystore found');
+  }
+
+  const keystore = JSON.parse(stored);
+  return Keystore.decrypt(keystore, password);
+}
+
+// Usage
+try {
+  const privateKey = loadFromStorage('wallet', userPassword);
+} catch (error) {
+  console.error('Failed to unlock wallet');
+}
+```
+
+### Batch Decryption
+
+```zig
+async function decryptMultiple(keystores, password) {
+  const results = [];
+
+  for (const keystore of keystores) {
+    try {
+      const privateKey = Keystore.decrypt(keystore, password);
+      results.push({ id: keystore.id, success: true, privateKey });
+    } catch (error) {
+      results.push({ id: keystore.id, success: false, error: error.message });
+    }
+  }
+
+  return results;
+}
+```
+
+## Performance Considerations
+
+Decryption time depends on KDF parameters stored in the keystore:
+
+| KDF | Parameters | Typical Time |
+|-----|------------|--------------|
+| Scrypt | N=262144 (default) | 2-5 seconds |
+| Scrypt | N=16384 | 100-200ms |
+| PBKDF2 | c=262144 (default) | 500ms-1s |
+| PBKDF2 | c=10000 | 20-50ms |
+
+### Showing Progress
+
+```zig
+async function decryptWithUI(keystore, password) {
+  showLoadingSpinner('Decrypting...');
+
+  try {
+    // Decryption is synchronous but CPU-intensive
+    // Consider using a Web Worker for non-blocking UI
+    const privateKey = Keystore.decrypt(keystore, password);
+    hideLoadingSpinner();
+    return privateKey;
+  } catch (error) {
+    hideLoadingSpinner();
+    throw error;
+  }
+}
+```
+
+### Web Worker (Non-blocking)
+
+```zig
+// worker.js
+import * as Keystore from '@tevm/voltaire/crypto/Keystore';
+
+self.onmessage = (event) => {
+  const { keystore, password } = event.data;
+
+  try {
+    const privateKey = Keystore.decrypt(keystore, password);
+    self.postMessage({ success: true, privateKey: Array.from(privateKey) });
+  } catch (error) {
+    self.postMessage({ success: false, error: error.message });
+  }
+};
+
+// main.js
+const worker = new Worker('worker.js');
+
+function decryptInWorker(keystore, password) {
+  return new Promise((resolve, reject) => {
+    worker.onmessage = (event) => {
+      if (event.data.success) {
+        resolve(new Uint8Array(event.data.privateKey));
+      } else {
+        reject(new Error(event.data.error));
+      }
+    };
+
+    worker.postMessage({ keystore, password });
+  });
+}
+```
+
+## Common Issues
+
+### Wrong Password
+
+The most common decryption error:
+
+```zig
+// This always throws InvalidMacError for wrong passwords
+try {
+  Keystore.decrypt(keystore, 'wrong-password');
+} catch (error) {
+  // error instanceof Keystore.InvalidMacError === true
+}
+```
+
+<Tip>
+There's no way to "recover" a keystore with a forgotten password. The only option is to try different passwords or use the original private key if backed up elsewhere.
+</Tip>
+
+### Corrupted Keystore
+
+If the keystore JSON is modified, decryption fails:
+
+```zig
+// Corrupted ciphertext
+keystore.crypto.ciphertext = 'modified-value';
+
+try {
+  Keystore.decrypt(keystore, password);
+} catch (error) {
+  // InvalidMacError - MAC no longer matches
+}
+```
+
+### IV Corruption
+
+A special case: corrupted IV passes MAC verification but produces wrong plaintext:
+
+```zig
+// IV corruption doesn't affect MAC (MAC doesn't include IV)
+keystore.crypto.cipherparams.iv = 'different-iv-value';
+
+const decrypted = Keystore.decrypt(keystore, password);
+// Decryption "succeeds" but returns garbage data!
+```
+
+<Warning>
+Always validate the resulting private key (e.g., check that it produces the expected address) after decryption.
+</Warning>
+
+## References
+
+- [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition)
+- [AES-CTR Mode (NIST SP 800-38A)](https://csrc.nist.gov/publications/detail/sp/800-38a/final)
+- [Keccak256](https://keccak.team/keccak.html)

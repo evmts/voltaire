@@ -1,0 +1,223 @@
+---
+title: Address.zero
+description: Create zero address (0x0000...0000)
+---
+
+
+<Tip>
+View the complete executable example at [`playground/src/examples/primitives/address/zero.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/primitives/address/zero.ts).
+</Tip>
+
+<Tabs>
+
+<Tab title="C">
+
+## `PrimitivesAddress` Zero Constant
+
+In C API, use the zero-initialized struct pattern to create zero address.
+
+**Type:** `PrimitivesAddress`
+
+**Example:**
+
+```c
+#include <tevm/primitives.h>
+#include <string.h>
+
+// Create zero address
+PrimitivesAddress zero = {0};
+
+// Verify it's zero
+bool is_zero = primitives_address_is_zero(&zero);
+// is_zero == true
+
+// Alternative: explicitly zero all bytes
+PrimitivesAddress zero2;
+memset(zero2.bytes, 0, 20);
+```
+
+**Verification:**
+
+```c
+#include <tevm/primitives.h>
+
+PrimitivesAddress zero = {0};
+
+// Compare with known zero
+PrimitivesAddress expected = {0};
+bool equal = primitives_address_equals(&zero, &expected);
+// equal == true
+
+// Check directly
+bool is_zero = primitives_address_is_zero(&zero);
+// is_zero == true
+```
+
+**Defined in:** [primitives.h:65](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L65)
+
+</Tab>
+</Tabs>
+
+## Common Use Cases
+
+### Default Values
+
+Use as a default or placeholder address:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+interface Config {
+  owner: Address
+  admin: Address
+}
+
+const defaultConfig: Config = {
+  owner: Address.zero(),
+  admin: Address.zero()
+}
+```
+
+### Burn Address
+
+The zero address is commonly used as a burn address (destroying tokens):
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+const BURN_ADDRESS = Address.zero()
+
+function burnTokens(amount: bigint) {
+  // Transfer tokens to zero address (irreversibly destroys them)
+  transfer(BURN_ADDRESS, amount)
+}
+```
+
+### Validation
+
+Check if address is unset or invalid:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+function validateRecipient(recipient: Address) {
+  if (recipient.equals(Address.zero())) {
+    throw new Error('Cannot send to zero address')
+  }
+}
+```
+
+### Contract Creation
+
+Zero address indicates contract creation in transaction `to` field:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+interface Transaction {
+  from: Address
+  to: Address | null
+  data: Uint8Array
+}
+
+// Deploy contract (to = zero address or null)
+const deployTx: Transaction = {
+  from: deployer,
+  to: Address.zero(), // or null
+  data: contractBytecode
+}
+```
+
+## Special Properties
+
+**Uniqueness:** Only one valid representation exists.
+
+**Singleton:** Multiple calls to `zero()` return equivalent addresses:
+```zig
+const zero1 = Address.zero()
+const zero2 = Address.zero()
+console.log(zero1.equals(zero2)) // true
+```
+
+**Memory:** Each call allocates a new Uint8Array. For repeated use, store the reference:
+```zig
+// Less efficient (multiple allocations)
+for (let i = 0; i < 1000; i++) {
+  if (addr.equals(Address.zero())) {
+    // ...
+  }
+}
+
+// More efficient (single allocation)
+const ZERO = Address.zero()
+for (let i = 0; i < 1000; i++) {
+  if (addr.equals(ZERO)) {
+    // ...
+  }
+}
+```
+
+## Equivalent Constructions
+
+All of these produce the zero address:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+const zero1 = Address.zero()
+const zero2 = Address(0n)
+const zero3 = Address(0)
+const zero4 = Address("0x0000000000000000000000000000000000000000")
+const zero5 = Address(new Uint8Array(20))
+
+// All are equal
+console.log(zero1.equals(zero2)) // true
+console.log(zero1.equals(zero3)) // true
+console.log(zero1.equals(zero4)) // true
+console.log(zero1.equals(zero5)) // true
+```
+
+**Recommendation:** Use `Address.zero()` for clarity and intent.
+
+## Checking for Zero
+
+Use `isZero()` method to check if an address is zero:
+
+```zig
+import { Address } from '@tevm/voltaire'
+
+const addr = Address("0x0000000000000000000000000000000000000000")
+
+if (addr.isZero()) {
+  console.log("Address is zero")
+}
+
+// Equivalent but less clear
+if (addr.equals(Address.zero())) {
+  console.log("Address is zero")
+}
+```
+
+## Ethereum Context
+
+**Transaction to field:** Zero address in transaction `to` field indicates contract creation.
+
+**Event logs:** Zero address in log topics often represents minting (from) or burning (to).
+
+**Token standards:** ERC-20/ERC-721 use zero address to represent minting/burning:
+```solidity
+// Minting: from = 0x0
+emit Transfer(address(0), recipient, amount)
+
+// Burning: to = 0x0
+emit Transfer(sender, address(0), amount)
+```
+
+**Not a valid EOA:** Zero address cannot sign transactions (no private key exists).
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [isZero](/primitives/address/comparisons#iszerо) - Check if address is zero
+- [equals](/primitives/address/equals) - Compare addresses
+- [ERC-20 Token Standard](https://eips.ethereum.org/EIPS/eip-20) - Uses zero address for minting/burning

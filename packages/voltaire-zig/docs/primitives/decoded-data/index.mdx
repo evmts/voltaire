@@ -1,0 +1,40 @@
+---
+title: "DecodedData"
+description: "Generic decoded structure from ABI-encoded data"
+---
+
+# DecodedData
+
+Generic structure representing decoded values with their corresponding ABI types. Provides type-safe access to decoded contract data.
+
+## Type (Zig)
+
+```zig
+// Use primitives.AbiEncoding to decode ABI-encoded bytes into []AbiValue.
+```
+
+## Construction
+
+```zig
+const Abi = @import("primitives").AbiEncoding;
+const allocator = std.testing.allocator;
+const output_types = &[_]Abi.AbiType{ .uint256 };
+const values = try Abi.decodeFunctionResult(allocator, return_bytes, output_types);
+defer allocator.free(values);
+```
+
+## Type Safety
+
+```zig
+// Access values by variant: values[i].address / .uint256 / .bool
+```
+
+## Example
+
+```zig
+const Abi = @import("primitives").AbiEncoding;
+const output_types = &[_]Abi.AbiType{ .uint256, .address, .bool };
+const values = try Abi.decodeFunctionResult(std.testing.allocator, return_bytes, output_types);
+defer std.testing.allocator.free(values);
+// values[0].uint256, values[1].address, values[2].bool
+```
