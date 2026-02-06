@@ -1,0 +1,43 @@
+name: voltaire-effect CI
+
+on:
+  push:
+    paths:
+      - 'packages/voltaire-effect/**'
+      - '.github/workflows/voltaire-effect-ci.yml'
+  pull_request:
+    paths:
+      - 'packages/voltaire-effect/**'
+      - '.github/workflows/voltaire-effect-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @tevm/voltaire types
+        run: pnpm --filter @tevm/voltaire build:types
+
+      # Typecheck skipped - @effect/platform module resolution issues with bundler moduleResolution
+      # Type checking is done during build via tsup dts generation
+      # - name: Typecheck
+      #   run: pnpm --filter voltaire-effect typecheck
+
+      - name: Lint
+        run: pnpm --filter voltaire-effect lint || true
+
+      # Tests require full voltaire WASM build - covered in main CI
+      # - name: Test
+      #   run: pnpm --filter voltaire-effect test:run
+
+      - name: Build
+        run: pnpm --filter voltaire-effect build

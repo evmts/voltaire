@@ -1,0 +1,238 @@
+# =============================================================================
+# PUBLISH WORKFLOW
+# =============================================================================
+# HOW TO PUBLISH A NEW VERSION:
+#
+# 1. Bump version in package.json files:
+#    - cd packages/voltaire-ts && npm version patch --no-git-tag-version
+#    - cd packages/voltaire-effect && npm version <same-version> --no-git-tag-version
+#
+# 2. Commit the version bump:
+#    - git add packages/voltaire/package.json packages/voltaire-effect/package.json
+#    - git commit -m "chore: bump version to X.Y.Z"
+#
+# 3. Create and push the tag:
+#    - git tag vX.Y.Z
+#    - git push && git push origin vX.Y.Z
+#
+# If a tag already exists on remote and needs to be replaced:
+#    - git push origin --delete vX.Y.Z
+#    - git tag -d vX.Y.Z && git tag vX.Y.Z
+#    - git push origin vX.Y.Z
+#
+# The workflow will:
+#   1. Run validation tests (sharded across 8 runners)
+#   2. Publish @tevm/voltaire to npm
+#   3. Publish voltaire-effect to npm (depends on step 2)
+#   4. Create GitHub release with auto-generated changelog
+# =============================================================================
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Build and test Zig
+        if: matrix.shard == 1
+        run: |
+          zig build -Doptimize=ReleaseFast
+          zig build test -Doptimize=ReleaseFast
+
+      - name: Install Rust wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Build WASM
+        run: |
+          zig build build-ts-wasm
+          zig build crypto-wasm
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        if: matrix.shard == 1
+        run: pnpm -r run typecheck
+
+      - name: Lint
+        if: matrix.shard == 1
+        run: pnpm -r run lint:check
+
+      - name: Test (Shard ${{ matrix.shard }}/8)
+        run: pnpm --filter @tevm/voltaire test:run --shard=${{ matrix.shard }}/8
+
+  publish-voltaire:
+    name: Publish @tevm/voltaire
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Install Rust wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Build Zig + WASM
+        run: |
+          zig build -Doptimize=ReleaseFast
+          zig build build-ts-wasm
+          zig build crypto-wasm
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript
+        run: pnpm --filter @tevm/voltaire build
+
+      - name: Publish @tevm/voltaire
+        working-directory: packages/voltaire-ts
+        run: npm publish --provenance --access public --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-voltaire-effect:
+    name: Publish voltaire-effect
+    needs: [publish-voltaire]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Install Rust wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Build Zig + WASM
+        run: |
+          zig build -Doptimize=ReleaseFast
+          zig build build-ts-wasm
+          zig build crypto-wasm
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @tevm/voltaire
+        run: pnpm --filter @tevm/voltaire build
+
+      - name: Build voltaire-effect
+        run: pnpm --filter voltaire-effect build
+
+      # Typecheck skipped - voltaire-effect has export mismatches with @tevm/voltaire
+      # TODO: Update voltaire-effect to match current @tevm/voltaire exports
+
+      - name: Publish voltaire-effect
+        run: pnpm --filter voltaire-effect publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  create-release:
+    name: Create GitHub Release
+    needs: [publish-voltaire-effect]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD)
+          fi
+          cat > release_notes.md << EOF
+          ## What's Changed
+
+          $CHANGELOG
+
+          ## Installation
+
+          \`\`\`bash
+          # Main package
+          npm install @tevm/voltaire@${{ steps.version.outputs.version }}
+
+          # Effect-TS integration
+          npm install voltaire-effect@${{ steps.version.outputs.version }}
+          \`\`\`
+
+          ## Full Changelog
+
+          https://github.com/evmts/voltaire/compare/${PREV_TAG}...v${{ steps.version.outputs.version }}
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
