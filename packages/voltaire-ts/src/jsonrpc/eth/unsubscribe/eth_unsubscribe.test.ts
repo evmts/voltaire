@@ -1,0 +1,59 @@
+import { describe, expect, test } from "vitest";
+import { method, UnsubscribeRequest } from "./eth_unsubscribe.js";
+
+describe("eth_unsubscribe", () => {
+	describe("Request Creation", () => {
+		test("creates request with subscription id", () => {
+			const subscriptionId = "0x1";
+			const req = UnsubscribeRequest(subscriptionId);
+			expect(req).toEqual({
+				method: "eth_unsubscribe",
+				params: [subscriptionId],
+			});
+		});
+
+		test("creates request with different subscription id", () => {
+			const subscriptionId = "0xabcd1234";
+			const req = UnsubscribeRequest(subscriptionId);
+			expect(req).toEqual({
+				method: "eth_unsubscribe",
+				params: [subscriptionId],
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_unsubscribe");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type with params", () => {
+			const subscriptionId = "0x1";
+			const req = UnsubscribeRequest(subscriptionId);
+			expect(req).toHaveProperty("method");
+			expect(req).toHaveProperty("params");
+			expect(Array.isArray(req.params)).toBe(true);
+			expect(req.params).toHaveLength(1);
+		});
+
+		test("method matches constant", () => {
+			const subscriptionId = "0x1";
+			const req = UnsubscribeRequest(subscriptionId);
+			expect(req.method).toBe(method);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		test("handles subscription id 0x0", () => {
+			const subscriptionId = "0x0";
+			const req = UnsubscribeRequest(subscriptionId);
+			expect(req.params?.[0]).toBe(subscriptionId);
+		});
+
+		test("handles large subscription id", () => {
+			const subscriptionId = "0xffffffffffffffff";
+			const req = UnsubscribeRequest(subscriptionId);
+			expect(req.params?.[0]).toBe(subscriptionId);
+		});
+	});
+});

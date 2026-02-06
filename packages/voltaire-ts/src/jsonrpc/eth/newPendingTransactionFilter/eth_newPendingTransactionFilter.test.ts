@@ -1,0 +1,33 @@
+import { describe, expect, test } from "vitest";
+import {
+	method,
+	NewPendingTransactionFilterRequest,
+} from "./eth_newPendingTransactionFilter.js";
+
+describe("eth_newPendingTransactionFilter", () => {
+	describe("Request Creation", () => {
+		test("creates request with no parameters", () => {
+			const req = NewPendingTransactionFilterRequest();
+			expect(req).toEqual({
+				method: "eth_newPendingTransactionFilter",
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_newPendingTransactionFilter");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type", () => {
+			const req = NewPendingTransactionFilterRequest();
+			expect(req).toHaveProperty("method");
+			expect(req.params).toBeUndefined();
+		});
+
+		test("method matches constant", () => {
+			const req = NewPendingTransactionFilterRequest();
+			expect(req.method).toBe(method);
+		});
+	});
+});

@@ -1,0 +1,72 @@
+import { describe, expect, test } from "vitest";
+import {
+	GetTransactionByBlockNumberAndIndexRequest,
+	method,
+} from "./eth_getTransactionByBlockNumberAndIndex.js";
+
+describe("eth_getTransactionByBlockNumberAndIndex", () => {
+	describe("Request Creation", () => {
+		test("creates request with block number and transaction index", () => {
+			const blockNumber = "0x1234";
+			const txIndex = "0x0";
+			const req = GetTransactionByBlockNumberAndIndexRequest(
+				blockNumber,
+				txIndex,
+			);
+			expect(req).toEqual({
+				method: "eth_getTransactionByBlockNumberAndIndex",
+				params: [blockNumber, txIndex],
+			});
+		});
+
+		test("creates request with block tag and transaction index", () => {
+			const txIndex = "0x5";
+			const req = GetTransactionByBlockNumberAndIndexRequest("latest", txIndex);
+			expect(req).toEqual({
+				method: "eth_getTransactionByBlockNumberAndIndex",
+				params: ["latest", txIndex],
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_getTransactionByBlockNumberAndIndex");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type with params", () => {
+			const req = GetTransactionByBlockNumberAndIndexRequest("0x1234", "0x0");
+			expect(req).toHaveProperty("method");
+			expect(req).toHaveProperty("params");
+			expect(Array.isArray(req.params)).toBe(true);
+			expect(req.params).toHaveLength(2);
+		});
+
+		test("method matches constant", () => {
+			const req = GetTransactionByBlockNumberAndIndexRequest("0x1234", "0x0");
+			expect(req.method).toBe(method);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		test("handles earliest block tag", () => {
+			const req = GetTransactionByBlockNumberAndIndexRequest("earliest", "0x0");
+			expect(req.params?.[0]).toBe("earliest");
+		});
+
+		test("handles pending block tag", () => {
+			const req = GetTransactionByBlockNumberAndIndexRequest("pending", "0x0");
+			expect(req.params?.[0]).toBe("pending");
+		});
+
+		test("handles first transaction index", () => {
+			const req = GetTransactionByBlockNumberAndIndexRequest("0x1234", "0x0");
+			expect(req.params?.[1]).toBe("0x0");
+		});
+
+		test("handles higher transaction index", () => {
+			const req = GetTransactionByBlockNumberAndIndexRequest("0x1234", "0xa5");
+			expect(req.params?.[1]).toBe("0xa5");
+		});
+	});
+});

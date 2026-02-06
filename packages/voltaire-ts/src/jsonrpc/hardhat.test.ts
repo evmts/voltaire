@@ -1,0 +1,118 @@
+import { describe, expect, it } from "vitest";
+import * as Hardhat from "./hardhat/methods.js";
+
+describe("Hardhat RPC Methods", () => {
+	describe("Network Control", () => {
+		it("hardhat_reset with no params", () => {
+			const req = Hardhat.hardhat_reset();
+			expect(req.method).toBe("hardhat_reset");
+			expect(req.params).toEqual([]);
+		});
+
+		it("hardhat_reset with forking config", () => {
+			const config = {
+				forking: {
+					jsonRpcUrl: "https://eth-mainnet.alchemyapi.io/v2/your-api-key",
+					blockNumber: 14390000,
+				},
+			};
+			const req = Hardhat.hardhat_reset(config);
+			expect(req.method).toBe("hardhat_reset");
+			expect(req.params).toEqual([config]);
+		});
+	});
+
+	describe("State Manipulation", () => {
+		it("hardhat_setBalance", () => {
+			const req = Hardhat.hardhat_setBalance(
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+				"0xde0b6b3a7640000",
+			);
+			expect(req.method).toBe("hardhat_setBalance");
+			expect(req.params).toEqual([
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+				"0xde0b6b3a7640000",
+			]);
+		});
+
+		it("hardhat_setCode", () => {
+			const req = Hardhat.hardhat_setCode(
+				"0x5FbDB2315678afecb367f032d93F642f64180aa3",
+				"0x6080604052",
+			);
+			expect(req.method).toBe("hardhat_setCode");
+			expect(req.params).toEqual([
+				"0x5FbDB2315678afecb367f032d93F642f64180aa3",
+				"0x6080604052",
+			]);
+		});
+
+		it("hardhat_setNonce", () => {
+			const req = Hardhat.hardhat_setNonce(
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+				"0x10",
+			);
+			expect(req.method).toBe("hardhat_setNonce");
+			expect(req.params).toEqual([
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+				"0x10",
+			]);
+		});
+
+		it("hardhat_setStorageAt", () => {
+			const req = Hardhat.hardhat_setStorageAt(
+				"0x5FbDB2315678afecb367f032d93F642f64180aa3",
+				"0x0",
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			);
+			expect(req.method).toBe("hardhat_setStorageAt");
+			expect(req.params).toEqual([
+				"0x5FbDB2315678afecb367f032d93F642f64180aa3",
+				"0x0",
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			]);
+		});
+	});
+
+	describe("Account Impersonation", () => {
+		it("hardhat_impersonateAccount", () => {
+			const req = Hardhat.hardhat_impersonateAccount(
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+			);
+			expect(req.method).toBe("hardhat_impersonateAccount");
+			expect(req.params).toEqual([
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+			]);
+		});
+
+		it("hardhat_stopImpersonatingAccount", () => {
+			const req = Hardhat.hardhat_stopImpersonatingAccount(
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+			);
+			expect(req.method).toBe("hardhat_stopImpersonatingAccount");
+			expect(req.params).toEqual([
+				"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+			]);
+		});
+	});
+
+	describe("Mining", () => {
+		it("hardhat_mine with no params", () => {
+			const req = Hardhat.hardhat_mine();
+			expect(req.method).toBe("hardhat_mine");
+			expect(req.params).toEqual([]);
+		});
+
+		it("hardhat_mine with blocks", () => {
+			const req = Hardhat.hardhat_mine("0xa");
+			expect(req.method).toBe("hardhat_mine");
+			expect(req.params).toEqual(["0xa"]);
+		});
+
+		it("hardhat_mine with blocks and interval", () => {
+			const req = Hardhat.hardhat_mine("0xa", "0x5");
+			expect(req.method).toBe("hardhat_mine");
+			expect(req.params).toEqual(["0xa", "0x5"]);
+		});
+	});
+});
