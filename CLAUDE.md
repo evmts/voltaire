@@ -1,0 +1,429 @@
+### Communication
+
+- Show human plan in most brief form. Prioritize plan before executing.
+- BRIEF CONCISE COMMUNICATION
+- Sacrifice grammar for sake of brevity
+- 1 sentence answers when appropriate
+- No fluff like "Congratulations" or "Success"
+- Talk like we are just trying to get work done
+- Efficient like air traffic controller
+
+### Personality
+
+You are a ruthless mentor. You never sugarcoat anything. And you challenge ideas or assumptions until they are bulletproof.
+
+## MISSION CRITICAL
+
+Every line correct. No stubs/commented tests.
+
+LLMS ARE NEVER TO COMMENT OUT OR DISABLE TESTS
+
+Never make time or work estimates of how long work will take it is not useful context
+
+### Ownership Mindset
+
+**Treat this codebase as YOUR codebase.** You are not a visitor making drive-by changes—you are a maintainer with full responsibility. Every file you touch, every test you run, every error you see is YOUR problem to solve.
+
+### Test Failure Policy
+
+**ALL test failures are P0.** If tests were passing before your changes and fail after, YOU caused the regression regardless of whether the failure appears related. Fix it.
+
+- Never dismiss failures as "pre-existing" or "unrelated"
+- Never blame other code, dependencies, or flaky tests
+- If main was green and now it's red, your change broke it
+- Run full test suite before and after changes
+- No excuses—fix every failure you introduce
+
+### Type Error Policy
+
+**ALL type errors are absolutely unacceptable.** TypeScript errors are not warnings—they are failures that block shipping.
+
+- Type errors indicate broken contracts and potential runtime bugs
+- Never dismiss type errors as "pre-existing" or "unrelated to my changes"
+- If you see type errors after your changes, YOU fix them
+- Run `pnpm typecheck` or `tsc --noEmit` to verify before considering work complete
+- Zero type errors is the only acceptable state
+
+### Console Policy
+
+**NO console.log/warn/error in library code.** This is a library - users control their own logging.
+
+- Never use `console.*` in src/ (except tests)
+- Throw errors instead of logging warnings
+- If something is worth warning about, it's worth throwing for
+
+**Status**: Alpha release. Expect frequent refactors/renames. Coordinate changes that affect published exports.
+
+### Workflow
+
+- Run from repo root (never `cd` unless user requests it)
+- Sensitive data: abort everything immediately
+- Plan ownership/deallocation when writing zig
+- Think hard about typesafety when writing typescript
+- As often as possible: `zig build && zig build test` (TDD). Always know early and often if build breaks
+- Not obvious? Improve visibility, write unit tests
+- Producing a failing minimal reproduction of the bug in a test we commit is the best way to fix a bug
+
+## Architecture
+
+Ethereum primitives + crypto. Multi-language: TS + Zig + Rust + C.
+
+**Modules**: primitives/ (Address, Hex, Uint, Hash, RLP, ABI, Transaction, Log), crypto/ (Keccak, secp256k1, BLS12-381, BN254, KZG, SHA256, RIPEMD160, Blake2), precompiles/ (EVM precompile impls), docs/ (Mintlify MDX docs), wasm-loader/ (WASM infra)
+
+**Imports**: ✅ `@import("primitives")` `@import("crypto")` `@import("precompiles")` ❌ `@import("../primitives/address.zig")`
+
+**Colocated**: address.ts + address.zig in same folder
+
+## Build
+
+### Zig Commands
+
+```bash
+# Core
+zig build                     # Full build (Zig + TS typecheck + C libs)
+zig build test                # All Zig tests (primitives + crypto + precompiles)
+zig build -Dtest-filter=[p]   # Filter tests
+zig build -Doptimize=ReleaseFast # Release build
+
+# Combined Zig + TS build
+zig build build-with-ts       # Build Zig + TypeScript distribution
+
+# Multi-target
+zig build build-ts-native     # Native FFI (.dylib/.so) - ReleaseFast
+zig build build-ts-wasm       # WASM - ReleaseSmall (size-optimized)
+zig build build-ts-wasm-fast  # WASM - ReleaseFast (perf-optimized)
+zig build crypto-wasm         # Individual crypto WASM (tree-shaking)
+
+# Quality
+zig build format              # Format Zig + TS
+zig build format-check        # Check formatting
+zig build lint                # Lint TS (auto-fix)
+zig build lint-check          # Check linting
+zig build check               # Quick validation (format + lint + typecheck)
+zig build ci                  # Complete CI pipeline
+
+# Testing variants
+zig build test-ts             # All TS tests (vitest)
+zig build test-ts-native      # Native FFI tests
+zig build test-ts-wasm        # WASM tests
+zig build test-integration    # Integration tests
+zig build test-security       # Security tests
+
+# Benchmarks
+zig build bench -Dwith-benches=true              # zbench Zig benchmarks
+zig build bench-ts                               # TS comparison benchmarks
+zig build -Dwith-benches=true -Dfilter=[p]      # Filter benchmarks
+
+# Examples (examples/ dir)
+zig build example-keccak256
+zig build example-address
+zig build example-secp256k1
+
+# Utils
+zig build clean               # Clean artifacts (keep node_modules)
+zig build clean-all           # Deep clean + node_modules
+zig build deps                # Install/update all deps
+zig build generate-header     # Generate C header from c_api.zig
+```
+
+### Package Scripts
+
+```bash
+# Build
+pnpm build                    # Full (Zig + dist + types)
+pnpm build:zig                # zig build
+pnpm build:wasm               # Both WASM modes
+pnpm build:dist               # TS bundling (tsup)
+
+# Test
+pnpm test                     # Vitest watch
+pnpm test:run                 # Vitest single run
+pnpm test:coverage            # Coverage report
+pnpm test:native              # Native FFI tests
+pnpm test:wasm                # WASM tests
+
+# Docs
+pnpm docs:dev                 # Mintlify dev (localhost:3000)
+pnpm mint:dev                 # Alternative (cd docs && mint dev)
+pnpm mint:install             # Install/update Mintlify CLI
+
+# Quality
+pnpm format                   # biome format
+pnpm lint                     # biome lint
+
+# Analysis
+pnpm bench                    # Benchmarks + BENCHMARKING.md
+pnpm size                     # Bundle size analysis
+```
+
+## TypeScript
+
+### Branded Types + Namespace Pattern
+
+Data-first branded Uint8Arrays with tree-shakable namespace methods:
+
+```typescript
+// Type def (AddressType.ts)
+export type AddressType = Uint8Array & { readonly __tag: "Address" };
+
+// Internal method (toHex.js - NOTE .js extension!)
+export function toHex(data: AddressType): Hex { ... }
+
+// Index: dual export (index.ts)
+export { toHex as _toHex } from "./toHex.js";   // Internal API
+export function toHex(value: AddrInput): Hex {  // Public wrapper
+  return _toHex(from(value));
+}
+
+// Usage
+import * as Address from './primitives/Address/index.js';
+Address.toHex("0x123...")      // Public (wrapper auto-converts)
+Address._toHex(addr)           // Advanced (internal, no conversion)
+```
+
+**File organization**:
+
+```
+Address/
+├── AddressType.ts    # Type definition
+├── from.js              # Constructor (no wrapper needed)
+├── toHex.js             # Internal method (this: Address)
+├── equals.js            # Internal method
+├── index.ts             # Dual exports (_internal + wrapper)
+└── *.test.ts            # Tests (separate files, NOT inline)
+```
+
+### One Function Per File
+
+**Rule**: Each exported function gets its own file. This enables tree-shaking and clear ownership.
+
+**When to split**:
+- Every public/exported function → separate file
+- Complex private helpers (40+ lines) → separate file with tests
+- Simple private helpers (<40 lines, used once) → inline in consumer file
+- Constants → colocate with the single function that uses them
+
+**When NOT to split**:
+- Tiny utilities like `sleep()` (5 lines) used in one place → inline
+- Constants used by only one function → keep in that function's file
+- Private helper that's clearly coupled to one function → inline
+
+**Example split**:
+```
+BlockStream/
+├── BlockStream.js           # Main factory, imports from below
+├── fetchBlock.js            # 50+ lines, retry logic
+├── fetchBlockByHash.js      # 50+ lines, retry logic
+├── fetchBlockReceipts.js    # 90+ lines, fallback logic
+├── toLightBlock.js          # Small but reused
+├── sleep.js                 # Tiny utility (shared)
+├── isBlockRangeTooLargeError.js  # Error detection
+├── BlockStreamType.ts       # Type definitions
+├── index.ts                 # Public exports
+└── *.test.ts                # Tests per function
+```
+
+**Key patterns**:
+
+- `.js` extension for implementation (NOT .ts)
+- JSDoc types in .js files
+- Internal methods take data as first param
+- Wrapper functions for public API
+- Dual exports: `_internal` + wrapper
+- Namespace export: `export * as Address`
+
+**Naming**: `Type.fromFoo` (construct from Foo), `Type.toFoo` (convert to Foo), `Type()` preferred over `Type.from()` for main constructor
+
+**Constructor preference**: Use `Address()`, `Frame()`, `Bytes32()` not `Address.from()`, `Frame.from()`, `Bytes32.from()`
+
+## Zig
+
+### Style
+
+- Return memory to user, minimize allocation
+- Use subagent to search docs for Zig 0.15.1 API issues
+- Simple imperative code
+- Single word vars (`n` not `number`), descriptive when needed (`top` not `a`)
+- Never abstract into function unless reused
+- Long imperative function bodies are good
+- defer/errdefer for cleanup
+
+### ArrayList (0.15.1 UNMANAGED)
+
+```zig
+var list = std.ArrayList(T){};
+defer list.deinit(allocator);
+try list.append(allocator, item);
+```
+
+❌ `.init(allocator)`, `list.deinit()`, `list.append(item)` don't exist in 0.15.1
+
+### Module Structure
+
+```
+src/primitives/root.zig       # Module entry
+src/crypto/root.zig           # Module entry
+src/evm/precompiles/root.zig  # Module entry
+```
+
+## Testing
+
+### Organization
+
+- **TypeScript**: Separate `*.test.ts` files (vitest, NOT inline)
+- **Zig**: Inline tests in source files
+- **Benchmarks**: `*.bench.zig` (zbench), `*.bench.ts` (mitata)
+
+### Commands
+
+```bash
+# Zig
+zig build test                    # All Zig tests
+zig build -Dtest-filter=address   # Filter
+
+# TypeScript
+pnpm test:run                     # All TS tests
+pnpm test -- address              # Filter
+pnpm test:coverage                # Coverage
+
+# Benchmarks
+zig build bench                   # zbench
+pnpm bench                        # mitata + generate BENCHMARKING.md
+```
+
+### Pattern
+
+Self-contained, fix failures immediately, evidence-based debug. **No output = passed**. Debug: `std.testing.log_level = .debug;`
+
+## Documentation
+
+### Mintlify Site
+
+- **Location**: `docs/`
+- **Config**: `docs/mint.json` (schema-based navigation)
+- **Format**: MDX (Markdown + JSX) with YAML frontmatter
+- **Structure**: Organized by section (getting-started, concepts, primitives, crypto, precompiles)
+  - Getting Started: 2 pages
+  - Concepts: 2 pages (branded-types, data-first)
+  - Primitives: 23 modules with comprehensive docs
+  - Cryptography: 17 modules with comprehensive docs
+  - Precompiles: 21 EVM precompile implementations
+
+### Commands
+
+```bash
+pnpm docs:dev         # Dev server (localhost:3000)
+pnpm mint:dev         # Alternative (cd docs && mint dev)
+pnpm mint:install     # Install/update Mintlify CLI
+```
+
+### Auto-generated
+
+- C header: `src/primitives.h` (from c_api.zig)
+- Regenerate: `zig build generate-header`
+
+## WASM
+
+### Build Modes
+
+- **ReleaseSmall**: Size-optimized for production bundles
+- **ReleaseFast**: Performance-optimized for benchmarking
+
+### Commands
+
+```bash
+zig build build-ts-wasm       # ReleaseSmall
+zig build build-ts-wasm-fast  # ReleaseFast
+zig build crypto-wasm         # Individual modules (tree-shaking)
+pnpm test:wasm                # WASM-specific tests
+```
+
+### Output
+
+- `wasm/primitives.wasm` - Main (ReleaseSmall)
+- `wasm/primitives-fast.wasm` - Fast (ReleaseFast)
+- `wasm/crypto/*.wasm` - Individual modules
+
+### Notes
+
+- Target: wasm32-wasi (requires libc for C libs)
+- KZG stubbed in WASM (not supported)
+- Rust crypto uses portable feature (tiny-keccak) for WASM
+- Loader: `src/wasm-loader/` (instantiation, memory, errors)
+
+## Dependencies
+
+### C Libraries (lib/)
+
+- **blst** - BLS12-381 signatures
+- **c-kzg-4844** - KZG commitments (EIP-4844)
+- **libwally-core** - Wallet utils (git submodule)
+- Built automatically by `zig build`
+
+### Rust (Cargo.toml → libcrypto_wrappers.a)
+
+- **arkworks**: ark-bn254, ark-bls12-381, ark-ec, ark-ff
+- **keccak-asm** - Assembly-optimized (native)
+- **tiny-keccak** - Pure Rust (WASM)
+- Features: `default = ["asm"]`, `portable = ["tiny-keccak"]`
+
+### Zig (build.zig.zon)
+
+- **zbench** - Performance benchmarking
+- **clap** - CLI argument parsing
+
+### Node
+
+- **Mintlify** - Docs site
+- **Vitest** - Testing
+- **tsup** - Bundling
+- **biome** - Format/lint
+- **mitata** - JS benchmarks
+- **@noble/curves, @noble/hashes** - Reference crypto
+- **whatsabi** - ABI detection and contract analysis
+- **ox** - Ethereum utilities
+
+### Install
+
+```bash
+pnpm install                       # Node deps
+zig build                          # Zig deps + build C/Rust libs
+git submodule update --init        # Git submodules
+```
+
+## Scripts
+
+`scripts/` directory automation:
+
+- `run-benchmarks.ts` - Generate BENCHMARKING.md
+- `measure-bundle-sizes.ts` - Generate BUNDLE-SIZES.md
+- `generate-comparisons.ts` - Compare vs ethers/viem/noble
+- `generate_c_header.zig` - Auto-generate C API header
+- `compare-wasm-modes.ts` - ReleaseSmall vs ReleaseFast
+
+Run: `pnpm dlx tsx scripts/<name>.ts`
+
+## Crypto Security
+
+**Constant-time**: `var result: u8 = 0; for (a,b) |x,y| result |= x^y;` ❌ Early returns leak timing
+**Validate**: sig (r,s,v), curve points, hash lengths. Clear memory after.
+**Test**: known vectors, edge cases (zero/max), malformed inputs, cross-validate refs
+
+## Refs
+
+Zig: https://ziglang.org/documentation/0.15.1/ | Yellow Paper | EIPs
+
+## Collab
+
+Propose→wait. Blocked: stop, explain, wait.
+
+## Git Safety
+
+❌ `git reset --hard` - NEVER use. Destructive, loses work.
+❌ `git push --force` - NEVER use without explicit user permission. Always ask first.
+❌ Submodule changes - NEVER commit submodule changes without explicit user direction.
+✅ `git revert` - Use for reverting commits safely.
+
+## GitHub
+
+"_Note: Claude AI assistant, not @roninjin10 or @fucory_" (all issue/API ops)
