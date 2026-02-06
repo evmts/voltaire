@@ -1,0 +1,224 @@
+---
+title: Signature
+description: ECDSA signatures for Ethereum (secp256k1)
+---
+
+# Signature
+
+The `signature` package provides ECDSA signature handling for Ethereum, supporting secp256k1 signatures with proper V value encoding.
+
+## Installation
+
+```go
+import "github.com/voltaire-labs/voltaire-go/primitives/signature"
+```
+
+## Type Definition
+
+```go
+type Signature struct {
+    R [32]byte
+    S [32]byte
+    V byte // 0, 1, 27, 28, or EIP-155 chain-adjusted
+}
+```
+
+## Constants
+
+```go
+const (
+    Size          = 65 // Full signature size (r + s + v)
+    CompactSize   = 64 // Compact signature size (r + s)
+    ComponentSize = 32 // Size of r or s component
+)
+```
+
+## V Value Encoding
+
+The V value in Ethereum signatures has multiple encodings:
+
+| V Value | Meaning |
+|---------|---------|
+| 0, 1 | Raw recovery ID (EIP-2098 compact) |
+| 27, 28 | Legacy Ethereum format |
+| 35+ | EIP-155 chain-protected: `chainId * 2 + 35 + yParity` |
+
+## Constructors
+
+### FromBytes
+
+Parse a 65-byte signature (r \|\| s \|\| v).
+
+```go
+sig, err := signature.FromBytes(sigBytes)
+if err != nil {
+    // handle error
+}
+```
+
+### FromHex
+
+Parse a hex-encoded signature.
+
+```go
+sig, err := signature.FromHex("0x" + rHex + sHex + vHex)
+if err != nil {
+    // handle error
+}
+```
+
+### FromRSV
+
+Create from individual components.
+
+```go
+sig := signature.FromRSV(r, s, v)
+```
+
+### MustFromHex
+
+Parse hex, panic on error.
+
+```go
+sig := signature.MustFromHex("0x...")
+```
+
+## Methods
+
+### Bytes
+
+Return 65-byte representation.
+
+```go
+bytes := sig.Bytes() // [r(32) || s(32) || v(1)]
+```
+
+### Hex
+
+Return hex-encoded signature with 0x prefix.
+
+```go
+hex := sig.Hex() // "0x..."
+```
+
+### IsLowS
+
+Check if S is in canonical low-S form (EIP-2).
+
+```go
+if sig.IsLowS() {
+    // signature is canonical
+}
+```
+
+### ToLowS
+
+Convert to canonical low-S form.
+
+```go
+canonical := sig.ToLowS()
+```
+
+### RecoveryID
+
+Get normalized recovery ID (0 or 1).
+
+```go
+recId := sig.RecoveryID() // 0 or 1
+```
+
+### YParity
+
+Alias for RecoveryID (EIP-2098 terminology).
+
+```go
+yParity := sig.YParity() // 0 or 1
+```
+
+## Serialization
+
+The Signature type implements standard Go interfaces:
+
+- `encoding.TextMarshaler` / `encoding.TextUnmarshaler`
+- `json.Marshaler` / `json.Unmarshaler`
+- `fmt.Stringer`
+
+```go
+// JSON
+data, _ := json.Marshal(sig)
+// {"r":"0x...","s":"0x...","v":27}
+
+// String
+fmt.Println(sig) // hex representation
+```
+
+## EIP-155 Chain ID
+
+For EIP-155 signatures, extract chain ID:
+
+```go
+// v = chainId * 2 + 35 + yParity
+// chainId = (v - 35) / 2
+func extractChainID(v byte) (uint64, byte) {
+    if v < 35 {
+        return 0, v - 27 // legacy
+    }
+    yParity := (v - 35) % 2
+    chainID := (uint64(v) - 35) / 2
+    return chainID, byte(yParity)
+}
+```
+
+## Low-S Enforcement (EIP-2)
+
+Bitcoin and Ethereum enforce low-S signatures to prevent transaction malleability:
+
+```go
+// secp256k1 curve order N
+// N/2 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+
+if !sig.IsLowS() {
+    sig = sig.ToLowS() // s = N - s, flip v
+}
+```
+
+## Example Usage
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/voltaire-labs/voltaire-go/primitives/signature"
+)
+
+func main() {
+    // Parse from hex
+    sig, err := signature.FromHex("0x" +
+        "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" + // r
+        "fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321" + // s
+        "1b") // v = 27
+    if err != nil {
+        panic(err)
+    }
+
+    // Check canonical form
+    if !sig.IsLowS() {
+        sig = sig.ToLowS()
+    }
+
+    // Get components
+    fmt.Printf("Recovery ID: %d\n", sig.RecoveryID())
+    fmt.Printf("Hex: %s\n", sig.Hex())
+}
+```
+
+## Error Handling
+
+```go
+var (
+    ErrInvalidLength    // signature not 64 or 65 bytes
+    ErrInvalidHex       // invalid hex encoding
+    ErrInvalidSignature // invalid signature format
+)
+```
