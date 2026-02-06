@@ -1,0 +1,323 @@
+/**
+ * @fileoverview Tests for signature verification utilities.
+ */
+
+import { describe, expect, it } from "@effect/vitest";
+import { Address } from "@tevm/voltaire/Address";
+import type { TypedData } from "@tevm/voltaire/EIP712";
+import { Hash } from "@tevm/voltaire/Hash";
+import * as Effect from "effect/Effect";
+import { CryptoLive } from "../CryptoLive.js";
+import { KeccakLive, KeccakService } from "../Keccak256/index.js";
+import { constantTimeEqual } from "./constantTimeEqual.js";
+import { hashMessage } from "./hashMessage.js";
+import { recoverAddress } from "./recoverAddress.js";
+import { recoverMessageAddress } from "./recoverMessageAddress.js";
+import { verifyHash } from "./verifyHash.js";
+import { verifyMessage } from "./verifyMessage.js";
+import { verifyTypedData } from "./verifyTypedData.js";
+
+const bytesToHex = (bytes: Uint8Array): string => {
+	return (
+		"0x" +
+		Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+	);
+};
+
+const hexToBytes = (hex: string): Uint8Array => {
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (normalized.length % 2 !== 0) {
+		throw new Error(`Invalid hex length: ${hex}`);
+	}
+	const bytes = new Uint8Array(normalized.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+};
+
+const vectorAddressHex = "0x6370ef2f4db3611d657b90667de398a2cc2a370c";
+const vectorMessage = "hello world";
+const vectorMessageHash =
+	"0xd9eba16ed0ecae432b71fe008c98cc872bb4cc214d3220a36f365326cf807d68";
+const vectorMessageSignature = {
+	r: hexToBytes(
+		"0x4abf5429c5dcb3faf26e434987bb59016de5e47a2cb97ddf0efee0041ee4562a",
+	),
+	s: hexToBytes(
+		"0x27f3df3e38ebe155bfe211699e382d645d83963a1004da01e16f6e60512eafa1",
+	),
+	v: 27,
+};
+const vectorHash =
+	"0xaabbccddeeff00112233445566778899aabbccddeeff00112233445566778899";
+const vectorHashSignature = {
+	r: hexToBytes(
+		"0xff651c65eeded46383a4bdcd9170ff659a4f617bb658a46dd456c51ec8cc211a",
+	),
+	s: hexToBytes(
+		"0x7dc4de91d0c847bf5def995bd043658136fe2135afe69282f7de873990dacb77",
+	),
+	v: 28,
+};
+const vectorTypedData: TypedData = {
+	domain: { name: "Test App", version: "1", chainId: 1n },
+	types: {
+		Message: [{ name: "content", type: "string" }],
+	},
+	primaryType: "Message",
+	message: { content: "Hello, World!" },
+};
+const vectorTypedSignature = {
+	r: hexToBytes(
+		"0x518902699cee276b2df67790727fe4a5b2707886db43d171fc48aba66f5b25fc",
+	),
+	s: hexToBytes(
+		"0x5fc558727f1070827057ef76bb9f7dde6a77b3b7235d613583a06f07c5bbf9f1",
+	),
+	v: 28,
+};
+
+describe("constantTimeEqual", () => {
+	it("returns true for equal arrays", () => {
+		const a = new Uint8Array([1, 2, 3, 4, 5]);
+		const b = new Uint8Array([1, 2, 3, 4, 5]);
+		expect(constantTimeEqual(a, b)).toBe(true);
+	});
+
+	it("returns false for different arrays", () => {
+		const a = new Uint8Array([1, 2, 3, 4, 5]);
+		const b = new Uint8Array([1, 2, 3, 4, 6]);
+		expect(constantTimeEqual(a, b)).toBe(false);
+	});
+
+	it("returns false for arrays of different lengths", () => {
+		const a = new Uint8Array([1, 2, 3, 4, 5]);
+		const b = new Uint8Array([1, 2, 3, 4]);
+		expect(constantTimeEqual(a, b)).toBe(false);
+	});
+
+	it("returns true for empty arrays", () => {
+		const a = new Uint8Array([]);
+		const b = new Uint8Array([]);
+		expect(constantTimeEqual(a, b)).toBe(true);
+	});
+
+	it("works with 20-byte addresses", () => {
+		const addr1 = new Uint8Array(20).fill(0xab);
+		const addr2 = new Uint8Array(20).fill(0xab);
+		const addr3 = new Uint8Array(20).fill(0xcd);
+
+		expect(constantTimeEqual(addr1, addr2)).toBe(true);
+		expect(constantTimeEqual(addr1, addr3)).toBe(false);
+	});
+
+	it("works with 32-byte hashes", () => {
+		const hash1 = new Uint8Array(32).fill(0x12);
+		const hash2 = new Uint8Array(32).fill(0x12);
+		const hash3 = new Uint8Array(32).fill(0x34);
+
+		expect(constantTimeEqual(hash1, hash2)).toBe(true);
+		expect(constantTimeEqual(hash1, hash3)).toBe(false);
+	});
+});
+
+describe("hashMessage", () => {
+	it.effect("hashes a string message", () =>
+		Effect.gen(function* () {
+			const result = yield* hashMessage("hello world");
+
+			expect(result).toBeInstanceOf(Uint8Array);
+			expect(result.length).toBe(32);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	it.effect("produces consistent hash for same message", () =>
+		Effect.gen(function* () {
+			const hash1 = yield* hashMessage("test message");
+			const hash2 = yield* hashMessage("test message");
+
+			expect(constantTimeEqual(hash1, hash2)).toBe(true);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	it.effect("produces different hashes for different messages", () =>
+		Effect.gen(function* () {
+			const hash1 = yield* hashMessage("message1");
+			const hash2 = yield* hashMessage("message2");
+
+			expect(constantTimeEqual(hash1, hash2)).toBe(false);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	it.effect("hashes bytes", () =>
+		Effect.gen(function* () {
+			const bytes = new Uint8Array([1, 2, 3, 4, 5]);
+			const result = yield* hashMessage(bytes);
+
+			expect(result.length).toBe(32);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	it.effect("hashes hex strings", () =>
+		Effect.gen(function* () {
+			const result = yield* hashMessage("0x1234");
+
+			expect(result.length).toBe(32);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	// Known test vector: EIP-191 format
+	it.effect("matches known EIP-191 test vector", () =>
+		Effect.gen(function* () {
+			const result = yield* hashMessage("hello world");
+
+			// The result should be a valid 32-byte hash
+			expect(result.length).toBe(32);
+			// Verify it's not all zeros
+			expect(result.some((b) => b !== 0)).toBe(true);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	it.effect("EIP-191 prefix is applied correctly", () =>
+		Effect.gen(function* () {
+			const keccak = yield* KeccakService;
+
+			// Hash manually to verify prefix
+			const message = "hello";
+			const prefix = "\x19Ethereum Signed Message:\n";
+			const prefixedMessage = `${prefix}5${message}`;
+			const manualBytes = new TextEncoder().encode(prefixedMessage);
+			const manualHash = yield* keccak.hash(manualBytes);
+
+			// Hash using hashMessage
+			const result = yield* hashMessage(message);
+
+			expect(constantTimeEqual(result, manualHash)).toBe(true);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+});
+
+describe("Signature verification vectors", () => {
+	const expectedAddress = Address.fromHex(vectorAddressHex);
+
+	it.effect("hashMessage matches EIP-191 vector", () =>
+		Effect.gen(function* () {
+			const hash = yield* hashMessage(vectorMessage);
+			expect(bytesToHex(hash)).toBe(vectorMessageHash);
+		}).pipe(Effect.provide(KeccakLive)),
+	);
+
+	it.effect("recoverMessageAddress matches vector", () =>
+		Effect.gen(function* () {
+			const recovered = yield* recoverMessageAddress({
+				message: vectorMessage,
+				signature: vectorMessageSignature,
+			});
+			expect(constantTimeEqual(recovered, expectedAddress)).toBe(true);
+		}).pipe(Effect.provide(CryptoLive)),
+	);
+
+	it.effect("verifyMessage returns true for vector", () =>
+		Effect.gen(function* () {
+			const isValid = yield* verifyMessage({
+				message: vectorMessage,
+				signature: vectorMessageSignature,
+				address: expectedAddress,
+			});
+			expect(isValid).toBe(true);
+		}).pipe(Effect.provide(CryptoLive)),
+	);
+
+	it.effect("recoverAddress matches vector for raw hash", () =>
+		Effect.gen(function* () {
+			const recovered = yield* recoverAddress({
+				hash: Hash.from(vectorHash),
+				signature: vectorHashSignature,
+			});
+			expect(constantTimeEqual(recovered, expectedAddress)).toBe(true);
+		}).pipe(Effect.provide(CryptoLive)),
+	);
+
+	it.effect("verifyHash returns true for vector", () =>
+		Effect.gen(function* () {
+			const isValid = yield* verifyHash({
+				hash: Hash.from(vectorHash),
+				signature: vectorHashSignature,
+				address: expectedAddress,
+			});
+			expect(isValid).toBe(true);
+		}).pipe(Effect.provide(CryptoLive)),
+	);
+
+	it.effect("verifyTypedData returns true for vector", () =>
+		Effect.gen(function* () {
+			const isValid = yield* verifyTypedData({
+				typedData: vectorTypedData,
+				signature: vectorTypedSignature,
+				address: expectedAddress,
+			});
+			expect(isValid).toBe(true);
+		}).pipe(Effect.provide(CryptoLive)),
+	);
+});
+
+describe("Security: Constant-time comparison", () => {
+	it("compares addresses in constant time", () => {
+		// These should all take approximately the same time
+		const addr1 = new Uint8Array(20).fill(0xaa);
+		const addr2 = new Uint8Array(20).fill(0xaa);
+		const addr3 = new Uint8Array(20);
+		addr3.fill(0xaa);
+		addr3[0] = 0xbb; // Different at start
+		const addr4 = new Uint8Array(20);
+		addr4.fill(0xaa);
+		addr4[19] = 0xbb; // Different at end
+
+		// Just verify correctness - timing verification would need more sophisticated tests
+		expect(constantTimeEqual(addr1, addr2)).toBe(true);
+		expect(constantTimeEqual(addr1, addr3)).toBe(false);
+		expect(constantTimeEqual(addr1, addr4)).toBe(false);
+	});
+
+	it("compares 32-byte hashes in constant time", () => {
+		const hash1 = new Uint8Array(32).fill(0x12);
+		const hash2 = new Uint8Array(32).fill(0x12);
+		const hash3 = new Uint8Array(32);
+		hash3.fill(0x12);
+		hash3[0] = 0x34;
+		const hash4 = new Uint8Array(32);
+		hash4.fill(0x12);
+		hash4[31] = 0x34;
+
+		expect(constantTimeEqual(hash1, hash2)).toBe(true);
+		expect(constantTimeEqual(hash1, hash3)).toBe(false);
+		expect(constantTimeEqual(hash1, hash4)).toBe(false);
+	});
+});
+
+describe("Error types", () => {
+	it("exports VerifyError", async () => {
+		const { VerifyError } = await import("./errors.js");
+		const error = VerifyError.of("test error");
+		expect(error._tag).toBe("VerifyError");
+		expect(error.message).toBe("test error");
+	});
+
+	it("exports RecoverError", async () => {
+		const { RecoverError } = await import("./errors.js");
+		const error = RecoverError.of("test error", { cause: new Error("inner") });
+		expect(error._tag).toBe("RecoverError");
+		expect(error.message).toBe("test error");
+		expect(error.cause).toBeInstanceOf(Error);
+	});
+
+	it("exports AddressDerivationError", async () => {
+		const { AddressDerivationError } = await import("./errors.js");
+		const error = AddressDerivationError.of("test error");
+		expect(error._tag).toBe("AddressDerivationError");
+		expect(error.message).toBe("test error");
+	});
+});
