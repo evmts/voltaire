@@ -1,0 +1,240 @@
+---
+title: Additional Crypto
+description: Ed25519, P256, X25519, AES-GCM
+---
+
+Additional cryptographic primitives beyond secp256k1.
+
+## Ed25519
+
+Edwards-curve Digital Signature Algorithm.
+
+### ed25519Sign
+
+```c
+int ed25519Sign(
+    const unsigned char* message,
+    size_t message_len,
+    const unsigned char secret_key[64],
+    unsigned char out_signature[64]
+);
+```
+
+### ed25519Verify
+
+```c
+int ed25519Verify(
+    const unsigned char* message,
+    size_t message_len,
+    const unsigned char signature[64],
+    const unsigned char public_key[32]
+);
+```
+
+**Returns:** 0 if valid, 1 if invalid, negative on error.
+
+### ed25519DerivePublicKey
+
+```c
+int ed25519DerivePublicKey(
+    const unsigned char secret_key[64],
+    unsigned char out_public_key[32]
+);
+```
+
+## P256 (secp256r1)
+
+NIST P-256 curve for WebAuthn/passkeys.
+
+### p256Sign
+
+```c
+int p256Sign(
+    const unsigned char hash[32],
+    const unsigned char private_key[32],
+    unsigned char out_signature[64]    // r || s
+);
+```
+
+### p256Verify
+
+```c
+int p256Verify(
+    const unsigned char hash[32],
+    const unsigned char signature[64],
+    const unsigned char public_key[64]  // x || y
+);
+```
+
+**Returns:** 0 if valid, 1 if invalid.
+
+### p256DerivePublicKey
+
+```c
+int p256DerivePublicKey(
+    const unsigned char private_key[32],
+    unsigned char out_public_key[64]
+);
+```
+
+### p256Ecdh
+
+Elliptic-curve Diffie-Hellman key exchange.
+
+```c
+int p256Ecdh(
+    const unsigned char private_key[32],
+    const unsigned char public_key[64],
+    unsigned char out_shared[32]
+);
+```
+
+## X25519
+
+Curve25519 key exchange.
+
+### x25519DerivePublicKey
+
+```c
+int x25519DerivePublicKey(
+    const unsigned char secret[32],
+    unsigned char out_public[32]
+);
+```
+
+### x25519Scalarmult
+
+Compute shared secret.
+
+```c
+int x25519Scalarmult(
+    const unsigned char secret[32],
+    const unsigned char public_key[32],
+    unsigned char out_shared[32]
+);
+```
+
+### x25519KeypairFromSeed
+
+Generate keypair from seed.
+
+```c
+int x25519KeypairFromSeed(
+    const unsigned char seed[32],
+    unsigned char out_secret[32],
+    unsigned char out_public[32]
+);
+```
+
+## AES-GCM
+
+Authenticated encryption.
+
+### aesGcm128Encrypt
+
+```c
+int aesGcm128Encrypt(
+    const unsigned char* plaintext,
+    size_t plaintext_len,
+    const unsigned char key[16],
+    const unsigned char nonce[12],
+    const unsigned char* additional_data,
+    size_t ad_len,
+    unsigned char* out                  // plaintext_len + 16 bytes
+);
+```
+
+### aesGcm128Decrypt
+
+```c
+int aesGcm128Decrypt(
+    const unsigned char* ciphertext,
+    size_t ciphertext_len,              // includes 16-byte tag
+    const unsigned char key[16],
+    const unsigned char nonce[12],
+    const unsigned char* additional_data,
+    size_t ad_len,
+    unsigned char* out                  // ciphertext_len - 16 bytes
+);
+```
+
+### aesGcm256Encrypt
+
+```c
+int aesGcm256Encrypt(
+    const unsigned char* plaintext,
+    size_t plaintext_len,
+    const unsigned char key[32],
+    const unsigned char nonce[12],
+    const unsigned char* additional_data,
+    size_t ad_len,
+    unsigned char* out
+);
+```
+
+### aesGcm256Decrypt
+
+```c
+int aesGcm256Decrypt(
+    const unsigned char* ciphertext,
+    size_t ciphertext_len,
+    const unsigned char key[32],
+    const unsigned char nonce[12],
+    const unsigned char* additional_data,
+    size_t ad_len,
+    unsigned char* out
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // X25519 key exchange
+    unsigned char alice_secret[32], alice_public[32];
+    unsigned char bob_secret[32], bob_public[32];
+
+    // Generate keypairs from seeds
+    unsigned char alice_seed[32] = {1};
+    unsigned char bob_seed[32] = {2};
+
+    x25519KeypairFromSeed(alice_seed, alice_secret, alice_public);
+    x25519KeypairFromSeed(bob_seed, bob_secret, bob_public);
+
+    // Compute shared secrets
+    unsigned char alice_shared[32], bob_shared[32];
+    x25519Scalarmult(alice_secret, bob_public, alice_shared);
+    x25519Scalarmult(bob_secret, alice_public, bob_shared);
+
+    // Should be equal
+    printf("Shared secrets match: %d\n",
+           memcmp(alice_shared, bob_shared, 32) == 0);
+
+    // AES-GCM encryption with shared secret
+    const char* message = "Hello, Alice!";
+    unsigned char nonce[12] = {0};
+    unsigned char ciphertext[256];
+    unsigned char decrypted[256];
+
+    aesGcm256Encrypt(
+        (unsigned char*)message, strlen(message),
+        alice_shared, nonce,
+        NULL, 0,
+        ciphertext
+    );
+
+    aesGcm256Decrypt(
+        ciphertext, strlen(message) + 16,
+        bob_shared, nonce,
+        NULL, 0,
+        decrypted
+    );
+
+    printf("Decrypted: %.*s\n", (int)strlen(message), decrypted);
+
+    return 0;
+}
+```

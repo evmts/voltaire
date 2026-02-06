@@ -1,0 +1,55 @@
+---
+title: Transaction
+description: Transaction type detection and operations
+---
+
+Detect and work with different Ethereum transaction types.
+
+## Functions
+
+### primitives_tx_detect_type
+
+Detect transaction type from serialized data.
+
+```c
+int primitives_tx_detect_type(
+    const unsigned char* data,
+    size_t data_len
+);
+```
+
+**Returns:** Transaction type (0-4) or negative error code.
+
+| Return | Type |
+|--------|------|
+| 0 | Legacy |
+| 1 | EIP-2930 (Access List) |
+| 2 | EIP-1559 (Fee Market) |
+| 3 | EIP-4844 (Blob) |
+| 4 | EIP-7702 (Authorization) |
+
+```c
+unsigned char tx_data[] = {0x02, ...};  // EIP-1559 prefix
+int type = primitives_tx_detect_type(tx_data, sizeof(tx_data));
+// type = 2
+```
+
+## Example
+
+```c
+#include <stdio.h>
+
+int main() {
+    // Legacy transaction (RLP list, first byte >= 0xc0)
+    unsigned char legacy[] = {0xf8, ...};
+    int type1 = primitives_tx_detect_type(legacy, sizeof(legacy));
+    printf("Legacy: %d\n", type1);  // 0
+
+    // EIP-1559 transaction (prefix 0x02)
+    unsigned char eip1559[] = {0x02, ...};
+    int type2 = primitives_tx_detect_type(eip1559, sizeof(eip1559));
+    printf("EIP-1559: %d\n", type2);  // 2
+
+    return 0;
+}
+```

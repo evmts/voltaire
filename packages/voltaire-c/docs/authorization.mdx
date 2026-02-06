@@ -1,0 +1,122 @@
+---
+title: Authorization
+description: EIP-7702 authorization operations
+---
+
+Work with EIP-7702 authorizations for account abstraction.
+
+## Types
+
+```c
+typedef struct {
+    uint64_t chain_id;
+    PrimitivesAddress address;
+    uint64_t nonce;
+    uint64_t v;
+    unsigned char r[32];
+    unsigned char s[32];
+} PrimitivesAuthorization;
+```
+
+## Functions
+
+### primitives_authorization_validate
+
+Validate authorization structure.
+
+```c
+int primitives_authorization_validate(
+    const PrimitivesAuthorization* auth
+);
+```
+
+**Returns:** `PRIMITIVES_SUCCESS` or `PRIMITIVES_ERROR_AUTHORIZATION_INVALID`
+
+### primitives_authorization_signing_hash
+
+Calculate signing hash for authorization.
+
+```c
+int primitives_authorization_signing_hash(
+    uint64_t chain_id,
+    const PrimitivesAddress* address,
+    uint64_t nonce,
+    PrimitivesHash* out_hash
+);
+```
+
+### primitives_authorization_authority
+
+Recover signer address from authorization.
+
+```c
+int primitives_authorization_authority(
+    const PrimitivesAuthorization* auth,
+    PrimitivesAddress* out_address
+);
+```
+
+### primitives_authorization_gas_cost
+
+Calculate gas cost for authorization list.
+
+```c
+uint64_t primitives_authorization_gas_cost(
+    size_t count,
+    size_t empty_accounts
+);
+```
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Create authorization
+    PrimitivesAuthorization auth;
+    auth.chain_id = 1;  // mainnet
+    auth.nonce = 0;
+
+    primitives_address_from_hex(
+        "0x1234567890123456789012345678901234567890",
+        &auth.address
+    );
+
+    // Get signing hash
+    PrimitivesHash hash;
+    primitives_authorization_signing_hash(
+        auth.chain_id,
+        &auth.address,
+        auth.nonce,
+        &hash
+    );
+
+    // Sign the hash (with your private key)
+    unsigned char privkey[32] = {...};
+    unsigned char sig[64];
+    unsigned char recid;
+    secp256k1Sign(hash.bytes, privkey, sig, &recid);
+
+    // Fill in signature
+    memcpy(auth.r, sig, 32);
+    memcpy(auth.s, sig + 32, 32);
+    auth.v = recid;
+
+    // Validate
+    int result = primitives_authorization_validate(&auth);
+    printf("Valid: %d\n", result == 0);
+
+    // Recover authority
+    PrimitivesAddress authority;
+    primitives_authorization_authority(&auth, &authority);
+
+    // Print authority address
+    unsigned char hex[42];
+    primitives_address_to_checksum_hex(&authority, hex);
+    printf("Authority: %s\n", hex);
+
+    return 0;
+}
+```

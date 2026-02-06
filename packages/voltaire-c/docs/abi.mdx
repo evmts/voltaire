@@ -1,0 +1,169 @@
+---
+title: ABI Encoding
+description: Ethereum ABI encoding and decoding
+---
+
+Encode and decode function calls and event data.
+
+## Functions
+
+### primitives_abi_compute_selector
+
+Compute 4-byte function selector from signature.
+
+```c
+int primitives_abi_compute_selector(
+    const char* signature,         // e.g., "transfer(address,uint256)"
+    unsigned char out_selector[4]
+);
+```
+
+```c
+unsigned char selector[4];
+primitives_abi_compute_selector("transfer(address,uint256)", selector);
+// selector = [0xa9, 0x05, 0x9c, 0xbb]
+```
+
+### primitives_abi_encode_parameters
+
+Encode ABI parameters from JSON arrays.
+
+```c
+int primitives_abi_encode_parameters(
+    const char* types_json,        // ["address","uint256"]
+    const char* values_json,       // ["0x...", "100"]
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+**Returns:** Number of bytes written, or negative error code.
+
+```c
+unsigned char encoded[256];
+int len = primitives_abi_encode_parameters(
+    "[\"address\",\"uint256\"]",
+    "[\"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\",\"1000\"]",
+    encoded, sizeof(encoded)
+);
+```
+
+### primitives_abi_decode_parameters
+
+Decode ABI-encoded data.
+
+```c
+int primitives_abi_decode_parameters(
+    const unsigned char* data,
+    size_t data_len,
+    const char* types_json,
+    unsigned char* out_buf,        // JSON result
+    size_t buf_len
+);
+```
+
+### primitives_abi_encode_function_data
+
+Encode function call (selector + parameters).
+
+```c
+int primitives_abi_encode_function_data(
+    const char* signature,         // "transfer(address,uint256)"
+    const char* types_json,
+    const char* values_json,
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+```c
+unsigned char calldata[256];
+int len = primitives_abi_encode_function_data(
+    "transfer(address,uint256)",
+    "[\"address\",\"uint256\"]",
+    "[\"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\",\"1000\"]",
+    calldata, sizeof(calldata)
+);
+```
+
+### primitives_abi_decode_function_data
+
+Decode function call data.
+
+```c
+int primitives_abi_decode_function_data(
+    const unsigned char* data,
+    size_t data_len,
+    const char* types_json,
+    unsigned char out_selector[4],
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+### primitives_abi_encode_packed
+
+Encode tightly packed data (non-standard, for `abi.encodePacked`).
+
+```c
+int primitives_abi_encode_packed(
+    const char* types_json,
+    const char* values_json,
+    unsigned char* out_buf,
+    size_t buf_len
+);
+```
+
+### primitives_abi_estimate_gas
+
+Estimate calldata gas cost.
+
+```c
+long long primitives_abi_estimate_gas(
+    const unsigned char* data,
+    size_t data_len
+);
+```
+
+**Returns:** Gas cost (16 per non-zero byte, 4 per zero byte).
+
+## Supported Types
+
+| Type | Example Value |
+|------|---------------|
+| `address` | `"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"` |
+| `uint8`-`uint256` | `"42"` or `"0x2a"` |
+| `int8`-`int256` | `"-42"` |
+| `bool` | `"true"` or `"false"` |
+| `string` | `"hello world"` |
+| `bytes` | `"0xdeadbeef"` |
+| `bytes1`-`bytes32` | `"0xab..."` |
+| `uint256[]` | `["1","2","3"]` |
+| `address[]` | `["0x...","0x..."]` |
+
+## Example
+
+```c
+#include <stdio.h>
+
+int main() {
+    // Compute selector
+    unsigned char selector[4];
+    primitives_abi_compute_selector("balanceOf(address)", selector);
+
+    // Encode function call
+    unsigned char calldata[256];
+    int len = primitives_abi_encode_function_data(
+        "balanceOf(address)",
+        "[\"address\"]",
+        "[\"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\"]",
+        calldata, sizeof(calldata)
+    );
+
+    // Estimate gas
+    long long gas = primitives_abi_estimate_gas(calldata, len);
+    printf("Calldata gas: %lld\n", gas);
+
+    return 0;
+}
+```

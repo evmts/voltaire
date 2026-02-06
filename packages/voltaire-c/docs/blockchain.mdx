@@ -1,0 +1,327 @@
+---
+title: Blockchain
+description: Blockchain and fork block cache operations
+---
+
+Manage blockchain state with optional fork support for fetching historical blocks.
+
+## Handle Types
+
+```c
+typedef void* BlockchainHandle;
+typedef void* ForkBlockCacheHandle;
+```
+
+## Error Codes
+
+```c
+#define BLOCKCHAIN_SUCCESS               0
+#define BLOCKCHAIN_ERROR_INVALID_INPUT   -1
+#define BLOCKCHAIN_ERROR_OUT_OF_MEMORY   -2
+#define BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND -3
+#define BLOCKCHAIN_ERROR_INVALID_PARENT  -4
+#define BLOCKCHAIN_ERROR_ORPHAN_HEAD     -5
+#define BLOCKCHAIN_ERROR_INVALID_HASH    -6
+#define BLOCKCHAIN_ERROR_RPC_PENDING     -7
+#define BLOCKCHAIN_ERROR_NO_PENDING_REQUEST -8
+#define BLOCKCHAIN_ERROR_OUTPUT_TOO_SMALL -9
+#define BLOCKCHAIN_ERROR_INVALID_REQUEST -10
+#define BLOCKCHAIN_ERROR_NOT_IMPLEMENTED -999
+```
+
+## Blockchain Lifecycle
+
+### blockchain_create
+
+Create blockchain without fork support.
+
+```c
+BlockchainHandle blockchain_create(void);
+```
+
+### blockchain_create_with_fork
+
+Create blockchain with fork block cache.
+
+```c
+BlockchainHandle blockchain_create_with_fork(
+    ForkBlockCacheHandle fork_cache
+);
+```
+
+### blockchain_destroy
+
+Free blockchain and resources.
+
+```c
+void blockchain_destroy(BlockchainHandle handle);
+```
+
+## Chain Info
+
+### blockchain_local_block_count
+
+Get number of locally stored blocks.
+
+```c
+size_t blockchain_local_block_count(BlockchainHandle handle);
+```
+
+### blockchain_canonical_chain_length
+
+Get canonical chain length.
+
+```c
+size_t blockchain_canonical_chain_length(BlockchainHandle handle);
+```
+
+### blockchain_orphan_count
+
+Get number of orphan blocks.
+
+```c
+size_t blockchain_orphan_count(BlockchainHandle handle);
+```
+
+### blockchain_get_head_block_number
+
+Get head block number.
+
+```c
+int blockchain_get_head_block_number(
+    BlockchainHandle handle,
+    uint64_t* out_number
+);
+```
+
+### blockchain_is_fork_block
+
+Check if block number is at/before fork point.
+
+```c
+bool blockchain_is_fork_block(
+    BlockchainHandle handle,
+    uint64_t number
+);
+```
+
+## Block Operations
+
+### blockchain_get_block_by_number
+
+Get block by number (canonical chain).
+
+```c
+int blockchain_get_block_by_number(
+    BlockchainHandle handle,
+    uint64_t number,
+    unsigned char* out_block          // JSON output buffer
+);
+```
+
+Returns JSON-encoded block.
+
+### blockchain_get_block_by_hash
+
+Get block by hash.
+
+```c
+int blockchain_get_block_by_hash(
+    BlockchainHandle handle,
+    const unsigned char block_hash[32],
+    unsigned char* out_block
+);
+```
+
+### blockchain_has_block
+
+Check if block exists.
+
+```c
+bool blockchain_has_block(
+    BlockchainHandle handle,
+    const unsigned char block_hash[32]
+);
+```
+
+### blockchain_get_canonical_hash
+
+Get canonical block hash for number.
+
+```c
+int blockchain_get_canonical_hash(
+    BlockchainHandle handle,
+    uint64_t number,
+    unsigned char out_hash[32]
+);
+```
+
+### blockchain_put_block
+
+Add block to chain. (Not implemented)
+
+```c
+int blockchain_put_block(
+    BlockchainHandle handle,
+    const unsigned char* block_data
+);
+```
+
+### blockchain_set_canonical_head
+
+Set canonical head. (Not implemented)
+
+```c
+int blockchain_set_canonical_head(
+    BlockchainHandle handle,
+    const unsigned char block_hash[32]
+);
+```
+
+## Fork Block Cache
+
+### fork_block_cache_create
+
+Create fork block cache for async RPC fetching.
+
+```c
+ForkBlockCacheHandle fork_block_cache_create(
+    size_t rpc_context,               // ignored (ABI compat)
+    size_t vtable_fetch_by_number,    // ignored
+    size_t vtable_fetch_by_hash,      // ignored
+    uint64_t fork_block_number
+);
+```
+
+### fork_block_cache_destroy
+
+Free fork block cache.
+
+```c
+void fork_block_cache_destroy(ForkBlockCacheHandle handle);
+```
+
+### fork_block_cache_next_request
+
+Get next pending block request.
+
+```c
+int fork_block_cache_next_request(
+    ForkBlockCacheHandle handle,
+    uint64_t* out_request_id,
+    unsigned char* out_method,
+    size_t method_buf_len,
+    size_t* out_method_len,
+    unsigned char* out_params,
+    size_t params_buf_len,
+    size_t* out_params_len
+);
+```
+
+Methods returned: `eth_getBlockByNumber`, `eth_getBlockByHash`
+
+### fork_block_cache_continue
+
+Continue with RPC response.
+
+```c
+int fork_block_cache_continue(
+    ForkBlockCacheHandle handle,
+    uint64_t request_id,
+    const unsigned char* response,
+    size_t response_len
+);
+```
+
+## Block JSON Format
+
+Blocks are returned as JSON:
+
+```json
+{
+  "hash": "0x...",
+  "parentHash": "0x...",
+  "number": "0x...",
+  "timestamp": "0x...",
+  "gasLimit": "0x...",
+  "gasUsed": "0x...",
+  "baseFeePerGas": "0x..." | null,
+  "transactions": "0x",
+  "...": "..."
+}
+```
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Create fork cache at block 18000000
+    ForkBlockCacheHandle cache = fork_block_cache_create(
+        0, 0, 0,
+        18000000
+    );
+
+    // Create blockchain with fork
+    BlockchainHandle bc = blockchain_create_with_fork(cache);
+    if (!bc) {
+        printf("Failed to create blockchain\n");
+        return 1;
+    }
+
+    // Get chain info
+    printf("Local blocks: %zu\n", blockchain_local_block_count(bc));
+    printf("Chain length: %zu\n", blockchain_canonical_chain_length(bc));
+    printf("Orphans: %zu\n", blockchain_orphan_count(bc));
+
+    // Try to get a block (may need RPC)
+    char block_json[4096];
+    int result = blockchain_get_block_by_number(bc, 18000000,
+        (unsigned char*)block_json);
+
+    if (result == BLOCKCHAIN_ERROR_RPC_PENDING) {
+        // Handle async fetch
+        uint64_t request_id;
+        char method[64], params[256];
+        size_t method_len, params_len;
+
+        fork_block_cache_next_request(cache,
+            &request_id,
+            (unsigned char*)method, sizeof(method), &method_len,
+            (unsigned char*)params, sizeof(params), &params_len
+        );
+
+        printf("Need RPC: %.*s %.*s\n",
+            (int)method_len, method,
+            (int)params_len, params);
+
+        // ... perform RPC and continue ...
+    }
+
+    // Check if hash exists
+    unsigned char some_hash[32] = {0};
+    bool has = blockchain_has_block(bc, some_hash);
+    printf("Has block: %d\n", has);
+
+    // Cleanup
+    blockchain_destroy(bc);
+    fork_block_cache_destroy(cache);
+
+    return 0;
+}
+```
+
+## Async Pattern
+
+1. Call `blockchain_get_block_by_number` or `blockchain_get_block_by_hash`
+2. If returns `BLOCKCHAIN_ERROR_RPC_PENDING`:
+   - Call `fork_block_cache_next_request` to get method/params
+   - Perform RPC (`eth_getBlockByNumber` or `eth_getBlockByHash`)
+   - Call `fork_block_cache_continue` with response
+   - Retry original call
+
+## Note
+
+Blockchain operations are for native builds only, not available in WASM.

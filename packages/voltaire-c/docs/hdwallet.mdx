@@ -1,0 +1,188 @@
+---
+title: HD Wallet
+description: BIP-32/39 hierarchical deterministic wallets
+---
+
+Generate and derive Ethereum wallets from mnemonic phrases.
+
+## Functions
+
+### hdwallet_generate_mnemonic
+
+Generate BIP-39 mnemonic from entropy.
+
+```c
+int hdwallet_generate_mnemonic(
+    const unsigned char* entropy,
+    size_t entropy_len,            // 16 (12 words) or 32 (24 words)
+    unsigned char* out_mnemonic,
+    size_t out_len                 // at least 256 bytes
+);
+```
+
+**Returns:** Length of mnemonic string, or negative error code.
+
+### hdwallet_validate_mnemonic
+
+Validate mnemonic checksum.
+
+```c
+int hdwallet_validate_mnemonic(const char* mnemonic);
+```
+
+**Returns:** 1 if valid, 0 if invalid.
+
+### hdwallet_mnemonic_to_seed
+
+Convert mnemonic to 64-byte seed.
+
+```c
+int hdwallet_mnemonic_to_seed(
+    const char* mnemonic,
+    const char* passphrase,        // optional, NULL if not used
+    unsigned char out_seed[64]
+);
+```
+
+### hdwallet_from_seed
+
+Create HD root key from seed.
+
+```c
+size_t hdwallet_from_seed(
+    const unsigned char* seed,
+    size_t seed_len                // must be 64
+);
+```
+
+**Returns:** Opaque handle (0 on error).
+
+### hdwallet_derive
+
+Derive child key from path.
+
+```c
+size_t hdwallet_derive(
+    size_t hdkey_handle,
+    const uint32_t* path,
+    size_t path_len
+);
+```
+
+Use `0x80000000 | index` for hardened derivation.
+
+**Returns:** New handle to derived key.
+
+### hdwallet_get_private_key
+
+Extract 32-byte private key.
+
+```c
+int hdwallet_get_private_key(
+    size_t hdkey_handle,
+    unsigned char out_private_key[32]
+);
+```
+
+### hdwallet_get_public_key
+
+Extract 33-byte compressed public key.
+
+```c
+int hdwallet_get_public_key(
+    size_t hdkey_handle,
+    unsigned char out_public_key[33]
+);
+```
+
+### hdwallet_get_address
+
+Get Ethereum address from HD key.
+
+```c
+int hdwallet_get_address(
+    size_t hdkey_handle,
+    PrimitivesAddress* out_address
+);
+```
+
+### hdwallet_free
+
+Free HD key handle.
+
+```c
+int hdwallet_free(size_t hdkey_handle);
+```
+
+## Derivation Paths
+
+| Path | Description |
+|------|-------------|
+| `m/44'/60'/0'/0/0` | First Ethereum account (BIP-44) |
+| `m/44'/60'/0'/0/1` | Second account |
+| `m/44'/60'/1'/0/0` | Second account (different account index) |
+
+Hardened indices use `0x80000000` offset.
+
+## Example
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Generate entropy (use proper RNG in production!)
+    unsigned char entropy[16];
+    primitives_generate_private_key(entropy);  // 32 bytes, use first 16
+
+    // Generate mnemonic
+    char mnemonic[256];
+    hdwallet_generate_mnemonic(entropy, 16, (unsigned char*)mnemonic, sizeof(mnemonic));
+    printf("Mnemonic: %s\n", mnemonic);
+
+    // Validate
+    if (!hdwallet_validate_mnemonic(mnemonic)) {
+        printf("Invalid mnemonic!\n");
+        return 1;
+    }
+
+    // Convert to seed
+    unsigned char seed[64];
+    hdwallet_mnemonic_to_seed(mnemonic, NULL, seed);
+
+    // Create root key
+    size_t root = hdwallet_from_seed(seed, 64);
+    if (root == 0) {
+        printf("Failed to create root key\n");
+        return 1;
+    }
+
+    // Derive m/44'/60'/0'/0/0 (first Ethereum account)
+    uint32_t path[] = {
+        0x80000000 | 44,   // 44' (purpose)
+        0x80000000 | 60,   // 60' (Ethereum)
+        0x80000000 | 0,    // 0'  (account)
+        0,                 // 0   (change)
+        0                  // 0   (address index)
+    };
+    size_t account = hdwallet_derive(root, path, 5);
+
+    // Get address
+    PrimitivesAddress addr;
+    hdwallet_get_address(account, &addr);
+
+    unsigned char hex[42];
+    primitives_address_to_checksum_hex(&addr, hex);
+    printf("Address: %s\n", hex);
+
+    // Cleanup
+    hdwallet_free(account);
+    hdwallet_free(root);
+
+    return 0;
+}
+```
+
+## Note
+
+HD wallet operations use libwally-core and are not available in WASM builds.

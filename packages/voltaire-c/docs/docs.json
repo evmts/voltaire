@@ -1,0 +1,54 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Voltaire C API",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["index"]
+          },
+          {
+            "group": "Primitives",
+            "pages": [
+              "address",
+              "hex",
+              "hash",
+              "rlp",
+              "abi",
+              "transaction",
+              "accesslist",
+              "authorization",
+              "eventlog"
+            ]
+          },
+          {
+            "group": "Cryptography",
+            "pages": [
+              "secp256k1",
+              "crypto",
+              "hdwallet",
+              "kzg"
+            ]
+          },
+          {
+            "group": "EVM",
+            "pages": [
+              "bytecode",
+              "blob"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "statemanager",
+              "blockchain"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

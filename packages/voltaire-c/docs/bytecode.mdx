@@ -1,0 +1,154 @@
+---
+title: Bytecode Analysis
+description: EVM bytecode analysis and validation
+---
+
+Analyze and validate EVM bytecode.
+
+## Functions
+
+### primitives_bytecode_analyze_jumpdests
+
+Find all valid JUMPDEST locations.
+
+```c
+int primitives_bytecode_analyze_jumpdests(
+    const unsigned char* code,
+    size_t code_len,
+    uint32_t* out_jumpdests,       // output array
+    size_t max_jumpdests           // array capacity
+);
+```
+
+**Returns:** Number of JUMPDESTs found.
+
+### primitives_bytecode_is_boundary
+
+Check if position is at instruction boundary (not inside PUSH data).
+
+```c
+bool primitives_bytecode_is_boundary(
+    const unsigned char* code,
+    size_t code_len,
+    uint32_t position
+);
+```
+
+### primitives_bytecode_is_valid_jumpdest
+
+Check if position is a valid JUMPDEST.
+
+```c
+bool primitives_bytecode_is_valid_jumpdest(
+    const unsigned char* code,
+    size_t code_len,
+    uint32_t position
+);
+```
+
+### primitives_bytecode_validate
+
+Validate bytecode for basic correctness.
+
+```c
+int primitives_bytecode_validate(
+    const unsigned char* code,
+    size_t code_len
+);
+```
+
+**Returns:** `PRIMITIVES_SUCCESS` if valid, error code otherwise.
+
+### primitives_bytecode_get_next_pc
+
+Get next program counter after current instruction.
+
+```c
+int64_t primitives_bytecode_get_next_pc(
+    const unsigned char* code,
+    size_t code_len,
+    uint32_t current_pc
+);
+```
+
+**Returns:** Next PC or -1 if at end.
+
+### primitives_bytecode_scan
+
+Scan bytecode and collect instructions in range.
+
+```c
+int primitives_bytecode_scan(
+    const unsigned char* code,
+    size_t code_len,
+    uint32_t start_pc,
+    uint32_t end_pc,
+    unsigned char* out_instructions,
+    size_t* out_len
+);
+```
+
+### primitives_bytecode_detect_fusions
+
+Detect optimizable instruction patterns.
+
+```c
+int primitives_bytecode_detect_fusions(
+    const unsigned char* code,
+    size_t code_len,
+    unsigned char* out_fusions,
+    size_t* out_len
+);
+```
+
+## Opcodes
+
+| Opcode | Name | Description |
+|--------|------|-------------|
+| 0x00 | STOP | Halt execution |
+| 0x5b | JUMPDEST | Valid jump destination |
+| 0x56 | JUMP | Unconditional jump |
+| 0x57 | JUMPI | Conditional jump |
+| 0x60-0x7f | PUSH1-PUSH32 | Push 1-32 bytes |
+| 0x80-0x8f | DUP1-DUP16 | Duplicate stack item |
+| 0x90-0x9f | SWAP1-SWAP16 | Swap stack items |
+
+## Example
+
+```c
+#include <stdio.h>
+
+int main() {
+    // Simple bytecode: PUSH1 0x00 PUSH1 0x00 JUMPDEST ADD STOP
+    unsigned char code[] = {
+        0x60, 0x00,  // PUSH1 0x00
+        0x60, 0x00,  // PUSH1 0x00
+        0x5b,        // JUMPDEST (valid at position 4)
+        0x01,        // ADD
+        0x00         // STOP
+    };
+
+    // Validate
+    int result = primitives_bytecode_validate(code, sizeof(code));
+    printf("Valid: %d\n", result == 0);
+
+    // Find JUMPDESTs
+    uint32_t jumpdests[10];
+    int count = primitives_bytecode_analyze_jumpdests(code, sizeof(code), jumpdests, 10);
+    printf("JUMPDESTs: %d\n", count);  // 1
+
+    for (int i = 0; i < count; i++) {
+        printf("  Position %u\n", jumpdests[i]);  // 4
+    }
+
+    // Check boundary
+    bool is_boundary = primitives_bytecode_is_boundary(code, sizeof(code), 4);
+    printf("Position 4 is boundary: %d\n", is_boundary);  // true
+
+    // Position 1 is inside PUSH1 data
+    is_boundary = primitives_bytecode_is_boundary(code, sizeof(code), 1);
+    printf("Position 1 is boundary: %d\n", is_boundary);  // false
+
+    return 0;
+}
+```
