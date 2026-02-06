@@ -1,0 +1,1 @@
+/Users/williamcory/voltaire/packages/voltaire-zig/target/release/libcrypto_wrappers.a: /Users/williamcory/voltaire/packages/voltaire-zig/src/crypto/bn254_wrapper.rs /Users/williamcory/voltaire/packages/voltaire-zig/src/crypto/keccak_wrapper.rs /Users/williamcory/voltaire/packages/voltaire-zig/src/crypto/lib.rs
