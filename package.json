@@ -1,0 +1,30 @@
+{
+	"name": "voltaire-monorepo",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Voltaire Ethereum primitives monorepo",
+	"type": "module",
+	"scripts": {
+		"build": "pnpm -r build",
+		"build:zig": "zig build",
+		"test": "pnpm -r test",
+		"test:run": "pnpm -r test:run",
+		"format": "zig build format && pnpm -r format",
+		"lint": "pnpm -r lint",
+		"typecheck": "pnpm -r typecheck",
+		"clean": "rm -rf zig-out .zig-cache target && pnpm -r clean",
+		"changeset": "changeset",
+		"version-packages": "changeset version",
+		"release": "pnpm build && pnpm -r publish --access public"
+	},
+	"devDependencies": {
+		"@changesets/changelog-github": "^0.5.2",
+		"@changesets/cli": "^2.29.8"
+	},
+	"packageManager": "pnpm@10.26.2+sha512.0e308ff2005fc7410366f154f625f6631ab2b16b1d2e70238444dd6ae9d630a8482d92a451144debc492416896ed16f7b114a86ec68b8404b2443869e68ffda6",
+	"pnpm": {
+		"patchedDependencies": {
+			"@scure/bip39@2.0.1": "patches/@scure__bip39@2.0.1.patch"
+		}
+	}
+}

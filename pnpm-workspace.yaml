@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+  - apps/*
+
+patchedDependencies:
+  '@scure/bip39@2.0.1': patches/@scure__bip39@2.0.1.patch
