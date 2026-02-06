@@ -1,4 +1,0 @@
-cargo:rustc-link-search=native=/Users/williamcory/voltaire/packages/voltaire-zig/zig-out/lib
-cargo:rustc-link-lib=static=voltaire
-cargo:rustc-link-lib=framework=Security
-cargo:rerun-if-changed=build.rs
