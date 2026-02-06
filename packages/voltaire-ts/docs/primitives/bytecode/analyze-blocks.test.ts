@@ -1,0 +1,170 @@
+import { describe, expect, it } from "vitest";
+
+describe("Bytecode.analyzeBlocks (docs/primitives/bytecode/analyze-blocks.mdx)", () => {
+	describe("Basic Block Analysis", () => {
+		it("should analyze linear code blocks", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// Simple linear code: PUSH1 0x01, PUSH1 0x02, ADD, STOP
+			const code = Bytecode("0x6001600201" + "00");
+			const blocks = code.analyzeBlocks();
+
+			expect(Array.isArray(blocks)).toBe(true);
+			expect(blocks.length).toBeGreaterThanOrEqual(1);
+		});
+
+		it("should handle empty bytecode", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x");
+			const blocks = code.analyzeBlocks();
+
+			expect(blocks).toHaveLength(0);
+		});
+	});
+
+	describe("Block Properties", () => {
+		it("should return blocks with required properties", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x600100");
+			const blocks = code.analyzeBlocks();
+
+			if (blocks.length > 0) {
+				const block = blocks[0];
+
+				// Check required properties from docs
+				expect(typeof block.startPc).toBe("number");
+				expect(typeof block.endPc).toBe("number");
+				expect(typeof block.instructionCount).toBe("number");
+				expect(typeof block.gasEstimate).toBe("number");
+			}
+		});
+
+		it("should track instruction count per block", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x6001600201" + "00");
+			const blocks = code.analyzeBlocks();
+
+			if (blocks.length > 0) {
+				expect(blocks[0].instructionCount).toBeGreaterThan(0);
+			}
+		});
+
+		it("should estimate gas per block", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x600101" + "00");
+			const blocks = code.analyzeBlocks();
+
+			if (blocks.length > 0) {
+				expect(blocks[0].gasEstimate).toBeGreaterThanOrEqual(0);
+			}
+		});
+	});
+
+	describe("Control Flow", () => {
+		it("should detect blocks with JUMP terminator", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x05, JUMP, INVALID, INVALID, JUMPDEST, STOP
+			const code = Bytecode("0x60055600fefe5b00");
+			const blocks = code.analyzeBlocks({ buildCFG: true });
+
+			const jumpBlock = blocks.find((b) => b.terminator === "jump");
+			expect(jumpBlock).toBeDefined();
+		});
+
+		it("should detect blocks with JUMPI terminator", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x08, PUSH1 0x01, JUMPI, STOP, INVALID, INVALID, JUMPDEST, STOP
+			const code = Bytecode("0x60086001570000fefe5b00");
+			const blocks = code.analyzeBlocks({ buildCFG: true });
+
+			const jumpiBlock = blocks.find((b) => b.terminator === "jumpi");
+			expect(jumpiBlock).toBeDefined();
+		});
+	});
+
+	describe("CFG Building", () => {
+		it("should build successors when buildCFG is true", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x05, JUMPI, STOP, JUMPDEST, STOP
+			const code = Bytecode("0x6005570000" + "5b00");
+			const blocks = code.analyzeBlocks({ buildCFG: true });
+
+			const hasSuccessors = blocks.some((b) => b.successors.length > 0);
+			expect(hasSuccessors).toBe(true);
+		});
+	});
+
+	describe("Reachability Analysis", () => {
+		it("should compute reachability when enabled", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x00, RETURN, INVALID (unreachable)
+			const code = Bytecode("0x60006000f3fe");
+			const blocks = code.analyzeBlocks({
+				computeReachability: true,
+				buildCFG: true,
+			});
+
+			if (blocks.length > 0) {
+				// First block should be reachable
+				expect(blocks[0].isReachable).toBe(true);
+			}
+		});
+
+		it("should detect unreachable blocks", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// STOP, INVALID (unreachable)
+			const code = Bytecode("0x00fe");
+			const blocks = code.analyzeBlocks({
+				computeReachability: true,
+				buildCFG: true,
+				includeUnreachable: true,
+			});
+
+			const unreachable = blocks.filter((b) => !b.isReachable);
+			expect(unreachable.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe("Multiple Entry Points", () => {
+		it("should detect multiple JUMPDESTs", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// JUMPDEST, PUSH1 0x01, JUMPDEST, PUSH1 0x02, STOP
+			const code = Bytecode("0x5b60015b600200");
+			const blocks = code.analyzeBlocks();
+
+			expect(blocks.length).toBeGreaterThan(1);
+		});
+	});
+});

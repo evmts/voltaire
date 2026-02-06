@@ -1,0 +1,78 @@
+---
+title: How to Decode Event Logs
+description: Decode raw event logs into typed arguments using ABI definitions.
+---
+
+## Goal
+
+Decode raw log data and topics into named, typed event arguments.
+
+## Using Abi.decodeLog
+
+```typescript
+import * as Abi from '@voltaire/primitives/Abi';
+
+const abi = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value', indexed: false }
+    ]
+  }
+];
+
+const log = {
+  data: '0x0000000000000000000000000000000000000000000000000000000000000064',
+  topics: [
+    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3',
+    '0x000000000000000000000000a1b2c3d4e5f6789012345678901234567890abcd'
+  ]
+};
+
+const decoded = Abi.decodeLog(abi, log);
+// { event: 'Transfer', params: { from: '0x742d...', to: '0xa1b2...', value: 100n } }
+```
+
+## Using Abi.Event.decodeLog (single event)
+
+```typescript
+import * as Abi from '@voltaire/primitives/Abi';
+import * as Hex from '@voltaire/primitives/Hex';
+
+const transferEvent = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value', indexed: false }
+  ]
+};
+
+const data = Hex.toBytes('0x0000000000000000000000000000000000000000000000000000000000000064');
+const topics = [
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3',
+  '0x000000000000000000000000a1b2c3d4e5f6789012345678901234567890abcd'
+].map(Hex.toBytes);
+
+const args = Abi.Event.decodeLog(transferEvent, data, topics);
+// { from: '0x742d...', to: '0xa1b2...', value: 100n }
+```
+
+## With EventStream (Contract)
+
+```typescript
+import { Contract } from '@voltaire/contract';
+
+const usdc = Contract({ address: usdcAddress, abi: erc20Abi, provider });
+
+for await (const { log } of usdc.events.Transfer({}).backfill({ fromBlock: 18000000n, toBlock: 18001000n })) {
+  // log.args already decoded: { from, to, value }
+  console.log(log.args.value);
+}
+```

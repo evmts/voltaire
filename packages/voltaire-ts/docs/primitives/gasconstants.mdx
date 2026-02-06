@@ -1,0 +1,439 @@
+---
+title: GasConstants
+description: EVM gas cost constants and calculation functions for Ethereum operations
+---
+
+## Overview
+
+`GasConstants` provides comprehensive EVM gas cost constants and calculation functions according to the Ethereum Yellow Paper and various EIPs. Use this module to accurately compute gas costs for opcodes, storage operations, transactions, precompiles, and memory expansion.
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Access constants directly
+const txCost = GasConstants.Tx;           // 21000n
+const sloadCost = GasConstants.Sload;     // 100n
+
+// Use calculation functions
+const intrinsicGas = GasConstants.calculateTxIntrinsicGas(calldata, false);
+const memoryCost = GasConstants.calculateMemoryExpansionCost(64n, 128n);
+```
+
+## Basic Opcode Costs
+
+Step-based gas costs for EVM opcodes:
+
+| Constant | Gas | Opcodes |
+|----------|-----|---------|
+| `QuickStep` | 2 | ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, PC, MSIZE, GAS, CHAINID, SELFBALANCE |
+| `FastestStep` | 3 | ADD, SUB, NOT, LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, CALLDATALOAD, MLOAD, MSTORE, MSTORE8, PUSH, DUP, SWAP |
+| `FastStep` | 5 | MUL, DIV, SDIV, MOD, SMOD |
+| `MidStep` | 8 | ADDMOD, MULMOD, SIGNEXTEND |
+| `SlowStep` | 10 | JUMPI |
+| `ExtStep` | 20 | BALANCE, EXTCODESIZE, BLOCKHASH |
+
+```typescript
+import { QuickStep, FastestStep, FastStep, MidStep, SlowStep, ExtStep } from '@tevm/voltaire/GasConstants';
+
+console.log(QuickStep);    // 2n - very cheap operations
+console.log(FastestStep);  // 3n - simple arithmetic/logic
+console.log(FastStep);     // 5n - multiplication/division
+console.log(MidStep);      // 8n - advanced arithmetic
+console.log(SlowStep);     // 10n - conditional jumps
+console.log(ExtStep);      // 20n - external account access
+```
+
+## Hashing Operations
+
+```typescript
+import { Keccak256Base, Keccak256Word, calculateKeccak256Cost } from '@tevm/voltaire/GasConstants';
+
+// Constants
+Keccak256Base;  // 30n - base cost
+Keccak256Word;  // 6n - per 32 bytes
+
+// Calculate cost for 100 bytes of data
+const cost = calculateKeccak256Cost(100n);  // 30 + ceil(100/32) * 6 = 54n
+```
+
+## Storage Operations (EIP-2929, EIP-2200, EIP-3529)
+
+Storage operations have different costs based on access patterns:
+
+| Constant | Gas | Description |
+|----------|-----|-------------|
+| `Sload` | 100 | Warm SLOAD |
+| `ColdSload` | 2100 | Cold SLOAD (EIP-2929) |
+| `ColdAccountAccess` | 2600 | Cold account access (BALANCE, EXTCODESIZE, CALL family) |
+| `WarmStorageRead` | 100 | Warm storage read |
+| `SstoreSentry` | 2300 | Minimum gas for SSTORE |
+| `SstoreSet` | 20000 | SSTORE zero to non-zero |
+| `SstoreReset` | 5000 | SSTORE modify existing non-zero |
+| `SstoreClear` | 5000 | SSTORE clear to zero |
+| `SstoreRefund` | 4800 | Gas refund for clearing storage (EIP-3529) |
+
+```typescript
+import { calculateSstoreCost } from '@tevm/voltaire/GasConstants';
+
+// Cold slot, zero to non-zero
+const result1 = calculateSstoreCost(false, 0n, 100n);
+// { cost: 22100n, refund: 0n }  (ColdSload + SstoreSet)
+
+// Warm slot, non-zero to zero
+const result2 = calculateSstoreCost(true, 100n, 0n);
+// { cost: 5000n, refund: 4800n }  (SstoreClear + refund)
+
+// Warm slot, modify existing value
+const result3 = calculateSstoreCost(true, 50n, 100n);
+// { cost: 5000n, refund: 0n }  (SstoreReset)
+```
+
+## Memory Expansion
+
+Memory costs grow quadratically with size:
+
+```typescript
+import { Memory, QuadCoeffDiv, calculateMemoryExpansionCost } from '@tevm/voltaire/GasConstants';
+
+Memory;        // 3n - linear coefficient
+QuadCoeffDiv;  // 512n - quadratic coefficient divisor
+
+// Calculate memory expansion from 64 to 128 bytes
+const expansion = calculateMemoryExpansionCost(64n, 128n);
+// {
+//   oldCost: bigint,       // Cost for 64 bytes
+//   newCost: bigint,       // Cost for 128 bytes
+//   expansionCost: bigint, // Additional gas needed
+//   words: bigint          // New memory size in words
+// }
+```
+
+## Transaction Costs
+
+```typescript
+import {
+  Tx,
+  TxContractCreation,
+  TxDataZero,
+  TxDataNonZero,
+  calculateTxIntrinsicGas
+} from '@tevm/voltaire/GasConstants';
+
+Tx;                  // 21000n - base transaction cost
+TxContractCreation;  // 53000n - contract creation base cost
+TxDataZero;          // 4n - per zero byte in calldata
+TxDataNonZero;       // 16n - per non-zero byte in calldata
+
+// Calculate intrinsic gas for transaction
+const calldata = new Uint8Array([0, 1, 2, 0, 0]);
+const intrinsicGas = calculateTxIntrinsicGas(calldata, false);
+// 21000 + (3 * 4) + (2 * 16) = 21044n
+
+// Contract creation transaction
+const initcode = new Uint8Array([0x60, 0x00, 0x60, 0x00]);
+const createGas = calculateTxIntrinsicGas(initcode, true);
+// 53000 + (4 * 16) = 53064n
+```
+
+## Contract Creation and Calls
+
+```typescript
+import {
+  Create,
+  CreateData,
+  InitcodeWord,
+  MaxInitcodeSize,
+  Call,
+  CallStipend,
+  CallValueTransfer,
+  CallNewAccount,
+  CallGasRetentionDivisor
+} from '@tevm/voltaire/GasConstants';
+
+Create;                  // 32000n - base CREATE cost
+CreateData;              // 200n - per byte of deployed code
+InitcodeWord;            // 2n - per word of initcode (EIP-3860)
+MaxInitcodeSize;         // 49152n - max initcode size (EIP-3860)
+
+Call;                    // 40n - base CALL cost
+CallStipend;             // 2300n - gas stipend for value transfer
+CallValueTransfer;       // 9000n - additional cost for value transfer
+CallNewAccount;          // 25000n - additional cost for new account creation
+CallGasRetentionDivisor; // 64n - 63/64 rule divisor
+```
+
+## Logging Operations
+
+```typescript
+import { LogBase, LogData, LogTopic, calculateLogCost } from '@tevm/voltaire/GasConstants';
+
+LogBase;   // 375n - base LOG cost
+LogData;   // 8n - per byte of data
+LogTopic;  // 375n - per topic
+
+// LOG2 with 100 bytes of data
+const logCost = calculateLogCost(2n, 100n);
+// 375 + (2 * 375) + (100 * 8) = 1925n
+```
+
+## Copy Operations
+
+```typescript
+import { Copy, calculateCopyCost } from '@tevm/voltaire/GasConstants';
+
+Copy;  // 3n - per word for CALLDATACOPY, CODECOPY, RETURNDATACOPY
+
+const copyCost = calculateCopyCost(128n);  // 3 * ceil(128/32) = 12n
+```
+
+## EIP-4844: Blob Transactions
+
+```typescript
+import { BlobHash, BlobBaseFee } from '@tevm/voltaire/GasConstants';
+
+BlobHash;     // 3n - BLOBHASH opcode cost
+BlobBaseFee;  // 2n - BLOBBASEFEE opcode cost
+```
+
+## EIP-1153: Transient Storage
+
+```typescript
+import { TLoad, TStore } from '@tevm/voltaire/GasConstants';
+
+TLoad;   // 100n - TLOAD cost
+TStore;  // 100n - TSTORE cost
+```
+
+## Refund Calculation
+
+```typescript
+import { MaxRefundQuotient, calculateMaxRefund } from '@tevm/voltaire/GasConstants';
+
+MaxRefundQuotient;  // 5n - max refund is 1/5 of gas used (EIP-3529)
+
+// Calculate maximum refund for transaction
+const gasUsed = 100000n;
+const maxRefund = calculateMaxRefund(gasUsed);  // 20000n
+```
+
+## Hardfork Utilities
+
+Check EIP activation status:
+
+```typescript
+import { hasEIP1153, hasEIP2929, hasEIP3529, hasEIP3860, hasEIP4844 } from '@tevm/voltaire/GasConstants';
+
+hasEIP1153('cancun');   // true - transient storage
+hasEIP2929('berlin');   // true - cold/warm access
+hasEIP3529('london');   // true - reduced refunds
+hasEIP3860('shanghai'); // true - initcode limits
+hasEIP4844('cancun');   // true - blob transactions
+```
+
+Get hardfork-specific costs:
+
+```typescript
+import { getColdAccountAccessCost, getColdSloadCost, getSstoreRefund, getSelfdestructRefund } from '@tevm/voltaire/GasConstants';
+
+getColdAccountAccessCost('berlin');  // 2600n (EIP-2929)
+getColdAccountAccessCost('istanbul'); // 0n (pre-EIP-2929)
+
+getColdSloadCost('berlin');  // 2100n
+getSstoreRefund('london');   // 4800n (EIP-3529)
+getSelfdestructRefund('london'); // 0n (removed in EIP-3529)
+```
+
+## Precompile Gas Costs
+
+The `Precompile` namespace contains all precompile gas constants and calculation functions:
+
+### ECRECOVER, SHA256, RIPEMD160, IDENTITY
+
+```typescript
+import { Precompile } from '@tevm/voltaire/GasConstants';
+
+Precompile.EcRecover;      // 3000n - fixed cost
+
+Precompile.Sha256Base;     // 60n
+Precompile.Sha256Word;     // 12n
+Precompile.calculateSha256Cost(100n);  // 60 + 4 * 12 = 108n
+
+Precompile.Ripemd160Base;  // 600n
+Precompile.Ripemd160Word;  // 120n
+Precompile.calculateRipemd160Cost(100n);  // 600 + 4 * 120 = 1080n
+
+Precompile.IdentityBase;   // 15n
+Precompile.IdentityWord;   // 3n
+Precompile.calculateIdentityCost(100n);  // 15 + 4 * 3 = 27n
+```
+
+### MODEXP (EIP-2565)
+
+```typescript
+import { Precompile } from '@tevm/voltaire/GasConstants';
+
+Precompile.ModExpMin;  // 200n - minimum cost
+
+const cost = Precompile.calculateModExpCost(
+  32n,   // baseLength
+  32n,   // expLength
+  32n,   // modLength
+  0xFFn  // expHead (first 32 bytes of exponent)
+);
+```
+
+### BN254 (alt_bn128) - Hardfork-dependent
+
+```typescript
+import { Precompile } from '@tevm/voltaire/GasConstants';
+
+// ECADD costs
+Precompile.EcAddIstanbul;   // 150n (Istanbul+)
+Precompile.EcAddByzantium;  // 500n (Byzantium-Berlin)
+Precompile.getEcAddCost('cancun');  // 150n
+
+// ECMUL costs
+Precompile.EcMulIstanbul;   // 6000n (Istanbul+)
+Precompile.EcMulByzantium;  // 40000n (Byzantium-Berlin)
+Precompile.getEcMulCost('cancun');  // 6000n
+
+// ECPAIRING costs
+Precompile.EcPairingBaseIstanbul;      // 45000n
+Precompile.EcPairingPerPairIstanbul;   // 34000n
+Precompile.calculateEcPairingCost(2n, 'istanbul');  // 113000n
+```
+
+### BLAKE2F
+
+```typescript
+import { Precompile } from '@tevm/voltaire/GasConstants';
+
+Precompile.Blake2fPerRound;  // 1n per round
+Precompile.calculateBlake2fCost(12n);  // 12n
+```
+
+### Point Evaluation (EIP-4844)
+
+```typescript
+import { Precompile } from '@tevm/voltaire/GasConstants';
+
+Precompile.PointEvaluation;  // 50000n - fixed cost
+Precompile.calculatePointEvaluationCost();  // 50000n
+```
+
+### BLS12-381 (EIP-2537 - Prague)
+
+```typescript
+import { Precompile } from '@tevm/voltaire/GasConstants';
+
+Precompile.Bls12G1Add;        // 500n
+Precompile.Bls12G1Mul;        // 12000n
+Precompile.Bls12G2Add;        // 800n
+Precompile.Bls12G2Mul;        // 45000n
+Precompile.Bls12MapFpToG1;    // 5500n
+Precompile.Bls12MapFp2ToG2;   // 75000n
+
+// MSM with discount table
+Precompile.calculateBls12G1MsmCost(10n);  // Discounted cost for 10 points
+Precompile.calculateBls12G2MsmCost(10n);
+
+// Pairing
+Precompile.Bls12PairingBase;     // 65000n
+Precompile.Bls12PairingPerPair;  // 43000n
+Precompile.calculateBls12PairingCost(3n);  // 65000 + 3 * 43000 = 194000n
+```
+
+## Complete Gas Constants Reference
+
+<Accordion title="All Constants">
+
+### Basic Operations
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `QuickStep` | 2 | Very cheap operations |
+| `FastestStep` | 3 | Simple arithmetic |
+| `FastStep` | 5 | Multiplication/division |
+| `MidStep` | 8 | Advanced arithmetic |
+| `SlowStep` | 10 | Conditional jumps |
+| `ExtStep` | 20 | External account access |
+| `Jumpdest` | 1 | JUMPDEST marker |
+
+### Hashing
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `Keccak256Base` | 30 | Base KECCAK256 cost |
+| `Keccak256Word` | 6 | Per 32-byte word |
+
+### Storage
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `Sload` | 100 | Warm SLOAD |
+| `ColdSload` | 2100 | Cold SLOAD (EIP-2929) |
+| `ColdAccountAccess` | 2600 | Cold account access |
+| `WarmStorageRead` | 100 | Warm storage read |
+| `SstoreSentry` | 2300 | Minimum SSTORE gas |
+| `SstoreSet` | 20000 | Zero to non-zero |
+| `SstoreReset` | 5000 | Modify non-zero |
+| `SstoreClear` | 5000 | Clear to zero |
+| `SstoreRefund` | 4800 | Clear refund (EIP-3529) |
+
+### Logging
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `LogBase` | 375 | Base LOG cost |
+| `LogData` | 8 | Per byte of data |
+| `LogTopic` | 375 | Per topic |
+
+### Calls and Creates
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `Create` | 32000 | Base CREATE cost |
+| `CreateData` | 200 | Per byte deployed |
+| `InitcodeWord` | 2 | Per initcode word (EIP-3860) |
+| `MaxInitcodeSize` | 49152 | Max initcode (EIP-3860) |
+| `Call` | 40 | Base CALL cost |
+| `CallStipend` | 2300 | Value transfer stipend |
+| `CallValueTransfer` | 9000 | Value transfer cost |
+| `CallNewAccount` | 25000 | New account cost |
+| `CallCode` | 700 | CALLCODE (EIP-150) |
+| `DelegateCall` | 700 | DELEGATECALL (EIP-150) |
+| `StaticCall` | 700 | STATICCALL (EIP-214) |
+| `Selfdestruct` | 5000 | SELFDESTRUCT base |
+| `SelfdestructRefund` | 24000 | Removed in EIP-3529 |
+| `CallGasRetentionDivisor` | 64 | 63/64 rule |
+
+### Memory
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `Memory` | 3 | Linear coefficient |
+| `QuadCoeffDiv` | 512 | Quadratic divisor |
+
+### Transactions
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `Tx` | 21000 | Base transaction |
+| `TxContractCreation` | 53000 | Contract creation |
+| `TxDataZero` | 4 | Per zero byte |
+| `TxDataNonZero` | 16 | Per non-zero byte |
+| `Copy` | 3 | Per copy word |
+| `MaxRefundQuotient` | 5 | Max refund 1/5 |
+
+### EIP-4844 Blobs
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `BlobHash` | 3 | BLOBHASH opcode |
+| `BlobBaseFee` | 2 | BLOBBASEFEE opcode |
+
+### EIP-1153 Transient Storage
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `TLoad` | 100 | TLOAD cost |
+| `TStore` | 100 | TSTORE cost |
+
+</Accordion>
+
+## Related
+
+- [Hardfork](/primitives/hardfork) - Ethereum hardfork identifiers
+- [Transaction](/primitives/transaction) - Transaction encoding/decoding
+- [Opcode](/primitives/opcode) - EVM opcode definitions

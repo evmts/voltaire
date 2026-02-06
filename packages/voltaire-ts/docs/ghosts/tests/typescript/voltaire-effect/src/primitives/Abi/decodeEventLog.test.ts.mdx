@@ -1,0 +1,138 @@
+---
+title: '[TS/JS] voltaire-effect/src/primitives/Abi/decodeEventLog.test.ts'
+source: 'voltaire-effect/src/primitives/Abi/decodeEventLog.test.ts'
+---
+
+> Auto-generated from test file: voltaire-effect/src/primitives/Abi/decodeEventLog.test.ts
+
+```typescript
+import { describe, expect, it } from "@effect/vitest";
+import { Abi } from "@tevm/voltaire/Abi";
+import type { HexType } from "@tevm/voltaire/Hex";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import { decodeEventLog } from "./decodeEventLog.js";
+
+const erc20Abi = Abi([
+	{
+		type: "event",
+		name: "Transfer",
+		inputs: [
+			{ name: "from", type: "address", indexed: true },
+			{ name: "to", type: "address", indexed: true },
+			{ name: "value", type: "uint256", indexed: false },
+		],
+	},
+	{
+		type: "event",
+		name: "Approval",
+		inputs: [
+			{ name: "owner", type: "address", indexed: true },
+			{ name: "spender", type: "address", indexed: true },
+			{ name: "value", type: "uint256", indexed: false },
+		],
+	},
+]);
+
+describe("decodeEventLog", () => {
+	describe("decoding with known topics", () => {
+		it.effect("decodes Transfer event log with known topics", () =>
+			Effect.gen(function* () {
+				const value = 1000000000000000000n;
+				const data = `0x${value.toString(16).padStart(64, "0")}` as HexType;
+				const topics = [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType,
+					"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType,
+					"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType,
+				];
+
+				const decoded = yield* decodeEventLog(erc20Abi, { data, topics });
+				expect(decoded.event).toBe("Transfer");
+				expect(decoded.params.value).toBe(value);
+			}),
+		);
+
+		it.effect("decodes Approval event log with known topics", () =>
+			Effect.gen(function* () {
+				const value = 5000n;
+				const data = `0x${value.toString(16).padStart(64, "0")}` as HexType;
+				const topics = [
+					"0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925" as HexType,
+					"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType,
+					"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType,
+				];
+
+				const decoded = yield* decodeEventLog(erc20Abi, { data, topics });
+				expect(decoded.event).toBe("Approval");
+				expect(decoded.params.value).toBe(value);
+			}),
+		);
+
+		it.effect("decodes zero value correctly", () =>
+			Effect.gen(function* () {
+				const data = `0x${"0".repeat(64)}` as HexType;
+				const topics = [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType,
+					"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType,
+					"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType,
+				];
+
+				const decoded = yield* decodeEventLog(erc20Abi, { data, topics });
+				expect(decoded.params.value).toBe(0n);
+			}),
+		);
+
+		it.effect("decodes max uint256 correctly", () =>
+			Effect.gen(function* () {
+				const maxUint256 = 2n ** 256n - 1n;
+				const data = `0x${"f".repeat(64)}` as HexType;
+				const topics = [
+					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType,
+					"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3" as HexType,
+					"0x0000000000000000000000001234567890123456789012345678901234567890" as HexType,
+				];
+
+				const decoded = yield* decodeEventLog(erc20Abi, { data, topics });
+				expect(decoded.params.value).toBe(maxUint256);
+			}),
+		);
+	});
+
+	describe("error cases", () => {
+		it("fails for unknown event signature", async () => {
+			const exit = await Effect.runPromiseExit(
+				decodeEventLog(erc20Abi, {
+					data: "0x" as HexType,
+					topics: [
+						"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" as HexType,
+					],
+				}),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with empty topics", async () => {
+			const exit = await Effect.runPromiseExit(
+				decodeEventLog(erc20Abi, {
+					data: "0x" as HexType,
+					topics: [],
+				}),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+
+		it("fails with empty ABI", async () => {
+			const exit = await Effect.runPromiseExit(
+				decodeEventLog(Abi([]), {
+					data: "0x" as HexType,
+					topics: [
+						"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as HexType,
+					],
+				}),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+		});
+	});
+});
+
+```

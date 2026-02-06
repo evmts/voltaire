@@ -1,0 +1,391 @@
+---
+title: MultiTokenId
+description: ERC-1155 multi-token identifier primitive for Voltaire
+---
+
+# MultiTokenId
+
+`MultiTokenId` is a branded `bigint` type representing ERC-1155 multi-token identifiers that can represent both fungible and non-fungible tokens.
+
+## Overview
+
+ERC-1155 is a multi-token standard that supports multiple token types in a single contract. Each token type has a unique ID, and can be either fungible (like ERC-20) or non-fungible (like ERC-721).
+
+### Key Features
+
+- **Type-safe**: Branded bigint prevents mixing with raw numbers
+- **Dual nature**: Supports both fungible and non-fungible tokens
+- **Range validation**: 0 to 2^256-1
+- **Fungibility detection**: Utilities to check token type
+- **ERC-1155 interface selectors**: Built-in function selectors
+
+## Installation
+
+```bash
+bun install voltaire
+```
+
+## Basic Usage
+
+```typescript
+import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
+
+// Fungible token type (like ERC-20)
+const fungibleId = MultiTokenId.from(1n);
+console.log(MultiTokenId.isValidFungible(fungibleId)); // true
+
+// Non-fungible token type (like ERC-721)
+const nftId = MultiTokenId.from(2n ** 128n);
+console.log(MultiTokenId.isValidNonFungible(nftId)); // true
+
+// Compare token IDs
+const a = MultiTokenId.from(1n);
+const b = MultiTokenId.from(2n);
+console.log(MultiTokenId.compare(a, b)); // -1
+```
+
+## API Reference
+
+### Constructor
+
+#### `from(value: bigint | number | string): MultiTokenId`
+
+Create MultiTokenId from bigint, number, or hex/decimal string.
+
+```typescript
+const tokenId1 = MultiTokenId.from(1n);
+const tokenId2 = MultiTokenId.from(100);
+const tokenId3 = MultiTokenId.from("0xff");
+const tokenId4 = MultiTokenId.from(2n ** 128n); // Non-fungible
+```
+
+**Throws:**
+- `InvalidMultiTokenIdError` if value is negative, exceeds max, or invalid
+
+### Conversions
+
+#### `toNumber(tokenId: MultiTokenId): number`
+
+Convert to number (unsafe for large values).
+
+```typescript
+const tokenId = MultiTokenId.from(1n);
+const num = MultiTokenId.toNumber(tokenId); // 1
+```
+
+**Throws:**
+- `RangeError` if value exceeds `Number.MAX_SAFE_INTEGER`
+
+#### `toBigInt(tokenId: MultiTokenId): bigint`
+
+Convert to bigint.
+
+```typescript
+const tokenId = MultiTokenId.from(1n);
+const bigint = MultiTokenId.toBigInt(tokenId); // 1n
+```
+
+#### `toHex(tokenId: MultiTokenId): string`
+
+Convert to hex string with 0x prefix.
+
+```typescript
+const tokenId = MultiTokenId.from(1n);
+const hex = MultiTokenId.toHex(tokenId); // "0x1"
+```
+
+### Fungibility Checks
+
+#### `isValidFungible(tokenId: MultiTokenId): boolean`
+
+Check if token ID is valid for fungible tokens (> 0 and < 2^128).
+
+```typescript
+const fungible = MultiTokenId.from(1n);
+MultiTokenId.isValidFungible(fungible); // true
+
+const nft = MultiTokenId.from(2n ** 128n);
+MultiTokenId.isValidFungible(nft); // false
+```
+
+#### `isValidNonFungible(tokenId: MultiTokenId): boolean`
+
+Check if token ID is valid for non-fungible tokens (>= 2^128).
+
+```typescript
+const nft = MultiTokenId.from(2n ** 128n);
+MultiTokenId.isValidNonFungible(nft); // true
+
+const fungible = MultiTokenId.from(1n);
+MultiTokenId.isValidNonFungible(fungible); // false
+```
+
+### Comparison
+
+#### `equals(a: MultiTokenId, b: MultiTokenId): boolean`
+
+Check if two token IDs are equal.
+
+```typescript
+const a = MultiTokenId.from(1n);
+const b = MultiTokenId.from(1n);
+MultiTokenId.equals(a, b); // true
+```
+
+#### `compare(a: MultiTokenId, b: MultiTokenId): number`
+
+Compare two token IDs. Returns -1 if a < b, 0 if equal, 1 if a > b.
+
+```typescript
+const a = MultiTokenId.from(1n);
+const b = MultiTokenId.from(2n);
+MultiTokenId.compare(a, b); // -1
+```
+
+## Constants
+
+### `constants.MAX`
+
+Maximum MultiTokenId value (2^256 - 1).
+
+```typescript
+MultiTokenId.constants.MAX; // 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+```
+
+### `constants.MIN`
+
+Minimum MultiTokenId value (0).
+
+```typescript
+MultiTokenId.constants.MIN; // 0n
+```
+
+### `constants.FUNGIBLE_THRESHOLD`
+
+Threshold for fungible vs non-fungible tokens (2^128).
+
+```typescript
+MultiTokenId.constants.FUNGIBLE_THRESHOLD; // 340282366920938463463374607431768211456n
+```
+
+By convention:
+- Token IDs < 2^128: Fungible tokens (multiple owners can have amounts)
+- Token IDs >= 2^128: Non-fungible tokens (single owner, amount = 1)
+
+## ERC-1155 Interface
+
+### `ERC1155_SELECTORS`
+
+ERC-1155 function selectors for ABI encoding.
+
+```typescript
+MultiTokenId.ERC1155_SELECTORS.balanceOf;              // "0x00fdd58e"
+MultiTokenId.ERC1155_SELECTORS.balanceOfBatch;         // "0x4e1273f4"
+MultiTokenId.ERC1155_SELECTORS.safeTransferFrom;       // "0xf242432a"
+MultiTokenId.ERC1155_SELECTORS.safeBatchTransferFrom;  // "0x2eb2c2d6"
+MultiTokenId.ERC1155_SELECTORS.setApprovalForAll;     // "0xa22cb465"
+MultiTokenId.ERC1155_SELECTORS.isApprovedForAll;      // "0xe985e9c5"
+MultiTokenId.ERC1155_SELECTORS.uri;                    // "0x0e89341c"
+```
+
+## ERC-1155 Standard
+
+ERC-1155 defines a multi-token standard. Key functions:
+
+- `balanceOf(address, uint256)`: Returns balance of token type
+- `balanceOfBatch(address[], uint256[])`: Returns balances for multiple accounts/tokens
+- `safeTransferFrom(address, address, uint256, uint256, bytes)`: Transfers tokens
+- `safeBatchTransferFrom(address, address, uint256[], uint256[], bytes)`: Batch transfer
+- `setApprovalForAll(address, bool)`: Approves operator for all tokens
+- `isApprovedForAll(address, address)`: Checks if operator is approved
+- `uri(uint256)`: Returns metadata URI for token type
+
+**Specification:** [EIP-1155](https://eips.ethereum.org/EIPS/eip-1155)
+
+## Token ID Patterns
+
+### Fungible Tokens
+
+Fungible token IDs typically start from 1 and increment:
+
+```typescript
+const gold = MultiTokenId.from(1n);
+const silver = MultiTokenId.from(2n);
+const bronze = MultiTokenId.from(3n);
+
+console.log(MultiTokenId.isValidFungible(gold)); // true
+```
+
+Each address can own any amount of these tokens.
+
+### Non-Fungible Tokens
+
+Non-fungible token IDs use the upper 128 bits:
+
+```typescript
+const nftBase = 2n ** 128n;
+const nft1 = MultiTokenId.from(nftBase);
+const nft2 = MultiTokenId.from(nftBase + 1n);
+
+console.log(MultiTokenId.isValidNonFungible(nft1)); // true
+```
+
+Each NFT typically has amount = 1 and a single owner.
+
+### Hybrid Collections
+
+Mix both types in one contract:
+
+```typescript
+// Fungible: In-game currency
+const currency = MultiTokenId.from(1n);
+
+// Non-fungible: Unique items
+const sword = MultiTokenId.from(2n ** 128n);
+const shield = MultiTokenId.from(2n ** 128n + 1n);
+```
+
+## Examples
+
+### Query Balance
+
+```typescript
+import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
+import * as Address from '@tevm/voltaire/Address';
+
+const tokenId = MultiTokenId.from(1n);
+const account = Address.from("0x...");
+
+const data = encodeBalanceOf(account, tokenId);
+const balance = decodeBalanceOf(response);
+
+console.log(`Balance: ${balance}`);
+```
+
+### Batch Query
+
+```typescript
+const accounts = [
+  Address.from("0x..."),
+  Address.from("0x..."),
+];
+const tokenIds = [
+  MultiTokenId.from(1n),
+  MultiTokenId.from(2n),
+];
+
+const data = encodeBalanceOfBatch(accounts, tokenIds);
+const balances = decodeBalanceOfBatch(response);
+```
+
+### Transfer Tokens
+
+```typescript
+import * as MultiTokenId from '@tevm/voltaire/primitives/MultiTokenId';
+import * as Address from '@tevm/voltaire/Address';
+
+const from = Address.from("0x...");
+const to = Address.from("0x...");
+const tokenId = MultiTokenId.from(1n);
+const amount = 100n;
+
+const data = encodeSafeTransferFrom(from, to, tokenId, amount, "0x");
+```
+
+### Check Token Type
+
+```typescript
+const tokenId = MultiTokenId.from(unknownId);
+
+if (MultiTokenId.isValidFungible(tokenId)) {
+  console.log("Fungible token - multiple owners possible");
+} else if (MultiTokenId.isValidNonFungible(tokenId)) {
+  console.log("Non-fungible token - unique item");
+} else {
+  console.log("Invalid token ID");
+}
+```
+
+### List All Tokens
+
+```typescript
+// Query events to discover all token IDs
+const transferEvents = await queryTransferEvents();
+
+const tokenIds = new Set<MultiTokenId>();
+for (const event of transferEvents) {
+  tokenIds.add(MultiTokenId.from(event.tokenId));
+}
+
+// Categorize tokens
+const fungible = Array.from(tokenIds).filter(id =>
+  MultiTokenId.isValidFungible(id)
+);
+const nonFungible = Array.from(tokenIds).filter(id =>
+  MultiTokenId.isValidNonFungible(id)
+);
+```
+
+## Error Handling
+
+```typescript
+import { InvalidMultiTokenIdError } from '@tevm/voltaire/primitives/MultiTokenId';
+
+try {
+  const tokenId = MultiTokenId.from(-1n);
+} catch (error) {
+  if (error instanceof InvalidMultiTokenIdError) {
+    console.error("Invalid token ID:", error.message);
+  }
+}
+```
+
+## Type Safety
+
+MultiTokenId is a branded type that prevents accidental mixing with raw bigints:
+
+```typescript
+const tokenId: MultiTokenId = 1n; // ❌ Type error
+const tokenId = MultiTokenId.from(1n); // ✅ Correct
+
+function transfer(id: MultiTokenId, amount: bigint) {
+  // Type-safe: only MultiTokenId accepted
+}
+
+transfer(1n, 100n); // ❌ Type error
+transfer(MultiTokenId.from(1n), 100n); // ✅ Correct
+```
+
+## Use Cases
+
+### Gaming
+
+```typescript
+// In-game currencies (fungible)
+const gold = MultiTokenId.from(1n);
+const gems = MultiTokenId.from(2n);
+
+// Unique items (non-fungible)
+const legendaryWord = MultiTokenId.from(2n ** 128n);
+const rareArmor = MultiTokenId.from(2n ** 128n + 1n);
+```
+
+### Collectibles
+
+```typescript
+// Common cards (fungible)
+const commonCard = MultiTokenId.from(1n);
+
+// Rare cards (semi-fungible)
+const rareCard = MultiTokenId.from(2n);
+
+// Unique art (non-fungible)
+const uniqueArt = MultiTokenId.from(2n ** 128n);
+```
+
+## See Also
+
+- [TokenBalance](/primitives/token-balance) - ERC-20 token balances
+- [TokenId](/primitives/token-id) - ERC-721 NFT token IDs
+- [Uint256](/primitives/uint) - Generic unsigned 256-bit integers
+- [Address](/primitives/address) - Ethereum addresses

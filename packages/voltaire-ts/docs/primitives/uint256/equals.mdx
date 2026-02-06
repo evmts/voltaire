@@ -1,0 +1,41 @@
+---
+title: Uint.equals
+description: Check if two Uint256 values are equal
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/uint.ts">
+  Run Uint examples in the interactive playground
+</Card>
+
+
+## `Uint.equals(a: BrandedUint256, b: BrandedUint256): boolean`
+
+Check if two Uint256 values are equal.
+
+**Parameters:**
+- `a: BrandedUint256` - First value
+- `b: BrandedUint256` - Second value
+
+**Returns:** `boolean` - True if equal
+
+**Example:**
+
+```typescript
+import { Uint } from 'tevm'
+
+const a = Uint(100n)
+const b = Uint(100n)
+Uint.equals(a, b)  // true
+
+const c = Uint(200n)
+Uint.equals(a, c)  // false
+
+Uint.equals(Uint.ZERO, Uint(0n))  // true
+```
+
+**Defined in:** [primitives/Uint/equals.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/equals.ts)
+
+## See Also
+
+- [notEquals](/primitives/uint256/not-equals) - Inequality check
+- [Comparisons](/primitives/uint256/comparisons) - Full comparison reference

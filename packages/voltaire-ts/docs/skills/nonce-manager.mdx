@@ -1,0 +1,311 @@
+---
+title: "Nonce Manager"
+description: "Manage transaction nonces to prevent gaps and race conditions"
+---
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+# Nonce Manager
+
+When sending multiple Ethereum transactions, each requires a unique sequential nonce. Concurrent submissions cause collisions. Failed transactions create gaps. The NonceManager solves this.
+
+## The Problem
+
+```ts
+// Without nonce management - BROKEN
+const [tx1, tx2, tx3] = await Promise.all([
+  wallet.sendTransaction({ to, value }),
+  wallet.sendTransaction({ to, value }),
+  wallet.sendTransaction({ to, value }),
+]);
+// All three may get same nonce! Two will fail.
+```
+
+**Race condition:** Each call fetches nonce from chain (e.g., 5), then all three try to use nonce 5.
+
+**Nonce gap:** If tx with nonce 5 fails, tx with nonce 6 is stuck forever.
+
+## Quick Start
+
+```ts
+import { createNonceManager, jsonRpc } from '@voltaire/examples/nonce-manager';
+
+// Create manager
+const manager = createNonceManager({ source: jsonRpc() });
+
+// Concurrent transactions - WORKS
+const [nonce1, nonce2, nonce3] = await Promise.all([
+  manager.consume({ address, chainId: 1, provider }),
+  manager.consume({ address, chainId: 1, provider }),
+  manager.consume({ address, chainId: 1, provider }),
+]);
+// nonces are sequential: 5, 6, 7
+```
+
+## How It Works
+
+The key insight from ethers v6 and viem:
+
+> **Increment delta BEFORE awaiting chain nonce**
+
+```ts
+async consume(params) {
+  const promise = this.get(params);  // Start fetch
+  this.increment(params);            // Increment BEFORE await
+  const nonce = await promise;
+  return nonce;
+}
+```
+
+This allows concurrent callers to get unique nonces without blocking.
+
+### State Management
+
+```
+deltaMap     = { "0xabc.1": 2 }    // Pending tx count
+nonceMap     = { "0xabc.1": 5 }    // Last confirmed nonce
+promiseMap   = { "0xabc.1": P }    // Cached chain fetch
+
+Final nonce = chain_nonce + delta
+```
+
+## API Reference
+
+### createNonceManager(options?)
+
+Creates a new nonce manager instance.
+
+```ts
+const manager = createNonceManager({
+  source: jsonRpc(),  // or inMemory() for testing
+  cacheSize: 8192,    // LRU cache entries
+});
+```
+
+### manager.consume(params)
+
+Get and increment nonce atomically. Primary method for sending transactions.
+
+```ts
+const nonce = await manager.consume({
+  address: '0x...',
+  chainId: 1,
+  provider: client,
+});
+```
+
+### manager.get(params)
+
+Get next nonce without incrementing. For dry-run or estimation.
+
+```ts
+const nonce = await manager.get({ address, chainId, provider });
+```
+
+### manager.increment(params)
+
+Increment delta manually. Use when you know a tx will be sent.
+
+```ts
+manager.increment({ address, chainId });
+```
+
+### manager.reset(params)
+
+Clear cached state. Forces refetch on next get.
+
+```ts
+manager.reset({ address, chainId });
+```
+
+### manager.recycle(params)
+
+Decrement delta after tx failure. Allows nonce reuse.
+
+```ts
+try {
+  await sendTx(nonce);
+} catch {
+  manager.recycle({ address, chainId });
+}
+```
+
+### manager.getDelta(params)
+
+Get current pending tx count. For debugging.
+
+```ts
+console.log(manager.getDelta({ address, chainId })); // 3
+```
+
+## Concurrent Transactions Pattern
+
+```ts
+import { createNonceManager, jsonRpc } from '@voltaire/examples/nonce-manager';
+
+const manager = createNonceManager({ source: jsonRpc() });
+
+async function sendBatchedTransactions(
+  signer: Signer,
+  transactions: Transaction[]
+) {
+  const address = await signer.getAddress();
+  const chainId = 1;
+  const provider = signer.provider;
+
+  // Get all nonces concurrently
+  const nonces = await Promise.all(
+    transactions.map(() =>
+      manager.consume({ address, chainId, provider })
+    )
+  );
+
+  // Send all transactions
+  const txPromises = transactions.map((tx, i) =>
+    signer.sendTransaction({ ...tx, nonce: nonces[i] })
+  );
+
+  return Promise.all(txPromises);
+}
+```
+
+## Signer Wrapper Pattern
+
+Like ethers NonceManager, wrap a signer for automatic nonce management:
+
+```ts
+import { wrapSigner } from '@voltaire/examples/nonce-manager';
+
+// Wrap your signer
+const managed = wrapSigner(wallet, { chainId: 1 });
+
+// Nonces managed automatically
+await managed.sendTransaction({ to, value });
+await managed.sendTransaction({ to, value });
+
+// Reset if needed
+await managed.resetNonce();
+```
+
+## Error Recovery
+
+### Transaction Failure
+
+```ts
+const nonce = await manager.consume({ address, chainId, provider });
+
+try {
+  await wallet.sendTransaction({ ...tx, nonce });
+} catch (error) {
+  // Transaction wasn't broadcast - recycle nonce
+  manager.recycle({ address, chainId });
+  throw error;
+}
+```
+
+### Stuck Transaction
+
+If a transaction is stuck in mempool, your options:
+
+1. **Wait** - It may eventually confirm
+2. **Speed up** - Send replacement with same nonce, higher gas
+3. **Cancel** - Send 0-value tx to self with same nonce
+
+```ts
+// Speed up stuck tx
+const stuckNonce = 5;
+await wallet.sendTransaction({
+  to: originalTx.to,
+  value: originalTx.value,
+  nonce: stuckNonce,
+  maxFeePerGas: originalGas * 1.2n, // 20% higher
+});
+```
+
+### Nonce Gap Recovery
+
+If you have a gap (e.g., nonces 5, 7 but not 6):
+
+```ts
+// Reset manager
+manager.reset({ address, chainId });
+
+// Fetch fresh nonce
+const currentNonce = await manager.get({ address, chainId, provider });
+// currentNonce will be 5 (the gap)
+
+// Fill the gap
+await wallet.sendTransaction({ to: address, value: 0n, nonce: currentNonce });
+```
+
+## Multi-Chain Support
+
+Nonces are scoped by `address + chainId`:
+
+```ts
+// Same address, different chains - independent nonces
+await manager.consume({ address, chainId: 1, provider: mainnet });
+await manager.consume({ address, chainId: 137, provider: polygon });
+```
+
+## Testing with In-Memory Source
+
+```ts
+import { createNonceManager, inMemory } from '@voltaire/examples/nonce-manager';
+
+const source = inMemory();
+source.setNonce('0x123...', 1, 10); // Set initial nonce
+
+const manager = createNonceManager({ source });
+
+const nonce = await manager.consume({
+  address: '0x123...',
+  chainId: 1,
+  provider: {}, // Provider not used with inMemory
+});
+// nonce === 10
+```
+
+## Comparison with Libraries
+
+### ethers v6 NonceManager
+
+```ts
+// ethers
+const managed = new NonceManager(wallet);
+await managed.sendTransaction(tx);
+```
+
+- Wraps signer
+- `increment()` / `reset()` methods
+- Tightly coupled to signer interface
+
+### viem nonceManager
+
+```ts
+// viem
+const account = privateKeyToAccount(key, { nonceManager });
+await sendTransaction(client, { account, ...tx });
+```
+
+- Attached to account
+- `consume()` / `get()` / `reset()` methods
+- Decoupled, pluggable sources
+
+### Voltaire (this implementation)
+
+```ts
+// Standalone
+const nonce = await manager.consume({ address, chainId, provider });
+
+// Or wrapped
+const managed = wrapSigner(wallet, { chainId });
+await managed.sendTransaction(tx);
+```
+
+- Both patterns supported
+- `recycle()` for failure recovery
+- `getDelta()` for debugging
+- Works with any provider interface

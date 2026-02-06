@@ -1,0 +1,375 @@
+---
+title: Astro
+description: Using Tevm with Astro for static and server-rendered Ethereum apps
+---
+
+Tevm works with Astro for static site generation and server-side rendering of Ethereum data.
+
+## Installation
+
+```bash
+bun add @tevm/voltaire
+```
+
+## Static Data Fetching
+
+Fetch data at build time:
+
+```astro
+---
+// pages/address/[address].astro
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+
+const { address } = Astro.params
+
+if (!address) {
+  return Astro.redirect('/404')
+}
+
+const addr = Address.from(address)
+
+const [balance, nonce, code] = await Promise.all([
+  provider.eth.getBalance({ address: addr }),
+  provider.eth.getTransactionCount({ address: addr }),
+  provider.eth.getCode({ address: addr }),
+])
+
+const data = {
+  address,
+  balance: Wei.toEther(balance),
+  nonce: Number(nonce),
+  isContract: code.length > 2,
+}
+---
+
+<html>
+  <body>
+    <h1>Address: {data.address}</h1>
+    <p>Balance: {data.balance} ETH</p>
+    <p>Nonce: {data.nonce}</p>
+    <p>Type: {data.isContract ? 'Contract' : 'EOA'}</p>
+  </body>
+</html>
+```
+
+## Server Endpoints
+
+Create API routes for dynamic data:
+
+```ts
+// pages/api/balance/[address].ts
+import type { APIRoute } from 'astro'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+
+export const GET: APIRoute = async ({ params }) => {
+  const { address } = params
+
+  if (!address) {
+    return new Response(JSON.stringify({ error: 'Address required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  try {
+    const addr = Address.from(address)
+    const balance = await provider.eth.getBalance({ address: addr })
+
+    return new Response(JSON.stringify({
+      address,
+      balance: Wei.toEther(balance),
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch (e) {
+    return new Response(JSON.stringify({ error: (e as Error).message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+}
+```
+
+## Static Paths for Known Addresses
+
+Pre-generate pages for known addresses:
+
+```astro
+---
+// pages/address/[address].astro
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+export async function getStaticPaths() {
+  // Pre-defined addresses to generate at build time
+  const addresses = [
+    '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', // vitalik.eth
+    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+  ]
+
+  return addresses.map(address => ({
+    params: { address },
+  }))
+}
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+const { address } = Astro.params
+const addr = Address.from(address!)
+
+const balance = await provider.eth.getBalance({ address: addr })
+---
+
+<p>Balance: {Wei.toEther(balance)} ETH</p>
+```
+
+## Hybrid Rendering
+
+Use SSR for dynamic pages:
+
+```ts
+// astro.config.mjs
+export default defineConfig({
+  output: 'hybrid', // or 'server' for full SSR
+})
+```
+
+```astro
+---
+// pages/live/[address].astro
+export const prerender = false // Force SSR for this page
+
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+const { address } = Astro.params
+
+const addr = Address.from(address!)
+const balance = await provider.eth.getBalance({ address: addr })
+---
+
+<p>Live Balance: {Wei.toEther(balance)} ETH</p>
+<p>Fetched at: {new Date().toISOString()}</p>
+```
+
+## React/Vue/Solid Islands
+
+Use framework components for interactivity:
+
+```astro
+---
+// pages/dashboard.astro
+import BalanceChecker from '../components/BalanceChecker.tsx'
+---
+
+<html>
+  <body>
+    <h1>Ethereum Dashboard</h1>
+    <!-- React component with client-side interactivity -->
+    <BalanceChecker client:load />
+  </body>
+</html>
+```
+
+```tsx
+// components/BalanceChecker.tsx (React)
+import { useState } from 'react'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+
+export default function BalanceChecker() {
+  const [address, setAddress] = useState('')
+  const [balance, setBalance] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function checkBalance() {
+    if (!address) return
+    setLoading(true)
+    try {
+      const addr = Address.from(address)
+      const result = await provider.eth.getBalance({ address: addr })
+      setBalance(Wei.toEther(result))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <input
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        placeholder="Enter address"
+      />
+      <button onClick={checkBalance} disabled={loading}>
+        {loading ? 'Loading...' : 'Check Balance'}
+      </button>
+      {balance && <p>Balance: {balance} ETH</p>}
+    </div>
+  )
+}
+```
+
+## Content Collections
+
+Generate pages from a collection of addresses:
+
+```ts
+// content/config.ts
+import { defineCollection, z } from 'astro:content'
+
+const addresses = defineCollection({
+  type: 'data',
+  schema: z.object({
+    address: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+  }),
+})
+
+export const collections = { addresses }
+```
+
+```json
+// content/addresses/vitalik.json
+{
+  "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  "name": "Vitalik Buterin",
+  "description": "Ethereum co-founder"
+}
+```
+
+```astro
+---
+// pages/addresses/[slug].astro
+import { getCollection, getEntry } from 'astro:content'
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+export async function getStaticPaths() {
+  const entries = await getCollection('addresses')
+  return entries.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }))
+}
+
+const { entry } = Astro.props
+const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+
+const addr = Address.from(entry.data.address)
+const balance = await provider.eth.getBalance({ address: addr })
+---
+
+<h1>{entry.data.name}</h1>
+<p>{entry.data.description}</p>
+<p>Address: {entry.data.address}</p>
+<p>Balance: {Wei.toEther(balance)} ETH</p>
+```
+
+## Middleware for Caching
+
+Add caching headers:
+
+```ts
+// middleware.ts
+import { defineMiddleware } from 'astro:middleware'
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  const response = await next()
+
+  // Cache API responses
+  if (context.url.pathname.startsWith('/api/')) {
+    response.headers.set('Cache-Control', 'public, max-age=10')
+  }
+
+  return response
+})
+```
+
+## Environment Variables
+
+Configure RPC URL:
+
+```ts
+// env.d.ts
+interface ImportMetaEnv {
+  readonly PUBLIC_RPC_URL: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}
+```
+
+```ts
+// lib/provider.ts
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+export const provider = createJsonRpcProvider(
+  import.meta.env.PUBLIC_RPC_URL || 'https://eth.llamarpc.com'
+)
+```
+
+## Build-time Data
+
+Fetch data during build:
+
+```ts
+// lib/buildData.ts
+import { Address } from '@tevm/voltaire/Address'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+
+const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+
+// This runs at build time
+export async function getTopContracts() {
+  const contracts = [
+    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+    '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
+  ]
+
+  return Promise.all(
+    contracts.map(async (address) => {
+      const addr = Address.from(address)
+      const balance = await provider.eth.getBalance({ address: addr })
+      return { address, balance: Wei.toEther(balance) }
+    })
+  )
+}
+```
+
+```astro
+---
+import { getTopContracts } from '../lib/buildData'
+
+const contracts = await getTopContracts()
+---
+
+<ul>
+  {contracts.map(c => (
+    <li>{c.address}: {c.balance} ETH</li>
+  ))}
+</ul>
+```
+
+## Next Steps
+
+- [JSONRPCProvider](/jsonrpc-provider) - Full provider documentation
+- [Address](/primitives/address) - Address primitive reference

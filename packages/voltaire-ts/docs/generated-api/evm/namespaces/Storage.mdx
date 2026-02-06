@@ -1,0 +1,188 @@
+---
+title: "Storage"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [evm](../index.mdx) / Storage
+
+# Storage
+
+## Functions
+
+### sload()
+
+> **sload**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/storage/handlers/0x54\_SLOAD.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/storage/handlers/0x54_SLOAD.js#L26)
+
+SLOAD (0x54) - Load word from storage
+
+Stack:
+  in: key
+  out: value
+
+Gas: 100 (warm) or 2100 (cold) - EIP-2929
+
+EIP-2929 (Berlin+): Warm/cold storage access tracking
+- First access to slot: 2100 gas (cold)
+- Subsequent accesses: 100 gas (warm)
+- Slot is marked warm for rest of transaction
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### sstore()
+
+> **sstore**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/storage/handlers/0x55\_SSTORE.js:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/storage/handlers/0x55_SSTORE.js#L44)
+
+SSTORE (0x55) - Save word to storage
+
+Stack:
+  in: key, value
+  out: -
+
+Gas: Complex - EIP-2200 (Istanbul+) / EIP-2929 (Berlin+) / EIP-3529 (London+)
+
+EIP-2200 (Istanbul+):
+- Sentry: Requires >= 2300 gas remaining
+- Cost varies based on current vs original value
+- Refunds for clearing and restoring values
+
+EIP-2929 (Berlin+):
+- Cold/warm storage slot tracking
+- Cold slot access adds 2000 gas (100 -> 2100 for first access)
+
+EIP-3529 (London+):
+- Reduced refunds: 4800 instead of 15000 for clearing
+- Max refund capped at 20% of tx gas
+
+Pre-Istanbul:
+- Zero to non-zero: 20000 gas
+- Otherwise: 5000 gas
+- Refund 15000 when clearing
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### tload()
+
+> **tload**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/storage/handlers/0x5c\_TLOAD.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/storage/handlers/0x5c_TLOAD.js#L21)
+
+TLOAD (0x5c) - Load word from transient storage
+
+Stack:
+  in: key
+  out: value
+
+Gas: 100
+
+EIP-1153: Transient storage opcodes (Cancun hardfork)
+- Transaction-scoped storage, cleared at end of transaction
+- No refunds or complex gas metering
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### tstore()
+
+> **tstore**(`frame`, `host`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/storage/handlers/0x5d\_TSTORE.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/storage/handlers/0x5d_TSTORE.js#L22)
+
+TSTORE (0x5d) - Save word to transient storage
+
+Stack:
+  in: key, value
+  out: -
+
+Gas: 100
+
+EIP-1153: Transient storage opcodes (Cancun hardfork)
+- Transaction-scoped storage, cleared at end of transaction
+- No refunds or complex gas metering
+- Cannot be called in static context
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any

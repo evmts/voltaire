@@ -1,0 +1,75 @@
+---
+title: Event.encodeTopics
+description: Encode indexed event parameters into topic arrays
+---
+
+## Overview
+
+`Event.encodeTopics` builds the topics array for an event filter. It includes `topic0` (the event selector) for non-anonymous events and encodes indexed parameters as topics.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
+
+const Transfer = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' }
+  ]
+} as const;
+
+const topics = Abi.Event.encodeTopics(Transfer, {
+  from: '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
+  to: '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4'
+});
+
+const topicHex = topics.map((t) => (t ? Hex.fromBytes(t) : null));
+```
+
+## Wildcards and Partial Filters
+
+Set an indexed value to `null` (or omit it) to leave that topic unconstrained:
+
+```typescript
+const topics = Abi.Event.encodeTopics(Transfer, {
+  from: null,
+  to: '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4'
+});
+```
+
+## Use in Log Filters
+
+`encodeTopics` returns byte arrays. Convert to hex strings when passing to JSON-RPC:
+
+```typescript
+const topics = Abi.Event.encodeTopics(Transfer, {
+  from: null,
+  to: '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4'
+});
+
+const filterTopics = topics.map((t) => (t ? Hex.fromBytes(t) : null));
+
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  topics: filterTopics
+});
+```
+
+## Dynamic Indexed Parameters
+
+Dynamic types (`string`, `bytes`, dynamic arrays, tuples with dynamic parts) are **hashed** with keccak256 before being placed in a topic. You cannot recover the original value from the topic alone.
+
+## Anonymous Events
+
+Anonymous events omit `topic0`. `encodeTopics` will return only the indexed parameter topics.
+
+## See Also
+
+- [decodeLog](/primitives/abi/event/decode-log) - Decode log data + topics
+- [getSelector](/primitives/abi/event/get-selector) - Compute topic0 selector
+- [Selectors](/primitives/abi/selectors) - Selector rules

@@ -1,0 +1,1687 @@
+---
+description: Auto-generated TypeScript API documentation from source code
+title: Generated API Reference
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / crypto/Bls12381
+
+# crypto/Bls12381
+
+## Namespaces
+
+- [Fp](namespaces/Fp.mdx)
+- [Fp2](namespaces/Fp2.mdx)
+- [Fr](namespaces/Fr.mdx)
+- [G1](namespaces/G1.mdx)
+- [G2](namespaces/G2.mdx)
+- [Pairing](namespaces/Pairing.mdx)
+
+## Classes
+
+### Bls12381Error
+
+Defined in: [src/crypto/Bls12381/errors.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L12)
+
+Base error class for BLS12-381 operations
+
+#### Extends
+
+- `Error`
+
+#### Extended by
+
+- [`InvalidPointError`](#invalidpointerror)
+- [`InvalidSubgroupError`](#invalidsubgrouperror)
+- [`InvalidScalarError`](#invalidscalarerror)
+- [`InvalidFieldElementError`](#invalidfieldelementerror)
+- [`PairingError`](#pairingerror)
+- [`SignatureError`](#signatureerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new Bls12381Error**(`message`): [`Bls12381Error`](#bls12381error)
+
+Defined in: [src/crypto/Bls12381/errors.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L16)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### Returns
+
+[`Bls12381Error`](#bls12381error)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bls12381/errors.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L18)
+
+###### Inherited from
+
+`Error.name`
+
+***
+
+### InvalidFieldElementError
+
+Defined in: [src/crypto/Bls12381/errors.js:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L58)
+
+Error thrown when field element is invalid
+
+#### Extends
+
+- [`Bls12381Error`](#bls12381error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidFieldElementError**(`reason?`): [`InvalidFieldElementError`](#invalidfieldelementerror)
+
+Defined in: [src/crypto/Bls12381/errors.js:62](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L62)
+
+###### Parameters
+
+###### reason?
+
+`string`
+
+###### Returns
+
+[`InvalidFieldElementError`](#invalidfieldelementerror)
+
+###### Overrides
+
+[`Bls12381Error`](#bls12381error).[`constructor`](#constructor)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bls12381/errors.js:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L64)
+
+###### Inherited from
+
+[`Bls12381Error`](#bls12381error).[`name`](#name)
+
+***
+
+### InvalidPointError
+
+Defined in: [src/crypto/Bls12381/errors.js:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L25)
+
+Error thrown when a point is not on the curve
+
+#### Extends
+
+- [`Bls12381Error`](#bls12381error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPointError**(): [`InvalidPointError`](#invalidpointerror)
+
+Defined in: [src/crypto/Bls12381/errors.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L26)
+
+###### Returns
+
+[`InvalidPointError`](#invalidpointerror)
+
+###### Overrides
+
+[`Bls12381Error`](#bls12381error).[`constructor`](#constructor)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bls12381/errors.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L28)
+
+###### Inherited from
+
+[`Bls12381Error`](#bls12381error).[`name`](#name)
+
+***
+
+### InvalidScalarError
+
+Defined in: [src/crypto/Bls12381/errors.js:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L45)
+
+Error thrown when a scalar is invalid
+
+#### Extends
+
+- [`Bls12381Error`](#bls12381error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidScalarError**(`reason?`): [`InvalidScalarError`](#invalidscalarerror)
+
+Defined in: [src/crypto/Bls12381/errors.js:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L49)
+
+###### Parameters
+
+###### reason?
+
+`string`
+
+###### Returns
+
+[`InvalidScalarError`](#invalidscalarerror)
+
+###### Overrides
+
+[`Bls12381Error`](#bls12381error).[`constructor`](#constructor)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bls12381/errors.js:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L51)
+
+###### Inherited from
+
+[`Bls12381Error`](#bls12381error).[`name`](#name)
+
+***
+
+### InvalidSubgroupError
+
+Defined in: [src/crypto/Bls12381/errors.js:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L35)
+
+Error thrown when a point is not in the correct subgroup
+
+#### Extends
+
+- [`Bls12381Error`](#bls12381error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSubgroupError**(): [`InvalidSubgroupError`](#invalidsubgrouperror)
+
+Defined in: [src/crypto/Bls12381/errors.js:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L36)
+
+###### Returns
+
+[`InvalidSubgroupError`](#invalidsubgrouperror)
+
+###### Overrides
+
+[`Bls12381Error`](#bls12381error).[`constructor`](#constructor)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bls12381/errors.js:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L38)
+
+###### Inherited from
+
+[`Bls12381Error`](#bls12381error).[`name`](#name)
+
+***
+
+### PairingError
+
+Defined in: [src/crypto/Bls12381/errors.js:71](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L71)
+
+Error thrown when pairing check fails
+
+#### Extends
+
+- [`Bls12381Error`](#bls12381error)
+
+#### Constructors
+
+##### Constructor
+
+> **new PairingError**(`reason?`): [`PairingError`](#pairingerror)
+
+Defined in: [src/crypto/Bls12381/errors.js:75](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L75)
+
+###### Parameters
+
+###### reason?
+
+`string`
+
+###### Returns
+
+[`PairingError`](#pairingerror)
+
+###### Overrides
+
+[`Bls12381Error`](#bls12381error).[`constructor`](#constructor)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bls12381/errors.js:77](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L77)
+
+###### Inherited from
+
+[`Bls12381Error`](#bls12381error).[`name`](#name)
+
+***
+
+### SignatureError
+
+Defined in: [src/crypto/Bls12381/errors.js:84](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L84)
+
+Error thrown when signature operation fails
+
+#### Extends
+
+- [`Bls12381Error`](#bls12381error)
+
+#### Constructors
+
+##### Constructor
+
+> **new SignatureError**(`reason?`): [`SignatureError`](#signatureerror)
+
+Defined in: [src/crypto/Bls12381/errors.js:88](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L88)
+
+###### Parameters
+
+###### reason?
+
+`string`
+
+###### Returns
+
+[`SignatureError`](#signatureerror)
+
+###### Overrides
+
+[`Bls12381Error`](#bls12381error).[`constructor`](#constructor)
+
+#### Properties
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/Bls12381/errors.js:90](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/errors.js#L90)
+
+###### Inherited from
+
+[`Bls12381Error`](#bls12381error).[`name`](#name)
+
+## Variables
+
+### B\_G1
+
+> `const` **B\_G1**: `bigint` = `4n`
+
+Defined in: [src/crypto/Bls12381/constants.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L33)
+
+G1 curve coefficient b = 4
+y^2 = x^3 + 4 over Fp
+
+***
+
+### B\_G2
+
+> `const` **B\_G2**: `object`
+
+Defined in: [src/crypto/Bls12381/constants.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L41)
+
+G2 curve coefficient b = 4(1+i)
+y^2 = x^3 + 4(1+i) over Fp2
+Represented as [4, 4] for the Fp2 element
+
+#### Type Declaration
+
+##### c0
+
+> **c0**: `bigint`
+
+##### c1
+
+> **c1**: `bigint`
+
+***
+
+### BLS\_X
+
+> `const` **BLS\_X**: `bigint` = `0xd201000000010000n`
+
+Defined in: [src/crypto/Bls12381/constants.js:93](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L93)
+
+BLS parameter x (used in Miller loop)
+x = -0xd201000000010000 (negative)
+
+***
+
+### BLS\_X\_IS\_NEGATIVE
+
+> `const` **BLS\_X\_IS\_NEGATIVE**: `boolean` = `true`
+
+Defined in: [src/crypto/Bls12381/constants.js:99](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L99)
+
+BLS parameter x is negative
+
+***
+
+### Bls12381
+
+> `const` **Bls12381**: `object`
+
+Defined in: [src/crypto/Bls12381/Bls12381.js:104](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/Bls12381.js#L104)
+
+Bls12381 main export
+
+#### Type Declaration
+
+##### aggregate()
+
+> **aggregate**: (`signatures`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregate multiple BLS signatures into one
+
+The aggregated signature can be verified against an aggregated public key
+(when all signers signed the same message) or via batch verification
+(when signers signed different messages).
+
+###### Parameters
+
+###### signatures
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of compressed G1 signatures (48 bytes each)
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (48 bytes compressed G1)
+
+###### Throws
+
+If aggregation fails or no signatures provided
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const message = new TextEncoder().encode('Vote for proposal');
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+
+const sig1 = Bls12381.sign(message, pk1);
+const sig2 = Bls12381.sign(message, pk2);
+
+const aggSig = Bls12381.aggregate([sig1, sig2]);
+```
+
+##### aggregatePublicKeys()
+
+> **aggregatePublicKeys**: (`publicKeys`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregate multiple public keys into one
+
+Used when multiple signers sign the same message and you want
+to verify against a single aggregated public key.
+
+###### Parameters
+
+###### publicKeys
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of compressed G2 public keys (96 bytes each)
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated public key (96 bytes compressed G2)
+
+###### Throws
+
+If aggregation fails or no public keys provided
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+
+const pubKey1 = Bls12381.derivePublicKey(pk1);
+const pubKey2 = Bls12381.derivePublicKey(pk2);
+
+const aggPubKey = Bls12381.aggregatePublicKeys([pubKey1, pubKey2]);
+```
+
+##### aggregateVerify()
+
+> **aggregateVerify**: (`aggregatedSignature`, `message`, `publicKeys`) => `boolean`
+
+Verify an aggregated signature where all signers signed the same message
+
+This is the most common case in Ethereum consensus - multiple validators
+sign the same block/attestation.
+
+###### Parameters
+
+###### aggregatedSignature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (96 bytes)
+
+###### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+The message that was signed by all parties
+
+###### publicKeys
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Public keys of all signers (48 bytes each)
+
+###### Returns
+
+`boolean`
+
+True if the aggregated signature is valid
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const message = new TextEncoder().encode('Block attestation');
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+const pubKey1 = Bls12381.derivePublicKey(pk1);
+const pubKey2 = Bls12381.derivePublicKey(pk2);
+
+const sig1 = Bls12381.sign(message, pk1);
+const sig2 = Bls12381.sign(message, pk2);
+const aggSig = Bls12381.aggregate([sig1, sig2]);
+
+const isValid = Bls12381.aggregateVerify(aggSig, message, [pubKey1, pubKey2]);
+console.log(isValid); // true
+```
+
+##### batchVerify()
+
+> **batchVerify**: (`aggregatedSignature`, `messages`, `publicKeys`) => `boolean`
+
+Verify an aggregated signature where each signer signed a different message
+
+Uses multi-pairing verification: product of e(pk_i, H(msg_i)) == e(G1, aggSig)
+
+###### Parameters
+
+###### aggregatedSignature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (96 bytes)
+
+###### messages
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Messages that were signed (one per signer)
+
+###### publicKeys
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Public keys (one per signer, same order as messages)
+
+###### Returns
+
+`boolean`
+
+True if the aggregated signature is valid
+
+###### Throws
+
+If messages and publicKeys have different lengths
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+const pubKey1 = Bls12381.derivePublicKey(pk1);
+const pubKey2 = Bls12381.derivePublicKey(pk2);
+
+const msg1 = new TextEncoder().encode('Message 1');
+const msg2 = new TextEncoder().encode('Message 2');
+
+const sig1 = Bls12381.sign(msg1, pk1);
+const sig2 = Bls12381.sign(msg2, pk2);
+const aggSig = Bls12381.aggregate([sig1, sig2]);
+
+const isValid = Bls12381.batchVerify(aggSig, [msg1, msg2], [pubKey1, pubKey2]);
+console.log(isValid); // true
+```
+
+##### derivePublicKey()
+
+> **derivePublicKey**: (`privateKey`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Derive a BLS12-381 public key from a private key
+
+Public key = privateKey * G2_generator
+
+###### Parameters
+
+###### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key (scalar in Fr)
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed G2 public key (96 bytes)
+
+###### Throws
+
+If private key is invalid
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const publicKey = Bls12381.derivePublicKey(privateKey);
+console.log(publicKey.length); // 96
+```
+
+##### derivePublicKeyPoint()
+
+> **derivePublicKeyPoint**: (`privateKey`) => [`Bls12381G1PointType`](../../index/index.mdx#bls12381g1pointtype)
+
+Derive a BLS12-381 public key as a G1 point (uncompressed)
+
+###### Parameters
+
+###### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+###### Returns
+
+[`Bls12381G1PointType`](../../index/index.mdx#bls12381g1pointtype)
+
+Public key as G1 point
+
+###### Throws
+
+If private key is invalid
+
+##### fastAggregateVerify()
+
+> **fastAggregateVerify**: (`aggregatedSignature`, `message`, `aggregatedPublicKey`) => `boolean`
+
+Fast aggregate verify (same message case)
+
+Optimized for the common case where all signers signed the same message.
+This is faster than aggregateVerify when you already have the aggregated public key.
+
+###### Parameters
+
+###### aggregatedSignature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (96 bytes)
+
+###### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+The message that was signed
+
+###### aggregatedPublicKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Pre-computed aggregated public key (48 bytes)
+
+###### Returns
+
+`boolean`
+
+True if valid
+
+##### Fp
+
+> **Fp**: [`Fp`](namespaces/Fp.mdx)
+
+##### Fp2
+
+> **Fp2**: [`Fp2`](namespaces/Fp2.mdx)
+
+##### Fr
+
+> **Fr**: [`Fr`](namespaces/Fr.mdx)
+
+##### G1
+
+> **G1**: [`G1`](namespaces/G1.mdx)
+
+##### G2
+
+> **G2**: [`G2`](namespaces/G2.mdx)
+
+##### isValidPrivateKey()
+
+> **isValidPrivateKey**: (`privateKey`) => `boolean`
+
+Check if a private key is valid
+
+A valid private key must be:
+- 32 bytes
+- Non-zero
+- Less than the curve order (Fr modulus)
+
+###### Parameters
+
+###### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Private key to validate
+
+###### Returns
+
+`boolean`
+
+True if valid
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const pk = Bls12381.randomPrivateKey();
+console.log(Bls12381.isValidPrivateKey(pk)); // true
+
+const invalid = new Uint8Array(32); // all zeros
+console.log(Bls12381.isValidPrivateKey(invalid)); // false
+```
+
+##### Pairing
+
+> **Pairing**: [`Pairing`](namespaces/Pairing.mdx)
+
+BLS12-381 Pairing Operations
+
+Optimal Ate pairing implementation for BLS12-381.
+e: G1 x G2 -> GT
+
+NOTE: Full pairing implementation requires Fp6, Fp12 tower extensions
+and Miller loop computation. For production use, the native blst
+library should be used via the Zig FFI bindings.
+
+This module provides the interface and simplified implementations
+for testing and educational purposes.
+
+###### See
+
+https://hackmd.io/@benjaminion/bls12-381 for pairing details
+
+###### Since
+
+0.0.0
+
+##### randomPrivateKey()
+
+> **randomPrivateKey**: () => `Uint8Array`\<`ArrayBufferLike`\>
+
+Generate a random BLS12-381 private key
+
+Uses cryptographically secure random number generation.
+The key is guaranteed to be valid (non-zero and less than curve order).
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const publicKey = Bls12381.derivePublicKey(privateKey);
+```
+
+##### sign()
+
+> **sign**: (`message`, `privateKey`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Sign a message using BLS12-381
+
+Uses the Ethereum consensus "short signatures" scheme:
+- Signature = privateKey * H(message) where H maps to G1
+- Signatures are 48 bytes (compressed G1 point)
+
+###### Parameters
+
+###### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Message to sign
+
+###### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key (scalar in Fr)
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Signature as compressed G1 point (48 bytes)
+
+###### Throws
+
+If private key is invalid
+
+###### Throws
+
+If signing fails
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const message = new TextEncoder().encode('Hello, Ethereum!');
+const signature = Bls12381.sign(message, privateKey);
+```
+
+##### signPoint()
+
+> **signPoint**: (`messagePoint`, `privateKey`) => [`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Sign a pre-hashed message (G2 point) using BLS12-381
+
+For advanced use when you have already hashed the message to G2.
+
+###### Parameters
+
+###### messagePoint
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Message as G2 point
+
+###### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key (scalar in Fr)
+
+###### Returns
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Signature as G2 point (projective)
+
+###### Throws
+
+If private key is invalid
+
+###### Throws
+
+If signing fails
+
+##### verify()
+
+> **verify**: (`signature`, `message`, `publicKey`) => `boolean`
+
+Verify a BLS12-381 signature
+
+Uses pairing check for verification.
+
+###### Parameters
+
+###### signature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed G1 signature (48 bytes)
+
+###### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Original message that was signed
+
+###### publicKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed G2 public key (96 bytes)
+
+###### Returns
+
+`boolean`
+
+True if signature is valid
+
+###### Throws
+
+If verification fails due to invalid inputs
+
+###### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const publicKey = Bls12381.derivePublicKey(privateKey);
+const message = new TextEncoder().encode('Hello!');
+const signature = Bls12381.sign(message, privateKey);
+
+const isValid = Bls12381.verify(signature, message, publicKey);
+console.log(isValid); // true
+```
+
+##### verifyPoint()
+
+> **verifyPoint**: (`signaturePoint`, `messagePoint`, `publicKeyPoint`) => `boolean`
+
+Verify a BLS signature with pre-computed points (advanced)
+
+For use when you have already deserialized the points.
+
+###### Parameters
+
+###### signaturePoint
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Signature as G2 point
+
+###### messagePoint
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Message hash as G2 point
+
+###### publicKeyPoint
+
+[`Bls12381G1PointType`](../../index/index.mdx#bls12381g1pointtype)
+
+Public key as G1 point
+
+###### Returns
+
+`boolean`
+
+True if signature is valid
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+// Generate keypair
+const privateKey = Bls12381.randomPrivateKey();
+const publicKey = Bls12381.derivePublicKey(privateKey);
+
+// Sign and verify
+const message = new TextEncoder().encode('Hello');
+const signature = Bls12381.sign(message, privateKey);
+const isValid = Bls12381.verify(signature, message, publicKey);
+```
+
+***
+
+### EMBEDDING\_DEGREE
+
+> `const` **EMBEDDING\_DEGREE**: `number` = `12`
+
+Defined in: [src/crypto/Bls12381/constants.js:86](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L86)
+
+Embedding degree k = 12
+
+***
+
+### FP\_MOD
+
+> `const` **FP\_MOD**: `bigint` = `0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn`
+
+Defined in: [src/crypto/Bls12381/constants.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L17)
+
+Base field modulus p (381 bits)
+p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+
+***
+
+### FR\_MOD
+
+> `const` **FR\_MOD**: `bigint` = `0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n`
+
+Defined in: [src/crypto/Bls12381/constants.js:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L25)
+
+Scalar field modulus r (curve order, 255 bits)
+r = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+
+***
+
+### G1\_GENERATOR\_X
+
+> `const` **G1\_GENERATOR\_X**: `bigint` = `0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bbn`
+
+Defined in: [src/crypto/Bls12381/constants.js:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L47)
+
+G1 generator x-coordinate
+
+***
+
+### G1\_GENERATOR\_Y
+
+> `const` **G1\_GENERATOR\_Y**: `bigint` = `0x08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1n`
+
+Defined in: [src/crypto/Bls12381/constants.js:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L54)
+
+G1 generator y-coordinate
+
+***
+
+### G2\_COFACTOR
+
+> `const` **G2\_COFACTOR**: `bigint` = `0x5d543a95414e7f1091d50792876a202cd91de4547085abaa68a205b2e5a7ddfa628f1cb4d9e82ef21537e293a6691ae1616ec6e786f0c70cf1c38e31c7238e5n`
+
+Defined in: [src/crypto/Bls12381/constants.js:79](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L79)
+
+G2 cofactor h2 (large value)
+
+***
+
+### G2\_GENERATOR\_X
+
+> `const` **G2\_GENERATOR\_X**: `object`
+
+Defined in: [src/crypto/Bls12381/constants.js:61](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L61)
+
+G2 generator x-coordinate (Fp2 element)
+
+#### Type Declaration
+
+##### c0
+
+> **c0**: `bigint`
+
+##### c1
+
+> **c1**: `bigint`
+
+***
+
+### G2\_GENERATOR\_Y
+
+> `const` **G2\_GENERATOR\_Y**: `object`
+
+Defined in: [src/crypto/Bls12381/constants.js:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/constants.js#L70)
+
+G2 generator y-coordinate (Fp2 element)
+
+#### Type Declaration
+
+##### c0
+
+> **c0**: `bigint`
+
+##### c1
+
+> **c1**: `bigint`
+
+## Functions
+
+### aggregate()
+
+> **aggregate**(`signatures`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Bls12381/aggregate.js:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/aggregate.js#L43)
+
+Aggregate multiple BLS signatures into one
+
+The aggregated signature can be verified against an aggregated public key
+(when all signers signed the same message) or via batch verification
+(when signers signed different messages).
+
+#### Parameters
+
+##### signatures
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of compressed G1 signatures (48 bytes each)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (48 bytes compressed G1)
+
+#### Throws
+
+If aggregation fails or no signatures provided
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const message = new TextEncoder().encode('Vote for proposal');
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+
+const sig1 = Bls12381.sign(message, pk1);
+const sig2 = Bls12381.sign(message, pk2);
+
+const aggSig = Bls12381.aggregate([sig1, sig2]);
+```
+
+***
+
+### aggregatePublicKeys()
+
+> **aggregatePublicKeys**(`publicKeys`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Bls12381/aggregate.js:89](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/aggregate.js#L89)
+
+Aggregate multiple public keys into one
+
+Used when multiple signers sign the same message and you want
+to verify against a single aggregated public key.
+
+#### Parameters
+
+##### publicKeys
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Array of compressed G2 public keys (96 bytes each)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated public key (96 bytes compressed G2)
+
+#### Throws
+
+If aggregation fails or no public keys provided
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+
+const pubKey1 = Bls12381.derivePublicKey(pk1);
+const pubKey2 = Bls12381.derivePublicKey(pk2);
+
+const aggPubKey = Bls12381.aggregatePublicKeys([pubKey1, pubKey2]);
+```
+
+***
+
+### aggregateVerify()
+
+> **aggregateVerify**(`aggregatedSignature`, `message`, `publicKeys`): `boolean`
+
+Defined in: [src/crypto/Bls12381/aggregateVerify.js:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/aggregateVerify.js#L47)
+
+Verify an aggregated signature where all signers signed the same message
+
+This is the most common case in Ethereum consensus - multiple validators
+sign the same block/attestation.
+
+#### Parameters
+
+##### aggregatedSignature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (96 bytes)
+
+##### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+The message that was signed by all parties
+
+##### publicKeys
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Public keys of all signers (48 bytes each)
+
+#### Returns
+
+`boolean`
+
+True if the aggregated signature is valid
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const message = new TextEncoder().encode('Block attestation');
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+const pubKey1 = Bls12381.derivePublicKey(pk1);
+const pubKey2 = Bls12381.derivePublicKey(pk2);
+
+const sig1 = Bls12381.sign(message, pk1);
+const sig2 = Bls12381.sign(message, pk2);
+const aggSig = Bls12381.aggregate([sig1, sig2]);
+
+const isValid = Bls12381.aggregateVerify(aggSig, message, [pubKey1, pubKey2]);
+console.log(isValid); // true
+```
+
+***
+
+### batchVerify()
+
+> **batchVerify**(`aggregatedSignature`, `messages`, `publicKeys`): `boolean`
+
+Defined in: [src/crypto/Bls12381/aggregateVerify.js:105](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/aggregateVerify.js#L105)
+
+Verify an aggregated signature where each signer signed a different message
+
+Uses multi-pairing verification: product of e(pk_i, H(msg_i)) == e(G1, aggSig)
+
+#### Parameters
+
+##### aggregatedSignature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (96 bytes)
+
+##### messages
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Messages that were signed (one per signer)
+
+##### publicKeys
+
+`Uint8Array`\<`ArrayBufferLike`\>[]
+
+Public keys (one per signer, same order as messages)
+
+#### Returns
+
+`boolean`
+
+True if the aggregated signature is valid
+
+#### Throws
+
+If messages and publicKeys have different lengths
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const pk1 = Bls12381.randomPrivateKey();
+const pk2 = Bls12381.randomPrivateKey();
+const pubKey1 = Bls12381.derivePublicKey(pk1);
+const pubKey2 = Bls12381.derivePublicKey(pk2);
+
+const msg1 = new TextEncoder().encode('Message 1');
+const msg2 = new TextEncoder().encode('Message 2');
+
+const sig1 = Bls12381.sign(msg1, pk1);
+const sig2 = Bls12381.sign(msg2, pk2);
+const aggSig = Bls12381.aggregate([sig1, sig2]);
+
+const isValid = Bls12381.batchVerify(aggSig, [msg1, msg2], [pubKey1, pubKey2]);
+console.log(isValid); // true
+```
+
+***
+
+### derivePublicKey()
+
+> **derivePublicKey**(`privateKey`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Bls12381/derivePublicKey.js:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/derivePublicKey.js#L38)
+
+Derive a BLS12-381 public key from a private key
+
+Public key = privateKey * G2_generator
+
+#### Parameters
+
+##### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key (scalar in Fr)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed G2 public key (96 bytes)
+
+#### Throws
+
+If private key is invalid
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const publicKey = Bls12381.derivePublicKey(privateKey);
+console.log(publicKey.length); // 96
+```
+
+***
+
+### derivePublicKeyPoint()
+
+> **derivePublicKeyPoint**(`privateKey`): [`Bls12381G1PointType`](../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/derivePublicKey.js:80](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/derivePublicKey.js#L80)
+
+Derive a BLS12-381 public key as a G1 point (uncompressed)
+
+#### Parameters
+
+##### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+#### Returns
+
+[`Bls12381G1PointType`](../../index/index.mdx#bls12381g1pointtype)
+
+Public key as G1 point
+
+#### Throws
+
+If private key is invalid
+
+***
+
+### fastAggregateVerify()
+
+> **fastAggregateVerify**(`aggregatedSignature`, `message`, `aggregatedPublicKey`): `boolean`
+
+Defined in: [src/crypto/Bls12381/aggregateVerify.js:148](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/aggregateVerify.js#L148)
+
+Fast aggregate verify (same message case)
+
+Optimized for the common case where all signers signed the same message.
+This is faster than aggregateVerify when you already have the aggregated public key.
+
+#### Parameters
+
+##### aggregatedSignature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Aggregated signature (96 bytes)
+
+##### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+The message that was signed
+
+##### aggregatedPublicKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Pre-computed aggregated public key (48 bytes)
+
+#### Returns
+
+`boolean`
+
+True if valid
+
+***
+
+### isValidPrivateKey()
+
+> **isValidPrivateKey**(`privateKey`): `boolean`
+
+Defined in: [src/crypto/Bls12381/randomPrivateKey.js:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/randomPrivateKey.js#L55)
+
+Check if a private key is valid
+
+A valid private key must be:
+- 32 bytes
+- Non-zero
+- Less than the curve order (Fr modulus)
+
+#### Parameters
+
+##### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Private key to validate
+
+#### Returns
+
+`boolean`
+
+True if valid
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const pk = Bls12381.randomPrivateKey();
+console.log(Bls12381.isValidPrivateKey(pk)); // true
+
+const invalid = new Uint8Array(32); // all zeros
+console.log(Bls12381.isValidPrivateKey(invalid)); // false
+```
+
+***
+
+### randomPrivateKey()
+
+> **randomPrivateKey**(): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Bls12381/randomPrivateKey.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/randomPrivateKey.js#L29)
+
+Generate a random BLS12-381 private key
+
+Uses cryptographically secure random number generation.
+The key is guaranteed to be valid (non-zero and less than curve order).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const publicKey = Bls12381.derivePublicKey(privateKey);
+```
+
+***
+
+### sign()
+
+> **sign**(`message`, `privateKey`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/Bls12381/sign.js:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/sign.js#L44)
+
+Sign a message using BLS12-381
+
+Uses the Ethereum consensus "short signatures" scheme:
+- Signature = privateKey * H(message) where H maps to G1
+- Signatures are 48 bytes (compressed G1 point)
+
+#### Parameters
+
+##### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Message to sign
+
+##### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key (scalar in Fr)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Signature as compressed G1 point (48 bytes)
+
+#### Throws
+
+If private key is invalid
+
+#### Throws
+
+If signing fails
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const message = new TextEncoder().encode('Hello, Ethereum!');
+const signature = Bls12381.sign(message, privateKey);
+```
+
+***
+
+### signPoint()
+
+> **signPoint**(`messagePoint`, `privateKey`): [`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Defined in: [src/crypto/Bls12381/sign.js:91](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/sign.js#L91)
+
+Sign a pre-hashed message (G2 point) using BLS12-381
+
+For advanced use when you have already hashed the message to G2.
+
+#### Parameters
+
+##### messagePoint
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Message as G2 point
+
+##### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte private key (scalar in Fr)
+
+#### Returns
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Signature as G2 point (projective)
+
+#### Throws
+
+If private key is invalid
+
+#### Throws
+
+If signing fails
+
+***
+
+### verify()
+
+> **verify**(`signature`, `message`, `publicKey`): `boolean`
+
+Defined in: [src/crypto/Bls12381/verify.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/verify.js#L41)
+
+Verify a BLS12-381 signature
+
+Uses pairing check for verification.
+
+#### Parameters
+
+##### signature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed G1 signature (48 bytes)
+
+##### message
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Original message that was signed
+
+##### publicKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compressed G2 public key (96 bytes)
+
+#### Returns
+
+`boolean`
+
+True if signature is valid
+
+#### Throws
+
+If verification fails due to invalid inputs
+
+#### Example
+
+```javascript
+import { Bls12381 } from './crypto/Bls12381/index.js';
+
+const privateKey = Bls12381.randomPrivateKey();
+const publicKey = Bls12381.derivePublicKey(privateKey);
+const message = new TextEncoder().encode('Hello!');
+const signature = Bls12381.sign(message, privateKey);
+
+const isValid = Bls12381.verify(signature, message, publicKey);
+console.log(isValid); // true
+```
+
+***
+
+### verifyPoint()
+
+> **verifyPoint**(`signaturePoint`, `messagePoint`, `publicKeyPoint`): `boolean`
+
+Defined in: [src/crypto/Bls12381/verify.js:78](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/verify.js#L78)
+
+Verify a BLS signature with pre-computed points (advanced)
+
+For use when you have already deserialized the points.
+
+#### Parameters
+
+##### signaturePoint
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Signature as G2 point
+
+##### messagePoint
+
+[`Bls12381G2PointType`](../../index/index.mdx#bls12381g2pointtype)
+
+Message hash as G2 point
+
+##### publicKeyPoint
+
+[`Bls12381G1PointType`](../../index/index.mdx#bls12381g1pointtype)
+
+Public key as G1 point
+
+#### Returns
+
+`boolean`
+
+True if signature is valid
+
+## References
+
+### Fp2Type
+
+Renames and re-exports [Bls12381Fp2Type](../../index/index.mdx#bls12381fp2type)
+
+***
+
+### G1PointType
+
+Renames and re-exports [Bls12381G1PointType](../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### G2PointType
+
+Renames and re-exports [Bls12381G2PointType](../../index/index.mdx#bls12381g2pointtype)

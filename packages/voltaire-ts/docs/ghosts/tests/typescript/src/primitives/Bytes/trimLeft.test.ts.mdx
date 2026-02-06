@@ -1,0 +1,44 @@
+---
+title: '[TS/JS] src/primitives/Bytes/trimLeft.test.ts'
+source: 'src/primitives/Bytes/trimLeft.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Bytes/trimLeft.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { trimLeft } from "./trimLeft.js";
+
+describe("Bytes.trimLeft", () => {
+	it("removes leading zeros", () => {
+		expect(trimLeft(new Uint8Array([0, 0, 0x12, 0x34]))).toEqual(
+			new Uint8Array([0x12, 0x34]),
+		);
+	});
+
+	it("returns original if no leading zeros", () => {
+		const bytes = new Uint8Array([0x12, 0x34]);
+		expect(trimLeft(bytes)).toBe(bytes);
+	});
+
+	it("preserves one zero byte for all-zero arrays", () => {
+		expect(trimLeft(new Uint8Array([0, 0, 0]))).toEqual(new Uint8Array([0]));
+	});
+
+	it("preserves single zero byte", () => {
+		expect(trimLeft(new Uint8Array([0]))).toEqual(new Uint8Array([0]));
+	});
+
+	it("handles empty bytes", () => {
+		const empty = new Uint8Array([]);
+		expect(trimLeft(empty)).toBe(empty);
+	});
+
+	it("preserves non-leading zeros", () => {
+		expect(trimLeft(new Uint8Array([0, 0x12, 0, 0x34]))).toEqual(
+			new Uint8Array([0x12, 0, 0x34]),
+		);
+	});
+});
+
+```

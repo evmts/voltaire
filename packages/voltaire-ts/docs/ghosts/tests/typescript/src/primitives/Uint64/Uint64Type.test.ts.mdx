@@ -1,0 +1,36 @@
+---
+title: '[TS/JS] src/primitives/Uint64/Uint64Type.test.ts'
+source: 'src/primitives/Uint64/Uint64Type.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Uint64/Uint64Type.test.ts
+
+```typescript
+import { describe, it } from "vitest";
+import type { Uint64Type } from "./Uint64Type.js";
+
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
+
+describe("Uint64Type", () => {
+	it("satisfies bigint with brand", () => {
+		type Test = Equals<Uint64Type, bigint>;
+		const _: Test = true;
+	});
+
+	it("is branded distinct from plain bigint", () => {
+		// @ts-expect-error - Uint64Type is not assignable to plain bigint
+		const _: bigint = 0n as Uint64Type;
+	});
+
+	it("is not assignable to other branded uint types", () => {
+		type Uint128Type = bigint & { readonly __tag: "Uint128" };
+
+		// @ts-expect-error - Uint64Type is not Uint128Type
+		const _: Uint128Type = 0n as Uint64Type;
+	});
+});
+
+```

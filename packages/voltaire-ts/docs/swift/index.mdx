@@ -1,0 +1,77 @@
+---
+title: Swift
+description: Swift wrappers for Voltaire Ethereum primitives
+---
+
+# Voltaire Swift
+
+Native Swift wrappers over Voltaire's C FFI, enabling iOS and macOS apps to use the same primitives used across Zig and TypeScript.
+
+<Tip>
+New to the project? Start with <a href="/swift/getting-started">Getting Started</a>.
+</Tip>
+
+## What’s Included
+
+- Core primitives: Address, Hash, Hex, Bytes32, U256
+- Cryptography: Keccak-256, secp256k1 (PrivateKey, PublicKey, Signature)
+- Zero-copy C interop for performance and safety
+
+## Quick Start
+
+```bash
+zig build build-ts-native
+cd swift
+swift build && swift test
+```
+
+```swift
+import Voltaire
+
+// Address
+let addr = try Address(hex: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+print(addr.checksumHex)
+
+// Keccak-256
+let h = Keccak256.hash("hello")
+print(h.hex)
+
+// U256
+let v = try U256(hex: "0x01")
+print(v.hex)
+```
+
+## API Reference
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/swift/getting-started">
+    Install and build the Swift package
+  </Card>
+  <Card title="Xcode Integration" icon="apple" href="/swift/getting-started-xcode">
+    Add the package to Xcode apps
+  </Card>
+  <Card title="Address" icon="location-dot" href="/swift/primitives/address">
+    20-byte EVM addresses with EIP-55
+  </Card>
+  <Card title="Hash" icon="hashtag" href="/swift/primitives/hash">
+    32-byte Keccak-256 hashes
+  </Card>
+  <Card title="Hex" icon="hexagon" href="/swift/primitives/hex">
+    Encode and decode hex strings
+  </Card>
+  <Card title="Bytes32" icon="code" href="/swift/primitives/bytes32">
+    Generic 32-byte values
+  </Card>
+  <Card title="U256" icon="binary" href="/swift/primitives/u256">
+    256-bit unsigned integers
+  </Card>
+  <Card title="PrivateKey" icon="key" href="/swift/primitives/private-key">
+    secp256k1 private keys
+  </Card>
+  <Card title="PublicKey" icon="user" href="/swift/primitives/public-key">
+    secp256k1 public keys
+  </Card>
+  <Card title="Signature" icon="pen-nib" href="/swift/primitives/signature">
+    ECDSA signatures (r, s, v)
+  </Card>
+</CardGroup>

@@ -1,0 +1,62 @@
+---
+title: How to Estimate Gas
+description: Estimate gas required for a transaction using eth_estimateGas
+---
+
+## Using Provider
+
+```typescript
+import { HttpProvider } from 'voltaire/provider';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+// Estimate gas for ETH transfer
+const gasEstimate = await provider.request({
+  method: 'eth_estimateGas',
+  params: [{
+    from: '0xYourAddress',
+    to: '0xRecipientAddress',
+    value: '0xde0b6b3a7640000', // 1 ETH in wei (hex)
+  }]
+});
+
+console.log('Gas estimate:', BigInt(gasEstimate)); // ~21000n for simple transfer
+```
+
+## Contract Call Estimation
+
+```typescript
+import * as Abi from 'voltaire/primitives/Abi';
+
+// Encode function call
+const data = Abi.encodeFunction({
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: [recipientAddress, 1000000n]
+});
+
+const gasEstimate = await provider.request({
+  method: 'eth_estimateGas',
+  params: [{
+    from: senderAddress,
+    to: tokenAddress,
+    data
+  }]
+});
+```
+
+## With Gas Buffer
+
+Add 10-20% buffer for safety:
+
+```typescript
+const estimate = BigInt(gasEstimate);
+const gasLimit = estimate + (estimate / 10n); // +10% buffer
+```
+
+## Key Points
+
+- Returns hex string, convert with `BigInt(result)`
+- Simple ETH transfer: ~21,000 gas
+- Contract calls vary based on execution path
+- Estimation can fail if tx would revert - catch errors

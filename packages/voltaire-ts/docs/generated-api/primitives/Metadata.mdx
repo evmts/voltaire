@@ -1,0 +1,221 @@
+---
+title: "primitives/Metadata"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Metadata
+
+# primitives/Metadata
+
+## Type Aliases
+
+### Metadata
+
+> **Metadata** = `object`
+
+Defined in: [src/primitives/Metadata/MetadataType.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/MetadataType.ts#L7)
+
+Solidity compiler metadata
+
+Encoded in CBOR format at the end of contract bytecode.
+Contains compiler version and source verification hashes.
+
+#### Properties
+
+##### bzzr0?
+
+> `readonly` `optional` **bzzr0**: `string`
+
+Defined in: [src/primitives/Metadata/MetadataType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/MetadataType.ts#L15)
+
+Swarm hash (legacy)
+
+##### bzzr1?
+
+> `readonly` `optional` **bzzr1**: `string`
+
+Defined in: [src/primitives/Metadata/MetadataType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/MetadataType.ts#L17)
+
+Swarm hash v1
+
+##### experimental?
+
+> `readonly` `optional` **experimental**: `boolean`
+
+Defined in: [src/primitives/Metadata/MetadataType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/MetadataType.ts#L19)
+
+Experimental features enabled
+
+##### ipfs?
+
+> `readonly` `optional` **ipfs**: `string`
+
+Defined in: [src/primitives/Metadata/MetadataType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/MetadataType.ts#L13)
+
+IPFS content hash
+
+##### raw
+
+> `readonly` **raw**: `Uint8Array`
+
+Defined in: [src/primitives/Metadata/MetadataType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/MetadataType.ts#L9)
+
+Raw CBOR-encoded bytes
+
+##### solc?
+
+> `readonly` `optional` **solc**: `string`
+
+Defined in: [src/primitives/Metadata/MetadataType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/MetadataType.ts#L11)
+
+Solidity compiler version (e.g., "0.8.19")
+
+## Functions
+
+### decode()
+
+> **decode**(`raw`): [`Metadata`](#metadata)
+
+Defined in: [src/primitives/Metadata/decode.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/decode.js#L19)
+
+Decode CBOR-encoded metadata
+
+Parses Solidity metadata format to extract compiler version and content hashes.
+
+#### Parameters
+
+##### raw
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+CBOR-encoded metadata
+
+#### Returns
+
+[`Metadata`](#metadata)
+
+Metadata
+
+#### Example
+
+```javascript
+import * as Metadata from './primitives/Metadata/index.js';
+const raw = new Uint8Array([0xa2, 0x64, ...]);
+const meta = Metadata.decode(raw);
+console.log(meta.solc); // "0.8.19"
+```
+
+***
+
+### encode()
+
+> **encode**(`metadata`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Metadata/encode.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/encode.js#L22)
+
+Encode metadata to CBOR format
+
+Creates CBOR-encoded metadata following Solidity format.
+
+#### Parameters
+
+##### metadata
+
+[`Metadata`](#metadata)
+
+Metadata to encode
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+CBOR-encoded bytes
+
+#### Example
+
+```javascript
+import * as Metadata from './primitives/Metadata/index.js';
+const meta = {
+  raw: new Uint8Array(),
+  solc: "0.8.19",
+  ipfs: "0x1234...",
+};
+const encoded = Metadata.encode(meta);
+```
+
+***
+
+### from()
+
+> **from**(`raw`): [`Metadata`](#metadata)
+
+Defined in: [src/primitives/Metadata/from.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/from.js#L14)
+
+Create Metadata from raw CBOR bytes
+
+#### Parameters
+
+##### raw
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+CBOR-encoded metadata bytes
+
+#### Returns
+
+[`Metadata`](#metadata)
+
+Metadata
+
+#### See
+
+https://voltaire.tevm.sh/primitives/metadata for Metadata documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Metadata from './primitives/Metadata/index.js';
+const meta = Metadata.from(new Uint8Array([0xa2, 0x64, ...]));
+```
+
+***
+
+### fromBytecode()
+
+> **fromBytecode**(`bytecode`): [`Metadata`](#metadata) \| `null`
+
+Defined in: [src/primitives/Metadata/fromBytecode.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Metadata/fromBytecode.js#L17)
+
+Extract metadata from contract bytecode
+
+Solidity appends CBOR metadata at the end: bytecode + metadata + 0x00 + length
+
+#### Parameters
+
+##### bytecode
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Contract bytecode with metadata
+
+#### Returns
+
+[`Metadata`](#metadata) \| `null`
+
+Metadata or null if not found
+
+#### Example
+
+```javascript
+import * as Metadata from './primitives/Metadata/index.js';
+const bytecode = new Uint8Array([...code, 0xa2, 0x64, ...metadata, 0x00, 0x33]);
+const meta = Metadata.fromBytecode(bytecode);
+```

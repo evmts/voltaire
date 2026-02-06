@@ -1,0 +1,310 @@
+---
+title: Int32
+description: Signed 32-bit integers with two's complement representation
+---
+
+# Int32
+
+Type-safe signed 32-bit integers with two's complement encoding and EVM SDIV/SMOD semantics.
+
+## Overview
+
+[Branded](/getting-started/branded-types) `number` type representing signed 32-bit integers (-2,147,483,648 to 2,147,483,647). Uses two's complement representation for negative values and implements EVM signed division/modulo semantics.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Operations">
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+// Create signed integers
+const a = Int32.from(-42)
+const b = Int32.from(10)
+const zero = Int32.from(0)
+
+// Signed arithmetic
+const sum = Int32.plus(a, b)        // -32
+const diff = Int32.minus(a, b)      // -52
+const product = Int32.times(a, b)   // -420
+
+// Overflow detection
+try {
+  Int32.plus(Int32.MAX, 1)  // Throws: overflow
+} catch (err) {
+  console.error('Overflow detected')
+}
+```
+</Tab>
+<Tab title="Two's Complement">
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+// Two's complement conversions
+const negOne = Int32.from(-1)
+Int32.toHex(negOne)    // "0xffffffff"
+
+const min = Int32.from(-2147483648)
+Int32.toHex(min)       // "0x80000000"
+
+// Hex to signed
+const fromHex = Int32.fromHex("0xFFFFFFFF")
+Int32.toNumber(fromHex)  // -1
+
+// Bytes (two's complement, big-endian)
+const bytes = Int32.toBytes(Int32.from(-1))
+// Uint8Array([0xff, 0xff, 0xff, 0xff])
+```
+</Tab>
+<Tab title="EVM Semantics">
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+// SDIV: truncate toward zero
+Int32.dividedBy(Int32.from(-10), Int32.from(3))   // -3 (not -4)
+Int32.dividedBy(Int32.from(10), Int32.from(-3))   // -3 (not -4)
+Int32.dividedBy(Int32.from(-10), Int32.from(-3))  // 3
+
+// SMOD: sign follows dividend
+Int32.modulo(Int32.from(-10), Int32.from(3))      // -1 (not 2)
+Int32.modulo(Int32.from(10), Int32.from(-3))      // 1 (not -2)
+
+// Overflow on INT32_MIN / -1
+try {
+  Int32.dividedBy(Int32.MIN, Int32.from(-1))  // Result > MAX
+} catch (err) {
+  console.error('Division overflow')
+}
+```
+</Tab>
+<Tab title="Comparison & Sign">
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+const a = Int32.from(-42)
+const b = Int32.from(10)
+
+// Comparison
+Int32.lessThan(a, b)     // true
+Int32.greaterThan(a, b)  // false
+Int32.equals(a, a)       // true
+
+// Sign operations
+Int32.isNegative(a)  // true
+Int32.isPositive(a)  // false
+Int32.sign(a)        // -1
+Int32.sign(Int32.ZERO)  // 0
+
+// Absolute value & negate
+Int32.abs(a)     // 42
+Int32.negate(a)  // 42
+```
+</Tab>
+</Tabs>
+
+## Two's Complement Encoding
+
+Negative values use two's complement representation:
+
+| Decimal       | Hex        | Notes                    |
+|---------------|------------|--------------------------|
+| 2147483647    | 0x7FFFFFFF | INT32_MAX               |
+| 1             | 0x00000001 | Positive                |
+| 0             | 0x00000000 | Zero                    |
+| -1            | 0xFFFFFFFF | All bits set            |
+| -2147483648   | 0x80000000 | INT32_MIN (sign bit)    |
+
+Bit 31 is the sign bit:
+- 0 = positive (0 to 2,147,483,647)
+- 1 = negative (-2,147,483,648 to -1)
+
+## Constants
+
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+Int32.MIN      // -2147483648 (INT32_MIN)
+Int32.MAX      // 2147483647 (INT32_MAX)
+Int32.ZERO     // 0
+Int32.ONE      // 1
+Int32.MINUS_ONE // -1
+Int32.SIZE     // 4 (bytes)
+```
+
+## Constructors
+
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+// Universal constructor
+const a = Int32.from(-42)
+const b = Int32.from(-42n)
+const c = Int32.from("0xFFFFFFFF")
+
+// Type-specific constructors
+const d = Int32.fromNumber(-42)
+const e = Int32.fromBigInt(-42n)
+const f = Int32.fromHex("0x80000000")  // -2147483648
+const g = Int32.fromBytes(new Uint8Array([0xff, 0xff, 0xff, 0xff]))  // -1
+```
+
+## Conversions
+
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+const value = Int32.from(-42)
+
+// To number
+Int32.toNumber(value)  // -42
+
+// To bigint
+Int32.toBigInt(value)  // -42n
+
+// To hex (two's complement)
+Int32.toHex(value)     // "0xffffffd6"
+
+// To bytes (two's complement, big-endian)
+Int32.toBytes(value)   // Uint8Array([0xff, 0xff, 0xff, 0xd6])
+
+// To string
+Int32.toString(value)  // "-42"
+
+// Clone
+Int32.clone(value)     // Creates independent copy
+```
+
+## Arithmetic
+
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+const a = Int32.from(-100)
+const b = Int32.from(30)
+
+// Basic operations
+Int32.plus(a, b)       // -70
+Int32.minus(a, b)      // -130
+Int32.times(a, b)      // -3000
+Int32.dividedBy(a, b)  // -3 (truncate toward zero)
+Int32.modulo(a, b)     // -10 (sign follows dividend)
+
+// Sign operations
+Int32.abs(a)           // 100
+Int32.negate(a)        // 100 (flips sign)
+
+// Min/max
+Int32.minimum(a, b)    // -100
+Int32.maximum(a, b)    // 30
+```
+
+## Bitwise Operations
+
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+const a = Int32.from(0b01010101)
+const b = Int32.from(0b00110011)
+
+// Bitwise operations
+Int32.bitwiseAnd(a, b)   // 0b00010001 (17)
+Int32.bitwiseOr(a, b)    // 0b01110111 (119)
+Int32.bitwiseXor(a, b)   // 0b01100110 (102)
+Int32.bitwiseNot(a)      // ~0b01010101 (inverts all bits)
+
+// Shifts
+Int32.shiftLeft(a, 2)    // Logical left shift
+Int32.shiftRight(Int32.from(-8), 1)  // -4 (arithmetic, preserves sign)
+```
+
+## Validation
+
+```typescript
+import * as Int32 from '@tevm/voltaire/Int32'
+
+// Check if valid Int32
+Int32.isValid(2147483647)   // true (MAX)
+Int32.isValid(-2147483648)  // true (MIN)
+Int32.isValid(2147483648)   // false (out of range)
+Int32.isValid(-2147483649)  // false (out of range)
+Int32.isValid(42.5)         // false (not integer)
+
+// Check sign
+Int32.isZero(Int32.ZERO)       // true
+Int32.isNegative(Int32.from(-1))  // true
+Int32.isPositive(Int32.from(1))   // true
+```
+
+## API Reference
+
+### Constructors
+| Function | Description |
+|----------|-------------|
+| `from(value)` | Universal constructor from number, bigint, hex, or bytes |
+| `fromNumber(n)` | From JavaScript number |
+| `fromBigInt(n)` | From BigInt |
+| `fromHex(hex)` | From hex string (two's complement) |
+| `fromBytes(bytes)` | From Uint8Array (big-endian) |
+
+### Conversions
+| Function | Description |
+|----------|-------------|
+| `toNumber(v)` | To JavaScript number |
+| `toBigInt(v)` | To BigInt |
+| `toHex(v)` | To hex string |
+| `toBytes(v)` | To Uint8Array (big-endian) |
+| `toString(v)` | To decimal string |
+| `clone(v)` | Create copy |
+
+### Arithmetic
+| Function | Description |
+|----------|-------------|
+| `plus(a, b)` | Addition with overflow check |
+| `minus(a, b)` | Subtraction with overflow check |
+| `times(a, b)` | Multiplication with overflow check |
+| `dividedBy(a, b)` | Division (truncate toward zero) |
+| `modulo(a, b)` | Modulo (sign follows dividend) |
+| `abs(v)` | Absolute value |
+| `negate(v)` | Negate (flip sign) |
+
+### Comparison
+| Function | Description |
+|----------|-------------|
+| `equals(a, b)` | Equality check |
+| `lessThan(a, b)` | Less than comparison |
+| `greaterThan(a, b)` | Greater than comparison |
+| `minimum(a, b)` | Return smaller value |
+| `maximum(a, b)` | Return larger value |
+
+### Bitwise
+| Function | Description |
+|----------|-------------|
+| `bitwiseAnd(a, b)` | Bitwise AND |
+| `bitwiseOr(a, b)` | Bitwise OR |
+| `bitwiseXor(a, b)` | Bitwise XOR |
+| `bitwiseNot(v)` | Bitwise NOT |
+| `shiftLeft(v, n)` | Left shift |
+| `shiftRight(v, n)` | Arithmetic right shift |
+
+### Validation
+| Function | Description |
+|----------|-------------|
+| `isValid(v)` | Check if valid Int32 |
+| `isZero(v)` | Check if zero |
+| `isNegative(v)` | Check if negative |
+| `isPositive(v)` | Check if positive |
+| `sign(v)` | Return -1, 0, or 1 |
+
+## Related
+
+- [Int8](/primitives/int8) - Signed 8-bit integers
+- [Int16](/primitives/int16) - Signed 16-bit integers
+- [Int64](/primitives/int64) - Signed 64-bit integers
+- [Int128](/primitives/int128) - Signed 128-bit integers
+- [Int256](/primitives/int256) - Signed 256-bit integers
+
+## References
+
+- [EVM SDIV](https://evm.codes/#05) - Signed division opcode
+- [EVM SMOD](https://evm.codes/#07) - Signed modulo opcode
+- [Two's Complement](https://en.wikipedia.org/wiki/Two%27s_complement) - Wikipedia

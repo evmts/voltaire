@@ -1,0 +1,32 @@
+---
+title: Item.isError
+description: Type guard for error ABI items
+---
+
+## Overview
+
+`Item.isError` checks whether an ABI item is a custom error definition and narrows the type in TypeScript.
+
+## Example
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const item = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
+
+if (Abi.Item.isError(item)) {
+  const selector = Abi.Error.getSelector(item);
+}
+```
+
+## See Also
+
+- [Item.isFunction](/primitives/abi/item-is-function)
+- [Item.isEvent](/primitives/abi/item-is-event)

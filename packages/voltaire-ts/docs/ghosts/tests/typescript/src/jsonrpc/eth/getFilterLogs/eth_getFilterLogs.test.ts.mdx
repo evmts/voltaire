@@ -1,0 +1,69 @@
+---
+title: '[TS/JS] src/jsonrpc/eth/getFilterLogs/eth_getFilterLogs.test.ts'
+source: 'src/jsonrpc/eth/getFilterLogs/eth_getFilterLogs.test.ts'
+---
+
+> Auto-generated from test file: src/jsonrpc/eth/getFilterLogs/eth_getFilterLogs.test.ts
+
+```typescript
+import { describe, expect, test } from "vitest";
+import { GetFilterLogsRequest, method } from "./eth_getFilterLogs.js";
+
+describe("eth_getFilterLogs", () => {
+	describe("Request Creation", () => {
+		test("creates request with filter id", () => {
+			const filterId = "0x1";
+			const req = GetFilterLogsRequest(filterId);
+			expect(req).toEqual({
+				method: "eth_getFilterLogs",
+				params: [filterId],
+			});
+		});
+
+		test("creates request with different filter id", () => {
+			const filterId = "0x123";
+			const req = GetFilterLogsRequest(filterId);
+			expect(req).toEqual({
+				method: "eth_getFilterLogs",
+				params: [filterId],
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_getFilterLogs");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type with params", () => {
+			const filterId = "0x1";
+			const req = GetFilterLogsRequest(filterId);
+			expect(req).toHaveProperty("method");
+			expect(req).toHaveProperty("params");
+			expect(Array.isArray(req.params)).toBe(true);
+			expect(req.params).toHaveLength(1);
+		});
+
+		test("method matches constant", () => {
+			const filterId = "0x1";
+			const req = GetFilterLogsRequest(filterId);
+			expect(req.method).toBe(method);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		test("handles filter id 0x0", () => {
+			const filterId = "0x0";
+			const req = GetFilterLogsRequest(filterId);
+			expect(req.params?.[0]).toBe(filterId);
+		});
+
+		test("handles large filter id", () => {
+			const filterId = "0xabcdef123456";
+			const req = GetFilterLogsRequest(filterId);
+			expect(req.params?.[0]).toBe(filterId);
+		});
+	});
+});
+
+```

@@ -1,0 +1,619 @@
+---
+title: "primitives/BaseFeePerGas"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/BaseFeePerGas
+
+# primitives/BaseFeePerGas
+
+## Type Aliases
+
+### BaseFeePerGasType
+
+> **BaseFeePerGasType** = `bigint` & `object`
+
+Defined in: [src/primitives/BaseFeePerGas/BaseFeePerGasType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/BaseFeePerGasType.ts#L10)
+
+Branded BaseFeePerGas type - EIP-1559 base fee per gas
+Represents the minimum gas price required for transaction inclusion
+Base fee is burned and adjusts dynamically based on block fullness
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"BaseFeePerGas"`
+
+#### See
+
+https://eips.ethereum.org/EIPS/eip-1559
+
+## Variables
+
+### BaseFeePerGas
+
+> `const` **BaseFeePerGas**: `object`
+
+Defined in: [src/primitives/BaseFeePerGas/index.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/index.ts#L53)
+
+#### Type Declaration
+
+##### compare()
+
+> **compare**: (`baseFee1`, `baseFee2`) => `number`
+
+###### Parameters
+
+###### baseFee1
+
+`string` | `number` | `bigint`
+
+###### baseFee2
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`number`
+
+##### equals()
+
+> **equals**: (`baseFee1`, `baseFee2`) => `boolean`
+
+###### Parameters
+
+###### baseFee1
+
+`string` | `number` | `bigint`
+
+###### baseFee2
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`BaseFeePerGasType`](#basefeepergastype)
+
+Create BaseFeePerGas from bigint, number, or hex string
+
+###### Parameters
+
+###### value
+
+Base fee in Wei
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Branded base fee
+
+###### Throws
+
+If value is negative or invalid format
+
+###### Example
+
+```typescript
+const baseFee = BaseFeePerGas.from(25000000000n); // 25 Gwei
+const baseFee2 = BaseFeePerGas.from("0x5d21dba00");
+```
+
+##### fromGwei()
+
+> **fromGwei**: (`gwei`) => [`BaseFeePerGasType`](#basefeepergastype)
+
+Create BaseFeePerGas from Gwei value
+
+###### Parameters
+
+###### gwei
+
+Value in Gwei
+
+`number` | `bigint`
+
+###### Returns
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Base fee in Wei
+
+###### Example
+
+```typescript
+const baseFee = BaseFeePerGas.fromGwei(25n); // 25 Gwei = 25000000000 Wei
+```
+
+##### fromWei()
+
+> **fromWei**: (`wei`) => [`BaseFeePerGasType`](#basefeepergastype)
+
+Create BaseFeePerGas from Wei value (alias for from)
+
+###### Parameters
+
+###### wei
+
+Value in Wei
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Base fee
+
+###### Example
+
+```typescript
+const baseFee = BaseFeePerGas.fromWei(25000000000n);
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`baseFee`) => `bigint`
+
+###### Parameters
+
+###### baseFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`bigint`
+
+##### toGwei()
+
+> **toGwei**: (`baseFee`) => `bigint`
+
+###### Parameters
+
+###### baseFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`bigint`
+
+##### toNumber()
+
+> **toNumber**: (`baseFee`) => `number`
+
+###### Parameters
+
+###### baseFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`number`
+
+##### toWei()
+
+> **toWei**: (`baseFee`) => `bigint`
+
+###### Parameters
+
+###### baseFee
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+`bigint`
+
+## Functions
+
+### \_compare()
+
+> **\_compare**(`this`, `other`): `number`
+
+Defined in: [src/primitives/BaseFeePerGas/compare.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/compare.js#L15)
+
+Compare two BaseFeePerGas values
+
+#### Parameters
+
+##### this
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+##### other
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Value to compare
+
+#### Returns
+
+`number`
+
+-1 if this < other, 0 if equal, 1 if this > other
+
+#### Example
+
+```typescript
+const fee1 = BaseFeePerGas.from(25000000000n);
+const fee2 = BaseFeePerGas.from(30000000000n);
+BaseFeePerGas.compare(fee1, fee2); // -1
+```
+
+***
+
+### \_equals()
+
+> **\_equals**(`this`, `other`): `boolean`
+
+Defined in: [src/primitives/BaseFeePerGas/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/equals.js#L15)
+
+Check if two BaseFeePerGas values are equal
+
+#### Parameters
+
+##### this
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+##### other
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Value to compare
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### Example
+
+```typescript
+const fee1 = BaseFeePerGas.from(25000000000n);
+const fee2 = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.equals(fee1, fee2); // true
+```
+
+***
+
+### \_toBigInt()
+
+> **\_toBigInt**(`this`): `bigint`
+
+Defined in: [src/primitives/BaseFeePerGas/toBigInt.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/toBigInt.js#L13)
+
+Convert BaseFeePerGas to bigint (identity function)
+
+#### Parameters
+
+##### this
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+#### Returns
+
+`bigint`
+
+Value as bigint
+
+#### Example
+
+```typescript
+const baseFee = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.toBigInt(baseFee); // 25000000000n
+```
+
+***
+
+### \_toGwei()
+
+> **\_toGwei**(`this`): `bigint`
+
+Defined in: [src/primitives/BaseFeePerGas/toGwei.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/toGwei.js#L13)
+
+Convert BaseFeePerGas to Gwei
+
+#### Parameters
+
+##### this
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+#### Returns
+
+`bigint`
+
+Value in Gwei
+
+#### Example
+
+```typescript
+const baseFee = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.toGwei(baseFee); // 25n Gwei
+```
+
+***
+
+### \_toNumber()
+
+> **\_toNumber**(`this`): `number`
+
+Defined in: [src/primitives/BaseFeePerGas/toNumber.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/toNumber.js#L14)
+
+Convert BaseFeePerGas to number
+WARNING: May lose precision for large values
+
+#### Parameters
+
+##### this
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+#### Returns
+
+`number`
+
+Value as number
+
+#### Example
+
+```typescript
+const baseFee = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.toNumber(baseFee); // 25000000000
+```
+
+***
+
+### \_toWei()
+
+> **\_toWei**(`this`): `bigint`
+
+Defined in: [src/primitives/BaseFeePerGas/toWei.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/toWei.js#L13)
+
+Convert BaseFeePerGas to Wei (identity function)
+
+#### Parameters
+
+##### this
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+#### Returns
+
+`bigint`
+
+Value in Wei
+
+#### Example
+
+```typescript
+const baseFee = BaseFeePerGas.from(25000000000n);
+BaseFeePerGas.toWei(baseFee); // 25000000000n Wei
+```
+
+***
+
+### compare()
+
+> **compare**(`baseFee1`, `baseFee2`): `number`
+
+Defined in: [src/primitives/BaseFeePerGas/index.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/index.ts#L42)
+
+#### Parameters
+
+##### baseFee1
+
+`string` | `number` | `bigint`
+
+##### baseFee2
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`number`
+
+***
+
+### equals()
+
+> **equals**(`baseFee1`, `baseFee2`): `boolean`
+
+Defined in: [src/primitives/BaseFeePerGas/index.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/index.ts#L35)
+
+#### Parameters
+
+##### baseFee1
+
+`string` | `number` | `bigint`
+
+##### baseFee2
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`BaseFeePerGasType`](#basefeepergastype)
+
+Defined in: [src/primitives/BaseFeePerGas/from.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/from.js#L16)
+
+Create BaseFeePerGas from bigint, number, or hex string
+
+#### Parameters
+
+##### value
+
+Base fee in Wei
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Branded base fee
+
+#### Throws
+
+If value is negative or invalid format
+
+#### Example
+
+```typescript
+const baseFee = BaseFeePerGas.from(25000000000n); // 25 Gwei
+const baseFee2 = BaseFeePerGas.from("0x5d21dba00");
+```
+
+***
+
+### fromGwei()
+
+> **fromGwei**(`gwei`): [`BaseFeePerGasType`](#basefeepergastype)
+
+Defined in: [src/primitives/BaseFeePerGas/fromGwei.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/fromGwei.js#L12)
+
+Create BaseFeePerGas from Gwei value
+
+#### Parameters
+
+##### gwei
+
+Value in Gwei
+
+`number` | `bigint`
+
+#### Returns
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Base fee in Wei
+
+#### Example
+
+```typescript
+const baseFee = BaseFeePerGas.fromGwei(25n); // 25 Gwei = 25000000000 Wei
+```
+
+***
+
+### fromWei()
+
+> **fromWei**(`wei`): [`BaseFeePerGasType`](#basefeepergastype)
+
+Defined in: [src/primitives/BaseFeePerGas/fromWei.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/fromWei.js#L12)
+
+Create BaseFeePerGas from Wei value (alias for from)
+
+#### Parameters
+
+##### wei
+
+Value in Wei
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BaseFeePerGasType`](#basefeepergastype)
+
+Base fee
+
+#### Example
+
+```typescript
+const baseFee = BaseFeePerGas.fromWei(25000000000n);
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`baseFee`): `bigint`
+
+Defined in: [src/primitives/BaseFeePerGas/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/index.ts#L31)
+
+#### Parameters
+
+##### baseFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`bigint`
+
+***
+
+### toGwei()
+
+> **toGwei**(`baseFee`): `bigint`
+
+Defined in: [src/primitives/BaseFeePerGas/index.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/index.ts#L19)
+
+#### Parameters
+
+##### baseFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`bigint`
+
+***
+
+### toNumber()
+
+> **toNumber**(`baseFee`): `number`
+
+Defined in: [src/primitives/BaseFeePerGas/index.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/index.ts#L27)
+
+#### Parameters
+
+##### baseFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`number`
+
+***
+
+### toWei()
+
+> **toWei**(`baseFee`): `bigint`
+
+Defined in: [src/primitives/BaseFeePerGas/index.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/BaseFeePerGas/index.ts#L23)
+
+#### Parameters
+
+##### baseFee
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`bigint`

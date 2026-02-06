@@ -1,0 +1,2291 @@
+---
+title: "provider/eip6963"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../index.mdx) / [provider](../../index.mdx) / provider/eip6963
+
+# provider/eip6963
+
+EIP-6963: Multi Injected Provider Discovery
+
+Enables dapps to discover multiple wallet providers and wallets to announce themselves.
+
+## Dapp Usage (Consumer)
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+// Subscribe to wallet announcements
+const unsubscribe = EIP6963.subscribe((providers) => {
+  for (const { info, provider } of providers) {
+    console.log(`Found: ${info.name} (${info.rdns})`);
+  }
+});
+
+// Find specific wallet
+const metamask = EIP6963.findProvider({ rdns: 'io.metamask' });
+
+// Cleanup
+unsubscribe();
+```
+
+## Wallet Usage (Producer)
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+const unsubscribe = EIP6963.announce({
+  info: {
+    uuid: crypto.randomUUID(),
+    name: "My Wallet",
+    icon: "data:image/svg+xml;base64,PHN2Zy...",
+    rdns: "com.mywallet"
+  },
+  provider: myProvider
+});
+```
+
+## See
+
+https://eips.ethereum.org/EIPS/eip-6963
+
+## Classes
+
+### EIP6963Error
+
+Defined in: [src/provider/eip6963/errors.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L14)
+
+Base error for all EIP-6963 operations
+
+#### Extends
+
+- [`PrimitiveError`](../../../index/index.mdx#primitiveerror)
+
+#### Extended by
+
+- [`InvalidArgumentError`](#invalidargumenterror)
+- [`InvalidFieldError`](#invalidfielderror)
+- [`InvalidIconError`](#invalidiconerror)
+- [`InvalidProviderError`](#invalidprovidererror)
+- [`InvalidRdnsError`](#invalidrdnserror)
+- [`InvalidUuidError`](#invaliduuiderror)
+- [`MissingFieldError`](#missingfielderror)
+- [`NotImplementedError`](#notimplementederror)
+- [`UnsupportedEnvironmentError`](#unsupportedenvironmenterror)
+
+#### Constructors
+
+##### Constructor
+
+> **new EIP6963Error**(`message`, `options?`): [`EIP6963Error`](#eip6963error)
+
+Defined in: [src/provider/eip6963/errors.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L15)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`EIP6963Error`](#eip6963error)
+
+###### Overrides
+
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`constructor`](../../../index/index.mdx#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`cause`](../../../index/index.mdx#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`code`](../../../index/index.mdx#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`context`](../../../index/index.mdx#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`docsPath`](../../../index/index.mdx#docspath-16)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`getErrorChain`](../../../index/index.mdx#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](../../../index/index.mdx#primitiveerror).[`toJSON`](../../../index/index.mdx#tojson-32)
+
+***
+
+### InvalidArgumentError
+
+Defined in: [src/provider/eip6963/errors.ts:152](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L152)
+
+Thrown when function argument is invalid
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidArgumentError**(`functionName`, `expected`, `got`): [`InvalidArgumentError`](#invalidargumenterror)
+
+Defined in: [src/provider/eip6963/errors.ts:155](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L155)
+
+###### Parameters
+
+###### functionName
+
+`string`
+
+###### expected
+
+`string`
+
+###### got
+
+`string`
+
+###### Returns
+
+[`InvalidArgumentError`](#invalidargumenterror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### argument
+
+> `readonly` **argument**: `string`
+
+Defined in: [src/provider/eip6963/errors.ts:153](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L153)
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### InvalidFieldError
+
+Defined in: [src/provider/eip6963/errors.ts:124](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L124)
+
+Thrown when field value is invalid (e.g., empty string)
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidFieldError**(`objectType`, `field`, `reason`): [`InvalidFieldError`](#invalidfielderror)
+
+Defined in: [src/provider/eip6963/errors.ts:127](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L127)
+
+###### Parameters
+
+###### objectType
+
+`string`
+
+###### field
+
+`string`
+
+###### reason
+
+`string`
+
+###### Returns
+
+[`InvalidFieldError`](#invalidfielderror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+##### field
+
+> `readonly` **field**: `string`
+
+Defined in: [src/provider/eip6963/errors.ts:125](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L125)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### InvalidIconError
+
+Defined in: [src/provider/eip6963/errors.ts:88](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L88)
+
+Thrown when icon format is invalid
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidIconError**(`icon`): [`InvalidIconError`](#invalidiconerror)
+
+Defined in: [src/provider/eip6963/errors.ts:91](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L91)
+
+###### Parameters
+
+###### icon
+
+`string`
+
+###### Returns
+
+[`InvalidIconError`](#invalidiconerror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+##### icon
+
+> `readonly` **icon**: `string`
+
+Defined in: [src/provider/eip6963/errors.ts:89](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L89)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### InvalidProviderError
+
+Defined in: [src/provider/eip6963/errors.ts:140](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L140)
+
+Thrown when provider is invalid (missing request method)
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidProviderError**(): [`InvalidProviderError`](#invalidprovidererror)
+
+Defined in: [src/provider/eip6963/errors.ts:141](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L141)
+
+###### Returns
+
+[`InvalidProviderError`](#invalidprovidererror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### InvalidRdnsError
+
+Defined in: [src/provider/eip6963/errors.ts:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L69)
+
+Thrown when RDNS format is invalid
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidRdnsError**(`rdns`): [`InvalidRdnsError`](#invalidrdnserror)
+
+Defined in: [src/provider/eip6963/errors.ts:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L72)
+
+###### Parameters
+
+###### rdns
+
+`string`
+
+###### Returns
+
+[`InvalidRdnsError`](#invalidrdnserror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+##### rdns
+
+> `readonly` **rdns**: `string`
+
+Defined in: [src/provider/eip6963/errors.ts:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L70)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### InvalidUuidError
+
+Defined in: [src/provider/eip6963/errors.ts:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L53)
+
+Thrown when UUID format is invalid
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidUuidError**(`uuid`): [`InvalidUuidError`](#invaliduuiderror)
+
+Defined in: [src/provider/eip6963/errors.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L56)
+
+###### Parameters
+
+###### uuid
+
+`string`
+
+###### Returns
+
+[`InvalidUuidError`](#invaliduuiderror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+##### uuid
+
+> `readonly` **uuid**: `string`
+
+Defined in: [src/provider/eip6963/errors.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L54)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### MissingFieldError
+
+Defined in: [src/provider/eip6963/errors.ts:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L108)
+
+Thrown when required field is missing
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new MissingFieldError**(`objectType`, `field`): [`MissingFieldError`](#missingfielderror)
+
+Defined in: [src/provider/eip6963/errors.ts:111](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L111)
+
+###### Parameters
+
+###### objectType
+
+`string`
+
+###### field
+
+`string`
+
+###### Returns
+
+[`MissingFieldError`](#missingfielderror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+##### field
+
+> `readonly` **field**: `string`
+
+Defined in: [src/provider/eip6963/errors.ts:109](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L109)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### NotImplementedError
+
+Defined in: [src/provider/eip6963/errors.ts:168](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L168)
+
+Thrown when method is not yet implemented
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new NotImplementedError**(`methodName`): [`NotImplementedError`](#notimplementederror)
+
+Defined in: [src/provider/eip6963/errors.ts:169](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L169)
+
+###### Parameters
+
+###### methodName
+
+`string`
+
+###### Returns
+
+[`NotImplementedError`](#notimplementederror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+***
+
+### UnsupportedEnvironmentError
+
+Defined in: [src/provider/eip6963/errors.ts:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L37)
+
+Thrown when EIP-6963 is used in unsupported environment
+
+#### Extends
+
+- [`EIP6963Error`](#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new UnsupportedEnvironmentError**(`platform`): [`UnsupportedEnvironmentError`](#unsupportedenvironmenterror)
+
+Defined in: [src/provider/eip6963/errors.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L40)
+
+###### Parameters
+
+###### platform
+
+`string`
+
+###### Returns
+
+[`UnsupportedEnvironmentError`](#unsupportedenvironmenterror)
+
+###### Overrides
+
+[`EIP6963Error`](#eip6963error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`docsPath`](#docspath)
+
+##### platform
+
+> `readonly` **platform**: `string`
+
+Defined in: [src/provider/eip6963/errors.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/errors.ts#L38)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`EIP6963Error`](#eip6963error).[`toJSON`](#tojson)
+
+## Type Aliases
+
+### Platform
+
+> **Platform** = `"browser"` \| `"node"` \| `"bun"` \| `"worker"` \| `"unknown"`
+
+Defined in: [src/provider/eip6963/types.ts:92](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L92)
+
+Platform detection result
+
+***
+
+### ProviderDetailInput
+
+> **ProviderDetailInput** = `object`
+
+Defined in: [src/provider/eip6963/types.ts:79](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L79)
+
+Input type for ProviderDetail constructor
+
+#### Properties
+
+##### info
+
+> **info**: [`ProviderInfoInput`](#providerinfoinput)
+
+Defined in: [src/provider/eip6963/types.ts:80](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L80)
+
+##### provider
+
+> **provider**: [`EIP1193Provider`](../../index.mdx#eip1193provider)
+
+Defined in: [src/provider/eip6963/types.ts:81](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L81)
+
+***
+
+### ProviderDetailType
+
+> **ProviderDetailType** = `Readonly`\<\{ `info`: [`ProviderInfoType`](#providerinfotype); `provider`: [`EIP1193Provider`](../../index.mdx#eip1193provider); \}\> & `object`
+
+Defined in: [src/provider/eip6963/types.ts:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L69)
+
+Complete provider announcement
+
+Combines provider metadata with the actual EIP-1193 provider instance.
+All instances are frozen and immutable.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"ProviderDetail"`
+
+#### Example
+
+```typescript
+const detail: ProviderDetailType = EIP6963.ProviderDetail({
+  info: {
+    uuid: "350670db-19fa-4704-a166-e52e178b59d2",
+    name: "Example Wallet",
+    icon: "data:image/svg+xml;base64,PHN2Zy...",
+    rdns: "com.example.wallet"
+  },
+  provider: window.ethereum
+});
+```
+
+***
+
+### ProviderInfoInput
+
+> **ProviderInfoInput** = `object`
+
+Defined in: [src/provider/eip6963/types.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L43)
+
+Input type for ProviderInfo constructor
+
+#### Properties
+
+##### icon
+
+> **icon**: `string`
+
+Defined in: [src/provider/eip6963/types.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L46)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/provider/eip6963/types.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L45)
+
+##### rdns
+
+> **rdns**: `string`
+
+Defined in: [src/provider/eip6963/types.ts:47](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L47)
+
+##### uuid
+
+> **uuid**: `string`
+
+Defined in: [src/provider/eip6963/types.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L44)
+
+***
+
+### ProviderInfoType
+
+> **ProviderInfoType** = `Readonly`\<\{ `icon`: `string`; `name`: `string`; `rdns`: `string`; `uuid`: `string`; \}\> & `object`
+
+Defined in: [src/provider/eip6963/types.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L29)
+
+Wallet provider metadata
+
+Contains identifying information about an EIP-1193 provider.
+All instances are frozen and immutable.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"ProviderInfo"`
+
+#### Example
+
+```typescript
+const info: ProviderInfoType = EIP6963.ProviderInfo({
+  uuid: "350670db-19fa-4704-a166-e52e178b59d2",
+  name: "Example Wallet",
+  icon: "data:image/svg+xml;base64,PHN2Zy...",
+  rdns: "com.example.wallet"
+});
+```
+
+***
+
+### ProviderListener()
+
+> **ProviderListener** = (`providers`) => `void`
+
+Defined in: [src/provider/eip6963/types.ts:87](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/types.ts#L87)
+
+Listener function for provider announcements
+
+#### Parameters
+
+##### providers
+
+[`ProviderDetailType`](#providerdetailtype)[]
+
+#### Returns
+
+`void`
+
+## Variables
+
+### DATA\_URI\_REGEX
+
+> `const` **DATA\_URI\_REGEX**: `RegExp`
+
+Defined in: [src/provider/eip6963/validators.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L33)
+
+Data URI format regex for images
+
+***
+
+### RDNS\_REGEX
+
+> `const` **RDNS\_REGEX**: `RegExp`
+
+Defined in: [src/provider/eip6963/validators.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L27)
+
+Reverse DNS format regex
+
+***
+
+### UUID\_V4\_REGEX
+
+> `const` **UUID\_V4\_REGEX**: `RegExp`
+
+Defined in: [src/provider/eip6963/validators.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L20)
+
+UUIDv4 format regex
+
+## Functions
+
+### \_reset()
+
+> **\_reset**(): `void`
+
+Defined in: [src/provider/eip6963/state.js:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/state.js#L52)
+
+Clear all state (for testing)
+
+#### Returns
+
+`void`
+
+***
+
+### announce()
+
+> **announce**(`detail`): () => `void`
+
+Defined in: [src/provider/eip6963/announce.js:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/announce.js#L51)
+
+Announce a wallet provider
+
+For wallet implementations: announces the provider to dapps and
+automatically re-announces when dapps request providers.
+
+#### Parameters
+
+##### detail
+
+[`ProviderDetailInput`](#providerdetailinput)
+
+Provider info and instance
+
+#### Returns
+
+Unsubscribe function to stop announcing
+
+> (): `void`
+
+##### Returns
+
+`void`
+
+#### Throws
+
+If not in browser
+
+#### Throws
+
+If detail is missing info or provider
+
+#### Throws
+
+If provider.request is not a function
+
+#### Throws
+
+If info.uuid is not valid UUIDv4
+
+#### Throws
+
+If info.rdns is not valid reverse DNS
+
+#### Throws
+
+If info.icon is not valid data URI
+
+#### Example
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+// In wallet extension
+const unsubscribe = EIP6963.announce({
+  info: {
+    uuid: crypto.randomUUID(),
+    name: "My Wallet",
+    icon: "data:image/svg+xml;base64,PHN2Zy...",
+    rdns: "com.mywallet"
+  },
+  provider: myProvider
+});
+
+// On extension unload
+unsubscribe();
+```
+
+***
+
+### assertBrowser()
+
+> **assertBrowser**(): `void`
+
+Defined in: [src/provider/eip6963/getPlatform.js:76](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/getPlatform.js#L76)
+
+Assert that we're in a browser environment
+
+#### Returns
+
+`void`
+
+#### Throws
+
+If not in browser
+
+#### Example
+
+```typescript
+import { assertBrowser } from '@voltaire/provider/eip6963';
+
+assertBrowser(); // Throws if not in browser
+```
+
+***
+
+### findProvider()
+
+> **findProvider**(`options`): [`ProviderDetailType`](#providerdetailtype) \| `undefined`
+
+Defined in: [src/provider/eip6963/findProvider.js:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/findProvider.js#L42)
+
+Find a provider by its reverse DNS identifier
+
+Searches the discovered providers for one matching the given rdns.
+Note that this requires subscribe() to have been called at least once
+to start discovery.
+
+#### Parameters
+
+##### options
+
+Search options
+
+###### rdns
+
+`string`
+
+#### Returns
+
+[`ProviderDetailType`](#providerdetailtype) \| `undefined`
+
+Matching provider or undefined
+
+#### Throws
+
+If not in browser
+
+#### Throws
+
+If options.rdns is missing
+
+#### Example
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+// Start discovery
+const unsubscribe = EIP6963.subscribe(() => {});
+
+// Find MetaMask
+const metamask = EIP6963.findProvider({ rdns: 'io.metamask' });
+if (metamask) {
+  const accounts = await metamask.provider.request({
+    method: 'eth_requestAccounts'
+  });
+  console.log('Connected:', accounts[0]);
+}
+
+unsubscribe();
+```
+
+***
+
+### getPlatform()
+
+> **getPlatform**(): `"browser"` \| `"node"` \| `"bun"` \| `"worker"` \| `"unknown"`
+
+Defined in: [src/provider/eip6963/getPlatform.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/getPlatform.js#L33)
+
+Detect the current platform
+
+#### Returns
+
+`"browser"` \| `"node"` \| `"bun"` \| `"worker"` \| `"unknown"`
+
+The detected platform
+
+#### Example
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+const platform = EIP6963.getPlatform();
+if (platform === 'browser') {
+  // Safe to use EIP-6963
+}
+```
+
+***
+
+### getProviders()
+
+> **getProviders**(): [`ProviderDetailType`](#providerdetailtype)[]
+
+Defined in: [src/provider/eip6963/getProviders.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/getProviders.js#L34)
+
+Get snapshot of all currently discovered providers
+
+Returns the current state of discovered providers without subscribing
+to future updates. Note that this requires subscribe() to have been
+called at least once to start discovery.
+
+#### Returns
+
+[`ProviderDetailType`](#providerdetailtype)[]
+
+Array of discovered providers
+
+#### Throws
+
+If not in browser
+
+#### Example
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+// Start discovery
+const unsubscribe = EIP6963.subscribe(() => {});
+
+// Get current snapshot
+const providers = EIP6963.getProviders();
+console.log(`Found ${providers.length} wallets`);
+
+unsubscribe();
+```
+
+***
+
+### ProviderDetail()
+
+> **ProviderDetail**(`input`): [`ProviderDetailType`](#providerdetailtype)
+
+Defined in: [src/provider/eip6963/ProviderDetail.js:48](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/ProviderDetail.js#L48)
+
+Create a validated ProviderDetail object
+
+Validates info and provider, then returns a frozen, branded object.
+
+#### Parameters
+
+##### input
+
+[`ProviderDetailInput`](#providerdetailinput)
+
+Provider detail fields
+
+#### Returns
+
+[`ProviderDetailType`](#providerdetailtype)
+
+Frozen, branded ProviderDetail
+
+#### Throws
+
+If info or provider is missing
+
+#### Throws
+
+If provider.request is not a function
+
+#### Throws
+
+If info.uuid is not valid UUIDv4
+
+#### Throws
+
+If info.rdns is not valid reverse DNS
+
+#### Throws
+
+If info.icon is not valid data URI
+
+#### Throws
+
+If info.name is empty
+
+#### Example
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+const detail = EIP6963.ProviderDetail({
+  info: {
+    uuid: "350670db-19fa-4704-a166-e52e178b59d2",
+    name: "Example Wallet",
+    icon: "data:image/svg+xml;base64,PHN2Zy...",
+    rdns: "com.example.wallet"
+  },
+  provider: window.ethereum
+});
+
+// Use the provider
+const accounts = await detail.provider.request({
+  method: 'eth_accounts'
+});
+```
+
+***
+
+### ProviderInfo()
+
+> **ProviderInfo**(`input`): [`ProviderInfoType`](#providerinfotype)
+
+Defined in: [src/provider/eip6963/ProviderInfo.js:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/ProviderInfo.js#L45)
+
+Create a validated ProviderInfo object
+
+Validates all fields and returns a frozen, branded object.
+
+#### Parameters
+
+##### input
+
+[`ProviderInfoInput`](#providerinfoinput)
+
+Provider info fields
+
+#### Returns
+
+[`ProviderInfoType`](#providerinfotype)
+
+Frozen, branded ProviderInfo
+
+#### Throws
+
+If any required field is missing
+
+#### Throws
+
+If uuid is not valid UUIDv4
+
+#### Throws
+
+If rdns is not valid reverse DNS
+
+#### Throws
+
+If icon is not valid data URI
+
+#### Throws
+
+If name is empty
+
+#### Example
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+const info = EIP6963.ProviderInfo({
+  uuid: "350670db-19fa-4704-a166-e52e178b59d2",
+  name: "Example Wallet",
+  icon: "data:image/svg+xml;base64,PHN2Zy...",
+  rdns: "com.example.wallet"
+});
+
+console.log(info.name); // "Example Wallet"
+console.log(Object.isFrozen(info)); // true
+```
+
+***
+
+### subscribe()
+
+> **subscribe**(`listener`): () => `void`
+
+Defined in: [src/provider/eip6963/subscribe.js:75](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/subscribe.js#L75)
+
+Subscribe to wallet provider announcements
+
+Listens for EIP-6963 provider announcements and calls the listener
+with the current list of discovered providers. Automatically handles
+deduplication by UUID (same UUID updates existing entry).
+
+#### Parameters
+
+##### listener
+
+[`ProviderListener`](#providerlistener)
+
+Called with providers array on each change
+
+#### Returns
+
+Unsubscribe function
+
+> (): `void`
+
+##### Returns
+
+`void`
+
+#### Throws
+
+If not in browser
+
+#### Throws
+
+If listener is not a function
+
+#### Example
+
+```typescript
+import * as EIP6963 from '@voltaire/provider/eip6963';
+
+const unsubscribe = EIP6963.subscribe((providers) => {
+  console.log('Discovered wallets:', providers.length);
+
+  for (const { info, provider } of providers) {
+    console.log(`- ${info.name} (${info.rdns})`);
+  }
+});
+
+// Later, cleanup
+unsubscribe();
+```
+
+***
+
+### validateIcon()
+
+> **validateIcon**(`icon`): `void`
+
+Defined in: [src/provider/eip6963/validators.js:99](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L99)
+
+Validate icon is a valid data URI
+
+#### Parameters
+
+##### icon
+
+`string`
+
+The icon data URI to validate
+
+#### Returns
+
+`void`
+
+#### Throws
+
+If icon is missing
+
+#### Throws
+
+If icon is not a valid data URI
+
+#### Example
+
+```typescript
+validateIcon("data:image/svg+xml;base64,PHN2Zy..."); // OK
+validateIcon("https://example.com/icon.png"); // Throws InvalidIconError
+```
+
+***
+
+### validateName()
+
+> **validateName**(`name`): `void`
+
+Defined in: [src/provider/eip6963/validators.js:143](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L143)
+
+Validate name is non-empty string
+
+#### Parameters
+
+##### name
+
+`string`
+
+The name to validate
+
+#### Returns
+
+`void`
+
+#### Throws
+
+If name is missing
+
+#### Throws
+
+If name is empty
+
+***
+
+### validateProvider()
+
+> **validateProvider**(`provider`): `void`
+
+Defined in: [src/provider/eip6963/validators.js:124](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L124)
+
+Validate provider has request method
+
+#### Parameters
+
+##### provider
+
+`unknown`
+
+The provider to validate
+
+#### Returns
+
+`void`
+
+#### Throws
+
+If provider is missing
+
+#### Throws
+
+If provider.request is not a function
+
+#### Example
+
+```typescript
+validateProvider(window.ethereum); // OK if has request()
+validateProvider({}); // Throws InvalidProviderError
+```
+
+***
+
+### validateRdns()
+
+> **validateRdns**(`rdns`): `void`
+
+Defined in: [src/provider/eip6963/validators.js:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L74)
+
+Validate RDNS is valid reverse DNS format
+
+#### Parameters
+
+##### rdns
+
+`string`
+
+The reverse DNS to validate
+
+#### Returns
+
+`void`
+
+#### Throws
+
+If rdns is missing
+
+#### Throws
+
+If rdns is not valid format
+
+#### Example
+
+```typescript
+validateRdns("io.metamask"); // OK
+validateRdns("metamask"); // Throws InvalidRdnsError
+```
+
+***
+
+### validateUuid()
+
+> **validateUuid**(`uuid`): `void`
+
+Defined in: [src/provider/eip6963/validators.js:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/provider/eip6963/validators.js#L49)
+
+Validate UUID is UUIDv4 format
+
+#### Parameters
+
+##### uuid
+
+`string`
+
+The UUID to validate
+
+#### Returns
+
+`void`
+
+#### Throws
+
+If uuid is missing
+
+#### Throws
+
+If uuid is not valid UUIDv4
+
+#### Example
+
+```typescript
+validateUuid("350670db-19fa-4704-a166-e52e178b59d2"); // OK
+validateUuid("invalid"); // Throws InvalidUuidError
+```

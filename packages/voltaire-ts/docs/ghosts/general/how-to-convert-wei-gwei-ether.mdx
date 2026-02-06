@@ -1,0 +1,111 @@
+---
+title: Convert Between Wei, Gwei, and Ether
+description: Handle Ethereum denomination conversions with type-safe primitives.
+---
+
+## Denominations
+
+| Unit  | Wei                      | Type   | Use Case          |
+|-------|--------------------------|--------|-------------------|
+| Wei   | 1                        | bigint | Base unit         |
+| Gwei  | 10^9 (1,000,000,000)     | string | Gas prices        |
+| Ether | 10^18                    | string | Balances, values  |
+
+## Create Denomination Values
+
+```typescript
+import { Wei, Gwei, Ether } from '@voltaire/primitives/Denomination'
+
+// Wei from bigint (smallest unit, always whole numbers)
+const wei = Wei.from(1000000000000000000n)
+
+// Gwei and Ether from strings (support decimals)
+const gwei = Gwei.from("50")        // 50 Gwei
+const ether = Ether.from("1.5")     // 1.5 Ether
+```
+
+## Convert Between Units
+
+```typescript
+import { Wei, Gwei, Ether } from '@voltaire/primitives/Denomination'
+
+// Ether to smaller units
+const oneEther = Ether.from("1.5")
+const weiFromEther = Ether.toWei(oneEther)   // 1500000000000000000n
+const gweiFromEther = Ether.toGwei(oneEther) // "1500000000"
+
+// Gwei to other units
+const hundredGwei = Gwei.from("100")
+const weiFromGwei = Gwei.toWei(hundredGwei)     // 100000000000n
+const etherFromGwei = Gwei.toEther(hundredGwei) // "0.0000001"
+
+// Wei to larger units (preserves precision as strings)
+const largeWei = Wei.from(2500000000000000000n)
+const gweiFromWei = Wei.toGwei(largeWei)   // "2500000000"
+const etherFromWei = Wei.toEther(largeWei) // "2.5"
+```
+
+## Common Patterns
+
+### Format Gas Price
+
+```typescript
+import { Gwei, Wei } from '@voltaire/primitives/Denomination'
+
+function formatGasPrice(weiValue: bigint): string {
+  const wei = Wei.from(weiValue)
+  const gwei = Wei.toGwei(wei)
+  return `${gwei} Gwei`
+}
+
+formatGasPrice(30000000000n) // "30 Gwei"
+```
+
+### Calculate Transaction Cost
+
+```typescript
+import { Wei, Gwei, Ether } from '@voltaire/primitives/Denomination'
+import { Uint256 } from '@voltaire/primitives/Uint'
+
+function calculateTxCost(gasPriceGwei: string, gasLimit: bigint): {
+  costWei: bigint
+  costEther: string
+} {
+  const gasPrice = Gwei.from(gasPriceGwei)
+  const gasPriceWei = Gwei.toWei(gasPrice)
+
+  const costWei = Wei.from(
+    Uint256.toBigInt(
+      Uint256.times(
+        Uint256.from(gasPriceWei),
+        Uint256.from(gasLimit)
+      )
+    )
+  )
+
+  return {
+    costWei: costWei,
+    costEther: Wei.toEther(costWei)  // String with full precision
+  }
+}
+
+// 30 Gwei gas price, 21000 gas limit
+const cost = calculateTxCost("30", 21000n)
+// costWei: 630000000000000n
+// costEther: "0.00063"
+```
+
+### Parse User Input
+
+```typescript
+import { Ether, Wei } from '@voltaire/primitives/Denomination'
+
+// Ether now natively supports decimal strings
+function parseEtherInput(input: string): bigint {
+  const ether = Ether.from(input)
+  return Ether.toWei(ether)
+}
+
+parseEtherInput('1.5')    // 1500000000000000000n
+parseEtherInput('0.001')  // 1000000000000000n
+```

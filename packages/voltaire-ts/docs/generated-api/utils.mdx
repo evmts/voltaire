@@ -1,0 +1,1867 @@
+---
+title: "utils"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](index.mdx)
+
+***
+
+[@tevm/voltaire](index.mdx) / utils
+
+# utils
+
+Utilities
+
+Generic utilities for building robust Ethereum applications.
+Includes retry logic, rate limiting, polling, timeouts, and batching.
+
+## Classes
+
+### AsyncQueue
+
+Defined in: [src/utils/batch.ts:277](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L277)
+
+Async queue processor with concurrency limit
+
+Processes items from a queue with a maximum number of concurrent operations.
+Useful for rate-limiting parallel operations like RPC calls or file I/O.
+
+#### Example
+
+```typescript
+// Process with max 3 concurrent operations
+const processor = new AsyncQueue<string, Balance>(
+  async (address) => provider.eth_getBalance(address),
+  { concurrency: 3 }
+);
+
+// Add items
+const results = await Promise.all([
+  processor.add('0x123...'),
+  processor.add('0x456...'),
+  processor.add('0x789...'),
+  processor.add('0xabc...'),
+  processor.add('0xdef...'),
+]);
+
+// Only 3 execute concurrently, others wait
+```
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Item type
+
+##### R
+
+`R`
+
+Result type
+
+#### Constructors
+
+##### Constructor
+
+> **new AsyncQueue**\<`T`, `R`\>(`processFn`, `options`): [`AsyncQueue`](#asyncqueue)\<`T`, `R`\>
+
+Defined in: [src/utils/batch.ts:287](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L287)
+
+###### Parameters
+
+###### processFn
+
+(`item`) => `Promise`\<`R`\>
+
+###### options
+
+###### concurrency
+
+`number`
+
+###### Returns
+
+[`AsyncQueue`](#asyncqueue)\<`T`, `R`\>
+
+#### Methods
+
+##### activeCount()
+
+> **activeCount**(): `number`
+
+Defined in: [src/utils/batch.ts:345](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L345)
+
+Get number of active operations
+
+###### Returns
+
+`number`
+
+##### add()
+
+> **add**(`item`): `Promise`\<`R`\>
+
+Defined in: [src/utils/batch.ts:301](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L301)
+
+Add an item to the queue
+
+###### Parameters
+
+###### item
+
+`T`
+
+Item to process
+
+###### Returns
+
+`Promise`\<`R`\>
+
+Promise resolving to the result
+
+##### drain()
+
+> **drain**(): `Promise`\<`void`\>
+
+Defined in: [src/utils/batch.ts:352](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L352)
+
+Wait for all operations to complete
+
+###### Returns
+
+`Promise`\<`void`\>
+
+##### size()
+
+> **size**(): `number`
+
+Defined in: [src/utils/batch.ts:338](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L338)
+
+Get current queue size
+
+###### Returns
+
+`number`
+
+***
+
+### BatchQueue
+
+Defined in: [src/utils/batch.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L49)
+
+Batch Queue for async operations
+
+Automatically batches items and processes them together when:
+- Batch size reaches maxBatchSize
+- maxWaitTime elapses since first item added
+
+Useful for batching RPC calls, database operations, or any async work.
+
+#### Example
+
+```typescript
+// Batch RPC calls
+const queue = new BatchQueue({
+  maxBatchSize: 10,
+  maxWaitTime: 100,
+  processBatch: async (addresses) => {
+    // Batch call to get multiple balances
+    return Promise.all(
+      addresses.map(addr => provider.eth_getBalance(addr))
+    );
+  }
+});
+
+// Add items - automatically batched
+const balance1 = queue.add('0x123...');
+const balance2 = queue.add('0x456...');
+const balance3 = queue.add('0x789...');
+
+// Results returned individually
+console.log(await balance1); // Balance for 0x123...
+console.log(await balance2); // Balance for 0x456...
+```
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Item type
+
+##### R
+
+`R`
+
+Result type
+
+#### Constructors
+
+##### Constructor
+
+> **new BatchQueue**\<`T`, `R`\>(`options`): [`BatchQueue`](#batchqueue)\<`T`, `R`\>
+
+Defined in: [src/utils/batch.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L63)
+
+###### Parameters
+
+###### options
+
+[`BatchQueueOptions`](#batchqueueoptions)\<`T`, `R`\>
+
+###### Returns
+
+[`BatchQueue`](#batchqueue)\<`T`, `R`\>
+
+#### Methods
+
+##### add()
+
+> **add**(`item`): `Promise`\<`R`\>
+
+Defined in: [src/utils/batch.ts:76](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L76)
+
+Add an item to the queue
+
+###### Parameters
+
+###### item
+
+`T`
+
+Item to process
+
+###### Returns
+
+`Promise`\<`R`\>
+
+Promise resolving to the result for this item
+
+##### clear()
+
+> **clear**(): `void`
+
+Defined in: [src/utils/batch.ts:172](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L172)
+
+Clear the queue without processing
+
+###### Returns
+
+`void`
+
+##### drain()
+
+> **drain**(): `Promise`\<`void`\>
+
+Defined in: [src/utils/batch.ts:189](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L189)
+
+Wait for all pending items to complete
+
+###### Returns
+
+`Promise`\<`void`\>
+
+##### flush()
+
+> **flush**(): `Promise`\<`void`\>
+
+Defined in: [src/utils/batch.ts:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L108)
+
+Flush the current batch
+
+###### Returns
+
+`Promise`\<`void`\>
+
+##### size()
+
+> **size**(): `number`
+
+Defined in: [src/utils/batch.ts:165](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L165)
+
+Get current queue size
+
+###### Returns
+
+`number`
+
+***
+
+### RateLimiter
+
+Defined in: [src/utils/rateLimit.ts:142](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L142)
+
+Token Bucket Rate Limiter
+
+Implements token bucket algorithm for rate limiting. Requests consume tokens
+from a bucket that refills over time. When bucket is empty, requests are queued,
+rejected, or dropped based on strategy.
+
+#### Example
+
+```typescript
+// Limit to 10 requests per second
+const limiter = new RateLimiter({
+  maxRequests: 10,
+  interval: 1000,
+  strategy: 'queue'
+});
+
+// Execute with rate limit
+const result = await limiter.execute(() => provider.eth_blockNumber());
+
+// Wrap function with rate limiter
+const getBalance = limiter.wrap(
+  (address: string) => provider.eth_getBalance(address)
+);
+const balance = await getBalance('0x123...');
+```
+
+#### Constructors
+
+##### Constructor
+
+> **new RateLimiter**(`options`): [`RateLimiter`](#ratelimiter)
+
+Defined in: [src/utils/rateLimit.ts:155](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L155)
+
+###### Parameters
+
+###### options
+
+[`RateLimiterOptions`](#ratelimiteroptions)
+
+###### Returns
+
+[`RateLimiter`](#ratelimiter)
+
+#### Methods
+
+##### clearQueue()
+
+> **clearQueue**(): `void`
+
+Defined in: [src/utils/rateLimit.ts:295](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L295)
+
+Clear all queued requests
+
+###### Returns
+
+`void`
+
+##### execute()
+
+> **execute**\<`T`\>(`fn`): `Promise`\<`T`\>
+
+Defined in: [src/utils/rateLimit.ts:224](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L224)
+
+Execute a function with rate limiting
+
+###### Type Parameters
+
+###### T
+
+`T`
+
+Return type
+
+###### Parameters
+
+###### fn
+
+() => `Promise`\<`T`\>
+
+Async function to execute
+
+###### Returns
+
+`Promise`\<`T`\>
+
+Promise resolving to function result
+
+###### Throws
+
+Error if rate limit exceeded and strategy is 'reject'
+
+##### getQueueLength()
+
+> **getQueueLength**(): `number`
+
+Defined in: [src/utils/rateLimit.ts:288](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L288)
+
+Get queued request count
+
+###### Returns
+
+`number`
+
+##### getTokens()
+
+> **getTokens**(): `number`
+
+Defined in: [src/utils/rateLimit.ts:280](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L280)
+
+Get current token count
+
+###### Returns
+
+`number`
+
+##### wrap()
+
+> **wrap**\<`TArgs`, `TReturn`\>(`fn`): (...`args`) => `Promise`\<`TReturn`\>
+
+Defined in: [src/utils/rateLimit.ts:271](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L271)
+
+Wrap a function with rate limiting
+
+###### Type Parameters
+
+###### TArgs
+
+`TArgs` *extends* `unknown`[]
+
+Function argument types
+
+###### TReturn
+
+`TReturn`
+
+Function return type
+
+###### Parameters
+
+###### fn
+
+(...`args`) => `Promise`\<`TReturn`\>
+
+Function to wrap
+
+###### Returns
+
+Rate-limited function
+
+> (...`args`): `Promise`\<`TReturn`\>
+
+###### Parameters
+
+###### args
+
+...`TArgs`
+
+###### Returns
+
+`Promise`\<`TReturn`\>
+
+***
+
+### TimeoutError
+
+Defined in: [src/utils/timeout.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L16)
+
+Timeout error class
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new TimeoutError**(`message`): [`TimeoutError`](#timeouterror)
+
+Defined in: [src/utils/timeout.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L17)
+
+###### Parameters
+
+###### message
+
+`string` = `"Operation timed out"`
+
+###### Returns
+
+[`TimeoutError`](#timeouterror)
+
+###### Overrides
+
+`Error.constructor`
+
+## Interfaces
+
+### BatchQueueOptions
+
+Defined in: [src/utils/types.ts:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L64)
+
+Batch queue configuration
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+##### R
+
+`R`
+
+#### Properties
+
+##### maxBatchSize
+
+> **maxBatchSize**: `number`
+
+Defined in: [src/utils/types.ts:66](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L66)
+
+Maximum batch size
+
+##### maxWaitTime
+
+> **maxWaitTime**: `number`
+
+Defined in: [src/utils/types.ts:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L68)
+
+Maximum wait time before flushing batch (ms)
+
+##### onError()?
+
+> `optional` **onError**: (`error`, `items`) => `void`
+
+Defined in: [src/utils/types.ts:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L72)
+
+Callback on batch processing error
+
+###### Parameters
+
+###### error
+
+`unknown`
+
+###### items
+
+`T`[]
+
+###### Returns
+
+`void`
+
+##### processBatch()
+
+> **processBatch**: (`items`) => `Promise`\<`R`[]\>
+
+Defined in: [src/utils/types.ts:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L70)
+
+Function to process a batch of items
+
+###### Parameters
+
+###### items
+
+`T`[]
+
+###### Returns
+
+`Promise`\<`R`[]\>
+
+***
+
+### PollOptions
+
+Defined in: [src/utils/types.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L32)
+
+Polling configuration options
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Properties
+
+##### backoff?
+
+> `optional` **backoff**: `boolean`
+
+Defined in: [src/utils/types.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L38)
+
+Use exponential backoff for polling intervals (default: false)
+
+##### backoffFactor?
+
+> `optional` **backoffFactor**: `number`
+
+Defined in: [src/utils/types.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L40)
+
+Backoff factor when backoff enabled (default: 1.5)
+
+##### interval?
+
+> `optional` **interval**: `number`
+
+Defined in: [src/utils/types.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L34)
+
+Polling interval in milliseconds (default: 1000)
+
+##### maxInterval?
+
+> `optional` **maxInterval**: `number`
+
+Defined in: [src/utils/types.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L42)
+
+Maximum interval when using backoff (default: 10000)
+
+##### onPoll()?
+
+> `optional` **onPoll**: (`result`, `attempt`) => `void`
+
+Defined in: [src/utils/types.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L46)
+
+Callback invoked on each poll attempt
+
+###### Parameters
+
+###### result
+
+`T`
+
+###### attempt
+
+`number`
+
+###### Returns
+
+`void`
+
+##### timeout?
+
+> `optional` **timeout**: `number`
+
+Defined in: [src/utils/types.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L36)
+
+Maximum polling duration in milliseconds (default: 60000)
+
+##### validate()?
+
+> `optional` **validate**: (`result`) => `boolean`
+
+Defined in: [src/utils/types.ts:44](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L44)
+
+Predicate to determine if polling should continue
+
+###### Parameters
+
+###### result
+
+`T`
+
+###### Returns
+
+`boolean`
+
+***
+
+### RateLimiterOptions
+
+Defined in: [src/utils/types.ts:52](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L52)
+
+Rate limiter configuration
+
+#### Properties
+
+##### interval
+
+> **interval**: `number`
+
+Defined in: [src/utils/types.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L56)
+
+Time interval in milliseconds
+
+##### maxRequests
+
+> **maxRequests**: `number`
+
+Defined in: [src/utils/types.ts:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L54)
+
+Maximum number of requests per interval
+
+##### strategy?
+
+> `optional` **strategy**: `"queue"` \| `"reject"` \| `"drop"`
+
+Defined in: [src/utils/types.ts:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L58)
+
+Queue strategy when limit exceeded (default: 'queue')
+
+***
+
+### RetryOptions
+
+Defined in: [src/utils/types.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L12)
+
+Retry configuration options
+
+#### Properties
+
+##### factor?
+
+> `optional` **factor**: `number`
+
+Defined in: [src/utils/types.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L18)
+
+Exponential backoff factor (default: 2)
+
+##### initialDelay?
+
+> `optional` **initialDelay**: `number`
+
+Defined in: [src/utils/types.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L16)
+
+Initial delay in milliseconds (default: 1000)
+
+##### jitter?
+
+> `optional` **jitter**: `boolean`
+
+Defined in: [src/utils/types.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L22)
+
+Add random jitter to delays (default: true)
+
+##### maxDelay?
+
+> `optional` **maxDelay**: `number`
+
+Defined in: [src/utils/types.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L20)
+
+Maximum delay cap in milliseconds (default: 30000)
+
+##### maxRetries?
+
+> `optional` **maxRetries**: `number`
+
+Defined in: [src/utils/types.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L14)
+
+Maximum number of retry attempts (default: 3)
+
+##### onRetry()?
+
+> `optional` **onRetry**: (`error`, `attempt`, `nextDelay`) => `void`
+
+Defined in: [src/utils/types.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L26)
+
+Callback invoked on each retry attempt
+
+###### Parameters
+
+###### error
+
+`unknown`
+
+###### attempt
+
+`number`
+
+###### nextDelay
+
+`number`
+
+###### Returns
+
+`void`
+
+##### shouldRetry()?
+
+> `optional` **shouldRetry**: (`error`, `attempt`) => `boolean`
+
+Defined in: [src/utils/types.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L24)
+
+Predicate to determine if error should be retried (default: always retry)
+
+###### Parameters
+
+###### error
+
+`unknown`
+
+###### attempt
+
+`number`
+
+###### Returns
+
+`boolean`
+
+***
+
+### TimeoutOptions
+
+Defined in: [src/utils/types.ts:78](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L78)
+
+Timeout options
+
+#### Properties
+
+##### message?
+
+> `optional` **message**: `string`
+
+Defined in: [src/utils/types.ts:82](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L82)
+
+Error message for timeout (default: "Operation timed out")
+
+##### ms
+
+> **ms**: `number`
+
+Defined in: [src/utils/types.ts:80](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L80)
+
+Timeout duration in milliseconds
+
+##### signal?
+
+> `optional` **signal**: `AbortSignal`
+
+Defined in: [src/utils/types.ts:84](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/types.ts#L84)
+
+Optional AbortController for cancellation
+
+## Functions
+
+### createBatchedFunction()
+
+> **createBatchedFunction**\<`T`, `R`\>(`fn`, `maxBatchSize`, `maxWaitTime`): (`item`) => `Promise`\<`R`\>
+
+Defined in: [src/utils/batch.ts:234](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/batch.ts#L234)
+
+Create a batched version of an async function
+
+Returns a new function that automatically batches calls.
+Useful for wrapping provider methods or other async functions.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Argument type
+
+##### R
+
+`R`
+
+Return type
+
+#### Parameters
+
+##### fn
+
+(`items`) => `Promise`\<`R`[]\>
+
+Function to batch (takes array, returns array)
+
+##### maxBatchSize
+
+`number`
+
+Maximum batch size
+
+##### maxWaitTime
+
+`number`
+
+Maximum wait time in milliseconds
+
+#### Returns
+
+Batched function (takes single item, returns single result)
+
+> (`item`): `Promise`\<`R`\>
+
+##### Parameters
+
+###### item
+
+`T`
+
+##### Returns
+
+`Promise`\<`R`\>
+
+#### Example
+
+```typescript
+// Batch balance lookups
+const getBalance = createBatchedFunction(
+  async (addresses: string[]) => {
+    return Promise.all(
+      addresses.map(addr => provider.eth_getBalance(addr))
+    );
+  },
+  50,   // Batch up to 50 addresses
+  100   // Wait max 100ms
+);
+
+// Use like normal function - batching happens automatically
+const balance1 = getBalance('0x123...');
+const balance2 = getBalance('0x456...');
+const balance3 = getBalance('0x789...');
+
+// All three requests batched into single call
+console.log(await balance1);
+console.log(await balance2);
+console.log(await balance3);
+```
+
+***
+
+### createDeferred()
+
+> **createDeferred**\<`T`\>(): `object`
+
+Defined in: [src/utils/timeout.ts:226](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L226)
+
+Create a deferred promise with manual resolve/reject control
+
+Returns a promise along with functions to resolve or reject it manually.
+Useful for complex async flows, event handling, and cancellation patterns.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Promise result type
+
+#### Returns
+
+`object`
+
+Object with promise and control functions
+
+##### promise
+
+> **promise**: `Promise`\<`T`\>
+
+##### reject()
+
+> **reject**: (`error`) => `void`
+
+###### Parameters
+
+###### error
+
+`unknown`
+
+###### Returns
+
+`void`
+
+##### resolve()
+
+> **resolve**: (`value`) => `void`
+
+###### Parameters
+
+###### value
+
+`T`
+
+###### Returns
+
+`void`
+
+#### Example
+
+```typescript
+// Manual promise control
+const { promise, resolve, reject } = createDeferred<number>();
+
+// Resolve from event handler
+provider.on('block', (blockNumber) => {
+  if (blockNumber > 1000000) {
+    resolve(blockNumber);
+  }
+});
+
+const result = await promise;
+
+// With timeout
+const { promise, resolve, reject } = createDeferred<string>();
+setTimeout(() => reject(new TimeoutError()), 5000);
+
+// Resolve from multiple sources
+websocket.on('message', (data) => resolve(data));
+controller.on('cancel', () => reject(new Error('Cancelled')));
+```
+
+***
+
+### debounce()
+
+> **debounce**\<`TArgs`, `TReturn`\>(`fn`, `wait`): (...`args`) => `void` & `object`
+
+Defined in: [src/utils/rateLimit.ts:89](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L89)
+
+Debounce a function to execute only after calls have stopped for specified wait time
+
+Delays execution until the function hasn't been called for the wait period.
+Useful for expensive operations triggered by rapid events (search, resize, etc).
+
+#### Type Parameters
+
+##### TArgs
+
+`TArgs` *extends* `unknown`[]
+
+Function argument types
+
+##### TReturn
+
+`TReturn`
+
+Function return type
+
+#### Parameters
+
+##### fn
+
+(...`args`) => `TReturn`
+
+Function to debounce
+
+##### wait
+
+`number`
+
+Wait time in milliseconds
+
+#### Returns
+
+(...`args`) => `void` & `object`
+
+Debounced function with cancel method
+
+#### Example
+
+```typescript
+// Debounce search queries
+const searchBlocks = debounce(
+  (query: string) => provider.eth_getBlockByNumber(query),
+  500 // Wait 500ms after last keystroke
+);
+
+// Rapid calls - only last executes after 500ms
+searchBlocks('latest');  // Cancelled
+searchBlocks('pending'); // Cancelled
+searchBlocks('0x123');   // Executes after 500ms
+
+// Cancel pending execution
+searchBlocks.cancel();
+```
+
+***
+
+### executeWithTimeout()
+
+> **executeWithTimeout**\<`T`\>(`fn`, `timeoutMs`, `maxRetries`): `Promise`\<`T`\>
+
+Defined in: [src/utils/timeout.ts:275](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L275)
+
+Execute an async function with a timeout and optional retries
+
+Combines timeout and retry logic for robust async operations.
+Each retry attempt gets a fresh timeout.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Return type
+
+#### Parameters
+
+##### fn
+
+() => `Promise`\<`T`\>
+
+Async function to execute
+
+##### timeoutMs
+
+`number`
+
+Timeout per attempt in milliseconds
+
+##### maxRetries
+
+`number` = `0`
+
+Maximum number of retry attempts (default: 0)
+
+#### Returns
+
+`Promise`\<`T`\>
+
+Promise resolving to function result
+
+#### Throws
+
+TimeoutError if all attempts timeout
+
+#### Example
+
+```typescript
+// Execute with timeout and retries
+const block = await executeWithTimeout(
+  () => provider.eth_getBlockByNumber('latest'),
+  5000,  // 5s timeout per attempt
+  3      // Retry up to 3 times
+);
+
+// Fetch with timeout and retries
+const data = await executeWithTimeout(
+  async () => {
+    const res = await fetch(url);
+    return res.json();
+  },
+  10000,
+  2
+);
+```
+
+***
+
+### poll()
+
+> **poll**\<`T`\>(`fn`, `options`): `Promise`\<`T`\>
+
+Defined in: [src/utils/poll.ts:84](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L84)
+
+Poll an async operation until it succeeds or times out
+
+Repeatedly calls the provided function until it returns a truthy value,
+the optional validate predicate passes, or the timeout is reached.
+Supports exponential backoff for progressively longer intervals.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Return type of the polling function
+
+#### Parameters
+
+##### fn
+
+() => `Promise`\<`T`\>
+
+Async function to poll
+
+##### options
+
+[`PollOptions`](#polloptions)\<`T`\> = `{}`
+
+Polling configuration
+
+#### Returns
+
+`Promise`\<`T`\>
+
+Promise resolving to the successful result
+
+#### Throws
+
+Error if timeout is reached or validation fails
+
+#### Example
+
+```typescript
+// Wait for transaction confirmation
+const receipt = await poll(
+  () => provider.eth_getTransactionReceipt(txHash),
+  {
+    interval: 1000,
+    timeout: 60000,
+    validate: (receipt) => receipt !== null
+  }
+);
+
+// Wait for block with backoff
+const block = await poll(
+  () => provider.eth_getBlockByNumber('latest'),
+  {
+    interval: 500,
+    backoff: true,
+    backoffFactor: 2,
+    maxInterval: 5000
+  }
+);
+
+// Poll with progress callback
+const balance = await poll(
+  () => provider.eth_getBalance(address),
+  {
+    interval: 2000,
+    onPoll: (result, attempt) => {
+      console.log(`Attempt ${attempt}: ${result}`);
+    }
+  }
+);
+```
+
+***
+
+### pollForReceipt()
+
+> **pollForReceipt**\<`TReceipt`\>(`txHash`, `getReceipt`, `options`): `Promise`\<`TReceipt`\>
+
+Defined in: [src/utils/poll.ts:211](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L211)
+
+Poll for a transaction receipt
+
+Convenience function for the common pattern of waiting for transaction confirmation.
+Polls eth_getTransactionReceipt until receipt is available.
+
+#### Type Parameters
+
+##### TReceipt
+
+`TReceipt`
+
+#### Parameters
+
+##### txHash
+
+`string`
+
+Transaction hash to poll for
+
+##### getReceipt
+
+(`hash`) => `Promise`\<`TReceipt` \| `null`\>
+
+Function to fetch receipt (provider.eth_getTransactionReceipt)
+
+##### options
+
+`Omit`\<[`PollOptions`](#polloptions)\<`TReceipt` \| `null`\>, `"validate"`\> = `{}`
+
+Polling configuration
+
+#### Returns
+
+`Promise`\<`TReceipt`\>
+
+Promise resolving to the transaction receipt
+
+#### Throws
+
+Error if timeout is reached
+
+#### Example
+
+```typescript
+// Wait for transaction receipt
+const receipt = await pollForReceipt(
+  txHash,
+  (hash) => provider.eth_getTransactionReceipt(hash),
+  { timeout: 120000 } // 2 minutes
+);
+
+if (receipt.status === '0x1') {
+  console.log('Transaction successful!');
+}
+```
+
+***
+
+### pollUntil()
+
+> **pollUntil**\<`T`\>(`fn`, `predicate`, `options`): `Promise`\<`T`\>
+
+Defined in: [src/utils/poll.ts:174](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L174)
+
+Poll until a predicate returns true
+
+Repeatedly calls the function and checks if the predicate passes.
+More expressive than poll() when you want to explicitly check a condition.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Return type of the polling function
+
+#### Parameters
+
+##### fn
+
+() => `Promise`\<`T`\>
+
+Async function to poll
+
+##### predicate
+
+(`result`) => `boolean`
+
+Function to test result
+
+##### options
+
+`Omit`\<[`PollOptions`](#polloptions)\<`T`\>, `"validate"`\> = `{}`
+
+Polling configuration (without validate)
+
+#### Returns
+
+`Promise`\<`T`\>
+
+Promise resolving to the successful result
+
+#### Throws
+
+Error if timeout is reached
+
+#### Example
+
+```typescript
+// Wait for specific block number
+const blockNumber = await pollUntil(
+  () => provider.eth_blockNumber(),
+  (num) => num >= 1000000n,
+  { interval: 500, timeout: 30000 }
+);
+
+// Wait for contract deployment
+const code = await pollUntil(
+  () => provider.eth_getCode(contractAddress),
+  (code) => code.length > 2, // More than '0x'
+  { interval: 1000 }
+);
+```
+
+***
+
+### pollWithBackoff()
+
+> **pollWithBackoff**\<`T`\>(`fn`, `options`): `Promise`\<`T`\>
+
+Defined in: [src/utils/poll.ts:253](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/poll.ts#L253)
+
+Poll with exponential backoff
+
+Convenience function that enables exponential backoff by default.
+Useful when you expect operations to take progressively longer.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Return type of the polling function
+
+#### Parameters
+
+##### fn
+
+() => `Promise`\<`T`\>
+
+Async function to poll
+
+##### options
+
+[`PollOptions`](#polloptions)\<`T`\> = `{}`
+
+Polling configuration (backoff enabled by default)
+
+#### Returns
+
+`Promise`\<`T`\>
+
+Promise resolving to the successful result
+
+#### Throws
+
+Error if timeout is reached
+
+#### Example
+
+```typescript
+// Poll with automatic backoff
+const data = await pollWithBackoff(
+  () => provider.eth_call({ to, data }),
+  {
+    interval: 100,      // Start at 100ms
+    backoffFactor: 2,   // Double each time
+    maxInterval: 5000,  // Cap at 5s
+    timeout: 30000
+  }
+);
+```
+
+***
+
+### retryWithBackoff()
+
+> **retryWithBackoff**\<`T`\>(`fn`, `options`): `Promise`\<`T`\>
+
+Defined in: [src/utils/retryWithBackoff.ts:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/retryWithBackoff.ts#L108)
+
+Retry an async operation with exponential backoff
+
+Automatically retries failed operations using exponential backoff with jitter.
+Useful for handling transient failures in network requests, RPC calls, and
+other unreliable operations.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Return type of the operation
+
+#### Parameters
+
+##### fn
+
+() => `Promise`\<`T`\>
+
+Async function to retry
+
+##### options
+
+[`RetryOptions`](#retryoptions) = `{}`
+
+Retry configuration
+
+#### Returns
+
+`Promise`\<`T`\>
+
+Promise resolving to the operation result
+
+#### Throws
+
+Last error encountered if all retries exhausted
+
+#### Example
+
+```typescript
+// Basic usage - retry RPC call
+const blockNumber = await retryWithBackoff(
+  () => provider.eth_blockNumber(),
+  { maxRetries: 5 }
+);
+
+// Custom retry condition - only retry on network errors
+const data = await retryWithBackoff(
+  () => fetchData(),
+  {
+    maxRetries: 3,
+    shouldRetry: (error) => error.code === 'NETWORK_ERROR',
+    onRetry: (error, attempt, delay) => {
+      console.log(`Retry ${attempt} after ${delay}ms: ${error.message}`);
+    }
+  }
+);
+
+// Aggressive retry with custom backoff
+const result = await retryWithBackoff(
+  () => unstableOperation(),
+  {
+    maxRetries: 10,
+    initialDelay: 100,
+    factor: 1.5,
+    maxDelay: 5000,
+    jitter: true
+  }
+);
+```
+
+***
+
+### sleep()
+
+> **sleep**(`ms`, `signal?`): `Promise`\<`void`\>
+
+Defined in: [src/utils/timeout.ts:174](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L174)
+
+Sleep for specified duration with optional cancellation
+
+Returns a promise that resolves after the specified time.
+Can be cancelled using an AbortSignal.
+
+#### Parameters
+
+##### ms
+
+`number`
+
+Milliseconds to sleep
+
+##### signal?
+
+`AbortSignal`
+
+Optional AbortSignal for cancellation
+
+#### Returns
+
+`Promise`\<`void`\>
+
+Promise that resolves after delay
+
+#### Throws
+
+Error if operation is aborted
+
+#### Example
+
+```typescript
+// Simple delay
+await sleep(1000); // Wait 1 second
+
+// Cancellable delay
+const controller = new AbortController();
+const sleepPromise = sleep(5000, controller.signal);
+
+// Cancel after 1 second
+setTimeout(() => controller.abort(), 1000);
+
+try {
+  await sleepPromise;
+} catch (error) {
+  console.log('Sleep cancelled');
+}
+```
+
+***
+
+### throttle()
+
+> **throttle**\<`TArgs`, `TReturn`\>(`fn`, `wait`): (...`args`) => `TReturn` \| `undefined`
+
+Defined in: [src/utils/rateLimit.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/rateLimit.ts#L39)
+
+Throttle a function to execute at most once per specified wait time
+
+The first call executes immediately, subsequent calls within the wait
+period are ignored. Useful for rate-limiting user actions or events.
+
+#### Type Parameters
+
+##### TArgs
+
+`TArgs` *extends* `unknown`[]
+
+Function argument types
+
+##### TReturn
+
+`TReturn`
+
+Function return type
+
+#### Parameters
+
+##### fn
+
+(...`args`) => `TReturn`
+
+Function to throttle
+
+##### wait
+
+`number`
+
+Wait time in milliseconds
+
+#### Returns
+
+Throttled function
+
+> (...`args`): `TReturn` \| `undefined`
+
+##### Parameters
+
+###### args
+
+...`TArgs`
+
+##### Returns
+
+`TReturn` \| `undefined`
+
+#### Example
+
+```typescript
+// Throttle RPC calls
+const getBalance = throttle(
+  (address: string) => provider.eth_getBalance(address),
+  1000 // Max once per second
+);
+
+// Multiple rapid calls - only first executes
+getBalance('0x123...'); // Executes immediately
+getBalance('0x456...'); // Ignored (within 1s)
+getBalance('0x789...'); // Ignored (within 1s)
+```
+
+***
+
+### withRetry()
+
+> **withRetry**\<`TArgs`, `TReturn`\>(`fn`, `options`): (...`args`) => `Promise`\<`TReturn`\>
+
+Defined in: [src/utils/retryWithBackoff.ts:188](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/retryWithBackoff.ts#L188)
+
+Create a retry wrapper for a function
+
+Returns a new function that automatically retries with the given configuration.
+Useful for wrapping provider methods or other frequently-called functions.
+
+#### Type Parameters
+
+##### TArgs
+
+`TArgs` *extends* `unknown`[]
+
+Function argument types
+
+##### TReturn
+
+`TReturn`
+
+Function return type
+
+#### Parameters
+
+##### fn
+
+(...`args`) => `Promise`\<`TReturn`\>
+
+Function to wrap with retry logic
+
+##### options
+
+[`RetryOptions`](#retryoptions) = `{}`
+
+Retry configuration
+
+#### Returns
+
+Wrapped function with automatic retry
+
+> (...`args`): `Promise`\<`TReturn`\>
+
+##### Parameters
+
+###### args
+
+...`TArgs`
+
+##### Returns
+
+`Promise`\<`TReturn`\>
+
+#### Example
+
+```typescript
+// Wrap provider method with automatic retry
+const getBlockNumberWithRetry = withRetry(
+  (provider: Provider) => provider.eth_blockNumber(),
+  { maxRetries: 5, initialDelay: 500 }
+);
+
+const blockNumber = await getBlockNumberWithRetry(provider);
+
+// Wrap custom function
+const fetchWithRetry = withRetry(
+  async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Request failed');
+    return res.json();
+  },
+  { maxRetries: 3 }
+);
+
+const data = await fetchWithRetry('https://api.example.com/data');
+```
+
+***
+
+### withTimeout()
+
+> **withTimeout**\<`T`\>(`promise`, `options`): `Promise`\<`T`\>
+
+Defined in: [src/utils/timeout.ts:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L65)
+
+Wrap a promise with a timeout
+
+Races the promise against a timeout. If the promise doesn't resolve
+within the specified time, throws a TimeoutError. Supports AbortSignal
+for cancellation.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+Promise result type
+
+#### Parameters
+
+##### promise
+
+`Promise`\<`T`\>
+
+Promise to add timeout to
+
+##### options
+
+[`TimeoutOptions`](#timeoutoptions)
+
+Timeout configuration
+
+#### Returns
+
+`Promise`\<`T`\>
+
+Promise that resolves to original result or throws TimeoutError
+
+#### Throws
+
+TimeoutError if timeout is reached
+
+#### Throws
+
+Error if AbortSignal is triggered
+
+#### Example
+
+```typescript
+// Basic timeout
+const result = await withTimeout(
+  provider.eth_getBlockByNumber('latest'),
+  { ms: 5000 }
+);
+
+// Custom timeout message
+const balance = await withTimeout(
+  provider.eth_getBalance(address),
+  {
+    ms: 10000,
+    message: 'Balance fetch timed out after 10s'
+  }
+);
+
+// With AbortController
+const controller = new AbortController();
+const dataPromise = withTimeout(
+  fetchData(),
+  { ms: 30000, signal: controller.signal }
+);
+
+// Cancel operation
+controller.abort();
+```
+
+***
+
+### wrapWithTimeout()
+
+> **wrapWithTimeout**\<`TArgs`, `TReturn`\>(`fn`, `ms`, `message?`): (...`args`) => `Promise`\<`TReturn`\>
+
+Defined in: [src/utils/timeout.ts:132](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/utils/timeout.ts#L132)
+
+Create a timeout wrapper for a function
+
+Returns a new function that automatically adds a timeout to calls.
+Useful for wrapping provider methods or other async functions.
+
+#### Type Parameters
+
+##### TArgs
+
+`TArgs` *extends* `unknown`[]
+
+Function argument types
+
+##### TReturn
+
+`TReturn`
+
+Function return type
+
+#### Parameters
+
+##### fn
+
+(...`args`) => `Promise`\<`TReturn`\>
+
+Function to wrap with timeout
+
+##### ms
+
+`number`
+
+Timeout in milliseconds
+
+##### message?
+
+`string`
+
+Optional timeout message
+
+#### Returns
+
+Function with automatic timeout
+
+> (...`args`): `Promise`\<`TReturn`\>
+
+##### Parameters
+
+###### args
+
+...`TArgs`
+
+##### Returns
+
+`Promise`\<`TReturn`\>
+
+#### Example
+
+```typescript
+// Wrap provider method with timeout
+const getBalanceWithTimeout = wrapWithTimeout(
+  (address: string) => provider.eth_getBalance(address),
+  5000
+);
+
+const balance = await getBalanceWithTimeout('0x123...');
+
+// Wrap custom function
+const fetchDataWithTimeout = wrapWithTimeout(
+  async (url: string) => {
+    const res = await fetch(url);
+    return res.json();
+  },
+  10000,
+  'Data fetch timeout'
+);
+```

@@ -1,0 +1,178 @@
+---
+title: '[TS/JS] docs/evm/precompiles/bls12-g2-add.test.ts'
+source: 'docs/evm/precompiles/bls12-g2-add.test.ts'
+---
+
+> Auto-generated from test file: docs/evm/precompiles/bls12-g2-add.test.ts
+
+```typescript
+/**
+ * Tests for bls12-g2-add.mdx documentation examples
+ * Validates code examples work correctly with actual API
+ */
+import { describe, expect, it } from "vitest";
+import { PrecompileAddress, execute, bls12G2Add } from "../../../src/evm/precompiles/precompiles.js";
+import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+
+describe("bls12-g2-add.mdx documentation examples", () => {
+	describe("Overview section", () => {
+		it("should perform point addition on BLS12-381 G2 group", () => {
+			// Doc states: performs point addition on the BLS12-381 curve's G2 group
+			// Point at infinity + Point at infinity = Point at infinity
+			const input = new Uint8Array(512); // Two zero points (infinity)
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+			expect(result.output.length).toBe(256);
+		});
+	});
+
+	describe("Gas Cost section", () => {
+		it("should use exactly 800 gas", () => {
+			// Doc states: Fixed: 800 gas
+			const input = new Uint8Array(512);
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(800n);
+		});
+
+		it("should fail with insufficient gas", () => {
+			// Doc states: Out of gas: gasLimit < 800
+			const input = new Uint8Array(512);
+			const result = bls12G2Add(input, 799n);
+
+			expect(result.success).toBe(false);
+			expect(result.error).toBe("Out of gas");
+		});
+	});
+
+	describe("G2 vs G1 section", () => {
+		it("should use 256 bytes per G2 point", () => {
+			// Doc states: G2 points: 256 bytes (128 bytes per coordinate, 2 coordinates)
+			// Each G2 coordinate is an Fp2 element (c0 + c1*u)
+			const input = new Uint8Array(512); // 2 x 256-byte points
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+			expect(result.output.length).toBe(256);
+		});
+	});
+
+	describe("Input Format section", () => {
+		it("should require exactly 512 bytes", () => {
+			// Doc states: Total input length: 512 bytes (256 bytes per G2 point)
+			const input = new Uint8Array(512);
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+		});
+
+		it("should fail for invalid input length", () => {
+			// Doc states: Invalid input length: input.len != 512
+			const shortInput = new Uint8Array(511);
+			const longInput = new Uint8Array(513);
+
+			const resultShort = bls12G2Add(shortInput, 2000n);
+			const resultLong = bls12G2Add(longInput, 2000n);
+
+			expect(resultShort.success).toBe(false);
+			expect(resultLong.success).toBe(false);
+		});
+
+		it("should handle Fp2 element encoding", () => {
+			// Doc states: Each G2 point coordinate is an Fp2 element: c0 + c1*u
+			// x.c0 (64 bytes) + x.c1 (64 bytes) + y.c0 (64 bytes) + y.c1 (64 bytes) = 256 bytes
+			const input = new Uint8Array(512);
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+		});
+	});
+
+	describe("Output Format section", () => {
+		it("should return 256 bytes", () => {
+			// Doc states: Total output length: 256 bytes
+			const input = new Uint8Array(512);
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+			expect(result.output.length).toBe(256);
+		});
+
+		it("should have 4 x 64-byte Fp2 components", () => {
+			// Doc states: x.c0 (64), x.c1 (64), y.c0 (64), y.c1 (64)
+			const input = new Uint8Array(512);
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+			const xc0 = result.output.slice(0, 64);
+			const xc1 = result.output.slice(64, 128);
+			const yc0 = result.output.slice(128, 192);
+			const yc1 = result.output.slice(192, 256);
+
+			expect(xc0.length).toBe(64);
+			expect(xc1.length).toBe(64);
+			expect(yc0.length).toBe(64);
+			expect(yc1.length).toBe(64);
+		});
+	});
+
+	describe("Special Cases from documentation", () => {
+		it("should handle point at infinity (256 bytes of zeros)", () => {
+			// Doc states: Point at infinity: All zeros (256 bytes) represents identity element
+			const input = new Uint8Array(512); // Two identity points
+			const result = bls12G2Add(input, 2000n);
+
+			expect(result.success).toBe(true);
+			// Identity + Identity = Identity
+			expect([...result.output].every((b) => b === 0)).toBe(true);
+		});
+	});
+
+	describe("Integration with execute function", () => {
+		it("should work via execute with PrecompileAddress.BLS12_G2_ADD", () => {
+			const input = new Uint8Array(512);
+			const result = execute(
+				PrecompileAddress.BLS12_G2_ADD,
+				input,
+				2000n,
+				Hardfork.PRAGUE,
+			);
+
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(800n);
+		});
+
+		it("should be available from PRAGUE hardfork", () => {
+			// Doc states: Introduced: Prague (EIP-2537)
+			const input = new Uint8Array(512);
+			const result = execute(
+				PrecompileAddress.BLS12_G2_ADD,
+				input,
+				2000n,
+				Hardfork.PRAGUE,
+			);
+			expect(result.success).toBe(true);
+		});
+
+		it("hardfork availability via isPrecompile function", async () => {
+			// NOTE: execute() does not enforce hardfork availability
+			// Use isPrecompile() to check availability
+			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
+			expect(isPrecompile(PrecompileAddress.BLS12_G2_ADD, Hardfork.PRAGUE)).toBe(true);
+			expect(isPrecompile(PrecompileAddress.BLS12_G2_ADD, Hardfork.CANCUN)).toBe(false);
+		});
+	});
+
+	describe("Gas Comparison section", () => {
+		it("should use 800 gas compared to G1 Add's 500", () => {
+			// Doc states: G1 Gas: 500, G2 Gas: 800, Ratio: 1.6x
+			const input = new Uint8Array(512);
+			const result = bls12G2Add(input, 2000n);
+			expect(result.gasUsed).toBe(800n);
+		});
+	});
+});
+
+```

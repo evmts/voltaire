@@ -1,0 +1,298 @@
+---
+title: '[Zig] src/primitives/Bundler/Bundler.zig'
+source: 'src/primitives/Bundler/Bundler.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Bundler/Bundler.zig
+
+### fromBytes - valid 20 bytes
+
+```zig
+test "fromBytes - valid 20 bytes" {
+    const bytes = [_]u8{0xab} ** SIZE;
+    const bundler = try fromBytes(&bytes);
+    try std.testing.expectEqual(@as(u8, 0xab), bundler.bytes[0]);
+}
+```
+
+### fromBytes - invalid length
+
+```zig
+test "fromBytes - invalid length" {
+    const bytes = [_]u8{0xab} ** 19;
+    try std.testing.expectError(error.InvalidAddressLength, fromBytes(&bytes));
+}
+```
+
+### fromHex - with 0x prefix
+
+```zig
+test "fromHex - with 0x prefix" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const hex = Address.toHex(bundler);
+    try std.testing.expectEqualStrings("0xa0cf798816d4b9b9866b5330eea46a18382f251e", &hex);
+}
+```
+
+### fromHex - invalid format
+
+```zig
+test "fromHex - invalid format" {
+    try std.testing.expectError(error.InvalidHexFormat, fromHex("0xaabb"));
+}
+```
+
+### fromAddress - converts address
+
+```zig
+test "fromAddress - converts address" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const bundler = fromAddress(addr);
+    try std.testing.expect(Address.equals(bundler, addr));
+}
+```
+
+### fromU256 - converts number
+
+```zig
+test "fromU256 - converts number" {
+    const bundler = fromU256(0x1234);
+    try std.testing.expect(!Address.isZero(bundler));
+}
+```
+
+### from - hex string
+
+```zig
+test "from - hex string" {
+    const bundler = try from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expect(!Address.isZero(bundler));
+}
+```
+
+### from - address passthrough
+
+```zig
+test "from - address passthrough" {
+    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const bundler = try from(addr);
+    try std.testing.expect(Address.equals(bundler, addr));
+}
+```
+
+### toHex - returns hex string
+
+```zig
+test "toHex - returns hex string" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const hex = toHex(bundler);
+    try std.testing.expect(std.mem.startsWith(u8, &hex, "0x"));
+    try std.testing.expectEqual(@as(usize, 42), hex.len);
+}
+```
+
+### toChecksummed - returns checksummed string
+
+```zig
+test "toChecksummed - returns checksummed string" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const checksum = toChecksummed(bundler);
+    try std.testing.expectEqualStrings("0xA0Cf798816D4b9b9866b5330EEa46a18382f251e", &checksum);
+}
+```
+
+### toBytes - returns bytes
+
+```zig
+test "toBytes - returns bytes" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const bytes = toBytes(bundler);
+    try std.testing.expectEqual(@as(usize, 20), bytes.len);
+    try std.testing.expectEqual(@as(u8, 0xa0), bytes[0]);
+}
+```
+
+### toAddress - returns same address
+
+```zig
+test "toAddress - returns same address" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const addr = toAddress(bundler);
+    try std.testing.expect(Address.equals(bundler, addr));
+}
+```
+
+### toU256 - roundtrip
+
+```zig
+test "toU256 - roundtrip" {
+    const original = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const value = toU256(original);
+    const recovered = fromU256(value);
+    try std.testing.expect(equals(&original, &recovered));
+}
+```
+
+### toString - same as toHex
+
+```zig
+test "toString - same as toHex" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const str = toString(bundler);
+    const hex = toHex(bundler);
+    try std.testing.expectEqualSlices(u8, &hex, &str);
+}
+```
+
+### equals - same bundler
+
+```zig
+test "equals - same bundler" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expect(equals(&bundler, &bundler));
+}
+```
+
+### equals - identical bundlers
+
+```zig
+test "equals - identical bundlers" {
+    const a = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const b = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expect(equals(&a, &b));
+}
+```
+
+### equals - different bundlers
+
+```zig
+test "equals - different bundlers" {
+    const a = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const b = try fromHex("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
+    try std.testing.expect(!equals(&a, &b));
+}
+```
+
+### isZero - zero bundler
+
+```zig
+test "isZero - zero bundler" {
+    const bundler = ZERO;
+    try std.testing.expect(isZero(&bundler));
+}
+```
+
+### isZero - non-zero bundler
+
+```zig
+test "isZero - non-zero bundler" {
+    const bundler = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expect(!isZero(&bundler));
+}
+```
+
+### isValidHex - valid
+
+```zig
+test "isValidHex - valid" {
+    try std.testing.expect(isValidHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e"));
+}
+```
+
+### isValidHex - invalid
+
+```zig
+test "isValidHex - invalid" {
+    try std.testing.expect(!isValidHex("0xinvalid"));
+    try std.testing.expect(!isValidHex("0xaabb"));
+}
+```
+
+### isValidChecksum - valid checksum
+
+```zig
+test "isValidChecksum - valid checksum" {
+    try std.testing.expect(isValidChecksum("0xA0Cf798816D4b9b9866b5330EEa46a18382f251e"));
+}
+```
+
+### isValidChecksum - invalid checksum
+
+```zig
+test "isValidChecksum - invalid checksum" {
+    try std.testing.expect(!isValidChecksum("0xa0cf798816d4b9b9866b5330eea46a18382f251e"));
+}
+```
+
+### clone - creates copy
+
+```zig
+test "clone - creates copy" {
+    const original = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    var copy = clone(original);
+    try std.testing.expect(equals(&original, &copy));
+
+    // Modify copy
+    copy.bytes[0] = 0xff;
+    try std.testing.expect(!equals(&original, &copy));
+}
+```
+
+### WellKnown - flashbots bundler is valid
+
+```zig
+test "WellKnown - flashbots bundler is valid" {
+    const bundler = WellKnown.FLASHBOTS_MAINNET;
+    try std.testing.expect(!isZero(&bundler));
+}
+```
+
+### compare - equal
+
+```zig
+test "compare - equal" {
+    const a = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const b = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expectEqual(@as(i8, 0), compare(a, b));
+}
+```
+
+### compare - less than
+
+```zig
+test "compare - less than" {
+    const a = try fromHex("0x0000000000000000000000000000000000000001");
+    const b = try fromHex("0x0000000000000000000000000000000000000002");
+    try std.testing.expectEqual(@as(i8, -1), compare(a, b));
+}
+```
+
+### compare - greater than
+
+```zig
+test "compare - greater than" {
+    const a = try fromHex("0x0000000000000000000000000000000000000002");
+    const b = try fromHex("0x0000000000000000000000000000000000000001");
+    try std.testing.expectEqual(@as(i8, 1), compare(a, b));
+}
+```
+
+### lessThan - true
+
+```zig
+test "lessThan - true" {
+    const a = try fromHex("0x0000000000000000000000000000000000000001");
+    const b = try fromHex("0x0000000000000000000000000000000000000002");
+    try std.testing.expect(lessThan(a, b));
+}
+```
+
+### greaterThan - true
+
+```zig
+test "greaterThan - true" {
+    const a = try fromHex("0x0000000000000000000000000000000000000002");
+    const b = try fromHex("0x0000000000000000000000000000000000000001");
+    try std.testing.expect(greaterThan(a, b));
+}
+```

@@ -1,0 +1,296 @@
+---
+title: "primitives/MemoryDump"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/MemoryDump
+
+# primitives/MemoryDump
+
+## Type Aliases
+
+### MemoryDumpType
+
+> **MemoryDumpType** = `object`
+
+Defined in: [src/primitives/MemoryDump/MemoryDumpType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/MemoryDumpType.ts#L15)
+
+Memory state snapshot from EVM execution
+
+Represents the complete memory state at a point in EVM execution.
+EVM memory is byte-addressable and grows dynamically, organized in 32-byte words.
+
+#### Example
+
+```typescript
+const dump: MemoryDumpType = {
+  data: new Uint8Array([...]), // Full memory contents
+  length: 128, // Memory size in bytes
+};
+```
+
+#### Properties
+
+##### data
+
+> `readonly` **data**: `Uint8Array`
+
+Defined in: [src/primitives/MemoryDump/MemoryDumpType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/MemoryDumpType.ts#L19)
+
+Raw memory bytes - complete memory contents
+
+##### length
+
+> `readonly` **length**: `number`
+
+Defined in: [src/primitives/MemoryDump/MemoryDumpType.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/MemoryDumpType.ts#L24)
+
+Total memory size in bytes
+
+## Variables
+
+### MemoryDump
+
+> `const` **MemoryDump**: `object`
+
+Defined in: [src/primitives/MemoryDump/index.ts:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/index.ts#L30)
+
+#### Type Declaration
+
+##### from()
+
+> **from**: (`value`) => [`MemoryDumpType`](#memorydumptype) = `_from`
+
+Create MemoryDump from raw bytes or object
+
+###### Parameters
+
+###### value
+
+Memory data or object
+
+`Uint8Array`\<`ArrayBufferLike`\> | \{ `data`: `Uint8Array`; `length?`: `number`; \}
+
+###### Returns
+
+[`MemoryDumpType`](#memorydumptype)
+
+MemoryDump
+
+###### Example
+
+```typescript
+const dump1 = MemoryDump.from(new Uint8Array(64));
+const dump2 = MemoryDump.from({ data: new Uint8Array(64), length: 64 });
+```
+
+##### readWord()
+
+> **readWord**: (`dump`, `offset`) => `Uint8Array`
+
+###### Parameters
+
+###### dump
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`MemoryDumpType`](#memorydumptype)
+
+###### offset
+
+`number`
+
+###### Returns
+
+`Uint8Array`
+
+##### slice()
+
+> **slice**: (`dump`, `start`, `end?`) => `Uint8Array`
+
+###### Parameters
+
+###### dump
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`MemoryDumpType`](#memorydumptype)
+
+###### start
+
+`number`
+
+###### end?
+
+`number`
+
+###### Returns
+
+`Uint8Array`
+
+## Functions
+
+### \_readWord()
+
+> **\_readWord**(`dump`, `offset`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/MemoryDump/readWord.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/readWord.js#L15)
+
+Read a 32-byte word from memory at the given offset
+
+#### Parameters
+
+##### dump
+
+[`MemoryDumpType`](#memorydumptype)
+
+Memory dump
+
+##### offset
+
+`number`
+
+Byte offset to read from
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte word
+
+#### Throws
+
+If offset is out of bounds or insufficient data
+
+#### Example
+
+```typescript
+const word = MemoryDump.readWord(dump, 0); // First 32 bytes
+const word2 = MemoryDump.readWord(dump, 32); // Second 32 bytes
+```
+
+***
+
+### \_slice()
+
+> **\_slice**(`dump`, `start`, `end?`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/MemoryDump/slice.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/slice.js#L16)
+
+Extract a slice of memory
+
+#### Parameters
+
+##### dump
+
+[`MemoryDumpType`](#memorydumptype)
+
+Memory dump
+
+##### start
+
+`number`
+
+Start offset (inclusive)
+
+##### end?
+
+`number`
+
+End offset (exclusive, defaults to length)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Memory slice
+
+#### Throws
+
+If offsets are invalid
+
+#### Example
+
+```typescript
+const slice = MemoryDump.slice(dump, 0, 64); // First 64 bytes
+const tail = MemoryDump.slice(dump, 64); // From byte 64 to end
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`MemoryDumpType`](#memorydumptype)
+
+Defined in: [src/primitives/MemoryDump/from.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/from.js#L13)
+
+Create MemoryDump from raw bytes or object
+
+#### Parameters
+
+##### value
+
+Memory data or object
+
+`Uint8Array`\<`ArrayBufferLike`\> | \{ `data`: `Uint8Array`; `length?`: `number`; \}
+
+#### Returns
+
+[`MemoryDumpType`](#memorydumptype)
+
+MemoryDump
+
+#### Example
+
+```typescript
+const dump1 = MemoryDump.from(new Uint8Array(64));
+const dump2 = MemoryDump.from({ data: new Uint8Array(64), length: 64 });
+```
+
+***
+
+### readWord()
+
+> **readWord**(`dump`, `offset`): `Uint8Array`
+
+Defined in: [src/primitives/MemoryDump/index.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/index.ts#L11)
+
+#### Parameters
+
+##### dump
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`MemoryDumpType`](#memorydumptype)
+
+##### offset
+
+`number`
+
+#### Returns
+
+`Uint8Array`
+
+***
+
+### slice()
+
+> **slice**(`dump`, `start`, `end?`): `Uint8Array`
+
+Defined in: [src/primitives/MemoryDump/index.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/MemoryDump/index.ts#L18)
+
+#### Parameters
+
+##### dump
+
+`Uint8Array`\<`ArrayBufferLike`\> | [`MemoryDumpType`](#memorydumptype)
+
+##### start
+
+`number`
+
+##### end?
+
+`number`
+
+#### Returns
+
+`Uint8Array`

@@ -1,0 +1,53 @@
+---
+title: Constructor.encodeParams
+description: Encode constructor parameters for contract deployment
+---
+
+## Overview
+
+Constructor parameters are ABI-encoded **without** a selector. You append the encoded params to the contract creation bytecode when deploying.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
+
+const ctor = {
+  type: 'constructor',
+  stateMutability: 'nonpayable',
+  inputs: [
+    { type: 'string', name: 'name' },
+    { type: 'string', name: 'symbol' },
+    { type: 'uint8', name: 'decimals' }
+  ]
+} as const;
+
+const params = Abi.Constructor.encodeParams(ctor, [
+  'MyToken',
+  'MTK',
+  18
+]);
+
+const bytecode = '0x6001600080600a6000396000f3...';
+const deployData = Hex.concat(bytecode, Hex.fromBytes(params));
+```
+
+## Append to Bytecode
+
+The deploy data is `bytecode + encoded params`. If you already have a `Uint8Array` of bytecode, concatenate the raw bytes:
+
+```typescript
+const deployBytes = new Uint8Array(bytecodeBytes.length + params.length);
+deployBytes.set(bytecodeBytes, 0);
+deployBytes.set(params, bytecodeBytes.length);
+```
+
+## Error Handling
+
+If a value does not match the constructor input types, encoding throws an `AbiEncodingError`.
+
+## See Also
+
+- [decodeParams](/primitives/abi/constructor/decode-params) - Decode constructor parameters
+- [Encoding](/primitives/abi/encoding) - ABI encoding rules

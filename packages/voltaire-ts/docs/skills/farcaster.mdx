@@ -1,0 +1,93 @@
+---
+title: Farcaster
+description: Social protocol integration with Farcaster
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [ethers-provider Skill](https://github.com/evmts/voltaire/tree/main/examples/ethers-provider) for an example of a complete Skill implementation.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Integrate with Farcaster's on-chain identity and social graph.
+
+## Planned Implementation
+
+### Identity (ID Registry)
+
+```typescript
+import { Farcaster } from './Farcaster.js';
+
+const fc = Farcaster({
+  provider,
+  idRegistry: ID_REGISTRY,
+  keyRegistry: KEY_REGISTRY,
+});
+
+// Get FID for address
+const fid = await fc.getFid(address);
+
+// Get custody address for FID
+const custody = await fc.getCustodyAddress(fid);
+
+// Register new FID
+await fc.register({
+  recovery: recoveryAddress,
+  signer,
+});
+```
+
+### Keys
+
+```typescript
+// Add signer key
+await fc.addKey({
+  fid,
+  key: signerPublicKey,
+  keyType: 1, // Ed25519
+  signer,
+});
+
+// Remove key
+await fc.removeKey({
+  fid,
+  key: signerPublicKey,
+  signer,
+});
+```
+
+### Frames
+
+```typescript
+// Validate frame action message
+const { isValid, message } = await fc.validateFrameAction(
+  trustedData.messageBytes
+);
+
+if (isValid) {
+  console.log('FID:', message.fid);
+  console.log('Button:', message.buttonIndex);
+  console.log('Input:', message.inputText);
+}
+```
+
+## Resources
+
+- [Farcaster Documentation](https://docs.farcaster.xyz/)
+- [Farcaster Contracts](https://github.com/farcasterxyz/contracts)
+- [Frames Specification](https://docs.farcaster.xyz/reference/frames/spec)
+
+## Related
+
+- [siwe-authentication](/skills/siwe-authentication) — Sign-in patterns

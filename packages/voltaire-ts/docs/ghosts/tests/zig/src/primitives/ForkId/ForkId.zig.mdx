@@ -1,0 +1,358 @@
+---
+title: '[Zig] src/primitives/ForkId/ForkId.zig'
+source: 'src/primitives/ForkId/ForkId.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/ForkId/ForkId.zig
+
+### ForkId: from creates fork ID from hash and next
+
+```zig
+test "ForkId: from creates fork ID from hash and next" {
+    const fork_id = ForkId.from(0xfc64ec04, 1920000);
+    try std.testing.expectEqual(@as(u32, 0xfc64ec04), fork_id.hashAsU32());
+    try std.testing.expectEqual(@as(u64, 1920000), fork_id.next);
+}
+```
+
+### ForkId: fromBytes creates from byte array
+
+```zig
+test "ForkId: fromBytes creates from byte array" {
+    const hash = [_]u8{ 0xfc, 0x64, 0xec, 0x04 };
+    const fork_id = ForkId.fromBytes(hash, 1920000);
+    try std.testing.expectEqualSlices(u8, &hash, &fork_id.hash);
+    try std.testing.expectEqual(@as(u64, 1920000), fork_id.next);
+}
+```
+
+### ForkId: fromHex creates from hex string
+
+```zig
+test "ForkId: fromHex creates from hex string" {
+    const fork_id = try ForkId.fromHex("0xfc64ec04", 1920000);
+    try std.testing.expectEqual(@as(u32, 0xfc64ec04), fork_id.hashAsU32());
+    try std.testing.expectEqual(@as(u64, 1920000), fork_id.next);
+}
+```
+
+### ForkId: fromHex without prefix
+
+```zig
+test "ForkId: fromHex without prefix" {
+    const fork_id = try ForkId.fromHex("fc64ec04", 1920000);
+    try std.testing.expectEqual(@as(u32, 0xfc64ec04), fork_id.hashAsU32());
+}
+```
+
+### ForkId: fromHex invalid length
+
+```zig
+test "ForkId: fromHex invalid length" {
+    try std.testing.expectError(error.InvalidHashLength, ForkId.fromHex("0x1234", 0));
+}
+```
+
+### ForkId: toBytes encodes to 12 bytes
+
+```zig
+test "ForkId: toBytes encodes to 12 bytes" {
+    const fork_id = ForkId.from(0xfc64ec04, 1920000);
+    const bytes = fork_id.toBytes();
+    try std.testing.expectEqual(@as(usize, 12), bytes.len);
+}
+```
+
+### ForkId: toBytes encodes correctly
+
+```zig
+test "ForkId: toBytes encodes correctly" {
+    const fork_id = ForkId.from(0x00000001, 0x0000000000000002);
+    const bytes = fork_id.toBytes();
+
+    // First 4 bytes: hash
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[0]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[1]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[2]);
+    try std.testing.expectEqual(@as(u8, 0x01), bytes[3]);
+
+    // Last 8 bytes: next (big-endian)
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[4]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[5]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[6]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[7]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[8]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[9]);
+    try std.testing.expectEqual(@as(u8, 0x00), bytes[10]);
+    try std.testing.expectEqual(@as(u8, 0x02), bytes[11]);
+}
+```
+
+### ForkId: toBytes handles zero next
+
+```zig
+test "ForkId: toBytes handles zero next" {
+    const fork_id = ForkId.from(0xfc64ec04, 0);
+    const bytes = fork_id.toBytes();
+    try std.testing.expectEqual(@as(usize, 12), bytes.len);
+
+    // Last 8 bytes should be zero
+    for (bytes[4..12]) |b| {
+        try std.testing.expectEqual(@as(u8, 0), b);
+    }
+}
+```
+
+### ForkId: fromEncodedBytes roundtrip
+
+```zig
+test "ForkId: fromEncodedBytes roundtrip" {
+    const original = ForkId.from(0xfc64ec04, 1920000);
+    const bytes = original.toBytes();
+    const decoded = ForkId.fromEncodedBytes(bytes);
+    try std.testing.expect(original.equals(decoded));
+}
+```
+
+### ForkId: equals same fork IDs
+
+```zig
+test "ForkId: equals same fork IDs" {
+    const a = ForkId.from(0xfc64ec04, 1920000);
+    const b = ForkId.from(0xfc64ec04, 1920000);
+    try std.testing.expect(a.equals(b));
+}
+```
+
+### ForkId: equals different hash
+
+```zig
+test "ForkId: equals different hash" {
+    const a = ForkId.from(0xfc64ec04, 1920000);
+    const b = ForkId.from(0x12345678, 1920000);
+    try std.testing.expect(!a.equals(b));
+}
+```
+
+### ForkId: equals different next
+
+```zig
+test "ForkId: equals different next" {
+    const a = ForkId.from(0xfc64ec04, 1920000);
+    const b = ForkId.from(0xfc64ec04, 2000000);
+    try std.testing.expect(!a.equals(b));
+}
+```
+
+### ForkId: matches identical fork IDs
+
+```zig
+test "ForkId: matches identical fork IDs" {
+    const local = ForkId.from(0xfc64ec04, 1920000);
+    const remote = ForkId.from(0xfc64ec04, 1920000);
+    try std.testing.expect(ForkId.matches(local, remote));
+}
+```
+
+### ForkId: matches when remote has no future forks
+
+```zig
+test "ForkId: matches when remote has no future forks" {
+    const local = ForkId.from(0xfc64ec04, 1920000);
+    const remote = ForkId.from(0xfc64ec04, 0);
+    try std.testing.expect(ForkId.matches(local, remote));
+}
+```
+
+### ForkId: matches when local has no future forks
+
+```zig
+test "ForkId: matches when local has no future forks" {
+    const local = ForkId.from(0xfc64ec04, 0);
+    const remote = ForkId.from(0xfc64ec04, 1920000);
+    try std.testing.expect(ForkId.matches(local, remote));
+}
+```
+
+### ForkId: not match when hashes match but both have different future forks
+
+```zig
+test "ForkId: not match when hashes match but both have different future forks" {
+    const local = ForkId.from(0xfc64ec04, 1920000);
+    const remote = ForkId.from(0xfc64ec04, 2000000);
+    try std.testing.expect(!ForkId.matches(local, remote));
+}
+```
+
+### ForkId: matches when remote is ahead on known fork
+
+```zig
+test "ForkId: matches when remote is ahead on known fork" {
+    const local = ForkId.from(0x12345678, 1920000);
+    const remote = ForkId.from(0xabcdef00, 2000000);
+    try std.testing.expect(ForkId.matches(local, remote));
+}
+```
+
+### ForkId: not match incompatible forks
+
+```zig
+test "ForkId: not match incompatible forks" {
+    const local = ForkId.from(0x12345678, 2000000);
+    const remote = ForkId.from(0xabcdef00, 1500000);
+    try std.testing.expect(!ForkId.matches(local, remote));
+}
+```
+
+### ForkId: not match when local next is 0 and hashes differ
+
+```zig
+test "ForkId: not match when local next is 0 and hashes differ" {
+    const local = ForkId.from(0x12345678, 0);
+    const remote = ForkId.from(0xabcdef00, 1500000);
+    try std.testing.expect(!ForkId.matches(local, remote));
+}
+```
+
+### ForkId: mainnet genesis fork
+
+```zig
+test "ForkId: mainnet genesis fork" {
+    const genesis = ForkId.from(0xfc64ec04, 1150000);
+    try std.testing.expectEqual(@as(u32, 0xfc64ec04), genesis.hashAsU32());
+    try std.testing.expectEqual(@as(u64, 1150000), genesis.next);
+}
+```
+
+### ForkId: fork progression
+
+```zig
+test "ForkId: fork progression" {
+    const frontier = ForkId.from(0xfc64ec04, 1150000);
+    const homestead = ForkId.from(0x97c2c34c, 1920000);
+    // Same network, different forks - should be compatible
+    try std.testing.expect(ForkId.matches(frontier, homestead));
+}
+```
+
+### ForkId: different networks
+
+```zig
+test "ForkId: different networks" {
+    const mainnet = ForkId.from(0xfc64ec04, 1920000);
+    const ropsten = ForkId.from(0x30c7ddbc, 10);
+    try std.testing.expect(!ForkId.matches(mainnet, ropsten));
+}
+```
+
+### ForkId: toHex returns hex string with 0x prefix
+
+```zig
+test "ForkId: toHex returns hex string with 0x prefix" {
+    const fork_id = ForkId.from(0xfc64ec04, 1920000);
+    const hex = fork_id.toHex();
+    try std.testing.expectEqualStrings("0xfc64ec04", &hex);
+}
+```
+
+### ForkId: toHex handles zero hash
+
+```zig
+test "ForkId: toHex handles zero hash" {
+    const fork_id = ForkId.from(0x00000000, 0);
+    const hex = fork_id.toHex();
+    try std.testing.expectEqualStrings("0x00000000", &hex);
+}
+```
+
+### ForkId: rlpEncode and rlpDecode roundtrip
+
+```zig
+test "ForkId: rlpEncode and rlpDecode roundtrip" {
+    const allocator = std.testing.allocator;
+    const original = ForkId.from(0xfc64ec04, 1920000);
+
+    const encoded = try original.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try ForkId.rlpDecode(allocator, encoded);
+    try std.testing.expect(original.equals(decoded));
+}
+```
+
+### ForkId: rlpEncode with zero next
+
+```zig
+test "ForkId: rlpEncode with zero next" {
+    const allocator = std.testing.allocator;
+    const fork_id = ForkId.from(0xfc64ec04, 0);
+
+    const encoded = try fork_id.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try ForkId.rlpDecode(allocator, encoded);
+    try std.testing.expect(fork_id.equals(decoded));
+    try std.testing.expectEqual(@as(u64, 0), decoded.next);
+}
+```
+
+### ForkId: rlpEncode with max u64 next
+
+```zig
+test "ForkId: rlpEncode with max u64 next" {
+    const allocator = std.testing.allocator;
+    const fork_id = ForkId.from(0xdeadbeef, std.math.maxInt(u64));
+
+    const encoded = try fork_id.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try ForkId.rlpDecode(allocator, encoded);
+    try std.testing.expect(fork_id.equals(decoded));
+}
+```
+
+### ForkId: RLP encoding format per EIP-2124
+
+```zig
+test "ForkId: RLP encoding format per EIP-2124" {
+    const allocator = std.testing.allocator;
+    // Test with known mainnet frontier fork
+    const fork_id = ForkId.from(0xfc64ec04, 1150000);
+
+    const encoded = try fork_id.rlpEncode(allocator);
+    defer allocator.free(encoded);
+
+    // RLP list: [4-byte hash, variable next]
+    // List prefix: 0xc0 + length (short list)
+    // hash: 0x84 + fc64ec04 (4 bytes = 0x84 prefix)
+    // next: 1150000 = 0x118c30 (3 bytes = 0x83 prefix)
+    // Total: 1 (list) + 1 + 4 (hash) + 1 + 3 (next) = 10 bytes
+    try std.testing.expectEqual(@as(usize, 10), encoded.len);
+
+    // First byte is list prefix (0xc0 + 9 = 0xc9)
+    try std.testing.expectEqual(@as(u8, 0xc9), encoded[0]);
+}
+```
+
+### ForkId: Ethereum mainnet fork IDs (EIP-2124 reference)
+
+```zig
+test "ForkId: Ethereum mainnet fork IDs (EIP-2124 reference)" {
+    // Mainnet fork IDs from EIP-2124 specification
+    const allocator = std.testing.allocator;
+
+    // Frontier: hash=0xfc64ec04, next=1150000 (Homestead)
+    const frontier = ForkId.from(0xfc64ec04, 1150000);
+    try std.testing.expectEqual(@as(u32, 0xfc64ec04), frontier.hashAsU32());
+
+    // Homestead: hash=0x97c2c34c, next=1920000 (DAO fork)
+    const homestead = ForkId.from(0x97c2c34c, 1920000);
+    try std.testing.expectEqual(@as(u32, 0x97c2c34c), homestead.hashAsU32());
+
+    // Verify roundtrip for mainnet forks
+    const encoded = try frontier.rlpEncode(allocator);
+    defer allocator.free(encoded);
+    const decoded = try ForkId.rlpDecode(allocator, encoded);
+    try std.testing.expect(frontier.equals(decoded));
+}
+```

@@ -1,0 +1,121 @@
+---
+title: '[Zig] src/primitives/BlockFilter/block_filter.zig'
+source: 'src/primitives/BlockFilter/block_filter.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/BlockFilter/block_filter.zig
+
+### from - creates block filter
+
+```zig
+test "from - creates block filter" {
+    const id = filter_id.fromU64(1);
+    const f = from(&id);
+    try std.testing.expect(filter_id.equals(&f.filter_id, &id));
+    try std.testing.expectEqual(FilterType.block, f.filter_type);
+}
+```
+
+### from - different ids create distinct filters
+
+```zig
+test "from - different ids create distinct filters" {
+    const id1 = filter_id.fromU64(1);
+    const id2 = filter_id.fromU64(2);
+    const f1 = from(&id1);
+    const f2 = from(&id2);
+    try std.testing.expect(!filter_id.equals(&f1.filter_id, &f2.filter_id));
+}
+```
+
+### fromHex - creates block filter
+
+```zig
+test "fromHex - creates block filter" {
+    const f = try fromHex("0x1");
+    try std.testing.expectEqual(FilterType.block, f.filter_type);
+}
+```
+
+### fromU64 - creates block filter
+
+```zig
+test "fromU64 - creates block filter" {
+    const f = fromU64(42);
+    try std.testing.expectEqual(FilterType.block, f.filter_type);
+    try std.testing.expectEqual(@as(u8, 42), f.filter_id.data[0]);
+}
+```
+
+### getFilterId - returns filter id
+
+```zig
+test "getFilterId - returns filter id" {
+    const f = fromU64(123);
+    const id = getFilterId(&f);
+    const expected = filter_id.fromU64(123);
+    try std.testing.expect(filter_id.equals(id, &expected));
+}
+```
+
+### toHex - returns filter id hex
+
+```zig
+test "toHex - returns filter id hex" {
+    const f = try fromHex("0xabcd");
+    const hex = try toHex(&f, std.testing.allocator);
+    defer std.testing.allocator.free(hex);
+    try std.testing.expect(std.mem.eql(u8, hex, "0xabcd"));
+}
+```
+
+### toJson - returns JSON object
+
+```zig
+test "toJson - returns JSON object" {
+    const f = try fromHex("0x1");
+    const json = try toJson(&f, std.testing.allocator);
+    defer std.testing.allocator.free(json);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"filterId\":\"0x01\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"type\":\"block\"") != null);
+}
+```
+
+### equals - same filters
+
+```zig
+test "equals - same filters" {
+    const f1 = fromU64(1);
+    const f2 = fromU64(1);
+    try std.testing.expect(equals(&f1, &f2));
+}
+```
+
+### equals - different filters
+
+```zig
+test "equals - different filters" {
+    const f1 = fromU64(1);
+    const f2 = fromU64(2);
+    try std.testing.expect(!equals(&f1, &f2));
+}
+```
+
+### clone - creates copy
+
+```zig
+test "clone - creates copy" {
+    const f1 = fromU64(42);
+    const f2 = clone(&f1);
+    try std.testing.expect(equals(&f1, &f2));
+}
+```
+
+### isBlockFilter - always true for BlockFilter
+
+```zig
+test "isBlockFilter - always true for BlockFilter" {
+    const f = fromU64(1);
+    try std.testing.expect(isBlockFilter(&f));
+}
+```

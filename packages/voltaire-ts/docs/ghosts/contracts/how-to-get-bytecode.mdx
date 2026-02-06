@@ -1,0 +1,73 @@
+---
+title: How to Get Contract Bytecode
+description: Retrieve and analyze deployed contract bytecode
+---
+
+## Goal
+
+Fetch deployed bytecode from an on-chain contract address.
+
+## Using eth_getCode
+
+```typescript
+import * as Hex from '@voltaire/primitives/Hex';
+import * as Bytecode from '@voltaire/primitives/Bytecode';
+
+// Fetch bytecode
+const codeHex = await provider.request({
+  method: 'eth_getCode',
+  params: ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 'latest']
+});
+
+// Convert to Bytecode type
+const bytecode = Bytecode.fromHex(codeHex);
+
+// Get bytecode size
+console.log(`Size: ${Bytecode.size(bytecode)} bytes`);
+```
+
+## Analyze Bytecode
+
+```typescript
+import * as Bytecode from '@voltaire/primitives/Bytecode';
+
+const bytecode = Bytecode.fromHex(codeHex);
+
+// Analyze structure
+const analysis = Bytecode.analyze(bytecode);
+console.log(`Total instructions: ${analysis.instructionCount}`);
+console.log(`Has metadata: ${Bytecode.hasMetadata(bytecode)}`);
+
+// Parse opcodes
+for (const { pc, opcode, value } of Bytecode.scan(bytecode)) {
+  console.log(`${pc}: ${opcode}${value ? ` ${value}` : ''}`);
+}
+```
+
+## Strip Metadata
+
+```typescript
+import * as Bytecode from '@voltaire/primitives/Bytecode';
+
+// Remove Solidity metadata (CBOR-encoded compiler info)
+const stripped = Bytecode.stripMetadata(bytecode);
+```
+
+## Get Bytecode Hash
+
+```typescript
+import * as Bytecode from '@voltaire/primitives/Bytecode';
+
+// Keccak256 hash of bytecode
+const codeHash = Bytecode.hash(bytecode);
+```
+
+## Historical Bytecode
+
+```typescript
+// Get bytecode at specific block (useful for upgradeable proxies)
+const oldCode = await provider.request({
+  method: 'eth_getCode',
+  params: ['0x...', '0xE8D4A5'] // block 15,250,597
+});
+```

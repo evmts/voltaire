@@ -1,0 +1,302 @@
+---
+title: "System"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [evm](../index.mdx) / System
+
+# System
+
+## Functions
+
+### call()
+
+> **call**(`frame`, `host?`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/system/0xf1\_CALL.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/system/0xf1_CALL.js#L32)
+
+CALL opcode (0xf1) - Message call into an account
+
+Stack: [gas, address, value, inOffset, inLength, outOffset, outLength] => [success]
+Gas: Complex (base + memory + cold access + value transfer + new account)
+
+## Architecture Note
+
+This is a low-level opcode handler. For full nested execution, the host must
+provide a `call` method. Full EVM implementations are in:
+- **guillotine**: Production EVM with async state, tracing, full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing
+
+When host.call is not provided, returns NotImplemented error.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host?
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface (optional)
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### callcode()
+
+> **callcode**(`frame`, `host?`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/system/0xf2\_CALLCODE.js:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/system/0xf2_CALLCODE.js#L34)
+
+CALLCODE opcode (0xf2) - Message call into this account with another account's code
+
+Stack: [gas, address, value, inOffset, inLength, outOffset, outLength] => [success]
+Gas: Similar to CALL but executes code in current context
+
+## Architecture Note
+
+This is a low-level opcode handler. For full nested execution, the host must
+provide a `call` method. Full EVM implementations are in:
+- **guillotine**: Production EVM with async state, tracing, full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing
+
+When host.call is not provided, returns NotImplemented error.
+
+Note: CALLCODE is deprecated in favor of DELEGATECALL (EIP-7).
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host?
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface (optional)
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### create()
+
+> **create**(`frame`, `host?`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/system/0xf0\_CREATE.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/system/0xf0_CREATE.js#L21)
+
+CREATE opcode (0xf0) - Create a new contract
+
+Stack: [value, offset, length] => [address]
+Gas: 32000 + memory expansion + init code hash cost
+
+## Architecture Note
+
+This is a low-level opcode handler. For full nested execution, the host must
+provide a `create` method. Full EVM implementations are in:
+- **guillotine**: Production EVM with async state, tracing, full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing
+
+When host.create is not provided, returns NotImplemented error.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host?
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface (optional)
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### create2()
+
+> **create2**(`frame`, `host?`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/system/0xf5\_CREATE2.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/system/0xf5_CREATE2.js#L23)
+
+CREATE2 opcode (0xf5) - Create a new contract with deterministic address
+
+Stack: [value, offset, length, salt] => [address]
+Gas: 32000 + memory expansion + init code hash cost + keccak256 cost
+Address: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))
+Note: Introduced in EIP-1014 (Constantinople)
+
+## Architecture Note
+
+This is a low-level opcode handler. For full nested execution, the host must
+provide a `create` method. Full EVM implementations are in:
+- **guillotine**: Production EVM with async state, tracing, full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing
+
+When host.create is not provided, returns NotImplemented error.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host?
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface (optional)
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### delegatecall()
+
+> **delegatecall**(`frame`, `host?`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/system/0xf4\_DELEGATECALL.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/system/0xf4_DELEGATECALL.js#L22)
+
+DELEGATECALL opcode (0xf4) - Message call with another account's code, preserving msg.sender and msg.value
+
+Stack: [gas, address, inOffset, inLength, outOffset, outLength] => [success]
+Gas: Similar to CALL but no value parameter (preserves current msg.value)
+Note: Introduced in EIP-7 (Homestead)
+
+## Architecture Note
+
+This is a low-level opcode handler. For full nested execution, the host must
+provide a `call` method. Full EVM implementations are in:
+- **guillotine**: Production EVM with async state, tracing, full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing
+
+When host.call is not provided, returns NotImplemented error.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host?
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface (optional)
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### selfdestruct()
+
+> **selfdestruct**(`frame`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/system/0xff\_SELFDESTRUCT.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/system/0xff_SELFDESTRUCT.js#L14)
+
+SELFDESTRUCT opcode (0xff) - Halt execution and register account for deletion
+
+Stack: [beneficiary] => []
+Gas: 5000 + cold account access (EIP-2929) + new account (if needed)
+Note: Behavior changed significantly in EIP-6780 (Cancun)
+
+Pre-Cancun: Marks account for deletion, transfers balance to beneficiary
+Post-Cancun: Only deletes if account was created in same transaction, always transfers balance
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any
+
+***
+
+### staticcall()
+
+> **staticcall**(`frame`, `host?`): [`EvmError`](../index.mdx#evmerror) \| `null`
+
+Defined in: [src/evm/system/0xfa\_STATICCALL.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/evm/system/0xfa_STATICCALL.js#L32)
+
+STATICCALL opcode (0xfa) - Static message call (no state modifications allowed)
+
+Stack: [gas, address, inOffset, inLength, outOffset, outLength] => [success]
+Gas: Similar to CALL but no value parameter
+Note: Introduced in EIP-214 (Byzantium)
+Note: Sets isStatic flag, preventing any state modifications in called context
+
+## Architecture Note
+
+This is a low-level opcode handler. For full nested execution, the host must
+provide a `call` method. Full EVM implementations are in:
+- **guillotine**: Production EVM with async state, tracing, full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing
+
+When host.call is not provided, returns NotImplemented error.
+
+#### Parameters
+
+##### frame
+
+[`BrandedFrame`](../index.mdx#brandedframe)
+
+Frame instance
+
+##### host?
+
+[`BrandedHost`](../index.mdx#brandedhost)
+
+Host interface (optional)
+
+#### Returns
+
+[`EvmError`](../index.mdx#evmerror) \| `null`
+
+Error if any

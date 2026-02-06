@@ -1,0 +1,97 @@
+---
+title: '[TS/JS] src/primitives/Uint64/shiftRight.test.ts'
+source: 'src/primitives/Uint64/shiftRight.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Uint64/shiftRight.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { ZERO } from "./constants.js";
+import { from } from "./from.js";
+import { shiftRight } from "./shiftRight.js";
+
+describe("Uint64.shiftRight", () => {
+	describe("known values", () => {
+		it("1 >> 0 = 1", () => {
+			const result = shiftRight(from(1n), 0);
+			expect(result).toBe(1n);
+		});
+
+		it("2 >> 1 = 1", () => {
+			const result = shiftRight(from(2n), 1);
+			expect(result).toBe(1n);
+		});
+
+		it("256 >> 8 = 1", () => {
+			const result = shiftRight(from(256n), 8);
+			expect(result).toBe(1n);
+		});
+
+		it("16 >> 3 = 2", () => {
+			const result = shiftRight(from(16n), 3);
+			expect(result).toBe(2n);
+		});
+
+		it("80 >> 4 = 5", () => {
+			const result = shiftRight(from(80n), 4);
+			expect(result).toBe(5n);
+		});
+
+		it("0xff00 >> 8 = 0xff", () => {
+			const result = shiftRight(from(0xff00n), 8);
+			expect(result).toBe(0xffn);
+		});
+	});
+
+	describe("edge cases", () => {
+		it("0 >> n = 0", () => {
+			const result = shiftRight(ZERO, 10);
+			expect(result).toBe(0n);
+		});
+
+		it("n >> 0 = n", () => {
+			const result = shiftRight(from(42n), 0);
+			expect(result).toBe(42n);
+		});
+
+		it("1 >> 1 = 0", () => {
+			const result = shiftRight(from(1n), 1);
+			expect(result).toBe(0n);
+		});
+
+		it("large shift becomes 0", () => {
+			const result = shiftRight(from(0xffffn), 64);
+			expect(result).toBe(0n);
+		});
+
+		it("shift larger than bit width becomes 0", () => {
+			const result = shiftRight(from(999999n), 100);
+			expect(result).toBe(0n);
+		});
+	});
+
+	describe("properties", () => {
+		it("equivalent to division: a >> n = floor(a / 2^n)", () => {
+			const a = from(40n);
+			const n = 3;
+			expect(shiftRight(a, n)).toBe(a / (1n << BigInt(n)));
+		});
+
+		it("chaining: (a >> m) >> n = a >> (m + n)", () => {
+			const a = from(160n);
+			const m = 2;
+			const n = 3;
+			expect(shiftRight(shiftRight(a, m), n)).toBe(shiftRight(a, m + n));
+		});
+
+		it("inverse of shift left (for exact powers): (a << n) >> n = a", () => {
+			const a = from(5n);
+			const n = 3;
+			const shifted = (a << BigInt(n)) & 0xffffffffffffffffn;
+			expect(shiftRight(from(shifted), n)).toBe(a);
+		});
+	});
+});
+
+```

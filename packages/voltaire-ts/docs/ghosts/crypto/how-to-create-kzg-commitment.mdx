@@ -1,0 +1,71 @@
+---
+title: How to Create KZG Commitment
+description: Create a KZG polynomial commitment from a blob for EIP-4844
+---
+
+## Goal
+
+Convert a 128 KB blob into a 48-byte KZG commitment for EIP-4844 blob transactions.
+
+## Example (TypeScript)
+
+```typescript
+import { Kzg, Blob } from '@tevm/voltaire';
+
+// Load trusted setup (required once before any KZG operations)
+Kzg.loadTrustedSetup();
+
+// Create blob (131,072 bytes = 4096 field elements x 32 bytes)
+const blob = Blob(131072);
+
+// Fill with rollup data
+// Each 32-byte field element must have top byte = 0
+for (let i = 0; i < 4096; i++) {
+  const offset = i * 32;
+  blob[offset] = 0; // Top byte must be 0 (< BLS12-381 modulus)
+  // Fill remaining 31 bytes with data
+}
+
+// Generate commitment
+const commitment = Kzg.Commitment(blob);
+// Returns: Uint8Array (48 bytes)
+
+console.log(`Commitment: ${Buffer.from(commitment).toString('hex')}`);
+```
+
+## Factory API (Tree-Shakeable)
+
+```typescript
+import { Kzg, Blob } from '@tevm/voltaire';
+import * as ckzg from 'c-kzg';
+
+Kzg.loadTrustedSetup();
+
+// Create factory with dependency injection
+const Commitment = Kzg.CommitmentFactory({
+  blobToKzgCommitment: ckzg.blobToKzgCommitment
+});
+
+const blob = Blob(131072);
+const commitment = Commitment(blob);
+```
+
+## Error Handling
+
+```typescript
+try {
+  const commitment = Kzg.Commitment(blob);
+} catch (error) {
+  if (error instanceof KzgNotInitializedError) {
+    Kzg.loadTrustedSetup();
+  } else if (error instanceof KzgInvalidBlobError) {
+    console.error('Invalid blob format');
+  }
+}
+```
+
+## Related
+
+- [KZG Commitments](/crypto/kzg/commitments)
+- [KZG Overview](/crypto/kzg)
+- [EIP-4844](/crypto/kzg/eip-4844)

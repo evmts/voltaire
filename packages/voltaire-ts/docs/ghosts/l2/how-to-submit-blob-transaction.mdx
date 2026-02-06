@@ -1,0 +1,177 @@
+---
+title: How to Submit Blob Transactions (EIP-4844)
+description: Create and submit blob-carrying transactions for L2 data availability.
+---
+
+## Goal
+
+Construct and submit EIP-4844 blob transactions for posting data to L1.
+
+## Concepts
+
+EIP-4844 introduces:
+- **Blobs**: 128KB data chunks stored temporarily (~18 days)
+- **Blob gas**: Separate fee market from execution gas
+- **KZG commitments**: Cryptographic proofs for blob data
+- **Versioned hashes**: References to blobs in transaction
+
+Each blob:
+- Size: 131,072 bytes (128KB)
+- Max per tx: 6 blobs
+- Cost: Separate blob gas market with own base fee
+
+## Example: Create Blob Transaction
+
+```typescript
+import * as Blob from '@voltaire/primitives/Blob';
+import * as Transaction from '@voltaire/primitives/Transaction';
+import * as Address from '@voltaire/primitives/Address';
+import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+
+// Prepare data for blob
+const data = new TextEncoder().encode("Rollup batch data...");
+
+// Create blob from data (auto-pads to 128KB)
+const blob = Blob.fromData(data);
+
+// Generate KZG commitment and proof
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob, commitment);
+const versionedHash = Blob.toVersionedHash(commitment);
+
+// Verify blob integrity
+const isValid = Blob.verify(blob, commitment, proof);
+console.log(`Blob valid: ${isValid}`);
+
+// Create EIP-4844 transaction
+const tx = Transaction.EIP4844({
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  maxFeePerGas: 50_000_000_000n,
+  gasLimit: 21000n,
+  to: Address("0x1234567890123456789012345678901234567890"),
+  value: 0n,
+  data: new Uint8Array(0),
+  accessList: [],
+  maxFeePerBlobGas: 10_000_000_000n, // Max willing to pay per blob gas
+  blobVersionedHashes: [versionedHash],
+});
+
+// Serialize for broadcast (includes blob sidecar)
+const serialized = Transaction.serialize(tx);
+```
+
+## Calculate Blob Gas Costs
+
+```typescript
+import * as Blob from '@voltaire/primitives/Blob';
+import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+
+// Blob gas constants
+const GAS_PER_BLOB = Blob.GAS_PER_BLOB;           // 131072
+const TARGET_BLOBS_PER_BLOCK = 3;                  // Target for fee adjustment
+const MAX_BLOBS_PER_BLOCK = 6;
+
+// Estimate blob count needed
+const dataSize = 250_000; // 250KB of data
+const blobCount = Blob.estimateBlobCount(dataSize); // 2 blobs
+
+// Calculate gas needed
+const blobGas = Blob.calculateGas(blobCount);      // 262144
+
+// Get current blob base fee from block
+const blockState = {
+  excessBlobGas: 393216n,
+  blobGasUsed: 0n,
+  gasUsed: 15_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 30_000_000_000n,
+};
+
+const blobBaseFee = FeeMarket.getBlobBaseFee(blockState);
+
+// Total blob fee
+const totalBlobFee = BigInt(blobGas) * blobBaseFee;
+console.log(`Blob fee: ${totalBlobFee} wei`);
+```
+
+## Full Transaction Fee Breakdown
+
+```typescript
+import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+
+const feeParams = {
+  maxFeePerGas: 50_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 30_000_000_000n,
+  gasLimit: 100_000n,
+  maxFeePerBlobGas: 10_000_000_000n,
+  blobBaseFee: 5_000_000n,
+  blobCount: 2n,
+};
+
+const fee = FeeMarket.calculateBlobTxFee(feeParams);
+
+console.log(`Effective gas price: ${fee.effectiveGasPrice} wei`);
+console.log(`Max fee: ${fee.maxFee} wei`);
+console.log(`Blob gas price: ${fee.blobGasPrice} wei`);
+console.log(`Total blob fee: ${fee.totalBlobFee} wei`);
+```
+
+## Split Large Data into Blobs
+
+```typescript
+import * as Blob from '@voltaire/primitives/Blob';
+
+// Large rollup batch (400KB)
+const batchData = new Uint8Array(400_000);
+
+// Split into multiple blobs
+const blobs = Blob.splitData(batchData);
+console.log(`Split into ${blobs.length} blobs`); // 4 blobs
+
+// Reconstruct original data
+const reconstructed = Blob.joinData(blobs);
+```
+
+## Verify Blob Batch
+
+```typescript
+import * as Blob from '@voltaire/primitives/Blob';
+
+const blobs = [blob1, blob2, blob3];
+const commitments = blobs.map(b => Blob.toCommitment(b));
+const proofs = blobs.map((b, i) => Blob.toProof(b, commitments[i]));
+
+// Batch verification (more efficient than individual)
+const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+```
+
+## Key Points
+
+- Blobs are pruned after ~18 days; archive if needed long-term
+- Blob gas has separate base fee from execution gas
+- Use `maxFeePerBlobGas` to cap blob costs
+- Blob transactions must have at least 1 blob
+- Versioned hashes link tx to blobs cryptographically
+
+## Constants Reference
+
+```typescript
+import * as Blob from '@voltaire/primitives/Blob';
+
+Blob.SIZE                    // 131072 (128KB)
+Blob.FIELD_ELEMENTS_PER_BLOB // 4096
+Blob.BYTES_PER_FIELD_ELEMENT // 32
+Blob.MAX_PER_TRANSACTION     // 6
+Blob.GAS_PER_BLOB           // 131072
+Blob.COMMITMENT_VERSION_KZG // 0x01
+```
+
+## Related
+
+- `/primitives/blob` - Full Blob API documentation
+- `/primitives/feemarket/eip4844` - Blob fee market
+- `/primitives/transaction/eip4844` - EIP-4844 transaction type
+- `/ghosts/l2/how-to-estimate-l1-data-fee` - L1 data fees

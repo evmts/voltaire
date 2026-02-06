@@ -1,0 +1,23 @@
+---
+title: Address — Validate and Checksum
+description: Validate an EVM address and return the EIP-55 checksummed version.
+---
+
+## Goal
+
+Given a hex address, return a valid checksummed address.
+
+Return as:
+
+ANSWER: 0x...
+
+## Example (TypeScript)
+
+```ts
+import { toChecksummed, isValid } from '@tevm/voltaire/Address'
+
+const input = '0x1234567890123456789012345678901234567890'
+if (!isValid(input)) throw new Error('invalid address')
+console.log(`ANSWER: ${toChecksummed(input)}`)
+```
+

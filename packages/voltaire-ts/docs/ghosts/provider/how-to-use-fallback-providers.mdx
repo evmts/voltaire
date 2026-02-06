@@ -1,0 +1,133 @@
+---
+title: Use Multiple Providers (Fallback)
+description: Configure fallback providers for reliability and redundancy.
+---
+
+## Basic Fallback
+
+```typescript
+import { HttpProvider } from '@tevm/voltaire/provider';
+
+const providers = [
+  new HttpProvider('https://eth.llamarpc.com'),
+  new HttpProvider('https://rpc.ankr.com/eth'),
+  new HttpProvider('https://cloudflare-eth.com')
+];
+
+async function requestWithFallback(
+  method: string,
+  params: unknown[]
+) {
+  for (const provider of providers) {
+    try {
+      return await provider.request({ method, params });
+    } catch (error) {
+      console.warn('Provider failed, trying next...');
+    }
+  }
+  throw new Error('All providers failed');
+}
+
+// Usage
+const blockNumber = await requestWithFallback('eth_blockNumber', []);
+```
+
+## Fallback Provider Class
+
+```typescript
+class FallbackProvider {
+  private providers: HttpProvider[];
+  private currentIndex = 0;
+
+  constructor(urls: string[]) {
+    this.providers = urls.map(url => new HttpProvider(url));
+  }
+
+  async request(args: { method: string; params?: unknown[] }) {
+    const startIndex = this.currentIndex;
+
+    do {
+      try {
+        const result = await this.providers[this.currentIndex].request(args);
+        return result;
+      } catch (error) {
+        this.currentIndex = (this.currentIndex + 1) % this.providers.length;
+        if (this.currentIndex === startIndex) {
+          throw new Error('All providers failed');
+        }
+      }
+    } while (true);
+  }
+}
+
+// Usage
+const provider = new FallbackProvider([
+  'https://eth.llamarpc.com',
+  'https://rpc.ankr.com/eth',
+  'https://cloudflare-eth.com'
+]);
+
+const balance = await provider.request({
+  method: 'eth_getBalance',
+  params: [address, 'latest']
+});
+```
+
+## Racing Providers
+
+```typescript
+async function raceProviders(
+  providers: HttpProvider[],
+  method: string,
+  params: unknown[]
+) {
+  return Promise.race(
+    providers.map(p => p.request({ method, params }))
+  );
+}
+
+// Returns fastest response
+const blockNumber = await raceProviders(providers, 'eth_blockNumber', []);
+```
+
+## Health-Checked Fallback
+
+```typescript
+class HealthyFallbackProvider {
+  private providers: Array<{ provider: HttpProvider; healthy: boolean }>;
+
+  constructor(urls: string[]) {
+    this.providers = urls.map(url => ({
+      provider: new HttpProvider(url),
+      healthy: true
+    }));
+  }
+
+  async request(args: { method: string; params?: unknown[] }) {
+    // Try healthy providers first
+    for (const entry of this.providers) {
+      if (!entry.healthy) continue;
+
+      try {
+        return await entry.provider.request(args);
+      } catch {
+        entry.healthy = false;
+        setTimeout(() => { entry.healthy = true; }, 60000); // Retry in 1 min
+      }
+    }
+
+    // All unhealthy, try any
+    for (const entry of this.providers) {
+      try {
+        const result = await entry.provider.request(args);
+        entry.healthy = true;
+        return result;
+      } catch {
+        // Continue to next
+      }
+    }
+
+    throw new Error('All providers failed');
+  }
+}
+```

@@ -1,0 +1,330 @@
+---
+title: "primitives/Uncle"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Uncle
+
+# primitives/Uncle
+
+## Type Aliases
+
+### UncleType
+
+> **UncleType** = `object`
+
+Defined in: [src/primitives/Uncle/UncleType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L17)
+
+Uncle (Ommer) block type - represents uncle/ommer block header
+
+Uncle blocks are valid blocks that were mined but not included in the main chain.
+They receive reduced rewards and help secure the network.
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/uncle for Uncle documentation
+ - https://ethereum.org/en/glossary/#ommer for ommer/uncle definition
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### beneficiary
+
+> `readonly` **beneficiary**: [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L20)
+
+##### difficulty
+
+> `readonly` **difficulty**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L25)
+
+##### extraData
+
+> `readonly` **extraData**: `Uint8Array`
+
+Defined in: [src/primitives/Uncle/UncleType.ts:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L30)
+
+##### gasLimit
+
+> `readonly` **gasLimit**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L27)
+
+##### gasUsed
+
+> `readonly` **gasUsed**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L28)
+
+##### logsBloom
+
+> `readonly` **logsBloom**: `Uint8Array`
+
+Defined in: [src/primitives/Uncle/UncleType.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L24)
+
+##### mixHash
+
+> `readonly` **mixHash**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L31)
+
+##### nonce
+
+> `readonly` **nonce**: `Uint8Array`
+
+Defined in: [src/primitives/Uncle/UncleType.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L32)
+
+##### number
+
+> `readonly` **number**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L26)
+
+##### ommersHash
+
+> `readonly` **ommersHash**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L19)
+
+##### parentHash
+
+> `readonly` **parentHash**: [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L18)
+
+##### receiptsRoot
+
+> `readonly` **receiptsRoot**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L23)
+
+##### stateRoot
+
+> `readonly` **stateRoot**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L21)
+
+##### timestamp
+
+> `readonly` **timestamp**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L29)
+
+##### transactionsRoot
+
+> `readonly` **transactionsRoot**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Uncle/UncleType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/UncleType.ts#L22)
+
+## Variables
+
+### Uncle
+
+> `const` **Uncle**: `object`
+
+Defined in: [src/primitives/Uncle/index.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/index.ts#L32)
+
+#### Type Declaration
+
+##### from()
+
+> **from**: (`params`) => [`UncleType`](#uncletype)
+
+###### Parameters
+
+###### params
+
+###### beneficiary
+
+`string` \| [`AddressType`](Address.mdx#addresstype)
+
+###### difficulty
+
+`string` \| `number` \| `bigint`
+
+###### extraData
+
+`Uint8Array`
+
+###### gasLimit
+
+`string` \| `number` \| `bigint`
+
+###### gasUsed
+
+`string` \| `number` \| `bigint`
+
+###### logsBloom
+
+`Uint8Array`
+
+###### mixHash
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### nonce
+
+`Uint8Array`
+
+###### number
+
+`number` \| `bigint`
+
+###### ommersHash
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### parentHash
+
+`string` \| [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+###### receiptsRoot
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### stateRoot
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### timestamp
+
+`string` \| `number` \| `bigint`
+
+###### transactionsRoot
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### Returns
+
+[`UncleType`](#uncletype)
+
+## Functions
+
+### \_from()
+
+> **\_from**(`params`): [`UncleType`](#uncletype)
+
+Defined in: [src/primitives/Uncle/from.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/from.js#L53)
+
+Create Uncle from components
+
+#### Parameters
+
+##### params
+
+`UncleParams`
+
+Uncle parameters
+
+#### Returns
+
+[`UncleType`](#uncletype)
+
+Uncle
+
+#### Example
+
+```typescript
+const uncle = Uncle.from({
+  parentHash: "0x1234...",
+  ommersHash: "0x5678...",
+  beneficiary: "0xabcd...",
+  stateRoot: "0xef01...",
+  transactionsRoot: "0x2345...",
+  receiptsRoot: "0x6789...",
+  logsBloom: new Uint8Array(256),
+  difficulty: 0n,
+  number: 12345n,
+  gasLimit: 30000000n,
+  gasUsed: 21000n,
+  timestamp: 1234567890n,
+  extraData: new Uint8Array(0),
+  mixHash: "0xabcd...",
+  nonce: new Uint8Array(8)
+});
+```
+
+***
+
+### from()
+
+> **from**(`params`): [`UncleType`](#uncletype)
+
+Defined in: [src/primitives/Uncle/index.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uncle/index.ts#L11)
+
+#### Parameters
+
+##### params
+
+###### beneficiary
+
+`string` \| [`AddressType`](Address.mdx#addresstype)
+
+###### difficulty
+
+`string` \| `number` \| `bigint`
+
+###### extraData
+
+`Uint8Array`
+
+###### gasLimit
+
+`string` \| `number` \| `bigint`
+
+###### gasUsed
+
+`string` \| `number` \| `bigint`
+
+###### logsBloom
+
+`Uint8Array`
+
+###### mixHash
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### nonce
+
+`Uint8Array`
+
+###### number
+
+`number` \| `bigint`
+
+###### ommersHash
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### parentHash
+
+`string` \| [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+###### receiptsRoot
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### stateRoot
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+###### timestamp
+
+`string` \| `number` \| `bigint`
+
+###### transactionsRoot
+
+`string` \| [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+#### Returns
+
+[`UncleType`](#uncletype)

@@ -1,0 +1,225 @@
+/**
+ * Tests for docs/jsonrpc-provider/method-api.mdx
+ *
+ * Tests the Method API documentation examples showing request builders,
+ * branded primitives, and various method categories.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Method API Documentation", () => {
+	describe("Request Builders", () => {
+		it("creates request with branded primitives", async () => {
+			const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+
+			// Build requests as shown in docs
+			const blockRequest = Rpc.Eth.BlockNumberRequest();
+			const balanceRequest = Rpc.Eth.GetBalanceRequest(address, "latest");
+
+			expect(blockRequest.method).toBe("eth_blockNumber");
+			expect(balanceRequest.method).toBe("eth_getBalance");
+			expect(balanceRequest.params?.[0]).toBe(address);
+		});
+
+		it("creates GetBlockByHashRequest with full transactions option", async () => {
+			const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+			const blockHash =
+				"0xb3b20624f8f0f86eb50dd04688409e5cea4bd02d700bf6e79e9384d47d6a5a35";
+
+			// With full transactions
+			const fullTxReq = Rpc.Eth.GetBlockByHashRequest(blockHash, true);
+			expect(fullTxReq.method).toBe("eth_getBlockByHash");
+			expect(fullTxReq.params?.[1]).toBe(true);
+
+			// With hashes only
+			const hashOnlyReq = Rpc.Eth.GetBlockByHashRequest(blockHash, false);
+			expect(hashOnlyReq.params?.[1]).toBe(false);
+		});
+	});
+
+	describe("BlockTag Parameter", () => {
+		it("supports all block tag values", async () => {
+			const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+
+			// Test all standard block tags as shown in docs
+			const tags = ["latest", "earliest", "pending", "safe", "finalized"];
+
+			for (const tag of tags) {
+				const req = Rpc.Eth.GetBalanceRequest(address, tag);
+				expect(req.params?.[1]).toBe(tag);
+			}
+
+			// Test hex block number
+			const hexBlockReq = Rpc.Eth.GetBalanceRequest(address, "0x112A880");
+			expect(hexBlockReq.params?.[1]).toBe("0x112A880");
+		});
+	});
+
+	describe("Method Categories", () => {
+		describe("Read Operations", () => {
+			it("creates all state read requests", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+
+				// Block number
+				const blockNumReq = Rpc.Eth.BlockNumberRequest();
+				expect(blockNumReq.method).toBe("eth_blockNumber");
+
+				// Balance
+				const balanceReq = Rpc.Eth.GetBalanceRequest(address, "latest");
+				expect(balanceReq.method).toBe("eth_getBalance");
+
+				// Transaction count (nonce)
+				const nonceReq = Rpc.Eth.GetTransactionCountRequest(address, "latest");
+				expect(nonceReq.method).toBe("eth_getTransactionCount");
+
+				// Code
+				const codeReq = Rpc.Eth.GetCodeRequest(address, "latest");
+				expect(codeReq.method).toBe("eth_getCode");
+
+				// Storage
+				const storageReq = Rpc.Eth.GetStorageAtRequest(address, "0x0", "latest");
+				expect(storageReq.method).toBe("eth_getStorageAt");
+			});
+		});
+
+		describe("Contract Calls", () => {
+			it("creates CallRequest for read-only calls", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const request = Rpc.Eth.CallRequest(
+					{
+						to: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+						data: "0x70a08231000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0",
+					},
+					"latest",
+				);
+
+				expect(request.method).toBe("eth_call");
+				expect(request.params?.[1]).toBe("latest");
+			});
+
+			it("creates EstimateGasRequest", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const request = Rpc.Eth.EstimateGasRequest({
+					from: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+					to: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					value: "0xDE0B6B3A7640000", // 1 ETH in wei
+					data: "0x",
+				});
+
+				expect(request.method).toBe("eth_estimateGas");
+			});
+		});
+
+		describe("Transaction Operations", () => {
+			it("creates SendRawTransactionRequest", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const signedTx = "0xf86c808504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a0";
+
+				const request = Rpc.Eth.SendRawTransactionRequest(signedTx);
+
+				expect(request.method).toBe("eth_sendRawTransaction");
+				expect(request.params?.[0]).toBe(signedTx);
+			});
+
+			it("creates GetTransactionByHashRequest", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const txHash =
+					"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+
+				const request = Rpc.Eth.GetTransactionByHashRequest(txHash);
+
+				expect(request).toEqual({
+					method: "eth_getTransactionByHash",
+					params: [txHash],
+				});
+			});
+
+			it("creates GetTransactionReceiptRequest", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const txHash =
+					"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b";
+
+				const request = Rpc.Eth.GetTransactionReceiptRequest(txHash);
+
+				expect(request).toEqual({
+					method: "eth_getTransactionReceipt",
+					params: [txHash],
+				});
+			});
+		});
+
+		describe("Block Operations", () => {
+			it("creates GetBlockByNumberRequest", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const request = Rpc.Eth.GetBlockByNumberRequest("latest", true);
+
+				expect(request.method).toBe("eth_getBlockByNumber");
+				expect(request.params?.[0]).toBe("latest");
+				expect(request.params?.[1]).toBe(true);
+			});
+
+			it("creates GetUncleCountByBlockNumberRequest", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const request = Rpc.Eth.GetUncleCountByBlockNumberRequest("latest");
+
+				expect(request).toEqual({
+					method: "eth_getUncleCountByBlockNumber",
+					params: ["latest"],
+				});
+			});
+		});
+
+		describe("Log Queries", () => {
+			it("creates GetLogsRequest with filter", async () => {
+				const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+				const request = Rpc.Eth.GetLogsRequest({
+					fromBlock: "earliest",
+					toBlock: "latest",
+					address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+					topics: [
+						"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+					],
+				});
+
+				expect(request.method).toBe("eth_getLogs");
+				expect(request.params?.[0]).toHaveProperty("fromBlock", "earliest");
+				expect(request.params?.[0]).toHaveProperty("toBlock", "latest");
+			});
+		});
+	});
+
+	describe("Best Practices - Batching", () => {
+		it("supports creating multiple independent requests for Promise.all", async () => {
+			const { Rpc } = await import("../../src/jsonrpc/index.js");
+
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+
+			// As shown in docs best practices
+			const requests = [
+				Rpc.Eth.BlockNumberRequest(),
+				Rpc.Eth.GetBalanceRequest(address, "latest"),
+				Rpc.Eth.GetTransactionCountRequest(address, "latest"),
+			];
+
+			// All requests should be independent and valid
+			expect(requests).toHaveLength(3);
+			expect(requests[0].method).toBe("eth_blockNumber");
+			expect(requests[1].method).toBe("eth_getBalance");
+			expect(requests[2].method).toBe("eth_getTransactionCount");
+		});
+	});
+});

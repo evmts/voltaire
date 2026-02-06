@@ -1,0 +1,279 @@
+---
+title: StructLog
+description: Geth-style structured execution log with human-readable formatting
+---
+
+# StructLog
+
+Geth-style structured log entry representing a single opcode execution with human-readable hex string formatting.
+
+## Overview
+
+StructLog is the JSON-RPC format used by Geth's `debug_traceTransaction`. It uses hex strings for all values (stack, memory, storage) instead of typed values.
+
+## Type Definition
+
+```typescript
+type StructLogType = {
+  readonly pc: number;                    // Program counter
+  readonly op: string;                    // Opcode name (e.g., "PUSH1", "ADD")
+  readonly gas: Uint256Type;              // Remaining gas
+  readonly gasCost: Uint256Type;          // Gas cost
+  readonly depth: number;                 // Call depth
+  readonly stack: readonly string[];      // Stack as hex strings (top to bottom)
+  readonly memory?: readonly string[];    // Memory as 32-byte hex chunks
+  readonly storage?: Record<string, string>; // Storage changes (hex key -> hex value)
+  readonly refund?: Uint256Type;          // Gas refund counter
+  readonly error?: string;                // Error message
+};
+```
+
+## Usage
+
+### Creating StructLogs
+
+```typescript
+import * as StructLog from '@tevm/primitives/StructLog';
+
+// Basic StructLog
+const log = StructLog.from({
+  pc: 0,
+  op: "PUSH1",
+  gas: 1000000n,
+  gasCost: 3n,
+  depth: 0,
+  stack: ["0x60"],
+});
+
+// StructLog with memory
+const mstoreLog = StructLog.from({
+  pc: 10,
+  op: "MSTORE",
+  gas: 999900n,
+  gasCost: 6n,
+  depth: 0,
+  stack: ["0x40", "0x60"],
+  memory: [
+    "0000000000000000000000000000000000000000000000000000000000000000",
+    "0000000000000000000000000000000000000000000000000000000000006040"
+  ],
+});
+
+// StructLog with storage
+const sstoreLog = StructLog.from({
+  pc: 20,
+  op: "SSTORE",
+  gas: 980000n,
+  gasCost: 20000n,
+  depth: 0,
+  stack: ["0x01", "0x64"],
+  storage: {
+    "0x0000000000000000000000000000000000000000000000000000000000000001":
+    "0x0000000000000000000000000000000000000000000000000000000000000064"
+  },
+});
+
+// StructLog with refund
+const refundLog = StructLog.from({
+  pc: 30,
+  op: "SSTORE",
+  gas: 960000n,
+  gasCost: 5000n,
+  depth: 0,
+  stack: ["0x02", "0x00"],
+  refund: 15000n, // Clearing storage slot
+});
+```
+
+### Converting to OpStep
+
+```typescript
+import * as StructLog from '@tevm/primitives/StructLog';
+
+// Convert to typed OpStep
+const log = /* ... from RPC ... */;
+const step = StructLog.toOpStep(log);
+
+// Now have typed stack/memory/storage
+console.log(step.stack); // bigint[] instead of string[]
+```
+
+## RPC Response Format
+
+### Example from debug_traceTransaction
+
+```json
+{
+  "gas": 21000,
+  "failed": false,
+  "returnValue": "",
+  "structLogs": [
+    {
+      "pc": 0,
+      "op": "PUSH1",
+      "gas": 79000,
+      "gasCost": 3,
+      "depth": 1,
+      "stack": []
+    },
+    {
+      "pc": 2,
+      "op": "PUSH1",
+      "gas": 78997,
+      "gasCost": 3,
+      "depth": 1,
+      "stack": ["0x60"]
+    },
+    {
+      "pc": 4,
+      "op": "MSTORE",
+      "gas": 78994,
+      "gasCost": 12,
+      "depth": 1,
+      "stack": ["0x60", "0x40"],
+      "memory": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000060"
+      ]
+    }
+  ]
+}
+```
+
+### Parsing RPC Response
+
+```typescript
+import * as StructLog from '@tevm/primitives/StructLog';
+import * as TraceResult from '@tevm/primitives/TraceResult';
+
+// Parse RPC response
+const response = await rpc.debug_traceTransaction(txHash, config);
+
+const result = TraceResult.from({
+  gas: BigInt(response.gas),
+  failed: response.failed,
+  returnValue: hexToBytes(response.returnValue),
+  structLogs: response.structLogs.map(log => StructLog.from({
+    pc: log.pc,
+    op: log.op,
+    gas: BigInt(log.gas),
+    gasCost: BigInt(log.gasCost),
+    depth: log.depth,
+    stack: log.stack,
+    memory: log.memory,
+    storage: log.storage,
+    refund: log.refund ? BigInt(log.refund) : undefined,
+    error: log.error,
+  })),
+});
+```
+
+## Memory Format
+
+Memory is returned as an array of 32-byte hex strings (64 hex characters each):
+
+```typescript
+const log = StructLog.from({
+  pc: 100,
+  op: "MLOAD",
+  gas: 50000n,
+  gasCost: 3n,
+  depth: 0,
+  stack: ["0x40"],
+  memory: [
+    "0000000000000000000000000000000000000000000000000000000000000000", // 0x00-0x1f
+    "0000000000000000000000000000000000000000000000000000000000000080", // 0x20-0x3f
+    "0000000000000000000000000000000000000000000000000000000000000000", // 0x40-0x5f
+  ],
+});
+
+// Memory at offset 0x20 contains 0x80
+```
+
+## Storage Format
+
+Storage is a map of 32-byte hex keys to 32-byte hex values:
+
+```typescript
+const log = StructLog.from({
+  pc: 200,
+  op: "SSTORE",
+  gas: 100000n,
+  gasCost: 20000n,
+  depth: 0,
+  stack: ["0x01", "0xff"],
+  storage: {
+    // Storage slot 1 = 0xff
+    "0x0000000000000000000000000000000000000000000000000000000000000001":
+    "0x00000000000000000000000000000000000000000000000000000000000000ff"
+  },
+});
+```
+
+## Common Patterns
+
+### Finding Reverts
+
+```typescript
+function findRevert(logs: StructLogType[]): StructLogType | undefined {
+  return logs.find(log => log.op === "REVERT" || log.error);
+}
+```
+
+### Analyzing Gas Usage
+
+```typescript
+function analyzeGasByOpcode(logs: StructLogType[]): Map<string, bigint> {
+  const gasUsage = new Map<string, bigint>();
+
+  for (const log of logs) {
+    const current = gasUsage.get(log.op) ?? 0n;
+    gasUsage.set(log.op, current + log.gasCost);
+  }
+
+  return gasUsage;
+}
+```
+
+### Extracting Storage Changes
+
+```typescript
+function extractStorageChanges(logs: StructLogType[]): Record<string, string> {
+  const changes: Record<string, string> = {};
+
+  for (const log of logs) {
+    if (log.storage) {
+      Object.assign(changes, log.storage);
+    }
+  }
+
+  return changes;
+}
+```
+
+### Stack Depth Analysis
+
+```typescript
+function findMaxStackDepth(logs: StructLogType[]): number {
+  return Math.max(...logs.map(log => log.stack.length));
+}
+```
+
+## Comparison with OpStep
+
+| Feature | StructLog | OpStep |
+|---------|-----------|--------|
+| Format | JSON-RPC from Geth | Typed TypeScript |
+| Stack | `string[]` | `Uint256Type[]` |
+| Memory | `string[]` (32-byte chunks) | `Uint8Array` (raw bytes) |
+| Storage | `Record<string, string>` | `Record<string, Uint256Type>` |
+| Opcode | `string` (name) | `OpcodeType` (number) |
+| Usage | Parsing RPC responses | Internal processing |
+
+## See Also
+
+- [OpStep](/primitives/op-step) - Typed opcode step
+- [TraceResult](/primitives/trace-result) - Complete trace result
+- [TraceConfig](/primitives/trace-config) - Trace configuration
+- [Opcode](/primitives/opcode) - Opcode definitions

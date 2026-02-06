@@ -1,0 +1,362 @@
+---
+title: "primitives/DomainSeparator"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/DomainSeparator
+
+# primitives/DomainSeparator
+
+## Classes
+
+### InvalidDomainSeparatorLengthError
+
+Defined in: [src/primitives/DomainSeparator/errors.js:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/errors.js#L4)
+
+Error thrown when DomainSeparator length is invalid
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidDomainSeparatorLengthError**(`message`, `context`): [`InvalidDomainSeparatorLengthError`](#invaliddomainseparatorlengtherror)
+
+Defined in: [src/primitives/DomainSeparator/errors.js:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/errors.js#L9)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### context
+
+`Record`\<`string`, `unknown`\>
+
+###### Returns
+
+[`InvalidDomainSeparatorLengthError`](#invaliddomainseparatorlengtherror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### context
+
+> **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/DomainSeparator/errors.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/errors.js#L12)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/DomainSeparator/errors.js:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/errors.js#L11)
+
+###### Inherited from
+
+`Error.name`
+
+## Type Aliases
+
+### DomainSeparatorType
+
+> **DomainSeparatorType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/DomainSeparator/DomainSeparatorType.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/DomainSeparatorType.ts#L7)
+
+EIP-712 Domain Separator - keccak256 hash of domain separator
+Used in EIP-712 signature verification for domain separation
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"DomainSeparator"`
+
+##### length
+
+> `readonly` **length**: `32`
+
+## Variables
+
+### SIZE
+
+> `const` **SIZE**: `32` = `32`
+
+Defined in: [src/primitives/DomainSeparator/DomainSeparatorType.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/DomainSeparatorType.ts#L12)
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/DomainSeparator/equals.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/equals.js#L12)
+
+Check if two DomainSeparators are equal
+
+#### Parameters
+
+##### a
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+First DomainSeparator
+
+##### b
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+Second DomainSeparator
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### Example
+
+```javascript
+const equal = DomainSeparator.equals(sep1, sep2);
+```
+
+***
+
+### \_from()
+
+> **\_from**(`value`): [`DomainSeparatorType`](#domainseparatortype)
+
+Defined in: [src/primitives/DomainSeparator/from.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/from.js#L17)
+
+Create DomainSeparator from string or bytes
+
+#### Parameters
+
+##### value
+
+Hex string with optional 0x prefix or Uint8Array
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+DomainSeparator bytes
+
+#### Throws
+
+If input is invalid or wrong length
+
+#### Example
+
+```javascript
+import * as DomainSeparator from './primitives/DomainSeparator/index.js';
+const sep = DomainSeparator.from('0x1234...');
+const sep2 = DomainSeparator.from(new Uint8Array(32));
+```
+
+***
+
+### \_fromBytes()
+
+> **\_fromBytes**(`bytes`): [`DomainSeparatorType`](#domainseparatortype)
+
+Defined in: [src/primitives/DomainSeparator/fromBytes.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/fromBytes.js#L14)
+
+Create DomainSeparator from bytes
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte array
+
+#### Returns
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+DomainSeparator
+
+#### Throws
+
+If bytes length is not 32
+
+#### Example
+
+```javascript
+const sep = DomainSeparator.fromBytes(new Uint8Array(32));
+```
+
+***
+
+### \_fromHex()
+
+> **\_fromHex**(`hex`): [`DomainSeparatorType`](#domainseparatortype)
+
+Defined in: [src/primitives/DomainSeparator/fromHex.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/fromHex.js#L15)
+
+Create DomainSeparator from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string with optional 0x prefix (must be 66 chars with 0x or 64 without)
+
+#### Returns
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+DomainSeparator
+
+#### Throws
+
+If hex string is invalid or wrong length
+
+#### Example
+
+```javascript
+const sep = DomainSeparator.fromHex('0x1234...');
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`separator`): `string`
+
+Defined in: [src/primitives/DomainSeparator/toHex.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/toHex.js#L14)
+
+Convert DomainSeparator to hex string with 0x prefix
+
+#### Parameters
+
+##### separator
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+DomainSeparator
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### Example
+
+```javascript
+const hex = DomainSeparator.toHex(separator);
+console.log(hex); // '0x1234...'
+```
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/DomainSeparator/index.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/index.ts#L42)
+
+#### Parameters
+
+##### a
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+##### b
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`DomainSeparatorType`](#domainseparatortype)
+
+Defined in: [src/primitives/DomainSeparator/index.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/index.ts#L18)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): [`DomainSeparatorType`](#domainseparatortype)
+
+Defined in: [src/primitives/DomainSeparator/index.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/index.ts#L24)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`
+
+#### Returns
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`DomainSeparatorType`](#domainseparatortype)
+
+Defined in: [src/primitives/DomainSeparator/index.ts:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/index.ts#L30)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+#### Returns
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+***
+
+### toHex()
+
+> **toHex**(`separator`): `string`
+
+Defined in: [src/primitives/DomainSeparator/index.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/DomainSeparator/index.ts#L36)
+
+#### Parameters
+
+##### separator
+
+[`DomainSeparatorType`](#domainseparatortype)
+
+#### Returns
+
+`string`

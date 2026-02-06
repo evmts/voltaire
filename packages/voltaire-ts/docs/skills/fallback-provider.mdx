@@ -1,0 +1,125 @@
+---
+title: Fallback Provider
+description: Automatic RPC failover with multiple endpoint support
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [ethers-provider Skill](https://github.com/evmts/voltaire/tree/main/examples/ethers-provider) for an example of a complete Skill implementation.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+A provider that automatically fails over to backup RPC endpoints when the primary fails. Essential for production reliability.
+
+## Why Fallback Provider?
+
+Single RPC endpoints fail. Rate limits, downtime, network issues. Production apps need redundancy:
+
+```typescript
+// Without fallback - single point of failure
+const provider = new HttpProvider('https://eth-mainnet.g.alchemy.com/v2/...');
+// If Alchemy is down, your app is down
+
+// With fallback - automatic failover
+const provider = FallbackProvider([
+  'https://eth-mainnet.g.alchemy.com/v2/...',
+  'https://mainnet.infura.io/v3/...',
+  'https://eth.llamarpc.com',
+]);
+// Tries each endpoint until one works
+```
+
+## Planned Implementation
+
+### Basic Fallback
+
+```typescript
+const provider = FallbackProvider({
+  endpoints: [
+    { url: 'https://eth-mainnet.g.alchemy.com/v2/KEY', priority: 1 },
+    { url: 'https://mainnet.infura.io/v3/KEY', priority: 2 },
+    { url: 'https://eth.llamarpc.com', priority: 3 },
+  ],
+  // Try next endpoint after 5s timeout
+  timeout: 5000,
+  // Retry failed endpoint after 30s
+  retryDelay: 30000,
+});
+
+// Uses highest priority available endpoint
+const balance = await provider.request({
+  method: 'eth_getBalance',
+  params: [address, 'latest']
+});
+```
+
+### Quorum Mode
+
+```typescript
+// Require multiple endpoints to agree (for critical operations)
+const provider = FallbackProvider({
+  endpoints: [...],
+  quorum: 2, // Need 2 endpoints to return same result
+  quorumWeight: {
+    'eth_getBalance': 1,      // Single endpoint OK for reads
+    'eth_sendRawTransaction': 2, // Require quorum for sends
+  }
+});
+```
+
+### Health Checking
+
+```typescript
+const provider = FallbackProvider({
+  endpoints: [...],
+  healthCheck: {
+    interval: 10000, // Check every 10s
+    method: 'eth_blockNumber',
+    // Mark unhealthy if >5 blocks behind
+    staleness: 5,
+  }
+});
+
+// Get endpoint health status
+const health = provider.getHealth();
+// [{ url: '...', healthy: true, latency: 45, blockNumber: 12345678 }, ...]
+```
+
+### Sticky Sessions
+
+```typescript
+const provider = FallbackProvider({
+  endpoints: [...],
+  // Stick to working endpoint instead of always trying primary
+  sticky: true,
+  // Re-check primary every 60s
+  primaryCheckInterval: 60000,
+});
+```
+
+## Configuration Options
+
+| Option | Description |
+|--------|-------------|
+| `endpoints` | Array of RPC URLs or endpoint configs |
+| `timeout` | Request timeout before trying next endpoint |
+| `retryDelay` | Wait before retrying failed endpoint |
+| `quorum` | Number of endpoints that must agree |
+| `sticky` | Stick to working endpoint |
+| `healthCheck` | Background health monitoring config |
+
+## Related
+
+- [batched-provider](/skills/batched-provider) — Request batching
+- [ethers-provider](/skills/ethers-provider) — Base provider implementation

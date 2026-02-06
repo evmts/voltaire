@@ -1,0 +1,703 @@
+---
+title: '[Zig] src/crypto/EIP712/eip712.fuzz.zig'
+source: 'src/crypto/EIP712/eip712.fuzz.zig'
+---
+
+> Auto-generated from Zig tests in: src/crypto/EIP712/eip712.fuzz.zig
+
+### fuzz domain with random fields
+
+```zig
+test "fuzz domain with random fields" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    // Create domain with various field combinations
+    const has_name = (input[0] & 0x1) != 0;
+    const has_version = (input[0] & 0x2) != 0;
+    const has_chain_id = (input[0] & 0x4) != 0;
+    const has_contract = (input[0] & 0x8) != 0;
+    const has_salt = (input[0] & 0x10) != 0;
+
+    var domain = eip712.Eip712Domain{};
+    defer domain.deinit(allocator);
+
+    if (has_name and input.len >= 64) {
+        // Create name from fuzz input
+        const name_len = @min((input[1] % 32) + 1, 32);
+        const name = allocator.alloc(u8, name_len) catch return;
+        @memcpy(name, input[32 .. 32 + name_len]);
+        domain.name = name;
+    }
+
+    if (has_version and input.len >= 96) {
+        const version_len = @min((input[2] % 16) + 1, 16);
+        const version = allocator.alloc(u8, version_len) catch return;
+        @memcpy(version, input[64 .. 64 + version_len]);
+        domain.version = version;
+    }
+
+    if (has_chain_id) {
+        domain.chain_id = std.mem.readInt(u64, input[16..24], .big);
+    }
+
+    if (has_contract and input.len >= 52) {
+        var addr: [20]u8 = undefined;
+        @memcpy(&addr, input[32..52]);
+        domain.verifying_contract = addr;
+    }
+
+    if (has_salt and input.len >= 84) {
+        var salt: [32]u8 = undefined;
+        @memcpy(&salt, input[52..84]);
+        domain.salt = salt;
+    }
+
+    // Domain should always be hashable
+    _ = eip712.hash_domain(allocator, &domain) catch |err| {
+        switch (err) {
+            error.OutOfMemory,
+            error.InvalidDomain,
+            error.InvalidUtf8,
+            => {},
+            else => return err,
+        }
+    };
+}
+```
+
+### fuzz domain with null fields
+
+```zig
+test "fuzz domain with null fields" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 8) return;
+
+    const allocator = std.testing.allocator;
+
+    // Test various null field combinations
+    var domain = eip712.Eip712Domain{
+        .name = null,
+        .version = null,
+        .chain_id = null,
+        .verifying_contract = null,
+        .salt = null,
+    };
+
+    // Empty domain should hash successfully
+    const hash_result = eip712.hash_domain(allocator, &domain);
+    if (hash_result) |hash| {
+        // Verify it's not all zeros
+        const zero_hash = [_]u8{0} ** 32;
+        try std.testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
+    } else |_| {}
+}
+```
+
+### fuzz domain with extreme string lengths
+
+```zig
+test "fuzz domain with extreme string lengths" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    // Test with very long strings
+    const name_len = @min(input[0], 200); // Cap at reasonable size
+    const version_len = @min(input[1], 200);
+
+    var domain = eip712.Eip712Domain{};
+    defer domain.deinit(allocator);
+
+    if (name_len > 0) {
+        const name = allocator.alloc(u8, name_len) catch return;
+        @memset(name, 'A');
+        domain.name = name;
+    }
+
+    if (version_len > 0) {
+        const version = allocator.alloc(u8, version_len) catch return;
+        @memset(version, '1');
+        domain.version = version;
+    }
+
+    _ = eip712.hash_domain(allocator, &domain) catch {};
+}
+```
+
+### fuzz domain with special characters
+
+```zig
+test "fuzz domain with special characters" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    var domain = eip712.Eip712Domain{};
+    defer domain.deinit(allocator);
+
+    // Create name with special characters
+    const name = allocator.dupe(u8, input[0..@min(input.len, 32)]) catch return;
+    domain.name = name;
+
+    _ = eip712.hash_domain(allocator, &domain) catch {};
+}
+```
+
+### fuzz type with random field names
+
+```zig
+test "fuzz type with random field names" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 16) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Create type with fuzzed field names
+    const num_fields = @min((input[0] % 8) + 1, 8);
+    const props = allocator.alloc(eip712.TypeProperty, num_fields) catch return;
+    defer allocator.free(props);
+
+    for (props, 0..) |*prop, i| {
+        const offset = (i * 2) % input.len;
+        const name_len = @min((input[offset] % 16) + 1, 16);
+        const name = allocator.alloc(u8, name_len) catch return;
+        @memset(name, 'a' + @as(u8, @intCast(i % 26)));
+
+        prop.* = eip712.TypeProperty{
+            .name = name,
+            .type = allocator.dupe(u8, "uint256") catch return,
+        };
+    }
+
+    types.put(allocator, "FuzzType", props) catch {};
+
+    // Should be able to encode
+    _ = eip712.encode_type(allocator, "FuzzType", &types) catch {};
+}
+```
+
+### fuzz deeply nested types
+
+```zig
+test "fuzz deeply nested types" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Create chain of nested types
+    const depth = @min((input[0] % 10) + 1, 10);
+    for (0..depth) |i| {
+        const type_name = std.fmt.allocPrint(allocator, "Level{d}", .{i}) catch return;
+        defer allocator.free(type_name);
+
+        if (i == depth - 1) {
+            // Leaf type
+            const props = [_]eip712.TypeProperty{
+                eip712.TypeProperty{
+                    .name = allocator.dupe(u8, "value") catch return,
+                    .type = allocator.dupe(u8, "uint256") catch return,
+                },
+            };
+            types.put(allocator, type_name, &props) catch {};
+        } else {
+            // Nested type
+            const next_type = std.fmt.allocPrint(allocator, "Level{d}", .{i + 1}) catch return;
+            const props = [_]eip712.TypeProperty{
+                eip712.TypeProperty{
+                    .name = allocator.dupe(u8, "nested") catch return,
+                    .type = next_type,
+                },
+            };
+            types.put(allocator, type_name, &props) catch {};
+        }
+    }
+
+    _ = eip712.encode_type(allocator, "Level0", &types) catch {};
+}
+```
+
+### fuzz cyclic type references
+
+```zig
+test "fuzz cyclic type references" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Create A -> B -> A cycle
+    const propsA = [_]eip712.TypeProperty{
+        eip712.TypeProperty{
+            .name = allocator.dupe(u8, "next") catch return,
+            .type = allocator.dupe(u8, "TypeB") catch return,
+        },
+    };
+    types.put(allocator, "TypeA", &propsA) catch {};
+
+    const propsB = [_]eip712.TypeProperty{
+        eip712.TypeProperty{
+            .name = allocator.dupe(u8, "next") catch return,
+            .type = allocator.dupe(u8, "TypeA") catch return,
+        },
+    };
+    types.put(allocator, "TypeB", &propsB) catch {};
+
+    // Should handle cycles without infinite loop
+    _ = eip712.encode_type(allocator, "TypeA", &types) catch {};
+}
+```
+
+### fuzz uint boundary values
+
+```zig
+test "fuzz uint boundary values" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Test various uint sizes and boundary values
+    const uint_types = [_][]const u8{
+        "uint8",   "uint16",  "uint32", "uint64",
+        "uint128", "uint256",
+    };
+
+    const test_values = [_]u256{
+        0, // Min
+        1, // Min + 1
+        0xFF, // uint8 max
+        0xFFFF, // uint16 max
+        0xFFFFFFFF, // uint32 max
+        0xFFFFFFFFFFFFFFFF, // uint64 max
+        std.math.maxInt(u256), // Max u256
+        std.mem.readInt(u256, input[0..32], .big), // Fuzz value
+    };
+
+    for (uint_types) |uint_type| {
+        for (test_values) |value| {
+            const msg_value = eip712.MessageValue{ .number = value };
+            _ = eip712.encode_value(allocator, uint_type, msg_value, &types) catch {};
+        }
+    }
+}
+```
+
+### fuzz int boundary values
+
+```zig
+test "fuzz int boundary values" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Test int types with various values
+    const int_types = [_][]const u8{
+        "int8",   "int16",  "int32", "int64",
+        "int128", "int256",
+    };
+
+    const test_values = [_]u256{
+        0, // Zero
+        1, // Positive
+        0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, // Max positive
+        0x8000000000000000000000000000000000000000000000000000000000000000, // Min negative (2's complement)
+        std.mem.readInt(u256, input[0..32], .big), // Fuzz value
+    };
+
+    for (int_types) |int_type| {
+        for (test_values) |value| {
+            const msg_value = eip712.MessageValue{ .number = value };
+            _ = eip712.encode_value(allocator, int_type, msg_value, &types) catch {};
+        }
+    }
+}
+```
+
+### fuzz bytes types with various sizes
+
+```zig
+test "fuzz bytes types with various sizes" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Test bytes1 through bytes32
+    for (1..33) |size| {
+        const type_name = std.fmt.allocPrint(allocator, "bytes{d}", .{size}) catch return;
+        defer allocator.free(type_name);
+
+        // Test with correct size
+        const bytes = allocator.alloc(u8, size) catch return;
+        defer allocator.free(bytes);
+        @memcpy(bytes, input[0..size]);
+
+        const msg_value = eip712.MessageValue{ .bytes = bytes };
+        _ = eip712.encode_value(allocator, type_name, msg_value, &types) catch {};
+
+        // Test with wrong size (should error)
+        const wrong_size = allocator.alloc(u8, size + 1) catch return;
+        defer allocator.free(wrong_size);
+        const wrong_value = eip712.MessageValue{ .bytes = wrong_size };
+        _ = eip712.encode_value(allocator, type_name, wrong_value, &types) catch {};
+    }
+}
+```
+
+### fuzz dynamic bytes
+
+```zig
+test "fuzz dynamic bytes" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Test with various dynamic byte lengths
+    const len = @min(input[0], 200);
+    const bytes = allocator.alloc(u8, len) catch return;
+    defer allocator.free(bytes);
+
+    if (len > 0 and input.len >= len) {
+        @memcpy(bytes, input[0..len]);
+    }
+
+    const msg_value = eip712.MessageValue{ .bytes = bytes };
+    _ = eip712.encode_value(allocator, "bytes", msg_value, &types) catch {};
+}
+```
+
+### fuzz string encoding
+
+```zig
+test "fuzz string encoding" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Test with various string patterns
+    const str_patterns = [_][]const u8{
+        "", // Empty
+        "a", // Single char
+        "Hello, World!", // Normal
+        "🔥💎✨", // Unicode
+        &[_]u8{ 0xFF, 0xFE, 0xFD }, // Invalid UTF-8
+    };
+
+    for (str_patterns) |str| {
+        const owned = allocator.dupe(u8, str) catch return;
+        defer allocator.free(owned);
+        const msg_value = eip712.MessageValue{ .string = owned };
+        _ = eip712.encode_value(allocator, "string", msg_value, &types) catch {};
+    }
+
+    // Fuzz input as string
+    if (input.len > 0) {
+        const fuzz_str = allocator.dupe(u8, input) catch return;
+        defer allocator.free(fuzz_str);
+        const msg_value = eip712.MessageValue{ .string = fuzz_str };
+        _ = eip712.encode_value(allocator, "string", msg_value, &types) catch {};
+    }
+}
+```
+
+### fuzz array encoding
+
+```zig
+test "fuzz array encoding" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Create array of uint256
+    const arr_len = @min((input[0] % 10) + 1, 10);
+    const arr = allocator.alloc(eip712.MessageValue, arr_len) catch return;
+    defer allocator.free(arr);
+
+    for (arr, 0..) |*elem, i| {
+        const offset = (i * 32) % input.len;
+        const value = if (offset + 32 <= input.len)
+            std.mem.readInt(u256, input[offset .. offset + 32], .big)
+        else
+            @as(u256, i);
+        elem.* = eip712.MessageValue{ .number = value };
+    }
+
+    var msg_value = eip712.MessageValue{ .array = arr };
+    defer msg_value.deinit(allocator);
+
+    // Arrays not directly encodable in EIP-712, but test doesn't crash
+    _ = eip712.encode_value(allocator, "uint256[]", msg_value, &types) catch {};
+}
+```
+
+### fuzz message with missing fields
+
+```zig
+test "fuzz message with missing fields" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Define type with multiple fields
+    const props = [_]eip712.TypeProperty{
+        eip712.TypeProperty{
+            .name = allocator.dupe(u8, "field1") catch return,
+            .type = allocator.dupe(u8, "uint256") catch return,
+        },
+        eip712.TypeProperty{
+            .name = allocator.dupe(u8, "field2") catch return,
+            .type = allocator.dupe(u8, "string") catch return,
+        },
+    };
+    types.put(allocator, "TestType", &props) catch {};
+
+    // Create message with only one field
+    var data = std.StringHashMap(eip712.MessageValue).init(allocator);
+    defer {
+        var it = data.iterator();
+        while (it.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data.deinit();
+    }
+
+    data.put(allocator.dupe(u8, "field1") catch return, eip712.MessageValue{ .number = 42 }) catch {};
+
+    // Should error on missing field
+    _ = eip712.hash_struct(allocator, "TestType", &data, &types) catch {};
+}
+```
+
+### fuzz message with extra fields
+
+```zig
+test "fuzz message with extra fields" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const props = [_]eip712.TypeProperty{
+        eip712.TypeProperty{
+            .name = allocator.dupe(u8, "field1") catch return,
+            .type = allocator.dupe(u8, "uint256") catch return,
+        },
+    };
+    types.put(allocator, "TestType", &props) catch {};
+
+    var data = std.StringHashMap(eip712.MessageValue).init(allocator);
+    defer {
+        var it = data.iterator();
+        while (it.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data.deinit();
+    }
+
+    // Add required field
+    data.put(allocator.dupe(u8, "field1") catch return, eip712.MessageValue{ .number = 42 }) catch {};
+    // Add extra field (should be ignored)
+    data.put(allocator.dupe(u8, "extra") catch return, eip712.MessageValue{ .number = 99 }) catch {};
+
+    _ = eip712.hash_struct(allocator, "TestType", &data, &types) catch {};
+}
+```
+
+### fuzz message with wrong types
+
+```zig
+test "fuzz message with wrong types" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 4) return;
+
+    const allocator = std.testing.allocator;
+
+    var types = eip712.TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const props = [_]eip712.TypeProperty{
+        eip712.TypeProperty{
+            .name = allocator.dupe(u8, "value") catch return,
+            .type = allocator.dupe(u8, "uint256") catch return,
+        },
+    };
+    types.put(allocator, "TestType", &props) catch {};
+
+    var data = std.StringHashMap(eip712.MessageValue).init(allocator);
+    defer {
+        var it = data.iterator();
+        while (it.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data.deinit();
+    }
+
+    // Provide string where uint256 expected
+    const str = allocator.dupe(u8, "not a number") catch return;
+    data.put(allocator.dupe(u8, "value") catch return, eip712.MessageValue{ .string = str }) catch {};
+
+    // Should error on type mismatch
+    _ = eip712.hash_struct(allocator, "TestType", &data, &types) catch {};
+}
+```
+
+### fuzz signature r/s/v values
+
+```zig
+test "fuzz signature r/s/v values" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 65) return;
+
+    const allocator = std.testing.allocator;
+
+    // Extract signature components
+    const r = std.mem.readInt(u256, input[0..32], .big);
+    const s = std.mem.readInt(u256, input[32..64], .big);
+    const v = input[64];
+
+    // Test boundary values for each component
+    const r_tests = [_]u256{
+        0, // Invalid
+        1, // Min valid
+        r, // Fuzz
+        std.math.maxInt(u256), // Max
+    };
+
+    const s_tests = [_]u256{
+        0, // Invalid
+        1, // Min valid
+        s, // Fuzz
+        std.math.maxInt(u256), // Max
+    };
+
+    const v_tests = [_]u8{ 0, 1, 27, 28, v, 255 };
+
+    // These are just component tests - actual signature verification
+    // would require valid typed data structure
+    for (r_tests) |_| {
+        for (s_tests) |_| {
+            for (v_tests) |_| {
+                // Would test signature verification here if we had
+                // a complete typed data structure
+            }
+        }
+    }
+}
+```
+
+### fuzz hash determinism
+
+```zig
+test "fuzz hash determinism" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    var domain = eip712.Eip712Domain{
+        .name = allocator.dupe(u8, "Test") catch return,
+        .version = allocator.dupe(u8, "1") catch return,
+        .chain_id = 1,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer domain.deinit(allocator);
+
+    // Hash twice
+    const hash1_result = eip712.hash_domain(allocator, &domain);
+    const hash2_result = eip712.hash_domain(allocator, &domain);
+
+    if (hash1_result) |hash1| {
+        if (hash2_result) |hash2| {
+            // Property: Hashing is deterministic
+            try std.testing.expectEqualSlices(u8, &hash1, &hash2);
+        } else |_| {}
+    } else |_| {}
+}
+```
+
+### fuzz different domains produce different hashes
+
+```zig
+test "fuzz different domains produce different hashes" {
+    const input = std.testing.fuzzInput(.{});
+    if (input.len < 32) return;
+
+    const allocator = std.testing.allocator;
+
+    var domain1 = eip712.Eip712Domain{
+        .name = allocator.dupe(u8, "Test1") catch return,
+        .version = null,
+        .chain_id = null,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer domain1.deinit(allocator);
+
+    var domain2 = eip712.Eip712Domain{
+        .name = allocator.dupe(u8, "Test2") catch return,
+        .version = null,
+        .chain_id = null,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer domain2.deinit(allocator);
+
+    const hash1_result = eip712.hash_domain(allocator, &domain1);
+    const hash2_result = eip712.hash_domain(allocator, &domain2);
+
+    if (hash1_result) |hash1| {
+        if (hash2_result) |hash2| {
+            // Property: Different inputs produce different hashes
+            try std.testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+        } else |_| {}
+    } else |_| {}
+}
+```

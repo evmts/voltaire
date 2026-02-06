@@ -1,0 +1,354 @@
+---
+title: '[Zig] src/primitives/WithdrawalIndex/WithdrawalIndex.zig'
+source: 'src/primitives/WithdrawalIndex/WithdrawalIndex.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/WithdrawalIndex/WithdrawalIndex.zig
+
+### WithdrawalIndex.from creates index
+
+```zig
+test "WithdrawalIndex.from creates index" {
+    const idx = from(1000000);
+    try std.testing.expectEqual(1000000, idx);
+}
+```
+
+### WithdrawalIndex.from handles zero
+
+```zig
+test "WithdrawalIndex.from handles zero" {
+    const idx = from(0);
+    try std.testing.expectEqual(0, idx);
+}
+```
+
+### WithdrawalIndex.from handles max u64
+
+```zig
+test "WithdrawalIndex.from handles max u64" {
+    const idx = from(std.math.maxInt(u64));
+    try std.testing.expectEqual(std.math.maxInt(u64), idx);
+}
+```
+
+### WithdrawalIndex.fromBigInt converts valid u256
+
+```zig
+test "WithdrawalIndex.fromBigInt converts valid u256" {
+    const idx = fromBigInt(1000000);
+    try std.testing.expectEqual(1000000, idx.?);
+}
+```
+
+### WithdrawalIndex.fromBigInt returns null for too large
+
+```zig
+test "WithdrawalIndex.fromBigInt returns null for too large" {
+    const idx = fromBigInt(@as(u256, std.math.maxInt(u64)) + 1);
+    try std.testing.expect(idx == null);
+}
+```
+
+### WithdrawalIndex.toNumber converts to u64
+
+```zig
+test "WithdrawalIndex.toNumber converts to u64" {
+    const idx = from(42);
+    try std.testing.expectEqual(42, toNumber(idx));
+}
+```
+
+### WithdrawalIndex.toNumber is identity
+
+```zig
+test "WithdrawalIndex.toNumber is identity" {
+    const idx = from(123456);
+    try std.testing.expectEqual(idx, toNumber(idx));
+}
+```
+
+### WithdrawalIndex.toBigInt converts to u256
+
+```zig
+test "WithdrawalIndex.toBigInt converts to u256" {
+    const idx = from(1000000);
+    try std.testing.expectEqual(@as(u256, 1000000), toBigInt(idx));
+}
+```
+
+### WithdrawalIndex.toBigInt handles max u64
+
+```zig
+test "WithdrawalIndex.toBigInt handles max u64" {
+    const idx = from(std.math.maxInt(u64));
+    try std.testing.expectEqual(@as(u256, std.math.maxInt(u64)), toBigInt(idx));
+}
+```
+
+### WithdrawalIndex.equals returns true for equal indexes
+
+```zig
+test "WithdrawalIndex.equals returns true for equal indexes" {
+    const a = from(1000000);
+    const b = from(1000000);
+    try std.testing.expect(equals(a, b));
+}
+```
+
+### WithdrawalIndex.equals returns false for unequal indexes
+
+```zig
+test "WithdrawalIndex.equals returns false for unequal indexes" {
+    const a = from(1000000);
+    const b = from(1000001);
+    try std.testing.expect(!equals(a, b));
+}
+```
+
+### WithdrawalIndex.equals handles zero
+
+```zig
+test "WithdrawalIndex.equals handles zero" {
+    const a = from(0);
+    const b = from(0);
+    try std.testing.expect(equals(a, b));
+}
+```
+
+### WithdrawalIndex.compare returns .lt for lesser
+
+```zig
+test "WithdrawalIndex.compare returns .lt for lesser" {
+    const a = from(1000);
+    const b = from(2000);
+    try std.testing.expectEqual(std.math.Order.lt, compare(a, b));
+}
+```
+
+### WithdrawalIndex.compare returns .eq for equal
+
+```zig
+test "WithdrawalIndex.compare returns .eq for equal" {
+    const a = from(1000000);
+    const b = from(1000000);
+    try std.testing.expectEqual(std.math.Order.eq, compare(a, b));
+}
+```
+
+### WithdrawalIndex.compare returns .gt for greater
+
+```zig
+test "WithdrawalIndex.compare returns .gt for greater" {
+    const a = from(2000);
+    const b = from(1000);
+    try std.testing.expectEqual(std.math.Order.gt, compare(a, b));
+}
+```
+
+### WithdrawalIndex.increment increments by one
+
+```zig
+test "WithdrawalIndex.increment increments by one" {
+    const idx = from(1000000);
+    const next = increment(idx);
+    try std.testing.expectEqual(1000001, next.?);
+}
+```
+
+### WithdrawalIndex.increment handles zero
+
+```zig
+test "WithdrawalIndex.increment handles zero" {
+    const idx = from(0);
+    const next = increment(idx);
+    try std.testing.expectEqual(1, next.?);
+}
+```
+
+### WithdrawalIndex.increment returns null on overflow
+
+```zig
+test "WithdrawalIndex.increment returns null on overflow" {
+    const idx = from(std.math.maxInt(u64));
+    const next = increment(idx);
+    try std.testing.expect(next == null);
+}
+```
+
+### WithdrawalIndex constants
+
+```zig
+test "WithdrawalIndex constants" {
+    try std.testing.expectEqual(@as(u64, 0), MIN);
+    try std.testing.expectEqual(@as(u64, 0), ZERO);
+    try std.testing.expectEqual(std.math.maxInt(u64), MAX);
+}
+```
+
+### WithdrawalIndex.toHex converts zero
+
+```zig
+test "WithdrawalIndex.toHex converts zero" {
+    const idx = from(0);
+    const hex = toHex(idx);
+    try std.testing.expectEqualStrings("0x0", std.mem.sliceTo(&hex, 0));
+}
+```
+
+### WithdrawalIndex.toHex converts single digit
+
+```zig
+test "WithdrawalIndex.toHex converts single digit" {
+    const idx = from(10);
+    const hex = toHex(idx);
+    try std.testing.expectEqualStrings("0xa", std.mem.sliceTo(&hex, 0));
+}
+```
+
+### WithdrawalIndex.toHex converts 255
+
+```zig
+test "WithdrawalIndex.toHex converts 255" {
+    const idx = from(255);
+    const hex = toHex(idx);
+    try std.testing.expectEqualStrings("0xff", std.mem.sliceTo(&hex, 0));
+}
+```
+
+### WithdrawalIndex.toHex converts typical withdrawal index
+
+```zig
+test "WithdrawalIndex.toHex converts typical withdrawal index" {
+    const idx = from(1000000);
+    const hex = toHex(idx);
+    try std.testing.expectEqualStrings("0xf4240", std.mem.sliceTo(&hex, 0));
+}
+```
+
+### WithdrawalIndex.toHex converts large u64
+
+```zig
+test "WithdrawalIndex.toHex converts large u64" {
+    const idx = from(0xcafebabe12345678);
+    const hex = toHex(idx);
+    try std.testing.expectEqualStrings("0xcafebabe12345678", std.mem.sliceTo(&hex, 0));
+}
+```
+
+### WithdrawalIndex.toHex converts max u64
+
+```zig
+test "WithdrawalIndex.toHex converts max u64" {
+    const idx = from(std.math.maxInt(u64));
+    const hex = toHex(idx);
+    try std.testing.expectEqualStrings("0xffffffffffffffff", std.mem.sliceTo(&hex, 0));
+}
+```
+
+### WithdrawalIndex.fromHex parses with 0x prefix
+
+```zig
+test "WithdrawalIndex.fromHex parses with 0x prefix" {
+    const idx = fromHex("0xf4240");
+    try std.testing.expectEqual(1000000, idx.?);
+}
+```
+
+### WithdrawalIndex.fromHex parses without prefix
+
+```zig
+test "WithdrawalIndex.fromHex parses without prefix" {
+    const idx = fromHex("f4240");
+    try std.testing.expectEqual(1000000, idx.?);
+}
+```
+
+### WithdrawalIndex.fromHex parses zero
+
+```zig
+test "WithdrawalIndex.fromHex parses zero" {
+    const idx = fromHex("0x0");
+    try std.testing.expectEqual(0, idx.?);
+}
+```
+
+### WithdrawalIndex.fromHex parses uppercase
+
+```zig
+test "WithdrawalIndex.fromHex parses uppercase" {
+    const idx = fromHex("0xF4240");
+    try std.testing.expectEqual(1000000, idx.?);
+}
+```
+
+### WithdrawalIndex.fromHex parses max u64
+
+```zig
+test "WithdrawalIndex.fromHex parses max u64" {
+    const idx = fromHex("0xffffffffffffffff");
+    try std.testing.expectEqual(std.math.maxInt(u64), idx.?);
+}
+```
+
+### WithdrawalIndex.fromHex parses large value
+
+```zig
+test "WithdrawalIndex.fromHex parses large value" {
+    const idx = fromHex("0xcafebabe12345678");
+    try std.testing.expectEqual(0xcafebabe12345678, idx.?);
+}
+```
+
+### WithdrawalIndex.fromHex returns null for overflow
+
+```zig
+test "WithdrawalIndex.fromHex returns null for overflow" {
+    const idx = fromHex("0x10000000000000000");
+    try std.testing.expect(idx == null);
+}
+```
+
+### WithdrawalIndex.fromHex returns null for invalid char
+
+```zig
+test "WithdrawalIndex.fromHex returns null for invalid char" {
+    const idx = fromHex("0xf424g");
+    try std.testing.expect(idx == null);
+}
+```
+
+### WithdrawalIndex.fromHex returns null for empty
+
+```zig
+test "WithdrawalIndex.fromHex returns null for empty" {
+    const idx = fromHex("0x");
+    try std.testing.expect(idx == null);
+}
+```
+
+### WithdrawalIndex.isZero returns true for zero
+
+```zig
+test "WithdrawalIndex.isZero returns true for zero" {
+    const idx = from(0);
+    try std.testing.expect(isZero(idx));
+}
+```
+
+### WithdrawalIndex.isZero returns false for non-zero
+
+```zig
+test "WithdrawalIndex.isZero returns false for non-zero" {
+    const idx = from(1000000);
+    try std.testing.expect(!isZero(idx));
+}
+```
+
+### WithdrawalIndex.isZero with ZERO constant
+
+```zig
+test "WithdrawalIndex.isZero with ZERO constant" {
+    try std.testing.expect(isZero(ZERO));
+}
+```

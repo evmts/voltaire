@@ -1,0 +1,79 @@
+---
+title: How to Set Gas Price
+description: Set gas price for legacy and EIP-1559 transactions
+---
+
+## Legacy Transactions
+
+Single `gasPrice` field:
+
+```typescript
+import * as Transaction from 'voltaire/primitives/Transaction';
+
+// Get current gas price
+const gasPrice = await provider.request({ method: 'eth_gasPrice', params: [] });
+
+const legacyTx: Transaction.Legacy = {
+  type: 0,
+  nonce: 0n,
+  gasPrice: BigInt(gasPrice),
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array()
+};
+```
+
+## EIP-1559 Transactions (Recommended)
+
+Use `maxFeePerGas` + `maxPriorityFeePerGas`:
+
+```typescript
+// Get base fee and priority fee
+const [baseFeeResult, priorityFeeResult] = await Promise.all([
+  provider.request({ method: 'eth_gasPrice', params: [] }),
+  provider.request({ method: 'eth_maxPriorityFeePerGas', params: [] })
+]);
+
+const baseFee = BigInt(baseFeeResult);
+const maxPriorityFee = BigInt(priorityFeeResult);
+
+// Set maxFee to 2x base fee + priority (buffer for base fee fluctuation)
+const maxFee = baseFee * 2n + maxPriorityFee;
+
+const eip1559Tx: Transaction.EIP1559 = {
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: maxFee,
+  maxPriorityFeePerGas: maxPriorityFee,
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: []
+};
+```
+
+## Using Fee History
+
+Get historical fees for smarter pricing:
+
+```typescript
+const feeHistory = await provider.request({
+  method: 'eth_feeHistory',
+  params: ['0x4', 'latest', [25, 50, 75]] // Last 4 blocks, 25/50/75 percentiles
+});
+
+// Use median priority fee from recent blocks
+const recentPriorityFees = feeHistory.reward.map(r => BigInt(r[1])); // 50th percentile
+const avgPriorityFee = recentPriorityFees.reduce((a, b) => a + b) / BigInt(recentPriorityFees.length);
+```
+
+## Key Differences
+
+| Legacy | EIP-1559 |
+|--------|----------|
+| `gasPrice` only | `maxFeePerGas` + `maxPriorityFeePerGas` |
+| Pay exactly `gasPrice` | Pay `baseFee + priorityFee` (up to max) |
+| Overpay during low congestion | Get refund if `maxFee > actual` |

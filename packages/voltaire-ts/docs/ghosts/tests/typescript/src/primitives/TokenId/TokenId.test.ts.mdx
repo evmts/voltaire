@@ -1,0 +1,169 @@
+---
+title: '[TS/JS] src/primitives/TokenId/TokenId.test.ts'
+source: 'src/primitives/TokenId/TokenId.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/TokenId/TokenId.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as TokenId from "./index.js";
+
+describe("TokenId", () => {
+	describe("from", () => {
+		it("creates from bigint", () => {
+			const tokenId = TokenId.from(42n);
+			expect(tokenId).toBe(42n);
+		});
+
+		it("creates from number", () => {
+			const tokenId = TokenId.from(100);
+			expect(tokenId).toBe(100n);
+		});
+
+		it("creates from hex string", () => {
+			const tokenId = TokenId.from("0x2a");
+			expect(tokenId).toBe(42n);
+		});
+
+		it("creates from decimal string", () => {
+			const tokenId = TokenId.from("1000000");
+			expect(tokenId).toBe(1000000n);
+		});
+
+		it("allows zero", () => {
+			const tokenId = TokenId.from(0n);
+			expect(tokenId).toBe(0n);
+		});
+
+		it("throws on negative value", () => {
+			expect(() => TokenId.from(-1n)).toThrow("cannot be negative");
+		});
+
+		it("throws on float number", () => {
+			expect(() => TokenId.from(1.5)).toThrow("must be an integer");
+		});
+
+		it("throws on value exceeding max", () => {
+			const overMax = 1n << 256n;
+			expect(() => TokenId.from(overMax)).toThrow("exceeds maximum");
+		});
+	});
+
+	describe("toNumber", () => {
+		it("converts to number", () => {
+			const tokenId = TokenId.from(42n);
+			expect(TokenId.toNumber(tokenId)).toBe(42);
+		});
+
+		it("throws on value exceeding MAX_SAFE_INTEGER", () => {
+			const tokenId = TokenId.from(BigInt(Number.MAX_SAFE_INTEGER) + 1n);
+			expect(() => TokenId.toNumber(tokenId)).toThrow("MAX_SAFE_INTEGER");
+		});
+	});
+
+	describe("toBigInt", () => {
+		it("converts to bigint", () => {
+			const tokenId = TokenId.from(42n);
+			expect(TokenId.toBigInt(tokenId)).toBe(42n);
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts to hex string", () => {
+			const tokenId = TokenId.from(42n);
+			expect(TokenId.toHex(tokenId)).toBe("0x2a");
+		});
+
+		it("handles zero", () => {
+			const tokenId = TokenId.from(0n);
+			expect(TokenId.toHex(tokenId)).toBe("0x0");
+		});
+
+		it("handles large values", () => {
+			const tokenId = TokenId.from(1000000n);
+			expect(TokenId.toHex(tokenId)).toBe("0xf4240");
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal token IDs", () => {
+			const a = TokenId.from(42n);
+			const b = TokenId.from(42n);
+			expect(TokenId.equals(a, b)).toBe(true);
+		});
+
+		it("returns false for different token IDs", () => {
+			const a = TokenId.from(42n);
+			const b = TokenId.from(100n);
+			expect(TokenId.equals(a, b)).toBe(false);
+		});
+	});
+
+	describe("compare", () => {
+		it("returns -1 when a < b", () => {
+			const a = TokenId.from(42n);
+			const b = TokenId.from(100n);
+			expect(TokenId.compare(a, b)).toBe(-1);
+		});
+
+		it("returns 0 when a === b", () => {
+			const a = TokenId.from(42n);
+			const b = TokenId.from(42n);
+			expect(TokenId.compare(a, b)).toBe(0);
+		});
+
+		it("returns 1 when a > b", () => {
+			const a = TokenId.from(100n);
+			const b = TokenId.from(42n);
+			expect(TokenId.compare(a, b)).toBe(1);
+		});
+	});
+
+	describe("isValid", () => {
+		it("returns true for non-zero token ID", () => {
+			const tokenId = TokenId.from(42n);
+			expect(TokenId.isValid(tokenId)).toBe(true);
+		});
+
+		it("returns false for zero token ID", () => {
+			const tokenId = TokenId.from(0n);
+			expect(TokenId.isValid(tokenId)).toBe(false);
+		});
+
+		it("returns true for large token IDs", () => {
+			const tokenId = TokenId.from(1000000000000000000n);
+			expect(TokenId.isValid(tokenId)).toBe(true);
+		});
+	});
+
+	describe("constants", () => {
+		it("exports MAX", () => {
+			expect(TokenId.constants.MAX).toBe((1n << 256n) - 1n);
+		});
+
+		it("exports MIN", () => {
+			expect(TokenId.constants.MIN).toBe(0n);
+		});
+	});
+
+	describe("ERC721_SELECTORS", () => {
+		it("exports balanceOf selector", () => {
+			expect(TokenId.ERC721_SELECTORS.balanceOf).toBe("0x70a08231");
+		});
+
+		it("exports ownerOf selector", () => {
+			expect(TokenId.ERC721_SELECTORS.ownerOf).toBe("0x6352211e");
+		});
+
+		it("exports transferFrom selector", () => {
+			expect(TokenId.ERC721_SELECTORS.transferFrom).toBe("0x23b872dd");
+		});
+
+		it("exports safeTransferFrom selector", () => {
+			expect(TokenId.ERC721_SELECTORS.safeTransferFrom).toBe("0x42842e0e");
+		});
+	});
+});
+
+```

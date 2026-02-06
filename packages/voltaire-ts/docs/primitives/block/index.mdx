@@ -1,0 +1,112 @@
+---
+title: "Block"
+description: "Complete Ethereum block representation"
+---
+
+## Overview
+
+Block represents a complete Ethereum block with header, body, hash, and metadata. Used for block validation, storage, and propagation.
+
+```typescript
+import * as Block from '@voltaire/primitives/Block'
+
+const block = Block.from({
+  header: blockHeader,
+  body: blockBody,
+  hash: "0x1234567890abcdef...",
+  size: 1024n,
+  totalDifficulty: 12345678n, // Optional, pre-merge only
+})
+```
+
+## Type Definition
+
+```typescript
+type BlockType = {
+  readonly header: BlockHeaderType
+  readonly body: BlockBodyType
+  readonly hash: BlockHashType
+  readonly size: Uint256Type
+  readonly totalDifficulty?: Uint256Type
+}
+```
+
+**Fields:**
+- `header` - Block metadata and Merkle roots
+- `body` - Transactions, uncles/ommers, withdrawals
+- `hash` - Keccak256(RLP(header))
+- `size` - Block size in bytes (RLP-encoded)
+- `totalDifficulty` - Cumulative difficulty (pre-merge only)
+
+## Creating Blocks
+
+### from
+
+Universal constructor from block components.
+
+```typescript
+import * as Block from '@voltaire/primitives/Block'
+import * as BlockHeader from '@voltaire/primitives/BlockHeader'
+import * as BlockBody from '@voltaire/primitives/BlockBody'
+
+const header = BlockHeader.from({
+  parentHash: "0x...",
+  // ... other header fields
+})
+
+const body = BlockBody.from({
+  transactions: [tx1, tx2],
+  ommers: [],
+  withdrawals: [w1, w2],
+})
+
+const block = Block.from({
+  header,
+  body,
+  hash: "0xabc123...",
+  size: 2048n,
+})
+```
+
+## Block Components
+
+A complete block consists of:
+
+1. **Header** - Metadata and Merkle roots for verification
+2. **Body** - Actual content (transactions, uncles, withdrawals)
+3. **Hash** - Unique block identifier computed from header
+4. **Size** - Total RLP-encoded size in bytes
+
+## Post-Merge Changes
+
+After The Merge (September 2022):
+- `totalDifficulty` is no longer relevant
+- Proof-of-Work fields in header are zeroed
+- Beacon chain handles consensus
+
+```typescript
+// Pre-merge block
+const premerge = Block.from({
+  header,
+  body,
+  hash: "0x...",
+  size: 1024n,
+  totalDifficulty: 58750003716598352816469n,
+})
+
+// Post-merge block (no totalDifficulty)
+const postmerge = Block.from({
+  header,
+  body,
+  hash: "0x...",
+  size: 1024n,
+})
+```
+
+## See Also
+
+- [Block (Effect)](https://voltaire-effect.tevm.sh/primitives/block) - Effect.ts integration with Schema validation
+- [BlockHeader](/primitives/block-header) - Block header details
+- [BlockBody](/primitives/block-body) - Block body details
+- [BlockHash](/primitives/block-hash) - Block identifier
+- [BlockNumber](/primitives/block-number) - Block height

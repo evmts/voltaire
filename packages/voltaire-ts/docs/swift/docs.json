@@ -1,0 +1,62 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Voltaire Swift",
+  "colors": {
+    "primary": "#10B981",
+    "light": "#34D399",
+    "dark": "#059669"
+  },
+  "favicon": "/favicon.png",
+  "navigation": {
+    "anchors": [
+      {
+        "anchor": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "icon": "rocket",
+            "pages": [
+              "index",
+              "getting-started",
+              "getting-started-xcode"
+            ]
+          },
+          {
+            "group": "Primitives",
+            "icon": "cubes",
+            "pages": [
+              {
+                "group": "Core",
+                "pages": [
+                  "primitives/address",
+                  "primitives/hash",
+                  "primitives/hex",
+                  "primitives/bytes32",
+                  "primitives/u256"
+                ]
+              },
+              {
+                "group": "Crypto",
+                "pages": [
+                  "crypto/keccak256",
+                  "primitives/private-key",
+                  "primitives/public-key",
+                  "primitives/signature"
+                ]
+              },
+              {
+                "group": "Support",
+                "pages": [
+                  "support/errors",
+                  "support/troubleshooting"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

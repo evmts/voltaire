@@ -1,0 +1,253 @@
+---
+title: "primitives/Paymaster"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Paymaster
+
+# primitives/Paymaster
+
+## Type Aliases
+
+### PaymasterType
+
+> **PaymasterType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Paymaster/PaymasterType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Paymaster/PaymasterType.ts#L13)
+
+Paymaster address type - ERC-4337 paymaster contract
+
+Paymasters sponsor gas fees for user operations, enabling gasless transactions
+or allowing users to pay gas in ERC-20 tokens.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Paymaster"`
+
+#### See
+
+ - https://eips.ethereum.org/EIPS/eip-4337
+ - https://voltaire.tevm.sh/primitives/paymaster for Paymaster documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### Paymaster
+
+> `const` **Paymaster**: `object`
+
+Defined in: [src/primitives/Paymaster/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Paymaster/index.ts#L31)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`paymaster1`, `paymaster2`) => `boolean`
+
+###### Parameters
+
+###### paymaster1
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### paymaster2
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`PaymasterType`](#paymastertype)
+
+Create Paymaster from address input
+
+###### Parameters
+
+###### value
+
+Address value
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+[`PaymasterType`](#paymastertype)
+
+Paymaster address
+
+###### Throws
+
+If address format is invalid
+
+###### Example
+
+```typescript
+const paymaster = Paymaster.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+```
+
+##### toHex()
+
+> **toHex**: (`paymaster`) => `string`
+
+###### Parameters
+
+###### paymaster
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+`string`
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Paymaster/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Paymaster/equals.js#L15)
+
+Check if two Paymaster addresses are equal
+
+#### Parameters
+
+##### a
+
+[`PaymasterType`](#paymastertype)
+
+First Paymaster
+
+##### b
+
+[`PaymasterType`](#paymastertype)
+
+Second Paymaster
+
+#### Returns
+
+`boolean`
+
+True if addresses are equal
+
+#### Example
+
+```typescript
+const isEqual = Paymaster.equals(paymaster1, paymaster2);
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`paymaster`): `string`
+
+Defined in: [src/primitives/Paymaster/toHex.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Paymaster/toHex.js#L15)
+
+Convert Paymaster to hex string
+
+#### Parameters
+
+##### paymaster
+
+[`PaymasterType`](#paymastertype)
+
+Paymaster address
+
+#### Returns
+
+`string`
+
+Hex string (0x-prefixed)
+
+#### Example
+
+```typescript
+const hex = Paymaster.toHex(paymaster);
+console.log(hex); // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+```
+
+***
+
+### equals()
+
+> **equals**(`paymaster1`, `paymaster2`): `boolean`
+
+Defined in: [src/primitives/Paymaster/index.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Paymaster/index.ts#L20)
+
+#### Parameters
+
+##### paymaster1
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+##### paymaster2
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`PaymasterType`](#paymastertype)
+
+Defined in: [src/primitives/Paymaster/from.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Paymaster/from.js#L15)
+
+Create Paymaster from address input
+
+#### Parameters
+
+##### value
+
+Address value
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+[`PaymasterType`](#paymastertype)
+
+Paymaster address
+
+#### Throws
+
+If address format is invalid
+
+#### Example
+
+```typescript
+const paymaster = Paymaster.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+```
+
+***
+
+### toHex()
+
+> **toHex**(`paymaster`): `string`
+
+Defined in: [src/primitives/Paymaster/index.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Paymaster/index.ts#L14)
+
+#### Parameters
+
+##### paymaster
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+`string`

@@ -1,0 +1,106 @@
+---
+title: Function.encodeResult
+description: Encode function return values into ABI format
+---
+
+<Tabs>
+
+</Tabs>
+
+## Usage Examples
+
+### Single Return Value
+
+```typescript
+import { Function } from 'tevm'
+
+const totalSupplyFn = new Function({
+  type: "function",
+  name: "totalSupply",
+  inputs: [],
+  outputs: [{ type: "uint256", name: "supply" }]
+})
+
+const encoded = totalSupplyFn.encodeResult([1000000n])
+```
+
+### Multiple Return Values
+
+```typescript
+import { Function } from 'tevm'
+
+const getReservesFn = new Function({
+  type: "function",
+  name: "getReserves",
+  outputs: [
+    { type: "uint112", name: "reserve0" },
+    { type: "uint112", name: "reserve1" },
+    { type: "uint32", name: "blockTimestampLast" }
+  ]
+})
+
+const encoded = getReservesFn.encodeResult([1000n, 2000n, 1234567n])
+```
+
+### Boolean Return
+
+```typescript
+import { Function } from 'tevm'
+
+const transferFn = new Function({
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool", name: "success" }]
+})
+
+const encoded = transferFn.encodeResult([true])
+```
+
+### Dynamic Return Types
+
+```typescript
+import { Function } from 'tevm'
+
+const getNameFn = new Function({
+  type: "function",
+  name: "name",
+  outputs: [{ type: "string", name: "name" }]
+})
+
+const encoded = getNameFn.encodeResult(["MyToken"])
+```
+
+### Testing Contract Behavior
+
+```typescript
+import { Function } from 'tevm'
+
+const balanceOfFn = new Function({
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+})
+
+// Create mock return data
+const mockBalance = 1000n
+const mockReturnData = balanceOfFn.encodeResult([mockBalance])
+
+// Use in tests
+async function testBalanceOf() {
+  // Mock provider returns our encoded data
+  mockProvider.setReturnData(mockReturnData)
+
+  const balance = await contract.balanceOf(address)
+  expect(balance).toBe(mockBalance)
+}
+```
+
+## See Also
+
+- [decodeResult](/primitives/abi/function/decode-result) - Decode function return values
+- [encodeParams](/primitives/abi/function/encode-params) - Encode function calldata

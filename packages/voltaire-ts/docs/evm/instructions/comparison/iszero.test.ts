@@ -1,0 +1,96 @@
+/**
+ * Test file for ISZERO (0x15) documentation examples
+ * Tests examples from iszero.mdx
+ */
+import { describe, expect, it } from "vitest";
+
+describe("ISZERO (0x15) - Documentation Examples", async () => {
+	const { ISZERO } = await import("../../../../src/evm/comparison/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Zero Check", () => {
+		it("0 is zero = 1 (true)", () => {
+			const frame = createFrame([0n]);
+			const err = ISZERO(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Non-Zero Check", () => {
+		it("42 is not zero = 0 (false)", () => {
+			const frame = createFrame([42n]);
+			const err = ISZERO(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Boolean NOT", () => {
+		it("NOT 1 = 0", () => {
+			const frame = createFrame([1n]);
+			ISZERO(frame);
+			expect(frame.stack).toEqual([0n]);
+		});
+
+		it("NOT 0 = 1", () => {
+			const frame = createFrame([0n]);
+			ISZERO(frame);
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Large Value Check", () => {
+		it("MAX is not zero", () => {
+			const MAX = (1n << 256n) - 1n;
+			const frame = createFrame([MAX]);
+			ISZERO(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Small Non-Zero", () => {
+		it("1 is not zero", () => {
+			const frame = createFrame([1n]);
+			ISZERO(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("returns StackUnderflow with empty stack", () => {
+			const frame = createFrame([]);
+			const err = ISZERO(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+
+		it("returns OutOfGas when insufficient gas", () => {
+			const frame = createFrame([0n], 2n);
+			const err = ISZERO(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+			expect(frame.gasRemaining).toBe(0n);
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 3 gas (GasFastestStep)", () => {
+			const frame = createFrame([0n], 100n);
+			const err = ISZERO(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(97n);
+		});
+	});
+});

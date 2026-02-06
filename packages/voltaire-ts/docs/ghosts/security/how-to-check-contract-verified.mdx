@@ -1,0 +1,206 @@
+---
+title: How to Check if Contract is Verified
+description: Query block explorers to check contract verification status.
+---
+
+## Goal
+
+Check if a contract's source code is verified on Etherscan or other explorers.
+
+## Etherscan API
+
+```ts
+import { Address } from '@voltaire/primitives'
+
+interface VerificationResult {
+  verified: boolean
+  contractName?: string
+  compiler?: string
+  optimization?: boolean
+  runs?: number
+  sourceCode?: string
+}
+
+async function checkEtherscanVerification(
+  address: string,
+  apiKey: string,
+  network: 'mainnet' | 'goerli' | 'sepolia' = 'mainnet'
+): Promise<VerificationResult> {
+  // Validate address first
+  if (!Address.isValid(address)) {
+    throw new Error('Invalid address')
+  }
+
+  const baseUrl = network === 'mainnet'
+    ? 'https://api.etherscan.io'
+    : `https://api-${network}.etherscan.io`
+
+  const response = await fetch(
+    `${baseUrl}/api?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`
+  )
+
+  const data = await response.json()
+
+  if (data.status !== '1' || !data.result[0]) {
+    return { verified: false }
+  }
+
+  const result = data.result[0]
+
+  // Empty SourceCode means not verified
+  if (!result.SourceCode) {
+    return { verified: false }
+  }
+
+  return {
+    verified: true,
+    contractName: result.ContractName,
+    compiler: result.CompilerVersion,
+    optimization: result.OptimizationUsed === '1',
+    runs: parseInt(result.Runs) || undefined,
+    sourceCode: result.SourceCode
+  }
+}
+
+// Usage
+const result = await checkEtherscanVerification(
+  '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
+  process.env.ETHERSCAN_API_KEY!
+)
+
+if (result.verified) {
+  console.log(`Contract: ${result.contractName}`)
+  console.log(`Compiler: ${result.compiler}`)
+} else {
+  console.warn('Contract source not verified!')
+}
+```
+
+## Sourcify Check
+
+```ts
+async function checkSourcifyVerification(
+  address: string,
+  chainId: number = 1
+): Promise<{ verified: boolean; match?: 'full' | 'partial' }> {
+  if (!Address.isValid(address)) {
+    throw new Error('Invalid address')
+  }
+
+  const checksummed = Address.fromHex(address).toChecksummed()
+
+  // Check full match first
+  const fullUrl = `https://sourcify.dev/server/check-by-addresses?addresses=${checksummed}&chainIds=${chainId}`
+  const response = await fetch(fullUrl)
+  const data = await response.json()
+
+  if (data[0]?.status === 'perfect') {
+    return { verified: true, match: 'full' }
+  }
+
+  if (data[0]?.status === 'partial') {
+    return { verified: true, match: 'partial' }
+  }
+
+  return { verified: false }
+}
+```
+
+## Multi-Explorer Check
+
+```ts
+interface ExplorerResult {
+  explorer: string
+  verified: boolean
+  url?: string
+}
+
+async function checkMultipleExplorers(
+  address: string,
+  etherscanKey?: string
+): Promise<ExplorerResult[]> {
+  const results: ExplorerResult[] = []
+
+  // Sourcify (no API key needed)
+  try {
+    const sourcify = await checkSourcifyVerification(address)
+    results.push({
+      explorer: 'Sourcify',
+      verified: sourcify.verified,
+      url: sourcify.verified
+        ? `https://sourcify.dev/#/lookup/${address}`
+        : undefined
+    })
+  } catch {}
+
+  // Etherscan (requires API key)
+  if (etherscanKey) {
+    try {
+      const etherscan = await checkEtherscanVerification(address, etherscanKey)
+      results.push({
+        explorer: 'Etherscan',
+        verified: etherscan.verified,
+        url: etherscan.verified
+          ? `https://etherscan.io/address/${address}#code`
+          : undefined
+      })
+    } catch {}
+  }
+
+  return results
+}
+
+// Usage
+const checks = await checkMultipleExplorers(
+  '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI token
+  process.env.ETHERSCAN_API_KEY
+)
+
+for (const check of checks) {
+  console.log(`${check.explorer}: ${check.verified ? 'Verified' : 'Not verified'}`)
+  if (check.url) console.log(`  ${check.url}`)
+}
+```
+
+## Quick Contract Check
+
+```ts
+async function isContractTrusted(address: string): Promise<{
+  isContract: boolean
+  verified: boolean
+  warnings: string[]
+}> {
+  const warnings: string[] = []
+
+  // Check if it's actually a contract
+  const code = await provider.request({
+    method: 'eth_getCode',
+    params: [address, 'latest']
+  })
+
+  if (code === '0x' || code === '0x0') {
+    return { isContract: false, verified: false, warnings: ['Address is not a contract (EOA)'] }
+  }
+
+  // Check verification
+  const verification = await checkEtherscanVerification(
+    address,
+    process.env.ETHERSCAN_API_KEY!
+  )
+
+  if (!verification.verified) {
+    warnings.push('Contract source code not verified')
+  }
+
+  return {
+    isContract: true,
+    verified: verification.verified,
+    warnings
+  }
+}
+```
+
+## See Also
+
+- [Verify Contract Source](/ghosts/security/how-to-verify-contract-source)
+- [Address Validation](/ghosts/security/how-to-validate-address)

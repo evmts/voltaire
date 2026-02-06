@@ -1,0 +1,1941 @@
+---
+title: "primitives/Authorization"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Authorization
+
+# primitives/Authorization
+
+## Classes
+
+### InvalidAddressError
+
+Defined in: [src/primitives/Authorization/errors.js:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L35)
+
+Authorization address cannot be zero address
+
+#### Throws
+
+#### Extends
+
+- [`InvalidFormatError`](../index/index.mdx#invalidformaterror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidAddressError**(`address`, `options?`): [`InvalidAddressError`](#invalidaddresserror)
+
+Defined in: [src/primitives/Authorization/errors.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L41)
+
+###### Parameters
+
+###### address
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### Returns
+
+[`InvalidAddressError`](#invalidaddresserror)
+
+###### Overrides
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`constructor`](../index/index.mdx#constructor-7)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`cause`](../index/index.mdx#cause-7)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`code`](../index/index.mdx#code-7)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`context`](../index/index.mdx#context-7)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`docsPath`](../index/index.mdx#docspath-7)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`expected`](../index/index.mdx#expected-3)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Authorization/errors.js:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L49)
+
+###### Inherited from
+
+`InvalidFormatError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`value`](../index/index.mdx#value-3)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`getErrorChain`](../index/index.mdx#geterrorchain-14)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`toJSON`](../index/index.mdx#tojson-14)
+
+***
+
+### InvalidChainIdError
+
+Defined in: [src/primitives/Authorization/errors.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L12)
+
+Authorization chain ID must be non-zero
+
+#### Throws
+
+#### Extends
+
+- [`InvalidFormatError`](../index/index.mdx#invalidformaterror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidChainIdError**(`chainId`, `options?`): [`InvalidChainIdError`](#invalidchainiderror)
+
+Defined in: [src/primitives/Authorization/errors.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L18)
+
+###### Parameters
+
+###### chainId
+
+`bigint`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### Returns
+
+[`InvalidChainIdError`](#invalidchainiderror)
+
+###### Overrides
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`constructor`](../index/index.mdx#constructor-7)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`cause`](../index/index.mdx#cause-7)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`code`](../index/index.mdx#code-7)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`context`](../index/index.mdx#context-7)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`docsPath`](../index/index.mdx#docspath-7)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`expected`](../index/index.mdx#expected-3)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Authorization/errors.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L26)
+
+###### Inherited from
+
+`InvalidFormatError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`value`](../index/index.mdx#value-3)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`getErrorChain`](../index/index.mdx#geterrorchain-14)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidFormatError`](../index/index.mdx#invalidformaterror).[`toJSON`](../index/index.mdx#tojson-14)
+
+***
+
+### InvalidSignatureComponentError
+
+Defined in: [src/primitives/Authorization/errors.js:81](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L81)
+
+Authorization signature component cannot be zero
+
+#### Throws
+
+#### Extends
+
+- [`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSignatureComponentError**(`component`, `value`, `options?`): [`InvalidSignatureComponentError`](#invalidsignaturecomponenterror)
+
+Defined in: [src/primitives/Authorization/errors.js:88](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L88)
+
+###### Parameters
+
+###### component
+
+`string`
+
+'r' or 's'
+
+###### value
+
+`bigint`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### Returns
+
+[`InvalidSignatureComponentError`](#invalidsignaturecomponenterror)
+
+###### Overrides
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`constructor`](../index/index.mdx#constructor-12)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`cause`](../index/index.mdx#cause-12)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`code`](../index/index.mdx#code-12)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`context`](../index/index.mdx#context-12)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`docsPath`](../index/index.mdx#docspath-12)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Authorization/errors.js:95](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L95)
+
+###### Inherited from
+
+`InvalidSignatureError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`getErrorChain`](../index/index.mdx#geterrorchain-24)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`toJSON`](../index/index.mdx#tojson-24)
+
+***
+
+### InvalidSignatureRangeError
+
+Defined in: [src/primitives/Authorization/errors.js:104](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L104)
+
+Authorization signature r must be less than curve order
+
+#### Throws
+
+#### Extends
+
+- [`InvalidRangeError`](../index/index.mdx#invalidrangeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSignatureRangeError**(`value`, `max`, `options?`): [`InvalidSignatureRangeError`](#invalidsignaturerangeerror)
+
+Defined in: [src/primitives/Authorization/errors.js:111](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L111)
+
+###### Parameters
+
+###### value
+
+`bigint`
+
+###### max
+
+`bigint`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### Returns
+
+[`InvalidSignatureRangeError`](#invalidsignaturerangeerror)
+
+###### Overrides
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`constructor`](../index/index.mdx#constructor-11)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`cause`](../index/index.mdx#cause-11)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`code`](../index/index.mdx#code-11)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`context`](../index/index.mdx#context-11)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`docsPath`](../index/index.mdx#docspath-11)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`expected`](../index/index.mdx#expected-5)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Authorization/errors.js:119](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L119)
+
+###### Inherited from
+
+`InvalidRangeError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`value`](../index/index.mdx#value-5)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`getErrorChain`](../index/index.mdx#geterrorchain-22)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`toJSON`](../index/index.mdx#tojson-22)
+
+***
+
+### InvalidYParityError
+
+Defined in: [src/primitives/Authorization/errors.js:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L58)
+
+Authorization yParity must be 0 or 1
+
+#### Throws
+
+#### Extends
+
+- [`InvalidRangeError`](../index/index.mdx#invalidrangeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidYParityError**(`yParity`, `options?`): [`InvalidYParityError`](#invalidyparityerror)
+
+Defined in: [src/primitives/Authorization/errors.js:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L64)
+
+###### Parameters
+
+###### yParity
+
+`number`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### Returns
+
+[`InvalidYParityError`](#invalidyparityerror)
+
+###### Overrides
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`constructor`](../index/index.mdx#constructor-11)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`cause`](../index/index.mdx#cause-11)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`code`](../index/index.mdx#code-11)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`context`](../index/index.mdx#context-11)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`docsPath`](../index/index.mdx#docspath-11)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`expected`](../index/index.mdx#expected-5)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Authorization/errors.js:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L72)
+
+###### Inherited from
+
+`InvalidRangeError.name`
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`value`](../index/index.mdx#value-5)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`getErrorChain`](../index/index.mdx#geterrorchain-22)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidRangeError`](../index/index.mdx#invalidrangeerror).[`toJSON`](../index/index.mdx#tojson-22)
+
+***
+
+### MalleableSignatureError
+
+Defined in: [src/primitives/Authorization/errors.js:128](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L128)
+
+Authorization signature s too high (malleable signature)
+
+#### Throws
+
+#### Extends
+
+- [`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new MalleableSignatureError**(`s`, `max`, `options?`): [`MalleableSignatureError`](#malleablesignatureerror)
+
+Defined in: [src/primitives/Authorization/errors.js:135](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L135)
+
+###### Parameters
+
+###### s
+
+`bigint`
+
+###### max
+
+`bigint`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### Returns
+
+[`MalleableSignatureError`](#malleablesignatureerror)
+
+###### Overrides
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`constructor`](../index/index.mdx#constructor-12)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`cause`](../index/index.mdx#cause-12)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`code`](../index/index.mdx#code-12)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`context`](../index/index.mdx#context-12)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`docsPath`](../index/index.mdx#docspath-12)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/primitives/Authorization/errors.js:142](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/errors.js#L142)
+
+###### Inherited from
+
+`InvalidSignatureError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`getErrorChain`](../index/index.mdx#geterrorchain-24)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidSignatureError`](../index/index.mdx#invalidsignatureerror).[`toJSON`](../index/index.mdx#tojson-24)
+
+## Interfaces
+
+### DelegationDesignation
+
+Defined in: [src/primitives/Authorization/types.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/types.js#L20)
+
+#### Properties
+
+##### authority
+
+> **authority**: [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/Authorization/types.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/types.js#L21)
+
+Authority (signer) address
+
+##### delegatedAddress
+
+> **delegatedAddress**: [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/Authorization/types.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/types.js#L22)
+
+Delegated code address
+
+***
+
+### Unsigned
+
+Defined in: [src/primitives/Authorization/types.js:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/types.js#L11)
+
+#### Properties
+
+##### address
+
+> **address**: [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/Authorization/types.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/types.js#L13)
+
+Address to delegate code execution to
+
+##### chainId
+
+> **chainId**: `bigint`
+
+Defined in: [src/primitives/Authorization/types.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/types.js#L12)
+
+Chain ID where authorization is valid
+
+##### nonce
+
+> **nonce**: `bigint`
+
+Defined in: [src/primitives/Authorization/types.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/types.js#L14)
+
+Nonce of the authorizing account
+
+## Type Aliases
+
+### AuthorizationType
+
+> **AuthorizationType** = `object`
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L7)
+
+EIP-7702 Authorization branded type
+Allows EOA to delegate code execution to another address
+
+#### Properties
+
+##### address
+
+> **address**: [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L11)
+
+Address to delegate code execution to
+
+##### chainId
+
+> **chainId**: `bigint`
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L9)
+
+Chain ID where authorization is valid
+
+##### nonce
+
+> **nonce**: `bigint`
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L13)
+
+Nonce of the authorizing account
+
+##### r
+
+> **r**: `Uint8Array`
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L17)
+
+Signature r value (32 bytes)
+
+##### s
+
+> **s**: `Uint8Array`
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L19)
+
+Signature s value (32 bytes)
+
+##### yParity
+
+> **yParity**: `number`
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L15)
+
+Signature Y parity (0 or 1)
+
+***
+
+### ~~BrandedAuthorization~~
+
+> **BrandedAuthorization** = [`AuthorizationType`](#authorizationtype)
+
+Defined in: [src/primitives/Authorization/AuthorizationType.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/AuthorizationType.ts#L25)
+
+#### Deprecated
+
+Use AuthorizationType instead
+
+## Variables
+
+### Authorization
+
+> `const` **Authorization**: `object`
+
+Defined in: [src/primitives/Authorization/index.ts:163](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L163)
+
+#### Type Declaration
+
+##### calculateGasCost()
+
+> **calculateGasCost**: (`authList`, `emptyAccounts`) => `bigint`
+
+###### Parameters
+
+###### authList
+
+[`AuthorizationType`](#authorizationtype)[]
+
+###### emptyAccounts
+
+`number`
+
+###### Returns
+
+`bigint`
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### b
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+`boolean`
+
+##### equalsAuth()
+
+> **equalsAuth**: (`auth1`, `auth2`) => `boolean`
+
+###### Parameters
+
+###### auth1
+
+[`AuthorizationType`](#authorizationtype)
+
+###### auth2
+
+[`AuthorizationType`](#authorizationtype)
+
+###### Returns
+
+`boolean`
+
+##### format()
+
+> **format**: (`auth`) => `string`
+
+###### Parameters
+
+###### auth
+
+[`AuthorizationType`](#authorizationtype) | \{ `address`: [`AddressType`](Address.mdx#addresstype); `chainId`: `bigint`; `nonce`: `bigint`; \}
+
+###### Returns
+
+`string`
+
+##### getGasCost()
+
+> **getGasCost**: (`auth`, `isEmpty`) => `bigint`
+
+###### Parameters
+
+###### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+###### isEmpty
+
+`boolean`
+
+###### Returns
+
+`bigint`
+
+##### hash
+
+> **hash**: `HashFn`
+
+##### Hash()
+
+> **Hash**: (`deps`) => `HashFn`
+
+###### Parameters
+
+###### deps
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+###### Returns
+
+`HashFn`
+
+##### isItem()
+
+> **isItem**: (`value`) => `boolean`
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+###### Returns
+
+`boolean`
+
+##### isUnsigned()
+
+> **isUnsigned**: (`value`) => `boolean`
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+###### Returns
+
+`boolean`
+
+##### MAGIC\_BYTE
+
+> **MAGIC\_BYTE**: `number`
+
+EIP-7702 magic byte for signing hash
+
+##### PER\_AUTH\_BASE\_COST
+
+> **PER\_AUTH\_BASE\_COST**: `bigint`
+
+Base gas cost per authorization
+
+##### PER\_EMPTY\_ACCOUNT\_COST
+
+> **PER\_EMPTY\_ACCOUNT\_COST**: `bigint`
+
+Gas cost per empty account authorization
+
+##### process()
+
+> **process**: (`auth`) => `object`
+
+###### Parameters
+
+###### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+###### Returns
+
+`object`
+
+###### authority
+
+> **authority**: [`AddressType`](Address.mdx#addresstype)
+
+###### delegatedAddress
+
+> **delegatedAddress**: [`AddressType`](Address.mdx#addresstype)
+
+##### processAll()
+
+> **processAll**: (`authList`) => `object`[]
+
+###### Parameters
+
+###### authList
+
+[`AuthorizationType`](#authorizationtype)[]
+
+###### Returns
+
+`object`[]
+
+##### SECP256K1\_HALF\_N
+
+> **SECP256K1\_HALF\_N**: `bigint`
+
+secp256k1 curve order N / 2 (for malleability check)
+
+##### SECP256K1\_N
+
+> **SECP256K1\_N**: `bigint`
+
+secp256k1 curve order N
+
+##### sign
+
+> **sign**: `SignFn`
+
+##### Sign()
+
+> **Sign**: (`deps`) => `SignFn`
+
+###### Parameters
+
+###### deps
+
+###### addressFromPublicKey
+
+(`x`, `y`) => [`AddressType`](Address.mdx#addresstype)
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+###### recoverPublicKey
+
+(`signature`, `messageHash`) => `Uint8Array`
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+###### sign
+
+(`messageHash`, `privateKey`) => `object`
+
+###### Returns
+
+`SignFn`
+
+##### validate()
+
+> **validate**: (`auth`) => `void`
+
+###### Parameters
+
+###### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+###### Returns
+
+`void`
+
+##### verify
+
+> **verify**: `VerifyFn`
+
+##### Verify()
+
+> **Verify**: (`deps`) => `VerifyFn`
+
+###### Parameters
+
+###### deps
+
+###### addressFromPublicKey
+
+(`x`, `y`) => [`AddressType`](Address.mdx#addresstype)
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+###### recoverPublicKey
+
+(`signature`, `messageHash`) => `Uint8Array`
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+###### Returns
+
+`VerifyFn`
+
+***
+
+### calculateGasCost()
+
+> `const` **calculateGasCost**: (`authList`, `emptyAccounts`) => `bigint` = `calculateGasCostImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:97](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L97)
+
+#### Parameters
+
+##### authList
+
+[`AuthorizationType`](#authorizationtype)[]
+
+##### emptyAccounts
+
+`number`
+
+#### Returns
+
+`bigint`
+
+***
+
+### equals()
+
+> `const` **equals**: (`a`, `b`) => `boolean` = `equalsImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:102](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L102)
+
+#### Parameters
+
+##### a
+
+[`AddressType`](Address.mdx#addresstype)
+
+##### b
+
+[`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### equalsAuth()
+
+> `const` **equalsAuth**: (`auth1`, `auth2`) => `boolean` = `equalsAuthImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:104](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L104)
+
+#### Parameters
+
+##### auth1
+
+[`AuthorizationType`](#authorizationtype)
+
+##### auth2
+
+[`AuthorizationType`](#authorizationtype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### format()
+
+> `const` **format**: (`auth`) => `string` = `formatImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:109](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L109)
+
+#### Parameters
+
+##### auth
+
+[`AuthorizationType`](#authorizationtype) | \{ `address`: [`AddressType`](Address.mdx#addresstype); `chainId`: `bigint`; `nonce`: `bigint`; \}
+
+#### Returns
+
+`string`
+
+***
+
+### getGasCost()
+
+> `const` **getGasCost**: (`auth`, `isEmpty`) => `bigint` = `getGasCostImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:115](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L115)
+
+#### Parameters
+
+##### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+##### isEmpty
+
+`boolean`
+
+#### Returns
+
+`bigint`
+
+***
+
+### hash
+
+> `const` **hash**: `HashFn`
+
+Defined in: [src/primitives/Authorization/index.ts:135](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L135)
+
+***
+
+### Hash()
+
+> `const` **Hash**: (`deps`) => `HashFn`
+
+Defined in: [src/primitives/Authorization/index.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L43)
+
+#### Parameters
+
+##### deps
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+#### Returns
+
+`HashFn`
+
+***
+
+### isItem()
+
+> `const` **isItem**: (`value`) => `boolean` = `isItemImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:118](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L118)
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+`boolean`
+
+***
+
+### isUnsigned()
+
+> `const` **isUnsigned**: (`value`) => `boolean` = `isUnsignedImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:120](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L120)
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+`boolean`
+
+***
+
+### MAGIC\_BYTE
+
+> `const` **MAGIC\_BYTE**: `5` = `0x05`
+
+Defined in: [src/primitives/Authorization/constants.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/constants.js#L8)
+
+EIP-7702 magic byte for signing hash
+
+***
+
+### PER\_AUTH\_BASE\_COST
+
+> `const` **PER\_AUTH\_BASE\_COST**: `12500n` = `12500n`
+
+Defined in: [src/primitives/Authorization/constants.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/constants.js#L18)
+
+Base gas cost per authorization
+
+***
+
+### PER\_EMPTY\_ACCOUNT\_COST
+
+> `const` **PER\_EMPTY\_ACCOUNT\_COST**: `25000n` = `25000n`
+
+Defined in: [src/primitives/Authorization/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/constants.js#L13)
+
+Gas cost per empty account authorization
+
+***
+
+### process()
+
+> `const` **process**: (`auth`) => `object` = `processImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:122](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L122)
+
+#### Parameters
+
+##### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+#### Returns
+
+`object`
+
+##### authority
+
+> **authority**: [`AddressType`](Address.mdx#addresstype)
+
+##### delegatedAddress
+
+> **delegatedAddress**: [`AddressType`](Address.mdx#addresstype)
+
+***
+
+### processAll()
+
+> `const` **processAll**: (`authList`) => `object`[] = `processAllImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:127](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L127)
+
+#### Parameters
+
+##### authList
+
+[`AuthorizationType`](#authorizationtype)[]
+
+#### Returns
+
+`object`[]
+
+***
+
+### SECP256K1\_HALF\_N
+
+> `const` **SECP256K1\_HALF\_N**: `bigint`
+
+Defined in: [src/primitives/Authorization/constants.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/constants.js#L29)
+
+secp256k1 curve order N / 2 (for malleability check)
+
+***
+
+### SECP256K1\_N
+
+> `const` **SECP256K1\_N**: `115792089237316195423570985008687907852837564279074904382605163141518161494337n` = `0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n`
+
+Defined in: [src/primitives/Authorization/constants.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/constants.js#L23)
+
+secp256k1 curve order N
+
+***
+
+### sign
+
+> `const` **sign**: `SignFn`
+
+Defined in: [src/primitives/Authorization/index.ts:148](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L148)
+
+***
+
+### Sign()
+
+> `const` **Sign**: (`deps`) => `SignFn`
+
+Defined in: [src/primitives/Authorization/index.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L49)
+
+#### Parameters
+
+##### deps
+
+###### addressFromPublicKey
+
+(`x`, `y`) => [`AddressType`](Address.mdx#addresstype)
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+###### recoverPublicKey
+
+(`signature`, `messageHash`) => `Uint8Array`
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+###### sign
+
+(`messageHash`, `privateKey`) => `object`
+
+#### Returns
+
+`SignFn`
+
+***
+
+### validate()
+
+> `const` **validate**: (`auth`) => `void` = `validateImpl`
+
+Defined in: [src/primitives/Authorization/index.ts:132](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L132)
+
+#### Parameters
+
+##### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+#### Returns
+
+`void`
+
+***
+
+### verify
+
+> `const` **verify**: `VerifyFn`
+
+Defined in: [src/primitives/Authorization/index.ts:140](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L140)
+
+***
+
+### Verify()
+
+> `const` **Verify**: (`deps`) => `VerifyFn`
+
+Defined in: [src/primitives/Authorization/index.ts:64](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/index.ts#L64)
+
+#### Parameters
+
+##### deps
+
+###### addressFromPublicKey
+
+(`x`, `y`) => [`AddressType`](Address.mdx#addresstype)
+
+###### keccak256
+
+(`data`) => `Uint8Array`
+
+###### recoverPublicKey
+
+(`signature`, `messageHash`) => `Uint8Array`
+
+###### rlpEncode
+
+(`data`) => `Uint8Array`
+
+#### Returns
+
+`VerifyFn`
+
+## Functions
+
+### authorityWasm()
+
+> **authorityWasm**(`auth`): [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/Authorization/Authorization.wasm.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/Authorization.wasm.ts#L56)
+
+Recover authority (signer) from authorization
+
+#### Parameters
+
+##### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+Authorization to recover from
+
+#### Returns
+
+[`AddressType`](Address.mdx#addresstype)
+
+Recovered authority address
+
+***
+
+### gasCostWasm()
+
+> **gasCostWasm**(`authCount`, `emptyAccounts`): `bigint`
+
+Defined in: [src/primitives/Authorization/Authorization.wasm.ts:73](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/Authorization.wasm.ts#L73)
+
+Calculate gas cost for authorization list
+
+#### Parameters
+
+##### authCount
+
+`number`
+
+Number of authorizations
+
+##### emptyAccounts
+
+`number`
+
+Number of empty accounts
+
+#### Returns
+
+`bigint`
+
+Gas cost as bigint
+
+***
+
+### signingHashWasm()
+
+> **signingHashWasm**(`chainId`, `address`, `nonce`): [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Authorization/Authorization.wasm.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/Authorization.wasm.ts#L43)
+
+Calculate signing hash for authorization
+
+#### Parameters
+
+##### chainId
+
+`bigint`
+
+Chain ID
+
+##### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+Target address
+
+##### nonce
+
+`bigint`
+
+Nonce
+
+#### Returns
+
+[`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Signing hash
+
+***
+
+### validateWasm()
+
+> **validateWasm**(`auth`): `void`
+
+Defined in: [src/primitives/Authorization/Authorization.wasm.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Authorization/Authorization.wasm.ts#L25)
+
+Validate authorization structure
+
+#### Parameters
+
+##### auth
+
+[`AuthorizationType`](#authorizationtype)
+
+Authorization to validate
+
+#### Returns
+
+`void`
+
+#### Throws
+
+Error if authorization is invalid

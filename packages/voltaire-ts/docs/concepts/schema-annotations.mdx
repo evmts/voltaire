@@ -1,0 +1,192 @@
+---
+title: Schema Annotations
+description: Annotate Effect schemas for better errors, JSON Schema generation, and form integration
+---
+
+Voltaire's Effect schemas support full annotations that improve developer experience across error messages, JSON Schema generation, and form validation.
+
+## Why Annotate Schemas?
+
+```typescript
+// ❌ Minimal annotation
+.annotations({ identifier: "Address.Hex" })
+
+// ✅ Full annotations
+.annotations({
+  identifier: "Address.Hex",
+  title: "Ethereum Address",
+  description: "A 20-byte Ethereum address as a checksummed hex string",
+  examples: [
+    "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+  ],
+  message: () => "Expected a valid Ethereum address (40 hex characters with 0x prefix)"
+})
+```
+
+## Annotation Types
+
+| Annotation | Purpose | Example |
+|------------|---------|---------|
+| `identifier` | Unique ID for the schema | `"Address.Hex"` |
+| `title` | Human-readable name for UI/forms | `"Ethereum Address"` |
+| `description` | Explains what the type represents | `"A 20-byte Ethereum address..."` |
+| `examples` | Valid example values | `["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]` |
+| `message` | Custom error message function | `() => "Invalid address format"` |
+| `default` | Default value | `"0x0000000000000000000000000000000000000000"` |
+| `documentation` | Extended documentation | `"See EIP-55 for checksum details..."` |
+
+## Benefits
+
+### Better Error Messages
+
+Without annotations, parse errors show raw type information:
+
+```
+Expected Uint8Array of length 20, but received "0x123"
+```
+
+With `message` annotation:
+
+```
+Invalid Ethereum address: expected 40 hex characters with 0x prefix
+```
+
+### JSON Schema Generation
+
+Generate OpenAPI-compatible schemas with `JSONSchema.make()`:
+
+```typescript
+import { JSONSchema } from "effect"
+import * as Address from "voltaire-effect/primitives/Address"
+
+const schema = JSONSchema.make(Address.Hex)
+// {
+//   "type": "string",
+//   "title": "Ethereum Address",
+//   "description": "A 20-byte Ethereum address as a checksummed hex string",
+//   "pattern": "^0x[a-fA-F0-9]{40}$",
+//   "examples": [
+//     "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+//     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+//   ]
+// }
+```
+
+### Form Integration
+
+Use `title` and `description` for form labels and help text:
+
+```typescript
+import * as S from "effect/Schema"
+import { AST } from "effect"
+
+function getFormMetadata(schema: S.Schema<any>) {
+  const ast = schema.ast
+  return {
+    label: ast.annotations[AST.TitleAnnotationId],
+    helpText: ast.annotations[AST.DescriptionAnnotationId],
+    placeholder: ast.annotations[AST.ExamplesAnnotationId]?.[0]
+  }
+}
+
+const meta = getFormMetadata(Address.Hex)
+// { label: "Ethereum Address", helpText: "A 20-byte...", placeholder: "0xd8dA..." }
+```
+
+### IDE Autocomplete
+
+Annotations surface in IDE hover information, making types self-documenting.
+
+## Annotation Patterns by Type
+
+### Address Types
+
+```typescript
+.annotations({
+  identifier: "Address.Hex",
+  title: "Ethereum Address",
+  description: "A 20-byte Ethereum address. Accepts checksummed, lowercase, or uppercase.",
+  examples: [
+    "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+  ],
+  message: () => "Invalid Ethereum address: expected 40 hex characters with 0x prefix"
+})
+```
+
+### Hash Types
+
+```typescript
+.annotations({
+  identifier: "Hash.Hex",
+  title: "32-byte Hash",
+  description: "A 32-byte hash value (e.g., keccak256 output) as hex string",
+  examples: ["0xabababab..."], // 64 hex chars
+  message: () => "Invalid hash: expected 64 hex characters (32 bytes)"
+})
+```
+
+### Numeric Types
+
+```typescript
+.annotations({
+  identifier: "ChainId.Number",
+  title: "Chain ID",
+  description: "EIP-155 chain identifier. 1 = Ethereum Mainnet, 137 = Polygon, etc.",
+  examples: [1, 137, 42161, 10, 8453],
+  message: () => "Invalid chain ID: must be a positive integer"
+})
+```
+
+### Sensitive Types
+
+```typescript
+.annotations({
+  identifier: "PrivateKey.Hex",
+  title: "Private Key",
+  description: "A 32-byte secp256k1 private key. NEVER log or expose this value.",
+  examples: ["0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
+  message: () => "Invalid private key: expected 64 hex characters (32 bytes)"
+})
+```
+
+## Accessing Annotations
+
+```typescript
+import * as S from "effect/Schema"
+import { AST } from "effect"
+
+const schema = Address.Hex
+
+// Get specific annotation
+const title = schema.ast.annotations[AST.TitleAnnotationId]
+const description = schema.ast.annotations[AST.DescriptionAnnotationId]
+const examples = schema.ast.annotations[AST.ExamplesAnnotationId]
+
+// Check if annotation exists
+const hasTitle = AST.TitleAnnotationId in schema.ast.annotations
+```
+
+## Custom Error Formatting
+
+Use `TreeFormatter` with annotated schemas:
+
+```typescript
+import { TreeFormatter } from "effect/ParseResult"
+import * as S from "effect/Schema"
+
+const result = S.decodeUnknownEither(Address.Hex)("invalid")
+
+if (result._tag === "Left") {
+  const formatted = TreeFormatter.formatError(result.left)
+  console.log(formatted)
+  // "Invalid Ethereum address: expected 40 hex characters with 0x prefix"
+}
+```
+
+## See Also
+
+- [Branded Types](/concepts/branded-types) - Type-safe primitives
+- [Error Handling](/concepts/error-handling) - Parse error handling patterns
+- [Effect Schema](https://effect.website/docs/schema/introduction) - Official Effect Schema docs

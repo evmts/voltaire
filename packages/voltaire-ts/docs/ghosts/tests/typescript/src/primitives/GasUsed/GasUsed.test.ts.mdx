@@ -1,0 +1,170 @@
+---
+title: '[TS/JS] src/primitives/GasUsed/GasUsed.test.ts'
+source: 'src/primitives/GasUsed/GasUsed.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/GasUsed/GasUsed.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as GasUsed from "./index.js";
+
+describe("GasUsed", () => {
+	describe("from", () => {
+		it("creates from bigint", () => {
+			const gas = GasUsed.from(51234n);
+			expect(gas).toBe(51234n);
+		});
+
+		it("creates from number", () => {
+			const gas = GasUsed.from(21000);
+			expect(gas).toBe(21000n);
+		});
+
+		it("creates from string", () => {
+			const gas = GasUsed.from("51234");
+			expect(gas).toBe(51234n);
+		});
+
+		it("throws on negative value", () => {
+			expect(() => GasUsed.from(-1n)).toThrow("Gas used must be non-negative");
+		});
+
+		it("accepts zero", () => {
+			const gas = GasUsed.from(0n);
+			expect(gas).toBe(0n);
+		});
+
+		it("accepts large values", () => {
+			const gas = GasUsed.from(30_000_000n); // 30M block limit
+			expect(gas).toBe(30_000_000n);
+		});
+	});
+
+	describe("toNumber", () => {
+		it("converts to number", () => {
+			const gas = GasUsed.from(51234n);
+			expect(GasUsed.toNumber(gas)).toBe(51234);
+		});
+
+		it("converts with wrapper", () => {
+			expect(GasUsed.toNumber(51234n)).toBe(51234);
+		});
+	});
+
+	describe("toBigInt", () => {
+		it("returns bigint identity", () => {
+			const gas = GasUsed.from(51234n);
+			expect(GasUsed.toBigInt(gas)).toBe(51234n);
+		});
+
+		it("converts with wrapper", () => {
+			expect(GasUsed.toBigInt(51234)).toBe(51234n);
+		});
+	});
+
+	describe("toHex", () => {
+		it("converts to hex", () => {
+			const gas = GasUsed.from(51234n);
+			expect(GasUsed.toHex(gas)).toBe("0xc822");
+		});
+
+		it("converts zero", () => {
+			expect(GasUsed.toHex(0n)).toBe("0x0");
+		});
+
+		it("converts large value", () => {
+			expect(GasUsed.toHex(30_000_000n)).toBe("0x1c9c380");
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal values", () => {
+			const a = GasUsed.from(51234n);
+			const b = GasUsed.from(51234n);
+			expect(GasUsed._equals.call(a, b)).toBe(true);
+		});
+
+		it("returns false for different values", () => {
+			const a = GasUsed.from(51234n);
+			const b = GasUsed.from(21000n);
+			expect(GasUsed._equals.call(a, b)).toBe(false);
+		});
+
+		it("works with wrapper", () => {
+			expect(GasUsed.equals(51234n, 51234n)).toBe(true);
+			expect(GasUsed.equals(51234n, 21000n)).toBe(false);
+		});
+	});
+
+	describe("compare", () => {
+		it("returns -1 when first is smaller", () => {
+			const a = GasUsed.from(21000n);
+			const b = GasUsed.from(51234n);
+			expect(GasUsed._compare.call(a, b)).toBe(-1);
+		});
+
+		it("returns 0 when equal", () => {
+			const a = GasUsed.from(51234n);
+			const b = GasUsed.from(51234n);
+			expect(GasUsed._compare.call(a, b)).toBe(0);
+		});
+
+		it("returns 1 when first is larger", () => {
+			const a = GasUsed.from(51234n);
+			const b = GasUsed.from(21000n);
+			expect(GasUsed._compare.call(a, b)).toBe(1);
+		});
+
+		it("works with wrapper", () => {
+			expect(GasUsed.compare(21000n, 51234n)).toBe(-1);
+			expect(GasUsed.compare(51234n, 51234n)).toBe(0);
+			expect(GasUsed.compare(51234n, 21000n)).toBe(1);
+		});
+	});
+
+	describe("calculateCost", () => {
+		it("calculates transaction cost", () => {
+			const gasUsed = GasUsed.from(51234n);
+			const gasPrice = 20_000_000_000n; // 20 gwei
+			const cost = GasUsed._calculateCost.call(gasUsed, gasPrice);
+			expect(cost).toBe(1_024_680_000_000_000n); // Wei
+		});
+
+		it("calculates minimum transfer cost", () => {
+			const gasUsed = GasUsed.from(21000n);
+			const gasPrice = 10_000_000_000n; // 10 gwei
+			const cost = GasUsed._calculateCost.call(gasUsed, gasPrice);
+			expect(cost).toBe(210_000_000_000_000n); // 0.00021 ETH
+		});
+
+		it("works with wrapper", () => {
+			const cost = GasUsed.calculateCost(51234n, 20_000_000_000n);
+			expect(cost).toBe(1_024_680_000_000_000n);
+		});
+
+		it("handles zero gas price", () => {
+			const cost = GasUsed.calculateCost(51234n, 0n);
+			expect(cost).toBe(0n);
+		});
+
+		it("handles zero gas used", () => {
+			const cost = GasUsed.calculateCost(0n, 20_000_000_000n);
+			expect(cost).toBe(0n);
+		});
+	});
+
+	describe("namespace", () => {
+		it("exports all methods", () => {
+			expect(GasUsed.from).toBeDefined();
+			expect(GasUsed.toNumber).toBeDefined();
+			expect(GasUsed.toBigInt).toBeDefined();
+			expect(GasUsed.toHex).toBeDefined();
+			expect(GasUsed.equals).toBeDefined();
+			expect(GasUsed.compare).toBeDefined();
+			expect(GasUsed.calculateCost).toBeDefined();
+		});
+	});
+});
+
+```

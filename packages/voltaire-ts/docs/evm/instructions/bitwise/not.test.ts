@@ -1,0 +1,116 @@
+/**
+ * Test file for NOT (0x19) documentation examples
+ * Tests examples from not.mdx
+ */
+import { describe, expect, it } from "vitest";
+
+describe("NOT (0x19) - Documentation Examples", async () => {
+	const { NOT } = await import("../../../../src/evm/bitwise/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	const MAX = (1n << 256n) - 1n;
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Basic Inversion", () => {
+		it("inverts all bits", () => {
+			const value = 0b11001100n;
+			const frame = createFrame([value]);
+			const err = NOT(frame);
+
+			expect(err).toBeNull();
+			// All 256 bits inverted
+			const expected = MAX - value;
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Zero to Max", () => {
+		it("NOT of zero is MAX", () => {
+			const frame = createFrame([0n]);
+			NOT(frame);
+
+			expect(frame.stack).toEqual([MAX]);
+		});
+	});
+
+	describe("Max to Zero", () => {
+		it("NOT of MAX is zero", () => {
+			const frame = createFrame([MAX]);
+			NOT(frame);
+
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Involutory Property", () => {
+		it("~~a = a (double negation returns original)", () => {
+			const value = 0x123456789abcdefn;
+
+			const frame1 = createFrame([value]);
+			NOT(frame1);
+			const inverted = frame1.stack[0];
+
+			const frame2 = createFrame([inverted]);
+			NOT(frame2);
+
+			expect(frame2.stack).toEqual([value]);
+		});
+	});
+
+	describe("Alternating Pattern", () => {
+		it("NOT 0xAAAA... = 0x5555...", () => {
+			const pattern =
+				0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan;
+			const expected =
+				0x5555555555555555555555555555555555555555555555555555555555555555n;
+
+			const frame = createFrame([pattern]);
+			NOT(frame);
+
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Single Bit Set", () => {
+		it("NOT with single bit set clears that bit", () => {
+			const singleBit = 1n;
+			const frame = createFrame([singleBit]);
+			NOT(frame);
+
+			const expected = MAX - 1n;
+			expect(frame.stack).toEqual([expected]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("returns StackUnderflow with empty stack", () => {
+			const frame = createFrame([]);
+			const err = NOT(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+
+		it("returns OutOfGas when insufficient gas", () => {
+			const frame = createFrame([0x123n], 2n);
+			const err = NOT(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+			expect(frame.gasRemaining).toBe(0n);
+		});
+	});
+
+	describe("Gas Cost", () => {
+		it("consumes 3 gas (GasFastestStep)", () => {
+			const frame = createFrame([0x123n], 100n);
+			const err = NOT(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(97n);
+		});
+	});
+});

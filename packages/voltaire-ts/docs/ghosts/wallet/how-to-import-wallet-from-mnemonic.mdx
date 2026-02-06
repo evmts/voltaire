@@ -1,0 +1,88 @@
+---
+title: Import Wallet from Mnemonic
+description: Import a wallet from a BIP-39 mnemonic phrase or raw private key
+---
+
+## From Mnemonic
+
+```typescript
+import { Bip39 } from '@voltaire/crypto/Bip39';
+import { HDWallet } from '@voltaire/crypto/HDWallet';
+import * as PrivateKey from '@voltaire/primitives/PrivateKey';
+
+const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+
+// Validate first
+if (!Bip39.validateMnemonic(mnemonic)) {
+  throw new Error('Invalid mnemonic');
+}
+
+// Convert to seed
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+
+// Derive root HD wallet
+const root = HDWallet.fromSeed(seed);
+
+// Derive first Ethereum account (BIP-44 path)
+const account = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
+
+// Get private key
+const privateKey = HDWallet.getPrivateKey(account);
+
+// Get address
+const address = PrivateKey.toAddress(privateKey);
+console.log(address); // 0x9858EfFD232B4033E47d90003D41EC34EcaEda94
+```
+
+## From Private Key
+
+```typescript
+import * as PrivateKey from '@voltaire/primitives/PrivateKey';
+
+// From hex string
+const pk = PrivateKey.from('0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
+
+// Get address
+const address = PrivateKey.toAddress(pk);
+
+// Get public key
+const publicKey = PrivateKey.toPublicKey(pk);
+```
+
+## With Optional Passphrase
+
+BIP-39 supports an optional passphrase for additional security:
+
+```typescript
+const seed = await Bip39.mnemonicToSeed(mnemonic, 'my-secret-passphrase');
+const root = HDWallet.fromSeed(seed);
+
+// Different passphrase = different wallet
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, 'different-passphrase');
+// Produces completely different keys
+```
+
+## Validate Before Import
+
+```typescript
+function importWallet(mnemonic: string): { address: string; privateKey: Uint8Array } {
+  // Validate mnemonic format
+  Bip39.assertValidMnemonic(mnemonic); // Throws if invalid
+
+  const seed = Bip39.mnemonicToSeedSync(mnemonic);
+  const root = HDWallet.fromSeed(seed);
+  const account = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
+  const privateKey = HDWallet.getPrivateKey(account);
+
+  return {
+    address: PrivateKey.toAddress(privateKey),
+    privateKey,
+  };
+}
+```
+
+## Related
+
+- [Mnemonic Generation](/crypto/bip39/generation) - Generate new mnemonics
+- [HD Wallet Derivation](/crypto/hdwallet) - BIP-32/44 derivation paths
+- [Keystore Encryption](/crypto/keystore/encryption) - Encrypt private keys for storage

@@ -1,0 +1,272 @@
+---
+title: "primitives/EntryPoint"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/EntryPoint
+
+# primitives/EntryPoint
+
+## Type Aliases
+
+### EntryPointType
+
+> **EntryPointType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/EntryPoint/EntryPointType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/EntryPointType.ts#L10)
+
+EntryPoint address type - ERC-4337 entry point contract
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"EntryPoint"`
+
+#### See
+
+ - https://eips.ethereum.org/EIPS/eip-4337
+ - https://voltaire.tevm.sh/primitives/entry-point for EntryPoint documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### EntryPoint
+
+> `const` **EntryPoint**: `object`
+
+Defined in: [src/primitives/EntryPoint/index.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/index.ts#L34)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`entryPoint1`, `entryPoint2`) => `boolean`
+
+###### Parameters
+
+###### entryPoint1
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### entryPoint2
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`EntryPointType`](#entrypointtype)
+
+Create EntryPoint from address input
+
+###### Parameters
+
+###### value
+
+Address value
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+[`EntryPointType`](#entrypointtype)
+
+EntryPoint address
+
+###### Throws
+
+If address format is invalid
+
+###### Example
+
+```typescript
+const entryPoint = EntryPoint.from("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+const entryPoint2 = EntryPoint.from(ENTRYPOINT_V07);
+```
+
+##### toHex()
+
+> **toHex**: (`entryPoint`) => `string`
+
+###### Parameters
+
+###### entryPoint
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+###### Returns
+
+`string`
+
+***
+
+### ENTRYPOINT\_V06
+
+> `const` **ENTRYPOINT\_V06**: [`EntryPointType`](#entrypointtype)
+
+Defined in: [src/primitives/EntryPoint/constants.js:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/constants.js#L7)
+
+EntryPoint v0.6.0 address
+
+***
+
+### ENTRYPOINT\_V07
+
+> `const` **ENTRYPOINT\_V07**: [`EntryPointType`](#entrypointtype)
+
+Defined in: [src/primitives/EntryPoint/constants.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/constants.js#L15)
+
+EntryPoint v0.7.0 address
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/EntryPoint/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/equals.js#L15)
+
+Check if two EntryPoint addresses are equal
+
+#### Parameters
+
+##### a
+
+[`EntryPointType`](#entrypointtype)
+
+First EntryPoint
+
+##### b
+
+[`EntryPointType`](#entrypointtype)
+
+Second EntryPoint
+
+#### Returns
+
+`boolean`
+
+True if addresses are equal
+
+#### Example
+
+```typescript
+const isEqual = EntryPoint.equals(entryPoint1, entryPoint2);
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`entryPoint`): `string`
+
+Defined in: [src/primitives/EntryPoint/toHex.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/toHex.js#L15)
+
+Convert EntryPoint to hex string
+
+#### Parameters
+
+##### entryPoint
+
+[`EntryPointType`](#entrypointtype)
+
+EntryPoint address
+
+#### Returns
+
+`string`
+
+Hex string (0x-prefixed)
+
+#### Example
+
+```typescript
+const hex = EntryPoint.toHex(entryPoint);
+console.log(hex); // "0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789"
+```
+
+***
+
+### equals()
+
+> **equals**(`entryPoint1`, `entryPoint2`): `boolean`
+
+Defined in: [src/primitives/EntryPoint/index.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/index.ts#L23)
+
+#### Parameters
+
+##### entryPoint1
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+##### entryPoint2
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`EntryPointType`](#entrypointtype)
+
+Defined in: [src/primitives/EntryPoint/from.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/from.js#L16)
+
+Create EntryPoint from address input
+
+#### Parameters
+
+##### value
+
+Address value
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+[`EntryPointType`](#entrypointtype)
+
+EntryPoint address
+
+#### Throws
+
+If address format is invalid
+
+#### Example
+
+```typescript
+const entryPoint = EntryPoint.from("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+const entryPoint2 = EntryPoint.from(ENTRYPOINT_V07);
+```
+
+***
+
+### toHex()
+
+> **toHex**(`entryPoint`): `string`
+
+Defined in: [src/primitives/EntryPoint/index.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/EntryPoint/index.ts#L17)
+
+#### Parameters
+
+##### entryPoint
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\> | [`AddressType`](Address.mdx#addresstype)
+
+#### Returns
+
+`string`

@@ -1,0 +1,309 @@
+---
+title: "Host"
+description: "EVM host interface for external state access - balances, storage, code, nonces"
+---
+
+## Overview
+
+The Host module provides an interface for EVM opcodes to access external blockchain state. It abstracts account storage, balances, code, and nonces behind a unified API that instruction handlers call during execution.
+
+This is the boundary between the EVM execution engine and the state layer - whether that's an in-memory mock, a database, or a live Ethereum node.
+
+## Architecture Note
+
+This module provides **low-level EVM primitives** (opcode handlers, frame management). For full EVM execution with nested calls, use:
+
+- **guillotine**: Production EVM with async state access, tracing, and full EIP support
+- **guillotine-mini**: Lightweight synchronous EVM for testing and simple use cases
+
+The optional `call` and `create` methods enable nested execution. When not provided, system opcodes (CALL, CREATE, etc.) return NotImplemented error.
+
+## Type Definition
+
+```typescript
+type BrandedHost = {
+  readonly [brand]: "Host";
+
+  // Account state
+  getBalance: (address: Address) => bigint;
+  setBalance: (address: Address, balance: bigint) => void;
+  getCode: (address: Address) => Uint8Array;
+  setCode: (address: Address, code: Uint8Array) => void;
+  getNonce: (address: Address) => bigint;
+  setNonce: (address: Address, nonce: bigint) => void;
+
+  // Persistent storage
+  getStorage: (address: Address, slot: bigint) => bigint;
+  setStorage: (address: Address, slot: bigint, value: bigint) => void;
+
+  // Transient storage (EIP-1153)
+  getTransientStorage: (address: Address, slot: bigint) => bigint;
+  setTransientStorage: (address: Address, slot: bigint, value: bigint) => void;
+
+  // Nested execution (optional)
+  call?: (params: CallParams) => CallResult;
+  create?: (params: CreateParams) => CreateResult;
+};
+```
+
+## API
+
+### Host(impl)
+
+Create a Host from an implementation object.
+
+```typescript
+import { Host } from 'voltaire/evm/Host';
+
+const host = Host({
+  getBalance: (addr) => balances.get(toKey(addr)) ?? 0n,
+  setBalance: (addr, bal) => balances.set(toKey(addr), bal),
+  getCode: (addr) => codes.get(toKey(addr)) ?? new Uint8Array(0),
+  setCode: (addr, code) => codes.set(toKey(addr), code),
+  getStorage: (addr, slot) => storage.get(`${toKey(addr)}-${slot}`) ?? 0n,
+  setStorage: (addr, slot, val) => storage.set(`${toKey(addr)}-${slot}`, val),
+  getNonce: (addr) => nonces.get(toKey(addr)) ?? 0n,
+  setNonce: (addr, nonce) => nonces.set(toKey(addr), nonce),
+  getTransientStorage: (addr, slot) => transient.get(`${toKey(addr)}-${slot}`) ?? 0n,
+  setTransientStorage: (addr, slot, val) => transient.set(`${toKey(addr)}-${slot}`, val),
+});
+```
+
+### Host.from(impl)
+
+Alias for `Host(impl)`. Creates a branded Host from implementation.
+
+### Host.createMemoryHost()
+
+Create an in-memory Host for testing. All state stored in Maps.
+
+```typescript
+import { Host } from 'voltaire/evm/Host';
+import * as Address from 'voltaire/primitives/Address';
+
+const host = Host.createMemoryHost();
+const addr = Address.from("0x1234567890123456789012345678901234567890");
+
+// Set and get balance
+host.setBalance(addr, 1000000000000000000n); // 1 ETH
+console.log(host.getBalance(addr)); // 1000000000000000000n
+
+// Set and get storage
+host.setStorage(addr, 0x42n, 0x1337n);
+console.log(host.getStorage(addr, 0x42n)); // 0x1337n
+
+// Set and get code
+host.setCode(addr, new Uint8Array([0x60, 0x80, 0x60, 0x40]));
+console.log(host.getCode(addr).length); // 4
+```
+
+## Methods
+
+### Account State
+
+| Method | Description | Used By |
+|--------|-------------|---------|
+| `getBalance(address)` | Get ETH balance in wei | BALANCE (0x31) |
+| `setBalance(address, balance)` | Set ETH balance | Transaction processing |
+| `getCode(address)` | Get contract bytecode | EXTCODESIZE, EXTCODECOPY, EXTCODEHASH |
+| `setCode(address, code)` | Deploy contract code | CREATE, CREATE2 |
+| `getNonce(address)` | Get account nonce | Transaction validation |
+| `setNonce(address, nonce)` | Increment nonce | Transaction processing |
+
+### Persistent Storage
+
+| Method | Description | Used By |
+|--------|-------------|---------|
+| `getStorage(address, slot)` | Read storage slot | SLOAD (0x54) |
+| `setStorage(address, slot, value)` | Write storage slot | SSTORE (0x55) |
+
+### Transient Storage (EIP-1153)
+
+Transaction-scoped storage cleared at end of transaction.
+
+| Method | Description | Used By |
+|--------|-------------|---------|
+| `getTransientStorage(address, slot)` | Read transient slot | TLOAD (0x5c) |
+| `setTransientStorage(address, slot, value)` | Write transient slot | TSTORE (0x5d) |
+
+### Nested Execution (Optional)
+
+| Method | Description | Used By |
+|--------|-------------|---------|
+| `call(params)` | Execute nested call | CALL, STATICCALL, DELEGATECALL, CALLCODE |
+| `create(params)` | Deploy new contract | CREATE, CREATE2 |
+
+## Examples
+
+### Custom Host with Logging
+
+```typescript
+import { Host } from 'voltaire/evm/Host';
+import * as Hex from 'voltaire/primitives/Hex';
+
+const logs: string[] = [];
+
+const host = Host.from({
+  getBalance: (addr) => {
+    logs.push(`getBalance: ${Hex.fromBytes(addr)}`);
+    return 0n;
+  },
+  setBalance: (addr, balance) => {
+    logs.push(`setBalance: ${Hex.fromBytes(addr)} = ${balance}`);
+  },
+  getCode: (addr) => {
+    logs.push(`getCode: ${Hex.fromBytes(addr)}`);
+    return new Uint8Array(0);
+  },
+  setCode: (addr, code) => {
+    logs.push(`setCode: ${Hex.fromBytes(addr)} (${code.length} bytes)`);
+  },
+  getStorage: (addr, slot) => {
+    logs.push(`getStorage: ${Hex.fromBytes(addr)} [${slot}]`);
+    return 0n;
+  },
+  setStorage: (addr, slot, value) => {
+    logs.push(`setStorage: ${Hex.fromBytes(addr)} [${slot}] = ${value}`);
+  },
+  getNonce: (addr) => {
+    logs.push(`getNonce: ${Hex.fromBytes(addr)}`);
+    return 0n;
+  },
+  setNonce: (addr, nonce) => {
+    logs.push(`setNonce: ${Hex.fromBytes(addr)} = ${nonce}`);
+  },
+  getTransientStorage: () => 0n,
+  setTransientStorage: () => {},
+});
+```
+
+### Using with SLOAD Instruction
+
+```typescript
+import { Host } from 'voltaire/evm/Host';
+import { Frame } from 'voltaire/evm/Frame';
+import { sload } from 'voltaire/evm/instructions/storage';
+import * as Address from 'voltaire/primitives/Address';
+
+const host = Host.createMemoryHost();
+const addr = Address.from("0x1234567890123456789012345678901234567890");
+
+// Pre-populate storage
+host.setStorage(addr, 0x42n, 0x1337n);
+
+// Create execution frame
+const frame = Frame({
+  code: new Uint8Array([0x54]), // SLOAD opcode
+  address: addr,
+  gasRemaining: 10000n,
+});
+
+// Push key onto stack
+Frame.pushStack(frame, 0x42n);
+
+// Execute SLOAD - reads from host
+const error = sload(frame, host);
+
+console.log(Frame.popStack(frame).value); // 0x1337n
+```
+
+### Multiple Account Management
+
+```typescript
+const host = Host.createMemoryHost();
+
+const alice = Address.from("0x1111111111111111111111111111111111111111");
+const bob = Address.from("0x2222222222222222222222222222222222222222");
+const contract = Address.from("0x3333333333333333333333333333333333333333");
+
+// Set balances
+host.setBalance(alice, 10n * 10n**18n); // 10 ETH
+host.setBalance(bob, 5n * 10n**18n);    // 5 ETH
+
+// Set nonces
+host.setNonce(alice, 5n);
+host.setNonce(bob, 12n);
+
+// Deploy contract code
+host.setCode(contract, new Uint8Array([
+  0x60, 0x80, // PUSH1 0x80
+  0x60, 0x40, // PUSH1 0x40
+  0x52,       // MSTORE
+]));
+
+// Set contract storage
+host.setStorage(contract, 0n, 111n);
+host.setStorage(contract, 1n, 222n);
+
+// All state isolated by address
+console.log(host.getBalance(alice)); // 10000000000000000000n
+console.log(host.getBalance(bob));   // 5000000000000000000n
+console.log(host.getCode(alice).length); // 0 (EOA, no code)
+console.log(host.getCode(contract).length); // 5 (contract)
+```
+
+## Transient Storage (EIP-1153)
+
+Transient storage provides transaction-scoped data that is:
+- Isolated per contract address
+- Cleared at end of transaction
+- Cheaper than persistent storage (no disk writes)
+- Useful for reentrancy locks, callbacks, flash loans
+
+```typescript
+const host = Host.createMemoryHost();
+const addr = Address.from("0x1234567890123456789012345678901234567890");
+
+// Set transient value
+host.setTransientStorage(addr, 0x99n, 0xABCDn);
+
+// Read transient value
+console.log(host.getTransientStorage(addr, 0x99n)); // 0xABCDn
+
+// Transient and persistent storage are independent
+host.setStorage(addr, 0x99n, 0x1111n);
+console.log(host.getTransientStorage(addr, 0x99n)); // 0xABCDn (unchanged)
+console.log(host.getStorage(addr, 0x99n)); // 0x1111n
+```
+
+## Edge Cases
+
+### Uninitialized Values
+
+```typescript
+const host = Host.createMemoryHost();
+const addr = Address.from("0x1234567890123456789012345678901234567890");
+
+// All uninitialized values return zero/empty
+console.log(host.getBalance(addr)); // 0n
+console.log(host.getNonce(addr)); // 0n
+console.log(host.getStorage(addr, 0x42n)); // 0n
+console.log(host.getCode(addr)); // Uint8Array(0)
+```
+
+### Max Uint256 Values
+
+```typescript
+const MAX = (1n << 256n) - 1n;
+
+host.setBalance(addr, MAX);
+host.setStorage(addr, MAX, MAX); // Max slot, max value
+
+console.log(host.getBalance(addr)); // MAX
+console.log(host.getStorage(addr, MAX)); // MAX
+```
+
+### Large Code (EIP-170: 24KB limit)
+
+```typescript
+const largeCode = new Uint8Array(24576); // 24KB max
+host.setCode(addr, largeCode);
+console.log(host.getCode(addr).length); // 24576
+```
+
+## References
+
+- [EIP-1153: Transient Storage Opcodes](https://eips.ethereum.org/EIPS/eip-1153)
+- [EIP-170: Contract code size limit](https://eips.ethereum.org/EIPS/eip-170)
+- [EIP-2929: Gas cost increases for state access](https://eips.ethereum.org/EIPS/eip-2929)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Account Storage)

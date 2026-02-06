@@ -1,0 +1,3288 @@
+---
+title: "primitives/Int256"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Int256
+
+# primitives/Int256
+
+## Type Aliases
+
+### BrandedInt256
+
+> **BrandedInt256** = `bigint` & `object`
+
+Defined in: [src/primitives/Int256/Int256Type.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/Int256Type.ts#L9)
+
+Branded Int256 type (critical for EVM signed operations)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Int256"`
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### BITS
+
+> `const` **BITS**: `number` = `256`
+
+Defined in: [src/primitives/Int256/constants.js:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L51)
+
+Size in bits
+
+***
+
+### Int256
+
+> `const` **Int256**: `object`
+
+Defined in: [src/primitives/Int256/index.ts:98](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/index.ts#L98)
+
+#### Type Declaration
+
+##### abs()
+
+> **abs**: (`value`) => [`BrandedInt256`](#brandedint256)
+
+Absolute value of Int256
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Absolute value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is MIN (abs(MIN) overflows)
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.abs(a); // 42n
+```
+
+##### bitLength()
+
+> **bitLength**: (`value`) => `number`
+
+Get bit length of Int256 value
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+`number`
+
+Number of bits needed to represent value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(255n);
+Int256.bitLength(a); // 8
+```
+
+##### BITS
+
+> **BITS**: `number`
+
+Size in bits
+
+##### bitwiseAnd()
+
+> **bitwiseAnd**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Bitwise AND of Int256 values
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+const b = Int256.from(0x07n);
+Int256.bitwiseAnd(a, b); // 0x07n
+```
+
+##### bitwiseNot()
+
+> **bitwiseNot**: (`value`) => [`BrandedInt256`](#brandedint256)
+
+Bitwise NOT of Int256 value
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0n);
+Int256.bitwiseNot(a); // -1n
+```
+
+##### bitwiseOr()
+
+> **bitwiseOr**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Bitwise OR of Int256 values
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+const b = Int256.from(0x70n);
+Int256.bitwiseOr(a, b); // 0x7fn
+```
+
+##### bitwiseXor()
+
+> **bitwiseXor**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Bitwise XOR of Int256 values
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+const b = Int256.from(0x07n);
+Int256.bitwiseXor(a, b); // 0x08n
+```
+
+##### dividedBy()
+
+> **dividedBy**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Divide Int256 values (EVM SDIV - signed division, truncate toward zero)
+
+EVM SDIV semantics:
+- Truncates toward zero (not floor division)
+- -10 / 3 = -3 (not -4)
+- MIN / -1 overflows (throws error)
+- 0 / 0 throws error
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+Dividend
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Divisor
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Quotient (truncated toward zero)
+
+###### See
+
+ - https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+ - https://eips.ethereum.org/EIPS/eip-145 for EVM SDIV specification
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If divisor is zero or MIN / -1 (overflow)
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+// EVM SDIV examples
+const a = Int256.from(-10n);
+const b = Int256.from(3n);
+Int256.dividedBy(a, b); // -3n (truncate toward zero, not -4n)
+
+const c = Int256.from(10n);
+const d = Int256.from(-3n);
+Int256.dividedBy(c, d); // -3n (truncate toward zero)
+```
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+Check Int256 equality
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+True if equal
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+const b = Int256.from(-42n);
+Int256.equals(a, b); // true
+```
+
+##### from()
+
+> **from**: (`value`) => [`BrandedInt256`](#brandedint256)
+
+Create Int256 from bigint, number, or string
+
+###### Parameters
+
+###### value
+
+bigint, number, or decimal/hex string
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range or invalid
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-100n);
+const b = Int256.from("-255");
+const c = Int256.from("0xff");
+const d = Int256.from(-42);
+```
+
+##### fromBigInt()
+
+> **fromBigInt**: (`value`) => [`BrandedInt256`](#brandedint256)
+
+Create Int256 from bigint
+
+###### Parameters
+
+###### value
+
+`bigint`
+
+BigInt value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is out of range
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.fromBigInt(-42n);
+const b = Int256.fromBigInt(100n);
+```
+
+##### fromBytes()
+
+> **fromBytes**: (`bytes`) => [`BrandedInt256`](#brandedint256)
+
+Create Int256 from bytes (two's complement, big-endian)
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Byte array (32 bytes)
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If bytes length is incorrect
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const bytes = new Uint8Array(16);
+bytes[15] = 0xff; // -1
+const value = Int256.fromBytes(bytes);
+```
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => [`BrandedInt256`](#brandedint256)
+
+Create Int256 from hex string (two's complement)
+
+###### Parameters
+
+###### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If hex is invalid or out of range
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.fromHex("0x7fffffffffffffffffffffffffffffff"); // MAX
+const b = Int256.fromHex("0x80000000000000000000000000000000"); // MIN
+const c = Int256.fromHex("0xffffffffffffffffffffffffffffffff"); // -1
+```
+
+##### fromNumber()
+
+> **fromNumber**: (`value`) => [`BrandedInt256`](#brandedint256)
+
+Create Int256 from number
+
+###### Parameters
+
+###### value
+
+`number`
+
+Integer number
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is not an integer or out of range
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.fromNumber(-42);
+const b = Int256.fromNumber(100);
+```
+
+##### greaterThan()
+
+> **greaterThan**: (`a`, `b`) => `boolean`
+
+Check if Int256 is greater than another
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+True if a > b
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0n);
+const b = Int256.from(-1n);
+Int256.greaterThan(a, b); // true
+```
+
+##### isNegative()
+
+> **isNegative**: (`value`) => `boolean`
+
+Check if Int256 is negative
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+`boolean`
+
+True if negative
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.isNegative(a); // true
+```
+
+##### isPositive()
+
+> **isPositive**: (`value`) => `boolean`
+
+Check if Int256 is positive
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+`boolean`
+
+True if positive
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(42n);
+Int256.isPositive(a); // true
+```
+
+##### isValid()
+
+> **isValid**: (`value`) => `boolean`
+
+Check if value is valid Int256
+
+###### Parameters
+
+###### value
+
+`bigint`
+
+Value to check
+
+###### Returns
+
+`boolean`
+
+True if valid Int256
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+Int256.isValid(-42n); // true
+Int256.isValid(2n ** 127n); // false (exceeds MAX)
+```
+
+##### isZero()
+
+> **isZero**: (`value`) => `boolean`
+
+Check if Int256 is zero
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+`boolean`
+
+True if zero
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0n);
+Int256.isZero(a); // true
+```
+
+##### leadingZeros()
+
+> **leadingZeros**: (`value`) => `number`
+
+Count leading zeros in Int256 two's complement representation
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+`number`
+
+Number of leading zero bits
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(1n);
+Int256.leadingZeros(a); // 127
+```
+
+##### lessThan()
+
+> **lessThan**: (`a`, `b`) => `boolean`
+
+Check if Int256 is less than another
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+True if a < b
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-1n);
+const b = Int256.from(0n);
+Int256.lessThan(a, b); // true
+```
+
+##### MAX
+
+> **MAX**: `bigint`
+
+Maximum Int256 value: 2^255 - 1
+EVM: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+##### maximum()
+
+> **maximum**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Return maximum of two Int256 values
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Maximum value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+const b = Int256.from(10n);
+Int256.maximum(a, b); // 10n
+```
+
+##### MIN
+
+> **MIN**: `bigint`
+
+Minimum Int256 value: -2^255
+EVM: 0x8000000000000000000000000000000000000000000000000000000000000000
+
+##### minimum()
+
+> **minimum**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Return minimum of two Int256 values
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Minimum value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+const b = Int256.from(10n);
+Int256.minimum(a, b); // -42n
+```
+
+##### minus()
+
+> **minus**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Subtract Int256 values with wrapping (EVM SUB with signed interpretation)
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+Minuend
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Subtrahend
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Difference with wrapping
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(100n);
+const b = Int256.from(50n);
+const diff = Int256.minus(a, b); // 50n
+```
+
+##### modulo()
+
+> **modulo**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Modulo Int256 values (EVM SMOD - signed modulo, sign follows dividend)
+
+EVM SMOD semantics:
+- Sign of result follows dividend (first operand)
+- -10 % 3 = -1 (not 2)
+- 10 % -3 = 1 (not -2)
+- Property: a = (a/b)*b + (a%b)
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+Dividend
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Divisor
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Remainder (sign follows dividend)
+
+###### See
+
+ - https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+ - https://eips.ethereum.org/EIPS/eip-145 for EVM SMOD specification
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If divisor is zero
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+// EVM SMOD examples
+const a = Int256.from(-10n);
+const b = Int256.from(3n);
+Int256.modulo(a, b); // -1n (sign follows dividend -10)
+
+const c = Int256.from(10n);
+const d = Int256.from(-3n);
+Int256.modulo(c, d); // 1n (sign follows dividend 10)
+```
+
+##### MODULO
+
+> **MODULO**: `bigint`
+
+Modulo value for wrapping: 2^256
+
+##### NEG\_ONE
+
+> **NEG\_ONE**: `bigint`
+
+Negative one value (-1 in two's complement)
+EVM: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+##### negate()
+
+> **negate**: (`value`) => [`BrandedInt256`](#brandedint256)
+
+Negate Int256 value with wrapping
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Negated value with wrapping
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(42n);
+Int256.negate(a); // -42n
+const min = Int256.from(Int256.MIN);
+Int256.negate(min); // MIN (wraps around)
+```
+
+##### ONE
+
+> **ONE**: `bigint`
+
+One value
+
+##### plus()
+
+> **plus**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Add Int256 values with wrapping (EVM ADD with signed interpretation)
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First operand
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second operand
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Sum with wrapping
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-100n);
+const b = Int256.from(50n);
+const sum = Int256.plus(a, b); // -50n
+```
+
+##### popCount()
+
+> **popCount**: (`value`) => `number`
+
+Count set bits in Int256 two's complement representation
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+`number`
+
+Number of set bits
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+Int256.popCount(a); // 4
+```
+
+##### shiftLeft()
+
+> **shiftLeft**: (`value`, `shift`) => [`BrandedInt256`](#brandedint256)
+
+Shift Int256 left with wrapping
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Value to shift
+
+###### shift
+
+Shift amount
+
+`number` | `bigint`
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Shifted value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(1n);
+Int256.shiftLeft(a, 8); // 256n
+```
+
+##### shiftRight()
+
+> **shiftRight**: (`value`, `shift`) => [`BrandedInt256`](#brandedint256)
+
+Arithmetic right shift of Int256 (EVM SAR - sign-preserving)
+
+EVM SAR semantics:
+- Preserves sign bit during shift
+- Negative values remain negative
+- -256 >> 1 = -128 (not 128)
+- Equivalent to division by 2^shift with floor toward negative infinity
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Value to shift
+
+###### shift
+
+Shift amount
+
+`number` | `bigint`
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Shifted value (sign-extended)
+
+###### See
+
+ - https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+ - https://eips.ethereum.org/EIPS/eip-145 for EVM SAR specification
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+// EVM SAR examples
+const a = Int256.from(-256n);
+Int256.shiftRight(a, 1); // -128n (sign preserved)
+
+const b = Int256.from(-1n);
+Int256.shiftRight(b, 8); // -1n (all bits remain 1)
+```
+
+##### sign()
+
+> **sign**: (`value`) => `-1` \| `0` \| `1`
+
+Get sign of Int256 value
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+###### Returns
+
+`-1` \| `0` \| `1`
+
+-1 for negative, 0 for zero, 1 for positive
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.sign(a); // -1
+const b = Int256.from(0n);
+Int256.sign(b); // 0
+const c = Int256.from(42n);
+Int256.sign(c); // 1
+```
+
+##### SIZE
+
+> **SIZE**: `number`
+
+Size in bytes
+
+##### times()
+
+> **times**: (`a`, `b`) => [`BrandedInt256`](#brandedint256)
+
+Multiply Int256 values with wrapping (EVM MUL with signed interpretation)
+
+###### Parameters
+
+###### a
+
+[`BrandedInt256`](#brandedint256)
+
+First operand
+
+###### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second operand
+
+###### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Product with wrapping
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(10n);
+const b = Int256.from(-5n);
+const product = Int256.times(a, b); // -50n
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`value`) => `bigint`
+
+Convert Int256 to bigint
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### Returns
+
+`bigint`
+
+BigInt value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.toBigInt(a); // -42n
+```
+
+##### toBytes()
+
+> **toBytes**: (`value`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Convert Int256 to bytes (two's complement, big-endian)
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Byte array (32 bytes)
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-1n);
+const bytes = Int256.toBytes(a); // [0xff, 0xff, ..., 0xff]
+```
+
+##### toHex()
+
+> **toHex**: (`value`) => `string`
+
+Convert Int256 to hex string (two's complement)
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-1n);
+Int256.toHex(a); // "0xffffffffffffffffffffffffffffffff"
+const b = Int256.from(255n);
+Int256.toHex(b); // "0x000000000000000000000000000000ff"
+```
+
+##### toNumber()
+
+> **toNumber**: (`value`) => `number`
+
+Convert Int256 to number (warns on overflow)
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### Returns
+
+`number`
+
+Number value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value exceeds Number.MAX_SAFE_INTEGER or Number.MIN_SAFE_INTEGER
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.toNumber(a); // -42
+```
+
+##### toString()
+
+> **toString**: (`value`) => `string`
+
+Convert Int256 to decimal string
+
+###### Parameters
+
+###### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+###### Returns
+
+`string`
+
+Decimal string
+
+###### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+###### Since
+
+0.0.0
+
+###### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.toString(a); // "-42"
+```
+
+##### ZERO
+
+> **ZERO**: `bigint`
+
+Zero value
+
+***
+
+### MAX
+
+> `const` **MAX**: `bigint`
+
+Defined in: [src/primitives/Int256/constants.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L20)
+
+Maximum Int256 value: 2^255 - 1
+EVM: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+***
+
+### MIN
+
+> `const` **MIN**: `bigint`
+
+Defined in: [src/primitives/Int256/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L13)
+
+Minimum Int256 value: -2^255
+EVM: 0x8000000000000000000000000000000000000000000000000000000000000000
+
+***
+
+### MODULO
+
+> `const` **MODULO**: `bigint`
+
+Defined in: [src/primitives/Int256/constants.js:57](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L57)
+
+Modulo value for wrapping: 2^256
+
+***
+
+### NEG\_ONE
+
+> `const` **NEG\_ONE**: `bigint` = `-1n`
+
+Defined in: [src/primitives/Int256/constants.js:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L39)
+
+Negative one value (-1 in two's complement)
+EVM: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+***
+
+### ONE
+
+> `const` **ONE**: `bigint` = `1n`
+
+Defined in: [src/primitives/Int256/constants.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L32)
+
+One value
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `number` = `32`
+
+Defined in: [src/primitives/Int256/constants.js:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L45)
+
+Size in bytes
+
+***
+
+### ZERO
+
+> `const` **ZERO**: `bigint` = `0n`
+
+Defined in: [src/primitives/Int256/constants.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/constants.js#L26)
+
+Zero value
+
+## Functions
+
+### abs()
+
+> **abs**(`value`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/abs.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/abs.js#L18)
+
+Absolute value of Int256
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Absolute value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is MIN (abs(MIN) overflows)
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.abs(a); // 42n
+```
+
+***
+
+### bitLength()
+
+> **bitLength**(`value`): `number`
+
+Defined in: [src/primitives/Int256/bitLength.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/bitLength.js#L17)
+
+Get bit length of Int256 value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+`number`
+
+Number of bits needed to represent value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(255n);
+Int256.bitLength(a); // 8
+```
+
+***
+
+### bitwiseAnd()
+
+> **bitwiseAnd**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/bitwiseAnd.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/bitwiseAnd.js#L19)
+
+Bitwise AND of Int256 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+const b = Int256.from(0x07n);
+Int256.bitwiseAnd(a, b); // 0x07n
+```
+
+***
+
+### bitwiseNot()
+
+> **bitwiseNot**(`value`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/bitwiseNot.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/bitwiseNot.js#L17)
+
+Bitwise NOT of Int256 value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0n);
+Int256.bitwiseNot(a); // -1n
+```
+
+***
+
+### bitwiseOr()
+
+> **bitwiseOr**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/bitwiseOr.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/bitwiseOr.js#L19)
+
+Bitwise OR of Int256 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+const b = Int256.from(0x70n);
+Int256.bitwiseOr(a, b); // 0x7fn
+```
+
+***
+
+### bitwiseXor()
+
+> **bitwiseXor**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/bitwiseXor.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/bitwiseXor.js#L19)
+
+Bitwise XOR of Int256 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Result
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+const b = Int256.from(0x07n);
+Int256.bitwiseXor(a, b); // 0x08n
+```
+
+***
+
+### dividedBy()
+
+> **dividedBy**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/dividedBy.js:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/dividedBy.js#L32)
+
+Divide Int256 values (EVM SDIV - signed division, truncate toward zero)
+
+EVM SDIV semantics:
+- Truncates toward zero (not floor division)
+- -10 / 3 = -3 (not -4)
+- MIN / -1 overflows (throws error)
+- 0 / 0 throws error
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+Dividend
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Divisor
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Quotient (truncated toward zero)
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+ - https://eips.ethereum.org/EIPS/eip-145 for EVM SDIV specification
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If divisor is zero or MIN / -1 (overflow)
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+// EVM SDIV examples
+const a = Int256.from(-10n);
+const b = Int256.from(3n);
+Int256.dividedBy(a, b); // -3n (truncate toward zero, not -4n)
+
+const c = Int256.from(10n);
+const d = Int256.from(-3n);
+Int256.dividedBy(c, d); // -3n (truncate toward zero)
+```
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int256/equals.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/equals.js#L17)
+
+Check Int256 equality
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+const b = Int256.from(-42n);
+Int256.equals(a, b); // true
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/from.js:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/from.js#L20)
+
+Create Int256 from bigint, number, or string
+
+#### Parameters
+
+##### value
+
+bigint, number, or decimal/hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range or invalid
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-100n);
+const b = Int256.from("-255");
+const c = Int256.from("0xff");
+const d = Int256.from(-42);
+```
+
+***
+
+### fromBigInt()
+
+> **fromBigInt**(`value`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/fromBigInt.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/fromBigInt.js#L18)
+
+Create Int256 from bigint
+
+#### Parameters
+
+##### value
+
+`bigint`
+
+BigInt value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is out of range
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.fromBigInt(-42n);
+const b = Int256.fromBigInt(100n);
+```
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/fromBytes.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/fromBytes.js#L19)
+
+Create Int256 from bytes (two's complement, big-endian)
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Byte array (32 bytes)
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If bytes length is incorrect
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const bytes = new Uint8Array(16);
+bytes[15] = 0xff; // -1
+const value = Int256.fromBytes(bytes);
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/fromHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/fromHex.js#L19)
+
+Create Int256 from hex string (two's complement)
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string (with or without 0x prefix)
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If hex is invalid or out of range
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.fromHex("0x7fffffffffffffffffffffffffffffff"); // MAX
+const b = Int256.fromHex("0x80000000000000000000000000000000"); // MIN
+const c = Int256.fromHex("0xffffffffffffffffffffffffffffffff"); // -1
+```
+
+***
+
+### fromNumber()
+
+> **fromNumber**(`value`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/fromNumber.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/fromNumber.js#L18)
+
+Create Int256 from number
+
+#### Parameters
+
+##### value
+
+`number`
+
+Integer number
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is not an integer or out of range
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.fromNumber(-42);
+const b = Int256.fromNumber(100);
+```
+
+***
+
+### greaterThan()
+
+> **greaterThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int256/greaterThan.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/greaterThan.js#L17)
+
+Check if Int256 is greater than another
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+True if a > b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0n);
+const b = Int256.from(-1n);
+Int256.greaterThan(a, b); // true
+```
+
+***
+
+### isNegative()
+
+> **isNegative**(`value`): `boolean`
+
+Defined in: [src/primitives/Int256/isNegative.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/isNegative.js#L15)
+
+Check if Int256 is negative
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+`boolean`
+
+True if negative
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.isNegative(a); // true
+```
+
+***
+
+### isPositive()
+
+> **isPositive**(`value`): `boolean`
+
+Defined in: [src/primitives/Int256/isPositive.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/isPositive.js#L15)
+
+Check if Int256 is positive
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+`boolean`
+
+True if positive
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(42n);
+Int256.isPositive(a); // true
+```
+
+***
+
+### isValid()
+
+> **isValid**(`value`): `boolean`
+
+Defined in: [src/primitives/Int256/isValid.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/isValid.js#L17)
+
+Check if value is valid Int256
+
+#### Parameters
+
+##### value
+
+`bigint`
+
+Value to check
+
+#### Returns
+
+`boolean`
+
+True if valid Int256
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+Int256.isValid(-42n); // true
+Int256.isValid(2n ** 127n); // false (exceeds MAX)
+```
+
+***
+
+### isZero()
+
+> **isZero**(`value`): `boolean`
+
+Defined in: [src/primitives/Int256/isZero.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/isZero.js#L15)
+
+Check if Int256 is zero
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+`boolean`
+
+True if zero
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0n);
+Int256.isZero(a); // true
+```
+
+***
+
+### leadingZeros()
+
+> **leadingZeros**(`value`): `number`
+
+Defined in: [src/primitives/Int256/leadingZeros.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/leadingZeros.js#L17)
+
+Count leading zeros in Int256 two's complement representation
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+`number`
+
+Number of leading zero bits
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(1n);
+Int256.leadingZeros(a); // 127
+```
+
+***
+
+### lessThan()
+
+> **lessThan**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Int256/lessThan.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/lessThan.js#L17)
+
+Check if Int256 is less than another
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+True if a < b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-1n);
+const b = Int256.from(0n);
+Int256.lessThan(a, b); // true
+```
+
+***
+
+### maximum()
+
+> **maximum**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/maximum.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/maximum.js#L17)
+
+Return maximum of two Int256 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Maximum value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+const b = Int256.from(10n);
+Int256.maximum(a, b); // 10n
+```
+
+***
+
+### minimum()
+
+> **minimum**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/minimum.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/minimum.js#L17)
+
+Return minimum of two Int256 values
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First value
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Minimum value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+const b = Int256.from(10n);
+Int256.minimum(a, b); // -42n
+```
+
+***
+
+### minus()
+
+> **minus**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/minus.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/minus.js#L19)
+
+Subtract Int256 values with wrapping (EVM SUB with signed interpretation)
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+Minuend
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Subtrahend
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Difference with wrapping
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(100n);
+const b = Int256.from(50n);
+const diff = Int256.minus(a, b); // 50n
+```
+
+***
+
+### modulo()
+
+> **modulo**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/modulo.js:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/modulo.js#L30)
+
+Modulo Int256 values (EVM SMOD - signed modulo, sign follows dividend)
+
+EVM SMOD semantics:
+- Sign of result follows dividend (first operand)
+- -10 % 3 = -1 (not 2)
+- 10 % -3 = 1 (not -2)
+- Property: a = (a/b)*b + (a%b)
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+Dividend
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Divisor
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Remainder (sign follows dividend)
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+ - https://eips.ethereum.org/EIPS/eip-145 for EVM SMOD specification
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If divisor is zero
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+// EVM SMOD examples
+const a = Int256.from(-10n);
+const b = Int256.from(3n);
+Int256.modulo(a, b); // -1n (sign follows dividend -10)
+
+const c = Int256.from(10n);
+const d = Int256.from(-3n);
+Int256.modulo(c, d); // 1n (sign follows dividend 10)
+```
+
+***
+
+### negate()
+
+> **negate**(`value`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/negate.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/negate.js#L19)
+
+Negate Int256 value with wrapping
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Negated value with wrapping
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(42n);
+Int256.negate(a); // -42n
+const min = Int256.from(Int256.MIN);
+Int256.negate(min); // MIN (wraps around)
+```
+
+***
+
+### plus()
+
+> **plus**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/plus.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/plus.js#L19)
+
+Add Int256 values with wrapping (EVM ADD with signed interpretation)
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First operand
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second operand
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Sum with wrapping
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-100n);
+const b = Int256.from(50n);
+const sum = Int256.plus(a, b); // -50n
+```
+
+***
+
+### popCount()
+
+> **popCount**(`value`): `number`
+
+Defined in: [src/primitives/Int256/popCount.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/popCount.js#L17)
+
+Count set bits in Int256 two's complement representation
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+`number`
+
+Number of set bits
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(0x0fn);
+Int256.popCount(a); // 4
+```
+
+***
+
+### shiftLeft()
+
+> **shiftLeft**(`value`, `shift`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/shiftLeft.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/shiftLeft.js#L18)
+
+Shift Int256 left with wrapping
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Value to shift
+
+##### shift
+
+Shift amount
+
+`number` | `bigint`
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Shifted value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(1n);
+Int256.shiftLeft(a, 8); // 256n
+```
+
+***
+
+### shiftRight()
+
+> **shiftRight**(`value`, `shift`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/shiftRight.js:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/shiftRight.js#L29)
+
+Arithmetic right shift of Int256 (EVM SAR - sign-preserving)
+
+EVM SAR semantics:
+- Preserves sign bit during shift
+- Negative values remain negative
+- -256 >> 1 = -128 (not 128)
+- Equivalent to division by 2^shift with floor toward negative infinity
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Value to shift
+
+##### shift
+
+Shift amount
+
+`number` | `bigint`
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Shifted value (sign-extended)
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+ - https://eips.ethereum.org/EIPS/eip-145 for EVM SAR specification
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+// EVM SAR examples
+const a = Int256.from(-256n);
+Int256.shiftRight(a, 1); // -128n (sign preserved)
+
+const b = Int256.from(-1n);
+Int256.shiftRight(b, 8); // -1n (all bits remain 1)
+```
+
+***
+
+### sign()
+
+> **sign**(`value`): `-1` \| `0` \| `1`
+
+Defined in: [src/primitives/Int256/sign.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/sign.js#L19)
+
+Get sign of Int256 value
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Input value
+
+#### Returns
+
+`-1` \| `0` \| `1`
+
+-1 for negative, 0 for zero, 1 for positive
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.sign(a); // -1
+const b = Int256.from(0n);
+Int256.sign(b); // 0
+const c = Int256.from(42n);
+Int256.sign(c); // 1
+```
+
+***
+
+### times()
+
+> **times**(`a`, `b`): [`BrandedInt256`](#brandedint256)
+
+Defined in: [src/primitives/Int256/times.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/times.js#L19)
+
+Multiply Int256 values with wrapping (EVM MUL with signed interpretation)
+
+#### Parameters
+
+##### a
+
+[`BrandedInt256`](#brandedint256)
+
+First operand
+
+##### b
+
+[`BrandedInt256`](#brandedint256)
+
+Second operand
+
+#### Returns
+
+[`BrandedInt256`](#brandedint256)
+
+Product with wrapping
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int256 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(10n);
+const b = Int256.from(-5n);
+const product = Int256.times(a, b); // -50n
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`value`): `bigint`
+
+Defined in: [src/primitives/Int256/toBigInt.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/toBigInt.js#L15)
+
+Convert Int256 to bigint
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### Returns
+
+`bigint`
+
+BigInt value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.toBigInt(a); // -42n
+```
+
+***
+
+### toBytes()
+
+> **toBytes**(`value`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Int256/toBytes.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/toBytes.js#L17)
+
+Convert Int256 to bytes (two's complement, big-endian)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Byte array (32 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-1n);
+const bytes = Int256.toBytes(a); // [0xff, 0xff, ..., 0xff]
+```
+
+***
+
+### toHex()
+
+> **toHex**(`value`): `string`
+
+Defined in: [src/primitives/Int256/toHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/toHex.js#L19)
+
+Convert Int256 to hex string (two's complement)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-1n);
+Int256.toHex(a); // "0xffffffffffffffffffffffffffffffff"
+const b = Int256.from(255n);
+Int256.toHex(b); // "0x000000000000000000000000000000ff"
+```
+
+***
+
+### toNumber()
+
+> **toNumber**(`value`): `number`
+
+Defined in: [src/primitives/Int256/toNumber.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/toNumber.js#L16)
+
+Convert Int256 to number (warns on overflow)
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### Returns
+
+`number`
+
+Number value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value exceeds Number.MAX_SAFE_INTEGER or Number.MIN_SAFE_INTEGER
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.toNumber(a); // -42
+```
+
+***
+
+### toString()
+
+> **toString**(`value`): `string`
+
+Defined in: [src/primitives/Int256/toString.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/toString.js#L16)
+
+Convert Int256 to decimal string
+
+#### Parameters
+
+##### value
+
+[`BrandedInt256`](#brandedint256)
+
+Int256 value
+
+#### Returns
+
+`string`
+
+Decimal string
+
+#### See
+
+https://voltaire.tevm.sh/primitives/int128 for Int256 documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Int256 from './primitives/Int256/index.js';
+const a = Int256.from(-42n);
+Int256.toString(a); // "-42"
+```

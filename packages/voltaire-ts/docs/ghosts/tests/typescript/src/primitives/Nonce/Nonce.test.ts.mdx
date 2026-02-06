@@ -1,0 +1,123 @@
+---
+title: '[TS/JS] src/primitives/Nonce/Nonce.test.ts'
+source: 'src/primitives/Nonce/Nonce.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Nonce/Nonce.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as Nonce from "./index.js";
+
+describe("Nonce", () => {
+	describe("from", () => {
+		it("creates from number", () => {
+			const nonce = Nonce.from(42);
+			expect(Nonce.toBigInt(nonce)).toBe(42n);
+		});
+
+		it("creates from bigint", () => {
+			const nonce = Nonce.from(42n);
+			expect(Nonce.toBigInt(nonce)).toBe(42n);
+		});
+
+		it("creates from string", () => {
+			const nonce = Nonce.from("42");
+			expect(Nonce.toBigInt(nonce)).toBe(42n);
+		});
+
+		it("creates from hex string", () => {
+			const nonce = Nonce.from("0x2a");
+			expect(Nonce.toBigInt(nonce)).toBe(42n);
+		});
+
+		it("creates zero nonce", () => {
+			const nonce = Nonce.from(0);
+			expect(Nonce.toBigInt(nonce)).toBe(0n);
+		});
+
+		it("creates large nonce", () => {
+			const large = 2n ** 200n;
+			const nonce = Nonce.from(large);
+			expect(Nonce.toBigInt(nonce)).toBe(large);
+		});
+	});
+
+	describe("increment", () => {
+		it("increments zero to one", () => {
+			const nonce = Nonce.from(0);
+			const next = Nonce.increment(nonce);
+			expect(Nonce.toBigInt(next)).toBe(1n);
+		});
+
+		it("increments value by one", () => {
+			const nonce = Nonce.from(42);
+			const next = Nonce.increment(nonce);
+			expect(Nonce.toBigInt(next)).toBe(43n);
+		});
+
+		it("increments large value", () => {
+			const nonce = Nonce.from(1000000n);
+			const next = Nonce.increment(nonce);
+			expect(Nonce.toBigInt(next)).toBe(1000001n);
+		});
+
+		it("does not mutate original", () => {
+			const nonce = Nonce.from(42);
+			const next = Nonce.increment(nonce);
+			expect(Nonce.toBigInt(nonce)).toBe(42n);
+			expect(Nonce.toBigInt(next)).toBe(43n);
+		});
+
+		it("works with max safe integer", () => {
+			const nonce = Nonce.from(Number.MAX_SAFE_INTEGER);
+			const next = Nonce.increment(nonce);
+			expect(Nonce.toBigInt(next)).toBe(9007199254740992n);
+		});
+	});
+
+	describe("namespace object", () => {
+		it("has from method", () => {
+			expect(typeof Nonce.Nonce.from).toBe("function");
+		});
+
+		it("has toNumber method", () => {
+			expect(typeof Nonce.Nonce.toNumber).toBe("function");
+		});
+
+		it("has toBigInt method", () => {
+			expect(typeof Nonce.Nonce.toBigInt).toBe("function");
+		});
+
+		it("has increment method", () => {
+			expect(typeof Nonce.Nonce.increment).toBe("function");
+		});
+	});
+
+	describe("typical usage scenarios", () => {
+		it("handles transaction sequence", () => {
+			let nonce = Nonce.from(0);
+			nonce = Nonce.increment(nonce);
+			expect(Nonce.toNumber(nonce)).toBe(1);
+			nonce = Nonce.increment(nonce);
+			expect(Nonce.toNumber(nonce)).toBe(2);
+			nonce = Nonce.increment(nonce);
+			expect(Nonce.toNumber(nonce)).toBe(3);
+		});
+
+		it("handles account with many transactions", () => {
+			const nonce = Nonce.from(9999);
+			const next = Nonce.increment(nonce);
+			expect(Nonce.toNumber(next)).toBe(10000);
+		});
+
+		it("handles fresh account", () => {
+			const nonce = Nonce.from(0);
+			expect(Nonce.toNumber(nonce)).toBe(0);
+			const first = Nonce.increment(nonce);
+			expect(Nonce.toNumber(first)).toBe(1);
+		});
+	});
+});
+
+```

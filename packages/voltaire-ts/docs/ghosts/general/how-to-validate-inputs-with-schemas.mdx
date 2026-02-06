@@ -1,0 +1,109 @@
+---
+title: Validate Inputs With Schemas (Do Not Cast Types)
+description: Use runtime schemas to validate unknown data instead of TypeScript casts.
+---
+
+## Goal
+
+Avoid unsafe `as` casting at runtime. Validate inputs using Effect Schema so bad data fails early and loudly.
+
+## Why Casting Is Unsafe
+
+TypeScript casts only affect the compiler. They do **not** validate data at runtime.
+
+```ts
+// ❌ This compiles even if input is "not-an-address"
+const address = input as `0x${string}`
+```
+
+If `input` is wrong, you still get runtime failures later (or worse, silently wrong behavior).
+
+## Use Schemas Instead
+
+Decode unknown data at the boundary (RPC, file input, user input, env vars) and only pass validated values deeper into your app.
+
+### Example: Validate an Address
+
+```ts
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+
+const parseAddress = (input: unknown) =>
+  S.decodeUnknownSync(Address.Hex)(input)
+
+const address = parseAddress('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+// address is AddressType and validated at runtime
+```
+
+### Example: Validate a Request Shape
+
+```ts
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+
+const GetBalanceRequest = S.Struct({
+  address: Address.Hex,
+  blockTag: S.optional(S.String)
+})
+
+const request = S.decodeUnknownSync(GetBalanceRequest)(input)
+// request.address is validated; request.blockTag is optional
+```
+
+### Example: Validate ABI Arrays
+
+```ts
+import * as S from 'effect/Schema'
+import * as AbiSchema from 'voltaire-effect/primitives/Abi'
+
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: 'balance', type: 'uint256' }]
+  }
+])
+```
+
+## Rule of Thumb
+
+- **Never** use `as` or `unknown as` on untrusted data.
+- **Always** use schemas to validate at runtime at the boundary.
+
+## Annotations for Better Errors
+
+Annotated schemas provide better error messages and enable JSON Schema generation:
+
+```ts
+import * as S from 'effect/Schema'
+import { JSONSchema } from 'effect'
+
+const AddressHex = S.String.pipe(
+  S.pattern(/^0x[a-fA-F0-9]{40}$/)
+).annotations({
+  identifier: "Address.Hex",
+  title: "Ethereum Address",
+  description: "A 20-byte Ethereum address as a hex string",
+  examples: ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"],
+  message: () => "Invalid address: expected 40 hex characters with 0x prefix"
+})
+
+// Generate JSON Schema for OpenAPI
+const jsonSchema = JSONSchema.make(AddressHex)
+// { title: "Ethereum Address", description: "...", examples: [...] }
+```
+
+Key annotations:
+- `identifier` - Unique ID for the schema
+- `title` - Human-readable name (form labels)
+- `description` - Explains the type (help text)
+- `examples` - Valid example values
+- `message` - Custom error message function
+
+## See Also
+
+- [Schema Annotations](/concepts/schema-annotations)
+- [How to Validate an Ethereum Address](/ghosts/security/how-to-validate-address)
+- [How to Serialize to JSON](/ghosts/general/how-to-serialize-to-json)

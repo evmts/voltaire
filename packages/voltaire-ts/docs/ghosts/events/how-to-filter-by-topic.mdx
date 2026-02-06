@@ -1,0 +1,91 @@
+---
+title: How to Filter Events by Topic
+description: Filter event logs by topic0 (event signature) and indexed parameters.
+---
+
+## Goal
+
+Filter logs by event signature and indexed parameter values.
+
+## Using EventLog.matchesTopics
+
+```typescript
+import * as EventLog from '@voltaire/primitives/EventLog';
+import * as Hash from '@voltaire/primitives/Hash';
+
+const transferTopic = Hash.keccak256String('Transfer(address,address,uint256)');
+const fromAddress = Hash.fromHex('0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f251e3');
+
+// Match logs with specific topic0 and from address
+const matches = EventLog.matchesTopics(log, [
+  transferTopic,  // topic0: event signature
+  fromAddress,    // topic1: indexed 'from'
+  null            // topic2: any 'to' address
+]);
+```
+
+## Using EventLog.filterLogs
+
+```typescript
+import * as EventLog from '@voltaire/primitives/EventLog';
+import * as Address from '@voltaire/primitives/Address';
+
+const filtered = EventLog.filterLogs(logs, {
+  address: Address.from('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+  topics: [transferTopic, null, recipientTopic]
+});
+```
+
+## Multiple Values per Topic (OR filter)
+
+```typescript
+// Match transfers TO either address1 OR address2
+const filtered = EventLog.filterLogs(logs, {
+  topics: [
+    transferTopic,
+    null,  // any sender
+    [recipientTopic1, recipientTopic2]  // array = OR
+  ]
+});
+```
+
+## With Contract EventStream
+
+```typescript
+import { Contract } from '@voltaire/contract';
+
+const usdc = Contract({ address: usdcAddress, abi: erc20Abi, provider });
+
+// Filter at stream creation - RPC-level filtering
+const stream = usdc.events.Transfer({
+  from: '0x742d35cc6634c0532925a3b844bc9e7595f251e3'
+});
+
+for await (const { log } of stream.backfill({ fromBlock: 18000000n, toBlock: 18001000n })) {
+  // Only logs matching the filter
+  console.log(log.args);
+}
+```
+
+## Encode Topics for Filtering
+
+```typescript
+import * as Abi from '@voltaire/primitives/Abi';
+
+const event = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value', indexed: false }
+  ]
+};
+
+// Generate topics array for eth_getLogs filter
+const topics = Abi.Event.encodeTopics(event, {
+  from: '0x742d35cc6634c0532925a3b844bc9e7595f251e3',
+  to: null  // null = don't filter this param
+});
+// [selector, encodedFrom, null]
+```

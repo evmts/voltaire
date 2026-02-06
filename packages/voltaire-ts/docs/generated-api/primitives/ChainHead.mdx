@@ -1,0 +1,189 @@
+---
+title: "primitives/ChainHead"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/ChainHead
+
+# primitives/ChainHead
+
+## Type Aliases
+
+### ChainHeadType
+
+> **ChainHeadType** = `object`
+
+Defined in: [src/primitives/ChainHead/ChainHeadType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/ChainHeadType.ts#L22)
+
+Current chain head information
+
+Represents the latest block at the tip of the blockchain.
+Typically obtained from eth_getBlockByNumber("latest").
+
+#### Example
+
+```typescript
+const chainHead: ChainHeadType = {
+  number: 18000000n,
+  hash: blockHash,
+  timestamp: 1699000000n,
+  difficulty: 0n, // Post-merge (PoS)
+  totalDifficulty: 58750003716598352816469n, // Pre-merge cumulative
+};
+```
+
+#### Properties
+
+##### difficulty?
+
+> `readonly` `optional` **difficulty**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/ChainHead/ChainHeadType.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/ChainHeadType.ts#L41)
+
+Block difficulty (0 post-merge)
+
+##### hash
+
+> `readonly` **hash**: [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+Defined in: [src/primitives/ChainHead/ChainHeadType.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/ChainHeadType.ts#L31)
+
+Block hash
+
+##### number
+
+> `readonly` **number**: [`BlockNumberType`](BlockNumber.mdx#blocknumbertype)
+
+Defined in: [src/primitives/ChainHead/ChainHeadType.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/ChainHeadType.ts#L26)
+
+Block number
+
+##### timestamp
+
+> `readonly` **timestamp**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/ChainHead/ChainHeadType.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/ChainHeadType.ts#L36)
+
+Block timestamp (Unix seconds)
+
+##### totalDifficulty?
+
+> `readonly` `optional` **totalDifficulty**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/ChainHead/ChainHeadType.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/ChainHeadType.ts#L46)
+
+Total difficulty from genesis to this block
+
+## Variables
+
+### ChainHead
+
+> `const` **ChainHead**: `object`
+
+Defined in: [src/primitives/ChainHead/index.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/index.ts#L9)
+
+#### Type Declaration
+
+##### from()
+
+> **from**: (`value`) => [`ChainHeadType`](#chainheadtype) = `_from`
+
+Create ChainHead from block data or RPC response
+
+###### Parameters
+
+###### value
+
+Chain head data
+
+###### difficulty?
+
+`string` \| `number` \| `bigint`
+
+###### hash
+
+`string` \| [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+###### number
+
+`string` \| `number` \| `bigint`
+
+###### timestamp
+
+`string` \| `number` \| `bigint`
+
+###### totalDifficulty?
+
+`string` \| `number` \| `bigint`
+
+###### Returns
+
+[`ChainHeadType`](#chainheadtype)
+
+ChainHead
+
+###### Example
+
+```typescript
+const head = ChainHead.from({
+  number: 18000000n,
+  hash: blockHash,
+  timestamp: 1699000000n,
+});
+```
+
+## Functions
+
+### from()
+
+> **from**(`value`): [`ChainHeadType`](#chainheadtype)
+
+Defined in: [src/primitives/ChainHead/from.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/ChainHead/from.js#L16)
+
+Create ChainHead from block data or RPC response
+
+#### Parameters
+
+##### value
+
+Chain head data
+
+###### difficulty?
+
+`string` \| `number` \| `bigint`
+
+###### hash
+
+`string` \| [`BlockHashType`](BlockHash.mdx#blockhashtype)
+
+###### number
+
+`string` \| `number` \| `bigint`
+
+###### timestamp
+
+`string` \| `number` \| `bigint`
+
+###### totalDifficulty?
+
+`string` \| `number` \| `bigint`
+
+#### Returns
+
+[`ChainHeadType`](#chainheadtype)
+
+ChainHead
+
+#### Example
+
+```typescript
+const head = ChainHead.from({
+  number: 18000000n,
+  hash: blockHash,
+  timestamp: 1699000000n,
+});
+```

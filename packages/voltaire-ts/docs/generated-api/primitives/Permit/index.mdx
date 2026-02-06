@@ -1,0 +1,211 @@
+---
+description: Auto-generated TypeScript API documentation from source code
+title: Generated API Reference
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / primitives/Permit
+
+# primitives/Permit
+
+## Namespaces
+
+- [KnownTokens](namespaces/KnownTokens.mdx)
+
+## Interfaces
+
+### PermitDomainType
+
+Defined in: [src/primitives/Permit/PermitType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L19)
+
+EIP-712 Domain for Permit signatures
+
+#### Properties
+
+##### chainId
+
+> `readonly` **chainId**: [`ChainIdType`](../ChainId.mdx#chainidtype)
+
+Defined in: [src/primitives/Permit/PermitType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L22)
+
+##### name
+
+> `readonly` **name**: `string`
+
+Defined in: [src/primitives/Permit/PermitType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L20)
+
+##### verifyingContract
+
+> `readonly` **verifyingContract**: [`AddressType`](../Address.mdx#addresstype)
+
+Defined in: [src/primitives/Permit/PermitType.ts:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L23)
+
+##### version
+
+> `readonly` **version**: `string`
+
+Defined in: [src/primitives/Permit/PermitType.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L21)
+
+***
+
+### PermitType
+
+Defined in: [src/primitives/Permit/PermitType.ts:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L8)
+
+EIP-2612 Permit message structure
+
+#### Properties
+
+##### deadline
+
+> `readonly` **deadline**: [`Type`](../Uint.mdx#type)
+
+Defined in: [src/primitives/Permit/PermitType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L13)
+
+##### nonce
+
+> `readonly` **nonce**: [`Type`](../Uint.mdx#type)
+
+Defined in: [src/primitives/Permit/PermitType.ts:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L12)
+
+##### owner
+
+> `readonly` **owner**: [`AddressType`](../Address.mdx#addresstype)
+
+Defined in: [src/primitives/Permit/PermitType.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L9)
+
+##### spender
+
+> `readonly` **spender**: [`AddressType`](../Address.mdx#addresstype)
+
+Defined in: [src/primitives/Permit/PermitType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L10)
+
+##### value
+
+> `readonly` **value**: [`Type`](../Uint.mdx#type)
+
+Defined in: [src/primitives/Permit/PermitType.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/PermitType.ts#L11)
+
+## Variables
+
+### PERMIT\_TYPES
+
+> `const` **PERMIT\_TYPES**: `object`
+
+Defined in: [src/primitives/Permit/constants.js:4](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/constants.js#L4)
+
+EIP-2612 Permit type definition for EIP-712
+
+#### Type Declaration
+
+##### Permit
+
+> **Permit**: `object`[]
+
+## Functions
+
+### createPermitSignature()
+
+> **createPermitSignature**(`permit`, `domain`, `privateKey`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Permit/createPermitSignature.js:37](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/createPermitSignature.js#L37)
+
+Creates an EIP-2612 permit signature
+
+#### Parameters
+
+##### permit
+
+[`PermitType`](#permittype)
+
+Permit message
+
+##### domain
+
+[`PermitDomainType`](#permitdomaintype)
+
+EIP-712 domain
+
+##### privateKey
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Private key (32 bytes)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compact signature (64 bytes + recovery id)
+
+#### Example
+
+```typescript
+import * as Permit from './primitives/Permit/index.js';
+import * as Address from './primitives/Address/index.js';
+import * as Uint256 from './primitives/Uint256/index.js';
+
+const permit = {
+  owner: Address.fromHex('0x...'),
+  spender: Address.fromHex('0x...'),
+  value: Uint256.fromBigInt(1000000n),
+  nonce: Uint256.fromBigInt(0n),
+  deadline: Uint256.fromBigInt(1234567890n),
+};
+
+const domain = {
+  name: 'USD Coin',
+  version: '2',
+  chainId: 1,
+  verifyingContract: Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+};
+
+const signature = Permit.createPermitSignature(permit, domain, privateKey);
+```
+
+***
+
+### verifyPermit()
+
+> **verifyPermit**(`permit`, `signature`, `domain`): `boolean`
+
+Defined in: [src/primitives/Permit/verifyPermit.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Permit/verifyPermit.js#L21)
+
+Verifies an EIP-2612 permit signature
+
+#### Parameters
+
+##### permit
+
+[`PermitType`](#permittype)
+
+Permit message
+
+##### signature
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Compact signature (64 bytes + recovery id)
+
+##### domain
+
+[`PermitDomainType`](#permitdomaintype)
+
+EIP-712 domain
+
+#### Returns
+
+`boolean`
+
+True if signature is valid
+
+#### Example
+
+```typescript
+import * as Permit from './primitives/Permit/index.js';
+
+const isValid = Permit.verifyPermit(permit, signature, domain);
+```

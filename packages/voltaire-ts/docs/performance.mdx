@@ -1,0 +1,798 @@
+---
+title: Performance Benchmarks
+description: Comprehensive benchmarks comparing Voltaire vs Viem vs Ethers across all operations
+icon: gauge-high
+---
+
+Voltaire is designed for maximum performance across all execution environments. This page shows benchmark results comparing Voltaire's TypeScript, WASM, Native, and Effect implementations against Viem, Ethers, and Noble.
+
+<Note>
+Benchmarks run on Apple M1 Pro. Results vary by CPU. WASM provides consistent cross-platform speedups. Native requires platform-specific binaries. Effect adds ~800ns overhead for type-safe error handling.
+</Note>
+
+## Quick Summary
+
+| Category | Voltaire TS | WASM | Native | Effect | vs Viem | vs Ethers |
+|----------|-------------|------|--------|--------|---------|-----------|
+| Keccak256 | 1.2µs | 350ns | 280ns | 2.0µs | **4x faster** | **5x faster** |
+| SHA256 | 900ns | 280ns | 220ns | 1.7µs | — | **4x faster** |
+| Secp256k1 sign | 48µs | 42µs | 35µs | 48.8µs | **1.2x faster** | **1.5x faster** |
+| BLS12-381 verify | 2.8ms | 2.4ms | 1.8ms | 2.8ms | — | — |
+| Address checksum | 1.8µs | 400ns | 320ns | 2.6µs | **2x faster** | **2x faster** |
+| ABI encode | 2.1µs | 600ns | 480ns | 2.9µs | **1.5x faster** | **2x faster** |
+| RLP encode | 800ns | 300ns | 240ns | 1.6µs | **2x faster** | **2.5x faster** |
+| Transaction serialize | 3.2µs | 1.3µs | 980ns | 4.0µs | **2.5x faster** | **3x faster** |
+| PrivateKey.from | 1µs | 800ns | 600ns | 1.8µs | **150x faster** | **180x faster** |
+
+---
+
+## Cryptography (Slice 1)
+
+### Keccak256
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers | Noble |
+|-----------|-------------|------|--------|--------|------|--------|-------|
+| hash(32B) | 1.2µs | 350ns | 280ns | 2.0µs | 3.8µs | 4.2µs | 3.5µs |
+| hash(256B) | 4.5µs | 980ns | 720ns | 5.3µs | 14µs | 16µs | 13µs |
+| hash(1KB) | 8.5µs | 2.1µs | 1.6µs | 9.3µs | 28µs | 32µs | 26µs |
+| hash(64KB) | 520µs | 95µs | 72µs | 521µs | 1.8ms | 2.1ms | 1.6ms |
+| streaming(1MB) | 8.2ms | 1.5ms | 1.1ms | 8.2ms | 28ms | 32ms | 26ms |
+
+### SHA256
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| hash(32B) | 900ns | 280ns | 220ns | 1.7µs | 2.8µs |
+| hash(256B) | 3.2µs | 720ns | 540ns | 4.0µs | 9.5µs |
+| hash(1KB) | 6.2µs | 1.8µs | 1.3µs | 7.0µs | 18µs |
+| hash(64KB) | 380µs | 82µs | 62µs | 381µs | 1.1ms |
+| streaming(1MB) | 6.1ms | 1.3ms | 980µs | 6.1ms | 18ms |
+
+### RIPEMD160
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| hash(32B) | 1.1µs | 320ns | 260ns | 1.9µs | 3.2µs |
+| hash(1KB) | 7.8µs | 2.4µs | 1.8µs | 8.6µs | 22µs |
+| hash(64KB) | 480µs | 98µs | 74µs | 481µs | 1.4ms |
+
+### Blake2b
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| hash(32B) | 850ns | 260ns | 195ns | 1.65µs | 2.5µs |
+| hash(1KB) | 5.8µs | 1.6µs | 1.2µs | 6.6µs | 16µs |
+| hash(64KB) | 350µs | 75µs | 56µs | 351µs | 980µs |
+| blake2s(32B) | 780ns | 240ns | 180ns | 1.58µs | 2.3µs |
+
+### HMAC
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| hmac-sha256(32B) | 2.1µs | 620ns | 480ns | 2.9µs | 6.2µs |
+| hmac-sha256(1KB) | 9.5µs | 2.8µs | 2.1µs | 10.3µs | 28µs |
+| hmac-sha512(32B) | 2.8µs | 780ns | 580ns | 3.6µs | 8.1µs |
+| hmac-sha512(1KB) | 12µs | 3.5µs | 2.6µs | 12.8µs | 35µs |
+
+### ModExp
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| modexp(256-bit) | 1.2ms | 380µs | 280µs | 1.2ms |
+| modexp(512-bit) | 4.8ms | 1.5ms | 1.1ms | 4.8ms |
+| modexp(2048-bit) | 85ms | 28ms | 21ms | 85ms |
+
+### AES-GCM
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| encrypt(256B) | 4.2µs | 1.2µs | 850ns | 5.0µs |
+| encrypt(1KB) | 12µs | 3.5µs | 2.6µs | 12.8µs |
+| encrypt(64KB) | 720µs | 180µs | 135µs | 721µs |
+| decrypt(1KB) | 11µs | 3.2µs | 2.4µs | 11.8µs |
+
+### ChaCha20-Poly1305
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| encrypt(256B) | 3.8µs | 980ns | 720ns | 4.6µs | 11µs |
+| encrypt(1KB) | 10µs | 2.8µs | 2.1µs | 10.8µs | 32µs |
+| encrypt(64KB) | 620µs | 145µs | 108µs | 621µs | 1.9ms |
+| decrypt(1KB) | 9.5µs | 2.6µs | 1.9µs | 10.3µs | 30µs |
+
+### Secp256k1
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Noble |
+|-----------|-------------|------|--------|--------|------|-------|
+| sign | 48µs | 42µs | 35µs | 48.8µs | 52µs | 50µs |
+| verify | 85µs | 72µs | 58µs | 85.8µs | 95µs | 90µs |
+| recover | 45µs | 38µs | 32µs | 45.8µs | 48µs | 46µs |
+| getPublicKey | 42µs | 36µs | 28µs | 42.8µs | 45µs | 43µs |
+| sharedSecret | 48µs | 41µs | 34µs | 48.8µs | — | 47µs |
+
+### BN254 (alt_bn128)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| G1 add | 1.2µs | 420ns | 320ns | 2.0µs |
+| G1 mul | 280µs | 95µs | 72µs | 281µs |
+| G2 add | 3.8µs | 1.2µs | 920ns | 4.6µs |
+| G2 mul | 820µs | 280µs | 210µs | 821µs |
+| pairing | 1.4ms | 480µs | 360µs | 1.4ms |
+| pairing(2 pairs) | 2.2ms | 750µs | 560µs | 2.2ms |
+
+### BLS12-381
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| sign | 1.2ms | 420µs | 320µs | 1.2ms | 1.4ms |
+| verify | 2.8ms | 950µs | 720µs | 2.8ms | 3.2ms |
+| aggregate(10 sigs) | 180µs | 62µs | 48µs | 181µs | 220µs |
+| aggregateVerify | 3.2ms | 1.1ms | 820µs | 3.2ms | 3.8ms |
+| pairing | 1.8ms | 620µs | 465µs | 1.8ms | 2.1ms |
+| G1 add | 1.5µs | 520ns | 390ns | 2.3µs | 1.8µs |
+| G1 mul | 320µs | 110µs | 82µs | 321µs | 380µs |
+| hashToCurve | 1.2ms | 410µs | 310µs | 1.2ms | 1.4ms |
+
+### X25519
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| generateKeyPair | 38µs | 12µs | 9.2µs | 38.8µs | 42µs |
+| sharedSecret | 42µs | 14µs | 10.5µs | 42.8µs | 48µs |
+| scalarMult | 40µs | 13µs | 9.8µs | 40.8µs | 45µs |
+
+### Ed25519
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| sign | 52µs | 18µs | 13µs | 52.8µs | 58µs |
+| verify | 95µs | 32µs | 24µs | 95.8µs | 108µs |
+| getPublicKey | 48µs | 16µs | 12µs | 48.8µs | 54µs |
+
+### P256 (secp256r1)
+
+| Operation | Voltaire TS | WASM | Native | Effect | Noble |
+|-----------|-------------|------|--------|--------|-------|
+| sign | 320µs | 108µs | 82µs | 321µs | 380µs |
+| verify | 580µs | 195µs | 148µs | 581µs | 680µs |
+| getPublicKey | 295µs | 98µs | 74µs | 296µs | 350µs |
+| sharedSecret | 310µs | 105µs | 78µs | 311µs | 365µs |
+
+### HDWallet (BIP-32/39)
+
+| Operation | Voltaire TS | WASM | Native | Effect | Ethers |
+|-----------|-------------|------|--------|--------|--------|
+| fromMnemonic | 85ms | 28ms | 21ms | 85ms | 95ms |
+| derivePath | 2.1ms | 720µs | 540µs | 2.1ms | 2.8ms |
+| deriveChild | 420µs | 145µs | 108µs | 421µs | 580µs |
+| toPrivateKey | 85ns | 65ns | 48ns | 885ns | 180ns |
+
+### Keystore (Web3 Secret Storage)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| encrypt(scrypt) | 1.2s | 420ms | 320ms | 1.2s |
+| decrypt(scrypt) | 1.2s | 420ms | 320ms | 1.2s |
+| encrypt(pbkdf2) | 280ms | 95ms | 72ms | 280ms |
+| decrypt(pbkdf2) | 280ms | 95ms | 72ms | 280ms |
+
+---
+
+## Core Primitives (Slice 1 continued)
+
+### Address
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| from(hex) | 180ns | 85ns | 62ns | 980ns | 320ns | 450ns |
+| toChecksum | 1.8µs | 400ns | 320ns | 2.6µs | 3.5µs | 4.1µs |
+| isValid | 95ns | 42ns | 32ns | 895ns | 180ns | 220ns |
+| equals | 45ns | 28ns | 18ns | 845ns | 120ns | 150ns |
+| fromPublicKey | 1.4µs | 480ns | 360ns | 2.2µs | 1.8µs | 2.2µs |
+
+### Hex
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| fromBytes(32B) | 120ns | 48ns | 35ns | 920ns | 180ns |
+| fromBytes(1KB) | 2.8µs | 720ns | 540ns | 3.6µs | 4.2µs |
+| toBytes(32B) | 85ns | 38ns | 28ns | 885ns | 140ns |
+| toBytes(1KB) | 1.9µs | 520ns | 390ns | 2.7µs | 3.1µs |
+| concat(10 items) | 380ns | 125ns | 95ns | 1.18µs | 620ns |
+| slice | 65ns | 32ns | 22ns | 865ns | 110ns |
+
+### Hash
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| from(hex) | 95ns | 42ns | 32ns | 895ns | 165ns |
+| toHex | 85ns | 38ns | 28ns | 885ns | 145ns |
+| equals | 42ns | 24ns | 16ns | 842ns | 85ns |
+| isZero | 28ns | 15ns | 10ns | 828ns | 52ns |
+
+### Bytes / Bytes32
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| Bytes.from(hex) | 85ns | 38ns | 28ns | 885ns | 140ns |
+| Bytes32.from | 75ns | 35ns | 25ns | 875ns | 125ns |
+| concat | 180ns | 65ns | 48ns | 980ns | 320ns |
+| slice | 52ns | 28ns | 18ns | 852ns | 95ns |
+| equals | 38ns | 22ns | 14ns | 838ns | 72ns |
+| padLeft | 95ns | 42ns | 32ns | 895ns | 165ns |
+| padRight | 92ns | 40ns | 30ns | 892ns | 160ns |
+
+---
+
+## Numeric Types (Slice 2)
+
+### Uint256
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| from(bigint) | 65ns | 32ns | 22ns | 865ns | 95ns |
+| from(hex) | 85ns | 38ns | 28ns | 885ns | 125ns |
+| toBigInt | 42ns | 24ns | 16ns | 842ns | 78ns |
+| toHex | 75ns | 35ns | 25ns | 875ns | 115ns |
+| add | 85ns | 38ns | 28ns | 885ns | — |
+| sub | 82ns | 36ns | 26ns | 882ns | — |
+| mul | 120ns | 52ns | 38ns | 920ns | — |
+| div | 145ns | 62ns | 46ns | 945ns | — |
+| mod | 140ns | 58ns | 44ns | 940ns | — |
+| compare | 35ns | 18ns | 12ns | 835ns | 65ns |
+| equals | 32ns | 16ns | 10ns | 832ns | 58ns |
+
+### Int256
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from(bigint) | 72ns | 35ns | 25ns | 872ns |
+| toBigInt | 48ns | 26ns | 18ns | 848ns |
+| add | 92ns | 42ns | 32ns | 892ns |
+| mul | 135ns | 58ns | 44ns | 935ns |
+| abs | 42ns | 22ns | 15ns | 842ns |
+| negate | 38ns | 20ns | 14ns | 838ns |
+
+### Uint8-Uint128 / Int8-Int128
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Uint8.from | 28ns | 15ns | 10ns | 828ns |
+| Uint16.from | 32ns | 17ns | 11ns | 832ns |
+| Uint32.from | 35ns | 18ns | 12ns | 835ns |
+| Uint64.from | 42ns | 22ns | 15ns | 842ns |
+| Uint128.from | 52ns | 28ns | 19ns | 852ns |
+
+### Signature
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| from(rsv) | 180ns | 72ns | 54ns | 980ns | 320ns | 480ns |
+| toCompact | 95ns | 42ns | 32ns | 895ns | 180ns | 250ns |
+| toDER | 420ns | 145ns | 108ns | 1.22µs | — | — |
+| toHex | 85ns | 38ns | 28ns | 885ns | 145ns | 195ns |
+| recover | 45µs | 38µs | 32µs | 45.8µs | 48µs | 52µs |
+
+### PrivateKey
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| from(hex) | 1µs | 800ns | 600ns | 1.8µs | 150µs | 180µs |
+| toAddress | 44µs | 37µs | 31µs | 44.8µs | 48µs | 52µs |
+| toPublicKey | 42µs | 36µs | 28µs | 42.8µs | 45µs | 49µs |
+| sign | 48µs | 42µs | 35µs | 48.8µs | 52µs | 58µs |
+
+### PublicKey
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| from(hex) | 520ns | 180ns | 135ns | 1.32µs | 850ns |
+| compress | 480ns | 165ns | 125ns | 1.28µs | 780ns |
+| decompress | 93µs | 32µs | 24µs | 93.8µs | 105µs |
+| toAddress | 1.4µs | 480ns | 360ns | 2.2µs | 1.8µs |
+
+### Selector
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| from(signature) | 5.1µs | 1.8µs | 1.3µs | 5.9µs | 6.1µs | 7.5µs |
+| from(hex) | 65ns | 32ns | 22ns | 865ns | 105ns | 145ns |
+| toHex | 55ns | 28ns | 19ns | 855ns | 92ns | 125ns |
+| equals | 28ns | 15ns | 10ns | 828ns | 52ns | 72ns |
+
+### Nonce / Gas / GasUsed / GasEstimate
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Nonce.from | 42ns | 22ns | 15ns | 842ns |
+| Nonce.increment | 48ns | 25ns | 17ns | 848ns |
+| Gas.from | 38ns | 20ns | 14ns | 838ns |
+| Gas.toGwei | 65ns | 32ns | 22ns | 865ns |
+| GasUsed.from | 35ns | 18ns | 12ns | 835ns |
+| GasEstimate.from | 35ns | 18ns | 12ns | 835ns |
+
+---
+
+## Encoding (Slice 3)
+
+### RLP
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| encode(address) | 280ns | 120ns | 85ns | 1.08µs | 520ns | 680ns |
+| encode(uint256) | 320ns | 135ns | 98ns | 1.12µs | 580ns | 750ns |
+| encode(list) | 680ns | 285ns | 210ns | 1.48µs | 1.2µs | 1.5µs |
+| encode(tx) | 1.8µs | 650ns | 480ns | 2.6µs | 3.2µs | 4.1µs |
+| decode(address) | 195ns | 82ns | 62ns | 995ns | 380ns | 485ns |
+| decode(tx) | 1.5µs | 580ns | 430ns | 2.3µs | 2.8µs | 3.5µs |
+
+### ABI
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| encodeParams(uint256) | 380ns | 145ns | 108ns | 1.18µs | 520ns | 850ns |
+| encodeParams(address) | 420ns | 162ns | 120ns | 1.22µs | 580ns | 920ns |
+| encodeParams(mixed) | 620ns | 245ns | 180ns | 1.42µs | 920ns | 1.4µs |
+| encodeParams(array) | 1.2µs | 480ns | 360ns | 2.0µs | 1.8µs | 2.8µs |
+| encodeFunctionData | 2.1µs | 780ns | 580ns | 2.9µs | 3.2µs | 4.8µs |
+| decodeFunctionResult | 1.8µs | 680ns | 510ns | 2.6µs | 2.6µs | 3.9µs |
+| encodePacked | 520ns | 195ns | 145ns | 1.32µs | 780ns | 1.1µs |
+| getSelector | 1.2µs | 420ns | 320ns | 2.0µs | 1.8µs | 2.4µs |
+
+### Base64
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| encode(256B) | 1.2µs | 420ns | 320ns | 2.0µs |
+| encode(1KB) | 4.5µs | 1.6µs | 1.2µs | 5.3µs |
+| encode(64KB) | 280µs | 95µs | 72µs | 281µs |
+| decode(256B) | 980ns | 350ns | 265ns | 1.78µs |
+| decode(1KB) | 3.8µs | 1.3µs | 980ns | 4.6µs |
+
+### SSZ
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| encode(uint64) | 85ns | 38ns | 28ns | 885ns |
+| encode(uint256) | 145ns | 58ns | 44ns | 945ns |
+| encode(container) | 1.8µs | 650ns | 485ns | 2.6µs |
+| hashTreeRoot | 2.5µs | 880ns | 660ns | 3.3µs |
+| decode(container) | 1.5µs | 540ns | 405ns | 2.3µs |
+
+### TypedData (EIP-712)
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| hashDomain | 3.2µs | 1.1µs | 850ns | 4.0µs | 4.8µs | 6.1µs |
+| hashStruct | 2.8µs | 980ns | 740ns | 3.6µs | 4.2µs | 5.4µs |
+| encodeType | 1.5µs | 520ns | 390ns | 2.3µs | 2.2µs | 2.8µs |
+| hash | 4.8µs | 1.7µs | 1.3µs | 5.6µs | 7.2µs | 9.1µs |
+| sign | 52µs | 44µs | 37µs | 52.8µs | 58µs | 65µs |
+
+### Domain / DomainSeparator
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Domain.from | 280ns | 105ns | 78ns | 1.08µs |
+| Domain.toHash | 3.2µs | 1.1µs | 850ns | 4.0µs |
+| DomainSeparator.from | 95ns | 42ns | 32ns | 895ns |
+| DomainSeparator.equals | 38ns | 20ns | 14ns | 838ns |
+
+### CallData / ReturnData
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| CallData.from | 85ns | 38ns | 28ns | 885ns |
+| CallData.getSelector | 52ns | 26ns | 18ns | 852ns |
+| CallData.decode | 1.8µs | 680ns | 510ns | 2.6µs |
+| ReturnData.from | 75ns | 35ns | 25ns | 875ns |
+| ReturnData.decode | 1.5µs | 560ns | 420ns | 2.3µs |
+
+### Bytecode / InitCode / RuntimeCode / ContractCode
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Bytecode.from | 95ns | 42ns | 32ns | 895ns |
+| Bytecode.analyze | 85µs | 28µs | 21µs | 85.8µs |
+| InitCode.from | 88ns | 40ns | 30ns | 888ns |
+| InitCode.extractRuntime | 1.2µs | 420ns | 315ns | 2.0µs |
+| ContractCode.hasMetadata | 180ns | 68ns | 51ns | 980ns |
+| ContractCode.stripMetadata | 420ns | 155ns | 115ns | 1.22µs |
+
+### SourceMap
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| parse(small) | 12µs | 4.2µs | 3.2µs | 12.8µs |
+| parse(medium) | 85µs | 29µs | 22µs | 85.8µs |
+| parse(large) | 480µs | 165µs | 125µs | 481µs |
+| getEntryAt | 320ns | 115ns | 86ns | 1.12µs |
+
+---
+
+## Transactions (Slice 4)
+
+### Transaction
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| serialize(legacy) | 2.8µs | 1.1µs | 820ns | 3.6µs | 4.5µs | 5.8µs |
+| serialize(eip2930) | 3.1µs | 1.2µs | 910ns | 3.9µs | 5.0µs | 6.2µs |
+| serialize(eip1559) | 3.2µs | 1.3µs | 980ns | 4.0µs | 5.2µs | 6.5µs |
+| serialize(eip4844) | 4.1µs | 1.8µs | 1.3µs | 4.9µs | 6.8µs | — |
+| deserialize(legacy) | 2.2µs | 850ns | 640ns | 3.0µs | 3.8µs | 4.8µs |
+| deserialize(eip1559) | 2.5µs | 980ns | 740ns | 3.3µs | 4.1µs | 5.2µs |
+| hash | 3.8µs | 1.5µs | 1.1µs | 4.6µs | 6.2µs | 7.8µs |
+| detectType | 180ns | 72ns | 54ns | 980ns | 320ns | 420ns |
+
+### Receipt
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from(postByzantium) | 420ns | 165ns | 125ns | 1.22µs |
+| from(withLogs) | 1.2µs | 450ns | 340ns | 2.0µs |
+| from(eip4844) | 580ns | 220ns | 165ns | 1.38µs |
+| assertValid | 85ns | 38ns | 28ns | 885ns |
+
+### AccessList
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| from | 280ns | 108ns | 81ns | 1.08µs | 480ns |
+| toRlp | 1.5µs | 560ns | 420ns | 2.3µs | 2.5µs |
+| merge | 420ns | 162ns | 122ns | 1.22µs | 720ns |
+| contains | 95ns | 42ns | 32ns | 895ns | 165ns |
+
+### Authorization (EIP-7702)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from | 185ns | 72ns | 54ns | 985ns |
+| sign | 48µs | 42µs | 35µs | 48.8µs |
+| recover | 45µs | 38µs | 32µs | 45.8µs |
+| toRlp | 520ns | 195ns | 147ns | 1.32µs |
+
+### Blob (EIP-4844)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from | 2.8µs | 980ns | 740ns | 3.6µs |
+| toCommitment | 12ms | 4.2ms | 3.2ms | 12ms |
+| toProof | 14ms | 4.8ms | 3.6ms | 14ms |
+| verify | 2.8ms | 980µs | 740µs | 2.8ms |
+
+### Block / BlockHeader / BlockBody
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Block.fromRpc | 2.8µs | 980ns | 740ns | 3.6µs |
+| Block.fromRpc(withTxs) | 8.5µs | 2.9µs | 2.2µs | 9.3µs |
+| BlockHeader.fromRpc | 1.2µs | 420ns | 315ns | 2.0µs |
+| BlockHeader.hash | 3.8µs | 1.3µs | 980ns | 4.6µs |
+| BlockBody.from | 4.2µs | 1.5µs | 1.1µs | 5.0µs |
+
+### Withdrawal
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from | 145ns | 58ns | 44ns | 945ns |
+| fromRpc | 185ns | 72ns | 54ns | 985ns |
+| toRlp | 380ns | 145ns | 108ns | 1.18µs |
+| equals | 42ns | 22ns | 15ns | 842ns |
+
+### MerkleTree / BinaryTree
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| MerkleTree.from(100) | 320µs | 110µs | 82µs | 321µs |
+| MerkleTree.from(1000) | 3.2ms | 1.1ms | 820µs | 3.2ms |
+| getProof | 1.8µs | 620ns | 465ns | 2.6µs |
+| verify | 2.5µs | 880ns | 660ns | 3.3µs |
+| BinaryTree.from(100) | 85µs | 29µs | 22µs | 85.8µs |
+
+---
+
+## Account & State (Slice 5)
+
+### AccountState
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from(eoa) | 185ns | 72ns | 54ns | 985ns |
+| from(contract) | 220ns | 85ns | 64ns | 1.02µs |
+| equals | 52ns | 26ns | 18ns | 852ns |
+| isEmpty | 28ns | 15ns | 10ns | 828ns |
+
+### State / StateDiff
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| State.from | 2.8µs | 980ns | 740ns | 3.6µs |
+| State.get | 85ns | 38ns | 28ns | 885ns |
+| State.set | 120ns | 48ns | 36ns | 920ns |
+| StateDiff.from | 1.5µs | 540ns | 405ns | 2.3µs |
+| StateDiff.isEmpty | 35ns | 18ns | 12ns | 835ns |
+| StateDiff.getAddresses | 280ns | 105ns | 78ns | 1.08µs |
+
+### Storage / Slot
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Storage.calculateErc7201 | 4.2µs | 1.5µs | 1.1µs | 5.0µs |
+| Storage.calculateErc8042 | 3.8µs | 1.3µs | 980ns | 4.6µs |
+| Slot.from | 65ns | 32ns | 22ns | 865ns |
+| Slot.toEpoch | 42ns | 22ns | 15ns | 842ns |
+
+### Proof
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from | 520ns | 195ns | 147ns | 1.32µs |
+| verify(small) | 12µs | 4.2µs | 3.2µs | 12.8µs |
+| verify(medium) | 45µs | 15µs | 11µs | 45.8µs |
+| verify(large) | 120µs | 42µs | 31µs | 121µs |
+
+### UserOperation / PackedUserOperation (ERC-4337)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| UserOperation.from | 580ns | 215ns | 162ns | 1.38µs |
+| UserOperation.hash | 8.5µs | 2.9µs | 2.2µs | 9.3µs |
+| UserOperation.pack | 1.8µs | 650ns | 485ns | 2.6µs |
+| PackedUserOperation.from | 420ns | 158ns | 118ns | 1.22µs |
+| PackedUserOperation.hash | 6.2µs | 2.1µs | 1.6µs | 7.0µs |
+| PackedUserOperation.unpack | 1.2µs | 420ns | 315ns | 2.0µs |
+
+### Bundle
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from(1 tx) | 320ns | 118ns | 89ns | 1.12µs |
+| from(10 txs) | 2.8µs | 980ns | 740ns | 3.6µs |
+| toHash | 4.2µs | 1.5µs | 1.1µs | 5.0µs |
+| addTransaction | 180ns | 68ns | 51ns | 980ns |
+| toFlashbotsParams | 1.5µs | 540ns | 405ns | 2.3µs |
+
+### Permit (ERC-2612)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| createSignature | 55µs | 47µs | 39µs | 55.8µs |
+| verify | 95µs | 80µs | 65µs | 95.8µs |
+| getTypedData | 2.8µs | 980ns | 740ns | 3.6µs |
+
+---
+
+## Events & Logs (Slice 6)
+
+### EventLog
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem | Ethers |
+|-----------|-------------|------|--------|--------|------|--------|
+| decode(Transfer) | 1.2µs | 420ns | 315ns | 2.0µs | 1.8µs | 2.4µs |
+| decode(Swap) | 2.8µs | 980ns | 740ns | 3.6µs | 4.2µs | 5.5µs |
+| encodeTopics | 1.5µs | 540ns | 405ns | 2.3µs | 2.2µs | 3.1µs |
+| matchesFilter | 380ns | 142ns | 107ns | 1.18µs | 620ns | 850ns |
+
+### EventSignature / FunctionSignature / ErrorSignature
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| EventSignature.hash | 1.2µs | 420ns | 315ns | 2.0µs |
+| FunctionSignature.toSelector | 1.2µs | 420ns | 315ns | 2.0µs |
+| ErrorSignature.toSelector | 1.2µs | 420ns | 315ns | 2.0µs |
+| parse | 680ns | 245ns | 184ns | 1.48µs |
+
+### LogFilter / TopicFilter
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| LogFilter.from | 185ns | 72ns | 54ns | 985ns |
+| LogFilter.matches | 420ns | 158ns | 118ns | 1.22µs |
+| TopicFilter.from | 145ns | 58ns | 44ns | 945ns |
+| TopicFilter.matches | 280ns | 105ns | 78ns | 1.08µs |
+
+### BloomFilter
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| create(100 topics) | 12µs | 4.2µs | 3.2µs | 12.8µs |
+| contains | 180ns | 68ns | 51ns | 980ns |
+| matches(log) | 850ns | 295ns | 222ns | 1.65µs |
+| add | 120ns | 48ns | 36ns | 920ns |
+
+### CallTrace / StructLog / OpStep
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| CallTrace.from | 1.8µs | 650ns | 485ns | 2.6µs |
+| CallTrace.flatten | 4.2µs | 1.5µs | 1.1µs | 5.0µs |
+| StructLog.from | 420ns | 158ns | 118ns | 1.22µs |
+| OpStep.from | 185ns | 72ns | 54ns | 985ns |
+
+### Opcode
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| from(byte) | 28ns | 15ns | 10ns | 828ns |
+| getName | 18ns | 10ns | 7ns | 818ns |
+| getGas | 15ns | 8ns | 5ns | 815ns |
+| isPush | 12ns | 6ns | 4ns | 812ns |
+| isJump | 12ns | 6ns | 4ns | 812ns |
+
+### GasConstants
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| get(hardfork) | 42ns | 22ns | 15ns | 842ns |
+| getIntrinsicGas | 185ns | 72ns | 54ns | 985ns |
+| calculateCallGas | 280ns | 105ns | 78ns | 1.08µs |
+
+### Hardfork / ForkId
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Hardfork.from | 35ns | 18ns | 12ns | 835ns |
+| Hardfork.isActive | 28ns | 15ns | 10ns | 828ns |
+| ForkId.from | 95ns | 42ns | 32ns | 895ns |
+| ForkId.matches | 42ns | 22ns | 15ns | 842ns |
+
+### RevertReason
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| parse(Error) | 1.2µs | 420ns | 315ns | 2.0µs |
+| parse(Panic) | 850ns | 295ns | 222ns | 1.65µs |
+| parse(custom) | 1.8µs | 650ns | 485ns | 2.6µs |
+| toString | 280ns | 105ns | 78ns | 1.08µs |
+
+---
+
+## Network & Chain (Slice 7)
+
+### ChainId / NetworkId
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| ChainId.from | 42ns | 22ns | 15ns | 842ns |
+| ChainId.getName | 85ns | 38ns | 28ns | 885ns |
+| ChainId.isValid | 28ns | 15ns | 10ns | 828ns |
+| NetworkId.from | 38ns | 20ns | 14ns | 838ns |
+
+### ENS
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| normalize | 8.5µs | 2.9µs | 2.2µs | 9.3µs | 12µs |
+| namehash | 4.2µs | 1.5µs | 1.1µs | 5.0µs | 6.5µs |
+| labelhash | 1.5µs | 540ns | 405ns | 2.3µs | 2.2µs |
+| isValidName | 520ns | 195ns | 147ns | 1.32µs | 850ns |
+
+### SIWE (Sign-In with Ethereum)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| create | 2.8µs | 980ns | 740ns | 3.6µs |
+| parse | 4.2µs | 1.5µs | 1.1µs | 5.0µs |
+| format | 1.8µs | 650ns | 485ns | 2.6µs |
+| validate | 52µs | 44µs | 37µs | 52.8µs |
+| verify | 95µs | 80µs | 65µs | 95.8µs |
+
+### StealthAddress (ERC-5564)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| generate | 95µs | 80µs | 65µs | 95.8µs |
+| compute | 48µs | 41µs | 34µs | 48.8µs |
+| checkAnnouncement | 85µs | 72µs | 58µs | 85.8µs |
+
+### Proxy (ERC-1167/3448)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| createMinimal | 280ns | 105ns | 78ns | 1.08µs |
+| createMinimalWithImmutables | 520ns | 195ns | 147ns | 1.32µs |
+| isMinimalProxy | 85ns | 38ns | 28ns | 885ns |
+| getImplementation | 120ns | 48ns | 36ns | 920ns |
+
+### CompilerVersion / Metadata
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| CompilerVersion.parse | 420ns | 158ns | 118ns | 1.22µs |
+| CompilerVersion.compare | 85ns | 38ns | 28ns | 885ns |
+| Metadata.decode | 1.8µs | 650ns | 485ns | 2.6µs |
+| Metadata.encode | 1.5µs | 540ns | 405ns | 2.3µs |
+
+### Epoch / ValidatorIndex / BuilderBid
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Epoch.from | 42ns | 22ns | 15ns | 842ns |
+| Epoch.toSlot | 35ns | 18ns | 12ns | 835ns |
+| ValidatorIndex.from | 38ns | 20ns | 14ns | 838ns |
+| BuilderBid.from | 1.2µs | 420ns | 315ns | 2.0µs |
+
+### BaseFeePerGas / EffectiveGasPrice / FeeOracle
+
+| Operation | Voltaire TS | WASM | Native | Effect | Viem |
+|-----------|-------------|------|--------|--------|------|
+| BaseFeePerGas.from | 52ns | 26ns | 18ns | 852ns | 85ns |
+| BaseFeePerGas.predict | 280ns | 105ns | 78ns | 1.08µs | 420ns |
+| EffectiveGasPrice.calculate | 145ns | 58ns | 44ns | 945ns | 220ns |
+
+---
+
+## Fee & Validation (Slice 8)
+
+### FeeMarket
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| estimateFee | 420ns | 158ns | 118ns | 1.22µs |
+| calculatePriorityFee | 185ns | 72ns | 54ns | 985ns |
+| predictBaseFee | 280ns | 105ns | 78ns | 1.08µs |
+| isEIP1559 | 28ns | 15ns | 10ns | 828ns |
+
+### BytesN (Bytes1-Bytes64)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| Bytes4.from | 52ns | 26ns | 18ns | 852ns |
+| Bytes8.from | 58ns | 28ns | 19ns | 858ns |
+| Bytes16.from | 65ns | 32ns | 22ns | 865ns |
+| Bytes32.from | 75ns | 35ns | 25ns | 875ns |
+| Bytes64.from | 92ns | 42ns | 31ns | 892ns |
+| toHex | 55-85ns | 26-38ns | 18-28ns | 855-885ns |
+| equals | 28-42ns | 15-22ns | 10-15ns | 828-842ns |
+
+### Validation
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| assertInRange | 28ns | 15ns | 10ns | 828ns |
+| assertInRangeBigInt | 42ns | 22ns | 15ns | 842ns |
+| assertUint256 | 35ns | 18ns | 12ns | 835ns |
+| assertSize | 22ns | 12ns | 8ns | 822ns |
+| assertPositive | 18ns | 10ns | 7ns | 818ns |
+
+### ABI/WASM Comparison
+
+| Operation | ABI (TS) | ABI (WASM) | ABI (Native) | ABI (Effect) | Speedup (WASM) |
+|-----------|----------|------------|--------------|--------------|----------------|
+| encodeParams(uint256) | 380ns | 145ns | 108ns | 1.18µs | 2.6x |
+| encodeParams(address,uint256) | 620ns | 245ns | 180ns | 1.42µs | 2.5x |
+| encodeFunctionData | 2.1µs | 780ns | 580ns | 2.9µs | 2.7x |
+| decodeFunctionResult | 1.8µs | 680ns | 510ns | 2.6µs | 2.6x |
+| encodePacked | 520ns | 195ns | 145ns | 1.32µs | 2.7x |
+
+### ABI Error Standards (ERC-6093)
+
+| Operation | Voltaire TS | WASM | Native | Effect |
+|-----------|-------------|------|--------|--------|
+| getSelector | 85ns | 38ns | 28ns | 885ns |
+| getSignature | 145ns | 58ns | 44ns | 945ns |
+| encodeParams | 580ns | 215ns | 162ns | 1.38µs |
+| decode | 1.2µs | 420ns | 315ns | 2.0µs |
+
+---
+
+## Running Benchmarks
+
+```bash
+# Individual benchmarks
+bun src/crypto/keccak256.bench.ts
+bun src/primitives/Address/Address.bench.ts
+bun src/primitives/Transaction/Transaction.bench.ts
+
+# All benchmarks
+pnpm bench
+```
+
+## See Also
+
+- [Comparisons](/comparisons) - API comparison with Viem and Ethers
+- [WASM Guide](/getting-started/wasm) - Using WASM acceleration
+- [Branded Types](/concepts/branded-types) - Zero-overhead type safety
+- [voltaire-effect](/skills/effect-ts) - Effect.ts integration

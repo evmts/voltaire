@@ -1,0 +1,71 @@
+---
+title: Handle BigInt in JavaScript
+description: Work with BigInt values safely in Ethereum applications using Voltaire primitives.
+---
+
+## The Problem
+
+JavaScript `BigInt` is required for Ethereum values (balances, gas prices, token amounts) that exceed `Number.MAX_SAFE_INTEGER` (2^53 - 1). Native JSON methods fail with BigInt.
+
+## Solution
+
+Use Voltaire's `Uint256` for type-safe BigInt operations:
+
+```typescript
+import { Uint256 } from '@voltaire/primitives/Uint'
+
+// Create from various inputs
+const fromBigInt = Uint256.from(1000000000000000000n)
+const fromNumber = Uint256.from(1000000)
+const fromHex = Uint256.from('0xde0b6b3a7640000')
+const fromString = Uint256.from('1000000000000000000')
+
+// Convert back
+const bigint = Uint256.toBigInt(fromBigInt)  // 1000000000000000000n
+const hex = Uint256.toHex(fromBigInt)        // '0xde0b6b3a7640000'
+const str = Uint256.toString(fromBigInt)     // '1000000000000000000'
+```
+
+## Arithmetic Operations
+
+```typescript
+import { Uint256 } from '@voltaire/primitives/Uint'
+
+const a = Uint256.from(100n)
+const b = Uint256.from(25n)
+
+const sum = Uint256.plus(a, b)         // 125n
+const diff = Uint256.minus(a, b)       // 75n
+const prod = Uint256.times(a, b)       // 2500n
+const quot = Uint256.dividedBy(a, b)   // 4n
+const rem = Uint256.modulo(a, b)       // 0n
+```
+
+## Safe Number Conversion
+
+```typescript
+import { Uint256 } from '@voltaire/primitives/Uint'
+
+const small = Uint256.from(1000n)
+const large = Uint256.from(10n ** 30n)
+
+// Safe for small values
+const num = Uint256.toNumber(small)  // 1000
+
+// Use toBigInt for large values - toNumber will overflow
+const big = Uint256.toBigInt(large)  // 10n ** 30n
+```
+
+## Comparisons
+
+```typescript
+import { Uint256 } from '@voltaire/primitives/Uint'
+
+const a = Uint256.from(100n)
+const b = Uint256.from(200n)
+
+Uint256.lessThan(a, b)           // true
+Uint256.greaterThanOrEqual(b, a) // true
+Uint256.equals(a, a)             // true
+Uint256.isZero(Uint256.ZERO)     // true
+```

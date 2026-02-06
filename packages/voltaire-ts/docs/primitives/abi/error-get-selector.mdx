@@ -1,0 +1,37 @@
+---
+title: Error.getSelector
+description: Compute the 4-byte selector for a custom error
+---
+
+## Overview
+
+`Error.getSelector` returns the first 4 bytes of the keccak256 hash of the error signature.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
+
+const InsufficientBalance = {
+  type: 'error',
+  name: 'InsufficientBalance',
+  inputs: [
+    { type: 'uint256', name: 'balance' },
+    { type: 'uint256', name: 'required' }
+  ]
+} as const;
+
+const selector = Abi.Error.getSelector(InsufficientBalance);
+const selectorHex = Hex.fromBytes(selector);
+```
+
+## Notes
+
+- Uses canonical types for signatures (e.g. `uint256`).
+- Error selectors are 4 bytes, like function selectors.
+
+## See Also
+
+- [getSignature](/primitives/abi/error/get-signature) - Error signature string
+- [Selectors](/primitives/abi/selectors) - Selector rules

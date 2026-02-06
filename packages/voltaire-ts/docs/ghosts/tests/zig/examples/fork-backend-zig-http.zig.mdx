@@ -1,0 +1,32 @@
+---
+title: '[Zig] examples/fork-backend-zig-http.zig'
+source: 'examples/fork-backend-zig-http.zig'
+---
+
+> Auto-generated from Zig tests in: examples/fork-backend-zig-http.zig
+
+### HttpRpcClient - init and deinit
+
+```zig
+test "HttpRpcClient - init and deinit" {
+    const allocator = std.testing.allocator;
+    var client = try HttpRpcClient.init(allocator, "http://localhost:8545");
+    defer client.deinit();
+
+    try std.testing.expectEqualStrings("http://localhost:8545", client.url);
+}
+```
+
+### createRpcVTable - creates valid vtable
+
+```zig
+test "createRpcVTable - creates valid vtable" {
+    const allocator = std.testing.allocator;
+    var client = try HttpRpcClient.init(allocator, "http://localhost:8545");
+    defer client.deinit();
+
+    const vtable = createRpcVTable(&client);
+    try std.testing.expect(vtable.ptr != null);
+    try std.testing.expect(vtable.vtable != null);
+}
+```

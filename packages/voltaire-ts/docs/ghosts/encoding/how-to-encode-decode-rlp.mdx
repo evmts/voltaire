@@ -1,0 +1,87 @@
+---
+title: Encode and Decode RLP
+description: Recursive Length Prefix encoding and decoding for Ethereum data structures.
+---
+
+## Encode Bytes
+
+```ts
+import { Rlp } from '@voltaire/primitives/Rlp'
+
+const data = new Uint8Array([1, 2, 3])
+const encoded = Rlp.encode(Rlp(data))
+// Uint8Array with RLP-encoded bytes
+```
+
+## Encode List
+
+```ts
+import { Rlp } from '@voltaire/primitives/Rlp'
+
+const list = [
+  new Uint8Array([1, 2]),
+  new Uint8Array([3, 4, 5])
+]
+const encoded = Rlp.encodeList(list.map(Rlp))
+```
+
+## Encode Array (Shorthand)
+
+```ts
+import { Rlp } from '@voltaire/primitives/Rlp'
+
+// Encode array of byte arrays
+const items = [
+  new Uint8Array([0x01]),
+  new Uint8Array([0x02, 0x03])
+]
+const encoded = Rlp.encodeArray(items)
+```
+
+## Decode
+
+```ts
+import { Rlp } from '@voltaire/primitives/Rlp'
+
+const encoded = new Uint8Array([0xc8, 0x83, 0x01, 0x02, 0x03, 0x83, 0x04, 0x05, 0x06])
+const decoded = Rlp.decode(encoded)
+// Returns BrandedRlp structure
+```
+
+## Decode to Array
+
+```ts
+import { Rlp } from '@voltaire/primitives/Rlp'
+
+const encoded = /* RLP-encoded list */
+const items = Rlp.decodeArray(encoded)
+// Returns Uint8Array[]
+```
+
+## Encode Transaction-like Object
+
+```ts
+import { Rlp } from '@voltaire/primitives/Rlp'
+import * as Hex from '@voltaire/primitives/Hex'
+
+// Legacy transaction fields
+const fields = [
+  Hex.toBytes('0x09'),           // nonce
+  Hex.toBytes('0x04a817c800'),   // gasPrice
+  Hex.toBytes('0x5208'),         // gasLimit
+  Hex.toBytes('0x...'),          // to (20 bytes)
+  Hex.toBytes('0x0de0b6b3a7640000'), // value
+  new Uint8Array(0),             // data
+]
+const encoded = Rlp.encodeArray(fields)
+```
+
+## Check Canonical Encoding
+
+```ts
+import { Rlp } from '@voltaire/primitives/Rlp'
+
+const encoded = /* some RLP data */
+const isCanonical = Rlp.isCanonical(encoded)
+// true if encoding is minimal (no leading zeros)
+```

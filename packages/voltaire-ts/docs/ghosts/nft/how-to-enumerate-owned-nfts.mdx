@@ -1,0 +1,97 @@
+---
+title: Enumerate Owned NFTs
+description: List all NFTs owned by an address using ERC721Enumerable or Transfer event scanning.
+---
+
+## Goal
+
+Given an ERC721 contract and owner address, list all token IDs owned.
+
+Return as:
+
+```
+TOKENS: [1, 42, 99, ...]
+```
+
+## ERC721Enumerable (if supported)
+
+```ts
+import { Contract } from '@voltaire/contract'
+
+const ERC721_ENUMERABLE_ABI = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }]
+  },
+  {
+    type: 'function',
+    name: 'tokenOfOwnerByIndex',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'index', type: 'uint256' }
+    ],
+    outputs: [{ name: '', type: 'uint256' }]
+  }
+] as const
+
+const nft = Contract({
+  address: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+  abi: ERC721_ENUMERABLE_ABI,
+  provider
+})
+
+const owner = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+const balance = await nft.read.balanceOf(owner)
+
+const tokenIds: bigint[] = []
+for (let i = 0n; i < balance; i++) {
+  const tokenId = await nft.read.tokenOfOwnerByIndex(owner, i)
+  tokenIds.push(tokenId)
+}
+
+console.log(`TOKENS: [${tokenIds.join(', ')}]`)
+```
+
+## Transfer Event Scanning (any ERC721)
+
+```ts
+import { Contract } from '@voltaire/contract'
+import * as Address from '@voltaire/primitives/Address'
+
+const ERC721_ABI = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'tokenId', type: 'uint256', indexed: true }
+    ]
+  }
+] as const
+
+const nft = Contract({
+  address: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+  abi: ERC721_ABI,
+  provider
+})
+
+const owner = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+const owned = new Set<string>()
+
+// Tokens transferred TO owner
+for await (const log of nft.events.Transfer({ to: owner })) {
+  owned.add(log.args.tokenId.toString())
+}
+
+// Tokens transferred FROM owner
+for await (const log of nft.events.Transfer({ from: owner })) {
+  owned.delete(log.args.tokenId.toString())
+}
+
+console.log(`TOKENS: [${[...owned].join(', ')}]`)
+```

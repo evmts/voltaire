@@ -1,0 +1,119 @@
+---
+title: "BlockNumber"
+description: "Block height in the blockchain"
+---
+
+## Overview
+
+BlockNumber is a branded `bigint` type representing a block's height in the blockchain. Block numbers start at 0 (genesis) and increment by 1 for each new block.
+
+```typescript
+import * as BlockNumber from '@tevm/primitives/BlockNumber'
+
+const blockNum = BlockNumber.from(19000000n)
+```
+
+## Type Definition
+
+```typescript
+type BlockNumberType = bigint & {
+  readonly [brand]: "BlockNumber";
+}
+```
+
+## Creating BlockNumbers
+
+### from
+
+Create from number or bigint.
+
+```typescript
+// From bigint
+const bn1 = BlockNumber.from(19000000n)
+
+// From number
+const bn2 = BlockNumber.from(19000000)
+
+// Zero (genesis block)
+const genesis = BlockNumber.from(0n)
+```
+
+**Validation**: Must be non-negative.
+
+## Converting BlockNumbers
+
+### toBigInt
+
+Convert to bigint (zero-cost).
+
+```typescript
+const num = BlockNumber.toBigInt(blockNum)
+// 19000000n
+```
+
+### toNumber
+
+Convert to number (unsafe for large values).
+
+```typescript
+const num = BlockNumber.toNumber(blockNum)
+// 19000000
+```
+
+<Warning>
+`toNumber` may lose precision for block numbers exceeding `Number.MAX_SAFE_INTEGER` (2^53-1). Use `toBigInt` for safety.
+</Warning>
+
+## Comparing BlockNumbers
+
+### equals
+
+Check equality.
+
+```typescript
+const a = BlockNumber.from(100n)
+const b = BlockNumber.from(100n)
+
+if (BlockNumber.equals(a, b)) {
+  console.log('Block numbers are equal')
+}
+```
+
+## Common Use Cases
+
+### Latest Block Tracking
+
+```typescript
+let latestBlock = BlockNumber.from(0n)
+
+function updateLatestBlock(newBlock: BlockNumberType) {
+  if (newBlock > latestBlock) {
+    latestBlock = newBlock
+  }
+}
+```
+
+### Block Range Queries
+
+```typescript
+const fromBlock = BlockNumber.from(19000000n)
+const toBlock = BlockNumber.from(19000100n)
+
+// Query logs in range
+const logs = await eth.getLogs({
+  fromBlock,
+  toBlock,
+  address: contractAddress
+})
+```
+
+## Errors
+
+**InvalidBlockNumberError**: Invalid value (negative, wrong type).
+
+## See Also
+
+- [BlockNumber (Effect)](https://voltaire-effect.tevm.sh/primitives/block-number) - Effect.ts integration with Schema validation
+- [BlockHash](/primitives/block-hash) - Block identifier
+- [Receipt](/primitives/receipt) - Transaction receipts
+- [EventLog](/primitives/eventlog) - Event logs

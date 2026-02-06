@@ -1,0 +1,231 @@
+---
+title: '[Zig] src/primitives/EffectiveGasPrice/EffectiveGasPrice.zig'
+source: 'src/primitives/EffectiveGasPrice/EffectiveGasPrice.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/EffectiveGasPrice/EffectiveGasPrice.zig
+
+### EffectiveGasPrice: from and toU64
+
+```zig
+test "EffectiveGasPrice: from and toU64" {
+    const price = EffectiveGasPrice.from(27_000_000_000); // 27 gwei in wei
+    try testing.expectEqual(@as(u64, 27_000_000_000), try price.toU64());
+}
+```
+
+### EffectiveGasPrice: fromGwei
+
+```zig
+test "EffectiveGasPrice: fromGwei" {
+    const price = EffectiveGasPrice.fromGwei(27);
+    try testing.expectEqual(@as(u64, 27_000_000_000), try price.toU64());
+}
+```
+
+### EffectiveGasPrice: toGwei
+
+```zig
+test "EffectiveGasPrice: toGwei" {
+    const price = EffectiveGasPrice.from(27_000_000_000);
+    try testing.expectEqual(@as(u64, 27), try price.toGweiU64());
+}
+```
+
+### EffectiveGasPrice: toGwei truncates
+
+```zig
+test "EffectiveGasPrice: toGwei truncates" {
+    const price = EffectiveGasPrice.from(27_500_000_000); // 27.5 gwei
+    try testing.expectEqual(@as(u64, 27), try price.toGweiU64());
+}
+```
+
+### EffectiveGasPrice: toWei identity
+
+```zig
+test "EffectiveGasPrice: toWei identity" {
+    const price = EffectiveGasPrice.from(12345);
+    const wei = price.toWei();
+    try testing.expect(wei.eq(EffectiveGasPrice.U256.from_u64(12345)));
+}
+```
+
+### EffectiveGasPrice: fromBytes and toBytes roundtrip
+
+```zig
+test "EffectiveGasPrice: fromBytes and toBytes roundtrip" {
+    const price = EffectiveGasPrice.fromGwei(50);
+    const bytes = price.toBytes();
+    const restored = EffectiveGasPrice.fromBytes(bytes);
+    try testing.expect(price.equals(restored));
+}
+```
+
+### EffectiveGasPrice: calculate with sufficient max fee
+
+```zig
+test "EffectiveGasPrice: calculate with sufficient max fee" {
+    // base_fee = 25 gwei, max_fee = 100 gwei, priority = 2 gwei
+    // effective = 25 + 2 = 27 gwei
+    const result = EffectiveGasPrice.calculateFromU64(
+        25_000_000_000, // 25 gwei base
+        100_000_000_000, // 100 gwei max
+        2_000_000_000, // 2 gwei priority
+    );
+    try testing.expectEqual(@as(u64, 27_000_000_000), try result.effective.toU64());
+    try testing.expectEqual(@as(u64, 2_000_000_000), result.miner_fee);
+}
+```
+
+### EffectiveGasPrice: calculate with limited max fee
+
+```zig
+test "EffectiveGasPrice: calculate with limited max fee" {
+    // base_fee = 25 gwei, max_fee = 27 gwei, priority = 5 gwei
+    // max_allowed_priority = 27 - 25 = 2 gwei
+    // effective = 25 + 2 = 27 gwei (capped)
+    const result = EffectiveGasPrice.calculateFromU64(
+        25_000_000_000, // 25 gwei base
+        27_000_000_000, // 27 gwei max (tight)
+        5_000_000_000, // 5 gwei priority (more than available)
+    );
+    try testing.expectEqual(@as(u64, 27_000_000_000), try result.effective.toU64());
+    try testing.expectEqual(@as(u64, 2_000_000_000), result.miner_fee);
+}
+```
+
+### EffectiveGasPrice: calculate with max fee below base fee
+
+```zig
+test "EffectiveGasPrice: calculate with max fee below base fee" {
+    // Tx would be rejected, but returns max_fee with 0 miner
+    const result = EffectiveGasPrice.calculateFromU64(
+        30_000_000_000, // 30 gwei base
+        25_000_000_000, // 25 gwei max (below base)
+        2_000_000_000, // 2 gwei priority
+    );
+    try testing.expectEqual(@as(u64, 25_000_000_000), try result.effective.toU64());
+    try testing.expectEqual(@as(u64, 0), result.miner_fee);
+}
+```
+
+### EffectiveGasPrice: calculate with zero priority fee
+
+```zig
+test "EffectiveGasPrice: calculate with zero priority fee" {
+    const result = EffectiveGasPrice.calculateFromU64(
+        25_000_000_000, // 25 gwei base
+        100_000_000_000, // 100 gwei max
+        0, // 0 priority
+    );
+    try testing.expectEqual(@as(u64, 25_000_000_000), try result.effective.toU64());
+    try testing.expectEqual(@as(u64, 0), result.miner_fee);
+}
+```
+
+### EffectiveGasPrice: calculate with exact base fee match
+
+```zig
+test "EffectiveGasPrice: calculate with exact base fee match" {
+    const result = EffectiveGasPrice.calculateFromU64(
+        25_000_000_000, // 25 gwei base
+        25_000_000_000, // 25 gwei max (exactly base)
+        2_000_000_000, // 2 gwei priority (can't be paid)
+    );
+    try testing.expectEqual(@as(u64, 25_000_000_000), try result.effective.toU64());
+    try testing.expectEqual(@as(u64, 0), result.miner_fee);
+}
+```
+
+### EffectiveGasPrice: compare less than
+
+```zig
+test "EffectiveGasPrice: compare less than" {
+    const price1 = EffectiveGasPrice.fromGwei(25);
+    const price2 = EffectiveGasPrice.fromGwei(30);
+    try testing.expectEqual(std.math.Order.lt, price1.compare(price2));
+}
+```
+
+### EffectiveGasPrice: compare greater than
+
+```zig
+test "EffectiveGasPrice: compare greater than" {
+    const price1 = EffectiveGasPrice.fromGwei(30);
+    const price2 = EffectiveGasPrice.fromGwei(25);
+    try testing.expectEqual(std.math.Order.gt, price1.compare(price2));
+}
+```
+
+### EffectiveGasPrice: compare equal
+
+```zig
+test "EffectiveGasPrice: compare equal" {
+    const price1 = EffectiveGasPrice.fromGwei(27);
+    const price2 = EffectiveGasPrice.fromGwei(27);
+    try testing.expectEqual(std.math.Order.eq, price1.compare(price2));
+}
+```
+
+### EffectiveGasPrice: equals
+
+```zig
+test "EffectiveGasPrice: equals" {
+    const price1 = EffectiveGasPrice.fromGwei(27);
+    const price2 = EffectiveGasPrice.fromGwei(27);
+    const price3 = EffectiveGasPrice.fromGwei(30);
+    try testing.expect(price1.equals(price2));
+    try testing.expect(!price1.equals(price3));
+}
+```
+
+### EffectiveGasPrice: isZero
+
+```zig
+test "EffectiveGasPrice: isZero" {
+    const zero = EffectiveGasPrice.from(0);
+    const nonzero = EffectiveGasPrice.fromGwei(1);
+    try testing.expect(zero.isZero());
+    try testing.expect(!nonzero.isZero());
+}
+```
+
+### EffectiveGasPrice: fromGwei roundtrip
+
+```zig
+test "EffectiveGasPrice: fromGwei roundtrip" {
+    const gwei_values = [_]u64{ 1, 10, 25, 27, 50, 100, 200 };
+    for (gwei_values) |gwei| {
+        const price = EffectiveGasPrice.fromGwei(gwei);
+        try testing.expectEqual(gwei, try price.toGweiU64());
+    }
+}
+```
+
+### EffectiveGasPrice: zero value
+
+```zig
+test "EffectiveGasPrice: zero value" {
+    const price = EffectiveGasPrice.from(0);
+    try testing.expectEqual(@as(u64, 0), try price.toU64());
+    try testing.expectEqual(@as(u64, 0), try price.toGweiU64());
+    try testing.expect(price.isZero());
+}
+```
+
+### EffectiveGasPrice: typical mainnet values
+
+```zig
+test "EffectiveGasPrice: typical mainnet values" {
+    // Typical scenario: 20 gwei base, 100 gwei max, 2 gwei priority
+    const result = EffectiveGasPrice.calculateFromU64(
+        20_000_000_000, // 20 gwei base
+        100_000_000_000, // 100 gwei max
+        2_000_000_000, // 2 gwei priority
+    );
+    // effective = 20 + 2 = 22 gwei
+    try testing.expectEqual(@as(u64, 22), try result.effective.toGweiU64());
+    try testing.expectEqual(@as(u64, 2_000_000_000), result.miner_fee);
+}
+```

@@ -1,0 +1,176 @@
+---
+title: '[TS/JS] docs/skills/gas-estimation.test.ts'
+source: 'docs/skills/gas-estimation.test.ts'
+---
+
+> Auto-generated from test file: docs/skills/gas-estimation.test.ts
+
+```typescript
+/**
+ * Tests for gas estimation guide
+ * @see /docs/guides/gas-estimation.mdx
+ *
+ * Note: The guide mostly covers Provider interactions (eth_estimateGas, etc.)
+ * which require network access. These tests cover the primitives that ARE available:
+ * - FeeMarket calculations
+ * - Gas-related primitives
+ *
+ * API DISCREPANCIES:
+ * - The guide references '@voltaire/provider' which doesn't exist as a module export
+ * - The guide references '@voltaire/primitives/GasEstimate' and '@voltaire/primitives/FeeMarket'
+ *   These need to be checked for actual availability
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Gas Estimation Guide", () => {
+	it("should work with Gas primitive", async () => {
+		const Gas = await import("../../src/primitives/Gas/index.js");
+
+		// Gas module should exist
+		expect(Gas).toBeDefined();
+
+		// Use GasLimit namespace
+		expect(Gas.GasLimit).toBeDefined();
+		expect(Gas.GasPrice).toBeDefined();
+	});
+
+	it("should work with BaseFeePerGas primitive", async () => {
+		const BaseFeePerGas = await import(
+			"../../src/primitives/BaseFeePerGas/index.js"
+		);
+
+		// Create a base fee value
+		const baseFee = BaseFeePerGas.from(30_000_000_000n); // 30 gwei
+		expect(BaseFeePerGas.toBigInt(baseFee)).toBe(30_000_000_000n);
+	});
+
+	it("should work with MaxFeePerGas primitive", async () => {
+		const MaxFeePerGas = await import(
+			"../../src/primitives/MaxFeePerGas/index.js"
+		);
+
+		// Create max fee value
+		const maxFee = MaxFeePerGas.from(50_000_000_000n); // 50 gwei
+		expect(MaxFeePerGas.toBigInt(maxFee)).toBe(50_000_000_000n);
+	});
+
+	it("should work with MaxPriorityFeePerGas primitive", async () => {
+		const MaxPriorityFeePerGas = await import(
+			"../../src/primitives/MaxPriorityFeePerGas/index.js"
+		);
+
+		// Create priority fee value
+		const priorityFee = MaxPriorityFeePerGas.from(2_000_000_000n); // 2 gwei
+		expect(MaxPriorityFeePerGas.toBigInt(priorityFee)).toBe(2_000_000_000n);
+	});
+
+	it("should work with GasUsed primitive", async () => {
+		const GasUsed = await import("../../src/primitives/GasUsed/index.js");
+
+		const gasUsed = GasUsed.from(65000n);
+		expect(GasUsed.toBigInt(gasUsed)).toBe(65000n);
+	});
+
+	it("should work with EffectiveGasPrice primitive", async () => {
+		const EffectiveGasPrice = await import(
+			"../../src/primitives/EffectiveGasPrice/index.js"
+		);
+
+		const effectivePrice = EffectiveGasPrice.from(32_000_000_000n);
+		expect(EffectiveGasPrice.toBigInt(effectivePrice)).toBe(32_000_000_000n);
+	});
+
+	it("should calculate gas buffer as shown in guide", () => {
+		// From the guide: gasLimit = gasEstimate * 120n / 100n
+		const gasEstimate = 21000n;
+		const gasWithBuffer = (gasEstimate * 120n) / 100n; // 20% buffer
+
+		expect(gasWithBuffer).toBe(25200n);
+	});
+
+	it("should calculate EIP-1559 effective fee", () => {
+		// From the guide: actual fee = min(maxFeePerGas, baseFee + maxPriorityFeePerGas)
+		const baseFee = 30_000_000_000n; // 30 gwei
+		const maxPriorityFeePerGas = 2_000_000_000n; // 2 gwei
+		const maxFeePerGas = 50_000_000_000n; // 50 gwei
+
+		const effectiveFee =
+			maxFeePerGas < baseFee + maxPriorityFeePerGas
+				? maxFeePerGas
+				: baseFee + maxPriorityFeePerGas;
+
+		expect(effectiveFee).toBe(32_000_000_000n); // 32 gwei
+	});
+
+	it("should calculate next base fee based on utilization", () => {
+		// From the guide: base fee adjusts up to 12.5% per block
+		// Block 100% full: base fee increases 12.5%
+		// Block 50% full (target): base fee unchanged
+		// Block 0% full: base fee decreases 12.5%
+
+		const parentBaseFee = 30_000_000_000n;
+		const gasLimit = 30_000_000n;
+
+		// 100% full block
+		const gasUsedFull = gasLimit;
+		const targetGasUsed = gasLimit / 2n;
+		const gasUsedDelta = gasUsedFull - targetGasUsed;
+		const baseFeeMaxChangeDenominator = 8n; // 12.5% = 1/8
+
+		// Calculate next base fee for full block
+		const nextBaseFeeFull =
+			parentBaseFee +
+			(parentBaseFee * gasUsedDelta) /
+				targetGasUsed /
+				baseFeeMaxChangeDenominator;
+
+		// Should increase by ~12.5%
+		expect(nextBaseFeeFull).toBeGreaterThan(parentBaseFee);
+		expect(nextBaseFeeFull).toBeLessThanOrEqual(
+			parentBaseFee + parentBaseFee / 8n,
+		);
+
+		// 50% full block (target) - should stay same
+		const gasUsedTarget = targetGasUsed;
+		const gasUsedDeltaTarget = gasUsedTarget - targetGasUsed;
+		const nextBaseFeeTarget =
+			parentBaseFee +
+			(parentBaseFee * gasUsedDeltaTarget) /
+				targetGasUsed /
+				baseFeeMaxChangeDenominator;
+
+		expect(nextBaseFeeTarget).toBe(parentBaseFee);
+	});
+
+	it("should calculate transaction cost", () => {
+		// From guide: complete transaction cost estimation
+		const gasLimit = 25200n; // with 20% buffer
+		const baseFee = 30_000_000_000n;
+		const priorityFee = 2_000_000_000n;
+
+		const minCost = gasLimit * baseFee;
+		const expectedCost = gasLimit * (baseFee + priorityFee);
+		const maxCost = gasLimit * (baseFee * 2n + priorityFee);
+
+		expect(minCost).toBe(756_000_000_000_000n); // in wei
+		expect(expectedCost).toBe(806_400_000_000_000n);
+		expect(maxCost).toBe(1_562_400_000_000_000n);
+
+		// Convert to ETH
+		const expectedCostEth = Number(expectedCost) / 1e18;
+		expect(expectedCostEth).toBeCloseTo(0.0008064, 6);
+	});
+
+	it("should calculate blob fee (EIP-4844)", () => {
+		// From guide: blob fee calculation
+		const blobBaseFee = 1_000_000_000n; // 1 gwei per blob gas
+		const BLOB_GAS_PER_BLOB = 131072n;
+		const blobCount = 3n;
+
+		const blobCost = blobBaseFee * BLOB_GAS_PER_BLOB * blobCount;
+
+		expect(blobCost).toBe(393_216_000_000_000n);
+	});
+});
+
+```

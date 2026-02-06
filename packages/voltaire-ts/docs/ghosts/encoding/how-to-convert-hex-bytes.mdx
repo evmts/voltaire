@@ -1,0 +1,59 @@
+---
+title: Convert Between Hex and Bytes
+description: Convert hex strings to byte arrays and vice versa using Voltaire primitives.
+---
+
+## Hex to Bytes
+
+```ts
+import * as Hex from '@voltaire/primitives/Hex'
+
+const hex = '0x1234abcd'
+const bytes = Hex.toBytes(hex)
+// Uint8Array([0x12, 0x34, 0xab, 0xcd])
+```
+
+## Bytes to Hex
+
+```ts
+import * as Hex from '@voltaire/primitives/Hex'
+
+const bytes = new Uint8Array([0x12, 0x34, 0xab, 0xcd])
+const hex = Hex.fromBytes(bytes)
+// '0x1234abcd'
+```
+
+## Round-trip
+
+```ts
+import * as Hex from '@voltaire/primitives/Hex'
+
+const original = '0xdeadbeef'
+const bytes = Hex.toBytes(original)
+const restored = Hex.fromBytes(bytes)
+// restored === original
+```
+
+## From BigInt
+
+```ts
+import * as Hex from '@voltaire/primitives/Hex'
+
+const hex = Hex.fromBigInt(255n)  // '0xff'
+const big = Hex.toBigInt('0xff')  // 255n
+```
+
+## Error Handling
+
+```ts
+import * as Hex from '@voltaire/primitives/Hex'
+
+// Missing prefix throws InvalidFormatError
+Hex.toBytes('1234') // Error: missing 0x prefix
+
+// Odd length throws InvalidLengthError
+Hex.toBytes('0x123') // Error: odd number of digits
+
+// Invalid chars throws InvalidFormatError
+Hex.toBytes('0xgg') // Error: invalid hex character
+```

@@ -1,0 +1,426 @@
+---
+title: Send ETH & Tokens
+description: Transfer ETH and ERC20 tokens programmatically
+---
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+# Send ETH & Tokens
+
+This guide covers sending ETH to addresses, building and signing transactions, sending ERC20 tokens, and checking transaction status.
+
+## Prerequisites
+
+- A provider (EIP-1193 compatible)
+- Private key for signing (for raw transactions)
+- Some ETH for gas
+
+## Sending ETH
+
+### Using eth_sendTransaction (Wallet Provider)
+
+If you're using a wallet provider (MetaMask, WalletConnect), the wallet handles signing:
+
+```typescript
+import { HttpProvider } from '@voltaire/provider';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+// eth_sendTransaction - wallet signs automatically
+const txHash = await provider.request({
+  method: 'eth_sendTransaction',
+  params: [{
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+    to: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    value: '0xDE0B6B3A7640000', // 1 ETH in hex (1e18 wei)
+  }]
+});
+
+console.log('Transaction hash:', txHash);
+```
+
+### Building and Signing Raw Transactions
+
+For programmatic signing without a wallet:
+
+```typescript
+import { PrivateKeySignerImpl } from '@voltaire/crypto/signers/private-key-signer';
+import * as Transaction from '@voltaire/primitives/Transaction';
+import { Address } from '@voltaire/primitives/Address';
+import { HttpProvider } from '@voltaire/provider';
+
+const provider = new HttpProvider('https://eth.llamarpc.com');
+
+// Create signer from private key
+const signer = PrivateKeySignerImpl.fromPrivateKey({
+  privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+});
+
+// Get current nonce
+const nonce = await provider.request({
+  method: 'eth_getTransactionCount',
+  params: [signer.address, 'pending']
+});
+
+// Get gas price (or use EIP-1559 fees)
+const gasPrice = await provider.request({
+  method: 'eth_gasPrice',
+  params: []
+});
+
+// Build EIP-1559 transaction
+const tx = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: BigInt(nonce),
+  maxPriorityFeePerGas: 1_000_000_000n,  // 1 Gwei
+  maxFeePerGas: 50_000_000_000n,         // 50 Gwei
+  gasLimit: 21_000n,                      // Standard ETH transfer
+  to: Address('0x5FbDB2315678afecb367f032d93F642f64180aa3'),
+  value: 1_000_000_000_000_000_000n,     // 1 ETH in wei
+  data: new Uint8Array(),
+  accessList: [],
+};
+
+// Sign transaction
+const signedTx = await signer.signTransaction(tx);
+
+// Serialize to bytes
+const serialized = Transaction.serialize(signedTx);
+
+// Convert to hex string for RPC
+const hexTx = '0x' + Array.from(serialized)
+  .map(b => b.toString(16).padStart(2, '0'))
+  .join('');
+
+// Submit to network
+const txHash = await provider.request({
+  method: 'eth_sendRawTransaction',
+  params: [hexTx]
+});
+
+console.log('Transaction submitted:', txHash);
+```
+
+### Using Denomination Helpers
+
+Convert between ETH, Gwei, and Wei:
+
+```typescript
+import * as Ether from '@voltaire/primitives/Denomination/Ether';
+import * as Gwei from '@voltaire/primitives/Denomination/Gwei';
+
+// Create values in user-friendly units
+const valueEther = Ether.from(1n);              // 1 ETH
+const valueWei = Ether.toWei(valueEther);       // 1_000_000_000_000_000_000n
+
+const gasPriceGwei = Gwei.from(50n);            // 50 Gwei
+const gasPriceWei = Gwei.toWei(gasPriceGwei);   // 50_000_000_000n
+
+const tx = {
+  // ...
+  value: valueWei,
+  maxFeePerGas: gasPriceWei,
+};
+```
+
+## Sending ERC20 Tokens
+
+### Using Contract Module
+
+The Contract module provides type-safe token transfers:
+
+```typescript
+import { Contract } from '@voltaire/contract';
+import * as S from 'effect/Schema';
+import * as AbiSchema from 'voltaire-effect/primitives/Abi';
+
+const erc20Abi = S.decodeUnknownSync(AbiSchema.fromArray)([
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ type: 'address', name: 'account' }],
+    outputs: [{ type: 'uint256', name: '' }]
+  },
+  {
+    type: 'function',
+    name: 'decimals',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint8', name: '' }]
+  },
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value', indexed: false }
+    ]
+  }
+]);
+
+// Create contract instance
+const usdc = Contract({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  abi: erc20Abi,
+  provider
+});
+
+// Check balance first
+const balance = await usdc.read.balanceOf('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const decimals = await usdc.read.decimals();
+
+console.log(`Balance: ${balance / 10n ** BigInt(decimals)} USDC`);
+
+// Transfer tokens
+const recipient = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+const amount = 100_000_000n; // 100 USDC (6 decimals)
+
+const txHash = await usdc.write.transfer(recipient, amount);
+console.log('Transfer submitted:', txHash);
+```
+
+### With Gas Estimation
+
+Estimate gas before sending to avoid failures:
+
+```typescript
+// Estimate gas first
+const gasEstimate = await usdc.estimateGas.transfer(recipient, amount);
+
+// Add 20% buffer
+const gasLimit = gasEstimate * 120n / 100n;
+
+// Send with explicit gas limit
+const txHash = await usdc.write.transfer(recipient, amount, {
+  gas: gasLimit
+});
+```
+
+### Manual Token Transfer
+
+Build the transaction manually for more control:
+
+```typescript
+import * as Abi from '@voltaire/primitives/Abi';
+
+// Encode transfer calldata
+const transferSelector = '0xa9059cbb'; // transfer(address,uint256)
+const calldata = usdc.abi.encode('transfer', [recipient, amount]);
+
+// Build transaction
+const tx = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: BigInt(await provider.request({
+    method: 'eth_getTransactionCount',
+    params: [signer.address, 'pending']
+  })),
+  maxPriorityFeePerGas: 1_000_000_000n,
+  maxFeePerGas: 50_000_000_000n,
+  gasLimit: 65_000n,  // Token transfers typically use ~65k gas
+  to: Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+  value: 0n,
+  data: calldata,
+  accessList: [],
+};
+
+// Sign and submit
+const signedTx = await signer.signTransaction(tx);
+const serialized = Transaction.serialize(signedTx);
+const hexTx = '0x' + Array.from(serialized)
+  .map(b => b.toString(16).padStart(2, '0'))
+  .join('');
+
+const txHash = await provider.request({
+  method: 'eth_sendRawTransaction',
+  params: [hexTx]
+});
+```
+
+## Checking Transaction Status
+
+### Get Transaction Receipt
+
+```typescript
+// Poll for receipt
+async function waitForReceipt(txHash: string, maxAttempts = 60) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const receipt = await provider.request({
+      method: 'eth_getTransactionReceipt',
+      params: [txHash]
+    });
+
+    if (receipt) {
+      return receipt;
+    }
+
+    // Wait 1 second between polls
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  throw new Error('Transaction not mined after timeout');
+}
+
+const receipt = await waitForReceipt(txHash);
+
+// Check status (1 = success, 0 = reverted)
+if (receipt.status === '0x1') {
+  console.log('Transaction succeeded!');
+  console.log('Block number:', parseInt(receipt.blockNumber, 16));
+  console.log('Gas used:', parseInt(receipt.gasUsed, 16));
+} else {
+  console.log('Transaction reverted');
+}
+```
+
+### Get Transaction Details
+
+```typescript
+// Get full transaction details
+const tx = await provider.request({
+  method: 'eth_getTransactionByHash',
+  params: [txHash]
+});
+
+if (tx) {
+  console.log('From:', tx.from);
+  console.log('To:', tx.to);
+  console.log('Value:', BigInt(tx.value));
+  console.log('Gas price:', BigInt(tx.gasPrice));
+
+  if (tx.blockNumber) {
+    console.log('Confirmed in block:', parseInt(tx.blockNumber, 16));
+  } else {
+    console.log('Transaction is pending');
+  }
+}
+```
+
+### Wait for Confirmations
+
+```typescript
+async function waitForConfirmations(txHash: string, confirmations = 3) {
+  // First, wait for receipt
+  const receipt = await waitForReceipt(txHash);
+  const txBlockNumber = BigInt(receipt.blockNumber);
+
+  // Then wait for additional blocks
+  while (true) {
+    const currentBlock = await provider.request({
+      method: 'eth_blockNumber',
+      params: []
+    });
+
+    const currentBlockNumber = BigInt(currentBlock);
+    const confirmed = currentBlockNumber - txBlockNumber + 1n;
+
+    if (confirmed >= BigInt(confirmations)) {
+      console.log(`Transaction confirmed with ${confirmed} confirmations`);
+      return receipt;
+    }
+
+    console.log(`${confirmed}/${confirmations} confirmations...`);
+    await new Promise(resolve => setTimeout(resolve, 12000)); // ~1 block
+  }
+}
+
+await waitForConfirmations(txHash, 3);
+```
+
+## Error Handling
+
+Handle common transaction failures:
+
+```typescript
+try {
+  const txHash = await usdc.write.transfer(recipient, amount);
+} catch (error) {
+  // Check error type
+  if (error.code === 4001) {
+    console.log('User rejected transaction');
+  } else if (error.code === -32000) {
+    // Execution error
+    if (error.message.includes('insufficient funds')) {
+      console.log('Not enough ETH for gas');
+    } else if (error.message.includes('nonce too low')) {
+      console.log('Nonce already used - transaction may be duplicate');
+    } else if (error.message.includes('replacement transaction underpriced')) {
+      console.log('Gas price too low to replace pending transaction');
+    }
+  } else {
+    console.log('Transaction failed:', error.message);
+  }
+}
+```
+
+## Transaction Types
+
+Voltaire supports all Ethereum transaction types:
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| Legacy (0) | Original format with `gasPrice` | Compatibility with older networks |
+| EIP-2930 (1) | Access lists | Reduce gas with declared storage |
+| EIP-1559 (2) | Dynamic fees | Recommended for mainnet |
+| EIP-4844 (3) | Blob transactions | L2 data availability |
+| EIP-7702 (4) | EOA delegation | Account abstraction |
+
+### Legacy Transaction
+
+```typescript
+const legacyTx = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 50_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address('0x...'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  v: 0n,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+```
+
+### EIP-1559 Transaction (Recommended)
+
+```typescript
+const eip1559Tx = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1_000_000_000n,   // Tip to miner
+  maxFeePerGas: 50_000_000_000n,          // Max total fee
+  gasLimit: 21_000n,
+  to: Address('0x...'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+```
+
+## Related
+
+- [Contract Interaction](/guides/contract-interaction) - Read and write smart contracts
+- [Event Listening](/guides/event-listening) - Monitor Transfer events
+- [Transaction](/primitives/transaction) - Transaction primitive reference
+- [Denomination](/primitives/denomination) - Wei, Gwei, Ether conversions
+- [JSONRPCProvider](/jsonrpc-provider) - Provider API reference

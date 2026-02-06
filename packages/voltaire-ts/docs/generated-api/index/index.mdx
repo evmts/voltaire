@@ -1,0 +1,7946 @@
+---
+description: Auto-generated TypeScript API documentation from source code
+title: Generated API Reference
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / index
+
+# index
+
+## Namespaces
+
+- [BrandedAddress](namespaces/BrandedAddress/index.mdx)
+- [BrandedBase64](namespaces/BrandedBase64.mdx)
+- [BrandedBytes](namespaces/BrandedBytes.mdx)
+- [BrandedBytes1](namespaces/BrandedBytes1.mdx)
+- [BrandedBytes16](namespaces/BrandedBytes16.mdx)
+- [BrandedBytes2](namespaces/BrandedBytes2.mdx)
+- [BrandedBytes3](namespaces/BrandedBytes3.mdx)
+- [BrandedBytes32](namespaces/BrandedBytes32.mdx)
+- [BrandedBytes4](namespaces/BrandedBytes4.mdx)
+- [BrandedBytes5](namespaces/BrandedBytes5.mdx)
+- [BrandedBytes6](namespaces/BrandedBytes6.mdx)
+- [BrandedBytes64](namespaces/BrandedBytes64.mdx)
+- [BrandedBytes7](namespaces/BrandedBytes7.mdx)
+- [BrandedBytes8](namespaces/BrandedBytes8.mdx)
+- [BrandedChain](namespaces/BrandedChain.mdx)
+- [BrandedEther](namespaces/BrandedEther.mdx)
+- [BrandedFeeMarket](namespaces/BrandedFeeMarket.mdx)
+- [BrandedGwei](namespaces/BrandedGwei.mdx)
+- [BrandedHex](namespaces/BrandedHex.mdx)
+- [BrandedOpcode](namespaces/BrandedOpcode.mdx)
+- [BrandedRlp](namespaces/BrandedRlp.mdx)
+- [BrandedWei](namespaces/BrandedWei.mdx)
+- [ERC1155](namespaces/ERC1155.mdx)
+- [ERC165](namespaces/ERC165.mdx)
+- [ERC20](namespaces/ERC20.mdx)
+- [ERC721](namespaces/ERC721.mdx)
+- [FeeMarket](namespaces/FeeMarket.mdx)
+- [HashType](namespaces/HashType.mdx)
+- [precompiles](namespaces/precompiles.mdx)
+- [wasm](namespaces/wasm/index.mdx)
+
+## Classes
+
+### `abstract` AbstractError
+
+Defined in: [src/primitives/errors/AbstractError.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L34)
+
+Abstract base error for all Voltaire errors
+
+Provides standardized error handling with:
+- Error cause chain for debugging
+- Error codes for programmatic handling
+- Context object for additional metadata
+- Documentation links for user guidance
+
+#### Example
+
+```typescript
+class InvalidAddressError extends AbstractError {
+  constructor(address: string, options?: ErrorOptions) {
+    super(
+      `Invalid address format: ${address}`,
+      {
+        ...options,
+        code: options?.code || 'INVALID_ADDRESS',
+        docsPath: '/primitives/address/from-hex#error-handling'
+      }
+    )
+    this.name = 'InvalidAddressError'
+  }
+}
+
+// Usage with cause chain
+try {
+  parseHex(input)
+} catch (e) {
+  throw new InvalidAddressError(input, { cause: e })
+}
+```
+
+#### Extends
+
+- `Error`
+
+#### Extended by
+
+- [`PrimitiveError`](#primitiveerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new AbstractError**(`message`, `options?`): [`AbstractError`](#abstracterror)
+
+Defined in: [src/primitives/errors/AbstractError.ts:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L58)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`AbstractError`](#abstracterror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Overrides
+
+`Error.cause`
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+***
+
+### CryptoError
+
+Defined in: [src/primitives/errors/CryptoError.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L16)
+
+Base crypto error
+
+#### Example
+
+```typescript
+throw new CryptoError('Cryptographic operation failed', {
+  code: 'CRYPTO_ERROR',
+  context: { operation: 'sign' },
+  docsPath: '/crypto/secp256k1/sign#error-handling',
+  cause: originalError
+})
+```
+
+#### Extends
+
+- [`PrimitiveError`](#primitiveerror)
+
+#### Extended by
+
+- [`AesGcmError`](../crypto/AesGcm.mdx#aesgcmerror)
+- [`Bip39Error`](../crypto/Bip39.mdx#bip39error)
+- [`ChaCha20Poly1305Error`](../crypto/ChaCha20Poly1305.mdx#chacha20poly1305error)
+- [`Eip712Error`](../crypto/EIP712.mdx#eip712error)
+- [`Ed25519Error`](../crypto/Ed25519.mdx#ed25519error)
+- [`KzgError`](../crypto/KZG.mdx#kzgerror)
+- [`P256Error`](../crypto/P256.mdx#p256error)
+- [`X25519Error`](../crypto/X25519.mdx#x25519error)
+- [`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+- [`InvalidPublicKeyError`](#invalidpublickeyerror)
+- [`InvalidSignatureError`](#invalidsignatureerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new CryptoError**(`message`, `options?`): [`CryptoError`](#cryptoerror)
+
+Defined in: [src/primitives/errors/CryptoError.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L17)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`CryptoError`](#cryptoerror)
+
+###### Overrides
+
+[`PrimitiveError`](#primitiveerror).[`constructor`](#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`cause`](#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`code`](#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`context`](#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`docsPath`](#docspath-16)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`getErrorChain`](#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`toJSON`](#tojson-32)
+
+***
+
+### DecodingError
+
+Defined in: [src/primitives/errors/SerializationError.ts:66](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/SerializationError.ts#L66)
+
+Decoding error (e.g., RLP decoding failure)
+
+#### Throws
+
+#### Extends
+
+- [`SerializationError`](#serializationerror)
+
+#### Extended by
+
+- [`SiweParseError`](../primitives/Siwe.mdx#siweparseerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new DecodingError**(`message`, `options?`): [`DecodingError`](#decodingerror)
+
+Defined in: [src/primitives/errors/SerializationError.ts:67](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/SerializationError.ts#L67)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`DecodingError`](#decodingerror)
+
+###### Overrides
+
+[`SerializationError`](#serializationerror).[`constructor`](#constructor-17)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`cause`](#cause-17)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`code`](#code-17)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`context`](#context-17)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`docsPath`](#docspath-17)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`getErrorChain`](#geterrorchain-34)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`toJSON`](#tojson-34)
+
+***
+
+### EncodingError
+
+Defined in: [src/primitives/errors/SerializationError.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/SerializationError.ts#L41)
+
+Encoding error (e.g., RLP encoding failure)
+
+#### Throws
+
+#### Extends
+
+- [`SerializationError`](#serializationerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new EncodingError**(`message`, `options?`): [`EncodingError`](#encodingerror)
+
+Defined in: [src/primitives/errors/SerializationError.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/SerializationError.ts#L42)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`EncodingError`](#encodingerror)
+
+###### Overrides
+
+[`SerializationError`](#serializationerror).[`constructor`](#constructor-17)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`cause`](#cause-17)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`code`](#code-17)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`context`](#context-17)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`docsPath`](#docspath-17)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`getErrorChain`](#geterrorchain-34)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`SerializationError`](#serializationerror).[`toJSON`](#tojson-34)
+
+***
+
+### IntegerOverflowError
+
+Defined in: [src/primitives/errors/OverflowError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L18)
+
+Error thrown when integer value exceeds maximum bound
+
+#### Example
+
+```typescript
+throw new IntegerOverflowError(
+  'Value exceeds uint8 maximum',
+  {
+    value: 256n,
+    max: 255n,
+    type: 'uint8',
+  }
+)
+```
+
+#### Extends
+
+- [`InvalidRangeError`](#invalidrangeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new IntegerOverflowError**(`message`, `options`): [`IntegerOverflowError`](#integeroverflowerror)
+
+Defined in: [src/primitives/errors/OverflowError.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L24)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### max
+
+`number` \| `bigint`
+
+###### type
+
+`string`
+
+###### value
+
+`number` \| `bigint`
+
+###### Returns
+
+[`IntegerOverflowError`](#integeroverflowerror)
+
+###### Overrides
+
+[`InvalidRangeError`](#invalidrangeerror).[`constructor`](#constructor-11)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`cause`](#cause-11)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`code`](#code-11)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`context`](#context-11)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`docsPath`](#docspath-11)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`expected`](#expected-5)
+
+##### integerType
+
+> **integerType**: `string`
+
+Defined in: [src/primitives/errors/OverflowError.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L22)
+
+Integer type (e.g., 'uint8', 'uint256')
+
+##### max
+
+> **max**: `number` \| `bigint`
+
+Defined in: [src/primitives/errors/OverflowError.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L20)
+
+Maximum allowed value
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`value`](#value-5)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`getErrorChain`](#geterrorchain-22)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`toJSON`](#tojson-22)
+
+***
+
+### IntegerUnderflowError
+
+Defined in: [src/primitives/errors/OverflowError.ts:70](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L70)
+
+Error thrown when integer value is below minimum bound (e.g., negative for unsigned)
+
+#### Example
+
+```typescript
+throw new IntegerUnderflowError(
+  'Unsigned integer cannot be negative',
+  {
+    value: -1n,
+    min: 0n,
+    type: 'uint256',
+  }
+)
+```
+
+#### Extends
+
+- [`InvalidRangeError`](#invalidrangeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new IntegerUnderflowError**(`message`, `options`): [`IntegerUnderflowError`](#integerunderflowerror)
+
+Defined in: [src/primitives/errors/OverflowError.ts:76](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L76)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### min
+
+`number` \| `bigint`
+
+###### type
+
+`string`
+
+###### value
+
+`number` \| `bigint`
+
+###### Returns
+
+[`IntegerUnderflowError`](#integerunderflowerror)
+
+###### Overrides
+
+[`InvalidRangeError`](#invalidrangeerror).[`constructor`](#constructor-11)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`cause`](#cause-11)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`code`](#code-11)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`context`](#context-11)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`docsPath`](#docspath-11)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`expected`](#expected-5)
+
+##### integerType
+
+> **integerType**: `string`
+
+Defined in: [src/primitives/errors/OverflowError.ts:74](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L74)
+
+Integer type (e.g., 'uint8', 'int256')
+
+##### min
+
+> **min**: `number` \| `bigint`
+
+Defined in: [src/primitives/errors/OverflowError.ts:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L72)
+
+Minimum allowed value
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`value`](#value-5)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`getErrorChain`](#geterrorchain-22)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`toJSON`](#tojson-22)
+
+***
+
+### InvalidChecksumError
+
+Defined in: [src/primitives/errors/ValidationError.ts:115](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L115)
+
+Invalid checksum error (e.g., EIP-55 checksum mismatch)
+
+#### Throws
+
+#### Extends
+
+- [`ValidationError`](#validationerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidChecksumError**(`message`, `options`): [`InvalidChecksumError`](#invalidchecksumerror)
+
+Defined in: [src/primitives/errors/ValidationError.ts:116](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L116)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expected
+
+`string`
+
+###### value
+
+`unknown`
+
+###### Returns
+
+[`InvalidChecksumError`](#invalidchecksumerror)
+
+###### Overrides
+
+[`ValidationError`](#validationerror).[`constructor`](#constructor-20)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`cause`](#cause-19)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`code`](#code-19)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`context`](#context-19)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`docsPath`](#docspath-19)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`expected`](#expected-7)
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`value`](#value-7)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`getErrorChain`](#geterrorchain-38)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`toJSON`](#tojson-38)
+
+***
+
+### InvalidFormatError
+
+Defined in: [src/primitives/errors/ValidationError.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L49)
+
+Invalid format error (e.g., wrong hex prefix, invalid characters)
+
+#### Throws
+
+#### Extends
+
+- [`ValidationError`](#validationerror)
+
+#### Extended by
+
+- [`InvalidHexFormatError`](../primitives/Address.mdx#invalidhexformaterror)
+- [`InvalidHexStringError`](../primitives/Address.mdx#invalidhexstringerror)
+- [`InvalidChainIdError`](../primitives/Authorization.mdx#invalidchainiderror)
+- [`InvalidAddressError`](../primitives/Authorization.mdx#invalidaddresserror)
+- [`InvalidBytes32HexError`](../primitives/Bytes32.mdx#invalidbytes32hexerror)
+- [`InvalidLabelExtensionError`](../primitives/Ens.mdx#invalidlabelextensionerror)
+- [`IllegalMixtureError`](../primitives/Ens.mdx#illegalmixtureerror)
+- [`WholeConfusableError`](../primitives/Ens.mdx#wholeconfusableerror)
+- [`DisallowedCharacterError`](../primitives/Ens.mdx#disallowedcharactererror)
+- [`EmptyLabelError`](../primitives/Ens.mdx#emptylabelerror)
+- [`InvalidUtf8Error`](../primitives/Ens.mdx#invalidutf8error)
+- [`InvalidSignatureFormatError`](../primitives/Signature.mdx#invalidsignatureformaterror)
+- [`InvalidDERError`](../primitives/Signature.mdx#invaliddererror)
+- [`InvalidMnemonicError`](../crypto/Bip39.mdx#invalidmnemonicerror)
+- [`InvalidFieldError`](../primitives/Siwe.mdx#invalidfielderror)
+- [`InvalidSiweMessageError`](../primitives/Siwe.mdx#invalidsiwemessageerror)
+- [`MissingFieldError`](../primitives/Siwe.mdx#missingfielderror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidFormatError**(`message`, `options`): [`InvalidFormatError`](#invalidformaterror)
+
+Defined in: [src/primitives/errors/ValidationError.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L50)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expected
+
+`string`
+
+###### value
+
+`unknown`
+
+###### Returns
+
+[`InvalidFormatError`](#invalidformaterror)
+
+###### Overrides
+
+[`ValidationError`](#validationerror).[`constructor`](#constructor-20)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`cause`](#cause-19)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`code`](#code-19)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`context`](#context-19)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`docsPath`](#docspath-19)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`expected`](#expected-7)
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`value`](#value-7)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`getErrorChain`](#geterrorchain-38)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`toJSON`](#tojson-38)
+
+***
+
+### InvalidLengthError
+
+Defined in: [src/primitives/errors/ValidationError.ts:71](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L71)
+
+Invalid length error (e.g., wrong byte count)
+
+#### Throws
+
+#### Extends
+
+- [`ValidationError`](#validationerror)
+
+#### Extended by
+
+- [`InvalidAddressLengthError`](../primitives/Address.mdx#invalidaddresslengtherror)
+- [`InvalidAddressLengthError`](../primitives/BinaryTree.mdx#invalidaddresslengtherror)
+- [`InvalidKeyLengthError`](../primitives/BinaryTree.mdx#invalidkeylengtherror)
+- [`InvalidBloomFilterLengthError`](../primitives/BloomFilter.mdx#invalidbloomfilterlengtherror)
+- [`InvalidBytes32LengthError`](../primitives/Bytes32.mdx#invalidbytes32lengtherror)
+- [`InvalidSignatureLengthError`](../primitives/Signature.mdx#invalidsignaturelengtherror)
+- [`InvalidNonceLengthError`](../primitives/Siwe.mdx#invalidnoncelengtherror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidLengthError**(`message`, `options`): [`InvalidLengthError`](#invalidlengtherror)
+
+Defined in: [src/primitives/errors/ValidationError.ts:72](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L72)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expected
+
+`string`
+
+###### value
+
+`unknown`
+
+###### Returns
+
+[`InvalidLengthError`](#invalidlengtherror)
+
+###### Overrides
+
+[`ValidationError`](#validationerror).[`constructor`](#constructor-20)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`cause`](#cause-19)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`code`](#code-19)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`context`](#context-19)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`docsPath`](#docspath-19)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`expected`](#expected-7)
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`value`](#value-7)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`getErrorChain`](#geterrorchain-38)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`toJSON`](#tojson-38)
+
+***
+
+### InvalidPrivateKeyError
+
+Defined in: [src/primitives/errors/CryptoError.ts:91](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L91)
+
+Invalid private key error (e.g., out of range private key)
+
+#### Throws
+
+#### Extends
+
+- [`CryptoError`](#cryptoerror)
+
+#### Extended by
+
+- [`InvalidSecretKeyError`](../crypto/Ed25519.mdx#invalidsecretkeyerror)
+- [`InvalidPrivateKeyError`](../crypto/P256.mdx#invalidprivatekeyerror)
+- [`InvalidSecretKeyError`](../crypto/X25519.mdx#invalidsecretkeyerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPrivateKeyError**(`message`, `options?`): [`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+Defined in: [src/primitives/errors/CryptoError.ts:92](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L92)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidPrivateKeyError`](#invalidprivatekeyerror)
+
+###### Overrides
+
+[`CryptoError`](#cryptoerror).[`constructor`](#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`cause`](#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`code`](#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`context`](#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`docsPath`](#docspath-1)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`getErrorChain`](#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`toJSON`](#tojson-2)
+
+***
+
+### InvalidPublicKeyError
+
+Defined in: [src/primitives/errors/CryptoError.ts:66](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L66)
+
+Invalid public key error (e.g., malformed public key)
+
+#### Throws
+
+#### Extends
+
+- [`CryptoError`](#cryptoerror)
+
+#### Extended by
+
+- [`InvalidPublicKeyError`](../crypto/Ed25519.mdx#invalidpublickeyerror)
+- [`InvalidPublicKeyError`](../crypto/P256.mdx#invalidpublickeyerror)
+- [`InvalidPublicKeyError`](../crypto/X25519.mdx#invalidpublickeyerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidPublicKeyError**(`message`, `options?`): [`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+Defined in: [src/primitives/errors/CryptoError.ts:67](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L67)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidPublicKeyError`](#invalidpublickeyerror)
+
+###### Overrides
+
+[`CryptoError`](#cryptoerror).[`constructor`](#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`cause`](#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`code`](#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`context`](#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`docsPath`](#docspath-1)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`getErrorChain`](#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`toJSON`](#tojson-2)
+
+***
+
+### InvalidRangeError
+
+Defined in: [src/primitives/errors/ValidationError.ts:93](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L93)
+
+Invalid range error (e.g., value out of bounds)
+
+#### Throws
+
+#### Extends
+
+- [`ValidationError`](#validationerror)
+
+#### Extended by
+
+- [`InvalidYParityError`](../primitives/Authorization.mdx#invalidyparityerror)
+- [`InvalidSignatureRangeError`](../primitives/Authorization.mdx#invalidsignaturerangeerror)
+- [`InvalidBloomFilterParameterError`](../primitives/BloomFilter.mdx#invalidbloomfilterparametererror)
+- [`IntegerOverflowError`](#integeroverflowerror)
+- [`IntegerUnderflowError`](#integerunderflowerror)
+- [`InvalidSizeError`](#invalidsizeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidRangeError**(`message`, `options`): [`InvalidRangeError`](#invalidrangeerror)
+
+Defined in: [src/primitives/errors/ValidationError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L94)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expected
+
+`string`
+
+###### value
+
+`unknown`
+
+###### Returns
+
+[`InvalidRangeError`](#invalidrangeerror)
+
+###### Overrides
+
+[`ValidationError`](#validationerror).[`constructor`](#constructor-20)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`cause`](#cause-19)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`code`](#code-19)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`context`](#context-19)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`docsPath`](#docspath-19)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`expected`](#expected-7)
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`value`](#value-7)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`getErrorChain`](#geterrorchain-38)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ValidationError`](#validationerror).[`toJSON`](#tojson-38)
+
+***
+
+### InvalidSignatureError
+
+Defined in: [src/primitives/errors/CryptoError.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L41)
+
+Invalid signature error (e.g., signature verification failed)
+
+#### Throws
+
+#### Extends
+
+- [`CryptoError`](#cryptoerror)
+
+#### Extended by
+
+- [`InvalidSignatureComponentError`](../primitives/Authorization.mdx#invalidsignaturecomponenterror)
+- [`MalleableSignatureError`](../primitives/Authorization.mdx#malleablesignatureerror)
+- [`InvalidAlgorithmError`](../primitives/Signature.mdx#invalidalgorithmerror)
+- [`NonCanonicalSignatureError`](../primitives/Signature.mdx#noncanonicalsignatureerror)
+- [`InvalidSignatureError`](../crypto/Ed25519.mdx#invalidsignatureerror)
+- [`InvalidSignatureError`](../crypto/P256.mdx#invalidsignatureerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSignatureError**(`message`, `options?`): [`InvalidSignatureError`](#invalidsignatureerror)
+
+Defined in: [src/primitives/errors/CryptoError.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/CryptoError.ts#L42)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidSignatureError`](#invalidsignatureerror)
+
+###### Overrides
+
+[`CryptoError`](#cryptoerror).[`constructor`](#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`cause`](#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`code`](#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`context`](#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`docsPath`](#docspath-1)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`getErrorChain`](#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](#cryptoerror).[`toJSON`](#tojson-2)
+
+***
+
+### InvalidSignerError
+
+Defined in: [src/primitives/errors/TransactionError.ts:66](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/TransactionError.ts#L66)
+
+Invalid signer error (e.g., signature doesn't match expected signer)
+
+#### Throws
+
+#### Extends
+
+- [`TransactionError`](#transactionerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSignerError**(`message`, `options?`): [`InvalidSignerError`](#invalidsignererror)
+
+Defined in: [src/primitives/errors/TransactionError.ts:67](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/TransactionError.ts#L67)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidSignerError`](#invalidsignererror)
+
+###### Overrides
+
+[`TransactionError`](#transactionerror).[`constructor`](#constructor-18)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`cause`](#cause-18)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`code`](#code-18)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`context`](#context-18)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`docsPath`](#docspath-18)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`getErrorChain`](#geterrorchain-36)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`toJSON`](#tojson-36)
+
+***
+
+### InvalidSizeError
+
+Defined in: [src/primitives/errors/OverflowError.ts:122](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L122)
+
+Error thrown when hex/byte data has invalid size
+
+#### Example
+
+```typescript
+throw new InvalidSizeError(
+  'Address must be 20 bytes',
+  {
+    actualSize: 10,
+    expectedSize: 20,
+    value: '0x1234...',
+  }
+)
+```
+
+#### Extends
+
+- [`InvalidRangeError`](#invalidrangeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidSizeError**(`message`, `options`): [`InvalidSizeError`](#invalidsizeerror)
+
+Defined in: [src/primitives/errors/OverflowError.ts:128](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L128)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### actualSize
+
+`number`
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expectedSize
+
+`number`
+
+###### value
+
+`unknown`
+
+###### Returns
+
+[`InvalidSizeError`](#invalidsizeerror)
+
+###### Overrides
+
+[`InvalidRangeError`](#invalidrangeerror).[`constructor`](#constructor-11)
+
+#### Properties
+
+##### actualSize
+
+> **actualSize**: `number`
+
+Defined in: [src/primitives/errors/OverflowError.ts:124](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L124)
+
+Actual size in bytes
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`cause`](#cause-11)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`code`](#code-11)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`context`](#context-11)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`docsPath`](#docspath-11)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`expected`](#expected-5)
+
+##### expectedSize
+
+> **expectedSize**: `number`
+
+Defined in: [src/primitives/errors/OverflowError.ts:126](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/OverflowError.ts#L126)
+
+Expected size in bytes
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`value`](#value-5)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`getErrorChain`](#geterrorchain-22)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`InvalidRangeError`](#invalidrangeerror).[`toJSON`](#tojson-22)
+
+***
+
+### InvalidTransactionTypeError
+
+Defined in: [src/primitives/errors/TransactionError.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/TransactionError.ts#L41)
+
+Invalid transaction type error (e.g., unsupported transaction type)
+
+#### Throws
+
+#### Extends
+
+- [`TransactionError`](#transactionerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidTransactionTypeError**(`message`, `options?`): [`InvalidTransactionTypeError`](#invalidtransactiontypeerror)
+
+Defined in: [src/primitives/errors/TransactionError.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/TransactionError.ts#L42)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidTransactionTypeError`](#invalidtransactiontypeerror)
+
+###### Overrides
+
+[`TransactionError`](#transactionerror).[`constructor`](#constructor-18)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`cause`](#cause-18)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`code`](#code-18)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`context`](#context-18)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`docsPath`](#docspath-18)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`getErrorChain`](#geterrorchain-36)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`TransactionError`](#transactionerror).[`toJSON`](#tojson-36)
+
+***
+
+### PrimitiveError
+
+Defined in: [src/primitives/errors/PrimitiveError.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/PrimitiveError.ts#L15)
+
+Base error for all primitive-related errors
+
+#### Example
+
+```typescript
+throw new PrimitiveError('Invalid primitive value', {
+  code: 'INVALID_PRIMITIVE',
+  context: { value: '0x123' },
+  docsPath: '/primitives/overview#errors'
+})
+```
+
+#### Extends
+
+- [`AbstractError`](#abstracterror)
+
+#### Extended by
+
+- [`NotImplementedError`](../primitives/Address.mdx#notimplementederror)
+- [`ContractRevertError`](../primitives/ContractResult.mdx#contractreverterror)
+- [`InvalidHexFormatError`](../primitives/EncodedData.mdx#invalidhexformaterror)
+- [`InvalidValueError`](../primitives/EncodedData.mdx#invalidvalueerror)
+- [`MultiTokenIdError`](../primitives/MultiTokenId.mdx#multitokeniderror)
+- [`InvalidHexFormatError`](../primitives/ReturnData.mdx#invalidhexformaterror)
+- [`InvalidValueError`](../primitives/ReturnData.mdx#invalidvalueerror)
+- [`StealthAddressError`](../primitives/StealthAddress.mdx#stealthaddresserror)
+- [`TokenBalanceError`](../primitives/TokenBalance.mdx#tokenbalanceerror)
+- [`TokenIdError`](../primitives/TokenId.mdx#tokeniderror)
+- [`CryptoError`](#cryptoerror)
+- [`SerializationError`](#serializationerror)
+- [`TransactionError`](#transactionerror)
+- [`ValidationError`](#validationerror)
+- [`EIP6963Error`](../provider/namespaces/provider/eip6963.mdx#eip6963error)
+
+#### Constructors
+
+##### Constructor
+
+> **new PrimitiveError**(`message`, `options?`): [`PrimitiveError`](#primitiveerror)
+
+Defined in: [src/primitives/errors/PrimitiveError.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/PrimitiveError.ts#L16)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`PrimitiveError`](#primitiveerror)
+
+###### Overrides
+
+[`AbstractError`](#abstracterror).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`AbstractError`](#abstracterror).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`AbstractError`](#abstracterror).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`AbstractError`](#abstracterror).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`AbstractError`](#abstracterror).[`docsPath`](#docspath)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AbstractError`](#abstracterror).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`AbstractError`](#abstracterror).[`toJSON`](#tojson)
+
+***
+
+### SerializationError
+
+Defined in: [src/primitives/errors/SerializationError.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/SerializationError.ts#L16)
+
+Base serialization error
+
+#### Example
+
+```typescript
+throw new SerializationError('Failed to serialize', {
+  code: 'SERIALIZATION_ERROR',
+  context: { data: [...] },
+  docsPath: '/primitives/rlp/encode#error-handling',
+  cause: originalError
+})
+```
+
+#### Extends
+
+- [`PrimitiveError`](#primitiveerror)
+
+#### Extended by
+
+- [`DecodingError`](#decodingerror)
+- [`EncodingError`](#encodingerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new SerializationError**(`message`, `options?`): [`SerializationError`](#serializationerror)
+
+Defined in: [src/primitives/errors/SerializationError.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/SerializationError.ts#L17)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`SerializationError`](#serializationerror)
+
+###### Overrides
+
+[`PrimitiveError`](#primitiveerror).[`constructor`](#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`cause`](#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`code`](#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`context`](#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`docsPath`](#docspath-16)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`getErrorChain`](#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`toJSON`](#tojson-32)
+
+***
+
+### TransactionError
+
+Defined in: [src/primitives/errors/TransactionError.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/TransactionError.ts#L16)
+
+Base transaction error
+
+#### Example
+
+```typescript
+throw new TransactionError('Transaction processing failed', {
+  code: 'TRANSACTION_ERROR',
+  context: { txType: '0x02' },
+  docsPath: '/primitives/transaction/overview#error-handling',
+  cause: originalError
+})
+```
+
+#### Extends
+
+- [`PrimitiveError`](#primitiveerror)
+
+#### Extended by
+
+- [`InvalidSignerError`](#invalidsignererror)
+- [`InvalidTransactionTypeError`](#invalidtransactiontypeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new TransactionError**(`message`, `options?`): [`TransactionError`](#transactionerror)
+
+Defined in: [src/primitives/errors/TransactionError.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/TransactionError.ts#L17)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`TransactionError`](#transactionerror)
+
+###### Overrides
+
+[`PrimitiveError`](#primitiveerror).[`constructor`](#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`cause`](#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`code`](#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`context`](#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`docsPath`](#docspath-16)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`getErrorChain`](#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`toJSON`](#tojson-32)
+
+***
+
+### Uint
+
+Defined in: [src/primitives/Uint/Uint.js:100](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L100)
+
+Factory function for creating Uint instances
+
+#### Constructors
+
+##### Constructor
+
+> **new Uint**(`value`): [`Uint`](#uint)
+
+Defined in: [src/primitives/Uint/Uint.js:100](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L100)
+
+Factory function for creating Uint instances
+
+###### Parameters
+
+###### value
+
+`any`
+
+###### Returns
+
+[`Uint`](#uint)
+
+#### Properties
+
+##### bitLength()
+
+> **bitLength**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:173](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L173)
+
+Get number of bits required to represent value
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`number`
+
+Number of bits (0-256)
+
+###### Example
+
+```typescript
+const a = Uint(255n);
+const bits1 = Uint.bitLength(a); // 8
+const bits2 = a.bitLength(); // 8
+```
+
+##### bitwiseAnd()
+
+> **bitwiseAnd**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:157](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L157)
+
+Bitwise AND
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint & b
+
+###### Example
+
+```typescript
+const a = Uint(0xffn);
+const b = Uint(0x0fn);
+const result1 = Uint.bitwiseAnd(a, b); // 0x0f
+const result2 = a.bitwiseAnd(b); // 0x0f
+```
+
+##### bitwiseNot()
+
+> **bitwiseNot**: (`uint`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:160](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L160)
+
+Bitwise NOT
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+~uint & MAX
+
+###### Example
+
+```typescript
+const a = Uint(0n);
+const result1 = Uint.bitwiseNot(a); // MAX
+const result2 = a.bitwiseNot(); // MAX
+```
+
+##### bitwiseOr()
+
+> **bitwiseOr**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:158](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L158)
+
+Bitwise OR
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint | b
+
+###### Example
+
+```typescript
+const a = Uint(0xf0n);
+const b = Uint(0x0fn);
+const result1 = Uint.bitwiseOr(a, b); // 0xff
+const result2 = a.bitwiseOr(b); // 0xff
+```
+
+##### bitwiseXor()
+
+> **bitwiseXor**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:159](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L159)
+
+Bitwise XOR
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint ^ b
+
+###### Example
+
+```typescript
+const a = Uint(0xffn);
+const b = Uint(0x0fn);
+const result1 = Uint.bitwiseXor(a, b); // 0xf0
+const result2 = a.bitwiseXor(b); // 0xf0
+```
+
+##### dividedBy()
+
+> **dividedBy**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:154](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L154)
+
+Divide Uint256 value
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Dividend
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Divisor
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Quotient (uint / b), floor division
+
+###### Throws
+
+Error if divisor is zero
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(10n);
+const quotient1 = Uint.dividedBy(a, b); // 10
+const quotient2 = a.dividedBy(b); // 10
+```
+
+##### equals()
+
+> **equals**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:163](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L163)
+
+Check equality
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint === b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(100n);
+const eq1 = Uint.equals(a, b); // true
+const eq2 = a.equals(b); // true
+```
+
+##### greaterThan()
+
+> **greaterThan**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:167](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L167)
+
+Check greater than
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint > b
+
+###### Example
+
+```typescript
+const a = Uint(200n);
+const b = Uint(100n);
+const isGreater1 = Uint.greaterThan(a, b); // true
+const isGreater2 = a.greaterThan(b); // true
+```
+
+##### greaterThanOrEqual()
+
+> **greaterThanOrEqual**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:168](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L168)
+
+Check greater than or equal
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint >= b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(100n);
+const isGte1 = Uint.greaterThanOrEqual(a, b); // true
+const isGte2 = a.greaterThanOrEqual(b); // true
+```
+
+##### isZero()
+
+> **isZero**: (`uint`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:170](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L170)
+
+Check if value is zero
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`boolean`
+
+true if uint === 0
+
+###### Example
+
+```typescript
+const a = Uint(0n);
+const isZero1 = Uint.isZero(a); // true
+const isZero2 = a.isZero(); // true
+```
+
+##### leadingZeros()
+
+> **leadingZeros**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:174](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L174)
+
+Get number of leading zero bits
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`number`
+
+Number of leading zeros (0-256)
+
+###### Example
+
+```typescript
+const a = Uint(1n);
+const zeros1 = Uint.leadingZeros(a); // 255
+const zeros2 = a.leadingZeros(); // 255
+```
+
+##### lessThan()
+
+> **lessThan**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:165](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L165)
+
+Check less than
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint < b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const isLess1 = Uint.lessThan(a, b); // true
+const isLess2 = a.lessThan(b); // true
+```
+
+##### lessThanOrEqual()
+
+> **lessThanOrEqual**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:166](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L166)
+
+Check less than or equal
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint is less than or equal to b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(100n);
+const isLte1 = Uint.lessThanOrEqual(a, b); // true
+const isLte2 = a.lessThanOrEqual(b); // true
+```
+
+##### maximum()
+
+> **maximum**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:172](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L172)
+
+Get maximum of two values
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+max(uint, b)
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const max1 = Uint.maximum(a, b); // 200
+const max2 = a.maximum(b); // 200
+```
+
+##### minimum()
+
+> **minimum**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:171](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L171)
+
+Get minimum of two values
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+min(uint, b)
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const min1 = Uint.minimum(a, b); // 100
+const min2 = a.minimum(b); // 100
+```
+
+##### minus()
+
+> **minus**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:152](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L152)
+
+Subtract Uint256 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Difference (uint - b) mod 2^256
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(50n);
+const diff1 = Uint.minus(a, b); // 50
+const diff2 = a.minus(b); // 50
+```
+
+##### modulo()
+
+> **modulo**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:155](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L155)
+
+Modulo operation
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Dividend
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Divisor
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Remainder (uint % b)
+
+###### Throws
+
+Error if divisor is zero
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(30n);
+const remainder1 = Uint.modulo(a, b); // 10
+const remainder2 = a.modulo(b); // 10
+```
+
+##### notEquals()
+
+> **notEquals**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:164](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L164)
+
+Check inequality
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint !== b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const isNotEq1 = Uint.notEquals(a, b); // true
+const isNotEq2 = a.notEquals(b); // true
+```
+
+##### plus()
+
+> **plus**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:151](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L151)
+
+Add Uint256 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Sum (uint + b) mod 2^256
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(50n);
+const sum1 = Uint.plus(a, b); // 150
+const sum2 = a.plus(b); // 150
+```
+
+##### popCount()
+
+> **popCount**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:175](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L175)
+
+Count number of set bits (population count)
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`number`
+
+Number of 1 bits
+
+###### Example
+
+```typescript
+const a = Uint(0xffn);
+const count1 = Uint.popCount(a); // 8
+const count2 = a.popCount(); // 8
+```
+
+##### shiftLeft()
+
+> **shiftLeft**: (`uint`, `bits`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:161](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L161)
+
+Left shift
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to shift
+
+###### bits
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Number of bits to shift
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint shifted left by bits (mod 2^256)
+
+###### Example
+
+```typescript
+const a = Uint(1n);
+const b = Uint(8n);
+const result1 = Uint.shiftLeft(a, b); // 256
+const result2 = a.shiftLeft(b); // 256
+```
+
+##### shiftRight()
+
+> **shiftRight**: (`uint`, `bits`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:162](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L162)
+
+Right shift
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to shift
+
+###### bits
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Number of bits to shift
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint shifted right by bits
+
+###### Example
+
+```typescript
+const a = Uint(256n);
+const b = Uint(8n);
+const result1 = Uint.shiftRight(a, b); // 1
+const result2 = a.shiftRight(b); // 1
+```
+
+##### times()
+
+> **times**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:153](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L153)
+
+Multiply Uint256 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Product (uint * b) mod 2^256
+
+###### Example
+
+```typescript
+const a = Uint(10n);
+const b = Uint(5n);
+const product1 = Uint.times(a, b); // 50
+const product2 = a.times(b); // 50
+```
+
+##### toAbiEncoded()
+
+> **toAbiEncoded**: (`uint`) => `Uint8Array`
+
+Defined in: [src/primitives/Uint/Uint.js:149](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L149)
+
+Convert Uint256 to ABI-encoded bytes (32 bytes, big-endian)
+
+This is identical to toBytes() - all Uint256 values in ABI encoding
+are represented as 32-byte big-endian values.
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to encode
+
+###### Returns
+
+`Uint8Array`
+
+32-byte ABI-encoded Uint8Array
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const encoded1 = Uint.toAbiEncoded(value);
+const encoded2 = value.toAbiEncoded();
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`uint`) => `bigint`
+
+Defined in: [src/primitives/Uint/Uint.js:146](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L146)
+
+Convert Uint256 to bigint
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### Returns
+
+`bigint`
+
+bigint value
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const bigint1 = Uint.toBigInt(value);
+const bigint2 = value.toBigInt();
+```
+
+##### toBytes()
+
+> **toBytes**: (`uint`) => `Uint8Array`
+
+Defined in: [src/primitives/Uint/Uint.js:148](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L148)
+
+Convert Uint256 to bytes (big-endian, 32 bytes)
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### Returns
+
+`Uint8Array`
+
+32-byte Uint8Array
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const bytes1 = Uint.toBytes(value);
+const bytes2 = value.toBytes();
+```
+
+##### toHex()
+
+> **toHex**: (`uint`, `padded`) => `string`
+
+Defined in: [src/primitives/Uint/Uint.js:145](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L145)
+
+Convert Uint256 to hex string
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### padded
+
+`boolean` = `true`
+
+Whether to pad to 64 characters (32 bytes)
+
+###### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const hex1 = Uint.toHex(value); // "0x00...ff"
+const hex2 = value.toHex(); // "0x00...ff"
+const hex3 = value.toHex(false); // "0xff"
+```
+
+##### toNumber()
+
+> **toNumber**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:147](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L147)
+
+Convert Uint256 to number
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### Returns
+
+`number`
+
+number value
+
+###### Throws
+
+Error if value exceeds MAX_SAFE_INTEGER
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const num1 = Uint.toNumber(value);
+const num2 = value.toNumber();
+```
+
+##### toPower()
+
+> **toPower**: (`uint`, `exponent`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:156](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L156)
+
+Exponentiation
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Base value
+
+###### exponent
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Exponent value
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint^exponent mod 2^256
+
+###### Example
+
+```typescript
+const base = Uint(2n);
+const exp = Uint(8n);
+const result1 = Uint.toPower(base, exp); // 256
+const result2 = base.toPower(exp); // 256
+```
+
+##### toString()
+
+> **toString**: (`uint`, `radix`) => `string`
+
+Defined in: [src/primitives/Uint/Uint.js:150](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L150)
+
+Convert Uint256 to string representation
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### radix
+
+`number` = `10`
+
+Base for string conversion (2, 10, 16, etc.)
+
+###### Returns
+
+`string`
+
+String representation
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const dec1 = Uint.toString(value, 10); // "255"
+const dec2 = value.toString(10); // "255"
+const hex = value.toString(16); // "ff"
+```
+
+##### bitLength()
+
+> `static` **bitLength**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:140](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L140)
+
+Get number of bits required to represent value
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`number`
+
+Number of bits (0-256)
+
+###### Example
+
+```typescript
+const a = Uint(255n);
+const bits1 = Uint.bitLength(a); // 8
+const bits2 = a.bitLength(); // 8
+```
+
+##### bitwiseAnd()
+
+> `static` **bitwiseAnd**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:125](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L125)
+
+Bitwise AND
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint & b
+
+###### Example
+
+```typescript
+const a = Uint(0xffn);
+const b = Uint(0x0fn);
+const result1 = Uint.bitwiseAnd(a, b); // 0x0f
+const result2 = a.bitwiseAnd(b); // 0x0f
+```
+
+##### bitwiseNot()
+
+> `static` **bitwiseNot**: (`uint`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:128](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L128)
+
+Bitwise NOT
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+~uint & MAX
+
+###### Example
+
+```typescript
+const a = Uint(0n);
+const result1 = Uint.bitwiseNot(a); // MAX
+const result2 = a.bitwiseNot(); // MAX
+```
+
+##### bitwiseOr()
+
+> `static` **bitwiseOr**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:126](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L126)
+
+Bitwise OR
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint | b
+
+###### Example
+
+```typescript
+const a = Uint(0xf0n);
+const b = Uint(0x0fn);
+const result1 = Uint.bitwiseOr(a, b); // 0xff
+const result2 = a.bitwiseOr(b); // 0xff
+```
+
+##### bitwiseXor()
+
+> `static` **bitwiseXor**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:127](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L127)
+
+Bitwise XOR
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint ^ b
+
+###### Example
+
+```typescript
+const a = Uint(0xffn);
+const b = Uint(0x0fn);
+const result1 = Uint.bitwiseXor(a, b); // 0xf0
+const result2 = a.bitwiseXor(b); // 0xf0
+```
+
+##### dividedBy()
+
+> `static` **dividedBy**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:122](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L122)
+
+Divide Uint256 value
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Dividend
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Divisor
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Quotient (uint / b), floor division
+
+###### Throws
+
+Error if divisor is zero
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(10n);
+const quotient1 = Uint.dividedBy(a, b); // 10
+const quotient2 = a.dividedBy(b); // 10
+```
+
+##### equals()
+
+> `static` **equals**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:131](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L131)
+
+Check equality
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint === b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(100n);
+const eq1 = Uint.equals(a, b); // true
+const eq2 = a.equals(b); // true
+```
+
+##### greaterThan()
+
+> `static` **greaterThan**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:135](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L135)
+
+Check greater than
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint > b
+
+###### Example
+
+```typescript
+const a = Uint(200n);
+const b = Uint(100n);
+const isGreater1 = Uint.greaterThan(a, b); // true
+const isGreater2 = a.greaterThan(b); // true
+```
+
+##### greaterThanOrEqual()
+
+> `static` **greaterThanOrEqual**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:136](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L136)
+
+Check greater than or equal
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint >= b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(100n);
+const isGte1 = Uint.greaterThanOrEqual(a, b); // true
+const isGte2 = a.greaterThanOrEqual(b); // true
+```
+
+##### isValid()
+
+> `static` **isValid**: (`value`) => `value is Type`
+
+Defined in: [src/primitives/Uint/Uint.js:112](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L112)
+
+Check if value is a valid Uint256
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+Value to check
+
+###### Returns
+
+`value is Type`
+
+true if value is valid Uint256
+
+###### Example
+
+```typescript
+const isValid = Uint.isValid(100n); // true
+const isInvalid = Uint.isValid(-1n); // false
+```
+
+##### isZero()
+
+> `static` **isZero**: (`uint`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:137](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L137)
+
+Check if value is zero
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`boolean`
+
+true if uint === 0
+
+###### Example
+
+```typescript
+const a = Uint(0n);
+const isZero1 = Uint.isZero(a); // true
+const isZero2 = a.isZero(); // true
+```
+
+##### leadingZeros()
+
+> `static` **leadingZeros**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:141](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L141)
+
+Get number of leading zero bits
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`number`
+
+Number of leading zeros (0-256)
+
+###### Example
+
+```typescript
+const a = Uint(1n);
+const zeros1 = Uint.leadingZeros(a); // 255
+const zeros2 = a.leadingZeros(); // 255
+```
+
+##### lessThan()
+
+> `static` **lessThan**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:133](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L133)
+
+Check less than
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint < b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const isLess1 = Uint.lessThan(a, b); // true
+const isLess2 = a.lessThan(b); // true
+```
+
+##### lessThanOrEqual()
+
+> `static` **lessThanOrEqual**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:134](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L134)
+
+Check less than or equal
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint is less than or equal to b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(100n);
+const isLte1 = Uint.lessThanOrEqual(a, b); // true
+const isLte2 = a.lessThanOrEqual(b); // true
+```
+
+##### MAX
+
+> `static` **MAX**: [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:178](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L178)
+
+##### maximum()
+
+> `static` **maximum**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:139](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L139)
+
+Get maximum of two values
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+max(uint, b)
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const max1 = Uint.maximum(a, b); // 200
+const max2 = a.maximum(b); // 200
+```
+
+##### MIN
+
+> `static` **MIN**: [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:179](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L179)
+
+##### minimum()
+
+> `static` **minimum**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:138](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L138)
+
+Get minimum of two values
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+min(uint, b)
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const min1 = Uint.minimum(a, b); // 100
+const min2 = a.minimum(b); // 100
+```
+
+##### minus()
+
+> `static` **minus**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:120](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L120)
+
+Subtract Uint256 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Difference (uint - b) mod 2^256
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(50n);
+const diff1 = Uint.minus(a, b); // 50
+const diff2 = a.minus(b); // 50
+```
+
+##### modulo()
+
+> `static` **modulo**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:123](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L123)
+
+Modulo operation
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Dividend
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Divisor
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Remainder (uint % b)
+
+###### Throws
+
+Error if divisor is zero
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(30n);
+const remainder1 = Uint.modulo(a, b); // 10
+const remainder2 = a.modulo(b); // 10
+```
+
+##### notEquals()
+
+> `static` **notEquals**: (`uint`, `b`) => `boolean`
+
+Defined in: [src/primitives/Uint/Uint.js:132](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L132)
+
+Check inequality
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First value
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second value
+
+###### Returns
+
+`boolean`
+
+true if uint !== b
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(200n);
+const isNotEq1 = Uint.notEquals(a, b); // true
+const isNotEq2 = a.notEquals(b); // true
+```
+
+##### ONE
+
+> `static` **ONE**: [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:181](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L181)
+
+##### plus()
+
+> `static` **plus**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:119](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L119)
+
+Add Uint256 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Sum (uint + b) mod 2^256
+
+###### Example
+
+```typescript
+const a = Uint(100n);
+const b = Uint(50n);
+const sum1 = Uint.plus(a, b); // 150
+const sum2 = a.plus(b); // 150
+```
+
+##### popCount()
+
+> `static` **popCount**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:142](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L142)
+
+Count number of set bits (population count)
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to check
+
+###### Returns
+
+`number`
+
+Number of 1 bits
+
+###### Example
+
+```typescript
+const a = Uint(0xffn);
+const count1 = Uint.popCount(a); // 8
+const count2 = a.popCount(); // 8
+```
+
+##### shiftLeft()
+
+> `static` **shiftLeft**: (`uint`, `bits`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:129](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L129)
+
+Left shift
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to shift
+
+###### bits
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Number of bits to shift
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint shifted left by bits (mod 2^256)
+
+###### Example
+
+```typescript
+const a = Uint(1n);
+const b = Uint(8n);
+const result1 = Uint.shiftLeft(a, b); // 256
+const result2 = a.shiftLeft(b); // 256
+```
+
+##### shiftRight()
+
+> `static` **shiftRight**: (`uint`, `bits`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:130](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L130)
+
+Right shift
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Value to shift
+
+###### bits
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Number of bits to shift
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint shifted right by bits
+
+###### Example
+
+```typescript
+const a = Uint(256n);
+const b = Uint(8n);
+const result1 = Uint.shiftRight(a, b); // 1
+const result2 = a.shiftRight(b); // 1
+```
+
+##### SIZE
+
+> `static` **SIZE**: `number`
+
+Defined in: [src/primitives/Uint/Uint.js:143](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L143)
+
+##### times()
+
+> `static` **times**: (`uint`, `b`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:121](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L121)
+
+Multiply Uint256 value with wrapping
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+First operand
+
+###### b
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Second operand
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Product (uint * b) mod 2^256
+
+###### Example
+
+```typescript
+const a = Uint(10n);
+const b = Uint(5n);
+const product1 = Uint.times(a, b); // 50
+const product2 = a.times(b); // 50
+```
+
+##### toAbiEncoded()
+
+> `static` **toAbiEncoded**: (`uint`) => `Uint8Array`
+
+Defined in: [src/primitives/Uint/Uint.js:117](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L117)
+
+Convert Uint256 to ABI-encoded bytes (32 bytes, big-endian)
+
+This is identical to toBytes() - all Uint256 values in ABI encoding
+are represented as 32-byte big-endian values.
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to encode
+
+###### Returns
+
+`Uint8Array`
+
+32-byte ABI-encoded Uint8Array
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const encoded1 = Uint.toAbiEncoded(value);
+const encoded2 = value.toAbiEncoded();
+```
+
+##### toBigInt()
+
+> `static` **toBigInt**: (`uint`) => `bigint`
+
+Defined in: [src/primitives/Uint/Uint.js:114](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L114)
+
+Convert Uint256 to bigint
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### Returns
+
+`bigint`
+
+bigint value
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const bigint1 = Uint.toBigInt(value);
+const bigint2 = value.toBigInt();
+```
+
+##### toBytes()
+
+> `static` **toBytes**: (`uint`) => `Uint8Array`
+
+Defined in: [src/primitives/Uint/Uint.js:116](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L116)
+
+Convert Uint256 to bytes (big-endian, 32 bytes)
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### Returns
+
+`Uint8Array`
+
+32-byte Uint8Array
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const bytes1 = Uint.toBytes(value);
+const bytes2 = value.toBytes();
+```
+
+##### toHex()
+
+> `static` **toHex**: (`uint`, `padded`) => `string`
+
+Defined in: [src/primitives/Uint/Uint.js:113](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L113)
+
+Convert Uint256 to hex string
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### padded
+
+`boolean` = `true`
+
+Whether to pad to 64 characters (32 bytes)
+
+###### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const hex1 = Uint.toHex(value); // "0x00...ff"
+const hex2 = value.toHex(); // "0x00...ff"
+const hex3 = value.toHex(false); // "0xff"
+```
+
+##### toNumber()
+
+> `static` **toNumber**: (`uint`) => `number`
+
+Defined in: [src/primitives/Uint/Uint.js:115](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L115)
+
+Convert Uint256 to number
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### Returns
+
+`number`
+
+number value
+
+###### Throws
+
+Error if value exceeds MAX_SAFE_INTEGER
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const num1 = Uint.toNumber(value);
+const num2 = value.toNumber();
+```
+
+##### toPower()
+
+> `static` **toPower**: (`uint`, `exponent`) => [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:124](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L124)
+
+Exponentiation
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Base value
+
+###### exponent
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Exponent value
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+uint^exponent mod 2^256
+
+###### Example
+
+```typescript
+const base = Uint(2n);
+const exp = Uint(8n);
+const result1 = Uint.toPower(base, exp); // 256
+const result2 = base.toPower(exp); // 256
+```
+
+##### toString()
+
+> `static` **toString**: (`uint`, `radix`) => `string`
+
+Defined in: [src/primitives/Uint/Uint.js:118](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L118)
+
+Convert Uint256 to string representation
+
+###### Parameters
+
+###### uint
+
+[`Type`](../primitives/Uint.mdx#type)
+
+Uint256 value to convert
+
+###### radix
+
+`number` = `10`
+
+Base for string conversion (2, 10, 16, etc.)
+
+###### Returns
+
+`string`
+
+String representation
+
+###### Example
+
+```typescript
+const value = Uint(255n);
+const dec1 = Uint.toString(value, 10); // "255"
+const dec2 = value.toString(10); // "255"
+const hex = value.toString(16); // "ff"
+```
+
+##### tryFrom()
+
+> `static` **tryFrom**: (`value`) => [`Type`](../primitives/Uint.mdx#type) \| `undefined`
+
+Defined in: [src/primitives/Uint/Uint.js:111](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L111)
+
+Try to create Uint256, returns undefined if invalid (standard form)
+
+###### Parameters
+
+###### value
+
+bigint, number, or string
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type) \| `undefined`
+
+Uint256 value or undefined
+
+###### Example
+
+```typescript
+const a = Uint.tryFrom(100n); // Uint256
+const b = Uint.tryFrom(-1n); // undefined
+const c = Uint.tryFrom("invalid"); // undefined
+```
+
+##### ZERO
+
+> `static` **ZERO**: [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:180](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L180)
+
+#### Methods
+
+##### from()
+
+> `static` **from**(`value`): [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:104](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L104)
+
+###### Parameters
+
+###### value
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+##### fromAbiEncoded()
+
+> `static` **fromAbiEncoded**(`value`): [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:109](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L109)
+
+###### Parameters
+
+###### value
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+##### fromBigInt()
+
+> `static` **fromBigInt**(`value`): [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:106](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L106)
+
+###### Parameters
+
+###### value
+
+`bigint`
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+##### fromBytes()
+
+> `static` **fromBytes**(`value`): [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:108](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L108)
+
+###### Parameters
+
+###### value
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+##### fromHex()
+
+> `static` **fromHex**(`value`): [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:105](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L105)
+
+###### Parameters
+
+###### value
+
+`string`
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+##### fromNumber()
+
+> `static` **fromNumber**(`value`): [`Type`](../primitives/Uint.mdx#type)
+
+Defined in: [src/primitives/Uint/Uint.js:107](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint/Uint.js#L107)
+
+###### Parameters
+
+###### value
+
+`number` | `bigint`
+
+###### Returns
+
+[`Type`](../primitives/Uint.mdx#type)
+
+***
+
+### ValidationError
+
+Defined in: [src/primitives/errors/ValidationError.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L17)
+
+Base validation error
+
+#### Example
+
+```typescript
+throw new ValidationError('Invalid value', {
+  value: '0x123',
+  expected: '20 bytes',
+  code: 'VALIDATION_ERROR',
+  docsPath: '/primitives/address/from-hex#error-handling',
+  cause: originalError
+})
+```
+
+#### Extends
+
+- [`PrimitiveError`](#primitiveerror)
+
+#### Extended by
+
+- [`InvalidValueError`](../primitives/Address.mdx#invalidvalueerror)
+- [`InvalidAddressError`](../primitives/Address.mdx#invalidaddresserror)
+- [`InvalidChecksumError`](../primitives/Address.mdx#invalidchecksumerror)
+- [`InvalidTreeStateError`](../primitives/BinaryTree.mdx#invalidtreestateerror)
+- [`InvalidBytes32ValueError`](../primitives/Bytes32.mdx#invalidbytes32valueerror)
+- [`InvalidMultiTokenIdError`](../primitives/MultiTokenId.mdx#invalidmultitokeniderror)
+- [`InvalidTokenBalanceError`](../primitives/TokenBalance.mdx#invalidtokenbalanceerror)
+- [`TokenBalanceOverflowError`](../primitives/TokenBalance.mdx#tokenbalanceoverflowerror)
+- [`InvalidTokenIdError`](../primitives/TokenId.mdx#invalidtokeniderror)
+- [`InvalidChecksumError`](#invalidchecksumerror)
+- [`InvalidFormatError`](#invalidformaterror)
+- [`InvalidLengthError`](#invalidlengtherror)
+- [`InvalidRangeError`](#invalidrangeerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new ValidationError**(`message`, `options`): [`ValidationError`](#validationerror)
+
+Defined in: [src/primitives/errors/ValidationError.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L21)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### expected
+
+`string`
+
+###### value
+
+`unknown`
+
+###### Returns
+
+[`ValidationError`](#validationerror)
+
+###### Overrides
+
+[`PrimitiveError`](#primitiveerror).[`constructor`](#constructor-16)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`cause`](#cause-16)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`code`](#code-16)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`context`](#context-16)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`docsPath`](#docspath-16)
+
+##### expected
+
+> **expected**: `string`
+
+Defined in: [src/primitives/errors/ValidationError.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L19)
+
+##### value
+
+> **value**: `unknown`
+
+Defined in: [src/primitives/errors/ValidationError.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/ValidationError.ts#L18)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`getErrorChain`](#geterrorchain-32)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`PrimitiveError`](#primitiveerror).[`toJSON`](#tojson-32)
+
+## Type Aliases
+
+### Blake2Hash
+
+> **Blake2Hash** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/Blake2/Blake2HashType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Blake2/Blake2HashType.ts#L19)
+
+Blake2Hash - 64-byte (default) branded Uint8Array type
+
+Type-safe wrapper around Uint8Array representing a BLAKE2b hash.
+Zero runtime overhead - just compile-time type checking.
+Supports variable output lengths (1-64 bytes).
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Blake2Hash"`
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import type { Blake2Hash } from './crypto/Blake2/index.js';
+
+const hash: Blake2Hash = Blake2Hash.from("hello");
+// Uint8Array(64) with type branding
+```
+
+***
+
+### Bls12381Fp2Type
+
+> **Bls12381Fp2Type** = `object`
+
+Defined in: [src/crypto/Bls12381/Fp2Type.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/Fp2Type.ts#L11)
+
+BLS12-381 Fp2 extension field element type
+
+Fp2 = Fp[i] / (i^2 + 1), where i^2 = -1
+Elements are represented as c0 + c1*i where c0, c1 are in Fp
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### \[brand\]?
+
+> `readonly` `optional` **\[brand\]**: `"Bls12381Fp2"`
+
+Defined in: [src/crypto/Bls12381/Fp2Type.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/Fp2Type.ts#L16)
+
+##### c0
+
+> **c0**: `bigint`
+
+Defined in: [src/crypto/Bls12381/Fp2Type.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/Fp2Type.ts#L13)
+
+Real component (c0)
+
+##### c1
+
+> **c1**: `bigint`
+
+Defined in: [src/crypto/Bls12381/Fp2Type.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/Fp2Type.ts#L15)
+
+Imaginary component (c1)
+
+***
+
+### Bls12381G1PointType
+
+> **Bls12381G1PointType** = `object`
+
+Defined in: [src/crypto/Bls12381/G1PointType.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1PointType.ts#L14)
+
+BLS12-381 G1 point type in projective coordinates
+
+G1 is the base field elliptic curve group over Fp.
+Points are stored in Jacobian projective coordinates (x, y, z)
+where the affine point is (x/z^2, y/z^3).
+
+Curve equation: y^2 = x^3 + 4 over Fp
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Bls12381G1Point"`
+
+Defined in: [src/crypto/Bls12381/G1PointType.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1PointType.ts#L21)
+
+##### x
+
+> **x**: `bigint`
+
+Defined in: [src/crypto/Bls12381/G1PointType.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1PointType.ts#L16)
+
+x-coordinate in projective form
+
+##### y
+
+> **y**: `bigint`
+
+Defined in: [src/crypto/Bls12381/G1PointType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1PointType.ts#L18)
+
+y-coordinate in projective form
+
+##### z
+
+> **z**: `bigint`
+
+Defined in: [src/crypto/Bls12381/G1PointType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1PointType.ts#L20)
+
+z-coordinate (projective scaling factor)
+
+***
+
+### Bls12381G2PointType
+
+> **Bls12381G2PointType** = `object`
+
+Defined in: [src/crypto/Bls12381/G2PointType.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G2PointType.ts#L15)
+
+BLS12-381 G2 point type in projective coordinates
+
+G2 is the extension field elliptic curve group over Fp2.
+Points are stored in Jacobian projective coordinates (x, y, z)
+where x, y, z are Fp2 elements.
+
+Curve equation: y^2 = x^3 + 4(1+i) over Fp2
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Bls12381G2Point"`
+
+Defined in: [src/crypto/Bls12381/G2PointType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G2PointType.ts#L22)
+
+##### x
+
+> **x**: [`Bls12381Fp2Type`](#bls12381fp2type)
+
+Defined in: [src/crypto/Bls12381/G2PointType.ts:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G2PointType.ts#L17)
+
+x-coordinate in projective form (Fp2 element)
+
+##### y
+
+> **y**: [`Bls12381Fp2Type`](#bls12381fp2type)
+
+Defined in: [src/crypto/Bls12381/G2PointType.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G2PointType.ts#L19)
+
+y-coordinate in projective form (Fp2 element)
+
+##### z
+
+> **z**: [`Bls12381Fp2Type`](#bls12381fp2type)
+
+Defined in: [src/crypto/Bls12381/G2PointType.ts:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G2PointType.ts#L21)
+
+z-coordinate (projective scaling factor, Fp2 element)
+
+***
+
+### Ether
+
+> **Ether** = [`EtherType`](namespaces/BrandedEther.mdx#ethertype)
+
+Defined in: [src/primitives/Denomination/index.d.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/index.d.ts#L42)
+
+***
+
+### Gwei
+
+> **Gwei** = [`GweiType`](namespaces/BrandedGwei.mdx#gweitype)
+
+Defined in: [src/primitives/Denomination/index.d.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/index.d.ts#L29)
+
+***
+
+### Keccak256Hash
+
+> **Keccak256Hash** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/Keccak256/Keccak256HashType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Keccak256/Keccak256HashType.ts#L18)
+
+Keccak256Hash - 32-byte branded Uint8Array type
+
+Type-safe wrapper around Uint8Array representing a Keccak256 hash.
+Zero runtime overhead - just compile-time type checking.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Keccak256Hash"`
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import type { Keccak256Hash } from './crypto/Keccak256/index.js';
+
+const hash: Keccak256Hash = Keccak256Hash.from("hello");
+// Uint8Array(32) with type branding
+```
+
+***
+
+### Ripemd160Hash
+
+> **Ripemd160Hash** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/Ripemd160/Ripemd160HashType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Ripemd160/Ripemd160HashType.ts#L18)
+
+Ripemd160Hash - 20-byte branded Uint8Array type
+
+Type-safe wrapper around Uint8Array representing a RIPEMD160 hash.
+Zero runtime overhead - just compile-time type checking.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Ripemd160Hash"`
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import type { Ripemd160Hash } from './crypto/Ripemd160/index.js';
+
+const hash: Ripemd160Hash = Ripemd160Hash.from("hello");
+// Uint8Array(20) with type branding
+```
+
+***
+
+### SHA256Hash
+
+> **SHA256Hash** = `Uint8Array` & `object`
+
+Defined in: [src/crypto/SHA256/SHA256HashType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/SHA256/SHA256HashType.ts#L18)
+
+SHA256Hash - 32-byte branded Uint8Array type
+
+Type-safe wrapper around Uint8Array representing a SHA256 hash.
+Zero runtime overhead - just compile-time type checking.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"SHA256Hash"`
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import type { SHA256Hash } from './crypto/SHA256/index.js';
+
+const hash: SHA256Hash = SHA256Hash.from("hello");
+// Uint8Array(32) with type branding
+```
+
+***
+
+### Wei
+
+> **Wei** = [`WeiType`](namespaces/BrandedWei.mdx#weitype)
+
+Defined in: [src/primitives/Denomination/index.d.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/index.d.ts#L16)
+
+## Variables
+
+### BN254
+
+> `const` **BN254**: `object`
+
+Defined in: [src/crypto/bn254/BN254.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/bn254/BN254.js#L53)
+
+BN254 main export
+
+#### Type Declaration
+
+##### deserializeG1()
+
+> **deserializeG1**: (`bytes`) => `G1PointType`
+
+Deserialize G1 point from bytes
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+64-byte serialization
+
+###### Returns
+
+`G1PointType`
+
+G1 point
+
+###### See
+
+https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If bytes length is invalid (must be 64 bytes)
+
+###### Example
+
+```javascript
+import { deserializeG1 } from './crypto/bn254/deserializeG1.js';
+const bytes = new Uint8Array(64);
+const point = deserializeG1(bytes);
+```
+
+##### deserializeG2()
+
+> **deserializeG2**: (`bytes`) => `G2PointType`
+
+Deserialize G2 point from bytes
+
+###### Parameters
+
+###### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+128-byte serialization
+
+###### Returns
+
+`G2PointType`
+
+G2 point
+
+###### See
+
+https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If bytes length is invalid (must be 128 bytes)
+
+###### Example
+
+```javascript
+import { deserializeG2 } from './crypto/bn254/deserializeG2.js';
+const bytes = new Uint8Array(128);
+const point = deserializeG2(bytes);
+```
+
+##### Fp
+
+> **Fp**: `__module`
+
+##### Fp2
+
+> **Fp2**: `__module`
+
+##### Fr
+
+> **Fr**: `__module`
+
+##### G1
+
+> **G1**: `__module`
+
+##### G2
+
+> **G2**: `__module`
+
+##### Pairing
+
+> **Pairing**: `__module`
+
+##### serializeG1()
+
+> **serializeG1**: (`point`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Serialize G1 point to bytes (64 bytes: x || y)
+
+###### Parameters
+
+###### point
+
+`G1PointType`
+
+G1 point
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+64-byte serialization
+
+###### See
+
+https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { serializeG1 } from './crypto/bn254/serializeG1.js';
+import * as G1 from './crypto/bn254/G1/index.js';
+const point = G1.generator();
+const bytes = serializeG1(point);
+```
+
+##### serializeG2()
+
+> **serializeG2**: (`point`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Serialize G2 point to bytes (128 bytes: x.c0 || x.c1 || y.c0 || y.c1)
+
+###### Parameters
+
+###### point
+
+`G2PointType`
+
+G2 point
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+128-byte serialization
+
+###### See
+
+https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import { serializeG2 } from './crypto/bn254/serializeG2.js';
+import * as G2 from './crypto/bn254/G2/index.js';
+const point = G2.generator();
+const bytes = serializeG2(point);
+```
+
+***
+
+### Ether
+
+> **Ether**: `EtherConstructor`
+
+Defined in: [src/primitives/Denomination/index.d.ts:42](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/index.d.ts#L42)
+
+***
+
+### Gwei
+
+> **Gwei**: `GweiConstructor`
+
+Defined in: [src/primitives/Denomination/index.d.ts:29](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/index.d.ts#L29)
+
+***
+
+### Hash
+
+> `const` **Hash**: `HashConstructor`
+
+Defined in: [src/primitives/Hash/Hash.d.ts:3](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hash/Hash.d.ts#L3)
+
+***
+
+### Wei
+
+> **Wei**: `WeiConstructor`
+
+Defined in: [src/primitives/Denomination/index.d.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Denomination/index.d.ts#L16)
+
+## Functions
+
+### Bytes()
+
+> **Bytes**(`value`): [`BytesType`](../primitives/Bytes.mdx#bytestype)
+
+Defined in: [src/primitives/Bytes/Bytes.ts:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes.ts#L19)
+
+Create Bytes from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Uint8Array, hex string, UTF-8 string, or number array
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`BytesType`](../primitives/Bytes.mdx#bytestype)
+
+Bytes
+
+#### Example
+
+```typescript
+import { Bytes } from '@tevm/voltaire';
+
+const b1 = Bytes([0x01, 0x02, 0x03]);
+const b2 = Bytes(new Uint8Array([0x01, 0x02]));
+const b3 = Bytes("0x1234");
+```
+
+***
+
+### Bytes2()
+
+> **Bytes2**(`value`): [`Bytes2Type`](../primitives/Bytes.mdx#bytes2type)
+
+Defined in: [src/primitives/Bytes/Bytes2/Bytes2.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes2/Bytes2.js#L21)
+
+Create Bytes2 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Input value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes2Type`](../primitives/Bytes.mdx#bytes2type)
+
+***
+
+### Bytes3()
+
+> **Bytes3**(`value`): [`Bytes3Type`](../primitives/Bytes.mdx#bytes3type)
+
+Defined in: [src/primitives/Bytes/Bytes3/Bytes3.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes3/Bytes3.js#L21)
+
+Create Bytes3 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Input value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes3Type`](../primitives/Bytes.mdx#bytes3type)
+
+***
+
+### Bytes5()
+
+> **Bytes5**(`value`): [`Bytes5Type`](../primitives/Bytes.mdx#bytes5type)
+
+Defined in: [src/primitives/Bytes/Bytes5/Bytes5.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes5/Bytes5.js#L21)
+
+Create Bytes5 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Input value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes5Type`](../primitives/Bytes.mdx#bytes5type)
+
+***
+
+### Bytes6()
+
+> **Bytes6**(`value`): [`Bytes6Type`](../primitives/Bytes.mdx#bytes6type)
+
+Defined in: [src/primitives/Bytes/Bytes6/Bytes6.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes6/Bytes6.js#L21)
+
+Create Bytes6 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Input value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes6Type`](../primitives/Bytes.mdx#bytes6type)
+
+***
+
+### Bytes7()
+
+> **Bytes7**(`value`): [`Bytes7Type`](../primitives/Bytes.mdx#bytes7type)
+
+Defined in: [src/primitives/Bytes/Bytes7/Bytes7.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes7/Bytes7.js#L21)
+
+Create Bytes7 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Input value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | `number`[]
+
+#### Returns
+
+[`Bytes7Type`](../primitives/Bytes.mdx#bytes7type)
+
+***
+
+### Hex()
+
+> **Hex**(`value`): [`HexType`](../primitives/Hex.mdx#hextype)
+
+Defined in: [src/primitives/Hex/Hex.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Hex/Hex.ts#L22)
+
+Factory function for creating Hex instances (canonical constructor)
+
+#### Parameters
+
+##### value
+
+Hex string or bytes
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`HexType`](../primitives/Hex.mdx#hextype)
+
+Hex value
+
+#### Example
+
+```ts
+import { Hex } from '@voltaire/primitives/Hex';
+const hex = Hex('0x1234');
+```
+
+***
+
+### Int128()
+
+> **Int128**(`value`): [`BrandedInt128`](../primitives/Int128.mdx#brandedint128)
+
+Defined in: [src/primitives/Int128/Int128.js:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int128/Int128.js#L68)
+
+Create Int128 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt128`](../primitives/Int128.mdx#brandedint128)
+
+#### Example
+
+```javascript
+import { Int128 } from '@tevm/voltaire';
+
+const a = Int128(-1000000000000000000000n);
+const b = Int128("0xffffffffffffffffffc9f2c9cd04674edbb00000");
+```
+
+***
+
+### Int16()
+
+> **Int16**(`value`): [`BrandedInt16`](../primitives/Int16.mdx#brandedint16)
+
+Defined in: [src/primitives/Int16/Int16.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int16/Int16.js#L28)
+
+Create Int16 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt16`](../primitives/Int16.mdx#brandedint16)
+
+#### Example
+
+```javascript
+import { Int16 } from '@tevm/voltaire';
+
+const a = Int16(-1000);
+const b = Int16("0xfc18");
+```
+
+***
+
+### Int256()
+
+> **Int256**(`value`): [`BrandedInt256`](../primitives/Int256.mdx#brandedint256)
+
+Defined in: [src/primitives/Int256/Int256.js:68](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int256/Int256.js#L68)
+
+Create Int256 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt256`](../primitives/Int256.mdx#brandedint256)
+
+#### Example
+
+```javascript
+import { Int256 } from '@tevm/voltaire';
+
+const a = Int256(-1000000000000000000000000000000n);
+const b = Int256("0xff..."); // 256-bit hex
+```
+
+***
+
+### Int32()
+
+> **Int32**(`value`): [`BrandedInt32`](../primitives/Int32.mdx#brandedint32)
+
+Defined in: [src/primitives/Int32/Int32.js:57](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int32/Int32.js#L57)
+
+Create Int32 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt32`](../primitives/Int32.mdx#brandedint32)
+
+#### Example
+
+```javascript
+import { Int32 } from '@tevm/voltaire';
+
+const a = Int32(-100000);
+const b = Int32("0xfffe7960");
+```
+
+***
+
+### Int64()
+
+> **Int64**(`value`): [`BrandedInt64`](../primitives/Int64.mdx#brandedint64)
+
+Defined in: [src/primitives/Int64/Int64.js:57](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int64/Int64.js#L57)
+
+Create Int64 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt64`](../primitives/Int64.mdx#brandedint64)
+
+#### Example
+
+```javascript
+import { Int64 } from '@tevm/voltaire';
+
+const a = Int64(-1000000000000n);
+const b = Int64("0xffffff172b5af000");
+```
+
+***
+
+### Int8()
+
+> **Int8**(`value`): [`BrandedInt8`](../primitives/Int8.mdx#brandedint8)
+
+Defined in: [src/primitives/Int8/Int8.js:28](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Int8/Int8.js#L28)
+
+Create Int8 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`BrandedInt8`](../primitives/Int8.mdx#brandedint8)
+
+#### Example
+
+```javascript
+import { Int8 } from '@tevm/voltaire';
+
+const a = Int8(-42);
+const b = Int8("0xd6");
+```
+
+***
+
+### KZG()
+
+> **KZG**(): `void`
+
+Defined in: [src/crypto/KZG/KZG.js:121](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/KZG/KZG.js#L121)
+
+KZG Commitments for EIP-4844
+
+Available in both native FFI and WASM environments.
+
+#### Returns
+
+`void`
+
+#### See
+
+https://voltaire.tevm.sh/crypto/kzg
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+Always throws - use static methods instead
+
+***
+
+### Opcode()
+
+> **Opcode**(`value`): [`BrandedOpcode`](../primitives/Opcode.mdx#brandedopcode)
+
+Defined in: [src/primitives/Opcode/Opcode.js:119](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Opcode/Opcode.js#L119)
+
+Identity function for type branding
+
+#### Parameters
+
+##### value
+
+`number`
+
+Opcode byte value
+
+#### Returns
+
+[`BrandedOpcode`](../primitives/Opcode.mdx#brandedopcode)
+
+Branded opcode
+
+***
+
+### Uint128()
+
+> **Uint128**(`value`): [`Uint128Type`](../primitives/Uint128.mdx#uint128type)
+
+Defined in: [src/primitives/Uint128/Uint128.js:69](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint128/Uint128.js#L69)
+
+Create Uint128 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`Uint128Type`](../primitives/Uint128.mdx#uint128type)
+
+#### Example
+
+```javascript
+import { Uint128 } from '@tevm/voltaire';
+
+const a = Uint128(1000000000000000000000000n);
+const b = Uint128("0xd3c21bcecceda1000000");
+```
+
+***
+
+### Uint16()
+
+> **Uint16**(`value`): `Uint16Type`
+
+Defined in: [src/primitives/Uint16/Uint16.js:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint16/Uint16.js#L54)
+
+Create Uint16 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`Uint16Type`
+
+#### Example
+
+```javascript
+import { Uint16 } from '@tevm/voltaire';
+
+const a = Uint16(1000);
+const b = Uint16("0x03e8");
+```
+
+***
+
+### Uint32()
+
+> **Uint32**(`value`): [`Uint32Type`](../primitives/Uint32.mdx#uint32type)
+
+Defined in: [src/primitives/Uint32/Uint32.js:59](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint32/Uint32.js#L59)
+
+Create Uint32 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`Uint32Type`](../primitives/Uint32.mdx#uint32type)
+
+#### Example
+
+```javascript
+import { Uint32 } from '@tevm/voltaire';
+
+const a = Uint32(100000);
+const b = Uint32("0x186a0");
+```
+
+***
+
+### Uint64()
+
+> **Uint64**(`value`): [`Uint64Type`](../primitives/Uint64.mdx#uint64type)
+
+Defined in: [src/primitives/Uint64/Uint64.js:59](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint64/Uint64.js#L59)
+
+Create Uint64 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`Uint64Type`](../primitives/Uint64.mdx#uint64type)
+
+#### Example
+
+```javascript
+import { Uint64 } from '@tevm/voltaire';
+
+const a = Uint64(1000000000000n);
+const b = Uint64("0xe8d4a51000");
+```
+
+***
+
+### Uint8()
+
+> **Uint8**(`value`): `Uint8Type`
+
+Defined in: [src/primitives/Uint8/Uint8.js:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Uint8/Uint8.js#L55)
+
+Create Uint8 from various input types (callable constructor)
+
+#### Parameters
+
+##### value
+
+Number, BigInt, or hex string
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+`Uint8Type`
+
+#### Example
+
+```javascript
+import { Uint8 } from '@tevm/voltaire';
+
+const a = Uint8(42);
+const b = Uint8("0x2a");
+const c = Uint8(42n);
+```
+
+## References
+
+### Abi
+
+Re-exports [Abi](../primitives/Abi/index.mdx#abi)
+
+***
+
+### AccessList
+
+Re-exports [AccessList](../primitives/AccessList.mdx#accesslist)
+
+***
+
+### Address
+
+Re-exports [Address](../primitives/Address.mdx#address)
+
+***
+
+### AesGcm
+
+Re-exports [AesGcm](../crypto/AesGcm.mdx#aesgcm)
+
+***
+
+### Authorization
+
+Renames and re-exports [primitives/Authorization](../primitives/Authorization.mdx)
+
+***
+
+### Base64
+
+Renames and re-exports [primitives/Base64](../primitives/Base64.mdx)
+
+***
+
+### BeaconBlockRoot
+
+Renames and re-exports [primitives/BeaconBlockRoot](../primitives/BeaconBlockRoot.mdx)
+
+***
+
+### BinaryTree
+
+Renames and re-exports [primitives/BinaryTree](../primitives/BinaryTree.mdx)
+
+***
+
+### Bip39
+
+Re-exports [Bip39](../crypto/Bip39.mdx#bip39)
+
+***
+
+### Blake2
+
+Re-exports [Blake2](../crypto/Blake2.mdx#blake2)
+
+***
+
+### Blake2HashType
+
+Renames and re-exports [Blake2Hash](#blake2hash)
+
+***
+
+### Blob
+
+Re-exports [Blob](../primitives/Blob.mdx#blob)
+
+***
+
+### Block
+
+Renames and re-exports [primitives/Block](../primitives/Block.mdx)
+
+***
+
+### BlockBody
+
+Renames and re-exports [primitives/BlockBody](../primitives/BlockBody.mdx)
+
+***
+
+### BlockFilter
+
+Renames and re-exports [primitives/BlockFilter](../primitives/BlockFilter.mdx)
+
+***
+
+### BlockHash
+
+Renames and re-exports [primitives/BlockHash](../primitives/BlockHash.mdx)
+
+***
+
+### BlockHeader
+
+Renames and re-exports [primitives/BlockHeader](../primitives/BlockHeader.mdx)
+
+***
+
+### BlockNumber
+
+Renames and re-exports [primitives/BlockNumber](../primitives/BlockNumber.mdx)
+
+***
+
+### BloomFilter
+
+Re-exports [BloomFilter](../primitives/BloomFilter.mdx#bloomfilter)
+
+***
+
+### Bls12381
+
+Re-exports [Bls12381](../crypto/Bls12381/index.mdx#bls12381)
+
+***
+
+### BrandedAbi
+
+Renames and re-exports [primitives/Abi](../primitives/Abi/index.mdx)
+
+***
+
+### BrandedAccessList
+
+Renames and re-exports [primitives/AccessList](../primitives/AccessList.mdx)
+
+***
+
+### BrandedAuthorization
+
+Renames and re-exports [primitives/Authorization](../primitives/Authorization.mdx)
+
+***
+
+### BrandedBinaryTree
+
+Renames and re-exports [primitives/BinaryTree](../primitives/BinaryTree.mdx)
+
+***
+
+### BrandedBlob
+
+Renames and re-exports [primitives/Blob](../primitives/Blob.mdx)
+
+***
+
+### BrandedBloomFilter
+
+Renames and re-exports [primitives/BloomFilter](../primitives/BloomFilter.mdx)
+
+***
+
+### BrandedBytecode
+
+Renames and re-exports [primitives/Bytecode](../primitives/Bytecode.mdx)
+
+***
+
+### BrandedEventLog
+
+Renames and re-exports [primitives/EventLog](../primitives/EventLog.mdx)
+
+***
+
+### BrandedHash
+
+Renames and re-exports [primitives/Hash](../primitives/Hash.mdx)
+
+***
+
+### BrandedInt128
+
+Renames and re-exports [primitives/Int128](../primitives/Int128.mdx)
+
+***
+
+### BrandedInt16
+
+Renames and re-exports [primitives/Int16](../primitives/Int16.mdx)
+
+***
+
+### BrandedInt256
+
+Renames and re-exports [primitives/Int256](../primitives/Int256.mdx)
+
+***
+
+### BrandedInt32
+
+Renames and re-exports [primitives/Int32](../primitives/Int32.mdx)
+
+***
+
+### BrandedInt64
+
+Renames and re-exports [primitives/Int64](../primitives/Int64.mdx)
+
+***
+
+### BrandedInt8
+
+Renames and re-exports [primitives/Int8](../primitives/Int8.mdx)
+
+***
+
+### BrandedSiwe
+
+Renames and re-exports [primitives/Siwe](../primitives/Siwe.mdx)
+
+***
+
+### BrandedStorageKey
+
+Renames and re-exports [primitives/State](../primitives/State.mdx)
+
+***
+
+### BrandedUint
+
+Renames and re-exports [primitives/Uint](../primitives/Uint.mdx)
+
+***
+
+### BrandedUint128
+
+Renames and re-exports [primitives/Uint128](../primitives/Uint128.mdx)
+
+***
+
+### BrandedUint16
+
+Renames and re-exports [primitives/Uint16](../primitives/Uint16.mdx)
+
+***
+
+### BrandedUint32
+
+Renames and re-exports [primitives/Uint32](../primitives/Uint32.mdx)
+
+***
+
+### BrandedUint64
+
+Renames and re-exports [primitives/Uint64](../primitives/Uint64.mdx)
+
+***
+
+### BrandedUint8
+
+Renames and re-exports [primitives/Uint8](../primitives/Uint8.mdx)
+
+***
+
+### Bytecode
+
+Re-exports [Bytecode](../primitives/Bytecode.mdx#bytecode)
+
+***
+
+### Bytes1
+
+Re-exports [Bytes1](namespaces/BrandedBytes1.mdx#bytes1)
+
+***
+
+### Bytes16
+
+Re-exports [Bytes16](namespaces/BrandedBytes16.mdx#bytes16)
+
+***
+
+### Bytes32
+
+Re-exports [Bytes32](namespaces/BrandedBytes32.mdx#bytes32)
+
+***
+
+### Bytes4
+
+Re-exports [Bytes4](namespaces/BrandedBytes4.mdx#bytes4)
+
+***
+
+### Bytes64
+
+Re-exports [Bytes64](namespaces/BrandedBytes64.mdx#bytes64)
+
+***
+
+### Bytes8
+
+Re-exports [Bytes8](namespaces/BrandedBytes8.mdx#bytes8)
+
+***
+
+### CallTrace
+
+Renames and re-exports [primitives/CallTrace](../primitives/CallTrace.mdx)
+
+***
+
+### ChaCha20Poly1305
+
+Re-exports [ChaCha20Poly1305](../crypto/ChaCha20Poly1305.mdx#chacha20poly1305)
+
+***
+
+### Chain
+
+Re-exports [Chain](namespaces/BrandedChain.mdx#chain-1)
+
+***
+
+### ChainHead
+
+Renames and re-exports [primitives/ChainHead](../primitives/ChainHead.mdx)
+
+***
+
+### CompilerVersion
+
+Renames and re-exports [primitives/CompilerVersion](../primitives/CompilerVersion.mdx)
+
+***
+
+### ContractCode
+
+Renames and re-exports [primitives/ContractCode](../primitives/ContractCode.mdx)
+
+***
+
+### ContractResult
+
+Renames and re-exports [primitives/ContractResult](../primitives/ContractResult.mdx)
+
+***
+
+### ContractSignature
+
+Renames and re-exports [primitives/ContractSignature](../primitives/ContractSignature.mdx)
+
+***
+
+### DecodedData
+
+Renames and re-exports [primitives/DecodedData](../primitives/DecodedData.mdx)
+
+***
+
+### Domain
+
+Renames and re-exports [primitives/Domain](../primitives/Domain.mdx)
+
+***
+
+### DomainSeparator
+
+Renames and re-exports [primitives/DomainSeparator](../primitives/DomainSeparator.mdx)
+
+***
+
+### Ed25519
+
+Re-exports [Ed25519](../crypto/Ed25519.mdx#ed25519)
+
+***
+
+### EIP712
+
+Re-exports [EIP712](../crypto/EIP712.mdx#eip712)
+
+***
+
+### EncodedData
+
+Renames and re-exports [primitives/EncodedData](../primitives/EncodedData.mdx)
+
+***
+
+### Ens
+
+Renames and re-exports [primitives/Ens](../primitives/Ens.mdx)
+
+***
+
+### Epoch
+
+Renames and re-exports [primitives/Epoch](../primitives/Epoch.mdx)
+
+***
+
+### ErrorSignature
+
+Renames and re-exports [primitives/ErrorSignature](../primitives/ErrorSignature.mdx)
+
+***
+
+### EventLog
+
+Renames and re-exports [primitives/EventLog](../primitives/EventLog.mdx)
+
+***
+
+### EventSignature
+
+Renames and re-exports [primitives/EventSignature](../primitives/EventSignature.mdx)
+
+***
+
+### evm
+
+Re-exports [evm](../evm/index.mdx)
+
+***
+
+### FilterId
+
+Renames and re-exports [primitives/FilterId](../primitives/FilterId.mdx)
+
+***
+
+### ForkId
+
+Renames and re-exports [primitives/ForkId](../primitives/ForkId.mdx)
+
+***
+
+### FunctionSignature
+
+Renames and re-exports [primitives/FunctionSignature](../primitives/FunctionSignature.mdx)
+
+***
+
+### Gas
+
+Renames and re-exports [primitives/Gas](../primitives/Gas.mdx)
+
+***
+
+### GasConstants
+
+Renames and re-exports [primitives/GasConstants](../primitives/GasConstants/index.mdx)
+
+***
+
+### GasCosts
+
+Re-exports [GasCosts](../GasCosts.mdx)
+
+***
+
+### GasEstimate
+
+Renames and re-exports [primitives/GasEstimate](../primitives/GasEstimate.mdx)
+
+***
+
+### GasRefund
+
+Renames and re-exports [primitives/GasRefund](../primitives/GasRefund.mdx)
+
+***
+
+### GasUsed
+
+Renames and re-exports [primitives/GasUsed](../primitives/GasUsed.mdx)
+
+***
+
+### Hardfork
+
+Renames and re-exports [primitives/Hardfork](../primitives/Hardfork.mdx)
+
+***
+
+### HDWallet
+
+Re-exports [HDWallet](../HDWallet.mdx)
+
+***
+
+### InitCode
+
+Renames and re-exports [primitives/InitCode](../primitives/InitCode.mdx)
+
+***
+
+### Keccak256
+
+Re-exports [Keccak256](../crypto/Keccak256.mdx#keccak256)
+
+***
+
+### Keccak256HashType
+
+Renames and re-exports [Keccak256Hash](#keccak256hash)
+
+***
+
+### Keystore
+
+Renames and re-exports [crypto/Keystore](../crypto/Keystore.mdx)
+
+***
+
+### KzgBlobType
+
+Renames and re-exports [BlobType](../crypto/KZG.mdx#blobtype)
+
+***
+
+### KzgCommitmentType
+
+Re-exports [KzgCommitmentType](../crypto/KZG.mdx#kzgcommitmenttype)
+
+***
+
+### KzgProofType
+
+Re-exports [KzgProofType](../crypto/KZG.mdx#kzgprooftype)
+
+***
+
+### License
+
+Renames and re-exports [primitives/License](../primitives/License.mdx)
+
+***
+
+### LogFilter
+
+Renames and re-exports [primitives/LogFilter](../primitives/LogFilter.mdx)
+
+***
+
+### LogIndex
+
+Renames and re-exports [primitives/LogIndex](../primitives/LogIndex.mdx)
+
+***
+
+### MemoryDump
+
+Renames and re-exports [primitives/MemoryDump](../primitives/MemoryDump.mdx)
+
+***
+
+### Metadata
+
+Renames and re-exports [primitives/Metadata](../primitives/Metadata.mdx)
+
+***
+
+### ModExp
+
+Re-exports [ModExp](../crypto/ModExp.mdx#modexp)
+
+***
+
+### NetworkId
+
+Renames and re-exports [primitives/NetworkId](../primitives/NetworkId.mdx)
+
+***
+
+### NodeInfo
+
+Renames and re-exports [primitives/NodeInfo](../primitives/NodeInfo.mdx)
+
+***
+
+### OpStep
+
+Renames and re-exports [primitives/OpStep](../primitives/OpStep.mdx)
+
+***
+
+### P256
+
+Re-exports [P256](../crypto/P256.mdx#p256)
+
+***
+
+### PeerId
+
+Renames and re-exports [primitives/PeerId](../primitives/PeerId.mdx)
+
+***
+
+### PeerInfo
+
+Renames and re-exports [primitives/PeerInfo](../primitives/PeerInfo.mdx)
+
+***
+
+### PendingTransactionFilter
+
+Renames and re-exports [primitives/PendingTransactionFilter](../primitives/PendingTransactionFilter.mdx)
+
+***
+
+### Permit
+
+Renames and re-exports [primitives/Permit](../primitives/Permit/index.mdx)
+
+***
+
+### ProtocolVersion
+
+Renames and re-exports [primitives/ProtocolVersion](../primitives/ProtocolVersion.mdx)
+
+***
+
+### Proxy
+
+Re-exports [Proxy](../Proxy.mdx)
+
+***
+
+### Receipt
+
+Renames and re-exports [primitives/Receipt](../primitives/Receipt.mdx)
+
+***
+
+### ReturnData
+
+Renames and re-exports [primitives/ReturnData](../primitives/ReturnData.mdx)
+
+***
+
+### RevertReason
+
+Renames and re-exports [primitives/RevertReason](../primitives/RevertReason.mdx)
+
+***
+
+### Ripemd160
+
+Re-exports [Ripemd160](../crypto/Ripemd160.mdx#ripemd160)
+
+***
+
+### Ripemd160HashType
+
+Renames and re-exports [Ripemd160Hash](#ripemd160hash)
+
+***
+
+### Rlp
+
+Re-exports [Rlp](../primitives/Rlp.mdx#rlp)
+
+***
+
+### RuntimeCode
+
+Renames and re-exports [primitives/RuntimeCode](../primitives/RuntimeCode.mdx)
+
+***
+
+### Secp256k1
+
+Re-exports [Secp256k1](../crypto/Secp256k1.mdx#secp256k1)
+
+***
+
+### Selector
+
+Renames and re-exports [primitives/Selector](../primitives/Selector.mdx)
+
+***
+
+### SHA256
+
+Re-exports [SHA256](../crypto/SHA256.mdx#sha256)
+
+***
+
+### SHA256HashType
+
+Renames and re-exports [SHA256Hash](#sha256hash)
+
+***
+
+### SignedData
+
+Renames and re-exports [primitives/SignedData](../primitives/SignedData.mdx)
+
+***
+
+### Siwe
+
+Re-exports [Siwe](../primitives/Siwe.mdx#siwe)
+
+***
+
+### Slot
+
+Renames and re-exports [primitives/Slot](../primitives/Slot.mdx)
+
+***
+
+### SourceMap
+
+Renames and re-exports [primitives/SourceMap](../primitives/SourceMap.mdx)
+
+***
+
+### Ssz
+
+Re-exports [Ssz](../Ssz.mdx)
+
+***
+
+### State
+
+Renames and re-exports [primitives/State](../primitives/State.mdx)
+
+***
+
+### StateDiff
+
+Renames and re-exports [primitives/StateDiff](../primitives/StateDiff.mdx)
+
+***
+
+### StealthAddress
+
+Renames and re-exports [primitives/StealthAddress](../primitives/StealthAddress.mdx)
+
+***
+
+### Storage
+
+Re-exports [Storage](../Storage.mdx)
+
+***
+
+### StorageDiff
+
+Renames and re-exports [primitives/StorageDiff](../primitives/StorageDiff.mdx)
+
+***
+
+### StorageKey
+
+Re-exports [StorageKey](../primitives/State.mdx#storagekey)
+
+***
+
+### StructLog
+
+Renames and re-exports [primitives/StructLog](../primitives/StructLog.mdx)
+
+***
+
+### SyncStatus
+
+Renames and re-exports [primitives/SyncStatus](../primitives/SyncStatus.mdx)
+
+***
+
+### TopicFilter
+
+Renames and re-exports [primitives/TopicFilter](../primitives/TopicFilter.mdx)
+
+***
+
+### TraceConfig
+
+Renames and re-exports [primitives/TraceConfig](../primitives/TraceConfig.mdx)
+
+***
+
+### TraceResult
+
+Renames and re-exports [primitives/TraceResult](../primitives/TraceResult.mdx)
+
+***
+
+### Transaction
+
+Renames and re-exports [primitives/Transaction](../primitives/Transaction/index.mdx)
+
+***
+
+### TransactionHash
+
+Renames and re-exports [primitives/TransactionHash](../primitives/TransactionHash.mdx)
+
+***
+
+### TransactionIndex
+
+Renames and re-exports [primitives/TransactionIndex](../primitives/TransactionIndex.mdx)
+
+***
+
+### TransactionStatus
+
+Renames and re-exports [primitives/TransactionStatus](../primitives/TransactionStatus.mdx)
+
+***
+
+### TransactionUrl
+
+Re-exports [TransactionUrl](../TransactionUrl.mdx)
+
+***
+
+### TypedData
+
+Renames and re-exports [primitives/TypedData](../primitives/TypedData.mdx)
+
+***
+
+### Uint256
+
+Renames and re-exports [primitives/Uint](../primitives/Uint.mdx)
+
+***
+
+### Uncle
+
+Renames and re-exports [primitives/Uncle](../primitives/Uncle.mdx)
+
+***
+
+### ValidatorIndex
+
+Renames and re-exports [primitives/ValidatorIndex](../primitives/ValidatorIndex.mdx)
+
+***
+
+### Withdrawal
+
+Renames and re-exports [primitives/Withdrawal](../primitives/Withdrawal.mdx)
+
+***
+
+### WithdrawalIndex
+
+Renames and re-exports [primitives/WithdrawalIndex](../primitives/WithdrawalIndex.mdx)
+
+***
+
+### X25519
+
+Re-exports [X25519](../crypto/X25519.mdx#x25519)

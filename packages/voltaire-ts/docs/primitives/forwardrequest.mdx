@@ -1,0 +1,330 @@
+---
+title: "ForwardRequest"
+description: "EIP-2771 meta-transaction forward requests for gasless transactions"
+---
+
+## Overview
+
+ForwardRequest represents an EIP-2771 meta-transaction request for GSN (Gas Station Network) style gasless transactions. A user signs the request off-chain, and a relayer submits it on-chain, paying gas on behalf of the user.
+
+```typescript
+import * as ForwardRequest from '@tevm/voltaire/ForwardRequest'
+import * as Domain from '@tevm/voltaire/Domain'
+
+const request = ForwardRequest.from({
+  from: userAddress,
+  to: targetContract,
+  value: 0n,
+  gas: 100000n,
+  nonce: 1n,
+  data: calldata,
+  validUntilTime: 1700000000n,
+})
+
+// Compute EIP-712 hash for signing
+const domain = Domain.from({
+  name: 'GSN Relayed Transaction',
+  version: '2',
+  chainId: 1n,
+  verifyingContract: forwarderAddress,
+})
+
+const hash = ForwardRequest.hash(request, domain)
+// Sign hash with user's private key, relayer submits to forwarder contract
+```
+
+## API
+
+### from
+
+Creates a ForwardRequest from input parameters.
+
+```typescript
+function from(value: ForwardRequestLike): ForwardRequestType
+```
+
+**Parameters:**
+- `from` - Address of the actual signer/sender
+- `to` - Target contract address
+- `value` - ETH value to send with the call
+- `gas` - Gas limit for the inner call
+- `nonce` - Replay protection nonce
+- `data` - Calldata to execute on target contract
+- `validUntilTime` - Unix timestamp after which request is invalid
+
+```typescript
+const request = ForwardRequest.from({
+  from: userAddress,
+  to: targetContract,
+  value: 0n,
+  gas: 100000n,
+  nonce: 1n,
+  data: encodedFunctionCall,
+  validUntilTime: BigInt(Math.floor(Date.now() / 1000) + 3600),
+})
+```
+
+### fromFields
+
+Creates a ForwardRequest from individual field parameters.
+
+```typescript
+function fromFields(
+  from: Address,
+  to: Address,
+  value: bigint,
+  gas: bigint,
+  nonce: bigint,
+  data: Uint8Array,
+  validUntilTime: bigint
+): ForwardRequestType
+```
+
+```typescript
+const request = ForwardRequest.fromFields(
+  userAddress,
+  targetContract,
+  0n,
+  100000n,
+  1n,
+  calldata,
+  1700000000n
+)
+```
+
+### structHash
+
+Computes the EIP-712 struct hash for the request.
+
+```typescript
+function structHash(request: ForwardRequestType): Uint8Array
+```
+
+The struct hash is `keccak256(typeHash || encodeData)` where encodeData contains all fields ABI-encoded.
+
+```typescript
+const request = ForwardRequest.from({
+  from: userAddress,
+  to: targetContract,
+  value: 0n,
+  gas: 100000n,
+  nonce: 1n,
+  data: calldata,
+  validUntilTime: 1700000000n,
+})
+
+const structHash = ForwardRequest.structHash(request)
+// Uint8Array(32)
+```
+
+### hash
+
+Computes the EIP-712 typed data hash for signing.
+
+```typescript
+function hash(
+  request: ForwardRequestType,
+  domain: DomainType
+): Uint8Array
+```
+
+Returns `keccak256("\x19\x01" || domainSeparator || structHash)` - the hash to sign.
+
+```typescript
+import * as Domain from '@tevm/voltaire/Domain'
+
+const domain = Domain.from({
+  name: 'GSN Relayed Transaction',
+  version: '2',
+  chainId: 1n,
+  verifyingContract: forwarderAddress,
+})
+
+const request = ForwardRequest.from({
+  from: userAddress,
+  to: targetContract,
+  value: 0n,
+  gas: 100000n,
+  nonce: 1n,
+  data: calldata,
+  validUntilTime: 1700000000n,
+})
+
+const hashToSign = ForwardRequest.hash(request, domain)
+// Sign this hash with the user's private key
+```
+
+### equals
+
+Checks equality between two ForwardRequests.
+
+```typescript
+function equals(a: ForwardRequestType, b: ForwardRequestType): boolean
+```
+
+```typescript
+const req1 = ForwardRequest.from({ ... })
+const req2 = ForwardRequest.from({ ... })
+
+if (ForwardRequest.equals(req1, req2)) {
+  console.log('Requests are identical')
+}
+```
+
+### isExpired
+
+Checks if the request has expired based on current time.
+
+```typescript
+function isExpired(request: ForwardRequestType, currentTime: bigint): boolean
+```
+
+```typescript
+const request = ForwardRequest.from({
+  from: userAddress,
+  to: targetContract,
+  value: 0n,
+  gas: 100000n,
+  nonce: 1n,
+  data: calldata,
+  validUntilTime: 1700000000n,
+})
+
+const now = BigInt(Math.floor(Date.now() / 1000))
+
+if (ForwardRequest.isExpired(request, now)) {
+  console.log('Request has expired, cannot relay')
+}
+```
+
+### isValid
+
+Checks if the request is still valid (not expired).
+
+```typescript
+function isValid(request: ForwardRequestType, currentTime: bigint): boolean
+```
+
+```typescript
+const now = BigInt(Math.floor(Date.now() / 1000))
+
+if (ForwardRequest.isValid(request, now)) {
+  // Safe to relay
+  await submitToForwarder(request, signature)
+}
+```
+
+### getTypeString
+
+Returns the EIP-712 type string for ForwardRequest.
+
+```typescript
+function getTypeString(): string
+```
+
+```typescript
+ForwardRequest.getTypeString()
+// "ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)"
+```
+
+## Types
+
+### ForwardRequestType
+
+```typescript
+type ForwardRequestType = {
+  /** Actual signer/sender of the meta-transaction */
+  readonly from: AddressType
+
+  /** Target contract to call */
+  readonly to: AddressType
+
+  /** ETH value to send with the call */
+  readonly value: bigint
+
+  /** Gas limit for the inner call */
+  readonly gas: bigint
+
+  /** Nonce for replay protection */
+  readonly nonce: bigint
+
+  /** Calldata to execute on target contract */
+  readonly data: Uint8Array
+
+  /** Unix timestamp after which request is invalid */
+  readonly validUntilTime: bigint
+}
+```
+
+## Constants
+
+### FORWARD_REQUEST_TYPEHASH
+
+Pre-computed keccak256 hash of the EIP-712 type string.
+
+```typescript
+const FORWARD_REQUEST_TYPEHASH: Uint8Array // 32 bytes
+```
+
+## Meta-Transaction Flow
+
+### 1. User Signs Request
+
+User creates and signs a ForwardRequest off-chain:
+
+```typescript
+// User's browser (no ETH needed)
+const request = ForwardRequest.from({
+  from: userAddress,
+  to: targetContract,
+  value: 0n,
+  gas: 150000n,
+  nonce: await forwarder.getNonce(userAddress),
+  data: targetContract.interface.encodeFunctionData('transfer', [recipient, amount]),
+  validUntilTime: BigInt(Math.floor(Date.now() / 1000) + 3600),
+})
+
+const domain = Domain.from({
+  name: 'GSN Relayed Transaction',
+  version: '2',
+  chainId: 1n,
+  verifyingContract: forwarderAddress,
+})
+
+const hash = ForwardRequest.hash(request, domain)
+const signature = await wallet.signMessage(hash)
+```
+
+### 2. Relayer Submits On-Chain
+
+Relayer receives request + signature and submits to forwarder:
+
+```typescript
+// Relayer server (pays gas)
+if (!ForwardRequest.isValid(request, BigInt(Math.floor(Date.now() / 1000)))) {
+  throw new Error('Request expired')
+}
+
+// Submit to forwarder contract
+await forwarder.execute(request, signature)
+```
+
+### 3. Forwarder Executes
+
+Forwarder contract verifies signature and calls target with `msg.sender` set to original user (via EIP-2771 trusted forwarder pattern).
+
+## EIP-2771 Compliance
+
+This implementation follows the [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771) specification for native meta-transactions. Key points:
+
+- **Trusted Forwarder**: Target contracts must implement `_msgSender()` to extract the original sender from calldata
+- **Domain Separator**: Each forwarder contract has its own EIP-712 domain
+- **Replay Protection**: Nonce prevents replay attacks; `validUntilTime` prevents stale requests
+
+## See Also
+
+- [Domain](/primitives/domain) - EIP-712 domain separator
+- [Signature](/crypto/secp256k1) - ECDSA signing
+- [Keccak256](/crypto/keccak256) - Hash functions
+- [EIP-2771](https://eips.ethereum.org/EIPS/eip-2771) - Native meta-transactions specification
+- [GSN Documentation](https://docs.opengsn.org/) - Gas Station Network

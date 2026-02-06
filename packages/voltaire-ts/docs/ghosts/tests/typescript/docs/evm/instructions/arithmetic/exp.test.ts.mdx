@@ -1,0 +1,152 @@
+---
+title: '[TS/JS] docs/evm/instructions/arithmetic/exp.test.ts'
+source: 'docs/evm/instructions/arithmetic/exp.test.ts'
+---
+
+> Auto-generated from test file: docs/evm/instructions/arithmetic/exp.test.ts
+
+```typescript
+/**
+ * Test file for EXP (0x0a) documentation examples
+ * Tests examples from exp.mdx
+ *
+ * NOTE: Stack order is [bottom, ..., top] - pop() returns the last element.
+ * For EXP(base, exponent): base is popped first, exponent second. Result = base^exponent.
+ * So for base^exponent, stack should be [exponent, base].
+ */
+import { describe, expect, it } from "vitest";
+
+describe("EXP (0x0a) - Documentation Examples", async () => {
+	const { exp } = await import("../../../../src/evm/arithmetic/index.js");
+	const { Frame } = await import("../../../../src/evm/Frame/index.js");
+
+	function createFrame(stack: bigint[], gasRemaining = 1000000n) {
+		const frame = Frame({ gas: gasRemaining });
+		frame.stack = [...stack];
+		return frame;
+	}
+
+	describe("Basic Exponentiation", () => {
+		it("2^3 = 8", () => {
+			const frame = createFrame([3n, 2n]);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([8n]);
+		});
+	});
+
+	describe("Zero Exponent", () => {
+		it("any^0 = 1 (including 0^0)", () => {
+			const frame = createFrame([0n, 999n]);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Zero Base", () => {
+		it("0^5 = 0", () => {
+			const frame = createFrame([5n, 0n]);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("EVM 0^0 Convention", () => {
+		it("0^0 = 1 (EVM defines this as 1)", () => {
+			const frame = createFrame([0n, 0n]);
+			exp(frame);
+
+			expect(frame.stack).toEqual([1n]);
+		});
+	});
+
+	describe("Large Exponent with Overflow", () => {
+		it("2^256 wraps to 0", () => {
+			const frame = createFrame([256n, 2n]);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([0n]);
+		});
+	});
+
+	describe("Power of 10 (Wei/Ether)", () => {
+		it("10^18 = 1 ether in wei", () => {
+			const frame = createFrame([18n, 10n]);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.stack).toEqual([1000000000000000000n]);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		it("2^255 = largest power of 2 in u256", () => {
+			const frame = createFrame([255n, 2n]);
+			exp(frame);
+			expect(frame.stack).toEqual([1n << 255n]);
+		});
+
+		it("n^1 = n (identity exponent)", () => {
+			const frame = createFrame([1n, 42n]);
+			exp(frame);
+			expect(frame.stack).toEqual([42n]);
+		});
+
+		it("MAX^2 wraps around", () => {
+			const MAX_U256 = (1n << 256n) - 1n;
+			const frame = createFrame([2n, MAX_U256]);
+			exp(frame);
+
+			const expected = (MAX_U256 * MAX_U256) & ((1n << 256n) - 1n);
+			expect(frame.stack).toEqual([expected]);
+		});
+
+		it("returns StackUnderflow with insufficient stack", () => {
+			const frame = createFrame([5n]);
+			const err = exp(frame);
+
+			expect(err).toEqual({ type: "StackUnderflow" });
+		});
+	});
+
+	describe("Gas Cost (Dynamic)", () => {
+		it("consumes base gas (10) when exponent is 0", () => {
+			const frame = createFrame([0n, 999n], 100n);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(90n); // 100 - 10
+		});
+
+		it("consumes 60 gas for 1-byte exponent (10 + 50*1)", () => {
+			const frame = createFrame([255n, 2n], 1000n);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(940n); // 1000 - 60
+		});
+
+		it("consumes 110 gas for 2-byte exponent (10 + 50*2)", () => {
+			const frame = createFrame([256n, 2n], 1000n);
+			const err = exp(frame);
+
+			expect(err).toBeNull();
+			expect(frame.gasRemaining).toBe(890n); // 1000 - 110
+		});
+
+		it("returns OutOfGas when insufficient gas for large exponent", () => {
+			const frame = createFrame([256n, 2n], 50n);
+			const err = exp(frame);
+
+			expect(err).toEqual({ type: "OutOfGas" });
+		});
+	});
+});
+
+```

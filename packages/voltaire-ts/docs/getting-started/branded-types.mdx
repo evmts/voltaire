@@ -1,0 +1,105 @@
+---
+title: Safe Ethereum
+description: Modern type safety with branded types
+---
+
+Voltaire provides runtime safety without third-party validation libraries. Every primitive validates at construction, giving you type-safe, runtime-verified values.
+
+## The Problem
+
+### Type Confusion
+
+TypeScript's structural typing means types with the same structure are interchangeable:
+
+```typescript
+type Address = `0x${string}`;
+type Bytecode = `0x${string}`;
+
+function simulateTransfer(to: Address, bytecode: Bytecode) { }
+
+const address: Address = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
+const bytecode: Bytecode = "0x60806040";
+
+// Arguments swapped - compiles fine, breaks at runtime!
+simulateTransfer(bytecode, address); // ✓ No error
+```
+
+### Casing Bugs
+
+String-based addresses have casing inconsistencies:
+
+```typescript
+const addr1 = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"; // lowercase
+const addr2 = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"; // checksummed
+addr1 === addr2; // false - same address!
+```
+
+## The Solution
+
+[Branded types](https://prosopo.io/blog/typescript-branding/) add compile-time tags that prevent mixing incompatible types:
+
+```typescript
+import { Address, Bytecode } from '@tevm/voltaire'
+
+function simulateTransfer(to: Address, bytecode: Bytecode) { }
+
+const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+const bytecode = Bytecode('0x60806040')
+
+simulateTransfer(bytecode, address)
+// Error: Type 'Bytecode' is not assignable to type 'Address'
+```
+
+For casing, Voltaire uses `Uint8Array` internally:
+
+```typescript
+const addr1 = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e')
+const addr2 = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+Address.equals(addr1, addr2) // true
+```
+
+## Validation at Construction
+
+Invalid inputs throw immediately:
+
+```typescript
+Address('0xnot_valid_hex')     // Error: Invalid hex character
+Address('0x123')               // Error: Invalid address length
+Address(new Uint8Array(10))    // Error: Address must be exactly 20 bytes
+
+// For checksum validation, use ChecksummedAddress
+ChecksummedAddress('0x742d35cc6634c0532925a3b844bc9e7595f51e3E')
+// Error: Invalid checksum
+```
+
+<Warning>
+**If you see a branded type, it's validated.** Any `AddressType` value is guaranteed valid.
+</Warning>
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card title="Type Safety" icon="lock">
+    Can't mix Address with Hash or Bytecode
+  </Card>
+  <Card title="Zero Runtime Cost" icon="gauge">
+    Brand only exists in TypeScript's type checker
+  </Card>
+  <Card title="LLM-Friendly" icon="robot">
+    Compile errors help AI assistants self-correct
+  </Card>
+  <Card title="No Zod Needed" icon="shield-check">
+    Validation built into constructors
+  </Card>
+</CardGroup>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Branded Types Reference" icon="book" href="/concepts/branded-types">
+    Complete guide to branded types
+  </Card>
+  <Card title="Address Primitive" icon="cube" href="/generated-api/primitives/Address">
+    Complete Address API reference
+  </Card>
+</CardGroup>

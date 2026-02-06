@@ -1,0 +1,367 @@
+---
+title: '[TS/JS] docs/crypto/bn254/zk-usage.test.ts'
+source: 'docs/crypto/bn254/zk-usage.test.ts'
+---
+
+> Auto-generated from test file: docs/crypto/bn254/zk-usage.test.ts
+
+```typescript
+/**
+ * Tests for docs/crypto/bn254/zk-usage.mdx code examples
+ *
+ * NOTE: This documentation page is marked as "planned and under active development"
+ * with placeholder content. Tests below demonstrate zkSNARK-related usage.
+ *
+ * zkSNARK systems using BN254:
+ * - Groth16
+ * - PLONK
+ * - Marlin
+ * - Sonic
+ *
+ * Import path: ../../../src/crypto/bn254/BN254.js
+ */
+
+import { describe, expect, it } from "vitest";
+
+describe("docs/crypto/bn254/zk-usage.mdx", () => {
+	/**
+	 * API DISCREPANCY NOTE:
+	 * The docs page is a placeholder. These tests demonstrate
+	 * zkSNARK-related patterns using BN254.
+	 */
+
+	describe("Groth16 Verification Pattern", () => {
+		/**
+		 * Groth16 verification equation:
+		 * e(A, B) = e(alpha, beta) * e(L, gamma) * e(C, delta)
+		 *
+		 * Where:
+		 * - (A, B, C) is the proof
+		 * - (alpha, beta, gamma, delta) is the verification key
+		 * - L = sum of public inputs weighted by vk
+		 *
+		 * Rewritten for pairing check:
+		 * e(A, B) * e(-alpha, beta) * e(-L, gamma) * e(-C, delta) = 1
+		 */
+
+		it("should simulate Groth16-style pairing check", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const g1 = BN254.G1.generator();
+			const g2 = BN254.G2.generator();
+
+			// Simulate proof components (in reality, these come from prover)
+			const proofA = BN254.G1.mul(g1, 2n);
+			const proofB = BN254.G2.mul(g2, 3n);
+			const proofC = BN254.G1.mul(g1, 4n);
+
+			// Simulate verification key (in reality, from trusted setup)
+			const vkAlpha = BN254.G1.mul(g1, 5n);
+			const vkBeta = BN254.G2.mul(g2, 6n);
+			const vkGamma = BN254.G2.mul(g2, 7n);
+			const vkDelta = BN254.G2.mul(g2, 8n);
+
+			// Simulate public input contribution
+			const publicInputs = BN254.G1.mul(g1, 9n);
+
+			// In a real verification, we'd check the pairing equation
+			// This test just verifies the structure works
+			const pairs: Array<
+				[
+					ReturnType<typeof BN254.G1.generator>,
+					ReturnType<typeof BN254.G2.generator>,
+				]
+			> = [
+				[proofA, proofB],
+				[BN254.G1.negate(vkAlpha), vkBeta],
+				[BN254.G1.negate(publicInputs), vkGamma],
+				[BN254.G1.negate(proofC), vkDelta],
+			];
+
+			// Multi-pairing computation (for gas estimation purposes)
+			const result = BN254.Pairing.multiPairing(pairs);
+			expect(result).toBeDefined();
+
+			// Pairing check would be called for actual verification
+			// (This specific equation won't be true with random values)
+		});
+
+		it("should compute public input aggregation", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const g1 = BN254.G1.generator();
+
+			// Verification key IC (input commitment) points
+			const ic0 = BN254.G1.mul(g1, 100n); // Constant term
+			const ic1 = BN254.G1.mul(g1, 101n); // For input 1
+			const ic2 = BN254.G1.mul(g1, 102n); // For input 2
+			const ic3 = BN254.G1.mul(g1, 103n); // For input 3
+
+			// Public inputs
+			const input1 = 42n;
+			const input2 = 123n;
+			const input3 = 456n;
+
+			// Compute: L = IC[0] + input1*IC[1] + input2*IC[2] + input3*IC[3]
+			let L = ic0;
+			L = BN254.G1.add(L, BN254.G1.mul(ic1, input1));
+			L = BN254.G1.add(L, BN254.G1.mul(ic2, input2));
+			L = BN254.G1.add(L, BN254.G1.mul(ic3, input3));
+
+			expect(BN254.G1.isOnCurve(L)).toBe(true);
+		});
+	});
+
+	describe("PLONK Verification Pattern", () => {
+		/**
+		 * PLONK uses KZG polynomial commitments with BN254.
+		 * Key operations:
+		 * - Polynomial commitment (G1 point)
+		 * - Opening proof verification (pairing check)
+		 */
+
+		it("should simulate polynomial commitment", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const g1 = BN254.G1.generator();
+
+			// SRS (Structured Reference String) - powers of tau
+			// In reality: [tau^0 * G, tau^1 * G, tau^2 * G, ...]
+			const tau = 12345n; // Secret (destroyed in trusted setup)
+			const srs = [
+				g1, // tau^0 * G = G
+				BN254.G1.mul(g1, tau), // tau^1 * G
+				BN254.G1.mul(g1, tau ** 2n), // tau^2 * G
+				BN254.G1.mul(g1, tau ** 3n), // tau^3 * G
+			];
+
+			// Polynomial coefficients: p(x) = 1 + 2x + 3x^2 + 4x^3
+			const coeffs = [1n, 2n, 3n, 4n];
+
+			// Commitment: sum of coeff_i * SRS[i]
+			let commitment = BN254.G1.infinity();
+			for (let i = 0; i < coeffs.length; i++) {
+				const term = BN254.G1.mul(srs[i], coeffs[i]);
+				commitment = BN254.G1.add(commitment, term);
+			}
+
+			expect(BN254.G1.isOnCurve(commitment)).toBe(true);
+		});
+	});
+
+	describe("Proof Composition Pattern", () => {
+		/**
+		 * Multiple proofs can be batched for efficient verification.
+		 * Random linear combination reduces multiple checks to one.
+		 */
+
+		it("should combine multiple proof elements", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const g1 = BN254.G1.generator();
+
+			// Multiple proof elements
+			const proofs = [
+				BN254.G1.mul(g1, 111n),
+				BN254.G1.mul(g1, 222n),
+				BN254.G1.mul(g1, 333n),
+			];
+
+			// Random challenge (in practice, derived from transcript)
+			const challenge = 7n;
+
+			// Linear combination: proof[0] + challenge*proof[1] + challenge^2*proof[2]
+			let combined = proofs[0];
+			let power = challenge;
+			for (let i = 1; i < proofs.length; i++) {
+				combined = BN254.G1.add(combined, BN254.G1.mul(proofs[i], power));
+				power = power * challenge;
+			}
+
+			expect(BN254.G1.isOnCurve(combined)).toBe(true);
+		});
+	});
+
+	describe("Recursive Proof Pattern", () => {
+		/**
+		 * Recursive SNARKs verify proofs within proofs.
+		 * BN254 operations are verified inside the circuit.
+		 *
+		 * API DISCREPANCY: Bilinearity tests are skipped in the main test suite
+		 * (src/crypto/bn254.test.ts) because the pairing implementation is still
+		 * being refined. This test documents expected behavior once complete.
+		 */
+
+		it.skip("should handle nested pairing checks", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const g1 = BN254.G1.generator();
+			const g2 = BN254.G2.generator();
+
+			// Inner proof verification (simulated)
+			const innerA = BN254.G1.mul(g1, 10n);
+			const innerANeg = BN254.G1.negate(innerA);
+
+			// Outer proof uses result of inner check
+			// Valid equation: e(10G1, G2) * e(-10G1, G2) = 1
+			const innerValid = BN254.Pairing.pairingCheck([
+				[innerA, g2],
+				[innerANeg, g2],
+			]);
+
+			expect(innerValid).toBe(true);
+		});
+	});
+
+	describe("Proof Size Estimation", () => {
+		/**
+		 * Groth16 proof size: 2 G1 + 1 G2 = 128 + 128 = 256 bytes
+		 * But serialized: 64 + 128 + 64 = 256 bytes (G1 is 64 bytes each)
+		 */
+
+		it("should calculate Groth16 proof size", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const g1 = BN254.G1.generator();
+			const g2 = BN254.G2.generator();
+
+			// Groth16 proof: (A, B, C) where A,C in G1, B in G2
+			const proofA = BN254.G1.mul(g1, 123n);
+			const proofB = BN254.G2.mul(g2, 456n);
+			const proofC = BN254.G1.mul(g1, 789n);
+
+			const aSize = BN254.serializeG1(proofA).length;
+			const bSize = BN254.serializeG2(proofB).length;
+			const cSize = BN254.serializeG1(proofC).length;
+
+			// G1: 64 bytes, G2: 128 bytes
+			expect(aSize).toBe(64);
+			expect(bSize).toBe(128);
+			expect(cSize).toBe(64);
+
+			// Total proof size
+			expect(aSize + bSize + cSize).toBe(256);
+		});
+	});
+
+	describe("Gas Cost Estimation", () => {
+		/**
+		 * EIP-196/197 gas costs (post-Istanbul):
+		 * - ECADD: 150 gas
+		 * - ECMUL: 6,000 gas
+		 * - ECPAIRING base: 45,000 gas
+		 * - ECPAIRING per pair: 34,000 gas
+		 *
+		 * Groth16 verification: 45,000 + 34,000 * 4 = 181,000 gas (typical)
+		 */
+
+		it("should estimate gas for Groth16 verification", async () => {
+			// Constants from EIP-1108 (Istanbul)
+			const ECADD_GAS = 150;
+			const ECMUL_GAS = 6000;
+			const PAIRING_BASE_GAS = 45000;
+			const PAIRING_PAIR_GAS = 34000;
+
+			// Groth16 with 3 public inputs:
+			// - 3 ECMUL for public input aggregation
+			// - 3 ECADD for accumulation
+			// - 1 ECPAIRING with 4 pairs
+
+			const publicInputCount = 3;
+			const pairingPairs = 4;
+
+			const mulGas = publicInputCount * ECMUL_GAS;
+			const addGas = publicInputCount * ECADD_GAS;
+			const pairingGas = PAIRING_BASE_GAS + pairingPairs * PAIRING_PAIR_GAS;
+
+			const totalGas = mulGas + addGas + pairingGas;
+
+			expect(totalGas).toBe(18000 + 450 + 181000);
+			expect(totalGas).toBe(199450);
+		});
+	});
+
+	describe("Fiat-Shamir Transform Pattern", () => {
+		/**
+		 * Non-interactive proofs use Fiat-Shamir to derive challenges
+		 * from transcript of public data.
+		 */
+
+		it("should use serialized points as transcript input", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+
+			const g1 = BN254.G1.generator();
+			const g2 = BN254.G2.generator();
+
+			// Prover's commitment
+			const commitment = BN254.G1.mul(g1, 42n);
+			const commitmentBytes = BN254.serializeG1(commitment);
+
+			// In Fiat-Shamir: challenge = hash(transcript || commitment)
+			// Here we just verify serialization is deterministic
+			const commitmentBytes2 = BN254.serializeG1(commitment);
+
+			expect(commitmentBytes.length).toBe(commitmentBytes2.length);
+			for (let i = 0; i < commitmentBytes.length; i++) {
+				expect(commitmentBytes[i]).toBe(commitmentBytes2[i]);
+			}
+		});
+	});
+
+	describe("Trusted Setup Ceremony Pattern", () => {
+		/**
+		 * BN254 trusted setup generates powers of tau.
+		 * Each participant adds their randomness multiplicatively.
+		 *
+		 * API DISCREPANCY: Bilinearity tests are skipped in the main test suite
+		 * (src/crypto/bn254.test.ts) because the pairing implementation is still
+		 * being refined. This test documents expected behavior once complete.
+		 */
+
+		it.skip("should demonstrate powers of tau structure", async () => {
+			const { BN254 } = await import("../../../src/crypto/bn254/BN254.js");
+			const { FR_MOD } = await import("../../../src/crypto/bn254/constants.js");
+
+			const g1 = BN254.G1.generator();
+			const g2 = BN254.G2.generator();
+
+			// Simulated secret tau (destroyed after ceremony)
+			const tau = 12345n % FR_MOD;
+
+			// Powers of tau in G1
+			const powersG1 = [];
+			let power = 1n;
+			for (let i = 0; i < 4; i++) {
+				powersG1.push(BN254.G1.mul(g1, power));
+				power = (power * tau) % FR_MOD;
+			}
+
+			// Powers of tau in G2 (usually fewer needed)
+			const powersG2 = [];
+			power = 1n;
+			for (let i = 0; i < 2; i++) {
+				powersG2.push(BN254.G2.mul(g2, power));
+				power = (power * tau) % FR_MOD;
+			}
+
+			// Verify all points are valid
+			for (const p of powersG1) {
+				expect(BN254.G1.isOnCurve(p)).toBe(true);
+			}
+			for (const p of powersG2) {
+				expect(BN254.G2.isOnCurve(p)).toBe(true);
+			}
+
+			// Verify consistency: e(tau*G1, G2) = e(G1, tau*G2)
+			const negG1 = BN254.G1.negate(g1);
+			const valid = BN254.Pairing.pairingCheck([
+				[powersG1[1], g2],
+				[negG1, powersG2[1]],
+			]);
+
+			expect(valid).toBe(true);
+		});
+	});
+});
+
+```

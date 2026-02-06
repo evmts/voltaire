@@ -1,0 +1,164 @@
+---
+title: '[TS/JS] voltaire-effect/src/services/Cache/MemoryCache.test.ts'
+source: 'voltaire-effect/src/services/Cache/MemoryCache.test.ts'
+---
+
+> Auto-generated from test file: voltaire-effect/src/services/Cache/MemoryCache.test.ts
+
+```typescript
+import { describe, expect, it } from "@effect/vitest";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import * as TestClock from "effect/TestClock";
+import { CacheService } from "./CacheService.js";
+import { MemoryCache } from "./MemoryCache.js";
+
+describe("MemoryCache", () => {
+	describe("basic operations", () => {
+		it.effect("sets and gets a value", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key", "value");
+				const result = yield* cache.get("key");
+				expect(Option.isSome(result)).toBe(true);
+				expect(Option.getOrThrow(result)).toBe("value");
+			}).pipe(Effect.provide(MemoryCache())),
+		);
+
+		it.effect("returns none for missing key", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				const result = yield* cache.get("missing");
+				expect(Option.isNone(result)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache())),
+		);
+
+		it.effect("deletes a key", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key", "value");
+				const deleted = yield* cache.delete("key");
+				const result = yield* cache.get("key");
+				expect(deleted).toBe(true);
+				expect(Option.isNone(result)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache())),
+		);
+
+		it.effect("clears all entries", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key1", "value1");
+				yield* cache.set("key2", "value2");
+				yield* cache.clear();
+				const r1 = yield* cache.get("key1");
+				const r2 = yield* cache.get("key2");
+				expect(Option.isNone(r1)).toBe(true);
+				expect(Option.isNone(r2)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache())),
+		);
+	});
+
+	describe("TTL with TestClock", () => {
+		it.effect("expires entries after TTL", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key", "value", 1000);
+
+				const before = yield* cache.get("key");
+				yield* TestClock.adjust(Duration.millis(1001));
+				const after = yield* cache.get("key");
+
+				expect(Option.isSome(before)).toBe(true);
+				expect(Option.isNone(after)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache())),
+		);
+
+		it.effect("does not expire entries before TTL", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key", "value", 1000);
+
+				yield* TestClock.adjust(Duration.millis(999));
+				const result = yield* cache.get("key");
+				expect(Option.isSome(result)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache())),
+		);
+
+		it.effect("uses default TTL when not specified", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key", "value");
+
+				const before = yield* cache.get("key");
+				yield* TestClock.adjust(Duration.millis(501));
+				const after = yield* cache.get("key");
+
+				expect(Option.isSome(before)).toBe(true);
+				expect(Option.isNone(after)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache({ defaultTtl: 500 }))),
+		);
+	});
+
+	describe("Layer isolation", () => {
+		it.effect("separate Layer instances have separate caches", () =>
+			Effect.gen(function* () {
+				const layer1 = MemoryCache();
+				const layer2 = MemoryCache();
+
+				yield* Effect.gen(function* () {
+					const cache = yield* CacheService;
+					yield* cache.set("key", "value-from-layer1");
+				}).pipe(Effect.provide(layer1));
+
+				const result = yield* Effect.gen(function* () {
+					const cache = yield* CacheService;
+					return yield* cache.get("key");
+				}).pipe(Effect.provide(layer2));
+
+				expect(Option.isNone(result)).toBe(true);
+			}),
+		);
+	});
+
+	describe("LRU eviction", () => {
+		it.effect("evicts oldest entry when max size exceeded", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key1", "value1");
+				yield* cache.set("key2", "value2");
+				yield* cache.set("key3", "value3");
+
+				const r1 = yield* cache.get("key1");
+				const r2 = yield* cache.get("key2");
+				const r3 = yield* cache.get("key3");
+
+				expect(Option.isNone(r1)).toBe(true);
+				expect(Option.isSome(r2)).toBe(true);
+				expect(Option.isSome(r3)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache({ maxSize: 2 }))),
+		);
+
+		it.effect("updates LRU order on get", () =>
+			Effect.gen(function* () {
+				const cache = yield* CacheService;
+				yield* cache.set("key1", "value1");
+				yield* cache.set("key2", "value2");
+
+				yield* cache.get("key1");
+
+				yield* cache.set("key3", "value3");
+
+				const r1 = yield* cache.get("key1");
+				const r2 = yield* cache.get("key2");
+				const r3 = yield* cache.get("key3");
+
+				expect(Option.isSome(r1)).toBe(true);
+				expect(Option.isNone(r2)).toBe(true);
+				expect(Option.isSome(r3)).toBe(true);
+			}).pipe(Effect.provide(MemoryCache({ maxSize: 2 }))),
+		);
+	});
+});
+
+```

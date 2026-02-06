@@ -1,0 +1,44 @@
+---
+title: Bytecode.equals
+description: Compare two bytecode instances for equality
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/bytecode.ts">
+  Run Bytecode examples in the interactive playground
+</Card>
+
+
+<Tabs>
+
+<Tab title="C">
+
+## `bool bytecode_equals(bytecode_t a, bytecode_t b)`
+
+Compare two bytecode instances for equality.
+
+```c
+#include "voltaire.h"
+
+uint8_t code1[] = {0x60, 0x01};
+uint8_t code2[] = {0x60, 0x01};
+uint8_t code3[] = {0x60, 0x02};
+
+bytecode_t bc1 = bytecode_init(code1, 2);
+bytecode_t bc2 = bytecode_init(code2, 2);
+bytecode_t bc3 = bytecode_init(code3, 2);
+
+bool equal1 = bytecode_equals(bc1, bc2);
+bool equal2 = bytecode_equals(bc1, bc3);
+
+printf("%d\n", equal1);  // 1 (true)
+printf("%d\n", equal2);  // 0 (false)
+
+bytecode_free(bc1);
+bytecode_free(bc2);
+bytecode_free(bc3);
+```
+
+**Defined in:** [src/primitives.h](https://github.com/evmts/voltaire/blob/main/src/primitives.h)
+
+</Tab>
+</Tabs>

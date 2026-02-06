@@ -1,0 +1,148 @@
+---
+title: '[TS/JS] voltaire-effect/src/primitives/BloomFilter/BloomFilter.test.ts'
+source: 'voltaire-effect/src/primitives/BloomFilter/BloomFilter.test.ts'
+---
+
+> Auto-generated from test file: voltaire-effect/src/primitives/BloomFilter/BloomFilter.test.ts
+
+```typescript
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as BloomFilter from "./index.js";
+
+describe("BloomFilter.create", () => {
+	it("creates a filter with valid parameters", async () => {
+		const program = BloomFilter.create(2048, 3);
+		const filter = await Effect.runPromise(program);
+		expect(filter).toBeInstanceOf(Uint8Array);
+		expect(filter.length).toBe(256); // 2048 bits / 8
+		expect(filter.m).toBe(2048);
+		expect(filter.k).toBe(3);
+	});
+
+	it("fails on invalid parameters (m <= 0)", async () => {
+		const program = BloomFilter.create(0, 3);
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+
+	it("fails on invalid parameters (k <= 0)", async () => {
+		const program = BloomFilter.create(2048, 0);
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+});
+
+describe("BloomFilter.fromHex", () => {
+	it("creates filter from valid hex", async () => {
+		const hex = "0x" + "00".repeat(256);
+		const program = BloomFilter.fromHex(hex, 2048, 3);
+		const filter = await Effect.runPromise(program);
+		expect(filter.length).toBe(256);
+		expect(filter.m).toBe(2048);
+		expect(filter.k).toBe(3);
+	});
+
+	it("fails on wrong hex length", async () => {
+		const hex = "0x" + "00".repeat(128);
+		const program = BloomFilter.fromHex(hex, 2048, 3);
+		const result = await Effect.runPromiseExit(program);
+		expect(result._tag).toBe("Failure");
+	});
+});
+
+describe("BloomFilter pure functions", () => {
+	it("add and contains", async () => {
+		const filter = await Effect.runPromise(BloomFilter.create(2048, 3));
+		const item = new Uint8Array([1, 2, 3, 4, 5]);
+
+		expect(BloomFilter.contains(filter, item)).toBe(false);
+		BloomFilter.add(filter, item);
+		expect(BloomFilter.contains(filter, item)).toBe(true);
+	});
+
+	it("isEmpty", async () => {
+		const filter = await Effect.runPromise(BloomFilter.create(2048, 3));
+		expect(BloomFilter.isEmpty(filter)).toBe(true);
+
+		BloomFilter.add(filter, new Uint8Array([1, 2, 3]));
+		expect(BloomFilter.isEmpty(filter)).toBe(false);
+	});
+
+	it("density", async () => {
+		const filter = await Effect.runPromise(BloomFilter.create(2048, 3));
+		expect(BloomFilter.density(filter)).toBe(0);
+
+		BloomFilter.add(filter, new Uint8Array([1, 2, 3]));
+		expect(BloomFilter.density(filter)).toBeGreaterThan(0);
+	});
+
+	it("toHex", async () => {
+		const filter = await Effect.runPromise(BloomFilter.create(2048, 3));
+		const hex = BloomFilter.toHex(filter);
+		expect(hex).toMatch(/^0x[0-9a-f]+$/i);
+		expect(hex.length).toBe(514); // 0x + 512 hex chars
+	});
+
+	it("merge", async () => {
+		const filter1 = await Effect.runPromise(BloomFilter.create(2048, 3));
+		const filter2 = await Effect.runPromise(BloomFilter.create(2048, 3));
+
+		BloomFilter.add(filter1, new Uint8Array([1, 2, 3]));
+		BloomFilter.add(filter2, new Uint8Array([4, 5, 6]));
+
+		const merged = BloomFilter.merge(filter1, filter2);
+		expect(BloomFilter.contains(merged, new Uint8Array([1, 2, 3]))).toBe(true);
+		expect(BloomFilter.contains(merged, new Uint8Array([4, 5, 6]))).toBe(true);
+	});
+
+	it("combine", async () => {
+		const filter1 = await Effect.runPromise(BloomFilter.create(2048, 3));
+		const filter2 = await Effect.runPromise(BloomFilter.create(2048, 3));
+		const filter3 = await Effect.runPromise(BloomFilter.create(2048, 3));
+
+		BloomFilter.add(filter1, new Uint8Array([1]));
+		BloomFilter.add(filter2, new Uint8Array([2]));
+		BloomFilter.add(filter3, new Uint8Array([3]));
+
+		const combined = BloomFilter.combine(filter1, filter2, filter3);
+		expect(BloomFilter.contains(combined, new Uint8Array([1]))).toBe(true);
+		expect(BloomFilter.contains(combined, new Uint8Array([2]))).toBe(true);
+		expect(BloomFilter.contains(combined, new Uint8Array([3]))).toBe(true);
+	});
+
+	it("hash", () => {
+		const item = new Uint8Array([1, 2, 3, 4, 5]);
+		const h = BloomFilter.hash(item, 0, 2048);
+		expect(h).toBeGreaterThanOrEqual(0);
+		expect(h).toBeLessThan(2048);
+	});
+
+	it("hashFromKeccak", () => {
+		const keccakHash = new Uint8Array(32).fill(0xff);
+		const h = BloomFilter.hashFromKeccak(keccakHash, 0, 2048);
+		expect(h).toBeGreaterThanOrEqual(0);
+		expect(h).toBeLessThan(2048);
+	});
+
+	it("expectedFalsePositiveRate", async () => {
+		const filter = await Effect.runPromise(BloomFilter.create(2048, 3));
+		const rate = BloomFilter.expectedFalsePositiveRate(filter, 100);
+		expect(rate).toBeGreaterThanOrEqual(0);
+		expect(rate).toBeLessThanOrEqual(1);
+	});
+});
+
+describe("BloomFilter round-trip", () => {
+	it("fromHex(toHex(filter)) preserves data", async () => {
+		const filter = await Effect.runPromise(BloomFilter.create(2048, 3));
+		BloomFilter.add(filter, new Uint8Array([1, 2, 3]));
+
+		const hex = BloomFilter.toHex(filter);
+		const restored = await Effect.runPromise(BloomFilter.fromHex(hex, 2048, 3));
+
+		expect(BloomFilter.contains(restored, new Uint8Array([1, 2, 3]))).toBe(true);
+	});
+});
+
+```

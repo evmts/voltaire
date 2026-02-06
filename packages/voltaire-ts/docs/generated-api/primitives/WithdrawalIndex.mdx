@@ -1,0 +1,394 @@
+---
+title: "primitives/WithdrawalIndex"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/WithdrawalIndex
+
+# primitives/WithdrawalIndex
+
+## Type Aliases
+
+### WithdrawalIndexType
+
+> **WithdrawalIndexType** = `bigint` & `object`
+
+Defined in: [src/primitives/WithdrawalIndex/WithdrawalIndexType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/WithdrawalIndex/WithdrawalIndexType.ts#L13)
+
+WithdrawalIndex type
+
+Represents the global withdrawal counter in the beacon chain (EIP-4895).
+This counter increments monotonically for each withdrawal processed.
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"WithdrawalIndex"`
+
+#### See
+
+ - https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+ - https://eips.ethereum.org/EIPS/eip-4895 for EIP-4895 specification
+
+#### Since
+
+0.0.0
+
+## Variables
+
+### WithdrawalIndex
+
+> `const` **WithdrawalIndex**: `object`
+
+Defined in: [src/primitives/WithdrawalIndex/index.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/WithdrawalIndex/index.ts#L10)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+Check if WithdrawalIndex values are equal
+
+###### Parameters
+
+###### a
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+First withdrawal index
+
+###### b
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+Second withdrawal index
+
+###### Returns
+
+`boolean`
+
+true if equal
+
+###### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const a = WithdrawalIndex.from(1000000n);
+const b = WithdrawalIndex.from(1000000n);
+const result = WithdrawalIndex.equals(a, b); // true
+```
+
+##### from()
+
+> **from**: (`value`) => [`WithdrawalIndexType`](#withdrawalindextype)
+
+Create WithdrawalIndex from number, bigint, or string
+
+###### Parameters
+
+###### value
+
+Withdrawal index (number, bigint, or decimal/hex string)
+
+`string` | `number` | `bigint`
+
+###### Returns
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+WithdrawalIndex value
+
+###### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If value is negative or invalid
+
+###### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const idx1 = WithdrawalIndex.from(1000000n);
+const idx2 = WithdrawalIndex.from(1000000);
+const idx3 = WithdrawalIndex.from("0xf4240");
+```
+
+##### toBigInt()
+
+> **toBigInt**: (`index`) => `bigint`
+
+Convert WithdrawalIndex to bigint
+
+###### Parameters
+
+###### index
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+WithdrawalIndex value
+
+###### Returns
+
+`bigint`
+
+BigInt representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const idx = WithdrawalIndex.from(1000000);
+const big = WithdrawalIndex.toBigInt(idx); // 1000000n
+```
+
+##### toNumber()
+
+> **toNumber**: (`index`) => `number`
+
+Convert WithdrawalIndex to number
+
+###### Parameters
+
+###### index
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+WithdrawalIndex value
+
+###### Returns
+
+`number`
+
+Number representation
+
+###### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If index exceeds safe integer range
+
+###### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const idx = WithdrawalIndex.from(1000000n);
+const num = WithdrawalIndex.toNumber(idx); // 1000000
+```
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/WithdrawalIndex/equals.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/WithdrawalIndex/equals.js#L18)
+
+Check if WithdrawalIndex values are equal
+
+#### Parameters
+
+##### a
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+First withdrawal index
+
+##### b
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+Second withdrawal index
+
+#### Returns
+
+`boolean`
+
+true if equal
+
+#### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const a = WithdrawalIndex.from(1000000n);
+const b = WithdrawalIndex.from(1000000n);
+const result = WithdrawalIndex.equals(a, b); // true
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`WithdrawalIndexType`](#withdrawalindextype)
+
+Defined in: [src/primitives/WithdrawalIndex/from.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/WithdrawalIndex/from.js#L17)
+
+Create WithdrawalIndex from number, bigint, or string
+
+#### Parameters
+
+##### value
+
+Withdrawal index (number, bigint, or decimal/hex string)
+
+`string` | `number` | `bigint`
+
+#### Returns
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+WithdrawalIndex value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If value is negative or invalid
+
+#### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const idx1 = WithdrawalIndex.from(1000000n);
+const idx2 = WithdrawalIndex.from(1000000);
+const idx3 = WithdrawalIndex.from("0xf4240");
+```
+
+***
+
+### toBigInt()
+
+> **toBigInt**(`index`): `bigint`
+
+Defined in: [src/primitives/WithdrawalIndex/toBigInt.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/WithdrawalIndex/toBigInt.js#L16)
+
+Convert WithdrawalIndex to bigint
+
+#### Parameters
+
+##### index
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+WithdrawalIndex value
+
+#### Returns
+
+`bigint`
+
+BigInt representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const idx = WithdrawalIndex.from(1000000);
+const big = WithdrawalIndex.toBigInt(idx); // 1000000n
+```
+
+***
+
+### toNumber()
+
+> **toNumber**(`index`): `number`
+
+Defined in: [src/primitives/WithdrawalIndex/toNumber.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/WithdrawalIndex/toNumber.js#L16)
+
+Convert WithdrawalIndex to number
+
+#### Parameters
+
+##### index
+
+[`WithdrawalIndexType`](#withdrawalindextype)
+
+WithdrawalIndex value
+
+#### Returns
+
+`number`
+
+Number representation
+
+#### See
+
+https://voltaire.tevm.sh/primitives/withdrawal-index for WithdrawalIndex documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If index exceeds safe integer range
+
+#### Example
+
+```javascript
+import * as WithdrawalIndex from './primitives/WithdrawalIndex/index.js';
+const idx = WithdrawalIndex.from(1000000n);
+const num = WithdrawalIndex.toNumber(idx); // 1000000
+```

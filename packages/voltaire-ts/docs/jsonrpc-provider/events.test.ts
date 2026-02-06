@@ -1,0 +1,240 @@
+/**
+ * Tests for docs/jsonrpc-provider/events.mdx
+ *
+ * Tests the Events documentation examples showing EIP-1193 provider events
+ * using the standard EventEmitter pattern.
+ */
+import { describe, expect, it } from "vitest";
+
+describe("Events Documentation", () => {
+	describe("EIP-1193 Event Interface", () => {
+		it("demonstrates provider event interface structure", () => {
+			// Mock provider with EIP-1193 event methods
+			const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+
+			const mockProvider = {
+				on(event: string, listener: (...args: unknown[]) => void) {
+					if (!listeners[event]) {
+						listeners[event] = [];
+					}
+					listeners[event].push(listener);
+				},
+				removeListener(event: string, listener: (...args: unknown[]) => void) {
+					if (listeners[event]) {
+						listeners[event] = listeners[event].filter((l) => l !== listener);
+					}
+				},
+				emit(event: string, ...args: unknown[]) {
+					if (listeners[event]) {
+						listeners[event].forEach((l) => l(...args));
+					}
+				},
+			};
+
+			expect(mockProvider).toHaveProperty("on");
+			expect(mockProvider).toHaveProperty("removeListener");
+		});
+	});
+
+	describe("Available Events", () => {
+		it("supports accountsChanged event", () => {
+			const events: string[] = [];
+			const mockProvider = {
+				on(event: string, _listener: (...args: unknown[]) => void) {
+					events.push(event);
+				},
+			};
+
+			mockProvider.on("accountsChanged", () => {});
+			expect(events).toContain("accountsChanged");
+		});
+
+		it("supports chainChanged event", () => {
+			const events: string[] = [];
+			const mockProvider = {
+				on(event: string, _listener: (...args: unknown[]) => void) {
+					events.push(event);
+				},
+			};
+
+			mockProvider.on("chainChanged", () => {});
+			expect(events).toContain("chainChanged");
+		});
+
+		it("supports connect event", () => {
+			const events: string[] = [];
+			const mockProvider = {
+				on(event: string, _listener: (...args: unknown[]) => void) {
+					events.push(event);
+				},
+			};
+
+			mockProvider.on("connect", () => {});
+			expect(events).toContain("connect");
+		});
+
+		it("supports disconnect event", () => {
+			const events: string[] = [];
+			const mockProvider = {
+				on(event: string, _listener: (...args: unknown[]) => void) {
+					events.push(event);
+				},
+			};
+
+			mockProvider.on("disconnect", () => {});
+			expect(events).toContain("disconnect");
+		});
+	});
+
+	describe("Event Handler Patterns from Docs", () => {
+		it("demonstrates accountsChanged handler pattern", () => {
+			let capturedAccounts: string[] = [];
+
+			// Pattern from docs
+			const handler = (accounts: string[]) => {
+				if (accounts.length === 0) {
+					capturedAccounts = [];
+				} else {
+					capturedAccounts = accounts;
+				}
+			};
+
+			// Simulate event with accounts
+			handler(["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"]);
+			expect(capturedAccounts).toHaveLength(1);
+
+			// Simulate disconnect (empty accounts)
+			handler([]);
+			expect(capturedAccounts).toHaveLength(0);
+		});
+
+		it("demonstrates chainChanged handler pattern", () => {
+			let parsedChainId: number | null = null;
+
+			// Pattern from docs
+			const handler = (chainId: string) => {
+				parsedChainId = parseInt(chainId, 16);
+			};
+
+			// Ethereum mainnet
+			handler("0x1");
+			expect(parsedChainId).toBe(1);
+
+			// Sepolia testnet
+			handler("0xaa36a7");
+			expect(parsedChainId).toBe(11155111);
+		});
+
+		it("demonstrates connect handler pattern", () => {
+			let connectedChainId: string | null = null;
+
+			// Pattern from docs
+			const handler = (connectInfo: { chainId: string }) => {
+				connectedChainId = connectInfo.chainId;
+			};
+
+			handler({ chainId: "0x1" });
+			expect(connectedChainId).toBe("0x1");
+		});
+
+		it("demonstrates disconnect handler pattern", () => {
+			let disconnectError: { code: number; message: string } | null = null;
+
+			// Pattern from docs
+			const handler = (error: { code: number; message: string }) => {
+				disconnectError = error;
+			};
+
+			handler({ code: 4900, message: "Disconnected from chain" });
+			expect(disconnectError?.code).toBe(4900);
+		});
+	});
+
+	describe("Event Management", () => {
+		it("demonstrates removeListener pattern", () => {
+			const listeners: Array<(...args: unknown[]) => void> = [];
+
+			const mockProvider = {
+				on(_event: string, listener: (...args: unknown[]) => void) {
+					listeners.push(listener);
+				},
+				removeListener(_event: string, listener: (...args: unknown[]) => void) {
+					const index = listeners.indexOf(listener);
+					if (index > -1) {
+						listeners.splice(index, 1);
+					}
+				},
+			};
+
+			// Add listener
+			const handler = () => {};
+			mockProvider.on("accountsChanged", handler);
+			expect(listeners).toHaveLength(1);
+
+			// Remove same listener reference
+			mockProvider.removeListener("accountsChanged", handler);
+			expect(listeners).toHaveLength(0);
+		});
+
+		it("demonstrates that inline arrow functions cannot be removed", () => {
+			const listeners: Array<(...args: unknown[]) => void> = [];
+
+			const mockProvider = {
+				on(_event: string, listener: (...args: unknown[]) => void) {
+					listeners.push(listener);
+				},
+				removeListener(_event: string, listener: (...args: unknown[]) => void) {
+					const index = listeners.indexOf(listener);
+					if (index > -1) {
+						listeners.splice(index, 1);
+					}
+				},
+			};
+
+			// Add inline arrow function
+			mockProvider.on("accountsChanged", () => {});
+			expect(listeners).toHaveLength(1);
+
+			// Try to remove different arrow function - won't work
+			mockProvider.removeListener("accountsChanged", () => {});
+			expect(listeners).toHaveLength(1); // Still there!
+		});
+	});
+
+	describe("React Hook Pattern from Docs", () => {
+		it("demonstrates useEffect cleanup pattern", () => {
+			// Simulated React-like hook pattern
+			const subscriptions: Array<{ event: string; handler: () => void }> = [];
+			let cleanupCalled = false;
+
+			const mockProvider = {
+				on(event: string, handler: () => void) {
+					subscriptions.push({ event, handler });
+				},
+				removeListener(event: string, handler: () => void) {
+					const index = subscriptions.findIndex(
+						(s) => s.event === event && s.handler === handler,
+					);
+					if (index > -1) {
+						subscriptions.splice(index, 1);
+					}
+				},
+			};
+
+			// Simulate useEffect
+			const handler = () => {};
+			mockProvider.on("accountsChanged", handler);
+
+			// Simulate cleanup function
+			const cleanup = () => {
+				mockProvider.removeListener("accountsChanged", handler);
+				cleanupCalled = true;
+			};
+
+			expect(subscriptions).toHaveLength(1);
+			cleanup();
+			expect(subscriptions).toHaveLength(0);
+			expect(cleanupCalled).toBe(true);
+		});
+	});
+});

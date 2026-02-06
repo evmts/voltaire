@@ -1,0 +1,23 @@
+---
+title: '[Zig] src/evm/precompiles/utils.zig'
+source: 'src/evm/precompiles/utils.zig'
+---
+
+> Auto-generated from Zig tests in: src/evm/precompiles/utils.zig
+
+### msmDiscount - discount table
+
+```zig
+test "msmDiscount - discount table" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 1000), msmDiscount(1));
+    try testing.expectEqual(@as(u64, 820), msmDiscount(2));
+    try testing.expectEqual(@as(u64, 580), msmDiscount(4));
+    try testing.expectEqual(@as(u64, 430), msmDiscount(8));
+    try testing.expectEqual(@as(u64, 320), msmDiscount(16));
+    try testing.expectEqual(@as(u64, 250), msmDiscount(32));
+    try testing.expectEqual(@as(u64, 200), msmDiscount(64));
+    try testing.expectEqual(@as(u64, 174), msmDiscount(128));
+}
+```

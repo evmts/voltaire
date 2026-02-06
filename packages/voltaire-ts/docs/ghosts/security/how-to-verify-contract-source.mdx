@@ -1,0 +1,87 @@
+---
+title: How to Verify Contract Source Code
+description: Verify deployed contract bytecode matches source code using Voltaire.
+---
+
+## Goal
+
+Compare deployed bytecode against compiled source to verify a contract.
+
+## Fetch and Compare Bytecode
+
+```ts
+import { Bytecode } from '@voltaire/primitives'
+import { hash as keccak256 } from '@voltaire/crypto/Keccak256'
+
+// Fetch deployed bytecode via RPC
+const deployedCode = await provider.request({
+  method: 'eth_getCode',
+  params: ['0xContractAddress', 'latest']
+})
+
+// Compile your source and get expected bytecode
+const expectedCode = compiledContract.deployedBytecode
+
+// Compare (strip metadata hash for fair comparison)
+const deployed = Bytecode.fromHex(deployedCode)
+const expected = Bytecode.fromHex(expectedCode)
+
+// Simple equality check
+const exactMatch = Bytecode.equals(deployed, expected)
+console.log('Exact match:', exactMatch)
+
+// Hash comparison
+const deployedHash = keccak256(deployed)
+const expectedHash = keccak256(expected)
+const hashMatch = deployedHash.every((b, i) => b === expectedHash[i])
+console.log('Hash match:', hashMatch)
+```
+
+## Handle Metadata Hash
+
+Solidity appends CBOR-encoded metadata that varies between compilations:
+
+```ts
+import { Bytecode } from '@voltaire/primitives'
+
+function stripMetadata(bytecode: Uint8Array): Uint8Array {
+  // Metadata length is last 2 bytes (big-endian)
+  const len = bytecode.length
+  if (len < 2) return bytecode
+
+  const metadataLen = (bytecode[len - 2] << 8) | bytecode[len - 1]
+
+  // Sanity check: metadata typically 32-64 bytes
+  if (metadataLen < 10 || metadataLen > 100) return bytecode
+
+  return bytecode.slice(0, len - metadataLen - 2)
+}
+
+const deployedCore = stripMetadata(deployed)
+const expectedCore = stripMetadata(expected)
+const coreMatch = Bytecode.equals(deployedCore, expectedCore)
+```
+
+## Verify via Etherscan API
+
+```ts
+// Check if contract is verified on Etherscan
+const apiKey = process.env.ETHERSCAN_API_KEY
+const address = '0xContractAddress'
+
+const response = await fetch(
+  `https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`
+)
+const data = await response.json()
+
+if (data.result[0].SourceCode) {
+  console.log('Contract is verified')
+  console.log('Compiler:', data.result[0].CompilerVersion)
+  console.log('Optimization:', data.result[0].OptimizationUsed)
+}
+```
+
+## See Also
+
+- [Bytecode Analysis](/primitives/bytecode/analyze)
+- [Check if Contract is Verified](/ghosts/security/how-to-check-contract-verified)

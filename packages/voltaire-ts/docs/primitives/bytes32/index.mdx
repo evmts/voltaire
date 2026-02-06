@@ -1,0 +1,207 @@
+---
+title: "Bytes32"
+description: "Fixed-size 32-byte array type (Zig)"
+---
+
+## Overview
+
+Bytes32 is a generic 32-byte data structure used throughout Ethereum. While Hash is specifically for cryptographic hashes, Bytes32 is the general-purpose type for any 32-byte data like storage values and numeric representations.
+
+<Note>
+Bytes32 is a Zig-only primitive. For TypeScript, use the branded types like Hash, BlockHash, or Uint256.
+</Note>
+
+```zig
+const Bytes32 = @import("primitives").Bytes32;
+
+// From hex string
+const bytes = try Bytes32.fromHex("0x1234...");
+
+// From number
+const bytes2 = Bytes32.fromNumber(42);
+
+// Convert to other types
+const hash = Bytes32.toHash(&bytes);
+const addr = Bytes32.toAddress(&bytes);
+```
+
+## Type Definition (Zig)
+
+```zig
+pub const SIZE = 32;
+pub const Bytes32 = [SIZE]u8;
+pub const ZERO: Bytes32 = [_]u8{0} ** SIZE;
+```
+
+## Creating Bytes32
+
+### fromBytes
+
+Create from raw bytes (must be exactly 32 bytes).
+
+```zig
+const raw = [_]u8{1} ** 32;
+const b32 = Bytes32.fromBytes(&raw);
+```
+
+### fromHex
+
+Parse from hex string (with or without 0x prefix).
+
+```zig
+const b32 = try Bytes32.fromHex("0xabcdef...");
+// Or without prefix
+const b32_2 = try Bytes32.fromHex("abcdef...");
+```
+
+**Errors:**
+- `InvalidBytes32Length` - Not exactly 32 bytes
+- `InvalidHexCharacter` - Invalid hex character
+
+### fromNumber
+
+Create from u64 (big-endian, zero-padded left).
+
+```zig
+const b32 = Bytes32.fromNumber(42);
+// Result: 0x000...002a (42 in last byte)
+```
+
+### fromBigint
+
+Create from u256 (big-endian).
+
+```zig
+const max = std.math.maxInt(u256);
+const b32 = Bytes32.fromBigint(max);
+// Result: 0xffffff...ff
+```
+
+### zero
+
+Create all-zeros Bytes32.
+
+```zig
+const b32 = Bytes32.zero();
+try std.testing.expect(Bytes32.isZero(&b32));
+```
+
+## Converting Bytes32
+
+### toBytes
+
+Get raw bytes slice.
+
+```zig
+const bytes = Bytes32.toBytes(&b32);
+// Returns []const u8 of length 32
+```
+
+### toHex
+
+Convert to hex string with 0x prefix (requires allocator).
+
+```zig
+const hex = try Bytes32.toHex(&b32, allocator);
+defer allocator.free(hex);
+// "0xabcdef..."
+```
+
+### toBigint
+
+Convert to u256 (big-endian).
+
+```zig
+const value: u256 = Bytes32.toBigint(&b32);
+```
+
+### toHash
+
+Semantic conversion to Hash type.
+
+```zig
+const hash = Bytes32.toHash(&b32);
+```
+
+### toAddress
+
+Extract last 20 bytes as Address.
+
+```zig
+const addr = Bytes32.toAddress(&b32);
+// Uses bytes[12..32]
+```
+
+## Comparison
+
+### equals
+
+Compare two Bytes32 for byte-equality.
+
+```zig
+const equal = Bytes32.equals(&a, &b);
+```
+
+### compare
+
+Lexicographic comparison. Returns -1, 0, or 1.
+
+```zig
+const cmp = Bytes32.compare(&a, &b);
+if (cmp < 0) {
+    // a < b
+}
+```
+
+### isZero
+
+Check if all bytes are zero.
+
+```zig
+if (Bytes32.isZero(&b32)) {
+    // Handle zero case
+}
+```
+
+## Utilities
+
+### size
+
+Always returns 32.
+
+```zig
+const s = Bytes32.size(&b32); // 32
+```
+
+### clone
+
+Create independent copy.
+
+```zig
+var copy = Bytes32.clone(&original);
+// Modifications to original don't affect copy
+```
+
+## Roundtrip Examples
+
+```zig
+// Number roundtrip
+const value: u256 = 0x123456789ABCDEF0;
+const b32 = Bytes32.fromBigint(value);
+const recovered = Bytes32.toBigint(&b32);
+try std.testing.expectEqual(value, recovered);
+
+// Hex roundtrip
+const hex = "0x" ++ ("ab" ** 32);
+const bytes = try Bytes32.fromHex(hex);
+const hexBack = try Bytes32.toHex(&bytes, allocator);
+defer allocator.free(hexBack);
+try std.testing.expect(std.mem.eql(u8, hex, hexBack));
+```
+
+## See Also
+
+- [Bytes32 (Effect)](https://voltaire-effect.tevm.sh/primitives/bytes32) - Effect.ts integration with Schema validation
+- [Hash](/primitives/hash) - Cryptographic hash type
+- [Address](/primitives/address) - 20-byte address type
+- [Uint256](/primitives/uint256) - 256-bit unsigned integer

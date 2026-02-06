@@ -1,0 +1,79 @@
+---
+title: Performance
+description: Batching, caching, and optimization strategies
+---
+
+<Warning>
+**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
+</Warning>
+
+# Performance
+
+Optimize JSON-RPC requests for production applications.
+
+## Batch Requests
+
+Execute independent requests in parallel:
+
+```typescript
+// ✅ Good: parallel requests
+const [block, balance, nonce] = await Promise.all([
+  provider.eth_blockNumber(),
+  provider.eth_getBalance(address, 'latest'),
+  provider.eth_getTransactionCount(address, 'latest')
+]);
+
+// ❌ Bad: sequential requests
+const block = await provider.eth_blockNumber();
+const balance = await provider.eth_getBalance(address, 'latest');
+const nonce = await provider.eth_getTransactionCount(address, 'latest');
+```
+
+## Caching Strategies
+
+Cache immutable data to reduce requests:
+
+```typescript
+const cache = new Map<string, any>();
+
+async function getCachedCode(
+  provider: Provider,
+  address: Address.AddressType,
+  blockTag: BlockTag
+): Promise<Response<Hex>> {
+  // Only cache historical blocks (immutable)
+  if (blockTag !== 'latest' && blockTag !== 'pending') {
+    const key = `code:${Address.toHex(address)}:${blockTag}`;
+
+    if (cache.has(key)) {
+      return { result: cache.get(key) };
+    }
+
+    const response = await provider.eth_getCode(address, blockTag);
+
+    if (!response.error) {
+      cache.set(key, response.result);
+    }
+
+    return response;
+  }
+
+  // Don't cache latest/pending
+  return provider.eth_getCode(address, blockTag);
+}
+```
+
+## WebSocket vs HTTP
+
+| Transport | Real-time Events | Connection Overhead | Best For |
+|-----------|------------------|---------------------|----------|
+| WebSocket | ✅ Yes | Low (persistent) | Event subscriptions |
+| HTTP | ⚠️ Polling | High (per request) | One-off requests |
+
+Use WebSocket for applications requiring event subscriptions.
+
+## Related
+
+- [Method API](/jsonrpc-provider/method-api) - Method patterns
+- [Events](/jsonrpc-provider/events) - Real-time subscriptions
+- [Error Handling](/jsonrpc-provider/error-handling) - Retry strategies

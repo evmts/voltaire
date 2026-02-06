@@ -1,0 +1,85 @@
+---
+title: Connect to Browser Wallet
+description: Connect to MetaMask or other EIP-1193 browser wallets.
+---
+
+## Basic Connection
+
+```typescript
+// Check if wallet exists
+if (typeof window.ethereum === 'undefined') {
+  throw new Error('No wallet detected');
+}
+
+// Request account access
+const accounts = await window.ethereum.request({
+  method: 'eth_requestAccounts'
+});
+
+console.log('Connected:', accounts[0]);
+```
+
+## Full Connection Flow
+
+```typescript
+async function connectWallet() {
+  if (!window.ethereum) {
+    throw new Error('Install MetaMask or another wallet');
+  }
+
+  try {
+    // Request accounts
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts'
+    });
+
+    // Get chain ID
+    const chainId = await window.ethereum.request({
+      method: 'eth_chainId'
+    });
+
+    return {
+      account: accounts[0],
+      chainId: parseInt(chainId, 16)
+    };
+  } catch (error) {
+    if (error.code === 4001) {
+      throw new Error('User rejected connection');
+    }
+    throw error;
+  }
+}
+```
+
+## Listen for Account/Chain Changes
+
+```typescript
+// Account changes
+window.ethereum.on('accountsChanged', (accounts) => {
+  if (accounts.length === 0) {
+    console.log('Wallet disconnected');
+  } else {
+    console.log('Active account:', accounts[0]);
+  }
+});
+
+// Chain changes
+window.ethereum.on('chainChanged', (chainId) => {
+  // Reload page to avoid stale state
+  window.location.reload();
+});
+```
+
+## TypeScript Types
+
+```typescript
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      on: (event: string, handler: (...args: any[]) => void) => void;
+      removeListener: (event: string, handler: (...args: any[]) => void) => void;
+    };
+  }
+}
+```

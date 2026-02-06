@@ -1,0 +1,124 @@
+---
+title: '[TS/JS] src/primitives/BlockHeader/BlockHeader.test.ts'
+source: 'src/primitives/BlockHeader/BlockHeader.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/BlockHeader/BlockHeader.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as BlockHeader from "./index.js";
+
+describe("BlockHeader", () => {
+	const validHeader = {
+		parentHash: new Uint8Array(32).fill(0x12),
+		ommersHash: new Uint8Array(32).fill(0x34),
+		beneficiary: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
+		stateRoot: new Uint8Array(32).fill(0x56),
+		transactionsRoot: new Uint8Array(32).fill(0x78),
+		receiptsRoot: new Uint8Array(32).fill(0x9a),
+		logsBloom: new Uint8Array(256),
+		difficulty: 0n,
+		number: 12345n,
+		gasLimit: 30000000n,
+		gasUsed: 21000n,
+		timestamp: 1234567890n,
+		extraData: new Uint8Array(0),
+		mixHash: new Uint8Array(32).fill(0xbc),
+		nonce: new Uint8Array(8),
+	};
+
+	describe("from", () => {
+		it("creates header from basic components", () => {
+			const header = BlockHeader.from(validHeader);
+
+			expect(header.parentHash).toHaveLength(32);
+			expect(header.ommersHash).toHaveLength(32);
+			expect(header.beneficiary).toHaveLength(20);
+			expect(header.stateRoot).toHaveLength(32);
+			expect(header.transactionsRoot).toHaveLength(32);
+			expect(header.receiptsRoot).toHaveLength(32);
+			expect(header.logsBloom).toHaveLength(256);
+			expect(header.difficulty).toBe(0n);
+			expect(header.number).toBe(12345n);
+			expect(header.gasLimit).toBe(30000000n);
+			expect(header.gasUsed).toBe(21000n);
+			expect(header.timestamp).toBe(1234567890n);
+			expect(header.extraData).toHaveLength(0);
+			expect(header.mixHash).toHaveLength(32);
+			expect(header.nonce).toHaveLength(8);
+		});
+
+		it("includes optional EIP-1559 fields", () => {
+			const header = BlockHeader.from({
+				...validHeader,
+				baseFeePerGas: 1000000000n,
+			});
+
+			expect(header.baseFeePerGas).toBe(1000000000n);
+		});
+
+		it("includes optional post-Shanghai fields", () => {
+			const header = BlockHeader.from({
+				...validHeader,
+				withdrawalsRoot: new Uint8Array(32).fill(0xde),
+			});
+
+			expect(header.withdrawalsRoot).toHaveLength(32);
+		});
+
+		it("includes optional EIP-4844 fields", () => {
+			const header = BlockHeader.from({
+				...validHeader,
+				blobGasUsed: 262144n,
+				excessBlobGas: 0n,
+			});
+
+			expect(header.blobGasUsed).toBe(262144n);
+			expect(header.excessBlobGas).toBe(0n);
+		});
+
+		it("includes optional EIP-4788 fields", () => {
+			const header = BlockHeader.from({
+				...validHeader,
+				parentBeaconBlockRoot: new Uint8Array(32).fill(0x01),
+			});
+
+			expect(header.parentBeaconBlockRoot).toHaveLength(32);
+		});
+
+		it("handles all optional fields together", () => {
+			const header = BlockHeader.from({
+				...validHeader,
+				baseFeePerGas: 1000000000n,
+				withdrawalsRoot: new Uint8Array(32).fill(0xde),
+				blobGasUsed: 262144n,
+				excessBlobGas: 0n,
+				parentBeaconBlockRoot: new Uint8Array(32).fill(0x01),
+			});
+
+			expect(header.baseFeePerGas).toBe(1000000000n);
+			expect(header.withdrawalsRoot).toHaveLength(32);
+			expect(header.blobGasUsed).toBe(262144n);
+			expect(header.excessBlobGas).toBe(0n);
+			expect(header.parentBeaconBlockRoot).toHaveLength(32);
+		});
+
+		it("converts number inputs", () => {
+			const header = BlockHeader.from({
+				...validHeader,
+				number: 12345,
+				gasLimit: 30000000,
+				gasUsed: 21000,
+				timestamp: 1234567890,
+			});
+
+			expect(header.number).toBe(12345n);
+			expect(header.gasLimit).toBe(30000000n);
+			expect(header.gasUsed).toBe(21000n);
+			expect(header.timestamp).toBe(1234567890n);
+		});
+	});
+});
+
+```

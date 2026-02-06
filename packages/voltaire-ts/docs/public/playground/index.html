@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/playground/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voltaire Playground</title>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "modern-monaco/editor-core": "/node_modules/modern-monaco/dist/editor-core.mjs",
+          "modern-monaco/editor-worker": "/node_modules/modern-monaco/dist/editor-worker.mjs",
+          "modern-monaco/editor-worker-main": "/node_modules/modern-monaco/dist/editor-worker-main.mjs",
+          "modern-monaco/lsp": "/node_modules/modern-monaco/dist/lsp/index.mjs",
+          "typescript": "/typescript",
+          "voltaire/primitives/Address": "/voltaire/primitives/Address",
+          "voltaire/primitives/Hex": "/voltaire/primitives/Hex",
+          "voltaire/primitives/Hash": "/voltaire/primitives/Hash",
+          "voltaire/primitives/RLP": "/voltaire/primitives/RLP",
+          "voltaire/primitives/ABI": "/voltaire/primitives/ABI",
+          "voltaire/crypto/Keccak256": "/voltaire/crypto/Keccak256",
+          "voltaire/crypto/Secp256k1": "/voltaire/crypto/Secp256k1",
+          "voltaire/crypto/SHA256": "/voltaire/crypto/SHA256",
+          "voltaire/crypto/Blake2": "/voltaire/crypto/Blake2",
+          "voltaire/crypto/Ripemd160": "/voltaire/crypto/Ripemd160",
+          "voltaire/crypto/HDWallet": "/voltaire/crypto/HDWallet"
+        }
+      }
+    </script>
+    <script type="module" crossorigin src="/playground/assets/index-DKNrZ79z.js"></script>
+    <link rel="stylesheet" crossorigin href="/playground/assets/index-CcVLqkfN.css">
+  </head>
+  <body>
+    <div id="app">
+      <div id="file-tree"></div>
+      <div id="editor-container">
+        <div id="editor-header">
+          <div id="editor-tabs">
+            <span id="current-file">Select a file to begin</span>
+            <span id="unsaved-indicator" style="display: none; color: #ff6b6b; margin-left: 8px;">●</span>
+            <span id="last-saved-indicator" style="display: none; color: #888; margin-left: 12px; font-size: 12px;"></span>
+          </div>
+          <div id="editor-controls">
+            <span id="diff-indicator" style="display: none; color: #ffa500; margin-right: 8px; font-size: 12px;"></span>
+            <span id="vim-status"></span>
+            <button id="vim-toggle">Vim</button>
+            <button id="diff-toggle" title="Show Diff View">Diff</button>
+            <button id="revert-button" title="Revert to Original">Revert</button>
+            <button id="split-horizontal" title="Split Horizontal">⬌</button>
+            <button id="split-vertical" title="Split Vertical">⬍</button>
+            <button id="sync-scroll" title="Sync Scroll">↕</button>
+            <button id="history-button" title="Execution History">History</button>
+            <button id="benchmark-button" title="Benchmark Performance">Benchmark</button>
+            <button id="settings-button" title="Display Settings">⚙</button>
+            <button id="run-button" disabled>Run</button>
+          </div>
+        </div>
+        <div id="breadcrumbs"></div>
+        <div id="editor-split-container">
+          <div id="editor"></div>
+        </div>
+      </div>
+      <div id="console">
+        <div id="console-header">Output</div>
+        <div id="console-content"></div>
+      </div>
+      <div id="history-panel"></div>
+      <div id="benchmark-panel"></div>
+      <div id="settings-panel" style="display: none;"></div>
+      <div id="search-panel"></div>
+    </div>
+  </body>
+</html>

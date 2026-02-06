@@ -1,0 +1,268 @@
+---
+title: "G1"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../../index.mdx) / [crypto/Bls12381](../index.mdx) / G1
+
+# G1
+
+## Functions
+
+### add()
+
+> **add**(`p1`, `p2`): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/add.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/add.js#L14)
+
+Add two G1 points using Jacobian coordinates
+Algorithm: https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html#addition-add-2007-bl
+
+#### Parameters
+
+##### p1
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+First point
+
+##### p2
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Second point
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### double()
+
+> **double**(`point`): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/double.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/double.js#L12)
+
+Double a G1 point using Jacobian coordinates
+Algorithm: https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html#doubling-dbl-2007-bl
+
+#### Parameters
+
+##### point
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Point to double
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### equal()
+
+> **equal**(`p1`, `p2`): `boolean`
+
+Defined in: [src/crypto/Bls12381/G1/equal.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/equal.js#L12)
+
+Check if two G1 points are equal
+In Jacobian coordinates: P1 = P2 iff X1*Z2^2 = X2*Z1^2 and Y1*Z2^3 = Y2*Z1^3
+
+#### Parameters
+
+##### p1
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+First point
+
+##### p2
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Second point
+
+#### Returns
+
+`boolean`
+
+***
+
+### fromAffine()
+
+> **fromAffine**(`x`, `y`): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/fromAffine.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/fromAffine.js#L10)
+
+Create G1 point from affine coordinates
+
+#### Parameters
+
+##### x
+
+`bigint`
+
+x-coordinate
+
+##### y
+
+`bigint`
+
+y-coordinate
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### generator()
+
+> **generator**(): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/generator.js:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/generator.js#L8)
+
+Return the generator point for G1
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### infinity()
+
+> **infinity**(): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/infinity.js:6](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/infinity.js#L6)
+
+Return the point at infinity (identity element) for G1
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### isOnCurve()
+
+> **isOnCurve**(`point`): `boolean`
+
+Defined in: [src/crypto/Bls12381/G1/isOnCurve.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/isOnCurve.js#L13)
+
+Check if a G1 point is on the curve y^2 = x^3 + 4
+In Jacobian projective coordinates where (X, Y, Z) represents (X/Z^2, Y/Z^3):
+Y^2 = X^3 + b*Z^6
+
+#### Parameters
+
+##### point
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Point to check
+
+#### Returns
+
+`boolean`
+
+***
+
+### isZero()
+
+> **isZero**(`point`): `boolean`
+
+Defined in: [src/crypto/Bls12381/G1/isZero.js:7](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/isZero.js#L7)
+
+Check if a G1 point is the point at infinity
+
+#### Parameters
+
+##### point
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Point to check
+
+#### Returns
+
+`boolean`
+
+***
+
+### mul()
+
+> **mul**(`point`, `scalar`): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/mul.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/mul.js#L14)
+
+Scalar multiplication of G1 point using double-and-add
+
+#### Parameters
+
+##### point
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Point to multiply
+
+##### scalar
+
+`bigint`
+
+Scalar multiplier
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### negate()
+
+> **negate**(`point`): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/negate.js:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/negate.js#L10)
+
+Negate a G1 point (reflect over x-axis)
+
+#### Parameters
+
+##### point
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Point to negate
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+***
+
+### toAffine()
+
+> **toAffine**(`point`): [`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Defined in: [src/crypto/Bls12381/G1/toAffine.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/Bls12381/G1/toAffine.js#L12)
+
+Convert G1 point from projective to affine coordinates
+Affine: (x/z^2, y/z^3, 1)
+
+#### Parameters
+
+##### point
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)
+
+Point to convert
+
+#### Returns
+
+[`Bls12381G1PointType`](../../../index/index.mdx#bls12381g1pointtype)

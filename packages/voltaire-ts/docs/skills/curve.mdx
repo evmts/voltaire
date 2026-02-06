@@ -1,0 +1,72 @@
+---
+title: Curve Finance
+description: Stablecoin and pegged asset swaps with Curve
+---
+
+<Warning>
+**Looking for Contributors!** This Skill needs an implementation.
+
+Contributing a Skill involves:
+1. Writing a reference implementation with full functionality
+2. Adding comprehensive tests
+3. Writing documentation with usage examples
+
+See the [ethers-provider Skill](https://github.com/evmts/voltaire/tree/main/examples/ethers-provider) for an example of a complete Skill implementation.
+
+Interested? Open an issue or PR at [github.com/evmts/voltaire](https://github.com/evmts/voltaire).
+</Warning>
+
+<Info>
+**Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
+</Info>
+
+Swap stablecoins and pegged assets with minimal slippage via Curve's specialized AMM.
+
+## Planned Implementation
+
+### Swaps
+
+```typescript
+import { Curve } from './Curve.js';
+
+const curve = Curve({ provider });
+
+// Swap stablecoins
+await curve.exchange({
+  pool: THREE_POOL,
+  i: 0, // DAI
+  j: 1, // USDC
+  dx: parseUnits('1000', 18),
+  minDy: parseUnits('990', 6),
+  signer,
+});
+```
+
+### Liquidity
+
+```typescript
+// Add liquidity
+await curve.addLiquidity({
+  pool: THREE_POOL,
+  amounts: [parseUnits('1000', 18), parseUnits('1000', 6), parseUnits('1000', 6)],
+  minMintAmount: 0n,
+  signer,
+});
+
+// Remove liquidity
+await curve.removeLiquidity({
+  pool: THREE_POOL,
+  amount: lpBalance,
+  minAmounts: [0n, 0n, 0n],
+  signer,
+});
+```
+
+## Resources
+
+- [Curve Documentation](https://resources.curve.fi/)
+- [Curve Contracts](https://github.com/curvefi/curve-contract)
+
+## Related
+
+- [uniswap-v4](/skills/uniswap-v4) — General AMM

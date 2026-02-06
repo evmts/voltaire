@@ -1,0 +1,318 @@
+---
+title: TokenBalance
+description: ERC-20 token balance primitive for Voltaire
+---
+
+# TokenBalance
+
+`TokenBalance` is a branded `bigint` type representing ERC-20 token balances with decimal handling utilities.
+
+## Overview
+
+ERC-20 tokens are fungible tokens where each token is identical and interchangeable. Balances are stored as unsigned 256-bit integers (uint256) on-chain, with decimals used for display formatting.
+
+### Key Features
+
+- **Type-safe**: Branded bigint prevents mixing with raw numbers
+- **Decimal handling**: Convert between raw values and human-readable amounts
+- **Range validation**: 0 to 2^256-1
+- **ERC-20 interface selectors**: Built-in function selectors
+
+## Installation
+
+```bash
+bun install voltaire
+```
+
+## Basic Usage
+
+```typescript
+import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
+
+// Create from raw balance (wei-like units)
+const balance = TokenBalance.from(1000000000000000000n); // 1 token with 18 decimals
+
+// Format for display
+console.log(TokenBalance.format(balance, 18)); // "1.0"
+
+// Convert from human-readable amount
+const amount = TokenBalance.fromBaseUnit("100.5", 6); // USDC (6 decimals)
+console.log(amount); // 100500000n
+
+// Compare balances
+const a = TokenBalance.from(100n);
+const b = TokenBalance.from(200n);
+console.log(TokenBalance.compare(a, b)); // -1
+```
+
+## API Reference
+
+### Constructor
+
+#### `from(value: bigint | number | string): TokenBalance`
+
+Create TokenBalance from bigint, number, or hex/decimal string.
+
+```typescript
+const balance1 = TokenBalance.from(1000000000000000000n);
+const balance2 = TokenBalance.from(100);
+const balance3 = TokenBalance.from("0xff");
+const balance4 = TokenBalance.from("1000000");
+```
+
+**Throws:**
+- `InvalidTokenBalanceError` if value is negative, exceeds max, or invalid
+
+### Conversions
+
+#### `toNumber(balance: TokenBalance): number`
+
+Convert to number (unsafe for large values).
+
+```typescript
+const balance = TokenBalance.from(100n);
+const num = TokenBalance.toNumber(balance); // 100
+```
+
+**Throws:**
+- `RangeError` if value exceeds `Number.MAX_SAFE_INTEGER`
+
+#### `toBigInt(balance: TokenBalance): bigint`
+
+Convert to bigint.
+
+```typescript
+const balance = TokenBalance.from(1000000n);
+const bigint = TokenBalance.toBigInt(balance); // 1000000n
+```
+
+#### `toHex(balance: TokenBalance): string`
+
+Convert to hex string with 0x prefix.
+
+```typescript
+const balance = TokenBalance.from(255n);
+const hex = TokenBalance.toHex(balance); // "0xff"
+```
+
+### Decimal Handling
+
+#### `format(balance: TokenBalance, decimals: number, maxDecimals?: number): string`
+
+Format balance for display with decimal places.
+
+```typescript
+const balance = TokenBalance.from(1234567890123456789n);
+
+// Full precision
+TokenBalance.format(balance, 18); // "1.234567890123456789"
+
+// Rounded to 6 decimals
+TokenBalance.format(balance, 18, 6); // "1.234568"
+
+// USDC (6 decimals)
+const usdc = TokenBalance.from(100500000n);
+TokenBalance.format(usdc, 6); // "100.5"
+```
+
+#### `fromBaseUnit(amount: string, decimals: number): TokenBalance`
+
+Convert from human-readable amount to raw balance.
+
+```typescript
+// ETH (18 decimals)
+const eth = TokenBalance.fromBaseUnit("1.5", 18); // 1500000000000000000n
+
+// USDC (6 decimals)
+const usdc = TokenBalance.fromBaseUnit("100.5", 6); // 100500000n
+
+// Integer amounts
+const whole = TokenBalance.fromBaseUnit("100", 18); // 100000000000000000000n
+
+// Fractional only
+const fraction = TokenBalance.fromBaseUnit(".5", 18); // 500000000000000000n
+```
+
+**Throws:**
+- `Error` if amount format is invalid (e.g., "1.2.3")
+
+#### `toBaseUnit(balance: TokenBalance): bigint`
+
+Get raw bigint value.
+
+```typescript
+const balance = TokenBalance.from(1500000000000000000n);
+const raw = TokenBalance.toBaseUnit(balance); // 1500000000000000000n
+```
+
+### Comparison
+
+#### `equals(a: TokenBalance, b: TokenBalance): boolean`
+
+Check if two balances are equal.
+
+```typescript
+const a = TokenBalance.from(100n);
+const b = TokenBalance.from(100n);
+TokenBalance.equals(a, b); // true
+```
+
+#### `compare(a: TokenBalance, b: TokenBalance): number`
+
+Compare two balances. Returns -1 if a < b, 0 if equal, 1 if a > b.
+
+```typescript
+const a = TokenBalance.from(100n);
+const b = TokenBalance.from(200n);
+TokenBalance.compare(a, b); // -1
+```
+
+## Constants
+
+### `constants.MAX`
+
+Maximum TokenBalance value (2^256 - 1).
+
+```typescript
+TokenBalance.constants.MAX; // 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+```
+
+### `constants.MIN`
+
+Minimum TokenBalance value (0).
+
+```typescript
+TokenBalance.constants.MIN; // 0n
+```
+
+### `constants.DECIMALS`
+
+Common decimal counts for popular tokens.
+
+```typescript
+TokenBalance.constants.DECIMALS.ETH;   // 18
+TokenBalance.constants.DECIMALS.WETH;  // 18
+TokenBalance.constants.DECIMALS.USDC;  // 6
+TokenBalance.constants.DECIMALS.USDT;  // 6
+TokenBalance.constants.DECIMALS.DAI;   // 18
+TokenBalance.constants.DECIMALS.WBTC;  // 8
+```
+
+## ERC-20 Interface
+
+### `ERC20_SELECTORS`
+
+ERC-20 function selectors for ABI encoding.
+
+```typescript
+TokenBalance.ERC20_SELECTORS.balanceOf;     // "0x70a08231"
+TokenBalance.ERC20_SELECTORS.transfer;      // "0xa9059cbb"
+TokenBalance.ERC20_SELECTORS.approve;       // "0x095ea7b3"
+TokenBalance.ERC20_SELECTORS.transferFrom;  // "0x23b872dd"
+TokenBalance.ERC20_SELECTORS.totalSupply;   // "0x18160ddd"
+TokenBalance.ERC20_SELECTORS.allowance;     // "0xdd62ed3e"
+```
+
+## ERC-20 Standard
+
+ERC-20 defines a standard API for fungible tokens. Key functions:
+
+- `balanceOf(address)`: Returns token balance
+- `transfer(address, uint256)`: Transfers tokens
+- `approve(address, uint256)`: Approves spending allowance
+- `transferFrom(address, address, uint256)`: Transfers from approved account
+- `totalSupply()`: Returns total supply
+- `allowance(address, address)`: Returns approved allowance
+
+**Specification:** [EIP-20](https://eips.ethereum.org/EIPS/eip-20)
+
+## Common Decimal Counts
+
+Different tokens use different decimal counts:
+
+- **18 decimals**: ETH, WETH, DAI, most ERC-20 tokens
+- **6 decimals**: USDC, USDT (stablecoins)
+- **8 decimals**: WBTC (Bitcoin-based)
+
+Always check the token's `decimals()` function before formatting.
+
+## Examples
+
+### Query Balance
+
+```typescript
+import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
+import * as Address from '@tevm/voltaire/Address';
+
+// Encode balanceOf call
+const account = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+const data = encodeBalanceOf(account);
+
+// Decode response
+const balance = TokenBalance.from(response); // Raw balance from chain
+const formatted = TokenBalance.format(balance, 18); // Format for display
+console.log(`Balance: ${formatted} tokens`);
+```
+
+### Transfer Tokens
+
+```typescript
+import * as TokenBalance from '@tevm/voltaire/primitives/TokenBalance';
+import * as Address from '@tevm/voltaire/Address';
+
+// Convert user input to raw amount
+const amount = TokenBalance.fromBaseUnit("10.5", 18); // 10.5 tokens
+
+const to = Address.from("0x...");
+const data = encodeTransfer(to, amount);
+```
+
+### Check Sufficient Balance
+
+```typescript
+const balance = TokenBalance.from(userBalance);
+const required = TokenBalance.fromBaseUnit("5.0", 18);
+
+if (TokenBalance.compare(balance, required) >= 0) {
+  console.log("Sufficient balance");
+} else {
+  console.log("Insufficient balance");
+}
+```
+
+## Error Handling
+
+```typescript
+import { InvalidTokenBalanceError } from '@tevm/voltaire/primitives/TokenBalance';
+
+try {
+  const balance = TokenBalance.from(-100n);
+} catch (error) {
+  if (error instanceof InvalidTokenBalanceError) {
+    console.error("Invalid balance:", error.message);
+  }
+}
+```
+
+## Type Safety
+
+TokenBalance is a branded type that prevents accidental mixing with raw bigints:
+
+```typescript
+const balance: TokenBalance = 100n; // ❌ Type error
+const balance = TokenBalance.from(100n); // ✅ Correct
+
+function transfer(amount: TokenBalance) {
+  // Type-safe: only TokenBalance accepted
+}
+
+transfer(100n); // ❌ Type error
+transfer(TokenBalance.from(100n)); // ✅ Correct
+```
+
+## See Also
+
+- [TokenId](/primitives/token-id) - ERC-721 NFT token IDs
+- [MultiTokenId](/primitives/multi-token-id) - ERC-1155 multi-token IDs
+- [Uint256](/primitives/uint) - Generic unsigned 256-bit integers
+- [Address](/primitives/address) - Ethereum addresses

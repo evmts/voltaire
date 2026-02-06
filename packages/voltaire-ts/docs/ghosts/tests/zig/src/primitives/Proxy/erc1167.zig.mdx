@@ -1,0 +1,158 @@
+---
+title: '[Zig] src/primitives/Proxy/erc1167.zig'
+source: 'src/primitives/Proxy/erc1167.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/Proxy/erc1167.zig
+
+### generateErc1167 - generates valid 55-byte creation code
+
+```zig
+test "generateErc1167 - generates valid 55-byte creation code" {
+    const test_address = [_]u8{0x11} ** 20;
+    const bytecode = generateErc1167(test_address);
+
+    try std.testing.expectEqual(@as(usize, 55), bytecode.len);
+}
+```
+
+### generateErc1167 - embeds implementation address at correct offset
+
+```zig
+test "generateErc1167 - embeds implementation address at correct offset" {
+    const test_address = [_]u8{
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa,
+        0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0x22, 0x33, 0x44,
+    };
+    const bytecode = generateErc1167(test_address);
+
+    // Address should be at offset 20
+    for (test_address, 0..) |byte, i| {
+        try std.testing.expectEqual(byte, bytecode[20 + i]);
+    }
+}
+```
+
+### generateErc1167 - has correct creation code prefix
+
+```zig
+test "generateErc1167 - has correct creation code prefix" {
+    const test_address = [_]u8{0x11} ** 20;
+    const bytecode = generateErc1167(test_address);
+
+    // 3d602d80600a3d3981f3
+    try std.testing.expectEqual(@as(u8, 0x3d), bytecode[0]);
+    try std.testing.expectEqual(@as(u8, 0x60), bytecode[1]);
+    try std.testing.expectEqual(@as(u8, 0x2d), bytecode[2]);
+    try std.testing.expectEqual(@as(u8, 0xf3), bytecode[9]);
+}
+```
+
+### parseErc1167 - extracts implementation address from creation code
+
+```zig
+test "parseErc1167 - extracts implementation address from creation code" {
+    const test_address = [_]u8{
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa,
+        0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0x22, 0x33, 0x44,
+    };
+    const bytecode = generateErc1167(test_address);
+    const extracted = parseErc1167(&bytecode);
+
+    try std.testing.expect(extracted != null);
+    try std.testing.expectEqual(test_address, extracted.?);
+}
+```
+
+### parseErc1167 - extracts implementation address from runtime code
+
+```zig
+test "parseErc1167 - extracts implementation address from runtime code" {
+    const test_address = [_]u8{
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa,
+        0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0x22, 0x33, 0x44,
+    };
+    const bytecode = generateErc1167(test_address);
+    // Extract runtime portion (bytes 10-54, which is 45 bytes)
+    const runtime_code = bytecode[10..];
+
+    const extracted = parseErc1167(runtime_code);
+    try std.testing.expect(extracted != null);
+    try std.testing.expectEqual(test_address, extracted.?);
+}
+```
+
+### parseErc1167 - returns null for invalid bytecode length
+
+```zig
+test "parseErc1167 - returns null for invalid bytecode length" {
+    const invalid_bytecode = [_]u8{0xff} ** 30;
+    const extracted = parseErc1167(&invalid_bytecode);
+
+    try std.testing.expect(extracted == null);
+}
+```
+
+### isErc1167 - validates creation code
+
+```zig
+test "isErc1167 - validates creation code" {
+    const test_address = [_]u8{0x11} ** 20;
+    const bytecode = generateErc1167(test_address);
+
+    try std.testing.expect(isErc1167(&bytecode));
+}
+```
+
+### isErc1167 - validates runtime code
+
+```zig
+test "isErc1167 - validates runtime code" {
+    const test_address = [_]u8{0x11} ** 20;
+    const bytecode = generateErc1167(test_address);
+    const runtime_code = bytecode[10..];
+
+    try std.testing.expect(isErc1167(runtime_code));
+}
+```
+
+### isErc1167 - rejects invalid length
+
+```zig
+test "isErc1167 - rejects invalid length" {
+    const invalid_bytecode = [_]u8{0xff} ** 30;
+
+    try std.testing.expect(!isErc1167(&invalid_bytecode));
+}
+```
+
+### isErc1167 - rejects corrupted creation code
+
+```zig
+test "isErc1167 - rejects corrupted creation code" {
+    const test_address = [_]u8{0x11} ** 20;
+    var bytecode = generateErc1167(test_address);
+    bytecode[0] = 0xff; // Corrupt first byte
+
+    try std.testing.expect(!isErc1167(&bytecode));
+}
+```
+
+### round-trip - generate -> parse -> validate
+
+```zig
+test "round-trip - generate -> parse -> validate" {
+    const test_address = [_]u8{
+        0xd9, 0xe1, 0x45, 0x9a, 0x7a, 0x48, 0x21, 0xad, 0xb4, 0x99,
+        0xd9, 0xad, 0x3a, 0x96, 0x02, 0xec, 0x80, 0x62, 0x16, 0xec,
+    };
+
+    const bytecode = generateErc1167(test_address);
+    const extracted = parseErc1167(&bytecode);
+    const valid = isErc1167(&bytecode);
+
+    try std.testing.expect(extracted != null);
+    try std.testing.expectEqual(test_address, extracted.?);
+    try std.testing.expect(valid);
+}
+```

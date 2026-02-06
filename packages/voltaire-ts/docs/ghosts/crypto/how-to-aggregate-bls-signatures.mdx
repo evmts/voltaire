@@ -1,0 +1,69 @@
+---
+title: How to Aggregate BLS Signatures
+description: Combine multiple BLS signatures into a single compact signature using BLS12-381
+---
+
+## Goal
+
+Aggregate multiple BLS signatures into a single 48-byte signature for bandwidth-efficient verification.
+
+## Example (TypeScript)
+
+```typescript
+import { bls12_381 } from '@tevm/voltaire/crypto';
+
+// Multiple signatures to aggregate (G1 points, 128 bytes each uncompressed)
+const signatures: Uint8Array[] = [sig1, sig2, sig3];
+
+// Aggregate signatures via G1 point addition
+async function aggregateSignatures(sigs: Uint8Array[]): Promise<Uint8Array> {
+  if (sigs.length === 0) throw new Error('No signatures');
+
+  let aggregated = sigs[0];
+
+  for (let i = 1; i < sigs.length; i++) {
+    const input = new Uint8Array(256);
+    input.set(aggregated, 0);
+    input.set(sigs[i], 128);
+
+    const output = new Uint8Array(128);
+    await bls12_381.g1Add(input, output);
+    aggregated = output;
+  }
+
+  return aggregated;
+}
+
+const aggregated = await aggregateSignatures(signatures);
+// Result: Single 128-byte G1 point (48 bytes compressed)
+```
+
+## Verification (Same Message)
+
+```typescript
+// Aggregate public keys for same-message verification
+async function aggregatePublicKeys(pubkeys: Uint8Array[]): Promise<Uint8Array> {
+  let aggregated = pubkeys[0];
+
+  for (let i = 1; i < pubkeys.length; i++) {
+    const input = new Uint8Array(512);
+    input.set(aggregated, 0);
+    input.set(pubkeys[i], 256);
+
+    const output = new Uint8Array(256);
+    await bls12_381.g2Add(input, output);
+    aggregated = output;
+  }
+
+  return aggregated;
+}
+
+// Verify: e(aggregatedSig, G2) = e(H(msg), aggregatedPubKey)
+const aggPubKey = await aggregatePublicKeys(publicKeys);
+const valid = await verifyBLSSignature(aggregated, aggPubKey, message);
+```
+
+## Related
+
+- [BLS12-381 Aggregation](/crypto/bls12-381/aggregation)
+- [BLS Signatures](/crypto/bls12-381/signatures)

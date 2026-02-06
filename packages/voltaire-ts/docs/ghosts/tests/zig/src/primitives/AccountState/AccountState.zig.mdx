@@ -1,0 +1,397 @@
+---
+title: '[Zig] src/primitives/AccountState/AccountState.zig'
+source: 'src/primitives/AccountState/AccountState.zig'
+---
+
+> Auto-generated from Zig tests in: src/primitives/AccountState/AccountState.zig
+
+### createEmpty - creates valid empty state
+
+```zig
+test "createEmpty - creates valid empty state" {
+    const state = AccountState.createEmpty();
+
+    try std.testing.expectEqual(@as(u64, 0), state.nonce);
+    try std.testing.expectEqual(@as(u256, 0), state.balance);
+    try std.testing.expectEqualSlices(u8, &EMPTY_TRIE_ROOT, &state.storage_root);
+    try std.testing.expectEqualSlices(u8, &EMPTY_CODE_HASH, &state.code_hash);
+}
+```
+
+### createEmpty - is EOA
+
+```zig
+test "createEmpty - is EOA" {
+    const state = AccountState.createEmpty();
+    try std.testing.expect(state.isEOA());
+    try std.testing.expect(!state.isContract());
+}
+```
+
+### from - creates state with specified values
+
+```zig
+test "from - creates state with specified values" {
+    const state = AccountState.from(.{
+        .nonce = 5,
+        .balance = 1000000000000000000, // 1 ETH
+        .storage_root = EMPTY_TRIE_ROOT,
+        .code_hash = EMPTY_CODE_HASH,
+    });
+
+    try std.testing.expectEqual(@as(u64, 5), state.nonce);
+    try std.testing.expectEqual(@as(u256, 1000000000000000000), state.balance);
+}
+```
+
+### from - default values create empty state
+
+```zig
+test "from - default values create empty state" {
+    const state = AccountState.from(.{});
+    const empty = AccountState.createEmpty();
+
+    try std.testing.expect(state.equals(&empty));
+}
+```
+
+### isEOA - true for empty code hash
+
+```zig
+test "isEOA - true for empty code hash" {
+    const state = AccountState.from(.{
+        .nonce = 10,
+        .balance = 5000000000000000000,
+        .code_hash = EMPTY_CODE_HASH,
+    });
+
+    try std.testing.expect(state.isEOA());
+}
+```
+
+### isEOA - false for non-empty code hash
+
+```zig
+test "isEOA - false for non-empty code hash" {
+    var custom_code_hash: Hash.Hash = undefined;
+    @memset(&custom_code_hash, 0x12);
+
+    const state = AccountState.from(.{
+        .nonce = 1,
+        .balance = 0,
+        .code_hash = custom_code_hash,
+    });
+
+    try std.testing.expect(!state.isEOA());
+}
+```
+
+### isContract - true for non-empty code hash
+
+```zig
+test "isContract - true for non-empty code hash" {
+    var custom_code_hash: Hash.Hash = undefined;
+    @memset(&custom_code_hash, 0xab);
+
+    const state = AccountState.from(.{
+        .nonce = 1,
+        .balance = 0,
+        .code_hash = custom_code_hash,
+    });
+
+    try std.testing.expect(state.isContract());
+}
+```
+
+### isContract - false for empty code hash
+
+```zig
+test "isContract - false for empty code hash" {
+    const state = AccountState.createEmpty();
+    try std.testing.expect(!state.isContract());
+}
+```
+
+### equals - identical states are equal
+
+```zig
+test "equals - identical states are equal" {
+    const state1 = AccountState.createEmpty();
+    const state2 = AccountState.createEmpty();
+
+    try std.testing.expect(state1.equals(&state2));
+}
+```
+
+### equals - same values are equal
+
+```zig
+test "equals - same values are equal" {
+    const state1 = AccountState.from(.{
+        .nonce = 42,
+        .balance = 100,
+    });
+    const state2 = AccountState.from(.{
+        .nonce = 42,
+        .balance = 100,
+    });
+
+    try std.testing.expect(state1.equals(&state2));
+}
+```
+
+### equals - different nonce not equal
+
+```zig
+test "equals - different nonce not equal" {
+    const state1 = AccountState.from(.{ .nonce = 1 });
+    const state2 = AccountState.from(.{ .nonce = 2 });
+
+    try std.testing.expect(!state1.equals(&state2));
+}
+```
+
+### equals - different balance not equal
+
+```zig
+test "equals - different balance not equal" {
+    const state1 = AccountState.from(.{ .balance = 100 });
+    const state2 = AccountState.from(.{ .balance = 200 });
+
+    try std.testing.expect(!state1.equals(&state2));
+}
+```
+
+### equals - different storage_root not equal
+
+```zig
+test "equals - different storage_root not equal" {
+    var custom_root: StateRoot.StateRoot = undefined;
+    @memset(&custom_root, 0xff);
+
+    const state1 = AccountState.from(.{});
+    const state2 = AccountState.from(.{ .storage_root = custom_root });
+
+    try std.testing.expect(!state1.equals(&state2));
+}
+```
+
+### equals - different code_hash not equal
+
+```zig
+test "equals - different code_hash not equal" {
+    var custom_hash: Hash.Hash = undefined;
+    @memset(&custom_hash, 0xee);
+
+    const state1 = AccountState.from(.{});
+    const state2 = AccountState.from(.{ .code_hash = custom_hash });
+
+    try std.testing.expect(!state1.equals(&state2));
+}
+```
+
+### EMPTY_CODE_HASH is keccak256 of empty bytes
+
+```zig
+test "EMPTY_CODE_HASH is keccak256 of empty bytes" {
+    const crypto = @import("crypto");
+    var computed: [32]u8 = undefined;
+    crypto.Keccak256.hash(&.{}, &computed);
+
+    try std.testing.expectEqualSlices(u8, &EMPTY_CODE_HASH, &computed);
+}
+```
+
+### EMPTY_TRIE_ROOT is keccak256 of RLP null
+
+```zig
+test "EMPTY_TRIE_ROOT is keccak256 of RLP null" {
+    const crypto = @import("crypto");
+    var computed: [32]u8 = undefined;
+    crypto.Keccak256.hash(&[_]u8{0x80}, &computed);
+
+    try std.testing.expectEqualSlices(u8, &EMPTY_TRIE_ROOT, &computed);
+}
+```
+
+### rlpEncode - empty state
+
+```zig
+test "rlpEncode - empty state" {
+    const state = AccountState.createEmpty();
+
+    const encoded = try state.rlpEncode(std.testing.allocator);
+    defer std.testing.allocator.free(encoded);
+
+    // Should be a list: [nonce=0, balance=0, storageRoot, codeHash]
+    // First byte should indicate a list
+    try std.testing.expect(encoded[0] >= 0xc0);
+}
+```
+
+### rlpEncode and rlpDecode - round trip empty state
+
+```zig
+test "rlpEncode and rlpDecode - round trip empty state" {
+    const original = AccountState.createEmpty();
+
+    const encoded = try original.rlpEncode(std.testing.allocator);
+    defer std.testing.allocator.free(encoded);
+
+    const decoded = try AccountState.rlpDecode(std.testing.allocator, encoded);
+
+    try std.testing.expect(original.equals(&decoded));
+}
+```
+
+### rlpEncode and rlpDecode - round trip with values
+
+```zig
+test "rlpEncode and rlpDecode - round trip with values" {
+    const original = AccountState.from(.{
+        .nonce = 42,
+        .balance = 1000000000000000000, // 1 ETH
+    });
+
+    const encoded = try original.rlpEncode(std.testing.allocator);
+    defer std.testing.allocator.free(encoded);
+
+    const decoded = try AccountState.rlpDecode(std.testing.allocator, encoded);
+
+    try std.testing.expect(original.equals(&decoded));
+}
+```
+
+### rlpEncode and rlpDecode - round trip with large balance
+
+```zig
+test "rlpEncode and rlpDecode - round trip with large balance" {
+    // Max u256
+    const max_balance: u256 = std.math.maxInt(u256);
+    const original = AccountState.from(.{
+        .nonce = std.math.maxInt(u64),
+        .balance = max_balance,
+    });
+
+    const encoded = try original.rlpEncode(std.testing.allocator);
+    defer std.testing.allocator.free(encoded);
+
+    const decoded = try AccountState.rlpDecode(std.testing.allocator, encoded);
+
+    try std.testing.expect(original.equals(&decoded));
+}
+```
+
+### rlpEncode and rlpDecode - round trip contract state
+
+```zig
+test "rlpEncode and rlpDecode - round trip contract state" {
+    var custom_root: StateRoot.StateRoot = undefined;
+    @memset(&custom_root, 0xaa);
+    var custom_hash: Hash.Hash = undefined;
+    @memset(&custom_hash, 0xbb);
+
+    const original = AccountState.from(.{
+        .nonce = 100,
+        .balance = 500,
+        .storage_root = custom_root,
+        .code_hash = custom_hash,
+    });
+
+    const encoded = try original.rlpEncode(std.testing.allocator);
+    defer std.testing.allocator.free(encoded);
+
+    const decoded = try AccountState.rlpDecode(std.testing.allocator, encoded);
+
+    try std.testing.expect(original.equals(&decoded));
+}
+```
+
+### encodeU64 - zero
+
+```zig
+test "encodeU64 - zero" {
+    const encoded = try encodeU64(std.testing.allocator, 0);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 1), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x80), encoded[0]);
+}
+```
+
+### encodeU64 - single byte < 0x80
+
+```zig
+test "encodeU64 - single byte < 0x80" {
+    const encoded = try encodeU64(std.testing.allocator, 0x7f);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 1), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x7f), encoded[0]);
+}
+```
+
+### encodeU64 - single byte >= 0x80
+
+```zig
+test "encodeU64 - single byte >= 0x80" {
+    const encoded = try encodeU64(std.testing.allocator, 0x80);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 2), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x81), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x80), encoded[1]);
+}
+```
+
+### encodeU64 - multi-byte value
+
+```zig
+test "encodeU64 - multi-byte value" {
+    const encoded = try encodeU64(std.testing.allocator, 0x0400);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 3), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x82), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x04), encoded[1]);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[2]);
+}
+```
+
+### encodeU256 - zero
+
+```zig
+test "encodeU256 - zero" {
+    const encoded = try encodeU256(std.testing.allocator, 0);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 1), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x80), encoded[0]);
+}
+```
+
+### encodeU256 - small value
+
+```zig
+test "encodeU256 - small value" {
+    const encoded = try encodeU256(std.testing.allocator, 42);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 1), encoded.len);
+    try std.testing.expectEqual(@as(u8, 42), encoded[0]);
+}
+```
+
+### encodeU256 - 1 ETH in Wei
+
+```zig
+test "encodeU256 - 1 ETH in Wei" {
+    const one_eth: u256 = 1000000000000000000;
+    const encoded = try encodeU256(std.testing.allocator, one_eth);
+    defer std.testing.allocator.free(encoded);
+
+    // 1 ETH = 0x0de0b6b3a7640000 (8 bytes)
+    try std.testing.expectEqual(@as(usize, 9), encoded.len); // 1 byte prefix + 8 bytes data
+    try std.testing.expectEqual(@as(u8, 0x88), encoded[0]); // 0x80 + 8
+}
+```

@@ -1,0 +1,110 @@
+import { describe, expect, it } from "vitest";
+
+describe("Bytecode.analyzeJumpDestinations (docs/primitives/bytecode/analyzeJumpDestinations.mdx)", () => {
+	describe("Basic Detection", () => {
+		it("should find JUMPDEST opcodes", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// JUMPDEST, STOP, JUMPDEST, STOP
+			const code = Bytecode("0x5b005b00");
+			const jumpDests = code.analyzeJumpDestinations();
+
+			expect(jumpDests).toBeInstanceOf(Set);
+			expect(jumpDests.has(0)).toBe(true);
+			expect(jumpDests.has(2)).toBe(true);
+		});
+
+		it("should return empty set for bytecode without JUMPDESTs", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH1 0x01, ADD, STOP
+			const code = Bytecode("0x60010100");
+			const jumpDests = code.analyzeJumpDestinations();
+
+			expect(jumpDests.size).toBe(0);
+		});
+
+		it("should handle empty bytecode", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x");
+			const jumpDests = code.analyzeJumpDestinations();
+
+			expect(jumpDests.size).toBe(0);
+		});
+	});
+
+	describe("JUMPDEST in PUSH Data", () => {
+		it("should not mark JUMPDEST bytes inside PUSH data", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH2 0x5b00 - the 0x5b is data, not a JUMPDEST
+			const code = Bytecode("0x615b0000");
+			const jumpDests = code.analyzeJumpDestinations();
+
+			// Position 1 is inside PUSH2 data
+			expect(jumpDests.has(1)).toBe(false);
+		});
+
+		it("should not mark JUMPDEST bytes inside PUSH32 data", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// PUSH32 containing 0x5b bytes, then a real JUMPDEST
+			const pushData = new Uint8Array(32).fill(0x5b);
+			const code = Bytecode(new Uint8Array([0x7f, ...pushData, 0x5b, 0x00]));
+			const jumpDests = code.analyzeJumpDestinations();
+
+			// Only the last JUMPDEST at position 33 should be valid
+			expect(jumpDests.has(33)).toBe(true);
+
+			// Positions 1-32 are inside PUSH data
+			for (let i = 1; i <= 32; i++) {
+				expect(jumpDests.has(i)).toBe(false);
+			}
+		});
+	});
+
+	describe("Jump Table Patterns", () => {
+		it("should find all JUMPDESTs in jump table", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			// Multiple JUMPDESTs simulating a dispatcher
+			// PUSH1 0x05, JUMP, INVALID, INVALID, JUMPDEST, STOP, JUMPDEST, STOP
+			const code = Bytecode("0x60055600fefe5b005b00");
+			const jumpDests = code.analyzeJumpDestinations();
+
+			expect(jumpDests.has(6)).toBe(true); // First JUMPDEST
+			expect(jumpDests.has(8)).toBe(true); // Second JUMPDEST
+		});
+	});
+
+	describe("Return Type", () => {
+		it("should return Set<number>", async () => {
+			const { Bytecode } = await import(
+				"../../../src/primitives/Bytecode/index.js"
+			);
+
+			const code = Bytecode("0x5b00");
+			const jumpDests = code.analyzeJumpDestinations();
+
+			expect(jumpDests).toBeInstanceOf(Set);
+
+			// Should contain numbers
+			for (const pos of jumpDests) {
+				expect(typeof pos).toBe("number");
+			}
+		});
+	});
+});

@@ -1,0 +1,51 @@
+---
+title: '[TS/JS] src/primitives/ChainId/ChainIdType.test.ts'
+source: 'src/primitives/ChainId/ChainIdType.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/ChainId/ChainIdType.test.ts
+
+```typescript
+import { describe, it } from "vitest";
+import type { ChainIdType } from "./ChainIdType.js";
+
+type Equals<X, Y> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+		? true
+		: false;
+
+describe("ChainIdType", () => {
+	it("should be a branded number type", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+		const _typeTest = null as any as Equals<ChainIdType, number>;
+		const _assertion: Equals<typeof _typeTest, false> = true;
+		_assertion;
+	});
+
+	it("should not accept plain number", () => {
+		const plainNumber: number = 1;
+		// @ts-expect-error - plain number is not ChainIdType
+		const _chainId: ChainIdType = plainNumber;
+		_chainId;
+	});
+
+	it("should not accept string", () => {
+		// @ts-expect-error - string is not ChainIdType
+		const _chainId: ChainIdType = "1";
+		_chainId;
+	});
+
+	it("should not accept bigint", () => {
+		// @ts-expect-error - bigint is not ChainIdType
+		const _chainId: ChainIdType = 1n;
+		_chainId;
+	});
+
+	it("should accept result from from constructor", () => {
+		const chainId = 1 as ChainIdType;
+		const _result: ChainIdType = chainId;
+		_result;
+	});
+});
+
+```

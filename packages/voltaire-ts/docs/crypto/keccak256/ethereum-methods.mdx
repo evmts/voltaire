@@ -1,0 +1,572 @@
+---
+title: Ethereum Methods
+description: Ethereum-specific Keccak256 methods for selectors, topics, and contract addresses
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/keccak256.ts">
+  Run Keccak256 examples in the interactive playground
+</Card>
+
+<Warning>
+**Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
+</Warning>
+
+# Ethereum Methods
+
+Specialized Keccak256 methods for Ethereum protocol operations: function selectors, event topics, and contract address derivation (CREATE/CREATE2).
+
+<Tip>
+View executable examples: [`function-selector.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/keccak256/function-selector.ts) | [`event-topic.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/keccak256/event-topic.ts) | [`contract-address-create.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/keccak256/contract-address-create.ts) | [`contract-address-create2.ts`](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/keccak256/contract-address-create2.ts)
+</Tip>
+
+## selector(signature)
+
+Compute function selector (first 4 bytes of Keccak256 hash).
+
+**Signature:**
+```typescript
+function selector(signature: string): Uint8Array
+```
+
+**Parameters:**
+- `signature` (`string`) - Function signature (e.g., `"transfer(address,uint256)"`)
+
+**Returns:** `Uint8Array` (4 bytes) - Function selector
+
+**Throws:** Never throws for valid signature string
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
+const selector = Keccak256.selector('transfer(address,uint256)');
+// Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
+
+console.log(selector.length); // 4
+```
+</Tab>
+
+<Tab title="Building Calldata">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Build transaction calldata
+const selector = Keccak256.selector('transfer(address,uint256)');
+const params = Abi.encodeParams(
+  ['address', 'uint256'],
+  [recipient, amount]
+);
+
+// Combine selector + encoded params
+const calldata = new Uint8Array(selector.length + params.length);
+calldata.set(selector, 0);
+calldata.set(params, selector.length);
+
+console.log(Hex.fromBytes(calldata));
+// 0xa9059cbb000000000000000000000000...
+```
+</Tab>
+
+<Tab title="Common Selectors">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// ERC20 selectors
+const transfer = Keccak256.selector('transfer(address,uint256)');
+console.assert(Hex.fromBytes(transfer) === '0xa9059cbb');
+
+const approve = Keccak256.selector('approve(address,uint256)');
+console.assert(Hex.fromBytes(approve) === '0x095ea7b3');
+
+const balanceOf = Keccak256.selector('balanceOf(address)');
+console.assert(Hex.fromBytes(balanceOf) === '0x70a08231');
+
+// ERC721 selectors
+const safeTransferFrom = Keccak256.selector('safeTransferFrom(address,address,uint256)');
+console.assert(Hex.fromBytes(safeTransferFrom) === '0x42842e0e');
+```
+</Tab>
+
+<Tab title="Selector Lookup">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Build selector registry
+const selectorRegistry = new Map<string, string>([
+  [Hex.fromBytes(Keccak256.selector('transfer(address,uint256)')), 'transfer(address,uint256)'],
+  [Hex.fromBytes(Keccak256.selector('approve(address,uint256)')), 'approve(address,uint256)'],
+  [Hex.fromBytes(Keccak256.selector('balanceOf(address)')), 'balanceOf(address)'],
+]);
+
+// Decode calldata
+const calldata = '0xa9059cbb000...';
+const selector = calldata.slice(0, 10); // First 4 bytes (0x + 8 hex chars)
+const signature = selectorRegistry.get(selector);
+console.log(signature); // "transfer(address,uint256)"
+```
+</Tab>
+</Tabs>
+
+**Technical Notes:**
+- Returns first 4 bytes of `Keccak256.hashString(signature)`
+- Signature format: `functionName(type1,type2,...)` (no spaces, no param names)
+- Canonical types required: `uint256` not `uint`, `address` not `address payable`
+- Case-sensitive - `Transfer` ≠ `transfer`
+
+<Warning>
+Signature normalization critical:
+- ✅ `"transfer(address,uint256)"` - Correct
+- ❌ `"transfer(address, uint256)"` - Space causes different selector
+- ❌ `"transfer(address to, uint256 amount)"` - Param names cause different selector
+- ❌ `"transfer(address,uint)"` - Use canonical `uint256`
+</Warning>
+
+---
+
+## topic(signature)
+
+Compute event topic (32-byte Keccak256 hash).
+
+**Signature:**
+```typescript
+function topic(signature: string): Keccak256Hash
+```
+
+**Parameters:**
+- `signature` (`string`) - Event signature (e.g., `"Transfer(address,address,uint256)"`)
+
+**Returns:** `Keccak256Hash` (32 bytes) - Event topic hash
+
+**Throws:** Never throws for valid signature string
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
+const topic = Keccak256.topic('Transfer(address,address,uint256)');
+// Uint8Array(32) [full 32-byte hash]
+
+console.log(topic.length); // 32
+```
+</Tab>
+
+<Tab title="Event Filtering">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+
+// Filter logs for Transfer events
+const transferTopic = Keccak256.topic('Transfer(address,address,uint256)');
+
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  topics: [transferTopic], // Filter by topic0
+  fromBlock: startBlock,
+  toBlock: endBlock
+});
+
+// All logs will be Transfer events
+```
+</Tab>
+
+<Tab title="Common Topics">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// ERC20 events
+const transfer = Keccak256.topic('Transfer(address,address,uint256)');
+console.assert(
+  Hex.fromBytes(transfer) ===
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+);
+
+const approval = Keccak256.topic('Approval(address,address,uint256)');
+console.assert(
+  Hex.fromBytes(approval) ===
+  '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+);
+```
+</Tab>
+
+<Tab title="Topic Decoding">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Build topic registry
+const topicRegistry = new Map<string, string>([
+  [Hex.fromBytes(Keccak256.topic('Transfer(address,address,uint256)')), 'Transfer'],
+  [Hex.fromBytes(Keccak256.topic('Approval(address,address,uint256)')), 'Approval'],
+]);
+
+// Decode log event
+const log = {
+  topics: [
+    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e',
+    '0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045'
+  ],
+  data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'
+};
+
+const eventName = topicRegistry.get(log.topics[0]);
+console.log(eventName); // "Transfer"
+```
+</Tab>
+</Tabs>
+
+**Technical Notes:**
+- Returns full 32 bytes (unlike selector which returns 4 bytes)
+- Used as `topics[0]` in Ethereum event logs
+- Indexed event parameters become additional topics (`topics[1]`, `topics[2]`, etc.)
+- Non-indexed parameters in log `data` field
+
+**Event Log Structure:**
+```typescript
+interface Log {
+  topics: string[];  // [topic0=eventHash, topic1=indexed1, topic2=indexed2, ...]
+  data: string;      // ABI-encoded non-indexed parameters
+}
+```
+
+---
+
+## contractAddress(sender, nonce)
+
+Compute contract address from deployer and nonce (CREATE opcode).
+
+**Signature:**
+```typescript
+function contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array
+```
+
+**Parameters:**
+- `sender` (`Uint8Array`) - Deployer address (20 bytes)
+- `nonce` (`bigint`) - Transaction nonce
+
+**Returns:** `Uint8Array` (20 bytes) - Contract address
+
+**Throws:**
+- `InvalidLengthError` - Sender not 20 bytes
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+
+const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const nonce = 5n;
+
+const contractAddr = Keccak256.contractAddress(deployer, nonce);
+console.log(contractAddr.length); // 20
+```
+</Tab>
+
+<Tab title="Predicting Deployment">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+
+// Predict contract address before deployment
+async function predictContractAddress(
+  deployer: Uint8Array
+): Promise<Uint8Array> {
+  // Get current nonce
+  const nonce = await provider.getTransactionCount(deployer);
+
+  // Calculate next contract address
+  return Keccak256.contractAddress(deployer, BigInt(nonce));
+}
+
+const nextContract = await predictContractAddress(deployerAddress);
+console.log('Next deployment will create contract at:', nextContract);
+```
+</Tab>
+
+<Tab title="Contract Factory">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+
+// Track factory deployments
+const factory = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+let nonce = 0n;
+
+function getNextContractAddress(): Uint8Array {
+  const addr = Keccak256.contractAddress(factory, nonce);
+  nonce++;
+  return addr;
+}
+
+const contract1 = getNextContractAddress(); // nonce 0
+const contract2 = getNextContractAddress(); // nonce 1
+const contract3 = getNextContractAddress(); // nonce 2
+```
+</Tab>
+
+<Tab title="Reverse Lookup">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Find which nonce created a contract
+function findDeploymentNonce(
+  deployer: Uint8Array,
+  targetContract: Uint8Array,
+  maxNonce: bigint = 1000n
+): bigint | null {
+  for (let nonce = 0n; nonce <= maxNonce; nonce++) {
+    const addr = Keccak256.contractAddress(deployer, nonce);
+    if (Hex.fromBytes(addr) === Hex.fromBytes(targetContract)) {
+      return nonce;
+    }
+  }
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+**Algorithm:**
+```
+address = keccak256(rlp([sender, nonce]))[12:]
+```
+
+**Technical Notes:**
+- Formula defined in Ethereum Yellow Paper
+- RLP encoding: `[sender, nonce]` where sender is 20 bytes, nonce is minimal big-endian
+- Last 20 bytes of hash become contract address
+- Nonce increments with each transaction from sender
+- Deterministic - same sender + nonce always produces same address
+
+---
+
+## create2Address(deployer, salt, initCodeHash)
+
+Compute contract address using CREATE2 opcode (EIP-1014).
+
+**Signature:**
+```typescript
+function create2Address(
+  deployer: Uint8Array,
+  salt: Uint8Array,
+  initCodeHash: Uint8Array
+): Uint8Array
+```
+
+**Parameters:**
+- `deployer` (`Uint8Array`) - Deployer address (20 bytes)
+- `salt` (`Uint8Array`) - 32-byte salt
+- `initCodeHash` (`Uint8Array`) - 32-byte hash of initialization code
+
+**Returns:** `Uint8Array` (20 bytes) - Contract address
+
+**Throws:**
+- `InvalidLengthError` - Deployer not 20 bytes
+- `InvalidLengthError` - Salt not 32 bytes
+- `InvalidLengthError` - initCodeHash not 32 bytes
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
+
+const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
+const initCode = Bytecode('0x60806040...');
+const initCodeHash = Keccak256.hash(initCode);
+
+const contractAddr = Keccak256.create2Address(deployer, salt, initCodeHash);
+console.log(contractAddr.length); // 20
+```
+</Tab>
+
+<Tab title="Deterministic Deployment">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+
+// Compute address before deployment
+function getCreate2Address(
+  factory: Uint8Array,
+  salt: Uint8Array,
+  bytecode: Uint8Array
+): Uint8Array {
+  const initCodeHash = Keccak256.hash(bytecode);
+  return Keccak256.create2Address(factory, salt, initCodeHash);
+}
+
+// Deploy contract to predetermined address
+const factory = Address('0x4e59b44847b379578588920ca78fbf26c0b4956c'); // CREATE2 factory
+const salt = Bytes32('0x' + '0'.repeat(64)); // Zero salt
+const bytecode = Bytecode('0x60806040...');
+
+const predictedAddr = getCreate2Address(factory, salt, bytecode);
+console.log('Will deploy to:', predictedAddr);
+
+// Deploy - address will match prediction
+await deployContract(factory, salt, bytecode);
+```
+</Tab>
+
+<Tab title="Minimal Proxy (EIP-1167)">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Predict minimal proxy address
+function predictProxyAddress(
+  factory: Uint8Array,
+  implementation: Uint8Array,
+  salt: Uint8Array
+): Uint8Array {
+  // EIP-1167 minimal proxy bytecode
+  const proxyBytecode = Hex.toBytes(
+    '0x3d602d80600a3d3981f3363d3d373d3d3d363d73' +
+    Hex.fromBytes(implementation).slice(2) +
+    '5af43d82803e903d91602b57fd5bf3'
+  );
+
+  const initCodeHash = Keccak256.hash(proxyBytecode);
+  return Keccak256.create2Address(factory, salt, initCodeHash);
+}
+```
+</Tab>
+
+<Tab title="Salt Generation">
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+
+// Generate deterministic salt from parameters
+function generateSalt(owner: Uint8Array, version: number): Uint8Array {
+  const data = new Uint8Array(20 + 8);
+  data.set(owner, 0);
+  new DataView(data.buffer).setBigUint64(20, BigInt(version), false);
+  return Keccak256.hash(data);
+}
+
+// Use salt for CREATE2
+const salt = generateSalt(ownerAddress, 1);
+const addr = Keccak256.create2Address(factory, salt, initCodeHash);
+```
+</Tab>
+</Tabs>
+
+**Algorithm:**
+```
+address = keccak256(0xff ++ deployer ++ salt ++ keccak256(initCode))[12:]
+```
+
+**Technical Notes:**
+- Defined in EIP-1014
+- Enables deterministic deployment independent of nonce
+- Same deployer + salt + initCode always produces same address
+- `0xff` prefix distinguishes from CREATE (prevents collision)
+- initCode hashed separately (allows large bytecode)
+- Commonly used for counterfactual instantiation, proxy factories
+
+**Comparison with CREATE:**
+
+| Feature | CREATE | CREATE2 |
+|---------|--------|---------|
+| **Depends on nonce** | Yes | No |
+| **Depends on initCode** | Indirectly (via nonce) | Yes (hashed) |
+| **Predictable** | Requires knowing nonce | Always predictable |
+| **Redeployable** | No (nonce increments) | No (same address) |
+| **Use case** | Normal deployment | Counterfactual, upgradeable proxies |
+
+---
+
+## Usage Examples
+
+### Full Contract Deployment Flow
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address } from '@tevm/voltaire/Address';
+import { Bytes32 } from '@tevm/voltaire/Bytes32';
+import { Bytecode } from '@tevm/voltaire/Bytecode';
+
+// 1. Predict CREATE address
+const deployer = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+const currentNonce = await provider.getTransactionCount(deployer);
+const createAddr = Keccak256.contractAddress(deployer, BigInt(currentNonce));
+
+// 2. Predict CREATE2 address
+const factory = Address('0x4e59b44847b379578588920ca78fbf26c0b4956c');
+const salt = Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001');
+const initCode = Bytecode('0x60806040...');
+const initCodeHash = Keccak256.hash(initCode);
+const create2Addr = Keccak256.create2Address(factory, salt, initCodeHash);
+
+console.log('CREATE address:', createAddr);
+console.log('CREATE2 address:', create2Addr);
+```
+
+### Function Call Decoding
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Decode transaction calldata
+const calldata = '0xa9059cbb000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa960450000000000000000000000000000000000000000000000000de0b6b3a7640000';
+
+// Extract selector
+const selector = calldata.slice(0, 10);
+
+// Compare with known selectors
+const transferSel = Hex.fromBytes(Keccak256.selector('transfer(address,uint256)'));
+
+if (selector === transferSel) {
+  console.log('This is a transfer call');
+  // Decode parameters from calldata.slice(10)
+}
+```
+
+### Event Log Processing
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Hex } from '@tevm/voltaire/Hex';
+
+// Process Transfer event logs
+const transferTopic = Hex.fromBytes(
+  Keccak256.topic('Transfer(address,address,uint256)')
+);
+
+const logs = await provider.getLogs({
+  topics: [transferTopic],
+  fromBlock: 0,
+  toBlock: 'latest'
+});
+
+for (const log of logs) {
+  console.log('Transfer event:');
+  console.log('From:', log.topics[1]); // indexed from address
+  console.log('To:', log.topics[2]);   // indexed to address
+  console.log('Amount:', log.data);    // non-indexed amount
+}
+```
+
+## Related
+
+- [Core Hashing Methods](/crypto/keccak256/hash-methods) - Basic hash, hashString, hashHex
+- [Usage Patterns](/crypto/keccak256/usage-patterns) - Common patterns and best practices
+- [Implementations](/crypto/keccak256/implementations) - Implementation comparison
+- [ABI Module](/primitives/abi) - ABI encoding/decoding for selectors and topics

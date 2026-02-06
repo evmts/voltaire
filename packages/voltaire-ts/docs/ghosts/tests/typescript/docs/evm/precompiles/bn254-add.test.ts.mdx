@@ -1,0 +1,224 @@
+---
+title: '[TS/JS] docs/evm/precompiles/bn254-add.test.ts'
+source: 'docs/evm/precompiles/bn254-add.test.ts'
+---
+
+> Auto-generated from test file: docs/evm/precompiles/bn254-add.test.ts
+
+```typescript
+/**
+ * Tests for bn254-add.mdx documentation examples
+ * Validates code examples work correctly with actual API
+ */
+import { describe, expect, it } from "vitest";
+import { PrecompileAddress, execute, bn254Add } from "../../../src/evm/precompiles/precompiles.js";
+import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
+
+/**
+ * Helper: Convert bigint to 32-byte big-endian Uint8Array
+ */
+function beBytes32(n: bigint): Uint8Array {
+	const out = new Uint8Array(32);
+	let v = n;
+	for (let i = 31; i >= 0; i--) {
+		out[i] = Number(v & 0xffn);
+		v >>= 8n;
+	}
+	return out;
+}
+
+/**
+ * Helper: Build BN254 G1 point input (64 bytes: x || y)
+ */
+function buildG1Point(x: bigint, y: bigint): Uint8Array {
+	const point = new Uint8Array(64);
+	point.set(beBytes32(x), 0);
+	point.set(beBytes32(y), 32);
+	return point;
+}
+
+describe("bn254-add.mdx documentation examples", () => {
+	describe("Overview section", () => {
+		it("should perform elliptic curve point addition on BN254 curve", () => {
+			// Doc states: takes two G1 points and returns their sum
+			// Point at infinity + Point at infinity = Point at infinity
+			const input = new Uint8Array(128); // Two zero points (infinity)
+			const result = bn254Add(input, 1000n);
+
+			expect(result.success).toBe(true);
+			expect(result.output.length).toBe(64);
+		});
+	});
+
+	describe("Gas Cost section", () => {
+		it("should use exactly 150 gas", () => {
+			// Doc states: Fixed: 150 gas (reduced from 500 in Istanbul via EIP-1108)
+			const input = new Uint8Array(128);
+			const result = bn254Add(input, 1000n);
+
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(150n);
+		});
+
+		it("should fail with insufficient gas", () => {
+			const input = new Uint8Array(128);
+			const result = bn254Add(input, 149n);
+
+			expect(result.success).toBe(false);
+			expect(result.error).toBe("Out of gas");
+		});
+	});
+
+	describe("Input Format section", () => {
+		it("should accept 128 bytes total input", () => {
+			// Doc states: Total input length: 128 bytes (padded/truncated to this size)
+			const input = new Uint8Array(128);
+			const result = bn254Add(input, 1000n);
+
+			expect(result.success).toBe(true);
+		});
+
+		it("should handle point at infinity (0, 0)", () => {
+			// Doc states: Point at infinity is represented as (0, 0)
+			const infinity = new Uint8Array(128); // All zeros
+			const result = bn254Add(infinity, 1000n);
+
+			expect(result.success).toBe(true);
+			// Result should be point at infinity (all zeros)
+			expect([...result.output].every((b) => b === 0)).toBe(true);
+		});
+	});
+
+	describe("Output Format section", () => {
+		it("should return 64 bytes (x, y coordinates)", () => {
+			// Doc states: Total output length: 64 bytes
+			const input = new Uint8Array(128);
+			const result = bn254Add(input, 1000n);
+
+			expect(result.success).toBe(true);
+			expect(result.output.length).toBe(64);
+		});
+	});
+
+	describe("Test Vectors from documentation", () => {
+		it("should compute Identity + Identity = Identity", () => {
+			// Doc Test 1: Identity + Identity = Identity
+			const input = new Uint8Array(128); // All zeros (point at infinity)
+			const result = bn254Add(input, 1000n);
+
+			expect(result.success).toBe(true);
+			// Expected: (0, 0)
+			expect([...result.output].every((b) => b === 0)).toBe(true);
+		});
+
+		it("should add generator point to itself", () => {
+			// Doc Test 2: Generator + Generator = 2*Generator
+			// BN254 G1 generator: (1, 2)
+			const g1 = buildG1Point(1n, 2n);
+			const input = new Uint8Array(128);
+			input.set(g1, 0);
+			input.set(g1, 64);
+
+			const result = bn254Add(input, 1000n);
+
+			expect(result.success).toBe(true);
+			expect(result.output.length).toBe(64);
+			// Result should be non-zero (2*G)
+			expect([...result.output].some((b) => b !== 0)).toBe(true);
+		});
+
+		it("should handle P + O = P (identity element)", () => {
+			// Doc states: P + O = P (identity element)
+			const g1 = buildG1Point(1n, 2n);
+			const input = new Uint8Array(128);
+			input.set(g1, 0);
+			// Second point is all zeros (identity)
+
+			const result = bn254Add(input, 1000n);
+
+			expect(result.success).toBe(true);
+			// Result should equal input point
+			expect([...result.output.slice(0, 64)]).toEqual([...g1]);
+		});
+	});
+
+	describe("Point Addition Rules from documentation", () => {
+		it("should satisfy P + O = P", () => {
+			// Doc states: P + O = P (identity element)
+			const g1 = buildG1Point(1n, 2n);
+			const input = new Uint8Array(128);
+			input.set(g1, 0);
+			// Identity (zeros) at offset 64
+
+			const result = bn254Add(input, 1000n);
+			expect(result.success).toBe(true);
+			expect([...result.output]).toEqual([...g1]);
+		});
+
+		it("should satisfy O + P = P", () => {
+			// Identity is commutative
+			const g1 = buildG1Point(1n, 2n);
+			const input = new Uint8Array(128);
+			// Identity at offset 0
+			input.set(g1, 64);
+
+			const result = bn254Add(input, 1000n);
+			expect(result.success).toBe(true);
+			expect([...result.output]).toEqual([...g1]);
+		});
+	});
+
+	describe("Error Conditions section", () => {
+		it("should fail with insufficient gas", () => {
+			// Doc states: Out of gas (gasLimit < 150)
+			const input = new Uint8Array(128);
+			const result = bn254Add(input, 149n);
+
+			expect(result.success).toBe(false);
+			expect(result.gasUsed).toBe(150n);
+		});
+	});
+
+	describe("Integration with execute function", () => {
+		it("should work via execute with PrecompileAddress.BN254_ADD", () => {
+			const input = new Uint8Array(128);
+			const result = execute(
+				PrecompileAddress.BN254_ADD,
+				input,
+				1000n,
+				Hardfork.CANCUN,
+			);
+
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(150n);
+		});
+
+		it("should be available from BYZANTIUM hardfork", () => {
+			// Doc states: Introduced: Byzantium (EIP-196)
+			const input = new Uint8Array(128);
+			const result = execute(
+				PrecompileAddress.BN254_ADD,
+				input,
+				1000n,
+				Hardfork.BYZANTIUM,
+			);
+			expect(result.success).toBe(true);
+		});
+	});
+
+	describe("BN254 Curve Parameters section", () => {
+		it("should work with curve equation y^2 = x^3 + 3", () => {
+			// Doc states: Curve equation: y^2 = x^3 + 3
+			// Generator G1: (1, 2) satisfies: 2^2 = 1^3 + 3 => 4 = 4
+			const g1 = buildG1Point(1n, 2n);
+			const input = new Uint8Array(128);
+			input.set(g1, 0);
+			input.set(g1, 64);
+
+			const result = bn254Add(input, 1000n);
+			expect(result.success).toBe(true);
+		});
+	});
+});
+
+```

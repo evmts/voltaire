@@ -1,0 +1,166 @@
+---
+title: '[TS/JS] src/primitives/PeerInfo/PeerInfo.test.ts'
+source: 'src/primitives/PeerInfo/PeerInfo.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/PeerInfo/PeerInfo.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import * as PeerInfo from "./index.js";
+
+describe("PeerInfo", () => {
+	const validPeerInfo = {
+		id: "enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@10.3.58.6:30303",
+		name: "Geth/v1.10.26-stable/linux-amd64/go1.19.5",
+		caps: ["eth/67", "eth/68", "snap/1"],
+		network: {
+			localAddress: "192.168.1.100:30303",
+			remoteAddress: "10.3.58.6:30303",
+			inbound: false,
+			trusted: false,
+			static: true,
+		},
+		protocols: {
+			eth: {
+				version: "eth/67",
+				difficulty: "0x1234",
+				head: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			},
+			snap: {
+				version: 1,
+			},
+		},
+	};
+
+	describe("from", () => {
+		it("creates PeerInfo from valid object", () => {
+			const peerInfo = PeerInfo.from(validPeerInfo);
+			expect(peerInfo.name).toBe("Geth/v1.10.26-stable/linux-amd64/go1.19.5");
+			expect(peerInfo.caps).toEqual(["eth/67", "eth/68", "snap/1"]);
+		});
+
+		it("parses network information correctly", () => {
+			const peerInfo = PeerInfo.from(validPeerInfo);
+			expect(peerInfo.network.localAddress).toBe("192.168.1.100:30303");
+			expect(peerInfo.network.remoteAddress).toBe("10.3.58.6:30303");
+			expect(peerInfo.network.inbound).toBe(false);
+			expect(peerInfo.network.trusted).toBe(false);
+			expect(peerInfo.network.static).toBe(true);
+		});
+
+		it("parses eth protocol correctly", () => {
+			const peerInfo = PeerInfo.from(validPeerInfo);
+			expect(peerInfo.protocols.eth).toBeDefined();
+			expect(peerInfo.protocols.eth?.version).toBe("eth/67");
+		});
+
+		it("preserves other protocols", () => {
+			const peerInfo = PeerInfo.from(validPeerInfo);
+			expect(peerInfo.protocols.snap).toEqual({ version: 1 });
+		});
+
+		it("throws on non-object", () => {
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			expect(() => PeerInfo.from("not an object" as any)).toThrow(
+				"Peer info must be an object",
+			);
+		});
+
+		it("throws on missing id", () => {
+			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			(invalid as any).id = undefined;
+			expect(() => PeerInfo.from(invalid)).toThrow(
+				"Peer info must have 'id' string field",
+			);
+		});
+
+		it("throws on missing name", () => {
+			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			(invalid as any).name = undefined;
+			expect(() => PeerInfo.from(invalid)).toThrow(
+				"Peer info must have 'name' string field",
+			);
+		});
+
+		it("throws on missing caps", () => {
+			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			(invalid as any).caps = undefined;
+			expect(() => PeerInfo.from(invalid)).toThrow(
+				"Peer info must have 'caps' array field",
+			);
+		});
+
+		it("throws on missing network", () => {
+			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			(invalid as any).network = undefined;
+			expect(() => PeerInfo.from(invalid)).toThrow(
+				"Peer info must have 'network' object field",
+			);
+		});
+
+		it("throws on invalid network fields", () => {
+			const invalid = {
+				...validPeerInfo,
+				network: {
+					localAddress: "192.168.1.100:30303",
+					remoteAddress: "10.3.58.6:30303",
+					inbound: "not a boolean",
+					trusted: false,
+					static: true,
+				},
+			};
+			expect(() => PeerInfo.from(invalid)).toThrow(
+				"Peer info network must have required string and boolean fields",
+			);
+		});
+
+		it("throws on missing protocols", () => {
+			const invalid = { ...validPeerInfo };
+			// biome-ignore lint/suspicious/noExplicitAny: testing invalid input
+			(invalid as any).protocols = undefined;
+			expect(() => PeerInfo.from(invalid)).toThrow(
+				"Peer info must have 'protocols' object field",
+			);
+		});
+	});
+
+	describe("hasCapability", () => {
+		it("returns true for supported capability", () => {
+			const peerInfo = PeerInfo.from(validPeerInfo);
+			expect(PeerInfo.hasCapability(peerInfo, "eth/67")).toBe(true);
+			expect(PeerInfo.hasCapability(peerInfo, "snap/1")).toBe(true);
+		});
+
+		it("returns false for unsupported capability", () => {
+			const peerInfo = PeerInfo.from(validPeerInfo);
+			expect(PeerInfo.hasCapability(peerInfo, "eth/66")).toBe(false);
+			expect(PeerInfo.hasCapability(peerInfo, "les/4")).toBe(false);
+		});
+	});
+
+	describe("isInbound", () => {
+		it("returns false for outbound connection", () => {
+			const peerInfo = PeerInfo.from(validPeerInfo);
+			expect(PeerInfo.isInbound(peerInfo)).toBe(false);
+		});
+
+		it("returns true for inbound connection", () => {
+			const inboundPeer = {
+				...validPeerInfo,
+				network: {
+					...validPeerInfo.network,
+					inbound: true,
+				},
+			};
+			const peerInfo = PeerInfo.from(inboundPeer);
+			expect(PeerInfo.isInbound(peerInfo)).toBe(true);
+		});
+	});
+});
+
+```

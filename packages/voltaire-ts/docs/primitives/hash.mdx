@@ -1,0 +1,134 @@
+---
+title: "Hash (Moved to Keccak256)"
+description: "Hash has moved to crypto/keccak256 as Keccak256Hash"
+---
+
+## Overview
+
+The `Hash` primitive has been moved to `crypto/keccak256` as `Keccak256Hash`. This change reflects that Hash was specifically for Keccak256 hashing and belongs semantically under cryptographic operations rather than general primitives.
+
+## Why the Change
+
+**Better Organization**
+- Hash was Keccak256-specific, not a general hash primitive
+- Cryptographic operations belong in the crypto module
+- Clearer semantic organization of the codebase
+
+**Semantic Clarity**
+- `Keccak256Hash` explicitly names what it is
+- Separates hash algorithm (Keccak256) from hash type (Keccak256Hash)
+- Aligns with other crypto primitives (Secp256k1Signature, BlsSignature, etc.)
+
+## Migration Guide
+
+### Import Changes
+
+```typescript
+// Old
+import { Hash } from '@tevm/voltaire'
+import * as Hash from '@tevm/voltaire/primitives/Hash'
+
+// New
+import { Keccak256 } from '@tevm/voltaire/Keccak256'
+import * as Keccak256 from '@tevm/voltaire/Keccak256'
+```
+
+### Hashing Methods
+
+```typescript
+// Old - Hash.keccak256()
+const hash = Hash.keccak256(data)
+const hashFromHex = Hash.keccak256Hex('0x1234...')
+const hashFromString = Hash.keccak256String('hello')
+
+// New - Keccak256.hash()
+const hash = Keccak256.hash(data)
+const hashFromHex = Keccak256.hashHex('0x1234...')
+const hashFromString = Keccak256.hashString('hello')
+```
+
+### Type Changes
+
+```typescript
+// Old - HashType
+import type { HashType } from '@tevm/voltaire'
+
+function processHash(hash: HashType): void {
+  // ...
+}
+
+// New - Keccak256Hash (extends Bytes32)
+import type { Keccak256Hash } from '@tevm/voltaire/Keccak256'
+
+function processHash(hash: Keccak256Hash): void {
+  // ...
+}
+```
+
+### Constructor Changes
+
+```typescript
+// Old
+const hash = Hash.from('0x1234...')
+const hash = Hash.fromHex('0x1234...')
+const hash = Hash.fromBytes(bytes)
+
+// New - Use Keccak256Hash namespace
+import * as Keccak256Hash from '@tevm/voltaire/Keccak256/Keccak256Hash'
+
+const hash = Keccak256Hash.from('0x1234...')
+const hash = Keccak256Hash.fromHex('0x1234...')
+const hash = Keccak256Hash.fromBytes(bytes)
+```
+
+### Complete Example
+
+```typescript
+// Old approach
+import * as Hash from '@tevm/voltaire/primitives/Hash'
+
+const data = new Uint8Array([1, 2, 3, 4])
+const hash = Hash.keccak256(data)
+const hex = hash.toHex()
+const isValid = Hash.isHash(hash)
+
+// New approach
+import * as Keccak256 from '@tevm/voltaire/Keccak256'
+import * as Keccak256Hash from '@tevm/voltaire/Keccak256/Keccak256Hash'
+
+const data = new Uint8Array([1, 2, 3, 4])
+const hash = Keccak256.hash(data)
+const hex = Keccak256Hash.toHex(hash)
+const isValid = Keccak256Hash.isKeccak256Hash(hash)
+```
+
+## Type Hierarchy
+
+`Keccak256Hash` extends `Bytes32`, inheriting all Bytes32 methods while adding Keccak256-specific semantics:
+
+```typescript
+type Keccak256Hash = Bytes32 & { readonly __tag: "Keccak256Hash" }
+```
+
+This means all `Bytes32` operations work on `Keccak256Hash`:
+- Construction: `Bytes32.from()`, `Bytes32.fromHex()`
+- Conversion: `Bytes32.toHex()`, `Bytes32.toBytes()`
+- Validation: `Bytes32.equals()`, `Bytes32.isZero()`
+- Utilities: `Bytes32.slice()`, `Bytes32.concat()`
+
+## Where to Find
+
+### Keccak256Hash Type
+**[/crypto/keccak256/hash](/crypto/keccak256/hash)** - Type definition, branded type system, constructor methods
+
+### Hashing Methods
+**[/crypto/keccak256/index](/crypto/keccak256/index)** - Main hashing functions: `hash()`, `hashHex()`, `hashString()`
+
+### Implementations
+**[/crypto/keccak256/implementations](/crypto/keccak256/implementations)** - Native (keccak-asm), WASM (ReleaseSmall/ReleaseFast), JavaScript fallback
+
+## Related
+
+- [Bytes32](/primitives/bytes/bytes32) - Base type for 32-byte values
+- [Keccak256](/crypto/keccak256/index) - Keccak256 hashing functions
+- [Keccak256Hash](/crypto/keccak256/hash) - Keccak256Hash type documentation

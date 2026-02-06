@@ -1,0 +1,711 @@
+---
+title: "BrandedBytes32"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../../index.mdx)
+
+***
+
+[@tevm/voltaire](../../index.mdx) / [index](../index.mdx) / BrandedBytes32
+
+# BrandedBytes32
+
+## Type Aliases
+
+### Bytes32Like
+
+> **Bytes32Like** = [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type) \| `string` \| `Uint8Array` \| `bigint` \| `number`
+
+Defined in: [src/primitives/Bytes/Bytes32/Bytes32Type.ts:11](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/Bytes32Type.ts#L11)
+
+Inputs that can be converted to Bytes32
+
+## Variables
+
+### SIZE
+
+> `const` **SIZE**: `32` = `32`
+
+Defined in: [src/primitives/Bytes/Bytes32/Bytes32Type.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/Bytes32Type.ts#L13)
+
+***
+
+### ZERO
+
+> `const` **ZERO**: [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/constants.js:12](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/constants.js#L12)
+
+Zero Bytes32 constant (32 zero bytes)
+
+## Functions
+
+### Bytes32()
+
+> **Bytes32**(`value`): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/index.ts:49](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/index.ts#L49)
+
+#### Parameters
+
+##### value
+
+[`Bytes32Like`](#bytes32like)
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+***
+
+### clone()
+
+> **clone**(`bytes`): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/clone.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/clone.js#L14)
+
+Clone a Bytes32 value
+
+#### Parameters
+
+##### bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Value to clone
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Cloned value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const cloned = Bytes32.clone(bytes);
+```
+
+***
+
+### compare()
+
+> **compare**(`a`, `b`): `number`
+
+Defined in: [src/primitives/Bytes/Bytes32/compare.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/compare.js#L15)
+
+Compare two Bytes32 values
+
+#### Parameters
+
+##### a
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+First value
+
+##### b
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Second value
+
+#### Returns
+
+`number`
+
+-1 if a < b, 0 if equal, 1 if a > b
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const result = Bytes32.compare(a, b);
+```
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Bytes/Bytes32/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/equals.js#L15)
+
+Check if two Bytes32 values are equal
+
+#### Parameters
+
+##### a
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+First value
+
+##### b
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Second value
+
+#### Returns
+
+`boolean`
+
+True if equal
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const equal = Bytes32.equals(a, b);
+```
+
+***
+
+### from()
+
+> **from**(`value`): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/from.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/from.js#L23)
+
+Create Bytes32 from string, bytes, number, or bigint
+
+#### Parameters
+
+##### value
+
+Value to convert
+
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If input is invalid or wrong length
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const bytes1 = Bytes32.from('0x' + '12'.repeat(32));
+const bytes2 = Bytes32.from(new Uint8Array(32));
+const bytes3 = Bytes32.from(42);
+const bytes4 = Bytes32.from(123n);
+```
+
+***
+
+### fromBigint()
+
+> **fromBigint**(`value`): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/fromBigint.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/fromBigint.js#L16)
+
+Create Bytes32 from bigint (padded to 32 bytes)
+
+#### Parameters
+
+##### value
+
+`bigint`
+
+Bigint to convert
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 (big-endian)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const bytes = Bytes32.fromBigint(123456789012345678901234567890n);
+```
+
+***
+
+### fromBytes()
+
+> **fromBytes**(`bytes`): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/fromBytes.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/fromBytes.js#L18)
+
+Create Bytes32 from raw bytes
+
+#### Parameters
+
+##### bytes
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Raw bytes (must be 32 bytes)
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If bytes is wrong length
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const bytes = Bytes32.fromBytes(new Uint8Array(32));
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/fromHex.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/fromHex.js#L19)
+
+Create Bytes32 from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string with optional 0x prefix
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If hex is wrong length
+
+#### Throws
+
+If hex contains invalid characters
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const bytes = Bytes32.fromHex('0x' + '1234'.repeat(16));
+```
+
+***
+
+### fromNumber()
+
+> **fromNumber**(`value`): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/fromNumber.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/fromNumber.js#L16)
+
+Create Bytes32 from number (padded to 32 bytes)
+
+#### Parameters
+
+##### value
+
+`number`
+
+Number to convert
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 (big-endian)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const bytes = Bytes32.fromNumber(42);
+```
+
+***
+
+### isZero()
+
+> **isZero**(`bytes`): `boolean`
+
+Defined in: [src/primitives/Bytes/Bytes32/isZero.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/isZero.js#L14)
+
+Check if Bytes32 is all zeros
+
+#### Parameters
+
+##### bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Value to check
+
+#### Returns
+
+`boolean`
+
+True if all zeros
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const isAllZeros = Bytes32.isZero(bytes);
+```
+
+***
+
+### size()
+
+> **size**(`_bytes`): `32`
+
+Defined in: [src/primitives/Bytes/Bytes32/size.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/size.js#L16)
+
+Get size of Bytes32 (always 32)
+
+#### Parameters
+
+##### \_bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 value
+
+#### Returns
+
+`32`
+
+Size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const s = Bytes32.size(bytes); // 32
+```
+
+***
+
+### toAddress()
+
+> **toAddress**(`bytes`): [`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Defined in: [src/primitives/Bytes/Bytes32/toAddress.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/toAddress.js#L14)
+
+Extract Address from Bytes32 (last 20 bytes)
+
+#### Parameters
+
+##### bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 to extract from
+
+#### Returns
+
+[`AddressType`](../../primitives/Address.mdx#addresstype)
+
+Address
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const addr = Bytes32.toAddress(bytes);
+```
+
+***
+
+### toBigint()
+
+> **toBigint**(`bytes`): `bigint`
+
+Defined in: [src/primitives/Bytes/Bytes32/toBigint.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/toBigint.js#L14)
+
+Convert Bytes32 to bigint (big-endian)
+
+#### Parameters
+
+##### bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 to convert
+
+#### Returns
+
+`bigint`
+
+Bigint value
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const value = Bytes32.toBigint(bytes);
+```
+
+***
+
+### toHash()
+
+> **toHash**(`bytes`): [`HashType`](HashType.mdx#hashtype)
+
+Defined in: [src/primitives/Bytes/Bytes32/toHash.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/toHash.js#L14)
+
+Convert Bytes32 to Hash (same size, different semantic meaning)
+
+#### Parameters
+
+##### bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 to convert
+
+#### Returns
+
+[`HashType`](HashType.mdx#hashtype)
+
+Hash
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const hash = Bytes32.toHash(bytes);
+```
+
+***
+
+### toHex()
+
+> **toHex**(`bytes`): `string`
+
+Defined in: [src/primitives/Bytes/Bytes32/toHex.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/toHex.js#L14)
+
+Convert Bytes32 to hex string
+
+#### Parameters
+
+##### bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 to convert
+
+#### Returns
+
+`string`
+
+Hex string with 0x prefix
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const hex = Bytes32.toHex(bytes);
+```
+
+***
+
+### toUint8Array()
+
+> **toUint8Array**(`bytes`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/primitives/Bytes/Bytes32/toUint8Array.js:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/toUint8Array.js#L14)
+
+Convert Bytes32 to Uint8Array
+
+#### Parameters
+
+##### bytes
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Bytes32 to convert
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Raw bytes
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const raw = Bytes32.toUint8Array(bytes);
+```
+
+***
+
+### zero()
+
+> **zero**(): [`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Defined in: [src/primitives/Bytes/Bytes32/zero.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Bytes/Bytes32/zero.js#L15)
+
+Create a zero-filled Bytes32
+
+#### Returns
+
+[`Bytes32Type`](../../primitives/Bytes.mdx#bytes32type)
+
+Zero-filled Bytes32
+
+#### See
+
+https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
+const zeros = Bytes32.zero();
+```
+
+## References
+
+### Bytes32Type
+
+Re-exports [Bytes32Type](../../primitives/Bytes.mdx#bytes32type)

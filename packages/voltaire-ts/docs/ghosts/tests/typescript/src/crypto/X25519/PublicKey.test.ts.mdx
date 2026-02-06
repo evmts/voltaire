@@ -1,0 +1,156 @@
+---
+title: '[TS/JS] src/crypto/X25519/PublicKey.test.ts'
+source: 'src/crypto/X25519/PublicKey.test.ts'
+---
+
+> Auto-generated from test file: src/crypto/X25519/PublicKey.test.ts
+
+```typescript
+import { describe, expectTypeOf, it } from "vitest";
+import type { PublicKey } from "./PublicKey.js";
+
+type Equals<T, U> =
+	(<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2
+		? true
+		: false;
+
+describe("X25519 PublicKey Type", () => {
+	describe("type structure", () => {
+		it("PublicKey is Uint8Array", () => {
+			expectTypeOf<PublicKey>().toEqualTypeOf<Uint8Array>();
+		});
+
+		it("PublicKey matches Uint8Array exactly", () => {
+			type Test = Equals<PublicKey, Uint8Array>;
+			const result: Test = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+
+		it("accepts Uint8Array instances", () => {
+			const arr = new Uint8Array(32);
+			expectTypeOf(arr).toMatchTypeOf<PublicKey>();
+		});
+
+		it("is assignable to Uint8Array", () => {
+			type Test = PublicKey extends Uint8Array ? true : false;
+			const result: Test = true;
+			expectTypeOf(result).toEqualTypeOf<true>();
+		});
+	});
+
+	describe("usage patterns", () => {
+		it("PublicKey for function parameters", () => {
+			function acceptsPublicKey(_key: PublicKey): void {}
+			expectTypeOf(acceptsPublicKey).parameter(0).toEqualTypeOf<PublicKey>();
+		});
+
+		it("PublicKey for function returns", () => {
+			function returnsPublicKey(): PublicKey {
+				return new Uint8Array(32);
+			}
+			expectTypeOf(returnsPublicKey).returns.toEqualTypeOf<PublicKey>();
+		});
+
+		it("PublicKey in ECDH context", () => {
+			type ECDHInput = {
+				secretKey: Uint8Array;
+				publicKey: PublicKey;
+			};
+			expectTypeOf<ECDHInput>().toEqualTypeOf<{
+				secretKey: Uint8Array;
+				publicKey: PublicKey;
+			}>();
+		});
+
+		it("PublicKey in key exchange", () => {
+			type KeyExchange = (
+				secretKey: Uint8Array,
+				publicKey: PublicKey,
+			) => Uint8Array;
+			expectTypeOf<KeyExchange>().parameter(1).toEqualTypeOf<PublicKey>();
+		});
+	});
+
+	describe("type compatibility", () => {
+		it("compatible with typed arrays", () => {
+			const key: PublicKey = new Uint8Array(32);
+			expectTypeOf(key).toEqualTypeOf<PublicKey>();
+		});
+
+		it("compatible with ArrayBuffer views", () => {
+			const buffer = new ArrayBuffer(32);
+			const key: PublicKey = new Uint8Array(buffer);
+			expectTypeOf(key).toEqualTypeOf<PublicKey>();
+		});
+
+		it("not compatible with other typed arrays", () => {
+			const u16 = new Uint16Array(16);
+			// @ts-expect-error - Uint16Array is not PublicKey
+			const key: PublicKey = u16;
+			expectTypeOf(key).not.toEqualTypeOf<Uint16Array>();
+		});
+
+		it("not compatible with string", () => {
+			// @ts-expect-error - string is not PublicKey
+			const key: PublicKey = "public key";
+			expectTypeOf(key).not.toEqualTypeOf<string>();
+		});
+
+		it("not compatible with bigint", () => {
+			// @ts-expect-error - bigint is not PublicKey
+			const key: PublicKey = 123n;
+			expectTypeOf(key).not.toEqualTypeOf<bigint>();
+		});
+	});
+
+	describe("curve25519 specific", () => {
+		it("represents Montgomery curve x-coordinate", () => {
+			const publicKey: PublicKey = new Uint8Array(32);
+			expectTypeOf(publicKey).toEqualTypeOf<PublicKey>();
+		});
+
+		it("supports base point multiplication", () => {
+			type DerivePublicKey = (secretKey: Uint8Array) => PublicKey;
+			expectTypeOf<DerivePublicKey>().returns.toEqualTypeOf<PublicKey>();
+		});
+	});
+
+	describe("type narrowing", () => {
+		it("narrows from Uint8Array to PublicKey", () => {
+			function isPublicKey(value: Uint8Array): value is PublicKey {
+				return value.length === 32;
+			}
+			expectTypeOf(isPublicKey).returns.toEqualTypeOf<boolean>();
+		});
+
+		it("discriminates union types", () => {
+			type Result = PublicKey | Error;
+			function isKey(value: Result): value is PublicKey {
+				return value instanceof Uint8Array;
+			}
+			expectTypeOf(isKey).returns.toEqualTypeOf<boolean>();
+		});
+	});
+
+	describe("readonly and mutability", () => {
+		it("mutable by default", () => {
+			const key: PublicKey = new Uint8Array(32);
+			key[0] = 1;
+			expectTypeOf(key).toEqualTypeOf<PublicKey>();
+		});
+
+		it("can be made readonly", () => {
+			const key: Readonly<PublicKey> = new Uint8Array(32);
+			expectTypeOf(key).toEqualTypeOf<Readonly<PublicKey>>();
+		});
+
+		it("readonly prevents modification", () => {
+			const key: Readonly<PublicKey> = new Uint8Array(32);
+			// @ts-expect-error - readonly prevents assignment
+			key[0] = 1;
+			expectTypeOf(key).toMatchTypeOf<Readonly<Uint8Array>>();
+		});
+	});
+});
+
+```

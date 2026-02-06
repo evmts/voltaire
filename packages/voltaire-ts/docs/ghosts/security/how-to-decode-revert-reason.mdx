@@ -1,0 +1,181 @@
+---
+title: How to Decode Revert Reasons
+description: Decode error messages from reverted transactions using Voltaire's ABI tools.
+---
+
+## Goal
+
+Extract human-readable error messages from transaction reverts.
+
+## Standard Error(string) Decoding
+
+```ts
+import { Abi } from '@voltaire/primitives/Abi'
+import { Hex } from '@voltaire/primitives'
+
+// Error(string) selector: 0x08c379a0
+const ERROR_SELECTOR = '0x08c379a0'
+
+function decodeRevertReason(data: string): string | null {
+  if (!data || data === '0x') return null
+
+  // Error(string) - most common
+  if (data.startsWith(ERROR_SELECTOR)) {
+    const errorAbi = [{
+      type: 'error',
+      name: 'Error',
+      inputs: [{ name: 'message', type: 'string' }]
+    }] as const
+
+    try {
+      const decoded = Abi.decodeError(errorAbi, Hex.toBytes(data))
+      return decoded.message
+    } catch {
+      return null
+    }
+  }
+
+  // Panic(uint256) - 0x4e487b71
+  if (data.startsWith('0x4e487b71')) {
+    const panicCode = BigInt('0x' + data.slice(10))
+    return getPanicMessage(panicCode)
+  }
+
+  return `Unknown error: ${data.slice(0, 66)}...`
+}
+
+function getPanicMessage(code: bigint): string {
+  const panicCodes: Record<string, string> = {
+    '0': 'Generic compiler panic',
+    '1': 'Assert failed',
+    '17': 'Arithmetic overflow/underflow',
+    '18': 'Division by zero',
+    '33': 'Invalid enum value',
+    '34': 'Storage byte array encoding error',
+    '49': 'Pop on empty array',
+    '50': 'Array index out of bounds',
+    '65': 'Out of memory',
+    '81': 'Called zero-initialized function pointer'
+  }
+  return panicCodes[code.toString()] || `Panic code: ${code}`
+}
+```
+
+## Custom Error Decoding
+
+```ts
+import { Abi } from '@voltaire/primitives/Abi'
+
+// Contract has custom errors
+const contractAbi = [
+  {
+    type: 'error',
+    name: 'InsufficientBalance',
+    inputs: [
+      { name: 'available', type: 'uint256' },
+      { name: 'required', type: 'uint256' }
+    ]
+  },
+  {
+    type: 'error',
+    name: 'Unauthorized',
+    inputs: [{ name: 'caller', type: 'address' }]
+  }
+] as const
+
+function decodeCustomError(data: string, abi: readonly any[]): string | null {
+  const bytes = Hex.toBytes(data)
+  const selector = data.slice(0, 10)
+
+  // Find matching error in ABI
+  for (const item of abi) {
+    if (item.type !== 'error') continue
+
+    const errorSelector = Abi.getErrorSelector(abi, item.name)
+    if (Hex.fromBytes(errorSelector) === selector) {
+      const decoded = Abi.decodeError(abi, bytes)
+      return formatError(item.name, decoded)
+    }
+  }
+
+  return null
+}
+
+function formatError(name: string, params: Record<string, any>): string {
+  const paramStr = Object.entries(params)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(', ')
+  return `${name}(${paramStr})`
+}
+
+// Usage
+const errorData = '0x...' // from revert
+const decoded = decodeCustomError(errorData, contractAbi)
+// "InsufficientBalance(available=100, required=1000)"
+```
+
+## From Transaction Receipt
+
+```ts
+async function getRevertReason(txHash: string): Promise<string | null> {
+  const receipt = await provider.request({
+    method: 'eth_getTransactionReceipt',
+    params: [txHash]
+  })
+
+  if (receipt.status !== '0x0') {
+    return null // Transaction succeeded
+  }
+
+  // Re-simulate to get revert data
+  const tx = await provider.request({
+    method: 'eth_getTransactionByHash',
+    params: [txHash]
+  })
+
+  try {
+    await provider.request({
+      method: 'eth_call',
+      params: [{
+        from: tx.from,
+        to: tx.to,
+        data: tx.input,
+        value: tx.value,
+        gas: tx.gas
+      }, { blockNumber: receipt.blockNumber }]
+    })
+    return null // Shouldn't reach here
+  } catch (err: any) {
+    if (err.data) {
+      return decodeRevertReason(err.data)
+    }
+    return err.message
+  }
+}
+```
+
+## Combined Decoder
+
+```ts
+function decodeAnyError(data: string, abi?: readonly any[]): string {
+  // Try standard Error(string)
+  const standard = decodeRevertReason(data)
+  if (standard && !standard.startsWith('Unknown')) {
+    return standard
+  }
+
+  // Try custom errors if ABI provided
+  if (abi) {
+    const custom = decodeCustomError(data, abi)
+    if (custom) return custom
+  }
+
+  // Fallback
+  return `Raw error data: ${data.slice(0, 100)}${data.length > 100 ? '...' : ''}`
+}
+```
+
+## See Also
+
+- [ABI Error Encoding](/primitives/abi/error)
+- [Transaction Simulation](/ghosts/security/how-to-simulate-transaction)

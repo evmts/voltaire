@@ -1,0 +1,82 @@
+---
+title: '[TS/JS] src/jsonrpc/eth/sign/eth_sign.test.ts'
+source: 'src/jsonrpc/eth/sign/eth_sign.test.ts'
+---
+
+> Auto-generated from test file: src/jsonrpc/eth/sign/eth_sign.test.ts
+
+```typescript
+import { describe, expect, test } from "vitest";
+import { method, SignRequest } from "./eth_sign.js";
+
+describe("eth_sign", () => {
+	describe("Request Creation", () => {
+		test("creates request with address and message", () => {
+			const address = "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83";
+			const message = "0xdeadbeaf";
+			const req = SignRequest(address, message);
+			expect(req).toEqual({
+				method: "eth_sign",
+				params: [address, message],
+			});
+		});
+
+		test("creates request with different message", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const message = "0x48656c6c6f20576f726c64";
+			const req = SignRequest(address, message);
+			expect(req).toEqual({
+				method: "eth_sign",
+				params: [address, message],
+			});
+		});
+
+		test("method constant is correct", () => {
+			expect(method).toBe("eth_sign");
+		});
+	});
+
+	describe("Request Structure", () => {
+		test("returns RequestArguments type with params", () => {
+			const address = "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83";
+			const message = "0xdeadbeaf";
+			const req = SignRequest(address, message);
+			expect(req).toHaveProperty("method");
+			expect(req).toHaveProperty("params");
+			expect(Array.isArray(req.params)).toBe(true);
+			expect(req.params).toHaveLength(2);
+		});
+
+		test("method matches constant", () => {
+			const address = "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83";
+			const message = "0xdeadbeaf";
+			const req = SignRequest(address, message);
+			expect(req.method).toBe(method);
+		});
+	});
+
+	describe("Edge Cases", () => {
+		test("handles short message", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const message = "0x00";
+			const req = SignRequest(address, message);
+			expect(req.params?.[1]).toBe(message);
+		});
+
+		test("handles long message", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const message = `0x${"a".repeat(200)}`;
+			const req = SignRequest(address, message);
+			expect(req.params?.[1]).toBe(message);
+		});
+
+		test("handles ASCII text as hex", () => {
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+			const message = "0x48656c6c6f20576f726c64";
+			const req = SignRequest(address, message);
+			expect(req.params?.[1]).toBe(message);
+		});
+	});
+});
+
+```

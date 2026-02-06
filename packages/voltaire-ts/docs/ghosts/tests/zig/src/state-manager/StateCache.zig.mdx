@@ -1,0 +1,177 @@
+---
+title: '[Zig] src/state-manager/StateCache.zig'
+source: 'src/state-manager/StateCache.zig'
+---
+
+> Auto-generated from Zig tests in: src/state-manager/StateCache.zig
+
+### AccountCache - basic operations
+
+```zig
+test "AccountCache - basic operations" {
+    const allocator = std.testing.allocator;
+    var cache = try AccountCache.init(allocator);
+    defer cache.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account = AccountState{
+        .nonce = 5,
+        .balance = 1000,
+        .code_hash = Hash.ZERO,
+        .storage_root = Hash.ZERO,
+    };
+
+    try cache.put(addr, account);
+    try std.testing.expect(cache.has(addr));
+
+    const retrieved = cache.get(addr).?;
+    try std.testing.expectEqual(@as(u64, 5), retrieved.nonce);
+    try std.testing.expectEqual(@as(u256, 1000), retrieved.balance);
+}
+```
+
+### AccountCache - checkpoint and revert
+
+```zig
+test "AccountCache - checkpoint and revert" {
+    const allocator = std.testing.allocator;
+    var cache = try AccountCache.init(allocator);
+    defer cache.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
+
+    try cache.put(addr, account1);
+    try cache.checkpoint();
+
+    // Modify after checkpoint
+    const account2 = AccountState{ .nonce = 10, .balance = 2000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
+    try cache.put(addr, account2);
+
+    const modified = cache.get(addr).?;
+    try std.testing.expectEqual(@as(u64, 10), modified.nonce);
+
+    // Revert
+    cache.revert();
+
+    const reverted = cache.get(addr).?;
+    try std.testing.expectEqual(@as(u64, 5), reverted.nonce);
+    try std.testing.expectEqual(@as(u256, 1000), reverted.balance);
+}
+```
+
+### AccountCache - checkpoint and commit
+
+```zig
+test "AccountCache - checkpoint and commit" {
+    const allocator = std.testing.allocator;
+    var cache = try AccountCache.init(allocator);
+    defer cache.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
+
+    try cache.put(addr, account1);
+    try cache.checkpoint();
+
+    // Modify
+    const account2 = AccountState{ .nonce = 10, .balance = 2000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
+    try cache.put(addr, account2);
+
+    // Commit
+    cache.commit();
+
+    // Changes should persist
+    const committed = cache.get(addr).?;
+    try std.testing.expectEqual(@as(u64, 10), committed.nonce);
+    try std.testing.expectEqual(@as(u256, 2000), committed.balance);
+}
+```
+
+### StorageCache - basic operations
+
+```zig
+test "StorageCache - basic operations" {
+    const allocator = std.testing.allocator;
+    var cache = try StorageCache.init(allocator);
+    defer cache.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const slot: u256 = 42;
+    const value: u256 = 9999;
+
+    try cache.put(addr, slot, value);
+    try std.testing.expect(cache.has(addr, slot));
+
+    const retrieved = cache.get(addr, slot).?;
+    try std.testing.expectEqual(value, retrieved);
+}
+```
+
+### StorageCache - checkpoint and revert
+
+```zig
+test "StorageCache - checkpoint and revert" {
+    const allocator = std.testing.allocator;
+    var cache = try StorageCache.init(allocator);
+    defer cache.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const slot: u256 = 42;
+
+    try cache.put(addr, slot, 100);
+    try cache.checkpoint();
+
+    // Modify
+    try cache.put(addr, slot, 200);
+    try std.testing.expectEqual(@as(u256, 200), cache.get(addr, slot).?);
+
+    // Revert
+    cache.revert();
+    try std.testing.expectEqual(@as(u256, 100), cache.get(addr, slot).?);
+}
+```
+
+### ContractCache - basic operations
+
+```zig
+test "ContractCache - basic operations" {
+    const allocator = std.testing.allocator;
+    var cache = try ContractCache.init(allocator);
+    defer cache.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const code = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
+
+    try cache.put(addr, &code);
+    try std.testing.expect(cache.has(addr));
+
+    const retrieved = cache.get(addr).?;
+    try std.testing.expectEqualSlices(u8, &code, retrieved);
+}
+```
+
+### ContractCache - checkpoint and revert
+
+```zig
+test "ContractCache - checkpoint and revert" {
+    const allocator = std.testing.allocator;
+    var cache = try ContractCache.init(allocator);
+    defer cache.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const code1 = [_]u8{ 0x60, 0x60 };
+    const code2 = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
+
+    try cache.put(addr, &code1);
+    try cache.checkpoint();
+
+    // Modify
+    try cache.put(addr, &code2);
+    try std.testing.expectEqualSlices(u8, &code2, cache.get(addr).?);
+
+    // Revert
+    cache.revert();
+    try std.testing.expectEqualSlices(u8, &code1, cache.get(addr).?);
+}
+```

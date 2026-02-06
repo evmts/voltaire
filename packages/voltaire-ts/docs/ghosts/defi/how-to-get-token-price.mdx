@@ -1,0 +1,79 @@
+---
+title: How to Get Token Price from DEX
+description: Query on-chain DEX reserves to calculate real-time token prices using Voltaire's Contract module.
+---
+
+## Goal
+
+Get the current price of a token from a Uniswap V2-style DEX by reading pool reserves.
+
+Return as:
+
+ANSWER: 1 TOKEN_A = X.XXX TOKEN_B
+
+## Concepts
+
+DEXs like Uniswap V2 use the constant product formula: `x * y = k`. The price is derived from the ratio of reserves in a liquidity pool.
+
+**Price calculation**: `price = reserve1 / reserve0`
+
+Pool addresses are deterministic based on the two token addresses and the factory.
+
+## Example (TypeScript)
+
+```ts
+import { Contract } from '@tevm/voltaire/contract'
+
+const pairAbi = [
+  {
+    type: 'function',
+    name: 'getReserves',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      { name: 'reserve0', type: 'uint112' },
+      { name: 'reserve1', type: 'uint112' },
+      { name: 'blockTimestampLast', type: 'uint32' }
+    ]
+  },
+  {
+    type: 'function',
+    name: 'token0',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }]
+  },
+  {
+    type: 'function',
+    name: 'token1',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }]
+  }
+] as const
+
+// WETH/USDC pair on Uniswap V2
+const pair = Contract({
+  address: '0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc',
+  abi: pairAbi,
+  provider
+})
+
+// Get reserves
+const [reserve0, reserve1] = await pair.read.getReserves()
+const token0 = await pair.read.token0()
+const token1 = await pair.read.token1()
+
+// Calculate price (accounting for decimals)
+// USDC has 6 decimals, WETH has 18 decimals
+const price = (Number(reserve1) / 1e6) / (Number(reserve0) / 1e18)
+
+console.log(`ANSWER: 1 WETH = ${price.toFixed(2)} USDC`)
+```
+
+## Notes
+
+- Always account for token decimals when calculating prices
+- For more accurate prices, use TWAP (Time-Weighted Average Price) from Uniswap V2 Oracle
+- Uniswap V3 uses concentrated liquidity - price queries differ significantly
+- Consider using Chainlink oracles for price feeds in production

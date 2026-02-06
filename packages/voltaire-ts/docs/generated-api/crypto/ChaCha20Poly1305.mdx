@@ -1,0 +1,1352 @@
+---
+title: "crypto/ChaCha20Poly1305"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/ChaCha20Poly1305
+
+# crypto/ChaCha20Poly1305
+
+## Classes
+
+### ChaCha20Poly1305Error
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L21)
+
+Base error for ChaCha20-Poly1305 operations
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { ChaCha20Poly1305Error } from './crypto/ChaCha20Poly1305/index.js';
+throw new ChaCha20Poly1305Error('Operation failed', {
+  code: 'CHACHA20_POLY1305_ERROR',
+  context: { operation: 'encrypt' },
+  docsPath: '/crypto/chacha20poly1305#error-handling',
+  cause: originalError
+});
+```
+
+#### Extends
+
+- [`CryptoError`](../index/index.mdx#cryptoerror)
+
+#### Extended by
+
+- [`InvalidKeyError`](#invalidkeyerror)
+- [`InvalidNonceError`](#invalidnonceerror)
+- [`DecryptionError`](#decryptionerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new ChaCha20Poly1305Error**(`message`, `options?`): [`ChaCha20Poly1305Error`](#chacha20poly1305error)
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L26)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error)
+
+###### Overrides
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`constructor`](../index/index.mdx#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`cause`](../index/index.mdx#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`code`](../index/index.mdx#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`context`](../index/index.mdx#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`docsPath`](../index/index.mdx#docspath-1)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L33)
+
+###### Inherited from
+
+`CryptoError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`getErrorChain`](../index/index.mdx#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`toJSON`](../index/index.mdx#tojson-2)
+
+***
+
+### DecryptionError
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:118](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L118)
+
+Decryption failure error
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { DecryptionError } from './crypto/ChaCha20Poly1305/index.js';
+throw new DecryptionError('Authentication failed', {
+  code: 'CHACHA20_POLY1305_DECRYPTION_FAILED',
+  context: { operation: 'decrypt' },
+  docsPath: '/crypto/chacha20poly1305#error-handling',
+  cause: originalError
+});
+```
+
+#### Extends
+
+- [`ChaCha20Poly1305Error`](#chacha20poly1305error)
+
+#### Constructors
+
+##### Constructor
+
+> **new DecryptionError**(`message`, `options?`): [`DecryptionError`](#decryptionerror)
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:123](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L123)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`DecryptionError`](#decryptionerror)
+
+###### Overrides
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`docsPath`](#docspath)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:130](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L130)
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`name`](#name)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`toJSON`](#tojson)
+
+***
+
+### InvalidKeyError
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L53)
+
+Invalid key error
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidKeyError } from './crypto/ChaCha20Poly1305/index.js';
+throw new InvalidKeyError('Invalid key size', {
+  code: 'CHACHA20_POLY1305_INVALID_KEY_SIZE',
+  context: { size: 16, expected: 32 },
+  docsPath: '/crypto/chacha20poly1305#error-handling'
+});
+```
+
+#### Extends
+
+- [`ChaCha20Poly1305Error`](#chacha20poly1305error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidKeyError**(`message`, `options?`): [`InvalidKeyError`](#invalidkeyerror)
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L58)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidKeyError`](#invalidkeyerror)
+
+###### Overrides
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`docsPath`](#docspath)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L65)
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`name`](#name)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`toJSON`](#tojson)
+
+***
+
+### InvalidNonceError
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:85](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L85)
+
+Invalid nonce error
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidNonceError } from './crypto/ChaCha20Poly1305/index.js';
+throw new InvalidNonceError('Nonce must be 12 bytes', {
+  code: 'CHACHA20_POLY1305_INVALID_NONCE_LENGTH',
+  context: { length: 8, expected: 12 },
+  docsPath: '/crypto/chacha20poly1305#error-handling'
+});
+```
+
+#### Extends
+
+- [`ChaCha20Poly1305Error`](#chacha20poly1305error)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidNonceError**(`message`, `options?`): [`InvalidNonceError`](#invalidnonceerror)
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:90](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L90)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidNonceError`](#invalidnonceerror)
+
+###### Overrides
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`docsPath`](#docspath)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/ChaCha20Poly1305/errors.js:97](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/errors.js#L97)
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`name`](#name)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`ChaCha20Poly1305Error`](#chacha20poly1305error).[`toJSON`](#tojson)
+
+## Variables
+
+### ChaCha20Poly1305
+
+> `const` **ChaCha20Poly1305**: `object`
+
+Defined in: [src/crypto/ChaCha20Poly1305/ChaCha20Poly1305.js:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/ChaCha20Poly1305.js#L39)
+
+ChaCha20-Poly1305 Authenticated Encryption (RFC 8439)
+
+Provides authenticated encryption using ChaCha20 stream cipher
+with Poly1305 MAC. Optimized for software implementations.
+
+Uses @noble/ciphers for cryptographic operations.
+
+#### Type Declaration
+
+##### decrypt()
+
+> **decrypt**: (`ciphertext`, `key`, `nonce`, `additionalData?`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Decrypt data with ChaCha20-Poly1305
+
+###### Parameters
+
+###### ciphertext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encrypted data with authentication tag
+
+###### key
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte key (256 bits)
+
+###### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (96 bits) used during encryption
+
+###### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Decrypted plaintext
+
+###### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key is not 32 bytes
+
+###### Throws
+
+If nonce is not 12 bytes
+
+###### Throws
+
+If authentication fails or decryption error
+
+###### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const key = ChaCha20Poly1305.generateKey();
+const nonce = ChaCha20Poly1305.generateNonce();
+const decrypted = ChaCha20Poly1305.decrypt(ciphertext, key, nonce);
+const message = new TextDecoder().decode(decrypted);
+```
+
+##### encrypt()
+
+> **encrypt**: (`plaintext`, `key`, `nonce`, `additionalData?`) => `Uint8Array`\<`ArrayBufferLike`\>
+
+Encrypt data with ChaCha20-Poly1305
+
+###### Parameters
+
+###### plaintext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to encrypt
+
+###### key
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte key (256 bits)
+
+###### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (96 bits)
+
+###### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Ciphertext with authentication tag appended (16 bytes)
+
+###### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key is not 32 bytes
+
+###### Throws
+
+If nonce is not 12 bytes
+
+###### Throws
+
+If encryption fails
+
+###### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const plaintext = new TextEncoder().encode('Secret message');
+const key = ChaCha20Poly1305.generateKey();
+const nonce = ChaCha20Poly1305.generateNonce();
+const ciphertext = ChaCha20Poly1305.encrypt(plaintext, key, nonce);
+```
+
+##### generateKey()
+
+> **generateKey**: () => `Uint8Array`\<`ArrayBufferLike`\>
+
+Generate random ChaCha20-Poly1305 key
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte random key (256 bits)
+
+###### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const key = ChaCha20Poly1305.generateKey();
+console.log(key.length); // 32
+```
+
+##### generateNonce()
+
+> **generateNonce**: () => `Uint8Array`\<`ArrayBufferLike`\>
+
+Generate random nonce
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte random nonce (96 bits)
+
+###### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const nonce = ChaCha20Poly1305.generateNonce();
+console.log(nonce.length); // 12
+```
+
+##### KEY\_SIZE
+
+> **KEY\_SIZE**: `number`
+
+ChaCha20-Poly1305 key size in bytes (256 bits)
+
+###### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const keyBytes = new Uint8Array(ChaCha20Poly1305.KEY_SIZE);
+```
+
+##### NONCE\_SIZE
+
+> **NONCE\_SIZE**: `number`
+
+Nonce/IV size in bytes (96 bits)
+
+###### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const nonce = new Uint8Array(ChaCha20Poly1305.NONCE_SIZE);
+```
+
+##### TAG\_SIZE
+
+> **TAG\_SIZE**: `number`
+
+Authentication tag size in bytes (128 bits)
+
+###### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+console.log('Tag size:', ChaCha20Poly1305.TAG_SIZE);
+```
+
+#### Example
+
+```typescript
+import { ChaCha20Poly1305 } from './ChaCha20Poly1305.js';
+
+// Generate key
+const key = ChaCha20Poly1305.generateKey();
+
+// Encrypt data
+const plaintext = new TextEncoder().encode('Hello, world!');
+const nonce = ChaCha20Poly1305.generateNonce();
+const ciphertext = ChaCha20Poly1305.encrypt(plaintext, key, nonce);
+
+// Decrypt data
+const decrypted = ChaCha20Poly1305.decrypt(ciphertext, key, nonce);
+```
+
+***
+
+### KEY\_SIZE
+
+> `const` **KEY\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/ChaCha20Poly1305/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/constants.js#L13)
+
+ChaCha20-Poly1305 key size in bytes (256 bits)
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const keyBytes = new Uint8Array(ChaCha20Poly1305.KEY_SIZE);
+```
+
+***
+
+### NONCE\_SIZE
+
+> `const` **NONCE\_SIZE**: `12` = `12`
+
+Defined in: [src/crypto/ChaCha20Poly1305/constants.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/constants.js#L27)
+
+Nonce/IV size in bytes (96 bits)
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const nonce = new Uint8Array(ChaCha20Poly1305.NONCE_SIZE);
+```
+
+***
+
+### TAG\_SIZE
+
+> `const` **TAG\_SIZE**: `16` = `16`
+
+Defined in: [src/crypto/ChaCha20Poly1305/constants.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/constants.js#L41)
+
+Authentication tag size in bytes (128 bits)
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+console.log('Tag size:', ChaCha20Poly1305.TAG_SIZE);
+```
+
+## Functions
+
+### decrypt()
+
+> **decrypt**(`ciphertext`, `key`, `nonce`, `additionalData?`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/ChaCha20Poly1305/decrypt.js:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/decrypt.js#L31)
+
+Decrypt data with ChaCha20-Poly1305
+
+#### Parameters
+
+##### ciphertext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encrypted data with authentication tag
+
+##### key
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte key (256 bits)
+
+##### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (96 bits) used during encryption
+
+##### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Decrypted plaintext
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If key is not 32 bytes
+
+#### Throws
+
+If nonce is not 12 bytes
+
+#### Throws
+
+If authentication fails or decryption error
+
+#### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const key = ChaCha20Poly1305.generateKey();
+const nonce = ChaCha20Poly1305.generateNonce();
+const decrypted = ChaCha20Poly1305.decrypt(ciphertext, key, nonce);
+const message = new TextDecoder().decode(decrypted);
+```
+
+***
+
+### encrypt()
+
+> **encrypt**(`plaintext`, `key`, `nonce`, `additionalData?`): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/ChaCha20Poly1305/encrypt.js:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/encrypt.js#L31)
+
+Encrypt data with ChaCha20-Poly1305
+
+#### Parameters
+
+##### plaintext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to encrypt
+
+##### key
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte key (256 bits)
+
+##### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (96 bits)
+
+##### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Ciphertext with authentication tag appended (16 bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If key is not 32 bytes
+
+#### Throws
+
+If nonce is not 12 bytes
+
+#### Throws
+
+If encryption fails
+
+#### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const plaintext = new TextEncoder().encode('Secret message');
+const key = ChaCha20Poly1305.generateKey();
+const nonce = ChaCha20Poly1305.generateNonce();
+const ciphertext = ChaCha20Poly1305.encrypt(plaintext, key, nonce);
+```
+
+***
+
+### generateKey()
+
+> **generateKey**(): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/ChaCha20Poly1305/generateKey.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/generateKey.js#L17)
+
+Generate random ChaCha20-Poly1305 key
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+32-byte random key (256 bits)
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const key = ChaCha20Poly1305.generateKey();
+console.log(key.length); // 32
+```
+
+***
+
+### generateNonce()
+
+> **generateNonce**(): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/ChaCha20Poly1305/generateNonce.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/ChaCha20Poly1305/generateNonce.js#L17)
+
+Generate random nonce
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte random nonce (96 bits)
+
+#### See
+
+https://voltaire.tevm.sh/crypto/chacha20poly1305 for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as ChaCha20Poly1305 from './crypto/ChaCha20Poly1305/index.js';
+const nonce = ChaCha20Poly1305.generateNonce();
+console.log(nonce.length); // 12
+```

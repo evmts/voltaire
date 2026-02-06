@@ -1,0 +1,104 @@
+---
+title: '[TS/JS] src/primitives/BlockNumber/BlockNumber.test.ts'
+source: 'src/primitives/BlockNumber/BlockNumber.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/BlockNumber/BlockNumber.test.ts
+
+```typescript
+import { describe, expect, it } from "vitest";
+import { InvalidBlockNumberError } from "./errors.js";
+import * as BlockNumber from "./index.js";
+
+describe("BlockNumber", () => {
+	describe("from", () => {
+		it("creates from bigint", () => {
+			const bn = BlockNumber.from(123456n);
+			expect(BlockNumber.toBigInt(bn)).toBe(123456n);
+		});
+
+		it("creates from number", () => {
+			const bn = BlockNumber.from(123456);
+			expect(BlockNumber.toBigInt(bn)).toBe(123456n);
+		});
+
+		it("accepts zero", () => {
+			const bn = BlockNumber.from(0n);
+			expect(BlockNumber.toBigInt(bn)).toBe(0n);
+		});
+
+		it("throws on negative", () => {
+			try {
+				BlockNumber.from(-1n);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockNumberError);
+				expect((e as InvalidBlockNumberError).name).toBe(
+					"InvalidBlockNumberError",
+				);
+				expect((e as InvalidBlockNumberError).message).toContain(
+					"cannot be negative",
+				);
+			}
+		});
+
+		it("throws on invalid type", () => {
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: test requires type flexibility
+				BlockNumber.from("123" as any);
+				expect.fail("Should have thrown");
+			} catch (e) {
+				expect(e).toBeInstanceOf(InvalidBlockNumberError);
+				expect((e as InvalidBlockNumberError).name).toBe(
+					"InvalidBlockNumberError",
+				);
+				expect((e as InvalidBlockNumberError).message).toContain(
+					"must be a number or bigint",
+				);
+			}
+		});
+	});
+
+	describe("toBigInt", () => {
+		it("converts to bigint", () => {
+			const bn = BlockNumber.from(999n);
+			expect(BlockNumber.toBigInt(bn)).toBe(999n);
+		});
+	});
+
+	describe("toNumber", () => {
+		it("converts to number", () => {
+			const bn = BlockNumber.from(1000);
+			expect(BlockNumber.toNumber(bn)).toBe(1000);
+		});
+	});
+
+	describe("equals", () => {
+		it("returns true for equal block numbers", () => {
+			const a = BlockNumber.from(100n);
+			const b = BlockNumber.from(100n);
+			expect(BlockNumber.equals(a, b)).toBe(true);
+		});
+
+		it("returns false for different block numbers", () => {
+			const a = BlockNumber.from(100n);
+			const b = BlockNumber.from(101n);
+			expect(BlockNumber.equals(a, b)).toBe(false);
+		});
+	});
+
+	describe("error properties", () => {
+		it("InvalidBlockNumberError has correct properties", () => {
+			const error = new InvalidBlockNumberError("Test message", {
+				value: -1n,
+				expected: "non-negative integer",
+			});
+			expect(error.name).toBe("InvalidBlockNumberError");
+			expect(error.code).toBe("INVALID_BLOCK_NUMBER");
+			expect(error.value).toBe(-1n);
+			expect(error.expected).toBe("non-negative integer");
+		});
+	});
+});
+
+```

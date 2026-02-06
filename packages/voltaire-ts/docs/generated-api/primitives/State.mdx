@@ -1,0 +1,745 @@
+---
+title: "primitives/State"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/State
+
+# primitives/State
+
+## Type Aliases
+
+### StorageKeyLike
+
+> **StorageKeyLike** = [`StorageKeyType`](#storagekeytype) \| \{ `address`: [`AddressType`](Address.mdx#addresstype); `slot`: `bigint`; \}
+
+Defined in: [src/primitives/State/StorageKeyType.ts:57](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/StorageKeyType.ts#L57)
+
+Inputs that can be converted to StorageKeyType
+
+***
+
+### StorageKeyType
+
+> **StorageKeyType** = `object`
+
+Defined in: [src/primitives/State/StorageKeyType.ts:35](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/StorageKeyType.ts#L35)
+
+Composite key for EVM storage operations combining address and slot.
+
+The StorageKey uniquely identifies a storage location within the EVM by
+combining a contract address with a 256-bit storage slot number. This is
+fundamental to how the EVM organizes persistent contract storage.
+
+## Design Rationale
+Each smart contract has its own isolated storage space addressed by 256-bit
+slots. To track storage across multiple contracts in a single VM instance,
+we need a composite key that includes both the contract address and the
+slot number.
+
+## Storage Model
+In the EVM:
+- Each contract has 2^256 storage slots
+- Each slot can store a 256-bit value
+- Slots are initially zero and only consume gas when first written
+
+#### Example
+
+```typescript
+const key: StorageKeyType = {
+  address: myContractAddress,
+  slot: 0n, // First storage slot
+};
+
+// Use in maps for storage tracking
+const storage = new Map<string, bigint>();
+const keyStr = StorageKey.toString(key);
+storage.set(keyStr, value);
+```
+
+#### Properties
+
+##### address
+
+> `readonly` **address**: [`AddressType`](Address.mdx#addresstype)
+
+Defined in: [src/primitives/State/StorageKeyType.ts:40](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/StorageKeyType.ts#L40)
+
+The contract address that owns this storage slot.
+Standard 20-byte Ethereum address.
+
+##### slot
+
+> `readonly` **slot**: `bigint`
+
+Defined in: [src/primitives/State/StorageKeyType.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/StorageKeyType.ts#L46)
+
+The 256-bit storage slot number within the contract's storage space.
+Slots are sparsely allocated - most remain at zero value.
+
+## Variables
+
+### create()
+
+> `const` **create**: (`address`, `slot`) => [`StorageKeyType`](#storagekeytype)
+
+Defined in: [src/primitives/State/index.ts:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L15)
+
+#### Parameters
+
+##### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+##### slot
+
+`bigint`
+
+#### Returns
+
+[`StorageKeyType`](#storagekeytype)
+
+***
+
+### EMPTY\_CODE\_HASH
+
+> `const` **EMPTY\_CODE\_HASH**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/State/constants.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/constants.js#L21)
+
+Hash of empty EVM bytecode (Keccak256 of empty bytes).
+
+This is a well-known constant in Ethereum representing the Keccak256 hash
+of an empty byte array. It's used to identify accounts with no associated
+contract code.
+
+Value: Keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { EMPTY_CODE_HASH } from './primitives/State/index.js';
+if (codeHash.equals(EMPTY_CODE_HASH)) {
+  // Account has no code
+}
+```
+
+***
+
+### EMPTY\_TRIE\_ROOT
+
+> `const` **EMPTY\_TRIE\_ROOT**: [`HashType`](../index/namespaces/HashType.mdx#hashtype)
+
+Defined in: [src/primitives/State/constants.js:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/constants.js#L50)
+
+Root hash of an empty Merkle Patricia Trie.
+
+This is the root hash of an empty trie structure in Ethereum, used as
+the initial value for account storage roots and state roots when they
+contain no data.
+
+Value: Keccak256(RLP(null)) = 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```javascript
+import { EMPTY_TRIE_ROOT } from './primitives/State/index.js';
+if (storageRoot.equals(EMPTY_TRIE_ROOT)) {
+  // Account has no storage
+}
+```
+
+***
+
+### equals()
+
+> `const` **equals**: (`a`, `b`) => `boolean`
+
+Defined in: [src/primitives/State/index.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L24)
+
+#### Parameters
+
+##### a
+
+[`StorageKeyLike`](#storagekeylike)
+
+##### b
+
+[`StorageKeyLike`](#storagekeylike)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> `const` **from**: (`value`) => [`StorageKeyType`](#storagekeytype)
+
+Defined in: [src/primitives/State/index.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L20)
+
+#### Parameters
+
+##### value
+
+[`StorageKeyLike`](#storagekeylike)
+
+#### Returns
+
+[`StorageKeyType`](#storagekeytype)
+
+***
+
+### fromString()
+
+> `const` **fromString**: (`str`) => [`StorageKeyType`](#storagekeytype) \| `undefined`
+
+Defined in: [src/primitives/State/index.ts:32](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L32)
+
+#### Parameters
+
+##### str
+
+`string`
+
+#### Returns
+
+[`StorageKeyType`](#storagekeytype) \| `undefined`
+
+***
+
+### hashCode()
+
+> `const` **hashCode**: (`key`) => `number`
+
+Defined in: [src/primitives/State/index.ts:36](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L36)
+
+#### Parameters
+
+##### key
+
+[`StorageKeyLike`](#storagekeylike)
+
+#### Returns
+
+`number`
+
+***
+
+### is()
+
+> `const` **is**: (`value`) => `value is StorageKeyType`
+
+Defined in: [src/primitives/State/index.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L22)
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+`value is StorageKeyType`
+
+***
+
+### StorageKey
+
+> `const` **StorageKey**: `object`
+
+Defined in: [src/primitives/State/index.ts:50](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L50)
+
+#### Type Declaration
+
+##### create()
+
+> **create**: (`address`, `slot`) => [`StorageKeyType`](#storagekeytype)
+
+###### Parameters
+
+###### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+###### slot
+
+`bigint`
+
+###### Returns
+
+[`StorageKeyType`](#storagekeytype)
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+###### Parameters
+
+###### a
+
+[`StorageKeyLike`](#storagekeylike)
+
+###### b
+
+[`StorageKeyLike`](#storagekeylike)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`StorageKeyType`](#storagekeytype)
+
+###### Parameters
+
+###### value
+
+[`StorageKeyLike`](#storagekeylike)
+
+###### Returns
+
+[`StorageKeyType`](#storagekeytype)
+
+##### fromString()
+
+> **fromString**: (`str`) => [`StorageKeyType`](#storagekeytype) \| `undefined`
+
+###### Parameters
+
+###### str
+
+`string`
+
+###### Returns
+
+[`StorageKeyType`](#storagekeytype) \| `undefined`
+
+##### hashCode()
+
+> **hashCode**: (`key`) => `number`
+
+###### Parameters
+
+###### key
+
+[`StorageKeyLike`](#storagekeylike)
+
+###### Returns
+
+`number`
+
+##### is()
+
+> **is**: (`value`) => `value is StorageKeyType`
+
+###### Parameters
+
+###### value
+
+`unknown`
+
+###### Returns
+
+`value is StorageKeyType`
+
+##### toString()
+
+> **toString**: (`key`) => `string`
+
+###### Parameters
+
+###### key
+
+[`StorageKeyLike`](#storagekeylike)
+
+###### Returns
+
+`string`
+
+***
+
+### toString()
+
+> `const` **toString**: (`key`) => `string`
+
+Defined in: [src/primitives/State/index.ts:30](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L30)
+
+#### Parameters
+
+##### key
+
+[`StorageKeyLike`](#storagekeylike)
+
+#### Returns
+
+`string`
+
+## Functions
+
+### \_create()
+
+> **\_create**(`address`, `slot`): [`StorageKeyType`](#storagekeytype)
+
+Defined in: [src/primitives/State/create.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/create.js#L18)
+
+Create a new StorageKey
+
+#### Parameters
+
+##### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+Contract address
+
+##### slot
+
+`bigint`
+
+Storage slot number
+
+#### Returns
+
+[`StorageKeyType`](#storagekeytype)
+
+A new StorageKey
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as State from './primitives/State/index.js';
+import * as Address from './primitives/Address/index.js';
+const contractAddr = Address.fromHex('0x...');
+const key = State.create(contractAddr, 0n);
+```
+
+***
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/State/equals.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/equals.js#L23)
+
+Check equality between two storage keys.
+
+Two storage keys are equal if and only if both their address and
+slot number match exactly.
+
+#### Parameters
+
+##### a
+
+[`StorageKeyLike`](#storagekeylike)
+
+First storage key
+
+##### b
+
+[`StorageKeyLike`](#storagekeylike)
+
+Second storage key
+
+#### Returns
+
+`boolean`
+
+True if both address and slot match
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as State from './primitives/State/index.js';
+const key1 = { address: addr, slot: 0n };
+const key2 = { address: addr, slot: 0n };
+State.equals(key1, key2); // true
+```
+
+***
+
+### \_from()
+
+> **\_from**(`value`): [`StorageKeyType`](#storagekeytype)
+
+Defined in: [src/primitives/State/from.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/from.js#L15)
+
+Convert StorageKeyLike to StorageKey
+
+#### Parameters
+
+##### value
+
+[`StorageKeyLike`](#storagekeylike)
+
+Value to convert
+
+#### Returns
+
+[`StorageKeyType`](#storagekeytype)
+
+StorageKey
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as State from './primitives/State/index.js';
+const key = State.from({ address: addr, slot: 0n });
+```
+
+***
+
+### \_fromString()
+
+> **\_fromString**(`str`): [`StorageKeyType`](#storagekeytype) \| `undefined`
+
+Defined in: [src/primitives/State/fromString.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/fromString.js#L18)
+
+Parse a StorageKey from its string representation
+
+#### Parameters
+
+##### str
+
+`string`
+
+String representation from toString()
+
+#### Returns
+
+[`StorageKeyType`](#storagekeytype) \| `undefined`
+
+Parsed StorageKey or undefined if invalid
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as State from './primitives/State/index.js';
+const key = State.fromString(str);
+if (key) {
+  // Use key
+}
+```
+
+***
+
+### \_hashCode()
+
+> **\_hashCode**(`key`): `number`
+
+Defined in: [src/primitives/State/hashCode.js:17](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/hashCode.js#L17)
+
+Compute a hash code for the storage key for use in hash-based collections
+
+#### Parameters
+
+##### key
+
+[`StorageKeyLike`](#storagekeylike)
+
+Storage key to hash
+
+#### Returns
+
+`number`
+
+Hash code as a number
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as State from './primitives/State/index.js';
+const hash = State.hashCode(key);
+```
+
+***
+
+### \_is()
+
+> **\_is**(`value`): `value is StorageKeyType`
+
+Defined in: [src/primitives/State/is.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/is.js#L18)
+
+Type guard to check if a value is a valid StorageKey
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+Value to check
+
+#### Returns
+
+`value is StorageKeyType`
+
+True if value is a valid StorageKey
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as State from './primitives/State/index.js';
+const key = { address: addr, slot: 0n };
+if (State.is(key)) {
+  // key is StorageKey
+}
+```
+
+***
+
+### \_toString()
+
+> **\_toString**(`key`): `string`
+
+Defined in: [src/primitives/State/toString.js:23](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/toString.js#L23)
+
+Convert StorageKey to a string representation for use as Map key
+
+The string format is: address_hex + "_" + slot_hex
+
+#### Parameters
+
+##### key
+
+[`StorageKeyLike`](#storagekeylike)
+
+Storage key to convert
+
+#### Returns
+
+`string`
+
+String representation (address_hex + "_" + slot_hex)
+
+#### See
+
+https://voltaire.tevm.sh/primitives/state for State documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as State from './primitives/State/index.js';
+const key = { address: addr, slot: 42n };
+const str = State.toString(key);
+// Use as Map key
+map.set(str, value);
+```
+
+***
+
+### StorageKeyFactory()
+
+> **StorageKeyFactory**(`address`, `slot`): [`StorageKeyType`](#storagekeytype)
+
+Defined in: [src/primitives/State/index.ts:63](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/State/index.ts#L63)
+
+Factory function for creating StorageKey instances
+
+#### Parameters
+
+##### address
+
+[`AddressType`](Address.mdx#addresstype)
+
+##### slot
+
+`bigint`
+
+#### Returns
+
+[`StorageKeyType`](#storagekeytype)
+
+## References
+
+### default
+
+Renames and re-exports [StorageKeyFactory](#storagekeyfactory)

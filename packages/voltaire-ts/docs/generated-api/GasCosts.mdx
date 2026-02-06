@@ -1,0 +1,297 @@
+---
+title: "GasCosts"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](index.mdx)
+
+***
+
+[@tevm/voltaire](index.mdx) / GasCosts
+
+# GasCosts
+
+Gas cost constants for EVM operations
+
+Provides comprehensive gas cost constants for:
+- EVM opcodes
+- Transaction types
+- Storage operations
+- Block limits
+
+## Variables
+
+### BLOCK\_GAS\_LIMITS
+
+> `const` **BLOCK\_GAS\_LIMITS**: `object`
+
+Defined in: [src/primitives/GasCosts/constants.ts:113](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/GasCosts/constants.ts#L113)
+
+Block gas limit constants
+
+#### Type Declaration
+
+##### MAINNET
+
+> `readonly` **MAINNET**: `30000000n` = `30_000_000n`
+
+Typical mainnet block gas limit (30M)
+
+##### MINIMUM
+
+> `readonly` **MINIMUM**: `5000n` = `5000n`
+
+Minimum gas limit per EIP-1559
+
+***
+
+### GAS\_COSTS
+
+> `const` **GAS\_COSTS**: `object`
+
+Defined in: [src/primitives/GasCosts/constants.ts:9](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/GasCosts/constants.ts#L9)
+
+Gas cost constants for EVM operations
+Based on Yellow Paper Appendix G and various EIPs
+
+#### Type Declaration
+
+##### BALANCE
+
+> `readonly` **BALANCE**: `2600n` = `2600n`
+
+Cold BALANCE access (EIP-2929)
+
+##### BASE
+
+> `readonly` **BASE**: `2n` = `2n`
+
+Base cost for most opcodes
+
+##### BLOCKHASH
+
+> `readonly` **BLOCKHASH**: `20n` = `20n`
+
+BLOCKHASH opcode
+
+##### CALL
+
+> `readonly` **CALL**: `100n` = `100n`
+
+Base gas for message call
+
+##### CALL\_STIPEND
+
+> `readonly` **CALL\_STIPEND**: `2300n` = `2300n`
+
+Gas stipend provided to called contract when value > 0
+
+##### CALL\_VALUE
+
+> `readonly` **CALL\_VALUE**: `9000n` = `9000n`
+
+Additional cost for non-zero value transfer
+
+##### CALLDATA\_NONZERO
+
+> `readonly` **CALLDATA\_NONZERO**: `16n` = `16n`
+
+Non-zero byte in calldata
+
+##### CALLDATA\_ZERO
+
+> `readonly` **CALLDATA\_ZERO**: `4n` = `4n`
+
+Zero byte in calldata (cheaper)
+
+##### COLD\_ACCOUNT\_ACCESS
+
+> `readonly` **COLD\_ACCOUNT\_ACCESS**: `2600n` = `2600n`
+
+Cold account access cost (EIP-2929)
+
+##### COPY
+
+> `readonly` **COPY**: `3n` = `3n`
+
+Memory/storage copy cost per word
+
+##### CREATE
+
+> `readonly` **CREATE**: `32000n` = `32000n`
+
+Contract creation base cost
+
+##### EXP
+
+> `readonly` **EXP**: `10n` = `10n`
+
+EXP base cost
+
+##### EXP\_BYTE
+
+> `readonly` **EXP\_BYTE**: `50n` = `50n`
+
+EXP per byte cost
+
+##### EXTCODECOPY
+
+> `readonly` **EXTCODECOPY**: `2600n` = `2600n`
+
+Cold EXTCODECOPY access (EIP-2929)
+
+##### HIGH
+
+> `readonly` **HIGH**: `10n` = `10n`
+
+High cost operations
+
+##### JUMPDEST
+
+> `readonly` **JUMPDEST**: `1n` = `1n`
+
+JUMPDEST cost
+
+##### LOG
+
+> `readonly` **LOG**: `375n` = `375n`
+
+LOG0 base cost
+
+##### LOG\_DATA
+
+> `readonly` **LOG\_DATA**: `8n` = `8n`
+
+Cost per byte of LOG data
+
+##### LOG\_TOPIC
+
+> `readonly` **LOG\_TOPIC**: `375n` = `375n`
+
+Cost per LOG topic
+
+##### LOW
+
+> `readonly` **LOW**: `5n` = `5n`
+
+Low cost operations (MUL, DIV, etc)
+
+##### MEMORY
+
+> `readonly` **MEMORY**: `3n` = `3n`
+
+Memory expansion cost per word
+
+##### MID
+
+> `readonly` **MID**: `8n` = `8n`
+
+Mid cost operations
+
+##### SELFDESTRUCT
+
+> `readonly` **SELFDESTRUCT**: `5000n` = `5000n`
+
+SELFDESTRUCT cost (no refund post-London)
+
+##### SHA3
+
+> `readonly` **SHA3**: `30n` = `30n`
+
+SHA3/KECCAK256 base cost
+
+##### SHA3\_WORD
+
+> `readonly` **SHA3\_WORD**: `6n` = `6n`
+
+SHA3/KECCAK256 per word cost
+
+##### SLOAD
+
+> `readonly` **SLOAD**: `2100n` = `2100n`
+
+Cold SLOAD cost (EIP-2929)
+
+##### SLOAD\_WARM
+
+> `readonly` **SLOAD\_WARM**: `100n` = `100n`
+
+Cost of SLOAD from warm storage
+
+##### SSTORE\_CLEAR
+
+> `readonly` **SSTORE\_CLEAR**: `15000n` = `15000n`
+
+SSTORE clear refund (pre-London: 15000, post-London: none)
+
+##### SSTORE\_RESET
+
+> `readonly` **SSTORE\_RESET**: `5000n` = `5000n`
+
+SSTORE from non-zero to non-zero
+
+##### SSTORE\_SET
+
+> `readonly` **SSTORE\_SET**: `20000n` = `20000n`
+
+SSTORE from zero to non-zero (most expensive)
+
+##### TRANSACTION
+
+> `readonly` **TRANSACTION**: `21000n` = `21000n`
+
+Base transaction cost (21000 gas)
+
+##### VERY\_LOW
+
+> `readonly` **VERY\_LOW**: `3n` = `3n`
+
+Very low cost operations (ADD, SUB, etc)
+
+##### WARM\_STORAGE\_READ
+
+> `readonly` **WARM\_STORAGE\_READ**: `100n` = `100n`
+
+Warm storage access cost (EIP-2929)
+
+#### See
+
+ - https://ethereum.github.io/yellowpaper/paper.pdf
+ - EIP-2929 (Gas cost increases for state access)
+ - EIP-3529 (Refund reduction)
+
+***
+
+### TRANSACTION\_COSTS
+
+> `const` **TRANSACTION\_COSTS**: `object`
+
+Defined in: [src/primitives/GasCosts/constants.ts:124](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/GasCosts/constants.ts#L124)
+
+Transaction type gas costs
+
+#### Type Declaration
+
+##### CONTRACT\_DEPLOY
+
+> `readonly` **CONTRACT\_DEPLOY**: `32000n` = `32000n`
+
+Contract deployment base
+
+##### ERC20\_TRANSFER
+
+> `readonly` **ERC20\_TRANSFER**: `65000n` = `65000n`
+
+Typical ERC20 transfer cost
+
+##### SIMPLE\_TRANSFER
+
+> `readonly` **SIMPLE\_TRANSFER**: `21000n` = `21000n`
+
+Minimum gas for simple ETH transfer
+
+##### UNISWAP\_SWAP
+
+> `readonly` **UNISWAP\_SWAP**: `150000n` = `150000n`
+
+Typical Uniswap V2 swap cost

@@ -1,0 +1,310 @@
+---
+title: "primitives/TraceResult"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/TraceResult
+
+# primitives/TraceResult
+
+## Type Aliases
+
+### TraceResultType
+
+> **TraceResultType** = `object`
+
+Defined in: [src/primitives/TraceResult/TraceResultType.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/TraceResultType.ts#L13)
+
+Complete execution trace result
+Returned by debug_traceTransaction and debug_traceCall
+
+#### See
+
+https://voltaire.tevm.sh/primitives/trace-result for TraceResult documentation
+
+#### Since
+
+0.0.0
+
+#### Properties
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"TraceResult"`
+
+Defined in: [src/primitives/TraceResult/TraceResultType.ts:14](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/TraceResultType.ts#L14)
+
+##### callTrace?
+
+> `readonly` `optional` **callTrace**: [`CallTraceType`](CallTrace.mdx#calltracetype)
+
+Defined in: [src/primitives/TraceResult/TraceResultType.ts:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/TraceResultType.ts#L24)
+
+Call tree (when using callTracer)
+
+##### failed
+
+> `readonly` **failed**: `boolean`
+
+Defined in: [src/primitives/TraceResult/TraceResultType.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/TraceResultType.ts#L18)
+
+Whether execution failed
+
+##### gas
+
+> `readonly` **gas**: [`Type`](Uint.mdx#type)
+
+Defined in: [src/primitives/TraceResult/TraceResultType.ts:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/TraceResultType.ts#L16)
+
+Total gas used by the execution
+
+##### returnValue
+
+> `readonly` **returnValue**: `Uint8Array`
+
+Defined in: [src/primitives/TraceResult/TraceResultType.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/TraceResultType.ts#L20)
+
+Return value or revert data
+
+##### structLogs?
+
+> `readonly` `optional` **structLogs**: readonly [`StructLogType`](StructLog.mdx#structlogtype)[]
+
+Defined in: [src/primitives/TraceResult/TraceResultType.ts:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/TraceResultType.ts#L22)
+
+Opcode-level execution trace (when using default tracer)
+
+## Functions
+
+### \_from()
+
+> **\_from**(`data`): [`TraceResultType`](#traceresulttype)
+
+Defined in: [src/primitives/TraceResult/from.js:22](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/from.js#L22)
+
+Creates a TraceResult from raw data
+
+#### Parameters
+
+##### data
+
+TraceResult data
+
+###### callTrace?
+
+[`CallTraceType`](CallTrace.mdx#calltracetype)
+
+Call tree
+
+###### failed
+
+`boolean`
+
+Whether execution failed
+
+###### gas
+
+[`Type`](Uint.mdx#type)
+
+Total gas used
+
+###### returnValue
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Return value
+
+###### structLogs?
+
+readonly [`StructLogType`](StructLog.mdx#structlogtype)[]
+
+Opcode trace
+
+#### Returns
+
+[`TraceResultType`](#traceresulttype)
+
+TraceResult instance
+
+#### Example
+
+```javascript
+import { from } from './from.js';
+const result = from({
+  gas: 50000n,
+  failed: false,
+  returnValue: new Uint8Array(),
+  structLogs: []
+});
+```
+
+***
+
+### \_getCallTrace()
+
+> **\_getCallTrace**(`result`): [`CallTraceType`](CallTrace.mdx#calltracetype) \| `undefined`
+
+Defined in: [src/primitives/TraceResult/getCallTrace.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/getCallTrace.js#L15)
+
+Gets call trace from a TraceResult
+
+#### Parameters
+
+##### result
+
+[`TraceResultType`](#traceresulttype)
+
+TraceResult to extract call trace from
+
+#### Returns
+
+[`CallTraceType`](CallTrace.mdx#calltracetype) \| `undefined`
+
+Call trace (undefined if not using callTracer)
+
+#### Example
+
+```javascript
+import { getCallTrace } from './getCallTrace.js';
+const callTrace = getCallTrace(result);
+if (callTrace) {
+  console.log(`Root call: ${callTrace.type}`);
+}
+```
+
+***
+
+### \_getStructLogs()
+
+> **\_getStructLogs**(`result`): readonly [`StructLogType`](StructLog.mdx#structlogtype)[]
+
+Defined in: [src/primitives/TraceResult/getStructLogs.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/getStructLogs.js#L13)
+
+Gets structured logs from a TraceResult
+
+#### Parameters
+
+##### result
+
+[`TraceResultType`](#traceresulttype)
+
+TraceResult to extract logs from
+
+#### Returns
+
+readonly [`StructLogType`](StructLog.mdx#structlogtype)[]
+
+Structured logs (empty array if none)
+
+#### Example
+
+```javascript
+import { getStructLogs } from './getStructLogs.js';
+const logs = getStructLogs(result);
+console.log(`${logs.length} opcodes executed`);
+```
+
+***
+
+### from()
+
+> **from**(`data`): [`TraceResultType`](#traceresulttype)
+
+Defined in: [src/primitives/TraceResult/index.ts:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/index.ts#L26)
+
+Creates a TraceResult from raw data
+
+#### Parameters
+
+##### data
+
+`Omit`\<[`TraceResultType`](#traceresulttype), `brand`\>
+
+TraceResult data
+
+#### Returns
+
+[`TraceResultType`](#traceresulttype)
+
+TraceResult instance
+
+#### See
+
+https://voltaire.tevm.sh/primitives/trace-result for TraceResult documentation
+
+#### Since
+
+0.0.0
+
+#### Example
+
+```typescript
+import { TraceResult } from './primitives/TraceResult/index.js';
+const result = TraceResult.from({ gas: 50000n, failed: false, returnValue: new Uint8Array() });
+```
+
+***
+
+### getCallTrace()
+
+> **getCallTrace**(`result`): [`CallTraceType`](CallTrace.mdx#calltracetype) \| `undefined`
+
+Defined in: [src/primitives/TraceResult/index.ts:60](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/index.ts#L60)
+
+Gets call trace from a TraceResult
+
+#### Parameters
+
+##### result
+
+[`TraceResultType`](#traceresulttype)
+
+TraceResult to extract call trace from
+
+#### Returns
+
+[`CallTraceType`](CallTrace.mdx#calltracetype) \| `undefined`
+
+Call trace
+
+#### Example
+
+```typescript
+import { TraceResult } from './primitives/TraceResult/index.js';
+const trace = TraceResult.getCallTrace(result);
+```
+
+***
+
+### getStructLogs()
+
+> **getStructLogs**(`result`): readonly [`StructLogType`](StructLog.mdx#structlogtype)[]
+
+Defined in: [src/primitives/TraceResult/index.ts:43](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/TraceResult/index.ts#L43)
+
+Gets structured logs from a TraceResult
+
+#### Parameters
+
+##### result
+
+[`TraceResultType`](#traceresulttype)
+
+TraceResult to extract logs from
+
+#### Returns
+
+readonly [`StructLogType`](StructLog.mdx#structlogtype)[]
+
+Structured logs
+
+#### Example
+
+```typescript
+import { TraceResult } from './primitives/TraceResult/index.js';
+const logs = TraceResult.getStructLogs(result);
+```

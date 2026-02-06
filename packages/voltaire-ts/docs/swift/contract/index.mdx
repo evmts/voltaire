@@ -1,0 +1,251 @@
+---
+title: Contract
+description: Typed contract abstraction for interacting with deployed smart contracts in Swift
+---
+
+# Contract
+
+The Contract module provides a typed abstraction for interacting with deployed Ethereum smart contracts from Swift. It combines ABI encoding/decoding with provider calls using Swift's modern async/await and AsyncSequence patterns.
+
+## Overview
+
+Contract instances provide four main interfaces:
+
+| Interface | Description | Provider Method |
+|-----------|-------------|-----------------|
+| `read` | View/pure function calls | `eth_call` |
+| `write` | State-changing transactions | `eth_sendTransaction` |
+| `estimateGas` | Gas estimation for writes | `eth_estimateGas` |
+| `events` | Event streaming (AsyncSequence) | `eth_getLogs` + `eth_subscribe` |
+
+## Quick Start
+
+```swift
+import Voltaire
+
+// Define ABI (or load from JSON)
+let erc20Abi: [AbiItem] = [
+    .function(
+        name: "balanceOf",
+        stateMutability: .view,
+        inputs: [.init(type: .address, name: "account")],
+        outputs: [.init(type: .uint256, name: "")]
+    ),
+    .function(
+        name: "transfer",
+        stateMutability: .nonpayable,
+        inputs: [
+            .init(type: .address, name: "to"),
+            .init(type: .uint256, name: "amount")
+        ],
+        outputs: [.init(type: .bool, name: "")]
+    ),
+    .event(
+        name: "Transfer",
+        inputs: [
+            .init(type: .address, name: "from", indexed: true),
+            .init(type: .address, name: "to", indexed: true),
+            .init(type: .uint256, name: "value", indexed: false)
+        ]
+    )
+]
+
+// Create contract instance
+let usdc = Contract(
+    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    abi: erc20Abi,
+    provider: provider
+)
+
+// Read balance
+let balance: UInt256 = try await usdc.read.balanceOf("0x742d35...")
+print("Balance: \(balance)")
+
+// Transfer tokens
+let txHash = try await usdc.write.transfer("0x742d35...", 1000)
+print("Transaction: \(txHash)")
+
+// Estimate gas
+let gas = try await usdc.estimateGas.transfer("0x742d35...", 1000)
+print("Gas estimate: \(gas)")
+
+// Stream events
+for try await log in usdc.events.Transfer(from: "0x742d35...") {
+    print("\(log.args.from) -> \(log.args.to): \(log.args.value)")
+}
+```
+
+## API Reference
+
+### Contract Initializer
+
+```swift
+init(
+    address: String,
+    abi: [AbiItem],
+    provider: Provider
+)
+```
+
+Creates a typed contract instance.
+
+**Parameters:**
+- `address` - Contract address (hex string)
+- `abi` - Contract ABI as array of `AbiItem`
+- `provider` - EIP-1193 compatible provider
+
+**Returns:** `Contract` instance with `read`, `write`, `estimateGas`, and `events` interfaces.
+
+### Read Methods
+
+Execute view/pure functions with async/await:
+
+```swift
+// Single return value
+let balance: UInt256 = try await usdc.read.balanceOf(address)
+
+// Multiple return values (tuple)
+let (reserve0, reserve1, timestamp) = try await pair.read.getReserves()
+
+// String return
+let symbol: String = try await usdc.read.symbol()
+```
+
+### Write Methods
+
+Send state-changing transactions:
+
+```swift
+// Basic transfer
+let txHash = try await usdc.write.transfer(to, amount)
+
+// With options
+let txHash = try await usdc.write.transfer(to, amount, options: .init(
+    gas: 100_000,
+    maxFeePerGas: 30_000_000_000,
+    maxPriorityFeePerGas: 2_000_000_000
+))
+
+// Payable function with value
+let txHash = try await weth.write.deposit(options: .init(
+    value: 1_000_000_000_000_000_000 // 1 ETH
+))
+```
+
+### Gas Estimation
+
+Estimate gas before sending:
+
+```swift
+let gas = try await usdc.estimateGas.transfer(to, amount)
+
+// Add buffer and use in write
+let txHash = try await usdc.write.transfer(to, amount, options: .init(
+    gas: gas * 120 / 100 // 20% buffer
+))
+```
+
+### Events (AsyncSequence)
+
+Stream events using Swift's AsyncSequence:
+
+```swift
+// Stream all Transfer events
+for try await log in usdc.events.Transfer() {
+    print("\(log.args.from) -> \(log.args.to): \(log.args.value)")
+}
+
+// With filter
+for try await log in usdc.events.Transfer(from: senderAddress) {
+    print("Sent: \(log.args.value)")
+}
+
+// Historical + live
+for try await log in usdc.events.Transfer(fromBlock: 18_000_000) {
+    // First yields historical, then continues live
+    print(log)
+}
+
+// Break when done
+for try await log in usdc.events.Transfer() {
+    if log.args.value > 1_000_000 {
+        print("Large transfer found!")
+        break // Cleanup happens automatically
+    }
+}
+```
+
+## Manual Encoding
+
+Access the ABI directly for manual encoding:
+
+```swift
+// Encode calldata
+let calldata = try usdc.abi.encode("transfer", [to, amount])
+
+// Decode return data
+let decoded = try usdc.abi.decode("balanceOf", returnData)
+```
+
+## Error Handling
+
+Handle errors with Swift's throwing functions:
+
+```swift
+do {
+    let balance = try await usdc.read.balanceOf(address)
+} catch ContractError.reverted(let reason) {
+    print("Contract reverted: \(reason)")
+} catch ContractError.networkError(let error) {
+    print("Network error: \(error)")
+} catch {
+    print("Unexpected error: \(error)")
+}
+```
+
+## Type Safety
+
+Swift provides compile-time type checking:
+
+```swift
+// Return types are inferred from ABI
+let balance: UInt256 = try await usdc.read.balanceOf(address)
+let name: String = try await usdc.read.name()
+let decimals: UInt8 = try await usdc.read.decimals()
+
+// Argument types are validated
+try await usdc.write.transfer(
+    "0x742d35...",  // Address
+    1000            // UInt256
+)
+```
+
+## Concurrency
+
+Use Swift concurrency patterns:
+
+```swift
+// Parallel reads
+async let balance1 = usdc.read.balanceOf(address1)
+async let balance2 = usdc.read.balanceOf(address2)
+async let balance3 = usdc.read.balanceOf(address3)
+
+let balances = try await [balance1, balance2, balance3]
+
+// Task groups
+let balances = try await withThrowingTaskGroup(of: UInt256.self) { group in
+    for address in addresses {
+        group.addTask {
+            try await usdc.read.balanceOf(address)
+        }
+    }
+    return try await group.reduce(into: []) { $0.append($1) }
+}
+```
+
+## Related
+
+- [Read Methods](/swift/contract/read) - Calling view/pure functions
+- [Write Methods](/swift/contract/write) - Sending transactions
+- [Events](/swift/contract/events) - Streaming contract events
+- [Gas Estimation](/swift/contract/gas-estimation) - Estimating transaction gas

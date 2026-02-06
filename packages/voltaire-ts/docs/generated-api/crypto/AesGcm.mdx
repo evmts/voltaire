@@ -1,0 +1,1729 @@
+---
+title: "crypto/AesGcm"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / crypto/AesGcm
+
+# crypto/AesGcm
+
+## Classes
+
+### AesGcmError
+
+Defined in: [src/crypto/AesGcm/errors.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L21)
+
+Base error for AES-GCM operations
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { AesGcmError } from './crypto/AesGcm/index.js';
+throw new AesGcmError('Operation failed', {
+  code: 'AES_GCM_ERROR',
+  context: { operation: 'encrypt' },
+  docsPath: '/crypto/aes-gcm#error-handling',
+  cause: originalError
+});
+```
+
+#### Extends
+
+- [`CryptoError`](../index/index.mdx#cryptoerror)
+
+#### Extended by
+
+- [`InvalidKeyError`](#invalidkeyerror)
+- [`InvalidNonceError`](#invalidnonceerror)
+- [`DecryptionError`](#decryptionerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new AesGcmError**(`message`, `options?`): [`AesGcmError`](#aesgcmerror)
+
+Defined in: [src/crypto/AesGcm/errors.js:26](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L26)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`AesGcmError`](#aesgcmerror)
+
+###### Overrides
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`constructor`](../index/index.mdx#constructor-1)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`cause`](../index/index.mdx#cause-1)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`code`](../index/index.mdx#code-1)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`context`](../index/index.mdx#context-1)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`docsPath`](../index/index.mdx#docspath-1)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/AesGcm/errors.js:33](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L33)
+
+###### Inherited from
+
+`CryptoError.name`
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`getErrorChain`](../index/index.mdx#geterrorchain-2)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`CryptoError`](../index/index.mdx#cryptoerror).[`toJSON`](../index/index.mdx#tojson-2)
+
+***
+
+### DecryptionError
+
+Defined in: [src/crypto/AesGcm/errors.js:118](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L118)
+
+Decryption failure error
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { DecryptionError } from './crypto/AesGcm/index.js';
+throw new DecryptionError('Authentication failed', {
+  code: 'AES_GCM_DECRYPTION_FAILED',
+  context: { operation: 'decrypt' },
+  docsPath: '/crypto/aes-gcm/decrypt#error-handling',
+  cause: originalError
+});
+```
+
+#### Extends
+
+- [`AesGcmError`](#aesgcmerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new DecryptionError**(`message`, `options?`): [`DecryptionError`](#decryptionerror)
+
+Defined in: [src/crypto/AesGcm/errors.js:123](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L123)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`DecryptionError`](#decryptionerror)
+
+###### Overrides
+
+[`AesGcmError`](#aesgcmerror).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`docsPath`](#docspath)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/AesGcm/errors.js:130](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L130)
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`name`](#name)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`toJSON`](#tojson)
+
+***
+
+### InvalidKeyError
+
+Defined in: [src/crypto/AesGcm/errors.js:53](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L53)
+
+Invalid key error
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidKeyError } from './crypto/AesGcm/index.js';
+throw new InvalidKeyError('Invalid key size', {
+  code: 'AES_GCM_INVALID_KEY_SIZE',
+  context: { size: 16, expected: '16, 24, or 32 bytes' },
+  docsPath: '/crypto/aes-gcm/import-key#error-handling'
+});
+```
+
+#### Extends
+
+- [`AesGcmError`](#aesgcmerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidKeyError**(`message`, `options?`): [`InvalidKeyError`](#invalidkeyerror)
+
+Defined in: [src/crypto/AesGcm/errors.js:58](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L58)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidKeyError`](#invalidkeyerror)
+
+###### Overrides
+
+[`AesGcmError`](#aesgcmerror).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`docsPath`](#docspath)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/AesGcm/errors.js:65](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L65)
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`name`](#name)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`toJSON`](#tojson)
+
+***
+
+### InvalidNonceError
+
+Defined in: [src/crypto/AesGcm/errors.js:85](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L85)
+
+Invalid nonce error
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import { InvalidNonceError } from './crypto/AesGcm/index.js';
+throw new InvalidNonceError('Nonce must be 12 bytes', {
+  code: 'AES_GCM_INVALID_NONCE_LENGTH',
+  context: { length: 8, expected: 12 },
+  docsPath: '/crypto/aes-gcm/encrypt#error-handling'
+});
+```
+
+#### Extends
+
+- [`AesGcmError`](#aesgcmerror)
+
+#### Constructors
+
+##### Constructor
+
+> **new InvalidNonceError**(`message`, `options?`): [`InvalidNonceError`](#invalidnonceerror)
+
+Defined in: [src/crypto/AesGcm/errors.js:90](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L90)
+
+###### Parameters
+
+###### message
+
+`string`
+
+###### options?
+
+###### cause?
+
+`Error`
+
+###### code?
+
+`string`
+
+###### context?
+
+`Record`\<`string`, `unknown`\>
+
+###### docsPath?
+
+`string`
+
+###### Returns
+
+[`InvalidNonceError`](#invalidnonceerror)
+
+###### Overrides
+
+[`AesGcmError`](#aesgcmerror).[`constructor`](#constructor)
+
+#### Properties
+
+##### cause?
+
+> `optional` **cause**: `Error`
+
+Defined in: [src/primitives/errors/AbstractError.ts:56](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L56)
+
+Root cause of this error (for error chaining)
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`cause`](#cause)
+
+##### code
+
+> **code**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:39](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L39)
+
+Machine-readable error code for programmatic handling
+
+###### Example
+
+```ts
+'INVALID_FORMAT', 'INVALID_LENGTH'
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`code`](#code)
+
+##### context?
+
+> `optional` **context**: `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:45](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L45)
+
+Additional context metadata for debugging
+
+###### Example
+
+```ts
+{ value: '0x123', expected: '20 bytes' }
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`context`](#context)
+
+##### docsPath?
+
+> `optional` **docsPath**: `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:51](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L51)
+
+Path to documentation for this error
+
+###### Example
+
+```ts
+'/primitives/address/from-hex#error-handling'
+```
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`docsPath`](#docspath)
+
+##### name
+
+> **name**: `string`
+
+Defined in: [src/crypto/AesGcm/errors.js:97](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/errors.js#L97)
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`name`](#name)
+
+#### Methods
+
+##### getErrorChain()
+
+> **getErrorChain**(): `string`
+
+Defined in: [src/primitives/errors/AbstractError.ts:94](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L94)
+
+Get full error chain as string for logging
+
+###### Returns
+
+`string`
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`getErrorChain`](#geterrorchain)
+
+##### toJSON()
+
+> **toJSON**(): `Record`\<`string`, `unknown`\>
+
+Defined in: [src/primitives/errors/AbstractError.ts:110](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/errors/AbstractError.ts#L110)
+
+Serialize error to JSON for logging/telemetry
+
+###### Returns
+
+`Record`\<`string`, `unknown`\>
+
+###### Inherited from
+
+[`AesGcmError`](#aesgcmerror).[`toJSON`](#tojson)
+
+## Type Aliases
+
+### Key
+
+> **Key** = `CryptoKey`
+
+Defined in: [src/crypto/AesGcm/KeyTypes.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/KeyTypes.ts#L13)
+
+AES-GCM CryptoKey type
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```typescript
+import type { Key } from './crypto/AesGcm/KeyTypes.js';
+const key: Key = await crypto.subtle.generateKey(...);
+```
+
+***
+
+### KeyMaterial
+
+> **KeyMaterial** = `Uint8Array`
+
+Defined in: [src/crypto/AesGcm/KeyTypes.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/KeyTypes.ts#L27)
+
+Raw key material (bytes)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```typescript
+import type { KeyMaterial } from './crypto/AesGcm/KeyTypes.js';
+const material: KeyMaterial = new Uint8Array(32);
+```
+
+## Variables
+
+### AES128\_KEY\_SIZE
+
+> `const` **AES128\_KEY\_SIZE**: `16` = `16`
+
+Defined in: [src/crypto/AesGcm/constants.js:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/constants.js#L13)
+
+AES-128 key size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const keyBytes = new Uint8Array(AesGcm.AES128_KEY_SIZE);
+```
+
+***
+
+### AES256\_KEY\_SIZE
+
+> `const` **AES256\_KEY\_SIZE**: `32` = `32`
+
+Defined in: [src/crypto/AesGcm/constants.js:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/constants.js#L27)
+
+AES-256 key size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const keyBytes = new Uint8Array(AesGcm.AES256_KEY_SIZE);
+```
+
+***
+
+### AesGcm
+
+> `const` **AesGcm**: `object`
+
+Defined in: [src/crypto/AesGcm/AesGcm.js:54](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/AesGcm.js#L54)
+
+AES-GCM (Galois/Counter Mode) Authenticated Encryption
+
+Provides authenticated encryption using AES in GCM mode.
+Uses native WebCrypto API for optimal performance and security.
+Supports both AES-128-GCM and AES-256-GCM.
+
+#### Type Declaration
+
+##### AES128\_KEY\_SIZE
+
+> **AES128\_KEY\_SIZE**: `number`
+
+AES-128 key size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const keyBytes = new Uint8Array(AesGcm.AES128_KEY_SIZE);
+```
+
+##### AES256\_KEY\_SIZE
+
+> **AES256\_KEY\_SIZE**: `number`
+
+AES-256 key size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const keyBytes = new Uint8Array(AesGcm.AES256_KEY_SIZE);
+```
+
+##### decrypt()
+
+> **decrypt**: (`ciphertext`, `key`, `nonce`, `additionalData?`) => `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Decrypt data with AES-GCM
+
+###### Parameters
+
+###### ciphertext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encrypted data with authentication tag
+
+###### key
+
+`CryptoKey`
+
+AES key (128 or 256 bit)
+
+###### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (IV) used during encryption
+
+###### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+###### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Decrypted plaintext
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If authentication fails or decryption error
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+const message = new TextDecoder().decode(decrypted);
+```
+
+##### deriveKey()
+
+> **deriveKey**: (`password`, `salt`, `iterations`, `bits`) => `Promise`\<`CryptoKey`\>
+
+Derive key from password using PBKDF2
+
+###### Parameters
+
+###### password
+
+Password string or bytes
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+###### salt
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Salt for key derivation (at least 16 bytes recommended)
+
+###### iterations
+
+`number`
+
+Number of iterations (at least 100000 recommended)
+
+###### bits
+
+Key size in bits (128 or 256)
+
+`128` | `256`
+
+###### Returns
+
+`Promise`\<`CryptoKey`\>
+
+Derived CryptoKey
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key derivation fails
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const salt = crypto.getRandomValues(new Uint8Array(16));
+const key = await AesGcm.deriveKey('mypassword', salt, 100000, 256);
+```
+
+##### encrypt()
+
+> **encrypt**: (`plaintext`, `key`, `nonce`, `additionalData?`) => `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Encrypt data with AES-GCM
+
+###### Parameters
+
+###### plaintext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to encrypt
+
+###### key
+
+`CryptoKey`
+
+AES key (128 or 256 bit)
+
+###### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (IV)
+
+###### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+###### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Ciphertext with authentication tag appended
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If encryption fails
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const plaintext = new TextEncoder().encode('Secret message');
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+```
+
+##### exportKey()
+
+> **exportKey**: (`key`) => `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Export CryptoKey to raw bytes
+
+###### Parameters
+
+###### key
+
+`CryptoKey`
+
+CryptoKey to export
+
+###### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Raw key bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key export fails
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const key = await AesGcm.generateKey(256);
+const keyBytes = await AesGcm.exportKey(key);
+```
+
+##### generateKey()
+
+> **generateKey**: (`bits`) => `Promise`\<`CryptoKey`\>
+
+Generate AES-GCM key
+
+###### Parameters
+
+###### bits
+
+Key size in bits (128 or 256)
+
+`128` | `256`
+
+###### Returns
+
+`Promise`\<`CryptoKey`\>
+
+CryptoKey for use with WebCrypto API
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key generation fails
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const key128 = await AesGcm.generateKey(128);
+const key256 = await AesGcm.generateKey(256);
+```
+
+##### generateNonce()
+
+> **generateNonce**: () => `Uint8Array`\<`ArrayBufferLike`\>
+
+Generate random nonce
+
+###### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte random nonce
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const nonce = AesGcm.generateNonce();
+```
+
+##### importKey()
+
+> **importKey**: (`keyMaterial`) => `Promise`\<`CryptoKey`\>
+
+Import raw key material as CryptoKey
+
+###### Parameters
+
+###### keyMaterial
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+16-byte (128-bit) or 32-byte (256-bit) key
+
+###### Returns
+
+`Promise`\<`CryptoKey`\>
+
+CryptoKey for use with WebCrypto API
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+If key import fails or key size is invalid
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const keyBytes = crypto.getRandomValues(new Uint8Array(32));
+const key = await AesGcm.importKey(keyBytes);
+```
+
+##### NONCE\_SIZE
+
+> **NONCE\_SIZE**: `number`
+
+Nonce/IV size in bytes (standard for GCM)
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const nonce = new Uint8Array(AesGcm.NONCE_SIZE);
+```
+
+##### TAG\_SIZE
+
+> **TAG\_SIZE**: `number`
+
+Authentication tag size in bytes
+
+###### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+###### Since
+
+0.0.0
+
+###### Throws
+
+###### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+console.log('Tag size:', AesGcm.TAG_SIZE);
+```
+
+#### Example
+
+```typescript
+import { AesGcm } from './AesGcm.js';
+
+// Generate key
+const key = await AesGcm.generateKey(256);
+
+// Encrypt data
+const plaintext = new TextEncoder().encode('Hello, world!');
+const nonce = AesGcm.generateNonce();
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+// Decrypt data
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+```
+
+***
+
+### NONCE\_SIZE
+
+> `const` **NONCE\_SIZE**: `12` = `12`
+
+Defined in: [src/crypto/AesGcm/constants.js:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/constants.js#L41)
+
+Nonce/IV size in bytes (standard for GCM)
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const nonce = new Uint8Array(AesGcm.NONCE_SIZE);
+```
+
+***
+
+### TAG\_SIZE
+
+> `const` **TAG\_SIZE**: `16` = `16`
+
+Defined in: [src/crypto/AesGcm/constants.js:55](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/constants.js#L55)
+
+Authentication tag size in bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+console.log('Tag size:', AesGcm.TAG_SIZE);
+```
+
+## Functions
+
+### decrypt()
+
+> **decrypt**(`ciphertext`, `key`, `nonce`, `additionalData?`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Defined in: [src/crypto/AesGcm/decrypt.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/decrypt.js#L24)
+
+Decrypt data with AES-GCM
+
+#### Parameters
+
+##### ciphertext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Encrypted data with authentication tag
+
+##### key
+
+`CryptoKey`
+
+AES key (128 or 256 bit)
+
+##### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (IV) used during encryption
+
+##### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Decrypted plaintext
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If authentication fails or decryption error
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+const message = new TextDecoder().decode(decrypted);
+```
+
+***
+
+### deriveKey()
+
+> **deriveKey**(`password`, `salt`, `iterations`, `bits`): `Promise`\<`CryptoKey`\>
+
+Defined in: [src/crypto/AesGcm/deriveKey.js:21](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/deriveKey.js#L21)
+
+Derive key from password using PBKDF2
+
+#### Parameters
+
+##### password
+
+Password string or bytes
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+##### salt
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Salt for key derivation (at least 16 bytes recommended)
+
+##### iterations
+
+`number`
+
+Number of iterations (at least 100000 recommended)
+
+##### bits
+
+Key size in bits (128 or 256)
+
+`128` | `256`
+
+#### Returns
+
+`Promise`\<`CryptoKey`\>
+
+Derived CryptoKey
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If key derivation fails
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const salt = crypto.getRandomValues(new Uint8Array(16));
+const key = await AesGcm.deriveKey('mypassword', salt, 100000, 256);
+```
+
+***
+
+### encrypt()
+
+> **encrypt**(`plaintext`, `key`, `nonce`, `additionalData?`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Defined in: [src/crypto/AesGcm/encrypt.js:24](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/encrypt.js#L24)
+
+Encrypt data with AES-GCM
+
+#### Parameters
+
+##### plaintext
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Data to encrypt
+
+##### key
+
+`CryptoKey`
+
+AES key (128 or 256 bit)
+
+##### nonce
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte nonce (IV)
+
+##### additionalData?
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+Optional additional authenticated data
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Ciphertext with authentication tag appended
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If encryption fails
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const plaintext = new TextEncoder().encode('Secret message');
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+```
+
+***
+
+### exportKey()
+
+> **exportKey**(`key`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Defined in: [src/crypto/AesGcm/exportKey.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/exportKey.js#L18)
+
+Export CryptoKey to raw bytes
+
+#### Parameters
+
+##### key
+
+`CryptoKey`
+
+CryptoKey to export
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Raw key bytes
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If key export fails
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const key = await AesGcm.generateKey(256);
+const keyBytes = await AesGcm.exportKey(key);
+```
+
+***
+
+### generateKey()
+
+> **generateKey**(`bits`): `Promise`\<`CryptoKey`\>
+
+Defined in: [src/crypto/AesGcm/generateKey.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/generateKey.js#L18)
+
+Generate AES-GCM key
+
+#### Parameters
+
+##### bits
+
+Key size in bits (128 or 256)
+
+`128` | `256`
+
+#### Returns
+
+`Promise`\<`CryptoKey`\>
+
+CryptoKey for use with WebCrypto API
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If key generation fails
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const key128 = await AesGcm.generateKey(128);
+const key256 = await AesGcm.generateKey(256);
+```
+
+***
+
+### generateNonce()
+
+> **generateNonce**(): `Uint8Array`\<`ArrayBufferLike`\>
+
+Defined in: [src/crypto/AesGcm/generateNonce.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/generateNonce.js#L16)
+
+Generate random nonce
+
+#### Returns
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+12-byte random nonce
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const nonce = AesGcm.generateNonce();
+```
+
+***
+
+### importKey()
+
+> **importKey**(`keyMaterial`): `Promise`\<`CryptoKey`\>
+
+Defined in: [src/crypto/AesGcm/importKey.js:19](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/crypto/AesGcm/importKey.js#L19)
+
+Import raw key material as CryptoKey
+
+#### Parameters
+
+##### keyMaterial
+
+`Uint8Array`\<`ArrayBufferLike`\>
+
+16-byte (128-bit) or 32-byte (256-bit) key
+
+#### Returns
+
+`Promise`\<`CryptoKey`\>
+
+CryptoKey for use with WebCrypto API
+
+#### See
+
+https://voltaire.tevm.sh/crypto for crypto documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+If key import fails or key size is invalid
+
+#### Example
+
+```javascript
+import * as AesGcm from './crypto/AesGcm/index.js';
+const keyBytes = crypto.getRandomValues(new Uint8Array(32));
+const key = await AesGcm.importKey(keyBytes);
+```

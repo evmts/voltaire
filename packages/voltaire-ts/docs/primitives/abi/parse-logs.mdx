@@ -1,0 +1,100 @@
+---
+title: Abi.parseLogs
+description: Parse multiple event logs using full ABI
+---
+
+<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/abi.ts">
+  Run ABI examples in the interactive playground
+</Card>
+
+## Overview
+
+`Abi.parseLogs` decodes a list of log entries using a full ABI. It matches non-anonymous events by `topic0` and decodes indexed and non-indexed parameters. Logs that do not match any event are skipped.
+
+## Quick Start
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const abi = Abi([
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { type: 'address', name: 'from', indexed: true },
+      { type: 'address', name: 'to', indexed: true },
+      { type: 'uint256', name: 'value' }
+    ]
+  },
+  {
+    type: 'event',
+    name: 'Approval',
+    inputs: [
+      { type: 'address', name: 'owner', indexed: true },
+      { type: 'address', name: 'spender', indexed: true },
+      { type: 'uint256', name: 'value' }
+    ]
+  }
+] as const);
+
+// const logs = await provider.getLogs({ address: tokenAddress });
+const decoded = abi.parseLogs(logs);
+
+for (const log of decoded) {
+  if (log.eventName === 'Transfer') {
+    console.log('Transfer', log.args);
+  }
+}
+```
+
+## Hex or Bytes Input
+
+`parseLogs` accepts both hex strings and byte arrays:
+
+```typescript
+const logs = [
+  {
+    data: '0x...',
+    topics: ['0x...', '0x...', '0x...']
+  }
+];
+
+const decoded = abi.parseLogs(logs);
+```
+
+## Anonymous Events
+
+Anonymous events omit `topic0`. `parseLogs` can decode them only when there is a **unique** anonymous event with the same number of indexed parameters.
+
+```typescript
+const Anonymous = {
+  type: 'event',
+  name: 'Anonymous',
+  anonymous: true,
+  inputs: [
+    { type: 'address', name: 'who', indexed: true }
+  ]
+} as const;
+```
+
+If multiple anonymous events share the same indexed count, `parseLogs` cannot disambiguate and will skip them.
+
+## Decode a Single Event
+
+If you already know the event definition, decode directly:
+
+```typescript
+import { Abi } from '@tevm/voltaire/Abi';
+
+const decoded = Abi.Event.decodeLog(Transfer, log.data, log.topics);
+```
+
+## Dynamic Indexed Parameters
+
+Dynamic indexed parameters (like `string` or `bytes`) are stored as **keccak256 hashes** in topics. You can compare them, but you cannot recover the original value from the topic alone.
+
+## See Also
+
+- [Event.decodeLog](/primitives/abi/event-decode-log) - Decode a single log
+- [Event.encodeTopics](/primitives/abi/event-encode-topics) - Build topics for filters
+- [getItem](/primitives/abi/get-item) - Find event definitions in an ABI

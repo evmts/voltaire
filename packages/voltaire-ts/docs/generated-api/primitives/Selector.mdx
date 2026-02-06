@@ -1,0 +1,244 @@
+---
+title: "primitives/Selector"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/Selector
+
+# primitives/Selector
+
+## Type Aliases
+
+### SelectorLike
+
+> **SelectorLike** = [`SelectorType`](#selectortype) \| `string` \| `Uint8Array`
+
+Defined in: [src/primitives/Selector/SelectorType.ts:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/SelectorType.ts#L8)
+
+***
+
+### SelectorType
+
+> **SelectorType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/Selector/SelectorType.ts:3](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/SelectorType.ts#L3)
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"Selector"`
+
+##### length
+
+> `readonly` **length**: `4`
+
+## Variables
+
+### Selector
+
+> `const` **Selector**: `object`
+
+Defined in: [src/primitives/Selector/index.ts:46](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/index.ts#L46)
+
+#### Type Declaration
+
+##### equals()
+
+> **equals**: (`a`, `b`) => `boolean`
+
+Check if two Selectors are equal
+
+###### Parameters
+
+###### a
+
+[`SelectorType`](#selectortype)
+
+###### b
+
+[`SelectorType`](#selectortype)
+
+###### Returns
+
+`boolean`
+
+##### from()
+
+> **from**: (`value`) => [`SelectorType`](#selectortype)
+
+Create Selector from various input types
+
+###### Parameters
+
+###### value
+
+[`SelectorLike`](#selectorlike)
+
+###### Returns
+
+[`SelectorType`](#selectortype)
+
+##### fromHex()
+
+> **fromHex**: (`hex`) => [`SelectorType`](#selectortype)
+
+Create Selector from hex string
+
+###### Parameters
+
+###### hex
+
+`string`
+
+###### Returns
+
+[`SelectorType`](#selectortype)
+
+##### fromSignature()
+
+> **fromSignature**: (`signature`) => [`SelectorType`](#selectortype)
+
+Compute Selector from function signature
+
+###### Parameters
+
+###### signature
+
+`string`
+
+###### Returns
+
+[`SelectorType`](#selectortype)
+
+##### toHex()
+
+> **toHex**: (`selector`) => `string`
+
+Convert Selector to hex string
+
+###### Parameters
+
+###### selector
+
+[`SelectorType`](#selectortype)
+
+###### Returns
+
+`string`
+
+***
+
+### SIZE
+
+> `const` **SIZE**: `4` = `4`
+
+Defined in: [src/primitives/Selector/SelectorType.ts:10](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/SelectorType.ts#L10)
+
+## Functions
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/Selector/index.ts:41](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/index.ts#L41)
+
+Check if two Selectors are equal
+
+#### Parameters
+
+##### a
+
+[`SelectorType`](#selectortype)
+
+##### b
+
+[`SelectorType`](#selectortype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### from()
+
+> **from**(`value`): [`SelectorType`](#selectortype)
+
+Defined in: [src/primitives/Selector/index.ts:13](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/index.ts#L13)
+
+Create Selector from various input types
+
+#### Parameters
+
+##### value
+
+[`SelectorLike`](#selectorlike)
+
+#### Returns
+
+[`SelectorType`](#selectortype)
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`SelectorType`](#selectortype)
+
+Defined in: [src/primitives/Selector/index.ts:20](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/index.ts#L20)
+
+Create Selector from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+#### Returns
+
+[`SelectorType`](#selectortype)
+
+***
+
+### fromSignature()
+
+> **fromSignature**(`signature`): [`SelectorType`](#selectortype)
+
+Defined in: [src/primitives/Selector/index.ts:27](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/index.ts#L27)
+
+Compute Selector from function signature
+
+#### Parameters
+
+##### signature
+
+`string`
+
+#### Returns
+
+[`SelectorType`](#selectortype)
+
+***
+
+### toHex()
+
+> **toHex**(`selector`): `string`
+
+Defined in: [src/primitives/Selector/index.ts:34](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/Selector/index.ts#L34)
+
+Convert Selector to hex string
+
+#### Parameters
+
+##### selector
+
+[`SelectorType`](#selectortype)
+
+#### Returns
+
+`string`

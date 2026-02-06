@@ -1,0 +1,122 @@
+---
+title: '[TS/JS] src/primitives/Rlp/encodeObject.test.ts'
+source: 'src/primitives/Rlp/encodeObject.test.ts'
+---
+
+> Auto-generated from test file: src/primitives/Rlp/encodeObject.test.ts
+
+```typescript
+/**
+ * Tests for Rlp.encodeObject
+ */
+
+import { describe, expect, it } from "vitest";
+import { decodeObject } from "./decodeObject.js";
+import { encodeObject } from "./encodeObject.js";
+
+describe("Rlp.encodeObject", () => {
+	it("encodes empty object", () => {
+		const obj = {};
+		const result = encodeObject(obj);
+		expect(result).toBeInstanceOf(Uint8Array);
+		const decoded = decodeObject(result);
+		expect(decoded).toEqual({});
+	});
+
+	it("encodes object with single key", () => {
+		const obj = { name: new Uint8Array([65, 66, 67]) };
+		const result = encodeObject(obj);
+		const decoded = decodeObject(result);
+		expect(decoded.name).toEqual(new Uint8Array([65, 66, 67]));
+	});
+
+	it("encodes object with multiple keys", () => {
+		const obj = {
+			name: new Uint8Array([65, 66, 67]),
+			age: new Uint8Array([25]),
+			city: new Uint8Array([78, 89, 67]),
+		};
+		const result = encodeObject(obj);
+		const decoded = decodeObject(result);
+		expect(decoded.name).toEqual(new Uint8Array([65, 66, 67]));
+		expect(decoded.age).toEqual(new Uint8Array([25]));
+		expect(decoded.city).toEqual(new Uint8Array([78, 89, 67]));
+	});
+
+	it("encodes object with nested arrays", () => {
+		const obj = {
+			items: [new Uint8Array([1]), new Uint8Array([2])],
+		};
+		const result = encodeObject(obj);
+		const decoded = decodeObject(result);
+		expect(Array.isArray(decoded.items)).toBe(true);
+		expect(decoded.items).toHaveLength(2);
+	});
+
+	it("encodes object with empty values", () => {
+		const obj = {
+			empty: new Uint8Array([]),
+			filled: new Uint8Array([1, 2, 3]),
+		};
+		const result = encodeObject(obj);
+		const decoded = decodeObject(result);
+		expect(decoded.empty).toEqual(new Uint8Array([]));
+		expect(decoded.filled).toEqual(new Uint8Array([1, 2, 3]));
+	});
+
+	it("encodes object with unicode keys", () => {
+		const obj = {
+			"🔑": new Uint8Array([1, 2, 3]),
+			键: new Uint8Array([4, 5, 6]),
+		};
+		const result = encodeObject(obj);
+		const decoded = decodeObject(result);
+		expect(decoded["🔑"]).toEqual(new Uint8Array([1, 2, 3]));
+		expect(decoded.键).toEqual(new Uint8Array([4, 5, 6]));
+	});
+
+	it("maintains key insertion order", () => {
+		const obj1 = { b: new Uint8Array([2]), a: new Uint8Array([1]) };
+		const obj2 = { a: new Uint8Array([1]), b: new Uint8Array([2]) };
+		const result1 = encodeObject(obj1);
+		const result2 = encodeObject(obj2);
+		// Object.entries maintains insertion order, so they should differ
+		expect(result1).not.toEqual(result2);
+		// But both should decode correctly
+		const decoded1 = decodeObject(result1);
+		const decoded2 = decodeObject(result2);
+		expect(decoded1.a).toEqual(new Uint8Array([1]));
+		expect(decoded1.b).toEqual(new Uint8Array([2]));
+		expect(decoded2.a).toEqual(new Uint8Array([1]));
+		expect(decoded2.b).toEqual(new Uint8Array([2]));
+	});
+
+	it("encodes large object with many keys", () => {
+		const obj: Record<string, Uint8Array> = {};
+		for (let i = 0; i < 100; i++) {
+			obj[`key${i}`] = new Uint8Array([i % 256]);
+		}
+		const result = encodeObject(obj);
+		const decoded = decodeObject(result);
+		for (let i = 0; i < 100; i++) {
+			expect(decoded[`key${i}`]).toEqual(new Uint8Array([i % 256]));
+		}
+	});
+
+	it("round-trips complex object", () => {
+		const obj = {
+			name: new Uint8Array([65, 66]),
+			data: new Uint8Array(Array(100).fill(0xff)),
+			flag: new Uint8Array([1]),
+			nested: [new Uint8Array([1]), new Uint8Array([2])],
+		};
+		const encoded = encodeObject(obj);
+		const decoded = decodeObject(encoded);
+		expect(decoded.name).toEqual(obj.name);
+		expect(decoded.data).toEqual(obj.data);
+		expect(decoded.flag).toEqual(obj.flag);
+		expect(decoded.nested).toEqual(obj.nested);
+	});
+});
+
+```

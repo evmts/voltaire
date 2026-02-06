@@ -1,0 +1,335 @@
+---
+title: "primitives/InitCode"
+description: Auto-generated API documentation
+---
+
+[**@tevm/voltaire**](../index.mdx)
+
+***
+
+[@tevm/voltaire](../index.mdx) / primitives/InitCode
+
+# primitives/InitCode
+
+## Type Aliases
+
+### InitCodeType
+
+> **InitCodeType** = `Uint8Array` & `object`
+
+Defined in: [src/primitives/InitCode/InitCodeType.ts:8](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/InitCodeType.ts#L8)
+
+Branded InitCode type
+Contract creation bytecode (constructor + runtime code)
+Deployed during contract creation transaction
+
+#### Type Declaration
+
+##### \[brand\]
+
+> `readonly` **\[brand\]**: `"InitCode"`
+
+## Functions
+
+### \_equals()
+
+> **\_equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/InitCode/equals.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/equals.js#L15)
+
+Check if two InitCode instances are equal
+
+#### Parameters
+
+##### a
+
+[`InitCodeType`](#initcodetype)
+
+First InitCode
+
+##### b
+
+[`InitCodeType`](#initcodetype)
+
+Second InitCode
+
+#### Returns
+
+`boolean`
+
+true if equal
+
+#### Example
+
+```javascript
+import * as InitCode from './primitives/InitCode/index.js';
+const code1 = InitCode.from("0x6001");
+const code2 = InitCode.from("0x6001");
+InitCode._equals(code1, code2); // true
+```
+
+***
+
+### \_estimateGas()
+
+> **\_estimateGas**(`code`): `bigint`
+
+Defined in: [src/primitives/InitCode/estimateGas.js:16](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/estimateGas.js#L16)
+
+Estimate gas cost for contract creation
+
+Gas cost = 21000 (base) + 200 * non-zero bytes + 4 * zero bytes + 32000 (creation)
+
+#### Parameters
+
+##### code
+
+[`InitCodeType`](#initcodetype)
+
+InitCode
+
+#### Returns
+
+`bigint`
+
+Estimated gas cost
+
+#### Example
+
+```javascript
+import * as InitCode from './primitives/InitCode/index.js';
+const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
+const gas = InitCode._estimateGas(init);
+console.log(`Estimated gas: ${gas}`);
+```
+
+***
+
+### \_extractRuntime()
+
+> **\_extractRuntime**(`code`, `offset`): [`RuntimeCodeType`](RuntimeCode.mdx#runtimecodetype)
+
+Defined in: [src/primitives/InitCode/extractRuntime.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/extractRuntime.js#L18)
+
+Extract runtime code from init code at specified offset
+
+Init code contains constructor logic followed by runtime code.
+This extracts the runtime portion starting at the given offset.
+
+#### Parameters
+
+##### code
+
+[`InitCodeType`](#initcodetype)
+
+InitCode
+
+##### offset
+
+`number`
+
+Byte offset where runtime code starts
+
+#### Returns
+
+[`RuntimeCodeType`](RuntimeCode.mdx#runtimecodetype)
+
+RuntimeCode
+
+#### Example
+
+```javascript
+import * as InitCode from './primitives/InitCode/index.js';
+const init = InitCode.from("0x608060405234801561001057600080fd5b50...");
+// Assume constructor is 100 bytes
+const runtime = InitCode._extractRuntime(init, 100);
+```
+
+***
+
+### \_toHex()
+
+> **\_toHex**(`data`): [`HexType`](Hex.mdx#hextype)
+
+Defined in: [src/primitives/InitCode/toHex.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/toHex.js#L15)
+
+Convert InitCode to hex string
+
+#### Parameters
+
+##### data
+
+[`InitCodeType`](#initcodetype)
+
+InitCode
+
+#### Returns
+
+[`HexType`](Hex.mdx#hextype)
+
+Hex string
+
+#### Example
+
+```javascript
+import * as InitCode from './primitives/InitCode/index.js';
+const code = InitCode.from("0x608060405234801561001057600080fd5b50...");
+const hex = InitCode._toHex(code);
+```
+
+***
+
+### equals()
+
+> **equals**(`a`, `b`): `boolean`
+
+Defined in: [src/primitives/InitCode/index.ts:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/index.ts#L18)
+
+#### Parameters
+
+##### a
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`InitCodeType`](#initcodetype)
+
+##### b
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`InitCodeType`](#initcodetype)
+
+#### Returns
+
+`boolean`
+
+***
+
+### estimateGas()
+
+> **estimateGas**(`value`): `bigint`
+
+Defined in: [src/primitives/InitCode/index.ts:38](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/index.ts#L38)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`InitCodeType`](#initcodetype)
+
+#### Returns
+
+`bigint`
+
+***
+
+### extractRuntime()
+
+> **extractRuntime**(`value`, `offset`): [`RuntimeCodeType`](RuntimeCode.mdx#runtimecodetype)
+
+Defined in: [src/primitives/InitCode/index.ts:31](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/index.ts#L31)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`InitCodeType`](#initcodetype)
+
+##### offset
+
+`number`
+
+#### Returns
+
+[`RuntimeCodeType`](RuntimeCode.mdx#runtimecodetype)
+
+***
+
+### from()
+
+> **from**(`value`): [`InitCodeType`](#initcodetype)
+
+Defined in: [src/primitives/InitCode/from.js:18](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/from.js#L18)
+
+Create InitCode from various input types
+
+#### Parameters
+
+##### value
+
+Hex string or Uint8Array
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\>
+
+#### Returns
+
+[`InitCodeType`](#initcodetype)
+
+InitCode
+
+#### See
+
+https://voltaire.tevm.sh/primitives/init-code for InitCode documentation
+
+#### Since
+
+0.0.0
+
+#### Throws
+
+#### Example
+
+```javascript
+import * as InitCode from './primitives/InitCode/index.js';
+const code1 = InitCode.from("0x608060405234801561001057600080fd5b50...");
+const code2 = InitCode.from(new Uint8Array([0x60, 0x80, 0x60, 0x40, ...]));
+```
+
+***
+
+### fromHex()
+
+> **fromHex**(`hex`): [`InitCodeType`](#initcodetype)
+
+Defined in: [src/primitives/InitCode/fromHex.js:15](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/fromHex.js#L15)
+
+Create InitCode from hex string
+
+#### Parameters
+
+##### hex
+
+`string`
+
+Hex string
+
+#### Returns
+
+[`InitCodeType`](#initcodetype)
+
+InitCode
+
+#### Throws
+
+If hex string is invalid
+
+#### Example
+
+```javascript
+import * as InitCode from './primitives/InitCode/index.js';
+const code = InitCode.fromHex("0x608060405234801561001057600080fd5b50...");
+```
+
+***
+
+### toHex()
+
+> **toHex**(`value`): [`HexType`](Hex.mdx#hextype)
+
+Defined in: [src/primitives/InitCode/index.ts:25](https://github.com/evmts/voltaire/blob/bd6ec34405c15ad8cd51d11579d495dc53813482/src/primitives/InitCode/index.ts#L25)
+
+#### Parameters
+
+##### value
+
+`string` | `Uint8Array`\<`ArrayBufferLike`\> | [`InitCodeType`](#initcodetype)
+
+#### Returns
+
+[`HexType`](Hex.mdx#hextype)
