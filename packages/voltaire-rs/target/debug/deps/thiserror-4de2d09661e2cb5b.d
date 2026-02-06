@@ -1,0 +1,14 @@
+/Users/williamcory/voltaire/packages/voltaire-rs/target/debug/deps/thiserror-4de2d09661e2cb5b.d: /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/williamcory/voltaire/packages/voltaire-rs/target/debug/build/thiserror-76d82bc91b233865/out/private.rs
+
+/Users/williamcory/voltaire/packages/voltaire-rs/target/debug/deps/libthiserror-4de2d09661e2cb5b.rlib: /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/williamcory/voltaire/packages/voltaire-rs/target/debug/build/thiserror-76d82bc91b233865/out/private.rs
+
+/Users/williamcory/voltaire/packages/voltaire-rs/target/debug/deps/libthiserror-4de2d09661e2cb5b.rmeta: /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/williamcory/voltaire/packages/voltaire-rs/target/debug/build/thiserror-76d82bc91b233865/out/private.rs
+
+/Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs:
+/Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs:
+/Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs:
+/Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs:
+/Users/williamcory/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs:
+/Users/williamcory/voltaire/packages/voltaire-rs/target/debug/build/thiserror-76d82bc91b233865/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/williamcory/voltaire/packages/voltaire-rs/target/debug/build/thiserror-76d82bc91b233865/out
