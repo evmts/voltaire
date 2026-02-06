@@ -1,0 +1,39 @@
+---
+title: LogFilter
+description: eth_getLogs filter parameters
+---
+
+```typescript
+import { LogFilterSchema } from 'voltaire-effect/LogFilter'
+import * as S from 'effect/Schema'
+
+const filter = S.decodeSync(LogFilterSchema)({
+  fromBlock: 19000000n,
+  toBlock: 19000100n,
+  address: '0x1234...5678',
+  topics: ['0xddf252ad...']  // Transfer event
+})
+```
+
+## Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fromBlock` | `bigint \| 'earliest' \| 'latest' \| 'pending'` | Start block |
+| `toBlock` | `bigint \| 'earliest' \| 'latest' \| 'pending'` | End block |
+| `address` | `Address \| Address[]` | Contract(s) |
+| `topics` | `(Hash \| Hash[] \| null)[]` | Topic filters (up to 4) |
+| `blockhash` | `Hash` | Specific block (exclusive with fromBlock/toBlock) |
+
+## Topic Matching
+
+```typescript
+// AND: topic[0]=A AND topic[1]=B
+{ topics: ['0xaaa...', '0xbbb...'] }
+
+// OR: topic[0]=A OR topic[0]=B
+{ topics: [['0xaaa...', '0xbbb...']] }
+
+// Wildcard: any topic[0], topic[1]=B
+{ topics: [null, '0xbbb...'] }
+```

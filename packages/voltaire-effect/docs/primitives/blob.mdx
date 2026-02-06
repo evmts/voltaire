@@ -1,0 +1,117 @@
+---
+title: Blob
+description: EIP-4844 blob (128KB) with Effect-based API
+---
+
+```typescript
+import * as Blob from 'voltaire-effect/primitives/Blob'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+import { KZGLive } from 'voltaire-effect/crypto/KZG'
+
+// Constants
+Blob.SIZE                    // 131072 (128KB)
+Blob.FIELD_ELEMENTS_PER_BLOB // 4096
+Blob.BYTES_PER_FIELD_ELEMENT // 32
+Blob.MAX_PER_TRANSACTION     // 6
+Blob.MAX_DATA_PER_BLOB       // 126972 (usable data bytes)
+
+// From raw 131072 bytes
+const blob = await Effect.runPromise(Blob.from(blobBytes))
+
+// From arbitrary data (pads to 128KB)
+const padded = await Effect.runPromise(Blob.fromData(myData))
+
+// Extract original data (pure, never throws)
+const original = Blob.toData(blob)
+
+// Validate size (pure)
+if (Blob.isValid(data)) { /* exactly 128KB */ }
+
+// Schema validation
+Schema.decodeSync(Blob.Schema)(blobBytes)
+
+// Gas calculations
+const gas = await Effect.runPromise(Blob.calculateGas(3)) // 393216
+const count = await Effect.runPromise(Blob.estimateBlobCount(200000)) // 2
+
+// Split/join large data
+const blobs = await Effect.runPromise(Blob.splitData(largeData))
+const rejoined = await Effect.runPromise(Blob.joinData(blobs))
+
+// KZG operations (require KZGService)
+const program = Effect.gen(function* () {
+  const commitment = yield* Blob.toCommitment(blob)
+  const proof = yield* Blob.toProof(blob, commitment)
+  const hash = yield* Blob.toVersionedHash(commitment)
+  const isValid = yield* Blob.verify(blob, commitment, proof)
+  return { commitment, proof, hash, isValid }
+}).pipe(Effect.provide(KZGLive))
+```
+
+## API Reference
+
+### Types
+
+| Type | Description |
+|------|-------------|
+| `BrandedBlob` | 128KB blob (Uint8Array with brand) |
+| `Commitment` | 48-byte KZG commitment |
+| `Proof` | 48-byte KZG proof |
+| `VersionedHash` | 32-byte versioned hash (0x01 prefix) |
+
+### Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `SIZE` | 131072 | Blob size in bytes (128KB) |
+| `FIELD_ELEMENTS_PER_BLOB` | 4096 | Field elements per blob |
+| `BYTES_PER_FIELD_ELEMENT` | 32 | Bytes per field element |
+| `MAX_PER_TRANSACTION` | 6 | Max blobs per transaction |
+| `MAX_DATA_PER_BLOB` | 126972 | Max data bytes per blob |
+| `COMMITMENT_VERSION_KZG` | 0x01 | KZG version byte |
+| `GAS_PER_BLOB` | 131072 | Gas per blob |
+
+### Constructors
+
+| Function | Type | Description |
+|----------|------|-------------|
+| `from` | `(bytes: Uint8Array) => Effect<BrandedBlob, InvalidBlobDataSizeError>` | Create blob from bytes (auto-encodes if not 128KB) |
+| `fromData` | `(data: Uint8Array) => Effect<BrandedBlob, InvalidBlobDataSizeError>` | Create blob from data with padding |
+
+### Pure Functions
+
+| Function | Type | Description |
+|----------|------|-------------|
+| `isValid` | `(blob: Uint8Array) => boolean` | Check if exactly 128KB |
+| `isValidVersion` | `(hash: VersionedHash) => boolean` | Check version byte is 0x01 |
+| `toData` | `(blob: BrandedBlob) => Uint8Array` | Extract original data |
+
+### Effectful Functions
+
+| Function | Type | Description |
+|----------|------|-------------|
+| `calculateGas` | `(count: number) => Effect<number, InvalidBlobCountError>` | Calculate blob gas |
+| `estimateBlobCount` | `(size: number) => Effect<number, InvalidBlobDataSizeError>` | Estimate blobs needed |
+| `splitData` | `(data: Uint8Array) => Effect<BrandedBlob[], InvalidBlobDataSizeError>` | Split data into blobs |
+| `joinData` | `(blobs: BrandedBlob[]) => Effect<Uint8Array, BlobError>` | Join blobs into data |
+| `toCommitment` | `(blob: BrandedBlob) => Effect<Commitment, KZGError, KZGService>` | Compute KZG commitment |
+| `toProof` | `(blob, commitment) => Effect<Proof, KZGError, KZGService>` | Compute KZG proof |
+| `toVersionedHash` | `(commitment: Commitment) => Effect<VersionedHash, InvalidCommitmentSizeError>` | Create versioned hash |
+| `verify` | `(blob, commitment, proof) => Effect<boolean, KZGError, KZGService>` | Verify KZG proof |
+| `verifyBatch` | `(blobs, commitments, proofs) => Effect<boolean, BlobError>` | Batch verify (not implemented) |
+
+### Errors
+
+| Error | Description |
+|-------|-------------|
+| `InvalidBlobSizeError` | Blob is not exactly 131072 bytes |
+| `InvalidBlobDataSizeError` | Data exceeds max blob capacity |
+| `InvalidBlobCountError` | Blob count exceeds max per transaction |
+| `InvalidBlobLengthPrefixError` | Length prefix in blob is invalid |
+| `InvalidCommitmentSizeError` | Commitment is not 48 bytes |
+| `InvalidProofSizeError` | Proof is not 48 bytes |
+| `BlobArrayLengthMismatchError` | Arrays have different lengths |
+| `BlobNotImplementedError` | Operation not implemented |
+
+128KB data blobs for rollup data availability per EIP-4844.

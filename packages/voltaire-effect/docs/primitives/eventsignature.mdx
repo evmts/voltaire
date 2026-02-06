@@ -1,0 +1,47 @@
+---
+title: EventSignature
+description: 32-byte keccak256 event topic hash
+---
+
+```typescript
+import * as EventSignature from 'voltaire-effect/EventSignature'
+import { Effect } from 'effect'
+
+// From event signature string (computes keccak256)
+const sig = yield* EventSignature.fromSignature('Transfer(address,address,uint256)')
+// => 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+
+// From raw hex
+const sig2 = yield* EventSignature.fromHex('0xddf252ad...')
+
+// From bytes
+const sig3 = yield* EventSignature.from(topicBytes)
+```
+
+## Functions
+
+| Function | Description |
+|----------|-------------|
+| `fromSignature(str)` | Hash event signature to topic |
+| `fromHex(hex)` | Parse 32-byte hex topic |
+| `from(bytes)` | From Uint8Array |
+| `toHex(sig)` | Convert to hex string |
+| `equals(a, b)` | Compare two signatures |
+
+## Identifying Events
+
+```typescript
+const transfer = yield* EventSignature.fromSignature('Transfer(address,address,uint256)')
+const approval = yield* EventSignature.fromSignature('Approval(address,address,uint256)')
+
+const isTransfer = yield* EventSignature.equals(log.topics[0], transfer)
+```
+
+## Building Filters
+
+```typescript
+const transferSig = yield* EventSignature.fromSignature('Transfer(address,address,uint256)')
+const topicHex = yield* EventSignature.toHex(transferSig)
+
+const filter = { address: contractAddress, topics: [topicHex] }
+```

@@ -1,0 +1,139 @@
+---
+title: Data-First API
+description: Functional composition with Ethereum primitives
+---
+
+Voltaire represents Ethereum concepts as the simplest data type - a branded `Uint8Array`. This aligns with Effect's data-first design.
+
+## The Pattern
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+
+// addr is a Uint8Array - use with Voltaire functions
+import * as A from '@tevm/voltaire/Address'
+
+A.toHex(addr)        // "0x742d35cc..."
+A.isZero(addr)       // false
+A.equals(addr, addr) // true
+```
+
+Data as the first argument enables composition with `pipe`:
+
+```typescript
+import { pipe } from 'effect'
+import * as A from '@tevm/voltaire/Address'
+
+pipe(
+  addr,
+  A.toHex,
+  (hex) => hex.toUpperCase()
+)
+```
+
+## Why Data-First?
+
+**Interoperability** - Pass to any function expecting `Uint8Array`:
+
+```typescript
+crypto.subtle.digest('SHA-256', addr)
+Buffer.from(addr)
+new DataView(addr.buffer)
+```
+
+**Composability** - Chain operations with `pipe`:
+
+```typescript
+import { pipe } from 'effect'
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+
+const program = pipe(
+  S.decode(Address.Hex)(input),
+  Effect.map(A.toHex),
+  Effect.map(hex => hex.toLowerCase())
+)
+```
+
+**Predictability** - What you see is what you get. No hidden wrapper state.
+
+## Static Methods
+
+Voltaire functions take data as the first argument:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+// Data-first - works with pipe
+Address.toHex(addr)
+Address.equals(addr1, addr2)
+Address.isZero(addr)
+```
+
+## Effect Integration
+
+Effect's `pipe` and `Effect.map` work naturally with data-first functions:
+
+```typescript
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as A from '@tevm/voltaire/Address'
+
+const program = Effect.gen(function* () {
+  const addr = yield* S.decode(Address.Hex)(input)
+  const hex = A.toHex(addr)
+  return hex
+})
+```
+
+Or with `pipe`:
+
+```typescript
+S.decode(Address.Hex)(input).pipe(
+  Effect.map(A.toHex),
+  Effect.map(hex => `Address: ${hex}`)
+)
+```
+
+## FiberRef Helpers
+
+Per-request configuration helpers compose with pipe:
+
+```typescript
+import { getBalance, getBlock, getTransactionReceipt, withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+import * as Schedule from 'effect/Schedule'
+
+// Timeout uses Effect Duration format
+getBalance(addr).pipe(
+  withTimeout("5 seconds")
+)
+
+// Retry uses Effect Schedule
+getBlock({ blockNumber }).pipe(
+  withRetrySchedule(
+    Schedule.exponential("500 millis").pipe(
+      Schedule.jittered,
+      Schedule.recurs(5)
+    )
+  )
+)
+
+// Compose multiple overrides
+getTransactionReceipt(hash).pipe(
+  withTimeout("10 seconds"),
+  withRetrySchedule(Schedule.recurs(3)),
+  withoutCache
+)
+```
+
+## See Also
+
+- [Voltaire Data-First](https://voltaire.tevm.sh/concepts/data-first) — Core data-first documentation
+- [Branded Types](/concepts/branded-types) — How types are branded
+- [Effect Pipe](https://effect.website/docs/getting-started/building-pipelines/) — Building pipelines with Effect
+- [Effect Getting Started](https://effect.website/docs/getting-started/introduction/) — Introduction to Effect.ts
+- [Address Primitive](/primitives/address) — Example of data-first primitive

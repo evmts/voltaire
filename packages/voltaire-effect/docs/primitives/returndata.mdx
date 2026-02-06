@@ -1,0 +1,28 @@
+---
+title: ReturnData
+description: Data returned from EVM contract calls
+---
+
+Branded `Uint8Array` for EVM execution output.
+
+## Schema
+
+```typescript
+import * as ReturnData from 'voltaire-effect/primitives/ReturnData'
+import * as Schema from 'effect/Schema'
+
+const data = Schema.decodeSync(ReturnData.Hex)('0xabcd1234')
+```
+
+## Effect
+
+```typescript
+import * as ReturnData from 'voltaire-effect/primitives/ReturnData'
+import { Effect } from 'effect'
+
+const program = ReturnData.from('0xabcd1234')
+// Effect.Effect<ReturnDataType, ReturnDataError>
+
+const data = Effect.runSync(program)
+const fromBytes = ReturnData.fromBytes(new Uint8Array([0xab, 0xcd]))
+```

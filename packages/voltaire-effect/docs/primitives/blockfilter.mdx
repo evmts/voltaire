@@ -1,0 +1,21 @@
+---
+title: BlockFilter
+description: Block filter for eth_newBlockFilter polling
+---
+
+```typescript
+import * as BlockFilter from 'voltaire-effect/primitives/BlockFilter'
+import * as FilterId from 'voltaire-effect/primitives/FilterId'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema validation
+const filter = Schema.decodeSync(BlockFilter.JSON)(filterData)
+// { filterId: string, type: 'block' }
+
+// Effect constructor
+const program = Effect.gen(function* () {
+  const filterId = yield* FilterId.from('0x1')
+  return yield* BlockFilter.from(filterId)
+})
+```

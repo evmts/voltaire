@@ -1,0 +1,49 @@
+---
+title: ChaCha20-Poly1305
+description: Fast authenticated encryption without AES hardware
+---
+
+AEAD cipher optimized for software. Preferred when AES-NI unavailable.
+
+```typescript
+import { ChaCha20Poly1305Service, ChaCha20Poly1305Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const chacha = yield* ChaCha20Poly1305Service
+    const key = yield* chacha.generateKey()      // 32 bytes
+    const nonce = yield* chacha.generateNonce()  // 12 bytes
+    const ciphertext = yield* chacha.encrypt(plaintext, key, nonce)
+    const decrypted = yield* chacha.decrypt(ciphertext, key, nonce)
+    return decrypted
+  }).pipe(Effect.provide(ChaCha20Poly1305Live))
+)
+```
+
+## ChaCha20-Poly1305 vs AES-GCM
+
+| Feature | ChaCha20-Poly1305 | AES-GCM |
+|---------|-------------------|---------|
+| Hardware accel | No | Yes (AES-NI) |
+| Software speed | Faster | Slower |
+| Use case | Mobile, embedded | Desktop, server |
+
+## Testing
+
+```typescript
+import { ChaCha20Poly1305Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(ChaCha20Poly1305Test))
+// Zero-filled keys/nonces/ciphertext
+```
+
+## Interface
+
+```typescript
+interface ChaCha20Poly1305ServiceShape {
+  readonly encrypt: (plaintext: Uint8Array, key: Uint8Array, nonce: Uint8Array, additionalData?: Uint8Array) => Effect.Effect<Uint8Array>
+  readonly decrypt: (ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array, additionalData?: Uint8Array) => Effect.Effect<Uint8Array>
+  readonly generateKey: () => Effect.Effect<Uint8Array>
+  readonly generateNonce: () => Effect.Effect<Uint8Array>
+}
+```

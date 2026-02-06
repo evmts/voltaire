@@ -1,0 +1,226 @@
+---
+title: HD Wallet Integration
+description: Use BIP-39 mnemonics with voltaire-effect AccountService
+---
+
+<Warning>
+**Native FFI Required**: HD Wallet functionality requires native FFI and only works when running in a native environment (Node.js/Bun with FFI support). The WASM bundle does not support HD wallet operations.
+</Warning>
+
+## Overview
+
+Voltaire core provides full HD wallet support for deterministic key derivation:
+- **Bip39**: Mnemonic generation and validation
+- **HDWallet**: BIP-32/BIP-44 key derivation
+
+Voltaire-effect provides the `MnemonicAccount` helper to integrate these with `AccountService`.
+
+## MnemonicAccount Helper
+
+The `MnemonicAccount` function creates an account layer from a BIP-39 mnemonic:
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { AccountService } from 'voltaire-effect'
+import { MnemonicAccount } from 'voltaire-effect/native'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const mnemonic = "test test test test test test test test test test test junk";
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const AccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  console.log('Address:', account.address)
+  const signature = yield* account.signMessage(messageHex)
+  return signature
+})
+
+// Provide composed layer once
+await Effect.runPromise(program.pipe(Effect.provide(AccountLayer)))
+```
+
+## Derivation Options
+
+Derive different accounts using BIP-44 path `m/44'/60'/{account}'/0/{index}`:
+
+```typescript
+// Default: m/44'/60'/0'/0/0
+const account0 = MnemonicAccount(mnemonic)
+
+// Second address: m/44'/60'/0'/0/1
+const address1 = MnemonicAccount(mnemonic, { index: 1 })
+
+// Second account: m/44'/60'/1'/0/0
+const account1 = MnemonicAccount(mnemonic, { account: 1 })
+
+// With passphrase (additional entropy)
+const hardened = MnemonicAccount(mnemonic, { passphrase: "my secret" })
+```
+
+## Manual HD Wallet Usage
+
+For more control, use the core HDWallet module directly:
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { Bip39, HDWallet, Hex } from '@tevm/voltaire/native'
+import { LocalAccount, AccountService } from 'voltaire-effect'
+
+const createAccountFromMnemonic = (
+  mnemonic: string,
+  accountIndex = 0,
+  addressIndex = 0
+) => Effect.gen(function* () {
+  // Validate mnemonic
+  if (!Bip39.validateMnemonic(mnemonic)) {
+    return yield* Effect.fail(new Error('Invalid mnemonic'))
+  }
+  
+  // Derive seed and key
+  const seed = yield* Effect.promise(() => Bip39.mnemonicToSeed(mnemonic))
+  const root = HDWallet.fromSeed(seed)
+  const account = HDWallet.deriveEthereum(root, accountIndex, addressIndex)
+  const privateKey = HDWallet.getPrivateKey(account)
+  
+  if (!privateKey) {
+    return yield* Effect.fail(new Error('Failed to derive private key'))
+  }
+  
+  // Return as Layer
+  return LocalAccount(Hex.fromBytes(privateKey))
+})
+
+// Usage
+const program = Effect.gen(function* () {
+  const mnemonic = "test test test test test test test test test test test junk"
+  const accountLayer = yield* createAccountFromMnemonic(mnemonic, 0, 0)
+  
+  // Use the layer...
+})
+```
+
+## Custom Derivation Paths
+
+For non-Ethereum paths, use `derivePath`:
+
+```typescript
+import { Bip39, HDWallet } from '@tevm/voltaire/native'
+
+const seed = await Bip39.mnemonicToSeed(mnemonic)
+const root = HDWallet.fromSeed(seed)
+
+// Custom path
+const account = HDWallet.derivePath(root, "m/44'/60'/0'/0/0")
+
+// Bitcoin path
+const btcAccount = HDWallet.deriveBitcoin(root, 0, 0)
+```
+
+## Generate New Mnemonic
+
+```typescript
+import { Bip39 } from '@tevm/voltaire/native'
+
+// 12 words (128 bits entropy)
+const mnemonic12 = Bip39.generateMnemonic(128)
+
+// 24 words (256 bits entropy) - recommended
+const mnemonic24 = Bip39.generateMnemonic(256)
+
+// Validate
+console.log(Bip39.validateMnemonic(mnemonic24)) // true
+```
+
+## With Transaction Signing
+
+```typescript
+import { Effect, Layer } from 'effect'
+import {
+  SignerService,
+  Signer,
+  Provider,
+  HttpTransport
+} from 'voltaire-effect'
+import { MnemonicAccount } from 'voltaire-effect/native'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+
+const mnemonic = process.env.MNEMONIC!
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const AccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
+
+const DepsLayer = Layer.mergeAll(AccountLayer, ProviderLayer)
+const SignerLayer = Signer.Live.pipe(Layer.provide(DepsLayer))
+
+const program = Effect.gen(function* () {
+  const signer = yield* SignerService
+  return yield* signer.sendTransaction({
+    to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    value: 1000000000000000000n
+  })
+}).pipe(Effect.provide(SignerLayer))
+```
+
+## Security Considerations
+
+<Warning>
+**Never hardcode mnemonics** in source code. Use environment variables or secure key management.
+</Warning>
+
+- Mnemonics provide full control over all derived accounts
+- Use passphrases for additional security
+- Consider hardware wallets for production user funds
+- Server-side: use environment variables or secrets management
+- Client-side: prefer browser wallets (MetaMask, etc.)
+
+## API Reference
+
+### MnemonicAccount
+
+```typescript
+function MnemonicAccount(
+  mnemonic: string,
+  options?: {
+    account?: number    // BIP-44 account index (default: 0)
+    index?: number      // BIP-44 address index (default: 0)
+    passphrase?: string // BIP-39 passphrase (default: "")
+  }
+): Layer.Layer<AccountService, Error, Secp256k1Service | KeccakService>
+```
+
+### Bip39 Functions
+
+| Function | Description |
+|----------|-------------|
+| `generateMnemonic(bits)` | Generate new mnemonic (128-256 bits) |
+| `validateMnemonic(mnemonic)` | Check if mnemonic is valid |
+| `mnemonicToSeed(mnemonic, passphrase?)` | Derive 64-byte seed (async) |
+| `mnemonicToSeedSync(mnemonic, passphrase?)` | Derive 64-byte seed (sync) |
+
+### HDWallet Functions
+
+| Function | Description |
+|----------|-------------|
+| `fromSeed(seed)` | Create root key from seed |
+| `derivePath(root, path)` | Derive key using BIP-32 path |
+| `deriveEthereum(root, account, index)` | Derive Ethereum key (BIP-44) |
+| `deriveBitcoin(root, account, index)` | Derive Bitcoin key (BIP-44) |
+| `getPrivateKey(key)` | Get 32-byte private key |
+| `getPublicKey(key)` | Get 33-byte compressed public key |
+
+## See Also
+
+- [Wallet Creation Example](/examples/wallet-creation) — Generate and restore wallets
+- [Account Service](/services/account) — Low-level signing operations
+- [Signer Service](/services/signer) — Transaction signing with auto-fill
+- [BIP-39](/crypto/bip39) — Mnemonic crypto service
+- [HDWallet](/crypto/hdwallet) — HD wallet crypto service
+- [Voltaire HDWallet](https://voltaire.tevm.sh/crypto/hdwallet) — Core HDWallet documentation
+- [BIP-39 Specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) — Mnemonic standard
+- [BIP-44 Specification](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) — Derivation paths

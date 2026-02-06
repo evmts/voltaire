@@ -1,0 +1,22 @@
+---
+title: StorageValue
+description: 32-byte EVM storage slot values
+---
+
+```typescript
+import { StorageValue } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+const value = yield* StorageValue.from('0x0000...0064')
+const fromBigInt = yield* StorageValue.fromBigInt(100n)
+const zero = StorageValue.zero()  // 32 zero bytes
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(input) => Effect<StorageValueType, InvalidLengthError>` |
+| `fromBigInt` | `(n) => Effect<StorageValueType, Error>` |
+| `zero` | `() => StorageValueType` (sync) |
+| `StorageValueSchema` | Accepts hex string, Uint8Array, bigint, number |

@@ -1,0 +1,129 @@
+---
+title: SHA256
+description: Standard SHA-256 hashing
+---
+
+SHA-256 for Bitcoin-style operations, merkle trees, and general cryptographic use.
+
+```typescript
+import { SHA256Service, SHA256Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const hash = await Effect.runPromise(
+  Effect.gen(function* () {
+    const sha256 = yield* SHA256Service
+    return yield* sha256.hash(new Uint8Array([1, 2, 3]))
+  }).pipe(Effect.provide(SHA256Live))
+)
+// SHA256Hash (32 bytes)
+```
+
+## Hash String
+
+```typescript
+const hashString = (input: string) =>
+  Effect.gen(function* () {
+    const sha256 = yield* SHA256Service
+    const bytes = new TextEncoder().encode(input)
+    return yield* sha256.hash(bytes)
+  }).pipe(Effect.provide(SHA256Live))
+
+await Effect.runPromise(hashString('hello world'))
+```
+
+## Double SHA256 (Bitcoin)
+
+Bitcoin uses double SHA256 for transaction and block hashes:
+
+```typescript
+const doubleSha256 = (data: Uint8Array) =>
+  Effect.gen(function* () {
+    const sha256 = yield* SHA256Service
+    const first = yield* sha256.hash(data)
+    return yield* sha256.hash(first)
+  }).pipe(Effect.provide(SHA256Live))
+```
+
+## Merkle Root
+
+Build a merkle tree for transaction verification:
+
+```typescript
+const computeMerkleRoot = (hashes: Uint8Array[]): Effect.Effect<Uint8Array, never, SHA256Service> =>
+  Effect.gen(function* () {
+    const sha256 = yield* SHA256Service
+
+    if (hashes.length === 0) return new Uint8Array(32)
+    if (hashes.length === 1) return hashes[0]!
+
+    // Duplicate last hash if odd number
+    if (hashes.length % 2 === 1) {
+      hashes.push(hashes[hashes.length - 1]!)
+    }
+
+    const nextLevel: Uint8Array[] = []
+    for (let i = 0; i < hashes.length; i += 2) {
+      const combined = new Uint8Array(64)
+      combined.set(hashes[i]!, 0)
+      combined.set(hashes[i + 1]!, 32)
+      nextLevel.push(yield* sha256.hash(combined))
+    }
+
+    return yield* computeMerkleRoot(nextLevel)
+  })
+
+// Provide layer once at the call site
+const merkleRoot = await Effect.runPromise(
+  computeMerkleRoot(txHashes).pipe(Effect.provide(SHA256Live))
+)
+```
+
+## HMAC-SHA256
+
+For keyed message authentication, use the HMAC service:
+
+```typescript
+import { HMACService, HMACLive } from 'voltaire-effect/crypto'
+
+const hmac = Effect.gen(function* () {
+  const hmacService = yield* HMACService
+  return yield* hmacService.sha256(key, message)
+}).pipe(Effect.provide(HMACLive))
+```
+
+## Testing
+
+```typescript
+import { SHA256Test } from 'voltaire-effect/crypto'
+
+myProgram.pipe(Effect.provide(SHA256Test))
+// Returns zero-filled 32-byte hash
+```
+
+## With CryptoLive Bundle
+
+```typescript
+import { CryptoLive, SHA256Service } from 'voltaire-effect/crypto'
+
+const program = Effect.gen(function* () {
+  const sha256 = yield* SHA256Service
+  return yield* sha256.hash(data)
+}).pipe(Effect.provide(CryptoLive))
+```
+
+## Interface
+
+```typescript
+interface SHA256ServiceShape {
+  readonly hash: (data: Uint8Array) => Effect.Effect<SHA256Hash>
+}
+
+// SHA256Hash is a branded 32-byte Uint8Array
+type SHA256Hash = Uint8Array & { readonly __brand: 'SHA256Hash' }
+```
+
+## Related
+
+- [Keccak256](/crypto/keccak256) - Ethereum's hash function
+- [Blake2](/crypto/blake2) - High-performance hashing
+- [HMAC](/crypto/hmac) - Keyed-hash message authentication

@@ -1,0 +1,35 @@
+---
+title: Opcode
+description: EVM instruction opcode (0x00-0xFF)
+---
+
+Single-byte EVM instruction (STOP, ADD, PUSH, CALL, etc.).
+
+```typescript
+import * as Opcode from 'voltaire-effect/primitives/Opcode'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const stop = Schema.decodeSync(Opcode.Number)(0x00)  // STOP
+const add = Schema.decodeSync(Opcode.Number)(0x01)   // ADD
+const push1 = Schema.decodeSync(Opcode.Number)(0x60) // PUSH1
+
+// Effect
+const program = Opcode.from(0x01) // ADD
+// Effect.Effect<OpcodeType, OpcodeError>
+```
+
+## Common Opcodes
+
+| Opcode | Value |
+|--------|-------|
+| STOP | 0x00 |
+| ADD | 0x01 |
+| MUL | 0x02 |
+| PUSH1 | 0x60 |
+| CALL | 0xf1 |
+| RETURN | 0xf3 |
+| REVERT | 0xfd |
+
+Fails on values outside 0x00-0xFF.

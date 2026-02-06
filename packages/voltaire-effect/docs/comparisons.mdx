@@ -1,0 +1,167 @@
+---
+title: Comparisons
+description: voltaire-effect vs viem, ethers, and base Voltaire
+---
+
+## voltaire-effect vs Base Voltaire
+
+Both use the same branded types and crypto from [Voltaire](https://voltaire.tevm.sh). The difference is error handling and composition.
+
+| Aspect | Base Voltaire | voltaire-effect |
+|--------|---------------|-----------------|
+| Errors | Exceptions | Typed `ParseError` |
+| Dependencies | Explicit passing | Service injection |
+| Composition | Manual | `pipe`, `Effect.gen` |
+| Testing | Mock imports | Swap layers |
+| Bundle size | Smaller | Effect runtime (~15KB) |
+
+**Use base Voltaire when:**
+- Bundle size is critical
+- Simple validation without chaining
+- You prefer exceptions
+
+**Use voltaire-effect when:**
+- You want typed errors
+- Building complex workflows
+- Need testable service dependencies
+- Already using Effect
+
+## voltaire-effect vs viem
+
+viem uses branded strings. voltaire-effect uses branded `Uint8Array` with Effect schemas.
+
+```typescript
+// viem
+import { getAddress, isAddress } from 'viem'
+
+const addr = getAddress('0x742d...')  // string
+isAddress(addr)                        // boolean
+
+// voltaire-effect
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+const addr = S.decodeSync(Address.Hex)('0x742d...')  // Uint8Array
+```
+
+| Aspect | viem | voltaire-effect |
+|--------|------|-----------------|
+| Type | Branded string | Branded Uint8Array |
+| Error handling | Throws | Effect `ParseError` |
+| Validation | Runtime functions | Schema decode |
+| Bundle | ~50KB | Voltaire + Effect |
+
+## voltaire-effect vs ethers
+
+ethers v6 uses classes. voltaire-effect uses data + functions.
+
+```typescript
+// ethers
+import { getAddress } from 'ethers'
+
+const addr = getAddress('0x742d...')  // string
+
+// voltaire-effect
+const addr = S.decodeSync(Address.Hex)('0x742d...')
+```
+
+| Aspect | ethers | voltaire-effect |
+|--------|--------|-----------------|
+| Style | OOP | Functional |
+| Type | string | Branded Uint8Array |
+| Error handling | Throws | Effect `ParseError` |
+| Provider | Class instance | Service layer |
+
+## Code Comparison
+
+### Validate Address
+
+```typescript
+// viem
+import { isAddress, getAddress } from 'viem'
+
+if (isAddress(input)) {
+  const addr = getAddress(input)
+}
+
+// ethers
+import { isAddress, getAddress } from 'ethers'
+
+if (isAddress(input)) {
+  const addr = getAddress(input)
+}
+
+// voltaire-effect
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+
+const result = S.decodeEither(Address.Hex)(input)
+// Either<AddressType, ParseError>
+```
+
+### Provider Call
+
+```typescript
+// viem
+import { createPublicClient, http } from 'viem'
+
+const client = createPublicClient({ transport: http(url) })
+const balance = await client.getBalance({ address })
+
+// ethers
+import { JsonRpcProvider } from 'ethers'
+
+const provider = new JsonRpcProvider(url)
+const balance = await provider.getBalance(address)
+
+// voltaire-effect
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  return yield* getBalance(addr)
+})
+
+const MainLayer = Provider.pipe(Layer.provide(HttpTransport(url)))
+const balance = await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
+```
+
+### Error Handling
+
+```typescript
+// viem/ethers - unknown error type
+try {
+  const addr = getAddress(input)
+} catch (e) {
+  // e is unknown
+}
+
+// voltaire-effect - typed error
+S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag("ParseError", (e) => {
+    // e is ParseError with message, issue tree
+    return Effect.succeed(fallback)
+  })
+)
+```
+
+## When to Use What
+
+| Use Case | Recommendation |
+|----------|----------------|
+| Small script, simple validation | [Base Voltaire](https://voltaire.tevm.sh) or [viem](https://viem.sh) |
+| Complex dApp with typed errors | voltaire-effect |
+| Existing [Effect](https://effect.website) codebase | voltaire-effect |
+| Bundle size critical | [Base Voltaire](https://voltaire.tevm.sh) |
+| Need testable services | voltaire-effect |
+
+## See Also
+
+- [Why voltaire-effect?](/why) — Trade-offs and benefits
+- [Migrating from viem](/guides/migrating-from-viem) — Step-by-step migration guide
+- [Migrating from ethers](/guides/migrating-from-ethers) — Step-by-step migration guide
+- [Effect Documentation](https://effect.website/docs/getting-started/introduction/) — Learn Effect.ts
+- [viem Documentation](https://viem.sh) — viem reference
+- [ethers.js Documentation](https://docs.ethers.org) — ethers.js reference
+- [Voltaire Docs](https://voltaire.tevm.sh) — Core Voltaire documentation

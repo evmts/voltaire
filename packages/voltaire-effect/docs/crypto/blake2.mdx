@@ -1,0 +1,36 @@
+---
+title: Blake2
+description: Blake2b hashing with configurable output
+---
+
+Blake2b with variable output length. Used in various protocols and the EVM BLAKE2F precompile.
+
+```typescript
+import { Blake2Service, Blake2Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const blake2 = yield* Blake2Service
+    const hash64 = yield* blake2.hash(data)           // 64 bytes default
+    const hash32 = yield* blake2.hash(data, 32)       // 32 bytes
+    return { hash64, hash32 }
+  }).pipe(Effect.provide(Blake2Live))
+)
+```
+
+## Testing
+
+```typescript
+import { Blake2Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(Blake2Test))
+// Returns zero-filled array of requested length
+```
+
+## Interface
+
+```typescript
+interface Blake2ServiceShape {
+  readonly hash: (data: Uint8Array, outputLength?: number) => Effect.Effect<Blake2Hash>
+}
+```

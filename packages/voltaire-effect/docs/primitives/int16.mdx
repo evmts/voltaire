@@ -1,0 +1,35 @@
+---
+title: Int16
+description: Signed 16-bit integer (-32768 to 32767)
+---
+
+Signed 16-bit integer with overflow checking.
+
+```typescript
+import * as Int16 from 'voltaire-effect/primitives/Int16'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const value = Schema.decodeSync(Int16.Number)(1000)
+const negative = Schema.decodeSync(Int16.String)('-5000')
+
+// Arithmetic
+const program = Effect.gen(function* () {
+  const a = yield* Int16.from(1000)
+  const b = yield* Int16.from(500)
+  return yield* Int16.plus(a, b) // 1500
+})
+```
+
+## API
+
+| Function | Returns |
+|----------|---------|
+| `toNumber(v)` | number |
+| `toHex(v)` | hex string |
+| `equals(a, b)` | boolean |
+
+## Constants
+
+`INT16_MIN = -32768`, `INT16_MAX = 32767`

@@ -1,0 +1,31 @@
+---
+title: EncodedData
+description: ABI-encoded data as hex string or bytes
+---
+
+Raw ABI-encoded data before decoding.
+
+## Schema
+
+```typescript
+import * as EncodedData from 'voltaire-effect/EncodedData'
+import * as Schema from 'effect/Schema'
+
+const data = Schema.decodeSync(EncodedData.EncodedDataSchema)(
+  '0xa9059cbb000000000000000000000000...'
+)
+```
+
+## Effect
+
+```typescript
+import * as EncodedData from 'voltaire-effect/EncodedData'
+import { Effect } from 'effect'
+
+const program = EncodedData.from('0xa9059cbb...')
+// Effect.Effect<EncodedDataType, EncodedDataError>
+
+const encoded = Effect.runSync(program)
+const bytes = Effect.runSync(EncodedData.toBytes(encoded))
+const isEqual = Effect.runSync(EncodedData.equals(data1, data2))
+```

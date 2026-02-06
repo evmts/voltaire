@@ -1,0 +1,58 @@
+---
+title: TypedData
+description: EIP-712 structured data validation
+---
+
+```typescript
+import * as TypedData from 'voltaire-effect/primitives/TypedData'
+import { Effect } from 'effect'
+import * as S from 'effect/Schema'
+
+const typedData = S.decodeSync(TypedData.TypedDataSchema)({
+  types: {
+    EIP712Domain: [{ name: 'name', type: 'string' }],
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' }
+    ]
+  },
+  primaryType: 'Person',
+  domain: { name: 'My App' },
+  message: { name: 'Bob', wallet: '0x...' }
+})
+```
+
+## Effect API
+
+```typescript
+const permit = Effect.runSync(TypedData.from({
+  types: {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    Permit: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' }
+    ]
+  },
+  primaryType: 'Permit',
+  domain: {
+    name: 'USDC',
+    chainId: 1,
+    verifyingContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+  },
+  message: { owner: '0x...', spender: '0x...', value: '1000000' }
+}))
+```
+
+## Errors
+
+```typescript
+const result = await Effect.runPromiseExit(
+  TypedData.from({ types: {}, primaryType: 'X', domain: {}, message: {} })
+)
+// TypedDataError (missing EIP712Domain)
+```

@@ -1,0 +1,34 @@
+---
+title: DecodedData
+description: Decoded ABI data with values and type information
+---
+
+Pairs decoded values with their ABI type strings.
+
+## Schema
+
+```typescript
+import * as DecodedData from 'voltaire-effect/DecodedData'
+import * as Schema from 'effect/Schema'
+
+const decoded = Schema.decodeSync(DecodedData.DecodedDataSchema)({
+  values: [100n, '0x1234567890123456789012345678901234567890'],
+  types: ['uint256', 'address']
+})
+```
+
+## Effect
+
+```typescript
+import * as DecodedData from 'voltaire-effect/DecodedData'
+import { Effect } from 'effect'
+
+const program = DecodedData.from(
+  [100n, '0x1234...'],
+  ['uint256', 'address']
+)
+// Effect.Effect<DecodedDataType, DecodedDataError>
+
+const decoded = Effect.runSync(program)
+console.log(decoded.values, decoded.types)
+```

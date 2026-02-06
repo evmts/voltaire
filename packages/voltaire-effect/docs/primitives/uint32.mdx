@@ -1,0 +1,32 @@
+---
+title: Uint32
+description: 32-bit unsigned integer (0-4294967295)
+---
+
+32-bit unsigned integer with overflow checking.
+
+```typescript
+import * as Uint32 from 'voltaire-effect/primitives/Uint32'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema: number, bigint, or string
+const value = Schema.decodeSync(Uint32.Number)(4294967295)
+
+// Effect with arithmetic
+const a = Effect.runSync(Uint32.from(2000000000))
+const b = Effect.runSync(Uint32.from(1000000000))
+const sum = Effect.runSync(Uint32.plus(a, b)) // 3000000000
+```
+
+## API
+
+| Function | Returns |
+|----------|---------|
+| `toNumber(v)` | number |
+| `toHex(v)` | hex string |
+| `equals(a, b)` | boolean |
+
+## Constants
+
+`MAX = 4294967295`, `MIN = 0`, `ZERO`, `ONE`

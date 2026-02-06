@@ -1,0 +1,43 @@
+---
+title: EffectiveGasPrice
+description: EIP-1559 effective gas price calculation
+---
+
+```typescript
+import * as EffectiveGasPrice from 'voltaire-effect/EffectiveGasPrice'
+import { Effect } from 'effect'
+
+// Create from wei
+const price = Effect.runSync(EffectiveGasPrice.from(30000000000n))
+
+// Create from gwei
+const priceGwei = Effect.runSync(EffectiveGasPrice.fromGwei(30n))
+
+// Calculate: min(baseFee + priorityFee, maxFeePerGas)
+const effective = Effect.runSync(EffectiveGasPrice.calculate(
+  20n * 10n**9n,  // baseFee: 20 gwei
+  2n * 10n**9n,   // priorityFee: 2 gwei
+  30n * 10n**9n   // maxFeePerGas: 30 gwei
+)) // → 22 gwei
+```
+
+## API
+
+| Function | Description |
+|----------|-------------|
+| `from(wei)` | Create from wei |
+| `fromGwei(gwei)` | Create from gwei |
+| `calculate(base, priority, max)` | EIP-1559 effective price |
+| `toGwei(price)` | Convert to gwei |
+| `equals(a, b)` | Check equality |
+| `compare(a, b)` | Compare (-1, 0, 1) |
+
+## Example
+
+```typescript
+const txCost = (baseFee: bigint, tip: bigint, maxFee: bigint, gas: bigint) =>
+  Effect.gen(function* () {
+    const price = yield* EffectiveGasPrice.calculate(baseFee, tip, maxFee)
+    return price * gas
+  })
+```

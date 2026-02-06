@@ -1,0 +1,29 @@
+```typescript
+import { Effect, Layer } from 'effect'
+import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
+
+// Compose layers once
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+
+const SignerLayer = Layer.mergeAll(
+  Signer.fromPrivateKey(privateKey, Provider),
+  CryptoLayer,
+  ProviderLayer
+)
+
+const program = Effect.gen(function* () {
+  const signer = yield* SignerService
+  return yield* signer.sendTransaction({
+    to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    value: 1000000000000000000n
+  })
+})
+
+await Effect.runPromise(program.pipe(Effect.provide(SignerLayer)))
+```

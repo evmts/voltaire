@@ -1,0 +1,36 @@
+---
+title: Uint8
+description: 8-bit unsigned integer (0-255)
+---
+
+8-bit unsigned integer with overflow checking.
+
+```typescript
+import * as Uint8 from 'voltaire-effect/primitives/Uint8'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const value = Schema.decodeSync(Uint8.Number)(255)
+
+// Effect
+const a = Effect.runSync(Uint8.from(100))
+const b = Effect.runSync(Uint8.from(50))
+
+// Arithmetic (checked)
+const sum = Effect.runSync(Uint8.plus(a, b))   // 150
+const diff = Effect.runSync(Uint8.minus(a, b)) // 50
+// Uint8.times(a, b) → Error: 5000 > 255
+```
+
+## API
+
+| Function | Returns |
+|----------|---------|
+| `toNumber(v)` | number |
+| `toHex(v)` | `'0xff'` |
+| `equals(a, b)` | boolean |
+
+## Constants
+
+`MAX = 255`, `MIN = 0`, `ZERO`, `ONE`

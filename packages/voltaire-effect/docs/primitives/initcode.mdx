@@ -1,0 +1,37 @@
+---
+title: InitCode
+description: Contract deployment bytecode (constructor + runtime code)
+---
+
+```typescript
+import * as InitCode from 'voltaire-effect/primitives/InitCode'
+import * as S from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema: hex or bytes → InitCodeType
+const initCode = S.decodeSync(InitCode.Hex)(
+  '0x608060405234801561001057600080fd5b50'
+)
+
+// Effect constructor
+const program = InitCode.from('0x608060405234801561001057600080fd5b50')
+const validated = Effect.runSync(program)
+
+// From bytes
+const bytes = new Uint8Array([0x60, 0x80, 0x60, 0x40])
+const fromBytes = Effect.runSync(InitCode.from(bytes))
+```
+
+## API
+
+| Function | Type |
+|----------|------|
+| `Schema` | `Schema<InitCodeType, string \| Uint8Array>` |
+| `from` | `(input: string \| Uint8Array) => Effect<InitCodeType, Error>` |
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(InitCode.from('invalid'))
+if (result._tag === 'Failure') console.error(result.cause)
+```

@@ -1,0 +1,39 @@
+---
+title: StateDiff
+description: Track account balance, nonce, and code changes
+---
+
+```typescript
+import { StateDiff, Address } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+const diff = yield* StateDiff.from(new Map([
+  [Address('0x...'), { 
+    balance: { from: 100n, to: 200n },
+    nonce: { from: 1n, to: 2n }
+  }]
+]))
+
+// Query
+const accountDiff = StateDiff.getAccount(diff, addressBytes)
+const addresses = StateDiff.getAddresses(diff)
+const empty = StateDiff.isEmpty(diff)
+```
+
+## Change Schemas
+
+```typescript
+BalanceChangeSchema  // { from: bigint, to: bigint }
+NonceChangeSchema    // { from: bigint, to: bigint }
+CodeChangeSchema     // { from: Uint8Array | null, to: Uint8Array | null }
+AccountDiffSchema    // { balance?, nonce?, code? }
+```
+
+## API
+
+| Function | Signature |
+|----------|-----------|
+| `from` | `(map) => Effect<StateDiffType, StateDiffError>` |
+| `getAccount` | `(diff, address) => AccountDiff \| undefined` |
+| `getAddresses` | `(diff) => Address[]` |
+| `isEmpty` | `(diff) => boolean` |

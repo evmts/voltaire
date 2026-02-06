@@ -1,0 +1,153 @@
+---
+title: Dependency Injection
+description: Services for crypto, providers, and wallets
+---
+
+Base Voltaire requires explicit dependency passing:
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+import { keccak256 } from '@tevm/voltaire/Keccak256'
+
+const addr = Address.from('0x742d...', { keccak256 })
+Address.toChecksummed(addr)  // needs keccak256
+```
+
+voltaire-effect uses Effect services instead. Dependencies are declared in the type, provided at the edge.
+
+## Services
+
+A service is a typed interface with an implementation:
+
+```typescript
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+import * as Effect from 'effect/Effect'
+
+// Program declares it needs KeccakService
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  return yield* keccak.hash(data)
+})
+// Effect<Uint8Array, never, KeccakService>
+
+// Provide at the edge
+Effect.runPromise(program.pipe(Effect.provide(KeccakLive)))
+```
+
+The type signature shows what's needed. The implementation is injected.
+
+## Schema with Services
+
+Some schemas require services. `Address.Checksummed` needs `KeccakService`:
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc...')
+
+// Encode to checksummed - needs KeccakService
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr).pipe(
+    Effect.provide(KeccakLive)
+  )
+)
+```
+
+## Available Services
+
+| Service | Live Implementation | Purpose |
+|---------|---------------------|---------|
+| `KeccakService` | `KeccakLive` | Keccak256 hashing |
+| `Secp256k1Service` | `Secp256k1Live` | ECDSA signing |
+| `ProviderService` | `Provider` | JSON-RPC calls |
+| `SignerService` | `Signer` | Transaction signing |
+| `TransportService` | `HttpTransport` | HTTP/WS transport |
+
+## Composing Layers
+
+Stack multiple services with `Layer.merge`:
+
+```typescript
+import * as Layer from 'effect/Layer'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+import { Secp256k1Live } from 'voltaire-effect/crypto/Secp256k1'
+
+const CryptoLive = Layer.merge(KeccakLive, Secp256k1Live)
+
+Effect.runPromise(program.pipe(Effect.provide(CryptoLive)))
+```
+
+## Testing
+
+Swap implementations for tests:
+
+```typescript
+import { getBlock, getBalance, ProviderService, Provider, HttpTransport } from 'voltaire-effect'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+
+// Production - use real provider
+const program = Effect.gen(function* () {
+  const balance = yield* getBalance(addr)
+  const block = yield* getBlock({ blockTag: "latest" })
+  return { balance, block }
+})
+
+const ProviderLive = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+Effect.provide(program, ProviderLive)
+
+// Test - mock provider
+const ProviderTest = Layer.succeed(ProviderService, {
+  request: (_method, _params) => Effect.succeed(mockResponse)
+})
+
+Effect.provide(program, ProviderTest)
+```
+
+Business logic unchanged. Only the provided layer differs.
+
+## Per-Request Configuration
+
+FiberRef-based helpers provide scoped overrides without changing services:
+
+```typescript
+import { getBalance, getBlockNumber, getBlock, withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
+import * as Schedule from 'effect/Schedule'
+
+// Default config from service
+const balance = yield* getBalance(addr)
+
+// Per-request overrides (scoped to this fiber only)
+const fastBalance = yield* getBalance(addr).pipe(
+  withTimeout("5 seconds"),
+  withRetrySchedule(Schedule.recurs(1))
+)
+
+// Disable cache for fresh data
+const fresh = yield* getBlockNumber().pipe(withoutCache)
+
+// Enable tracing for debugging
+const traced = yield* getBlock(123).pipe(withTracing(true))
+```
+
+## Why Services?
+
+**Tree-shaking** - Crypto not imported until provided. If you never use checksums, `KeccakLive` is not in your bundle.
+
+**Testability** - Swap `ProviderLive` for `ProviderTest` without changing code.
+
+**Explicit dependencies** - Type signature shows exactly what a program needs.
+
+**No globals** - No hidden singletons or ambient imports.
+
+## See Also
+
+- [Effect Services](https://effect.website/docs/requirements-management/services/)
+- [Layers](/layers)
+- [Provider Service](/services/provider)

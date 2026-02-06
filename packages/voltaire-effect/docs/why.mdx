@@ -1,0 +1,202 @@
+---
+title: Why voltaire-effect?
+description: The type system should track your RPC errors, not hide them
+---
+
+## The Problem
+
+Every Ethereum library throws. Call `getBalance()` and it might return a bigint, or throw a rate limit error, or throw a connection timeout, or throw a revert. TypeScript shows none of this:
+
+```typescript
+// What the type signature says
+function getBalance(address: string): Promise<bigint>
+
+// What actually happens at runtime
+// - RateLimitError
+// - ConnectionTimeoutError
+// - InvalidAddressError
+// - JsonRpcError
+// - NetworkError
+// - ...who knows what else
+```
+
+You're forced to write defensive code:
+
+```typescript
+try {
+  const balance = await provider.getBalance(addr)
+  // do something with balance
+} catch (e) {
+  // What is e? Could be anything.
+  if (e instanceof Error && e.message.includes('rate limit')) {
+    // retry?
+  } else if (e.message?.includes('timeout')) {
+    // fallback provider?
+  } else {
+    throw e // give up
+  }
+}
+```
+
+This gets worse. RPC providers fail. Nodes go down. Rate limits hit. Transactions reorg. Each failure mode needs different handling, but the type system gives you no help tracking them.
+
+## The Insight
+
+Use the type system to track errors explicitly.
+
+Instead of functions that throw, functions return values that describe what can go wrong. The compiler becomes your first line of defense.
+
+```typescript
+// Effect makes the error type visible
+function getBalance(address: AddressType): Effect<bigint, TransportError | ProviderResponseError>
+```
+
+Now TypeScript tells you: this can fail with `TransportError` or `ProviderResponseError`. Handle them or propagate them—the compiler tracks it.
+
+## The Solution
+
+voltaire-effect combines [Voltaire's](https://voltaire.tevm.sh) branded primitives with [Effect's](https://effect.website) typed errors:
+
+```typescript
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import { getBalance, MainnetLayer } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  // Decode with typed ParseError
+  const addr = yield* S.decode(Address.Hex)(input)
+
+  // RPC with typed TransportError | ProviderResponseError
+  const balance = yield* getBalance(addr)
+
+  return { addr, balance }
+})
+// Effect<{addr, balance}, ParseError | TransportError | ProviderResponseError, Provider>
+```
+
+Every error is tracked. Every dependency is explicit. The signature tells you exactly what can go wrong and what the function needs to run.
+
+## What You Get
+
+### Typed Errors
+
+Errors have a `_tag` discriminant. Pattern match exhaustively:
+
+```typescript
+program.pipe(
+  Effect.catchTags({
+    ParseError: (e) => Effect.succeed(defaultAddress),
+    TransportError: (e) => retryWithBackoff(program),
+    ProviderResponseError: (e) => useFallbackProvider(program),
+  })
+)
+```
+
+The compiler ensures you handle every case. Add a new error type and TypeScript tells you everywhere that needs updating.
+
+### Built-in Resilience
+
+Retry, timeout, fallback—no external libraries:
+
+```typescript
+import { Schedule, Duration } from 'effect'
+import { getBlockNumber } from 'voltaire-effect'
+
+getBlockNumber().pipe(
+  // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
+  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
+  // Fail after 10 seconds total
+  Effect.timeout(Duration.seconds(10)),
+  // Try backup provider (same call, different layer)
+  Effect.orElse(() =>
+    getBlockNumber().pipe(Effect.provide(FallbackProviderLayer))
+  )
+)
+```
+
+### Testable by Design
+
+Services are injected, not imported. Swap a live provider layer for a test layer without touching business logic:
+
+```typescript
+// Production: real RPC calls
+await Effect.runPromise(program.pipe(Effect.provide(MainnetLayer)))
+
+// Test: deterministic responses, no network
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
+```
+
+No mocking frameworks. No module interception. Different wiring, same code.
+
+### Schema Validation
+
+Decode at boundaries, trust internally. Schema decodes directly to Voltaire's branded types:
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as Uint from 'voltaire-effect/primitives/Uint'
+
+const TransferRequest = S.Struct({
+  to: Address.Hex,
+  value: Uint.Uint256,
+})
+
+// One decode: validates format AND returns branded types
+const req = S.decodeSync(TransferRequest)(userInput)
+// req.to is AddressType, req.value is Uint256Type
+```
+
+## Before/After
+
+```typescript
+// Before: exceptions, untyped errors, hard to test
+async function transfer(to: string, amount: string) {
+  try {
+    const addr = parseAddress(to)     // throws?
+    const value = parseBigInt(amount) // throws?
+    const tx = await signer.sendTransaction({ to: addr, value }) // throws?
+    const receipt = await tx.wait()   // throws?
+    return receipt
+  } catch (e) {
+    // What failed? How do we retry?
+    console.error('Transfer failed:', e)
+    throw e
+  }
+}
+
+// After: typed errors, composable, testable
+const transfer = (to: string, amount: string) =>
+  Effect.gen(function* () {
+    const addr = yield* S.decode(Address.Hex)(to)
+    const value = yield* S.decode(Uint.Uint256)(amount)
+    const signer = yield* Signer
+    const tx = yield* signer.sendTransaction({ to: addr, value })
+    const receipt = yield* tx.wait()
+    return receipt
+  })
+// Effect<Receipt, ParseError | SignerError | WaitForTransactionReceiptError, Signer>
+```
+
+## Trade-offs
+
+**voltaire-effect adds:**
+- ~15KB for Effect runtime
+- New mental model (Effect, services, layers, generators)
+- More verbose for simple one-off scripts
+
+**You get:**
+- Typed errors everywhere
+- Zero-cost retries, timeouts, concurrency
+- Swappable dependencies without mocking
+- Composable operations that short-circuit on failure
+- The compiler tracks what can go wrong
+
+Use [base Voltaire](https://voltaire.tevm.sh) for quick scripts. Use voltaire-effect when you want the type system working for you.
+
+## See Also
+
+- [Effect Primer](/concepts/effect-primer) — 5-minute Effect.ts crash course
+- [Comparisons](/comparisons) — How voltaire-effect compares to viem and ethers
+- [Error Handling](/concepts/error-handling) — Deep dive on typed errors
+- [Why Effect](https://effect.website/docs/getting-started/why-effect/) — Effect's own explanation

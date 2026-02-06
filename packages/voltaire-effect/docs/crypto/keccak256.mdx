@@ -1,0 +1,135 @@
+---
+title: Keccak256
+description: Ethereum's core hash function
+---
+
+[Keccak256](https://keccak.team/keccak.html) is Ethereum's primary hash function (distinct from [SHA-3](https://en.wikipedia.org/wiki/SHA-3)). Used for addresses, transaction hashes, state roots, event topics, and function selectors.
+
+```typescript
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const hash = await Effect.runPromise(
+  Effect.gen(function* () {
+    const keccak = yield* KeccakService
+    return yield* keccak.hash(new Uint8Array([1, 2, 3]))
+  }).pipe(Effect.provide(KeccakLive))
+)
+// Keccak256Hash (32 bytes)
+```
+
+## Hash String Data
+
+```typescript
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const hashString = (input: string) => Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const bytes = new TextEncoder().encode(input)
+  return yield* keccak.hash(bytes)
+}).pipe(Effect.provide(KeccakLive))
+
+await Effect.runPromise(hashString('hello'))
+```
+
+## Compute Function Selector
+
+```typescript
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const getFunctionSelector = (signature: string) => Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const bytes = new TextEncoder().encode(signature)
+  const hash = yield* keccak.hash(bytes)
+  return hash.slice(0, 4)  // First 4 bytes
+}).pipe(Effect.provide(KeccakLive))
+
+// transfer(address,uint256) → 0xa9059cbb
+await Effect.runPromise(getFunctionSelector('transfer(address,uint256)'))
+```
+
+## Compute Event Topic
+
+```typescript
+const getEventTopic = (signature: string) => Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  const bytes = new TextEncoder().encode(signature)
+  return yield* keccak.hash(bytes)  // Full 32 bytes
+}).pipe(Effect.provide(KeccakLive))
+
+// Transfer(address,address,uint256) → 0xddf252ad...
+await Effect.runPromise(getEventTopic('Transfer(address,address,uint256)'))
+```
+
+## Derive Address From Public Key
+
+```typescript
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto'
+import { Address } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+const publicKeyToAddress = (publicKey: Uint8Array) => Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  // Remove 0x04 prefix if present (uncompressed key)
+  const key = publicKey[0] === 0x04 ? publicKey.slice(1) : publicKey
+  const hash = yield* keccak.hash(key)
+  return Address.fromBytes(hash.slice(-20))
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Testing
+
+Use `KeccakTest` for deterministic hashes in unit tests:
+
+```typescript
+import { KeccakTest } from 'voltaire-effect/crypto'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  return yield* keccak.hash(new Uint8Array([1, 2, 3]))
+})
+
+// Returns zero-filled 32-byte hash
+await Effect.runPromise(program.pipe(Effect.provide(KeccakTest)))
+```
+
+## With CryptoLive Bundle
+
+`CryptoLive` bundles all crypto services:
+
+```typescript
+import { CryptoLive, KeccakService } from 'voltaire-effect/crypto'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  return yield* keccak.hash(data)
+}).pipe(Effect.provide(CryptoLive))
+```
+
+## Interface
+
+```typescript
+interface KeccakServiceShape {
+  readonly hash: (data: Uint8Array) => Effect.Effect<Keccak256Hash>
+}
+
+// Keccak256Hash is a branded 32-byte Uint8Array
+type Keccak256Hash = Uint8Array & { readonly __brand: 'Keccak256Hash' }
+```
+
+## Performance
+
+The underlying implementation uses assembly-optimized keccak for native execution and a pure Rust fallback for WASM. Typical throughput:
+
+- Native: ~1.5 GB/s
+- WASM: ~200 MB/s
+
+## Related
+
+- [SHA256](/crypto/sha256) — Standard SHA-256 hashing
+- [Blake2](/crypto/blake2) — Blake2b hashing
+- [Secp256k1](/crypto/secp256k1) — Uses Keccak256 for message hashing
+- [Address](/primitives/address) — Derive address from public key using Keccak256
+- [Voltaire Keccak256](https://voltaire.tevm.sh/crypto/keccak256) — Core Keccak256 documentation

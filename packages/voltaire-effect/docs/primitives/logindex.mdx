@@ -1,0 +1,23 @@
+---
+title: LogIndex
+description: Event log position within a transaction
+---
+
+```typescript
+import * as LogIndex from 'voltaire-effect/LogIndex'
+import { Effect } from 'effect'
+
+const idx = yield* LogIndex.from(0)
+const idx2 = yield* LogIndex.from(5n)  // from bigint
+```
+
+## Schema
+
+```typescript
+import { LogIndexSchema } from 'voltaire-effect/LogIndex'
+import * as S from 'effect/Schema'
+
+const idx = S.decodeSync(LogIndexSchema)(0)
+```
+
+Non-negative integers only. Negative values throw `LogIndexError`.

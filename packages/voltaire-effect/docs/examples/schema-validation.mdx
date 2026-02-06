@@ -1,0 +1,162 @@
+---
+title: Schema Validation
+description: Parse and validate Ethereum data
+---
+
+## Validate Address
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+```
+
+## Parse with Error Handling
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import { Either } from 'effect'
+
+const result = S.decodeEither(Address.Hex)('invalid-address')
+
+Either.match(result, {
+  onLeft: (error) => console.error('Invalid:', error),
+  onRight: (addr) => console.log('Valid:', addr)
+})
+```
+
+## Effect-Based Parsing
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const addr1 = yield* S.decode(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+  const addr2 = yield* S.decode(Address.Bytes)(new Uint8Array(20).fill(1))
+  return [addr1, addr2]
+})
+```
+
+## Checksum Encoding
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const addr = S.decodeSync(Address.Hex)('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
+)
+// "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+```
+
+## Round-Trip Conversion
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+const hex = S.encodeSync(Address.Hex)(addr)
+const roundTripped = S.decodeSync(Address.Hex)(hex)
+```
+
+## Hex Validation
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import * as S from 'effect/Schema'
+
+const hex = S.decodeSync(Hex.String)('0x1234abcd')
+```
+
+## Uint256 Validation
+
+```typescript
+import * as Uint from 'voltaire-effect/primitives/Uint'
+import * as S from 'effect/Schema'
+
+const value = S.decodeSync(Uint.Uint256)('1000000000000000000')
+const overflow = S.decodeEither(Uint.Uint256)((2n ** 256n).toString()) // Left (error)
+```
+
+## Transaction Validation
+
+```typescript
+import * as Transaction from 'voltaire-effect/primitives/Transaction'
+import * as S from 'effect/Schema'
+
+const tx = S.decodeSync(Transaction.EIP1559Schema)({
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+  value: 1000000000000000000n,
+  maxFeePerGas: 50000000000n,
+  maxPriorityFeePerGas: 2000000000n,
+  gasLimit: 21000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32)
+})
+```
+
+## Block Number Validation
+
+```typescript
+import * as Block from 'voltaire-effect/primitives/Block'
+import * as S from 'effect/Schema'
+
+const blockNum = S.decodeSync(Block.Number)('0x1234') // 4660n
+const latest = S.decodeSync(Block.Tag)('latest')
+```
+
+## Batch Validation
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as S from 'effect/Schema'
+import * as Effect from 'effect/Effect'
+
+const addresses = ['0x742d35...', '0xd8dA6B...', 'invalid', '0xBE0eB5...']
+
+const program = Effect.gen(function* () {
+  return yield* Effect.all(
+    addresses.map(addr =>
+      S.decode(Address.Hex)(addr).pipe(
+        Effect.map(a => ({ address: addr, valid: true, parsed: a })),
+        Effect.catchAll(() => Effect.succeed({ address: addr, valid: false, parsed: null }))
+      )
+    )
+  )
+})
+```
+
+## Custom Schema Composition
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as Uint from 'voltaire-effect/primitives/Uint'
+import * as S from 'effect/Schema'
+
+const TransferRequestSchema = S.Struct({
+  from: Address.Hex,
+  to: Address.Hex,
+  amount: Uint.Uint256,
+  memo: S.optional(S.String)
+})
+
+const request = S.decodeSync(TransferRequestSchema)({
+  from: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+  to: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  amount: '1000000000000000000'
+})
+```

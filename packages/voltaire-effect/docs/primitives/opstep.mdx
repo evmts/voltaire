@@ -1,0 +1,43 @@
+---
+title: OpStep
+description: EVM execution step tracing
+---
+
+```typescript
+import * as OpStep from 'voltaire-effect/primitives/OpStep'
+import { Effect } from 'effect'
+
+const step = Effect.runSync(OpStep.from({
+  pc: 10,
+  op: 0x01, // ADD
+  gas: 50000n,
+  gasCost: 3n,
+  depth: 1,
+  stack: [1n, 2n]
+}))
+
+console.log(`PC: ${step.pc}, Op: 0x${step.op.toString(16)}, Gas: ${step.gas}`)
+```
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pc` | `number` | Program counter |
+| `op` | `number` | Opcode (numeric) |
+| `gas` | `bigint` | Remaining gas |
+| `gasCost` | `bigint` | Cost of this op |
+| `depth` | `number` | Call depth |
+| `stack` | `bigint[]` | Stack state (optional) |
+| `memory` | `Uint8Array` | Memory state (optional) |
+| `storage` | `Record<string, bigint>` | Storage state (optional) |
+| `error` | `string` | Error if step failed (optional) |
+
+## Error Handling
+
+```typescript
+const result = await Effect.runPromiseExit(OpStep.from({ pc: -1, ... }))
+if (result._tag === 'Failure') {
+  console.error(result.cause) // OpStepError
+}
+```

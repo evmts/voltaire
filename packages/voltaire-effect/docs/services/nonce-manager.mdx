@@ -1,0 +1,154 @@
+---
+title: NonceManager Service
+description: Transaction nonce management for concurrent transactions with Effect.ts
+---
+
+## Quick Start
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { NonceManagerService, DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
+const NonceManagerLayer = DefaultNonceManager.pipe(Layer.provide(ProviderLayer))
+
+const program = Effect.gen(function* () {
+  const nonceManager = yield* NonceManagerService
+  const chainId = 1
+
+  // Consume nonce for transaction
+  const nonce = yield* nonceManager.consume('0x1234...', chainId)
+  return nonce
+}).pipe(Effect.provide(NonceManagerLayer))
+```
+
+## Why NonceManager?
+
+When sending multiple transactions quickly, you can't wait for each to be mined before getting the next nonce. The NonceManager tracks a local delta per address/chain, allowing concurrent transaction preparation without nonce collisions.
+
+```typescript
+const program = Effect.gen(function* () {
+  const nonceManager = yield* NonceManagerService
+  const address = '0x1234...'
+  const chainId = 1
+
+  // Get nonces for 3 concurrent transactions
+  const nonce1 = yield* nonceManager.consume(address, chainId) // e.g., 5n
+  const nonce2 = yield* nonceManager.consume(address, chainId) // e.g., 6n
+  const nonce3 = yield* nonceManager.consume(address, chainId) // e.g., 7n
+
+  // Send transactions with these nonces...
+
+  // After all confirmed, reset to resync with chain
+  yield* nonceManager.reset(address, chainId)
+})
+```
+
+## Methods
+
+### get
+
+Returns the current nonce without consuming it (on-chain pending + local delta).
+
+```typescript
+const nonce = yield* nonceManager.get('0x1234...', 1)
+```
+
+### consume
+
+Gets and atomically increments the nonce. Safe for concurrent calls.
+
+```typescript
+const nonce = yield* nonceManager.consume('0x1234...', 1)
+// Use nonce in transaction, delta is incremented
+```
+
+### increment
+
+Increments the local delta without fetching from chain. Use when a transaction was sent externally.
+
+```typescript
+yield* nonceManager.increment('0x1234...', 1)
+```
+
+### reset
+
+Clears the local delta for an address/chain. Call after transactions confirm to resync.
+
+```typescript
+yield* nonceManager.reset('0x1234...', 1)
+```
+
+## Error Handling
+
+```typescript
+import { NonceError } from 'voltaire-effect'
+
+program.pipe(
+  Effect.catchTag('NonceError', (e) => {
+    console.error(`Nonce error for ${e.address}: ${e.message}`)
+    return Effect.succeed(0)
+  })
+)
+```
+
+## FiberRef Helpers
+
+Use `withTimeout` and `withRetrySchedule` for per-request overrides:
+
+```typescript
+import { Effect, Schedule, Duration } from 'effect'
+import { NonceManagerService, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const nonceManager = yield* NonceManagerService
+  
+  // Fast nonce fetch with retry
+  const nonce = yield* nonceManager.consume('0x1234...', 1).pipe(
+    withTimeout("3 seconds"),
+    withRetrySchedule(Schedule.recurs(2))
+  )
+  return nonce
+})
+```
+
+## Layer Composition
+
+```typescript
+import { Layer } from 'effect'
+import { DefaultNonceManager, Provider, HttpTransport } from 'voltaire-effect'
+
+const MainnetNonceManager = DefaultNonceManager.pipe(
+  Layer.provideMerge(Provider),
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = myEffect.pipe(Effect.provide(MainnetNonceManager))
+```
+
+## Service Interface
+
+```typescript
+type NonceManagerShape = {
+  readonly get: (
+    address: string,
+    chainId: number
+  ) => Effect.Effect<number, NonceError, ProviderService>
+
+  readonly consume: (
+    address: string,
+    chainId: number
+  ) => Effect.Effect<number, NonceError, ProviderService>
+
+  readonly increment: (
+    address: string,
+    chainId: number
+  ) => Effect.Effect<void>
+
+  readonly reset: (
+    address: string,
+    chainId: number
+  ) => Effect.Effect<void>
+}
+```

@@ -1,0 +1,43 @@
+---
+title: Bytes32
+description: Effect-based 32-byte fixed-size type for hashes, storage slots, and identifiers
+---
+
+```typescript
+import * as Bytes32 from 'voltaire-effect/primitives/Bytes32'
+import { Effect } from 'effect'
+
+const slot = await Effect.runPromise(
+  Bytes32.from('0x0000000000000000000000000000000000000000000000000000000000000001')
+)
+```
+
+## Schema
+
+**Bytes32.Hex** — Validates exactly 32 bytes (66-char hex with `0x` prefix).
+
+```typescript
+import * as Bytes32 from 'voltaire-effect/primitives/Bytes32'
+import * as S from 'effect/Schema'
+
+S.decodeSync(Bytes32.Hex)(
+  '0x0000000000000000000000000000000000000000000000000000000000000001'
+)
+```
+
+## Functions
+
+**from(input)** — Creates Bytes32 from hex, Uint8Array, bigint, or number.
+
+**toHex(bytes32)** — Pure sync. Returns 66-char hex string.
+
+**toBytes(bytes32)** — Pure sync. Returns Uint8Array(32).
+
+```typescript
+const hex = Bytes32.toHex(slot)
+const bytes = Bytes32.toBytes(slot)
+```
+
+## Errors
+
+`InvalidBytesLengthError` — Input is not exactly 32 bytes.

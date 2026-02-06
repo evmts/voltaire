@@ -1,0 +1,193 @@
+---
+title: Account Service
+description: Cryptographic signing operations with Effect.ts
+---
+
+<Info>
+AccountService is for local or wallet signing. For node account RPCs like `eth_accounts`, `eth_coinbase`, or `eth_sign*`, use the Provider free functions (`getAccounts`, `getCoinbase`, `sign`, `signTransaction`) with a `Provider` layer.
+</Info>
+
+## Quick Start
+
+```typescript
+import { Effect, Schedule, Layer } from 'effect'
+import { AccountService, LocalAccount, withTimeout } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec...')
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const AccountLayer = LocalAccount(privateKey).pipe(Layer.provide(CryptoLayer))
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+
+  // Per-request timeout for signing (useful for hardware wallets)
+  const signature = yield* account.signMessage(Hex.fromString('Hello!')).pipe(
+    withTimeout('10 seconds')
+  )
+  return signature
+}).pipe(Effect.provide(AccountLayer))
+```
+
+## Browser Wallet
+
+```typescript
+import { JsonRpcAccount, BrowserTransport, withTimeout } from 'voltaire-effect'
+import { Layer } from 'effect'
+
+// Compose layers first
+const BrowserAccountLayer = JsonRpcAccount(userAddress).pipe(
+  Layer.provide(BrowserTransport)
+)
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+
+  // Longer timeout for user interaction
+  const signature = yield* account.signMessage(messageHex).pipe(
+    withTimeout('2 minutes')
+  )
+  return signature
+}).pipe(Effect.provide(BrowserAccountLayer))
+```
+
+## Methods
+
+**signMessage** — EIP-191 personal_sign
+```typescript
+const signature = yield* account.signMessage(Hex.fromString('Hello!'))
+```
+
+**signTransaction** — Sign unsigned tx (all fields required)
+```typescript
+const signature = yield* account.signTransaction({
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  nonce: 5n,
+  gasLimit: 21000n,
+  gasPrice: 20000000000n,
+  chainId: 1n
+})
+```
+
+**signTypedData** — EIP-712 structured data
+```typescript
+const signature = yield* account.signTypedData({
+  domain: { name: 'App', version: '1', chainId: 1n, verifyingContract },
+  primaryType: 'Mail',
+  types: { Mail: [{ name: 'to', type: 'address' }, { name: 'contents', type: 'string' }] },
+  message: { to: recipient, contents: 'Hello!' }
+})
+```
+
+### Nested Types
+
+EIP-712 supports nested struct types and arrays:
+
+```typescript
+const typedData = {
+  domain: { name: 'MyApp', version: '1', chainId: 1n },
+  types: {
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' }
+    ],
+    Mail: [
+      { name: 'from', type: 'Person' },
+      { name: 'to', type: 'Person' },
+      { name: 'contents', type: 'string' }
+    ]
+  },
+  primaryType: 'Mail',
+  message: {
+    from: { name: 'Alice', wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826' },
+    to: { name: 'Bob', wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB' },
+    contents: 'Hello, Bob!'
+  }
+}
+const signature = yield* account.signTypedData(typedData)
+```
+
+### Array Types
+
+Arrays of primitives and structs are supported:
+
+```typescript
+const typedData = {
+  domain: { name: 'Batch', version: '1', chainId: 1n },
+  types: {
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' }
+    ],
+    BatchTransfer: [
+      { name: 'recipients', type: 'Person[]' },
+      { name: 'amounts', type: 'uint256[]' }
+    ]
+  },
+  primaryType: 'BatchTransfer',
+  message: {
+    recipients: [
+      { name: 'Alice', wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826' },
+      { name: 'Bob', wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB' }
+    ],
+    amounts: [1000000000000000000n, 2000000000000000000n]
+  }
+}
+```
+
+## HD Wallet / Mnemonic
+
+Create accounts from BIP-39 mnemonics using `MnemonicAccount`:
+
+```typescript
+import { MnemonicAccount } from 'voltaire-effect/native'
+
+const mnemonic = "test test test test test test test test test test test junk"
+
+// Compose layers first
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const MnemonicAccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
+
+const program = Effect.gen(function* () {
+  const account = yield* AccountService
+  return account.address
+}).pipe(Effect.provide(MnemonicAccountLayer))
+```
+
+See the [HD Wallet Guide](/guides/hd-wallet) for derivation paths, passphrases, and manual usage.
+
+## Error Handling
+
+```typescript
+import { AccountError } from 'voltaire-effect'
+
+program.pipe(
+  Effect.catchTag('AccountError', (e) => Effect.succeed({ error: e.message }))
+)
+```
+
+## Service Interface
+
+```typescript
+type AccountShape = {
+  readonly address: AddressType
+  readonly type: 'local' | 'json-rpc' | 'hardware'
+  readonly signMessage: (message: HexType) => Effect.Effect<SignatureType, AccountError>
+  readonly signTransaction: (tx: UnsignedTransaction) => Effect.Effect<SignatureType, AccountError>
+  readonly signTypedData: (typedData: TypedDataType) => Effect.Effect<SignatureType, AccountError>
+}
+```
+
+## See Also
+
+- [Signer Service](/services/signer) — Higher-level signing with auto-fill (nonce, gas, chainId)
+- [Provider Service](/services/provider) — JSON-RPC account operations (eth_accounts, eth_sign*)
+- [HD Wallet Guide](/guides/hd-wallet) — BIP-39 mnemonic wallet integration
+- [Wallet Creation Example](/examples/wallet-creation) — Generate and restore wallets
+- [EIP-712](/crypto/eip712) — Typed data signing details
+- [Secp256k1](/crypto/secp256k1) — ECDSA signature operations
+- [EIP-191](https://eips.ethereum.org/EIPS/eip-191) — Signed data standard

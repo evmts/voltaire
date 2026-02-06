@@ -1,0 +1,246 @@
+---
+title: Effect Primer
+description: A 5-minute introduction to Effect for Ethereum developers
+---
+
+<Tip>
+Read the [official Effect documentation](https://effect.website/docs/getting-started/introduction/) for the complete guide. This page is a quick reference for Ethereum developers.
+</Tip>
+
+## Core Concepts
+
+[Effect](https://effect.website) is a TypeScript library for building reliable software. Three things matter the most in Voltaire-Effect:
+
+1. **Effect** - A description of a computation that may fail or require dependencies. Effects are similar to promises but more strongly typed and lazily executed.
+2. **Schema** - Runtime validation that produces typed values. Similar to Zod but for Effect.
+3. **Services** - Dependency injection without magic. Similar to React Context. In Voltaire we use this to inject providers, signers, chains and contracts into your programs.
+
+## Effect Type
+
+```typescript
+Effect<Success, Error, Requirements>
+```
+
+- `Success` - What the computation returns on success
+- `Error` - What errors it can produce (typed, not `unknown`)
+- `Requirements` - What services it needs to run
+
+```typescript
+import * as Effect from 'effect/Effect'
+
+// A computation that returns string, fails with Error, needs nothing
+const program: Effect.Effect<string, Error, never> = Effect.succeed("hello")
+
+// Run it
+const result = await Effect.runPromise(program)
+```
+
+<Tip>
+As a best practice you should only run runPromise or runSync at the very top of your program. It is an antipattern to use it within your program as it breaks Effects composability.
+</Tip>
+
+## Generator Syntax
+
+`Effect.gen` provides async/await-like syntax for chaining effects:
+
+```typescript
+import * as Effect from 'effect/Effect'
+
+const program = Effect.gen(function* () {
+  const a = yield* Effect.succeed(1)
+  const b = yield* Effect.succeed(2)
+  return a + b
+})
+```
+
+`yield*` unwraps the success value. Errors short-circuit automatically.
+
+## Schema
+
+Schema validates unknown input and returns typed output:
+
+```typescript
+import * as S from 'effect/Schema'
+
+const User = S.Struct({
+  name: S.String,
+  age: S.Number
+})
+
+// Sync decode - throws on failure
+const user = S.decodeSync(User)({ name: "Alice", age: 30 })
+
+// Effect decode - returns Effect with typed ParseError
+const userEffect = S.decode(User)({ name: "Alice", age: 30 })
+```
+
+voltaire-effect schemas decode directly to Voltaire branded types:
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as A from '@tevm/voltaire/Address'
+import * as S from 'effect/Schema'
+
+const addr = S.decodeSync(Address.Hex)('0x742d35Cc...')
+// addr is AddressType (branded Uint8Array), not string
+
+// Use with Voltaire functions
+A.toHex(addr)     // "0x742d35cc..."
+A.isZero(addr)    // false
+```
+
+## Services
+
+Services are typed dependencies. Define a service, implement it, provide it:
+
+```typescript
+import * as Effect from 'effect/Effect'
+import * as Context from 'effect/Context'
+
+// 1. Define the service interface
+class Logger extends Context.Tag("Logger")<
+  Logger,
+  { log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+// 2. Use the service in a program
+const program = Effect.gen(function* () {
+  const logger = yield* Logger
+  yield* logger.log("Hello")
+})
+
+// 3. Provide the implementation
+const LoggerLive = Effect.provideService(
+  program,
+  Logger,
+  { log: (msg) => Effect.sync(() => console.log(msg)) }
+)
+```
+
+voltaire-effect uses this for crypto:
+
+```typescript
+import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+
+const program = Effect.gen(function* () {
+  const keccak = yield* KeccakService
+  return yield* keccak.hash(data)
+}).pipe(Effect.provide(KeccakLive))
+```
+
+## Error Handling
+
+Errors are values, not exceptions. Handle them with `catchTag`:
+
+```typescript
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+
+S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag("ParseError", (e) => 
+    Effect.succeed(Address.zero())
+  )
+)
+```
+
+## Pipe
+
+`pipe` chains transformations left-to-right:
+
+```typescript
+import { pipe } from 'effect'
+
+const result = pipe(
+  5,
+  (x) => x + 1,
+  (x) => x * 2
+)
+// 12
+```
+
+Use it to compose Effects:
+
+```typescript
+pipe(
+  S.decode(Address.Hex)(input),
+  Effect.map(addr => addr.toHex()),
+  Effect.catchTag("ParseError", () => Effect.succeed("0x0")),
+  Effect.provide(KeccakLive)
+)
+```
+
+## Duration & Retry
+
+Effect uses human-readable duration strings:
+
+```typescript
+import * as Duration from 'effect/Duration'
+import * as Schedule from 'effect/Schedule'
+
+// Duration strings
+"30 seconds"
+"5 minutes"
+Duration.seconds(30)
+
+// Retry with exponential backoff
+Schedule.exponential("500 millis").pipe(
+  Schedule.jittered,
+  Schedule.recurs(5)
+)
+```
+
+## Per-Request Configuration
+
+Use FiberRef-based helpers for scoped overrides:
+
+```typescript
+import { getBalance, getBlock, getBlockNumber, withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
+import * as Schedule from 'effect/Schedule'
+
+// Override timeout for single request
+getBalance(addr).pipe(withTimeout("5 seconds"))
+
+// Custom retry schedule
+getBlock({ blockNumber }).pipe(
+  withRetrySchedule(Schedule.recurs(1))
+)
+
+// Disable caching for fresh data
+getBlockNumber().pipe(withoutCache)
+```
+
+## Running Effects
+
+```typescript
+// Returns Promise<A>
+Effect.runPromise(effect)
+
+// Returns A (throws on async or error)
+Effect.runSync(effect)
+
+// Returns Either<A, E>
+Effect.runSyncEither(effect)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Effect Docs" icon="arrow-up-right-from-square" href="https://effect.website/docs/getting-started/introduction/">
+    Complete Effect.ts documentation
+  </Card>
+  <Card title="Layers" icon="layer-group" href="/layers">
+    Schema, Effect, and Service layers
+  </Card>
+  <Card title="Why voltaire-effect?" icon="question" href="/why">
+    Trade-offs and benefits
+  </Card>
+  <Card title="Cheatsheet" icon="bolt" href="/cheatsheet">
+    Quick reference patterns
+  </Card>
+</CardGroup>
+
+## More Effect Resources
+
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Validation and parsing
+- [Effect Services](https://effect.website/docs/requirements-management/services/) — Dependency injection
+- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — Typed errors

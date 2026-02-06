@@ -1,0 +1,112 @@
+---
+title: EventLog
+description: EVM event log schema and utilities with Effect
+---
+
+```typescript
+import * as EventLog from 'voltaire-effect/primitives/EventLog'
+import * as S from 'effect/Schema'
+import { Effect } from 'effect'
+
+const log = S.decodeSync(EventLog.Rpc)({
+  address: contractAddress,
+  topics: [eventTopic],
+  data: eventData,
+  blockNumber: 19000000n,
+  logIndex: 0,
+})
+```
+
+## Schemas
+
+```typescript
+S.decodeSync(EventLog.Rpc)(rpcLog)    // from RPC format
+S.decodeSync(EventLog.Schema)(rpcLog) // alias
+```
+
+## Constructors (Effect-wrapped)
+
+```typescript
+const log = await Effect.runPromise(EventLog.create({
+  address: contractAddress,
+  topics: [eventTopic],
+  data: new Uint8Array(32),
+}))
+
+const fromInput = await Effect.runPromise(EventLog.from(input))
+const fromRpc = await Effect.runPromise(EventLog.fromRpc(rpcResponse))
+```
+
+## Accessors (Pure)
+
+```typescript
+EventLog.getTopic0(log)        // HashType | undefined (event signature)
+EventLog.getSignature(log)     // HashType | undefined
+EventLog.getIndexed(log, 1)    // HashType | undefined (topic at index)
+EventLog.getIndexedTopics(log) // HashType[] (topics 1-3)
+```
+
+## Filtering (Pure)
+
+```typescript
+EventLog.matchesAddress(log, address)     // boolean
+EventLog.matchesTopics(log, [topic0])     // boolean
+EventLog.matchesFilter(log, filter)       // boolean
+EventLog.filterLogs(logs, { topics: [t] }) // EventLogType[]
+EventLog.sortLogs(logs)                   // EventLogType[]
+```
+
+## Status (Pure)
+
+```typescript
+EventLog.isRemoved(log)  // boolean
+EventLog.wasRemoved(log) // boolean
+```
+
+## Clone/Copy (Pure)
+
+```typescript
+EventLog.clone(log) // EventLogType
+EventLog.copy(log)  // EventLogType
+```
+
+## Conversion (Pure)
+
+```typescript
+EventLog.toRpc(log) // RPC-formatted object
+```
+
+## Type
+
+```typescript
+type EventLogType = {
+  address: AddressType
+  topics: HashType[]
+  data: Uint8Array
+  blockNumber?: bigint
+  transactionHash?: HashType
+  transactionIndex?: number
+  blockHash?: HashType
+  logIndex?: number
+  removed?: boolean
+}
+```
+
+## Filtering by Event
+
+```typescript
+import * as EventSignature from 'voltaire-effect/primitives/EventSignature'
+
+const transferSig = S.decodeSync(EventSignature.String)('Transfer(address,address,uint256)')
+const transfers = EventLog.filterLogs(logs, { topics: [transferSig] })
+```
+
+## Parsing Indexed Params
+
+```typescript
+import * as Address from 'voltaire-effect/primitives/Address'
+
+// Transfer: topics[1]=from, topics[2]=to, data=value
+const from = S.decodeSync(Address.Bytes)(log.topics[1].slice(12))
+const to = S.decodeSync(Address.Bytes)(log.topics[2].slice(12))
+```

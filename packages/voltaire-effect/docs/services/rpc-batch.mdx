@@ -1,0 +1,264 @@
+---
+title: RpcBatch Service
+description: Effect-idiomatic JSON-RPC request batching and deduplication
+---
+
+## Quick Start
+
+```typescript
+import { Effect, Layer } from 'effect'
+import { RpcBatchService, RpcBatch, EthBlockNumber, EthGetBalance, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const RpcBatchLayer = RpcBatch.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = Effect.gen(function* () {
+  const batch = yield* RpcBatchService
+
+  // These are automatically batched into a single JSON-RPC call
+  const { blockNumber, balance1, balance2 } = yield* Effect.all({
+    blockNumber: batch.request(new EthBlockNumber({})),
+    balance1: batch.request(new EthGetBalance({ address: '0x1234...', blockTag: 'latest' })),
+    balance2: batch.request(new EthGetBalance({ address: '0x5678...', blockTag: 'latest' })),
+  }, { concurrency: 'unbounded' })
+
+  return { blockNumber, balance1, balance2 }
+}).pipe(Effect.provide(RpcBatchLayer))
+```
+
+## Request Types
+
+All request types extend `Data.TaggedClass` for structural equality (enabling deduplication):
+
+### No-Parameter Requests
+
+```typescript
+new EthBlockNumber({})     // eth_blockNumber
+new EthChainId({})         // eth_chainId
+new EthGasPrice({})        // eth_gasPrice
+```
+
+### Address-Based Requests
+
+```typescript
+new EthGetBalance({ address: '0x...', blockTag: 'latest' })
+new EthGetTransactionCount({ address: '0x...', blockTag: 'latest' })
+new EthGetCode({ address: '0x...', blockTag: 'latest' })
+new EthGetStorageAt({ address: '0x...', position: '0x0', blockTag: 'latest' })
+```
+
+### Transaction Requests
+
+```typescript
+new EthGetTransactionByHash({ hash: '0x...' })
+new EthGetTransactionReceipt({ hash: '0x...' })
+```
+
+### Block Requests
+
+```typescript
+new EthGetBlockByNumber({ blockTag: 'latest', includeTransactions: true })
+new EthGetBlockByHash({ blockHash: '0x...', includeTransactions: false })
+```
+
+### Contract Interaction
+
+```typescript
+new EthCall({
+  to: '0x...',
+  data: '0x...',
+  from: '0x...',      // optional
+  gas: '0x...',       // optional
+  gasPrice: '0x...',  // optional
+  value: '0x...',     // optional
+  blockTag: 'latest'
+})
+
+new EthEstimateGas({
+  to: '0x...',
+  data: '0x...',
+  blockTag: 'latest'  // optional
+})
+```
+
+### Event Logs
+
+```typescript
+new EthGetLogs({
+  address: '0x...',                    // or string[]
+  topics: ['0x...', null, '0x...'],    // indexed params
+  fromBlock: '0x100000',
+  toBlock: 'latest'
+  // OR blockHash: '0x...' (mutually exclusive with fromBlock/toBlock)
+})
+```
+
+### Generic Requests
+
+For methods not covered by typed requests:
+
+```typescript
+new GenericRpcRequest({
+  method: 'eth_getProof',
+  params: ['0x...', ['0x0', '0x1'], 'latest']
+})
+```
+
+## Request Deduplication
+
+Identical requests within the same batch return a shared result:
+
+```typescript
+const program = Effect.gen(function* () {
+  const batch = yield* RpcBatchService
+  const addr = '0x1234567890123456789012345678901234567890'
+
+  // Same request twice - only ONE RPC call is made
+  const { balance1, balance2 } = yield* Effect.all({
+    balance1: batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
+    balance2: batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
+  }, { concurrency: 'unbounded' })
+
+  // balance1 === balance2 (structurally equal, shared result)
+})
+```
+
+Deduplication works because request types use `Data.TaggedClass`, providing structural equality based on field values.
+
+## Error Handling
+
+Each request in a batch can fail independently:
+
+```typescript
+import { TransportError } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const batch = yield* RpcBatchService
+
+  const { balance, call } = yield* Effect.all({
+    balance: batch.request(new EthGetBalance({ address: validAddr, blockTag: 'latest' })),
+    call: batch.request(new EthCall({ to: invalidContract, data: '0x...', blockTag: 'latest' })),
+  }, { concurrency: 'unbounded', mode: 'either' })
+
+  // balance might succeed while call fails
+  for (const result of [balance, call]) {
+    if (result._tag === 'Right') {
+      console.log('Success:', result.right)
+    } else {
+      console.log('Failed:', result.left.message)
+    }
+  }
+})
+```
+
+Or catch errors per-request:
+
+```typescript
+const safeBalance = batch.request(new EthGetBalance({ address, blockTag: 'latest' })).pipe(
+  Effect.catchTag('TransportError', () => Effect.succeed('0x0'))
+)
+```
+
+## Configuration
+
+Use FiberRef helpers for per-request timeout and retry:
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { RpcBatchService, RpcBatch, EthBlockNumber, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const batch = yield* RpcBatchService
+  
+  // Fast timeout for time-sensitive requests
+  const blockNumber = yield* batch.request(new EthBlockNumber({})).pipe(
+    withTimeout('5 seconds')
+  )
+  
+  // Retry with backoff for unreliable endpoints
+  const balance = yield* batch.request(new EthGetBalance({ address: '0x...', blockTag: 'latest' })).pipe(
+    withRetrySchedule(Schedule.recurs(2))
+  )
+})
+```
+
+## Layer Composition
+
+`RpcBatch` requires `TransportService`:
+
+```typescript
+import * as Layer from 'effect/Layer'
+import { RpcBatch, HttpTransport } from 'voltaire-effect'
+
+// RpcBatch depends on Transport
+const RpcBatch: Layer.Layer<RpcBatchService, never, TransportService>
+
+// Compose layers
+const BatchedTransport = RpcBatch.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+// Use in program
+const program = myEffect.pipe(Effect.provide(BatchedTransport))
+```
+
+## Service Interface
+
+```typescript
+interface RpcBatchShape {
+  readonly resolver: RequestResolver.RequestResolver<RpcRequest, never>
+  readonly request: <R extends RpcRequest>(
+    request: R
+  ) => Effect.Effect<Request.Request.Success<R>, Request.Request.Error<R>>
+}
+
+type RpcRequest =
+  | EthBlockNumber
+  | EthGetBalance
+  | EthGetTransactionCount
+  | EthChainId
+  | EthGasPrice
+  | EthGetCode
+  | EthGetStorageAt
+  | EthCall
+  | EthEstimateGas
+  | EthGetBlockByNumber
+  | EthGetBlockByHash
+  | EthGetTransactionByHash
+  | EthGetTransactionReceipt
+  | EthGetLogs
+  | GenericRpcRequest
+```
+
+## Comparison: Manual vs Effect.request
+
+### Manual Batching (Imperative)
+
+```typescript
+// Manual: collect requests, send batch, match responses
+const requests = [
+  { jsonrpc: '2.0', id: 0, method: 'eth_blockNumber', params: [] },
+  { jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [addr, 'latest'] },
+]
+const responses = await fetch(rpcUrl, { body: JSON.stringify(requests) })
+const [blockNumber, balance] = responses.map(r => r.result)
+```
+
+### Effect.request Pattern (Declarative)
+
+```typescript
+// Effect: declare requests, batching/deduplication is automatic
+const { blockNumber, balance } = yield* Effect.all({
+  blockNumber: batch.request(new EthBlockNumber({})),
+  balance: batch.request(new EthGetBalance({ address: addr, blockTag: 'latest' })),
+}, { concurrency: 'unbounded' })
+```
+
+**Benefits of Effect.request:**
+- Automatic batching when requests run concurrently
+- Built-in deduplication (same request = shared result)
+- Per-request error handling
+- Type-safe request/response mapping
+- Composable with other Effect patterns (retry, timeout, caching)

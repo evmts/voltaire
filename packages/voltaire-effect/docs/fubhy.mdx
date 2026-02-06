@@ -1,0 +1,814 @@
+---
+title: "Effect API Review"
+description: "Comprehensive overview of voltaire-effect Effect.ts patterns for maintainer review"
+---
+
+<Note>
+For those new to Effect, we wrote an [Effect Primer](/concepts/effect-primer) covering the core concepts. Worth reviewing for correctness.
+</Note>
+
+# voltaire-effect: Effect API Review
+
+A comprehensive, concise overview of our Effect.ts patterns in `voltaire-effect` - an Ethereum primitives and provider library. Seeking feedback on idiomatic Effect usage.
+
+**Repo**: [github.com/evmts/voltaire](https://github.com/evmts/voltaire) (see `voltaire-effect/` directory)
+
+---
+
+## 0. Voltaire vs Voltaire Effect
+
+Voltaire (the non effect version) is super unopinionated. It's mostly just
+
+1. Branded types `const addr = Address(420); // Uint8Array & { __brand: 'Address' }`
+2. methods on those types `const cs = addr.toChecksummed(); // Hex & {__brand: 'ChecksummedAddress' }`
+
+Voltaire core does not have ANY high level abstractions including no Provider abstraction. Only to the spec ethereum standards like EIP-1193 are supported. Instead of high level abstractions we offer prompts to vendor your own abstractions in your library.
+
+Voltaire-Effect is the opinionated version of Voltaire. It's opinion is you should use Effect.ts. Unlike voltaire it's actually feature complete with a library like viem or ethers including provider abstractions etc..
+
+## 1. Schema Pattern (Primitives)
+
+In voltaire we make branded types with zod validator like constructors `Address(420)`. In voltaire-effect we wrap them in schemas.
+
+### Schema.declare for Branded Primitives
+
+This is what we do internally. I asked the llm to use the lowest level api so we have max control.
+
+<Note>
+**INTERNAL**: Schema definitions for validating branded primitive types. These wrap `@tevm/voltaire` branded Uint8Array types.
+</Note>
+
+```typescript
+// INTERNAL: src/primitives/Address/AddressSchema.ts
+// AddressType is a branded type
+import type { AddressType } from "@tevm/voltaire/Address";
+import * as S from "effect/Schema";
+
+export const AddressTypeSchema = S.declare<AddressType>(
+  (u): u is AddressType => u instanceof Uint8Array && u.length === 20,
+  { identifier: "Address" },
+);
+```
+
+```typescript
+// INTERNAL: src/primitives/Hex/HexSchema.ts
+import * as Brand from "effect/Brand";
+import * as Schema from "effect/Schema";
+
+export type HexBrand = string & Brand.Brand<"Hex">;
+export const HexBrand = Brand.nominal<HexBrand>();
+
+export const HexSchema = Schema.String.pipe(
+  Schema.filter((s): s is `0x${string}` => /^0x[0-9a-fA-F]*$/.test(s)),
+  Schema.brand("Hex"),
+);
+
+export const HexFromBytes = Schema.transform(
+  Schema.Uint8ArrayFromSelf,
+  HexSchema,
+  {
+    decode: (bytes) => bytesToHex(bytes),
+    encode: (hex) => hexToBytes(hex),
+  },
+);
+```
+
+---
+
+## 2. Service Pattern
+
+All dependencies including crypto transports and more are injected as services. Crypto specifically may sound wierd but later when we add Tevm support it's important to be able to inject different crypto that optimizes for bundle size, performance, zk, etc. It also makes any use of expensive crypto explicit.
+
+### Service Definition via Context.Tag
+
+<Note>
+**INTERNAL**: Service definitions live in `src/services/*/Service.ts` or `src/crypto/*/Service.ts`
+</Note>
+
+```typescript
+// INTERNAL: src/services/Transport/TransportService.ts
+import * as Context from "effect/Context";
+import type * as Effect from "effect/Effect";
+
+export type TransportShape = {
+  readonly request: <T>(
+    method: string,
+    params?: unknown[],
+  ) => Effect.Effect<T, TransportError>;
+};
+
+export class TransportService extends Context.Tag("TransportService")<
+  TransportService,
+  TransportShape
+>() {}
+```
+
+```typescript
+// INTERNAL: src/crypto/Secp256k1/Secp256k1Service.ts
+export interface Secp256k1ServiceShape {
+  readonly sign: (
+    messageHash: HashType,
+    privateKey: Uint8Array,
+    options?: SignOptions,
+  ) => Effect.Effect<Secp256k1SignatureType, InvalidPrivateKeyError | Secp256k1Error>;
+  
+  readonly recover: (
+    signature: Secp256k1SignatureType,
+    messageHash: HashType,
+  ) => Effect.Effect<Secp256k1PublicKeyType, InvalidSignatureError | InvalidRecoveryIdError | Secp256k1Error>;
+  
+  readonly verify: (
+    signature: Secp256k1SignatureType,
+    messageHash: HashType,
+    publicKey: Secp256k1PublicKeyType,
+  ) => Effect.Effect<boolean, InvalidSignatureError | InvalidPublicKeyError | Secp256k1Error>;
+}
+
+export class Secp256k1Service extends Context.Tag("Secp256k1Service")<
+  Secp256k1Service,
+  Secp256k1ServiceShape
+>() {}
+```
+
+---
+
+## 3. Layer Pattern
+
+### Live Layers via Layer.succeed/Layer.effect
+
+<Note>
+**INTERNAL**: Layer implementations live alongside service definitions. These are exported for users to provide.
+</Note>
+
+```typescript
+// INTERNAL: src/crypto/Secp256k1/Secp256k1Service.ts
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
+import * as Layer from "effect/Layer";
+
+export const Secp256k1Live = Layer.succeed(Secp256k1Service, {
+  sign: (messageHash, privateKey, options) =>
+    Effect.try({
+      try: () => Secp256k1.sign(messageHash, privateKey, options),
+      catch: (e) => mapToSecp256k1Error(e, "sign"),
+    }),
+  recover: (signature, messageHash) =>
+    Effect.try({
+      try: () => Secp256k1.recoverPublicKey(signature, messageHash),
+      catch: (e) => mapToSecp256k1Error(e, "recover"),
+    }),
+  verify: (signature, messageHash, publicKey) =>
+    Effect.try({
+      try: () => Secp256k1.verify(signature, messageHash, publicKey),
+      catch: (e) => mapToSecp256k1Error(e, "verify"),
+    }),
+});
+```
+
+```typescript
+// INTERNAL: src/services/Transport/HttpTransport.ts
+export const HttpTransport = (
+  options: string | HttpTransportConfig,
+): Layer.Layer<TransportService> =>
+  Layer.effect(
+    TransportService,
+    Effect.gen(function* () {
+      const config = typeof options === "string" ? { url: options } : options;
+      const client = yield* HttpClient.HttpClient;
+      // ... setup
+      return { request: (method, params) => /* ... */ };
+    }),
+  ).pipe(Layer.provide(FetchHttpClient.layer));
+```
+
+### Composed Live Layers
+
+```typescript
+// INTERNAL: src/crypto/index.ts
+export const CryptoLive = Layer.mergeAll(
+  Secp256k1Live,
+  KeccakLive,
+  SHA256Live,
+  Blake2Live,
+  Ripemd160Live,
+  HMACLive,
+  AesGcmLive,
+  ChaCha20Poly1305Live,
+  EIP712Live,
+  ModExpLive,
+  Ed25519Live,
+  X25519Live,
+  P256Live,
+  Bls12381Live,
+  Bn254Live,
+  HDWalletLive,
+  Bip39Live,
+  KeystoreLive,
+);
+```
+
+---
+
+## 4. Error Pattern
+
+### Data.TaggedError for Typed Errors
+
+<Note>
+**INTERNAL**: Error types are defined alongside services and exported for user error handling.
+</Note>
+
+```typescript
+// INTERNAL: src/block/BlockError.ts
+import * as Data from "effect/Data";
+
+export class BlockError extends Data.TaggedError("BlockError")<{
+  readonly message: string;
+  readonly cause?: unknown;
+  readonly context?: Record<string, unknown>;
+}> {
+  constructor(message: string, options?: { cause?: unknown; context?: Record<string, unknown> }) {
+    super({ message, cause: options?.cause, context: options?.context });
+  }
+}
+
+export class BlockNotFoundError extends Data.TaggedError("BlockNotFoundError")<{
+  readonly identifier: string | bigint;
+  readonly message: string;
+  readonly cause?: unknown;
+}> {
+  constructor(identifier: string | bigint, options?: { cause?: unknown }) {
+    super({
+      identifier,
+      message: `Block ${typeof identifier === "bigint" ? identifier.toString() : identifier} not found`,
+      cause: options?.cause,
+    });
+  }
+}
+```
+
+```typescript
+// INTERNAL: src/standards/errors.ts
+export class StandardsError extends Data.TaggedError("StandardsError")<{
+  readonly operation: string;
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+```
+
+---
+
+## 5. Provider Service (Request-only)
+
+### Minimal Context.Tag
+
+<Note>
+**INTERNAL**: ProviderService is request-only and intentionally minimal. All operations are exposed as free functions that call `ProviderService.request`.
+</Note>
+
+```typescript
+// INTERNAL: src/services/Provider/ProviderService.ts
+export type ProviderShape = {
+  readonly request: <T>(method: string, params?: unknown[]) => Effect.Effect<T, TransportError>;
+};
+
+export class ProviderService extends Context.Tag("ProviderService")<
+  ProviderService,
+  ProviderShape
+>() {}
+```
+
+### Free Functions Pattern
+
+```typescript
+// INTERNAL: src/services/Provider/functions/getBlockNumber.ts
+export const getBlockNumber = () =>
+  Effect.flatMap(ProviderService, (svc) =>
+    svc.request<string>("eth_blockNumber").pipe(
+      Effect.flatMap((hex) =>
+        parseHexToBigInt({ method: "eth_blockNumber", response: hex })
+      )
+    )
+  )
+
+// INTERNAL: src/services/Provider/functions/getBalance.ts
+export const getBalance = (address: AddressInput, blockTag: BlockTag = "latest") =>
+  Effect.flatMap(ProviderService, (svc) =>
+    svc.request<string>("eth_getBalance", [toAddressHex(address), blockTag]).pipe(
+      Effect.flatMap((hex) =>
+        parseHexToBigInt({ method: "eth_getBalance", response: hex })
+      )
+    )
+  )
+
+// PUBLIC API: Users import free functions directly
+import { getBlockNumber, getBalance } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const block = yield* getBlockNumber()
+  const balance = yield* getBalance(addr)
+  return { block, balance }
+})
+```
+
+**Note**: Free functions depend on `ProviderService` (request-only) which is backed by `TransportService`.
+
+---
+
+## 6. Stream Pattern
+
+### Effect Stream for Event/Block Streaming
+
+<Note>
+**INTERNAL**: Stream services bridge async iterators to Effect Streams.
+</Note>
+
+```typescript
+// INTERNAL: src/contract/EventStreamService.ts
+import * as Stream from "effect/Stream";
+
+export const makeEventStream = (): Effect.Effect<EventStreamShape, never, TransportService> =>
+  Effect.gen(function* () {
+    const transport = yield* TransportService;
+    const runtime = yield* Effect.runtime();
+    const runPromise = Runtime.runPromise(runtime);
+
+    // Bridge to non-Effect async iterator
+    const provider = {
+      request: async ({ method, params }) => runPromise(transport.request(method, params)),
+    };
+
+    return {
+      backfill: <TEvent>(options): Stream.Stream<EventStreamResult<TEvent>, EventStreamError> => {
+        const coreStream = CoreEventStream({ provider, ...options });
+        return Stream.fromAsyncIterable(
+          { [Symbol.asyncIterator]: () => coreStream.backfill(options) },
+          (error) => new EventStreamError(error instanceof Error ? error.message : "Error", { cause: error }),
+        );
+      },
+      
+      watch: <TEvent>(options): Stream.Stream<EventStreamResult<TEvent>, EventStreamError> => {
+        const coreStream = CoreEventStream({ provider, ...options });
+        return Stream.fromAsyncIterable(
+          { [Symbol.asyncIterator]: () => coreStream.watch(options) },
+          (error) => new EventStreamError(error instanceof Error ? error.message : "Error", { cause: error }),
+        );
+      },
+    };
+  });
+```
+
+**Question**: Is `Runtime.runPromise` the right approach for bridging Effect to async iterators?
+
+---
+
+## 7. FiberRef for Config Override
+
+### Transport-Level FiberRef for Runtime Config
+
+<Note>
+**INTERNAL**: FiberRefs provide runtime-configurable defaults.
+</Note>
+
+```typescript
+// INTERNAL: src/services/Transport/config.ts
+import * as FiberRef from "effect/FiberRef";
+import * as Schedule from "effect/Schedule";
+
+export const timeoutRef = FiberRef.unsafeMake<Duration.DurationInput>("30 seconds");
+export const retryScheduleRef = FiberRef.unsafeMake<Schedule.Schedule<unknown, TransportError>>(
+  Schedule.exponential("1 second").pipe(Schedule.jittered, Schedule.compose(Schedule.recurs(3))),
+);
+export const tracingRef = FiberRef.unsafeMake<boolean>(false);
+```
+
+```typescript
+// INTERNAL: src/services/Transport/HttpTransport.ts
+const makeRequest = <T>(method: string, params?: unknown[]) =>
+  Effect.gen(function* () {
+    const timeout = yield* FiberRef.get(timeoutRef);
+    const retrySchedule = yield* FiberRef.get(retryScheduleRef);
+    // ... use config
+  });
+```
+
+**Question**: Is `FiberRef.unsafeMake` at module level the right pattern for default configs?
+
+---
+
+## 8. Wrapper Function Pattern
+
+### Effect.try for Wrapping Sync Libraries
+
+<Note>
+**INTERNAL**: Standards wrap pure functions from `@tevm/voltaire` with Effect error handling.
+</Note>
+
+```typescript
+// INTERNAL: src/standards/ERC20.ts
+export const encodeTransfer = (
+  to: AddressType,
+  amount: bigint,
+): Effect.Effect<string, StandardsError> =>
+  Effect.try({
+    try: () => ERC20Impl.encodeTransfer(to, amount),
+    catch: (e) => new StandardsError({
+      operation: "ERC20.encodeTransfer",
+      message: e instanceof Error ? e.message : String(e),
+      cause: e,
+    }),
+  });
+
+export const decodeTransferEvent = (log: { topics: string[]; data: string }): Effect.Effect<
+  { from: string; to: string; value: bigint },
+  StandardsError
+> =>
+  Effect.try({
+    try: () => ERC20Impl.decodeTransferEvent(log),
+    catch: (e) => new StandardsError({
+      operation: "ERC20.decodeTransferEvent",
+      message: e instanceof Error ? e.message : String(e),
+      cause: e,
+    }),
+  });
+```
+
+**Question**: Should we use `Effect.sync` + `Effect.catchAll` instead of `Effect.try`?
+
+---
+
+## 9. Usage Examples (PUBLIC API)
+
+<Note>
+**PUBLIC API**: These examples show how users consume the library.
+</Note>
+
+### Basic Provider Usage
+
+```typescript
+// PUBLIC API: User code
+import { Effect, Layer } from "effect";
+import { getBlockNumber, getBalance, Provider, HttpTransport } from "voltaire-effect";
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport("https://mainnet.infura.io/v3/KEY"))
+);
+
+const program = Effect.gen(function* () {
+  const blockNum = yield* getBlockNumber();
+  const balance = yield* getBalance("0x1234...");
+  return { blockNum, balance };
+});
+
+// Single provide at the edge
+await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)));
+```
+
+### Crypto with Layer Composition
+
+```typescript
+// PUBLIC API: User code
+import { Effect, Layer } from "effect";
+import { Secp256k1Service, KeccakService, CryptoLive } from "voltaire-effect";
+
+const signMessage = (message: Uint8Array, privateKey: Uint8Array) =>
+  Effect.gen(function* () {
+    const keccak = yield* KeccakService;
+    const secp = yield* Secp256k1Service;
+    const hash = yield* keccak.hash(message);
+    return yield* secp.sign(hash, privateKey);
+  });
+
+const sig = await Effect.runPromise(
+  signMessage(msg, key).pipe(Effect.provide(CryptoLive)),
+);
+```
+
+### Stream Consumption
+
+```typescript
+// PUBLIC API: User code
+import { Effect, Stream } from "effect";
+import { makeEventStream, HttpTransport } from "voltaire-effect";
+
+const program = Effect.gen(function* () {
+  const eventStream = yield* makeEventStream();
+  yield* Stream.runForEach(
+    eventStream.backfill({
+      address: "0x...",
+      event: transferEvent,
+      fromBlock: 18000000n,
+      toBlock: 18001000n,
+    }),
+    ({ log }) => Effect.log(`Transfer: ${log.args.from} -> ${log.args.to}`),
+  );
+}).pipe(Effect.provide(HttpTransport("https://...")));
+```
+
+---
+
+## 11. Effect Platform (@effect/platform)
+
+<Note>
+**INTERNAL**: We use Effect Platform for cross-platform HTTP client.
+</Note>
+
+```typescript
+// INTERNAL: src/services/Transport/HttpTransport.ts
+import { FetchHttpClient } from "@effect/platform";
+import * as HttpClient from "@effect/platform/HttpClient";
+import * as HttpClientRequest from "@effect/platform/HttpClientRequest";
+
+export const HttpTransport = (url: string): Layer.Layer<TransportService> =>
+  Layer.effect(
+    TransportService,
+    Effect.gen(function* () {
+      const client = yield* HttpClient.HttpClient;
+      // Use platform-agnostic HTTP client
+      const response = yield* client.execute(
+        HttpClientRequest.post(url).pipe(
+          HttpClientRequest.jsonBody({ jsonrpc: "2.0", ... })
+        )
+      );
+      // ...
+    }),
+  ).pipe(Layer.provide(FetchHttpClient.layer));
+```
+
+---
+
+## 12. Duration & Schedule
+
+<Note>
+**INTERNAL**: Used extensively for timeouts and retry logic.
+</Note>
+
+```typescript
+// INTERNAL: src/services/Transport/HttpTransport.ts
+import * as Duration from "effect/Duration";
+import * as Schedule from "effect/Schedule";
+
+const defaultRetrySchedule = Schedule.exponential("1 second").pipe(
+  Schedule.jittered,
+  Schedule.compose(Schedule.recurs(3)),
+);
+
+const makeRequest = (method: string, params?: unknown[]) =>
+  client.execute(request).pipe(
+    Effect.timeout(Duration.seconds(30)),
+    Effect.retry(defaultRetrySchedule),
+  );
+```
+
+---
+
+## 13. Request/RequestResolver (Batching)
+
+<Note>
+**INTERNAL**: Used for automatic request batching and deduplication.
+</Note>
+
+```typescript
+// INTERNAL: src/services/RpcBatch/RpcResolver.ts
+import * as Request from "effect/Request";
+import * as RequestResolver from "effect/RequestResolver";
+
+// Define a request type
+interface RpcRequest extends Request.Request<unknown, TransportError> {
+  readonly method: string;
+  readonly params?: unknown[];
+}
+
+// Create batched resolver
+export const makeRpcResolver = (transport: TransportShape) =>
+  RequestResolver.makeBatched((requests: readonly RpcRequest[]) =>
+    Effect.gen(function* () {
+      // Batch all requests into single RPC call
+      const batch = requests.map((req, idx) => ({
+        jsonrpc: "2.0",
+        id: idx,
+        method: req.method,
+        params: req.params,
+      }));
+      
+      const responses = yield* transport.request("__batch__", batch);
+      
+      yield* Effect.forEach(requests, (request, idx) =>
+        Request.succeed(request, responses[idx].result)
+      );
+    })
+  );
+```
+
+---
+
+## 14. Ref, Queue, Deferred (Concurrency Primitives)
+
+<Note>
+**INTERNAL**: Used for stateful transports, connection management, and request coordination.
+</Note>
+
+```typescript
+// INTERNAL: src/services/Transport/WebSocketTransport.ts
+import * as Ref from "effect/Ref";
+import * as Deferred from "effect/Deferred";
+import * as Queue from "effect/Queue";
+
+// Track pending requests
+const pendingRef = yield* Ref.make<Map<number, Deferred.Deferred<unknown, TransportError>>>(
+  new Map()
+);
+
+// Create deferred for each request
+const deferred = yield* Deferred.make<unknown, TransportError>();
+yield* Ref.update(pendingRef, (map) => map.set(id, deferred));
+
+// Wait for response
+const result = yield* Deferred.await(deferred);
+```
+
+---
+
+## 15. Effect.acquireRelease (Resource Safety)
+
+<Note>
+**INTERNAL**: Used for secure key material handling - ensures secrets are zeroed after use.
+</Note>
+
+```typescript
+// INTERNAL: src/crypto/HDWallet/derive.ts
+export const mnemonicToSeedScoped = (mnemonic: string) =>
+  Effect.acquireRelease(
+    mnemonicToSeed(mnemonic),
+    (seed) => Effect.sync(() => seed.fill(0)) // Zero memory on cleanup
+  );
+
+// INTERNAL: src/services/Account/LocalAccount.ts
+const secureAccount = Effect.acquireRelease(
+  createAccount(privateKey),
+  (account) => Effect.sync(() => account.privateKey.fill(0))
+);
+```
+
+---
+
+## 16. Config (Environment Configuration)
+
+<Note>
+**INTERNAL**: Used for transport configuration from environment.
+</Note>
+
+```typescript
+// INTERNAL: src/services/Transport/TransportConfig.ts
+import * as Config from "effect/Config";
+
+export const TransportFromConfig = Layer.effect(
+  TransportService,
+  Effect.gen(function* () {
+    const url = yield* Config.string("RPC_URL");
+    const timeout = yield* Config.duration("RPC_TIMEOUT").pipe(
+      Config.withDefault(Duration.seconds(30))
+    );
+    // ...
+  })
+);
+```
+
+---
+
+## 17. Option (Optional Values)
+
+<Note>
+**INTERNAL**: Used for cache lookups, optional config, and nullable results.
+</Note>
+
+```typescript
+// INTERNAL: src/services/Cache/CacheService.ts
+import type * as Option from "effect/Option";
+
+export type CacheShape = {
+  readonly get: <T>(key: string) => Effect.Effect<Option.Option<T>>;
+  readonly set: <T>(key: string, value: T, ttl?: Duration.DurationInput) => Effect.Effect<void>;
+};
+```
+
+---
+
+## 18. Native Dependencies (HDWallet, KZG)
+
+<Note>
+**NOT INCLUDED**: Some crypto modules have native dependencies that complicated the build. We provide docs on wrapping them in Effect, but they're not bundled in voltaire-effect.
+</Note>
+
+HDWallet and KZG are available in the core library at `@tevm/voltaire/native`:
+
+```typescript
+// User code: Wrapping native HDWallet in Effect
+import { HDWallet } from "@tevm/voltaire/native";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+
+// Create your own HDWalletService layer
+const HDWalletLive = Layer.succeed(HDWalletService, {
+  derive: (seed, path) =>
+    Effect.try({
+      try: () => HDWallet.derive(seed, path),
+      catch: (e) => new HDWalletError({ message: String(e), cause: e }),
+    }),
+  fromMnemonic: (mnemonic) =>
+    Effect.try({
+      try: () => HDWallet.fromMnemonic(mnemonic),
+      catch: (e) => new HDWalletError({ message: String(e), cause: e }),
+    }),
+});
+```
+
+The native entrypoint includes:
+- **HDWallet** - BIP-32/BIP-44 hierarchical deterministic wallets
+- **KZG** - KZG polynomial commitments (EIP-4844 blob proofs)
+
+These require native compilation (Rust/C libs) which varies by platform.
+
+---
+
+## Services Overview
+
+### Crypto Services
+
+> **Note**: HDWalletService and KZGService are not bundled due to native dependencies. See Section 18 for how to wrap `@tevm/voltaire/native` yourself.
+
+- **Keccak256Service** - Keccak256 hashing
+- **Secp256k1Service** - ECDSA signing/verification on secp256k1 curve
+- **Bls12381Service** - BLS12-381 curve operations
+- **Bn254Service** - BN254 curve operations (alt_bn128)
+- **SHA256Service** - SHA-256 hashing
+- **Blake2Service** - Blake2 hashing
+- **Ripemd160Service** - RIPEMD-160 hashing
+- **HMACService** - HMAC message authentication
+- **Ed25519Service** - EdDSA signing on Curve25519
+- **P256Service** - ECDSA on NIST P-256 curve
+- **X25519Service** - X25519 key exchange
+- **AesGcmService** - AES-GCM authenticated encryption
+- **ChaCha20Poly1305Service** - ChaCha20-Poly1305 AEAD
+- **Bip39Service** - Mnemonic phrase generation/validation
+- **KeystoreService** - Encrypted keystore operations
+- **SignersService** - Multi-signer coordination
+- **EIP712Service** - Typed structured data signing
+- **ModExpService** - Modular exponentiation
+
+### Provider Services
+- **TransportService** - JSON-RPC transport layer
+- **ProviderService** - Request-only tag used by provider free functions
+- **RawProviderService** - Low-level RPC calls
+
+### Infrastructure Services
+- **ChainService** - Chain configuration
+- **BlockExplorerService** - Block explorer URLs
+- **ContractsService** - Common contract addresses per chain
+- **CacheService** - Generic caching
+- **LookupCacheService** - Address/ENS lookup caching
+- **RateLimiterService** - Rate limiting
+- **FeeEstimatorService** - Gas fee estimation
+- **NonceManagerService** - Nonce management
+
+### Account & Signing Services
+- **AccountService** - Cryptographic signing (local/JSON-RPC)
+- **SignerService** - Transaction signing orchestration
+
+### Application Services
+- **DebugService** - Debug JSON-RPC methods (debug_traceCall, etc.)
+- **EnsService** - ENS resolution
+- **CcipService** - Cross-chain interop protocol
+- **BlockStreamService** - Real-time block streaming
+- **TransactionStreamService** - Real-time transaction streaming
+- **EventStreamService** - Real-time event streaming
+- **EngineApiService** - Execution layer Engine API
+- **AbiEncoderService** - ABI encoding/decoding
+- **FormatterService** - Data formatting
+- **TransactionSerializerService** - Transaction serialization
+- **BlockchainService** - High-level blockchain facade
+- **RpcBatchService** - Request batching with RequestResolver
+
+### Functions (Not Services)
+
+These are effectful functions that depend on services but are not Context.Tag services themselves:
+
+- **Contract()** - Factory function returning type-safe contract bindings (depends on ProviderService/SignerService)
+- **aggregate3()** - Multicall3 batching function (depends on TransportService)
+- **BalanceResolver** - Batched balance fetching with RequestResolver pattern
+- **ERC20/ERC721/ERC1155/ERC165** - Effect-wrapped pure functions for token standards
+
+## Module Summary
+
+| Category | Pattern |
+|----------|---------|
+| **Primitives** | Schema.declare for branded Uint8Array types |
+| **Transport** | HttpTransport, WebSocketTransport, BrowserTransport as Layer factories |
+| **Provider** | ProviderService (request-only) + free functions for RPC operations |
+| **Signer** | SignerService for wallet transaction signing |
+| **Crypto** | 20 individual services + CryptoLive bundle via Layer.mergeAll |
+| **Functions** | Contract(), aggregate3(), BalanceResolver, ERC standards - depend on services but aren't services |
+| **Streams** | EventStreamService, BlockStreamService, TransactionStreamService returning Stream |
+
+---
+
+Looking for feedback on idiomaticity, anti-patterns, and suggestions for improvement. Thanks!

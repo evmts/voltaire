@@ -1,0 +1,143 @@
+---
+title: AccessList
+description: EIP-2930 access lists for gas-optimized storage access
+---
+
+Specifies addresses and storage keys a transaction will access.
+
+## Schema
+
+```typescript
+import * as AccessList from 'voltaire-effect/primitives/AccessList'
+import * as S from 'effect/Schema'
+
+const accessList = S.decodeSync(AccessList.Rpc)([
+  {
+    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3',
+    storageKeys: [
+      '0x0000000000000000000000000000000000000000000000000000000000000001'
+    ]
+  }
+])
+```
+
+## Constructors
+
+```typescript
+import * as AccessList from 'voltaire-effect/primitives/AccessList'
+import { Effect } from 'effect'
+
+// Create empty list (pure)
+const empty = AccessList.create()
+
+// From items (Effect-wrapped)
+const program = AccessList.from([
+  { address: addressBytes, storageKeys: [key1, key2] }
+])
+// Effect.Effect<BrandedAccessList, InvalidFormatError | InvalidLengthError>
+
+// From RLP bytes (Effect-wrapped)
+const fromRlp = AccessList.fromBytes(rlpBytes)
+// Effect.Effect<BrandedAccessList, DecodingError | InvalidFormatError | InvalidLengthError>
+```
+
+## Type Guards
+
+```typescript
+if (AccessList.is(value)) {
+  // value is BrandedAccessList
+}
+
+if (AccessList.isItem(item)) {
+  // item is { address: AddressType, storageKeys: HashType[] }
+}
+```
+
+## Queries
+
+```typescript
+AccessList.isEmpty(list)                    // boolean
+AccessList.addressCount(list)               // number
+AccessList.storageKeyCount(list)            // number
+AccessList.includesAddress(list, addr)      // boolean
+AccessList.includesStorageKey(list, addr, key) // boolean
+AccessList.keysFor(list, addr)              // readonly HashType[] | undefined
+```
+
+## Gas Calculations
+
+```typescript
+const cost = AccessList.gasCost(list)       // bigint
+const savings = AccessList.gasSavings(list) // bigint
+const beneficial = AccessList.hasSavings(list) // boolean
+
+// Constants
+AccessList.ADDRESS_COST        // 2400n
+AccessList.STORAGE_KEY_COST    // 1900n
+AccessList.COLD_ACCOUNT_ACCESS_COST  // 2600n
+AccessList.COLD_STORAGE_ACCESS_COST  // 2100n
+AccessList.WARM_STORAGE_ACCESS_COST  // 100n
+```
+
+## Transformations
+
+```typescript
+// Deduplicate entries
+const deduped = AccessList.deduplicate(list)
+
+// Merge multiple lists
+const merged = AccessList.merge(list1, list2, list3)
+
+// Add address (immutable)
+const withAddr = AccessList.withAddress(list, address)
+
+// Add storage key (immutable)
+const withKey = AccessList.withStorageKey(list, address, key)
+
+// Encode to RLP
+const bytes = AccessList.toBytes(list)
+```
+
+## Validation
+
+```typescript
+import * as AccessList from 'voltaire-effect/primitives/AccessList'
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  yield* AccessList.assertValid(list)
+  console.log('Valid access list')
+})
+// Effect.Effect<void, InvalidFormatError | InvalidLengthError>
+```
+
+## Full Example
+
+```typescript
+import * as AccessList from 'voltaire-effect/primitives/AccessList'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as Hash from 'voltaire-effect/primitives/Hash'
+import { Effect, pipe } from 'effect'
+
+const program = Effect.gen(function* () {
+  // Create addresses and storage keys
+  const contractAddr = yield* Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+  const slot0 = yield* Hash.from('0x0000000000000000000000000000000000000000000000000000000000000000')
+  const slot1 = yield* Hash.from('0x0000000000000000000000000000000000000000000000000000000000000001')
+
+  // Build access list
+  let list = AccessList.create()
+  list = AccessList.withStorageKey(list, contractAddr, slot0)
+  list = AccessList.withStorageKey(list, contractAddr, slot1)
+
+  // Validate
+  yield* AccessList.assertValid(list)
+
+  // Check gas benefits
+  if (AccessList.hasSavings(list)) {
+    console.log(`Gas savings: ${AccessList.gasSavings(list)}`)
+  }
+
+  return list
+})
+```

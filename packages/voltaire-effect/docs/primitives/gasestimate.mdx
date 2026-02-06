@@ -1,0 +1,33 @@
+---
+title: GasEstimate
+description: Gas estimation with buffer and conversion utilities
+---
+
+Gas estimates from `eth_estimateGas` with buffer calculations.
+
+```typescript
+import * as GasEstimate from 'voltaire-effect/primitives/GasEstimate'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Schema
+const estimate = Schema.decodeSync(GasEstimate.BigInt)(21000n)
+
+// Effect with buffer
+const program = Effect.gen(function* () {
+  const estimate = yield* GasEstimate.from(100000n)
+  const buffered = yield* GasEstimate.withBuffer(estimate, 20) // +20%
+  const gasLimit = yield* GasEstimate.toGasLimit(buffered)
+  return gasLimit // 120000n
+})
+```
+
+## Functions
+
+| Function | Description |
+|----------|-------------|
+| `from(n)` | Create estimate |
+| `withBuffer(est, pct)` | Add percentage buffer |
+| `toGasLimit(est)` | Convert to gas limit |
+
+Fails on negative values.

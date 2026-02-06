@@ -1,0 +1,194 @@
+---
+title: Provider Fallback Strategies
+description: Automatically fallback between RPC providers using ExecutionPlan
+---
+
+<Note>
+**Experimental**: ExecutionPlan requires Effect 3.16+. This API is marked experimental and may change.
+</Note>
+
+## Overview
+
+Production apps should never rely on a single RPC provider. Use `ExecutionPlan` to declaratively define retry and fallback strategies across multiple providers.
+
+## Basic Usage
+
+```typescript
+import { Effect, Schedule } from 'effect'
+import { makeProviderPlan, getBlockNumber } from 'voltaire-effect'
+
+const ProviderPlan = makeProviderPlan([
+  {
+    url: process.env.INFURA_URL!,
+    attempts: 2,
+    schedule: Schedule.spaced('1 second')
+  },
+  {
+    url: process.env.ALCHEMY_URL!,
+    attempts: 3,
+    schedule: Schedule.exponential('500 millis')
+  },
+  {
+    url: 'https://eth.llamarpc.com'  // public fallback, single attempt
+  }
+])
+
+const program = Effect.gen(function* () {
+  const blockNumber = yield* getBlockNumber().pipe(
+    Effect.withExecutionPlan(ProviderPlan)
+  )
+  return blockNumber
+})
+
+await Effect.runPromise(program)
+```
+
+## How It Works
+
+1. **First provider fails** → retries with configured schedule
+2. **Exhausts attempts** → moves to next provider in the plan
+3. **All providers fail** → effect fails with the last error
+
+Each step in the plan represents a different RPC endpoint with its own retry configuration.
+
+## Resilient Provider (Pre-configured)
+
+For common use cases, use the pre-built resilient plan:
+
+```typescript
+import { Effect } from 'effect'
+import { makeResilientProviderPlan, getBalance } from 'voltaire-effect'
+
+const ResilientPlan = makeResilientProviderPlan(
+  process.env.INFURA_URL!,     // Primary: 3 attempts, exponential backoff
+  process.env.ALCHEMY_URL!,    // Fallback: 2 attempts, 500ms delay  
+  'https://eth.llamarpc.com'   // Last resort: single attempt
+)
+
+const balance = yield* getBalance(address).pipe(
+  Effect.withExecutionPlan(ResilientPlan)
+)
+```
+
+The pre-built plan uses:
+- **Primary**: 3 attempts with 200ms exponential backoff + jitter
+- **Fallback**: 2 attempts with 500ms fixed delay
+- **Last resort**: single attempt (no retry)
+
+## Custom Schedules
+
+Use any Effect `Schedule` for retry timing:
+
+```typescript
+import { Schedule } from 'effect'
+
+const plan = makeProviderPlan([
+  {
+    url: 'https://primary.example.com',
+    attempts: 5,
+    schedule: Schedule.exponential('100 millis').pipe(
+      Schedule.jittered,                      // Add randomness
+      Schedule.intersect(Schedule.recurs(5))  // Max 5 retries
+    )
+  },
+  {
+    url: 'https://fallback.example.com',
+    schedule: Schedule.fibonacci('500 millis').pipe(
+      Schedule.intersect(Schedule.recurs(3))
+    )
+  }
+])
+```
+
+## With Streaming
+
+ExecutionPlan also works with streams:
+
+```typescript
+import { Stream } from 'effect'
+import { makeBlockStream, makeProviderPlan } from 'voltaire-effect'
+
+const plan = makeProviderPlan([
+  { url: process.env.PRIMARY_WS!, attempts: 2 },
+  { url: process.env.FALLBACK_WS! }
+])
+
+const blockStream = yield* makeBlockStream()
+const resilientStream = blockStream.watch({ include: 'transactions' }).pipe(
+  Stream.withExecutionPlan(plan)
+)
+```
+
+## Error Handling
+
+When all providers fail, the effect fails with the last error:
+
+```typescript
+const program = getBlockNumber().pipe(
+  Effect.withExecutionPlan(plan),
+  Effect.catchTag('TransportError', (error) => {
+    console.error('All providers failed:', error.message)
+    return Effect.succeed(0n)
+  })
+)
+```
+
+## Best Practices
+
+1. **Order by reliability**: Put most reliable provider first
+2. **Reduce attempts for last resort**: Public RPCs often rate-limit
+3. **Use jitter**: Prevents thundering herd on provider recovery
+4. **Monitor fallbacks**: Log when fallback is triggered
+
+```typescript
+import { Effect, Schedule } from 'effect'
+
+const plan = makeProviderPlan([
+  {
+    url: process.env.PAID_PROVIDER!,
+    attempts: 3,
+    schedule: Schedule.exponential('200 millis').pipe(Schedule.jittered)
+  },
+  {
+    url: process.env.BACKUP_PROVIDER!,
+    attempts: 2,
+    schedule: Schedule.spaced('1 second')
+  },
+  {
+    url: 'https://eth.llamarpc.com',
+    attempts: 1  // Single attempt, rate limits are aggressive
+  }
+])
+```
+
+## API Reference
+
+### makeProviderPlan
+
+```typescript
+const makeProviderPlan: (
+  configs: readonly [ProviderStepConfig, ...ProviderStepConfig[]]
+) => ExecutionPlan
+
+interface ProviderStepConfig {
+  readonly url: string
+  readonly attempts?: number   // Default: 1
+  readonly schedule?: Schedule // Default: no delay
+}
+```
+
+### makeResilientProviderPlan
+
+```typescript
+const makeResilientProviderPlan: (
+  primaryUrl: string,
+  fallbackUrl: string,
+  lastResortUrl?: string
+) => ExecutionPlan
+```
+
+## See Also
+
+- [Rate Limiting](/services/rate-limiter) — Respect provider rate limits
+- [Layer Composition](/guides/layers) — Compose providers with other services
+- [Effect ExecutionPlan](https://effect.website/docs/effect/execution-plan) — Official docs

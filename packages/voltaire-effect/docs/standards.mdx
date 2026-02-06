@@ -1,0 +1,406 @@
+---
+title: ERC Standards
+description: Effect-wrapped ERC token standard utilities
+---
+
+## Overview
+
+Effect wrappers for common [ERC token standards](https://ethereum.org/en/developers/docs/standards/tokens/), providing type-safe calldata encoding, event decoding, and interface detection.
+
+```typescript
+import { Effect } from 'effect'
+import * as ERC20 from 'voltaire-effect/standards/ERC20'
+import * as ERC721 from 'voltaire-effect/standards/ERC721'
+import * as ERC1155 from 'voltaire-effect/standards/ERC1155'
+import * as ERC165 from 'voltaire-effect/standards/ERC165'
+```
+
+## ERC-20: Fungible Tokens
+
+The [ERC-20](https://eips.ethereum.org/EIPS/eip-20) standard defines a common interface for fungible tokens.
+
+### Encoding Calldata
+
+```typescript
+import { Effect } from 'effect'
+import * as ERC20 from 'voltaire-effect/standards/ERC20'
+import { Address, Uint256 } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const to = Address('0x1234567890123456789012345678901234567890')
+  const amount = 1000000000000000000n as Uint256.Uint256Type
+  
+  // Encode transfer calldata
+  const transferData = yield* ERC20.encodeTransfer(to, amount)
+  
+  // Encode approve calldata
+  const approveData = yield* ERC20.encodeApprove(to, amount)
+  
+  // Encode balanceOf calldata
+  const balanceData = yield* ERC20.encodeBalanceOf(to)
+  
+  return { transferData, approveData, balanceData }
+})
+```
+
+### Decoding Events
+
+```typescript
+const program = Effect.gen(function* () {
+  const log = {
+    topics: [
+      ERC20.EVENTS.Transfer,
+      '0x0000000000000000000000001234567890123456789012345678901234567890',
+      '0x0000000000000000000000000987654321098765432109876543210987654321'
+    ],
+    data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'
+  }
+  
+  const transfer = yield* ERC20.decodeTransferEvent(log)
+  // { from: '0x1234...', to: '0x0987...', value: 1000000000000000000n }
+  
+  return transfer
+})
+```
+
+### Decoding Return Values
+
+```typescript
+const program = Effect.gen(function* () {
+  const rawBalance = '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'
+  
+  const balance = yield* ERC20.decodeUint256(rawBalance)
+  const success = yield* ERC20.decodeBool('0x0000...01')
+  const name = yield* ERC20.decodeString('0x...')
+  
+  return { balance, success, name }
+})
+```
+
+### TransferFrom and Allowance
+
+```typescript
+const program = Effect.gen(function* () {
+  const owner = Address('0x1111111111111111111111111111111111111111')
+  const spender = Address('0x2222222222222222222222222222222222222222')
+  const recipient = Address('0x3333333333333333333333333333333333333333')
+  const amount = 1000000000000000000n as Uint256.Uint256Type
+  
+  // Encode transferFrom (for approved spenders)
+  const transferFromData = yield* ERC20.encodeTransferFrom(owner, recipient, amount)
+  
+  // Encode allowance check
+  const allowanceData = yield* ERC20.encodeAllowance(owner, spender)
+  
+  // Decode Approval event
+  const log = { topics: [...], data: '0x...' }
+  const approval = yield* ERC20.decodeApprovalEvent(log)
+  // { owner: '0x...', spender: '0x...', value: 1000000000000000000n }
+  
+  // Decode address from return data
+  const addressResult = yield* ERC20.decodeAddress('0x000000000000000000000000...')
+  
+  return { transferFromData, allowanceData, approval }
+})
+```
+
+### Selectors & Events
+
+```typescript
+// Function selectors
+ERC20.SELECTORS.transfer     // '0xa9059cbb'
+ERC20.SELECTORS.approve      // '0x095ea7b3'
+ERC20.SELECTORS.balanceOf    // '0x70a08231'
+ERC20.SELECTORS.transferFrom // '0x23b872dd'
+ERC20.SELECTORS.allowance    // '0xdd62ed3e'
+
+// Event signatures
+ERC20.EVENTS.Transfer  // '0xddf252ad...'
+ERC20.EVENTS.Approval  // '0x8c5be1e5...'
+```
+
+## ERC-721: Non-Fungible Tokens
+
+The [ERC-721](https://eips.ethereum.org/EIPS/eip-721) standard defines non-fungible tokens (NFTs).
+
+### Encoding Calldata
+
+```typescript
+import * as ERC721 from 'voltaire-effect/standards/ERC721'
+
+const program = Effect.gen(function* () {
+  const from = Address('0x1111111111111111111111111111111111111111')
+  const to = Address('0x2222222222222222222222222222222222222222')
+  const tokenId = 42n as Uint256.Uint256Type
+  
+  // Transfer NFT
+  const transferData = yield* ERC721.encodeTransferFrom(from, to, tokenId)
+  
+  // Safe transfer
+  const safeTransferData = yield* ERC721.encodeSafeTransferFrom(from, to, tokenId)
+  
+  // Approve single token
+  const approveData = yield* ERC721.encodeApprove(to, tokenId)
+  
+  // Set operator approval
+  const setApprovalData = yield* ERC721.encodeSetApprovalForAll(to, true)
+  
+  // Query owner
+  const ownerOfData = yield* ERC721.encodeOwnerOf(tokenId)
+  
+  // Get token URI
+  const tokenURIData = yield* ERC721.encodeTokenURI(tokenId)
+  
+  return { transferData, safeTransferData }
+})
+```
+
+### Decoding Events
+
+```typescript
+const program = Effect.gen(function* () {
+  const log = { topics: [...], data: '0x...' }
+  
+  const transfer = yield* ERC721.decodeTransferEvent(log)
+  // { from: '0x...', to: '0x...', tokenId: 42n }
+  
+  const approval = yield* ERC721.decodeApprovalEvent(log)
+  // { owner: '0x...', approved: '0x...', tokenId: 42n }
+  
+  const approvalForAll = yield* ERC721.decodeApprovalForAllEvent(log)
+  // { owner: '0x...', operator: '0x...', approved: true }
+  
+  return { transfer, approval, approvalForAll }
+})
+```
+
+### Selectors
+
+```typescript
+ERC721.SELECTORS.ownerOf           // '0x6352211e'
+ERC721.SELECTORS.transferFrom      // '0x23b872dd'
+ERC721.SELECTORS.safeTransferFrom  // '0x42842e0e'
+ERC721.SELECTORS.approve           // '0x095ea7b3'
+ERC721.SELECTORS.setApprovalForAll // '0xa22cb465'
+ERC721.SELECTORS.tokenURI          // '0xc87b56dd'
+```
+
+## ERC-1155: Multi-Token Standard
+
+The [ERC-1155](https://eips.ethereum.org/EIPS/eip-1155) standard supports both fungible and non-fungible tokens in a single contract.
+
+### Encoding Calldata
+
+```typescript
+import * as ERC1155 from 'voltaire-effect/standards/ERC1155'
+
+const program = Effect.gen(function* () {
+  const from = Address('0x1111...')
+  const to = Address('0x2222...')
+  const tokenId = 1n as Uint256.Uint256Type
+  const amount = 100n as Uint256.Uint256Type
+  
+  // Balance of specific token
+  const balanceData = yield* ERC1155.encodeBalanceOf(to, tokenId)
+  
+  // Safe transfer with data
+  const transferData = yield* ERC1155.encodeSafeTransferFrom(
+    from, to, tokenId, amount, new Uint8Array([])
+  )
+  
+  // Check operator approval
+  const isApprovedData = yield* ERC1155.encodeIsApprovedForAll(from, to)
+  
+  // Get token URI
+  const uriData = yield* ERC1155.encodeURI(tokenId)
+  
+  return { balanceData, transferData }
+})
+```
+
+### Decoding Events
+
+```typescript
+const program = Effect.gen(function* () {
+  const log = { topics: [...], data: '0x...' }
+  
+  const transfer = yield* ERC1155.decodeTransferSingleEvent(log)
+  // { operator: '0x...', from: '0x...', to: '0x...', id: 1n, value: 100n }
+  
+  const approval = yield* ERC1155.decodeApprovalForAllEvent(log)
+  // { account: '0x...', operator: '0x...', approved: true }
+  
+  return { transfer, approval }
+})
+```
+
+### Selectors
+
+```typescript
+ERC1155.SELECTORS.balanceOf           // '0x00fdd58e'
+ERC1155.SELECTORS.safeTransferFrom    // '0xf242432a'
+ERC1155.SELECTORS.safeBatchTransferFrom // '0x2eb2c2d6'
+ERC1155.SELECTORS.setApprovalForAll   // '0xa22cb465'
+ERC1155.SELECTORS.isApprovedForAll    // '0xe985e9c5'
+ERC1155.SELECTORS.uri                 // '0x0e89341c'
+```
+
+### Batch Operations
+
+ERC-1155's batch operations for gas-efficient multi-token transfers:
+
+```typescript
+import * as ERC1155 from 'voltaire-effect/standards/ERC1155'
+
+const program = Effect.gen(function* () {
+  const from = Address('0x1111...')
+  const to = Address('0x2222...')
+  
+  // Batch transfer multiple tokens
+  const tokenIds = [1n, 2n, 3n] as Uint256.Uint256Type[]
+  const amounts = [100n, 50n, 25n] as Uint256.Uint256Type[]
+  
+  const batchTransferData = yield* ERC1155.encodeSafeBatchTransferFrom(
+    from, to, tokenIds, amounts, new Uint8Array([])
+  )
+  
+  // Batch query balances
+  const accounts = [userAddress, userAddress, userAddress] as AddressType[]
+  const queryData = yield* ERC1155.encodeBalanceOfBatch(accounts, tokenIds)
+  
+  return { batchTransferData, queryData }
+})
+```
+
+### Decoding Batch Events
+
+```typescript
+const program = Effect.gen(function* () {
+  const log = { topics: [...], data: '0x...' }
+  
+  // Decode batch transfer event
+  const batch = yield* ERC1155.decodeTransferBatchEvent(log)
+  // { operator: '0x...', from: '0x...', to: '0x...', ids: [1n, 2n], values: [100n, 50n] }
+  
+  // Decode URI update event
+  const uriEvent = yield* ERC1155.decodeURIEvent(log)
+  // { value: 'https://.../{id}.json', id: 1n }
+  
+  // Decode batch balance result
+  const rawResult = '0x...'
+  const balances = yield* ERC1155.decodeBalanceOfBatchResult(rawResult)
+  // [100n, 50n, 25n]
+  
+  return { batch, balances }
+})
+```
+
+## ERC-165: Interface Detection
+
+The [ERC-165](https://eips.ethereum.org/EIPS/eip-165) standard provides a way to detect which interfaces a contract supports.
+
+### Check Interface Support
+
+```typescript
+import { Layer } from 'effect'
+import * as ERC165 from 'voltaire-effect/standards/ERC165'
+import { Provider, HttpTransport } from 'voltaire-effect'
+
+// Compose layers first
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
+
+const program = Effect.gen(function* () {
+  const contract = '0x1234567890123456789012345678901234567890'
+
+  // Check if contract supports ERC-721
+  const supportsERC721 = yield* ERC165.supportsInterface(
+    contract,
+    ERC165.INTERFACE_IDS.ERC721
+  )
+
+  // Detect all supported interfaces
+  const interfaces = yield* ERC165.detectInterfaces(contract)
+  // ['ERC165', 'ERC721', 'ERC721Metadata']
+
+  return { supportsERC721, interfaces }
+}).pipe(Effect.provide(ProviderLayer))
+```
+
+### Encoding Calldata
+
+```typescript
+const program = Effect.gen(function* () {
+  // Encode supportsInterface(bytes4) call
+  const calldata = yield* ERC165.encodeSupportsInterface(
+    ERC165.INTERFACE_IDS.ERC721
+  )
+  
+  return calldata
+})
+```
+
+### Interface IDs
+
+```typescript
+ERC165.INTERFACE_IDS.ERC165          // '0x01ffc9a7'
+ERC165.INTERFACE_IDS.ERC20           // '0x36372b07'
+ERC165.INTERFACE_IDS.ERC721          // '0x80ac58cd'
+ERC165.INTERFACE_IDS.ERC721Metadata  // '0x5b5e139f'
+ERC165.INTERFACE_IDS.ERC721Enumerable // '0x780e9d63'
+ERC165.INTERFACE_IDS.ERC1155         // '0xd9b67a26'
+ERC165.INTERFACE_IDS.ERC1155MetadataURI // '0x0e89341c'
+ERC165.INTERFACE_IDS.ERC2981         // '0x2a55205a'
+ERC165.INTERFACE_IDS.ERC4906         // '0x49064906'
+```
+
+## Error Handling
+
+All encoding/decoding operations use Effect for consistent error handling:
+
+```typescript
+import { StandardsError } from 'voltaire-effect/standards'
+
+const program = Effect.gen(function* () {
+  const log = { topics: [...], data: '0x...' }
+  const result = yield* ERC20.decodeTransferEvent(log)
+  return result
+}).pipe(
+  Effect.catchTag('StandardsError', (e) => {
+    console.error('Decoding failed:', e.message)
+    return Effect.succeed(null)
+  })
+)
+```
+
+## Integration with Contract Factory
+
+Use with the Contract factory for high-level interactions:
+
+```typescript
+import { Contract, call, Provider } from 'voltaire-effect'
+import * as ERC20 from 'voltaire-effect/standards/ERC20'
+
+const program = Effect.gen(function* () {
+  // Use Contract for type-safe calls
+  const token = yield* Contract(tokenAddress, erc20Abi)
+  const balance = yield* token.read.balanceOf(userAddress)
+
+  // Or use ERC20 utils for manual encoding
+  const calldata = yield* ERC20.encodeBalanceOf(userAddress)
+  const result = yield* call({ to: tokenAddress, data: calldata })
+
+  return balance
+})
+```
+
+## See Also
+
+- [Contract Factory](/services/contract) — High-level contract interactions
+- [Provider Service](/services/provider) — Read contract with provider
+- [Contract Interactions Example](/examples/contract-interactions) — Working examples
+- [ERC-20 (EIP-20)](https://eips.ethereum.org/EIPS/eip-20) — Fungible token standard
+- [ERC-721 (EIP-721)](https://eips.ethereum.org/EIPS/eip-721) — Non-fungible token standard
+- [ERC-1155 (EIP-1155)](https://eips.ethereum.org/EIPS/eip-1155) — Multi-token standard
+- [ERC-165 (EIP-165)](https://eips.ethereum.org/EIPS/eip-165) — Interface detection

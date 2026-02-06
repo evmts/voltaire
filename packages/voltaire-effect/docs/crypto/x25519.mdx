@@ -1,0 +1,133 @@
+---
+title: X25519
+description: ECDH key exchange for secure communication
+---
+
+X25519 (Curve25519) for Elliptic Curve Diffie-Hellman key exchange. Used in Signal, Matrix, TLS 1.3, WireGuard.
+
+## Quick Start
+
+```typescript
+import { X25519Service, X25519Live } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const result = await Effect.runPromise(
+  Effect.gen(function* () {
+    const x = yield* X25519Service
+    const alice = yield* x.generateKeyPair()
+    const bob = yield* x.generateKeyPair()
+    const sharedSecret = yield* x.computeSecret(alice.secretKey, bob.publicKey)
+    return sharedSecret  // 32 bytes
+  }).pipe(Effect.provide(X25519Live))
+)
+```
+
+## End-to-End Encrypted Messaging
+
+Complete example of secure message exchange between two parties:
+
+```typescript
+import { X25519Service, X25519Live, AesGcmService, AesGcmLive } from 'voltaire-effect/crypto'
+import { Effect } from 'effect'
+
+const secureMessaging = Effect.gen(function* () {
+  const x25519 = yield* X25519Service
+  const aes = yield* AesGcmService
+  
+  // Alice and Bob generate keypairs
+  const alice = yield* x25519.generateKeyPair()
+  const bob = yield* x25519.generateKeyPair()
+  
+  // Both compute the same shared secret
+  const aliceShared = yield* x25519.computeSecret(alice.secretKey, bob.publicKey)
+  const bobShared = yield* x25519.computeSecret(bob.secretKey, alice.publicKey)
+  // aliceShared === bobShared (same 32 bytes)
+  
+  // Alice encrypts message using shared secret as key
+  const message = new TextEncoder().encode('Hello Bob!')
+  const nonce = yield* aes.generateNonce()
+  const ciphertext = yield* aes.encrypt(aliceShared, message, nonce)
+  
+  // Bob decrypts using the same shared secret
+  const decrypted = yield* aes.decrypt(bobShared, ciphertext, nonce)
+  const text = new TextDecoder().decode(decrypted)
+  
+  return { text, alicePublicKey: alice.publicKey, bobPublicKey: bob.publicKey }
+})
+
+const CryptoLayer = Layer.mergeAll(X25519Live, AesGcmLive)
+const result = await Effect.runPromise(secureMessaging.pipe(Effect.provide(CryptoLayer)))
+console.log('Decrypted message:', result.text) // "Hello Bob!"
+```
+
+## Public Key Distribution
+
+Derive public key from existing secret key:
+
+```typescript
+const publicKey = yield* x.getPublicKey(secretKey)
+```
+
+## Ephemeral Key Exchange
+
+Generate one-time keys for forward secrecy:
+
+```typescript
+const createSecureChannel = (recipientPublicKey: Uint8Array) =>
+  Effect.gen(function* () {
+    const x25519 = yield* X25519Service
+    
+    // Generate ephemeral keypair (one-time use)
+    const ephemeral = yield* x25519.generateKeyPair()
+    
+    // Compute shared secret
+    const sharedSecret = yield* x25519.computeSecret(
+      ephemeral.secretKey, 
+      recipientPublicKey
+    )
+    
+    return {
+      sharedSecret,
+      ephemeralPublicKey: ephemeral.publicKey
+      // Send ephemeralPublicKey with encrypted message
+    }
+  }).pipe(Effect.provide(X25519Live))
+```
+
+## Testing
+
+```typescript
+import { X25519Test } from 'voltaire-effect/crypto'
+myProgram.pipe(Effect.provide(X25519Test))
+// Deterministic keypairs and shared secrets for unit tests
+```
+
+## Error Handling
+
+```typescript
+import { InvalidSecretKeyError, InvalidPublicKeyError, X25519Error } from 'voltaire-effect/crypto'
+
+program.pipe(
+  Effect.catchTag('InvalidSecretKeyError', () => Effect.fail(new Error('Bad secret key'))),
+  Effect.catchTag('InvalidPublicKeyError', () => Effect.fail(new Error('Bad public key'))),
+  Effect.catchTag('X25519Error', (e) => Effect.fail(new Error(`Key exchange failed: ${e.message}`)))
+)
+```
+
+## Interface
+
+```typescript
+interface X25519ServiceShape {
+  readonly generateKeyPair: () => Effect.Effect<{ secretKey: Uint8Array; publicKey: Uint8Array }>
+  readonly getPublicKey: (secretKey: Uint8Array) => Effect.Effect<Uint8Array, InvalidSecretKeyError>
+  readonly computeSecret: (secretKey: Uint8Array, publicKey: Uint8Array) => Effect.Effect<Uint8Array, InvalidSecretKeyError | InvalidPublicKeyError | X25519Error>
+}
+```
+
+## Use Cases
+
+- **Encrypted messaging** - Signal, Matrix, and other E2E encrypted chat
+- **File encryption** - Encrypt files for specific recipients
+- **TLS 1.3** - Modern TLS uses X25519 for key exchange
+- **VPN protocols** - WireGuard uses X25519 for peer authentication
+- **Wallet backup sharing** - Securely share encrypted wallet backups

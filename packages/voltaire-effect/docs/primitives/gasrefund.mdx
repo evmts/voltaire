@@ -1,0 +1,30 @@
+---
+title: GasRefund
+description: Gas refunds with EIP-3529 capping
+---
+
+Gas refunds accumulated during execution (e.g., storage clearing), capped per EIP-3529.
+
+```typescript
+import * as GasRefund from 'voltaire-effect/primitives/GasRefund'
+import { Effect } from 'effect'
+
+// Create refund
+const refund = Effect.runSync(GasRefund.from(15000n))
+
+// Capped refund (max = gasUsed / 5 per EIP-3529)
+const capped = Effect.runSync(GasRefund.cappedRefund(30000n, 100000n))
+// max for 100000 gas = 20000, so min(30000, 20000) = 20000n
+```
+
+## Usage
+
+```typescript
+const calculateNetGas = (gasUsed: bigint, accumulatedRefund: bigint) =>
+  Effect.gen(function* () {
+    const capped = yield* GasRefund.cappedRefund(accumulatedRefund, gasUsed)
+    return gasUsed - capped
+  })
+```
+
+Fails on negative values.

@@ -1,0 +1,43 @@
+---
+title: ContractResult
+description: Contract call result handling (success/revert)
+---
+
+```typescript
+import * as ContractResult from 'voltaire-effect/ContractResult'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+// Decode raw result
+const success = Schema.decodeSync(ContractResult.ContractResultSchema)({
+  isSuccess: true,
+  data: '0x0000000000000000000000000000000000000000000000000000000000000001'
+})
+
+// Create directly
+const ok = Effect.runSync(ContractResult.success(new Uint8Array([0, 0, 0, 1])))
+const fail = Effect.runSync(ContractResult.failure(new Uint8Array([8, 195, 121, 160])))
+
+// Check and unwrap
+const isOk = Effect.runSync(ContractResult.isSuccess(ok))  // true
+const data = Effect.runSync(ContractResult.unwrap(ok))      // Uint8Array
+const safe = Effect.runSync(ContractResult.unwrapOr(fail, new Uint8Array(32)))
+```
+
+## Types
+
+```typescript
+type ContractResultType = SuccessResult | FailureResult
+type SuccessResult = { readonly success: true; readonly data: Uint8Array }
+type FailureResult = { readonly success: false; readonly revertReason: Uint8Array | string }
+```
+
+## API
+
+| Function | Type |
+|----------|------|
+| `success` | `(data: Uint8Array) => Effect<SuccessResult>` |
+| `failure` | `(reason: Uint8Array) => Effect<FailureResult>` |
+| `isSuccess` | `(r: ContractResultType) => Effect<boolean>` |
+| `unwrap` | `(r: ContractResultType) => Effect<Uint8Array, Error>` |
+| `unwrapOr` | `(r: ContractResultType, fallback: Uint8Array) => Effect<Uint8Array>` |

@@ -1,0 +1,29 @@
+---
+title: Uncle
+description: Uncle (ommer) block header
+---
+
+```typescript
+import * as Uncle from 'voltaire-effect/primitives/Uncle'
+import * as Schema from 'effect/Schema'
+import { Effect } from 'effect'
+
+const uncle = await Effect.runPromise(Uncle.from({
+  parentHash: '0x...',
+  beneficiary: '0x...',
+  number: 1000000n,
+  stateRoot: '0x...',
+  transactionsRoot: '0x...',
+  receiptsRoot: '0x...',
+  logsBloom: new Uint8Array(256),
+  difficulty: 0n,
+  gasLimit: 30000000n,
+  gasUsed: 0n,
+  timestamp: 1700000000n,
+  extraData: new Uint8Array(0),
+  mixHash: '0x...',
+  nonce: 0n,
+}))
+```
+
+Valid blocks not in canonical chain, referenced to incentivize mining on forks. Pre-merge only.

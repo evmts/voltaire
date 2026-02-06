@@ -1,0 +1,92 @@
+---
+title: Ens
+description: ENS name validation, normalization, and hashing with Effect
+---
+
+```typescript
+import * as Ens from 'voltaire-effect/primitives/Ens'
+import { Effect } from 'effect'
+import * as Schema from 'effect/Schema'
+
+// Schema validation
+const name = Schema.decodeSync(Ens.EnsSchema)('vitalik.eth')
+
+// Normalize (ENSIP-15)
+const normalized = await Effect.runPromise(Ens.normalize('Vitalik.ETH')) // 'vitalik.eth'
+
+// Namehash (32-byte hash for contracts)
+const hash = await Effect.runPromise(Ens.namehash('vitalik.eth'))
+
+// Labelhash (single label)
+const label = await Effect.runPromise(Ens.labelhash('vitalik'))
+
+// Beautify for display
+const display = await Effect.runPromise(Ens.beautify('vitalik.eth'))
+
+// Validation
+const isValid = Ens.isValid('vitalik.eth') // true (pure)
+```
+
+## Schema
+
+```typescript
+const name = Schema.decodeSync(Ens.EnsSchema)('vitalik.eth')
+```
+
+## Constructors (Effect-wrapped)
+
+```typescript
+const ens = await Effect.runPromise(Ens.from('vitalik.eth'))
+```
+
+## Normalization (Effect-wrapped)
+
+```typescript
+const normalized = await Effect.runPromise(Ens.normalize('VITALIK.eth'))
+const beautified = await Effect.runPromise(Ens.beautify('vitalik.eth'))
+```
+
+## Hashing (Effect-wrapped)
+
+```typescript
+const namehash = await Effect.runPromise(Ens.namehash('vitalik.eth'))
+const labelhash = await Effect.runPromise(Ens.labelhash('vitalik'))
+```
+
+## Validation
+
+```typescript
+Ens.isValid('vitalik.eth')  // boolean (pure)
+Ens.is(value)               // type guard (pure)
+await Effect.runPromise(Ens.validate('vitalik.eth'))  // throws on invalid
+```
+
+## Conversion (Pure)
+
+```typescript
+Ens.toString(ensName)  // string
+```
+
+## Practical Example
+
+```typescript
+const resolveEns = (input: string) =>
+  Effect.gen(function* () {
+    yield* Ens.validate(input)
+    const normalized = yield* Ens.normalize(input)
+    const hash = yield* Ens.namehash(normalized)
+    return { name: normalized, hash }
+  })
+
+const result = await Effect.runPromiseExit(resolveEns('invalid..eth'))
+if (result._tag === 'Failure') console.error(result.cause) // EnsError
+```
+
+## Errors
+
+- `DisallowedCharacterError` — Prohibited ENS character
+- `EmptyLabelError` — Zero-length label segment
+- `IllegalMixtureError` — Incompatible script combinations
+- `InvalidLabelExtensionError` — Double-dash at positions 2-3
+- `InvalidUtf8Error` — Malformed UTF-8 encoding
+- `WholeConfusableError` — Name resembles different script

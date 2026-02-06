@@ -1,0 +1,52 @@
+---
+title: Bytes
+description: Effect-based byte array schemas and operations for raw binary data
+---
+
+```typescript
+import { Bytes, Bytes32 } from 'voltaire-effect'
+import { Effect } from 'effect'
+
+const bytes = Effect.runSync(Bytes.from('0xdeadbeef'))
+```
+
+## Schemas
+
+**Bytes.Hex** — Decodes from hex, Uint8Array, or number array into branded `BytesType`.
+
+```typescript
+import { Bytes } from 'voltaire-effect'
+import * as Schema from 'effect/Schema'
+
+Schema.decodeSync(Bytes.Hex)('0xdeadbeef')
+Schema.decodeSync(Bytes.Hex)(new Uint8Array([0xde, 0xad]))
+Schema.decodeSync(Bytes.Hex)([222, 173, 190, 239])
+```
+
+**Bytes32.Hex** — Fixed 32-byte schema for hashes and storage slots.
+
+```typescript
+import { Bytes32 } from 'voltaire-effect'
+
+Schema.decodeSync(Bytes32.Hex)(
+  '0x0000000000000000000000000000000000000000000000000000000000000001'
+)
+```
+
+## Functions
+
+**Bytes.from(input)** — Returns `Effect<BytesType, InvalidRangeError>`.
+
+**Bytes32.from(input)** — Returns `Effect<Bytes32Type, Error>`.
+
+## Types
+
+```typescript
+type BytesType = Bytes.BytesType
+type Bytes32Type = Bytes32.Bytes32Type
+type Bytes32Like = Bytes32.Bytes32Like  // string | Uint8Array | bigint | number
+```
+
+## Errors
+
+`InvalidRangeError` on invalid input.

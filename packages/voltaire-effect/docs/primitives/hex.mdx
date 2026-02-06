@@ -1,0 +1,375 @@
+---
+title: Hex
+description: Effect-based wrappers for Ethereum hex string handling
+---
+
+Hex strings are ubiquitous in Ethereum—addresses, transaction data, storage slots, and more. This module provides validation, conversion, and manipulation with full Effect integration.
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  const hex = yield* Hex.from('0xdeadbeef')
+  const value = yield* Hex.toBigInt(hex)
+  return value
+})
+```
+
+## Schemas
+
+### Hex.String
+
+Validates hex strings with `0x` prefix. Returns branded `HexType`.
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import * as S from 'effect/Schema'
+
+S.decodeSync(Hex.String)('0xdeadbeef')  // ✓
+S.decodeSync(Hex.String)('0xDEADBEEF')  // ✓ (case-insensitive)
+S.decodeSync(Hex.String)('not-hex')     // ✗ ParseError
+```
+
+### Hex.Bytes
+
+Validates and converts to/from `Uint8Array`:
+
+```typescript
+const hex = S.decodeSync(Hex.Bytes)(new Uint8Array([0xde, 0xad]))
+const bytes = S.encodeSync(Hex.Bytes)(hex)  // Uint8Array
+```
+
+## Constructors
+
+### from (Effect)
+
+Creates hex from string or bytes. Returns Effect.
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  const hex = yield* Hex.from('0xdeadbeef')
+  const fromBytes = yield* Hex.from(new Uint8Array([0xde, 0xad]))
+})
+```
+
+### fromBytes (Infallible)
+
+Creates hex from bytes directly:
+
+```typescript
+const hex = Hex.fromBytes(new Uint8Array([0xde, 0xad, 0xbe, 0xef]))
+// "0xdeadbeef"
+```
+
+### fromString (Infallible)
+
+Creates hex from UTF-8 string (encodes string bytes):
+
+```typescript
+const hex = Hex.fromString('hello')
+// "0x68656c6c6f"
+```
+
+### fromBoolean (Infallible)
+
+Converts boolean to hex:
+
+```typescript
+Hex.fromBoolean(true)   // "0x01"
+Hex.fromBoolean(false)  // "0x00"
+```
+
+### fromNumber (Effect)
+
+Convert number to hex:
+
+```typescript
+const program = Effect.gen(function* () {
+  const hex = yield* Hex.fromNumber(255)      // "0xff"
+  const padded = yield* Hex.fromNumber(255, 2)  // "0x00ff"
+})
+```
+
+### fromBigInt (Effect)
+
+Convert bigint to hex:
+
+```typescript
+const program = Effect.gen(function* () {
+  const hex = yield* Hex.fromBigInt(1000000000000000000n)
+  // "0xde0b6b3a7640000"
+})
+```
+
+## Conversion
+
+### toBytes (Infallible)
+
+Convert hex to bytes:
+
+```typescript
+const bytes = Hex.toBytes(hex)
+// Uint8Array(4) [222, 173, 190, 239]
+```
+
+### toStringHex (Effect)
+
+Decode hex as UTF-8 string:
+
+```typescript
+const program = Effect.gen(function* () {
+  const str = yield* Hex.toStringHex(hex)
+  // "hello"
+})
+```
+
+### toNumber (Effect)
+
+Convert hex to number:
+
+```typescript
+const program = Effect.gen(function* () {
+  const num = yield* Hex.toNumber('0xff' as HexType)
+  // 255
+})
+```
+
+### toBigInt (Infallible)
+
+Convert hex to bigint:
+
+```typescript
+const big = Hex.toBigInt(hex)
+// 1000000000000000000n
+```
+
+### toBoolean (Effect)
+
+Convert hex to boolean:
+
+```typescript
+const program = Effect.gen(function* () {
+  const t = yield* Hex.toBoolean('0x01' as HexType)  // true
+  const f = yield* Hex.toBoolean('0x00' as HexType)  // false
+})
+```
+
+## Utilities
+
+### size (Infallible)
+
+Returns byte length:
+
+```typescript
+Hex.size(hex)  // 4
+Hex.size('0x' as HexType)  // 0
+```
+
+### isSized (Infallible)
+
+Check if hex is exactly the specified size:
+
+```typescript
+Hex.isSized(hex, 4)   // true
+Hex.isSized(hex, 32)  // false
+```
+
+### assertSize (Effect)
+
+Assert hex is exactly the specified size. Returns `Sized<T>` type on success:
+
+```typescript
+const program = Effect.gen(function* () {
+  const sized = yield* Hex.assertSize(hex, 4)  // succeeds with Sized<4>
+  yield* Hex.assertSize(hex, 32) // fails with InvalidLengthError
+})
+```
+
+### slice (Effect)
+
+Extract portion of hex:
+
+```typescript
+const program = Effect.gen(function* () {
+  const first4 = yield* Hex.slice(hex, 0, 4)
+  const fromByte4 = yield* Hex.slice(hex, 4)
+})
+```
+
+### pad / padRight (Effect)
+
+Pad to specified byte length:
+
+```typescript
+const program = Effect.gen(function* () {
+  const leftPad = yield* Hex.pad(hex, 32)     // "0x00000000...ef"
+  const rightPad = yield* Hex.padRight(hex, 32)  // "0xdeadbeef00..."
+})
+```
+
+### concat (Effect)
+
+Concatenate hex values:
+
+```typescript
+const program = Effect.gen(function* () {
+  const combined = yield* Hex.concat(hex1, hex2)
+  // "0xdeadbeef12345678"
+})
+```
+
+### trim (Infallible)
+
+Trim leading zeros:
+
+```typescript
+Hex.trim('0x00001234' as HexType)  // "0x1234"
+```
+
+### validate (Effect)
+
+Validate and return hex:
+
+```typescript
+const program = Effect.gen(function* () {
+  const valid = yield* Hex.validate('0x1234')
+})
+```
+
+### xor (Effect)
+
+XOR two hex strings:
+
+```typescript
+const program = Effect.gen(function* () {
+  const result = yield* Hex.xor(hex1, hex2)
+})
+```
+
+### equals (Infallible)
+
+Compare hex values (case-insensitive):
+
+```typescript
+Hex.equals(hex1, hex2)  // true
+```
+
+### clone (Infallible)
+
+Create a copy:
+
+```typescript
+const copy = Hex.clone(hex)
+```
+
+### isHex (Infallible)
+
+Check if string is valid hex:
+
+```typescript
+Hex.isHex('0x1234')  // true
+Hex.isHex('invalid') // false
+```
+
+### zero (Infallible)
+
+Create zero-filled hex:
+
+```typescript
+Hex.zero(32)  // "0x0000...0000" (32 bytes)
+```
+
+### random (Infallible)
+
+Generate random hex:
+
+```typescript
+Hex.random(32)  // random 32-byte hex
+```
+
+## Common Patterns
+
+### Encode Function Calldata
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  const selector = '0xa9059cbb' as HexType
+  const encodedArgs = '0x000000000000000000000000...' as HexType
+  const calldata = yield* Hex.concat(selector, encodedArgs)
+})
+```
+
+### Parse RPC Response
+
+```typescript
+import * as Hex from 'voltaire-effect/primitives/Hex'
+import { Effect } from 'effect'
+
+const program = Effect.gen(function* () {
+  const rpcResult = yield* Hex.from('0x0000...de0b6b3a7640000')
+  const value = yield* Hex.toBigInt(rpcResult)
+  // 1000000000000000000n (1 ETH)
+})
+```
+
+### Zero-Pad Address
+
+```typescript
+const program = Effect.gen(function* () {
+  const address = yield* Hex.from('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+  const padded = yield* Hex.pad(address, 32)
+})
+```
+
+## Error Handling
+
+Effect operations return typed errors:
+
+```typescript
+import { Effect } from 'effect'
+import * as Hex from 'voltaire-effect/primitives/Hex'
+
+const program = Hex.from('not-hex').pipe(
+  Effect.catchTag('InvalidFormatError', () =>
+    Effect.succeed('0x' as HexType)
+  )
+)
+```
+
+## Error Types
+
+| Error | Description |
+|-------|-------------|
+| `InvalidFormatError` | Missing 0x prefix or invalid format |
+| `InvalidCharacterError` | Invalid hex characters |
+| `InvalidLengthError` | Invalid length |
+| `OddLengthError` | Odd number of hex characters |
+| `SizeExceededError` | Hex exceeds target size |
+| `InvalidBooleanHexError` | Not a valid boolean hex |
+| `NegativeNumberError` | Negative number in conversion |
+| `UnsafeIntegerError` | Number exceeds MAX_SAFE_INTEGER |
+| `NonIntegerError` | Non-integer number |
+| `InvalidSizeError` | Invalid size parameter |
+
+## Types
+
+```typescript
+type HexType = `0x${string}` & { readonly __brand: 'Hex' }
+type Sized<N extends number> = HexType & { readonly __size: N }
+```
+
+## See Also
+
+- [Bytes](/primitives/bytes) — Raw byte arrays
+- [Bytes32](/primitives/bytes32) — Fixed 32-byte values
+- [Address](/primitives/address) — 20-byte addresses
+- [Hash](/primitives/hash) — 32-byte hashes
+- [Voltaire Hex](https://voltaire.tevm.sh/primitives/hex) — Core Hex documentation
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Effect Schema validation

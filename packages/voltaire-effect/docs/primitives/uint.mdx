@@ -1,0 +1,211 @@
+---
+title: Uint
+description: Effect wrappers for 256-bit unsigned integers
+---
+
+The Uint module provides Effect-based wrappers for all 47 Uint256 operations from `@tevm/voltaire`.
+
+```typescript
+import * as Uint from 'voltaire-effect/primitives/Uint'
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+```
+
+## Schemas
+
+Parse and validate Uint256 values using Effect Schema:
+
+| Schema | Input | Output |
+|--------|-------|--------|
+| `Uint.BigInt` | bigint | Uint256Type |
+| `Uint.Number` | number | Uint256Type |
+| `Uint.Hex` | hex string | Uint256Type |
+| `Uint.String` | decimal string | Uint256Type |
+| `Uint.Bytes` | Uint8Array | Uint256Type |
+
+```typescript
+// Decode from various formats
+const fromBigInt = S.decodeSync(Uint.BigInt)(1000000000000000000n)
+const fromHex = S.decodeSync(Uint.Hex)('0xde0b6b3a7640000')
+const fromNumber = S.decodeSync(Uint.Number)(42)
+
+// Encode back
+const hex = S.encodeSync(Uint.Hex)(fromBigInt)
+// "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000"
+```
+
+## Constructors
+
+Create Uint256 values with Effect-wrapped error handling:
+
+```typescript
+// from() accepts bigint, number, or string (decimal/hex)
+const a = Effect.runSync(Uint.from(100n))
+const b = Effect.runSync(Uint.from("0xff"))
+const c = Effect.runSync(Uint.from(42))
+
+// Type-specific constructors
+const fromBigInt = Effect.runSync(Uint.fromBigInt(100n))
+const fromNumber = Effect.runSync(Uint.fromNumber(42))
+const fromHex = Effect.runSync(Uint.fromHex("0xde0b6b3a7640000"))
+const fromBytes = Effect.runSync(Uint.fromBytes(new Uint8Array([0xff])))
+const fromAbi = Effect.runSync(Uint.fromAbiEncoded(abiEncodedData))
+```
+
+### tryFrom
+
+Returns an Option instead of throwing:
+
+```typescript
+import * as Option from 'effect/Option'
+
+const result = Uint.tryFrom(100n) // Some(100n)
+const invalid = Uint.tryFrom(-1n) // None
+```
+
+## Type Guards
+
+Pure functions for type checking:
+
+```typescript
+if (Uint.isUint256(value)) {
+  // value is Uint256Type
+}
+
+Uint.isValid(100n) // true
+Uint.isValid(-1n)  // false
+```
+
+## Arithmetic
+
+### Wrapping Operations (pure)
+
+These operations wrap on overflow/underflow and never fail:
+
+```typescript
+const a = S.decodeSync(Uint.BigInt)(100n)
+const b = S.decodeSync(Uint.BigInt)(30n)
+
+Uint.plus(a, b)   // 130n (wraps on overflow)
+Uint.minus(a, b)  // 70n (wraps on underflow)
+Uint.times(a, b)  // 3000n (wraps on overflow)
+Uint.toPower(a, b) // a^b (wraps on overflow)
+```
+
+### Fallible Operations (Effect-wrapped)
+
+Division and modulo can fail on zero divisor:
+
+```typescript
+const quotient = Effect.runSync(Uint.dividedBy(a, b)) // 3n
+const remainder = Effect.runSync(Uint.modulo(a, b))   // 10n
+
+// Handle errors
+const result = Uint.dividedBy(a, zero).pipe(
+  Effect.catchAll((e) => Effect.succeed(fallbackValue))
+)
+```
+
+## Comparison
+
+All comparison functions are pure:
+
+```typescript
+Uint.equals(a, b)           // false
+Uint.notEquals(a, b)        // true
+Uint.lessThan(a, b)         // false
+Uint.lessThanOrEqual(a, b)  // false
+Uint.greaterThan(a, b)      // true
+Uint.greaterThanOrEqual(a, b) // true
+Uint.isZero(a)              // false
+```
+
+## Bitwise Operations
+
+All bitwise operations are pure:
+
+```typescript
+Uint.bitwiseAnd(a, b)       // a & b
+Uint.bitwiseOr(a, b)        // a | b
+Uint.bitwiseXor(a, b)       // a ^ b
+Uint.bitwiseNot(a)          // ~a
+Uint.shiftLeft(a, bits)     // a << bits
+Uint.shiftRight(a, bits)    // a >> bits
+```
+
+## Bit Utilities
+
+```typescript
+Uint.bitLength(a)           // number of bits needed
+Uint.leadingZeros(a)        // Effect<number>
+Uint.popCount(a)            // Effect<number> - count of 1 bits
+Uint.isPowerOf2(a)          // boolean
+```
+
+## Math Utilities
+
+```typescript
+// Pure
+Uint.gcd(a, b)              // greatest common divisor
+Uint.lcm(a, b)              // least common multiple
+Uint.clone(a)               // copy value
+
+// Effect-wrapped (variadic)
+const minVal = Effect.runSync(Uint.min(a, b, c))
+const maxVal = Effect.runSync(Uint.max(a, b, c))
+const total = Effect.runSync(Uint.sum(a, b, c))
+const prod = Effect.runSync(Uint.product(a, b, c))
+
+// Binary min/max
+const smaller = Effect.runSync(Uint.minimum(a, b))
+const larger = Effect.runSync(Uint.maximum(a, b))
+```
+
+## Converters
+
+All converters are Effect-wrapped:
+
+```typescript
+const bigint = Effect.runSync(Uint.toBigInt(a))     // bigint
+const num = Effect.runSync(Uint.toNumber(a))        // number (can fail if too large)
+const hex = Effect.runSync(Uint.toHex(a))           // "0x00...64" (padded)
+const hexShort = Effect.runSync(Uint.toHex(a, false)) // "0x64" (unpadded)
+const bytes = Effect.runSync(Uint.toBytes(a))       // Uint8Array
+const abi = Effect.runSync(Uint.toAbiEncoded(a))    // 32-byte Uint8Array
+const str = Effect.runSync(Uint.toString(a))        // decimal string
+const strHex = Effect.runSync(Uint.toString(a, 16)) // hex string (no prefix)
+```
+
+## Complete API Reference
+
+### Schemas (5)
+`BigInt`, `Bytes`, `Hex`, `Number`, `String`
+
+### Constructors (7)
+`from`, `fromAbiEncoded`, `fromBigInt`, `fromBytes`, `fromHex`, `fromNumber`, `tryFrom`
+
+### Type Guards (2)
+`isUint256`, `isValid`
+
+### Bit Utilities (4)
+`bitLength`, `isPowerOf2`, `leadingZeros`, `popCount`
+
+### Bitwise (6)
+`bitwiseAnd`, `bitwiseNot`, `bitwiseOr`, `bitwiseXor`, `shiftLeft`, `shiftRight`
+
+### Comparison (7)
+`equals`, `greaterThan`, `greaterThanOrEqual`, `isZero`, `lessThan`, `lessThanOrEqual`, `notEquals`
+
+### Arithmetic (6)
+`dividedBy`, `minus`, `modulo`, `plus`, `times`, `toPower`
+
+### Math (9)
+`clone`, `gcd`, `lcm`, `max`, `maximum`, `min`, `minimum`, `product`, `sum`
+
+### Converters (6)
+`toAbiEncoded`, `toBigInt`, `toBytes`, `toHex`, `toNumber`, `toString`
+
+## See Also
+
+- [Voltaire Uint](https://voltaire.tevm.sh/primitives/uint) — Core Uint documentation
+- [Effect Schema](https://effect.website/docs/schema/introduction/) — Schema validation
