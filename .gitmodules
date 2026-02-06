@@ -1,0 +1,9 @@
+[submodule "vendor/execution-apis"]
+	path = vendor/execution-apis
+	url = https://github.com/ethereum/execution-apis.git
+[submodule "lib/libwally-core"]
+	path = packages/voltaire-zig/lib/libwally-core
+	url = https://github.com/evmts/libwally-core.git
+[submodule "skills"]
+	path = skills
+	url = git@github.com:evmts/skills.git
