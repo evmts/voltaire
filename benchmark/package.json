@@ -1,0 +1,19 @@
+{
+	"name": "keccak256-benchmark",
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"bench": "node run.js",
+		"bench:speed": "node speed.js",
+		"bench:size": "node size.js"
+	},
+	"dependencies": {
+		"viem": "^2.43.5",
+		"voltaire": "*"
+	},
+	"devDependencies": {
+		"esbuild": "^0.24.2",
+		"mitata": "^1.0.34",
+		"tsx": "^4.19.0"
+	}
+}
