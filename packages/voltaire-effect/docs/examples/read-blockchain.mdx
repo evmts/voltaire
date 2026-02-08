@@ -97,7 +97,7 @@ const ProviderLayer = Provider.pipe(
 
 const program = Effect.gen(function* () {
   return yield* waitForTransactionReceipt(
-    '0x0000000000000000000000000000000000000000000000000000000000000000',
+    '0x9d54e9626ddb161a68844c185cc0928540315ddc83290d78593f1f406d0dd0b6',
     { confirmations: 3, timeout: '60 seconds' }
   )
 }).pipe(Effect.provide(ProviderLayer))
