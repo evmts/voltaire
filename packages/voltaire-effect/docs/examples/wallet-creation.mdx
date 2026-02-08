@@ -137,8 +137,8 @@ import {
 import { MnemonicAccount } from 'voltaire-effect/native'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
-const mnemonic = process.env.MNEMONIC!
-const rpcUrl = 'https://mainnet.infura.io/v3/YOUR_KEY'
+const mnemonic = "test test test test test test test test test test test junk"
+const rpcUrl = 'https://eth.llamarpc.com'
 
 // Compose all layers once
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)

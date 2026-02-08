@@ -9,12 +9,31 @@ Querying 10 token balances naively requires 10 separate RPC calls:
 
 ```typescript
 import { Effect } from 'effect'
-import { call } from 'voltaire-effect'
+import { call, Provider, HttpTransport } from 'voltaire-effect'
+import * as ERC20 from 'voltaire-effect/standards/ERC20'
+
+const token = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' // USDC
+const addresses = [
+  '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8',
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f251e3'
+]
 
 // ❌ Naive approach: 10 RPC calls
-const balances = yield* Effect.forEach(addresses, (addr) => 
-  call({ to: token, data: encodeBalanceOf(addr) })
+const program = Effect.gen(function* () {
+  const balances = yield* Effect.forEach(addresses, (addr) =>
+    Effect.gen(function* () {
+      const callData = yield* ERC20.encodeBalanceOf(addr as `0x${string}`)
+      return yield* call({ to: token, data: callData })
+    })
+  )
+  return balances
+}).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
 )
+
+await Effect.runPromise(program)
 ```
 
 With Multicall3, you batch them into **1 RPC call**.

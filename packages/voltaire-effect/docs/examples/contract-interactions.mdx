@@ -22,7 +22,7 @@ const erc20Abi = [
 
 // Compose layers first, then provide once
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
 const program = Effect.gen(function* () {
@@ -228,7 +228,7 @@ const erc20Abi = [
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://mainnet.infura.io/v3/YOUR_KEY'))
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
 const resilientRead = Effect.gen(function* () {

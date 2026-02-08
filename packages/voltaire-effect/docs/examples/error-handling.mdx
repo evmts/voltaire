@@ -11,11 +11,11 @@ import { getBalance, Provider, HttpTransport, withTimeout } from 'voltaire-effec
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 
 const program = Effect.gen(function* () {
-  return yield* getBalance('0x...', 'latest')
+  return yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
 }).pipe(
   withTimeout('5 seconds'),
   Effect.catchTags({
@@ -75,7 +75,7 @@ import { getBlockNumber, Provider, HttpTransport, withRetrySchedule } from 'volt
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 
 const program = Effect.gen(function* () {
@@ -94,7 +94,7 @@ import { getBlock, Provider, HttpTransport, withTimeout } from 'voltaire-effect'
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 
 const program = Effect.gen(function* () {
@@ -114,11 +114,11 @@ import { getBlockNumber, Provider, HttpTransport, withTimeout } from 'voltaire-e
 
 // Compose layers for each provider
 const PrimaryLayer = Provider.pipe(
-  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 
 const BackupLayer = Provider.pipe(
-  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
+  Layer.provide(HttpTransport({ url: 'https://ethereum.publicnode.com' }))
 )
 
 const primary = Effect.gen(function* () {
@@ -145,7 +145,7 @@ const address = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 
 const program = Effect.gen(function* () {
@@ -174,7 +174,7 @@ const requiredAmount = 1_000_000_000_000_000_000n  // 1 ETH
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
+  Layer.provide(HttpTransport({ url: 'https://eth.llamarpc.com' }))
 )
 
 const program = Effect.gen(function* () {

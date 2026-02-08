@@ -298,8 +298,8 @@ await Effect.runPromise(withTimeoutExample)
 
 ```typescript
 import { Effect } from 'effect'
+import * as Stream from 'effect/Stream'
 import { makeBlockStream, BlockStreamError, HttpTransport } from 'voltaire-effect/services'
-import * as Stream from 'voltaire-effect/stream'
 
 const robustBackfill = Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()

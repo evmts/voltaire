@@ -96,7 +96,10 @@ const ProviderLayer = Provider.pipe(
 )
 
 const program = Effect.gen(function* () {
-  return yield* waitForTransactionReceipt('0x1234...', { confirmations: 3, timeout: '60 seconds' })
+  return yield* waitForTransactionReceipt(
+    '0x0000000000000000000000000000000000000000000000000000000000000000',
+    { confirmations: 3, timeout: '60 seconds' }
+  )
 }).pipe(Effect.provide(ProviderLayer))
 ```
 
@@ -113,8 +116,8 @@ const ProviderLayer = Provider.pipe(
 
 const program = Effect.gen(function* () {
   return yield* estimateGas({
-    from: '0xYourAddress...',
-    to: '0xRecipient...',
+    from: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+    to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     value: 1000000000000000000n
   })
 }).pipe(Effect.provide(ProviderLayer))

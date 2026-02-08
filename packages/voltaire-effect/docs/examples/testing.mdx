@@ -37,8 +37,13 @@ import { getBlockNumber, getBalance, getBlock, Provider, TestTransport, withoutC
 
 const mockTransport = TestTransport({
   eth_blockNumber: () => '0x1234',
-  eth_getBalance: (params) => params[0] === '0xRich...' ? '0xde0b6b3a7640000' : '0x0',
-  eth_getBlock: () => ({ number: '0x1234', hash: '0x...', transactions: [] }),
+  eth_getBalance: (params) =>
+    params[0] === '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' ? '0xde0b6b3a7640000' : '0x0',
+  eth_getBlock: () => ({
+    number: '0x1234',
+    hash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    transactions: []
+  }),
   eth_call: (params) => params[0]?.data?.startsWith('0x70a08231')
     ? '0x0000000000000000000000000000000000000000000000000000000005f5e100'
     : '0x'
@@ -50,7 +55,7 @@ const TestLayer = Provider.pipe(Layer.provide(mockTransport))
 const program = Effect.gen(function* () {
   return yield* Effect.all({
     blockNumber: getBlockNumber(),
-    balance: getBalance('0xRich...', 'latest'),
+    balance: getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest'),
     block: getBlock({ blockTag: 'latest' })
   })
 }).pipe(withoutCache, Effect.provide(TestLayer))
@@ -76,8 +81,8 @@ it('reads balance', async () => {
   )
 
   const program = Effect.gen(function* () {
-    const token = yield* Contract('0xToken...', erc20Abi)
-    return yield* token.read.balanceOf('0xUser...')
+    const token = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
+    return yield* token.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
   }).pipe(Effect.provide(TestLayer))
 
   expect(await Effect.runPromise(program)).toBe(100000000000000000000n)
@@ -98,7 +103,7 @@ it('handles RPC errors', async () => {
   )
 
   const program = Effect.gen(function* () {
-    return yield* getBalance('0x...', 'latest')
+    return yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
   }).pipe(Effect.provide(TestLayer))
 
   const exit = await Effect.runPromiseExit(program)
@@ -112,7 +117,7 @@ it('recovers from errors', async () => {
   )
 
   const program = Effect.gen(function* () {
-    return yield* getBalance('0x...', 'latest')
+    return yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'latest')
   }).pipe(
     Effect.catchTag('TransportError', () => Effect.succeed(0n)),
     Effect.provide(TestLayer)
@@ -206,7 +211,7 @@ import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
 import * as Effect from 'effect/Effect'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
-import { expect } from 'vitest'
+import { it, expect } from 'vitest'
 
 it('checksums correctly', async () => {
   const addr = S.decodeSync(Address.Hex)('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
@@ -222,7 +227,7 @@ it('checksums correctly', async () => {
 import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
 import * as fc from 'fast-check'
-import { expect } from 'vitest'
+import { it, expect } from 'vitest'
 
 it('round-trips through hex', async () => {
   await fc.assert(fc.asyncProperty(

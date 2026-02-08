@@ -115,8 +115,14 @@ const typedData = {
     ]
   },
   primaryType: 'Permit',
-  domain: { name: 'MyToken', version: '1', chainId: 1n, verifyingContract: '0x...' },
-  message: { owner: '0x...', spender: '0x...', value: 1000000n, nonce: 0n, deadline: 1700000000n }
+  domain: { name: 'MyToken', version: '1', chainId: 1n, verifyingContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  message: {
+    owner: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+    spender: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    value: 1000000n,
+    nonce: 0n,
+    deadline: 1700000000n
+  }
 }
 
 // Compose layers first
@@ -149,7 +155,7 @@ const BrowserLayer = Layer.mergeAll(
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
   const accounts = yield* signer.requestAddresses()
-  return yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
+  return yield* signer.sendTransaction({ to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', value: 1000000000000000000n })
 }).pipe(Effect.provide(BrowserLayer))
 ```
 
@@ -172,7 +178,7 @@ const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provi
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
 
-  const txHash = yield* signer.sendTransaction({ to: '0x...', value: 1000000000000000000n })
+  const txHash = yield* signer.sendTransaction({ to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', value: 1000000000000000000n })
   const receipt = yield* waitForTransactionReceipt(txHash, { confirmations: 3, timeout: '60 seconds' })
 
   return { hash: txHash, status: receipt.status, blockNumber: receipt.blockNumber }
