@@ -45,7 +45,7 @@ const mockTransport = TestTransport({
 })
 
 // Compose layers first, then provide once
-const TestLayer = Layer.merge(Provider, mockTransport)
+const TestLayer = Provider.pipe(Layer.provide(mockTransport))
 
 const program = Effect.gen(function* () {
   return yield* Effect.all({
@@ -61,6 +61,7 @@ const program = Effect.gen(function* () {
 ```typescript
 import { Effect, Layer } from 'effect'
 import { Contract, Provider, TestTransport } from 'voltaire-effect'
+import { it, expect } from 'vitest'
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }
@@ -88,6 +89,7 @@ it('reads balance', async () => {
 ```typescript
 import { Effect, Exit, Layer } from 'effect'
 import { getBalance, Provider, TestTransport } from 'voltaire-effect'
+import { it, expect } from 'vitest'
 
 it('handles RPC errors', async () => {
   // Compose layers first
@@ -125,7 +127,9 @@ it('recovers from errors', async () => {
 Each crypto module exports test layers for deterministic mocking:
 
 ```typescript
+import { Effect } from 'effect'
 import { hash, KeccakTest } from 'voltaire-effect/crypto/Keccak256'
+import { it, expect } from 'vitest'
 
 it('hashes data', async () => {
   const result = await Effect.runPromise(
@@ -141,6 +145,7 @@ it('hashes data', async () => {
 Use `CryptoLive` and `CryptoTest` convenience layers to provide all crypto services at once:
 
 ```typescript
+import { Effect } from 'effect'
 import { CryptoLive, CryptoTest } from 'voltaire-effect'
 import { KeccakService } from 'voltaire-effect/crypto/Keccak256'
 import { Secp256k1Service } from 'voltaire-effect/crypto/Secp256k1'
@@ -165,6 +170,7 @@ import {
   getBalance, waitForTransactionReceipt
 } from 'voltaire-effect'
 import { Hex } from '@tevm/voltaire'
+import { it, expect } from 'vitest'
 
 const TestLayer = Layer.mergeAll(
   Provider,
@@ -200,6 +206,7 @@ import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
 import * as Effect from 'effect/Effect'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
+import { expect } from 'vitest'
 
 it('checksums correctly', async () => {
   const addr = S.decodeSync(Address.Hex)('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
@@ -215,6 +222,7 @@ it('checksums correctly', async () => {
 import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
 import * as fc from 'fast-check'
+import { expect } from 'vitest'
 
 it('round-trips through hex', async () => {
   await fc.assert(fc.asyncProperty(

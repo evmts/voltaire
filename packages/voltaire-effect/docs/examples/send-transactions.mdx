@@ -43,6 +43,11 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Effect, Layer } from 'effect'
+import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
 // Compose layers first
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
@@ -65,6 +70,11 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Effect, Layer } from 'effect'
+import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
 // Compose layers first
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
@@ -82,6 +92,11 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Effect, Layer } from 'effect'
+import { SignerService, Signer, Provider, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
 const typedData = {
   types: {
@@ -120,7 +135,9 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import { JsonRpcAccount, BrowserTransport, Signer, Provider } from 'voltaire-effect'
+import { JsonRpcAccount, BrowserTransport, Signer, Provider, SignerService } from 'voltaire-effect'
+
+const userAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 // Compose layers first
 const BrowserLayer = Layer.mergeAll(
@@ -142,6 +159,9 @@ const program = Effect.gen(function* () {
 import { Effect, Layer } from 'effect'
 import { SignerService, waitForTransactionReceipt, Signer, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
 
 // Compose layers first
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
@@ -163,6 +183,9 @@ const program = Effect.gen(function* () {
 
 ```typescript
 import { Effect, Layer } from 'effect'
+import { JsonRpcAccount, BrowserTransport, Signer, Provider, SignerService } from 'voltaire-effect'
+
+const userAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 // Compose layers first
 const BrowserLayer = Layer.mergeAll(

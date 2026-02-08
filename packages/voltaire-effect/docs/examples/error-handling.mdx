@@ -29,17 +29,29 @@ const program = Effect.gen(function* () {
 ## Handle Multiple Error Types
 
 ```typescript
-import { Layer } from 'effect'
-import { Contract, ContractCallError, ContractWriteError, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { Contract, ContractCallError, ContractWriteError, Signer, Provider, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
+import { Hex } from '@tevm/voltaire'
+
+const erc20Abi = [
+  { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'transfer', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }], stateMutability: 'nonpayable' }
+] as const
+
+const privateKey = Hex.fromHex('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
+const tokenAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const userAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+const recipient = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+const amount = 100_000_000n // 100 USDC (6 decimals)
 
 // Compose all layers first
-const TransportLayer = HttpTransport({ url: 'https://...' })
-const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
+const TransportLayer = HttpTransport({ url: 'https://eth.llamarpc.com' })
 const SignerLayer = Layer.mergeAll(
-  Signer.Live,
-  LocalAccount(privateKey),
-  ProviderLayer
-)
+  Signer.fromPrivateKey(privateKey, Provider),
+  CryptoLayer
+).pipe(Layer.provide(TransportLayer))
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)
@@ -129,6 +141,8 @@ const program = primary.pipe(Effect.orElse(() => backup))
 import { Effect, Option, Layer } from 'effect'
 import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
 
+const address = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+
 // Compose layers first
 const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport({ url: 'https://mainnet.infura.io/v3/YOUR_KEY' }))
@@ -181,6 +195,7 @@ const program = Effect.gen(function* () {
 ```typescript
 import { Effect, Exit } from 'effect'
 
+const program = Effect.succeed(0n)
 const exit = await Effect.runPromiseExit(program)
 
 Exit.match(exit, {

@@ -54,6 +54,22 @@ await Effect.runPromise(program)
 Filter events efficiently at the RPC level using indexed parameters:
 
 ```typescript
+import { Effect, Layer } from 'effect'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const transferAbi = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
+
 const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 // Compose layers first
@@ -87,7 +103,21 @@ const program = Effect.gen(function* () {
 For large block ranges, chunk requests to avoid RPC limits:
 
 ```typescript
-import { Effect, Chunk, Stream } from 'effect'
+import { Effect, Stream, Layer } from 'effect'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const transferAbi = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
 
 const backfillEvents = (fromBlock: bigint, toBlock: bigint, chunkSize = 2000n) =>
   Effect.gen(function* () {
@@ -132,12 +162,26 @@ Combine [BlockStream](/services/block-stream) with event queries for live watchi
 
 ```typescript
 import { Effect, Stream, Layer } from 'effect'
-import { makeBlockStream, Contract, Provider, HttpTransport } from 'voltaire-effect/services'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const transferAbi = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
 
 // Compose layers first
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const LiveLayer = Layer.mergeAll(TransportLayer, ProviderLayer)
 
 const watchLive = Effect.gen(function* () {
   const blockStream = yield* makeBlockStream()
@@ -171,7 +215,7 @@ const watchLive = Effect.gen(function* () {
       }
     })
   )
-}).pipe(Effect.provide(ProviderLayer))
+}).pipe(Effect.provide(LiveLayer))
 ```
 
 ## Historical to Live Transition
@@ -180,12 +224,26 @@ Start from historical events and seamlessly transition to live:
 
 ```typescript
 import { Effect, Stream, Layer } from 'effect'
-import { Contract, Provider, HttpTransport, makeBlockStream, getBlockNumber } from 'voltaire-effect'
+import { Contract, Provider, HttpTransport, getBlockNumber } from 'voltaire-effect'
+import { makeBlockStream } from 'voltaire-effect/services'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const transferAbi = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
 
 // Compose layers first
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
+const TransportLayer = HttpTransport('https://eth.llamarpc.com')
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const LiveLayer = Layer.mergeAll(TransportLayer, ProviderLayer)
 
 const historicalToLive = (startBlock: bigint) =>
   Effect.gen(function* () {
@@ -232,7 +290,7 @@ const historicalToLive = (startBlock: bigint) =>
         }
       })
     )
-  }).pipe(Effect.provide(ProviderLayer))
+  }).pipe(Effect.provide(LiveLayer))
 ```
 
 ## Filter Large Transfers
@@ -240,6 +298,22 @@ const historicalToLive = (startBlock: bigint) =>
 Process events with filtering and transformation:
 
 ```typescript
+import { Effect, Layer } from 'effect'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const transferAbi = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
+
 // Compose layers first
 const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
@@ -273,6 +347,11 @@ const whaleTransfers = Effect.gen(function* () {
 Watch multiple event types from the same contract:
 
 ```typescript
+import { Effect, Layer } from 'effect'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+
 const multiEventAbi = [
   { 
     type: 'event', 
@@ -318,8 +397,21 @@ const program = Effect.gen(function* () {
 Handle common event query errors with Effect Schedule:
 
 ```typescript
-import { Effect, Schedule } from 'effect'
-import { ContractEventError, withRetrySchedule } from 'voltaire-effect'
+import { Effect, Schedule, Layer } from 'effect'
+import { Contract, ContractEventError, Provider, HttpTransport, withRetrySchedule } from 'voltaire-effect'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const transferAbi = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ]
+  }
+] as const
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(
@@ -358,6 +450,8 @@ For more control, use the `getLogs` free function directly:
 ```typescript
 import { Effect, Layer } from 'effect'
 import { getLogs, Provider, HttpTransport } from 'voltaire-effect'
+
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
 // Compose layers first
 const ProviderLayer = Provider.pipe(

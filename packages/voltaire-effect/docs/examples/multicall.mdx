@@ -82,6 +82,11 @@ const balances = await Effect.runPromise(program)
 Query multiple tokens for a single wallet:
 
 ```typescript
+import { Effect } from 'effect'
+import * as ERC20 from 'voltaire-effect/standards/ERC20'
+import { aggregate3, HttpTransport } from 'voltaire-effect'
+import type { MulticallCall } from 'voltaire-effect'
+
 const tokens = [
   { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const, decimals: 6 },
   { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' as const, decimals: 6 },
@@ -152,6 +157,11 @@ Handle both batch-level and per-call failures with Effect Schedule:
 ```typescript
 import { Effect, Schedule } from 'effect'
 import { aggregate3, HttpTransport, MulticallError, withRetrySchedule, withTimeout } from 'voltaire-effect'
+import * as ERC20 from 'voltaire-effect/standards/ERC20'
+
+const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const wallet = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+const wallet2 = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 
 const program = Effect.gen(function* () {
   const results = yield* aggregate3([
