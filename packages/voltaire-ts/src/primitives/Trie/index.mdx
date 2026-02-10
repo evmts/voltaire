@@ -1,0 +1,209 @@
+---
+title: Overview
+description: Merkle Patricia Trie implementation for Ethereum state, transactions, and receipts
+---
+
+<Tip>
+New to Merkle Patricia Tries? Start with [Fundamentals](/primitives/trie/fundamentals) to learn trie construction, hex-prefix encoding, and how Ethereum uses MPTs.
+</Tip>
+
+## Type Definition
+
+Immutable Merkle Patricia Trie with four node types (Branch, Extension, Leaf, Empty). Uses Keccak256 hashing and RLP encoding, matching the Ethereum Yellow Paper specification.
+
+```typescript
+export interface Trie {
+  readonly nodes: Map<string, TrieNode>;
+  readonly root: Uint8Array | null;
+}
+
+export type TrieNode =
+  | { readonly type: "empty" }
+  | { readonly type: "leaf"; readonly nibbles: Uint8Array; readonly value: Uint8Array }
+  | { readonly type: "extension"; readonly nibbles: Uint8Array; readonly childHash: Uint8Array }
+  | { readonly type: "branch"; readonly children: ReadonlyArray<Uint8Array | null>; readonly value: Uint8Array | null };
+```
+
+### Node Types
+
+- **Empty Node** — Represents an empty trie (root hash = keccak256(RLP("")))
+- **Leaf Node** — Stores a key suffix (nibbles) and value
+- **Extension Node** — Shared prefix path pointing to a child node
+- **Branch Node** — 16-way branch (one per nibble) plus optional value
+
+## Quick Reference
+
+```typescript
+import { Trie } from '@tevm/voltaire';
+
+// Create and populate
+let trie = Trie.init();
+trie = Trie.put(trie, key, value);
+const result = Trie.get(trie, key);
+
+// Root hash
+const hash = Trie.rootHash(trie);
+
+// Proofs
+const proof = Trie.prove(trie, key);
+const { valid, value } = Trie.verify(hash, key, proof.proof);
+```
+
+## API Methods
+
+### Constructors
+
+- [`init()`](#init) — Create empty trie
+
+### Operations
+
+- [`put(trie, key, value)`](#put) — Insert key-value pair (returns new trie)
+- [`get(trie, key)`](#get) — Look up value by key
+- [`del(trie, key)`](#del) — Delete key (returns new trie)
+- [`clear(trie)`](#clear) — Reset to empty trie
+
+### Hashing
+
+- [`rootHash(trie)`](#roothash) — Compute 32-byte Keccak256 root hash
+- [`hashNode(node)`](#hashnode) — Hash a single trie node
+
+### Proofs
+
+- [`prove(trie, key)`](#prove) — Generate Merkle proof
+- [`verify(rootHash, key, proof)`](#verify) — Verify Merkle proof against root
+
+### Utilities
+
+- [`keyToNibbles(key)`](#keytonibbles) — Convert bytes to nibbles
+- [`nibblesToKey(nibbles)`](#nibblestokey) — Convert nibbles to bytes
+- [`commonPrefixLength(a, b)`](#commonprefixlength) — Common prefix length
+- [`encodePath(nibbles, isLeaf)`](#encodepath) — Hex-prefix encode path
+- [`decodePath(encoded)`](#decodepath) — Decode hex-prefix path
+
+## Usage Patterns
+
+### Creating and Populating Tries
+
+```typescript
+import { Trie } from '@tevm/voltaire';
+
+const trie = Trie.init();
+
+// Insert values (immutable — each put returns a new trie)
+const t2 = Trie.put(trie, new Uint8Array([0x01, 0x02]), new Uint8Array([0xaa]));
+const t3 = Trie.put(t2, new Uint8Array([0x01, 0x03]), new Uint8Array([0xbb]));
+
+// Original trie is unchanged
+console.log(Trie.get(trie, new Uint8Array([0x01, 0x02]))); // null
+console.log(Trie.get(t3, new Uint8Array([0x01, 0x02])));   // Uint8Array [0xaa]
+```
+
+### Computing Root Hashes
+
+```typescript
+const hash = Trie.rootHash(t3);
+console.log(hash.length); // 32
+
+// Empty trie has a known root hash (keccak256 of RLP(""))
+const emptyHash = Trie.rootHash(Trie.init());
+// 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421
+```
+
+### Merkle Proofs
+
+```typescript
+// Generate proof for a key
+const proof = Trie.prove(t3, new Uint8Array([0x01, 0x02]));
+console.log(proof.value);  // Uint8Array [0xaa]
+console.log(proof.proof);  // Array of RLP-encoded nodes
+
+// Verify proof against root hash
+const root = Trie.rootHash(t3);
+const result = Trie.verify(root, new Uint8Array([0x01, 0x02]), proof.proof);
+console.log(result.valid); // true
+console.log(result.value); // Uint8Array [0xaa]
+
+// Exclusion proofs (key not in trie)
+const missing = Trie.prove(t3, new Uint8Array([0xff]));
+const excl = Trie.verify(root, new Uint8Array([0xff]), missing.proof);
+console.log(excl.valid); // true
+console.log(excl.value); // null
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+import { init, put, get, rootHash } from '@tevm/voltaire/Trie';
+
+const trie = init();
+const t2 = put(trie, key, value);
+const val = get(t2, key);
+const hash = rootHash(t2);
+```
+
+## Types
+
+<Tabs>
+<Tab title="Trie">
+
+```typescript
+export interface Trie {
+  readonly nodes: Map<string, TrieNode>;
+  readonly root: Uint8Array | null;
+}
+```
+
+Main trie structure. All operations return new trie instances (immutable).
+
+</Tab>
+<Tab title="Node Types">
+
+```typescript
+export type TrieNode =
+  | { readonly type: "empty" }
+  | { readonly type: "leaf"; readonly nibbles: Uint8Array; readonly value: Uint8Array }
+  | { readonly type: "extension"; readonly nibbles: Uint8Array; readonly childHash: Uint8Array }
+  | { readonly type: "branch"; readonly children: ReadonlyArray<Uint8Array | null>; readonly value: Uint8Array | null };
+
+export type LeafNode = Extract<TrieNode, { type: "leaf" }>;
+export type ExtensionNode = Extract<TrieNode, { type: "extension" }>;
+export type BranchNode = Extract<TrieNode, { type: "branch" }>;
+export type EmptyNode = Extract<TrieNode, { type: "empty" }>;
+```
+
+</Tab>
+<Tab title="TrieProof">
+
+```typescript
+export interface TrieProof {
+  readonly key: Uint8Array;
+  readonly value: Uint8Array | null;
+  readonly proof: ReadonlyArray<Uint8Array>;
+}
+```
+
+Merkle proof containing the key, resolved value (or null), and RLP-encoded nodes along the path.
+
+</Tab>
+</Tabs>
+
+## Related
+
+### Core Documentation
+
+- [Fundamentals](/primitives/trie/fundamentals) — MPT structure, hex-prefix encoding
+- [Usage Patterns](/primitives/trie/usage-patterns) — Common implementation patterns
+
+### Related Primitives
+
+- [Rlp](/primitives/rlp) — RLP encoding used by MPT nodes
+- [Keccak256](/crypto/keccak256) — Hash function for node hashing
+- [BinaryTree](/primitives/binarytree) — Binary State Tree (EIP-7864)
+- [State](/primitives/state) — Ethereum state representation
+
+## Specification
+
+- [Ethereum Yellow Paper, Appendix D](https://ethereum.github.io/yellowpaper/paper.pdf) — Modified Merkle Patricia Trie
+- [Ethereum Wiki: Patricia Tree](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)

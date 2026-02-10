@@ -209,6 +209,11 @@
 			"import": "./dist/primitives/Transaction/index.js",
 			"require": "./dist/primitives/Transaction/index.cjs"
 		},
+		"./Trie": {
+			"types": "./types/primitives/Trie/index.d.ts",
+			"import": "./dist/primitives/Trie/index.js",
+			"require": "./dist/primitives/Trie/index.cjs"
+		},
 		"./Uint": {
 			"types": "./types/primitives/Uint/index.d.ts",
 			"import": "./dist/primitives/Uint/index.js",
@@ -469,6 +474,9 @@
 			],
 			"Transaction": [
 				"./types/primitives/Transaction/index.d.ts"
+			],
+			"Trie": [
+				"./types/primitives/Trie/index.d.ts"
 			],
 			"Uint": [
 				"./types/primitives/Uint/index.d.ts"

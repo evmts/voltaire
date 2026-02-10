@@ -1,0 +1,102 @@
+---
+title: Fundamentals
+description: Understanding Merkle Patricia Tries — Ethereum's core data structure
+---
+
+## What is a Merkle Patricia Trie?
+
+A **Merkle Patricia Trie (MPT)** is a combination of:
+
+1. **Patricia Trie** (radix trie) — A space-optimized trie that collapses single-child chains into extension nodes
+2. **Merkle Tree** — A hash tree where each node's hash includes its children's hashes, enabling cryptographic proof of contents
+
+Ethereum uses MPTs for four critical data structures:
+
+- **State Trie** — Maps address → account state (nonce, balance, storageRoot, codeHash)
+- **Storage Tries** — Maps storage slot → value (one per contract)
+- **Transaction Trie** — Maps RLP-encoded index → transaction for each block
+- **Receipt Trie** — Maps RLP-encoded index → receipt for each block
+
+## Node Types
+
+### Leaf Node
+
+Stores a key suffix and value at the end of a path:
+
+```
+[hex-prefix-encoded-path, value]
+```
+
+The path uses **hex-prefix encoding** (HP encoding) with a flag bit indicating this is a leaf (not an extension).
+
+### Extension Node
+
+Collapses a shared prefix — points from a common path segment to a child:
+
+```
+[hex-prefix-encoded-path, child-hash]
+```
+
+### Branch Node
+
+A 17-element array: 16 child slots (one per nibble 0-f) plus an optional value:
+
+```
+[child_0, child_1, ..., child_f, value]
+```
+
+Children can be:
+- A 32-byte hash (reference to another node)
+- An inline RLP-encoded node (if < 32 bytes)
+- Empty (null)
+
+### Empty Node
+
+An empty byte string, RLP-encoded as `0x80`. The root hash of an empty trie is:
+
+```
+keccak256(0x80) = 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421
+```
+
+## Hex-Prefix Encoding
+
+Keys are converted to **nibbles** (half-bytes) for trie traversal. When storing a path in a leaf or extension node, nibbles are re-encoded using hex-prefix (HP) encoding:
+
+| Node type | Odd nibbles | Even nibbles |
+|-----------|-------------|--------------|
+| Extension | `0x1n` (n = first nibble) | `0x00` + nibble pairs |
+| Leaf | `0x3n` (n = first nibble) | `0x20` + nibble pairs |
+
+The high nibble of the first byte encodes:
+- Bit 1: leaf flag (0 = extension, 1 = leaf)
+- Bit 0: odd flag (0 = even nibble count, 1 = odd)
+
+## Hashing Rules
+
+1. **RLP-encode** the node (leaf/extension = 2-item list, branch = 17-item list)
+2. If the encoded node is **>= 32 bytes**: hash it with Keccak256 and store by hash
+3. If the encoded node is **< 32 bytes**: embed it inline in the parent
+
+This means small nodes are stored directly in their parent's RLP, while large nodes are referenced by hash.
+
+## Immutability
+
+This implementation uses **structural sharing** — `put` and `del` return new `Trie` objects that share unchanged nodes with the original. This enables:
+
+- Safe concurrent access (no locks needed)
+- Easy snapshotting (just keep a reference)
+- Functional programming patterns
+
+## Merkle Proofs
+
+A Merkle proof for key `k` consists of:
+1. All nodes along the path from root to the target (or where the target would be)
+2. Each node is RLP-encoded
+
+Verification:
+1. Hash the first proof node — must match the expected root hash
+2. Decode each node, follow the path dictated by the key's nibbles
+3. At each branch/extension, verify the child reference matches the next proof node's hash
+4. At a leaf, verify the path matches and extract the value
+
+Proofs work for both **inclusion** (key exists) and **exclusion** (key does not exist).

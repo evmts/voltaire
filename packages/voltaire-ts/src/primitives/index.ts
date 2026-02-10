@@ -201,6 +201,9 @@ export * as SyncStatus from "./SyncStatus/index.js";
 export * as TokenBalance from "./TokenBalance/index.js";
 export * as TokenId from "./TokenId/index.js";
 export * as TopicFilter from "./TopicFilter/index.js";
+// Data structures - Merkle Patricia Trie
+export * as Trie from "./Trie/index.js";
+export * as BrandedTrie from "./Trie/index.js";
 // Execution tracing (debug_trace* methods)
 export * as TraceConfig from "./TraceConfig/index.js";
 export * as TraceResult from "./TraceResult/index.js";
