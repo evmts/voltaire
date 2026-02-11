@@ -201,9 +201,6 @@ export * as SyncStatus from "./SyncStatus/index.js";
 export * as TokenBalance from "./TokenBalance/index.js";
 export * as TokenId from "./TokenId/index.js";
 export * as TopicFilter from "./TopicFilter/index.js";
-// Data structures - Merkle Patricia Trie
-export * as Trie from "./Trie/index.js";
-export * as BrandedTrie from "./Trie/index.js";
 // Execution tracing (debug_trace* methods)
 export * as TraceConfig from "./TraceConfig/index.js";
 export * as TraceResult from "./TraceResult/index.js";
@@ -214,6 +211,9 @@ export * as TransactionHash from "./TransactionHash/index.js";
 export * as TransactionIndex from "./TransactionIndex/index.js";
 export * as TransactionStatus from "./TransactionStatus/index.js";
 export * as TransactionUrl from "./TransactionUrl/index.js";
+// Data structures - Merkle Patricia Trie
+export * as Trie from "./Trie/index.js";
+export * as BrandedTrie from "./Trie/index.js";
 export * as TypedData from "./TypedData/index.js";
 export * as BrandedUint from "./Uint/index.js";
 export * as Uint256 from "./Uint/index.js"; // Alias for backward compatibility
