@@ -120,7 +120,8 @@ export * as SyncStatus from "./SyncStatus/index.js";
 export * as TokenBalance from "./TokenBalance/index.js";
 export * as TokenId from "./TokenId/index.js";
 export * as TopicFilter from "./TopicFilter/index.js";
-export * as Trie from "./Trie/index.js";
+// TODO: Re-enable when @tevm/voltaire exports Trie
+// export * as Trie from "./Trie/index.js";
 export * as TraceConfig from "./TraceConfig/index.js";
 export * as TraceResult from "./TraceResult/index.js";
 export * as Transaction from "./Transaction/index.js";
