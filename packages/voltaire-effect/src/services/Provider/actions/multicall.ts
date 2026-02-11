@@ -10,7 +10,6 @@ import {
 	BrandedAbi,
 	type Abi as BrandedAbiType,
 	type BrandedAddress,
-	type BrandedHex,
 	Hex,
 } from "@tevm/voltaire";
 import * as Effect from "effect/Effect";
@@ -26,7 +25,6 @@ import { call } from "../functions/call.js";
 import type { Abi } from "./readContract.js";
 
 type AddressType = BrandedAddress.AddressType;
-type HexType = BrandedHex.HexType;
 
 /**
  * Extracts function names from an ABI.
@@ -70,8 +68,8 @@ type AbiTypeToTS<T extends string> = T extends `uint${string}` | `int${string}`
 		? AddressType | `0x${string}`
 		: T extends "bool"
 			? boolean
-			: T extends `bytes${string}`
-				? HexType | `0x${string}`
+			: T extends `bytes${string}` | "bytes"
+				? Uint8Array
 				: T extends "string"
 					? string
 					: T extends `${string}[]`

@@ -341,11 +341,9 @@ type AbiTypeToTs<T extends string> = T extends `uint${string}`
 				? boolean
 				: T extends "string"
 					? string
-					: T extends `bytes${string}`
-						? HexType
-						: T extends "bytes"
-							? HexType
-							: T extends `${string}[]`
+					: T extends `bytes${string}` | "bytes"
+						? Uint8Array
+						: T extends `${string}[]`
 								? readonly unknown[]
 								: T extends `tuple`
 									? Record<string, unknown>

@@ -3,6 +3,7 @@ import { createTsUpOptions } from "@tevm/tsupconfig";
 // Pure JS entry points - no native FFI dependencies
 const pureJsEntries = [
 	"src/index.ts",
+	"src/brand.js",
 	// Core modules
 	"src/jsonrpc/index.ts",
 	"src/provider/index.ts",
