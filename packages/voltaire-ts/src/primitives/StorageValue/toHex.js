@@ -8,7 +8,7 @@ import * as Hex from "../Hex/index.js";
  * Converts a StorageValue to a hex string.
  *
  * @param {StorageValueType} value - The StorageValue to convert
- * @returns {string} - Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} - Hex string with 0x prefix
  *
  * @example
  * ```typescript

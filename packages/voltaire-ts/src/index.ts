@@ -3,6 +3,8 @@
  * TypeScript implementations with native Zig bindings via Bun FFI and WASM
  */
 
+// Brand symbol used by all branded types (Address, Hex, Hash, etc.)
+export { brand } from "./brand.js";
 // Streaming primitives - BlockStream, EventStream, TransactionStream
 export * as block from "./block/index.js";
 export * as contract from "./contract/index.js";

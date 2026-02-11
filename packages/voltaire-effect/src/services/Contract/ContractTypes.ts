@@ -328,10 +328,12 @@ type ExtractEventNames<TAbi extends Abi> =
 type AbiInputsToArgs<
 	TInputs extends readonly { type: string; name?: string }[],
 > = {
-	[K in keyof TInputs]: AbiTypeToTs<TInputs[K]["type"]>;
+	[K in keyof TInputs]: AbiTypeToInput<TInputs[K]["type"]>;
 };
 
-type AbiTypeToTs<T extends string> = T extends `uint${string}`
+type BytesInput = Uint8Array | `0x${string}`;
+
+type AbiTypeToInput<T extends string> = T extends `uint${string}`
 	? bigint
 	: T extends `int${string}`
 		? bigint
@@ -341,11 +343,27 @@ type AbiTypeToTs<T extends string> = T extends `uint${string}`
 				? boolean
 				: T extends "string"
 					? string
-					: T extends `bytes${string}`
-						? HexType
-						: T extends "bytes"
-							? HexType
-							: T extends `${string}[]`
+					: T extends `bytes${string}` | "bytes"
+						? BytesInput
+						: T extends `${string}[]`
+								? readonly unknown[]
+								: T extends `tuple`
+									? Record<string, unknown>
+									: unknown;
+
+type AbiTypeToOutput<T extends string> = T extends `uint${string}`
+	? bigint
+	: T extends `int${string}`
+		? bigint
+		: T extends "address"
+			? AddressType
+			: T extends "bool"
+				? boolean
+				: T extends "string"
+					? string
+					: T extends `bytes${string}` | "bytes"
+						? Uint8Array
+						: T extends `${string}[]`
 								? readonly unknown[]
 								: T extends `tuple`
 									? Record<string, unknown>
@@ -354,7 +372,7 @@ type AbiTypeToTs<T extends string> = T extends `uint${string}`
 type AbiOutputToTs<TOutputs extends readonly { type: string }[]> =
 	TOutputs extends readonly [{ type: infer T }]
 		? T extends string
-			? AbiTypeToTs<T>
+			? AbiTypeToOutput<T>
 			: unknown
 		: TOutputs extends readonly []
 			? undefined

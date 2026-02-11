@@ -6,7 +6,7 @@ import * as Hex from "../Hex/index.js";
  * @see https://voltaire.tevm.sh/primitives/beacon-block-root for BeaconBlockRoot documentation
  * @since 0.0.0
  * @param {import('./BeaconBlockRootType.js').BeaconBlockRootType} root - BeaconBlockRoot
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript

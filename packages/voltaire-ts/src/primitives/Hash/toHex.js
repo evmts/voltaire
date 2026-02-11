@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/hash for Hash documentation
  * @since 0.0.0
  * @param {import('./HashType.js').HashType} hash - Hash to convert
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -14,5 +14,7 @@
  * ```
  */
 export function toHex(hash) {
-	return `0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+	return /** @type {import('../Hex/HexType.js').HexType} */ (
+		`0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`
+	);
 }

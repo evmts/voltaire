@@ -4,7 +4,7 @@ import * as Hex from "../Hex/index.js";
  * Convert Selector to hex string
  *
  * @param {import('./SelectorType.js').SelectorType} selector - 4-byte selector
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript

@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/token-balance for TokenBalance documentation
  * @since 0.0.0
  * @param {import('./TokenBalanceType.js').TokenBalanceType} balance - TokenBalance value to convert
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @example
  * ```javascript
  * import * as TokenBalance from './primitives/TokenBalance/index.js';
@@ -13,5 +13,5 @@
  * ```
  */
 export function toHex(balance) {
-	return `0x${balance.toString(16)}`;
+	return /** @type {import('../Hex/HexType.js').HexType} */ (`0x${balance.toString(16)}`);
 }

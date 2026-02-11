@@ -1,3 +1,4 @@
+import type { HexType } from "../Hex/HexType.js";
 import type { bitLength } from "./bitLength.js";
 import type { bitwiseAnd } from "./bitwiseAnd.js";
 import type { bitwiseNot } from "./bitwiseNot.js";
@@ -34,7 +35,7 @@ import type { tryFrom } from "./tryFrom.js";
 import type { Uint256Type } from "./Uint256Type.js";
 
 type UintPrototype = Uint256Type & {
-	toHex(): string;
+	toHex(): HexType;
 	toBigInt(): bigint;
 	toNumber(): number;
 	toBytes(): Uint8Array;
