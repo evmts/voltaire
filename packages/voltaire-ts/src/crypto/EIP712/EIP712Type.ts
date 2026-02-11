@@ -1,17 +1,12 @@
 import type { brand } from "../../brand.js";
 import type { AddressType as BrandedAddress } from "../../primitives/Address/AddressType.js";
-import type { HashType } from "../../primitives/Hash/Hash.js";
+import type { DomainType } from "../../primitives/Domain/DomainType.js";
 
 /**
- * EIP-712 Domain separator fields
+ * EIP-712 Domain separator fields.
+ * Alias for the canonical DomainType from primitives.
  */
-export type Domain = {
-	name?: string;
-	version?: string;
-	chainId?: bigint;
-	verifyingContract?: BrandedAddress;
-	salt?: HashType;
-};
+export type Domain = DomainType;
 
 /**
  * Type property definition

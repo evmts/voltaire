@@ -27,7 +27,7 @@ export { toHash as _toHash } from "./toHash.js";
 export function from(domain: {
 	name?: string;
 	version?: string;
-	chainId?: import("../ChainId/ChainIdType.js").ChainIdType | number;
+	chainId?: import("../ChainId/ChainIdType.js").ChainIdType | number | bigint;
 	verifyingContract?: import("../Address/AddressType.js").AddressType | string;
 	salt?: import("../Hash/HashType.js").HashType | string;
 }): import("./DomainType.js").DomainType {

@@ -22,7 +22,7 @@ export function from<T = Record<string, unknown>>(typedData: {
 	domain: {
 		name?: string;
 		version?: string;
-		chainId?: import("../ChainId/ChainIdType.js").ChainIdType | number;
+		chainId?: import("../ChainId/ChainIdType.js").ChainIdType | number | bigint;
 		verifyingContract?:
 			| import("../Address/AddressType.js").AddressType
 			| string;

@@ -6,7 +6,7 @@
 
 import { bench, run } from "mitata";
 import type { AddressType } from "../Address/AddressType.js";
-import type { ChainIdType } from "../ChainId/ChainIdType.js";
+import * as ChainId from "../ChainId/index.js";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
 import * as Permit from "./index.js";
 import type { PermitDomainType, PermitType } from "./PermitType.js";
@@ -47,7 +47,7 @@ const daiAddress = createAddress(0xdd);
 const usdcDomain: PermitDomainType = {
 	name: "USD Coin",
 	version: "2",
-	chainId: 1n as ChainIdType,
+	chainId: ChainId.from(1),
 	verifyingContract: usdcAddress,
 };
 
@@ -55,7 +55,7 @@ const usdcDomain: PermitDomainType = {
 const daiDomain: PermitDomainType = {
 	name: "Dai Stablecoin",
 	version: "1",
-	chainId: 1n as ChainIdType,
+	chainId: ChainId.from(1),
 	verifyingContract: daiAddress,
 };
 
@@ -63,7 +63,7 @@ const daiDomain: PermitDomainType = {
 const polygonDomain: PermitDomainType = {
 	name: "USD Coin (PoS)",
 	version: "1",
-	chainId: 137n as ChainIdType,
+	chainId: ChainId.from(137),
 	verifyingContract: createAddress(0xee),
 };
 

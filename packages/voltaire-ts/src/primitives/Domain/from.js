@@ -9,7 +9,7 @@ import { InvalidDomainError } from "./errors.js";
  * @param {object} domain - Domain object
  * @param {string} [domain.name] - dApp name
  * @param {string} [domain.version] - Domain version
- * @param {import('../ChainId/ChainIdType.js').ChainIdType | number} [domain.chainId] - EIP-155 chain ID
+ * @param {import('../ChainId/ChainIdType.js').ChainIdType | number | bigint} [domain.chainId] - EIP-155 chain ID
  * @param {import('../Address/AddressType.js').AddressType | string} [domain.verifyingContract] - Contract address
  * @param {import('../Hash/HashType.js').HashType | string} [domain.salt] - Salt for disambiguation
  * @returns {import('./DomainType.js').DomainType} Domain
@@ -55,7 +55,8 @@ export function from(domain) {
 		result = {
 			...result,
 			chainId:
-				typeof domain.chainId === "number"
+				typeof domain.chainId === "number" ||
+				typeof domain.chainId === "bigint"
 					? /** @type {*} */ (ChainId.from(domain.chainId))
 					: domain.chainId,
 		};
