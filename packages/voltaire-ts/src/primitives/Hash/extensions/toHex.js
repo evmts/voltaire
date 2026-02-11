@@ -14,5 +14,7 @@
  * ```
  */
 export function toHex(hash) {
-	return /** @type {import('../../Hex/HexType.js').HexType} */ (`0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`);
+	return /** @type {import('../../Hex/HexType.js').HexType} */ (
+		`0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`
+	);
 }

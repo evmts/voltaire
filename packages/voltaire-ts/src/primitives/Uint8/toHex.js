@@ -20,5 +20,7 @@
  */
 export function toHex(uint, padded = true) {
 	const hex = uint.toString(16);
-	return /** @type {import('../Hex/HexType.js').HexType} */ (padded ? `0x${hex.padStart(2, "0")}` : `0x${hex}`);
+	return /** @type {import('../Hex/HexType.js').HexType} */ (
+		padded ? `0x${hex.padStart(2, "0")}` : `0x${hex}`
+	);
 }

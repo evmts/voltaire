@@ -16,5 +16,7 @@ export function toHex(code, prefix = true) {
 	const hex = Array.from(code)
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
-	return /** @type {import('../Hex/HexType.js').HexType} */ (prefix ? `0x${hex}` : hex);
+	return /** @type {import('../Hex/HexType.js').HexType} */ (
+		prefix ? `0x${hex}` : hex
+	);
 }

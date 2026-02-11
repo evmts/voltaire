@@ -15,7 +15,9 @@
  * ```
  */
 export function toHex(hash) {
-	return /** @type {import('../../primitives/Hex/HexType.js').HexType} */ (`0x${Array.from(hash)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`);
+	return /** @type {import('../../primitives/Hex/HexType.js').HexType} */ (
+		`0x${Array.from(hash)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")}`
+	);
 }

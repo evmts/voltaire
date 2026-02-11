@@ -13,5 +13,7 @@
  * ```
  */
 export function toHex(tokenId) {
-	return /** @type {import('../Hex/HexType.js').HexType} */ (`0x${tokenId.toString(16)}`);
+	return /** @type {import('../Hex/HexType.js').HexType} */ (
+		`0x${tokenId.toString(16)}`
+	);
 }
