@@ -5,8 +5,6 @@
  */
 
 export * from "../index.js";
-export { CryptoLiveNative } from "./CryptoLiveNative.js";
-export { HDWalletLive } from "../crypto/HDWallet/HDWalletLive.js";
 export {
 	HDWalletDerivationError,
 	MnemonicAccount,

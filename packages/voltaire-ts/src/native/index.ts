@@ -262,10 +262,8 @@ export {
 	P256,
 	X25519,
 	ModExp,
+	HDWallet,
 } from "../crypto/index.js";
-
-// HDWallet uses native FFI - only available in native entry point
-export * as HDWallet from "../crypto/HDWallet/index.js";
 
 // Re-export crypto types
 export type { Keccak256Hash } from "../crypto/Keccak256/Keccak256HashType.js";
