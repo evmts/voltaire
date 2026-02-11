@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   '@scure/bip39@2.0.1':
-    hash: grvffjnza3sefzswg63pv43f2y
+    hash: 4cbf98246735cf0aeb077cafe60f204f767396769114f512383c693238fa63b6
     path: patches/@scure__bip39@2.0.1.patch
 
 importers:
@@ -62,16 +62,6 @@ importers:
       '@tevm/voltaire':
         specifier: workspace:*
         version: link:../voltaire-ts
-    optionalDependencies:
-      '@effect/platform-browser':
-        specifier: ^0.74.0
-        version: 0.74.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13)
-      '@effect/platform-bun':
-        specifier: ^0.87.0
-        version: 0.87.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
-      '@effect/platform-node':
-        specifier: ^0.104.0
-        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
     devDependencies:
       '@effect/platform':
         specifier: ^0.94.0
@@ -97,6 +87,16 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.7.5)(happy-dom@20.0.11)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1)
+    optionalDependencies:
+      '@effect/platform-browser':
+        specifier: ^0.74.0
+        version: 0.74.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13)
+      '@effect/platform-bun':
+        specifier: ^0.87.0
+        version: 0.87.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
+      '@effect/platform-node':
+        specifier: ^0.104.0
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/workflow@0.16.0(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/sql@0.33.21(@effect/experimental@0.44.21(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(@effect/platform@0.94.2(effect@3.19.13))(effect@3.19.13))(effect@3.19.13)
 
   packages/voltaire-ts:
     dependencies:
@@ -114,7 +114,7 @@ importers:
         version: 2.0.1
       '@scure/bip39':
         specifier: ^2.0.1
-        version: 2.0.1(patch_hash=grvffjnza3sefzswg63pv43f2y)
+        version: 2.0.1(patch_hash=4cbf98246735cf0aeb077cafe60f204f767396769114f512383c693238fa63b6)
       '@shazow/whatsabi':
         specifier: ^0.25.0
         version: 0.25.0(@noble/hashes@2.0.1)(typescript@5.9.3)(zod@4.3.6)
@@ -124,10 +124,6 @@ importers:
       modern-monaco:
         specifier: ^0.3.6
         version: 0.3.6(typescript@5.9.3)
-    optionalDependencies:
-      effect:
-        specifier: ^3.19.13
-        version: 3.19.13
     devDependencies:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.76
@@ -231,6 +227,10 @@ importers:
       vitest:
         specifier: 4.0.16
         version: 4.0.16(@types/node@25.0.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.2)
+    optionalDependencies:
+      effect:
+        specifier: ^3.19.13
+        version: 3.19.13
 
   packages/voltaire-zig: {}
 
@@ -10063,7 +10063,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
-  '@scure/bip39@2.0.1(patch_hash=grvffjnza3sefzswg63pv43f2y)':
+  '@scure/bip39@2.0.1(patch_hash=4cbf98246735cf0aeb077cafe60f204f767396769114f512383c693238fa63b6)':
     dependencies:
       '@noble/hashes': 2.0.1
       '@scure/base': 2.0.0

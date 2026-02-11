@@ -56,13 +56,34 @@ type GetFunctionInputs<
  * Maps ABI input types to TypeScript types.
  */
 type AbiInputsToArgs<TInputs extends readonly { type: string }[]> = {
-	[K in keyof TInputs]: AbiTypeToTS<TInputs[K]["type"]>;
+	[K in keyof TInputs]: AbiTypeToInput<TInputs[K]["type"]>;
 };
 
 /**
- * Maps a single ABI type to TypeScript type.
+ * Maps a single ABI type to TypeScript input type.
  */
-type AbiTypeToTS<T extends string> = T extends `uint${string}` | `int${string}`
+type BytesInput = Uint8Array | `0x${string}`;
+
+type AbiTypeToInput<T extends string> = T extends `uint${string}` | `int${string}`
+	? bigint
+	: T extends "address"
+		? AddressType | `0x${string}`
+		: T extends "bool"
+			? boolean
+			: T extends `bytes${string}` | "bytes"
+				? BytesInput
+				: T extends "string"
+					? string
+					: T extends `${string}[]`
+						? readonly unknown[]
+						: T extends `(${string})`
+							? readonly unknown[]
+							: unknown;
+
+/**
+ * Maps a single ABI type to TypeScript output type.
+ */
+type AbiTypeToOutput<T extends string> = T extends `uint${string}` | `int${string}`
 	? bigint
 	: T extends "address"
 		? AddressType | `0x${string}`
@@ -94,9 +115,9 @@ type GetFunctionOutput<
 			? Outputs["length"] extends 0
 				? undefined
 				: Outputs["length"] extends 1
-					? AbiTypeToTS<Outputs[0]["type"]>
+					? AbiTypeToOutput<Outputs[0]["type"]>
 					: {
-							[K in keyof Outputs]: AbiTypeToTS<
+							[K in keyof Outputs]: AbiTypeToOutput<
 								Outputs[K] extends { type: string } ? Outputs[K]["type"] : never
 							>;
 						}
