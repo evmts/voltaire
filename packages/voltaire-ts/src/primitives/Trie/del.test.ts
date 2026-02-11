@@ -22,9 +22,7 @@ describe("del", () => {
 		let trie = init();
 		trie = put(trie, new Uint8Array([0x01]), new Uint8Array([0xaa]));
 		const t2 = del(trie, new Uint8Array([0x02]));
-		expect(get(t2, new Uint8Array([0x01]))).toEqual(
-			new Uint8Array([0xaa]),
-		);
+		expect(get(t2, new Uint8Array([0x01]))).toEqual(new Uint8Array([0xaa]));
 	});
 
 	it("deletes sole key, trie becomes empty", () => {
@@ -47,24 +45,16 @@ describe("del", () => {
 		let trie = init();
 		trie = put(trie, new Uint8Array([0x01]), new Uint8Array([0xaa]));
 		const t2 = del(trie, new Uint8Array([0x01]));
-		expect(get(trie, new Uint8Array([0x01]))).toEqual(
-			new Uint8Array([0xaa]),
-		);
+		expect(get(trie, new Uint8Array([0x01]))).toEqual(new Uint8Array([0xaa]));
 		expect(get(t2, new Uint8Array([0x01]))).toBe(null);
 	});
 
 	it("deletes from branch with value", () => {
 		let trie = init();
 		trie = put(trie, new Uint8Array([0x01]), new Uint8Array([1]));
-		trie = put(
-			trie,
-			new Uint8Array([0x01, 0x02]),
-			new Uint8Array([2]),
-		);
+		trie = put(trie, new Uint8Array([0x01, 0x02]), new Uint8Array([2]));
 		const t2 = del(trie, new Uint8Array([0x01]));
 		expect(get(t2, new Uint8Array([0x01]))).toBe(null);
-		expect(get(t2, new Uint8Array([0x01, 0x02]))).toEqual(
-			new Uint8Array([2]),
-		);
+		expect(get(t2, new Uint8Array([0x01, 0x02]))).toEqual(new Uint8Array([2]));
 	});
 });

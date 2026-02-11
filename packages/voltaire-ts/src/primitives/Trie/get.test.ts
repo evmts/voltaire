@@ -24,9 +24,7 @@ describe("get", () => {
 	it("finds existing key", () => {
 		let trie = init();
 		trie = put(trie, new Uint8Array([0x01]), new Uint8Array([0xaa]));
-		expect(get(trie, new Uint8Array([0x01]))).toEqual(
-			new Uint8Array([0xaa]),
-		);
+		expect(get(trie, new Uint8Array([0x01]))).toEqual(new Uint8Array([0xaa]));
 	});
 
 	it("finds key after multiple inserts", () => {
@@ -39,11 +37,7 @@ describe("get", () => {
 
 	it("returns null for prefix of existing key", () => {
 		let trie = init();
-		trie = put(
-			trie,
-			new Uint8Array([0x01, 0x02]),
-			new Uint8Array([0xaa]),
-		);
+		trie = put(trie, new Uint8Array([0x01, 0x02]), new Uint8Array([0xaa]));
 		expect(get(trie, new Uint8Array([0x01]))).toBe(null);
 	});
 

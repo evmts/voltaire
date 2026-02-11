@@ -1,5 +1,5 @@
-import { commonPrefixLength, keyToNibbles } from "./nibbles.js";
 import { encodeNode } from "./hashNode.js";
+import { commonPrefixLength, keyToNibbles } from "./nibbles.js";
 
 /**
  * @typedef {{ rlpEncode: (data: any) => Uint8Array }} ProveDeps
@@ -77,13 +77,7 @@ function collectProof(nodes, nodeHash, nibbles, proof, rlpEncode) {
 				const idx = /** @type {number} */ (nibbles[0]);
 				const child = node.children[idx];
 				if (child) {
-					collectProof(
-						nodes,
-						child,
-						nibbles.subarray(1),
-						proof,
-						rlpEncode,
-					);
+					collectProof(nodes, child, nibbles.subarray(1), proof, rlpEncode);
 				}
 			}
 			break;
@@ -134,7 +128,9 @@ function findValue(nodes, nodeHash, nibbles) {
 function toHex(bytes) {
 	let hex = "";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += /** @type {number} */ (bytes[i]).toString(16).padStart(2, "0");
+		hex += /** @type {number} */ (bytes[i])
+			.toString(16)
+			.padStart(2, "0");
 	}
 	return hex;
 }

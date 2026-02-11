@@ -1,3 +1,4 @@
+export * from "./errors.js";
 export type {
 	BranchNode,
 	EmptyNode,
@@ -7,18 +8,17 @@ export type {
 	TrieNode,
 	TrieProof,
 } from "./TrieType.js";
-export * from "./errors.js";
 
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { decode as rlpDecode } from "../Rlp/decode.js";
 import { encode as rlpEncode } from "../Rlp/encode.js";
-import type { Trie as TrieTypeInternal, TrieProof } from "./TrieType.js";
-
 import { clear as _clear } from "./clear.js";
 import { EMPTY_ROOT_HASH as _EMPTY_ROOT_HASH } from "./constants.js";
 import { Del as _Del } from "./del.js";
-import { decodePath as _decodePath } from "./encodePath.js";
-import { encodePath as _encodePath } from "./encodePath.js";
+import {
+	decodePath as _decodePath,
+	encodePath as _encodePath,
+} from "./encodePath.js";
 import { get as _get } from "./get.js";
 import { HashNode as _HashNode } from "./hashNode.js";
 import { init as _init } from "./init.js";
@@ -30,11 +30,12 @@ import {
 import { Prove as _Prove } from "./prove.js";
 import { Put as _Put } from "./put.js";
 import { RootHash as _RootHash } from "./rootHash.js";
+import type { TrieProof, Trie as TrieTypeInternal } from "./TrieType.js";
 import { Verify as _Verify } from "./verify.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: RLP encode accepts arbitrary nested data structures
 type RlpEncodeFn = (data: any) => Uint8Array;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: RLP decode returns arbitrary nested data structures
 type RlpDecodeFn = (bytes: Uint8Array, stream?: boolean) => any;
 
 type HashNodeDeps = {
@@ -79,9 +80,8 @@ export const Verify: (deps: {
 // Create wrappers with auto-injected crypto
 const _hashNode = HashNode({ keccak256, rlpEncode });
 
-export const hashNode: (
-	node: import("./TrieType.js").TrieNode,
-) => Uint8Array = _hashNode;
+export const hashNode: (node: import("./TrieType.js").TrieNode) => Uint8Array =
+	_hashNode;
 
 export const init: () => TrieTypeInternal = _init;
 
@@ -108,10 +108,8 @@ export const rootHash: (trie: TrieTypeInternal) => Uint8Array = _RootHash({
 
 export const clear: (trie: TrieTypeInternal) => TrieTypeInternal = _clear;
 
-export const prove: (
-	trie: TrieTypeInternal,
-	key: Uint8Array,
-) => TrieProof = _Prove({ rlpEncode });
+export const prove: (trie: TrieTypeInternal, key: Uint8Array) => TrieProof =
+	_Prove({ rlpEncode });
 
 export const verify: (
 	rootHash: Uint8Array,
@@ -126,17 +124,14 @@ export const verify: (
 export const EMPTY_ROOT_HASH: Uint8Array = _EMPTY_ROOT_HASH;
 export const keyToNibbles: (key: Uint8Array) => Uint8Array = _keyToNibbles;
 export const nibblesToKey: (nibbles: Uint8Array) => Uint8Array = _nibblesToKey;
-export const commonPrefixLength: (
-	a: Uint8Array,
-	b: Uint8Array,
-) => number = _commonPrefixLength;
-export const encodePath: (
-	nibbles: Uint8Array,
-	isLeaf: boolean,
-) => Uint8Array = _encodePath;
-export const decodePath: (
-	encoded: Uint8Array,
-) => { nibbles: Uint8Array; isLeaf: boolean } = _decodePath;
+export const commonPrefixLength: (a: Uint8Array, b: Uint8Array) => number =
+	_commonPrefixLength;
+export const encodePath: (nibbles: Uint8Array, isLeaf: boolean) => Uint8Array =
+	_encodePath;
+export const decodePath: (encoded: Uint8Array) => {
+	nibbles: Uint8Array;
+	isLeaf: boolean;
+} = _decodePath;
 
 // Namespace export
 export const Trie = {

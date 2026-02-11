@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
-import { encode as rlpEncode } from "../Rlp/encode.js";
 import { decode as rlpDecode } from "../Rlp/decode.js";
-import { EMPTY_ROOT_HASH } from "./constants.js";
+import { encode as rlpEncode } from "../Rlp/encode.js";
 import { clear } from "./clear.js";
+import { EMPTY_ROOT_HASH } from "./constants.js";
 import { Del } from "./del.js";
 import { get } from "./get.js";
 import { HashNode } from "./hashNode.js";
@@ -96,11 +96,7 @@ describe("Trie integration", () => {
 	it("handles 100 key-value pairs", () => {
 		let trie = init();
 		for (let i = 0; i < 100; i++) {
-			trie = put(
-				trie,
-				new Uint8Array([i >> 4, i & 0x0f]),
-				new Uint8Array([i]),
-			);
+			trie = put(trie, new Uint8Array([i >> 4, i & 0x0f]), new Uint8Array([i]));
 		}
 		for (let i = 0; i < 100; i++) {
 			expect(get(trie, new Uint8Array([i >> 4, i & 0x0f]))).toEqual(
@@ -138,14 +134,14 @@ describe("Trie integration", () => {
 			new Uint8Array([0xaa, 0xbb, 0xdd, 0x01]),
 			new Uint8Array([3]),
 		);
-		expect(
-			get(trie, new Uint8Array([0xaa, 0xbb, 0xcc, 0x01])),
-		).toEqual(new Uint8Array([1]));
-		expect(
-			get(trie, new Uint8Array([0xaa, 0xbb, 0xcc, 0x02])),
-		).toEqual(new Uint8Array([2]));
-		expect(
-			get(trie, new Uint8Array([0xaa, 0xbb, 0xdd, 0x01])),
-		).toEqual(new Uint8Array([3]));
+		expect(get(trie, new Uint8Array([0xaa, 0xbb, 0xcc, 0x01]))).toEqual(
+			new Uint8Array([1]),
+		);
+		expect(get(trie, new Uint8Array([0xaa, 0xbb, 0xcc, 0x02]))).toEqual(
+			new Uint8Array([2]),
+		);
+		expect(get(trie, new Uint8Array([0xaa, 0xbb, 0xdd, 0x01]))).toEqual(
+			new Uint8Array([3]),
+		);
 	});
 });

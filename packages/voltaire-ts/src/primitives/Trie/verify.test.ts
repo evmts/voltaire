@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
-import { encode as rlpEncode } from "../Rlp/encode.js";
 import { decode as rlpDecode } from "../Rlp/decode.js";
+import { encode as rlpEncode } from "../Rlp/encode.js";
 import { HashNode } from "./hashNode.js";
 import { init } from "./init.js";
 import { Prove } from "./prove.js";

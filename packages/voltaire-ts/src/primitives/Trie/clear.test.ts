@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { encode as rlpEncode } from "../Rlp/encode.js";
-import { EMPTY_ROOT_HASH } from "./constants.js";
 import { clear } from "./clear.js";
+import { EMPTY_ROOT_HASH } from "./constants.js";
 import { get } from "./get.js";
 import { HashNode } from "./hashNode.js";
 import { init } from "./init.js";

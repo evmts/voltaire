@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { TrieNode } from "./TrieType.js";
-import { HashNode, encodeNode } from "./hashNode.js";
-
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
 import { encode as rlpEncode } from "../Rlp/encode.js";
+import { encodeNode, HashNode } from "./hashNode.js";
+import type { TrieNode } from "./TrieType.js";
 
 const hashNode = HashNode({ keccak256, rlpEncode });
 

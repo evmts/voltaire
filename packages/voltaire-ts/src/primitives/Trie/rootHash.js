@@ -11,7 +11,7 @@ import { EMPTY_ROOT_HASH } from "./constants.js";
  * @returns {(trie: import('./TrieType.js').Trie) => Uint8Array}
  */
 export function RootHash(deps) {
-	const { keccak256, rlpEncode } = deps;
+	const { keccak256, rlpEncode: _rlpEncode } = deps;
 
 	/**
 	 * Compute the 32-byte root hash of the trie.

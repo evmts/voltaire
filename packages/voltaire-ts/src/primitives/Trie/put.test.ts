@@ -31,12 +31,8 @@ describe("put", () => {
 		let trie = init();
 		trie = put(trie, new Uint8Array([0x10]), new Uint8Array([0xaa]));
 		trie = put(trie, new Uint8Array([0x20]), new Uint8Array([0xbb]));
-		expect(get(trie, new Uint8Array([0x10]))).toEqual(
-			new Uint8Array([0xaa]),
-		);
-		expect(get(trie, new Uint8Array([0x20]))).toEqual(
-			new Uint8Array([0xbb]),
-		);
+		expect(get(trie, new Uint8Array([0x10]))).toEqual(new Uint8Array([0xaa]));
+		expect(get(trie, new Uint8Array([0x20]))).toEqual(new Uint8Array([0xbb]));
 	});
 
 	it("inserts two keys sharing a prefix", () => {
@@ -65,25 +61,15 @@ describe("put", () => {
 			trie = put(trie, new Uint8Array([i]), new Uint8Array([i * 2]));
 		}
 		for (let i = 0; i < 50; i++) {
-			expect(get(trie, new Uint8Array([i]))).toEqual(
-				new Uint8Array([i * 2]),
-			);
+			expect(get(trie, new Uint8Array([i]))).toEqual(new Uint8Array([i * 2]));
 		}
 	});
 
 	it("handles keys of different lengths", () => {
 		let trie = init();
 		trie = put(trie, new Uint8Array([0x01]), new Uint8Array([1]));
-		trie = put(
-			trie,
-			new Uint8Array([0x01, 0x02]),
-			new Uint8Array([2]),
-		);
-		trie = put(
-			trie,
-			new Uint8Array([0x01, 0x02, 0x03]),
-			new Uint8Array([3]),
-		);
+		trie = put(trie, new Uint8Array([0x01, 0x02]), new Uint8Array([2]));
+		trie = put(trie, new Uint8Array([0x01, 0x02, 0x03]), new Uint8Array([3]));
 		expect(get(trie, new Uint8Array([0x01]))).toEqual(new Uint8Array([1]));
 		expect(get(trie, new Uint8Array([0x01, 0x02]))).toEqual(
 			new Uint8Array([2]),

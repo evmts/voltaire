@@ -34,6 +34,7 @@ export function Put(deps) {
 	 * @param {Uint8Array} value
 	 * @returns {Uint8Array}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 	function insertAt(nodes, nodeHash, nibbles, value) {
 		if (nodeHash === null) {
 			return storeNode(nodes, { type: "leaf", nibbles, value });
@@ -236,7 +237,9 @@ export function Put(deps) {
 function toHex(bytes) {
 	let hex = "";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += /** @type {number} */ (bytes[i]).toString(16).padStart(2, "0");
+		hex += /** @type {number} */ (bytes[i])
+			.toString(16)
+			.padStart(2, "0");
 	}
 	return hex;
 }

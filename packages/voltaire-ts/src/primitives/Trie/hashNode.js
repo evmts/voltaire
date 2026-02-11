@@ -39,15 +39,9 @@ export function encodeNode(node, rlpEncode) {
 		case "empty":
 			return rlpEncode(new Uint8Array([]));
 		case "leaf":
-			return rlpEncode([
-				encodePath(node.nibbles, true),
-				node.value,
-			]);
+			return rlpEncode([encodePath(node.nibbles, true), node.value]);
 		case "extension":
-			return rlpEncode([
-				encodePath(node.nibbles, false),
-				node.childHash,
-			]);
+			return rlpEncode([encodePath(node.nibbles, false), node.childHash]);
 		case "branch": {
 			/** @type {(Uint8Array | Uint8Array)[]} */
 			const items = [];

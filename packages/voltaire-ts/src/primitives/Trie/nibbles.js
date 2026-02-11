@@ -24,7 +24,9 @@ export function keyToNibbles(key) {
 export function nibblesToKey(nibbles) {
 	const key = new Uint8Array(nibbles.length >> 1);
 	for (let i = 0; i < key.length; i++) {
-		key[i] = (/** @type {number} */ (nibbles[i * 2]) << 4) | /** @type {number} */ (nibbles[i * 2 + 1]);
+		key[i] =
+			(/** @type {number} */ (nibbles[i * 2]) << 4) |
+			/** @type {number} */ (nibbles[i * 2 + 1]);
 	}
 	return key;
 }

@@ -1,5 +1,5 @@
-import { keyToNibbles, commonPrefixLength } from "./nibbles.js";
 import { decodePath } from "./encodePath.js";
+import { commonPrefixLength, keyToNibbles } from "./nibbles.js";
 
 /**
  * @typedef {{ keccak256: (data: Uint8Array) => Uint8Array; rlpDecode: (bytes: Uint8Array, stream?: boolean) => any }} VerifyDeps
@@ -22,6 +22,7 @@ export function Verify(deps) {
 	 * @param {ReadonlyArray<Uint8Array>} proof - Array of RLP-encoded nodes
 	 * @returns {{ value: Uint8Array | null; valid: boolean }}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 	return function verify(rootHash, key, proof) {
 		if (proof.length === 0) {
 			return { value: null, valid: false };
@@ -113,6 +114,7 @@ export function Verify(deps) {
  * @param {Uint8Array} data
  * @returns {Uint8Array[] | null}
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 function decodeRlpList(data) {
 	if (data.length === 0) return null;
 	const prefix = /** @type {number} */ (data[0]);
