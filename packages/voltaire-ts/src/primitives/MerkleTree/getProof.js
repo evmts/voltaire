@@ -13,6 +13,7 @@ export function GetProof({ keccak256 }) {
 	 * @param {number} leafIndex - Index of leaf to prove
 	 * @returns {import('./MerkleTreeType.js').MerkleProofType}
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 	return function getProof(leaves, leafIndex) {
 		if (leaves.length === 0) {
 			throw new EmptyTreeError();

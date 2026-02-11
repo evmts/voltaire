@@ -79,6 +79,7 @@ export function encodeBasic(value, type) {
  * @param {string} type - Type: 'uint8', 'uint16', 'uint32', 'uint64', 'uint256', 'bool'
  * @returns {number | bigint | boolean} Decoded value
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 export function decodeBasic(bytes, type) {
 	switch (type) {
 		case "uint8": {
