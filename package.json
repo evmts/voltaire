@@ -15,7 +15,7 @@
 		"clean": "rm -rf zig-out .zig-cache target && pnpm -r clean",
 		"changeset": "changeset",
 		"version-packages": "changeset version",
-		"release": "pnpm build && pnpm -r publish --access public"
+		"release": "pnpm build && pnpm -r publish --access public --no-git-checks"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.2",
