@@ -1,3 +1,4 @@
+import type { HexType } from "../Hex/HexType.js";
 import type { CallDataType } from "./CallDataType.js";
 import * as BrandedCallData from "./internal-index.js";
 
@@ -10,7 +11,7 @@ export * from "./errors.js";
  * Base CallData interface with instance methods
  */
 export interface BaseCallData extends CallDataType {
-	toHex(): string;
+	toHex(): HexType;
 	toBytes(): Uint8Array;
 	getSelector(): Uint8Array;
 	hasSelector(selector: string | Uint8Array): boolean;

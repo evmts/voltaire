@@ -49,11 +49,6 @@
 			"import": "./dist/functional.js",
 			"require": "./dist/functional.cjs"
 		},
-		"./brand": {
-			"types": "./types/brand.d.ts",
-			"import": "./dist/brand.js",
-			"require": "./dist/brand.cjs"
-		},
 		"./Abi": {
 			"types": "./types/primitives/Abi/index.d.ts",
 			"import": "./dist/primitives/Abi/index.js",
@@ -390,9 +385,6 @@
 	"types": "types/index.d.ts",
 	"typesVersions": {
 		"*": {
-			"brand": [
-				"./types/brand.d.ts"
-			],
 			"native": [
 				"./types/native/index.d.ts"
 			],

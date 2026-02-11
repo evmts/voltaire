@@ -2,7 +2,7 @@
  * Convert bloom filter to hex string
  *
  * @param {import('./BloomFilterType.js').BloomFilterType} filter - Bloom filter
- * @returns {string} Hex string representation
+ * @returns {import('../Hex/HexType.js').HexType} Hex string representation
  *
  * @example
  * ```typescript
@@ -11,7 +11,9 @@
  * ```
  */
 export function toHex(filter) {
-	return `0x${Array.from(filter)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	return /** @type {import('../Hex/HexType.js').HexType} */ (
+		`0x${Array.from(filter)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")}`
+	);
 }

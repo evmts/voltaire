@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/bytes/bytes32 for documentation
  * @since 0.0.0
  * @param {import('./Bytes32Type.js').Bytes32Type} bytes - Bytes32 to convert
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @example
  * ```javascript
  * import * as Bytes32 from './primitives/Bytes/Bytes32/index.js';
@@ -18,5 +18,5 @@ export function toHex(bytes) {
 			.toString(16)
 			.padStart(2, "0");
 	}
-	return result;
+	return /** @type {import('../../Hex/HexType.js').HexType} */ (result);
 }

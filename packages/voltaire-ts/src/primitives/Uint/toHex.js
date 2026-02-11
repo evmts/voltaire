@@ -5,7 +5,7 @@
  * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - Uint256 value to convert
  * @param {boolean} [padded=true] - Whether to pad to 64 characters (32 bytes)
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript

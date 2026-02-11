@@ -4,7 +4,7 @@ import * as Address from "../Address/internal-index.js";
  * Convert EntryPoint to hex string
  *
  * @param {import('./EntryPointType.js').EntryPointType} entryPoint - EntryPoint address
- * @returns {string} Hex string (0x-prefixed)
+ * @returns {import('../Hex/HexType.js').HexType} Hex string (0x-prefixed)
  *
  * @example
  * ```typescript

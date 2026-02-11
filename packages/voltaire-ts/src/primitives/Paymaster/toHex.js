@@ -4,7 +4,7 @@ import * as Address from "../Address/internal-index.js";
  * Convert Paymaster to hex string
  *
  * @param {import('./PaymasterType.js').PaymasterType} paymaster - Paymaster address
- * @returns {string} Hex string (0x-prefixed)
+ * @returns {import('../Hex/HexType.js').HexType} Hex string (0x-prefixed)
  *
  * @example
  * ```typescript
