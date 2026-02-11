@@ -45,8 +45,8 @@ export { Number } from "./Number.js";
 // Re-export pure functions from voltaire
 import { TransactionIndex } from "@tevm/voltaire";
 
-export const equals = TransactionIndex.equals;
-export const toNumber = TransactionIndex.toNumber;
+export const equals: (a: TransactionIndexType, b: TransactionIndexType) => boolean = TransactionIndex.equals;
+export const toNumber: (index: TransactionIndexType) => number = TransactionIndex.toNumber;
 
 // Type export
 import type { TransactionIndex as _TransactionIndex } from "@tevm/voltaire";

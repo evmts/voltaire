@@ -19,7 +19,7 @@ export function encodePath(nibbles, isLeaf) {
 		out[0] = ((flag + 1) << 4) | /** @type {number} */ (nibbles[0]);
 		for (let i = 1; i < nibbles.length; i += 2) {
 			out[(i + 1) >> 1] =
-				(/** @type {number} */ (nibbles[i]) << 4) |
+				/** @type {number} */ (nibbles[i] << 4) |
 				/** @type {number} */ (nibbles[i + 1]);
 		}
 		return out;
@@ -29,7 +29,7 @@ export function encodePath(nibbles, isLeaf) {
 	out[0] = flag << 4;
 	for (let i = 0; i < nibbles.length; i += 2) {
 		out[1 + (i >> 1)] =
-			(/** @type {number} */ (nibbles[i]) << 4) |
+			/** @type {number} */ (nibbles[i] << 4) |
 			/** @type {number} */ (nibbles[i + 1]);
 	}
 	return out;

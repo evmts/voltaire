@@ -54,6 +54,7 @@ export { String } from "./String.js";
 
 // Re-export pure functions from voltaire
 import { Uint64 } from "@tevm/voltaire";
+import type { Uint64Type } from "./Uint64Schema.js";
 
 export const equals = Uint64.equals;
 export const plus = Uint64.plus;
@@ -62,10 +63,10 @@ export const times = Uint64.times;
 export const toBigInt = Uint64.toBigInt;
 export const toNumber = Uint64.toNumber;
 export const toHex = Uint64.toHex;
-export const MAX = Uint64.MAX;
-export const MIN = Uint64.MIN;
-export const ZERO = Uint64.ZERO;
-export const ONE = Uint64.ONE;
+export const MAX: Uint64Type = Uint64.MAX;
+export const MIN: Uint64Type = Uint64.MIN;
+export const ZERO: Uint64Type = Uint64.ZERO;
+export const ONE: Uint64Type = Uint64.ONE;
 
 // Type export
 export type { Uint64Type } from "./Uint64Schema.js";
