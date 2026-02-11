@@ -55,8 +55,7 @@ export function from(domain) {
 		result = {
 			...result,
 			chainId:
-				typeof domain.chainId === "number" ||
-				typeof domain.chainId === "bigint"
+				typeof domain.chainId === "number" || typeof domain.chainId === "bigint"
 					? /** @type {*} */ (ChainId.from(domain.chainId))
 					: domain.chainId,
 		};
