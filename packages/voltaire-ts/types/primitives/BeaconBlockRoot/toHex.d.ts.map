@@ -1,1 +1,1 @@
-{"version":3,"file":"toHex.d.ts","sourceRoot":"","sources":["../../../src/primitives/BeaconBlockRoot/toHex.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;GAcG;AACH,4BAVW,OAAO,0BAA0B,EAAE,mBAAmB,GACpD,MAAM,CAWlB"}
+{"version":3,"file":"toHex.d.ts","sourceRoot":"","sources":["../../../src/primitives/BeaconBlockRoot/toHex.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;GAcG;AACH,4BAVW,OAAO,0BAA0B,EAAE,mBAAmB,GACpD,OAAO,mBAAmB,EAAE,OAAO,CAW/C"}

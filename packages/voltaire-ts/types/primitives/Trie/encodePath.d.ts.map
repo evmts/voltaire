@@ -1,0 +1,1 @@
+{"version":3,"file":"encodePath.d.ts","sourceRoot":"","sources":["../../../src/primitives/Trie/encodePath.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;GAWG;AACH,oCAJW,UAAU,UACV,OAAO,GACL,UAAU,CAyBtB;AAED;;;;;GAKG;AACH,oCAHW,UAAU,GACR;IAAE,OAAO,EAAE,UAAU,CAAC;IAAC,MAAM,EAAE,OAAO,CAAA;CAAE,CAwBpD"}

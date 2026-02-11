@@ -2,7 +2,7 @@
  * Convert GasUsed to hex string
  *
  * @this {import('./GasUsedType.js').GasUsedType}
- * @returns {string} Gas used as hex string (0x prefixed)
+ * @returns {import('../Hex/HexType.js').HexType} Gas used as hex string (0x prefixed)
  *
  * @example
  * ```typescript
@@ -10,5 +10,5 @@
  * GasUsed.toHex(gasUsed); // "0xc822"
  * ```
  */
-export function toHex(this: import("./GasUsedType.js").GasUsedType): string;
+export function toHex(this: import("./GasUsedType.js").GasUsedType): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

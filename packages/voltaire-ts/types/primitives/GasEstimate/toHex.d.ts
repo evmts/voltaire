@@ -2,7 +2,7 @@
  * Convert GasEstimate to hex string
  *
  * @this {import('./GasEstimateType.js').GasEstimateType}
- * @returns {string} Gas estimate as hex string (0x prefixed)
+ * @returns {import('../Hex/HexType.js').HexType} Gas estimate as hex string (0x prefixed)
  *
  * @example
  * ```typescript
@@ -10,5 +10,5 @@
  * GasEstimate.toHex(estimate); // "0xc822"
  * ```
  */
-export function toHex(this: import("./GasEstimateType.js").GasEstimateType): string;
+export function toHex(this: import("./GasEstimateType.js").GasEstimateType): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map
