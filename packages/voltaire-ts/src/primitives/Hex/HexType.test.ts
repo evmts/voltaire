@@ -140,7 +140,6 @@ describe("HexType type-level tests", () => {
 
 			const hex4 = "0x12345678" as Sized<4>;
 			const result = test(hex4);
-			type ResultType = typeof result;
 			const _check: Sized<4> = result;
 		});
 
