@@ -1,5 +1,11 @@
 # voltaire-effect
 
+## 1.0.1
+
+### Patch Changes
+
+- [#375](https://github.com/evmts/voltaire/pull/375) [`49083f7`](https://github.com/evmts/voltaire/commit/49083f7788b23a9134e28659cddf2828c1dd444b) Thanks [@enitrat](https://github.com/enitrat)! - Re-enable TypeScript declaration generation in tsup config
+
 ## 1.0.0
 
 ### Patch Changes
