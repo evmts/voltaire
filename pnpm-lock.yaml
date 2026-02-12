@@ -115,9 +115,6 @@ importers:
       '@scure/bip39':
         specifier: ^2.0.1
         version: 2.0.1(patch_hash=4cbf98246735cf0aeb077cafe60f204f767396769114f512383c693238fa63b6)
-      '@shazow/whatsabi':
-        specifier: ^0.25.0
-        version: 0.25.0(@noble/hashes@2.0.1)(typescript@5.9.3)(zod@4.3.6)
       '@tevm/chains':
         specifier: ^0.0.1
         version: 0.0.1(typescript@5.9.3)
@@ -10076,14 +10073,6 @@ snapshots:
       - typescript
       - zod
 
-  '@shazow/whatsabi@0.25.0(@noble/hashes@2.0.1)(typescript@5.9.3)(zod@4.3.6)':
-    dependencies:
-      '@noble/hashes': 2.0.1
-      ox: 0.9.17(typescript@5.9.3)(zod@4.3.6)
-    transitivePeerDependencies:
-      - typescript
-      - zod
-
   '@shikijs/core@3.20.0':
     dependencies:
       '@shikijs/types': 3.20.0
@@ -14278,21 +14267,6 @@ snapshots:
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
       abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
-      eventemitter3: 5.0.1
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - zod
-
-  ox@0.9.17(typescript@5.9.3)(zod@4.3.6):
-    dependencies:
-      '@adraffy/ens-normalize': 1.11.1
-      '@noble/ciphers': 1.3.0
-      '@noble/curves': 1.9.1
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.7.0
-      '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.9.3
