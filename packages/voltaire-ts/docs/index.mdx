@@ -437,55 +437,80 @@ url = "https://voltaire.tevm.sh/mcp"
       <div id="editor-mount-point" style={{ maxWidth: '1000px', margin: '5rem auto 0' }}></div>
     </div>
 
-    <div style={{ maxWidth: '1000px', margin: '5rem auto', padding: '0 1rem' }}>
-      <h2 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '700', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Effect.ts Integration</h2>
+    <div style={{ maxWidth: '900px', margin: '5rem auto', padding: '0 1rem' }}>
+      <h2 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '700', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Type-Safe Primitives & Crypto</h2>
       <p style={{ fontSize: '1.1rem', color: '#999', textAlign: 'center', marginBottom: '2rem' }}>
-        Type-safe contract interactions with composable, error-handled operations via <code style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>voltaire-effect</code>
+        Branded types, denomination safety, ABI encoding, and WASM-accelerated cryptography.
       </p>
 
 ```typescript
-import { Effect } from 'effect'
-import {
-  ContractRegistryService,
-  makeContractRegistry,
-  HttpProvider
-} from 'voltaire-effect'
+import { Address, Wei } from '@tevm/voltaire'
+import { Hex } from '@tevm/voltaire/Hex'
+import { Keccak256 } from '@tevm/voltaire/Keccak256'
+import { Rlp } from '@tevm/voltaire/Rlp'
+import { Abi } from '@tevm/voltaire/Abi'
 
-// Define your contracts once
-const Contracts = makeContractRegistry({
-  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
-  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-  UniswapRouter: { abi: routerAbi, address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' },
-})
+// Branded types - Address and Hash are distinct types
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+console.log(addr.toChecksummed()) // "0x742d35Cc..."
 
-// Compose operations with full type safety
-const getPortfolioBalances = Effect.gen(function* () {
-  const { USDC, WETH } = yield* ContractRegistryService
+// Denomination safety - Wei and Gwei can't be mixed
+const value = Wei(1000000000000000000n)
+console.log(Wei.toEther(value)) // "1"
 
-  // Parallel contract reads
-  const [usdcBalance, wethBalance] = yield* Effect.all([
-    USDC.read.balanceOf(userAddress),
-    WETH.read.balanceOf(userAddress),
-  ])
+// WASM-accelerated Keccak256
+const hash = Keccak256('hello')
+const selector = Keccak256.selector('transfer(address,uint256)')
+// Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 
-  return { usdc: usdcBalance, weth: wethBalance }
-}).pipe(
-  Effect.retry({ times: 3 }),           // Auto-retry on RPC failures
-  Effect.timeout('10 seconds'),         // Timeout protection
-  Effect.provide(Contracts),
-  Effect.provide(HttpProvider('https://eth.llamarpc.com'))
-)
+// RLP encoding
+const encoded = Rlp.encode([addr, Hex.fromNumber(42n)])
 
-// Execute with full error handling
-const result = await Effect.runPromise(getPortfolioBalances)
+// ABI encoding with full type inference
+const calldata = Abi.Function.encodeParams({
+  type: 'function', name: 'transfer',
+  inputs: [{ type: 'address', name: 'to' }, { type: 'uint256', name: 'amount' }],
+  outputs: [{ type: 'bool' }], stateMutability: 'nonpayable'
+} as const, ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 1000000000000000000n])
 ```
 
-      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+    </div>
+
+    <div style={{ maxWidth: '1000px', margin: '5rem auto', padding: '0 1rem' }}>
+      <h2 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '700', textAlign: 'center', marginBottom: '1rem', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Need Providers, Signers, or Contract Interactions?</h2>
+      <p style={{ fontSize: '1.1rem', color: '#999', textAlign: 'center', marginBottom: '2rem' }}>
+        Voltaire focuses on primitives and cryptography. For providers, signers, contract reads/writes, and composable Effect.ts operations, use <code style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>voltaire-effect</code>.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        <div style={{ padding: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🌐</div>
+          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: '600', color: '#D4931E' }}>Providers</h4>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#999' }}>HTTP, WebSocket, and fallback transports with retry and rate limiting</p>
+        </div>
+        <div style={{ padding: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔑</div>
+          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: '600', color: '#D4931E' }}>Signers</h4>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#999' }}>HD wallets, private key signers, and EIP-712 typed data signing</p>
+        </div>
+        <div style={{ padding: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📜</div>
+          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: '600', color: '#D4931E' }}>Contracts</h4>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#999' }}>Type-safe contract reads, writes, and event subscriptions</p>
+        </div>
+        <div style={{ padding: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚡</div>
+          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: '600', color: '#D4931E' }}>Effect.ts</h4>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#999' }}>Composable operations with typed errors, retries, and timeouts</p>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
         <a href="https://github.com/evmts/voltaire/tree/main/voltaire-effect" target="_blank" rel="noopener"
            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'linear-gradient(135deg, #E6A23C 0%, #A0522D 100%)', color: 'white', transition: 'all 0.15s ease' }}
            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(230, 162, 60, 0.3)'; }}
            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}>
-          View voltaire-effect
+          View voltaire-effect →
         </a>
         <a href="https://effect.website" target="_blank" rel="noopener"
            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', background: 'transparent', color: 'currentColor', border: '2px solid rgba(128, 128, 128, 0.3)', transition: 'all 0.15s ease' }}
