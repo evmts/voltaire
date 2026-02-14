@@ -4,7 +4,7 @@
  * @since 0.0.1
  */
 
-import { HDWallet } from "@tevm/voltaire/native";
+import { HDWallet } from "@tevm/voltaire/HDWallet";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { wordsToMnemonic } from "../Bip39/utils.js";
