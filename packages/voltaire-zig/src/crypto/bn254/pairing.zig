@@ -74,9 +74,7 @@ pub fn finalExponentiation(f: *const Fp12Mont) !Fp12Mont {
 
 pub fn finalExponentiationEasyPart(f: *const Fp12Mont) !Fp12Mont {
     var result = f.*;
-    for (0..6) |_| {
-        result.frobeniusMapAssign();
-    }
+    result.conjAssign();
     // f should not be zero in a valid pairing computation
     // If inv() fails, return error instead of panicking
     const f_inv = try f.inv();

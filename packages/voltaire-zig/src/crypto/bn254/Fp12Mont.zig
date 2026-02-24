@@ -149,6 +149,17 @@ pub fn powAssign(self: *Fp12Mont, exponent: u256) void {
     self.* = self.pow(exponent);
 }
 
+pub fn conj(self: *const Fp12Mont) Fp12Mont {
+    return Fp12Mont{
+        .w0 = self.w0,
+        .w1 = self.w1.neg(),
+    };
+}
+
+pub fn conjAssign(self: *Fp12Mont) void {
+    self.* = self.conj();
+}
+
 pub fn inv(self: *const Fp12Mont) !Fp12Mont {
     const v = curve_parameters.V;
 
@@ -169,10 +180,7 @@ pub fn invAssign(self: *Fp12Mont) !void {
 
 // The inverse of a unary field element is it's conjugate
 pub fn unaryInverse(self: *const Fp12Mont) Fp12Mont {
-    return Fp12Mont{
-        .w0 = self.w0,
-        .w1 = self.w1.neg(),
-    };
+    return self.conj();
 }
 
 pub fn unaryInverseAssign(self: *Fp12Mont) void {
