@@ -81,7 +81,7 @@ pub fn finalExponentiationEasyPart(f: *const Fp12Mont) !Fp12Mont {
     // If inv() fails, return error instead of panicking
     const f_inv = try f.inv();
     result.mulAssign(&f_inv);
-    result.mulAssign(&result.frobeniusMap().frobeniusMap());
+    result.mulAssign(&result.frobeniusMap2());
     return result;
 }
 
@@ -117,13 +117,13 @@ pub fn finalExponentiationHardPart(f: *const Fp12Mont) Fp12Mont {
     t2 = t3.frobeniusMap();
 
     t0.mulAssign(&t2);
-    t2 = t4.frobeniusMap().frobeniusMap();
+    t2 = t4.frobeniusMap2();
 
     t0.mulAssign(&t2);
     t2 = f.unaryInverse();
 
     t2.mulAssign(&t3);
-    t2 = t2.frobeniusMap().frobeniusMap().frobeniusMap();
+    t2 = t2.frobeniusMap3();
 
     t0.mulAssign(&t2);
 
