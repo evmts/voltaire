@@ -158,7 +158,7 @@ test "curve parameters G2_INFINITY is infinity" {
 
 test "curve parameters G1_GENERATOR has correct z coordinate" {
     const gen = G1_GENERATOR;
-    const expected_z = FpMont.init(MONTGOMERY_R_MOD_P);
+    const expected_z = FpMont{ .value = MONTGOMERY_R_MOD_P };
     try std.testing.expect(gen.z.equal(&expected_z));
 }
 
@@ -280,24 +280,22 @@ test "curve parameters G2 generator doubled is on curve" {
 
 test "curve parameters G1 cube root cubed equals one mod FR" {
     const cube_root = G1_SCALAR.cube_root;
-    const Fr = @import("Fr.zig").Fr;
 
-    const cr_fr = Fr.init(cube_root);
-    const cr_squared = cr_fr.mul(&cr_fr);
-    const cr_cubed = cr_squared.mul(&cr_fr);
+    const cr_fp = FpMont.init(cube_root);
+    const cr_squared = cr_fp.mul(&cr_fp);
+    const cr_cubed = cr_squared.mul(&cr_fp);
 
-    try std.testing.expect(cr_cubed.equal(&Fr.ONE));
+    try std.testing.expect(cr_cubed.equal(&FpMont.ONE));
 }
 
 test "curve parameters G2 cube root cubed equals one mod FR" {
     const cube_root = G2_SCALAR.cube_root;
-    const Fr = @import("Fr.zig").Fr;
 
-    const cr_fr = Fr.init(cube_root);
-    const cr_squared = cr_fr.mul(&cr_fr);
-    const cr_cubed = cr_squared.mul(&cr_fr);
+    const cr_fp = FpMont.init(cube_root);
+    const cr_squared = cr_fp.mul(&cr_fp);
+    const cr_cubed = cr_squared.mul(&cr_fp);
 
-    try std.testing.expect(cr_cubed.equal(&Fr.ONE));
+    try std.testing.expect(cr_cubed.equal(&FpMont.ONE));
 }
 
 test "curve parameters montgomery minus p inv is valid" {
