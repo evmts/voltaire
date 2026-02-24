@@ -41,16 +41,29 @@ pub const G2_GENERATOR = G2{ .x = Fp2Mont{ .u0 = FpMont{ .value = 0x19573841af96
 pub const G2_INFINITY = G2{ .x = Fp2Mont{ .u0 = FpMont{ .value = 0x0 }, .u1 = FpMont{ .value = 0x0 } }, .y = Fp2Mont{ .u0 = FpMont{ .value = 0xe0a77c19a07df2f666ea36f7879462c0a78eb28f5c70b3dd35d438dc58f0d9d }, .u1 = FpMont{ .value = 0x0 } }, .z = Fp2Mont{ .u0 = FpMont{ .value = 0x0 }, .u1 = FpMont{ .value = 0x0 } } };
 
 // recomputed values for Frobenius coefficients in Montgomery form
-// Frobenius coefficients for Fp6
-pub const FROBENIUS_COEFF_FP6_V1 = Fp2Mont{ .u0 = FpMont{ .value = 0x1956bcd8118214ec7a007127242e0991347f91c8a9aa6454b5773b104563ab30 }, .u1 = FpMont{ .value = 0x26694fbb4e82ebc3b6e713cdfae0ca3aaa1c7b6d89f891416e849f1ea0aa4757 } };
-pub const FROBENIUS_COEFF_FP6_V2 = Fp2Mont{ .u0 = FpMont{ .value = 0x15df9cddbb9fd3ec9c941f314b3e2399a5bb2bd3273411fb7361d77f843abe92 }, .u1 = FpMont{ .value = 0x24830a9d3171f0fd37bc870a0c7dd2b962cb29a5a4445b605dddfd154bd8c949 } };
 
-// Frobenius coefficients for G2
-pub const FROBENIUS_G2_X_COEFF = Fp2Mont{ .u0 = FpMont{ .value = 0x1956bcd8118214ec7a007127242e0991347f91c8a9aa6454b5773b104563ab30 }, .u1 = FpMont{ .value = 0x26694fbb4e82ebc3b6e713cdfae0ca3aaa1c7b6d89f891416e849f1ea0aa4757 } };
-pub const FROBENIUS_G2_Y_COEFF = Fp2Mont{ .u0 = FpMont{ .value = 0x253570bea500f8dd31a9d1b6f9645366bb30f162e133bacbe4bbdd0c2936b629 }, .u1 = FpMont{ .value = 0x2c87200285defecc6d16bd27bb7edc6b07affd117826d1dba1d77ce45ffe77c7 } };
+const precomputed_exponent = (FP_MOD - 1) / 6;
 
-// Frobenius coefficients for Fp12
-pub const FROBENIUS_COEFF_FP12 = Fp2Mont{ .u0 = FpMont{ .value = 0x2f34d751a1f3a7c11bded5ef08a2087ca6b1d7387afb78aaf9ba69633144907 }, .u1 = FpMont{ .value = 0x10a75716b3899551dc2ff3a253dfc926d00f02a4565de15ba222ae234c492d72 } };
+pub const gamma_11 = blk: {
+    @setEvalBranchQuota(200_000);
+    break :blk Fp2Mont.initFromInt(9, 1).pow(precomputed_exponent);
+};
+pub const gamma_12 = gamma_11.mul(&gamma_11);
+pub const gamma_13 = gamma_12.mul(&gamma_11);
+pub const gamma_14 = gamma_13.mul(&gamma_11);
+pub const gamma_15 = gamma_14.mul(&gamma_11);
+
+pub const gamma_21 = gamma_11.mul(&gamma_11.conj());
+pub const gamma_22 = gamma_12.mul(&gamma_12.conj());
+pub const gamma_23 = gamma_13.mul(&gamma_13.conj());
+pub const gamma_24 = gamma_14.mul(&gamma_14.conj());
+pub const gamma_25 = gamma_15.mul(&gamma_15.conj());
+
+pub const gamma_31 = gamma_11.mul(&gamma_21);
+pub const gamma_32 = gamma_12.mul(&gamma_22);
+pub const gamma_33 = gamma_13.mul(&gamma_23);
+pub const gamma_34 = gamma_14.mul(&gamma_24);
+pub const gamma_35 = gamma_15.mul(&gamma_25);
 
 // GLS constants grouped for G1 scalar decompositions
 pub const G1_SCALAR = struct {
@@ -211,11 +224,6 @@ test "curve parameters miller loop constant length matches iterations" {
     try std.testing.expectEqual(miller_loop_iterations + 1, miller_loop_constant_signed.len);
 }
 
-test "curve parameters frobenius coefficients are non-zero" {
-    try std.testing.expect(FROBENIUS_COEFF_FP6_V1.u0.value != 0 or FROBENIUS_COEFF_FP6_V1.u1.value != 0);
-    try std.testing.expect(FROBENIUS_COEFF_FP6_V2.u0.value != 0 or FROBENIUS_COEFF_FP6_V2.u1.value != 0);
-}
-
 test "curve parameters G1 scalar constants are valid" {
     try std.testing.expect(G1_SCALAR.cube_root > 0);
     try std.testing.expect(G1_SCALAR.cube_root < FR_MOD);
@@ -332,19 +340,6 @@ test "curve parameters G2 small multiples are on curve" {
 
 test "curve parameters G2 generator is in correct subgroup" {
     try std.testing.expect(G2_GENERATOR.isInSubgroup());
-}
-
-test "curve parameters frobenius G2 coefficients are valid" {
-    const x_coeff = FROBENIUS_G2_X_COEFF;
-    const y_coeff = FROBENIUS_G2_Y_COEFF;
-
-    try std.testing.expect(x_coeff.u0.value != 0 or x_coeff.u1.value != 0);
-    try std.testing.expect(y_coeff.u0.value != 0 or y_coeff.u1.value != 0);
-}
-
-test "curve parameters FROBENIUS_COEFF_FP12 is valid" {
-    const coeff = FROBENIUS_COEFF_FP12;
-    try std.testing.expect(coeff.u0.value != 0 or coeff.u1.value != 0);
 }
 
 test "curve parameters G1 and G2 same cube root" {

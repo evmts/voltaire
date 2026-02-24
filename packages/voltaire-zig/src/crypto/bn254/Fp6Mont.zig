@@ -269,8 +269,8 @@ pub fn equal(self: *const Fp6Mont, other: *const Fp6Mont) bool {
 pub fn frobeniusMap(self: *const Fp6Mont) Fp6Mont {
     return Fp6Mont{
         .v0 = self.v0.frobeniusMap(),
-        .v1 = self.v1.frobeniusMap().mul(&curve_parameters.FROBENIUS_COEFF_FP6_V1),
-        .v2 = self.v2.frobeniusMap().mul(&curve_parameters.FROBENIUS_COEFF_FP6_V2),
+        .v1 = self.v1.frobeniusMap().mul(&curve_parameters.gamma_12),
+        .v2 = self.v2.frobeniusMap().mul(&curve_parameters.gamma_14),
     };
 }
 

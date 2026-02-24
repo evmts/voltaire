@@ -13,8 +13,8 @@ z: Fp2Mont,
 pub const INFINITY = curve_parameters.G2_INFINITY;
 pub const GENERATOR = curve_parameters.G2_GENERATOR;
 
-pub const FROBENIUS_X_COEFF = curve_parameters.FROBENIUS_G2_X_COEFF;
-pub const FROBENIUS_Y_COEFF = curve_parameters.FROBENIUS_G2_Y_COEFF;
+pub const FROBENIUS_X_COEFF = curve_parameters.gamma_12;
+pub const FROBENIUS_Y_COEFF = curve_parameters.gamma_13;
 
 pub fn isInfinity(self: *const G2) bool {
     return self.z.u0.value == 0 and self.z.u1.value == 0;

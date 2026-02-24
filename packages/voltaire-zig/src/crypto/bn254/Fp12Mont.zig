@@ -184,14 +184,66 @@ pub fn equal(self: *const Fp12Mont, other: *const Fp12Mont) bool {
 }
 
 pub fn frobeniusMap(self: *const Fp12Mont) Fp12Mont {
+    const w0 = Fp6Mont{
+        .v0 = self.w0.v0.conj(),
+        .v1 = self.w0.v1.conj().mul(&curve_parameters.gamma_12),
+        .v2 = self.w0.v2.conj().mul(&curve_parameters.gamma_14),
+    };
+    const w1 = Fp6Mont{
+        .v0 = self.w1.v0.conj().mul(&curve_parameters.gamma_11),
+        .v1 = self.w1.v1.conj().mul(&curve_parameters.gamma_13),
+        .v2 = self.w1.v2.conj().mul(&curve_parameters.gamma_15),
+    };
     return Fp12Mont{
-        .w0 = self.w0.frobeniusMap(),
-        .w1 = self.w1.frobeniusMap().mulByFp2(&curve_parameters.FROBENIUS_COEFF_FP12),
+        .w0 = w0,
+        .w1 = w1,
     };
 }
 
 pub fn frobeniusMapAssign(self: *Fp12Mont) void {
     self.* = self.frobeniusMap();
+}
+
+pub fn frobeniusMap2(self: *const Fp12Mont) Fp12Mont {
+    const w0 = Fp6Mont{
+        .v0 = self.w0.v0,
+        .v1 = self.w0.v1.mul(&curve_parameters.gamma_22),
+        .v2 = self.w0.v2.mul(&curve_parameters.gamma_24),
+    };
+    const w1 = Fp6Mont{
+        .v0 = self.w1.v0.mul(&curve_parameters.gamma_21),
+        .v1 = self.w1.v1.mul(&curve_parameters.gamma_23),
+        .v2 = self.w1.v2.mul(&curve_parameters.gamma_25),
+    };
+    return Fp12Mont{
+        .w0 = w0,
+        .w1 = w1,
+    };
+}
+
+pub fn frobeniusMap2Assign(self: *Fp12Mont) void {
+    self.* = self.frobeniusMap2();
+}
+
+pub fn frobeniusMap3(self: *const Fp12Mont) Fp12Mont {
+    const w0 = Fp6Mont{
+        .v0 = self.w0.v0.conj(),
+        .v1 = self.w0.v1.conj().mul(&curve_parameters.gamma_32),
+        .v2 = self.w0.v2.conj().mul(&curve_parameters.gamma_34),
+    };
+    const w1 = Fp6Mont{
+        .v0 = self.w1.v0.conj().mul(&curve_parameters.gamma_31),
+        .v1 = self.w1.v1.conj().mul(&curve_parameters.gamma_33),
+        .v2 = self.w1.v2.conj().mul(&curve_parameters.gamma_35),
+    };
+    return Fp12Mont{
+        .w0 = w0,
+        .w1 = w1,
+    };
+}
+
+pub fn frobeniusMap3Assign(self: *Fp12Mont) void {
+    self.* = self.frobeniusMap3();
 }
 
 pub fn powParamT(self: *const Fp12Mont) Fp12Mont {
@@ -514,6 +566,20 @@ test "Fp12Mont.frobeniusMap basic operation" {
     try expectFp12MontEqual(a, current);
 }
 
+test "Fp12Mont.frobeniusMap2 equivalent to two frobeniusMap applications" {
+    const a = fp12mont(5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27);
+    const result = a.frobeniusMap2();
+    const expected = a.frobeniusMap().frobeniusMap();
+    try expectFp12MontEqual(expected, result);
+}
+
+test "Fp12Mont.frobeniusMap3 equivalent to three frobeniusMap applications" {
+    const a = fp12mont(5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27);
+    const result = a.frobeniusMap3();
+    const expected = a.frobeniusMap().frobeniusMap().frobeniusMap();
+    try expectFp12MontEqual(expected, result);
+}
+
 test "Fp12Mont.powParamT basic operation" {
     const pairing = @import("pairing.zig");
     const a = fp12mont(2, 1, 1, 2, 3, 1, 1, 2, 3, 1, 2, 1);
@@ -554,7 +620,6 @@ test "Fp12Mont.mul distributive property over addition" {
     const right = a.mul(&b).add(&a.mul(&c));
     try expectFp12MontEqual(left, right);
 }
-
 test "Fp12Mont.mul associative property" {
     const a = fp12mont(12, 34, 56, 78, 90, 12, 34, 56, 78, 90, 12, 34);
     const b = fp12mont(11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53);
