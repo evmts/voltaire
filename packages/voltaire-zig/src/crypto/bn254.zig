@@ -109,7 +109,7 @@ test "BN254 G1 scalar multiplication by curve order gives infinity" {
 }
 
 test "BN254 G1 point validation rejects off-curve points" {
-    const bad_x = FpMont.init(1);
+    const bad_x = FpMont.init(2);
     const bad_y = FpMont.init(2);
     const z = FpMont.ONE;
 
@@ -683,8 +683,8 @@ test "BN254 EIP-196 ECADD - invalid point returns error" {
     var input: [128]u8 = undefined;
     @memset(&input, 0);
 
-    // Invalid point (1, 2) not on curve
-    std.mem.writeInt(u256, input[0..32], 1, .big);
+    // Invalid point (2, 2) not on curve
+    std.mem.writeInt(u256, input[0..32], 2, .big);
     std.mem.writeInt(u256, input[32..64], 2, .big);
 
     // Second point is infinity
