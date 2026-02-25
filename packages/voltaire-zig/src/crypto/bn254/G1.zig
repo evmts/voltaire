@@ -3,7 +3,7 @@ const std = @import("std");
 const FpMont = @import("FpMont.zig");
 const Fr = @import("Fr.zig");
 const curve_parameters = @import("curve_parameters.zig");
-const naf = @import("NAF.zig").naf;
+const wnaf = @import("NAF.zig").wnaf;
 
 //G1 is the group of points on the elliptic curve y^2 = x^3 + 3
 // We use the Jacobian projective coordinates to represent the points
@@ -33,13 +33,15 @@ pub fn init(x: *const FpMont, y: *const FpMont, z: *const FpMont) !G1 {
     return point;
 }
 
-pub fn toAffine(self: *const G1) !G1 {
+pub fn toAffine(self: *const G1) G1 {
     if (self.isInfinity()) {
         return INFINITY;
     }
-    // z should not be zero since we checked isInfinity above
-    // If inv() fails, return error instead of panicking
-    const z_inv = try self.z.inv();
+    // z cannot be zero here since we checked isInfinity above
+    // If inv() fails, it means z is zero which violates the invariant
+    const z_inv = self.z.inv() catch |err| {
+        std.debug.panic("G2.toAffine: z inversion failed (z should not be zero): {}", .{err});
+    };
     const z_inv_sq = z_inv.mul(&z_inv);
     const z_inv_cubed = z_inv_sq.mul(&z_inv);
 
@@ -201,13 +203,12 @@ pub fn addAssign(self: *G1, other: *const G1) void {
 }
 
 // This is a easy to compute morphism, G -> λG, where λ is a fixed field element, it can be found in curve_parameters.zig
-pub fn glsEndomorphism(self: *const G1) !G1 {
+pub fn glsEndomorphism(self: *const G1) G1 {
     const cube_root = FpMont.init(curve_parameters.G1_SCALAR.cube_root);
-    const point_aff = try self.toAffine();
     return G1{
-        .x = point_aff.x.mul(&cube_root),
-        .y = point_aff.y,
-        .z = FpMont.ONE,
+        .x = self.x.mul(&cube_root),
+        .y = self.y,
+        .z = self.z,
     };
 }
 
@@ -233,51 +234,64 @@ pub fn decomposeScalar(scalar: u256) scalar_decomposition {
     return scalar_decomposition{ .k1 = @intCast(k1), .k2 = @intCast(k2) };
 }
 
+//creates a table of size size containing P, 3P, 5P, 7P, ..., (2*size-1)P
+pub fn createTable(self: *const G1, size: comptime_int) [size]G1 {
+    var result: [size]G1 = undefined;
+    result[0] = self.*;
+    const double_point = self.double();
+    for (0..size - 1) |i| {
+        result[i + 1] = result[i].add(&double_point);
+    }
+    return result;
+}
+
 // This uses GLS in NAF, we first compute k1 and k2 in NAF, such that k = k1 + λ * k2
 // we then use Shamir's trick to reduce the number of doublings
-pub fn mulByInt(self: *const G1, scalar: u256) !G1 {
+pub fn mulByInt(self: *const G1, scalar: u256, window_size: comptime_int) G1 {
     const decomposition = decomposeScalar(scalar);
     const k1 = decomposition.k1;
-    const naf_k1 = naf(k1);
+    const wnaf_k1 = wnaf(window_size, u128, k1);
     const k2 = decomposition.k2;
-    const naf_k2 = naf(k2);
+    const wnaf_k2 = wnaf(window_size, u128, k2);
 
-    const P = self;
-    const Q = (try self.glsEndomorphism()).neg();
-    const P_plus_Q = P.add(&Q);
-    const P_minus_Q = P.sub(&Q);
+    const PTable = self.createTable(1 << (window_size - 2));
+    const QTable = self.glsEndomorphism().neg().createTable(1 << (window_size - 2));
 
     var result = INFINITY;
 
     for (0..128) |i| {
         result.doubleAssign();
 
-        const k1_bit = naf_k1[127 - i];
-        const k2_bit = naf_k2[127 - i];
-        const switch_case: u4 = (@as(u4, @as(u2, @bitCast(k1_bit))) << 2) | @as(u2, @bitCast(k2_bit)); //combine k1 and k2 bits into a single switch case
-
-        switch (switch_case) { //(k1_bit, k2_bit)
-            0 => {}, // (0, 0)
-            1 => result.addAssign(&Q), // (0, 1)
-            3 => result.addAssign(&Q.neg()), // (0, -1)
-            4 => result.addAssign(P), // (1, 0)
-            5 => result.addAssign(&P_plus_Q), // (1, 1)
-            7 => result.addAssign(&P_minus_Q), // (1, -1)
-            12 => result.addAssign(&P.neg()), // (-1, 0)
-            13 => result.addAssign(&P_minus_Q.neg()), // (-1, 1)
-            15 => result.addAssign(&P_plus_Q.neg()), // (-1, -1)
-            else => unreachable,
+        const k1_bit = wnaf_k1[127 - i];
+        const k2_bit = wnaf_k2[127 - i];
+        if (k1_bit != 0) {
+            const is_neg = if (k1_bit < 0) true else false;
+            const index = @abs(k1_bit) >> 1;
+            if (is_neg) {
+                result.addAssign(&PTable[index].neg());
+            } else {
+                result.addAssign(&PTable[index]);
+            }
+        }
+        if (k2_bit != 0) {
+            const is_neg = if (k2_bit < 0) true else false;
+            const index = @abs(k2_bit) >> 1;
+            if (is_neg) {
+                result.addAssign(&QTable[index].neg());
+            } else {
+                result.addAssign(&QTable[index]);
+            }
         }
     }
     return result;
 }
 
-pub fn mul(self: *const G1, scalar: *const Fr) !G1 {
-    return try self.mulByInt(scalar.value);
+pub fn mul(self: *const G1, scalar: *const Fr) G1 {
+    return self.mulByInt(scalar.value, curve_parameters.G1_SCALAR.window_size);
 }
 
-pub fn mulAssign(self: *G1, scalar: *const Fr) !void {
-    self.* = try self.mul(scalar);
+pub fn mulAssign(self: *G1, scalar: *const Fr) void {
+    self.* = self.mul(scalar);
 }
 
 // ============================================================================
@@ -320,7 +334,7 @@ test "G1.double" {
 
 test "G1.mul" {
     const Gen = G1.GENERATOR;
-    const minus_G = try Gen.mul(&Fr.init(1).neg());
+    const minus_G = Gen.mul(&Fr.init(1).neg());
     const G_plus_minus_G = Gen.add(&minus_G);
     try std.testing.expect(G_plus_minus_G.isInfinity());
 }
@@ -337,7 +351,7 @@ test "G1.isOnCurve identity" {
 
 test "G1.isOnCurve random point" {
     const k = 7; // example scalar
-    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
+    const random_point = G1.GENERATOR.mul(&Fr.init(k));
     try std.testing.expect(random_point.isOnCurve());
 }
 
@@ -358,8 +372,8 @@ test "G1.equal different representations same point" {
 
 test "G1.toAffine random point" {
     const k = 13; // example scalar
-    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
-    const affine = try random_point.toAffine();
+    const random_point = G1.GENERATOR.mul(&Fr.init(k));
+    const affine = random_point.toAffine();
 
     const expected_result = G1{
         .x = FpMont.init(2672242651313367459976336264061690128665099451055893690004467838496751824703),
@@ -381,8 +395,8 @@ test "G1.add generator to identity" {
 test "G1.add random points" {
     const k1 = 3; // example scalar
     const k2 = 5; // example scalar
-    const point1 = try G1.GENERATOR.mul(&Fr.init(k1));
-    const point2 = try G1.GENERATOR.mul(&Fr.init(k2));
+    const point1 = G1.GENERATOR.mul(&Fr.init(k1));
+    const point2 = G1.GENERATOR.mul(&Fr.init(k2));
     const result = point1.add(&point2);
 
     const expected_result = G1{
@@ -398,8 +412,8 @@ test "G1.add random points" {
 test "G1.add commutativity" {
     const k1 = 11; // example scalar
     const k2 = 17; // example scalar
-    const point1 = try G1.GENERATOR.mul(&Fr.init(k1));
-    const point2 = try G1.GENERATOR.mul(&Fr.init(k2));
+    const point1 = G1.GENERATOR.mul(&Fr.init(k1));
+    const point2 = G1.GENERATOR.mul(&Fr.init(k2));
 
     const result1 = point1.add(&point2);
     const result2 = point2.add(&point1);
@@ -414,7 +428,7 @@ test "G1.double identity" {
 
 test "G1.double random point" {
     const k = 9; // example scalar
-    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
+    const random_point = G1.GENERATOR.mul(&Fr.init(k));
     const doubled = random_point.double();
 
     const expected_result = G1{
@@ -461,8 +475,8 @@ test "G1.negAssign basic assignment" {
 test "G1.mulAssign basic assignment" {
     var a = G1.GENERATOR;
     const scalar = Fr.init(7);
-    const expected = try a.mul(&scalar);
-    try a.mulAssign(&scalar);
+    const expected = a.mul(&scalar);
+    a.mulAssign(&scalar);
     try std.testing.expect(a.equal(&expected));
 }
 
@@ -478,9 +492,9 @@ test "G1.glsEndomorphism" {
     };
 
     for (test_values) |value| {
-        const point = try gen.mul(&value);
-        const endo = try point.glsEndomorphism();
-        const point_times_lambda = try point.mul(&Fr.init(curve_parameters.G1_SCALAR.lambda));
+        const point = gen.mul(&value);
+        const endo = point.glsEndomorphism();
+        const point_times_lambda = point.mul(&Fr.init(curve_parameters.G1_SCALAR.lambda));
         try std.testing.expect(point_times_lambda.equal(&endo));
     }
 }

@@ -54,6 +54,7 @@ pub const FROBENIUS_COEFF_FP12 = Fp2Mont{ .u0 = FpMont{ .value = 0x2f34d751a1f3a
 
 // GLS constants grouped for G1 scalar decompositions
 pub const G1_SCALAR = struct {
+    pub const window_size: u8 = 4;
     pub const cube_root: u256 = 2203960485148121921418603742825762020974279258880205651966;
     pub const lambda: u256 = 4407920970296243842393367215006156084916469457145843978461;
     pub const lattice_basis = [_]struct { x: i128, y: i128 }{
@@ -64,6 +65,7 @@ pub const G1_SCALAR = struct {
 
 // G2 GLS constants grouped similarly
 pub const G2_SCALAR = struct {
+    pub const window_size: u8 = 4;
     pub const cube_root: u256 = 2203960485148121921418603742825762020974279258880205651966;
     pub const gamma: u256 = 21888242871839275217838484774961031246007050428528088939761107053157389710902;
     pub const lambda: u256 = 21888242871839275217838484774961031246154997185409878258781734729429964517155;
@@ -244,7 +246,7 @@ test "curve parameters G2 projection coefficients has correct size" {
 }
 
 test "curve parameters G1 equation verification on generator" {
-    const gen_affine = try G1_GENERATOR.toAffine();
+    const gen_affine = G1_GENERATOR.toAffine();
 
     const y_squared = gen_affine.y.mul(&gen_affine.y);
     const x_cubed = gen_affine.x.mul(&gen_affine.x).mul(&gen_affine.x);
@@ -257,7 +259,7 @@ test "curve parameters G1 equation verification on generator" {
 test "curve parameters G1 generator order is FR_MOD" {
     const Fr = @import("Fr.zig").Fr;
     const scalar = Fr{ .value = FR_MOD };
-    const result = try G1_GENERATOR.mul(&scalar);
+    const result = G1_GENERATOR.mul(&scalar);
     try std.testing.expect(result.isInfinity());
 }
 
@@ -314,7 +316,7 @@ test "curve parameters G1 small multiples are on curve" {
 
     for (scalars) |s| {
         const scalar = Fr.init(s);
-        const point = try G1_GENERATOR.mul(&scalar);
+        const point = G1_GENERATOR.mul(&scalar);
         try std.testing.expect(point.isOnCurve());
     }
 }
@@ -363,7 +365,7 @@ test "curve parameters field arithmetic in bounds" {
 }
 
 test "curve parameters G1 affine generator coordinates in field" {
-    const gen_affine = try G1_GENERATOR.toAffine();
+    const gen_affine = G1_GENERATOR.toAffine();
     try std.testing.expect(gen_affine.x.value < FP_MOD);
     try std.testing.expect(gen_affine.y.value < FP_MOD);
 }
