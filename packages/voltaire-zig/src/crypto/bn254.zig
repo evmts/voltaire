@@ -545,7 +545,6 @@ pub fn bn254Pairing(input: []const u8) !bool {
         const g1_y_bytes = input[pair_start + 32 .. pair_start + 64];
         const g1_x_value = std.mem.readInt(u256, g1_x_bytes[0..32], .big);
         const g1_y_value = std.mem.readInt(u256, g1_y_bytes[0..32], .big);
-
         const g1_point = if (g1_x_value == 0 and g1_y_value == 0)
             G1.INFINITY
         else blk: {
@@ -907,10 +906,10 @@ test "BN254 EIP-197 ECPAIRING - with infinity points" {
     // G1 point is infinity (0,0) - already zeroed
 
     // G2 point
-    std.mem.writeInt(u256, input[64..96], g2.x.u0.value, .big);
-    std.mem.writeInt(u256, input[96..128], g2.x.u1.value, .big);
-    std.mem.writeInt(u256, input[128..160], g2.y.u0.value, .big);
-    std.mem.writeInt(u256, input[160..192], g2.y.u1.value, .big);
+    std.mem.writeInt(u256, input[64..96], g2.x.u0.toStandardRepresentation(), .big);
+    std.mem.writeInt(u256, input[96..128], g2.x.u1.toStandardRepresentation(), .big);
+    std.mem.writeInt(u256, input[128..160], g2.y.u0.toStandardRepresentation(), .big);
+    std.mem.writeInt(u256, input[160..192], g2.y.u1.toStandardRepresentation(), .big);
 
     const result = try bn254Pairing(&input);
     try std.testing.expect(result); // e(0, G2) = 1
@@ -931,7 +930,7 @@ test "BN254 EIP-196 - scalar validation" {
 test "BN254 point serialization - point at infinity" {
     const inf = G1.INFINITY;
     try std.testing.expect(inf.x.equal(&FpMont.ZERO));
-    try std.testing.expect(inf.y.equal(&FpMont.ZERO));
+    try std.testing.expect(inf.y.equal(&FpMont.ONE));
     try std.testing.expect(inf.z.equal(&FpMont.ZERO));
 }
 
