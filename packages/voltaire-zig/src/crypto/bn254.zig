@@ -59,6 +59,8 @@ pub const FR_MOD = curve_parameters.FR_MOD;
 pub const G1 = @import("bn254/G1.zig");
 pub const G2 = @import("bn254/G2.zig");
 pub const pairing = @import("bn254/pairing.zig").pairing;
+pub const millerLoop = @import("bn254/pairing.zig").millerLoop;
+pub const finalExponentiation = @import("bn254/pairing.zig").finalExponentiation;
 
 // ============================================================================
 // TESTS - BN254 Module-Level Integration Tests
@@ -533,8 +535,8 @@ pub fn bn254Pairing(input: []const u8) !bool {
 
     const n_pairs = input.len / 192;
 
-    // Accumulate pairing result
-    var result = Fp12Mont.ONE;
+    // Accumulate miller loop result
+    var miller_loop_result = Fp12Mont.ONE;
 
     var i: usize = 0;
     while (i < n_pairs) : (i += 1) {
@@ -577,9 +579,10 @@ pub fn bn254Pairing(input: []const u8) !bool {
         };
 
         // Compute pairing for this pair and accumulate
-        const pair_result = try pairing(&g1_point, &g2_point);
-        result = result.mul(&pair_result);
+        const pair_result = try millerLoop(&g1_point, &g2_point);
+        miller_loop_result = miller_loop_result.mul(&pair_result);
     }
+    const result = try finalExponentiation(&miller_loop_result);
 
     // Check if result equals 1 (identity element)
     return result.equal(&Fp12Mont.ONE);
