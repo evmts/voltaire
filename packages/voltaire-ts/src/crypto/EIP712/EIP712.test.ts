@@ -1,6 +1,7 @@
 import { hexToBytes, randomBytes } from "@noble/hashes/utils.js";
 import { describe, expect, it } from "vitest";
 import * as Address from "../../primitives/Address/internal-index.js";
+import * as ChainId from "../../primitives/ChainId/index.js";
 import { EIP712 } from "./EIP712.js";
 import type { Domain, TypeDefinitions, TypedData } from "./EIP712Type.js";
 import {
@@ -16,7 +17,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const domain: Domain = {
 				name: "TestDomain",
 				version: "1",
-				chainId: 1n,
+				chainId: ChainId.from(1),
 				verifyingContract: Address.from(
 					"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
 				),
@@ -47,7 +48,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		it("should hash domain with only name and chainId", () => {
 			const domain: Domain = {
 				name: "MyApp",
-				chainId: 1n,
+				chainId: ChainId.from(1),
 			};
 
 			const hash = EIP712.Domain.hash(domain);
@@ -55,8 +56,8 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		});
 
 		it("should produce different hashes for different domains", () => {
-			const domain1: Domain = { name: "App1", chainId: 1n };
-			const domain2: Domain = { name: "App2", chainId: 1n };
+			const domain1: Domain = { name: "App1", chainId: ChainId.from(1) };
+			const domain2: Domain = { name: "App2", chainId: ChainId.from(1) };
 
 			const hash1 = EIP712.Domain.hash(domain1);
 			const hash2 = EIP712.Domain.hash(domain2);
@@ -68,7 +69,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const domain: Domain = {
 				name: "TestApp",
 				version: "1.0",
-				chainId: 1n,
+				chainId: ChainId.from(1),
 			};
 
 			const hash1 = EIP712.Domain.hash(domain);
@@ -78,8 +79,8 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		});
 
 		it("should handle different chainId values", () => {
-			const domain1: Domain = { name: "App", chainId: 1n };
-			const domain2: Domain = { name: "App", chainId: 137n };
+			const domain1: Domain = { name: "App", chainId: ChainId.from(1) };
+			const domain2: Domain = { name: "App", chainId: ChainId.from(137) };
 
 			const hash1 = EIP712.Domain.hash(domain1);
 			const hash2 = EIP712.Domain.hash(domain2);
@@ -668,7 +669,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				domain: {
 					name: "TestApp",
 					version: "1",
-					chainId: 1n,
+					chainId: ChainId.from(1),
 				},
 				types: {
 					Message: [{ name: "content", type: "string" }],
@@ -694,7 +695,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				domain: {
 					name: "MyToken",
 					version: "1",
-					chainId: 1n,
+					chainId: ChainId.from(1),
 					verifyingContract: Address.from(new Uint8Array(20).fill(0xcc)),
 				},
 				types: {
@@ -726,7 +727,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				domain: {
 					name: "Ether Mail",
 					version: "1",
-					chainId: 1n,
+					chainId: ChainId.from(1),
 					verifyingContract: Address.from(new Uint8Array(20).fill(0xdd)),
 				},
 				types: {
@@ -761,7 +762,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 
 		it("should be deterministic", () => {
 			const typedData: TypedData = {
-				domain: { name: "App", chainId: 1n },
+				domain: { name: "App", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "text", type: "string" }],
 				},
@@ -823,7 +824,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -850,7 +851,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -883,7 +884,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -911,7 +912,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -941,7 +942,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -978,7 +979,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -996,7 +997,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			// Tamper with domain (different chainId)
 			const tamperedData: TypedData = {
 				...typedData,
-				domain: { name: "TestApp", chainId: 2n },
+				domain: { name: "TestApp", chainId: ChainId.from(2) },
 			};
 
 			// Verify should fail
@@ -1014,7 +1015,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				const privateKey = randomBytes(32);
 
 				const typedData: TypedData = {
-					domain: { name: "TestApp", chainId: 1n },
+					domain: { name: "TestApp", chainId: ChainId.from(1) },
 					types: {
 						Message: [{ name: "content", type: "string" }],
 					},
@@ -1037,7 +1038,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -1063,7 +1064,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -1099,7 +1100,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -1132,7 +1133,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -1161,7 +1162,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 			const privateKey = randomBytes(32);
 
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Message: [{ name: "content", type: "string" }],
 				},
@@ -1278,7 +1279,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				domain: {
 					name: "USD Coin",
 					version: "2",
-					chainId: 1n,
+					chainId: ChainId.from(1),
 					verifyingContract: Address.from(
 						"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 					), // USDC on mainnet
@@ -1321,7 +1322,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				domain: {
 					name: "MetaTransaction",
 					version: "1",
-					chainId: 137n, // Polygon
+					chainId: ChainId.from(137), // Polygon
 					verifyingContract: Address.from(new Uint8Array(20).fill(0xcc)),
 				},
 				types: {
@@ -1377,7 +1378,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 
 		it("should hash typed data with fixed-size arrays", () => {
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Point: [{ name: "coordinates", type: "uint256[3]" }],
 				},
@@ -1393,7 +1394,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 
 		it("should hash typed data with fixed-size bytes32 array", () => {
 			const typedData: TypedData = {
-				domain: { name: "TestApp", chainId: 1n },
+				domain: { name: "TestApp", chainId: ChainId.from(1) },
 				types: {
 					Merkle: [{ name: "proof", type: "bytes32[5]" }],
 				},

@@ -5,7 +5,7 @@
  * @since 0.0.0
  * @param {import('./Uint8Type.js').Uint8Type} uint - Uint8 value
  * @param {boolean} [padded=true] - Whether to pad to 2 characters (1 byte)
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -18,5 +18,5 @@
  * const hex4 = Uint8.toHex(value2, false); // "0xf"
  * ```
  */
-export function toHex(uint: import("./Uint8Type.js").Uint8Type, padded?: boolean): string;
+export function toHex(uint: import("./Uint8Type.js").Uint8Type, padded?: boolean): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

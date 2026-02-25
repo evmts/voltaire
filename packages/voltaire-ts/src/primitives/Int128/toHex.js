@@ -6,7 +6,7 @@ import { MODULO, SIZE } from "./constants.js";
  * @see https://voltaire.tevm.sh/primitives/int128 for Int128 documentation
  * @since 0.0.0
  * @param {import('./Int128Type.js').BrandedInt128} value - Int128 value
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @example
  * ```javascript
  * import * as Int128 from './primitives/Int128/index.js';
@@ -23,5 +23,5 @@ export function toHex(value) {
 	// Convert to hex and pad to SIZE bytes
 	const hex = unsigned.toString(16).padStart(SIZE * 2, "0");
 
-	return `0x${hex}`;
+	return /** @type {import('../Hex/HexType.js').HexType} */ (`0x${hex}`);
 }

@@ -47,8 +47,8 @@ export { Hex } from "./Hex.js";
 // Re-export pure functions from voltaire
 import { BlockHash } from "@tevm/voltaire";
 
-export const equals = BlockHash.equals;
-export const toHex = BlockHash.toHex;
+export const equals: (a: BlockHashType, b: BlockHashType) => boolean = BlockHash.equals;
+export const toHex: (hash: BlockHashType) => string = BlockHash.toHex;
 
 // Type export
 import type { BlockHash as _BlockHash } from "@tevm/voltaire";

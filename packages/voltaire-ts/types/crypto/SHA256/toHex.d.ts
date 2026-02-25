@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {Uint8Array} hash - Hash bytes
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../../primitives/Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -14,5 +14,5 @@
  * console.log(hexStr); // "0x..."
  * ```
  */
-export function toHex(hash: Uint8Array): string;
+export function toHex(hash: Uint8Array): import("../../primitives/Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

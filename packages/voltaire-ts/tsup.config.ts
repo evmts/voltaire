@@ -73,6 +73,7 @@ const pureJsEntries = [
 	"src/primitives/Siwe/index.ts",
 	"src/primitives/State/index.ts",
 	"src/primitives/Transaction/index.ts",
+	"src/primitives/Trie/index.ts",
 	"src/primitives/Uint/index.ts",
 	// Crypto (pure JS only - no HDWallet, no native Keccak256)
 	"src/crypto/Bip39/index.js",

@@ -2,7 +2,7 @@
  * Convert FunctionSignature selector to hex string
  *
  * @param {import('./FunctionSignatureType.js').FunctionSignatureType} functionSig - Function signature
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -11,5 +11,5 @@
  * // '0xa9059cbb'
  * ```
  */
-export function toHex(functionSig: import("./FunctionSignatureType.js").FunctionSignatureType): string;
+export function toHex(functionSig: import("./FunctionSignatureType.js").FunctionSignatureType): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

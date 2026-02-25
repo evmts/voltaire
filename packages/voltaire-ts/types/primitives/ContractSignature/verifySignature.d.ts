@@ -7,7 +7,7 @@
  * @param {(x: bigint, y: bigint) => import("../Address/AddressType.js").AddressType} deps.addressFromPublicKey - Address derivation from public key
  * @returns {(provider: {request: (method: string, params: unknown[]) => Promise<unknown>}, address: import("../Address/AddressType.js").AddressType | string, hash: import("../Hash/HashType.js").HashType | Uint8Array, signature: {r: Uint8Array, s: Uint8Array, v: number} | Uint8Array) => Promise<boolean>}
  */
-export function VerifySignature({ keccak256, recoverPublicKey, addressFromPublicKey, }: {
+export function VerifySignature({ keccak256: _keccak256, recoverPublicKey, addressFromPublicKey, }: {
     keccak256: (data: Uint8Array) => Uint8Array;
     recoverPublicKey: (signature: {
         r: Uint8Array;

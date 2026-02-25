@@ -51,9 +51,9 @@ export { Number } from "./Number.js";
 // Re-export pure functions from voltaire
 import { BlockNumber } from "@tevm/voltaire";
 
-export const equals = BlockNumber.equals;
-export const toBigInt = BlockNumber.toBigInt;
-export const toNumber = BlockNumber.toNumber;
+export const equals: (a: BlockNumberType, b: BlockNumberType) => boolean = BlockNumber.equals;
+export const toBigInt: (blockNumber: BlockNumberType) => bigint = BlockNumber.toBigInt;
+export const toNumber: (blockNumber: BlockNumberType) => number = BlockNumber.toNumber;
 
 // Type export
 import type { BlockNumber as _BlockNumber } from "@tevm/voltaire";

@@ -1,5 +1,6 @@
 import type { BrandedBytecode } from "../Bytecode/BytecodeType.js";
 import type { HashType } from "../Hash/HashType.js";
+import type { HexType } from "../Hex/HexType.js";
 import type { AddressType } from "./AddressType.js";
 import * as BrandedAddress from "./internal-index.js";
 export type { AddressType, AddressType as BrandedAddress, } from "./AddressType.js";
@@ -16,7 +17,7 @@ export interface AddressCrypto {
  * Base Address type without crypto-dependent methods
  */
 export interface BaseAddress extends AddressType {
-    toHex(): string;
+    toHex(): HexType;
     toLowercase(): string;
     toUppercase(): string;
     toU256(): bigint;

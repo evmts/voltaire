@@ -4,7 +4,7 @@ import * as Selector from "../Selector/index.js";
  * Convert FunctionSignature selector to hex string
  *
  * @param {import('./FunctionSignatureType.js').FunctionSignatureType} functionSig - Function signature
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -14,5 +14,7 @@ import * as Selector from "../Selector/index.js";
  * ```
  */
 export function toHex(functionSig) {
-	return Selector.toHex(functionSig.selector);
+	return /** @type {import('../Hex/HexType.js').HexType} */ (
+		Selector.toHex(functionSig.selector)
+	);
 }

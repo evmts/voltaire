@@ -5,7 +5,7 @@
  * Converts BundleHash to hex string
  *
  * @param {BundleHashType} hash - BundleHash instance
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @example
  * ```typescript
  * import * as BundleHash from './BundleHash/index.js';
@@ -13,6 +13,6 @@
  * console.log(hex); // "0x1234..."
  * ```
  */
-export function toHex(hash: BundleHashType): string;
+export function toHex(hash: BundleHashType): import("../Hex/HexType.js").HexType;
 export type BundleHashType = import("./BundleHashType.js").BundleHashType;
 //# sourceMappingURL=toHex.d.ts.map

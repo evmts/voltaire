@@ -6,44 +6,8 @@ description: Modern general-purpose Ethereum library for TypeScript, Zig, C, and
 Voltaire is a modern general-purpose Ethereum library for TypeScript, Zig, C, and Swift. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
 
 <Tip>
-**For application development**, we recommend [voltaire-effect](/services/overview) — Effect.ts integration with typed errors, composable operations, and production-ready contract interactions.
+**Need providers, signers, or contract interactions?** Check out [voltaire-effect](https://github.com/evmts/voltaire/tree/main/voltaire-effect) — an Effect.ts integration with typed errors, composable operations, and production-ready contract interactions built on top of Voltaire primitives.
 </Tip>
-
-## Production-Ready Contract Interactions
-
-Define your contracts once, use them everywhere with full type safety:
-
-```typescript
-import { Effect } from 'effect'
-import {
-  ContractRegistryService,
-  makeContractRegistry,
-  Provider,
-  HttpTransport
-} from 'voltaire-effect'
-
-const Contracts = makeContractRegistry({
-  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
-  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-})
-
-const program = Effect.gen(function* () {
-  const { USDC, WETH } = yield* ContractRegistryService
-  const usdcBalance = yield* USDC.read.balanceOf(userAddress)
-  const wethBalance = yield* WETH.read.balanceOf(userAddress)
-  return { usdcBalance, wethBalance }
-}).pipe(
-  Effect.retry({ times: 3 }),
-  Effect.timeout('10 seconds'),
-  Effect.provide(Contracts),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-```
-
-<Note>
-Want to explore the primitives directly? Open the [Playground](https://playground.tevm.sh).
-</Note>
 
 ## Simple, Intuitive API
 

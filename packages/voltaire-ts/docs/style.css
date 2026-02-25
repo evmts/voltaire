@@ -10,15 +10,6 @@
   -webkit-backdrop-filter: none !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  #navbar-transition,
-  #navbar > div.absolute,
-  [data-is-opaque] {
-    background-color: #0a0a0a !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-}
 
 /* Homepage critical styles - prevent layout shift */
 .voltaire-hero {
@@ -26,6 +17,13 @@
   padding: 3rem 2rem 6rem;
   max-width: 1280px;
   margin: 0 auto;
+}
+
+/* Code blocks inside hero must stay left-aligned */
+.voltaire-hero pre,
+.voltaire-hero code,
+.voltaire-hero [data-component-part="code-block-root"] {
+  text-align: left !important;
 }
 
 .voltaire-title {

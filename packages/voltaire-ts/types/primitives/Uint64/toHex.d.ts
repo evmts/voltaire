@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  * @param {import('./Uint64Type.js').Uint64Type} uint - Uint64 value to convert
- * @returns {string} hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -13,5 +13,5 @@
  * const hex = Uint64.toHex(value); // "0xff"
  * ```
  */
-export function toHex(uint: import("./Uint64Type.js").Uint64Type): string;
+export function toHex(uint: import("./Uint64Type.js").Uint64Type): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

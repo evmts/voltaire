@@ -28,6 +28,7 @@
 		"src/primitives/Bytes/Bytes8/**",
 		"src/primitives/Bytes/Bytes16/**",
 		"src/primitives/Bytes/Bytes32/**",
-		"src/primitives/Bytes/Bytes64/**"
+		"src/primitives/Bytes/Bytes64/**",
+		"src/primitives/Trie/**"
 	]
 }

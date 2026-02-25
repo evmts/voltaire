@@ -347,6 +347,30 @@ describe("Abi.decodeParameters - dynamic bytes", () => {
 	});
 });
 
+describe("Abi.decodeParameters - bytes returns Uint8Array (not hex string)", () => {
+	it("bytes32 decodes to Uint8Array", () => {
+		const value = `0x${"ff".repeat(32)}`;
+		const encoded = Abi.encodeParameters([{ type: "bytes32" }], [value]);
+		const decoded = Abi.decodeParameters([{ type: "bytes32" }], encoded);
+		expect(decoded[0]).toBeInstanceOf(Uint8Array);
+		expect(typeof decoded[0]).not.toBe("string");
+	});
+
+	it("bytes1 decodes to Uint8Array", () => {
+		const encoded = Abi.encodeParameters([{ type: "bytes1" }], ["0x42"]);
+		const decoded = Abi.decodeParameters([{ type: "bytes1" }], encoded);
+		expect(decoded[0]).toBeInstanceOf(Uint8Array);
+	});
+
+	it("dynamic bytes decodes to Uint8Array", () => {
+		const value = "0xdeadbeef";
+		const encoded = Abi.encodeParameters([{ type: "bytes" }], [value]);
+		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
+		expect(decoded[0]).toBeInstanceOf(Uint8Array);
+		expect(typeof decoded[0]).not.toBe("string");
+	});
+});
+
 describe("Abi.decodeParameters - string", () => {
 	it("decodes empty string", () => {
 		const encoded = Abi.encodeParameters([{ type: "string" }], [""]);

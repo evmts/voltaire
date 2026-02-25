@@ -1,5 +1,24 @@
 # voltaire-effect
 
+## 1.0.1
+
+### Patch Changes
+
+- [#375](https://github.com/evmts/voltaire/pull/375) [`49083f7`](https://github.com/evmts/voltaire/commit/49083f7788b23a9134e28659cddf2828c1dd444b) Thanks [@enitrat](https://github.com/enitrat)! - Re-enable TypeScript declaration generation in tsup config
+
+## 1.0.0
+
+### Patch Changes
+
+- [`20b3b59`](https://github.com/evmts/voltaire/commit/20b3b5954796d960ca61b9ea7b38e07987790fe3) Thanks [@roninjin10](https://github.com/roninjin10)! - Fix docs examples to use real mainnet values and public endpoints
+
+- [`20b3b59`](https://github.com/evmts/voltaire/commit/20b3b5954796d960ca61b9ea7b38e07987790fe3) Thanks [@roninjin10](https://github.com/roninjin10)! - Fix all lint errors, TS2742 type annotation errors, and regenerate type definitions
+
+- [`20b3b59`](https://github.com/evmts/voltaire/commit/20b3b5954796d960ca61b9ea7b38e07987790fe3) Thanks [@roninjin10](https://github.com/roninjin10)! - Fix type soundness bugs in public API: all toHex() returns HexType, brand symbol exported from main entrypoint, ABI bytes mapped to Uint8Array, dead bun:ffi NativeExports removed, Domain chainId unified on ChainIdType
+
+- Updated dependencies [[`20b3b59`](https://github.com/evmts/voltaire/commit/20b3b5954796d960ca61b9ea7b38e07987790fe3), [`20b3b59`](https://github.com/evmts/voltaire/commit/20b3b5954796d960ca61b9ea7b38e07987790fe3), [`20b3b59`](https://github.com/evmts/voltaire/commit/20b3b5954796d960ca61b9ea7b38e07987790fe3), [`20b3b59`](https://github.com/evmts/voltaire/commit/20b3b5954796d960ca61b9ea7b38e07987790fe3)]:
+  - @tevm/voltaire@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

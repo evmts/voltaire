@@ -54,6 +54,7 @@ export { String } from "./String.js";
 
 // Re-export pure functions from voltaire
 import { BrandedUint8 } from "@tevm/voltaire";
+import type { Uint8Type } from "./Uint8Schema.js";
 
 export const equals = BrandedUint8.equals;
 export const plus = BrandedUint8.plus;
@@ -61,10 +62,10 @@ export const minus = BrandedUint8.minus;
 export const times = BrandedUint8.times;
 export const toNumber = BrandedUint8.toNumber;
 export const toHex = BrandedUint8.toHex;
-export const MAX = BrandedUint8.MAX;
-export const MIN = BrandedUint8.MIN;
-export const ZERO = BrandedUint8.ZERO;
-export const ONE = BrandedUint8.ONE;
+export const MAX: Uint8Type = BrandedUint8.MAX;
+export const MIN: Uint8Type = BrandedUint8.MIN;
+export const ZERO: Uint8Type = BrandedUint8.ZERO;
+export const ONE: Uint8Type = BrandedUint8.ONE;
 
 // Type export
 export type { Uint8Type } from "./Uint8Schema.js";

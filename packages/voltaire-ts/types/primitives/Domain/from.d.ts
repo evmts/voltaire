@@ -4,7 +4,7 @@
  * @param {object} domain - Domain object
  * @param {string} [domain.name] - dApp name
  * @param {string} [domain.version] - Domain version
- * @param {import('../ChainId/ChainIdType.js').ChainIdType | number} [domain.chainId] - EIP-155 chain ID
+ * @param {import('../ChainId/ChainIdType.js').ChainIdType | number | bigint} [domain.chainId] - EIP-155 chain ID
  * @param {import('../Address/AddressType.js').AddressType | string} [domain.verifyingContract] - Contract address
  * @param {import('../Hash/HashType.js').HashType | string} [domain.salt] - Salt for disambiguation
  * @returns {import('./DomainType.js').DomainType} Domain
@@ -23,7 +23,7 @@
 export function from(domain: {
     name?: string | undefined;
     version?: string | undefined;
-    chainId?: number | ChainId.ChainIdType | undefined;
+    chainId?: number | bigint | ChainId.ChainIdType | undefined;
     verifyingContract?: string | BrandedAddress.AddressType | undefined;
     salt?: string | Hash.HashType | undefined;
 }): import("./DomainType.js").DomainType;

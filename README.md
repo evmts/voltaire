@@ -80,7 +80,7 @@ const program = Effect.gen(function* () {
   Effect.timeout("10 seconds"),
   Effect.provide(Contracts),
   Effect.provide(Provider),
-  Effect.provide(HttpTransport("https://eth.llamarpc.com")),
+  Effect.provide(HttpTransport("https://eth.llamarpc.com"))
 );
 ```
 
