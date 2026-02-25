@@ -1,1 +1,1 @@
-{"version":3,"file":"from.d.ts","sourceRoot":"","sources":["../../../src/primitives/ChainId/from.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;GAYG;AACH,4BAVW,MAAM,GACJ,OAAO,kBAAkB,EAAE,WAAW,CAsBlD"}
+{"version":3,"file":"from.d.ts","sourceRoot":"","sources":["../../../src/primitives/ChainId/from.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;GAaG;AACH,4BAXW,MAAM,GAAG,MAAM,GACb,OAAO,kBAAkB,EAAE,WAAW,CAwBlD"}

@@ -2,7 +2,7 @@
  * Convert bloom filter to hex string
  *
  * @param {import('./BloomFilterType.js').BloomFilterType} filter - Bloom filter
- * @returns {string} Hex string representation
+ * @returns {import('../Hex/HexType.js').HexType} Hex string representation
  *
  * @example
  * ```typescript
@@ -10,5 +10,5 @@
  * const hex = BloomFilter.toHex(filter);
  * ```
  */
-export function toHex(filter: import("./BloomFilterType.js").BloomFilterType): string;
+export function toHex(filter: import("./BloomFilterType.js").BloomFilterType): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

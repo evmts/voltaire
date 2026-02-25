@@ -4,7 +4,7 @@ import * as Hex from "../Hex/index.js";
  * Convert ReturnData to hex string
  *
  * @param {import('./ReturnDataType.js').ReturnDataType} data - ReturnData
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  *
  * @example
  * ```typescript

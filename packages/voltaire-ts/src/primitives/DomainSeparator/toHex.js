@@ -4,7 +4,7 @@ import * as Hex from "../Hex/index.js";
  * Convert DomainSeparator to hex string with 0x prefix
  *
  * @param {import('./DomainSeparatorType.js').DomainSeparatorType} separator - DomainSeparator
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @example
  * ```javascript
  * const hex = DomainSeparator.toHex(separator);

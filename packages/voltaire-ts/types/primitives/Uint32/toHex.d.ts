@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
  * @param {import('./Uint32Type.js').Uint32Type} uint - Uint32 value to convert
- * @returns {string} hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -13,5 +13,5 @@
  * const hex = Uint32.toHex(value); // "0xff"
  * ```
  */
-export function toHex(uint: import("./Uint32Type.js").Uint32Type): string;
+export function toHex(uint: import("./Uint32Type.js").Uint32Type): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

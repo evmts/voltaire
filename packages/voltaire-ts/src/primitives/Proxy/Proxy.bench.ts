@@ -4,7 +4,7 @@
  */
 
 import { bench, run } from "mitata";
-import * as Proxy from "./index.js";
+import * as ProxyModule from "./index.js";
 
 // Test data - implementation address
 const implementationAddress = new Uint8Array([
@@ -13,8 +13,8 @@ const implementationAddress = new Uint8Array([
 ]);
 
 // Pre-generate proxy bytecode for detection benchmarks
-const erc1167Bytecode = Proxy.generateErc1167(implementationAddress);
-const erc3448Bytecode = Proxy.generateErc3448(
+const erc1167Bytecode = ProxyModule.generateErc1167(implementationAddress);
+const erc3448Bytecode = ProxyModule.generateErc3448(
 	implementationAddress,
 	new Uint8Array([1, 2, 3, 4]),
 );
@@ -34,8 +34,8 @@ for (let i = 0; i < 100; i++) {
 // generateErc1167 (minimal proxy creation)
 // ============================================================================
 
-bench("Proxy.generateErc1167 - voltaire", () => {
-	Proxy.generateErc1167(implementationAddress);
+bench("ProxyModule.generateErc1167 - voltaire", () => {
+	ProxyModule.generateErc1167(implementationAddress);
 });
 
 await run();
@@ -44,12 +44,12 @@ await run();
 // generateErc3448 (metaproxy with metadata)
 // ============================================================================
 
-bench("Proxy.generateErc3448 - short metadata - voltaire", () => {
-	Proxy.generateErc3448(implementationAddress, shortMetadata);
+bench("ProxyModule.generateErc3448 - short metadata - voltaire", () => {
+	ProxyModule.generateErc3448(implementationAddress, shortMetadata);
 });
 
-bench("Proxy.generateErc3448 - long metadata - voltaire", () => {
-	Proxy.generateErc3448(implementationAddress, longMetadata);
+bench("ProxyModule.generateErc3448 - long metadata - voltaire", () => {
+	ProxyModule.generateErc3448(implementationAddress, longMetadata);
 });
 
 await run();
@@ -58,12 +58,12 @@ await run();
 // isErc1167 (proxy detection)
 // ============================================================================
 
-bench("Proxy.isErc1167 - valid proxy - voltaire", () => {
-	Proxy.isErc1167(erc1167Bytecode);
+bench("ProxyModule.isErc1167 - valid proxy - voltaire", () => {
+	ProxyModule.isErc1167(erc1167Bytecode);
 });
 
-bench("Proxy.isErc1167 - invalid bytecode - voltaire", () => {
-	Proxy.isErc1167(invalidBytecode);
+bench("ProxyModule.isErc1167 - invalid bytecode - voltaire", () => {
+	ProxyModule.isErc1167(invalidBytecode);
 });
 
 await run();
@@ -72,12 +72,12 @@ await run();
 // isErc3448 (metaproxy detection)
 // ============================================================================
 
-bench("Proxy.isErc3448 - valid metaproxy - voltaire", () => {
-	Proxy.isErc3448(erc3448Bytecode);
+bench("ProxyModule.isErc3448 - valid metaproxy - voltaire", () => {
+	ProxyModule.isErc3448(erc3448Bytecode);
 });
 
-bench("Proxy.isErc3448 - invalid bytecode - voltaire", () => {
-	Proxy.isErc3448(invalidBytecode);
+bench("ProxyModule.isErc3448 - invalid bytecode - voltaire", () => {
+	ProxyModule.isErc3448(invalidBytecode);
 });
 
 await run();
@@ -86,8 +86,8 @@ await run();
 // parseErc1167 (extract implementation address)
 // ============================================================================
 
-bench("Proxy.parseErc1167 - voltaire", () => {
-	Proxy.parseErc1167(erc1167Bytecode);
+bench("ProxyModule.parseErc1167 - voltaire", () => {
+	ProxyModule.parseErc1167(erc1167Bytecode);
 });
 
 await run();
@@ -96,8 +96,8 @@ await run();
 // parseErc3448 (extract implementation + metadata)
 // ============================================================================
 
-bench("Proxy.parseErc3448 - voltaire", () => {
-	Proxy.parseErc3448(erc3448Bytecode);
+bench("ProxyModule.parseErc3448 - voltaire", () => {
+	ProxyModule.parseErc3448(erc3448Bytecode);
 });
 
 await run();
@@ -107,9 +107,9 @@ await run();
 // ============================================================================
 
 bench("Proxy workflow - generate + isErc1167 + parse - voltaire", () => {
-	const bytecode = Proxy.generateErc1167(implementationAddress);
-	if (Proxy.isErc1167(bytecode)) {
-		Proxy.parseErc1167(bytecode);
+	const bytecode = ProxyModule.generateErc1167(implementationAddress);
+	if (ProxyModule.isErc1167(bytecode)) {
+		ProxyModule.parseErc1167(bytecode);
 	}
 });
 

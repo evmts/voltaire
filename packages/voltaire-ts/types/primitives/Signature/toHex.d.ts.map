@@ -1,1 +1,1 @@
-{"version":3,"file":"toHex.d.ts","sourceRoot":"","sources":["../../../src/primitives/Signature/toHex.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;;;;;GAqBG;AACH,iCAdW,OAAO,oBAAoB,EAAE,aAAa,aAC1C,OAAO,GACL,MAAM,CAkClB"}
+{"version":3,"file":"toHex.d.ts","sourceRoot":"","sources":["../../../src/primitives/Signature/toHex.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;;;;;GAqBG;AACH,iCAdW,OAAO,oBAAoB,EAAE,aAAa,aAC1C,OAAO,GACL,OAAO,mBAAmB,EAAE,OAAO,CAkC/C"}

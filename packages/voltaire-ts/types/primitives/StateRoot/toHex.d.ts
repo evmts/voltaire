@@ -5,7 +5,7 @@
  * Converts a StateRoot to a hex string.
  *
  * @param {StateRootType} stateRoot - The StateRoot to convert
- * @returns {string} - Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} - Hex string with 0x prefix
  *
  * @example
  * ```typescript
@@ -13,6 +13,6 @@
  * // "0x1234..."
  * ```
  */
-export function toHex(stateRoot: StateRootType): string;
+export function toHex(stateRoot: StateRootType): import("../Hex/HexType.js").HexType;
 export type StateRootType = import("./StateRootType.js").StateRootType;
 //# sourceMappingURL=toHex.d.ts.map

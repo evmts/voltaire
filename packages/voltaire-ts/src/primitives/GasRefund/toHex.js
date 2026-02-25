@@ -2,7 +2,7 @@
  * Convert GasRefund to hex string
  *
  * @this {import('./GasRefundType.js').GasRefundType}
- * @returns {string} Gas refund as hex string (0x prefixed)
+ * @returns {import('../Hex/HexType.js').HexType} Gas refund as hex string (0x prefixed)
  *
  * @example
  * ```typescript
@@ -11,5 +11,7 @@
  * ```
  */
 export function toHex() {
-	return `0x${this.toString(16)}`;
+	return /** @type {import('../Hex/HexType.js').HexType} */ (
+		`0x${this.toString(16)}`
+	);
 }

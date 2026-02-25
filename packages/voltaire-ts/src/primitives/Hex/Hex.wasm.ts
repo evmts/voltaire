@@ -18,6 +18,7 @@ import {
  * @throws {InvalidCharacterError} If hex string contains invalid characters
  * @throws {OddLengthError} If hex string has odd length
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 export function hexToBytes(hex: string): Uint8Array {
 	try {
 		return loader.hexToBytes(hex);

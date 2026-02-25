@@ -689,7 +689,7 @@ pub fn build(b: *std.Build) void {
     // For JavaScript/TypeScript: use native libprimitives_c with FFI, or compile to WASM for browser
 
     // TypeScript/JavaScript FFI builds with optimized configurations
-    if (!is_wasm) {
+    if (!is_wasm and with_c_api) {
         // Native TypeScript bindings - ReleaseFast for maximum performance
         const ts_native_target = b.resolveTargetQuery(.{});
         addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);

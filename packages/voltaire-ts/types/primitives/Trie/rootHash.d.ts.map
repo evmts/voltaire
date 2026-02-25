@@ -1,0 +1,1 @@
+{"version":3,"file":"rootHash.d.ts","sourceRoot":"","sources":["../../../src/primitives/Trie/rootHash.js"],"names":[],"mappings":"AAEA;;GAEG;AAEH;;;;;GAKG;AACH,+BAHW,YAAY,GACV,CAAC,IAAI,EAAE,OAAO,eAAe,EAAE,IAAI,KAAK,UAAU,CAqB9D;2BA5BY;IAAE,SAAS,EAAE,CAAC,IAAI,EAAE,UAAU,KAAK,UAAU,CAAC;IAAC,SAAS,EAAE,CAAC,IAAI,EAAE,GAAG,KAAK,UAAU,CAAA;CAAE"}

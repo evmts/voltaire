@@ -8,7 +8,7 @@
  *
  * @param {import('./SignatureType.js').SignatureType} signature - Signature to convert
  * @param {boolean} [includeV=true] - Include v byte for secp256k1 (if present)
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  *
  * @example
  * ```typescript
@@ -20,5 +20,5 @@
  * // Returns "0x..." (128 chars)
  * ```
  */
-export function toHex(signature: import("./SignatureType.js").SignatureType, includeV?: boolean): string;
+export function toHex(signature: import("./SignatureType.js").SignatureType, includeV?: boolean): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

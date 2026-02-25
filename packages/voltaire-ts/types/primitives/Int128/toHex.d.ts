@@ -4,7 +4,7 @@
  * @see https://voltaire.tevm.sh/primitives/int128 for Int128 documentation
  * @since 0.0.0
  * @param {import('./Int128Type.js').BrandedInt128} value - Int128 value
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @example
  * ```javascript
  * import * as Int128 from './primitives/Int128/index.js';
@@ -14,5 +14,5 @@
  * Int128.toHex(b); // "0x000000000000000000000000000000ff"
  * ```
  */
-export function toHex(value: import("./Int128Type.js").BrandedInt128): string;
+export function toHex(value: import("./Int128Type.js").BrandedInt128): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

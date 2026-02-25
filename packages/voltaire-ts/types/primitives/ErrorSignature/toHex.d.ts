@@ -2,7 +2,7 @@
  * Convert ErrorSignature to hex string
  *
  * @param {import('./ErrorSignatureType.js').ErrorSignatureType} signature - 4-byte error signature
- * @returns {string} Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} Hex string with 0x prefix
  * @throws {never}
  * @example
  * ```javascript
@@ -11,5 +11,5 @@
  * // '0xcf479181'
  * ```
  */
-export function toHex(signature: import("./ErrorSignatureType.js").ErrorSignatureType): string;
+export function toHex(signature: import("./ErrorSignatureType.js").ErrorSignatureType): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

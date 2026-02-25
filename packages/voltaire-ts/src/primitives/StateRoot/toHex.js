@@ -8,7 +8,7 @@ import { Hash } from "../Hash/index.js";
  * Converts a StateRoot to a hex string.
  *
  * @param {StateRootType} stateRoot - The StateRoot to convert
- * @returns {string} - Hex string with 0x prefix
+ * @returns {import('../Hex/HexType.js').HexType} - Hex string with 0x prefix
  *
  * @example
  * ```typescript

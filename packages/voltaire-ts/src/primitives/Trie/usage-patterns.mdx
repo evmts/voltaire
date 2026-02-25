@@ -1,0 +1,109 @@
+---
+title: Usage Patterns
+description: Common patterns for working with Merkle Patricia Tries
+---
+
+## Transaction Trie
+
+Build a transaction trie from a block's transactions:
+
+```typescript
+import { Trie, Rlp } from '@tevm/voltaire';
+
+function buildTransactionTrie(transactions: Uint8Array[]): Trie.TrieType {
+  let trie = Trie.init();
+  for (let i = 0; i < transactions.length; i++) {
+    const key = Rlp.encode(encodeIndex(i));
+    trie = Trie.put(trie, key, transactions[i]);
+  }
+  return trie;
+}
+
+const root = Trie.rootHash(trie);
+// Compare with block.transactionsRoot
+```
+
+## Receipt Trie
+
+Similarly for transaction receipts:
+
+```typescript
+function buildReceiptTrie(receipts: Uint8Array[]): Trie.TrieType {
+  let trie = Trie.init();
+  for (let i = 0; i < receipts.length; i++) {
+    const key = Rlp.encode(encodeIndex(i));
+    trie = Trie.put(trie, key, receipts[i]);
+  }
+  return trie;
+}
+```
+
+## Proof Generation and Verification
+
+```typescript
+import { Trie } from '@tevm/voltaire';
+
+// Build trie with some data
+let trie = Trie.init();
+trie = Trie.put(trie, key1, value1);
+trie = Trie.put(trie, key2, value2);
+
+// Generate proof for key1
+const proof = Trie.prove(trie, key1);
+const root = Trie.rootHash(trie);
+
+// Verify on another machine (only needs root + proof)
+const result = Trie.verify(root, key1, proof.proof);
+if (result.valid && result.value) {
+  // Value is cryptographically verified
+}
+```
+
+## With Effect
+
+```typescript
+import * as Trie from 'voltaire-effect/primitives/Trie';
+import * as Effect from 'effect/Effect';
+
+const program = Effect.gen(function* () {
+  let trie = yield* Trie.init();
+  trie = yield* Trie.put(trie, key, value);
+  const result = yield* Trie.get(trie, key);
+  const root = Trie.rootHash(trie);
+
+  const proof = yield* Trie.prove(trie, key);
+  const verified = yield* Trie.verify(root, key, proof.proof);
+  return verified;
+});
+```
+
+## Deterministic Root Hashes
+
+The trie produces the same root hash regardless of insertion order:
+
+```typescript
+let t1 = Trie.init();
+t1 = Trie.put(t1, keyA, valA);
+t1 = Trie.put(t1, keyB, valB);
+
+let t2 = Trie.init();
+t2 = Trie.put(t2, keyB, valB);
+t2 = Trie.put(t2, keyA, valA);
+
+// Same root hash
+Trie.rootHash(t1) === Trie.rootHash(t2); // true (byte-equal)
+```
+
+## Factory Pattern (Custom Crypto)
+
+For tree-shaking or custom hash functions:
+
+```typescript
+import { HashNode, Put, Del, RootHash, Prove, Verify } from '@tevm/voltaire/Trie';
+
+// Inject your own keccak256 and RLP
+const hashNode = HashNode({ keccak256: myKeccak, rlpEncode: myRlp });
+const put = Put({ hashNode });
+const del = Del({ hashNode });
+const rootHash = RootHash({ keccak256: myKeccak, rlpEncode: myRlp });
+```

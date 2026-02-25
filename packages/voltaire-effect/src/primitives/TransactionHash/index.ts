@@ -47,10 +47,11 @@ export { Hex } from "./Hex.js";
 // Re-export pure functions from voltaire
 import { TransactionHash } from "@tevm/voltaire";
 
-export const equals = TransactionHash.equals;
+export const equals = (a: TransactionHashType, b: TransactionHashType): boolean =>
+	TransactionHash.equals(a as unknown as Parameters<typeof TransactionHash.equals>[0], b as unknown as Parameters<typeof TransactionHash.equals>[1]);
 export const toHex = (
 	hash: Uint8Array & { readonly __tag: "TransactionHash" },
-): string => TransactionHash.toHex(hash as any);
+): string => TransactionHash.toHex(hash as unknown as Parameters<typeof TransactionHash.toHex>[0]);
 
 // Type export
 export type TransactionHashType = Uint8Array & {

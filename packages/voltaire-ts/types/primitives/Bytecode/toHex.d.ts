@@ -3,7 +3,7 @@
  *
  * @param {import('./BytecodeType.js').BrandedBytecode} code - Bytecode to format
  * @param {boolean} [prefix=true] - Whether to include 0x prefix
- * @returns {string} Hex string
+ * @returns {import('../Hex/HexType.js').HexType} Hex string
  *
  * @example
  * ```typescript
@@ -12,5 +12,5 @@
  * Bytecode.toHex(code, false); // "6001"
  * ```
  */
-export function toHex(code: import("./BytecodeType.js").BrandedBytecode, prefix?: boolean): string;
+export function toHex(code: import("./BytecodeType.js").BrandedBytecode, prefix?: boolean): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

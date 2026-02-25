@@ -4,7 +4,7 @@ import * as Address from "../Address/internal-index.js";
  * Convert Bundler to hex string
  *
  * @param {import('./BundlerType.js').BundlerType} bundler - Bundler address
- * @returns {string} Hex string (0x-prefixed)
+ * @returns {import('../Hex/HexType.js').HexType} Hex string (0x-prefixed)
  *
  * @example
  * ```typescript

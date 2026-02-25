@@ -54,6 +54,7 @@ export { String } from "./String.js";
 
 // Re-export pure functions from voltaire
 import { BrandedUint16 } from "@tevm/voltaire";
+import type { Uint16Type } from "./Uint16Schema.js";
 
 export const equals = BrandedUint16.equals;
 export const plus = BrandedUint16.plus;
@@ -61,10 +62,10 @@ export const minus = BrandedUint16.minus;
 export const times = BrandedUint16.times;
 export const toNumber = BrandedUint16.toNumber;
 export const toHex = BrandedUint16.toHex;
-export const MAX = BrandedUint16.MAX;
-export const MIN = BrandedUint16.MIN;
-export const ZERO = BrandedUint16.ZERO;
-export const ONE = BrandedUint16.ONE;
+export const MAX: Uint16Type = BrandedUint16.MAX;
+export const MIN: Uint16Type = BrandedUint16.MIN;
+export const ZERO: Uint16Type = BrandedUint16.ZERO;
+export const ONE: Uint16Type = BrandedUint16.ONE;
 
 // Type export
 export type { Uint16Type } from "./Uint16Schema.js";

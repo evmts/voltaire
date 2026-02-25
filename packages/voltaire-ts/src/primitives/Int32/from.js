@@ -23,6 +23,7 @@ const INT32_MAX = 2147483647;
  * const c = Int32.from(-2147483648n);
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 export function from(value) {
 	let num;
 

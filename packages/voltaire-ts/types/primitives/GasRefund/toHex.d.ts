@@ -2,7 +2,7 @@
  * Convert GasRefund to hex string
  *
  * @this {import('./GasRefundType.js').GasRefundType}
- * @returns {string} Gas refund as hex string (0x prefixed)
+ * @returns {import('../Hex/HexType.js').HexType} Gas refund as hex string (0x prefixed)
  *
  * @example
  * ```typescript
@@ -10,5 +10,5 @@
  * GasRefund.toHex(refund); // "0x3a98"
  * ```
  */
-export function toHex(this: import("./GasRefundType.js").GasRefundType): string;
+export function toHex(this: import("./GasRefundType.js").GasRefundType): import("../Hex/HexType.js").HexType;
 //# sourceMappingURL=toHex.d.ts.map

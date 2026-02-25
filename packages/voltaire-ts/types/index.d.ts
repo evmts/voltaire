@@ -3,6 +3,7 @@
  * TypeScript implementations with native Zig bindings via Bun FFI and WASM
  */
 export * as block from "./block/index.js";
+export { brand } from "./brand.js";
 export * as contract from "./contract/index.js";
 export * from "./crypto/index.js";
 export * as evm from "./evm/index.js";

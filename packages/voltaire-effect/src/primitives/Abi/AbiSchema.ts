@@ -12,9 +12,8 @@ import * as S from "effect/Schema";
 
 /**
  * Type alias for Abi instances returned by the Abi factory.
- * @internal
  */
-type AbiInstance = ReturnType<typeof Abi>;
+export type AbiInstance = ReturnType<typeof Abi>;
 
 // =============================================================================
 // StateMutability Schema
@@ -444,7 +443,7 @@ const AbiInstanceGuardSchema = S.declare<AbiInstance>(
  *
  * @since 0.1.0
  */
-export const AbiSchema = AbiInstanceGuardSchema;
+export const AbiSchema: S.Schema<AbiInstance, AbiInstance> = AbiInstanceGuardSchema;
 
 /**
  * Schema that parses raw ABI arrays into Abi instances.
@@ -464,7 +463,7 @@ export const AbiSchema = AbiInstanceGuardSchema;
  *
  * @since 0.1.0
  */
-export const fromArray = S.transformOrFail(
+export const fromArray: S.Schema<AbiInstance, S.Schema.Encoded<typeof AbiSchemaInternal>> = S.transformOrFail(
 	AbiSchemaInternal,
 	AbiInstanceGuardSchema,
 	{
