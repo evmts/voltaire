@@ -83,7 +83,7 @@ test "BN254 G1 point doubling matches repeated addition" {
 test "BN254 G1 scalar multiplication basic" {
     const gen = G1.GENERATOR;
     const scalar = Fr.init(5);
-    const result = try gen.mul(&scalar);
+    const result = gen.mul(&scalar);
 
     const manual = gen.add(&gen).add(&gen).add(&gen).add(&gen);
     try std.testing.expect(result.equal(&manual));
@@ -92,19 +92,19 @@ test "BN254 G1 scalar multiplication basic" {
 
 test "BN254 G1 scalar multiplication by zero" {
     const gen = G1.GENERATOR;
-    const result = try gen.mulByInt(0);
+    const result = gen.mulByInt(0, curve_parameters.G1_SCALAR.window_size);
     try std.testing.expect(result.isInfinity());
 }
 
 test "BN254 G1 scalar multiplication by one" {
     const gen = G1.GENERATOR;
-    const result = try gen.mulByInt(1);
+    const result = gen.mulByInt(1, curve_parameters.G1_SCALAR.window_size);
     try std.testing.expect(result.equal(&gen));
 }
 
 test "BN254 G1 scalar multiplication by curve order gives infinity" {
     const gen = G1.GENERATOR;
-    const result = try gen.mulByInt(FR_MOD);
+    const result = gen.mulByInt(FR_MOD, curve_parameters.G1_SCALAR.window_size);
     try std.testing.expect(result.isInfinity());
 }
 
@@ -146,9 +146,9 @@ test "BN254 G1 associativity of addition" {
     const scalar2 = Fr.init(5);
     const scalar3 = Fr.init(7);
 
-    const p1 = try G1.GENERATOR.mul(&scalar1);
-    const p2 = try G1.GENERATOR.mul(&scalar2);
-    const p3 = try G1.GENERATOR.mul(&scalar3);
+    const p1 = G1.GENERATOR.mul(&scalar1);
+    const p2 = G1.GENERATOR.mul(&scalar2);
+    const p3 = G1.GENERATOR.mul(&scalar3);
 
     const left = p1.add(&p2).add(&p3);
     const right = p1.add(&p2.add(&p3));
@@ -159,8 +159,8 @@ test "BN254 G1 commutativity of addition" {
     const scalar1 = Fr.init(11);
     const scalar2 = Fr.init(13);
 
-    const p1 = try G1.GENERATOR.mul(&scalar1);
-    const p2 = try G1.GENERATOR.mul(&scalar2);
+    const p1 = G1.GENERATOR.mul(&scalar1);
+    const p2 = G1.GENERATOR.mul(&scalar2);
 
     const left = p1.add(&p2);
     const right = p2.add(&p1);
@@ -171,12 +171,12 @@ test "BN254 G1 distributivity of scalar multiplication" {
     const scalar1 = Fr.init(7);
     const scalar2 = Fr.init(11);
 
-    const p = try G1.GENERATOR.mul(&scalar1);
-    const q = try G1.GENERATOR.mul(&scalar2);
+    const p = G1.GENERATOR.mul(&scalar1);
+    const q = G1.GENERATOR.mul(&scalar2);
 
     const scalar3 = Fr.init(5);
-    const left = try p.add(&q).mul(&scalar3);
-    const right = (try p.mul(&scalar3)).add(&(try q.mul(&scalar3)));
+    const left = p.add(&q).mul(&scalar3);
+    const right = (p.mul(&scalar3)).add(&(q.mul(&scalar3)));
     try std.testing.expect(left.equal(&right));
 }
 
@@ -190,7 +190,7 @@ test "BN254 G2 point addition on curve" {
 
 test "BN254 G2 scalar multiplication basic" {
     const gen = G2.GENERATOR;
-    const result = gen.mulByInt(3);
+    const result = gen.mulByInt(3, curve_parameters.G2_SCALAR.window_size);
     const manual = gen.add(&gen).add(&gen);
     try std.testing.expect(result.equal(&manual));
     try std.testing.expect(result.isOnCurve());
@@ -198,13 +198,13 @@ test "BN254 G2 scalar multiplication basic" {
 
 test "BN254 G2 scalar multiplication by zero" {
     const gen = G2.GENERATOR;
-    const result = gen.mulByInt(0);
+    const result = gen.mulByInt(0, curve_parameters.G2_SCALAR.window_size);
     try std.testing.expect(result.isInfinity());
 }
 
 test "BN254 G2 scalar multiplication by curve order" {
     const gen = G2.GENERATOR;
-    const result = gen.mulByInt(FR_MOD);
+    const result = gen.mulByInt(FR_MOD, curve_parameters.G2_SCALAR.window_size);
     try std.testing.expect(result.isInfinity());
 }
 
@@ -239,7 +239,7 @@ test "BN254 G2 subgroup check on generator" {
 test "BN254 G2 subgroup check on multiples" {
     const scalars = [_]u256{ 2, 7, 13, 99, 1234 };
     for (scalars) |s| {
-        const point = G2.GENERATOR.mulByInt(s);
+        const point = G2.GENERATOR.mulByInt(s, curve_parameters.G2_SCALAR.window_size);
         try std.testing.expect(point.isInSubgroup());
     }
 }
@@ -251,7 +251,7 @@ test "BN254 pairing bilinearity" {
     const g1_base = G1.GENERATOR;
     const g2_base = G2.GENERATOR;
 
-    const g1_scaled = try g1_base.mul(&scalar1);
+    const g1_scaled = g1_base.mul(&scalar1);
     const g2_scaled = g2_base.mul(&scalar2);
 
     const e1 = try pairing(&g1_scaled, &g2_base);
@@ -308,14 +308,14 @@ test "BN254 generator points are not infinity" {
 
 test "BN254 G1 large scalar multiplication" {
     const large_scalar = FR_MOD - 1;
-    const result = try G1.GENERATOR.mulByInt(large_scalar);
+    const result = G1.GENERATOR.mulByInt(large_scalar, curve_parameters.G1_SCALAR.window_size);
     const neg_gen = G1.GENERATOR.neg();
     try std.testing.expect(result.equal(&neg_gen));
 }
 
 test "BN254 G2 large scalar multiplication" {
     const large_scalar = FR_MOD - 1;
-    const result = G2.GENERATOR.mulByInt(large_scalar);
+    const result = G2.GENERATOR.mulByInt(large_scalar, curve_parameters.G2_SCALAR.window_size);
     const neg_gen = G2.GENERATOR.neg();
     try std.testing.expect(result.equal(&neg_gen));
 }
@@ -323,15 +323,15 @@ test "BN254 G2 large scalar multiplication" {
 test "BN254 G1 small scalar edge cases" {
     const gen = G1.GENERATOR;
 
-    const by_2 = try gen.mulByInt(2);
+    const by_2 = gen.mulByInt(2, curve_parameters.G1_SCALAR.window_size);
     const doubled = gen.double();
     try std.testing.expect(by_2.equal(&doubled));
 
-    const by_3 = try gen.mulByInt(3);
+    const by_3 = gen.mulByInt(3, curve_parameters.G1_SCALAR.window_size);
     const tripled = gen.add(&gen).add(&gen);
     try std.testing.expect(by_3.equal(&tripled));
 
-    const by_4 = try gen.mulByInt(4);
+    const by_4 = gen.mulByInt(4, curve_parameters.G1_SCALAR.window_size);
     const quadrupled = doubled.double();
     try std.testing.expect(by_4.equal(&quadrupled));
 }
@@ -339,19 +339,19 @@ test "BN254 G1 small scalar edge cases" {
 test "BN254 G2 small scalar edge cases" {
     const gen = G2.GENERATOR;
 
-    const by_2 = gen.mulByInt(2);
+    const by_2 = gen.mulByInt(2, curve_parameters.G2_SCALAR.window_size);
     const doubled = gen.double();
     try std.testing.expect(by_2.equal(&doubled));
 
-    const by_3 = gen.mulByInt(3);
+    const by_3 = gen.mulByInt(3, curve_parameters.G2_SCALAR.window_size);
     const tripled = gen.add(&gen).add(&gen);
     try std.testing.expect(by_3.equal(&tripled));
 }
 
 test "BN254 G1 toAffine preserves point" {
     const scalar = Fr.init(17);
-    const point = try G1.GENERATOR.mul(&scalar);
-    const affine = try point.toAffine();
+    const point = G1.GENERATOR.mul(&scalar);
+    const affine = point.toAffine();
 
     try std.testing.expect(point.equal(&affine));
     try std.testing.expect(affine.isOnCurve());
@@ -370,7 +370,7 @@ test "BN254 G2 toAffine preserves point" {
 
 test "BN254 G1 negation twice gives original" {
     const scalar = Fr.init(23);
-    const point = try G1.GENERATOR.mul(&scalar);
+    const point = G1.GENERATOR.mul(&scalar);
     const neg_neg = point.neg().neg();
     try std.testing.expect(point.equal(&neg_neg));
 }
@@ -386,8 +386,8 @@ test "BN254 pairing additivity in first argument" {
     const scalar1 = Fr.init(3);
     const scalar2 = Fr.init(5);
 
-    const p1 = try G1.GENERATOR.mul(&scalar1);
-    const p2 = try G1.GENERATOR.mul(&scalar2);
+    const p1 = G1.GENERATOR.mul(&scalar1);
+    const p2 = G1.GENERATOR.mul(&scalar2);
     const q = G2.GENERATOR;
 
     const p1_plus_p2 = p1.add(&p2);
@@ -459,7 +459,7 @@ pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
 
     // Perform addition
     const result = p1.add(&p2);
-    const result_affine = try result.toAffine();
+    const result_affine = result.toAffine();
 
     // Serialize result to output
     // Point at infinity is represented as (0, 0)
@@ -503,8 +503,8 @@ pub fn bn254Mul(input: *const [96]u8, output: []u8) !void {
     };
 
     // Perform scalar multiplication
-    const result = try point.mulByInt(scalar_value);
-    const result_affine = try result.toAffine();
+    const result = point.mulByInt(scalar_value, curve_parameters.G1_SCALAR.window_size);
+    const result_affine = result.toAffine();
 
     // Serialize result to output
     // Point at infinity is represented as (0, 0)
@@ -592,7 +592,7 @@ pub fn bn254Pairing(input: []const u8) !bool {
 test "BN254 EIP-196 ECADD - add two points on curve" {
     // Test vector: G1 + G1 = 2*G1
     const gen = G1.GENERATOR;
-    const gen_affine = try gen.toAffine();
+    const gen_affine = gen.toAffine();
 
     var input: [128]u8 = undefined;
     @memset(&input, 0);
@@ -613,13 +613,13 @@ test "BN254 EIP-196 ECADD - add two points on curve" {
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
     // Verify result equals 2*G1
-    const expected = try gen.double().toAffine();
+    const expected = gen.double().toAffine();
     try std.testing.expectEqual(expected.x.value, result_x);
     try std.testing.expectEqual(expected.y.value, result_y);
 }
 
 test "BN254 EIP-196 ECADD - add point to infinity" {
-    const gen = try G1.GENERATOR.toAffine();
+    const gen = G1.GENERATOR.toAffine();
 
     var input: [128]u8 = undefined;
     @memset(&input, 0);
@@ -656,8 +656,8 @@ test "BN254 EIP-196 ECADD - add two infinities" {
 }
 
 test "BN254 EIP-196 ECADD - add point and its negation" {
-    const gen = try G1.GENERATOR.toAffine();
-    const neg_gen = try gen.neg().toAffine();
+    const gen = G1.GENERATOR.toAffine();
+    const neg_gen = gen.neg().toAffine();
 
     var input: [128]u8 = undefined;
     @memset(&input, 0);
@@ -694,7 +694,7 @@ test "BN254 EIP-196 ECADD - invalid point returns error" {
 }
 
 test "BN254 EIP-196 ECMUL - multiply by zero" {
-    const gen = try G1.GENERATOR.toAffine();
+    const gen = G1.GENERATOR.toAffine();
 
     var input: [96]u8 = undefined;
     @memset(&input, 0);
@@ -715,7 +715,7 @@ test "BN254 EIP-196 ECMUL - multiply by zero" {
 }
 
 test "BN254 EIP-196 ECMUL - multiply by one" {
-    const gen = try G1.GENERATOR.toAffine();
+    const gen = G1.GENERATOR.toAffine();
 
     var input: [96]u8 = undefined;
     @memset(&input, 0);
@@ -739,7 +739,7 @@ test "BN254 EIP-196 ECMUL - multiply by one" {
 }
 
 test "BN254 EIP-196 ECMUL - multiply by two" {
-    const gen = try G1.GENERATOR.toAffine();
+    const gen = G1.GENERATOR.toAffine();
 
     var input: [96]u8 = undefined;
     @memset(&input, 0);
@@ -758,7 +758,7 @@ test "BN254 EIP-196 ECMUL - multiply by two" {
     const result_x = std.mem.readInt(u256, output[0..32], .big);
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
-    const expected = try G1.GENERATOR.double().toAffine();
+    const expected = G1.GENERATOR.double().toAffine();
     try std.testing.expectEqual(expected.x.value, result_x);
     try std.testing.expectEqual(expected.y.value, result_y);
 }
@@ -781,7 +781,7 @@ test "BN254 EIP-196 ECMUL - multiply infinity by scalar" {
 }
 
 test "BN254 EIP-196 ECMUL - multiply by curve order" {
-    const gen = try G1.GENERATOR.toAffine();
+    const gen = G1.GENERATOR.toAffine();
 
     var input: [96]u8 = undefined;
     @memset(&input, 0);
@@ -803,7 +803,7 @@ test "BN254 EIP-196 ECMUL - multiply by curve order" {
 }
 
 test "BN254 EIP-196 ECMUL - multiply by large scalar" {
-    const gen = try G1.GENERATOR.toAffine();
+    const gen = G1.GENERATOR.toAffine();
     const scalar: u256 = 123456789;
 
     var input: [96]u8 = undefined;
@@ -820,7 +820,7 @@ test "BN254 EIP-196 ECMUL - multiply by large scalar" {
     try bn254Mul(&input, &output);
 
     // Verify result matches expected
-    const expected = try (try G1.GENERATOR.mulByInt(scalar)).toAffine();
+    const expected = G1.GENERATOR.mulByInt(scalar, curve_parameters.G1_SCALAR.window_size).toAffine();
     const result_x = std.mem.readInt(u256, output[0..32], .big);
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
@@ -842,7 +842,7 @@ test "BN254 EIP-197 ECPAIRING - invalid input length" {
 
 test "BN254 EIP-197 ECPAIRING - single valid pairing" {
     // e(G1, G2) should not equal 1
-    const g1 = try G1.GENERATOR.toAffine();
+    const g1 = G1.GENERATOR.toAffine();
     const g2 = G2.GENERATOR.toAffine();
 
     var input: [192]u8 = undefined;
@@ -868,9 +868,9 @@ test "BN254 EIP-197 ECPAIRING - bilinearity check" {
     const g1 = G1.GENERATOR;
     const g2 = G2.GENERATOR;
 
-    const p1 = try (try g1.mulByInt(2)).toAffine();
-    const p2 = g2.mulByInt(3).toAffine();
-    const p3 = try (try g1.mulByInt(6)).neg().toAffine();
+    const p1 = g1.mulByInt(2, curve_parameters.G1_SCALAR.window_size).toAffine();
+    const p2 = g2.mulByInt(3, curve_parameters.G2_SCALAR.window_size).toAffine();
+    const p3 = g1.mulByInt(6, curve_parameters.G1_SCALAR.window_size).neg().toAffine();
     const p4 = g2.toAffine();
 
     var input: [384]u8 = undefined;
@@ -918,12 +918,12 @@ test "BN254 EIP-197 ECPAIRING - with infinity points" {
 test "BN254 EIP-196 - scalar validation" {
     // Scalars must be less than the curve order
     const valid_scalar = FR_MOD - 1;
-    const result = try G1.GENERATOR.mulByInt(valid_scalar);
+    const result = G1.GENERATOR.mulByInt(valid_scalar, curve_parameters.G1_SCALAR.window_size);
     try std.testing.expect(result.isOnCurve());
 
     // Maximum valid scalar
     const max_scalar = FR_MOD - 1;
-    const result2 = try G1.GENERATOR.mulByInt(max_scalar);
+    const result2 = G1.GENERATOR.mulByInt(max_scalar, curve_parameters.G1_SCALAR.window_size);
     try std.testing.expect(result2.isOnCurve());
 }
 
@@ -936,20 +936,20 @@ test "BN254 point serialization - point at infinity" {
 
 test "BN254 point validation - generator has correct order" {
     const n_minus_1 = FR_MOD - 1;
-    const result = try G1.GENERATOR.mulByInt(n_minus_1);
+    const result = G1.GENERATOR.mulByInt(n_minus_1, curve_parameters.G1_SCALAR.window_size);
     const neg_gen = G1.GENERATOR.neg();
     try std.testing.expect(result.equal(&neg_gen));
 }
 
 test "BN254 G1 cofactor test" {
     const gen = G1.GENERATOR;
-    const order_mult = try gen.mulByInt(FR_MOD);
+    const order_mult = gen.mulByInt(FR_MOD, curve_parameters.G1_SCALAR.window_size);
     try std.testing.expect(order_mult.isInfinity());
 }
 
 test "BN254 G2 cofactor test" {
     const gen = G2.GENERATOR;
-    const order_mult = gen.mulByInt(FR_MOD);
+    const order_mult = gen.mulByInt(FR_MOD, curve_parameters.G2_SCALAR.window_size);
     try std.testing.expect(order_mult.isInfinity());
 }
 
@@ -989,13 +989,13 @@ test "BN254 point doubling formula correctness" {
             break :blk result;
         };
 
-        const by_mul = try G1.GENERATOR.mulByInt(s);
+        const by_mul = G1.GENERATOR.mulByInt(s, curve_parameters.G1_SCALAR.window_size);
         try std.testing.expect(by_doubling.equal(&by_mul));
     }
 }
 
 test "BN254 mixed addition (affine + projective)" {
-    const affine_gen = try G1.GENERATOR.toAffine();
+    const affine_gen = G1.GENERATOR.toAffine();
     const proj_gen = G1.GENERATOR;
 
     const sum1 = affine_gen.add(&proj_gen);
@@ -1009,7 +1009,7 @@ test "BN254 scalar multiplication - windowing consistency" {
     const test_scalars = [_]u256{ 15, 31, 63, 127, 255, 511, 1023 };
 
     for (test_scalars) |scalar| {
-        const result = try G1.GENERATOR.mulByInt(scalar);
+        const result = G1.GENERATOR.mulByInt(scalar, curve_parameters.G1_SCALAR.window_size);
 
         var expected = G1.INFINITY;
         var base = G1.GENERATOR;
@@ -1030,7 +1030,7 @@ test "BN254 pairing bilinearity with specific scalars" {
     const b = Fr.init(5);
     const ab = a.mul(&b);
 
-    const g1_a = try G1.GENERATOR.mul(&a);
+    const g1_a = G1.GENERATOR.mul(&a);
     const g2_b = G2.GENERATOR.mul(&b);
 
     const e1 = try pairing(&g1_a, &G2.GENERATOR);
@@ -1047,7 +1047,7 @@ test "BN254 pairing bilinearity with specific scalars" {
 
 test "BN254 negation preserves distance" {
     const scalar = Fr.init(42);
-    const point = try G1.GENERATOR.mul(&scalar);
+    const point = G1.GENERATOR.mul(&scalar);
     const neg_point = point.neg();
 
     const sum = point.add(&neg_point);
@@ -1070,10 +1070,10 @@ test "BN254 curve equation validation for random multiples" {
     const test_scalars = [_]u256{ 1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47 };
 
     for (test_scalars) |scalar| {
-        const g1_point = try G1.GENERATOR.mulByInt(scalar);
+        const g1_point = G1.GENERATOR.mulByInt(scalar, curve_parameters.G1_SCALAR.window_size);
         try std.testing.expect(g1_point.isOnCurve());
 
-        const g2_point = G2.GENERATOR.mulByInt(scalar);
+        const g2_point = G2.GENERATOR.mulByInt(scalar, curve_parameters.G2_SCALAR.window_size);
         try std.testing.expect(g2_point.isOnCurve());
     }
 }
