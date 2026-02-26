@@ -305,11 +305,13 @@ pub fn mulByInt(self: *const G2, scalar: u256, window_size: comptime_int) G2 {
     if (decomposition.k3 < 0) base_points[2].negAssign();
     if (decomposition.k4 < 0) base_points[3].negAssign();
 
-    const PrecomputedPoints = [4][1 << (window_size - 2)]G2{
-        base_points[0].createTable(1 << (window_size - 2)),
-        base_points[1].createTable(1 << (window_size - 2)),
-        base_points[2].createTable(1 << (window_size - 2)),
-        base_points[3].createTable(1 << (window_size - 2)),
+    const table_size = 1 << (window_size - 2);
+
+    const PrecomputedPoints = [4][table_size]G2{
+        base_points[0].createTable(table_size),
+        base_points[1].createTable(table_size),
+        base_points[2].createTable(table_size),
+        base_points[3].createTable(table_size),
     };
 
     const k = [4][71]i8{
@@ -339,25 +341,25 @@ pub fn mulByInt(self: *const G2, scalar: u256, window_size: comptime_int) G2 {
     return result;
 }
 
-fn get_precomputed_index(k1: u70, k2: u70, k3: u70, k4: u70, i: u7) u4 {
-    const k4_bit = @as(u4, @intCast((k4 >> i) & 1));
-    const k3_bit = @as(u4, @intCast((k3 >> i) & 1));
-    const k2_bit = @as(u4, @intCast((k2 >> i) & 1));
-    const k1_bit = @as(u4, @intCast((k1 >> i) & 1));
-    return k4_bit << 3 | k3_bit << 2 | k2_bit << 1 | k1_bit;
-}
+// fn get_precomputed_index(k1: u70, k2: u70, k3: u70, k4: u70, i: u7) u4 {
+//     const k4_bit = @as(u4, @intCast((k4 >> i) & 1));
+//     const k3_bit = @as(u4, @intCast((k3 >> i) & 1));
+//     const k2_bit = @as(u4, @intCast((k2 >> i) & 1));
+//     const k1_bit = @as(u4, @intCast((k1 >> i) & 1));
+//     return k4_bit << 3 | k3_bit << 2 | k2_bit << 1 | k1_bit;
+// }
 
-fn init_precomputed_points(points: *const [4]G2) [16]G2 {
-    var result: [16]G2 = undefined;
-    result[0] = INFINITY;
-    inline for (0..4) |i| {
-        const current_size = 1 << i;
-        for (0..current_size) |j| {
-            result[current_size + j] = result[j].add(&points[i]);
-        }
-    }
-    return result;
-}
+// fn init_precomputed_points(points: *const [4]G2) [16]G2 {
+//     var result: [16]G2 = undefined;
+//     result[0] = INFINITY;
+//     inline for (0..4) |i| {
+//         const current_size = 1 << i;
+//         for (0..current_size) |j| {
+//             result[current_size + j] = result[j].add(&points[i]);
+//         }
+//     }
+//     return result;
+// }
 
 //creates a table of size size containing P, 3P, 5P, 7P, ..., (2*size-1)P
 pub fn createTable(self: *const G2, size: comptime_int) [size]G2 {

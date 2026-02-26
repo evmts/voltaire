@@ -254,8 +254,9 @@ pub fn mulByInt(self: *const G1, scalar: u256, window_size: comptime_int) G1 {
     const k2 = decomposition.k2;
     const wnaf_k2 = wnaf(window_size, u128, k2);
 
-    const PTable = self.createTable(1 << (window_size - 2));
-    const QTable = self.glsEndomorphism().neg().createTable(1 << (window_size - 2));
+    const table_size = 1 << (window_size - 2);
+    const PTable = self.createTable(table_size);
+    const QTable = self.glsEndomorphism().neg().createTable(table_size);
 
     var result = INFINITY;
 
