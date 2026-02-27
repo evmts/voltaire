@@ -72,7 +72,9 @@ fn isValidMerkleBranch(
 
 const std = @import("std");
 
-test "calcSyncPeriod computes sync committee period not epoch" {
+test "calcSyncPeriod computes sync committee period edge cases" {
+    // Period = (slot / SLOTS_PER_EPOCH) / EPOCHS_PER_SYNC_COMMITTEE_PERIOD
+    // = (slot / 32) / 256 = slot / 8192
     try std.testing.expectEqual(@as(u64, 0), calcSyncPeriod(0));
     try std.testing.expectEqual(@as(u64, 0), calcSyncPeriod(64));
     try std.testing.expectEqual(@as(u64, 0), calcSyncPeriod(96));
@@ -81,3 +83,5 @@ test "calcSyncPeriod computes sync committee period not epoch" {
     try std.testing.expectEqual(@as(u64, 1), calcSyncPeriod(16383));
     try std.testing.expectEqual(@as(u64, 2), calcSyncPeriod(16384));
 }
+
+
