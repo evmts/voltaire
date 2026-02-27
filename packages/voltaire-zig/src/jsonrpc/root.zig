@@ -16,10 +16,15 @@ pub const engine = @import("engine/methods.zig");
 
 // Export shared types
 pub const types = @import("types.zig");
+pub const envelope = @import("envelope.zig");
 
 // Convenience re-exports from JsonRpc
 pub const JsonRpcMethod = JsonRpc.JsonRpcMethod;
 
 test {
     std.testing.refAllDecls(@This());
+}
+
+test "jsonrpc root exports envelope" {
+    try std.testing.expect(@hasDecl(@This(), "envelope"));
 }
