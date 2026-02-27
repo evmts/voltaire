@@ -7,7 +7,7 @@ const Ssz = @import("../Ssz/root.zig");
 
 /// Calculate the sync period for a given slot
 pub fn calcSyncPeriod(slot: u64) u64 {
-    return slot / ConsensusSpec.SLOTS_PER_EPOCH;
+    return slot / (ConsensusSpec.SLOTS_PER_EPOCH * ConsensusSpec.EPOCHS_PER_SYNC_COMMITTEE_PERIOD);
 }
 
 /// Calculate the expected current slot based on genesis time
@@ -71,3 +71,13 @@ fn isValidMerkleBranch(
 }
 
 const std = @import("std");
+
+test "calcSyncPeriod computes sync committee period not epoch" {
+    try std.testing.expectEqual(@as(u64, 0), calcSyncPeriod(0));
+    try std.testing.expectEqual(@as(u64, 0), calcSyncPeriod(64));
+    try std.testing.expectEqual(@as(u64, 0), calcSyncPeriod(96));
+    try std.testing.expectEqual(@as(u64, 0), calcSyncPeriod(8191));
+    try std.testing.expectEqual(@as(u64, 1), calcSyncPeriod(8192));
+    try std.testing.expectEqual(@as(u64, 1), calcSyncPeriod(16383));
+    try std.testing.expectEqual(@as(u64, 2), calcSyncPeriod(16384));
+}
