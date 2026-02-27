@@ -1,4 +1,5 @@
 const std = @import("std");
+// SENTINEL_TEST
 
 /// JSON-RPC 2.0 request id - can be integer, string, or null
 pub const Id = union(enum) {

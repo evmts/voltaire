@@ -3,9 +3,6 @@ const types = @import("../../types.zig");
 
 /// Returns a list of addresses owned by client.
 ///
-/// Example:
-/// Result: ...
-///
 /// Implements the `eth_accounts` JSON-RPC method.
 pub const EthAccounts = @This();
 
@@ -27,18 +24,25 @@ pub const Params = struct {
     }
 };
 
-/// Result for `eth_accounts`
+/// Result for `eth_accounts` — array of addresses
 pub const Result = struct {
-    /// Accounts
-    value: types.Quantity,
+    value: []const types.Address,
 
     pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+        try jws.beginArray();
+        for (self.value) |addr| {
+            try addr.jsonStringify(jws);
+        }
+        try jws.endArray();
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {
-        return Result{
-            .value = try std.json.innerParseFromValue(types.Quantity, allocator, source, options),
-        };
+        if (source != .array) return error.UnexpectedToken;
+        const items = source.array.items;
+        const addrs = try allocator.alloc(types.Address, items.len);
+        for (items, 0..) |item, i| {
+            addrs[i] = try types.Address.jsonParseFromValue(allocator, item, options);
+        }
+        return Result{ .value = addrs };
     }
 };

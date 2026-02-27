@@ -5,7 +5,7 @@ const types = @import("../../types.zig");
 ///
 /// Example:
 /// Block: "latest"
-/// Result: ...
+/// Result: Array of ReceiptResponse objects or null if block not found
 ///
 /// Implements the `eth_getBlockReceipts` JSON-RPC method.
 pub const EthGetBlockReceipts = @This();
@@ -35,16 +35,28 @@ pub const Params = struct {
 };
 
 /// Result for `eth_getBlockReceipts`
+/// Returns null if block is not found, otherwise returns array of ReceiptResponse
 pub const Result = struct {
-    value: types.Quantity,
+    value: ?[]const types.ReceiptResponse,
 
     pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+        if (self.value) |receipts| {
+            try jws.write(receipts);
+        } else {
+            try jws.write(null);
+        }
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {
-        return Result{
-            .value = try std.json.innerParseFromValue(types.Quantity, allocator, source, options),
-        };
+        if (source == .null) {
+            return Result{ .value = null };
+        }
+        const receipts = try std.json.innerParseFromValue([]const types.ReceiptResponse, allocator, source, options);
+        return Result{ .value = receipts };
     }
 };
+
+// Import tests
+test {
+    _ = @import("eth_getBlockReceipts_test.zig");
+}

@@ -42,6 +42,21 @@ const eth_simulateV1 = @import("simulateV1/eth_simulateV1.zig");
 const eth_syncing = @import("syncing/eth_syncing.zig");
 const eth_uninstallFilter = @import("uninstallFilter/eth_uninstallFilter.zig");
 
+// Public type re-exports for downstream access (params/result types only)
+pub const Accounts = eth_accounts.EthAccounts;
+pub const BlobBaseFee = eth_blobBaseFee.EthBlobBaseFee;
+pub const BlockNumber = eth_blockNumber.EthBlockNumber;
+pub const Call = eth_call.EthCall;
+pub const ChainId = eth_chainId.EthChainId;
+pub const Coinbase = eth_coinbase.EthCoinbase;
+pub const FeeHistory = eth_feeHistory.EthFeeHistory;
+pub const GasPrice = eth_gasPrice.EthGasPrice;
+pub const GetBalance = eth_getBalance.EthGetBalance;
+pub const GetCode = eth_getCode.EthGetCode;
+pub const GetStorageAt = eth_getStorageAt.EthGetStorageAt;
+pub const GetTransactionCount = eth_getTransactionCount.EthGetTransactionCount;
+pub const MaxPriorityFeePerGas = eth_maxPriorityFeePerGas.EthMaxPriorityFeePerGas;
+
 /// Tagged union of all eth namespace methods
 /// Maps method names to their corresponding parameter and result types
 pub const EthMethod = union(enum) {

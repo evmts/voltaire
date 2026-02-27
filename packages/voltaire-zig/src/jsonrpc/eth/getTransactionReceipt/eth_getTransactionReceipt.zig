@@ -5,7 +5,7 @@ const types = @import("../../types.zig");
 ///
 /// Example:
 /// Transaction hash: "0x504ce587a65bdbdb6414a0c6c16d86a04dd79bfcc4f2950eec9634b30ce5370f"
-/// Result: ...
+/// Result: ReceiptResponse object or null if not found
 ///
 /// Implements the `eth_getTransactionReceipt` JSON-RPC method.
 pub const EthGetTransactionReceipt = @This();
@@ -35,16 +35,29 @@ pub const Params = struct {
 };
 
 /// Result for `eth_getTransactionReceipt`
+/// Returns null if transaction is not found, otherwise returns ReceiptResponse
 pub const Result = struct {
-    value: types.Quantity,
+    value: ?types.ReceiptResponse,
 
     pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+        if (self.value) |receipt| {
+            try jws.write(receipt);
+        } else {
+            try jws.write(null);
+        }
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {
+        if (source == .null) {
+            return Result{ .value = null };
+        }
         return Result{
-            .value = try std.json.innerParseFromValue(types.Quantity, allocator, source, options),
+            .value = try std.json.innerParseFromValue(types.ReceiptResponse, allocator, source, options),
         };
     }
 };
+
+// Import tests
+test {
+    _ = @import("eth_getTransactionReceipt_test.zig");
+}

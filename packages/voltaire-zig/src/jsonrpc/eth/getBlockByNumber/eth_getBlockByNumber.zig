@@ -6,7 +6,7 @@ const types = @import("../../types.zig");
 /// Example:
 /// block: "0x68b3"
 /// Hydrated transactions: false
-/// Result: ...
+/// Result: BlockResponse
 ///
 /// Implements the `eth_getBlockByNumber` JSON-RPC method.
 pub const EthGetBlockByNumber = @This();
@@ -17,9 +17,9 @@ pub const method = "eth_getBlockByNumber";
 /// Parameters for `eth_getBlockByNumber`
 pub const Params = struct {
     /// Block number or tag
-    block: types.Quantity,
-    /// hydrated
-    hydrated_transactions: types.Quantity,
+    block: types.BlockSpec,
+    /// Whether to return full transaction objects (true) or just hashes (false)
+    hydrated_transactions: bool,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
@@ -33,23 +33,31 @@ pub const Params = struct {
         if (source.array.items.len != 2) return error.InvalidParamCount;
 
         return Params{
-            .block = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
-            .hydrated_transactions = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[1], options),
+            .block = try std.json.innerParseFromValue(types.BlockSpec, allocator, source.array.items[0], options),
+            .hydrated_transactions = try std.json.innerParseFromValue(bool, allocator, source.array.items[1], options),
         };
     }
 };
 
 /// Result for `eth_getBlockByNumber`
+/// Returns a BlockResponse or null if the block is not found.
 pub const Result = struct {
-    value: types.Quantity,
+    block: ?types.BlockResponse.BlockResponse,
 
     pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+        if (self.block) |b| {
+            try jws.write(b);
+        } else {
+            try jws.writeNull();
+        }
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {
+        if (source == .null) {
+            return Result{ .block = null };
+        }
         return Result{
-            .value = try std.json.innerParseFromValue(types.Quantity, allocator, source, options),
+            .block = try std.json.innerParseFromValue(types.BlockResponse.BlockResponse, allocator, source, options),
         };
     }
 };
