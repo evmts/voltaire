@@ -6,7 +6,7 @@ const types = @import("../../types.zig");
 /// Example:
 /// Block hash: "0xbf137c3a7a1ebdfac21252765e5d7f40d115c2757e4a4abee929be88c624fdb7"
 /// Transaction index: "0x2"
-/// Result: ...
+/// Result: TransactionResponse or null if not found
 ///
 /// Implements the `eth_getTransactionByBlockHashAndIndex` JSON-RPC method.
 pub const EthGetTransactionByBlockHashAndIndex = @This();
@@ -21,7 +21,7 @@ pub const Params = struct {
     /// hex encoded unsigned integer
     transaction_index: types.Quantity,
 
-    pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
+    pub fn jsonStringify(self: Params, jws: *std.json.WriteStream) !void {
         try jws.beginArray();
         try jws.write(self.block_hash);
         try jws.write(self.transaction_index);
@@ -40,16 +40,26 @@ pub const Params = struct {
 };
 
 /// Result for `eth_getTransactionByBlockHashAndIndex`
+/// Returns TransactionResponse for found transactions, null for not found.
 pub const Result = struct {
-    value: types.Quantity,
+    value: ?types.TransactionResponse,
 
-    pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+    pub fn jsonStringify(self: Result, jws: *std.json.WriteStream) !void {
+        if (self.value) |tx| {
+            try tx.jsonStringify(jws);
+        } else {
+            try jws.writeNull();
+        }
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {
-        return Result{
-            .value = try std.json.innerParseFromValue(types.Quantity, allocator, source, options),
-        };
+        if (source == .null) {
+            return Result{ .value = null };
+        }
+
+        // Parse TransactionResponse from JSON
+        _ = allocator;
+        _ = options;
+        @panic("TODO: implement TransactionResponse parsing from JSON");
     }
 };

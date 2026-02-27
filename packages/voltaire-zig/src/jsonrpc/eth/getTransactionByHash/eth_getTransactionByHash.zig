@@ -5,7 +5,7 @@ const types = @import("../../types.zig");
 ///
 /// Example:
 /// Transaction hash: "0xa52be92809541220ee0aaaede6047d9a6c5d0cd96a517c854d944ee70a0ebb44"
-/// Result: ...
+/// Result: TransactionResponse or null if not found
 ///
 /// Implements the `eth_getTransactionByHash` JSON-RPC method.
 pub const EthGetTransactionByHash = @This();
@@ -18,7 +18,7 @@ pub const Params = struct {
     /// 32 byte hex value
     transaction_hash: types.Hash,
 
-    pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
+    pub fn jsonStringify(self: Params, jws: *std.json.WriteStream) !void {
         try jws.beginArray();
         try jws.write(self.transaction_hash);
         try jws.endArray();
@@ -35,16 +35,28 @@ pub const Params = struct {
 };
 
 /// Result for `eth_getTransactionByHash`
+/// Returns TransactionResponse for found transactions, null for not found.
 pub const Result = struct {
-    value: types.Quantity,
+    value: ?types.TransactionResponse,
 
-    pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+    pub fn jsonStringify(self: Result, jws: *std.json.WriteStream) !void {
+        if (self.value) |tx| {
+            try tx.jsonStringify(jws);
+        } else {
+            try jws.writeNull();
+        }
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {
-        return Result{
-            .value = try std.json.innerParseFromValue(types.Quantity, allocator, source, options),
-        };
+        if (source == .null) {
+            return Result{ .value = null };
+        }
+
+        // Parse TransactionResponse from JSON
+        // For now, we'll parse into a generic structure and create the appropriate variant
+        // This is a placeholder - full parsing would need to handle all tx types
+        _ = allocator;
+        _ = options;
+        @panic("TODO: implement TransactionResponse parsing from JSON");
     }
 };
