@@ -81,7 +81,14 @@ pub fn build(b: *std.Build) void {
     });
     // jsonrpc types.zig uses hand-written types (Address, Hash, Quantity, BlockTag, BlockSpec)
     // that are self-contained — no import of primitives or crypto is needed
-    _ = jsonrpc_mod; // Module is exported for external packages
+
+    // JSON-RPC tests
+    const jsonrpc_tests = b.addTest(.{
+        .name = "jsonrpc-tests",
+        .root_module = jsonrpc_mod,
+    });
+
+    const run_jsonrpc_tests = b.addRunArtifact(jsonrpc_tests);
 
     // Now add primitives to crypto (circular dependency resolved by Zig's lazy evaluation)
     crypto_mod.addImport("primitives", primitives_mod);
@@ -169,10 +176,11 @@ pub fn build(b: *std.Build) void {
     const run_crypto_tests = b.addRunArtifact(crypto_tests);
     const run_precompiles_tests = b.addRunArtifact(precompiles_tests);
 
-    const test_step = b.step("test", "Run all tests (primitives + crypto + precompiles + state-manager + blockchain)");
+    const test_step = b.step("test", "Run all tests (primitives + crypto + precompiles + state-manager + blockchain + jsonrpc)");
     test_step.dependOn(&run_primitives_tests.step);
     test_step.dependOn(&run_crypto_tests.step);
     test_step.dependOn(&run_precompiles_tests.step);
+    test_step.dependOn(&run_jsonrpc_tests.step);
 
     const run_state_manager_tests = b.addRunArtifact(state_manager_tests);
     test_step.dependOn(&run_state_manager_tests.step);
