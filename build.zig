@@ -39,6 +39,13 @@ pub fn build(b: *std.Build) void {
     c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
     c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
 
+    // eth.zig - pure Zig Ethereum primitives (HD wallet, transaction utils)
+    const eth_zig_dep = b.dependency("eth_zig", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const eth_zig_mod = eth_zig_dep.module("eth");
+
     // Crypto module - export for external packages
     const crypto_mod = b.addModule("crypto", .{
         .root_source_file = b.path("packages/voltaire-zig/src/crypto/root.zig"),
@@ -46,6 +53,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("c_kzg", c_kzg_mod);
+    crypto_mod.addImport("eth_zig", eth_zig_mod);
     crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib")); // For keccak_wrapper.h
 
     // z-ens-normalize module
@@ -73,6 +81,7 @@ pub fn build(b: *std.Build) void {
     primitives_mod.addImport("crypto", crypto_mod);
     primitives_mod.addImport("z_ens_normalize", z_ens_normalize_mod);
     primitives_mod.addImport("primitives", primitives_mod);
+    primitives_mod.addImport("eth_zig", eth_zig_mod);
 
     // JSON-RPC module - Ethereum JSON-RPC type system (65 methods)
     const jsonrpc_mod = b.addModule("jsonrpc", .{
