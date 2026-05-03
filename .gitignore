@@ -18,6 +18,7 @@ worktrees/
 macos
 
 /target/
+**/target/
 **/*.rs.bk
 
 # Compiled object files and libraries (ensure comprehensive coverage)
@@ -98,6 +99,10 @@ zig-out/
 zig-cache/
 /bin/
 /wasm/
+
+# Local generated docs metadata
+/docs-starlight/.astro/
+/docs-starlight/.vercel/
 
 # Python
 __pycache__/
