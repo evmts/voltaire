@@ -40,9 +40,7 @@ pub const Keccak256_Accel = struct {
 
     /// AVX2 SIMD implementation for x86-64
     fn hash_avx2(data: []const u8, output: *[DIGEST_SIZE]u8) void {
-        // For now, use the standard library implementation until SIMD is properly debugged
-        // The SIMD implementation has issues with the Keccak-f permutation
-        hash_software_optimized(data, output);
+        hash_simd(data, output);
     }
 
     /// Absorb a block into the state using SIMD operations
@@ -95,18 +93,20 @@ pub const Keccak256_Accel = struct {
             0x8000000000008080, 0x0000000080000001, 0x8000000080008008,
         };
 
-        // Rotation offsets
-        const r = [5][5]u32{
-            [_]u32{ 0, 1, 62, 28, 27 },
-            [_]u32{ 36, 44, 6, 55, 20 },
-            [_]u32{ 3, 10, 43, 25, 39 },
-            [_]u32{ 41, 45, 15, 21, 8 },
-            [_]u32{ 18, 2, 61, 56, 14 },
+        // Rotation offsets (linearized)
+        const RHO = [25]u6{ 0, 1, 62, 28, 27, 36, 44, 6, 55, 20, 3, 10, 43, 25, 39, 41, 45, 15, 21, 8, 18, 2, 61, 56, 14 };
+
+        // Pi destination indices (standard Keccak permutation)
+        const PI_DST = [25]u5{
+            0,  10, 20, 5,  15,
+            16, 1,  11, 21, 6,
+            7,  17, 2,  12, 22,
+            23, 8,  18, 3,  13,
+            14, 24, 9,  19, 4,
         };
 
         for (RC) |rc| {
             // Theta step with SIMD
-            var C: [5]u64 = undefined;
             var D: [5]u64 = undefined;
 
             // Compute column parities using vectors
@@ -120,8 +120,7 @@ pub const Keccak256_Accel = struct {
 
             // Compute D values
             inline for (0..5) |x| {
-                C[x] = vec_C[x];
-                D[x] = C[(x + 4) % 5] ^ rotl(C[(x + 1) % 5], 1);
+                D[x] = vec_C[(x + 4) % 5] ^ rotl(vec_C[(x + 1) % 5], 1);
             }
 
             // Apply theta using SIMD
@@ -141,21 +140,26 @@ pub const Keccak256_Accel = struct {
                 }
             }
 
-            // Rho and Pi steps
+            // Rho and Pi steps (combined, using correct pi permutation)
             var B: [STATE_SIZE]u64 = undefined;
-            inline for (0..5) |y| {
-                inline for (0..5) |x| {
-                    B[y * 5 + x] = rotl(state[x * 5 + y], r[x][y]);
-                }
+            inline for (0..25) |i| {
+                B[PI_DST[i]] = rotl(state[i], RHO[i]);
             }
 
-            // Chi step with partial vectorization
+            // Chi step
             inline for (0..5) |y| {
                 const base = y * 5;
-                // Process row with bit operations
-                inline for (0..5) |x| {
-                    state[base + x] = B[base + x] ^ ((~B[base + (x + 1) % 5]) & B[base + (x + 2) % 5]);
-                }
+                const b0 = B[base + 0];
+                const b1 = B[base + 1];
+                const b2 = B[base + 2];
+                const b3 = B[base + 3];
+                const b4 = B[base + 4];
+
+                state[base + 0] = b0 ^ (~b1 & b2);
+                state[base + 1] = b1 ^ (~b2 & b3);
+                state[base + 2] = b2 ^ (~b3 & b4);
+                state[base + 3] = b3 ^ (~b4 & b0);
+                state[base + 4] = b4 ^ (~b0 & b1);
             }
 
             // Iota step
@@ -163,18 +167,38 @@ pub const Keccak256_Accel = struct {
         }
     }
 
-    /// Optimized software implementation
+    /// Software-optimized implementation using our keccak_f_simd permutation
     fn hash_software_optimized(data: []const u8, output: *[DIGEST_SIZE]u8) void {
-        // Use standard library as baseline
-        var result: [DIGEST_SIZE]u8 = undefined;
-        std.crypto.hash.sha3.Keccak256.hash(data, &result, .{});
-        @memcpy(output, &result);
+        hash_simd(data, output);
+    }
+
+    /// Full absorb/pad/squeeze using SIMD keccak_f permutation
+    fn hash_simd(data: []const u8, output: *[DIGEST_SIZE]u8) void {
+        var state: [STATE_SIZE]u64 = [_]u64{0} ** STATE_SIZE;
+
+        // Absorb full blocks
+        var offset: usize = 0;
+        while (offset + RATE <= data.len) : (offset += RATE) {
+            absorb_block_simd(&state, data[offset..][0..RATE]);
+        }
+
+        // Final block with Keccak padding (0x01 ... 0x80)
+        var last: [RATE]u8 = [_]u8{0} ** RATE;
+        const remaining = data.len - offset;
+        @memcpy(last[0..remaining], data[offset..][0..remaining]);
+        last[remaining] = 0x01;
+        last[RATE - 1] |= 0x80;
+        absorb_block_simd(&state, &last);
+
+        // Squeeze 32 bytes (4 lanes)
+        inline for (0..4) |i| {
+            std.mem.writeInt(u64, output[i * 8 ..][0..8], state[i], .little);
+        }
     }
 
     /// Left rotate helper
-    inline fn rotl(x: u64, n: u32) u64 {
-        if (n == 0) return x;
-        return (x << @as(u6, @intCast(n))) | (x >> @as(u6, @intCast(64 - n)));
+    inline fn rotl(x: u64, n: anytype) u64 {
+        return std.math.rotl(u64, x, n);
     }
 };
 

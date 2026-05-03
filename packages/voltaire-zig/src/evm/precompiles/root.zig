@@ -56,15 +56,13 @@ pub const BLS12_MAP_FP2_TO_G2_ADDRESS: Address = Address.fromU256(0x13);
 /// Check if an address is a precompile
 pub fn isPrecompile(address: Address, hardfork: Hardfork) bool {
     const addr_int = address.toU256();
+    if (addr_int == 0) return false;
 
-    return switch (hardfork) {
-        .FRONTIER, .HOMESTEAD => addr_int >= 0x01 and addr_int <= 0x04,
-        .BYZANTIUM => addr_int >= 0x01 and addr_int <= 0x08,
-        .ISTANBUL => addr_int >= 0x01 and addr_int <= 0x09,
-        .CANCUN => addr_int >= 0x01 and addr_int <= 0x0A,
-        .PRAGUE => addr_int >= 0x01 and addr_int <= 0x13,
-        else => false,
-    };
+    if (hardfork.isAtLeast(.PRAGUE)) return addr_int <= 0x13;
+    if (hardfork.isAtLeast(.CANCUN)) return addr_int <= 0x0A;
+    if (hardfork.isAtLeast(.ISTANBUL)) return addr_int <= 0x09;
+    if (hardfork.isAtLeast(.BYZANTIUM)) return addr_int <= 0x08;
+    return addr_int <= 0x04;
 }
 
 /// Execute a precompile contract
@@ -118,6 +116,19 @@ test "isPrecompile - Byzantium" {
     try testing.expect(isPrecompile(Address.fromU256(0x01), .BYZANTIUM));
     try testing.expect(isPrecompile(Address.fromU256(0x08), .BYZANTIUM));
     try testing.expect(!isPrecompile(Address.fromU256(0x09), .BYZANTIUM));
+}
+
+test "isPrecompile - hardfork continuity" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromU256(0x01), .DAO));
+    try testing.expect(isPrecompile(Address.fromU256(0x04), .SPURIOUS_DRAGON));
+    try testing.expect(isPrecompile(Address.fromU256(0x09), .MUIR_GLACIER));
+    try testing.expect(isPrecompile(Address.fromU256(0x09), .BERLIN));
+    try testing.expect(isPrecompile(Address.fromU256(0x09), .LONDON));
+    try testing.expect(isPrecompile(Address.fromU256(0x09), .MERGE));
+    try testing.expect(isPrecompile(Address.fromU256(0x09), .SHANGHAI));
+    try testing.expect(!isPrecompile(Address.fromU256(0x0A), .SHANGHAI));
 }
 
 test "isPrecompile - Istanbul" {

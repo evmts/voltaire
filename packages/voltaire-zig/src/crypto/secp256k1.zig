@@ -150,6 +150,10 @@ pub const AffinePoint = struct {
 /// Validates ECDSA signature parameters for Ethereum
 /// SECURITY: Uses constant-time comparisons to prevent timing attacks.
 pub fn unauditedValidateSignature(r: u256, s: u256) bool {
+    return validateSignature(r, s, true);
+}
+
+fn validateSignature(r: u256, s: u256, enforce_low_s: bool) bool {
     // r and s must be in [1, n-1]
     const r_is_zero = constant_time.constantTimeIsZeroU256(r);
     const r_gte_n = constant_time.constantTimeGteU256(r, SECP256K1_N);
@@ -161,7 +165,7 @@ pub fn unauditedValidateSignature(r: u256, s: u256) bool {
     const s_gt_half_n = constant_time.constantTimeLtU256(half_n, s);
 
     // Combine all checks
-    const invalid = r_is_zero | r_gte_n | s_is_zero | s_gte_n | s_gt_half_n;
+    const invalid = r_is_zero | r_gte_n | s_is_zero | s_gte_n | if (enforce_low_s) s_gt_half_n else 0;
     return invalid == 0;
 }
 
@@ -172,6 +176,27 @@ pub fn recoverPubkey(
     r: []const u8,
     s: []const u8,
     v: u8,
+) ![64]u8 {
+    return recoverPubkeyWithOptions(hash, r, s, v, true);
+}
+
+/// Recovers uncompressed 64-byte public key without EIP-2 low-s rejection.
+/// The ECRECOVER precompile is specified to keep accepting high-s signatures.
+pub fn recoverPubkeyAllowHighS(
+    hash: []const u8,
+    r: []const u8,
+    s: []const u8,
+    v: u8,
+) ![64]u8 {
+    return recoverPubkeyWithOptions(hash, r, s, v, false);
+}
+
+fn recoverPubkeyWithOptions(
+    hash: []const u8,
+    r: []const u8,
+    s: []const u8,
+    v: u8,
+    enforce_low_s: bool,
 ) ![64]u8 {
     if (hash.len != 32) return error.InvalidHashLength;
     if (r.len != 32) return error.InvalidRLength;
@@ -191,7 +216,7 @@ pub fn recoverPubkey(
         return error.InvalidRecoveryId;
     }
 
-    if (!unauditedValidateSignature(r_u256, s_u256)) return error.InvalidSignature;
+    if (!validateSignature(r_u256, s_u256, enforce_low_s)) return error.InvalidSignature;
 
     // Use internal recovery
     var hash_array: [32]u8 = undefined;

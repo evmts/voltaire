@@ -71,7 +71,7 @@ pub fn unauditedBlake2bG(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x:
 /// This function implements BLAKE2b compression rounds without security review.
 /// Use at your own risk in production systems.
 pub fn unauditedBlake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) void {
-    const s = &BLAKE2B_SIGMA[round % 12];
+    const s = &BLAKE2B_SIGMA[round % 10];
 
     // Column mixing
     unauditedBlake2bG(v, 0, 4, 8, 12, message[s[0]], message[s[1]]);
@@ -84,6 +84,57 @@ pub fn unauditedBlake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) v
     unauditedBlake2bG(v, 1, 6, 11, 12, message[s[10]], message[s[11]]);
     unauditedBlake2bG(v, 2, 7, 8, 13, message[s[12]], message[s[13]]);
     unauditedBlake2bG(v, 3, 4, 9, 14, message[s[14]], message[s[15]]);
+}
+
+test "blake2b round schedule cycles every ten permutations" {
+    const base_v = [16]u64{
+        0x0123456789abcdef,
+        0xfedcba9876543210,
+        0x1111111111111111,
+        0x2222222222222222,
+        0x3333333333333333,
+        0x4444444444444444,
+        0x5555555555555555,
+        0x6666666666666666,
+        0x7777777777777777,
+        0x8888888888888888,
+        0x9999999999999999,
+        0xaaaaaaaaaaaaaaaa,
+        0xbbbbbbbbbbbbbbbb,
+        0xcccccccccccccccc,
+        0xdddddddddddddddd,
+        0xeeeeeeeeeeeeeeee,
+    };
+    const message = [16]u64{
+        0x0001020304050607,
+        0x08090a0b0c0d0e0f,
+        0x1011121314151617,
+        0x18191a1b1c1d1e1f,
+        0x2021222324252627,
+        0x28292a2b2c2d2e2f,
+        0x3031323334353637,
+        0x38393a3b3c3d3e3f,
+        0x4041424344454647,
+        0x48494a4b4c4d4e4f,
+        0x5051525354555657,
+        0x58595a5b5c5d5e5f,
+        0x6061626364656667,
+        0x68696a6b6c6d6e6f,
+        0x7071727374757677,
+        0x78797a7b7c7d7e7f,
+    };
+
+    var round_0 = base_v;
+    var round_10 = base_v;
+    unauditedBlake2bRound(&round_0, &message, 0);
+    unauditedBlake2bRound(&round_10, &message, 10);
+    try std.testing.expectEqualSlices(u64, &round_0, &round_10);
+
+    var round_2 = base_v;
+    var round_12 = base_v;
+    unauditedBlake2bRound(&round_2, &message, 2);
+    unauditedBlake2bRound(&round_12, &message, 12);
+    try std.testing.expectEqualSlices(u64, &round_2, &round_12);
 }
 
 /// BLAKE2b compression function
@@ -834,8 +885,12 @@ pub const Blake2 = struct {
         const t1_bytes: *const [8]u8 = @ptrCast(input[204..212].ptr);
         t[1] = std.mem.readInt(u64, t1_bytes, .little);
 
-        // Parse f (1 byte, boolean)
-        const f = input[212] != 0;
+        // EIP-152 only accepts 0 or 1 for the final-block indicator.
+        const f = switch (input[212]) {
+            0 => false,
+            1 => true,
+            else => return error.InvalidInput,
+        };
 
         // Perform compression
         unauditedBlake2fCompress(&h, &m, t, f, rounds);

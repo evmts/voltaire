@@ -9,6 +9,34 @@ const PrecompileResult = @import("common.zig").PrecompileResult;
 /// Minimum gas for MODEXP precompile
 pub const MIN_GAS: u64 = 200;
 
+fn readPaddedU256(input: []const u8, start: usize) u256 {
+    var word: [32]u8 = [_]u8{0} ** 32;
+    if (start < input.len) {
+        const copy_len = @min(word.len, input.len - start);
+        @memcpy(word[0..copy_len], input[start .. start + copy_len]);
+    }
+    return std.mem.readInt(u256, &word, .big);
+}
+
+fn readPaddedSegment(allocator: std.mem.Allocator, input: []const u8, start: usize, len: usize) ![]u8 {
+    const segment = try allocator.alloc(u8, len);
+    @memset(segment, 0);
+
+    if (start < input.len) {
+        const copy_len = @min(len, input.len - start);
+        @memcpy(segment[0..copy_len], input[start .. start + copy_len]);
+    }
+
+    return segment;
+}
+
+fn isZero(bytes: []const u8) bool {
+    for (bytes) |byte| {
+        if (byte != 0) return false;
+    }
+    return true;
+}
+
 /// 0x05: MODEXP - Modular exponentiation
 pub fn execute(
     allocator: std.mem.Allocator,
@@ -17,13 +45,19 @@ pub fn execute(
     hardfork: Hardfork,
 ) PrecompileError!PrecompileResult {
     // Parse lengths
-    if (input.len < 96) {
-        return error.InvalidInput;
-    }
+    const base_len = readPaddedU256(input, 0);
+    const exp_len = readPaddedU256(input, 32);
+    const mod_len = readPaddedU256(input, 64);
 
-    const base_len = std.mem.readInt(u256, input[0..32], .big);
-    const exp_len = std.mem.readInt(u256, input[32..64], .big);
-    const mod_len = std.mem.readInt(u256, input[64..96], .big);
+    if (base_len == 0 and mod_len == 0) {
+        const gas_cost: u64 = if (hardfork.isAtLeast(.BERLIN)) MIN_GAS else 0;
+        if (gas_limit < gas_cost) return error.OutOfGas;
+        const output = try allocator.alloc(u8, 0);
+        return PrecompileResult{
+            .output = output,
+            .gas_used = gas_cost,
+        };
+    }
 
     if (base_len > std.math.maxInt(usize) or
         exp_len > std.math.maxInt(usize) or
@@ -35,16 +69,24 @@ pub fn execute(
     const base_len_usize = @as(usize, @intCast(base_len));
     const exp_len_usize = @as(usize, @intCast(exp_len));
     const mod_len_usize = @as(usize, @intCast(mod_len));
+    const data_start = 96;
+    const base_start = data_start;
+    const exp_start = data_start + base_len_usize;
+    const mod_start = exp_start + exp_len_usize;
+    const exp_head_len = @min(exp_len_usize, 32);
+    var exp_head_buf: [32]u8 = [_]u8{0} ** 32;
+    if (exp_start < input.len) {
+        const copy_len = @min(exp_head_len, input.len - exp_start);
+        @memcpy(exp_head_buf[0..copy_len], input[exp_start .. exp_start + copy_len]);
+    }
+    const exp_head = exp_head_buf[0..exp_head_len];
 
     // Calculate gas cost
     const gas_cost = ModExp.calculateGas(
         base_len_usize,
         exp_len_usize,
         mod_len_usize,
-        if (96 + base_len_usize + exp_len_usize <= input.len)
-            input[96 + base_len_usize .. 96 + base_len_usize + exp_len_usize]
-        else
-            &[_]u8{},
+        exp_head,
         hardfork,
     );
 
@@ -52,26 +94,32 @@ pub fn execute(
         return error.OutOfGas;
     }
 
-    // Extract base, exponent, and modulus
-    const data_start = 96;
-    const base_start = data_start;
-    const exp_start = base_start + base_len_usize;
-    const mod_start = exp_start + exp_len_usize;
+    if (mod_len_usize == 0) {
+        const output = try allocator.alloc(u8, mod_len_usize);
+        @memset(output, 0);
+        return PrecompileResult{
+            .output = output,
+            .gas_used = gas_cost,
+        };
+    }
 
-    const base = if (base_start + base_len_usize <= input.len)
-        input[base_start .. base_start + base_len_usize]
-    else
-        &[_]u8{};
+    const modulus = try readPaddedSegment(allocator, input, mod_start, mod_len_usize);
+    defer allocator.free(modulus);
 
-    const exponent = if (exp_start + exp_len_usize <= input.len)
-        input[exp_start .. exp_start + exp_len_usize]
-    else
-        &[_]u8{};
+    if (isZero(modulus)) {
+        const output = try allocator.alloc(u8, mod_len_usize);
+        @memset(output, 0);
+        return PrecompileResult{
+            .output = output,
+            .gas_used = gas_cost,
+        };
+    }
 
-    const modulus = if (mod_start + mod_len_usize <= input.len)
-        input[mod_start .. mod_start + mod_len_usize]
-    else
-        &[_]u8{};
+    // Extract base and exponent only after zero-output cases have returned.
+    const base = try readPaddedSegment(allocator, input, base_start, base_len_usize);
+    defer allocator.free(base);
+    const exponent = try readPaddedSegment(allocator, input, exp_start, exp_len_usize);
+    defer allocator.free(exponent);
 
     // Perform modular exponentiation
     const result = ModExp.modexp(allocator, base, exponent, modulus) catch |err| switch (err) {
@@ -181,8 +229,11 @@ test "modexp - zero modulus" {
     // mod = 0
     input[98] = 0;
 
-    const result = execute(allocator, &input, 1000000, .Cancun);
-    try testing.expectError(error.InvalidInput, result);
+    const result = try execute(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+    try testing.expectEqual(@as(u8, 0), result.output[0]);
 }
 
 test "modexp - minimum gas constant" {
@@ -388,6 +439,25 @@ test "modexp - modulus equals 1" {
     try testing.expectEqual(@as(u8, 0), result.output[0]);
 }
 
+test "modexp - zero exponent output is reduced modulo one" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [99]u8 = [_]u8{0} ** 99;
+    input[31] = 1;
+    input[63] = 1;
+    input[95] = 1;
+    input[96] = 0;
+    input[97] = 0;
+    input[98] = 1;
+
+    const result = try execute(allocator, &input, 1000000, .Berlin);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+    try testing.expectEqual(@as(u8, 0), result.output[0]);
+}
+
 test "modexp - base larger than modulus" {
     const testing = std.testing;
     const allocator = testing.allocator;
@@ -576,6 +646,44 @@ test "modexp - all zero input" {
 
     // All data bytes are 0
 
-    const result = execute(allocator, &input, 1000000, .Cancun);
-    try testing.expectError(error.InvalidInput, result);
+    const result = try execute(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+    try testing.expectEqual(@as(u8, 0), result.output[0]);
+}
+
+test "modexp - right pads short length header" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [64]u8 = [_]u8{0} ** 64;
+    input[60] = 0x04;
+
+    const result = try execute(allocator, &input, 1000000, .Berlin);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 0), result.output.len);
+    try testing.expectEqual(@as(u64, 200), result.gas_used);
+}
+
+test "modexp - right pads partially supplied modulus bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [99]u8 = [_]u8{0} ** 99;
+    input[31] = 1;
+    input[63] = 1;
+    input[95] = 32;
+
+    input[96] = 0;
+    input[97] = 0;
+    input[98] = 0x80;
+
+    const result = try execute(allocator, &input, 1000000, .Berlin);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    try testing.expectEqual(@as(u8, 0), result.output[30]);
+    try testing.expectEqual(@as(u8, 1), result.output[31]);
 }
