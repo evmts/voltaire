@@ -4,6 +4,7 @@ const address = @import("../Address/address.zig");
 const crypto_pkg = @import("crypto");
 const hash = crypto_pkg.Hash;
 const rlp = @import("../Rlp/Rlp.zig");
+const gas_constants = @import("../GasConstants/gas_constants.zig");
 const Address = address.Address;
 const Hash = hash.Hash;
 const Allocator = std.mem.Allocator;
@@ -1057,3 +1058,154 @@ test "withStorageKey" {
     try testing.expectEqual(@as(usize, 1), result3.len);
     try testing.expectEqual(@as(usize, 2), result3[0].storage_keys.len);
 }
+
+// ============================================================================
+// EIP-2929 Warm/Cold Access Tracking
+// ============================================================================
+
+pub const StorageSlotKey = struct {
+    address: Address,
+    slot: u256,
+
+    pub fn hash(key: StorageSlotKey) u32 {
+        var hasher = std.hash.Wyhash.init(0);
+        hasher.update(&key.address.bytes);
+        hasher.update(std.mem.asBytes(&key.slot));
+        return @truncate(hasher.final());
+    }
+
+    pub fn eql(a: StorageSlotKey, b: StorageSlotKey) bool {
+        return a.address.eql(b.address) and a.slot == b.slot;
+    }
+};
+
+const StorageSlotKeyContext = struct {
+    pub fn hash(self: @This(), key: StorageSlotKey) u32 {
+        _ = self;
+        return StorageSlotKey.hash(key);
+    }
+
+    pub fn eql(self: @This(), a: StorageSlotKey, b: StorageSlotKey, b_index: usize) bool {
+        _ = self;
+        _ = b_index;
+        return StorageSlotKey.eql(a, b);
+    }
+};
+
+const AddressContext = std.array_hash_map.AutoContext(Address);
+
+pub const AccessListManager = struct {
+    warm_addresses: std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false),
+    warm_storage_slots: std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false),
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator) AccessListManager {
+        return .{
+            .warm_addresses = std.array_hash_map.ArrayHashMap(Address, void, AddressContext, false).init(allocator),
+            .warm_storage_slots = std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false).init(allocator),
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *AccessListManager) void {
+        self.warm_addresses.deinit();
+        self.warm_storage_slots.deinit();
+    }
+
+    pub fn accessAddress(self: *AccessListManager, addr: Address) !u64 {
+        const entry = try self.warm_addresses.getOrPut(addr);
+        return if (entry.found_existing)
+            gas_constants.WarmStorageReadCost
+        else
+            gas_constants.ColdAccountAccessCost;
+    }
+
+    pub fn accessStorageSlot(self: *AccessListManager, addr: Address, slot: u256) !u64 {
+        const key = StorageSlotKey{ .address = addr, .slot = slot };
+        const entry = try self.warm_storage_slots.getOrPut(key);
+        return if (entry.found_existing)
+            gas_constants.WarmStorageReadCost
+        else
+            gas_constants.ColdSloadCost;
+    }
+
+    pub fn preWarmAddresses(self: *AccessListManager, addresses: []const Address) !void {
+        for (addresses) |addr| {
+            _ = try self.warm_addresses.getOrPut(addr);
+        }
+    }
+
+    pub fn preWarmStorageSlots(self: *AccessListManager, slots: []const StorageSlotKey) !void {
+        for (slots) |slot| {
+            _ = try self.warm_storage_slots.getOrPut(slot);
+        }
+    }
+
+    pub fn preWarmFromAccessList(self: *AccessListManager, access_list: AccessList) !void {
+        for (access_list) |entry| {
+            _ = try self.warm_addresses.getOrPut(entry.address);
+            for (entry.storage_keys) |key_hash| {
+                const slot = std.mem.readInt(u256, &key_hash, .big);
+                const key = StorageSlotKey{ .address = entry.address, .slot = slot };
+                _ = try self.warm_storage_slots.getOrPut(key);
+            }
+        }
+    }
+
+    pub fn isAddressWarm(self: *const AccessListManager, addr: Address) bool {
+        return self.warm_addresses.contains(addr);
+    }
+
+    pub fn isStorageSlotWarm(self: *const AccessListManager, addr: Address, slot: u256) bool {
+        const key = StorageSlotKey{ .address = addr, .slot = slot };
+        return self.warm_storage_slots.contains(key);
+    }
+
+    pub fn clear(self: *AccessListManager) void {
+        self.warm_addresses.clearRetainingCapacity();
+        self.warm_storage_slots.clearRetainingCapacity();
+    }
+
+    pub fn snapshot(self: *const AccessListManager) !AccessListSnapshot {
+        var addr_snapshot = std.AutoHashMap(Address, void).init(self.allocator);
+        var addr_it = self.warm_addresses.iterator();
+        while (addr_it.next()) |entry| {
+            try addr_snapshot.put(entry.key_ptr.*, {});
+        }
+
+        var slot_snapshot = std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false).init(self.allocator);
+        var slot_it = self.warm_storage_slots.iterator();
+        while (slot_it.next()) |entry| {
+            _ = try slot_snapshot.put(entry.key_ptr.*, {});
+        }
+
+        return .{
+            .addresses = addr_snapshot,
+            .slots = slot_snapshot,
+        };
+    }
+
+    pub fn restore(self: *AccessListManager, snap: AccessListSnapshot) !void {
+        self.warm_addresses.clearRetainingCapacity();
+        var addr_it = snap.addresses.iterator();
+        while (addr_it.next()) |entry| {
+            try self.warm_addresses.put(entry.key_ptr.*, {});
+        }
+
+        self.warm_storage_slots.clearRetainingCapacity();
+        var slot_it = snap.slots.iterator();
+        while (slot_it.next()) |entry| {
+            _ = try self.warm_storage_slots.put(entry.key_ptr.*, {});
+        }
+    }
+};
+
+pub const AccessListSnapshot = struct {
+    addresses: std.AutoHashMap(Address, void),
+    slots: std.array_hash_map.ArrayHashMap(StorageSlotKey, void, StorageSlotKeyContext, false),
+
+    pub fn deinit(self: *AccessListSnapshot) void {
+        self.addresses.deinit();
+        self.slots.deinit();
+    }
+};

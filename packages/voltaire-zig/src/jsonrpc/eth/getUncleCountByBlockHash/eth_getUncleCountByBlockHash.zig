@@ -26,7 +26,7 @@ pub const Params = struct {
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Params {
         if (source != .array) return error.UnexpectedToken;
-        if (source.array.items.len != 1) return error.InvalidParamCount;
+        if (source.array.items.len != 1) return error.UnexpectedToken;
 
         return Params{
             .block_hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),

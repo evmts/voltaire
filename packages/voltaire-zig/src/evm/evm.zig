@@ -86,6 +86,8 @@ pub fn Evm(comptime config: EvmConfig) type {
         // Stack of balance snapshots for nested calls (for SELFDESTRUCT revert handling)
         // Each call pushes a snapshot, and on revert we restore from that snapshot
         balance_snapshot_stack: std.ArrayList(*std.AutoHashMap(primitives.Address, u256)),
+        nonce_snapshot_stack: std.ArrayList(*std.AutoHashMap(primitives.Address, u64)),
+        code_snapshot_stack: std.ArrayList(*std.AutoHashMap(primitives.Address, []const u8)),
         hardfork: Hardfork = Hardfork.DEFAULT,
         fork_transition: ?primitives.ForkTransition = null,
         origin: primitives.Address,
@@ -139,6 +141,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .access_list_manager = undefined,
                 .gas_refund = 0,
                 .balance_snapshot_stack = undefined,
+                .nonce_snapshot_stack = undefined,
+                .code_snapshot_stack = undefined,
                 .hardfork = hardfork orelse Hardfork.DEFAULT,
                 .block_context = block_context orelse .{
                     .chain_id = 1,
@@ -216,6 +220,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.selfdestructed_accounts = std.AutoHashMap(primitives.Address, void).init(arena_allocator);
             self.touched_accounts = std.AutoHashMap(primitives.Address, void).init(arena_allocator);
             self.balance_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, u256)){};
+            self.nonce_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, u64)){};
+            self.code_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, []const u8)){};
 
             // Set blob versioned hashes for EIP-4844
             // CRITICAL: Must copy blob hashes into arena to ensure correct lifetime
@@ -253,12 +259,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         pub fn accessStorageSlot(self: *Self, contract_address: primitives.Address, slot: u256) !u64 {
             if (self.hardfork.isBefore(.BERLIN)) {
                 @branchHint(.cold);
-                // EIP-1884 (Istanbul): SLOAD increased from 200 to 800 gas
-                if (self.hardfork.isAtLeast(.ISTANBUL)) {
-                    return 800;
-                } else {
-                    return 200;
-                }
+                if (self.hardfork.isAtLeast(.ISTANBUL)) return 800;
+                if (self.hardfork.isAtLeast(.TANGERINE_WHISTLE)) return 200;
+                return 50;
             }
 
             return try self.access_list_manager.accessStorageSlot(contract_address, slot);
@@ -300,6 +303,105 @@ pub fn Evm(comptime config: EvmConfig) type {
                 h.setBalance(addr, new_balance);
             } else {
                 try self.balances.put(addr, new_balance);
+            }
+        }
+
+        pub fn setNonceWithSnapshot(self: *Self, addr: primitives.Address, new_nonce: u64) !void {
+            for (self.nonce_snapshot_stack.items) |snapshot| {
+                if (!snapshot.contains(addr)) {
+                    const current_nonce = if (self.host) |h|
+                        h.getNonce(addr)
+                    else
+                        self.nonces.get(addr) orelse 0;
+                    try snapshot.put(addr, current_nonce);
+                }
+            }
+
+            if (self.host) |h| {
+                h.setNonce(addr, new_nonce);
+            } else if (new_nonce == 0) {
+                _ = self.nonces.remove(addr);
+            } else {
+                try self.nonces.put(addr, new_nonce);
+            }
+        }
+
+        pub fn setCodeWithSnapshot(self: *Self, addr: primitives.Address, new_code: []const u8) !void {
+            for (self.code_snapshot_stack.items) |snapshot| {
+                if (!snapshot.contains(addr)) {
+                    const current_code = self.get_code(addr);
+                    const current_copy = if (current_code.len > 0)
+                        try self.arena.allocator().dupe(u8, current_code)
+                    else
+                        &[_]u8{};
+                    try snapshot.put(addr, current_copy);
+                }
+            }
+
+            if (self.host) |h| {
+                h.setCode(addr, new_code);
+            } else if (new_code.len == 0) {
+                _ = self.code.remove(addr);
+            } else {
+                const code_copy = try self.arena.allocator().dupe(u8, new_code);
+                try self.code.put(addr, code_copy);
+            }
+        }
+
+        fn restoreNonceSnapshot(self: *Self, nonce_snapshot: *const std.AutoHashMap(primitives.Address, u64)) !void {
+            var nonce_restore_it = nonce_snapshot.iterator();
+            while (nonce_restore_it.next()) |entry| {
+                if (self.host) |h| {
+                    h.setNonce(entry.key_ptr.*, entry.value_ptr.*);
+                } else if (entry.value_ptr.* == 0) {
+                    _ = self.nonces.remove(entry.key_ptr.*);
+                } else {
+                    try self.nonces.put(entry.key_ptr.*, entry.value_ptr.*);
+                }
+            }
+        }
+
+        fn restoreCodeSnapshot(self: *Self, code_snapshot: *const std.AutoHashMap(primitives.Address, []const u8)) !void {
+            var code_restore_it = code_snapshot.iterator();
+            while (code_restore_it.next()) |entry| {
+                if (self.host) |h| {
+                    h.setCode(entry.key_ptr.*, entry.value_ptr.*);
+                } else if (entry.value_ptr.*.len == 0) {
+                    _ = self.code.remove(entry.key_ptr.*);
+                } else {
+                    try self.code.put(entry.key_ptr.*, entry.value_ptr.*);
+                }
+            }
+        }
+
+        fn snapshotCreatedAccounts(self: *Self) !std.AutoHashMap(primitives.Address, void) {
+            var snapshot = std.AutoHashMap(primitives.Address, void).init(self.arena.allocator());
+            var it = self.created_accounts.iterator();
+            while (it.next()) |entry| {
+                try snapshot.put(entry.key_ptr.*, {});
+            }
+            return snapshot;
+        }
+
+        fn restoreCreatedAccountsSnapshot(self: *Self, created_accounts_snapshot: *const std.AutoHashMap(primitives.Address, void)) !void {
+            self.created_accounts.clearRetainingCapacity();
+            var restore_it = created_accounts_snapshot.iterator();
+            while (restore_it.next()) |entry| {
+                try self.created_accounts.put(entry.key_ptr.*, {});
+            }
+        }
+
+        fn touchCallTarget(self: *Self, addr: primitives.Address) void {
+            self.touched_accounts.put(addr, {}) catch {};
+
+            // Before EIP-161, a successful zero-value CALL to an otherwise empty
+            // account leaves that empty account in the state trie.
+            if (self.hardfork.isBefore(.SPURIOUS_DRAGON)) {
+                if (self.host) |h| {
+                    h.setBalance(addr, h.getBalance(addr));
+                } else if (!self.balances.contains(addr)) {
+                    self.balances.put(addr, 0) catch {};
+                }
             }
         }
 
@@ -643,6 +745,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                                     h.setStorage(addr, key.slot, 0);
                                 }
                             }
+                            var original_storage_it = self.storage.original_storage.iterator();
+                            while (original_storage_it.next()) |storage_entry| {
+                                const key = storage_entry.key_ptr.*;
+                                if (std.mem.eql(u8, &key.address, &addr.bytes)) {
+                                    h.setStorage(addr, key.slot, 0);
+                                }
+                            }
                         } else {
                             // Clear all account state in EVM storage
                             // These put operations should never fail in normal circumstances since we're
@@ -670,6 +779,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                         }
                     }
                     self.selfdestructed_accounts.clearRetainingCapacity();
+                    self.touchCallTarget(address);
+                    self.touched_accounts.clearRetainingCapacity();
 
                     return CallResult{
                         .success = true,
@@ -684,6 +795,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 self.access_list_manager.clear();
                 self.storage.clearTransient();
                 self.selfdestructed_accounts.clearRetainingCapacity();
+                self.touchCallTarget(address);
+                self.touched_accounts.clearRetainingCapacity();
 
                 return CallResult{
                     .success = true,
@@ -791,6 +904,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                             h.setStorage(addr, key.slot, 0);
                         }
                     }
+                    var original_storage_it = self.storage.original_storage.iterator();
+                    while (original_storage_it.next()) |storage_entry| {
+                        const key = storage_entry.key_ptr.*;
+                        if (std.mem.eql(u8, &key.address, &addr.bytes)) {
+                            h.setStorage(addr, key.slot, 0);
+                        }
+                    }
                 } else {
                     // Clear all account state in EVM storage
                     // Note: In non-host mode, we use arena allocation so memory will be reclaimed
@@ -824,6 +944,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // in subsequent transactions within the same block
             self.created_accounts.clearRetainingCapacity();
             self.selfdestructed_accounts.clearRetainingCapacity();
+            self.touched_accounts.clearRetainingCapacity();
 
             // No cleanup needed - arena handles it
             return result;
@@ -985,9 +1106,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .staticcall => .StaticCall,
                 else => unreachable,
             };
-            // Check call depth (STACK_DEPTH_LIMIT = 1024)
-            // Per Python reference (system.py:297-300), depth exceeded refunds gas
-            if (self.frames.items.len >= 1024) {
+            // The top-level transaction frame is not counted toward the 1024 message-call depth limit.
+            if (self.frames.items.len > 1024) {
                 return makeFailure(self.arena.allocator(), gas);
             }
 
@@ -1026,6 +1146,10 @@ pub fn Evm(comptime config: EvmConfig) type {
                     return makeFailure(self.arena.allocator(), gas);
                 };
             }
+
+            const created_accounts_snapshot = self.snapshotCreatedAccounts() catch {
+                return makeFailure(self.arena.allocator(), gas);
+            };
 
             // Snapshot warm addresses and storage slots before the call (EIP-2929)
             // Per Python reference (incorporate_child_on_error), accessed_addresses
@@ -1076,12 +1200,22 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Snapshot balances before the call (for SELFDESTRUCT revert handling)
             // We use copy-on-write: addresses are snapshotted when first modified via setBalanceWithSnapshot
             var balance_snapshot = std.AutoHashMap(primitives.Address, u256).init(self.arena.allocator());
+            var nonce_snapshot = std.AutoHashMap(primitives.Address, u64).init(self.arena.allocator());
+            var code_snapshot = std.AutoHashMap(primitives.Address, []const u8).init(self.arena.allocator());
 
             // Push the snapshot onto the stack so nested calls can snapshot in parent snapshots
             self.balance_snapshot_stack.append(self.arena.allocator(), &balance_snapshot) catch {
                 return makeFailure(self.arena.allocator(), gas);
             };
             defer _ = self.balance_snapshot_stack.pop();
+            self.nonce_snapshot_stack.append(self.arena.allocator(), &nonce_snapshot) catch {
+                return makeFailure(self.arena.allocator(), gas);
+            };
+            defer _ = self.nonce_snapshot_stack.pop();
+            self.code_snapshot_stack.append(self.arena.allocator(), &code_snapshot) catch {
+                return makeFailure(self.arena.allocator(), gas);
+            };
+            defer _ = self.code_snapshot_stack.pop();
 
             const execution_caller: primitives.Address = switch (call_type) {
                 .Call, .StaticCall => frame_caller,
@@ -1132,6 +1266,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 )) {
                     // JavaScript precompile handler executed successfully
                     const output = if (output_len > 0) output_ptr[0..output_len] else &[_]u8{};
+                    if (call_type == .Call) self.touchCallTarget(address);
                     return CallResult{
                         .success = true,
                         .gas_left = gas - gas_used,
@@ -1151,6 +1286,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         return makeFailure(self.arena.allocator(), 0);
                     };
 
+                    if (call_type == .Call) self.touchCallTarget(address);
                     return CallResult{
                         .success = true,
                         .gas_left = gas - result.gas_used,
@@ -1173,6 +1309,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         return makeFailure(self.arena.allocator(), 0);
                     };
 
+                    if (call_type == .Call) self.touchCallTarget(address);
                     return CallResult{
                         .success = true,
                         .gas_left = gas - result.gas_used,
@@ -1181,6 +1318,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 }
 
                 // For non-precompile empty accounts, return success with no output
+                if (call_type == .Call) self.touchCallTarget(address);
                 return CallResult.success_empty(self.arena.allocator(), gas) catch CallResult{
                     .success = true,
                     .gas_left = gas,
@@ -1298,6 +1436,23 @@ pub fn Evm(comptime config: EvmConfig) type {
                     };
                 }
 
+                self.selfdestructed_accounts.clearRetainingCapacity();
+                var restore_selfdestruct_it = selfdestruct_snapshot.iterator();
+                while (restore_selfdestruct_it.next()) |entry| {
+                    self.selfdestructed_accounts.put(entry.key_ptr.*, {}) catch {
+                        return makeFailure(self.arena.allocator(), 0);
+                    };
+                }
+                self.restoreNonceSnapshot(&nonce_snapshot) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                };
+                self.restoreCodeSnapshot(&code_snapshot) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                };
+                self.restoreCreatedAccountsSnapshot(&created_accounts_snapshot) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                };
+
                 return makeFailure(self.arena.allocator(), 0);
             };
 
@@ -1320,7 +1475,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .gas_left = @as(u64, @intCast(@max(frame.gas_remaining, 0))),
                 .output = output,
             };
-            // std.debug.print("DEBUG inner_call result: address={any} success={} reverted={} frames={}\n", .{address.bytes, result.success, frame.reverted, self.frames.items.len});
+            if (result.success and call_type == .Call) self.touchCallTarget(address);
 
             // Restore gas refunds on revert
             // Per Python: incorporate_child_on_error does NOT add child's refund_counter
@@ -1420,6 +1575,15 @@ pub fn Evm(comptime config: EvmConfig) type {
                         };
                     }
                 }
+                self.restoreNonceSnapshot(&nonce_snapshot) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                };
+                self.restoreCodeSnapshot(&code_snapshot) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                };
+                self.restoreCreatedAccountsSnapshot(&created_accounts_snapshot) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                };
             }
 
             // Pop frame from stack
@@ -1441,9 +1605,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             // We detect this when there is no active frame yet.
             // Used to avoid double-incrementing the sender's nonce (runner already increments it)
             const is_top_level_create = self.frames.items.len == 0;
-            // Check call depth (STACK_DEPTH_LIMIT = 1024)
-            // Per Python reference (system.py:97-99), depth exceeded refunds gas
-            if (self.frames.items.len >= 1024) {
+            // The top-level transaction frame is not counted toward the 1024 create depth limit.
+            if (self.frames.items.len > 1024) {
                 return .{
                     .address = primitives.ZERO_ADDRESS,
                     .success = false,
@@ -1529,60 +1692,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     nonce -= 1; // Undo the increment that runner already did
                 }
 
-                // Manually construct RLP encoding of [address_bytes, nonce]
-                // Address is 20 bytes, nonce is variable length
-                var rlp_data = std.ArrayList(u8){};
-                defer rlp_data.deinit(self.arena.allocator());
-
-                // Encode address (20 bytes, 0x80 + 20 = 0x94)
-                try rlp_data.append(self.arena.allocator(), 0x94);
-                try rlp_data.appendSlice(self.arena.allocator(), &caller.bytes);
-
-                // Encode nonce (RLP encoding for integers)
-                if (nonce == 0) {
-                    try rlp_data.append(self.arena.allocator(), 0x80); // Empty byte string
-                } else if (nonce < 0x80) {
-                    try rlp_data.append(self.arena.allocator(), @as(u8, @intCast(nonce)));
-                } else {
-                    // Multi-byte nonce - encode as big-endian bytes with length prefix
-                    // First, determine the minimum number of bytes needed
-                    var nonce_bytes: [8]u8 = undefined;
-                    var nonce_len: usize = 0;
-                    var temp_nonce = nonce;
-
-                    // Convert to big-endian bytes, skipping leading zeros
-                    var i: usize = 8;
-                    while (i > 0) : (i -= 1) {
-                        const byte = @as(u8, @truncate(temp_nonce & 0xFF));
-                        nonce_bytes[i - 1] = byte;
-                        temp_nonce >>= 8;
-                        if (temp_nonce == 0 and nonce_len == 0) {
-                            nonce_len = i;
-                        }
-                    }
-
-                    const start_idx = nonce_len;
-                    const byte_count = 8 - start_idx;
-
-                    // RLP: 0x80 + length, then the bytes
-                    try rlp_data.append(self.arena.allocator(), @as(u8, @intCast(0x80 + byte_count)));
-                    try rlp_data.appendSlice(self.arena.allocator(), nonce_bytes[start_idx..]);
-                }
-
-                // Wrap in list prefix
-                const total_len = rlp_data.items.len;
-                var final_rlp = std.ArrayList(u8){};
-                defer final_rlp.deinit(self.arena.allocator());
-                try final_rlp.append(self.arena.allocator(), @as(u8, @intCast(0xc0 + total_len))); // List with length
-                try final_rlp.appendSlice(self.arena.allocator(), rlp_data.items);
-
-                // Hash and take last 20 bytes
-                var addr_hash: [32]u8 = undefined;
-                std.crypto.hash.sha3.Keccak256.hash(final_rlp.items, &addr_hash, .{});
-
-                var addr_bytes: [20]u8 = undefined;
-                @memcpy(&addr_bytes, addr_hash[12..32]);
-                break :blk primitives.Address{ .bytes = addr_bytes };
+                break :blk try self.computeCreateAddress(caller, nonce);
             };
 
             // EIP-3860: Check init code size limit (Shanghai and later)
@@ -1637,11 +1747,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                     else
                         self.nonces.get(caller) orelse 0;
 
-                    if (self.host) |h| {
-                        h.setNonce(caller, caller_nonce + 1);
-                    } else {
-                        try self.nonces.put(caller, caller_nonce + 1);
-                    }
+                    try self.setNonceWithSnapshot(caller, caller_nonce + 1);
                 }
 
                 // Per Python reference (system.py:105-112): On collision, the gas is NOT refunded.
@@ -1667,19 +1773,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 else
                     self.nonces.get(caller) orelse 0;
 
-                if (self.host) |h| {
-                    h.setNonce(caller, caller_nonce + 1);
-                } else {
-                    try self.nonces.put(caller, caller_nonce + 1);
-                }
+                try self.setNonceWithSnapshot(caller, caller_nonce + 1);
             }
 
             // Set nonce of new contract to 1 (EVM spec: contracts start with nonce 1)
-            if (self.host) |h| {
-                h.setNonce(new_address, 1);
-            } else {
-                try self.nonces.put(new_address, 1);
-            }
+            try self.setNonceWithSnapshot(new_address, 1);
+
+            const created_accounts_snapshot = try self.snapshotCreatedAccounts();
 
             // EIP-6780 (Cancun): Mark account as created BEFORE execution
             // Per Python reference (interpreter.py:174): mark_account_created happens BEFORE process_message
@@ -1701,10 +1801,16 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Snapshot balances before execution (for SELFDESTRUCT revert handling)
             // We use copy-on-write: addresses are snapshotted when first modified via setBalanceWithSnapshot
             var balance_snapshot = std.AutoHashMap(primitives.Address, u256).init(self.arena.allocator());
+            var nonce_snapshot = std.AutoHashMap(primitives.Address, u64).init(self.arena.allocator());
+            var code_snapshot = std.AutoHashMap(primitives.Address, []const u8).init(self.arena.allocator());
 
             // Push the snapshot onto the stack so nested calls can snapshot in parent snapshots
             try self.balance_snapshot_stack.append(self.arena.allocator(), &balance_snapshot);
             defer _ = self.balance_snapshot_stack.pop();
+            try self.nonce_snapshot_stack.append(self.arena.allocator(), &nonce_snapshot);
+            defer _ = self.nonce_snapshot_stack.pop();
+            try self.code_snapshot_stack.append(self.arena.allocator(), &code_snapshot);
+            defer _ = self.code_snapshot_stack.pop();
 
             // Transfer balance if value > 0 using snapshot mechanism for proper revert handling
             if (value > 0) {
@@ -1744,11 +1850,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 _ = self.frames.pop();
 
                 // Revert nonce on execution error
-                if (self.host) |h| {
-                    h.setNonce(new_address, 0);
-                } else {
-                    _ = self.nonces.remove(new_address);
-                }
+                try self.setNonceWithSnapshot(new_address, 0);
 
                 // Restore gas refunds on failure
                 // Per Python: incorporate_child_on_error does NOT add child's refund_counter
@@ -1766,6 +1868,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                         try self.balances.put(entry.key_ptr.*, entry.value_ptr.*);
                     }
                 }
+                try self.restoreNonceSnapshot(&nonce_snapshot);
+                try self.restoreCodeSnapshot(&code_snapshot);
+                try self.restoreCreatedAccountsSnapshot(&created_accounts_snapshot);
 
                 return .{
                     .address = primitives.ZERO_ADDRESS,
@@ -1800,11 +1905,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                         _ = self.frames.pop();
 
                         // Revert nonce on failure
-                        if (self.host) |h| {
-                            h.setNonce(new_address, 0);
-                        } else {
-                            _ = self.nonces.remove(new_address);
-                        }
+                        try self.setNonceWithSnapshot(new_address, 0);
 
                         // Restore gas refunds on failure
                         // Per Python: incorporate_child_on_error does NOT add child's refund_counter
@@ -1829,6 +1930,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                         while (restore_create_selfdestruct_it.next()) |entry| {
                             try self.selfdestructed_accounts.put(entry.key_ptr.*, {});
                         }
+                        try self.restoreNonceSnapshot(&nonce_snapshot);
+                        try self.restoreCodeSnapshot(&code_snapshot);
+                        try self.restoreCreatedAccountsSnapshot(&created_accounts_snapshot);
 
                         // Per Python reference: code size violation raises OutOfGasError, consuming all gas
                         // execution-specs/src/ethereum/forks/constantinople/vm/interpreter.py
@@ -1841,33 +1945,17 @@ pub fn Evm(comptime config: EvmConfig) type {
                     }
 
                     // Deploy code and deduct deposit gas
-                    if (self.host) |h| {
-                        // When using a host, update host's code directly
-                        h.setCode(new_address, frame_output);
-                    } else {
-                        // When not using a host, store in EVM's code map
-                        const code_copy = try self.arena.allocator().alloc(u8, frame_output.len);
-                        @memcpy(code_copy, frame_output);
-                        try self.code.put(new_address, code_copy);
-                    }
+                    try self.setCodeWithSnapshot(new_address, frame_output);
                     const deposit_cost = @as(u64, @intCast(frame_output.len)) * GasConstants.CreateDataGas;
                     gas_left -= deposit_cost;
                 } else if (success) {
                     // Deploy empty code (output.len == 0)
-                    if (self.host) |h| {
-                        h.setCode(new_address, &[_]u8{});
-                    } else {
-                        try self.code.put(new_address, &[_]u8{});
-                    }
+                    try self.setCodeWithSnapshot(new_address, &[_]u8{});
                 }
             } else {
                 // Reverse state changes on revert
                 // Revert nonce to 0
-                if (self.host) |h| {
-                    h.setNonce(new_address, 0);
-                } else {
-                    _ = self.nonces.remove(new_address);
-                }
+                try self.setNonceWithSnapshot(new_address, 0);
 
                 // Restore balances on revert (handles SELFDESTRUCT balance transfers and value transfers)
                 var balance_restore_it = balance_snapshot.iterator();
@@ -1885,6 +1973,9 @@ pub fn Evm(comptime config: EvmConfig) type {
                 while (restore_create_selfdestruct_it.next()) |entry| {
                     try self.selfdestructed_accounts.put(entry.key_ptr.*, {});
                 }
+                try self.restoreNonceSnapshot(&nonce_snapshot);
+                try self.restoreCodeSnapshot(&code_snapshot);
+                try self.restoreCreatedAccountsSnapshot(&created_accounts_snapshot);
             }
 
             // Pop frame

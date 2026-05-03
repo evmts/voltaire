@@ -510,7 +510,7 @@ pub inline fn sstoreGasCost(current: u256, original: u256, new: u256, is_cold: b
             gas += SstoreSetGas;
         } else {
             // Modifying existing non-zero value
-            gas += SstoreResetGas;
+            gas += SstoreResetGas - ColdSloadCost;
         }
     } else {
         // Subsequent modification (already modified in this transaction)
@@ -650,7 +650,7 @@ test "sstoreGasCost function" {
 
     // Test modifying existing non-zero value
     const modify_nonzero = sstoreGasCost(10, 10, 20, false);
-    try testing.expectEqual(SstoreResetGas, modify_nonzero);
+    try testing.expectEqual(SstoreResetGas - ColdSloadCost, modify_nonzero);
 
     // Test subsequent modification (current != original)
     const subsequent_mod = sstoreGasCost(20, 10, 30, false);
@@ -853,12 +853,12 @@ test "sstoreGasCost - all state transitions" {
     try testing.expectEqual(@as(u64, 22100), sstoreGasCost(0, 0, 1, true)); // cold
 
     // Test non-zero to different non-zero
-    try testing.expectEqual(@as(u64, 5000), sstoreGasCost(1, 1, 2, false));
-    try testing.expectEqual(@as(u64, 7100), sstoreGasCost(1, 1, 2, true)); // cold
+    try testing.expectEqual(@as(u64, 2900), sstoreGasCost(1, 1, 2, false));
+    try testing.expectEqual(@as(u64, 5000), sstoreGasCost(1, 1, 2, true)); // cold
 
     // Test non-zero to zero (clearing)
-    try testing.expectEqual(@as(u64, 5000), sstoreGasCost(42, 42, 0, false));
-    try testing.expectEqual(@as(u64, 7100), sstoreGasCost(42, 42, 0, true)); // cold
+    try testing.expectEqual(@as(u64, 2900), sstoreGasCost(42, 42, 0, false));
+    try testing.expectEqual(@as(u64, 5000), sstoreGasCost(42, 42, 0, true)); // cold
 
     // Test subsequent modifications
     try testing.expectEqual(@as(u64, 100), sstoreGasCost(2, 1, 3, false));
@@ -1087,7 +1087,7 @@ test "integration - storage operation sequence" {
 
     // Total sequence cost
     const total = first_read + first_write + second_read + second_write + third_write;
-    try testing.expectEqual(@as(u64, 29400), total);
+    try testing.expectEqual(@as(u64, 27300), total);
 }
 
 // ============================================================================
@@ -1099,7 +1099,7 @@ test "storage refunds - clearing storage" {
 
     // Clear storage (non-zero to zero)
     const clear_cost = sstoreGasCost(42, 42, 0, false);
-    try testing.expectEqual(SstoreResetGas, clear_cost);
+    try testing.expectEqual(SstoreResetGas - ColdSloadCost, clear_cost);
 
     // Refund should be SstoreRefundGas
     try testing.expectEqual(@as(u64, 4800), SstoreRefundGas);
@@ -1345,18 +1345,19 @@ pub fn sstoreGasCostWithHardfork(
     if (is_istanbul_or_later) {
         // Istanbul rules
         if (original == current and current == new) {
-            // No change
-            gas += if (is_berlin_or_later) WarmStorageReadCost else 200;
+            // No change. Istanbul uses the EIP-1884 SLOAD cost; Berlin replaces
+            // it with the warm-storage read cost from EIP-2929.
+            gas += if (is_berlin_or_later) WarmStorageReadCost else 800;
         } else if (original == current and current != new) {
             // First modification in transaction
             if (original == 0) {
                 gas += SstoreSetGas; // 20000
             } else {
-                gas += SstoreResetGas; // 5000
+                gas += if (is_berlin_or_later) SstoreResetGas - ColdSloadCost else SstoreResetGas;
             }
         } else {
             // Subsequent modification
-            gas += if (is_berlin_or_later) WarmStorageReadCost else 200;
+            gas += if (is_berlin_or_later) WarmStorageReadCost else 800;
         }
     } else {
         // Pre-Istanbul simple rules
@@ -1404,13 +1405,23 @@ test "hardfork gas calculation functions" {
     const pre_istanbul_sstore = sstoreGasCostWithHardfork(0, 0, 42, false, false, false);
     try testing.expectEqual(@as(u64, 20000), pre_istanbul_sstore);
 
-    // Post-Istanbul with warm access
+    // Istanbul uses the EIP-1884 SLOAD cost for no-op SSTORE.
     const post_istanbul_warm = sstoreGasCostWithHardfork(42, 42, 42, false, false, true);
-    try testing.expectEqual(@as(u64, 200), post_istanbul_warm);
+    try testing.expectEqual(@as(u64, 800), post_istanbul_warm);
+
+    // Istanbul also uses the EIP-1884 SLOAD cost for dirty-slot writes.
+    const post_istanbul_dirty = sstoreGasCostWithHardfork(1, 0, 2, false, false, true);
+    try testing.expectEqual(@as(u64, 800), post_istanbul_dirty);
 
     // Post-Berlin with warm access
     const post_berlin_warm = sstoreGasCostWithHardfork(42, 42, 42, false, true, true);
     try testing.expectEqual(@as(u64, 100), post_berlin_warm);
+
+    // Post-Berlin reset gas includes the cold surcharge exactly once.
+    const post_berlin_reset_warm = sstoreGasCostWithHardfork(42, 42, 24, false, true, true);
+    try testing.expectEqual(@as(u64, 2900), post_berlin_reset_warm);
+    const post_berlin_reset_cold = sstoreGasCostWithHardfork(42, 42, 24, true, true, true);
+    try testing.expectEqual(@as(u64, 5000), post_berlin_reset_cold);
 
     // Test precompile gas with hardfork differences
 
@@ -1513,7 +1524,7 @@ test "hardfork - EIP-2200 Istanbul SSTORE gas metering" {
 
     // Scenario 3: Clean slot (original == current != 0, new == 0)
     const clean_slot_gas = sstoreGasCost(42, 42, 0, false);
-    try testing.expectEqual(@as(u64, 5000), clean_slot_gas); // SstoreClearGas
+    try testing.expectEqual(@as(u64, 2900), clean_slot_gas); // Berlin+ adjusted reset gas
 
     // Scenario 4: Reset to original (original != current, new == original)
     const reset_original_gas = sstoreGasCost(100, 42, 42, false);

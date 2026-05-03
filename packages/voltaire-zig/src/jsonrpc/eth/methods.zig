@@ -42,6 +42,47 @@ const eth_simulateV1 = @import("simulateV1/eth_simulateV1.zig");
 const eth_syncing = @import("syncing/eth_syncing.zig");
 const eth_uninstallFilter = @import("uninstallFilter/eth_uninstallFilter.zig");
 
+pub const Accounts = eth_accounts;
+pub const BlobBaseFee = eth_blobBaseFee;
+pub const BlockNumber = eth_blockNumber;
+pub const Call = eth_call;
+pub const ChainId = eth_chainId;
+pub const Coinbase = eth_coinbase;
+pub const CreateAccessList = eth_createAccessList;
+pub const EstimateGas = eth_estimateGas;
+pub const FeeHistory = eth_feeHistory;
+pub const GasPrice = eth_gasPrice;
+pub const GetBalance = eth_getBalance;
+pub const GetBlockByHash = eth_getBlockByHash;
+pub const GetBlockByNumber = eth_getBlockByNumber;
+pub const GetBlockReceipts = eth_getBlockReceipts;
+pub const GetBlockTransactionCountByHash = eth_getBlockTransactionCountByHash;
+pub const GetBlockTransactionCountByNumber = eth_getBlockTransactionCountByNumber;
+pub const GetCode = eth_getCode;
+pub const GetFilterChanges = eth_getFilterChanges;
+pub const GetFilterLogs = eth_getFilterLogs;
+pub const GetLogs = eth_getLogs;
+pub const GetProof = eth_getProof;
+pub const GetStorageAt = eth_getStorageAt;
+pub const GetTransactionByBlockHashAndIndex = eth_getTransactionByBlockHashAndIndex;
+pub const GetTransactionByBlockNumberAndIndex = eth_getTransactionByBlockNumberAndIndex;
+pub const GetTransactionByHash = eth_getTransactionByHash;
+pub const GetTransactionCount = eth_getTransactionCount;
+pub const GetTransactionReceipt = eth_getTransactionReceipt;
+pub const GetUncleCountByBlockHash = eth_getUncleCountByBlockHash;
+pub const GetUncleCountByBlockNumber = eth_getUncleCountByBlockNumber;
+pub const MaxPriorityFeePerGas = eth_maxPriorityFeePerGas;
+pub const NewBlockFilter = eth_newBlockFilter;
+pub const NewFilter = eth_newFilter;
+pub const NewPendingTransactionFilter = eth_newPendingTransactionFilter;
+pub const SendRawTransaction = eth_sendRawTransaction;
+pub const SendTransaction = eth_sendTransaction;
+pub const Sign = eth_sign;
+pub const SignTransaction = eth_signTransaction;
+pub const SimulateV1 = eth_simulateV1;
+pub const Syncing = eth_syncing;
+pub const UninstallFilter = eth_uninstallFilter;
+
 /// Tagged union of all eth namespace methods
 /// Maps method names to their corresponding parameter and result types
 pub const EthMethod = union(enum) {

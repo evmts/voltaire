@@ -40,7 +40,7 @@ const ForkBlockCacheModule = @import("ForkBlockCache.zig");
 pub const BlockStore = @import("BlockStore.zig").BlockStore;
 pub const ForkBlockCache = ForkBlockCacheModule.ForkBlockCache;
 pub const Blockchain = @import("Blockchain.zig").Blockchain;
-pub const BlockTag = @import("Blockchain.zig").BlockTag;
+pub const BlockTag = Blockchain.BlockTag;
 
 test {
     @import("std").testing.refAllDecls(@This());

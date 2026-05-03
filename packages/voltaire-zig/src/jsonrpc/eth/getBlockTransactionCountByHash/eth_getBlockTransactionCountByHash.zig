@@ -26,7 +26,7 @@ pub const Params = struct {
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Params {
         if (source != .array) return error.UnexpectedToken;
-        if (source.array.items.len != 1) return error.InvalidParamCount;
+        if (source.array.items.len != 1) return error.UnexpectedToken;
 
         return Params{
             .block_hash = try std.json.innerParseFromValue(types.Hash, allocator, source.array.items[0], options),
@@ -36,10 +36,14 @@ pub const Params = struct {
 
 /// Result for `eth_getBlockTransactionCountByHash`
 pub const Result = struct {
-    value: types.Quantity,
+    value: ?types.Quantity,
 
     pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+        if (self.value) |count| {
+            try jws.write(count);
+        } else {
+            try jws.write(null);
+        }
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {

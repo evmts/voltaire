@@ -393,7 +393,7 @@ test "random - correct size" {
 /// Compute Keccak256 hash of data
 pub fn keccak256(data: []const u8) Hash {
     var result: Hash = undefined;
-    crypto.Keccak256.hash(data, &result);
+    crypto.Keccak256.hash(data, &result, .{});
     return result;
 }
 
