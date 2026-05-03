@@ -466,8 +466,8 @@ pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
     if (result_affine.isInfinity()) {
         @memset(output[0..64], 0);
     } else {
-        const x_result = result_affine.x.value;
-        const y_result = result_affine.y.value;
+        const x_result = result_affine.x.toStandardRepresentation();
+        const y_result = result_affine.y.toStandardRepresentation();
 
         // Write x coordinate (big-endian)
         std.mem.writeInt(u256, output[0..32], x_result, .big);
@@ -511,8 +511,8 @@ pub fn bn254Mul(input: *const [96]u8, output: []u8) !void {
     if (result_affine.isInfinity()) {
         @memset(output[0..64], 0);
     } else {
-        const x_result = result_affine.x.value;
-        const y_result = result_affine.y.value;
+        const x_result = result_affine.x.toStandardRepresentation();
+        const y_result = result_affine.y.toStandardRepresentation();
 
         // Write x coordinate (big-endian)
         std.mem.writeInt(u256, output[0..32], x_result, .big);
@@ -555,24 +555,25 @@ pub fn bn254Pairing(input: []const u8) !bool {
             break :blk try G1.init(&x, &y, &z);
         };
 
-        // Parse G2 point (bytes 64-191 of this pair)
-        // G2 coordinates are in Fp2: x = x_c0 + x_c1*i, y = y_c0 + y_c1*i
-        const g2_x_c0_bytes = input[pair_start + 64 .. pair_start + 96];
-        const g2_x_c1_bytes = input[pair_start + 96 .. pair_start + 128];
-        const g2_y_c0_bytes = input[pair_start + 128 .. pair_start + 160];
-        const g2_y_c1_bytes = input[pair_start + 160 .. pair_start + 192];
+        // Parse G2 point (bytes 64-191 of this pair). EIP-197 encodes Fp2
+        // coordinates as imaginary limb then real limb, while Fp2Mont stores
+        // them as real then imaginary.
+        const g2_x_im_bytes = input[pair_start + 64 .. pair_start + 96];
+        const g2_x_re_bytes = input[pair_start + 96 .. pair_start + 128];
+        const g2_y_im_bytes = input[pair_start + 128 .. pair_start + 160];
+        const g2_y_re_bytes = input[pair_start + 160 .. pair_start + 192];
 
-        const g2_x_c0_value = std.mem.readInt(u256, g2_x_c0_bytes[0..32], .big);
-        const g2_x_c1_value = std.mem.readInt(u256, g2_x_c1_bytes[0..32], .big);
-        const g2_y_c0_value = std.mem.readInt(u256, g2_y_c0_bytes[0..32], .big);
-        const g2_y_c1_value = std.mem.readInt(u256, g2_y_c1_bytes[0..32], .big);
+        const g2_x_im_value = std.mem.readInt(u256, g2_x_im_bytes[0..32], .big);
+        const g2_x_re_value = std.mem.readInt(u256, g2_x_re_bytes[0..32], .big);
+        const g2_y_im_value = std.mem.readInt(u256, g2_y_im_bytes[0..32], .big);
+        const g2_y_re_value = std.mem.readInt(u256, g2_y_re_bytes[0..32], .big);
 
-        const g2_point = if (g2_x_c0_value == 0 and g2_x_c1_value == 0 and
-            g2_y_c0_value == 0 and g2_y_c1_value == 0)
+        const g2_point = if (g2_x_im_value == 0 and g2_x_re_value == 0 and
+            g2_y_im_value == 0 and g2_y_re_value == 0)
             G2.INFINITY
         else blk: {
-            const x = Fp2Mont.initFromInt(g2_x_c0_value, g2_x_c1_value);
-            const y = Fp2Mont.initFromInt(g2_y_c0_value, g2_y_c1_value);
+            const x = Fp2Mont.initFromInt(g2_x_re_value, g2_x_im_value);
+            const y = Fp2Mont.initFromInt(g2_y_re_value, g2_y_im_value);
             const z = Fp2Mont.ONE;
             break :blk try G2.init(&x, &y, &z);
         };
@@ -829,6 +830,37 @@ test "BN254 EIP-196 ECMUL - multiply by large scalar" {
     try std.testing.expectEqual(expected.y.value, result_y);
 }
 
+test "BN254 EIP-196 ECADD - fixture output uses standard coordinates" {
+    var input: [128]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&input, "0f25929bcb43d5a57391564615c9e70a992b10eafa4db109709649cf48c50dd2" ++
+        "16da2f5cb6be7a0aa72c440c53c9bbdfec6c36c7d515536431b3a865468acbba" ++
+        "1de49a4b0233273bba8146af82042d004f2085ec982397db0d97da17204cc286" ++
+        "0217327ffc463919bef80cc166d09c6172639d8589799928761bcd9f22c903d4");
+
+    var output: [64]u8 = undefined;
+    try bn254Add(&input, &output);
+
+    var expected: [64]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "1f4d1d80177b1377743d1901f70d7389be7f7a35a35bfd234a8aaee615b88c49" ++
+        "018683193ae021a2f8920fed186cde5d9b1365116865281ccf884c1f28b1df8f");
+    try std.testing.expectEqualSlices(u8, &expected, &output);
+}
+
+test "BN254 EIP-196 ECMUL - fixture output uses standard coordinates" {
+    var input: [96]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&input, "0f25929bcb43d5a57391564615c9e70a992b10eafa4db109709649cf48c50dd2" ++
+        "16da2f5cb6be7a0aa72c440c53c9bbdfec6c36c7d515536431b3a865468acbba" ++
+        "0000000000000000000000000000000000000000000000000000000000000003");
+
+    var output: [64]u8 = undefined;
+    try bn254Mul(&input, &output);
+
+    var expected: [64]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "1f4d1d80177b1377743d1901f70d7389be7f7a35a35bfd234a8aaee615b88c49" ++
+        "018683193ae021a2f8920fed186cde5d9b1365116865281ccf884c1f28b1df8f");
+    try std.testing.expectEqualSlices(u8, &expected, &output);
+}
+
 test "BN254 EIP-197 ECPAIRING - empty input" {
     const input: []const u8 = &[_]u8{};
     const result = try bn254Pairing(input);
@@ -853,11 +885,11 @@ test "BN254 EIP-197 ECPAIRING - single valid pairing" {
     std.mem.writeInt(u256, input[0..32], g1.x.value, .big);
     std.mem.writeInt(u256, input[32..64], g1.y.value, .big);
 
-    // G2 point
-    std.mem.writeInt(u256, input[64..96], g2.x.u0.value, .big);
-    std.mem.writeInt(u256, input[96..128], g2.x.u1.value, .big);
-    std.mem.writeInt(u256, input[128..160], g2.y.u0.value, .big);
-    std.mem.writeInt(u256, input[160..192], g2.y.u1.value, .big);
+    // G2 point, encoded in EIP-197 order: imaginary then real limbs.
+    std.mem.writeInt(u256, input[64..96], g2.x.u1.value, .big);
+    std.mem.writeInt(u256, input[96..128], g2.x.u0.value, .big);
+    std.mem.writeInt(u256, input[128..160], g2.y.u1.value, .big);
+    std.mem.writeInt(u256, input[160..192], g2.y.u0.value, .big);
 
     const result = try bn254Pairing(&input);
     try std.testing.expect(!result); // e(G1, G2) != 1
@@ -880,18 +912,18 @@ test "BN254 EIP-197 ECPAIRING - bilinearity check" {
     // First pair: (2G1, 3G2)
     std.mem.writeInt(u256, input[0..32], p1.x.value, .big);
     std.mem.writeInt(u256, input[32..64], p1.y.value, .big);
-    std.mem.writeInt(u256, input[64..96], p2.x.u0.value, .big);
-    std.mem.writeInt(u256, input[96..128], p2.x.u1.value, .big);
-    std.mem.writeInt(u256, input[128..160], p2.y.u0.value, .big);
-    std.mem.writeInt(u256, input[160..192], p2.y.u1.value, .big);
+    std.mem.writeInt(u256, input[64..96], p2.x.u1.value, .big);
+    std.mem.writeInt(u256, input[96..128], p2.x.u0.value, .big);
+    std.mem.writeInt(u256, input[128..160], p2.y.u1.value, .big);
+    std.mem.writeInt(u256, input[160..192], p2.y.u0.value, .big);
 
     // Second pair: (-6G1, G2)
     std.mem.writeInt(u256, input[192..224], p3.x.value, .big);
     std.mem.writeInt(u256, input[224..256], p3.y.value, .big);
-    std.mem.writeInt(u256, input[256..288], p4.x.u0.value, .big);
-    std.mem.writeInt(u256, input[288..320], p4.x.u1.value, .big);
-    std.mem.writeInt(u256, input[320..352], p4.y.u0.value, .big);
-    std.mem.writeInt(u256, input[352..384], p4.y.u1.value, .big);
+    std.mem.writeInt(u256, input[256..288], p4.x.u1.value, .big);
+    std.mem.writeInt(u256, input[288..320], p4.x.u0.value, .big);
+    std.mem.writeInt(u256, input[320..352], p4.y.u1.value, .big);
+    std.mem.writeInt(u256, input[352..384], p4.y.u0.value, .big);
 
     const result = try bn254Pairing(&input);
     try std.testing.expect(result); // Product should equal 1
@@ -906,14 +938,33 @@ test "BN254 EIP-197 ECPAIRING - with infinity points" {
 
     // G1 point is infinity (0,0) - already zeroed
 
-    // G2 point
-    std.mem.writeInt(u256, input[64..96], g2.x.u0.value, .big);
-    std.mem.writeInt(u256, input[96..128], g2.x.u1.value, .big);
-    std.mem.writeInt(u256, input[128..160], g2.y.u0.value, .big);
-    std.mem.writeInt(u256, input[160..192], g2.y.u1.value, .big);
+    // G2 point, encoded in EIP-197 order: imaginary then real limbs.
+    std.mem.writeInt(u256, input[64..96], g2.x.u1.value, .big);
+    std.mem.writeInt(u256, input[96..128], g2.x.u0.value, .big);
+    std.mem.writeInt(u256, input[128..160], g2.y.u1.value, .big);
+    std.mem.writeInt(u256, input[160..192], g2.y.u0.value, .big);
 
     const result = try bn254Pairing(&input);
     try std.testing.expect(result); // e(0, G2) = 1
+}
+
+test "BN254 EIP-197 ECPAIRING - fixture G2 limbs are imaginary-first" {
+    var input: [384]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&input, "1c76476f4def4bb94541d57ebba1193381ffa7aa76ada664dd31c16024c43f59" ++
+        "3034dd2920f673e204fee2811c678745fc819b55d3e9d294e45c9b03a76aef41" ++
+        "209dd15ebff5d46c4bd888e51a93cf99a7329636c63514396b4a452003a35bf7" ++
+        "04bf11ca01483bfa8b34b43561848d28905960114c8ac04049af4b6315a41678" ++
+        "2bb8324af6cfc93537a2ad1a445cfd0ca2a71acd7ac41fadbf933c2a51be344d" ++
+        "120a2a4cf30c1bf9845f20c6fe39e07ea2cce61f0c9bb048165fe5e4de877550" ++
+        "111e129f1cf1097710d41c4ac70fcdfa5ba2023c6ff1cbeac322de49d1b6df7c" ++
+        "2032c61a830e3c17286de9462bf242fca2883585b93870a73853face6a6bf411" ++
+        "198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2" ++
+        "1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed" ++
+        "090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b" ++
+        "12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa");
+
+    const result = try bn254Pairing(&input);
+    try std.testing.expect(result);
 }
 
 test "BN254 EIP-196 - scalar validation" {

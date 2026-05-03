@@ -50,6 +50,34 @@ pub const ECPAIRING_PER_POINT_GAS: u64 = 34000;
 pub const BLAKE2F_PER_ROUND_GAS: u64 = 1;
 pub const POINT_EVALUATION_GAS: u64 = 50000;
 
+fn readPaddedU256(input: []const u8, start: usize) u256 {
+    var word: [32]u8 = [_]u8{0} ** 32;
+    if (start < input.len) {
+        const copy_len = @min(word.len, input.len - start);
+        @memcpy(word[0..copy_len], input[start .. start + copy_len]);
+    }
+    return std.mem.readInt(u256, &word, .big);
+}
+
+fn readPaddedSegment(allocator: std.mem.Allocator, input: []const u8, start: usize, len: usize) ![]u8 {
+    const segment = try allocator.alloc(u8, len);
+    @memset(segment, 0);
+
+    if (start < input.len) {
+        const copy_len = @min(len, input.len - start);
+        @memcpy(segment[0..copy_len], input[start .. start + copy_len]);
+    }
+
+    return segment;
+}
+
+fn isZero(bytes: []const u8) bool {
+    for (bytes) |byte| {
+        if (byte != 0) return false;
+    }
+    return true;
+}
+
 /// BLS12-381 gas costs (EIP-2537)
 pub const BLS12_G1ADD_GAS: u64 = 500;
 pub const BLS12_G1MUL_GAS: u64 = 12000;
@@ -258,13 +286,9 @@ fn modexp(
     hardfork: Hardfork,
 ) PrecompileError!PrecompileResult {
     // Parse lengths
-    if (input.len < 96) {
-        return error.InvalidInput;
-    }
-
-    const base_len = std.mem.readInt(u256, input[0..32], .big);
-    const exp_len = std.mem.readInt(u256, input[32..64], .big);
-    const mod_len = std.mem.readInt(u256, input[64..96], .big);
+    const base_len = readPaddedU256(input, 0);
+    const exp_len = readPaddedU256(input, 32);
+    const mod_len = readPaddedU256(input, 64);
 
     if (base_len > std.math.maxInt(usize) or
         exp_len > std.math.maxInt(usize) or
@@ -276,16 +300,24 @@ fn modexp(
     const base_len_usize = @as(usize, @intCast(base_len));
     const exp_len_usize = @as(usize, @intCast(exp_len));
     const mod_len_usize = @as(usize, @intCast(mod_len));
+    const data_start = 96;
+    const base_start = data_start;
+    const exp_start = data_start + base_len_usize;
+    const mod_start = exp_start + exp_len_usize;
+    const exp_head_len = @min(exp_len_usize, 32);
+    var exp_head_buf: [32]u8 = [_]u8{0} ** 32;
+    if (exp_start < input.len) {
+        const copy_len = @min(exp_head_len, input.len - exp_start);
+        @memcpy(exp_head_buf[0..copy_len], input[exp_start .. exp_start + copy_len]);
+    }
+    const exp_head = exp_head_buf[0..exp_head_len];
 
     // Calculate gas cost
     const gas_cost = ModExp.calculateGas(
         base_len_usize,
         exp_len_usize,
         mod_len_usize,
-        if (96 + base_len_usize + exp_len_usize <= input.len)
-            input[96 + base_len_usize .. 96 + base_len_usize + exp_len_usize]
-        else
-            &[_]u8{},
+        exp_head,
         hardfork,
     );
 
@@ -294,25 +326,21 @@ fn modexp(
     }
 
     // Extract base, exponent, and modulus
-    const data_start = 96;
-    const base_start = data_start;
-    const exp_start = base_start + base_len_usize;
-    const mod_start = exp_start + exp_len_usize;
+    const base = try readPaddedSegment(allocator, input, base_start, base_len_usize);
+    defer allocator.free(base);
+    const exponent = try readPaddedSegment(allocator, input, exp_start, exp_len_usize);
+    defer allocator.free(exponent);
+    const modulus = try readPaddedSegment(allocator, input, mod_start, mod_len_usize);
+    defer allocator.free(modulus);
 
-    const base = if (base_start + base_len_usize <= input.len)
-        input[base_start .. base_start + base_len_usize]
-    else
-        &[_]u8{};
-
-    const exponent = if (exp_start + exp_len_usize <= input.len)
-        input[exp_start .. exp_start + exp_len_usize]
-    else
-        &[_]u8{};
-
-    const modulus = if (mod_start + mod_len_usize <= input.len)
-        input[mod_start .. mod_start + mod_len_usize]
-    else
-        &[_]u8{};
+    if (mod_len_usize == 0 or isZero(modulus)) {
+        const output = try allocator.alloc(u8, mod_len_usize);
+        @memset(output, 0);
+        return PrecompileResult{
+            .output = output,
+            .gas_used = gas_cost,
+        };
+    }
 
     // Perform modular exponentiation
     const result = try ModExp.modexp(allocator, base, exponent, modulus);

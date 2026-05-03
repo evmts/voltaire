@@ -63,6 +63,17 @@ test "blake2f - invalid input length zero" {
     try testing.expectError(error.InvalidInput, result);
 }
 
+test "blake2f - rejects final flag values other than 0 or 1" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 213;
+    input[212] = 2;
+
+    const result = execute(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
 test "blake2f - exact input length" {
     const testing = std.testing;
     const allocator = testing.allocator;
