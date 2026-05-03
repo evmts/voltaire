@@ -16,7 +16,7 @@ pub const method = "eth_getUncleCountByBlockNumber";
 /// Parameters for `eth_getUncleCountByBlockNumber`
 pub const Params = struct {
     /// Block number or tag
-    block: types.Quantity,
+    block: types.BlockSpec,
 
     pub fn jsonStringify(self: Params, jws: *std.json.Stringify) !void {
         try jws.beginArray();
@@ -26,10 +26,10 @@ pub const Params = struct {
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Params {
         if (source != .array) return error.UnexpectedToken;
-        if (source.array.items.len != 1) return error.InvalidParamCount;
+        if (source.array.items.len != 1) return error.UnexpectedToken;
 
         return Params{
-            .block = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
+            .block = try std.json.innerParseFromValue(types.BlockSpec, allocator, source.array.items[0], options),
         };
     }
 };

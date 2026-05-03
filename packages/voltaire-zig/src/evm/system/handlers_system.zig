@@ -13,6 +13,13 @@ pub fn Handlers(FrameType: type) type {
 
     return struct {
         /// Helper functions
+        inline fn preBerlinCallGas(hardfork: primitives.Hardfork) u64 {
+            return if (hardfork.isBefore(.TANGERINE_WHISTLE))
+                GasConstants.CallBaseCost
+            else
+                GasConstants.CallCodeCost;
+        }
+
         inline fn wordCount(bytes: u64) u64 {
             return (bytes + 31) / 32;
         }
@@ -141,7 +148,7 @@ pub fn Handlers(FrameType: type) type {
             // EIP-150 (Tangerine Whistle): Changed base cost from 40 to 700
             // Pre-Tangerine Whistle: Use 40 gas base cost
             if (evm.hardfork.isBefore(.BERLIN)) {
-                gas_cost = if (evm.hardfork.isBefore(.TANGERINE_WHISTLE)) 40 else GasConstants.CallGas;
+                gas_cost = preBerlinCallGas(evm.hardfork);
             }
 
             if (value_arg > 0) {
@@ -313,7 +320,7 @@ pub fn Handlers(FrameType: type) type {
             // EIP-150 (Tangerine Whistle): Changed base cost from 40 to 700
             // Pre-Tangerine Whistle: Use 40 gas base cost
             if (evm.hardfork.isBefore(.BERLIN)) {
-                gas_cost = if (evm.hardfork.isBefore(.TANGERINE_WHISTLE)) 40 else GasConstants.CallGas;
+                gas_cost = preBerlinCallGas(evm.hardfork);
             }
 
             if (value_arg > 0) {
@@ -455,7 +462,7 @@ pub fn Handlers(FrameType: type) type {
             // EIP-150 (Tangerine Whistle): Changed base cost from 40 to 700
             // Pre-Tangerine Whistle: Use 40 gas base cost
             if (evm.hardfork.isBefore(.BERLIN)) {
-                gas_cost = if (evm.hardfork.isBefore(.TANGERINE_WHISTLE)) 40 else GasConstants.CallGas;
+                gas_cost = preBerlinCallGas(evm.hardfork);
             }
 
             // EIP-2929 (Berlin+): access target account (warm/cold)
@@ -587,7 +594,7 @@ pub fn Handlers(FrameType: type) type {
             // EIP-150 (Tangerine Whistle): Changed base cost from 40 to 700
             // Pre-Tangerine Whistle: Use 40 gas base cost
             if (evm.hardfork.isBefore(.BERLIN)) {
-                call_gas_cost = if (evm.hardfork.isBefore(.TANGERINE_WHISTLE)) 40 else GasConstants.CallGas;
+                call_gas_cost = preBerlinCallGas(evm.hardfork);
             }
 
             // EIP-2929 (Berlin+): access target account (warm/cold)

@@ -5,6 +5,34 @@ comptime {
     _ = primitives;
 }
 
+pub const Fork = enum {
+    bellatrix,
+    capella,
+    deneb,
+    electra,
+
+    pub fn hasWithdrawalsRoot(self: Fork) bool {
+        return switch (self) {
+            .bellatrix => false,
+            .capella, .deneb, .electra => true,
+        };
+    }
+
+    pub fn hasBlobGasFields(self: Fork) bool {
+        return switch (self) {
+            .bellatrix, .capella => false,
+            .deneb, .electra => true,
+        };
+    }
+
+    pub fn isElectraOrLater(self: Fork) bool {
+        return switch (self) {
+            .bellatrix, .capella, .deneb => false,
+            .electra => true,
+        };
+    }
+};
+
 pub const LightClientHeader = struct {
     pub const BeaconBlockHeader = struct {
         slot: u64,
@@ -39,6 +67,7 @@ pub const LightClientHeader = struct {
     };
 
     pub const ExecutionPayloadHeaderFields = struct {
+        fork: Fork = .deneb,
         parent_hash: [32]u8,
         fee_recipient: [20]u8,
         state_root: [32]u8,
@@ -49,6 +78,8 @@ pub const LightClientHeader = struct {
         gas_limit: u64,
         gas_used: u64,
         timestamp: u64,
+        extra_data: [32]u8 = [_]u8{0} ** 32,
+        extra_data_len: u8 = 0,
         base_fee_per_gas: u256,
         block_hash: [32]u8,
         transactions_root: [32]u8,
@@ -75,6 +106,7 @@ pub const LightClientHeader = struct {
             excess_blob_gas: u64,
         ) ExecutionPayloadHeaderFields {
             return .{
+                .fork = .deneb,
                 .parent_hash = parent_hash,
                 .fee_recipient = fee_recipient,
                 .state_root = state_root,
@@ -94,8 +126,61 @@ pub const LightClientHeader = struct {
             };
         }
 
+        pub fn fromWithExtraData(
+            fork: Fork,
+            parent_hash: [32]u8,
+            fee_recipient: [20]u8,
+            state_root: [32]u8,
+            receipts_root: [32]u8,
+            logs_bloom: [256]u8,
+            prev_randao: [32]u8,
+            block_number: u64,
+            gas_limit: u64,
+            gas_used: u64,
+            timestamp: u64,
+            extra_data: []const u8,
+            base_fee_per_gas: u256,
+            block_hash: [32]u8,
+            transactions_root: [32]u8,
+            withdrawals_root: [32]u8,
+            blob_gas_used: u64,
+            excess_blob_gas: u64,
+        ) !ExecutionPayloadHeaderFields {
+            if (extra_data.len > 32) return error.ExtraDataTooLong;
+
+            var extra_data_bytes: [32]u8 = [_]u8{0} ** 32;
+            @memcpy(extra_data_bytes[0..extra_data.len], extra_data);
+
+            return .{
+                .fork = fork,
+                .parent_hash = parent_hash,
+                .fee_recipient = fee_recipient,
+                .state_root = state_root,
+                .receipts_root = receipts_root,
+                .logs_bloom = logs_bloom,
+                .prev_randao = prev_randao,
+                .block_number = block_number,
+                .gas_limit = gas_limit,
+                .gas_used = gas_used,
+                .timestamp = timestamp,
+                .extra_data = extra_data_bytes,
+                .extra_data_len = @intCast(extra_data.len),
+                .base_fee_per_gas = base_fee_per_gas,
+                .block_hash = block_hash,
+                .transactions_root = transactions_root,
+                .withdrawals_root = withdrawals_root,
+                .blob_gas_used = blob_gas_used,
+                .excess_blob_gas = excess_blob_gas,
+            };
+        }
+
+        pub fn extraData(self: *const ExecutionPayloadHeaderFields) []const u8 {
+            return self.extra_data[0..self.extra_data_len];
+        }
+
         pub fn equals(self: ExecutionPayloadHeaderFields, other: ExecutionPayloadHeaderFields) bool {
-            return std.mem.eql(u8, self.parent_hash[0..], other.parent_hash[0..]) and
+            return self.fork == other.fork and
+                std.mem.eql(u8, self.parent_hash[0..], other.parent_hash[0..]) and
                 std.mem.eql(u8, self.fee_recipient[0..], other.fee_recipient[0..]) and
                 std.mem.eql(u8, self.state_root[0..], other.state_root[0..]) and
                 std.mem.eql(u8, self.receipts_root[0..], other.receipts_root[0..]) and
@@ -105,6 +190,8 @@ pub const LightClientHeader = struct {
                 self.gas_limit == other.gas_limit and
                 self.gas_used == other.gas_used and
                 self.timestamp == other.timestamp and
+                self.extra_data_len == other.extra_data_len and
+                std.mem.eql(u8, self.extraData(), other.extraData()) and
                 self.base_fee_per_gas == other.base_fee_per_gas and
                 std.mem.eql(u8, self.block_hash[0..], other.block_hash[0..]) and
                 std.mem.eql(u8, self.transactions_root[0..], other.transactions_root[0..]) and
@@ -114,6 +201,7 @@ pub const LightClientHeader = struct {
         }
     };
 
+    fork: Fork = .deneb,
     beacon: BeaconBlockHeader,
     execution: ExecutionPayloadHeaderFields,
     execution_branch: [4][32]u8,
@@ -124,6 +212,21 @@ pub const LightClientHeader = struct {
         execution_branch: [4][32]u8,
     ) LightClientHeader {
         return .{
+            .fork = execution.fork,
+            .beacon = beacon,
+            .execution = execution,
+            .execution_branch = execution_branch,
+        };
+    }
+
+    pub fn fromWithFork(
+        fork: Fork,
+        beacon: BeaconBlockHeader,
+        execution: ExecutionPayloadHeaderFields,
+        execution_branch: [4][32]u8,
+    ) LightClientHeader {
+        return .{
+            .fork = fork,
             .beacon = beacon,
             .execution = execution,
             .execution_branch = execution_branch,
@@ -131,7 +234,8 @@ pub const LightClientHeader = struct {
     }
 
     pub fn equals(self: LightClientHeader, other: LightClientHeader) bool {
-        return self.beacon.equals(other.beacon) and
+        return self.fork == other.fork and
+            self.beacon.equals(other.beacon) and
             self.execution.equals(other.execution) and
             std.mem.eql(
                 u8,

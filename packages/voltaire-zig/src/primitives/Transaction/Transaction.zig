@@ -134,6 +134,21 @@ pub const LegacyTransaction = struct {
     s: [32]u8,
 };
 
+// EIP-2930 access-list transaction structure
+pub const Eip2930Transaction = struct {
+    chain_id: u64,
+    nonce: u64,
+    gas_price: u256,
+    gas_limit: u64,
+    to: ?Address,
+    value: u256,
+    data: []const u8,
+    access_list: []const AccessListItem,
+    y_parity: u8,
+    r: [32]u8,
+    s: [32]u8,
+};
+
 // EIP-1559 transaction structure
 pub const Eip1559Transaction = struct {
     chain_id: u64,
@@ -279,6 +294,96 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
         try result.appendSlice(len_bytes);
     }
     try result.appendSlice(list.items);
+
+    return result.toOwnedSlice();
+}
+
+// Encode EIP-2930 access-list transaction for signing.
+// When y_parity is 0 and r,s are zero, the encoding is the unsigned (signing-hash) form.
+// Otherwise the trailing y_parity/r/s are appended for the canonical signed envelope.
+pub fn encodeEip2930ForSigning(allocator: Allocator, tx: Eip2930Transaction) ![]u8 {
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer list.deinit();
+
+    {
+        const enc = try rlp.encode(allocator, tx.chain_id);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.nonce);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.gas_price);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.gas_limit);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+
+    if (tx.to) |to_addr| {
+        const enc_to = try rlp.encodeBytes(allocator, &to_addr.bytes);
+        defer allocator.free(enc_to);
+        try list.appendSlice(enc_to);
+    } else {
+        try list.append(0x80);
+    }
+
+    {
+        const enc_val = try rlp.encode(allocator, tx.value);
+        defer allocator.free(enc_val);
+        try list.appendSlice(enc_val);
+    }
+    {
+        const enc_data = try rlp.encodeBytes(allocator, tx.data);
+        defer allocator.free(enc_data);
+        try list.appendSlice(enc_data);
+    }
+
+    try encodeAccessListInternal(allocator, tx.access_list, &list);
+
+    const empty_sig = [_]u8{0} ** 32;
+    if (tx.y_parity == 0 and std.mem.eql(u8, &tx.r, &empty_sig) and std.mem.eql(u8, &tx.s, &empty_sig)) {
+        // Unsigned form for signing-hash computation.
+    } else {
+        {
+            const enc_v = try rlp.encode(allocator, tx.y_parity);
+            defer allocator.free(enc_v);
+            try list.appendSlice(enc_v);
+        }
+        {
+            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            defer allocator.free(enc_r);
+            try list.appendSlice(enc_r);
+        }
+        {
+            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            defer allocator.free(enc_s);
+            try list.appendSlice(enc_s);
+        }
+    }
+
+    var rlp_wrapped = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer rlp_wrapped.deinit();
+
+    if (list.items.len <= 55) {
+        try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
+    } else {
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
+        try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try rlp_wrapped.appendSlice(len_bytes);
+    }
+    try rlp_wrapped.appendSlice(list.items);
+
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
+    try result.append(@intFromEnum(TransactionType.eip2930));
+    try result.appendSlice(rlp_wrapped.items);
 
     return result.toOwnedSlice();
 }
@@ -566,13 +671,12 @@ pub fn encodeEip4844ForSigning(allocator: Allocator, tx: Eip4844Transaction) ![]
     }
     try list.appendSlice(hashes_list.items);
 
-    // For unsigned transaction
-    if (tx.v == 0) {
-        // No signature fields for unsigned
+    const empty_sig_4844 = [_]u8{0} ** 32;
+    if (tx.y_parity == 0 and std.mem.eql(u8, &tx.r, &empty_sig_4844) and std.mem.eql(u8, &tx.s, &empty_sig_4844)) {
+        // Unsigned form for signing-hash computation.
     } else {
-        // For signed transaction
         {
-            const enc_v = try rlp.encode(allocator, tx.v);
+            const enc_v = try rlp.encode(allocator, tx.y_parity);
             defer allocator.free(enc_v);
             try list.appendSlice(enc_v);
         }
@@ -670,13 +774,12 @@ pub fn encodeEip7702ForSigning(allocator: Allocator, tx: Eip7702Transaction) ![]
     defer allocator.free(auth_encoded);
     try list.appendSlice(auth_encoded);
 
-    // For unsigned transaction
-    if (tx.v == 0) {
-        // No signature fields for unsigned
+    const empty_sig_7702 = [_]u8{0} ** 32;
+    if (tx.y_parity == 0 and std.mem.eql(u8, &tx.r, &empty_sig_7702) and std.mem.eql(u8, &tx.s, &empty_sig_7702)) {
+        // Unsigned form for signing-hash computation.
     } else {
-        // For signed transaction
         {
-            const enc_v = try rlp.encode(allocator, tx.v);
+            const enc_v = try rlp.encode(allocator, tx.y_parity);
             defer allocator.free(enc_v);
             try list.appendSlice(enc_v);
         }

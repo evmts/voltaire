@@ -17,6 +17,9 @@ pub const engine = @import("engine/methods.zig");
 // Export shared types
 pub const types = @import("types.zig");
 
+// Export JSON-RPC envelope types and request batch parser
+pub const envelope = @import("envelope.zig");
+
 // Convenience re-exports from JsonRpc
 pub const JsonRpcMethod = JsonRpc.JsonRpcMethod;
 

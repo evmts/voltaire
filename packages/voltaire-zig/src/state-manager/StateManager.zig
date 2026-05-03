@@ -80,6 +80,15 @@ pub const StateManager = struct {
         return try self.journaled_state.getStorage(address, slot);
     }
 
+    /// Put a fresh account directly into the cache, bypassing fork backend reads.
+    /// Use this for seeding dev accounts at init time where the local overlay
+    /// should unconditionally override any remote state.
+    pub fn initAccount(self: *StateManager, address: Address, balance: u256) !void {
+        var account = StateCache.AccountState.init();
+        account.balance = balance;
+        try self.journaled_state.putAccount(address, account);
+    }
+
     // State mutators
     pub fn setBalance(self: *StateManager, address: Address, balance: u256) !void {
         var account = try self.journaled_state.getAccount(address);

@@ -165,7 +165,7 @@ pub const Proof = struct {
         if (self.value.len == Hash.SIZE) {
             @memcpy(&current, self.value);
         } else {
-            crypto.Keccak256.hash(self.value, &current);
+            crypto.Keccak256.hash(self.value, &current, .{});
         }
 
         // Walk up the tree
@@ -186,7 +186,7 @@ pub const Proof = struct {
                 @memcpy(combined[Hash.SIZE..], &current);
             }
 
-            crypto.Keccak256.hash(&combined, &current);
+            crypto.Keccak256.hash(&combined, &current, .{});
             pos >>= 1;
         }
 
@@ -224,7 +224,7 @@ pub const Proof = struct {
         if (self.value.len == Hash.SIZE) {
             @memcpy(&current, self.value);
         } else {
-            crypto.Keccak256.hash(self.value, &current);
+            crypto.Keccak256.hash(self.value, &current, .{});
         }
 
         // Walk up the tree
@@ -239,7 +239,7 @@ pub const Proof = struct {
                 @memcpy(combined[Hash.SIZE..], &current);
             }
 
-            crypto.Keccak256.hash(&combined, &current);
+            crypto.Keccak256.hash(&combined, &current, .{});
             pos >>= 1;
         }
 
@@ -336,7 +336,7 @@ pub fn verifyMPTProof(
             // Check if root is empty trie root (keccak256 of RLP empty string = 0x80)
             const empty_rlp = [_]u8{0x80};
             var empty_root: Hash.Hash = undefined;
-            crypto.Keccak256.hash(&empty_rlp, &empty_root);
+            crypto.Keccak256.hash(&empty_rlp, &empty_root, .{});
             return std.mem.eql(u8, expected_root, &empty_root);
         }
         return false;
@@ -352,7 +352,7 @@ pub fn verifyMPTProof(
     for (proof_nodes) |node_data| {
         // Verify node hash matches expected
         var node_hash: Hash.Hash = undefined;
-        crypto.Keccak256.hash(node_data, &node_hash);
+        crypto.Keccak256.hash(node_data, &node_hash, .{});
 
         if (!std.mem.eql(u8, &current_hash, &node_hash)) {
             return false;
@@ -450,7 +450,7 @@ pub fn verifyMPTProof(
                         @memcpy(&current_hash, child_hash);
                     } else {
                         // Embedded node - hash it
-                        crypto.Keccak256.hash(child_hash, &current_hash);
+                        crypto.Keccak256.hash(child_hash, &current_hash, .{});
                     }
                 } else {
                     return false;
@@ -488,7 +488,7 @@ pub fn verifyAccountProof(
 ) !bool {
     // In the state trie, keys are keccak256(address)
     var address_hash: Hash.Hash = undefined;
-    crypto.Keccak256.hash(address, &address_hash);
+    crypto.Keccak256.hash(address, &address_hash, .{});
 
     return verifyMPTProof(allocator, state_root, &address_hash, account_rlp, proof_nodes);
 }
@@ -513,7 +513,7 @@ pub fn verifyStorageSlotProof(
 ) !bool {
     // In the storage trie, keys are keccak256(slot)
     var slot_hash: Hash.Hash = undefined;
-    crypto.Keccak256.hash(slot, &slot_hash);
+    crypto.Keccak256.hash(slot, &slot_hash, .{});
 
     return verifyMPTProof(allocator, storage_root, &slot_hash, value_rlp, proof_nodes);
 }
@@ -691,7 +691,7 @@ test "Proof.verify - simple two-leaf tree" {
     @memcpy(combined[0..32], &leaf0);
     @memcpy(combined[32..64], &leaf1);
     var root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&combined, &root);
+    crypto.Keccak256.hash(&combined, &root, .{});
 
     // Proof for leaf0: sibling is leaf1, position 0
     const sibling = [_][]const u8{&leaf1};
@@ -723,7 +723,7 @@ test "Proof.computeRoot - matches verify" {
     @memcpy(combined[0..32], &leaf0);
     @memcpy(combined[32..64], &leaf1);
     var expected_root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&combined, &expected_root);
+    crypto.Keccak256.hash(&combined, &expected_root, .{});
 
     const sibling = [_][]const u8{&leaf1};
     const proof = Proof.init(&leaf0, &sibling);
@@ -758,7 +758,7 @@ test "Proof.verifyWithDepth - validates proof length matches expected depth" {
     @memcpy(combined[0..32], &leaf0);
     @memcpy(combined[32..64], &leaf1);
     var root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&combined, &root);
+    crypto.Keccak256.hash(&combined, &root, .{});
 
     // Proof with 1 sibling (correct for depth 1)
     const sibling = [_][]const u8{&leaf1};
@@ -804,19 +804,19 @@ test "Proof.verifyWithDepth - four-leaf tree requires depth 2" {
     @memcpy(combined01[0..32], &leaf0);
     @memcpy(combined01[32..64], &leaf1);
     var hash01: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&combined01, &hash01);
+    crypto.Keccak256.hash(&combined01, &hash01, .{});
 
     var combined23: [64]u8 = undefined;
     @memcpy(combined23[0..32], &leaf2);
     @memcpy(combined23[32..64], &leaf3);
     var hash23: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&combined23, &hash23);
+    crypto.Keccak256.hash(&combined23, &hash23, .{});
 
     var combined_root: [64]u8 = undefined;
     @memcpy(combined_root[0..32], &hash01);
     @memcpy(combined_root[32..64], &hash23);
     var root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&combined_root, &root);
+    crypto.Keccak256.hash(&combined_root, &root, .{});
 
     // Proof for leaf0: siblings are [leaf1, hash23], depth = 2
     const siblings = [_][]const u8{ &leaf1, &hash23 };
@@ -841,7 +841,7 @@ test "verifyMPTProof - empty proof with empty value and empty root" {
     // Empty trie root = keccak256(0x80) = keccak256(RLP of empty string)
     const empty_rlp = [_]u8{0x80};
     var empty_root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+    crypto.Keccak256.hash(&empty_rlp, &empty_root, .{});
 
     const empty_proof: []const []const u8 = &.{};
     const empty_value: []const u8 = &.{};
@@ -856,7 +856,7 @@ test "verifyMPTProof - empty proof with non-empty value fails" {
 
     const empty_rlp = [_]u8{0x80};
     var empty_root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+    crypto.Keccak256.hash(&empty_rlp, &empty_root, .{});
 
     const empty_proof: []const []const u8 = &.{};
     const value = [_]u8{ 0x01, 0x02, 0x03 };
@@ -884,7 +884,7 @@ test "verifyMPTProof - simple leaf node verification" {
 
     // Compute root hash (hash of the leaf node)
     var root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&leaf_node, &root);
+    crypto.Keccak256.hash(&leaf_node, &root, .{});
 
     // Key for verification (0x01)
     const key = [_]u8{0x01};
@@ -903,7 +903,7 @@ test "verifyMPTProof - leaf node with wrong value fails" {
     const leaf_node = [_]u8{ 0xc5, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
 
     var root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&leaf_node, &root);
+    crypto.Keccak256.hash(&leaf_node, &root, .{});
 
     const key = [_]u8{0x01};
 
@@ -941,7 +941,7 @@ test "verifyMPTProof - leaf node with odd path" {
     const leaf_node = [_]u8{ 0xc3, 0x35, 0x81, 0xAB };
 
     var root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&leaf_node, &root);
+    crypto.Keccak256.hash(&leaf_node, &root, .{});
 
     // Key is a single nibble (half byte), but we need to pass a full byte
     // Key 0x50 has nibbles [5, 0], but we want just [5]
@@ -966,7 +966,7 @@ test "verifyAccountProof - hashes address before verification" {
 
     // Hash the address to get the key path
     var address_hash: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&address, &address_hash);
+    crypto.Keccak256.hash(&address, &address_hash, .{});
 
     // For this test, we'd need to construct a proper leaf with the address hash path
     // This is complex because the path is 64 nibbles (32 bytes)
@@ -975,7 +975,7 @@ test "verifyAccountProof - hashes address before verification" {
     // Empty proof should fail for non-empty account
     const empty_rlp = [_]u8{0x80};
     var empty_root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+    crypto.Keccak256.hash(&empty_rlp, &empty_root, .{});
 
     const empty_proof: []const []const u8 = &.{};
     const account_rlp = [_]u8{0x01}; // Some non-empty value
@@ -992,12 +992,12 @@ test "verifyStorageSlotProof - hashes slot before verification" {
 
     // Hash the slot to get the key path
     var slot_hash: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&slot, &slot_hash);
+    crypto.Keccak256.hash(&slot, &slot_hash, .{});
 
     // Empty proof should fail for non-empty value
     const empty_rlp = [_]u8{0x80};
     var empty_root: Hash.Hash = undefined;
-    crypto.Keccak256.hash(&empty_rlp, &empty_root);
+    crypto.Keccak256.hash(&empty_rlp, &empty_root, .{});
 
     const empty_proof: []const []const u8 = &.{};
     const value_rlp = [_]u8{0x01}; // Some non-empty value
@@ -1035,7 +1035,7 @@ test "verifyMPTProof - branch node navigation" {
 
     // Compute hash of branch node
     var branch_hash: Hash.Hash = undefined;
-    crypto.Keccak256.hash(branch_data[0..20], &branch_hash);
+    crypto.Keccak256.hash(branch_data[0..20], &branch_hash, .{});
 
     // Empty key should match the branch value
     const empty_key: []const u8 = &.{};

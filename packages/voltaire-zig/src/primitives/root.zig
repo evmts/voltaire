@@ -329,15 +329,6 @@ pub const ZERO_ADDRESS = Address.ZERO_ADDRESS;
 pub const EMPTY_CODE_HASH = State.EMPTY_CODE_HASH;
 pub const EMPTY_TRIE_ROOT = State.EMPTY_TRIE_ROOT;
 
-// Light client primitives
-pub const ConsensusSpec = @import("ConsensusSpec/ConsensusSpec.zig");
-pub const ForkConfig = @import("ForkConfig/ForkConfig.zig");
-pub const LightClientUpdate = @import("LightClientUpdate/LightClientUpdate.zig");
-pub const LightClientHeader = @import("LightClientHeader/LightClientHeader.zig");
-pub const SyncCommittee = @import("SyncCommittee/SyncCommittee.zig");
-pub const SyncAggregate = @import("SyncAggregate/SyncAggregate.zig");
-pub const consensus = @import("consensus/consensus.zig");
-
 // Expose crypto package for primitives submodules that need hashing
 // Enables imports via `@import("root").crypto` within this package
 pub const crypto = @import("crypto");

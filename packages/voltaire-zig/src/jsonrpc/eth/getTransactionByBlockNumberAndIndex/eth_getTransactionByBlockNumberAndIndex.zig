@@ -17,7 +17,7 @@ pub const method = "eth_getTransactionByBlockNumberAndIndex";
 /// Parameters for `eth_getTransactionByBlockNumberAndIndex`
 pub const Params = struct {
     /// Block number or tag
-    block: types.Quantity,
+    block: types.BlockSpec,
     /// hex encoded unsigned integer
     transaction_index: types.Quantity,
 
@@ -30,7 +30,7 @@ pub const Params = struct {
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Params {
         if (source != .array) return error.UnexpectedToken;
-        if (source.array.items.len != 2) return error.InvalidParamCount;
+        if (source.array.items.len != 2) return error.UnexpectedToken;
 
         return Params{
             .block = try std.json.innerParseFromValue(types.Quantity, allocator, source.array.items[0], options),
@@ -41,15 +41,19 @@ pub const Params = struct {
 
 /// Result for `eth_getTransactionByBlockNumberAndIndex`
 pub const Result = struct {
-    value: types.Quantity,
+    value: ?types.TransactionResponse,
 
     pub fn jsonStringify(self: Result, jws: *std.json.Stringify) !void {
-        try jws.write(self.value);
+        if (self.value) |tx| {
+            try jws.write(tx);
+        } else {
+            try jws.write(null);
+        }
     }
 
     pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !Result {
         return Result{
-            .value = try std.json.innerParseFromValue(types.Quantity, allocator, source, options),
+            .value = try std.json.innerParseFromValue(?types.TransactionResponse, allocator, source, options),
         };
     }
 };
