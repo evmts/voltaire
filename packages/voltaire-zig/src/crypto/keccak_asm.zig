@@ -35,6 +35,11 @@ fn keccakResultToError(result: c_uint) KeccakError!void {
     };
 }
 
+fn toKeccakLen(len: usize) KeccakError!c_ulong {
+    if (std.math.cast(c_ulong, len)) |value| return value;
+    return KeccakError.InvalidInput;
+}
+
 /// Assembly-optimized KECCAK256 hash function
 ///
 /// This function uses the high-performance keccak-asm Rust crate which provides
@@ -49,7 +54,7 @@ pub fn keccak256(data: []const u8, out_hash: *[32]u8) !void {
 
     const result = c.keccak256(
         data.ptr,
-        data.len,
+        try toKeccakLen(data.len),
         out_hash,
         32,
     );
@@ -110,7 +115,7 @@ pub fn keccak256_batch(inputs: [][]const u8, outputs: [][32]u8) !void {
     // Populate arrays
     for (inputs, 0..) |input, i| {
         input_ptrs[i] = input.ptr;
-        input_lens[i] = input.len;
+        input_lens[i] = try toKeccakLen(input.len);
     }
 
     for (outputs, 0..) |*output, i| {
@@ -121,7 +126,7 @@ pub fn keccak256_batch(inputs: [][]const u8, outputs: [][32]u8) !void {
         input_ptrs.ptr,
         input_lens.ptr,
         output_ptrs.ptr,
-        inputs.len,
+        try toKeccakLen(inputs.len),
     );
     try keccakResultToError(result);
 }
