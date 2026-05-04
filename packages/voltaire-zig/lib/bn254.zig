@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 
 // Returns the path to the Rust crypto_wrappers static library
@@ -15,11 +16,15 @@ pub fn getRustLibraryPath(
     if (is_wasm) {
         return b.path(b.fmt("target/wasm32-unknown-unknown/{s}/libcrypto_wrappers.a", .{profile_dir}));
     }
-    // Native and cross builds always pass --target to Cargo so Rust artifacts
-    // live in a target-specific directory and cannot collide across Zig targets.
+    // Cross builds pass --target to Cargo so Rust artifacts live in a
+    // target-specific directory. Native builds use Cargo's default target
+    // directory so distro-packaged Rust toolchains do not need rustup sysroots.
     else {
-        const rust_target = rustTargetTriple(target);
-        return b.path(b.fmt("target/{s}/{s}/libcrypto_wrappers.a", .{ rust_target, profile_dir }));
+        if (usesExplicitRustTarget(target)) {
+            const rust_target = rustTargetTriple(target);
+            return b.path(b.fmt("target/{s}/{s}/libcrypto_wrappers.a", .{ rust_target, profile_dir }));
+        }
+        return b.path(b.fmt("target/{s}/libcrypto_wrappers.a", .{profile_dir}));
     }
 }
 
@@ -51,6 +56,13 @@ fn rustTargetTriple(target: std.Build.ResolvedTarget) []const u8 {
         },
         else => unsupportedRustTarget("unsupported Rust target OS"),
     };
+}
+
+fn usesExplicitRustTarget(target: std.Build.ResolvedTarget) bool {
+    if (target.result.os.tag != builtin.target.os.tag) return true;
+    if (target.result.cpu.arch != builtin.target.cpu.arch) return true;
+    if (target.result.os.tag == .linux and target.result.abi != builtin.target.abi) return true;
+    return false;
 }
 
 fn unsupportedRustTarget(message: []const u8) noreturn {

@@ -62,9 +62,11 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, t
         cargo_build.addArg("--features");
         cargo_build.addArg("portable");
     } else {
-        const rust_target = rustTargetTriple(target);
-        cargo_build.addArg("--target");
-        cargo_build.addArg(rust_target);
+        if (usesExplicitRustTarget(target)) {
+            const rust_target = rustTargetTriple(target);
+            cargo_build.addArg("--target");
+            cargo_build.addArg(rust_target);
+        }
         if (needsPortableRustCrypto(target)) {
             cargo_build.addArg("--no-default-features");
             cargo_build.addArg("--features");
@@ -118,11 +120,15 @@ pub fn rustTargetTriple(target: std.Build.ResolvedTarget) []const u8 {
     };
 }
 
-fn needsPortableRustCrypto(target: std.Build.ResolvedTarget) bool {
+fn usesExplicitRustTarget(target: std.Build.ResolvedTarget) bool {
     if (target.result.os.tag != builtin.target.os.tag) return true;
     if (target.result.cpu.arch != builtin.target.cpu.arch) return true;
     if (target.result.os.tag == .linux and target.result.abi != builtin.target.abi) return true;
     return false;
+}
+
+fn needsPortableRustCrypto(target: std.Build.ResolvedTarget) bool {
+    return usesExplicitRustTarget(target);
 }
 
 fn unsupportedRustTarget(message: []const u8) noreturn {
