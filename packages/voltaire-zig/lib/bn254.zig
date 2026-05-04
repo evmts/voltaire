@@ -15,17 +15,45 @@ pub fn getRustLibraryPath(
     if (is_wasm) {
         return b.path(b.fmt("target/wasm32-unknown-unknown/{s}/libcrypto_wrappers.a", .{profile_dir}));
     }
-    // On Windows, we force GNU toolchain with --target, so library goes in target-specific dir
-    // On other platforms, we don't specify --target, so it goes in target/release
-    else if (target.result.os.tag == .windows) {
-        const rust_target = switch (target.result.cpu.arch) {
+    // Native and cross builds always pass --target to Cargo so Rust artifacts
+    // live in a target-specific directory and cannot collide across Zig targets.
+    else {
+        const rust_target = rustTargetTriple(target);
+        return b.path(b.fmt("target/{s}/{s}/libcrypto_wrappers.a", .{ rust_target, profile_dir }));
+    }
+}
+
+fn rustTargetTriple(target: std.Build.ResolvedTarget) []const u8 {
+    return switch (target.result.os.tag) {
+        .linux => switch (target.result.abi) {
+            .gnu => switch (target.result.cpu.arch) {
+                .x86_64 => "x86_64-unknown-linux-gnu",
+                .aarch64 => "aarch64-unknown-linux-gnu",
+                else => unsupportedRustTarget("unsupported Linux GNU Rust architecture"),
+            },
+            .musl => switch (target.result.cpu.arch) {
+                .x86_64 => "x86_64-unknown-linux-musl",
+                .aarch64 => "aarch64-unknown-linux-musl",
+                else => unsupportedRustTarget("unsupported Linux musl Rust architecture"),
+            },
+            else => unsupportedRustTarget("unsupported Linux Rust ABI"),
+        },
+        .macos => switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-apple-darwin",
+            .aarch64 => "aarch64-apple-darwin",
+            else => unsupportedRustTarget("unsupported macOS Rust architecture"),
+        },
+        .windows => switch (target.result.cpu.arch) {
             .x86_64 => "x86_64-pc-windows-gnu",
             .x86 => "i686-pc-windows-gnu",
             .aarch64 => "aarch64-pc-windows-gnu",
-            else => @panic("Unsupported Windows architecture for Rust build"),
-        };
-        return b.path(b.fmt("target/{s}/{s}/libcrypto_wrappers.a", .{ rust_target, profile_dir }));
-    } else {
-        return b.path(b.fmt("target/{s}/libcrypto_wrappers.a", .{profile_dir}));
-    }
+            else => unsupportedRustTarget("unsupported Windows Rust architecture"),
+        },
+        else => unsupportedRustTarget("unsupported Rust target OS"),
+    };
+}
+
+fn unsupportedRustTarget(message: []const u8) noreturn {
+    std.debug.print("error: {s}\n", .{message});
+    std.process.exit(1);
 }

@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 
 // Import individual library build configurations
@@ -60,18 +61,15 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, t
         cargo_build.addArg("--no-default-features");
         cargo_build.addArg("--features");
         cargo_build.addArg("portable");
-    }
-    // On Windows, force GNU toolchain to produce .a files with lib prefix
-    // MSVC toolchain produces .lib files without lib prefix which breaks our build
-    else if (target.result.os.tag == .windows) {
-        const rust_target = switch (target.result.cpu.arch) {
-            .x86_64 => "x86_64-pc-windows-gnu",
-            .x86 => "i686-pc-windows-gnu",
-            .aarch64 => "aarch64-pc-windows-gnu",
-            else => @panic("Unsupported Windows architecture for Rust build"),
-        };
+    } else {
+        const rust_target = rustTargetTriple(target);
         cargo_build.addArg("--target");
         cargo_build.addArg(rust_target);
+        if (needsPortableRustCrypto(target)) {
+            cargo_build.addArg("--no-default-features");
+            cargo_build.addArg("--features");
+            cargo_build.addArg("portable");
+        }
     }
 
     // Set working directory to the primitives package root (where Cargo.toml lives)
@@ -88,6 +86,48 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, t
     }
 
     return &cargo_build.step;
+}
+
+pub fn rustTargetTriple(target: std.Build.ResolvedTarget) []const u8 {
+    return switch (target.result.os.tag) {
+        .linux => switch (target.result.abi) {
+            .gnu => switch (target.result.cpu.arch) {
+                .x86_64 => "x86_64-unknown-linux-gnu",
+                .aarch64 => "aarch64-unknown-linux-gnu",
+                else => unsupportedRustTarget("unsupported Linux GNU Rust architecture"),
+            },
+            .musl => switch (target.result.cpu.arch) {
+                .x86_64 => "x86_64-unknown-linux-musl",
+                .aarch64 => "aarch64-unknown-linux-musl",
+                else => unsupportedRustTarget("unsupported Linux musl Rust architecture"),
+            },
+            else => unsupportedRustTarget("unsupported Linux Rust ABI"),
+        },
+        .macos => switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-apple-darwin",
+            .aarch64 => "aarch64-apple-darwin",
+            else => unsupportedRustTarget("unsupported macOS Rust architecture"),
+        },
+        .windows => switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-pc-windows-gnu",
+            .x86 => "i686-pc-windows-gnu",
+            .aarch64 => "aarch64-pc-windows-gnu",
+            else => unsupportedRustTarget("unsupported Windows Rust architecture"),
+        },
+        else => unsupportedRustTarget("unsupported Rust target OS"),
+    };
+}
+
+fn needsPortableRustCrypto(target: std.Build.ResolvedTarget) bool {
+    if (target.result.os.tag != builtin.target.os.tag) return true;
+    if (target.result.cpu.arch != builtin.target.cpu.arch) return true;
+    if (target.result.os.tag == .linux and target.result.abi != builtin.target.abi) return true;
+    return false;
+}
+
+fn unsupportedRustTarget(message: []const u8) noreturn {
+    std.debug.print("error: {s}\n", .{message});
+    std.process.exit(1);
 }
 
 pub fn checkVendoredDeps(b: *std.Build) void {
