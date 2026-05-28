@@ -304,20 +304,24 @@ test "fuzz invmod never panics" {
     const a = std.mem.readInt(u256, input[0..32], .big);
     const m = std.mem.readInt(u256, input[32..64], .big);
 
+    // Must never panic for arbitrary inputs.
     const result = secp256k1.unauditedInvmod(a, m);
 
-    // Properties
+    // Degenerate inputs return null per the API contract.
     if (a == 0 or m == 0) {
         try std.testing.expect(result == null);
     }
 
-    if (result) |inv| {
-        // Property: a * inv ≡ 1 (mod m)
-        if (m > 0) {
-            try std.testing.expect(inv < m);
-            const product = secp256k1.unauditedMulmod(a, inv, m);
-            try std.testing.expectEqual(@as(u256, 1), product);
-        }
+    // modInverse is now a constant-time Fermat inverse (a^(m-2) mod m) that is
+    // only mathematically correct for PRIME moduli. Verify the multiplicative
+    // inverse property against the curve order n (prime) using the fuzzed scalar.
+    const n = secp256k1.SECP256K1_N;
+    const a_n = a % n;
+    if (a_n != 0) {
+        const inv = secp256k1.unauditedInvmod(a_n, n).?;
+        try std.testing.expect(inv >= 1 and inv < n);
+        const product = secp256k1.unauditedMulmod(a_n, inv, n);
+        try std.testing.expectEqual(@as(u256, 1), product);
     }
 }
 

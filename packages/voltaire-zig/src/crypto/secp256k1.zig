@@ -315,9 +315,12 @@ fn computePointFromX(x: u256, recoveryId: u8) !AffinePoint {
     if (y_sq != y2) return error.InvalidSignature;
 
     // Choose y based on parity (recoveryId bit 0)
-    const y_is_odd = (y & 1) == 1;
-    const recovery_bit = (recoveryId & 1) == 1;
-    const y_final = if (y_is_odd == recovery_bit) y else SECP256K1_P - y;
+    // Constant-time select to avoid branching on y's parity (which derives from x).
+    const y_is_odd: u8 = @truncate(y & 1);
+    const recovery_bit: u8 = recoveryId & 1;
+    // parity_match is 1 when y's parity equals the requested recovery bit.
+    const parity_match = constant_time.constantTimeNot(y_is_odd ^ recovery_bit);
+    const y_final = constant_time.constantTimeSelectU256(parity_match, y, SECP256K1_P - y);
 
     return AffinePoint{ .x = x, .y = y_final, .infinity = false };
 }
@@ -385,11 +388,14 @@ pub fn addmod(a: u256, b: u256, m: u256) u256 {
     const a_mod = a % m;
     const b_mod = b % m;
 
-    if (a_mod > m - b_mod) {
-        return a_mod - (m - b_mod);
-    } else {
-        return a_mod + b_mod;
-    }
+    // Constant-time: compute both candidate results and select without branching.
+    // If a_mod + b_mod >= m (i.e. a_mod > m - b_mod), the reduced result is
+    // a_mod - (m - b_mod); otherwise it is a_mod + b_mod.
+    const m_minus_b = m - b_mod;
+    const overflow = constant_time.constantTimeGtU256(a_mod, m_minus_b);
+    const reduced = a_mod -% m_minus_b;
+    const summed = a_mod +% b_mod;
+    return constant_time.constantTimeSelectU256(overflow, reduced, summed);
 }
 
 /// Modular subtraction
@@ -397,11 +403,11 @@ pub fn submod(a: u256, b: u256, m: u256) u256 {
     const a_mod = a % m;
     const b_mod = b % m;
 
-    if (a_mod >= b_mod) {
-        return a_mod - b_mod;
-    } else {
-        return m - (b_mod - a_mod);
-    }
+    // Constant-time: select between the direct difference and the wrapped result.
+    const ge = constant_time.constantTimeGteU256(a_mod, b_mod);
+    const direct = a_mod -% b_mod;
+    const wrapped = m -% (b_mod -% a_mod);
+    return constant_time.constantTimeSelectU256(ge, direct, wrapped);
 }
 
 /// Modular exponentiation
@@ -424,34 +430,69 @@ pub fn powmod(base: u256, exp: u256, modulus: u256) u256 {
     return result;
 }
 
-/// Modular inverse using Extended Euclidean Algorithm
+/// Constant-time modular multiplication for a prime modulus.
+/// Fixed 256-iteration double-and-add; no secret-dependent loop bound or branch.
+/// Requires m > 0. Operands need not be reduced mod m on entry.
+fn ctMulmod(a: u256, b: u256, m: u256) u256 {
+    const a_mod = a % m;
+    const b_mod = b % m;
+
+    var result: u256 = 0;
+    var multiplicand = a_mod;
+    var multiplier = b_mod;
+
+    // Iterate over all 256 bits regardless of value to keep the loop count fixed.
+    var i: usize = 0;
+    while (i < 256) : (i += 1) {
+        const bit: u8 = @truncate(multiplier & 1);
+        const candidate = addmod(result, multiplicand, m);
+        result = constant_time.constantTimeSelectU256(bit, candidate, result);
+        multiplicand = addmod(multiplicand, multiplicand, m);
+        multiplier >>= 1;
+    }
+
+    return result;
+}
+
+/// Constant-time modular exponentiation for a prime modulus.
+/// Fixed 256-iteration square-and-multiply with constant-time conditional multiply.
+/// The exponent is treated as secret (each bit branchlessly selects the multiply).
+fn ctPowmod(base: u256, exp: u256, m: u256) u256 {
+    var result: u256 = 1 % m;
+    var base_mod = base % m;
+    var exp_remaining = exp;
+
+    var i: usize = 0;
+    while (i < 256) : (i += 1) {
+        const bit: u8 = @truncate(exp_remaining & 1);
+        const candidate = ctMulmod(result, base_mod, m);
+        result = constant_time.constantTimeSelectU256(bit, candidate, result);
+        base_mod = ctMulmod(base_mod, base_mod, m);
+        exp_remaining >>= 1;
+    }
+
+    return result;
+}
+
+/// Modular inverse for a PRIME modulus via Fermat's little theorem:
+/// a^(-1) ≡ a^(m-2) (mod m). This is constant-time in `a` (fixed iteration
+/// count, constant-time conditional multiplies) so it is safe to call on
+/// secret values such as ephemeral ECDSA nonces.
+///
+/// SECURITY: `m` MUST be prime (e.g. SECP256K1_N or SECP256K1_P). Composite
+/// moduli are not supported by Fermat-based inversion.
+///
+/// Returns null only for the non-secret degenerate inputs (m == 0 or a == 0),
+/// preserving the prior API contract. The a == 0 fast path leaks nothing
+/// secret-sensitive (0 has no inverse and is not a valid nonce).
 pub fn modInverse(a: u256, m: u256) ?u256 {
     if (m == 0 or a == 0) return null;
+    // m == 1 has no meaningful inverse (every residue is 0); also guards the
+    // m - 2 subtraction below from underflow. Not a secret-sensitive path.
+    if (m == 1) return null;
 
-    var old_r: u256 = a % m;
-    var r: u256 = m;
-    var old_s: i512 = 1;
-    var s: i512 = 0;
-
-    while (r != 0) {
-        const quotient = old_r / r;
-
-        const temp_r = r;
-        r = old_r - quotient * r;
-        old_r = temp_r;
-
-        const temp_s = s;
-        s = old_s - @as(i512, @intCast(quotient)) * s;
-        old_s = temp_s;
-    }
-
-    if (old_r > 1) return null;
-
-    if (old_s < 0) {
-        old_s += @as(i512, @intCast(m));
-    }
-
-    return @as(u256, @intCast(old_s));
+    // inverse = a^(m-2) mod m
+    return ctPowmod(a, m - 2, m);
 }
 
 // Legacy aliases for compatibility
@@ -592,6 +633,44 @@ test "modular inverse" {
     const inv = modInverse(a, m).?;
     const prod = mulmod(a, inv, m);
     try std.testing.expect(prod == 1);
+}
+
+test "modInverse constant-time Fermat correctness" {
+    // a * a^(-1) mod m == 1 across both curve moduli and varied magnitudes.
+    const vectors = [_]u256{
+        1,
+        2,
+        3,
+        12345,
+        0x9f150809ad6e882b6e8f0c4dc4b0c5d58d6fd84ee8d48aef7e37b8d60f3d4f5a,
+        SECP256K1_N - 1,
+        SECP256K1_P - 1,
+        0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798,
+    };
+
+    for ([_]u256{ SECP256K1_N, SECP256K1_P }) |m| {
+        for (vectors) |a_raw| {
+            const a = a_raw % m;
+            if (a == 0) continue;
+            const inv = modInverse(a, m) orelse {
+                try std.testing.expect(false);
+                return;
+            };
+            // inverse must lie in [1, m-1]
+            try std.testing.expect(inv >= 1 and inv < m);
+            // a * inv ≡ 1 (mod m)
+            try std.testing.expectEqual(@as(u256, 1), mulmod(a, inv, m));
+        }
+    }
+
+    // Known small-prime vector: inverse of 3 mod 11 is 4 (3*4 = 12 ≡ 1).
+    try std.testing.expectEqual(@as(u256, 4), modInverse(3, 11).?);
+    // Inverse of 7 mod 11 is 8 (7*8 = 56 ≡ 1).
+    try std.testing.expectEqual(@as(u256, 8), modInverse(7, 11).?);
+
+    // Degenerate inputs preserve the null contract.
+    try std.testing.expect(modInverse(0, SECP256K1_N) == null);
+    try std.testing.expect(modInverse(12345, 0) == null);
 }
 
 test "recoverPubkey with valid signature" {
