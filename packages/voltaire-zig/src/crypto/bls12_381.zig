@@ -596,6 +596,10 @@ pub const G1Point = struct {
             return Error.InvalidPublicKey;
         }
 
+        if (!blst.blst_p1_affine_in_g1(&affine)) {
+            return Error.PointNotInGroup;
+        }
+
         var point: blst.blst_p1 = undefined;
         blst.blst_p1_from_affine(&point, &affine);
 
@@ -682,6 +686,10 @@ pub const G2Point = struct {
 
         if (ret != blst.BLST_SUCCESS) {
             return Error.InvalidSignature;
+        }
+
+        if (!blst.blst_p2_affine_in_g2(&affine)) {
+            return Error.PointNotInGroup;
         }
 
         var point: blst.blst_p2 = undefined;
@@ -1001,6 +1009,93 @@ test "G2 point operations" {
     const g2_neg = g2.negate();
     const should_be_infinity = g2.add(&g2_neg);
     try testing.expect(should_be_infinity.isInfinity());
+}
+
+test "G1Point fromCompressed round-trips valid subgroup point" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // A multiple of the generator is guaranteed to be in the G1 subgroup.
+    var scalar: [32]u8 = undefined;
+    @memset(&scalar, 0);
+    scalar[0] = 7;
+    const original = G1Point.generator().mul(&scalar);
+    try testing.expect(original.isInGroup());
+
+    const compressed = original.toCompressed();
+    const decoded = try G1Point.fromCompressed(&compressed);
+
+    try testing.expect(decoded.isOnCurve());
+    try testing.expect(decoded.isInGroup());
+    // Round-trip preserves the point: re-serialization matches.
+    try testing.expectEqualSlices(u8, &compressed, &decoded.toCompressed());
+}
+
+test "G1Point fromCompressed rejects valid-curve point not in subgroup" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // blst_map_to_g1 maps a field element onto the curve WITHOUT clearing the
+    // cofactor, so its output is on the curve but (with overwhelming
+    // probability, since the G1 cofactor is large) NOT in the prime-order
+    // subgroup. This is exactly the case the subgroup check must reject.
+    var seed: [48]u8 = undefined;
+    @memset(&seed, 0);
+    seed[47] = 3;
+    var u: blst.blst_fp = undefined;
+    blst.blst_fp_from_bendian(&u, &seed);
+
+    var raw: blst.blst_p1 = undefined;
+    blst.blst_map_to_g1(&raw, &u, null);
+
+    const candidate = G1Point{ .point = raw };
+    // Sanity: it is on the curve...
+    try testing.expect(candidate.isOnCurve());
+    // ...but not in the subgroup (guard against the rare in-group mapping).
+    if (candidate.isInGroup()) return error.SkipZigTest;
+
+    const compressed = candidate.toCompressed();
+    try testing.expectError(Error.PointNotInGroup, G1Point.fromCompressed(&compressed));
+}
+
+test "G2Point fromCompressed round-trips valid subgroup point" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    var scalar: [32]u8 = undefined;
+    @memset(&scalar, 0);
+    scalar[0] = 11;
+    const original = G2Point.generator().mul(&scalar);
+    try testing.expect(original.isInGroup());
+
+    const compressed = original.toCompressed();
+    const decoded = try G2Point.fromCompressed(&compressed);
+
+    try testing.expect(decoded.isOnCurve());
+    try testing.expect(decoded.isInGroup());
+    try testing.expectEqualSlices(u8, &compressed, &decoded.toCompressed());
+}
+
+test "G2Point fromCompressed rejects valid-curve point not in subgroup" {
+    if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
+
+    // blst_map_to_g2 maps an Fp2 element onto the curve without clearing the
+    // cofactor: on-curve but not in the G2 prime-order subgroup.
+    var seed: [48]u8 = undefined;
+    @memset(&seed, 0);
+    seed[47] = 5;
+    var u: blst.blst_fp2 = undefined;
+    blst.blst_fp_from_bendian(&u.fp[0], &seed);
+    @memset(&seed, 0);
+    seed[47] = 7;
+    blst.blst_fp_from_bendian(&u.fp[1], &seed);
+
+    var raw: blst.blst_p2 = undefined;
+    blst.blst_map_to_g2(&raw, &u, null);
+
+    const candidate = G2Point{ .point = raw };
+    try testing.expect(candidate.isOnCurve());
+    if (candidate.isInGroup()) return error.SkipZigTest;
+
+    const compressed = candidate.toCompressed();
+    try testing.expectError(Error.PointNotInGroup, G2Point.fromCompressed(&compressed));
 }
 
 test "hash to G2" {
