@@ -440,8 +440,11 @@ pub fn areAddressesEqual(a: []const u8, b: []const u8) !bool {
     var addr_a: Address = undefined;
     var addr_b: Address = undefined;
 
-    _ = try hex_to_bytes(&addr_a.bytes, a[2..]);
-    _ = try hex_to_bytes(&addr_b.bytes, b[2..]);
+    const hex_a = if (starts_with(u8, a, "0x") or starts_with(u8, a, "0X")) a[2..] else a;
+    const hex_b = if (starts_with(u8, b, "0x") or starts_with(u8, b, "0X")) b[2..] else b;
+
+    _ = try hex_to_bytes(&addr_a.bytes, hex_a);
+    _ = try hex_to_bytes(&addr_b.bytes, hex_b);
 
     return std.mem.eql(u8, &addr_a.bytes, &addr_b.bytes);
 }
@@ -633,6 +636,19 @@ test "Address - equality" {
     try std.testing.expectError(error.InvalidAddress, areAddressesEqual("0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678az", "0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678ac"));
 
     try std.testing.expectError(error.InvalidAddress, areAddressesEqual("0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678ac", "0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678aff"));
+}
+
+test "Address - equality with and without 0x prefix" {
+    // Same address, one with 0x prefix and one without, must be equal.
+    try std.testing.expect(try areAddressesEqual("0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678ac", "a5cc3c03994db5b0d9a5eEdD10Cabab0813678ac"));
+
+    try std.testing.expect(try areAddressesEqual("a5cc3c03994db5b0d9a5eEdD10Cabab0813678ac", "0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678ac"));
+
+    // Both prefix-less, same bytes.
+    try std.testing.expect(try areAddressesEqual("a0cf798816d4b9b9866b5330eea46a18382f251e", "A0Cf798816D4b9b9866b5330EEa46a18382f251e"));
+
+    // Prefix-less differing addresses remain unequal.
+    try std.testing.expect(!try areAddressesEqual("a0cf798816d4b9b9866b5330eea46a18382f251e", "0xa0cf798816d4b9b9866b5330eea46a18382f251f"));
 }
 
 test "contract address generation - CREATE" {
