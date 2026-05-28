@@ -284,13 +284,6 @@ pub fn encodeLength(allocator: Allocator, length: usize) ![]u8 {
 /// If stream is false (default), it expects the entire input to be consumed.
 /// Allocates memory that must be freed by calling .deinit() on the result.
 pub fn decode(allocator: Allocator, input: []const u8, stream: bool) !Decoded {
-    if (input.len == 0) {
-        return Decoded{
-            .data = Data{ .String = try allocator.dupe(u8, &.{}) },
-            .remainder = &.{},
-        };
-    }
-
     const result = try _decode(allocator, input, 0);
 
     if (!stream and result.remainder.len > 0) {
@@ -1466,6 +1459,25 @@ test "RLP empty string" {
     const decoded = try decode(allocator, encoded, false);
     defer decoded.data.deinit(allocator);
 
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqual(@as(usize, 0), str.len),
+        .List => unreachable,
+    }
+}
+
+test "RLP decode empty input is invalid" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Truly-empty bytes are not valid RLP; empty string's only encoding is 0x80.
+    const empty: []const u8 = &.{};
+    try testing.expectError(RlpError.InputTooShort, decode(allocator, empty, false));
+    try testing.expectError(RlpError.InputTooShort, decode(allocator, empty, true));
+
+    // 0x80 is the canonical encoding of the empty string and must decode successfully.
+    const encoded_empty = [_]u8{0x80};
+    const decoded = try decode(allocator, &encoded_empty, false);
+    defer decoded.data.deinit(allocator);
     switch (decoded.data) {
         .String => |str| try testing.expectEqual(@as(usize, 0), str.len),
         .List => unreachable,
