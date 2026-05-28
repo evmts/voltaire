@@ -35,8 +35,9 @@ pub fn execute(
     const proof = input[144..192];
 
     // Verify versioned hash matches commitment
+    // EIP-4844: versioned_hash = BLOB_COMMITMENT_VERSION_KZG ++ sha256(commitment)[1:]
     var computed_hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(commitment, &computed_hash);
+    std.crypto.hash.sha2.Sha256.hash(commitment, &computed_hash, .{});
     computed_hash[0] = 0x01; // Version byte for EIP-4844
 
     // Check if versioned hash matches
@@ -192,7 +193,7 @@ test "point_evaluation - correct proof case 0 (point at infinity)" {
 
     // Compute versioned hash
     var computed_hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &computed_hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &computed_hash, .{});
     computed_hash[0] = 0x01;
 
     // Set versioned hash
@@ -267,7 +268,7 @@ test "point_evaluation - correct proof case 1" {
 
     // Compute versioned hash
     var computed_hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &computed_hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &computed_hash, .{});
     computed_hash[0] = 0x01;
 
     // Set versioned hash
@@ -333,7 +334,7 @@ test "point_evaluation - incorrect proof returns zero output" {
 
     // Compute versioned hash
     var computed_hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &computed_hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &computed_hash, .{});
     computed_hash[0] = 0x01;
 
     // Set versioned hash
@@ -402,7 +403,7 @@ test "point_evaluation - invalid commitment malformed" {
 
     // Compute versioned hash
     var computed_hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &computed_hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &computed_hash, .{});
     computed_hash[0] = 0x01;
 
     // Set versioned hash
@@ -455,7 +456,7 @@ test "point_evaluation - versioned hash wrong version byte" {
 
     // Compute versioned hash
     var computed_hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &computed_hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &computed_hash, .{});
     computed_hash[0] = 0x01;
 
     // Set versioned hash but with wrong version byte
@@ -484,7 +485,7 @@ test "point_evaluation - output format validation" {
 
     // Compute versioned hash
     var computed_hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &computed_hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &computed_hash, .{});
     computed_hash[0] = 0x01;
 
     // Set versioned hash
@@ -527,7 +528,7 @@ test "point_evaluation - gas usage always constant" {
     input1[96] = 0xc0;
     input1[144] = 0xc0;
     var hash1: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input1[96..144], &hash1);
+    std.crypto.hash.sha2.Sha256.hash(input1[96..144], &hash1, .{});
     hash1[0] = 0x01;
     @memcpy(input1[0..32], &hash1);
 
@@ -557,7 +558,7 @@ test "point_evaluation - gas usage always constant" {
     }
 
     var hash2: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input2[96..144], &hash2);
+    std.crypto.hash.sha2.Sha256.hash(input2[96..144], &hash2, .{});
     hash2[0] = 0x01;
     @memcpy(input2[0..32], &hash2);
 
@@ -580,7 +581,7 @@ test "point_evaluation - exact gas limit allowed" {
     input[96] = 0xc0;
     input[144] = 0xc0;
     var hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &hash, .{});
     hash[0] = 0x01;
     @memcpy(input[0..32], &hash);
 
@@ -602,7 +603,7 @@ test "point_evaluation - high gas limit accepted" {
     input[96] = 0xc0;
     input[144] = 0xc0;
     var hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &hash, .{});
     hash[0] = 0x01;
     @memcpy(input[0..32], &hash);
 
@@ -625,7 +626,7 @@ test "point_evaluation - memory allocation success" {
     input[96] = 0xc0;
     input[144] = 0xc0;
     var hash: [32]u8 = undefined;
-    try crypto.keccak_asm.keccak256(input[96..144], &hash);
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], &hash, .{});
     hash[0] = 0x01;
     @memcpy(input[0..32], &hash);
 
