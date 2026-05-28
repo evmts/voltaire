@@ -7,6 +7,7 @@ import * as Uint from "../Uint/index.js";
 import { decodeParameters } from "./decodeParameters.js";
 import { AbiDecodingError } from "./Errors.js";
 import { isDynamicType } from "./isDynamicType.js";
+import { staticSize } from "./staticSize.js";
 
 /**
  * @param {Uint8Array} data
@@ -66,12 +67,9 @@ export function decodeValue(type, data, offset, components) {
 			/** @type {any} */ (components),
 			data.slice(offset),
 		);
-		// Calculate static size by summing component sizes
-		let staticSize = 0;
-		for (const _comp of components) {
-			staticSize += 32; // Each component takes at least 32 bytes in static part
-		}
-		return { value, newOffset: offset + staticSize };
+		// Calculate static size by summing actual component sizes (fixed-size
+		// arrays and nested static tuples occupy more than 32 bytes each).
+		return { value, newOffset: offset + staticSize(type, components) };
 	}
 
 	if (type.endsWith("[]")) {
