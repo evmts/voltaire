@@ -71,7 +71,7 @@ pub fn unauditedBlake2bG(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x:
 /// This function implements BLAKE2b compression rounds without security review.
 /// Use at your own risk in production systems.
 pub fn unauditedBlake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) void {
-    const s = &BLAKE2B_SIGMA[round % 10];
+    const s = &BLAKE2B_SIGMA[round % 12];
 
     // Column mixing
     unauditedBlake2bG(v, 0, 4, 8, 12, message[s[0]], message[s[1]]);
@@ -86,7 +86,7 @@ pub fn unauditedBlake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) v
     unauditedBlake2bG(v, 3, 4, 9, 14, message[s[14]], message[s[15]]);
 }
 
-test "blake2b round schedule cycles every ten permutations" {
+test "blake2b round schedule cycles every twelve permutations" {
     const base_v = [16]u64{
         0x0123456789abcdef,
         0xfedcba9876543210,
@@ -125,16 +125,16 @@ test "blake2b round schedule cycles every ten permutations" {
     };
 
     var round_0 = base_v;
-    var round_10 = base_v;
-    unauditedBlake2bRound(&round_0, &message, 0);
-    unauditedBlake2bRound(&round_10, &message, 10);
-    try std.testing.expectEqualSlices(u64, &round_0, &round_10);
-
-    var round_2 = base_v;
     var round_12 = base_v;
-    unauditedBlake2bRound(&round_2, &message, 2);
+    unauditedBlake2bRound(&round_0, &message, 0);
     unauditedBlake2bRound(&round_12, &message, 12);
-    try std.testing.expectEqualSlices(u64, &round_2, &round_12);
+    try std.testing.expectEqualSlices(u64, &round_0, &round_12);
+
+    var round_1 = base_v;
+    var round_13 = base_v;
+    unauditedBlake2bRound(&round_1, &message, 1);
+    unauditedBlake2bRound(&round_13, &message, 13);
+    try std.testing.expectEqualSlices(u64, &round_1, &round_13);
 }
 
 /// BLAKE2b compression function
