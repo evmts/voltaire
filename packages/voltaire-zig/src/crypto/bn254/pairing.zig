@@ -316,3 +316,45 @@ test "pairing bilinearity and infinity montgomery" {
     const result_both_inf = try pairing(&G1.INFINITY, &G2.INFINITY);
     try std.testing.expect(result_both_inf.equal(&Fp12Mont.ONE));
 }
+
+// Independent correctness pin for the Miller loop iteration bound.
+// The multiplicativity identity e(a*G1, b*G2) == e(G1, G2)^(a*b) is a
+// self-validating oracle: it only holds when every bit of the loop
+// constant 6t+2 is processed exactly once. The leading bit (index 64,
+// value 1) is consumed by the t = Q / f = 1 initialization, so the loop
+// must cover indices 63..0 (64 iterations) and no more. Processing index
+// 64 a second time, or skipping index 0, would break this relation.
+test "pairing multiplicativity pins miller loop bound montgomery" {
+    const w1 = curve_parameters.G1_SCALAR.window_size;
+    const w2 = curve_parameters.G2_SCALAR.window_size;
+
+    const base = try pairing(&G1.GENERATOR, &G2.GENERATOR);
+
+    // Non-degeneracy: e(G1, G2) must not be the identity.
+    try std.testing.expect(!base.equal(&Fp12Mont.ONE));
+
+    const scalars = [_]struct { a: u256, b: u256 }{
+        .{ .a = 2, .b = 3 },
+        .{ .a = 5, .b = 7 },
+        .{ .a = 11, .b = 13 },
+        .{ .a = 1, .b = 1 },
+    };
+
+    for (scalars) |s| {
+        const a_g1 = G1.GENERATOR.mulByInt(s.a, w1);
+        const b_g2 = G2.GENERATOR.mulByInt(s.b, w2);
+
+        // e(a*G1, b*G2) == e(G1, G2)^(a*b)
+        const lhs = try pairing(&a_g1, &b_g2);
+        const rhs = base.pow(s.a * s.b);
+        try std.testing.expect(lhs.equal(&rhs));
+
+        // e(a*G1, G2) == e(G1, G2)^a  (linearity in first arg)
+        const left_a = try pairing(&a_g1, &G2.GENERATOR);
+        try std.testing.expect(left_a.equal(&base.pow(s.a)));
+
+        // e(G1, b*G2) == e(G1, G2)^b  (linearity in second arg)
+        const left_b = try pairing(&G1.GENERATOR, &b_g2);
+        try std.testing.expect(left_b.equal(&base.pow(s.b)));
+    }
+}
