@@ -1,4 +1,3 @@
-import { equals } from "./equals.js";
 import { Hash } from "./hash.js";
 
 /**
@@ -6,18 +5,10 @@ import { Hash } from "./hash.js";
  * @param {Object} deps - Crypto dependencies
  * @param {(data: Uint8Array) => Uint8Array} deps.keccak256 - Keccak256 hash function
  * @param {(data: Array<Uint8Array>) => Uint8Array} deps.rlpEncode - RLP encode function
- * @param {(messageHash: Uint8Array, privateKey: Uint8Array) => {r: Uint8Array, s: Uint8Array, v: number}} deps.sign - secp256k1 sign function
- * @param {(signature: {r: Uint8Array, s: Uint8Array, v: number}, messageHash: Uint8Array) => Uint8Array} deps.recoverPublicKey - secp256k1 public key recovery
- * @param {(x: bigint, y: bigint) => import("../Address/AddressType.js").AddressType} deps.addressFromPublicKey - Address derivation from public key
+ * @param {(messageHash: Uint8Array, privateKey: Uint8Array) => {r: Uint8Array, s: Uint8Array, v: number, yParity?: number}} deps.sign - secp256k1 sign function
  * @returns {(unsigned: {chainId: bigint, address: import("../Address/AddressType.js").AddressType, nonce: bigint}, privateKey: Uint8Array) => import("./AuthorizationType.js").AuthorizationType} Function that signs authorization
  */
-export function Sign({
-	keccak256,
-	rlpEncode,
-	sign: secp256k1Sign,
-	recoverPublicKey,
-	addressFromPublicKey,
-}) {
+export function Sign({ keccak256, rlpEncode, sign: secp256k1Sign }) {
 	const hash = Hash({ keccak256, rlpEncode });
 
 	return function sign(unsigned, privateKey) {
@@ -31,28 +22,10 @@ export function Sign({
 		const r = sig.r;
 		const s = sig.s;
 
-		// Recover yParity by trying both values
-		let yParity = 0;
-		try {
-			const recovered = recoverPublicKey({ r, s, v: 0 }, messageHash);
-			// Derive address from recovered public key
-			let x = 0n;
-			let y = 0n;
-			for (let i = 0; i < 32; i++) {
-				const xByte = recovered[i];
-				const yByte = recovered[32 + i];
-				if (xByte !== undefined && yByte !== undefined) {
-					x = (x << 8n) | BigInt(xByte);
-					y = (y << 8n) | BigInt(yByte);
-				}
-			}
-			const recoveredAddress = addressFromPublicKey(x, y);
-			if (!equals(recoveredAddress, unsigned.address)) {
-				yParity = 1;
-			}
-		} catch {
-			yParity = 1;
-		}
+		// Derive yParity from the signature's recovery value.
+		// secp256k1Sign returns sig.v = 27 + recoveryBit (recoveryBit found by
+		// trying all candidates), so yParity = v - 27. Prefer sig.yParity if present.
+		const yParity = sig.yParity ?? sig.v - 27;
 
 		return {
 			chainId: unsigned.chainId,

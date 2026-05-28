@@ -9,7 +9,9 @@ import { sign as secp256k1Sign } from "../../crypto/Secp256k1/sign.js";
 import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import { FromPublicKey } from "../Address/fromPublicKey.js";
 import { encode as rlpEncode } from "../Rlp/encode.js";
+import { Hash } from "./hash.js";
 import { Sign } from "./sign.js";
+import { Verify } from "./verify.js";
 
 // Create address factory
 const addressFromPublicKey = FromPublicKey({ keccak256 });
@@ -22,6 +24,15 @@ const sign = Sign({
 	recoverPublicKey,
 	addressFromPublicKey,
 });
+
+const verify = Verify({
+	keccak256,
+	rlpEncode,
+	recoverPublicKey,
+	addressFromPublicKey,
+});
+
+const hashUnsigned = Hash({ keccak256, rlpEncode });
 
 // ============================================================================
 // Test Helpers
@@ -366,6 +377,80 @@ describe("Authorization.sign - signature format", () => {
 		expect(result.chainId).toBe(unsigned.chainId);
 		expect(result.address).toBe(unsigned.address);
 		expect(result.nonce).toBe(unsigned.nonce);
+	});
+});
+
+// ============================================================================
+// yParity Correctness Tests
+//
+// Regression guard for the EIP-7702 signing bug where yParity was guessed by
+// recovering with v=0 and comparing the recovered address against the
+// delegation TARGET (unsigned.address), then blindly flipping to 1. yParity
+// MUST come from the secp256k1 recovery value (v - 27), independent of the
+// delegation target.
+// ============================================================================
+
+describe("Authorization.sign - yParity correctness", () => {
+	const privateKey = new Uint8Array(32);
+	privateKey.fill(1);
+
+	it("derives yParity directly from secp256k1 recovery value (v - 27)", () => {
+		const unsigned = {
+			chainId: 1n,
+			address: createAddress(99),
+			nonce: 7n,
+		};
+		const messageHash = hashUnsigned(unsigned);
+		const rawSig = secp256k1Sign(messageHash, privateKey);
+		const expectedYParity = rawSig.v - 27;
+
+		const result = sign(unsigned, privateKey);
+		expect(result.yParity).toBe(expectedYParity);
+		expect([0, 1]).toContain(result.yParity);
+	});
+
+	it("yParity is independent of the delegation target address", () => {
+		// Same key + chainId + nonce, but different delegation targets. The
+		// message hash differs per target, so yParity is computed per signature
+		// from recovery — never from comparing against unsigned.address.
+		const base = { chainId: 1n, nonce: 0n };
+		const targets = [0, 1, 2, 5, 99, 0xff].map(createAddress);
+
+		for (const address of targets) {
+			const unsigned = { ...base, address };
+			const messageHash = hashUnsigned(unsigned);
+			const expectedYParity = secp256k1Sign(messageHash, privateKey).v - 27;
+			const result = sign(unsigned, privateKey);
+			expect(result.yParity).toBe(expectedYParity);
+		}
+	});
+
+	it("recovers the actual signer, not the delegation target", () => {
+		// Delegation target deliberately differs from any plausible signer.
+		const unsigned = {
+			chainId: 1n,
+			address: createAddress(99),
+			nonce: 0n,
+		};
+
+		// Independently derive the expected authority from the private key.
+		const messageHash = hashUnsigned(unsigned);
+		const rawSig = secp256k1Sign(messageHash, privateKey);
+		const pubKey = recoverPublicKey(
+			{ r: rawSig.r, s: rawSig.s, v: rawSig.v - 27 },
+			messageHash,
+		);
+		let x = 0n;
+		let y = 0n;
+		for (let i = 0; i < 32; i++) {
+			x = (x << 8n) | BigInt(pubKey[i] as number);
+			y = (y << 8n) | BigInt(pubKey[32 + i] as number);
+		}
+		const expectedAuthority = addressFromPublicKey(x, y);
+
+		const auth = sign(unsigned, privateKey);
+		const authority = verify(auth);
+		expect(Array.from(authority)).toEqual(Array.from(expectedAuthority));
 	});
 });
 
