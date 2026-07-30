@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-15, windows-latest]
         optimize: [Debug, ReleaseSmall, ReleaseSafe, ReleaseFast]
@@ -28,6 +29,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.89.0
+      - name: Install Windows GNU Rust target
+        if: runner.os == 'Windows'
+        run: rustup target add x86_64-pc-windows-gnu
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
       - name: Debug - List target directory (Windows)

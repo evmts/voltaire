@@ -62,6 +62,10 @@ jobs:
         with:
           toolchain: 1.89.0
 
+      - name: Install Windows GNU Rust target
+        if: runner.os == 'Windows'
+        run: rustup target add x86_64-pc-windows-gnu
+
       - name: Cache Cargo dependencies
         uses: actions/cache@v4
         with:
