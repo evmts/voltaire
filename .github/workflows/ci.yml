@@ -167,13 +167,11 @@ jobs:
         run: pnpm --filter @voltaire/docs run build
       - name: Run package validation
         run: pnpm --filter @tevm/voltaire run lint:package
-      - name: Run TypeScript tests with coverage
+      - name: Run TypeScript and WASM tests with coverage
         run: pnpm --filter @tevm/voltaire run test:coverage
       # Native FFI tests disabled until libwally-core C API is fixed
       # - name: Run native FFI tests
       #   run: pnpm run test:native
-      - name: Run WASM tests
-        run: pnpm --filter @tevm/voltaire run test:wasm
 
   # Benchmarks disabled - keccak_wrapper.h include path issue needs fix in build.zig
   # benchmarks:
