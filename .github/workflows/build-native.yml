@@ -23,8 +23,8 @@ jobs:
           - os: macos-latest
             platform: darwin-arm64
             zig-target: aarch64-macos
-          # macOS x64 - use macos-13 which is the last x64 runner
-          - os: macos-13
+          # macOS x64
+          - os: macos-15-intel
             platform: darwin-x64
             zig-target: x86_64-macos
           # Linux x64 - ubuntu-latest is x64
@@ -54,13 +54,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.22.0'
           cache: 'pnpm'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: 1.89.0
 
       - name: Cache Cargo dependencies
         uses: actions/cache@v4

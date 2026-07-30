@@ -22,7 +22,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: 1.89.0
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -52,4 +52,3 @@ jobs:
         run: |
           cd packages/voltaire-swift
           swift test -q
-

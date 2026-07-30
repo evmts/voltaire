@@ -9,12 +9,6 @@ export default defineConfig({
 			},
 		},
 		pool: "threads",
-		poolOptions: {
-			threads: {
-				maxThreads: 1,
-				minThreads: 1,
-			},
-		},
 		testTimeout: 30000,
 		hookTimeout: 30000,
 		include: [
@@ -53,11 +47,16 @@ export default defineConfig({
 		coverage: {
 			reportOnFailure: true,
 			include: ["src/**/*.ts"],
-			exclude: ["src/**/*.test.ts", "src/**/*.test-d.ts", "src/**/*.spec.ts"],
+			exclude: [
+				"src/**/*.d.ts",
+				"src/**/*.test.ts",
+				"src/**/*.test-d.ts",
+				"src/**/*.spec.ts",
+			],
 			provider: "v8",
 			reporter: ["text", "json-summary", "json"],
 			thresholds: {
-				autoUpdate: true,
+				autoUpdate: false,
 				lines: 18.57,
 				functions: 21.0,
 				branches: 26.86,

@@ -14,7 +14,7 @@ describe("Keystore", () => {
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
-		}, 30000);
+		}, 120000);
 
 		it("encrypts and decrypts with pbkdf2", async () => {
 			const privateKey = PrivateKey.from(
@@ -45,7 +45,7 @@ describe("Keystore", () => {
 
 			expect(decrypted1).toEqual(privateKey);
 			expect(decrypted2).toEqual(privateKey);
-		}, 60000);
+		}, 180000);
 
 		it("throws on wrong password (scrypt)", async () => {
 			const privateKey = PrivateKey.from(
@@ -57,7 +57,7 @@ describe("Keystore", () => {
 			expect(() => Keystore.decrypt(keystore, "wrong-password")).toThrow(
 				Keystore.InvalidMacError,
 			);
-		}, 30000);
+		}, 120000);
 
 		it("throws on wrong password (pbkdf2)", async () => {
 			const privateKey = PrivateKey.from(

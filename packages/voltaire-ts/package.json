@@ -2,7 +2,7 @@
 	"name": "@tevm/voltaire",
 	"version": "0.4.0",
 	"private": false,
-	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
+	"description": "Ethereum primitives and cryptography library with portable TypeScript and WebAssembly entry points",
 	"keywords": [
 		"ethereum",
 		"primitives",
@@ -18,6 +18,10 @@
 		"type": "git",
 		"url": "git+https://github.com/evmts/voltaire.git",
 		"directory": "packages/voltaire-ts"
+	},
+	"homepage": "https://voltaire.tevm.sh/",
+	"bugs": {
+		"url": "https://github.com/evmts/voltaire/issues"
 	},
 	"license": "MIT",
 	"contributors": [
@@ -546,13 +550,16 @@
 	"files": [
 		"dist",
 		"types",
-		"bin"
+		"bin",
+		"README.md",
+		"LICENSE"
 	],
 	"publishConfig": {
-		"access": "public"
+		"access": "public",
+		"provenance": true
 	},
 	"engines": {
-		"node": ">=18"
+		"node": ">=22.22.0"
 	},
 	"scripts": {
 		"build": "pnpm build:dist && pnpm build:types",

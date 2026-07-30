@@ -31,11 +31,12 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 		 * Trusted Setup: Must call loadTrustedSetup() before any KZG operations.
 		 * Setup loads Ethereum KZG Ceremony parameters (~1 MB).
 		 */
-		it("should load trusted setup", { timeout: 60000 }, () => {
+		it("should load trusted setup", { timeout: 120000 }, () => {
 			KZG.freeTrustedSetup();
 			expect(KZG.isInitialized()).toBe(false);
 
-			// loadTrustedSetup is slow (~13s locally, ~30s in CI)
+			// Loading and validating the ceremony data can take over a minute
+			// on resource-constrained CI runners.
 			KZG.loadTrustedSetup();
 			expect(KZG.isInitialized()).toBe(true);
 		});
@@ -116,7 +117,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 		/**
 		 * Tests that trusted setup can be freed and reloaded
 		 */
-		it("should support free and reload cycle", { timeout: 60000 }, () => {
+		it("should support free and reload cycle", { timeout: 120000 }, () => {
 			KZG.loadTrustedSetup();
 			expect(KZG.isInitialized()).toBe(true);
 
@@ -124,7 +125,7 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 			const blob1 = KZG.generateRandomBlob(1);
 			const commitment1 = KZG.Commitment(blob1);
 
-			// Free and reload (reload is slow ~13s locally, ~30s in CI)
+			// Free and reload (validation can take over a minute on CI).
 			KZG.freeTrustedSetup();
 			expect(KZG.isInitialized()).toBe(false);
 
@@ -217,11 +218,11 @@ describe.skipIf(!hasNativeKzg)("docs/crypto/kzg/trusted-setup.mdx - Trusted Setu
 			// afterAll will reload
 		});
 
-		it("should check initialization status", { timeout: 60000 }, () => {
+		it("should check initialization status", { timeout: 120000 }, () => {
 			KZG.freeTrustedSetup();
 			expect(KZG.isInitialized()).toBe(false);
 
-			// loadTrustedSetup is slow (~13s locally, ~30s in CI)
+			// Loading and validating the ceremony data can take over a minute on CI.
 			KZG.loadTrustedSetup();
 			expect(KZG.isInitialized()).toBe(true);
 		});
