@@ -2,6 +2,7 @@ name: voltaire-effect CI
 
 on:
   push:
+    branches: [main]
     paths:
       - 'packages/voltaire-effect/**'
       - '.github/workflows/voltaire-effect-ci.yml'

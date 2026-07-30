@@ -95,6 +95,7 @@ pnpm install --frozen-lockfile
 
 zig build --summary all
 zig build test --summary all
+cargo test --locked
 zig build build-ts-wasm
 zig build crypto-wasm
 

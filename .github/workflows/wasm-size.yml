@@ -2,6 +2,7 @@ name: WASM Size
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:

@@ -2,11 +2,24 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   schedule:
     - cron: '0 0 * * 0'
 
 jobs:
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+      - name: Run Rust wrapper tests
+        run: cargo test --locked
+
   test:
     strategy:
       fail-fast: false

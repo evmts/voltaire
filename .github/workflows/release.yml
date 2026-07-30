@@ -37,6 +37,9 @@ jobs:
           zig build -Doptimize=ReleaseFast
           zig build test -Doptimize=ReleaseFast
 
+      - name: Test Rust wrappers
+        run: cargo test --locked
+
       - name: Build WASM
         run: |
           zig build build-ts-wasm
