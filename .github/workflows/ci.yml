@@ -163,6 +163,8 @@ jobs:
         run: pnpm --filter @tevm/voltaire run build:dist
       - name: Build types
         run: pnpm --filter @tevm/voltaire run build:types
+      - name: Build documentation
+        run: pnpm --filter @voltaire/docs run build
       - name: Run package validation
         run: pnpm --filter @tevm/voltaire run lint:package
       - name: Run TypeScript tests with coverage

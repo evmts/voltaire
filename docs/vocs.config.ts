@@ -3,6 +3,7 @@ import { defineConfig } from "vocs/config";
 export default defineConfig({
 	title: "Voltaire",
 	titleTemplate: "%s · Voltaire",
+	baseUrl: "https://voltaire.tevm.sh",
 	description:
 		"Ethereum primitives and cryptography, written in Zig and shipped to TypeScript, Rust, Python, Go, Swift, and C.",
 	rootDir: ".",
