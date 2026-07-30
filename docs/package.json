@@ -14,5 +14,11 @@
 		"vite": "^8.0.0",
 		"vocs": "^2.7.2",
 		"waku": "^1.0.0-beta.6"
+	},
+	"dependencies": {
+		"@noble/curves": "^2.0.1",
+		"@noble/hashes": "^2.0.1",
+		"@tevm/voltaire": "0.4.0",
+		"ox": "^0.9.6"
 	}
 }

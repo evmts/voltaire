@@ -4,11 +4,37 @@ description: Ethereum primitives and cryptography, written in Zig and shipped to
 layout: minimal
 ---
 
-# Voltaire
+import { Playground } from '../components/Playground.client'
+import { FamilySites } from '../components/FamilySites'
 
-**Ethereum primitives and cryptography, written once in Zig and shipped to every language you actually use.**
+{/* Keep JSX text on a single line: Vocs' server and client renderers normalise
+    multi-line JSX text differently, which produces a hydration mismatch. */}
 
-Addresses, hex, RLP, ABI, transactions, tries, bloom filters, Keccak-256, secp256k1, BLS12-381, BN254, KZG — the layer every Ethereum tool rebuilds from scratch, implemented once with a real test suite and exposed through TypeScript, Zig, Rust, Python, Go, Swift, and a plain C ABI.
+<div className="vlt-hero">
+  <p className="vlt-hero__eyebrow">tevm · primitives and cryptography</p>
+
+  <h1 className="vlt-hero__title">Ethereum primitives, <span>written once in Zig</span></h1>
+
+  <p className="vlt-hero__lead">Ethereum primitives and cryptography, written once in Zig and shipped to every language you actually use. Addresses, hex, RLP, ABI, transactions, tries, bloom filters, Keccak-256, secp256k1, BLS12-381, BN254, KZG — the layer every Ethereum tool rebuilds from scratch, implemented once with a real test suite and exposed through TypeScript, Zig, Rust, Python, Go, Swift, and a plain C ABI.</p>
+
+  <div className="vlt-hero__actions">
+    <a className="vlt-button vlt-button--primary" href="/getting-started">Get started</a>
+    <a className="vlt-button" href="/introduction">Why Voltaire</a>
+    <a className="vlt-button" href="https://github.com/evmts/voltaire">GitHub</a>
+  </div>
+
+  <div className="vlt-install">
+    <span className="vlt-install__prompt" aria-hidden="true">$</span>
+    <span>npm install @tevm/voltaire</span>
+  </div>
+
+  <div className="vlt-badges">
+    <span>MIT licensed</span>
+    <span>71 subpath exports</span>
+    <span>ESM + CJS</span>
+    <span>Native, WASM and portable JS backends</span>
+  </div>
+</div>
 
 ```ts
 import { Address, Hex, Keccak256 } from '@tevm/voltaire'
@@ -21,6 +47,8 @@ Address.toChecksummed(address)
 Hex.fromBytes(Keccak256.hashString('Voltaire'))
 // '0x…'
 ```
+
+<Playground />
 
 ## Start here
 
@@ -58,3 +86,5 @@ Zig EVM agree byte for byte.
 | Kotlin                | Planned          |
 
 MIT licensed. [Source on GitHub](https://github.com/evmts/voltaire).
+
+<FamilySites />

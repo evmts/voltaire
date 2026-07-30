@@ -55,6 +55,19 @@ importers:
         version: 7.3.0(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.44.1)(tsx@4.23.1)(yaml@2.9.0)
 
   docs:
+    dependencies:
+      '@noble/curves':
+        specifier: ^2.0.1
+        version: 2.0.1
+      '@noble/hashes':
+        specifier: ^2.0.1
+        version: 2.0.1
+      '@tevm/voltaire':
+        specifier: 0.4.0
+        version: 0.4.0(@noble/hashes@2.0.1)(abitype@1.2.3(typescript@5.9.3)(zod@4.3.6))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.6)
+      ox:
+        specifier: ^0.9.6
+        version: 0.9.17(typescript@5.9.3)(zod@4.3.6)
     devDependencies:
       react:
         specifier: ^19.2.3
@@ -3466,6 +3479,15 @@ packages:
 
   '@tevm/tsupconfig@1.0.0-next.148':
     resolution: {integrity: sha512-kJblIsgZl7REGfpvm1gQN3aTue0nC4jQ5Orh0D4Wmos2OnTwR3+QHkvINnCzOdFDveqcF/LlrRgZb2FkgSKOzg==}
+
+  '@tevm/voltaire@0.4.0':
+    resolution: {integrity: sha512-JiEXnFXvMTZIXrX3uXxcimBlsiFTFLqOHnkjzjOqegJhrfr716KSZDkhPC/7FOgmH2ITLnahn/aHoZo1onRVsg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      abitype: ^1.1.1
+    peerDependenciesMeta:
+      abitype:
+        optional: true
 
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
@@ -12721,6 +12743,26 @@ snapshots:
     dependencies:
       '@tevm/tsconfig': 1.0.0-next.142
       '@types/node': 24.10.4
+
+  '@tevm/voltaire@0.4.0(@noble/hashes@2.0.1)(abitype@1.2.3(typescript@5.9.3)(zod@4.3.6))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.6)':
+    dependencies:
+      '@adraffy/ens-normalize': 1.11.1
+      '@codesandbox/sandpack-react': 2.20.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@noble/ciphers': 2.1.1
+      '@scure/bip32': 2.0.1
+      '@scure/bip39': 2.0.1(patch_hash=4cbf98246735cf0aeb077cafe60f204f767396769114f512383c693238fa63b6)
+      '@shazow/whatsabi': 0.25.0(@noble/hashes@2.0.1)(typescript@5.9.3)(zod@4.3.6)
+      '@tevm/chains': 0.0.1(typescript@5.9.3)
+      modern-monaco: 0.3.6(typescript@5.9.3)
+    optionalDependencies:
+      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
+      effect: 3.19.13
+    transitivePeerDependencies:
+      - '@noble/hashes'
+      - react
+      - react-dom
+      - typescript
+      - zod
 
   '@tokenizer/token@0.3.0': {}
 
