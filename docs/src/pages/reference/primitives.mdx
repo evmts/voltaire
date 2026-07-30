@@ -1,0 +1,226 @@
+---
+title: Reference — Primitives
+description: Every primitive module, what it is for, and its key members.
+---
+
+# Reference — Primitives
+
+Member lists below were read off the built package, not written from memory. They
+are the useful subset, not exhaustive — `Object.keys(await import('@tevm/voltaire/<Name>'))`
+is always the complete answer.
+
+:::tip
+Import style matters for some modules. `@tevm/voltaire/Address` re-exports the
+sub-namespaces; the flat function set (`toChecksummed`, `isValid`, …) comes from
+the barrel: `import { Address } from '@tevm/voltaire'`. When a name seems missing,
+try the other import.
+:::
+
+## Core values
+
+### `Address`
+20-byte account identifier.
+
+`from`, `fromHex`, `fromBytes`, `fromNumber`, `fromPublicKey`, `fromPrivateKey`,
+`fromBase64`, `fromAbiEncoded`, `toHex`, `toBytes`, `toChecksummed`,
+`toLowercase`, `toUppercase`, `toShortHex`, `toU256`, `toAbiEncoded`, `isZero`,
+`equals`, `isValid`, `isValidChecksum`, `zero`, `compare`, `lessThan`,
+`greaterThan`, `sortAddresses`, `deduplicateAddresses`, `clone`,
+`calculateCreateAddress`, `calculateCreate2Address`, `SIZE`, `assert`,
+`IsContract`. → [guide](/guides/addresses)
+
+### `Hex`
+Hex strings with validated length.
+
+`from`, `fromBytes`, `fromNumber`, `fromBigInt`, `fromString`, `fromBoolean`,
+`toBytes`, `toNumber`, `toBigInt`, `toString`, `toBoolean`, `isHex`, `validate`,
+`concat`, `random`, `zero`, `size`, `isSized`, `assertSize`, `slice`, `pad`,
+`padRight`, `trim`, `equals`, `xor`, `clone`.
+
+### `Bytes`
+Raw byte arrays with the operations you keep rewriting.
+
+`from`, `fromHex`, `fromBigInt`, `fromNumber`, `fromString`, `zero`, `random`,
+`clone`, `compare`, `concat`, `equals`, `isBytes`, `isEmpty`, `padLeft`,
+`padRight`, `size`, `slice`, `trimLeft`, `trimRight`, `toBigInt`, `toHex`,
+`toNumber`, `toString`, `assert`.
+
+### `Hash`
+32-byte digests.
+
+`from`, `fromBytes`, `fromHex`, `keccak256`, `keccak256String`, `keccak256Hex`,
+`random`, `toBytes`, `toHex`, `equals`, `isZero`, `isHash`, `isValidHex`,
+`clone`, `slice`, `concat`, `format`, `merkleRoot`, `assert`, `ZERO`, `SIZE`.
+
+### `Uint`
+`uint256`, wrapping mod 2²⁵⁶, branded over `bigint`.
+
+`from`, `tryFrom`, `fromHex`, `fromBigInt`, `fromNumber`, `fromBytes`,
+`fromAbiEncoded`, `toHex`, `toBigInt`, `toNumber`, `toBytes`, `toAbiEncoded`,
+`plus`, `minus`, `times`, `dividedBy`, `modulo`, `toPower`, `gcd`, `bitwiseAnd`,
+`bitwiseOr`, `bitwiseXor`, `bitwiseNot`, `shiftLeft`, `shiftRight`, `equals`,
+`lessThan`, `greaterThan`, `greaterThanOrEqual`, `isZero`, `isPowerOf2`,
+`minimum`, `maximum`, `bitLength`, `leadingZeros`, `popCount`, `isValid`,
+`MAX`, `MIN`, `ZERO`, `ONE`, `SIZE`. → [guide](/guides/units)
+
+### `Denomination`
+`Wei`, `Gwei`, `Ether` namespaces plus their branded types. Each has `from` and
+`to*`/`from*` converters and `toU256`. → [guide](/guides/units)
+
+### `Base64`
+`encode`, `decode`, `encodeString`, `decodeToString`, `encodeUrlSafe`,
+`decodeUrlSafe`, `encodeStringUrlSafe`, `decodeUrlSafeToString`, `from`,
+`fromUrlSafe`, `toBase64`, `toBase64Url`, `toBytes`, `toBytesUrlSafe`,
+`isValid`, `isValidUrlSafe`, `calcEncodedSize`, `calcDecodedSize`.
+
+## Keys and signatures
+
+### `PrivateKey`
+`from` (hex → 32 validated bytes), `fromBytes`, `toHex`, `toPublicKey`,
+`toAddress`, `sign`. Range-checked against the curve order.
+
+### `PublicKey`
+`from`, `fromPrivateKey`, `compress`, `decompress`, `isCompressed`, `toAddress`,
+`toHex`, `verify`.
+
+### `Signature`
+`from`, `fromBytes`, `fromHex`, `fromCompact`, `fromDER`, `fromTuple`,
+`fromRpc`, `fromSecp256k1`, `fromEd25519`, `fromP256`, `getR`, `getS`, `getV`,
+`getAlgorithm`, `isCanonical`, `equals`, `is`, plus `COMPONENT_SIZE`,
+`ECDSA_SIZE`, `ECDSA_WITH_V_SIZE`, `ED25519_SIZE`, `RECOVERY_ID_MIN/MAX` and
+typed errors including `NonCanonicalSignatureError`.
+→ [guide](/guides/keys-and-signatures)
+
+## Encoding
+
+### `Rlp`
+`encode`, `encodeBytes`, `encodeList`, `encodeArray`, `encodeObject`,
+`encodeVariadic`, `encodeBatch`, `decode`, `decodeArray`, `decodeObject`,
+`decodeValue`, `decodeBatch`, `getEncodedLength`, `getLength`, `isList`,
+`isString`, `isCanonical`, `validate`, `flatten`, `toRaw`, `toJSON`,
+`fromJSON`, `equals`. → [guide](/guides/rlp)
+
+### `Abi`
+Whole-ABI: `getItem`, `format`, `formatWithArgs`, `encode`, `decode`,
+`decodeData`, `decodeFunction`, `decodeLog`, `parseLogs`, `encodeParameters`,
+`decodeParameters`, `encodePacked`, `findSelectorCollisions`,
+`hasSelectorCollisions`.
+Item-level sub-namespaces: `Abi.Function` (`getSignature`, `getSelector`,
+`encodeParams`, `decodeParams`, `encodeResult`, `decodeResult`), `Abi.Event`
+(`getSignature`, `getSelector`, `encodeTopics`, `decodeLog`), `Abi.Error`,
+`Abi.Constructor`, `Abi.Parameter`, `Abi.Interface` (ERC-165 interface ids).
+→ [guide](/guides/abi)
+
+## Transactions
+
+### `Transaction`
+Per-type namespaces `Legacy`, `EIP2930`, `EIP1559`, `EIP4844`, `EIP7702`, each
+with `serialize`, `deserialize`, `hash`, `getSigningHash`, `getSender`,
+`verifySignature`.
+Envelope-agnostic: `detectType`, `deserialize`, `fromRpc`, `toRpc`, `format`,
+`hash`, `getChainId`, `getGasPrice`, `getRecipient`, `getSender`,
+`getAccessList`, `hasAccessList`, `getBlobCount`, `getBlobVersionedHashes`,
+`getAuthorizations`, `getAuthorizationCount`, `isLegacy`, `isEIP1559`,
+`isEIP2930`, `isEIP4844`, `isEIP7702`, `isSigned`, `isContractCall`,
+`isContractCreation`, `validateNonce`, `validateGasLimit`, `validateGasPrice`,
+`validateValue`, `validateChainId`, `assertSigned`, `withNonce`, `withGasLimit`,
+`withGasPrice`, `withData`, `replaceWith`. → [guide](/guides/transactions)
+
+### `AccessList` (EIP-2930)
+`create`, `from`, `fromBytes`, `toBytes`, `merge`, `deduplicate`,
+`includesAddress`, `includesStorageKey`, `keysFor`, `addressCount`,
+`storageKeyCount`, `gasCost`, `gasSavings`, `hasSavings`, `isEmpty`, `isItem`,
+`assertValid`.
+
+### `Authorization` (EIP-7702)
+`sign`, `verify`, `hash`, `validate`, `process`, `processAll`, `getGasCost`,
+`calculateGasCost`, `isUnsigned`, `equals`, `format`, plus WASM-backed variants
+(`authorityWasm`, `signingHashWasm`, `gasCostWasm`, `validateWasm`).
+
+### `Blob` (EIP-4844)
+`from`, `fromData`, `toData`, `splitData`, `joinData`, `toCommitment`,
+`toProof`, `toVersionedHash`, `verify`, `verifyBatch`, `isValid`,
+`isValidVersion`, `calculateGas`, `estimateBlobCount`.
+
+## Contract and EVM data
+
+### `Bytecode`
+Static analysis over EVM bytecode: `from`, `fromHex`, `analyze`,
+`analyzeJumpDestinations`, `analyzeBlocks`, `analyzeStack`, `analyzeGas`,
+`detectFusions`, `getBlock`, `extractRuntime`, `hasMetadata`, `isPush`,
+`getPushSize`, `isTerminator`, `formatInstruction`, `formatInstructions`,
+`hash`, `equals`.
+
+### `ContractCode` / `InitCode`
+`from`, `fromHex`, `toHex`, `extractRuntime`, `hasMetadata`, `stripMetadata`,
+`equals`; `InitCode` adds `estimateGas`.
+
+### `Opcode`
+`getName`, `getDescription`, `getCategory`, `getGasCost`, `getStackEffect`,
+`getStackInput`, `getStackOutput`, `getPushSize`, `isPush`, `isDup`, `isSwap`,
+`isLog`, `isJump`, `isJumpDestination`, `dupPosition`, `disassemble`, `format`,
+`info`.
+
+### `GasConstants`
+`calculateTxIntrinsicGas`, `calculateCallCost`, `calculateCreateCost`,
+`calculateKeccak256Cost`, `calculateCopyCost`, `calculateLogCost`,
+`calculateMemoryExpansionCost`, `calculateSstoreCost`, `getSstoreRefund`,
+`calculateMaxRefund`, `getColdAccountAccessCost`, `getColdSloadCost`,
+`getSelfdestructRefund`, `hasEIP2929`, `hasEIP1153`.
+
+### `FeeMarket`
+`nextState`, `calculateTxFee`, `calculateBlobTxFee`, `calculateExcessBlobGas`,
+`projectBaseFees`, `canIncludeTx`, `validateState`, `validateTxFeeParams`,
+`gweiToWei`, `weiToGwei`.
+
+### `Hardfork`
+`fromString`, `compare`, `equals`, `lt`, `gt`, `gte`, `isBefore`, `isAfter`,
+`isAtLeast`, `isPoS`, `isPostMerge`, `isValidName`, `allIds`, `allNames`, and
+per-EIP predicates (`hasEIP1559`, `hasEIP4844`, `hasEIP3855`, `hasEIP1153`, …).
+
+### `Chain`
+`from`, `byId`, `fromId` — chain metadata lookup.
+
+## State and logs
+
+### `State`
+Account state and storage keys: `create`, `from`, `fromString`, `toString`,
+`equals`, `hashCode`, `is`.
+
+### `Trie`
+Merkle-Patricia trie: `init`, `put`, `get`, `del`, `rootHash`, `prove`,
+`verify`, `clear`, `hashNode`, `keyToNibbles`, `nibblesToKey`, `encodePath`,
+`decodePath`, `commonPrefixLength`.
+
+### `BinaryTree`
+The Verkle-successor binary tree: `init`, `insert`, `get`, `rootHash`,
+`rootHashHex`, `addressToKey`, `splitKey`, `getStemBit`, `hashLeaf`,
+`hashStem`, `hashInternal`, `hashNode`.
+
+### `EventLog`
+`create`, `from`, `fromRpc`, `toRpc`, `getTopic0`, `getSignature`, `getIndexed`,
+`getIndexedTopics`, `filterLogs`, `matchesFilter`, `matchesAddress`,
+`matchesTopics`, `sortLogs`, `isRemoved`, `wasRemoved`, `clone`, `copy`.
+
+### `LogFilter`
+`from`, `matches`, `isEmpty`.
+
+### `BloomFilter`
+`create`, `add`, `contains`, `merge`, `combine`, `density`,
+`expectedFalsePositiveRate`, `isEmpty`, `hash`, `hashFromKeccak`, `fromHex`,
+`toHex` — the 2048-bit log bloom in block headers.
+
+## Identity and messages
+
+### `Ens`
+ENSIP-15 normalization: `normalize`, `beautify`, `namehash`, `labelhash`,
+`validate`, `isValid`, `from`, `is`, `toString`.
+
+### `Siwe`
+EIP-4361: `create`, `format`, `parse`, `getMessageHash`, `validate`, `verify`,
+`verifyMessage`, `generateNonce`. → [guide](/guides/eip712)
+
+## Related
+
+- [Cryptography](/reference/crypto)
+- [Entry Points](/reference/entry-points)

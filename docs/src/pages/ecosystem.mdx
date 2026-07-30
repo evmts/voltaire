@@ -1,0 +1,84 @@
+---
+title: Where Voltaire Fits
+description: How Voltaire relates to tevm, zevm, guillotine, guillotine-mini, and voltaire-effect.
+---
+
+# Where Voltaire Fits
+
+The evmts stack is deliberately split into layers that can be used
+independently. If you arrived here from one of the sibling projects, this page
+should tell you whether you are in the right repository.
+
+## The layers
+
+**Voltaire — primitives and cryptography (this project).**
+Addresses, hex, bytes, RLP, ABI, transactions, tries, bloom filters, gas
+constants, hardfork metadata, and the whole cryptographic toolbox. Written in Zig
+with bindings for TypeScript, Rust, Python, Go, Swift, and C. Knows nothing about
+executing bytecode and nothing about talking to a node. Everything above depends
+on it.
+
+**Guillotine — EVM execution.**
+The interpreter: opcodes, frames, memory, stack, gas metering, precompile
+dispatch. It consumes Voltaire's primitives rather than defining its own, which is
+why a transaction hash computed in a Voltaire wallet and one computed inside
+Guillotine agree by construction.
+[github.com/evmts/guillotine](https://github.com/evmts/guillotine)
+
+**Guillotine-mini — the minimal EVM.**
+A deliberately small, readable EVM aimed at spec conformance and teaching rather
+than raw throughput. Useful as a differential-testing oracle against the full
+implementation and as the version you can actually read end to end.
+
+**zevm — the Zig EVM/node work.**
+The Zig-side execution and node effort in the same family, sharing Voltaire as its
+primitive layer.
+
+**tevm — the TypeScript Ethereum tooling.**
+The application-facing end: an EVM in TypeScript, a Solidity-imports bundler, and
+the client tooling most JavaScript developers meet first. Voltaire is the
+primitives layer that tevm's newer components build on.
+[github.com/evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo)
+
+**voltaire-effect — the application layer over Voltaire.**
+Same primitives, wrapped as Effect values: typed errors, layers for dependency
+injection, providers, contract registries, and streams. Lives in this repository
+at `packages/voltaire-effect`. → [guide](/guides/effect)
+
+## Picking a layer
+
+| You want to…                                       | Use                     |
+| -------------------------------------------------- | ----------------------- |
+| Hash, encode, sign, or parse Ethereum data          | **Voltaire**            |
+| Do that with typed errors and DI in an app          | **voltaire-effect**     |
+| Execute EVM bytecode at speed                       | **Guillotine**          |
+| Read or differential-test a spec-faithful EVM        | **Guillotine-mini**     |
+| Build Ethereum tooling in TypeScript                 | **tevm**                |
+| Work on the Zig node/EVM stack                       | **zevm**                |
+
+## Why the split
+
+A primitives library and an EVM have very different release cadences and very
+different audiences. Bundling them forces a wallet that only needs
+`keccak256` to depend on an interpreter, and forces the interpreter's consumers to
+absorb every primitives change.
+
+Splitting them also creates a real seam for correctness. Because Guillotine and
+tevm consume Voltaire rather than reimplementing it, a fix to RLP canonicality or
+static-tuple ABI head sizes propagates to everything at once — instead of being
+fixed in three places, at three different times, with two of them left subtly
+wrong.
+
+## Documentation sites
+
+| Project        | Docs                                     |
+| -------------- | ---------------------------------------- |
+| Voltaire       | [voltaire.tevm.sh](https://voltaire.tevm.sh) |
+| Playground     | [playground.tevm.sh](https://playground.tevm.sh) |
+
+Sibling projects publish under the same `*.tevm.sh` family.
+
+## Related
+
+- [Introduction](/introduction) — what Voltaire is
+- [Other Languages](/native/other-languages) — the bindings surface

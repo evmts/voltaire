@@ -1,0 +1,131 @@
+---
+title: Addresses
+description: Parsing, checksumming, validating, comparing, and deriving Ethereum addresses.
+---
+
+# Addresses
+
+An `Address` in Voltaire is a 20-byte `Uint8Array` with a phantom brand. There is
+no wrapper class: it indexes, slices, and iterates like the byte array it is,
+but the type system will not let a bare `Uint8Array` through where an address is
+required.
+
+## Constructing
+
+```js
+import { Address, Hex } from '@tevm/voltaire'
+
+// From hex — accepts lowercase, uppercase, or checksummed input
+const a = Address.from('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+
+// From raw bytes (must be exactly 20)
+Address.fromBytes(new Uint8Array(20))
+
+// From a number/bigint — useful for precompile addresses
+Hex.fromBytes(Address.fromNumber(1n))
+// 0x0000000000000000000000000000000000000001
+
+// The zero address
+Hex.fromBytes(Address.zero())
+// 0x0000000000000000000000000000000000000000
+```
+
+`Address.from` throws a typed error (`InvalidLengthError`, `InvalidFormatError`)
+on bad input rather than returning a sentinel value.
+
+## Formatting
+
+```js
+Address.toHex(a) // '0xd8da6bf26964af9d7eed9e03e53415d37aa96045' (lowercase)
+Address.toChecksummed(a) // '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' (EIP-55)
+Address.toLowercase(a)
+Address.toUppercase(a)
+Address.toShortHex(a) // '0xd8da6b...6045' — for UI, never for comparison
+Address.toBytes(a) // Uint8Array(20)
+```
+
+:::tip
+Always display `toChecksummed`. EIP-55 mixed case is a checksum: a user pasting
+a checksummed address into another tool gets a typo caught. Always compare
+`toHex` (lowercase) or, better, compare bytes with `Address.equals`.
+:::
+
+## Validating
+
+```js
+Address.isValid('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045') // true
+Address.isValidChecksum('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045') // true
+Address.isValidChecksum('0xd8da6bf26964af9d7eed9e03e53415d37aa96045') // false
+```
+
+`isValid` checks shape (0x prefix, 40 hex digits). `isValidChecksum` additionally
+requires the EIP-55 case pattern to match — an all-lowercase address is *valid*
+but *not checksummed*, which is why the second call is `false`. Treat that
+distinction deliberately: rejecting all-lowercase input breaks a lot of
+legitimate tooling.
+
+## Comparing and sorting
+
+```js
+Address.equals(a, b) // constant-time-friendly byte equality
+Address.compare(a, b) // -1 | 0 | 1, big-endian numeric order
+Address.lessThan(a, b)
+Address.greaterThan(a, b)
+
+Address.sortAddresses([c, a, b]) // canonical order (e.g. Uniswap token0/token1)
+Address.deduplicateAddresses([a, a, b]) // [a, b]
+
+Address.isZero(Address.zero()) // true
+```
+
+## Numeric and ABI forms
+
+```js
+Address.toU256(a)
+// 1238012972454248237435767387143779415173800484933n
+
+Hex.fromBytes(Address.toAbiEncoded(a))
+// 0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045
+```
+
+`toAbiEncoded` left-pads to a 32-byte ABI word; `Address.fromAbiEncoded` reverses
+it and rejects non-zero padding bytes.
+
+## Deriving addresses
+
+```js
+import { Address, Hex } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+
+// From a private key
+const owner = PrivateKey.toAddress(
+  '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318',
+)
+Address.toChecksummed(owner)
+// 0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+
+// From a 64-byte uncompressed public key (no 0x04 prefix)
+Address.fromPublicKey(publicKey)
+
+// CREATE
+Address.toChecksummed(Address.calculateCreateAddress(owner, 0n))
+
+// CREATE2
+Address.toChecksummed(
+  Address.calculateCreate2Address(owner, salt, initCode),
+)
+```
+
+## Zig
+
+```zig
+const primitives = @import("primitives");
+const Address = primitives.Address;
+
+const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksummed = Address.toChecksummed(addr);       // [42]u8
+const ok = Address.isValid("0xa0cf...251e");            // bool
+const ok55 = Address.isValidChecksum("0xA0Cf...251e");  // bool
+```
+
+Run the full worked example with `zig build example-address`.

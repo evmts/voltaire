@@ -1,0 +1,143 @@
+---
+title: Units & Denominations
+description: Convert between wei, gwei, and ether without losing precision, and do 256-bit arithmetic safely.
+---
+
+# Units & Denominations
+
+Ethereum value arithmetic is exact integer arithmetic on wei. Every rounding
+shortcut in this layer is a bug that shows up as a few wei of drift, then as a
+failed invariant. Voltaire keeps wei in `bigint` and treats the human-facing
+units as conversions, not as storage.
+
+## Wei, gwei, ether
+
+```js
+import * as Denomination from '@tevm/voltaire/Denomination'
+
+const { Ether, Gwei, Wei } = Denomination
+
+// Ether accepts a decimal string, so no float ever touches the value
+Ether.toWei(Ether.from('1.5'))
+// 1500000000000000000n
+
+Wei.toEther(Wei.from(1_500_000_000_000_000_000n))
+// 1.5
+
+Gwei.toWei(Gwei.from(20))
+// 20000000000n
+```
+
+Each of the three namespaces has the same shape:
+
+| Namespace | `from`            | Converters                            |
+| --------- | ----------------- | ------------------------------------- |
+| `Wei`     | `bigint`          | `toGwei`, `toEther`, `toU256`, `fromGwei`, `fromEther` |
+| `Gwei`    | number or string  | `toWei`, `toEther`, `toU256`, `fromWei`, `fromEther`   |
+| `Ether`   | decimal string    | `toWei`, `toGwei`, `toU256`, `fromWei`, `fromGwei`     |
+
+`toU256` produces a branded `Uint` for ABI encoding or transaction fields.
+
+:::tip
+Parse user input with `Ether.from('<string>')`, never with
+`Number(input) * 1e18`. `0.1 + 0.2 !== 0.3` in float, and at 18 decimals that
+error is real money.
+:::
+
+Branded variants (`BrandedWei`, `BrandedGwei`, `BrandedEther`) let you type a
+function so that a gwei value cannot be passed where wei is expected — the class
+of bug that turns a 20 gwei gas price into 20 wei.
+
+## 256-bit integers
+
+`Uint` is Ethereum's `uint256` with checked semantics:
+
+```js
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(255n)
+
+Uint.toHex(a)
+// 0x00000000000000000000000000000000000000000000000000000000000000ff
+Uint.toBigInt(a) // 255n
+Uint.toNumber(a) // 255 — throws if the value exceeds Number.MAX_SAFE_INTEGER
+
+// Arithmetic — named, not operator-overloaded
+Uint.plus(a, Uint.from(1n))
+Uint.minus(a, Uint.from(1n))
+Uint.times(a, Uint.from(2n))
+Uint.dividedBy(a, Uint.from(2n))
+Uint.modulo(a, Uint.from(16n))
+Uint.toPower(Uint.from(2n), Uint.from(8n))
+
+// Bitwise
+Uint.bitwiseAnd(a, b)
+Uint.bitwiseOr(a, b)
+Uint.bitwiseXor(a, b)
+Uint.bitwiseNot(a)
+Uint.shiftLeft(a, 8)
+Uint.shiftRight(a, 8)
+
+// Comparison
+Uint.equals(a, b)
+Uint.lessThan(a, b)
+Uint.greaterThanOrEqual(a, b)
+Uint.isZero(a)
+Uint.minimum(a, b)
+Uint.maximum(a, b)
+
+// Bit inspection — useful for gas accounting and packing
+Uint.bitLength(a) // 8
+Uint.leadingZeros(a)
+Uint.popCount(a)
+```
+
+Constants: `Uint.MAX` (2²⁵⁶ − 1), `Uint.MIN`, `Uint.ZERO`, `Uint.ONE`,
+`Uint.SIZE` (32).
+
+A `Uint` **is** a `bigint` at runtime (branded at the type level), so
+`typeof Uint.from(255n) === 'bigint'`. Arithmetic **wraps modulo 2²⁵⁶**, matching
+EVM semantics exactly:
+
+```js
+Uint.toBigInt(Uint.plus(Uint.MAX, Uint.ONE)) // 0n
+Uint.toBigInt(Uint.minus(Uint.ZERO, Uint.ONE)) // Uint.MAX
+```
+
+That is the right default when you are mirroring on-chain execution, and a trap
+when you are doing application accounting — check your own bounds if you need
+saturating or throwing behaviour.
+
+Parsing is the strict part: `Uint.from` throws on out-of-range or malformed
+input, `Uint.tryFrom` returns `undefined` instead, `Uint.isValid` returns a
+boolean, and `Uint.toNumber` throws rather than losing precision:
+
+```js
+Uint.tryFrom('nope') // undefined
+Uint.toNumber(Uint.from(2n ** 60n))
+// throws: Uint256 value exceeds MAX_SAFE_INTEGER: 1152921504606846976
+```
+
+## Gas and fees
+
+```js
+import * as FeeMarket from '@tevm/voltaire/FeeMarket'
+import * as GasConstants from '@tevm/voltaire/GasConstants'
+```
+
+`FeeMarket` implements the EIP-1559 base fee update rule and priority fee
+arithmetic; `GasConstants` carries the per-opcode and per-transaction gas
+constants (intrinsic gas, calldata zero/non-zero byte cost, memory expansion,
+access-list costs).
+
+For a specific transaction's price at a given base fee:
+
+```js
+Transaction.EIP1559.getEffectiveGasPrice(tx, baseFee)
+// min(maxFeePerGas, baseFee + maxPriorityFeePerGas)
+```
+
+## Related
+
+- [Transactions](/guides/transactions) — where these values end up
+- [Reference: Primitives](/reference/primitives)

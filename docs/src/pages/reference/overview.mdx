@@ -1,0 +1,114 @@
+---
+title: Reference — Overview
+description: The complete module map, derived from the package's real export list.
+---
+
+# Reference — Overview
+
+Every module below is a real entry in `packages/voltaire-ts/package.json`'s
+`exports` map, so `@tevm/voltaire/<Name>` resolves for each one.
+
+## How to read the API
+
+**Namespaces, not classes.** Each module is a namespace of free functions taking
+data as the first argument:
+
+```js
+import * as Address from '@tevm/voltaire/Address'
+Address.toChecksummed(address)
+```
+
+**Naming.** `Type.fromFoo` constructs from `Foo`; `Type.toFoo` converts to `Foo`;
+`Type.from` is the general constructor; `Type.is*` / `Type.isValid*` are
+predicates; `Type.assert*` throws instead of returning a boolean.
+
+**Two layers.** Many modules export both a public wrapper and an internal
+`_`-prefixed variant:
+
+```js
+Address.toHex('0x…') // wrapper: accepts loose input, converts for you
+Address._toHex(addr) // internal: requires an already-branded Address, no conversion
+```
+
+Use the wrapper unless you are in a hot loop with values you already validated.
+
+**Errors, not sentinels.** Failures throw typed errors from
+`@tevm/voltaire/errors`, each carrying a `_tag`, a `code`, a `docsPath`, and
+context. Nothing returns `null` to mean "invalid".
+
+## Entry points
+
+| Subpath        | What it is                          |
+| -------------- | ----------------------------------- |
+| `.`            | the barrel — portable JavaScript     |
+| `./wasm`       | WebAssembly-backed implementations   |
+| `./native`     | native FFI implementations           |
+| `./functional` | functional-style variants            |
+| `./errors`     | the typed error hierarchy            |
+
+See [Entry Points](/reference/entry-points) for details and
+[Native, WASM & Portable JS](/native/backends) for how to choose.
+
+## Primitives
+
+`Abi`, `AccessList`, `Address` (+ `Address/functional`), `Authorization`,
+`Base64`, `BinaryTree`, `Blob`, `BloomFilter`, `Bytecode`, `Bytes`, `Chain`,
+`ContractCode`, `Denomination`, `Ens`, `EventLog`, `FeeMarket`, `GasConstants`,
+`Hardfork`, `Hash`, `Hex`, `InitCode`, `LogFilter`, `Opcode`, `PrivateKey`,
+`PublicKey`, `Rlp`, `Signature`, `Siwe`, `State`, `Transaction`, `Trie`, `Uint`.
+
+Details: [Primitives](/reference/primitives).
+
+## Cryptography
+
+`AesGcm`, `Bip39`, `Blake2`, `Bls12381`, `BN254`, `ChaCha20Poly1305`, `Ed25519`,
+`EIP712`, `HDWallet`, `HMAC`, `Keccak256` (+ `/native`, `/wasm`), `Keystore`,
+`KZG`, `ModExp`, `P256`, `Ripemd160`, `Secp256k1`, `SHA256`, `X25519`,
+`signers`.
+
+Details: [Cryptography](/reference/crypto).
+
+## Higher-level modules
+
+| Subpath            | Contents                                              |
+| ------------------ | ----------------------------------------------------- |
+| `./block`          | block types and block streaming                        |
+| `./transaction`    | transaction-level helpers above the primitives         |
+| `./contract`       | contract call/encode helpers                           |
+| `./stream`         | `BlockStream`, `EventStream`, `TransactionStream`      |
+| `./provider`       | EIP-1193 provider types and plumbing                   |
+| `./jsonrpc`        | JSON-RPC types generated from the OpenRPC spec          |
+| `./evm`, `./evm/*` | frame, host interface, instruction handlers            |
+| `./precompiles`    | precompiles `0x01`–`0x0a` plus the BLS set             |
+| `./utils`          | shared utilities                                       |
+
+## Zig modules
+
+`primitives`, `crypto`, `precompiles`, `state-manager`, `blockchain`,
+`jsonrpc`, `c_kzg` — see [Zig](/native/zig).
+
+## Known API rough edges
+
+Documented here because they change how you call the library today, not as
+aspiration:
+
+- **`Abi` whole-ABI functions are `this`-bound.** `Abi.encode(abi, name, args)`
+  throws `this.find is not a function`; use `Abi.encode.call(abi, name, args)`, or
+  prefer the item-level `Abi.Function.*` / `Abi.Event.*` API.
+  See [ABI Encoding](/guides/abi).
+- **`Transaction` namespaces are inconsistent.** `EIP1559.*` takes the transaction
+  as an argument; `Legacy.*` requires `.call(tx)`.
+  See [Transactions](/guides/transactions).
+- **Some modules are absent from the barrel.** `PrivateKey`, `PublicKey`,
+  `Denomination`, `HDWallet`, `Keystore`, `KZG`, and `Transaction`'s per-type
+  namespaces must be imported from their subpath.
+- **`Siwe.format` emits a lowercase address**, where EIP-4361 requires EIP-55.
+  See [EIP-712 Typed Data](/guides/eip712).
+- **KZG is unavailable from the portable JS entry point.** Use WASM (with the
+  module loaded) or native.
+
+## Generating a fuller API reference
+
+The TypeScript package is configured for TypeDoc (`typedoc.json`, with the
+markdown and frontmatter plugins). The source is the authority — every function
+carries JSDoc with `@param`, `@returns`, `@throws`, `@example`, and a `@see` link.

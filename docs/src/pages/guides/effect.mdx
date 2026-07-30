@@ -1,0 +1,126 @@
+---
+title: Effect Integration
+description: voltaire-effect — typed errors, dependency injection, and composable RPC for application code.
+---
+
+# Effect Integration
+
+`@tevm/voltaire` is a primitives library: it hashes, encodes, and signs, and it
+throws typed errors when input is wrong. `voltaire-effect` is the layer above it
+for **applications**: RPC providers, contract calls, streams, and services, all
+expressed as [Effect](https://effect.website) values so that failure, retry,
+timeout, and dependency wiring are part of the type rather than a runtime
+surprise.
+
+If you are writing a library, stay on `@tevm/voltaire`. If you are writing an
+app, service, or indexer, this is the recommended surface.
+
+## Install
+
+```bash
+pnpm add voltaire-effect effect @effect/platform
+```
+
+`voltaire-effect` 1.1.0 declares `effect ^3.19.0`, `@effect/platform ^0.94.0`,
+and `@tevm/voltaire` as peers, so your app pins the Effect version.
+
+## What changes
+
+The pitch is not "the same thing with more ceremony" — it is that the things
+libraries usually hide become explicit and composable.
+
+```ts
+import { Effect } from 'effect'
+import { HttpProvider, makeContractRegistry } from 'voltaire-effect'
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ type: 'address', name: 'owner' }],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
+  },
+] as const
+
+const Contracts = makeContractRegistry({
+  USDC: {
+    abi: erc20Abi,
+    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  },
+  WETH: {
+    abi: erc20Abi,
+    address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+  },
+})
+
+const program = Effect.gen(function* () {
+  const { USDC, WETH } = yield* Contracts.Service
+  const usdc = yield* USDC.read.balanceOf(userAddress)
+  const weth = yield* WETH.read.balanceOf(userAddress)
+  return { usdc, weth }
+}).pipe(
+  Effect.retry({ times: 3 }), // explicit, not a transport default
+  Effect.timeout('10 seconds'), // explicit, and typed as a failure
+  Effect.provide(Contracts.layer),
+  Effect.provide(HttpProvider('https://eth.llamarpc.com')),
+)
+
+const { usdc, weth } = await Effect.runPromise(program)
+```
+
+Three things to notice:
+
+**Retries are visible.** A viem `http(url, { retryCount: 3 })` hides the policy in
+transport config. Here the policy is a combinator on the program, so the code
+reviewer can see it.
+
+**Errors are in the type.** `ContractCallError`, `ContractWriteError`,
+`ContractEventError` and friends appear in the `Effect`'s error channel. You
+cannot forget to handle a decode failure, because the compiler tracks it.
+
+**The provider is a dependency.** Swap `HttpProvider` for a test layer and the
+same program runs against a mock — no module mocking, no global patching.
+
+## What ships
+
+- **Providers and transports** — `HttpProvider`, `HttpProviderFetch`,
+  `WebSocketProvider`, plus lower-level `HttpTransport` if you need it.
+- **Contracts** — `makeContractRegistry`, `Contract`, typed `read`/`write`
+  surfaces, event filters and decoding (`DecodedEvent`, `EventFilter`).
+- **Services** — `Account`, `Cache`, `Chain`, `Debug`, Engine API,
+  `BlockExplorerApi`, `AbiEncoder`, `Blockchain`.
+- **Streams** — `BlockStream`, `TransactionStream`, and the `Stream` namespace,
+  as Effect `Stream`s with backpressure rather than callbacks.
+- **Standards** — `ERC20`, `ERC721`, `ERC1155`, `ERC165`.
+- **Schema-wrapped primitives** — every primitive re-exported as an Effect Schema:
+  `Address`, `Hex`, `Hash`, `Transaction`, `TypedData`, `U256`, `Uint8` …
+  `Uint128`, `UserOperation`, `StealthAddress`, `Withdrawal`, and more, so
+  decoding untrusted JSON-RPC input is a schema parse with a typed failure.
+- **Crypto** — the same algorithms (`Bip39`, `Blake2`, `Bls12381`, `Bn254`,
+  `ChaCha20Poly1305`, `Ed25519`, `AesGcm`, …) behind `CryptoLive` and
+  `CryptoTest` layers, so tests can run against deterministic crypto.
+
+## Testing
+
+Because dependencies are layers, a test is the same program with different
+wiring:
+
+```ts
+import { Effect } from 'effect'
+import { CryptoTest } from 'voltaire-effect'
+
+const test = program.pipe(
+  Effect.provide(CryptoTest), // deterministic crypto
+  Effect.provide(MockProvider), // your own stub layer
+)
+```
+
+## Relationship to the core package
+
+`voltaire-effect` depends on `@tevm/voltaire`; it does not fork it. Every hash,
+codec, and signature is the same implementation documented in the rest of this
+site — the Effect layer adds the error channel, the schemas, and the services.
+
+Package docs live alongside the source in
+[`packages/voltaire-effect`](https://github.com/evmts/voltaire/tree/main/packages/voltaire-effect).

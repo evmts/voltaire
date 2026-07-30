@@ -1,0 +1,60 @@
+---
+title: Voltaire
+description: Ethereum primitives and cryptography, written in Zig and shipped to TypeScript, Rust, Python, Go, Swift, and C.
+layout: minimal
+---
+
+# Voltaire
+
+**Ethereum primitives and cryptography, written once in Zig and shipped to every language you actually use.**
+
+Addresses, hex, RLP, ABI, transactions, tries, bloom filters, Keccak-256, secp256k1, BLS12-381, BN254, KZG — the layer every Ethereum tool rebuilds from scratch, implemented once with a real test suite and exposed through TypeScript, Zig, Rust, Python, Go, Swift, and a plain C ABI.
+
+```ts
+import { Address, Hex, Keccak256 } from '@tevm/voltaire'
+
+const address = Address.from('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+
+Address.toChecksummed(address)
+// '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+
+Hex.fromBytes(Keccak256.hashString('Voltaire'))
+// '0x…'
+```
+
+## Start here
+
+- [Introduction](/introduction) — what Voltaire is and why it exists
+- [Installation](/installation) — the verified toolchain and install commands
+- [Getting Started](/getting-started) — a complete, runnable first program
+- [Where Voltaire Fits](/ecosystem) — how it relates to tevm, guillotine, and zevm
+
+## Why it exists
+
+Every Ethereum stack — a wallet, an indexer, an EVM, a compiler — needs the same
+primitive layer, and almost every one of them reimplements it. Those
+reimplementations disagree at the edges: checksum handling, RLP canonicality,
+signature malleability, ABI head/tail offsets for static tuples. Those edges are
+exactly where funds get lost.
+
+Voltaire's answer is one implementation in Zig, differentially tested against
+`@noble/*`, `ox`, `viem`, and `ethers`, compiled to native code and WebAssembly,
+and re-exported through thin idiomatic bindings so that a Python indexer and a
+Zig EVM agree byte for byte.
+
+## Status
+
+| Target                | Status           |
+| --------------------- | ---------------- |
+| Zig                   | Production ready |
+| TypeScript (portable) | Production ready |
+| TypeScript (WASM)     | Production ready |
+| TypeScript (native)   | Production ready |
+| `voltaire-effect`     | Production ready |
+| Python                | Beta             |
+| Rust                  | Beta             |
+| Go                    | Beta             |
+| Swift                 | Beta             |
+| Kotlin                | Planned          |
+
+MIT licensed. [Source on GitHub](https://github.com/evmts/voltaire).

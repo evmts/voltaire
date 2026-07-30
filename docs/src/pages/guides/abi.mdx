@@ -1,0 +1,191 @@
+---
+title: ABI Encoding
+description: Encode calldata, decode return values, and decode event logs.
+---
+
+# ABI Encoding
+
+The ABI codec turns function calls into calldata and logs back into values. It is
+the layer where subtle bugs are most expensive — static tuple head sizes, dynamic
+offsets, indexed event parameters — so Voltaire's ABI module is differentially
+tested against `ox`, `viem`, and `ethers`.
+
+## The item-level API
+
+The most direct and best-tested surface works on a single ABI item. Define the
+item once and reuse it:
+
+```js
+import { Hex } from '@tevm/voltaire'
+import * as Abi from '@tevm/voltaire/Abi'
+
+const transfer = {
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'amount' },
+  ],
+  outputs: [{ type: 'bool' }],
+  stateMutability: 'nonpayable',
+}
+
+// Canonical signature and 4-byte selector
+Abi.Function.getSignature(transfer)
+// 'transfer(address,uint256)'
+Hex.fromBytes(Abi.Function.getSelector(transfer))
+// '0xa9059cbb'
+
+// Encode a call: selector ++ ABI-encoded arguments
+const calldata = Abi.Function.encodeParams(transfer, [
+  '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  1_000_000n,
+])
+Hex.fromBytes(calldata)
+// 0xa9059cbb
+//   000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045
+//   00000000000000000000000000000000000000000000000000000000000f4240
+
+// Decode a call back into arguments
+Abi.Function.decodeParams(transfer, calldata)
+// [ '0xd8da6bf26964af9d7eed9e03e53415d37aa96045', 1000000n ]
+
+// Encode/decode the return side
+Abi.Function.encodeResult(transfer, [true])
+Abi.Function.decodeResult(transfer, returnData)
+```
+
+Values in, values out: `uint*`/`int*` are `bigint`, `bool` is `boolean`,
+`address` is a lowercase hex string on the way out and accepts hex or a branded
+`Address` on the way in, `bytes*` is `Uint8Array`, `string` is `string`, and
+tuples/arrays are plain arrays.
+
+## Raw parameter encoding
+
+When there is no function wrapper — constructor arguments, `abi.encode` inside a
+contract, an off-chain commitment:
+
+```js
+import { Hex } from '@tevm/voltaire'
+import * as Abi from '@tevm/voltaire/Abi'
+
+const params = [{ type: 'uint256' }, { type: 'bool' }]
+const encoded = Abi.encodeParameters(params, [42n, true])
+Abi.decodeParameters(params, encoded)
+// [ 42n, true ]
+```
+
+`Abi.encodePacked` implements Solidity's non-standard packed mode (no padding, no
+length prefixes) — the form used for `keccak256(abi.encodePacked(...))` hashes.
+
+:::warning
+`encodePacked` is ambiguous by design: `["ab", "c"]` and `["a", "bc"]` pack
+identically. Never use it as the sole input to a signed commitment.
+:::
+
+## Events
+
+```js
+import { Hex } from '@tevm/voltaire'
+import * as Abi from '@tevm/voltaire/Abi'
+
+const transferEvent = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value' },
+  ],
+}
+
+Abi.Event.getSignature(transferEvent)
+// 'Transfer(address,address,uint256)'
+Hex.fromBytes(Abi.Event.getSelector(transferEvent))
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+Decoding a log takes the **event, the data bytes, and the topics array** — in that
+order, all as bytes:
+
+```js
+import { Hex } from '@tevm/voltaire'
+import * as Abi from '@tevm/voltaire/Abi'
+
+const pad = (h) => `0x${h.replace(/^0x/, '').toLowerCase().padStart(64, '0')}`
+
+const topics = [
+  Hex.toBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
+  Hex.toBytes(pad('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')),
+  Hex.toBytes(pad('0x0000000000000000000000000000000000000001')),
+]
+const data = Hex.toBytes(pad('0xf4240'))
+
+Abi.Event.decodeLog(transferEvent, data, topics)
+// {
+//   from: '0xd8da6bf26964af9d7eed9e03e53415d37aa96045',
+//   to:   '0x0000000000000000000000000000000000000001',
+//   value: 1000000n
+// }
+```
+
+`decodeLog` verifies `topic0` against the event's own selector and throws
+`AbiInvalidSelectorError` on a mismatch, so you cannot silently decode a log with
+the wrong event definition. Anonymous events (`anonymous: true`) skip that check.
+
+## Selector collisions
+
+Two different functions can share a 4-byte selector, and a malicious ABI can
+exploit that:
+
+```js
+Abi.findSelectorCollisions(abi) // the colliding groups
+Abi.hasSelectorCollisions(abi) // boolean
+```
+
+Worth asserting in a build step if you ingest third-party ABIs.
+
+## Whole-ABI helpers and a known rough edge
+
+The module also exposes whole-ABI operations — `getItem`, `format`,
+`formatWithArgs`, `encode`, `decode`, `decodeData`, `parseLogs`. Several of these
+are currently exported as **`this`-bound internals**: they read the ABI array off
+`this` rather than taking it as a first argument, so the ergonomic call fails:
+
+```js
+// Does NOT work today — throws "this.find is not a function"
+Abi.encode(abi, 'transfer', args)
+
+// Works: bind the ABI array explicitly
+Abi.encode.call(abi, 'transfer', args)
+```
+
+Prefer the item-level API (`Abi.Function.*`, `Abi.Event.*`) shown above until the
+public wrappers land. This is tracked as a real API defect, not a documentation
+convention.
+
+## Type inference with abitype
+
+Install the optional peer dependency and `as const` your ABI to get argument and
+return types inferred instead of `unknown`:
+
+```bash
+pnpm add -D abitype
+```
+
+```ts
+const erc20 = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ type: 'address', name: 'owner' }],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
+  },
+] as const
+```
+
+## Related
+
+- [Hashing](/guides/hashing) — selectors and topics from signature strings
+- [RLP](/guides/rlp) — the *other* Ethereum encoding, used for transactions and state

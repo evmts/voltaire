@@ -1,0 +1,168 @@
+---
+title: Building from Source
+description: Prerequisites, platform support, build steps, and what each artifact is — verified on this tree.
+---
+
+# Building from Source
+
+You need this page if you want the native library, the WASM artifacts, the C
+header, or if you are contributing. Consuming Voltaire from npm requires none of
+it.
+
+## Prerequisites
+
+| Tool                     | Version                     | Why                                            |
+| ------------------------ | --------------------------- | ---------------------------------------------- |
+| Zig                      | 0.15.1 (0.15.2 verified)    | the core implementation and the build system    |
+| Rust                     | 1.89.0 (`rust-toolchain.toml`) | arkworks BN254/BLS12-381, assembly Keccak    |
+| Rust target              | `wasm32-unknown-unknown`    | the WASM build of the Rust crypto shims         |
+| Node.js                  | ≥ 22.22.0                   | the TypeScript build and tests                  |
+| pnpm                     | 10.26.2 (`corepack enable`) | workspace install                               |
+| A C compiler             | clang or gcc                | `blst` and `c-kzg-4844` are C                   |
+| Git submodules           | —                           | `blst`, `c-kzg-4844`, `libwally-core`           |
+
+Rust is **not** optional. `Cargo.toml` builds a `crypto_wrappers` static library
+that the Zig build links; without it the pairing-based crypto and the
+assembly-optimized Keccak are missing.
+
+## Clone and build
+
+```bash
+git clone --recurse-submodules https://github.com/evmts/voltaire.git
+cd voltaire
+corepack enable
+pnpm install --frozen-lockfile
+
+zig build --summary all
+```
+
+If you already cloned without `--recurse-submodules`:
+
+```bash
+git submodule update --init --recursive
+```
+
+## Test
+
+```bash
+zig build test --summary all
+```
+
+Real output on this tree (macOS arm64, Zig 0.15.2):
+
+```
+Build Summary: 19/19 steps succeeded; 91/91 tests passed
++- run test precompiles-tests 17 passed 6ms MaxRSS:2M
++- run test state-manager-tests 22 passed 11ms MaxRSS:2M
++- run test blockchain-tests 47 passed 66ms MaxRSS:2M
++- run test primitives-extra-tests 5 passed 5ms MaxRSS:2M
+```
+
+The TypeScript suite is separate:
+
+```bash
+pnpm --filter @tevm/voltaire test:run
+```
+
+Real output for the `Address` and `Keccak256` subset:
+
+```
+ Test Files  61 passed (61)
+      Tests  1532 passed | 18 skipped (1550)
+ Type Errors  no errors
+```
+
+Filter Zig tests with `-Dtest-filter=<substring>`; filter TypeScript tests with
+`pnpm --filter @tevm/voltaire test -- <pattern>`.
+
+## Artifacts
+
+| Command                    | Output                                    | Optimization  |
+| -------------------------- | ----------------------------------------- | ------------- |
+| `zig build`                | `zig-out/lib/*.a`, `*.dylib`              | Debug         |
+| `zig build build-ts-native`| `zig-out/native/libprimitives_ts_native.{dylib,so,dll}` | ReleaseFast |
+| `zig build build-ts-wasm`  | `wasm/primitives.wasm`                    | ReleaseSmall  |
+| `zig build build-ts-wasm-fast` | `wasm/primitives-fast.wasm`           | ReleaseFast   |
+| `zig build crypto-wasm`    | `wasm/crypto/*.wasm` (per algorithm)      | ReleaseSmall  |
+| `zig build generate-header`| `primitives.h` from `c_api.zig` (checked in at `packages/voltaire-ts/src/primitives.h`; the curated public header is `packages/voltaire-c/include/voltaire.h`) | — |
+
+Observed sizes on this tree: `wasm/primitives.wasm` 1.28 MB,
+`wasm/blockchain.wasm` 103 KB, `wasm/state-manager.wasm` 108 KB, and the
+per-algorithm modules under `wasm/crypto/` (`keccak256.wasm`, `blake2.wasm`,
+`ripemd160.wasm`, `address.wasm`) for when you want one algorithm and nothing
+else.
+
+The WASM target is `wasm32-wasi`, not `wasm32-freestanding`, because the vendored
+C libraries need libc.
+
+## Platform support
+
+CI builds and uploads native libraries for:
+
+| Platform       | Zig target        | Runner            |
+| -------------- | ----------------- | ----------------- |
+| `darwin-arm64` | `aarch64-macos`   | `macos-15`        |
+| `darwin-x64`   | `x86_64-macos`    | `macos-15-intel`  |
+| `linux-x64`    | `x86_64-linux`    | `ubuntu-latest`   |
+| `win32-x64`    | `x86_64-windows`  | `windows-latest`  |
+
+`linux-arm64` is **not** built in CI — it needs ARM runners or a
+cross-compilation setup, and is currently disabled. You can build it locally with
+Zig's cross-compilation; it is simply not a tested, shipped artifact.
+
+`zig build build-native-all` builds every configured platform locally;
+`zig build build-native-<platform>` builds one. The C API is behind a flag:
+`zig build -Dwith-c-api=true build-native-<platform>`.
+
+WASM is platform-independent and covers every other environment, at the cost of
+some throughput.
+
+## Useful build steps
+
+```bash
+zig build check          # format + lint + typecheck, fast
+zig build format         # format Zig and TypeScript
+zig build lint           # lint TypeScript with autofix
+zig build ci             # the full CI pipeline locally
+
+zig build bench -Dwith-benches=true   # zbench microbenchmarks
+zig build bench-ts                    # comparison benchmarks vs JS libraries
+
+zig build example-keccak256  # runnable examples, one step each
+zig build example-address
+zig build example-rlp
+zig build example-secp256k1
+zig build example-eip712
+zig build example-transaction
+zig build example-eip4844
+zig build example-eip7702
+zig build example-bls
+
+zig build clean           # drop artifacts, keep node_modules
+zig build clean-all       # drop node_modules too
+```
+
+`zig build --help` lists every step, which is the authoritative list.
+
+## Troubleshooting
+
+**`error: unable to find module 'c_kzg'`** — submodules are missing. Run
+`git submodule update --init --recursive`.
+
+**Rust link errors mentioning `crypto_wrappers`** — the Rust toolchain is not the
+pinned one, or `cargo` is not on `PATH`. `rustup show` should report 1.89.0 from
+`rust-toolchain.toml`.
+
+**WASM build fails on a `libc` symbol** — you are targeting
+`wasm32-freestanding` somewhere; the vendored C libraries require
+`wasm32-wasi`.
+
+**Linker warning `built for newer version`** on macOS — the prebuilt dylib was
+compiled against a newer SDK than your compiler default. It is a warning, and the
+resulting binary runs; pass `-mmacosx-version-min=` to silence it.
+
+## Next
+
+- [Native, WASM & Portable JS](/native/backends) — which backend to use, and why
+- [Zig](/native/zig) — consuming Voltaire as a Zig dependency
+- [Other Languages](/native/other-languages) — Rust, Python, Go, Swift, C

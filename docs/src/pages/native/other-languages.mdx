@@ -1,0 +1,217 @@
+---
+title: Other Languages
+description: C, Rust, Python, Go, and Swift bindings — how to consume them and their honest status.
+---
+
+# Other Languages
+
+Voltaire exports a C ABI from Zig, and the other language bindings sit on top of
+it. This page is deliberately blunt about status: only the TypeScript package is
+published to a registry today. Everything here is consumed from a local build.
+
+| Language | Directory                | Registry status                        | Maturity |
+| -------- | ------------------------ | -------------------------------------- | -------- |
+| C        | `packages/voltaire-c`    | header + built library, no package     | usable   |
+| Rust     | `packages/voltaire-rs`   | **not** published to crates.io         | beta     |
+| Python   | `packages/voltaire-py`   | **not** published to PyPI              | beta     |
+| Go       | `packages/voltaire-go`   | module path not yet a fetchable repo   | beta     |
+| Swift    | `packages/voltaire-swift`| SwiftPM package, local path only       | beta     |
+| Kotlin   | `kotlin/`               | planned                                | planned  |
+
+:::warning
+Package READMEs in this repo show aspirational installs — `voltaire = "0.1"` from
+crates.io, `pip install voltaire`, `go get github.com/voltaire-labs/voltaire-go`.
+Those registries do not currently serve this code. Use a local path or a git
+dependency until the release pipeline covers them. The unscoped `voltaire` name on
+npm is likewise an **unrelated** project; the npm package is `@tevm/voltaire`.
+:::
+
+## C
+
+The C API is not a wrapper — Zig exports it directly. Build the library, then
+compile against the header.
+
+```bash
+zig build build-ts-native        # -> zig-out/native/libprimitives_ts_native.dylib|.so|.dll
+```
+
+```c
+#include <stdio.h>
+#include "voltaire.h"
+
+int main(void) {
+    PrimitivesAddress addr;
+    if (primitives_address_from_hex(
+            "0xd8da6bf26964af9d7eed9e03e53415d37aa96045", &addr) != 0)
+        return 1;
+
+    unsigned char buf[43] = {0};
+    primitives_address_to_checksum_hex(&addr, buf);
+    printf("checksummed: %s\n", buf);
+
+    PrimitivesHash h;
+    primitives_keccak256((const unsigned char *)"Voltaire", 8, &h);
+    unsigned char hex[67] = {0};
+    primitives_hash_to_hex(&h, hex);
+    printf("keccak256:   %s\n", hex);
+    return 0;
+}
+```
+
+```bash
+cc demo.c \
+  -Ipackages/voltaire-c/include \
+  -Lzig-out/native -lprimitives_ts_native \
+  -o demo
+DYLD_LIBRARY_PATH=zig-out/native ./demo   # LD_LIBRARY_PATH on Linux
+```
+
+Real output:
+
+```
+checksummed: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+keccak256:   0xa35d8b3a144abaa59fc70648869c03b670dc34a91a8963640365ef6698290cb7
+```
+
+That Keccak digest is identical to the JavaScript one in
+[Getting Started](/getting-started), which is the point of having one core.
+
+**Conventions in the C API**: functions return `int` (`0` on success) and write
+through an out-parameter; predicates return `bool`; hex output buffers must be
+large enough including the `0x` prefix and the NUL (43 bytes for an address, 67 for
+a 32-byte hash). Types are plain structs (`PrimitivesAddress`, `PrimitivesHash`),
+so there is nothing to free.
+
+The curated public header is `packages/voltaire-c/include/voltaire.h` (414 lines
+covering addresses, hashing, hex, RLP, ABI, transactions, secp256k1, HD wallets,
+KZG, event logs, bytecode, state manager, and blockchain). The generated
+low-level header is `packages/voltaire-ts/src/primitives.h`, regenerated with
+`zig build generate-header`.
+
+## Rust
+
+`packages/voltaire-rs` provides idiomatic newtypes (`Address`, `Hash`, `U256`)
+with `Deref` to bytes, `no_std` support, and an optional `native` feature that
+routes through the FFI.
+
+Consume it by path or git until it is published:
+
+```toml
+[dependencies]
+voltaire = { path = "../voltaire/packages/voltaire-rs" }
+# or
+# voltaire = { git = "https://github.com/evmts/voltaire", branch = "main" }
+```
+
+```rust
+use voltaire::prelude::*;
+
+let addr: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
+println!("{addr}"); // Display renders EIP-55 checksummed
+
+let hash = keccak256(b"hello");
+let value = U256::from(1_000_000_000_000_000_000u64); // 1 ether in wei
+```
+
+Note the deliberate scope choice: the root `Cargo.toml` says Voltaire does not
+publish a Rust crate "in favor of using Alloy for rust" — that root manifest
+exists to build the internal `crypto_wrappers` static library, not to ship a
+crate. `packages/voltaire-rs` is the bindings crate, and it is beta.
+
+## Python
+
+`packages/voltaire-py` targets Python ≥ 3.10 (setuptools build backend).
+
+```bash
+zig build build-ts-native
+pip install -e packages/voltaire-py
+```
+
+```python
+from voltaire import Address, keccak256, Secp256k1, Signature
+
+addr = Address.from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f2bD20")
+print(addr.to_checksum())
+
+digest = keccak256(b"hello world")
+print(digest.to_hex())
+
+signature = Signature(r=r_bytes, s=s_bytes, v=27)
+recovered = Secp256k1.recover_address(keccak256(b"sign me"), signature)
+```
+
+Python is object-oriented here rather than data-first — that is intentional; each
+binding follows its own language's conventions instead of transliterating the
+TypeScript API.
+
+## Go
+
+Requires Go ≥ 1.22 and the native library built first.
+
+```bash
+zig build build-ts-native
+cd packages/voltaire-go && make test   # or: zig build test-go from the repo root
+```
+
+```go
+package main
+
+import (
+    "fmt"
+
+    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
+    "github.com/voltaire-labs/voltaire-go/primitives/address"
+)
+
+func main() {
+    addr, err := address.FromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(addr.ChecksumHex())
+    fmt.Println(keccak256.Hash([]byte("Voltaire")).Hex())
+}
+```
+
+The module path in `go.mod` is `github.com/voltaire-labs/voltaire-go`, which does
+not resolve to this repository — use a `replace` directive against a local
+checkout until that is reconciled.
+
+Build steps: `zig build go` (fetch deps), `zig build build-go`,
+`zig build test-go`.
+
+## Swift
+
+`packages/voltaire-swift` is a SwiftPM package targeting macOS 12+ / iOS 15+. Its
+`Package.swift` resolves the native library from `zig-out/native`, so build that
+first:
+
+```bash
+zig build build-ts-native
+cd packages/voltaire-swift && swift test
+```
+
+Add it to another project by local path:
+
+```swift
+.package(path: "../voltaire/packages/voltaire-swift")
+```
+
+CI runs the Swift suite via `.github/workflows/swift.yml`.
+
+## Kotlin
+
+`kotlin/` is a placeholder. Not usable yet.
+
+## If you are adding a binding
+
+The C ABI is the contract. Write the binding against
+`packages/voltaire-c/include/voltaire.h`, keep the idioms of the target language,
+and add a cross-language test that pins a shared vector (the
+`keccak256('Voltaire')` digest above is a good one). Divergence between bindings
+is the failure this architecture exists to prevent.
+
+## Related
+
+- [Building from Source](/native/building)
+- [Native, WASM & Portable JS](/native/backends)
