@@ -1,15 +1,44 @@
 import { defineConfig } from "vocs/config";
+import { familySites } from "./src/sites.js";
+import { accentColor, themeCss } from "./src/theme.js";
 
 export default defineConfig({
 	title: "Voltaire",
 	titleTemplate: "%s · Voltaire",
-	baseUrl: "https://voltaire.tevm.sh",
+	// Overridable so local `vocs preview` builds resolve assets from the
+	// preview origin instead of production.
+	baseUrl: process.env.VOCS_BASE_URL ?? "https://voltaire.tevm.sh",
 	description:
 		"Ethereum primitives and cryptography, written in Zig and shipped to TypeScript, Rust, Python, Go, Swift, and C.",
 	rootDir: ".",
+	// Matches the sibling tevm.sh sites (cli, logger, ethers, mud, bundler),
+	// which all resolve --vocs-color-accent to light-dark(#0085FF, #4DA6FF).
+	accentColor,
+	colorScheme: "light dark",
+	logoUrl: { light: "/tevm-logo-light.png", dark: "/tevm-logo-dark.png" },
+	iconUrl: { light: "/tevm-logo-light.png", dark: "/tevm-logo-dark.png" },
+	head: {
+		link: [
+			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
+			{
+				rel: "preconnect",
+				href: "https://fonts.gstatic.com",
+				crossorigin: "anonymous",
+			},
+			{
+				rel: "stylesheet",
+				href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+			},
+		],
+		style: [{ innerHTML: themeCss }],
+	},
+	markdown: {
+		code: {
+			themes: { light: "github-light", dark: "github-dark" },
+		},
+	},
 	editLink: {
-		pattern:
-			"https://github.com/evmts/voltaire/edit/main/docs/src/pages/:path",
+		link: "https://github.com/evmts/voltaire/edit/main/docs/src/pages/:path",
 		text: "Edit on GitHub",
 	},
 	socials: [
@@ -24,6 +53,13 @@ export default defineConfig({
 		{
 			text: "Playground",
 			link: "https://playground.tevm.sh",
+		},
+		{
+			text: "tevm docs",
+			items: familySites.map((site) => ({
+				text: site.name,
+				link: site.url,
+			})),
 		},
 	],
 	sidebar: [
