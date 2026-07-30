@@ -1,0 +1,227 @@
+---
+title: Transactions
+description: Build, sign, serialize, hash, and recover the sender of all five Ethereum transaction envelopes.
+---
+
+# Transactions
+
+Voltaire models every live transaction envelope:
+
+| Type   | EIP      | Namespace                | Adds                              |
+| ------ | -------- | ------------------------ | --------------------------------- |
+| `0`    | pre-2718 | `Transaction.Legacy`     | `gasPrice`, EIP-155 `v`           |
+| `1`    | 2930     | `Transaction.EIP2930`    | `accessList`                      |
+| `2`    | 1559     | `Transaction.EIP1559`    | `maxFeePerGas`, `maxPriorityFeePerGas` |
+| `3`    | 4844     | `Transaction.EIP4844`    | `blobVersionedHashes`, `maxFeePerBlobGas` |
+| `4`    | 7702     | `Transaction.EIP7702`    | `authorizationList`               |
+
+Import the namespace from the subpath:
+
+```js
+import * as Transaction from '@tevm/voltaire/Transaction'
+```
+
+## EIP-1559 (the default today)
+
+A transaction is a plain object. Signature fields are present but zeroed until
+you sign.
+
+```js
+import { Address, Hex, Secp256k1 } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+const KEY = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318'
+
+const unsigned = {
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  maxFeePerGas: 30_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from('0x0000000000000000000000000000000000000001'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+}
+
+const signingHash = Transaction.EIP1559.getSigningHash(unsigned)
+// 0xe5f9a06ffc0ced0062ac342e2b63a85ff9b5153ac576bb6f723623a9bdfc9466
+
+const sig = Secp256k1.signHash(signingHash, PrivateKey.from(KEY))
+const signed = { ...unsigned, yParity: sig.v - 27, r: sig.r, s: sig.s }
+
+Hex.fromBytes(Transaction.EIP1559.serialize(signed))
+// 0x02f8730180843b9aca008506fc23ac00825208…
+
+Hex.fromBytes(Transaction.EIP1559.hash(signed))
+// 0x36aa617911cb74efc515addbef946dd1b7972ecf35bef55240cba51ad0e7b968
+
+Address.toChecksummed(Transaction.EIP1559.getSender(signed))
+// 0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+
+Transaction.EIP1559.verifySignature(signed) // true
+
+// Effective gas price at a given base fee
+Transaction.EIP1559.getEffectiveGasPrice(signed, 10_000_000_000n)
+// 11000000000n  (base fee + priority fee, capped at maxFeePerGas)
+
+// Round-trip
+const decoded = Transaction.EIP1559.deserialize(
+  Transaction.EIP1559.serialize(signed),
+)
+decoded.nonce // 0n
+decoded.value // 1000000000000000000n
+```
+
+Note `yParity` (`0`/`1`), not `v` (`27`/`28`). All typed envelopes use `yParity`.
+
+## Legacy, and the `this`-bound call convention
+
+The `Legacy` namespace's operations are `this`-bound: they read the transaction
+off `this` instead of taking it as the first argument. Call them with `.call(tx)`:
+
+```js
+import { Address, Hex, Secp256k1 } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// The canonical EIP-155 example transaction.
+// `v` must already encode the chain id — 35 + 2 * chainId + parity — because
+// Legacy derives chainId from v.
+const tx = {
+  type: 0,
+  nonce: 9n,
+  gasPrice: 20_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from('0x3535353535353535353535353535353535353535'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  v: 37n, // chainId 1, parity 0
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+}
+
+const hash = Transaction.Legacy.getSigningHash.call(tx)
+Hex.fromBytes(hash)
+// 0xdaf5a779ae972f972197303d7b574746c7ef83eadac0f2791ad23db92e4c8e53
+//   ^ the signing hash from EIP-155 itself
+
+const KEY = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318'
+const sig = Secp256k1.signHash(hash, PrivateKey.from(KEY))
+const signed = { ...tx, v: BigInt(sig.v - 27) + 35n + 2n, r: sig.r, s: sig.s }
+
+Transaction.Legacy.getChainId.call(signed) // 1n
+Hex.fromBytes(Transaction.Legacy.serialize.call(signed))
+// 0xf86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a7640000
+//   8025a0499aa1110848b179aa0f228e20faa3ba68b350e1feeab49638c6b8ce40ea56ae
+//   a0053ec9b43dcea26f8d10b43a44bdfafae5b1b26462367921079005d4d274e06d
+Address.toChecksummed(Transaction.Legacy.getSender.call(signed))
+// 0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+Transaction.Legacy.verifySignature.call(signed) // true
+```
+
+:::warning
+The call convention is not uniform yet: `EIP1559.*` accepts the transaction as its
+first argument, `Legacy.*` requires `.call(tx)`. If you get
+`Cannot mix BigInt and other types` or `this.x is not a function`, you are on the
+wrong side of that split — try the other form. This inconsistency is a known API
+defect, not a design choice.
+:::
+
+Pre-EIP-155 (chain-id-less) legacy transactions are supported: set `v` to `27`
+or `28` and `getChainId` returns `null`, which switches the signing payload to the
+six-field pre-155 form.
+
+## Envelope-agnostic helpers
+
+The top-level `Transaction` namespace has operations that work across types:
+
+```js
+Transaction.detectType(rawBytes) // 0 | 1 | 2 | 3 | 4
+Transaction.deserialize(rawBytes) // dispatches on the type byte
+Transaction.isEIP1559(tx)
+Transaction.isLegacy(tx)
+Transaction.isContractCreation(tx) // to === null
+Transaction.isContractCall(tx)
+Transaction.getRecipient(tx)
+Transaction.getGasPrice(tx)
+Transaction.getAccessList(tx)
+Transaction.getBlobVersionedHashes(tx)
+Transaction.getAuthorizations(tx)
+Transaction.fromRpc(rpcTransaction) // eth_getTransactionByHash shape
+Transaction.toRpc(tx)
+```
+
+Validators throw typed errors instead of returning booleans:
+`validateNonce`, `validateGasLimit`, `validateGasPrice`, `validateValue`,
+`validateChainId`, `assertSigned`.
+
+Immutable field updates: `withNonce`, `withGasLimit`, `withGasPrice`, `withData`,
+`replaceWith`.
+
+Like `Legacy`, some of these are `this`-bound; each has an explicit
+`*_internal` twin, and the plain name is the one to try first.
+
+## Blob transactions (EIP-4844)
+
+Type 3 carries `blobVersionedHashes` and `maxFeePerBlobGas`. The blob data itself
+is a sidecar, handled by `Blob` and `KZG`:
+
+```js
+import * as Blob from '@tevm/voltaire/Blob'
+import * as KZG from '@tevm/voltaire/KZG'
+
+KZG.loadTrustedSetup() // required once, before any KZG operation
+const commitment = KZG.blobToKzgCommitment(blob)
+const proof = KZG.computeBlobKzgProof(blob, commitment)
+KZG.verifyBlobKzgProof(blob, commitment, proof) // true
+```
+
+Sizes: `KZG.BYTES_PER_BLOB` (131072), `BYTES_PER_COMMITMENT` (48),
+`BYTES_PER_PROOF` (48), `FIELD_ELEMENTS_PER_BLOB` (4096).
+
+:::warning
+KZG is the one module that is **not** available from the default portable
+JavaScript entry point. `KZG.isInitialized()` returns `false` and
+`KZG.loadTrustedSetup()` throws
+`Failed to load KZG trusted setup: WASM module not loaded. Call loadWasm() first.`
+until a backend is initialized — you need the WASM entry point (with the WASM
+module loaded) or the native build, which links `c-kzg-4844`. See
+[Native, WASM & Portable JS](/native/backends).
+:::
+
+## Authorization lists (EIP-7702)
+
+```js
+import * as Authorization from '@tevm/voltaire/Authorization'
+
+// An authorization delegates an EOA's code to a contract
+const auth = { chainId: 1n, address: delegate, nonce: 0n, yParity: 0, r, s }
+```
+
+`Transaction.EIP7702` handles the envelope; `Transaction.getAuthorizations` and
+`getAuthorizationCount` read the list back out.
+
+## Access lists (EIP-2930)
+
+```js
+import * as AccessList from '@tevm/voltaire/AccessList'
+
+const accessList = [
+  { address: contract, storageKeys: [slot0, slot1] },
+]
+```
+
+Any typed transaction may carry one; `Transaction.hasAccessList` and
+`getAccessList` are envelope-agnostic.
+
+## Related
+
+- [Keys & Signatures](/guides/keys-and-signatures) — the signing primitives
+- [RLP](/guides/rlp) — the serialization underneath every envelope
+- [Units & Denominations](/guides/units) — gas and value arithmetic

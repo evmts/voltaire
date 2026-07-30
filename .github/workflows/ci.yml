@@ -2,15 +2,29 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   schedule:
     - cron: '0 0 * * 0'
 
 jobs:
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+      - name: Run Rust wrapper tests
+        run: cargo test --locked
+
   test:
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-15, windows-latest]
         optimize: [Debug, ReleaseSmall, ReleaseSafe, ReleaseFast]
     runs-on: ${{ matrix.os }}
     defaults:
@@ -24,6 +38,13 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+      - name: Install Windows GNU Rust target
+        if: runner.os == 'Windows'
+        run: rustup target add x86_64-pc-windows-gnu
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
       - name: Debug - List target directory (Windows)
@@ -54,6 +75,10 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
       - name: Build keccak256 example
         run: zig build example-keccak256
       - name: Build ABI example
@@ -88,6 +113,10 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
       - name: Build for WASM
         run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
 
@@ -112,10 +141,13 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+          targets: wasm32-unknown-unknown
       - name: Build Zig library (required for FFI tests)
         run: zig build -Doptimize=ReleaseFast -Dwith-c-api=false
-      - name: Install Rust wasm32 target
-        run: rustup target add wasm32-unknown-unknown
       - name: Build WASM for TypeScript tests
         run: |
           zig build build-ts-wasm
@@ -127,7 +159,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.22.0'
           cache: 'pnpm'
       - name: Install TypeScript dependencies
         run: pnpm install --frozen-lockfile
@@ -144,15 +176,15 @@ jobs:
         run: pnpm --filter @tevm/voltaire run build:dist
       - name: Build types
         run: pnpm --filter @tevm/voltaire run build:types
+      - name: Build documentation
+        run: pnpm --filter @voltaire/docs run build
       - name: Run package validation
         run: pnpm --filter @tevm/voltaire run lint:package
-      - name: Run TypeScript tests with coverage
+      - name: Run TypeScript and WASM tests with coverage
         run: pnpm --filter @tevm/voltaire run test:coverage
       # Native FFI tests disabled until libwally-core C API is fixed
       # - name: Run native FFI tests
       #   run: pnpm run test:native
-      - name: Run WASM tests
-        run: pnpm --filter @tevm/voltaire run test:wasm
 
   # Benchmarks disabled - keccak_wrapper.h include path issue needs fix in build.zig
   # benchmarks:

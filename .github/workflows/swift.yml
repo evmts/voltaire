@@ -2,12 +2,13 @@ name: Swift
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
   swift-tests:
     name: Swift Tests (macOS)
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +23,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: 1.89.0
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -46,10 +47,9 @@ jobs:
           zig build install
 
       - name: Build Zig native artifacts
-        run: zig build build-ts-native
+        run: zig build -Dwith-c-api=true build-ts-native
 
       - name: Run Swift tests
         run: |
           cd packages/voltaire-swift
           swift test -q
-

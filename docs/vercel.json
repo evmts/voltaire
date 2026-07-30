@@ -1,0 +1,6 @@
+{
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"framework": null,
+	"installCommand": "corepack enable && pnpm install --filter @voltaire/docs...",
+	"buildCommand": "pnpm build"
+}

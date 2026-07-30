@@ -33,7 +33,7 @@
 
 ## Introduction
 
-Voltaire is an high performance robust Ethereum toolchain primarily built in Zig, but extended to support many other platforms including:
+Voltaire is a high-performance Ethereum primitives and cryptography toolchain, primarily built in Zig and extended to support:
 
 - Zig (Production ready)
 - TypeScript (Production ready)
@@ -45,6 +45,65 @@ Voltaire is an high performance robust Ethereum toolchain primarily built in Zig
 - Golang (Beta)
 - Swift (Beta)
 - Kotlin (Planned)
+
+## TypeScript
+
+Install the scoped npm package (the unscoped `voltaire` name belongs to an unrelated project):
+
+```sh
+pnpm add @tevm/voltaire
+```
+
+```typescript
+import { Address, Hex, Keccak256 } from "@tevm/voltaire";
+
+const address = Address.from(
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+);
+const digest = Keccak256.hash(Hex.toBytes(Hex.fromString("Voltaire")));
+
+console.log(Address.toHex(address));
+console.log(Hex.fromBytes(digest));
+```
+
+The npm package ships portable JavaScript, TypeScript declarations, and WASM entry points. Native bindings are built and tested separately; consumers do not need a native binary for the default entry point.
+
+## Zig
+
+Add this repository as a Zig dependency pinned to a release commit and import the `voltaire` module exposed by `build.zig`. Voltaire currently uses Zig 0.15.1.
+
+```sh
+zig fetch --save git+https://github.com/evmts/voltaire
+```
+
+## Development
+
+The reproducible contributor toolchain is:
+
+- Zig 0.15.1
+- Rust 1.89.0 with the `wasm32-unknown-unknown` target
+- Node.js 22.22.0
+- pnpm 10.26.2
+
+Clone with submodules, install JavaScript dependencies, then build and test:
+
+```sh
+git clone --recurse-submodules https://github.com/evmts/voltaire.git
+cd voltaire
+corepack enable
+pnpm install --frozen-lockfile
+
+zig build --summary all
+zig build test --summary all
+cargo test --locked
+zig build build-ts-wasm
+zig build crypto-wasm
+
+pnpm --filter @tevm/voltaire build
+pnpm --filter @tevm/voltaire test:run
+```
+
+The Rust package in the repository supplies internal cryptography used by the Zig build; it is not a public crates.io release target.
 
 ## Featured API: voltaire-effect
 

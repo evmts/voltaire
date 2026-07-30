@@ -1,0 +1,182 @@
+---
+title: Zig
+description: Consume Voltaire as a Zig dependency — modules, conventions, memory ownership.
+---
+
+# Zig
+
+Zig is Voltaire's native language: every other binding is a view onto this code.
+It targets **Zig 0.15.1** (`minimum_zig_version` in `build.zig.zon`; verified
+building on 0.15.2).
+
+## Adding the dependency
+
+```bash
+zig fetch --save git+https://github.com/evmts/voltaire
+```
+
+Pin a release commit rather than a moving branch. The package name in
+`build.zig.zon` is `primitives`, so that is the key you pass to `b.dependency`:
+
+```zig
+const voltaire = b.dependency("primitives", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+exe.root_module.addImport("primitives", voltaire.module("primitives"));
+exe.root_module.addImport("crypto", voltaire.module("crypto"));
+exe.root_module.addImport("precompiles", voltaire.module("precompiles"));
+```
+
+## Modules
+
+| Module          | Contents                                                        |
+| --------------- | --------------------------------------------------------------- |
+| `primitives`    | `Address`, `Hash`, `Hex`, `Rlp`, `Abi`, `Transaction`, `Bytes32`, `Block*`, `Siwe`, `Ens`, `Hardfork`, `GasConstants`, `FeeMarket`, … |
+| `crypto`        | `Crypto`, `secp256k1`, `p256`, `ed25519`, `x25519`, `Hash`, `HashUtils`, `HashAlgorithms`, `Blake2`, `Ripemd160`, `Eip712`, `bip39`, `bn254`, `bls12_381`, `keystore`, `signers`, `ModExp`, `constant_time` |
+| `precompiles`   | the EVM precompile implementations                               |
+| `state-manager` | account/storage state with journaling                           |
+| `blockchain`    | block and chain structures                                      |
+| `jsonrpc`       | JSON-RPC types generated from the OpenRPC spec                   |
+| `c_kzg`         | the `c-kzg-4844` bindings                                       |
+
+Always import by module name; never reach across directories:
+
+```zig
+const primitives = @import("primitives"); // ✅
+const crypto = @import("crypto"); // ✅
+const addr = @import("../primitives/address.zig"); // ❌
+```
+
+## Addresses
+
+From `packages/voltaire-zig/examples/address.zig`, which you can run with
+`zig build example-address`:
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Address = primitives.Address;
+
+pub fn main() !void {
+    const hex_addr = "0xa0cf798816d4b9b9866b5330eea46a18382f251e";
+    const addr = try Address.fromHex(hex_addr);
+
+    const checksummed = Address.toChecksummed(addr); // [42]u8, no allocation
+    std.debug.print("Checksum: {s}\n", .{&checksummed});
+
+    std.debug.print("Valid:          {}\n", .{Address.isValid(hex_addr)});
+    std.debug.print("Checksum valid: {}\n", .{Address.isValidChecksum(hex_addr)});
+}
+```
+
+Real output from `zig build example-address`:
+
+```
+1. Creating Address from Hex String
+   Input:  0xa0cf798816d4b9b9866b5330eea46a18382f251e
+
+2. EIP-55 Checksum Address
+   Lowercase: 0xa0cf798816d4b9b9866b5330eea46a18382f251e
+   Checksum:  0xA0Cf798816D4b9b9866b5330EEa46a18382f251e
+
+3. Address Validation
+   Address: 0xa0cf798816d4b9b9866b5330eea46a18382f251e
+   Valid:           true
+   Checksum Valid:  false
+```
+
+## Hashing
+
+From `packages/voltaire-zig/examples/keccak256.zig` (`zig build example-keccak256`):
+
+```zig
+const std = @import("std");
+const crypto = @import("crypto");
+const HashUtils = crypto.HashUtils;
+
+pub fn main() !void {
+    const h = HashUtils.keccak256("hello");
+    std.debug.print("{s}\n", .{HashUtils.toHex(h)});
+    // 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+
+    const empty = HashUtils.keccak256("");
+    std.debug.print("{s}\n", .{HashUtils.toHex(empty)});
+    // 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+
+    std.debug.print("{s}\n", .{HashUtils.toHexUpper(h)});
+}
+```
+
+`HashUtils.toHex` returns a fixed-size array, so there is nothing to free.
+
+## RLP and memory ownership
+
+Variable-length results take an allocator and hand ownership to you:
+
+```zig
+const primitives = @import("primitives");
+const Rlp = primitives.Rlp;
+
+const items = [_][]const u8{ &[_]u8{ 0x12, 0x34 }, "" };
+const encoded = try Rlp.encodeList(allocator, &items);
+defer allocator.free(encoded);
+```
+
+The rule throughout the Zig API: **fixed-size results are returned by value with
+no allocation; variable-size results take an allocator and are owned by the
+caller.** Pair every allocating call with `defer` or `errdefer` immediately, at
+the call site.
+
+## Style conventions in this codebase
+
+If you are contributing Zig here, match what is already there:
+
+- Return memory to the caller; minimize allocation.
+- ArrayList is **unmanaged** in 0.15.x:
+
+  ```zig
+  var list = std.ArrayList(T){};
+  defer list.deinit(allocator);
+  try list.append(allocator, item);
+  ```
+
+  `.init(allocator)`, `list.deinit()`, and `list.append(item)` do not exist.
+- Long imperative function bodies are fine; do not abstract until there is a
+  second caller.
+- Short variable names where the meaning is local (`n`, `top`), descriptive names
+  where it is not.
+- Tests are **inline** in the source file, not in a sibling test file (that is the
+  TypeScript convention here, not the Zig one).
+- Secret-dependent comparisons accumulate rather than returning early:
+
+  ```zig
+  var result: u8 = 0;
+  for (a, b) |x, y| result |= x ^ y;
+  ```
+
+## Examples to read
+
+Each is a standalone `main` you can run with a single build step:
+
+| Step                              | Covers                                |
+| --------------------------------- | ------------------------------------- |
+| `zig build example-address`       | parsing, checksums, validation        |
+| `zig build example-keccak256`     | hashing, EIP-191                      |
+| `zig build example-hex`           | hex encode/decode                     |
+| `zig build example-rlp`           | RLP round-trips                       |
+| `zig build example-abi`           | ABI encode/decode                     |
+| `zig build example-abi-workflow`  | a full ABI workflow                   |
+| `zig build example-secp256k1`     | signing, recovery                     |
+| `zig build example-signature-recovery` | recovery workflow                |
+| `zig build example-eip712`        | typed data signing                    |
+| `zig build example-transaction`   | transaction construction              |
+| `zig build example-eip4844`       | blob transactions                     |
+| `zig build example-eip7702`       | authorization transactions            |
+| `zig build example-bls`           | BLS12-381 operations                  |
+
+## Related
+
+- [Building from Source](/native/building)
+- [Reference: Primitives](/reference/primitives)

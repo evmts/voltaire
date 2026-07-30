@@ -1,0 +1,195 @@
+---
+title: Keys & Signatures
+description: secp256k1 key handling, ECDSA signing, recovery, mnemonics, and HD derivation.
+---
+
+# Keys & Signatures
+
+Ethereum's signature scheme is ECDSA over secp256k1 with a recovery bit, which is
+why you can derive the sender of a transaction from the transaction alone. This
+guide covers key material, signing, recovery, and hierarchical derivation.
+
+:::danger
+Every private key in this guide is a public test vector. Never paste a key with
+value into a terminal, a log line, or an LLM prompt.
+:::
+
+## Private keys
+
+```js
+import { Hex, Secp256k1 } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+
+const KEY = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318'
+
+// The wrapper functions take a 0x-prefixed 64-hex-digit string.
+PrivateKey.toHex(KEY)
+PrivateKey.toPublicKey(KEY) // Uint8Array(64), uncompressed without 0x04 prefix
+PrivateKey.toAddress(KEY) // Address
+
+// Bytes-in variant, and generation
+const bytes = PrivateKey.from(KEY) // Uint8Array(32), validated 1 <= k < n
+const fresh = Secp256k1.randomPrivateKey() // Uint8Array(32) from a CSPRNG
+
+Secp256k1.isValidPrivateKey(fresh) // true
+```
+
+`PrivateKey.from` rejects `0` and anything `>= n` (the curve order) — the two
+values that are hex-valid but not usable keys.
+
+## Public keys
+
+```js
+import { Hex } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+import * as PublicKey from '@tevm/voltaire/PublicKey'
+
+const pubHex = Hex.fromBytes(PrivateKey.toPublicKey(KEY))
+
+PublicKey.isCompressed(pubHex) // false — 64 bytes, X ++ Y
+PublicKey.compress(pubHex) // 33 bytes, 0x02/0x03 ++ X
+PublicKey.decompress(compressed) // back to 64 bytes
+PublicKey.toAddress(pubHex) // keccak256(pubkey)[12:]
+```
+
+The 64-byte form has **no** `0x04` prefix. If you are interoperating with a
+library that includes it, strip the leading byte first.
+
+## Signing and recovery
+
+Two families: `sign*` takes a message and hashes it for you; `*Hash` takes a
+32-byte digest you already have.
+
+```js
+import { Address, Keccak256, Secp256k1 } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+
+const digest = Keccak256.hashString('Voltaire')
+const sig = Secp256k1.signHash(digest, PrivateKey.from(KEY))
+// { r: Uint8Array(32), s: Uint8Array(32), v: 27 | 28 }
+
+// Recover the public key, then the address
+const pub = Secp256k1.recoverPublicKeyFromHash(sig, digest)
+Address.toChecksummed(Address.fromPublicKey(pub))
+// 0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+
+// Verify against a known public key
+Secp256k1.verifyHash(sig, digest, pub) // true
+```
+
+Argument order matters and is consistent: **signature first, then digest, then
+key**. The `sign` direction is the opposite (`signHash(hash, privateKey)`)
+because the digest is the subject there.
+
+`PrivateKey.sign(KEY, digest)` is the same operation with a hex key:
+
+```js
+const sig2 = PrivateKey.sign(KEY, digest)
+```
+
+### Signature representation
+
+`Signature` (`@tevm/voltaire/Signature`) converts between the forms you will meet
+on the wire:
+
+| Function                | Form                                            |
+| ----------------------- | ----------------------------------------------- |
+| `Signature.fromCompact` | 64-byte `r ++ s`                                |
+| `Signature.fromDER`     | ASN.1 DER (Bitcoin/OpenSSL style)               |
+| `Signature.fromTuple`   | `[r, s, v]`                                     |
+| `Signature.fromRpc`     | JSON-RPC `{ r, s, v }` hex strings              |
+| `Signature.fromEd25519` | 64-byte Ed25519                                 |
+| `Signature.fromP256`    | secp256r1                                       |
+
+It also carries the constants you need for validation: `COMPONENT_SIZE` (32),
+`ECDSA_SIZE` (64), `ECDSA_WITH_V_SIZE` (65), `RECOVERY_ID_MIN`/`MAX`, and typed
+errors including `NonCanonicalSignatureError` for high-`s` (malleable)
+signatures.
+
+:::warning
+For typed (EIP-2718) transactions the signature field is `yParity` (`0` or `1`),
+not `v` (`27` or `28`). Convert with `yParity = v - 27`. Getting this wrong
+produces a valid-looking transaction that recovers to the wrong sender.
+:::
+
+### ECDH and point arithmetic
+
+```js
+Secp256k1.getSharedSecret(privateKey, theirPublicKey)
+Secp256k1.ecdh(privateKey, theirPublicKey)
+Secp256k1.addPoints(p, q)
+Secp256k1.scalarMultiply(point, scalar)
+```
+
+These are the constant-time primitives used by the precompiles and by the
+encryption helpers; the modular inverse, `addmod`/`submod`, and point recovery
+paths are branch-free with respect to secret data.
+
+## Mnemonics (BIP-39)
+
+```js
+import * as Bip39 from '@tevm/voltaire/Bip39'
+
+const mnemonic = Bip39.generateMnemonic() // 12 words by default
+Bip39.validateMnemonic(mnemonic) // true
+Bip39.getWordCount(mnemonic) // 12
+Bip39.getEntropyBits(mnemonic) // 128
+
+const seed = await Bip39.mnemonicToSeed(mnemonic) // Uint8Array(64)
+const seedSync = Bip39.mnemonicToSeedSync(mnemonic)
+```
+
+Entropy constants: `ENTROPY_128` … `ENTROPY_256`. `Bip39.assertValidMnemonic`
+throws instead of returning a boolean.
+
+## HD wallets (BIP-32 / BIP-44)
+
+```js
+import { Address, Hex } from '@tevm/voltaire'
+import * as Bip39 from '@tevm/voltaire/Bip39'
+import * as HDWallet from '@tevm/voltaire/HDWallet'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+
+const seed = await Bip39.mnemonicToSeed(
+  'test test test test test test test test test test test junk',
+)
+
+const root = HDWallet.fromSeed(seed)
+const account0 = HDWallet.derivePath(root, "m/44'/60'/0'/0/0")
+
+const priv = HDWallet.getPrivateKey(account0)
+Hex.fromBytes(priv)
+// 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+Address.toChecksummed(PrivateKey.toAddress(Hex.fromBytes(priv)))
+// 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+```
+
+That is the standard local-devnet account 0, which makes it a convenient
+self-check that your derivation path handling is right.
+
+Other useful members: `HDWallet.deriveEthereum(root, index)` (BIP-44 shorthand),
+`deriveBitcoin`, `deriveChild`, `fromExtendedKey` / `fromPublicExtendedKey`,
+`getChainCode`, `getPublicKey`, `isValidPath`, `isHardenedPath`,
+`canDeriveHardened`, `HARDENED_OFFSET`, `BIP44_PATH`, `CoinType`, and typed
+errors (`InvalidMnemonicError`, `InvalidPathError`, `DerivationError`, …).
+
+## Keystores
+
+Encrypt a key at rest in the Web3 Secret Storage (V3) format:
+
+```js
+import * as Keystore from '@tevm/voltaire/Keystore'
+
+const json = await Keystore.encrypt(privateKeyBytes, 'correct horse battery staple')
+const recovered = await Keystore.decrypt(json, 'correct horse battery staple')
+```
+
+`Keystore` enforces sane KDF parameters and rejects weak ones outright
+(`InvalidScryptNError`, `InvalidPbkdf2IterationsError`), and reports MAC failures
+as `InvalidMacError` rather than a generic decryption error.
+
+## Related
+
+- [EIP-712 Typed Data](/guides/eip712) — structured message signing
+- [Transactions](/guides/transactions) — signing envelopes and recovering senders

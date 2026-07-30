@@ -1,0 +1,112 @@
+---
+title: RLP
+description: Recursive Length Prefix encoding — the serialization Ethereum uses for transactions, receipts, and state.
+---
+
+# RLP
+
+RLP (Recursive Length Prefix) is Ethereum's structural serialization. It encodes
+exactly two things: **byte strings** and **lists of items**. Numbers, addresses,
+and hashes are all just byte strings by the time RLP sees them. Transactions,
+block headers, receipts, and Merkle-Patricia trie nodes are all RLP.
+
+## Encoding
+
+```js
+import { Hex, Rlp } from '@tevm/voltaire'
+
+// A list of two byte strings: 0x1234 and the empty string
+const encoded = Rlp.encode([Hex.toBytes('0x1234'), new Uint8Array()])
+Hex.fromBytes(encoded)
+// 0xc482123480
+
+// A single byte string
+Hex.fromBytes(Rlp.encodeBytes(Hex.toBytes('0x1234')))
+// 0x821234
+```
+
+Reading `0xc482123480` byte by byte: `0xc4` is "list, 4 payload bytes", `0x82` is
+"string, 2 bytes" followed by `1234`, and `0x80` is the empty string.
+
+:::warning
+`Rlp.encode` takes **bytes and nested arrays of bytes**, not hex strings. Passing
+`'0x1234'` throws `RlpEncodingError: Invalid encodable data type`. Convert first
+with `Hex.toBytes`.
+:::
+
+Other encoders:
+
+| Function            | Use                                                        |
+| ------------------- | ---------------------------------------------------------- |
+| `Rlp.encodeBytes`   | one byte string                                            |
+| `Rlp.encodeList`    | a list of already-encoded items                            |
+| `Rlp.encodeArray`   | an array of values                                         |
+| `Rlp.encodeObject`  | an object, in declaration order                            |
+| `Rlp.encodeVariadic`| items as separate arguments                                |
+| `Rlp.encodeBatch`   | many payloads in one call                                  |
+
+## Decoding
+
+`Rlp.decode` gives you the structural view plus any trailing bytes:
+
+```js
+import { Hex, Rlp } from '@tevm/voltaire'
+
+const decoded = Rlp.decode(Hex.toBytes('0xc482123480'))
+// {
+//   data: { type: 'list', value: [ {…}, {…} ] },
+//   remainder: Uint8Array(0)
+// }
+
+// Flatten to plain hex values
+Rlp.toRaw(decoded.data)
+// [ '0x1234', '0x' ]
+```
+
+`Rlp.decodeArray` does both steps for a top-level list:
+
+```js
+Rlp.decodeArray(Hex.toBytes('0xc482123480'))
+// [ '0x1234', '0x' ]
+```
+
+A non-empty `remainder` means the input contained more than one RLP item. For
+transaction and block decoding that is an error — check it.
+
+## Canonicality
+
+RLP has exactly one valid encoding per value, and non-canonical encodings are a
+classic consensus-split and hash-mismatch source: a leading zero in a length
+prefix, or a short string encoded with the long form.
+
+```js
+Rlp.isCanonical(encoded) // true
+Rlp.validate(encoded) // throws on malformed input
+Rlp.getEncodedLength(encoded) // 6 — total encoded size in bytes
+Rlp.getLength(encoded) // payload length
+Rlp.isList(encoded) // true
+Rlp.isString(encoded) // false
+```
+
+Always run untrusted RLP through `isCanonical` before hashing it. Two encodings
+that decode to the same value but hash differently will desynchronize you from
+the network.
+
+## Zig
+
+```zig
+const primitives = @import("primitives");
+const Rlp = primitives.Rlp;
+
+const items = [_][]const u8{ &[_]u8{ 0x12, 0x34 }, "" };
+const encoded = try Rlp.encodeList(allocator, &items);
+defer allocator.free(encoded);
+```
+
+The Zig API returns owned slices; free them with the allocator you passed in.
+Run the worked example with `zig build example-rlp`.
+
+## Related
+
+- [Transactions](/guides/transactions) — RLP applied to the five envelope types
+- [ABI Encoding](/guides/abi) — the other encoding, for contract calls

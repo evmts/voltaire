@@ -1,0 +1,138 @@
+---
+title: Hashing
+description: Keccak-256, function selectors, event topics, and the other digests Voltaire ships.
+---
+
+# Hashing
+
+Keccak-256 is the hash Ethereum is built on: addresses, storage slots, function
+selectors, event topics, transaction hashes, and Merkle-Patricia nodes are all
+Keccak digests. Voltaire also ships SHA-256, RIPEMD-160, Blake2, and the
+precompile-facing variants.
+
+## Keccak-256
+
+```js
+import { Hex, Keccak256 } from '@tevm/voltaire'
+
+// From a UTF-8 string
+const a = Keccak256.hashString('Voltaire')
+Hex.fromBytes(a)
+// 0xa35d8b3a144abaa59fc70648869c03b670dc34a91a8963640365ef6698290cb7
+
+// From a hex string
+Hex.fromBytes(Keccak256.hashHex('0xdeadbeef'))
+// 0xd4fd4e189132273036449fc9e11198c739161b4c0116a9a2dccdfa1c492006f1
+
+// From raw bytes
+Hex.fromBytes(Keccak256.hash(new Uint8Array([0xde, 0xad, 0xbe, 0xef])))
+// 0xd4fd4e189132273036449fc9e11198c739161b4c0116a9a2dccdfa1c492006f1
+
+// Concatenate then hash, without allocating the concatenation yourself
+Hex.fromBytes(Keccak256.hashMultiple([new Uint8Array([1]), new Uint8Array([2])]))
+// 0x22ae6da6b482f9b1b19b0b897c3fd43884180a1c5ee361e1107a1bc635649dda
+
+// The empty-input digest, which appears everywhere in Ethereum state
+Hex.fromBytes(Keccak256.hashString(''))
+// 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+```
+
+`Keccak256.hash*` always returns a 32-byte `Uint8Array` branded as `Hash`.
+Constants: `Keccak256.DIGEST_SIZE` (32), `Keccak256.RATE` (136),
+`Keccak256.STATE_SIZE` (200).
+
+:::warning
+Keccak-256 is **not** SHA3-256. They differ in padding. If you need the NIST
+SHA-3 function, do not use `Keccak256`.
+:::
+
+## Selectors and topics
+
+The two derived forms you need constantly:
+
+```js
+import { Hex, Keccak256 } from '@tevm/voltaire'
+
+// First 4 bytes of keccak256 of the canonical function signature
+Hex.fromBytes(Keccak256.selector('transfer(address,uint256)'))
+// 0xa9059cbb
+
+// Full 32 bytes of keccak256 of the canonical event signature (topic0)
+Hex.fromBytes(Keccak256.topic('Transfer(address,address,uint256)'))
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+If you have an ABI item rather than a signature string, let the ABI module build
+the canonical signature for you — it handles tuples and arrays correctly:
+
+```js
+import * as Abi from '@tevm/voltaire/Abi'
+import { Hex } from '@tevm/voltaire'
+
+const transfer = {
+  type: 'function',
+  name: 'transfer',
+  inputs: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'amount' },
+  ],
+  outputs: [{ type: 'bool' }],
+  stateMutability: 'nonpayable',
+}
+
+Abi.Function.getSignature(transfer) // 'transfer(address,uint256)'
+Hex.fromBytes(Abi.Function.getSelector(transfer)) // '0xa9059cbb'
+```
+
+## Contract address derivation
+
+Both `CREATE` and `CREATE2` derivations are Keccak-based and live on `Address`:
+
+```js
+import { Address, Hex } from '@tevm/voltaire'
+
+const deployer = Address.from('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
+
+// CREATE: keccak256(rlp([sender, nonce]))[12:]
+Address.toChecksummed(Address.calculateCreateAddress(deployer, 0n))
+// 0x3E4EA2156166390f880071d94458EFB098473311
+
+// CREATE2: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:]
+Address.toChecksummed(
+  Address.calculateCreate2Address(
+    deployer,
+    new Uint8Array(32), // salt
+    Hex.toBytes('0x6000'), // init code
+  ),
+)
+// 0x8345c637db884d9FC7fAab59220A2AF9AA451B90
+```
+
+`Keccak256.contractAddress` and `Keccak256.create2Address` are the same
+computations exposed from the hashing side.
+
+## Other digests
+
+```js
+import { Blake2, Hex, Ripemd160, SHA256 } from '@tevm/voltaire'
+
+Hex.fromBytes(SHA256.hash(new Uint8Array([1, 2, 3])))
+// 0x039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81
+
+Ripemd160.hashString('abc') // 20 bytes — the 0x03 precompile
+Blake2.hashString('abc') // the EIP-152 compression function's hash
+```
+
+| Function    | Where Ethereum uses it                                 |
+| ----------- | ------------------------------------------------------ |
+| Keccak-256  | everything: state, selectors, topics, tx hashes         |
+| SHA-256     | `0x02` precompile, beacon chain, KZG versioned hashes    |
+| RIPEMD-160  | `0x03` precompile                                       |
+| Blake2b/2f  | `0x09` precompile (EIP-152)                             |
+
+## Performance
+
+The portable JavaScript build uses a pure-JS Keccak. If you are hashing in bulk
+(indexing, trie building, proof generation), switch to the WASM or native entry
+point — same API, different backend. See
+[Native, WASM & Portable JS](/native/backends).

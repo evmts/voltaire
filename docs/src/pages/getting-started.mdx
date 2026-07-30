@@ -1,0 +1,147 @@
+---
+title: Getting Started
+description: A complete, runnable first program — hash, derive an address, sign a transaction, and recover the sender.
+---
+
+# Getting Started
+
+This page is one complete program. Every line runs; the output below is the real
+output from running it against `@tevm/voltaire` on Node 24.
+
+## Setup
+
+```bash
+mkdir voltaire-demo && cd voltaire-demo
+npm init -y
+npm pkg set type=module
+npm install @tevm/voltaire
+```
+
+## The program
+
+Save this as `demo.mjs`.
+
+```js
+import { Address, Hex, Keccak256, Secp256k1 } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// A well-known test key. Never use a hardcoded key with real funds.
+const KEY = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318'
+
+// 1. Derive the address from the private key.
+const sender = PrivateKey.toAddress(KEY)
+console.log('sender      ', Address.toChecksummed(sender))
+
+// 2. Hash something.
+const digest = Keccak256.hashString('Voltaire')
+console.log('keccak256   ', Hex.fromBytes(digest))
+
+// 3. Sign that digest and recover the public key from the signature.
+const messageSig = PrivateKey.sign(KEY, digest)
+const publicKey = Secp256k1.recoverPublicKeyFromHash(messageSig, digest)
+console.log('sig valid   ', Secp256k1.verifyHash(messageSig, digest, publicKey))
+console.log('recovered   ', Address.toChecksummed(Address.fromPublicKey(publicKey)))
+
+// 4. Build an unsigned EIP-1559 transaction.
+//    Signature fields are placeholders until step 5.
+const unsigned = {
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1_000_000_000n, // 1 gwei
+  maxFeePerGas: 30_000_000_000n, // 30 gwei
+  gasLimit: 21_000n,
+  to: Address.from('0x0000000000000000000000000000000000000001'),
+  value: 1_000_000_000_000_000_000n, // 1 ether in wei
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+}
+
+// 5. Sign it: hash the unsigned payload, sign, then attach r/s/yParity.
+const signingHash = Transaction.EIP1559.getSigningHash(unsigned)
+const txSig = Secp256k1.signHash(signingHash, PrivateKey.from(KEY))
+const signed = { ...unsigned, yParity: txSig.v - 27, r: txSig.r, s: txSig.s }
+
+console.log('signing hash', Hex.fromBytes(signingHash))
+console.log('tx hash     ', Hex.fromBytes(Transaction.EIP1559.hash(signed)))
+console.log('raw tx      ', Hex.fromBytes(Transaction.EIP1559.serialize(signed)))
+console.log('tx sender   ', Address.toChecksummed(Transaction.EIP1559.getSender(signed)))
+console.log('tx valid    ', Transaction.EIP1559.verifySignature(signed))
+
+// 6. Round-trip the serialized bytes back into a transaction.
+const decoded = Transaction.EIP1559.deserialize(
+  Transaction.EIP1559.serialize(signed),
+)
+console.log('decoded     ', decoded.nonce, decoded.value)
+```
+
+```bash
+node demo.mjs
+```
+
+Real output:
+
+```
+sender       0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+keccak256    0xa35d8b3a144abaa59fc70648869c03b670dc34a91a8963640365ef6698290cb7
+sig valid    true
+recovered    0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+signing hash 0xe5f9a06ffc0ced0062ac342e2b63a85ff9b5153ac576bb6f723623a9bdfc9466
+tx hash      0x36aa617911cb74efc515addbef946dd1b7972ecf35bef55240cba51ad0e7b968
+raw tx       0x02f8730180843b9aca008506fc23ac00825208...
+tx sender    0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+tx valid     true
+decoded      0n 1000000000000000000n
+```
+
+(The `raw tx` line is truncated here for width; the program prints the full
+serialized transaction.)
+
+## What just happened
+
+**Everything is a branded byte array or a `bigint`.** `sender` is a
+`Uint8Array(20)` with a phantom `Address` tag. There is no wrapper object, so
+`sender.length === 20` and `Hex.fromBytes(sender)` work exactly as you would
+expect from a `Uint8Array`.
+
+**Wei is `bigint`, always.** Voltaire never uses `number` for value or gas.
+`1_000_000_000_000_000_000n` is 1 ether. See [Units & Denominations](/guides/units)
+for the conversion helpers.
+
+**Signature objects are `{ r, s, v }`** where `r` and `s` are 32-byte arrays and
+`v` is `27` or `28`. Typed transactions want `yParity` (`0` or `1`) instead,
+hence `txSig.v - 27`.
+
+**Argument order follows "the thing being verified comes first."**
+`Secp256k1.verifyHash(signature, hash, publicKey)` and
+`Secp256k1.recoverPublicKeyFromHash(signature, hash)`. If you get a length
+error, check the order.
+
+## Import styles
+
+Both of these work, and both tree-shake:
+
+```js
+// Barrel: convenient, bundlers drop what you do not use.
+import { Address, Keccak256 } from '@tevm/voltaire'
+
+// Deep import: guarantees only this module is pulled in.
+import * as Address from '@tevm/voltaire/Address'
+```
+
+Some modules are only reachable through their subpath because they are not
+re-exported from the barrel — notably `PrivateKey`, `PublicKey`, `Denomination`,
+`HDWallet`, `Keystore`, `KZG`, and `Transaction`'s per-type namespaces. When a
+name is missing from the barrel, reach for `@tevm/voltaire/<Module>`.
+
+## Where to next
+
+- [Hashing](/guides/hashing) — Keccak-256, selectors, topics, other digests
+- [Keys & Signatures](/guides/keys-and-signatures) — key derivation, signing, recovery
+- [ABI Encoding](/guides/abi) — calldata and event decoding
+- [Transactions](/guides/transactions) — all five envelope types
+- [Reference](/reference/overview) — the full module map

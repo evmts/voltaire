@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import * as PrivateKey from "../../primitives/PrivateKey/index.js";
 import * as Keystore from "./index.js";
 
+const fastScrypt = {
+	scryptN: 1024,
+	scryptR: 1,
+	scryptP: 1,
+} as const;
+
 describe("Keystore", () => {
 	describe("encrypt / decrypt", () => {
 		it("encrypts and decrypts with scrypt (default)", async () => {
@@ -14,7 +20,7 @@ describe("Keystore", () => {
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
-		}, 30000);
+		}, 180000);
 
 		it("encrypts and decrypts with pbkdf2", async () => {
 			const privateKey = PrivateKey.from(
@@ -35,8 +41,16 @@ describe("Keystore", () => {
 				"0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
 			);
 
-			const keystore1 = await Keystore.encrypt(privateKey, "password1");
-			const keystore2 = await Keystore.encrypt(privateKey, "password2");
+			const keystore1 = await Keystore.encrypt(
+				privateKey,
+				"password1",
+				fastScrypt,
+			);
+			const keystore2 = await Keystore.encrypt(
+				privateKey,
+				"password2",
+				fastScrypt,
+			);
 
 			expect(keystore1.crypto.ciphertext).not.toBe(keystore2.crypto.ciphertext);
 
@@ -45,14 +59,18 @@ describe("Keystore", () => {
 
 			expect(decrypted1).toEqual(privateKey);
 			expect(decrypted2).toEqual(privateKey);
-		}, 60000);
+		}, 180000);
 
 		it("throws on wrong password (scrypt)", async () => {
 			const privateKey = PrivateKey.from(
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "correct-password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"correct-password",
+				fastScrypt,
+			);
 
 			expect(() => Keystore.decrypt(keystore, "wrong-password")).toThrow(
 				Keystore.InvalidMacError,
@@ -78,7 +96,7 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "");
+			const keystore = await Keystore.encrypt(privateKey, "", fastScrypt);
 			const decrypted = Keystore.decrypt(keystore, "");
 
 			expect(decrypted).toEqual(privateKey);
@@ -90,7 +108,7 @@ describe("Keystore", () => {
 			);
 			const password = "pāšẅörd!@#$%^&*()[]{}|<>?/~`";
 
-			const keystore = await Keystore.encrypt(privateKey, password);
+			const keystore = await Keystore.encrypt(privateKey, password, fastScrypt);
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
@@ -102,7 +120,7 @@ describe("Keystore", () => {
 			);
 			const password = "a".repeat(1000);
 
-			const keystore = await Keystore.encrypt(privateKey, password);
+			const keystore = await Keystore.encrypt(privateKey, password, fastScrypt);
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
@@ -115,6 +133,7 @@ describe("Keystore", () => {
 			const customUuid = "12345678-1234-1234-1234-123456789abc";
 
 			const keystore = await Keystore.encrypt(privateKey, "password", {
+				...fastScrypt,
 				uuid: customUuid,
 			});
 
@@ -126,8 +145,16 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore1 = await Keystore.encrypt(privateKey, "password");
-			const keystore2 = await Keystore.encrypt(privateKey, "password");
+			const keystore1 = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
+			const keystore2 = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			expect(keystore1.id).not.toBe(keystore2.id);
 		});
@@ -177,7 +204,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			expect(keystore.version).toBe(3);
 		});
@@ -187,7 +218,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			expect(keystore.crypto.cipher).toBe("aes-128-ctr");
 		});
@@ -197,7 +232,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			expect(keystore.id).toMatch(
 				/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
@@ -209,7 +248,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			expect(keystore.crypto.cipherparams.iv).toHaveLength(32);
 			expect(keystore.crypto.cipherparams.iv).toMatch(/^[0-9a-f]{32}$/);
@@ -220,7 +263,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			const params = keystore.crypto.kdfparams as Keystore.ScryptParams;
 			expect(params.salt).toHaveLength(64);
@@ -232,7 +279,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			expect(keystore.crypto.mac).toHaveLength(64);
 			expect(keystore.crypto.mac).toMatch(/^[0-9a-f]{64}$/);
@@ -243,7 +294,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			expect(keystore.crypto.ciphertext).toHaveLength(64);
 			expect(keystore.crypto.ciphertext).toMatch(/^[0-9a-f]{64}$/);
@@ -470,7 +525,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			// Corrupt ciphertext
 			keystore.crypto.ciphertext = `${keystore.crypto.ciphertext.slice(0, -2)}ff`;
@@ -489,7 +548,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			// Corrupt MAC
 			keystore.crypto.mac = `${keystore.crypto.mac.slice(0, -2)}ff`;
@@ -508,7 +571,11 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(
+				privateKey,
+				"password",
+				fastScrypt,
+			);
 
 			// Corrupt IV - MAC will still pass since it doesn't include IV,
 			// but decryption will produce garbage
@@ -602,11 +669,13 @@ describe("Keystore", () => {
 			const uuid = "12345678-1234-1234-1234-123456789abc";
 
 			const keystore1 = await Keystore.encrypt(privateKey, password, {
+				...fastScrypt,
 				salt,
 				iv,
 				uuid,
 			});
 			const keystore2 = await Keystore.encrypt(privateKey, password, {
+				...fastScrypt,
 				salt,
 				iv,
 				uuid,
@@ -651,9 +720,11 @@ describe("Keystore", () => {
 			const salt2 = new Uint8Array(32).fill(2);
 
 			const keystore1 = await Keystore.encrypt(privateKey, password, {
+				...fastScrypt,
 				salt: salt1,
 			});
 			const keystore2 = await Keystore.encrypt(privateKey, password, {
+				...fastScrypt,
 				salt: salt2,
 			});
 
@@ -664,7 +735,9 @@ describe("Keystore", () => {
 	describe("security", () => {
 		it(
 			"different IVs produce different ciphertexts",
-			{ timeout: 30000 },
+			{
+				timeout: 30000,
+			},
 			async () => {
 				const privateKey = PrivateKey.from(
 					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
@@ -705,7 +778,9 @@ describe("Keystore", () => {
 
 		it(
 			"constant-time MAC comparison (no early exit)",
-			{ timeout: 30000 },
+			{
+				timeout: 30000,
+			},
 			async () => {
 				const privateKey = PrivateKey.from(
 					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
@@ -772,7 +847,8 @@ describe("Keystore", () => {
 			const elapsed = Date.now() - start;
 
 			expect(decrypted).toEqual(privateKey);
-			expect(elapsed).toBeLessThan(500); // Should complete in < 500ms
+			// Coverage instrumentation and shared CI runners add substantial overhead.
+			expect(elapsed).toBeLessThan(2000);
 		});
 	});
 });

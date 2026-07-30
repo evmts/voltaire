@@ -1,0 +1,123 @@
+---
+title: Reference — Entry Points
+description: Every published subpath of @tevm/voltaire, and what resolves where.
+---
+
+# Reference — Entry Points
+
+`@tevm/voltaire` publishes both ESM and CJS for every subpath, with `.d.ts`
+declarations. The lists below come from the package's `exports` map.
+
+## Root and backend entry points
+
+| Subpath                  | Contents                                   |
+| ------------------------ | ------------------------------------------ |
+| `@tevm/voltaire`         | the barrel — portable JavaScript            |
+| `@tevm/voltaire/wasm`    | WASM-backed implementations                 |
+| `@tevm/voltaire/native`  | native FFI implementations                  |
+| `@tevm/voltaire/functional` | functional-style variants                |
+| `@tevm/voltaire/errors`  | typed error classes                         |
+
+## Primitive modules
+
+```
+@tevm/voltaire/Abi
+@tevm/voltaire/AccessList
+@tevm/voltaire/Address
+@tevm/voltaire/Address/functional
+@tevm/voltaire/Authorization
+@tevm/voltaire/Base64
+@tevm/voltaire/BinaryTree
+@tevm/voltaire/Blob
+@tevm/voltaire/BloomFilter
+@tevm/voltaire/Bytecode
+@tevm/voltaire/Bytes
+@tevm/voltaire/Chain
+@tevm/voltaire/ContractCode
+@tevm/voltaire/Denomination
+@tevm/voltaire/Ens
+@tevm/voltaire/EventLog
+@tevm/voltaire/FeeMarket
+@tevm/voltaire/GasConstants
+@tevm/voltaire/Hardfork
+@tevm/voltaire/Hash
+@tevm/voltaire/Hex
+@tevm/voltaire/InitCode
+@tevm/voltaire/LogFilter
+@tevm/voltaire/Opcode
+@tevm/voltaire/PrivateKey
+@tevm/voltaire/PublicKey
+@tevm/voltaire/Rlp
+@tevm/voltaire/Signature
+@tevm/voltaire/Siwe
+@tevm/voltaire/State
+@tevm/voltaire/Transaction
+@tevm/voltaire/Trie
+@tevm/voltaire/Uint
+```
+
+## Crypto modules
+
+```
+@tevm/voltaire/AesGcm
+@tevm/voltaire/Bip39
+@tevm/voltaire/Blake2
+@tevm/voltaire/Bls12381
+@tevm/voltaire/BN254
+@tevm/voltaire/ChaCha20Poly1305
+@tevm/voltaire/Ed25519
+@tevm/voltaire/EIP712
+@tevm/voltaire/HDWallet
+@tevm/voltaire/HMAC
+@tevm/voltaire/Keccak256
+@tevm/voltaire/Keccak256/native
+@tevm/voltaire/Keccak256/wasm
+@tevm/voltaire/Keystore
+@tevm/voltaire/KZG
+@tevm/voltaire/ModExp
+@tevm/voltaire/P256
+@tevm/voltaire/Ripemd160
+@tevm/voltaire/Secp256k1
+@tevm/voltaire/SHA256
+@tevm/voltaire/X25519
+@tevm/voltaire/signers
+```
+
+## Application-level modules
+
+```
+@tevm/voltaire/block
+@tevm/voltaire/contract
+@tevm/voltaire/transaction
+@tevm/voltaire/stream
+@tevm/voltaire/provider
+@tevm/voltaire/jsonrpc
+@tevm/voltaire/utils
+@tevm/voltaire/evm
+@tevm/voltaire/evm/*
+@tevm/voltaire/precompiles
+```
+
+## What is in the barrel
+
+`import { … } from '@tevm/voltaire'` re-exports the primitives, crypto, and
+standards namespaces, plus `block`, `contract`, `evm`, `precompiles`, `stream`,
+`transaction`, `wasm`, and the `brand` symbol.
+
+It does **not** re-export `PrivateKey`, `PublicKey`, `Denomination`, `HDWallet`,
+`Keystore`, or `KZG` — import those from their subpath.
+
+## Tree-shaking
+
+`sideEffects: false` is declared, and every module has its own entry, so a bundler
+that follows `exports` will drop what you do not import. For the tightest
+budgets, deep-import (`@tevm/voltaire/Address`) rather than destructuring the
+barrel, and prefer the per-algorithm WASM modules in `wasm/crypto/` over the
+combined `primitives.wasm`.
+
+## Type declarations
+
+Declarations ship in `types/` and are wired through both `exports.types` and
+`typesVersions`, so `moduleResolution: "node16"`, `"nodenext"`, and `"bundler"`
+all resolve. `abitype` is an optional peer dependency used for ABI type
+inference.

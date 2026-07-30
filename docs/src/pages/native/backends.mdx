@@ -1,0 +1,106 @@
+---
+title: Native, WASM & Portable JS
+description: Three backends behind one API — what each one costs you and which to pick.
+---
+
+# Native, WASM & Portable JS
+
+The npm package ships three entry points over the same API surface. They differ in
+how the heavy math executes.
+
+| Entry point                | Backend                          | Requires                        |
+| -------------------------- | -------------------------------- | ------------------------------- |
+| `@tevm/voltaire`           | portable JavaScript              | nothing                         |
+| `@tevm/voltaire/wasm`      | `wasm32-wasi` WebAssembly        | a WASM-capable runtime          |
+| `@tevm/voltaire/native`    | compiled Zig via FFI             | a platform native library       |
+
+```js
+import { Keccak256 } from '@tevm/voltaire' // portable
+import { Keccak256 } from '@tevm/voltaire/wasm' // WASM
+import { Keccak256 } from '@tevm/voltaire/native' // native FFI
+```
+
+Some modules also expose a per-backend subpath, e.g.
+`@tevm/voltaire/Keccak256/native` and `@tevm/voltaire/Keccak256/wasm`, when you
+want to force one algorithm onto a faster backend without moving the whole app.
+
+## Portable JavaScript (the default)
+
+This is what `import '@tevm/voltaire'` gives you, and it is the right default:
+
+- Installs with no compiler, no postinstall, no binary download.
+- Runs in Node, Bun, Deno, browsers, Cloudflare Workers, and any bundler.
+- Uses audited JS crypto (`@noble/curves`, `@noble/hashes`, `@scure/*`) under the
+  Voltaire API.
+
+Cost: hashing and curve operations are the slowest of the three. For a wallet UI
+signing one transaction, that is irrelevant. For an indexer hashing millions of
+values, it is not.
+
+**Not available here:** KZG. `KZG.isInitialized()` returns `false` and
+`loadTrustedSetup()` throws
+`Failed to load KZG trusted setup: WASM module not loaded. Call loadWasm() first.`
+
+## WASM
+
+Two builds, same API:
+
+- `wasm/primitives.wasm` — ReleaseSmall, ~1.28 MB, for shipping to browsers.
+- `wasm/primitives-fast.wasm` — ReleaseFast, larger, for throughput.
+
+Plus per-algorithm modules in `wasm/crypto/` (`keccak256.wasm`, `blake2.wasm`,
+`ripemd160.wasm`, `address.wasm`) so a bundle that only needs Keccak does not ship
+secp256k1.
+
+WASM is the sweet spot for browsers and for edge runtimes where you cannot load a
+native library: much faster than portable JS on hashing and field arithmetic,
+portable everywhere, no per-platform artifacts. The loader
+(`packages/voltaire-ts/src/wasm-loader`) handles instantiation, memory growth, and
+error translation.
+
+Build them with `zig build build-ts-wasm` / `build-ts-wasm-fast` /
+`crypto-wasm`.
+
+## Native FFI
+
+Fastest: assembly-optimized Keccak, arkworks pairings, and `blst` for BLS12-381,
+called through FFI. Best suited to Bun (which has first-class FFI) and to Node
+servers you control.
+
+Requires the platform library, built by `zig build build-native-<platform>` and
+produced in CI for `darwin-arm64`, `darwin-x64`, `linux-x64`, and `win32-x64`.
+`linux-arm64` is not currently built in CI.
+
+This is also the only backend where KZG (`c-kzg-4844`) is fully available.
+
+## Choosing
+
+Answer these in order:
+
+1. **Browser or edge runtime?** Portable JS by default; WASM if you profile a
+   hashing bottleneck.
+2. **Need KZG / EIP-4844 blobs?** Native (or WASM with the module loaded).
+   Portable JS cannot do it.
+3. **Server-side, hashing in bulk?** Native if you can ship the library for your
+   platforms, WASM if you would rather not.
+4. **A library, not an app?** Portable JS. Do not impose a native dependency on
+   your consumers; let *them* choose the backend.
+
+## Verifying you agree
+
+The three backends should be byte-identical. A cheap check across a boundary —
+here JavaScript and C, over the same input:
+
+```
+JS  keccak256('Voltaire') = 0xa35d8b3a144abaa59fc70648869c03b670dc34a91a8963640365ef6698290cb7
+C   primitives_keccak256("Voltaire", 8) = 0xa35d8b3a144abaa59fc70648869c03b670dc34a91a8963640365ef6698290cb7
+```
+
+If you build a cross-backend path in your own code, pin a vector like this in a
+test. Silent divergence between backends is the failure mode that costs the most
+to debug later.
+
+## Related
+
+- [Building from Source](/native/building)
+- [Other Languages](/native/other-languages)

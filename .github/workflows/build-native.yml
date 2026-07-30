@@ -19,12 +19,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS ARM (M1/M2) - macos-latest is now ARM
-          - os: macos-latest
+          # macOS ARM (M1/M2)
+          - os: macos-15
             platform: darwin-arm64
             zig-target: aarch64-macos
-          # macOS x64 - use macos-13 which is the last x64 runner
-          - os: macos-13
+          # macOS x64
+          - os: macos-15-intel
             platform: darwin-x64
             zig-target: x86_64-macos
           # Linux x64 - ubuntu-latest is x64
@@ -54,13 +54,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.22.0'
           cache: 'pnpm'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: 1.89.0
+
+      - name: Install Windows GNU Rust target
+        if: runner.os == 'Windows'
+        run: rustup target add x86_64-pc-windows-gnu
 
       - name: Cache Cargo dependencies
         uses: actions/cache@v4
@@ -96,7 +100,7 @@ jobs:
           zig build install
 
       - name: Build native library
-        run: zig build build-native-${{ matrix.platform }}
+        run: zig build -Dwith-c-api=true build-native-${{ matrix.platform }}
 
       - name: Verify build output
         shell: bash

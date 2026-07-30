@@ -1,0 +1,161 @@
+---
+title: Installation
+description: Install Voltaire from npm, add it as a Zig dependency, or build the whole toolchain from source.
+---
+
+# Installation
+
+## npm (TypeScript / JavaScript)
+
+The npm package is **scoped**. The unscoped `voltaire` name on npm belongs to an
+unrelated project and is not us.
+
+:::code-group
+
+```bash [pnpm]
+pnpm add @tevm/voltaire
+```
+
+```bash [npm]
+npm install @tevm/voltaire
+```
+
+```bash [bun]
+bun add @tevm/voltaire
+```
+
+:::
+
+The default entry point is portable JavaScript with TypeScript declarations — no
+compiler, no postinstall step, no native binary required. It works in Node, Bun,
+Deno, browsers, and edge runtimes.
+
+Optional peer dependency: [`abitype`](https://github.com/wevm/abitype), for
+inferring TypeScript types from a `const`-asserted ABI. Everything works without
+it; you just get looser types on `Abi.encode` / `Abi.decode`.
+
+Requirements for the npm package:
+
+- **Node.js ≥ 22.22.0** (declared in `engines`), Bun ≥ 1.1, or any modern browser.
+- ESM and CJS are both published (`import` and `require` both resolve).
+
+### Effect users
+
+If you are building an application rather than a library, the Effect integration
+is the recommended surface — typed errors, layers, and composable retries:
+
+```bash
+pnpm add voltaire-effect effect
+```
+
+See [Effect Integration](/guides/effect).
+
+## Zig
+
+Voltaire targets **Zig 0.15.1** (`minimum_zig_version` in `build.zig.zon`; the
+toolchain also builds with 0.15.2).
+
+```bash
+zig fetch --save git+https://github.com/evmts/voltaire
+```
+
+Pin to a release commit rather than a branch. Then wire the modules up in your
+`build.zig`:
+
+```zig
+const voltaire = b.dependency("primitives", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+exe.root_module.addImport("primitives", voltaire.module("primitives"));
+exe.root_module.addImport("crypto", voltaire.module("crypto"));
+exe.root_module.addImport("precompiles", voltaire.module("precompiles"));
+```
+
+The package name in `build.zig.zon` is `primitives`, so that is the key
+`b.dependency` expects. The modules exposed by `build.zig` are `primitives`,
+`crypto`, `precompiles`, `jsonrpc`, `state-manager`, `blockchain`, and `c_kzg`.
+Full walkthrough: [Zig](/native/zig).
+
+## Other languages
+
+Rust, Python, Go, Swift, and C bindings live in `packages/voltaire-*` and are
+consumed from the built native library. They are **beta** and, except for the C
+header, are not published to their language registries yet — see
+[Other Languages](/native/other-languages) for the exact status and the local
+consumption steps.
+
+## Building from source
+
+This is the contributor path, and the only path if you want the native library or
+the WASM artifacts.
+
+### Verified toolchain
+
+| Tool     | Version   | Notes                                              |
+| -------- | --------- | -------------------------------------------------- |
+| Zig      | 0.15.1    | `minimum_zig_version`; verified locally on 0.15.2  |
+| Rust     | 1.89.0    | pinned in `rust-toolchain.toml`                    |
+| Rust target | `wasm32-unknown-unknown` | installed by the pinned toolchain file |
+| Node.js  | ≥ 22.22.0 | 24.x works                                          |
+| pnpm     | 10.26.2   | via `corepack enable`                               |
+
+Rust is not optional: the Zig build links a `crypto_wrappers` static library
+built from `Cargo.toml` (arkworks for BN254/BLS12-381, `keccak-asm` for native
+Keccak, `tiny-keccak` for the portable/WASM build).
+
+C dependencies are vendored as submodules and built by `zig build`:
+[`blst`](https://github.com/supranational/blst) for BLS12-381 and
+[`c-kzg-4844`](https://github.com/ethereum/c-kzg-4844) for EIP-4844 KZG, plus
+`libwally-core` as a lazy dependency.
+
+### Steps
+
+```bash
+git clone --recurse-submodules https://github.com/evmts/voltaire.git
+cd voltaire
+corepack enable
+pnpm install --frozen-lockfile
+
+zig build --summary all
+zig build test --summary all
+```
+
+Real output from `zig build test --summary all` on this tree (macOS arm64, Zig
+0.15.2):
+
+```
+Build Summary: 19/19 steps succeeded; 91/91 tests passed
++- run test precompiles-tests 17 passed 6ms MaxRSS:2M
++- run test state-manager-tests 22 passed 11ms MaxRSS:2M
++- run test blockchain-tests 47 passed 66ms MaxRSS:2M
++- run test primitives-extra-tests 5 passed 5ms MaxRSS:2M
+```
+
+Then the TypeScript side:
+
+```bash
+pnpm --filter @tevm/voltaire build
+pnpm --filter @tevm/voltaire test:run
+```
+
+And the optional native/WASM artifacts:
+
+```bash
+zig build build-ts-native   # .dylib/.so, ReleaseFast
+zig build build-ts-wasm     # wasm/primitives.wasm, ReleaseSmall
+zig build crypto-wasm       # per-module WASM for tree-shaking
+```
+
+More detail, including what each artifact is for:
+[Building from Source](/native/building).
+
+## Docs site
+
+The site you are reading is a [vocs](https://vocs.dev) app in `docs/`:
+
+```bash
+pnpm --filter @voltaire/docs dev     # local dev server
+pnpm --filter @voltaire/docs build   # static build into docs/dist
+```

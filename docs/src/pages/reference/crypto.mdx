@@ -1,0 +1,158 @@
+---
+title: Reference — Cryptography
+description: Every crypto module, what Ethereum uses it for, and its key members.
+---
+
+# Reference — Cryptography
+
+Member lists were read off the built package. Constants and typed errors are
+omitted for brevity; each module exports them alongside the functions.
+
+## Hashes
+
+### `Keccak256`
+The hash Ethereum is built on.
+
+`hash`, `hashString`, `hashHex`, `hashMultiple`, `from`, `selector`, `topic`,
+`contractAddress`, `create2Address`, `DIGEST_SIZE`, `RATE`, `STATE_SIZE`.
+Backend-specific: `@tevm/voltaire/Keccak256/native`,
+`@tevm/voltaire/Keccak256/wasm`. → [guide](/guides/hashing)
+
+### `SHA256`
+`hash`, `hashString`, `hashHex`, `create` (streaming), `from`, `toHex`.
+Used by the `0x02` precompile, the beacon chain, and KZG versioned hashes.
+
+### `Ripemd160`
+`hash`, `hashString`, `hashHex`, `from`. The `0x03` precompile.
+
+### `Blake2`
+`hash`, `hashString`, `compress`, `from`. `compress` is the EIP-152 `0x09`
+precompile's F function.
+
+### `HMAC`
+`sha256`, `sha512`. The MAC underneath BIP-32 derivation and keystores.
+
+## Elliptic curves
+
+### `Secp256k1`
+Ethereum's signature curve.
+
+`sign`, `signHash`, `verify`, `verifyHash`, `recoverPublicKey`,
+`recoverPublicKeyFromHash`, `derivePublicKey`, `randomPrivateKey`,
+`createKeyPair`, `isValidPrivateKey`, `isValidPublicKey`, `isValidSignature`,
+`ecdh`, `getSharedSecret`, `addPoints`, `scalarMultiply`, `CURVE_ORDER`,
+`PRIVATE_KEY_SIZE`, `PUBLIC_KEY_SIZE`, `SIGNATURE_COMPONENT_SIZE`.
+→ [guide](/guides/keys-and-signatures)
+
+Modular inverse, `addmod`/`submod`, and point recovery are constant-time with
+respect to secret data.
+
+### `P256` (secp256r1)
+`sign`, `verify`, `derivePublicKey`, `randomPrivateKey`, `ecdh`,
+`validatePrivateKey`, `validatePublicKey`. Needed for passkey / WebAuthn signature
+verification (RIP-7212).
+
+### `Ed25519`
+`sign`, `verify`, `derivePublicKey`, `keypairFromSeed`, `validateSeed`,
+`validateSecretKey`, `validatePublicKey`.
+
+### `X25519`
+`generateKeypair`, `generateSecretKey`, `keypairFromSeed`, `derivePublicKey`,
+`scalarmult`, `validateSecretKey`, `validatePublicKey`. ECDH for encrypted
+messaging.
+
+### `Bls12381`
+Consensus-layer signatures and the EIP-2537 precompiles.
+
+`sign`, `verify`, `signPoint`, `verifyPoint`, `aggregate`,
+`aggregatePublicKeys`, `aggregateVerify`, `fastAggregateVerify`, `batchVerify`,
+`derivePublicKey`, `derivePublicKeyPoint`, `randomPrivateKey`,
+`isValidPrivateKey`, plus the field/group types `Fp`, `Fp2`, `Fr`, `G1`, `G2`,
+`Pairing` and curve constants (`FP_MOD`, `FR_MOD`, `G1_GENERATOR_X/Y`,
+`G2_COFACTOR`, `BLS_X`, `EMBEDDING_DEGREE`).
+
+Native builds use `blst`; the pure-Zig path exists for WASM.
+
+### `BN254` (alt_bn128)
+`serializeG1`, `deserializeG1`, `serializeG2`, `deserializeG2` at the module
+level; the pairing and arithmetic used by precompiles `0x06`–`0x08` come from the
+arkworks-backed implementation on native and the pure-Zig implementation on WASM.
+
+## Signing standards
+
+### `EIP712`
+`hashTypedData`, `signTypedData`, `recoverAddress`, `verifyTypedData`,
+`hashDomain`, `hashStruct`, `hashType`, `encodeType`, `encodeData`,
+`encodeValue`, `validate`, `format`. → [guide](/guides/eip712)
+
+### `signers`
+`getAddress`, `recoverTransactionAddress` — signer-level convenience over the
+curve and transaction primitives.
+
+## Key management
+
+### `Bip39`
+`generateMnemonic`, `entropyToMnemonic`, `validateMnemonic`,
+`assertValidMnemonic`, `mnemonicToSeed`, `mnemonicToSeedSync`, `getWordCount`,
+`getEntropyBits`, `wordlists`, `ENTROPY_128`…`ENTROPY_256`, `SEED_LENGTH`.
+
+### `HDWallet`
+BIP-32/BIP-44: `fromSeed`, `fromExtendedKey`, `fromPublicExtendedKey`,
+`derivePath`, `deriveChild`, `deriveEthereum`, `deriveBitcoin`, `getPrivateKey`,
+`getPublicKey`, `getChainCode`, `isValidPath`, `isHardenedPath`,
+`canDeriveHardened`, `parseIndex`, `mnemonicToSeed`, `generateMnemonic`,
+`HARDENED_OFFSET`, `BIP44_PATH`, `CoinType`.
+→ [guide](/guides/keys-and-signatures)
+
+### `Keystore`
+Web3 Secret Storage V3: `encrypt`, `decrypt` (both async). Rejects weak KDF
+parameters (`InvalidScryptNError`, `InvalidPbkdf2IterationsError`) and reports
+`InvalidMacError` distinctly from other decryption failures.
+
+## Symmetric encryption
+
+### `AesGcm`
+`encrypt`, `decrypt`, `generateKey`, `generateNonce`, `deriveKey`, `importKey`,
+`exportKey`.
+
+### `ChaCha20Poly1305`
+`encrypt`, `decrypt`, `generateKey`, `generateNonce`.
+
+Both are AEADs. Never reuse a `(key, nonce)` pair — with GCM in particular, nonce
+reuse leaks the authentication key, not just the plaintext.
+
+## Blobs and modular arithmetic
+
+### `KZG`
+EIP-4844 commitments: `loadTrustedSetup`, `freeTrustedSetup`, `isInitialized`,
+`blobToKzgCommitment`, `computeBlobKzgProof`, `computeKzgProof`,
+`verifyBlobKzgProof`, `verifyBlobKzgProofBatch`, `verifyKzgProof`,
+`createEmptyBlob`, `generateRandomBlob`, `validateBlob`, `BYTES_PER_BLOB`
+(131072), `BYTES_PER_COMMITMENT` (48), `BYTES_PER_PROOF` (48),
+`BYTES_PER_FIELD_ELEMENT`, `FIELD_ELEMENTS_PER_BLOB` (4096).
+
+Requires the native (`c-kzg-4844`) or WASM backend — **not** available from the
+portable JS entry point. → [backends](/native/backends)
+
+### `ModExp`
+`modexp`, `modexpBytes`, `calculateGas` — the `0x05` precompile, including its
+EIP-2565 gas formula.
+
+## Security notes
+
+- Comparisons on secret data accumulate differences instead of returning early.
+  If you write a comparison over key material in your own code, do the same.
+- Signature validation covers `(r, s, v)` ranges, point-on-curve checks, and hash
+  lengths; malleable high-`s` signatures are detectable via
+  `Signature.isCanonical`.
+- The test suite pins known vectors, edge cases (zero, max, curve order ± 1), and
+  malformed inputs, and cross-validates against `@noble/curves` and
+  `@noble/hashes`.
+- Voltaire has **not** been externally audited. Treat it accordingly for
+  high-value production use, and see the repository's security policy before
+  reporting a vulnerability.
+
+## Related
+
+- [Primitives](/reference/primitives)
+- [Keys & Signatures](/guides/keys-and-signatures)

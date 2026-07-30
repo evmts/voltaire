@@ -1,0 +1,163 @@
+---
+title: EIP-712 Typed Data
+description: Hash, sign, and verify structured data — plus Sign-In with Ethereum.
+---
+
+# EIP-712 Typed Data
+
+EIP-712 turns a structured object into a domain-separated digest so a wallet can
+show a user what they are signing instead of an opaque hash. Voltaire implements
+the whole pipeline: type encoding, struct hashing, domain separation, signing,
+and recovery.
+
+## A complete example
+
+```js
+import { Address, EIP712, Hex } from '@tevm/voltaire'
+import * as PrivateKey from '@tevm/voltaire/PrivateKey'
+
+const typedData = {
+  domain: {
+    name: 'Ether Mail',
+    version: '1',
+    chainId: 1n,
+    verifyingContract: Address.from('0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC'),
+  },
+  types: {
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' },
+    ],
+    Mail: [
+      { name: 'from', type: 'Person' },
+      { name: 'to', type: 'Person' },
+      { name: 'contents', type: 'string' },
+    ],
+  },
+  primaryType: 'Mail',
+  message: {
+    from: {
+      name: 'Cow',
+      wallet: Address.from('0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826'),
+    },
+    to: {
+      name: 'Bob',
+      wallet: Address.from('0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB'),
+    },
+    contents: 'Hello, Bob!',
+  },
+}
+
+// The canonical type string, dependencies sorted per spec
+EIP712.encodeType('Mail', typedData.types)
+// 'Mail(Person from,Person to,string contents)Person(string name,address wallet)'
+
+// The final digest: keccak256(0x1901 ++ domainSeparator ++ hashStruct(message))
+Hex.fromBytes(EIP712.hashTypedData(typedData))
+// 0xbe609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2
+
+// Sign it. Note: (typedData, privateKeyBytes)
+const KEY = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318'
+const sig = EIP712.signTypedData(typedData, PrivateKey.from(KEY))
+sig.v // 28
+
+// Recover, then verify. Note: (signature, typedData)
+const signer = EIP712.recoverAddress(sig, typedData)
+Address.toChecksummed(signer)
+// 0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+
+EIP712.verifyTypedData(sig, typedData, signer) // true
+```
+
+:::warning
+Address values inside `domain` and `message` must be **branded `Address` bytes**,
+not hex strings. Passing `'0xCcCc…'` where an `address`-typed field is expected
+throws `RangeError: offset is out of bounds` from the encoder. Wrap every address
+in `Address.from(...)`. Numeric fields (`chainId`, `uint*`) must be `bigint`.
+:::
+
+## The pieces
+
+If you need the intermediate values — to match a contract's `_hashTypedDataV4`,
+or to debug a signature mismatch:
+
+```js
+EIP712.encodeType(primaryType, types) // canonical type string
+EIP712.hashType(primaryType, types) // keccak256 of that string
+EIP712.encodeData(primaryType, types, message) // 32-byte-word encoding
+EIP712.hashStruct(primaryType, types, message) // keccak256(typeHash ++ encodedData)
+EIP712.hashDomain(domain) // the domain separator
+EIP712.hashTypedData(typedData) // the full 0x1901 digest
+EIP712.encodeValue(type, value, types) // one field
+EIP712.validate(typedData) // throws on a malformed definition
+EIP712.format(typedData) // human-readable dump
+```
+
+`EIP712.Domain` is the domain type. All five standard domain fields are optional
+and the separator only includes the ones present — which is exactly how a
+contract that omits `version` or `salt` behaves.
+
+## Debugging a mismatch
+
+When a contract rejects a signature that verifies locally, work from the bottom
+up:
+
+1. Compare `EIP712.encodeType(primaryType, types)` against the contract's type
+   string, character for character. A field order difference changes everything.
+2. Compare `Hex.fromBytes(EIP712.hashDomain(domain))` against the contract's
+   `DOMAIN_SEPARATOR()`. Mismatches here are usually `chainId` or
+   `verifyingContract`.
+3. Compare `hashStruct` against the contract's struct hash.
+4. Only then look at the signature encoding — `v` versus `yParity`, or `r`/`s`
+   byte order.
+
+## Sign-In with Ethereum (EIP-4361)
+
+SIWE is a plain-text message rather than typed data, and has its own module:
+
+```js
+import { Address, Siwe } from '@tevm/voltaire'
+
+const message = Siwe.create({
+  domain: 'example.com',
+  address: Address.from('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'),
+  uri: 'https://example.com',
+  version: '1',
+  chainId: 1,
+  nonce: Siwe.generateNonce(),
+  issuedAt: '2026-01-01T00:00:00.000Z',
+  statement: 'Sign in',
+})
+
+console.log(Siwe.format(message))
+```
+
+Real output:
+
+```
+example.com wants you to sign in with your Ethereum account:
+0xd8da6bf26964af9d7eed9e03e53415d37aa96045
+
+Sign in
+
+URI: https://example.com
+Version: 1
+Chain ID: 1
+Nonce: deadbeef1234
+Issued At: 2026-01-01T00:00:00.000Z
+```
+
+Also available: `Siwe.parse` (string → object), `Siwe.getMessageHash`,
+`Siwe.validate`, `Siwe.verify`, and `Siwe.verifyMessage`.
+
+:::warning
+`Siwe.format` currently renders the address **lowercase**. EIP-4361 requires the
+EIP-55 checksummed form, and strict verifiers — including some wallets — will
+reject the lowercase variant. Until this is fixed, checksum the address line
+yourself before presenting or verifying the message. Tracked as a known defect.
+:::
+
+## Related
+
+- [Keys & Signatures](/guides/keys-and-signatures) — the ECDSA layer underneath
+- [Hashing](/guides/hashing) — Keccak-256 details
