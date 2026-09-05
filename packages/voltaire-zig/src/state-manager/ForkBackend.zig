@@ -198,6 +198,14 @@ pub const ForkBackend = struct {
     pending_keys: std.AutoHashMap(PendingKey, u64),
     next_request_id: u64,
 
+    /// Optional native resolver. It must drain pending requests using
+    /// nextRequest/continueRequest before returning. Leave null for async/WASM
+    /// request/continue hosts. The context must outlive this backend.
+    sync_resolver: ?struct {
+        context: ?*anyopaque,
+        resolve: *const fn (?*anyopaque) anyerror!void,
+    } = null,
+
     pub fn init(
         allocator: std.mem.Allocator,
         block_tag: []const u8,
@@ -258,6 +266,10 @@ pub const ForkBackend = struct {
 
         // Queue async request and signal pending
         try self.queueRequest(.account_proof, address, 0);
+        if (self.sync_resolver) |resolver| {
+            try resolver.resolve(resolver.context);
+            return self.account_cache.get(address) orelse error.InvalidResponse;
+        }
         return error.RpcPending;
     }
 
@@ -273,6 +285,11 @@ pub const ForkBackend = struct {
 
         // Queue async request and signal pending
         try self.queueRequest(.storage_proof, address, slot);
+        if (self.sync_resolver) |resolver| {
+            try resolver.resolve(resolver.context);
+            const slots = self.storage_cache.get(address) orelse return error.InvalidResponse;
+            return slots.get(slot) orelse error.InvalidResponse;
+        }
         return error.RpcPending;
     }
 
@@ -286,6 +303,10 @@ pub const ForkBackend = struct {
 
         // Queue async request and signal pending
         try self.queueRequest(.code, address, 0);
+        if (self.sync_resolver) |resolver| {
+            try resolver.resolve(resolver.context);
+            return self.code_cache.get(address) orelse error.InvalidResponse;
+        }
         return error.RpcPending;
     }
 
@@ -608,4 +629,22 @@ test "ForkBackend - transport union" {
 
     const ipc_transport = Transport{ .ipc = .{ .path = "/tmp/geth.ipc" } };
     try std.testing.expect(ipc_transport == .ipc);
+}
+
+test "ForkBackend native resolver completes code reads while async hosts remain pending" {
+    var backend = try ForkBackend.init(std.testing.allocator, "latest", .{});
+    defer backend.deinit();
+    const address = Address.Address{ .bytes = [_]u8{0x12} ** 20 };
+    try std.testing.expectError(error.RpcPending, backend.fetchCode(address));
+    const Resolver = struct {
+        fn resolve(context: ?*anyopaque) !void {
+            const fork: *ForkBackend = @ptrCast(@alignCast(context.?));
+            while (fork.nextRequest()) |request| {
+                try fork.continueRequest(request.id, "\"0x602a\"");
+            }
+        }
+    };
+    backend.sync_resolver = .{ .context = &backend, .resolve = Resolver.resolve };
+    try std.testing.expectEqualSlices(u8, &.{ 0x60, 0x2a }, try backend.fetchCode(address));
+    try std.testing.expect(backend.nextRequest() == null);
 }

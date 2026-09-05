@@ -338,3 +338,12 @@ pub const crypto = @import("crypto");
 // Files: Address/address.fuzz.zig, Abi/Abi.fuzz.zig, Hex/hex.fuzz.zig, etc.
 
 // Note: extra tests are compiled via a separate test runner (see build.zig)
+
+// Consensus primitives used by embedded light clients.
+pub const LightClientHeader = @import("LightClientHeader/LightClientHeader.zig");
+pub const LightClientUpdate = @import("LightClientUpdate/LightClientUpdate.zig");
+pub const SyncCommittee = @import("SyncCommittee/SyncCommittee.zig");
+pub const SyncAggregate = @import("SyncAggregate/SyncAggregate.zig");
+pub const consensus = @import("consensus/consensus.zig");
+pub const ConsensusSpec = @import("ConsensusSpec/ConsensusSpec.zig");
+pub const ForkConfig = @import("ForkConfig/ForkConfig.zig");

@@ -176,6 +176,8 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_precompiles_tests.step);
 
     const run_state_manager_tests = b.addRunArtifact(state_manager_tests);
+    const state_manager_test_step = b.step("test-state-manager", "Run state-manager unit tests");
+    state_manager_test_step.dependOn(&run_state_manager_tests.step);
     test_step.dependOn(&run_state_manager_tests.step);
 
     const run_blockchain_tests = b.addRunArtifact(blockchain_tests);
