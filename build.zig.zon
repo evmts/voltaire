@@ -76,6 +76,7 @@
         "packages/voltaire-zig/examples",
         "Cargo.toml",
         "Cargo.lock",
+        "scripts/filter-wasm-archive.py",
         "LICENSE",
         "README.md",
     },

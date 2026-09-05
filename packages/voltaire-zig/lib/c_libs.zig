@@ -71,6 +71,7 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, t
             "scripts/filter-wasm-archive.py",
             "target/wasm32-unknown-unknown/release/libcrypto_wrappers.a",
         });
+        filter_wasm_archive.setCwd(b.path("."));
         filter_wasm_archive.step.dependOn(&cargo_build.step);
         return &filter_wasm_archive.step;
     }

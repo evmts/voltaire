@@ -22,7 +22,14 @@ pub fn build(b: *std.Build) void {
     // Build crypto C/Rust libraries that primitives + crypto depend on
     const blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
-    const rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, target);
+    // Exported modules must carry the Cargo dependency, including when this
+    // package is consumed by another build rather than built on its own.
+    const rust_crypto_files = b.addWriteFiles();
+    rust_crypto_files.step.dependOn(cargo_build_step);
+    const rust_crypto_lib_path = rust_crypto_files.addCopyFile(
+        lib_build.Bn254Lib.getRustLibraryPath(b, target),
+        if (target.result.os.tag == .windows and target.result.abi == .msvc) "crypto_wrappers.lib" else "libcrypto_wrappers.a",
+    );
 
     // Install crypto libraries
     b.installArtifact(blst_lib);
