@@ -1,3 +1,4 @@
+# Zig 0.15.x requires the macOS 15 SDK; revisit when upgrading Zig.
 name: Swift
 
 on:
@@ -7,7 +8,7 @@ on:
 jobs:
   swift-tests:
     name: Swift Tests (macOS)
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
