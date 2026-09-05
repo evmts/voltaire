@@ -33,7 +33,9 @@ pub fn rustTargetTriple(target: std.Build.ResolvedTarget) []const u8 {
 
 pub fn needsExplicitTarget(target: std.Build.ResolvedTarget) bool {
     const t = target.result;
-    return t.cpu.arch == .wasm32 or t.cpu.arch == .wasm64 or
+    // Zig defaults to GNU on Windows while rustup defaults to MSVC.
+    // Always select the Cargo triple explicitly there, including host builds.
+    return t.os.tag == .windows or t.cpu.arch == .wasm32 or t.cpu.arch == .wasm64 or
         t.os.tag != builtin.target.os.tag or t.cpu.arch != builtin.target.cpu.arch or
         t.abi != builtin.target.abi;
 }
