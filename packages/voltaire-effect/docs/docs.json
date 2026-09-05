@@ -71,6 +71,7 @@
             "icon": "server",
             "pages": [
               "services/provider",
+              "services/ens",
               "services/signer",
               "services/account",
               "services/contract"

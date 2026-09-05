@@ -1,0 +1,63 @@
+---
+title: ENS Service
+description: Resolve Ethereum Name Service addresses, reverse names, avatars, text records, and resolvers with Effect
+---
+
+`EnsService` exposes ENS resolution through an injectable service. `DefaultEns`
+implements it using `ProviderService`; provide `Provider` and an Ethereum mainnet
+transport for the default ENS contracts. `HttpTransport` also needs an HTTP client;
+the examples supply `FetchHttpClient.layer` from `@effect/platform`.
+
+## Resolve a name
+
+```typescript
+import { FetchHttpClient } from '@effect/platform'
+import { Effect } from 'effect'
+import { DefaultEns, EnsService, HttpTransport, Provider } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const ens = yield* EnsService
+  return yield* ens.getEnsAddress({ name: 'vitalik.eth' })
+}).pipe(
+  Effect.provide(DefaultEns),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com')),
+  Effect.provide(FetchHttpClient.layer)
+)
+
+const address = await Effect.runPromise(program)
+console.log(address) // Address as a hex string, or null when no record exists
+```
+
+## Available operations
+
+All operations return an Effect that can fail with `EnsError`. Missing records
+return `null`.
+
+| Operation | Required parameters | Result |
+| --- | --- | --- |
+| `getEnsAddress` | `{ name: string }` | Ethereum address or `null` |
+| `getEnsName` | `{ address: \`0x${string}\` }` | Reverse ENS name or `null` |
+| `getEnsText` | `{ name: string, key: string }` | Text record or `null` |
+| `getEnsAvatar` | `{ name: string }` | Avatar URL/URI or `null` |
+| `getEnsResolver` | `{ name: string }` | Resolver address or `null` |
+
+Each operation is also a free function exported from `voltaire-effect`, requiring
+`ProviderService` directly:
+
+```typescript
+import { FetchHttpClient } from '@effect/platform'
+import { Effect } from 'effect'
+import { getEnsText, HttpTransport, Provider } from 'voltaire-effect'
+
+const program = getEnsText({ name: 'vitalik.eth', key: 'url' }).pipe(
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com')),
+  Effect.provide(FetchHttpClient.layer)
+)
+
+console.log(await Effect.runPromise(program))
+```
+
+For local name validation, ENSIP-15 normalization, namehash, and labelhash, use
+the [Ens primitive](/primitives/ens). Those operations do not need an RPC provider.
