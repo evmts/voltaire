@@ -105,6 +105,9 @@ const Authorization = authorization.Authorization;
 const VersionedHash = blob.VersionedHash;
 const Allocator = std.mem.Allocator;
 
+// Transaction builder utilities (signing, sender recovery) via eth.zig
+pub const utils = @import("transaction_utils.zig");
+
 // Transaction error types
 pub const TransactionError = error{
     InvalidTransactionType,

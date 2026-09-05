@@ -99,5 +99,8 @@ pub const bls12_381_ffi = Crypto.bls12_381;
 // BIP-39 mnemonic implementation
 pub const bip39 = @import("bip39.zig");
 
+// BIP-32/44 HD Wallet via eth.zig
+pub const hdwallet = @import("HDWallet/hdwallet.zig");
+
 // Export Keccak256 from std.crypto for primitives modules
 pub const Keccak256 = @import("std").crypto.hash.sha3.Keccak256;

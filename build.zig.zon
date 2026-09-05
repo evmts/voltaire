@@ -58,6 +58,10 @@
             .path = "packages/voltaire-zig/lib/libwally-core",
             .lazy = true,
         },
+        .eth_zig = .{
+            .url = "https://github.com/StrobeLabs/eth.zig/archive/v0.2.3.tar.gz",
+            .hash = "eth_zig-0.2.3-efEm-leZCQBWQBTN6L_ABVvjvAaRHgaXSlte6ZgQd4mB",
+        },
     },
 
     // Specifies the set of files and directories that are included in this package.
