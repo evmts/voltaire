@@ -47,7 +47,7 @@ jobs:
           zig build install
 
       - name: Build Zig native artifacts
-        run: zig build build-ts-native
+        run: zig build build-ts-native -Dwith-c-api=true
 
       - name: Run Swift tests
         run: |

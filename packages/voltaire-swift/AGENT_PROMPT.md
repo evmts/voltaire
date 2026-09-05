@@ -74,7 +74,7 @@ Check C API availability in `src/c_api.zig` and `src/primitives.h`:
 
 ```bash
 # From repo root
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 
 # From swift/
 swift build

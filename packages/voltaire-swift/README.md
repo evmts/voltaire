@@ -13,7 +13,7 @@ Swift bindings for Voltaire Ethereum primitives.
 First, build the Zig native library from the repo root:
 
 ```bash
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 ```
 
 Then build the Swift package:
