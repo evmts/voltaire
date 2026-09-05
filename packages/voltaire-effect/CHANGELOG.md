@@ -1,5 +1,14 @@
 # voltaire-effect
 
+## 1.1.1
+
+### Patch Changes
+
+- [#396](https://github.com/evmts/voltaire/pull/396) [`df0a9e0`](https://github.com/evmts/voltaire/commit/df0a9e069f712109fcd6a66c7f1ef71ba44ec875) Thanks [@roninjin10](https://github.com/roninjin10)! - Document the ENS service, its provider requirements, and all resolution helpers in the documentation navigation and LLM discovery index.
+
+- Updated dependencies [[`3b6d41a`](https://github.com/evmts/voltaire/commit/3b6d41a9dc7e3a49207086007b93b13af91188fd)]:
+  - @tevm/voltaire@0.4.1
+
 ## 1.1.0
 
 ### Minor Changes
