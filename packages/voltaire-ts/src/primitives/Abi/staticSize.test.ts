@@ -17,10 +17,7 @@ describe("staticSize", () => {
 	});
 
 	it("sums component sizes for static tuples", () => {
-		const components = [
-			{ type: "uint256[3]" },
-			{ type: "uint256" },
-		] as const;
+		const components = [{ type: "uint256[3]" }, { type: "uint256" }] as const;
 		expect(staticSize("tuple", components)).toBe(96 + 32);
 	});
 
@@ -48,10 +45,9 @@ describe("decodeValue static-tuple offset", () => {
 
 		const value = [[1n, 2n, 3n], 4n];
 		const trailing = 99n;
-		const values = [
-			value,
-			trailing,
-		] satisfies ParametersToPrimitiveTypes<typeof params>;
+		const values = [value, trailing] satisfies ParametersToPrimitiveTypes<
+			typeof params
+		>;
 
 		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);
@@ -79,10 +75,9 @@ describe("decodeValue static-tuple offset", () => {
 
 		const value = [[10n, 20n], 30n];
 		const addr = "0x0000000000000000000000000000000000000042";
-		const values = [
-			value,
-			addr,
-		] satisfies ParametersToPrimitiveTypes<typeof params>;
+		const values = [value, addr] satisfies ParametersToPrimitiveTypes<
+			typeof params
+		>;
 
 		const encoded = Abi.encodeParameters(params, values);
 		const decoded = Abi.decodeParameters(params, encoded);

@@ -20,10 +20,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install Zig 0.15.1
+      - name: Install Zig 0.15.2
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.15.2
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
       - name: Debug - List target directory (Windows)
@@ -50,10 +50,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install Zig 0.15.1
+      - name: Install Zig 0.15.2
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.15.2
       - name: Build keccak256 example
         run: zig build example-keccak256
       - name: Build ABI example
@@ -84,10 +84,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install Zig 0.15.1
+      - name: Install Zig 0.15.2
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.15.2
       - name: Build for WASM
         run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
 
@@ -95,10 +95,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Zig 0.15.1
+      - name: Install Zig 0.15.2
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.15.2
       - name: Check formatting
         run: zig fmt --check build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples
 
@@ -108,10 +108,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install Zig 0.15.1
+      - name: Install Zig 0.15.2
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.15.2
       - name: Build Zig library (required for FFI tests)
         run: zig build -Doptimize=ReleaseFast -Dwith-c-api=false
       - name: Install Rust wasm32 target
@@ -161,10 +161,10 @@ jobs:
   #     - uses: actions/checkout@v4
   #       with:
   #         submodules: recursive
-  #     - name: Install Zig 0.15.1
+  #     - name: Install Zig 0.15.2
   #       uses: goto-bus-stop/setup-zig@v2
   #       with:
-  #         version: 0.15.1
+  #         version: 0.15.2
   #     - name: Clean Rust build cache (for panic=abort)
   #       run: cargo clean
   #     - name: Compile benchmarks (catch API regressions)
