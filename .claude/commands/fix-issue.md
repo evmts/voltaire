@@ -2,7 +2,7 @@
 allowed-tools: Bash(zig build:*), Bash(zig build test:*), Bash(bun run test:*), Bash(bun run build:*), Bash(bun typecheck:*), Bash(git:*), Bash(gh:*), Read, Edit, Write, Glob, Grep, Task, TodoWrite
 argument-hint: <issue-number-or-url>
 description: Fix GitHub issue with TDD validation, architecture review, and comprehensive reporting
-model: claude-sonnet-4-20250514
+model: claude-sonnet-5
 ---
 
 # Fix Issue Command
