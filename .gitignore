@@ -3,7 +3,17 @@
 dist/
 /types/
 
-.smithers
+.smithers/data/
+.smithers/logs/
+.smithers/executions/
+.smithers/runs/
+.smithers/sandboxes/
+.smithers/state/
+.smithers/tmp/
+.smithers/*.db
+.smithers/*.db-shm
+.smithers/*.db-wal
+.smithers/node_modules/
 
 modern-monaco
 tevm-monorepo
