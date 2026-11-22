@@ -1,0 +1,97 @@
+{
+  "summary": "How evmts/voltaire validates bugs, triages contributions, and ships Ethereum primitives.",
+  "flows": [
+    {
+      "id": "issue/repro",
+      "description": "Validate and minimally reproduce a bug report before any implementation.",
+      "summary": "Reproduce and validate one GitHub issue using repository-owned Zig and TypeScript tests.",
+      "featured": true,
+      "kind": "mdx",
+      "path": ".smithers/flows/issue/repro/flow.mdx",
+      "capabilities": [
+        "fs:read:**",
+        "proc:spawn:rg *",
+        "proc:spawn:zig build test*",
+        "proc:spawn:zig build -Dtest-filter=*",
+        "proc:spawn:pnpm test*",
+        "proc:spawn:pnpm typecheck*"
+      ],
+      "model": "repository/research",
+      "modelInvocable": true,
+      "flows": []
+    },
+    {
+      "id": "issue/poc",
+      "description": "Build a minimal local proof of concept for a maintainer-accepted issue.",
+      "summary": "Write the smallest failing test and local PoC for an accepted issue.",
+      "featured": true,
+      "kind": "mdx",
+      "path": ".smithers/flows/issue/poc/flow.mdx",
+      "capabilities": [
+        "fs:read:**",
+        "fs:write:**",
+        "proc:spawn:rg *",
+        "proc:spawn:zig build*",
+        "proc:spawn:pnpm test*",
+        "proc:spawn:pnpm typecheck*"
+      ],
+      "model": "coding/poc",
+      "modelInvocable": false,
+      "flows": []
+    },
+    {
+      "id": "pr-triage",
+      "description": "Triage an external or internal pull request for scope, tests, crypto/memory safety, and review readiness.",
+      "summary": "Triage one pull request from its diff without approving or merging.",
+      "featured": true,
+      "kind": "mdx",
+      "path": ".smithers/flows/pr-triage/flow.mdx",
+      "capabilities": [
+        "fs:read:**",
+        "proc:spawn:rg *"
+      ],
+      "model": "repository/research",
+      "modelInvocable": true,
+      "flows": []
+    },
+    {
+      "id": "checks/review",
+      "description": "Review a Change through Voltaire's code quality and safety lenses and return findings bound to its commit.",
+      "summary": "Multi-lens review covering tests, Zig/crypto safety, errors, types, and docs.",
+      "featured": true,
+      "kind": "mdx",
+      "path": ".smithers/flows/checks/review/flow.mdx",
+      "capabilities": [
+        "fs:read:**"
+      ],
+      "model": null,
+      "modelInvocable": true,
+      "flows": []
+    }
+  ],
+  "on": [
+    {
+      "event": "issue.labeled:todo",
+      "flow": "issue/poc",
+      "description": "Build a failing test and PoC for every maintainer-accepted TODO"
+    },
+    {
+      "event": "change.opened",
+      "flow": "checks/review",
+      "description": "Review every Change through Voltaire's quality and safety lenses"
+    },
+    {
+      "event": "change.updated",
+      "flow": "checks/review",
+      "description": "Re-review every updated Change"
+    }
+  ],
+  "github": {
+    "mirror": "pull",
+    "issues": "two-way",
+    "changes": "send-upstream",
+    "maintainers": [
+      "roninjin10"
+    ]
+  }
+}
