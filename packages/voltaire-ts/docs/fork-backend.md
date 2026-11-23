@@ -319,7 +319,7 @@ With typical fork usage:
 
 ### Latency
 
-- **Cache hit**: <1ms (in-memory lookup)
+- **Cache hit**: under 1ms (in-memory lookup)
 - **Cache miss (RPC)**: 50-200ms (network + remote query)
 - **First read**: Always miss (cold cache)
 - **Subsequent reads**: High hit rate (warm cache)

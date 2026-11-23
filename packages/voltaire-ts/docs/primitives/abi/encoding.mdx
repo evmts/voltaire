@@ -34,7 +34,7 @@ Static types always occupy a full 32-byte word:
 - Integers (`uint*`, `int*`) are **left-padded** with zeros
 - `address` is **left-padded** (20 bytes right-aligned in a 32-byte word)
 - `bool` is `0` or `1` in a 32-byte word
-- `bytesN` (N <= 32) are **right-padded** with zeros
+- `bytesN` (`N <= 32`) are **right-padded** with zeros
 
 ```typescript
 import { Abi } from '@tevm/voltaire/Abi';
