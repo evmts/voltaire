@@ -5,11 +5,13 @@ on:
     paths:
       - 'packages/voltaire-ts/**'
       - 'packages/voltaire-effect/**'
+      - 'packages/voltaire-zig/wasm/**'
       - '.github/workflows/voltaire-effect-ci.yml'
   pull_request:
     paths:
       - 'packages/voltaire-ts/**'
       - 'packages/voltaire-effect/**'
+      - 'packages/voltaire-zig/wasm/**'
       - '.github/workflows/voltaire-effect-ci.yml'
 
 jobs:
@@ -26,8 +28,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build @tevm/voltaire types
-        run: pnpm --filter @tevm/voltaire build:types
+      # voltaire-effect imports @tevm/voltaire/* from dist/, so build both the
+      # JS bundle (build:dist, which copies the committed voltaire-zig/wasm) and
+      # the declarations (build:types).
+      - name: Build @tevm/voltaire
+        run: pnpm --filter @tevm/voltaire build
 
       - name: Typecheck
         run: pnpm --filter voltaire-effect typecheck

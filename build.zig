@@ -125,6 +125,7 @@ pub fn build(b: *std.Build) void {
     blockchain_tests.root_module.linkLibrary(c_kzg_lib);
     blockchain_tests.root_module.linkLibrary(blst_lib);
     blockchain_tests.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(blockchain_tests.root_module, target);
     blockchain_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     blockchain_tests.step.dependOn(cargo_build_step);
     blockchain_tests.root_module.link_libc = true;
@@ -137,6 +138,7 @@ pub fn build(b: *std.Build) void {
     primitives_tests.root_module.linkLibrary(c_kzg_lib);
     primitives_tests.root_module.linkLibrary(blst_lib);
     primitives_tests.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(primitives_tests.root_module, target);
     primitives_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     primitives_tests.step.dependOn(cargo_build_step);
     primitives_tests.root_module.link_libc = true;
@@ -149,6 +151,7 @@ pub fn build(b: *std.Build) void {
     crypto_tests.root_module.linkLibrary(c_kzg_lib);
     crypto_tests.root_module.linkLibrary(blst_lib);
     crypto_tests.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(crypto_tests.root_module, target);
     crypto_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     crypto_tests.step.dependOn(cargo_build_step);
     crypto_tests.root_module.link_libc = true;
@@ -169,6 +172,7 @@ pub fn build(b: *std.Build) void {
     precompiles_tests.root_module.linkLibrary(c_kzg_lib);
     precompiles_tests.root_module.linkLibrary(blst_lib);
     precompiles_tests.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(precompiles_tests.root_module, target);
     precompiles_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     precompiles_tests.step.dependOn(cargo_build_step);
     precompiles_tests.root_module.link_libc = true;
@@ -204,6 +208,7 @@ pub fn build(b: *std.Build) void {
     primitives_extra_tests.root_module.linkLibrary(c_kzg_lib);
     primitives_extra_tests.root_module.linkLibrary(blst_lib);
     primitives_extra_tests.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(primitives_extra_tests.root_module, target);
     primitives_extra_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     primitives_extra_tests.step.dependOn(cargo_build_step);
     primitives_extra_tests.root_module.link_libc = true;
@@ -238,6 +243,7 @@ pub fn build(b: *std.Build) void {
     keccak256_example.root_module.linkLibrary(c_kzg_lib);
     keccak256_example.root_module.linkLibrary(blst_lib);
     keccak256_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(keccak256_example.root_module, target);
     keccak256_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     keccak256_example.step.dependOn(cargo_build_step);
     keccak256_example.root_module.link_libc = true;
@@ -261,6 +267,7 @@ pub fn build(b: *std.Build) void {
     abi_example.root_module.linkLibrary(c_kzg_lib);
     abi_example.root_module.linkLibrary(blst_lib);
     abi_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(abi_example.root_module, target);
     abi_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     abi_example.step.dependOn(cargo_build_step);
     abi_example.root_module.link_libc = true;
@@ -285,6 +292,7 @@ pub fn build(b: *std.Build) void {
     secp256k1_example.root_module.linkLibrary(c_kzg_lib);
     secp256k1_example.root_module.linkLibrary(blst_lib);
     secp256k1_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(secp256k1_example.root_module, target);
     secp256k1_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     secp256k1_example.step.dependOn(cargo_build_step);
     secp256k1_example.root_module.link_libc = true;
@@ -308,6 +316,7 @@ pub fn build(b: *std.Build) void {
     address_example.root_module.linkLibrary(c_kzg_lib);
     address_example.root_module.linkLibrary(blst_lib);
     address_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(address_example.root_module, target);
     address_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     address_example.step.dependOn(cargo_build_step);
     address_example.root_module.link_libc = true;
@@ -331,6 +340,7 @@ pub fn build(b: *std.Build) void {
     hex_example.root_module.linkLibrary(c_kzg_lib);
     hex_example.root_module.linkLibrary(blst_lib);
     hex_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(hex_example.root_module, target);
     hex_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     hex_example.step.dependOn(cargo_build_step);
     hex_example.root_module.link_libc = true;
@@ -354,6 +364,7 @@ pub fn build(b: *std.Build) void {
     rlp_example.root_module.linkLibrary(c_kzg_lib);
     rlp_example.root_module.linkLibrary(blst_lib);
     rlp_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(rlp_example.root_module, target);
     rlp_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     rlp_example.step.dependOn(cargo_build_step);
     rlp_example.root_module.link_libc = true;
@@ -378,6 +389,7 @@ pub fn build(b: *std.Build) void {
     eip712_example.root_module.linkLibrary(c_kzg_lib);
     eip712_example.root_module.linkLibrary(blst_lib);
     eip712_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(eip712_example.root_module, target);
     eip712_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     eip712_example.step.dependOn(cargo_build_step);
     eip712_example.root_module.link_libc = true;
@@ -402,6 +414,7 @@ pub fn build(b: *std.Build) void {
     transaction_example.root_module.linkLibrary(c_kzg_lib);
     transaction_example.root_module.linkLibrary(blst_lib);
     transaction_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(transaction_example.root_module, target);
     transaction_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     transaction_example.step.dependOn(cargo_build_step);
     transaction_example.root_module.link_libc = true;
@@ -426,6 +439,7 @@ pub fn build(b: *std.Build) void {
     eip4844_example.root_module.linkLibrary(c_kzg_lib);
     eip4844_example.root_module.linkLibrary(blst_lib);
     eip4844_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(eip4844_example.root_module, target);
     eip4844_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     eip4844_example.step.dependOn(cargo_build_step);
     eip4844_example.root_module.link_libc = true;
@@ -450,6 +464,7 @@ pub fn build(b: *std.Build) void {
     eip7702_example.root_module.linkLibrary(c_kzg_lib);
     eip7702_example.root_module.linkLibrary(blst_lib);
     eip7702_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(eip7702_example.root_module, target);
     eip7702_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     eip7702_example.step.dependOn(cargo_build_step);
     eip7702_example.root_module.link_libc = true;
@@ -474,6 +489,7 @@ pub fn build(b: *std.Build) void {
     abi_workflow_example.root_module.linkLibrary(c_kzg_lib);
     abi_workflow_example.root_module.linkLibrary(blst_lib);
     abi_workflow_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(abi_workflow_example.root_module, target);
     abi_workflow_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     abi_workflow_example.step.dependOn(cargo_build_step);
     abi_workflow_example.root_module.link_libc = true;
@@ -498,6 +514,7 @@ pub fn build(b: *std.Build) void {
     sig_recovery_example.root_module.linkLibrary(c_kzg_lib);
     sig_recovery_example.root_module.linkLibrary(blst_lib);
     sig_recovery_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(sig_recovery_example.root_module, target);
     sig_recovery_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     sig_recovery_example.step.dependOn(cargo_build_step);
     sig_recovery_example.root_module.link_libc = true;
@@ -522,6 +539,7 @@ pub fn build(b: *std.Build) void {
     bls_operations_example.root_module.linkLibrary(c_kzg_lib);
     bls_operations_example.root_module.linkLibrary(blst_lib);
     bls_operations_example.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(bls_operations_example.root_module, target);
     bls_operations_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
     bls_operations_example.step.dependOn(cargo_build_step);
     bls_operations_example.root_module.link_libc = true;
@@ -595,6 +613,7 @@ pub fn build(b: *std.Build) void {
         c_api_lib.root_module.linkLibrary(c_kzg_lib);
         c_api_lib.root_module.linkLibrary(blst_lib);
         c_api_lib.root_module.addObjectFile(rust_crypto_lib_path);
+        linkRustCryptoDeps(c_api_lib.root_module, target);
         c_api_lib.root_module.linkLibrary(libwally_core_lib.?);
         c_api_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
         c_api_lib.step.dependOn(cargo_build_step);
@@ -620,6 +639,7 @@ pub fn build(b: *std.Build) void {
         c_api_shared.root_module.linkLibrary(c_kzg_lib);
         c_api_shared.root_module.linkLibrary(blst_lib);
         c_api_shared.root_module.addObjectFile(rust_crypto_lib_path);
+        linkRustCryptoDeps(c_api_shared.root_module, target);
         c_api_shared.root_module.linkLibrary(libwally_core_lib.?);
         c_api_shared.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
         c_api_shared.step.dependOn(cargo_build_step);
@@ -692,6 +712,7 @@ pub fn build(b: *std.Build) void {
         state_manager_lib.root_module.linkLibrary(c_kzg_lib);
         state_manager_lib.root_module.linkLibrary(blst_lib);
         state_manager_lib.root_module.addObjectFile(rust_crypto_lib_path);
+        linkRustCryptoDeps(state_manager_lib.root_module, target);
         state_manager_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
         state_manager_lib.step.dependOn(cargo_build_step);
         state_manager_lib.root_module.link_libc = true;
@@ -715,6 +736,7 @@ pub fn build(b: *std.Build) void {
         blockchain_lib.root_module.linkLibrary(c_kzg_lib);
         blockchain_lib.root_module.linkLibrary(blst_lib);
         blockchain_lib.root_module.addObjectFile(rust_crypto_lib_path);
+        linkRustCryptoDeps(blockchain_lib.root_module, target);
         blockchain_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
         blockchain_lib.step.dependOn(cargo_build_step);
         blockchain_lib.root_module.link_libc = true;
@@ -887,16 +909,10 @@ fn buildBenchmarks(
         bench_exe.root_module.linkLibrary(c_kzg_lib);
         bench_exe.root_module.linkLibrary(blst_lib);
         bench_exe.root_module.addObjectFile(rust_crypto_lib_path);
+        linkRustCryptoDeps(bench_exe.root_module, target);
         bench_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
         bench_exe.step.dependOn(cargo_build_step);
         bench_exe.root_module.link_libc = true;
-
-        // Link against libgcc_s for unwinding symbols required by Rust std library
-        // Even with panic=abort, Rust std uses unwinding infrastructure
-        if (target.result.os.tag == .linux) {
-            bench_exe.root_module.linkSystemLibrary("gcc_s", .{});
-        }
-
         b.installArtifact(bench_exe);
     }
 }
@@ -963,16 +979,10 @@ fn buildZBenchmarks(
         bench_exe.root_module.linkLibrary(c_kzg_lib);
         bench_exe.root_module.linkLibrary(blst_lib);
         bench_exe.root_module.addObjectFile(rust_crypto_lib_path);
+        linkRustCryptoDeps(bench_exe.root_module, target);
         bench_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
         bench_exe.step.dependOn(cargo_build_step);
         bench_exe.root_module.link_libc = true;
-
-        // Link against libgcc_s for unwinding symbols required by Rust std library
-        // Even with panic=abort, Rust std uses unwinding infrastructure
-        if (target.result.os.tag == .linux) {
-            bench_exe.root_module.linkSystemLibrary("gcc_s", .{});
-        }
-
         b.installArtifact(bench_exe);
 
         // Add run step for this benchmark
@@ -1031,6 +1041,7 @@ fn addTypeScriptNativeBuild(
     ts_native_lib.root_module.linkLibrary(c_kzg_lib);
     ts_native_lib.root_module.linkLibrary(blst_lib);
     ts_native_lib.root_module.addObjectFile(rust_crypto_lib_path);
+    linkRustCryptoDeps(ts_native_lib.root_module, ts_target);
     ts_native_lib.root_module.linkLibrary(libwally_core_lib);
     ts_native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
     ts_native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
@@ -1541,6 +1552,7 @@ fn addCrossPlatformNativeBuilds(
             native_lib.root_module.linkLibrary(target_c_kzg_lib);
             native_lib.root_module.linkLibrary(target_blst_lib);
             native_lib.root_module.addObjectFile(target_rust_crypto_lib_path);
+            linkRustCryptoDeps(native_lib.root_module, target);
             native_lib.root_module.linkLibrary(libwally_core_lib);
             native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
             native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
@@ -1653,4 +1665,13 @@ fn addCryptoWasmBuilds(
         "Note: Complex crypto modules (secp256k1, bn254, ripemd160) require refactoring for standalone WASM builds.",
     });
     crypto_wasm_step.dependOn(&echo_msg.step);
+}
+
+/// Links the system libraries that the Rust `crypto_wrappers` staticlib needs.
+/// Rust std references `_Unwind_*` symbols (std::sys::personality::gcc) even
+/// with panic=abort; on Linux glibc they live in libgcc_s.
+fn linkRustCryptoDeps(mod: *std.Build.Module, target: std.Build.ResolvedTarget) void {
+    if (target.result.os.tag == .linux) {
+        mod.linkSystemLibrary("gcc_s", .{});
+    }
 }

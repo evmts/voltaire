@@ -110,12 +110,15 @@ jobs:
       # libprimitives_c symbol. Build the C API and link and run the tests.
       - name: Build libprimitives_c
         run: zig build -Dwith-c-api=true -Doptimize=ReleaseFast
-      - name: Test Rust crate (native FFI bindings, links libprimitives_c)
+      # voltaire-rs links the shared library: the static archive does not
+      # bundle blst, c-kzg-4844, libwally-core or crypto_wrappers. build.rs
+      # embeds an rpath, so no LD_LIBRARY_PATH is needed.
+      - name: Test Rust crate (native FFI bindings, links libprimitives_c.so)
         env:
           VOLTAIRE_LIB_DIR: ${{ github.workspace }}/zig-out/lib
-          LD_LIBRARY_PATH: ${{ github.workspace }}/zig-out/lib
         run: |
           test -f "$VOLTAIRE_LIB_DIR/libprimitives_c.a"
+          test -f "$VOLTAIRE_LIB_DIR/libprimitives_c.so"
           cargo test --manifest-path packages/voltaire-rs/Cargo.toml --features native
 
   lint:
