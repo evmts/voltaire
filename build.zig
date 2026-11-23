@@ -1448,12 +1448,13 @@ fn addCrossPlatformNativeBuilds(
     const platforms = [_]struct {
         cpu_arch: std.Target.Cpu.Arch,
         os_tag: std.Target.Os.Tag,
+        abi: ?std.Target.Abi = null,
         name: []const u8,
     }{
         .{ .cpu_arch = .aarch64, .os_tag = .macos, .name = "darwin-arm64" },
         .{ .cpu_arch = .x86_64, .os_tag = .macos, .name = "darwin-x64" },
-        .{ .cpu_arch = .aarch64, .os_tag = .linux, .name = "linux-arm64" },
-        .{ .cpu_arch = .x86_64, .os_tag = .linux, .name = "linux-x64" },
+        .{ .cpu_arch = .aarch64, .os_tag = .linux, .abi = .gnu, .name = "linux-arm64" },
+        .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .gnu, .name = "linux-x64" },
         .{ .cpu_arch = .x86_64, .os_tag = .windows, .name = "win32-x64" },
     };
 
@@ -1464,6 +1465,7 @@ fn addCrossPlatformNativeBuilds(
         const target = b.resolveTargetQuery(.{
             .cpu_arch = platform.cpu_arch,
             .os_tag = platform.os_tag,
+            .abi = platform.abi,
         });
 
         // Build ALL crypto libraries for this specific target
@@ -1674,7 +1676,11 @@ fn addCryptoWasmBuilds(
 /// in api-ms-win-core-synch-l1-2-0.
 fn linkRustCryptoDeps(mod: *std.Build.Module, target: std.Build.ResolvedTarget) void {
     if (target.result.os.tag == .linux) {
-        mod.linkSystemLibrary("gcc_s", .{});
+        if (target.result.abi == .musl) {
+            mod.linkSystemLibrary("unwind", .{});
+        } else {
+            mod.linkSystemLibrary("gcc_s", .{});
+        }
     } else if (target.result.os.tag == .windows and target.result.abi != .msvc) {
         mod.linkSystemLibrary("unwind", .{});
         mod.linkSystemLibrary("api-ms-win-core-synch-l1-2-0", .{});

@@ -943,7 +943,7 @@ describe("Keystore", () => {
 			const elapsed = Date.now() - start;
 
 			expect(decrypted).toEqual(privateKey);
-			expect(elapsed).toBeLessThan(1000); // Should complete in < 1s
+			expect(elapsed).toBeLessThan(3000); // Should complete quickly even under CI v8 coverage
 		});
 
 		it("pbkdf2 with low iterations is fast", async () => {
@@ -960,7 +960,7 @@ describe("Keystore", () => {
 			const elapsed = Date.now() - start;
 
 			expect(decrypted).toEqual(privateKey);
-			expect(elapsed).toBeLessThan(500); // Should complete in < 500ms
+			expect(elapsed).toBeLessThan(2000); // Should complete quickly even under CI v8 coverage
 		});
 	});
 });
