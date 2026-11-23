@@ -82,8 +82,8 @@ jobs:
         with:
           publish: pnpm release
           version: pnpm version-packages
-          # The publish script reports tags for Changesets to create through the API.
-          commitMode: github-api
+          # Default git-cli commitMode is required because github-api cannot
+          # serialize executable files inside checked-out git submodules.
           title: "chore: version packages"
           commit: "chore: version packages"
         env:
