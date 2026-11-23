@@ -1,3 +1,4 @@
+import { encodeHexDigits } from "../../Hex/encodeHexDigits.js";
 import { decodeParameters } from "../Encoding.js";
 import {
 	FunctionDecodingError,
@@ -48,12 +49,8 @@ export function decodeParams(fn, data) {
 		const selByte = selector[i];
 		const expByte = expectedSelector[i];
 		if (selByte !== expByte) {
-			const selectorHex = `0x${Array.from(selector)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("")}`;
-			const expectedHex = `0x${Array.from(expectedSelector)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("")}`;
+			const selectorHex = `0x${encodeHexDigits(selector)}`;
+			const expectedHex = `0x${encodeHexDigits(expectedSelector)}`;
 			throw new FunctionInvalidSelectorError("Function selector mismatch", {
 				value: selector,
 				expected: expectedHex,

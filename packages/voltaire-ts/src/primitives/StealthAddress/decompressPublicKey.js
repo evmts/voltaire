@@ -1,5 +1,7 @@
 // @ts-nocheck
+
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import { COMPRESSED_PUBLIC_KEY_SIZE } from "./constants.js";
 import { InvalidPublicKeyError } from "./errors.js";
 
@@ -36,9 +38,7 @@ export function decompressPublicKey(compressed) {
 
 	try {
 		// Convert to hex string for Point.fromHex
-		const hex = Array.from(compressed)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+		const hex = encodeHexDigits(compressed);
 
 		// Decompress using Point.fromHex then convert to uncompressed bytes
 		const point = secp256k1.Point.fromHex(hex);

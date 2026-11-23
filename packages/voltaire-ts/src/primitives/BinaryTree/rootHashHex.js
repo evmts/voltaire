@@ -1,3 +1,4 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import { rootHash } from "./rootHash.js";
 
 /**
@@ -16,8 +17,6 @@ import { rootHash } from "./rootHash.js";
 export function rootHashHex(tree) {
 	const h = rootHash(tree);
 	return /** @type {import('../Hex/index.js').HexType} */ (
-		`0x${Array.from(h)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")}`
+		`0x${encodeHexDigits(h)}`
 	);
 }

@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Convert Hash to hex string
  *
@@ -15,6 +17,6 @@
  */
 export function toHex(hash) {
 	return /** @type {import('../Hex/HexType.js').HexType} */ (
-		`0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`
+		`0x${encodeHexDigits(hash)}`
 	);
 }

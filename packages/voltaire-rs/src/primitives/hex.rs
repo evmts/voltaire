@@ -7,6 +7,26 @@ use crate::error::{Error, Result};
 #[cfg(not(feature = "std"))]
 use alloc::{string::String, vec::Vec};
 
+/// Lowercase hex digit lookup table for fast encoding.
+const HEX_CHARS: &[u8; 16] = b"0123456789abcdef";
+
+/// ASCII nibble lookup table for fast decoding (0xff = invalid).
+const HEX_NIBBLE: [u8; 256] = {
+    let mut table = [0xffu8; 256];
+    let mut i = 0u8;
+    while i < 10 {
+        table[(b'0' + i) as usize] = i;
+        i += 1;
+    }
+    let mut j = 0u8;
+    while j < 6 {
+        table[(b'a' + j) as usize] = 10 + j;
+        table[(b'A' + j) as usize] = 10 + j;
+        j += 1;
+    }
+    table
+};
+
 /// Hex encoding/decoding utilities.
 pub struct Hex;
 
@@ -16,19 +36,54 @@ impl Hex {
     /// Accepts with or without `0x` prefix.
     pub fn decode(s: &str) -> Result<Vec<u8>> {
         let s = s.strip_prefix("0x").unwrap_or(s);
+        let bytes = s.as_bytes();
+        let len = bytes.len();
+        if len == 0 {
+            return Ok(Vec::new());
+        }
 
-        // Handle odd-length hex by prepending zero
-        let s = if s.len() % 2 == 1 {
-            format!("0{}", s)
-        } else {
-            s.to_string()
-        };
+        let mut out = Vec::with_capacity((len + 1) / 2);
+        let mut idx = 0;
 
-        hex::decode(&s).map_err(|e| Error::invalid_hex(e.to_string()))
+        // Handle odd-length hex by treating leading nibble as 0x0<first>
+        if len & 1 == 1 {
+            let lo = HEX_NIBBLE[bytes[0] as usize];
+            if lo == 0xff {
+                return Err(Error::invalid_hex("invalid hex character"));
+            }
+            out.push(lo);
+            idx = 1;
+        }
+
+        while idx < len {
+            let hi = HEX_NIBBLE[bytes[idx] as usize];
+            let lo = HEX_NIBBLE[bytes[idx + 1] as usize];
+            if (hi | lo) == 0xff {
+                return Err(Error::invalid_hex("invalid hex character"));
+            }
+            out.push((hi << 4) | lo);
+            idx += 2;
+        }
+
+        Ok(out)
     }
 
     /// Decode hex string to fixed-size array.
     pub fn decode_fixed<const N: usize>(s: &str) -> Result<[u8; N]> {
+        let s = s.strip_prefix("0x").unwrap_or(s);
+        let raw = s.as_bytes();
+        if raw.len() == N * 2 {
+            let mut arr = [0u8; N];
+            for i in 0..N {
+                let hi = HEX_NIBBLE[raw[i * 2] as usize];
+                let lo = HEX_NIBBLE[raw[i * 2 + 1] as usize];
+                if (hi | lo) == 0xff {
+                    return Err(Error::invalid_hex("invalid hex character"));
+                }
+                arr[i] = (hi << 4) | lo;
+            }
+            return Ok(arr);
+        }
         let bytes = Self::decode(s)?;
         if bytes.len() != N {
             return Err(Error::invalid_length(N, bytes.len()));
@@ -41,12 +96,26 @@ impl Hex {
 
     /// Encode bytes to hex string with 0x prefix.
     pub fn encode(bytes: &[u8]) -> String {
-        format!("0x{}", hex::encode(bytes))
+        let mut buf = Vec::with_capacity(2 + bytes.len() * 2);
+        buf.push(b'0');
+        buf.push(b'x');
+        for &b in bytes {
+            buf.push(HEX_CHARS[(b >> 4) as usize]);
+            buf.push(HEX_CHARS[(b & 0x0f) as usize]);
+        }
+        // SAFETY: `buf` contains only ASCII bytes '0', 'x', '0'-'9', 'a'-'f'.
+        unsafe { String::from_utf8_unchecked(buf) }
     }
 
     /// Encode bytes to hex string without prefix.
     pub fn encode_raw(bytes: &[u8]) -> String {
-        hex::encode(bytes)
+        let mut buf = Vec::with_capacity(bytes.len() * 2);
+        for &b in bytes {
+            buf.push(HEX_CHARS[(b >> 4) as usize]);
+            buf.push(HEX_CHARS[(b & 0x0f) as usize]);
+        }
+        // SAFETY: `buf` contains only ASCII bytes '0'-'9', 'a'-'f'.
+        unsafe { String::from_utf8_unchecked(buf) }
     }
 
     /// Check if string is valid hex.

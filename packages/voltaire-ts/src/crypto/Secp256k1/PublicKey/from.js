@@ -1,3 +1,4 @@
+import { parseHexByte } from "../../../primitives/Hex/parseHexByte.js";
 import { InvalidPublicKeyError } from "../errors.js";
 import { fromBytes } from "./fromBytes.js";
 
@@ -43,7 +44,7 @@ export function from(input) {
 		}
 		const bytes = new Uint8Array(64);
 		for (let i = 0; i < 64; i++) {
-			bytes[i] = Number.parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
+			bytes[i] = parseHexByte(hexStr, i * 2);
 		}
 		return fromBytes(bytes);
 	}

@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import {
 	InvalidAddressError,
 	InvalidChecksumError,
@@ -101,7 +102,7 @@ export function assert(value, options = {}) {
 	const hex = value.startsWith("0x") ? value.slice(2) : value;
 	const bytes = new Uint8Array(20);
 	for (let i = 0; i < 20; i++) {
-		bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(hex, i * 2);
 	}
 	return /** @type {import('./AddressType.js').AddressType} */ (bytes);
 }

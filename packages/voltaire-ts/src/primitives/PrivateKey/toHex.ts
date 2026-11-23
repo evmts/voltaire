@@ -1,3 +1,4 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import type { PrivateKeyType } from "./PrivateKeyType.js";
 
 /**
@@ -12,5 +13,5 @@ import type { PrivateKeyType } from "./PrivateKeyType.js";
  * ```
  */
 export function toHex(this: PrivateKeyType): string {
-	return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+	return `0x${encodeHexDigits(this)}`;
 }

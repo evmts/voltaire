@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../primitives/Hex/encodeHexDigits.js";
+
 /**
  * JSON-RPC method handlers
  *
@@ -68,9 +70,7 @@ export function createRpcHandler(deps: HandlerDependencies): RpcHandler {
 					];
 					const address = Address(addressHex) as AddressType;
 					const code = await deps.getCode(address);
-					return `0x${Array.from(code)
-						.map((b) => b.toString(16).padStart(2, "0"))
-						.join("")}`;
+					return `0x${encodeHexDigits(code)}`;
 				}
 
 				case "eth_getStorageAt": {

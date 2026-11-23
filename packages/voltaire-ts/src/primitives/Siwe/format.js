@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Format a SIWE message into a string for signing (EIP-4361)
  *
@@ -32,9 +34,7 @@ export function format(message) {
 	);
 
 	// Convert address bytes to hex string for display
-	const addressHex = `0x${Array.from(message.address)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	const addressHex = `0x${encodeHexDigits(message.address)}`;
 	lines.push(addressHex);
 	lines.push("");
 

@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
+
 /**
  * WASM implementation of PrivateKeySigner
  * Provides wallet/signer functionality using WASM Zig primitives
@@ -193,9 +195,7 @@ export class PrivateKeySignerImpl implements Signer {
 
 		// Sign the hash
 		const signature: Uint8Array = this.signWithPrivateKey(messageHash);
-		return `0x${Array.from(signature)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")}`;
+		return `0x${encodeHexDigits(signature)}`;
 	}
 
 	/**
@@ -308,9 +308,7 @@ export class PrivateKeySignerImpl implements Signer {
 		const signature: Uint8Array = this.signWithPrivateKey(hash);
 
 		// Return as hex string (0x + r + s + v)
-		return `0x${Array.from(signature)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")}`;
+		return `0x${encodeHexDigits(signature)}`;
 	}
 }
 

@@ -450,36 +450,39 @@ pub fn areAddressesEqual(a: []const u8, b: []const u8) !bool {
 }
 
 pub fn calculateCreateAddress(allocator: std.mem.Allocator, creator: Address, nonce: u64) CalculateAddressError!Address {
-    // Convert nonce to bytes, stripping leading zeros
-    var nonce_bytes: [8]u8 = undefined;
-    std.mem.writeInt(u64, &nonce_bytes, nonce, .big);
+    _ = allocator;
 
-    // Find first non-zero byte
-    var nonce_start: usize = 0;
-    for (nonce_bytes) |byte| {
-        if (byte != 0) break;
-        nonce_start += 1;
+    // RLP([20-byte creator, minimal-BE u64 nonce]) is at most 31 bytes:
+    //   list prefix (1B) + 0x94 (1B) + address (20B) + nonce RLP (1..9B).
+    // Stack-encoding avoids ArrayList + generic RLP heap allocations.
+    var buf: [32]u8 = undefined;
+    buf[1] = 0x80 + 20;
+    @memcpy(buf[2..22], &creator.bytes);
+
+    var end: usize = 22;
+    if (nonce == 0) {
+        buf[end] = 0x80;
+        end += 1;
+    } else if (nonce < 0x80) {
+        buf[end] = @intCast(nonce);
+        end += 1;
+    } else {
+        var nonce_bytes: [8]u8 = undefined;
+        std.mem.writeInt(u64, &nonce_bytes, nonce, .big);
+        const leading_zeros: usize = @intCast(@clz(nonce) / 8);
+        const nonce_len: usize = 8 - leading_zeros;
+        buf[end] = @intCast(0x80 + nonce_len);
+        end += 1;
+        @memcpy(buf[end .. end + nonce_len], nonce_bytes[leading_zeros..8]);
+        end += nonce_len;
     }
 
-    // If nonce is 0, use empty slice
-    const nonce_slice = if (nonce == 0) &[_]u8{} else nonce_bytes[nonce_start..];
+    const payload_len: usize = end - 1;
+    buf[0] = @intCast(0xc0 + payload_len);
 
-    // Create a list for RLP encoding [creator_address, nonce]
-    var list = std.ArrayList([]const u8){};
-    defer list.deinit(allocator);
-
-    try list.append(allocator, &creator.bytes);
-    try list.append(allocator, nonce_slice);
-
-    // RLP encode the list
-    const encoded = try rlp.encode(allocator, list.items);
-    defer allocator.free(encoded);
-
-    // Hash the RLP encoded data
     var hash: [32]u8 = undefined;
-    Keccak256.hash(encoded, &hash, .{});
+    Keccak256.hash(buf[0..end], &hash, .{});
 
-    // Take last 20 bytes as address
     var address: Address = undefined;
     @memcpy(&address.bytes, hash[12..32]);
 
@@ -487,37 +490,22 @@ pub fn calculateCreateAddress(allocator: std.mem.Allocator, creator: Address, no
 }
 
 pub fn calculateCreate2Address(allocator: std.mem.Allocator, creator: Address, salt: u256, init_code: []const u8) CalculateCreate2AddressError!Address {
+    _ = allocator;
+
     // First hash the init code
     var code_hash: [32]u8 = undefined;
     Keccak256.hash(init_code, &code_hash, .{});
 
-    // Create the data to hash: 0xff ++ creator ++ salt ++ keccak256(init_code)
-    var data = std.array_list.AlignedManaged(u8, null).init(allocator);
-    defer data.deinit();
+    // 0xff (1B) ++ creator (20B) ++ salt (32B BE) ++ keccak256(init_code) (32B) = 85B
+    var data: [85]u8 = undefined;
+    data[0] = 0xff;
+    @memcpy(data[1..21], &creator.bytes);
+    std.mem.writeInt(u256, data[21..53], salt, .big);
+    @memcpy(data[53..85], &code_hash);
 
-    // Add 0xff prefix
-    try data.append(0xff);
-
-    // Add creator address (20 bytes)
-    try data.appendSlice(&creator.bytes);
-
-    // Add salt (32 bytes, big-endian)
-    var salt_bytes: [32]u8 = undefined;
-    var temp_salt = salt;
-    for (0..32) |i| {
-        salt_bytes[31 - i] = @intCast(temp_salt & 0xFF);
-        temp_salt >>= 8;
-    }
-    try data.appendSlice(&salt_bytes);
-
-    // Add init code hash (32 bytes)
-    try data.appendSlice(&code_hash);
-
-    // Hash the combined data
     var hash: [32]u8 = undefined;
-    Keccak256.hash(data.items, &hash, .{});
+    Keccak256.hash(&data, &hash, .{});
 
-    // Take last 20 bytes as address
     var address: Address = undefined;
     @memcpy(&address.bytes, hash[12..32]);
 

@@ -1,3 +1,5 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
+
 /**
  * Create ChainHead from block data or RPC response
  *
@@ -35,7 +37,7 @@ export function from(value) {
 		}
 		const bytes = new Uint8Array(32);
 		for (let i = 0; i < 32; i++) {
-			bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+			bytes[i] = parseHexByte(hex, i * 2);
 		}
 		hash =
 			/** @type {import('../BlockHash/BlockHashType.js').BlockHashType} */ (

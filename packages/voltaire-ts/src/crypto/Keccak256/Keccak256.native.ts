@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
+
 /**
  * Keccak256 native implementation using FFI
  * Auto-detects Bun FFI or Node-API
@@ -93,9 +95,7 @@ export async function from(
 export async function selector(signature: string): Promise<string> {
 	const fullHash = await hashString(signature);
 	const selectorBytes = fullHash.slice(0, 4);
-	return `0x${Array.from(selectorBytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	return `0x${encodeHexDigits(selectorBytes)}`;
 }
 
 /**

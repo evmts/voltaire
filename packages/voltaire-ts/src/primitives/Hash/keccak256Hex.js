@@ -1,4 +1,5 @@
 import { InvalidFormatError } from "../errors/index.js";
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { Keccak256 } from "./keccak256.js";
 
 /**
@@ -39,7 +40,7 @@ export function Keccak256Hex({ keccak256 }) {
 		}
 		const bytes = new Uint8Array(normalized.length / 2);
 		for (let i = 0; i < bytes.length; i++) {
-			bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+			bytes[i] = parseHexByte(normalized, i * 2);
 		}
 		return hash(bytes);
 	};

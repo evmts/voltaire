@@ -1,3 +1,5 @@
+import { HEX_BYTE_TABLE } from "../../Hex/hexLookup.js";
+
 /**
  * Convert Bytes16 to hex string
  *
@@ -16,7 +18,7 @@ export function toHex(bytes) {
 	let result = "0x";
 	for (let i = 0; i < bytes.length; i++) {
 		const val = /** @type {number} */ (bytes[i]);
-		result += val.toString(16).padStart(2, "0");
+		result += HEX_BYTE_TABLE[val];
 	}
 	return /** @type {import('../../Hex/HexType.js').HexType} */ (result);
 }

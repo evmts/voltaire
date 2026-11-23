@@ -1,3 +1,4 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import type { PublicKeyType } from "./PublicKeyType.js";
 
 /**
@@ -12,5 +13,5 @@ import type { PublicKeyType } from "./PublicKeyType.js";
  * ```
  */
 export function toHex(this: PublicKeyType): string {
-	return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+	return `0x${encodeHexDigits(this)}`;
 }

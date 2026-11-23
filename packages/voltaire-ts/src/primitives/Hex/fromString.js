@@ -1,3 +1,5 @@
+import { HEX_BYTE_TABLE } from "./hexLookup.js";
+
 /**
  * Convert string to hex
  *
@@ -16,7 +18,7 @@ export function fromString(value) {
 	const bytes = new TextEncoder().encode(value);
 	let hex = "0x";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += bytes[i].toString(16).padStart(2, "0");
+		hex += HEX_BYTE_TABLE[bytes[i]];
 	}
 	return /** @type {import('./HexType.js').HexType} */ (hex);
 }

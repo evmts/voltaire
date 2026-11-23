@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { SIZE } from "./BundleHashType.js";
 import { InvalidBundleHashError } from "./errors.js";
 
@@ -32,7 +33,7 @@ export function fromHex(value) {
 
 	const bytes = new Uint8Array(SIZE);
 	for (let i = 0; i < hex.length; i += 2) {
-		const byte = Number.parseInt(hex.slice(i, i + 2), 16);
+		const byte = parseHexByte(hex, i);
 		if (Number.isNaN(byte)) {
 			throw new InvalidBundleHashError("Invalid hex character", { value });
 		}

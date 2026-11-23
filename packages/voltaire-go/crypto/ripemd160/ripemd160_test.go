@@ -275,15 +275,3 @@ func BenchmarkHash(b *testing.B) {
 		Hash(data)
 	}
 }
-
-func BenchmarkHash160(b *testing.B) {
-	data := make([]byte, 33) // Compressed public key size
-	for i := range data {
-		data[i] = byte(i)
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Hash160(data)
-	}
-}

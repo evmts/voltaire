@@ -1,3 +1,4 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import { InvalidAlgorithmError } from "./errors.js";
 import { getR } from "./getR.js";
 import { getS } from "./getS.js";
@@ -35,14 +36,10 @@ export function toRpc(signature) {
 	const v = getV(signature);
 
 	// Convert r to hex
-	const rHex = `0x${Array.from(r)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	const rHex = `0x${encodeHexDigits(r)}`;
 
 	// Convert s to hex
-	const sHex = `0x${Array.from(s)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	const sHex = `0x${encodeHexDigits(s)}`;
 
 	// Calculate yParity from v
 	let yParity;

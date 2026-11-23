@@ -1,3 +1,4 @@
+import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
 import { commonPrefixLength, keyToNibbles } from "./nibbles.js";
 
 /**
@@ -237,7 +238,7 @@ export function Put(deps) {
 function toHex(bytes) {
 	let hex = "";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += /** @type {number} */ (bytes[i]).toString(16).padStart(2, "0");
+		hex += HEX_BYTE_TABLE[/** @type {number} */ (bytes[i])];
 	}
 	return hex;
 }

@@ -4,6 +4,7 @@ import {
 	InvalidLengthError,
 	InvalidRangeError,
 } from "../errors/ValidationError.js";
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import type { PrivateKeyType } from "./PrivateKeyType.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
@@ -45,7 +46,7 @@ export function from(hex: string): PrivateKeyType {
 	}
 	const bytes = new Uint8Array(32);
 	for (let i = 0; i < 32; i++) {
-		bytes[i] = Number.parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(hexStr, i * 2);
 	}
 	if (!isValidPrivateKey(bytes)) {
 		throw new InvalidRangeError("Private key must be in range [1, n-1]", {

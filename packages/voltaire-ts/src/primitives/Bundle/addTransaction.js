@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidBundleError } from "./errors.js";
 
 /**
@@ -34,7 +35,7 @@ export function addTransaction(bundle, transaction) {
 		}
 		txBytes = new Uint8Array(hex.length / 2);
 		for (let i = 0; i < hex.length; i += 2) {
-			txBytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
+			txBytes[i / 2] = parseHexByte(hex, i);
 		}
 	} else {
 		throw new InvalidBundleError(

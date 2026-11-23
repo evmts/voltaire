@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidTransactionHashFormatError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 
@@ -30,7 +31,7 @@ export function fromHex(hex) {
 	}
 	const bytes = new Uint8Array(32);
 	for (let i = 0; i < 32; i++) {
-		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(normalized, i * 2);
 	}
 	return fromBytes(bytes);
 }

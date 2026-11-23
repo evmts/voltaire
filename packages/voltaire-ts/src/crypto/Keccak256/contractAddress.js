@@ -1,4 +1,5 @@
 import { InvalidLengthError } from "../../primitives/errors/ValidationError.js";
+import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 import { encodeList } from "../../primitives/Rlp/encodeList.js";
 import { hash } from "./hash.js";
 
@@ -15,7 +16,7 @@ function nonceToBytes(nonce) {
 	const paddedHex = hex.length % 2 ? `0${hex}` : hex;
 	const bytes = new Uint8Array(paddedHex.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(paddedHex.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(paddedHex, i * 2);
 	}
 	return bytes;
 }

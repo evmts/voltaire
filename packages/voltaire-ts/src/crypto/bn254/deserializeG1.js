@@ -1,3 +1,4 @@
+import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
 import { FP_MOD } from "./constants.js";
 import { Bn254Error, Bn254InvalidPointError } from "./errors.js";
 import * as G1 from "./G1/index.js";
@@ -53,7 +54,5 @@ export function deserializeG1(bytes) {
  * @returns {string}
  */
 function bytesToHex(bytes) {
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
+	return encodeHexDigits(bytes);
 }

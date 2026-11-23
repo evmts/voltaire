@@ -89,7 +89,7 @@ pub fn build(b: *std.Build) void {
     });
     // jsonrpc types.zig uses hand-written types (Address, Hash, Quantity, BlockTag, BlockSpec)
     // that are self-contained — no import of primitives or crypto is needed
-    _ = jsonrpc_mod; // Module is exported for external packages
+    // jsonrpc_mod is exported for external packages and zbench targets
 
     // Now add primitives to crypto (circular dependency resolved by Zig's lazy evaluation)
     crypto_mod.addImport("primitives", primitives_mod);
@@ -843,7 +843,7 @@ pub fn build(b: *std.Build) void {
 
         // zbench performance benchmarks colocated with source code
         const zbench_filter = b.option([]const u8, "filter", "Pattern to filter zbench benchmarks (default: \"*\")") orelse "*";
-        buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+        buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, state_manager_mod, blockchain_mod, jsonrpc_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
     }
 
     // TypeScript comparisons benchmark runner (generates BENCHMARKS.md files)
@@ -925,6 +925,9 @@ fn buildZBenchmarks(
     primitives_mod: *std.Build.Module,
     crypto_mod: *std.Build.Module,
     precompiles_mod: *std.Build.Module,
+    state_manager_mod: *std.Build.Module,
+    blockchain_mod: *std.Build.Module,
+    jsonrpc_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
     rust_crypto_lib_path: std.Build.LazyPath,
@@ -969,6 +972,9 @@ fn buildZBenchmarks(
         bench_mod.addImport("primitives", primitives_mod);
         bench_mod.addImport("crypto", crypto_mod);
         bench_mod.addImport("precompiles", precompiles_mod);
+        bench_mod.addImport("state-manager", state_manager_mod);
+        bench_mod.addImport("blockchain", blockchain_mod);
+        bench_mod.addImport("jsonrpc", jsonrpc_mod);
         bench_mod.addImport("zbench", zbench_mod);
 
         // Create benchmark executable

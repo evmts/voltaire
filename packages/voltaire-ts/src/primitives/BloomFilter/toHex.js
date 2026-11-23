@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Convert bloom filter to hex string
  *
@@ -12,8 +14,6 @@
  */
 export function toHex(filter) {
 	return /** @type {import('../Hex/HexType.js').HexType} */ (
-		`0x${Array.from(filter)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")}`
+		`0x${encodeHexDigits(filter)}`
 	);
 }

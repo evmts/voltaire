@@ -4,6 +4,7 @@ import {
 	verify as secp256k1Verify,
 } from "../../../crypto/Secp256k1/index.js";
 import { Hash } from "../../Hash/index.js";
+import { encodeHexDigits } from "../../Hex/encodeHexDigits.js";
 import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { GetSigningHash } from "./getSigningHash.js";
 
@@ -53,11 +54,7 @@ export function VerifySignature({
 			const v = 27 + tx.yParity;
 			const sBytes = tx.s;
 			// EIP-2: Reject high-s signatures to prevent malleability
-			const sValue = BigInt(
-				`0x${Array.from(sBytes)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("")}`,
-			);
+			const sValue = BigInt(`0x${encodeHexDigits(sBytes)}`);
 			if (sValue > SECP256K1_HALF_N) {
 				return false;
 			}

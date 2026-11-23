@@ -1,4 +1,5 @@
 import * as BlockNumber from "../BlockNumber/index.js";
+import { parseHexByte } from "../Hex/parseHexByte.js";
 
 /**
  * Create ForkId from hash and next block number
@@ -43,7 +44,7 @@ export function from(value) {
 		}
 		hash = new Uint8Array(4);
 		for (let i = 0; i < 4; i++) {
-			hash[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+			hash[i] = parseHexByte(hex, i * 2);
 		}
 	} else if (typeof value.hash === "number") {
 		// Convert number to 4-byte big-endian

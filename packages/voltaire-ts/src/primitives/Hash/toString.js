@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Convert Hash to string (alias for toHex)
  *
@@ -16,6 +18,6 @@
 // biome-ignore lint/suspicious/noShadowRestrictedNames: intentional toString override
 export function toString(hash) {
 	return /** @type {import('../Hex/HexType.js').HexType} */ (
-		`0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`
+		`0x${encodeHexDigits(hash)}`
 	);
 }

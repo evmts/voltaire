@@ -1,4 +1,5 @@
 import { InvalidFormatError } from "../../primitives/errors/ValidationError.js";
+import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 import { hash } from "./hash.js";
 
 /**
@@ -35,7 +36,7 @@ export function hashHex(hex) {
 	}
 	const bytes = new Uint8Array(normalized.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(normalized, i * 2);
 	}
 	return hash(bytes);
 }

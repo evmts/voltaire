@@ -2,6 +2,7 @@
  * Polyfills for Uint8Array methods that may not be available in all environments
  */
 import * as Base64 from "../Base64/index.js";
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import {
 	InvalidAddressLengthError,
 	InvalidHexFormatError,
@@ -43,7 +44,7 @@ export function setFromHexPolyfill(this: Uint8Array, hex: string): void {
 	}
 
 	for (let i = 0; i < str.length; i += 2) {
-		const byte = Number.parseInt(str.slice(i, i + 2), 16);
+		const byte = parseHexByte(str, i);
 		if (Number.isNaN(byte)) {
 			throw new InvalidHexStringError("Invalid hex character", {
 				value: str.slice(i, i + 2),

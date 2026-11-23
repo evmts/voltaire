@@ -1,3 +1,5 @@
+import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
+
 /**
  * Convert Signature to hex string
  *
@@ -26,7 +28,7 @@ export function toHex(signature, includeV = true) {
 	// Always include r + s (64 bytes)
 	for (let i = 0; i < 64; i++) {
 		const b = signature[i] ?? 0;
-		result += b.toString(16).padStart(2, "0");
+		result += HEX_BYTE_TABLE[b];
 	}
 
 	// Include v for secp256k1 if present and requested

@@ -3,6 +3,8 @@ import { fromHex } from "./fromHex.js";
 import { isValid as isValidAddress } from "./isValid.js";
 import { toHex } from "./toHex.js";
 
+const textEncoder = new TextEncoder();
+
 /**
  * @typedef {import('../Hex/HexType.js').HexType & { readonly __variant: 'Address'; readonly __checksummed: true }} Checksummed
  */
@@ -27,13 +29,11 @@ import { toHex } from "./toHex.js";
 export function From({ keccak256 }) {
 	return function from(value) {
 		const addr = fromAddress(value);
-		const hex = toHex(addr);
-
-		// Remove 0x prefix for hashing
-		const addrLower = hex.slice(2).toLowerCase();
+		// toHex emits lowercase digits, which EIP-55 hashes as ASCII.
+		const addrLower = toHex(addr).slice(2);
 
 		// Hash the lowercase address
-		const hash = keccak256(new TextEncoder().encode(addrLower));
+		const hash = keccak256(textEncoder.encode(addrLower));
 
 		// Apply checksum: uppercase if hash nibble >= 8
 		let checksummed = "0x";

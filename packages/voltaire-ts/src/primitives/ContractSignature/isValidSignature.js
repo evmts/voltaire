@@ -1,4 +1,5 @@
 import * as Abi from "../Abi/index.js";
+import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
 import { EIP1271_MAGIC_VALUE } from "./constants.js";
 import { ContractCallError } from "./errors.js";
 
@@ -54,7 +55,7 @@ export async function isValidSignature(
 		// Convert data to hex string
 		let dataHex = "0x";
 		for (const byte of data) {
-			dataHex += byte.toString(16).padStart(2, "0");
+			dataHex += HEX_BYTE_TABLE[byte];
 		}
 
 		// Convert contract address to hex if needed
@@ -64,7 +65,7 @@ export async function isValidSignature(
 		} else {
 			addressHex = "0x";
 			for (const byte of contractAddress) {
-				addressHex += byte.toString(16).padStart(2, "0");
+				addressHex += HEX_BYTE_TABLE[byte];
 			}
 		}
 

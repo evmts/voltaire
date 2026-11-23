@@ -3,6 +3,7 @@ import {
 	InvalidFormatError,
 	InvalidLengthError,
 } from "../errors/ValidationError.js";
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import type { PublicKeyType } from "./PublicKeyType.js";
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
@@ -43,7 +44,7 @@ export function from(hex: string): PublicKeyType {
 	}
 	const bytes = new Uint8Array(64);
 	for (let i = 0; i < 64; i++) {
-		bytes[i] = Number.parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(hexStr, i * 2);
 	}
 	if (!isValidPublicKey(bytes)) {
 		throw new InvalidFormatError("Public key is not on the secp256k1 curve", {

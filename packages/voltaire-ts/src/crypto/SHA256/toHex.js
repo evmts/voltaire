@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
+
 /**
  * Convert hash output to hex string
  *
@@ -16,8 +18,6 @@
  */
 export function toHex(hash) {
 	return /** @type {import('../../primitives/Hex/HexType.js').HexType} */ (
-		`0x${Array.from(hash)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")}`
+		`0x${encodeHexDigits(hash)}`
 	);
 }

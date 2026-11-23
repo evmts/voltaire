@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidBuilderBidError } from "./errors.js";
 
 /**
@@ -22,7 +23,7 @@ function hexToBytes(hex, expectedLength) {
 	}
 	const bytes = new Uint8Array(expectedLength);
 	for (let i = 0; i < clean.length; i += 2) {
-		bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
+		bytes[i / 2] = parseHexByte(clean, i);
 	}
 	return bytes;
 }

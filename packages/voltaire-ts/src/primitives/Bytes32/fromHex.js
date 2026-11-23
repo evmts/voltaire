@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { SIZE } from "./constants.js";
 import { InvalidBytes32HexError, InvalidBytes32LengthError } from "./errors.js";
 
@@ -30,7 +31,7 @@ export function fromHex(hex) {
 
 	const result = new Uint8Array(SIZE);
 	for (let i = 0; i < SIZE; i++) {
-		const byte = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		const byte = parseHexByte(normalized, i * 2);
 		if (Number.isNaN(byte)) {
 			throw new InvalidBytes32HexError("Invalid hex string", {
 				value: hex,

@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Format authorization to human-readable string
  *
@@ -35,8 +37,6 @@ export function format(auth) {
  * @returns {string} Formatted address
  */
 function formatAddress(addr) {
-	const hex = Array.from(addr)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
+	const hex = encodeHexDigits(addr);
 	return `0x${hex.slice(0, 4)}...${hex.slice(-4)}`;
 }

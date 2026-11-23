@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
 
 /**
  * @typedef {import('./BundleType.js').BundleType} BundleType
@@ -22,7 +23,7 @@ export function toFlashbotsParams(bundle) {
 			// Convert to hex string
 			let hex = "0x";
 			for (let i = 0; i < tx.length; i++) {
-				hex += tx[i].toString(16).padStart(2, "0");
+				hex += HEX_BYTE_TABLE[tx[i]];
 			}
 			return hex;
 		}),
@@ -44,7 +45,7 @@ export function toFlashbotsParams(bundle) {
 		params.revertingTxHashes = bundle.revertingTxHashes.map((hash) => {
 			let hex = "0x";
 			for (let i = 0; i < hash.length; i++) {
-				hex += hash[i].toString(16).padStart(2, "0");
+				hex += HEX_BYTE_TABLE[hash[i]];
 			}
 			return hex;
 		});

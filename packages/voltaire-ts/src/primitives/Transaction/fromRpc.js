@@ -3,6 +3,7 @@ import {
 	InvalidLengthError,
 	InvalidTransactionTypeError,
 } from "../errors/index.js";
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { Type } from "./types.js";
 
 const DOCS = "/primitives/transaction/from-rpc#error-handling";
@@ -99,7 +100,7 @@ function fromHex(hex) {
 	const padded = h.length % 2 === 0 ? h : `0${h}`;
 	const bytes = new Uint8Array(padded.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(padded.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(padded, i * 2);
 	}
 	return bytes;
 }

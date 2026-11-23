@@ -1,5 +1,7 @@
 // @ts-nocheck
+
 import { ripemd160 as nobleRipemd160 } from "@noble/hashes/legacy.js";
+import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 
 /**
  * Compute RIPEMD160 hash of hex string (without 0x prefix)
@@ -20,7 +22,7 @@ export function hashHex(hex) {
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(normalized.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(normalized, i * 2);
 	}
 	return nobleRipemd160(bytes);
 }

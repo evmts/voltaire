@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidBloomFilterLengthError } from "./errors.js";
 
 /**
@@ -33,7 +34,7 @@ export function fromHex(hex, m, k) {
 
 	const bytes = new Uint8Array(expectedBytes);
 	for (let i = 0; i < expectedBytes; i++) {
-		bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(cleanHex, i * 2);
 	}
 
 	Object.defineProperty(bytes, "k", {

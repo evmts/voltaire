@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidBytesFormatError } from "./errors.js";
 
 /**
@@ -29,7 +30,7 @@ export function fromHex(hex) {
 	}
 	const bytes = new Uint8Array(hexNoPrefix.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		const byte = Number.parseInt(hexNoPrefix.slice(i * 2, i * 2 + 2), 16);
+		const byte = parseHexByte(hexNoPrefix, i * 2);
 		if (Number.isNaN(byte)) {
 			throw new InvalidBytesFormatError("Invalid hex character", {
 				value: hex,

@@ -1,3 +1,5 @@
+import { parseHexByte } from "../primitives/Hex/parseHexByte.js";
+
 /**
  * Standalone Keccak256 WASM Implementation
  *
@@ -104,7 +106,7 @@ export function hashHex(hex: string): HashType {
 	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(cleanHex.length / 2);
 	for (let i = 0; i < cleanHex.length; i += 2) {
-		bytes[i / 2] = Number.parseInt(cleanHex.slice(i, i + 2), 16);
+		bytes[i / 2] = parseHexByte(cleanHex, i);
 	}
 	return hash(bytes);
 }

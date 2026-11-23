@@ -648,26 +648,8 @@ func BenchmarkEncodeLongString(b *testing.B) {
 	}
 }
 
-func BenchmarkEncodeList(b *testing.B) {
-	items := []interface{}{
-		[]byte("cat"),
-		[]byte("dog"),
-		[]byte("elephant"),
-	}
-	for i := 0; i < b.N; i++ {
-		EncodeList(items)
-	}
-}
-
 func BenchmarkDecodeShortString(b *testing.B) {
 	data := hexToBytes("8b68656c6c6f20776f726c64")
-	for i := 0; i < b.N; i++ {
-		DecodeBytes(data)
-	}
-}
-
-func BenchmarkDecodeList(b *testing.B) {
-	data := hexToBytes("cc8363617483646f678868656c6c6f")
 	for i := 0; i < b.N; i++ {
 		DecodeBytes(data)
 	}

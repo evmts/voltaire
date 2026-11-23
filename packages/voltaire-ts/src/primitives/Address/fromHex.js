@@ -1,7 +1,6 @@
+import { decodeHexDigitsInto } from "../Hex/decodeHexDigitsInto.js";
 import { HEX_SIZE, SIZE } from "./constants.js";
 import { InvalidHexFormatError, InvalidHexStringError } from "./errors.js";
-
-const HEX_REGEX = /^[0-9a-fA-F]{40}$/;
 
 /**
  * Parse hex string to Address (standard form)
@@ -22,15 +21,11 @@ export function fromHex(hex) {
 			value: hex,
 		});
 	}
-	const hexPart = hex.slice(2);
-	if (!HEX_REGEX.test(hexPart)) {
+	const bytes = new Uint8Array(SIZE);
+	if (decodeHexDigitsInto(hex, 2, bytes) !== -1) {
 		throw new InvalidHexStringError("Invalid hex string", {
 			value: hex,
 		});
-	}
-	const bytes = new Uint8Array(SIZE);
-	for (let i = 0; i < SIZE; i++) {
-		bytes[i] = Number.parseInt(hexPart.slice(i * 2, i * 2 + 2), 16);
 	}
 	return /** @type {import('./AddressType.js').AddressType} */ (bytes);
 }

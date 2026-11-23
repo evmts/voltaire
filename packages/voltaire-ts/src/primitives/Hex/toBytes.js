@@ -1,4 +1,5 @@
 import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
+import { decodeHexDigitsInto } from "./decodeHexDigitsInto.js";
 import { hexCharToValue } from "./utils.js";
 
 /**
@@ -26,29 +27,38 @@ export function toBytes(hex) {
 			docsPath: "/primitives/hex#error-handling",
 		});
 
-	const hexDigits = hex.slice(2);
+	const digits = hex.length - 2;
+	const bytes = new Uint8Array(digits >>> 1);
 
-	// Check for invalid characters first (more helpful error message)
-	for (let i = 0; i < hexDigits.length; i++) {
-		const char = hexDigits[i];
-		const val = hexCharToValue(char);
-		if (val === null)
-			throw new InvalidFormatError(
-				`Invalid hex character at position ${i + 2}: '${char}'`,
-				{
-					code: "HEX_INVALID_CHARACTER",
-					value: hex,
-					expected: "valid hex characters (0-9, a-f, A-F)",
-					context: {
-						position: i + 2,
-						character: char,
-					},
-					docsPath: "/primitives/hex#error-handling",
+	// Invalid characters are reported before odd length (more helpful error),
+	// so the trailing digit of an odd-length string is validated too.
+	let invalid = decodeHexDigitsInto(hex, 2, bytes);
+	if (
+		invalid === -1 &&
+		digits % 2 !== 0 &&
+		hexCharToValue(hex[hex.length - 1]) === null
+	)
+		invalid = digits - 1;
+
+	if (invalid !== -1) {
+		const position = invalid + 2;
+		const char = hex[position];
+		throw new InvalidFormatError(
+			`Invalid hex character at position ${position}: '${char}'`,
+			{
+				code: "HEX_INVALID_CHARACTER",
+				value: hex,
+				expected: "valid hex characters (0-9, a-f, A-F)",
+				context: {
+					position,
+					character: char,
 				},
-			);
+				docsPath: "/primitives/hex#error-handling",
+			},
+		);
 	}
 
-	if (hexDigits.length % 2 !== 0)
+	if (digits % 2 !== 0)
 		throw new InvalidLengthError("Invalid hex length: odd number of digits", {
 			code: "HEX_ODD_LENGTH",
 			value: hex,
@@ -56,12 +66,5 @@ export function toBytes(hex) {
 			docsPath: "/primitives/hex#error-handling",
 		});
 
-	const bytes = new Uint8Array(hexDigits.length / 2);
-	for (let i = 0; i < hexDigits.length; i += 2) {
-		const high = hexCharToValue(hexDigits[i]);
-		const low = hexCharToValue(hexDigits[i + 1]);
-		bytes[i / 2] =
-			/** @type {number} */ (high) * 16 + /** @type {number} */ (low);
-	}
 	return bytes;
 }

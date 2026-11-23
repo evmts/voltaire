@@ -1,4 +1,5 @@
 import type { AddressType } from "../primitives/Address/AddressType.js";
+import { encodeHexDigits } from "../primitives/Hex/encodeHexDigits.js";
 import type { Uint256Type } from "../primitives/Uint/Uint256Type.js";
 
 /**
@@ -53,9 +54,7 @@ export const EVENTS = {
  */
 export function encodeBalanceOf(account: AddressType, id: Uint256Type): string {
 	// Convert address (20 bytes) to hex and pad to 32 bytes
-	const accountHex = Array.from(account, (b) => b.toString(16).padStart(2, "0"))
-		.join("")
-		.padStart(64, "0");
+	const accountHex = encodeHexDigits(account).padStart(64, "0");
 	const idHex = id.toString(16).padStart(64, "0");
 	return `${SELECTORS.balanceOf}${accountHex}${idHex}`;
 }
@@ -68,11 +67,7 @@ export function encodeSetApprovalForAll(
 	approved: boolean,
 ): string {
 	// Convert address (20 bytes) to hex and pad to 32 bytes
-	const operatorHex = Array.from(operator, (b) =>
-		b.toString(16).padStart(2, "0"),
-	)
-		.join("")
-		.padStart(64, "0");
+	const operatorHex = encodeHexDigits(operator).padStart(64, "0");
 	const approvedHex = approved ? "1".padStart(64, "0") : "0".padStart(64, "0");
 	return `${SELECTORS.setApprovalForAll}${operatorHex}${approvedHex}`;
 }
@@ -88,21 +83,18 @@ export function encodeSafeTransferFrom(
 	data: Uint8Array = new Uint8Array(0),
 ): string {
 	// Convert addresses (20 bytes each) to hex and pad to 32 bytes
-	const fromHex = Array.from(from, (b) => b.toString(16).padStart(2, "0"))
-		.join("")
-		.padStart(64, "0");
-	const toHex = Array.from(to, (b) => b.toString(16).padStart(2, "0"))
-		.join("")
-		.padStart(64, "0");
+	const fromHex = encodeHexDigits(from).padStart(64, "0");
+	const toHex = encodeHexDigits(to).padStart(64, "0");
 	const idHex = id.toString(16).padStart(64, "0");
 	const amountHex = amount.toString(16).padStart(64, "0");
 
 	// Encode data as dynamic bytes
 	const dataOffset = "a0"; // 160 bytes offset (5 * 32)
 	const dataLength = data.length.toString(16).padStart(64, "0");
-	const dataHex = Array.from(data, (b) => b.toString(16).padStart(2, "0"))
-		.join("")
-		.padEnd(Math.ceil(data.length / 32) * 64, "0");
+	const dataHex = encodeHexDigits(data).padEnd(
+		Math.ceil(data.length / 32) * 64,
+		"0",
+	);
 
 	return `${SELECTORS.safeTransferFrom}${fromHex}${toHex}${idHex}${amountHex}${dataOffset}${dataLength}${dataHex}`;
 }
@@ -115,14 +107,8 @@ export function encodeIsApprovedForAll(
 	operator: AddressType,
 ): string {
 	// Convert addresses (20 bytes each) to hex and pad to 32 bytes
-	const accountHex = Array.from(account, (b) => b.toString(16).padStart(2, "0"))
-		.join("")
-		.padStart(64, "0");
-	const operatorHex = Array.from(operator, (b) =>
-		b.toString(16).padStart(2, "0"),
-	)
-		.join("")
-		.padStart(64, "0");
+	const accountHex = encodeHexDigits(account).padStart(64, "0");
+	const operatorHex = encodeHexDigits(operator).padStart(64, "0");
 	return `${SELECTORS.isApprovedForAll}${accountHex}${operatorHex}`;
 }
 

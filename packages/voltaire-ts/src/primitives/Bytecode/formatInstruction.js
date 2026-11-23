@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Format instruction to human-readable string
  *
@@ -15,9 +17,7 @@ export function formatInstruction(instruction) {
 	const opcode = instruction.opcode.toString(16).padStart(2, "0").toUpperCase();
 
 	if (instruction.pushData) {
-		const data = Array.from(instruction.pushData)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+		const data = encodeHexDigits(instruction.pushData);
 		return `0x${pos}: PUSH${instruction.pushData.length} 0x${data}`;
 	}
 

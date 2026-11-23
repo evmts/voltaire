@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import { name } from "./name.js";
 
 /**
@@ -22,9 +23,7 @@ export function format(instruction) {
 	const nameStr = name(instruction.opcode);
 
 	if (instruction.immediate && instruction.immediate.length > 0) {
-		const hex = Array.from(instruction.immediate)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+		const hex = encodeHexDigits(instruction.immediate);
 		return `0x${offsetHex}: ${nameStr} 0x${hex}`;
 	}
 

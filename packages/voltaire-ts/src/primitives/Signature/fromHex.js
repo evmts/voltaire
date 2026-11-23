@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { ECDSA_SIZE, ECDSA_WITH_V_SIZE, ED25519_SIZE } from "./constants.js";
 import {
 	InvalidSignatureFormatError,
@@ -67,7 +68,7 @@ export function fromHex(value, algorithm = "secp256k1") {
 	const bytes = new Uint8Array(byteLength);
 
 	for (let i = 0; i < hexChars; i += 2) {
-		const byte = Number.parseInt(hex.slice(i, i + 2), 16);
+		const byte = parseHexByte(hex, i);
 		if (Number.isNaN(byte)) {
 			throw new InvalidSignatureFormatError("Invalid hex character", {
 				value: hex.slice(i, i + 2),

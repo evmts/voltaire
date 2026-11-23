@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 /**
@@ -24,7 +25,7 @@ export function fromRpc(rpc) {
 	const rBytes = new Uint8Array(32);
 	const rParsed = rHex.padStart(64, "0");
 	for (let i = 0; i < 32; i++) {
-		rBytes[i] = Number.parseInt(rParsed.slice(i * 2, i * 2 + 2), 16);
+		rBytes[i] = parseHexByte(rParsed, i * 2);
 	}
 
 	// Parse s
@@ -32,7 +33,7 @@ export function fromRpc(rpc) {
 	const sBytes = new Uint8Array(32);
 	const sParsed = sHex.padStart(64, "0");
 	for (let i = 0; i < 32; i++) {
-		sBytes[i] = Number.parseInt(sParsed.slice(i * 2, i * 2 + 2), 16);
+		sBytes[i] = parseHexByte(sParsed, i * 2);
 	}
 
 	// Parse v - prefer explicit v if provided, otherwise derive from yParity

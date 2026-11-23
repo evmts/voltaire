@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Convert Address to hex string
  *
@@ -12,6 +14,6 @@
  */
 export function toHex(address) {
 	return /** @type {import('../Hex/index.js').HexType} */ (
-		`0x${Array.from(address, (b) => b.toString(16).padStart(2, "0")).join("")}`
+		`0x${encodeHexDigits(address)}`
 	);
 }

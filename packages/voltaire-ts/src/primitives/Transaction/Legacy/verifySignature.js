@@ -1,6 +1,7 @@
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import { recoverPublicKey as secp256k1RecoverPublicKey } from "../../../crypto/Secp256k1/index.js";
 import { Hash } from "../../Hash/index.js";
+import { encodeHexDigits } from "../../Hex/encodeHexDigits.js";
 import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { getChainId } from "./getChainId.js";
 import { GetSigningHash } from "./getSigningHash.js";
@@ -75,11 +76,7 @@ export function VerifySignature({
 			// Create HashType for r and s
 			const sBytes = this.s;
 			// EIP-2: Reject high-s signatures to prevent malleability
-			const sValue = BigInt(
-				`0x${Array.from(sBytes)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("")}`,
-			);
+			const sValue = BigInt(`0x${encodeHexDigits(sBytes)}`);
 			if (sValue > SECP256K1_HALF_N) {
 				return false;
 			}

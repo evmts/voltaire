@@ -1,4 +1,5 @@
 import { sha256 as nobleSha256 } from "@noble/hashes/sha2.js";
+import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 
 /**
  * Compute SHA256 hash of hex string (without 0x prefix)
@@ -19,7 +20,7 @@ export function hashHex(hex) {
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	const bytes = new Uint8Array(normalized.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(normalized, i * 2);
 	}
 	return /** @type {import('./SHA256HashType.js').SHA256Hash} */ (
 		nobleSha256(bytes)

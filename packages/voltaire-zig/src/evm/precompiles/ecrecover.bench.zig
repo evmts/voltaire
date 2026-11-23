@@ -77,4 +77,5 @@ pub fn main() !void {
 
     try writer.writeAll("\n");
     try bench.run(writer);
+    try writer.flush();
 }

@@ -1,3 +1,5 @@
+import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
+
 /**
  * Convert BlockHash to hex string
  *
@@ -8,7 +10,7 @@ export function toHex(hash) {
 	let result = "0x";
 	for (let i = 0; i < hash.length; i++) {
 		const val = /** @type {number} */ (hash[i]);
-		result += val.toString(16).padStart(2, "0");
+		result += HEX_BYTE_TABLE[val];
 	}
 	return result;
 }

@@ -1,5 +1,7 @@
 // @ts-nocheck
+
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
 import { PUBLIC_KEY_SIZE } from "./constants.js";
 import { InvalidPublicKeyError, Secp256k1Error } from "./errors.js";
 
@@ -60,12 +62,8 @@ export function addPoints(pubKey1, pubKey2) {
 		full2.set(pubKey2, 1);
 
 		// Convert to hex strings for Point.fromHex
-		const hex1 = Array.from(full1)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
-		const hex2 = Array.from(full2)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+		const hex1 = encodeHexDigits(full1);
+		const hex2 = encodeHexDigits(full2);
 
 		// Parse points
 		const point1 = secp256k1.Point.fromHex(hex1);

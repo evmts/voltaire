@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
 
 /**
  * @typedef {import('./BuilderBidType.js').BuilderBidType} BuilderBidType
@@ -13,7 +14,7 @@
 function bytesToHex(bytes) {
 	let hex = "0x";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += bytes[i].toString(16).padStart(2, "0");
+		hex += HEX_BYTE_TABLE[bytes[i]];
 	}
 	return hex;
 }

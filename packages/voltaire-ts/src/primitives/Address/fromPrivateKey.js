@@ -36,16 +36,7 @@ export function FromPrivateKey({ keccak256, derivePublicKey }) {
 			});
 		}
 
-		// Extract x and y coordinates (32 bytes each, big-endian)
-		let x = 0n;
-		let y = 0n;
-
-		for (let i = 0; i < 32; i++) {
-			x = (x << 8n) | BigInt(pubkey[i] ?? 0);
-			y = (y << 8n) | BigInt(pubkey[i + 32] ?? 0);
-		}
-
-		// Call fromPublicKey to derive address
-		return fromPublicKey(x, y);
+		// Pass 64-byte uncompressed public key directly without BigInt round-trip
+		return fromPublicKey(pubkey);
 	};
 }

@@ -1,5 +1,7 @@
 // @ts-nocheck
 
+import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
+import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 import { KeystoreError } from "./errors.js";
 
 /**
@@ -9,9 +11,7 @@ import { KeystoreError } from "./errors.js";
  * @returns {string} Hex string without 0x prefix
  */
 export function bytesToHex(bytes) {
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
+	return encodeHexDigits(bytes);
 }
 
 /**
@@ -28,7 +28,7 @@ export function hexToBytes(hex) {
 	}
 	const bytes = new Uint8Array(clean.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(clean, i * 2);
 	}
 	return bytes;
 }

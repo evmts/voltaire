@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Convert CallData to hex string with 0x prefix
  *
@@ -12,6 +14,6 @@
  */
 export function toHex(calldata) {
 	return /** @type {import('../Hex/index.js').HexType} */ (
-		`0x${Array.from(calldata, (b) => b.toString(16).padStart(2, "0")).join("")}`
+		`0x${encodeHexDigits(calldata)}`
 	);
 }

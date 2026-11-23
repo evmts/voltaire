@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Convert Bytes32 to hex string with 0x prefix
  *
@@ -12,6 +14,6 @@
  */
 export function toHex(bytes32) {
 	return /** @type {import('../Hex/HexType.js').HexType} */ (
-		`0x${Array.from(bytes32, (b) => b.toString(16).padStart(2, "0")).join("")}`
+		`0x${encodeHexDigits(bytes32)}`
 	);
 }

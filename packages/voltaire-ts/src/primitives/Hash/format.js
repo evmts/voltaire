@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Format hash for display (truncated)
  *
@@ -16,7 +18,7 @@
  * ```
  */
 export function format(hash, prefixLength = 6, suffixLength = 4) {
-	const hex = `0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+	const hex = `0x${encodeHexDigits(hash)}`;
 	if (hex.length <= prefixLength + suffixLength + 2) {
 		return hex;
 	}

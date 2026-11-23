@@ -1,3 +1,4 @@
+import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 import * as G1 from "./G1/index.js";
 
 /**
@@ -36,7 +37,7 @@ export function serializeG1(point) {
 function hexToBytes(hex) {
 	const bytes = new Uint8Array(hex.length / 2);
 	for (let i = 0; i < hex.length; i += 2) {
-		bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
+		bytes[i / 2] = parseHexByte(hex, i);
 	}
 	return bytes;
 }

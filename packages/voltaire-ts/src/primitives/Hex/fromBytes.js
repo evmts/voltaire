@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "./encodeHexDigits.js";
+
 /**
  * Convert bytes to hex
  *
@@ -14,10 +16,7 @@
  * ```
  */
 export function fromBytes(bytes) {
-	let hex = "0x";
-	for (let i = 0; i < bytes.length; i++) {
-		const byte = bytes[i];
-		hex += byte.toString(16).padStart(2, "0");
-	}
-	return /** @type {import('./HexType.js').HexType} */ (hex);
+	return /** @type {import('./HexType.js').HexType} */ (
+		`0x${encodeHexDigits(bytes)}`
+	);
 }

@@ -1,4 +1,5 @@
 import * as Address from "../Address/internal-index.js";
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import * as Uint from "../Uint/index.js";
 
 /**
@@ -40,7 +41,7 @@ export function from(params) {
 			if (hex.length === 0) return new Uint8Array(0);
 			const bytes = new Uint8Array(hex.length / 2);
 			for (let i = 0; i < bytes.length; i++) {
-				bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+				bytes[i] = parseHexByte(hex, i * 2);
 			}
 			return bytes;
 		}

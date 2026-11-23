@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
+
 /**
  * Format typed data for human-readable display.
  *
@@ -29,9 +31,7 @@ export function format(typedData) {
 		lines.push(`  chainId: ${typedData.domain.chainId}`);
 	if (typedData.domain.verifyingContract)
 		lines.push(
-			`  verifyingContract: 0x${Array.from(typedData.domain.verifyingContract)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("")}`,
+			`  verifyingContract: 0x${encodeHexDigits(typedData.domain.verifyingContract)}`,
 		);
 	lines.push("");
 

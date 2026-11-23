@@ -1,4 +1,5 @@
 import { InvalidTransactionTypeError } from "../errors/index.js";
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import { Type } from "./types.js";
 
 /**
@@ -7,9 +8,7 @@ import { Type } from "./types.js";
  * @returns {string}
  */
 function toHex(bytes) {
-	return `0x${Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("")}`;
+	return `0x${encodeHexDigits(bytes)}`;
 }
 
 /**

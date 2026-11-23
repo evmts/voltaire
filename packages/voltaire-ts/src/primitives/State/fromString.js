@@ -1,3 +1,5 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
+
 /**
  * Parse a StorageKey from its string representation
  *
@@ -32,7 +34,7 @@ export function fromString(str) {
 	try {
 		const address = new Uint8Array(20);
 		for (let i = 0; i < 20; i++) {
-			address[i] = Number.parseInt(addrHex.slice(i * 2, i * 2 + 2), 16);
+			address[i] = parseHexByte(addrHex, i * 2);
 		}
 
 		const slot = BigInt(`0x${slotHex}`);

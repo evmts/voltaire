@@ -1,3 +1,4 @@
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { NegativeBigIntError, SizeExceededError } from "./errors.js";
 
 /**
@@ -52,7 +53,7 @@ export function fromBigInt(value, size) {
 	for (let i = 0; i < minBytes; i++) {
 		const byteIndex = targetSize - 1 - i;
 		const hexIndex = hex.length - 2 - i * 2;
-		result[byteIndex] = Number.parseInt(hex.slice(hexIndex, hexIndex + 2), 16);
+		result[byteIndex] = parseHexByte(hex, hexIndex);
 	}
 
 	return /** @type {import('./BytesType.js').BytesType} */ (result);

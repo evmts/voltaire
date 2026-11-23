@@ -51,7 +51,7 @@ export function format(request) {
 	}
 
 	if (request.data !== undefined) {
-		const hexData = Hex.from(Hex.fromBytes(request.data));
+		const hexData = Hex.fromBytes(request.data);
 		params.push(`data=${hexData}`);
 	}
 

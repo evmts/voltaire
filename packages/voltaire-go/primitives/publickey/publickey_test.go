@@ -435,13 +435,6 @@ func BenchmarkFromBytes_Uncompressed(b *testing.B) {
 	}
 }
 
-func BenchmarkBytesCompressed(b *testing.B) {
-	pk, _ := FromBytes(generatorCompressed)
-	for i := 0; i < b.N; i++ {
-		_ = pk.BytesCompressed()
-	}
-}
-
 func BenchmarkAddress(b *testing.B) {
 	pk, _ := FromBytes(generatorCompressed)
 	for i := 0; i < b.N; i++ {

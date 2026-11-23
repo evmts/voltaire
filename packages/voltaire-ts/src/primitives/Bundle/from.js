@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidBundleError } from "./errors.js";
 
 /**
@@ -58,7 +59,7 @@ export function from(value) {
 			}
 			const bytes = new Uint8Array(hex.length / 2);
 			for (let i = 0; i < hex.length; i += 2) {
-				bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
+				bytes[i / 2] = parseHexByte(hex, i);
 			}
 			return bytes;
 		}
@@ -151,7 +152,7 @@ export function from(value) {
 				}
 				const bytes = new Uint8Array(32);
 				for (let i = 0; i < 64; i += 2) {
-					bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
+					bytes[i / 2] = parseHexByte(hex, i);
 				}
 				return bytes;
 			}

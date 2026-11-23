@@ -1,4 +1,5 @@
 import { InvalidFormatError, InvalidLengthError } from "../../errors/index.js";
+import { parseHexByte } from "../../Hex/parseHexByte.js";
 import { SIZE } from "./constants.js";
 
 /**
@@ -40,7 +41,7 @@ export function fromHex(hex) {
 	}
 	const bytes = new Uint8Array(SIZE);
 	for (let i = 0; i < SIZE; i++) {
-		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		bytes[i] = parseHexByte(normalized, i * 2);
 	}
 	return /** @type {import('./Bytes32Type.js').Bytes32Type} */ (bytes);
 }

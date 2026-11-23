@@ -1,3 +1,5 @@
+import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
+
 /**
  * Format bytecode as hex string
  *
@@ -13,9 +15,7 @@
  * ```
  */
 export function toHex(code, prefix = true) {
-	const hex = Array.from(code)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
+	const hex = encodeHexDigits(code);
 	return /** @type {import('../Hex/HexType.js').HexType} */ (
 		prefix ? `0x${hex}` : hex
 	);
