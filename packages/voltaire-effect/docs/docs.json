@@ -76,8 +76,15 @@
               "services/signer",
               "services/account",
               "services/contract",
-              "services/contract-registry",
-              "services/ens"
+              "services/contract-registry"
+            ]
+          },
+          {
+            "group": "ENS",
+            "icon": "at",
+            "pages": [
+              "services/ens",
+              "primitives/ens"
             ]
           },
           {
@@ -363,7 +370,6 @@
                   "primitives/brand",
                   "primitives/builderbid",
                   "primitives/blob",
-                  "primitives/ens",
                   "primitives/denomination",
                   "primitives/proxy",
                   "primitives/stealthaddress",

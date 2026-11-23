@@ -161,36 +161,6 @@ Core services for Ethereum operations:
 
 ProviderService is a minimal, request-only Context.Tag that powers all provider free functions.
 
-### ENS resolution
-
-`EnsService` resolves Ethereum Name Service records. `DefaultEns` requires
-`ProviderService`; provide `Provider` and an Ethereum mainnet transport for the
-default ENS contracts. Operations return `null` for missing records and fail with
-`EnsError` on resolution errors. The same operations are available as free
-functions requiring `ProviderService` directly.
-
-```typescript
-import { FetchHttpClient } from '@effect/platform'
-import { Effect } from 'effect'
-import { DefaultEns, EnsService, HttpTransport, Provider } from 'voltaire-effect'
-
-const program = Effect.gen(function* () {
-  const ens = yield* EnsService
-  return yield* ens.getEnsAddress({ name: 'vitalik.eth' })
-}).pipe(
-  Effect.provide(DefaultEns),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com')),
-  Effect.provide(FetchHttpClient.layer)
-)
-
-console.log(await Effect.runPromise(program))
-```
-
-Use `getEnsName({ address })` for reverse lookup, `getEnsText({ name, key })` for
-text records, `getEnsAvatar({ name })` for an avatar URL/URI, and
-`getEnsResolver({ name })` for the resolver address.
-
 ### Primitives
 
 Effect Schema wrappers for all Ethereum data types. Each primitive provides:
@@ -213,7 +183,7 @@ Effect Schema wrappers for all Ethereum data types. Each primitive provides:
 **Numeric types:**
 - `/primitives/uint` - Unsigned integers base
 - `/primitives/u256` - 256-bit unsigned integers
-- `/primitives/uint8` through `/primitives/uint256` - Fixed-size unsigned integers
+- `/primitives/uint8` through `/primitives/uint128` (and `/primitives/u256`) - Fixed-size unsigned integers
 - `/primitives/int8` through `/primitives/int256` - Fixed-size signed integers
 
 **Block types:**
@@ -328,6 +298,41 @@ Complete working code examples:
 ### ERC Standards
 
 - `/standards` - ERC-20, ERC-721, ERC-1155, ERC-165 utilities with typed encoding/decoding
+
+## ENS
+
+Ethereum Name Service resolution and local name utilities:
+
+- `/services/ens` - `EnsService`, `DefaultEns`, `getEnsAddress`, `getEnsName`, `getEnsText`, `getEnsAvatar`, and `getEnsResolver`
+- `/primitives/ens` - Local validation, ENSIP-15 `normalize`, `namehash`, and `labelhash` without an RPC provider
+
+`EnsService` resolves Ethereum Name Service records. `DefaultEns` requires
+`ProviderService`; provide `Provider` and an Ethereum mainnet transport for the
+default ENS contracts. Operations return `null` for missing records and fail with
+`EnsError` on resolution errors. The same operations are available as free
+functions requiring `ProviderService` directly.
+
+```typescript
+import { FetchHttpClient } from '@effect/platform'
+import { Effect } from 'effect'
+import { DefaultEns, EnsService, HttpTransport, Provider } from 'voltaire-effect'
+
+const program = Effect.gen(function* () {
+  const ens = yield* EnsService
+  return yield* ens.getEnsAddress({ name: 'vitalik.eth' })
+}).pipe(
+  Effect.provide(DefaultEns),
+  Effect.provide(Provider),
+  Effect.provide(HttpTransport('https://eth.llamarpc.com')),
+  Effect.provide(FetchHttpClient.layer)
+)
+
+console.log(await Effect.runPromise(program))
+```
+
+Use `getEnsName({ address })` for reverse lookup, `getEnsText({ name, key })` for
+text records, `getEnsAvatar({ name })` for an avatar URL/URI, and
+`getEnsResolver({ name })` for the resolver address.
 
 ## Error Types
 
