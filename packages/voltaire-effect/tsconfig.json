@@ -1,34 +1,24 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
-		"module": "ESNext",
-		"moduleResolution": "bundler",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"strict": true,
+		"skipLibCheck": true,
+		"rootDir": "src",
+		"outDir": "dist",
 		"declaration": true,
 		"declarationMap": true,
 		"sourceMap": true,
-		"outDir": "./dist",
-		"rootDir": "./src",
-		"strict": true,
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"forceConsistentCasingInFileNames": true,
-		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"noEmit": true
+		"noEmitOnError": true,
+		"allowArbitraryExtensions": true,
+		"rewriteRelativeImportExtensions": true,
+		"rootDirs": ["src", ".vibe/declarations"],
+		"types": []
 	},
-	"include": ["src/**/*"],
-	"exclude": [
-		"node_modules",
-		"dist",
-		"**/*.test.ts",
-		"**/*.test-d.ts",
-		"src/crypto/Signers/**",
-		"src/primitives/Abi/**",
-		"src/primitives/Bytes/Bytes4/**",
-		"src/primitives/Bytes/Bytes8/**",
-		"src/primitives/Bytes/Bytes16/**",
-		"src/primitives/Bytes/Bytes32/**",
-		"src/primitives/Bytes/Bytes64/**",
-		"src/primitives/Trie/**"
-	]
+	"vibe": {
+		"sidecarDir": ".vibe/declarations"
+	},
+	"include": ["src/**/*.vibe", "src/**/*.ts"],
+	"exclude": ["node_modules", "dist", ".vibe"]
 }

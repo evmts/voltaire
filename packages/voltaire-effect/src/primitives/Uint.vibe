@@ -1,0 +1,124 @@
+// Effect 4 Schemas and typed operations for Ethereum unsigned integers & JSON-RPC quantities.
+
+import type { HexType } from "@tevm/voltaire/Hex"
+import { InvalidUintError } from "../errors.vibe"
+
+export const MAX_UINT8 = 255n
+export const MAX_UINT16 = 65535n
+export const MAX_UINT32 = 4294967295n
+export const MAX_UINT64 = 18446744073709551615n
+export const MAX_UINT128 = (1n << 128n) - 1n
+export const MAX_UINT256 = (1n << 256n) - 1n
+
+const HEX_QUANTITY_RE = /^0x[0-9a-fA-F]+$/
+
+const MAX_SAFE_INT_BIGINT = 9007199254740991n
+
+export effect function parseQuantity(value: string | bigint | number): bigint!InvalidUintError {
+  if (typeof value === "bigint") {
+    if (value < 0n || value > MAX_UINT256) {
+      throw new InvalidUintError({ input: value, message: `Quantity out of uint256 range: ${value.toString()}` })
+    }
+    return value
+  }
+  if (typeof value === "number") {
+    if (!Number.isInteger(value) || value < 0 || !Number.isSafeInteger(value)) {
+      throw new InvalidUintError({ input: value, message: `Invalid integer quantity: ${value}` })
+    }
+    return try Effect.try({
+      try: () => BigInt(value),
+      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid integer quantity: ${value}`, cause })
+    })
+  }
+  const trimmed = value.trim()
+  if (trimmed === "0x" || trimmed === "0X") {
+    return 0n
+  }
+  if (HEX_QUANTITY_RE.test(trimmed)) {
+    const n = try Effect.try({
+      try: () => BigInt(trimmed),
+      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid hex quantity: ${value}`, cause })
+    })
+    if (n > MAX_UINT256) {
+      throw new InvalidUintError({ input: value, message: `Hex quantity exceeds uint256: ${value}` })
+    }
+    return n
+  }
+  if (/^\d+$/.test(trimmed)) {
+    const n = try Effect.try({
+      try: () => BigInt(trimmed),
+      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid decimal uint256: ${value}`, cause })
+    })
+    if (n > MAX_UINT256) {
+      throw new InvalidUintError({ input: value, message: `Decimal quantity exceeds uint256: ${value}` })
+    }
+    return n
+  }
+  throw new InvalidUintError({ input: value, message: `Invalid quantity string: ${value}` })
+}
+
+export function formatQuantity(value: bigint): HexType {
+  return `0x${value.toString(16)}` as HexType
+}
+
+export effect function fromBits(value: bigint | number | string, bits: number): bigint!InvalidUintError {
+  if (!Number.isInteger(bits) || bits <= 0 || bits > 256) {
+    throw new InvalidUintError({ input: bits, message: `Invalid bit width: ${bits}` })
+  }
+  const n = try parseQuantity(value)
+  const bitsBig = try Effect.try({
+    try: () => BigInt(bits),
+    catch: (cause) => new InvalidUintError({ input: bits, message: `Invalid bit width: ${bits}`, cause })
+  })
+  const max = (1n << bitsBig) - 1n
+  if (n > max) {
+    throw new InvalidUintError({ input: value, message: `Value ${n.toString()} exceeds uint${bits}` })
+  }
+  return n
+}
+
+export const Uint256Schema = Schema.BigInt.pipe(
+  Schema.check(
+    Schema.makeFilter((n) => n >= 0n && n <= MAX_UINT256, {
+      message: "Expected unsigned 256-bit integer (0 <= n < 2^256)"
+    })
+  )
+)
+
+// Bidirectional JSON-RPC hex quantity ("0x1a") <-> bigint codec.
+export const QuantityHex = Schema.String.pipe(
+  Schema.decodeTo(Uint256Schema, {
+    decode: SchemaGetter.transformEffect(effect (s, options) => {
+      return parseQuantity(s) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
+      }
+    }),
+    encode: SchemaGetter.transform((n): string => formatQuantity(n))
+  })
+)
+
+// Bidirectional JSON-RPC hex quantity ("0x1") <-> safe number codec (for logIndex, txIndex, chainId, etc.).
+export const QuantityNumber = Schema.String.pipe(
+  Schema.decodeTo(Schema.Number, {
+    decode: SchemaGetter.transformEffect(effect (s, options) => {
+      const n = parseQuantity(s) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
+      }
+      if (n > MAX_SAFE_INT_BIGINT) {
+        throw new SchemaIssue.InvalidValue({ message: `Quantity ${s} exceeds MAX_SAFE_INTEGER` }, s, options)
+      }
+      return Number(n)
+    }),
+    encode: SchemaGetter.transform((n): string => `0x${n.toString(16)}`)
+  })
+)
+
+export type BlockTagName = "latest" | "earliest" | "pending" | "safe" | "finalized"
+export type BlockIdentifier = BlockTagName | bigint | number
+
+export effect function formatBlockIdentifier(block: BlockIdentifier | undefined): string!InvalidUintError {
+  if (block === undefined) return "latest"
+  if (typeof block === "string") return block
+  const n = try parseQuantity(block)
+  return formatQuantity(n)
+}

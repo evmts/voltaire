@@ -1,0 +1,129 @@
+// Automatic JSON-RPC batching Transport powered by Effect 4 Request + RequestResolver.
+// Collects concurrent RPC calls within a time window, deduplicates identical calls,
+// dispatches a single JSON-RPC 2.0 batch, and fans out typed Exits to each fiber.
+
+import {
+  type RpcTransportError,
+  TransportError
+} from "../errors.vibe"
+import {
+  type JsonRpcBatchItemResult,
+  type JsonRpcCall,
+  Transport
+} from "./Transport.vibe"
+
+export interface BatchTransportConfig {
+  /** Batch collection window before flushing (default: "10 millis") */
+  readonly delay?: Duration.Input
+  /** Maximum requests per JSON-RPC batch (default: 50) */
+  readonly maxBatchSize?: number
+  /** Optional LRU cache capacity for deduplicating repeated calls */
+  readonly cacheCapacity?: number
+}
+
+class BatchedRpcRequest extends Request.Class<
+  {
+    readonly method: string
+    readonly paramsKey: string
+    readonly params: ReadonlyArray<unknown>
+  },
+  unknown,
+  RpcTransportError
+> {}
+
+module native {
+  /** @throws {never} */
+  export function stableParamsKey(params: ReadonlyArray<unknown>): string {
+    try {
+      return JSON.stringify(params, (_k, v) => (typeof v === "bigint" ? `${v.toString()}n` : v))
+    } catch {
+      return String(params)
+    }
+  }
+}
+
+import { stableParamsKey } from native
+
+// Wraps an underlying Transport layer with automatic RequestResolver-based batching.
+export function BatchTransport(
+  baseLayer: Layer.Layer<Transport, never, never>,
+  config: BatchTransportConfig = {}
+) {
+  const delay = config.delay ?? "10 millis"
+  const maxBatchSize = config.maxBatchSize ?? 50
+
+  return Layer.provide(
+    Layer.effect(
+      Transport,
+      effect {
+        const upstream = try Transport
+
+        let resolver = RequestResolver.make<BatchedRpcRequest>(effect (entries) => {
+          const calls: Array<JsonRpcCall> = entries.map((entry) => ({
+            method: entry.request.method,
+            params: entry.request.params
+          }))
+
+          const batchExit = try exit(upstream.requestBatch(calls))
+
+          match (batchExit) {
+            when Exit.Failure(let cause): do {
+              for (const entry of entries) {
+                entry.completeUnsafe(Exit.failCause(cause))
+              }
+              undefined
+            };
+            when Exit.Success(let results): do {
+              for (let i = 0; i < entries.length; i++) {
+                const entry = entries[i]
+                const item = results[i]
+                if (entry === undefined) continue
+                if (item === undefined) {
+                  entry.completeUnsafe(
+                    Exit.fail(
+                      new TransportError({
+                        message: `Missing batch response at index ${i}`,
+                        reason: { _tag: "InvalidResponse", message: "Batch response too short" }
+                      })
+                    )
+                  )
+                } else {
+                  match (item) {
+                    when { _tag: "Ok", let value }: entry.completeUnsafe(Exit.succeed(value));
+                    when { _tag: "Err", let error }: entry.completeUnsafe(Exit.fail(error));
+                  }
+                }
+              }
+              undefined
+            };
+          }
+        }).pipe(
+          RequestResolver.batchN(maxBatchSize),
+          RequestResolver.setDelay(delay),
+          RequestResolver.withSpan("rpc.batch.resolver")
+        )
+
+        if (config.cacheCapacity !== undefined && config.cacheCapacity > 0) {
+          resolver = try RequestResolver.withCache(resolver, { capacity: config.cacheCapacity })
+        }
+
+        return Transport.of({
+          effect request<T = unknown>(method: string, params?: ReadonlyArray<unknown>): T!RpcTransportError {
+            const p = params ?? []
+            const req = new BatchedRpcRequest({
+              method,
+              paramsKey: stableParamsKey(p),
+              params: p
+            })
+            const result = try Effect.request(req, resolver)
+            return result as T
+          },
+          requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+            return upstream.requestBatch(requests)
+          }
+        })
+      }
+    ),
+    baseLayer
+  )
+}

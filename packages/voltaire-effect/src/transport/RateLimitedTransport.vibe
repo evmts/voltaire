@@ -1,0 +1,68 @@
+// Concurrency- & rate-limited Transport wrapper using Effect Semaphore + Clock.
+
+import {
+  type RpcTransportError,
+  TransportError
+} from "../errors.vibe"
+import {
+  type JsonRpcBatchItemResult,
+  type JsonRpcCall,
+  Transport
+} from "./Transport.vibe"
+
+export interface RateLimitedTransportConfig {
+  /** Maximum concurrent in-flight requests (default: 10) */
+  readonly maxConcurrent?: number
+  /** Minimum spacing between requests in milliseconds (default: 0) */
+  readonly minIntervalMs?: number
+}
+
+export function RateLimitedTransport(
+  baseLayer: Layer.Layer<Transport, never, never>,
+  config: RateLimitedTransportConfig = {}
+) {
+  const maxConcurrent = config.maxConcurrent ?? 10
+  const minIntervalMs = config.minIntervalMs ?? 0
+
+  return Layer.provide(
+    Layer.effect(
+      Transport,
+      effect {
+        const upstream = try Transport
+        const sem = try Semaphore.make(maxConcurrent)
+        const slotSem = try Semaphore.make(1)
+        const lastCallRef = try Ref.make(Number.NEGATIVE_INFINITY)
+
+        const acquireSlot = effect {
+          if (minIntervalMs <= 0) return
+          return try slotSem.withPermits(1)(effect {
+            const now = try Clock.currentTimeMillis
+            const prev = try Ref.get(lastCallRef)
+            const waitMs = prev + minIntervalMs - now
+            if (waitMs > 0) {
+              try sleep(`${waitMs} millis`)
+            }
+            const after = try Clock.currentTimeMillis
+            try Ref.set(lastCallRef, after)
+          })
+        }
+
+        return Transport.of({
+          effect request<T = unknown>(method: string, params?: ReadonlyArray<unknown>): T!RpcTransportError {
+            return try sem.withPermits(1)(effect {
+              try acquireSlot
+              return try upstream.request<T>(method, params)
+            })
+          },
+          effect requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+            return try sem.withPermits(1)(effect {
+              try acquireSlot
+              return try upstream.requestBatch(requests)
+            })
+          }
+        })
+      }
+    ),
+    baseLayer
+  )
+}

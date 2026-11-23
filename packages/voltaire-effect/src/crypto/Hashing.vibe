@@ -1,0 +1,137 @@
+// Hashing & MAC cryptographic services: SHA-256, BLAKE2b, RIPEMD-160, and HMAC.
+
+import { CryptoError, errorMessage } from "../errors.vibe"
+
+module native {
+  import * as VoltaireSha256 from "@tevm/voltaire/SHA256"
+  import * as VoltaireBlake2 from "@tevm/voltaire/Blake2"
+  import * as VoltaireRipemd160 from "@tevm/voltaire/Ripemd160"
+  import * as VoltaireHmac from "@tevm/voltaire/HMAC"
+
+  export function sha256Raw(data: Uint8Array): Uint8Array {
+    return VoltaireSha256.hash(data)
+  }
+
+  export function sha256StringRaw(value: string): Uint8Array {
+    return VoltaireSha256.hashString(value)
+  }
+
+  export function blake2Raw(data: Uint8Array, outputLength?: number): Uint8Array {
+    return VoltaireBlake2.hash(data, outputLength)
+  }
+
+  export function ripemd160Raw(data: Uint8Array): Uint8Array {
+    return VoltaireRipemd160.hash(data)
+  }
+
+  export function hmacSha256Raw(key: Uint8Array, message: Uint8Array): Uint8Array {
+    return VoltaireHmac.sha256(key, message)
+  }
+
+  export function hmacSha512Raw(key: Uint8Array, message: Uint8Array): Uint8Array {
+    return VoltaireHmac.sha512(key, message)
+  }
+}
+
+import {
+  blake2Raw,
+  hmacSha256Raw,
+  hmacSha512Raw,
+  ripemd160Raw,
+  sha256Raw,
+  sha256StringRaw
+} from native
+
+export service Sha256 {
+  static readonly key = "voltaire-effect/crypto/Sha256"
+  hash(data: Uint8Array): Uint8Array!CryptoError
+  hashString(value: string): Uint8Array!CryptoError
+}
+
+export service Blake2 {
+  static readonly key = "voltaire-effect/crypto/Blake2"
+  hash(data: Uint8Array, outputLength?: number): Uint8Array!CryptoError
+}
+
+export service Ripemd160 {
+  static readonly key = "voltaire-effect/crypto/Ripemd160"
+  hash(data: Uint8Array): Uint8Array!CryptoError
+}
+
+export service Hmac {
+  static readonly key = "voltaire-effect/crypto/Hmac"
+  sha256(key: Uint8Array, message: Uint8Array): Uint8Array!CryptoError
+  sha512(key: Uint8Array, message: Uint8Array): Uint8Array!CryptoError
+}
+
+export const Sha256Live = Layer.succeed(Sha256, {
+  effect hash(data: Uint8Array) {
+    return try Effect.try({
+      try: () => sha256Raw(data),
+      catch: (cause) => new CryptoError({ operation: "sha256", message: `SHA-256 hash failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect hashString(value: string) {
+    return try Effect.try({
+      try: () => sha256StringRaw(value),
+      catch: (cause) => new CryptoError({ operation: "sha256String", message: `SHA-256 string hash failed: ${errorMessage(cause)}`, cause })
+    })
+  }
+})
+
+export const Blake2Live = Layer.succeed(Blake2, {
+  effect hash(data: Uint8Array, outputLength?: number) {
+    return try Effect.try({
+      try: () => blake2Raw(data, outputLength),
+      catch: (cause) => new CryptoError({ operation: "blake2", message: `BLAKE2b hash failed: ${errorMessage(cause)}`, cause })
+    })
+  }
+})
+
+export const Ripemd160Live = Layer.succeed(Ripemd160, {
+  effect hash(data: Uint8Array) {
+    return try Effect.try({
+      try: () => ripemd160Raw(data),
+      catch: (cause) => new CryptoError({ operation: "ripemd160", message: `RIPEMD-160 hash failed: ${errorMessage(cause)}`, cause })
+    })
+  }
+})
+
+export const HmacLive = Layer.succeed(Hmac, {
+  effect sha256(key: Uint8Array, message: Uint8Array) {
+    return try Effect.try({
+      try: () => hmacSha256Raw(key, message),
+      catch: (cause) => new CryptoError({ operation: "hmac.sha256", message: `HMAC-SHA256 failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect sha512(key: Uint8Array, message: Uint8Array) {
+    return try Effect.try({
+      try: () => hmacSha512Raw(key, message),
+      catch: (cause) => new CryptoError({ operation: "hmac.sha512", message: `HMAC-SHA512 failed: ${errorMessage(cause)}`, cause })
+    })
+  }
+})
+
+export effect function sha256(data: Uint8Array): Uint8Array!CryptoError!Sha256 {
+  return try (try Sha256).hash(data)
+}
+
+export effect function sha256String(value: string): Uint8Array!CryptoError!Sha256 {
+  return try (try Sha256).hashString(value)
+}
+
+export effect function blake2(data: Uint8Array, outputLength?: number): Uint8Array!CryptoError!Blake2 {
+  return try (try Blake2).hash(data, outputLength)
+}
+
+export effect function ripemd160(data: Uint8Array): Uint8Array!CryptoError!Ripemd160 {
+  return try (try Ripemd160).hash(data)
+}
+
+export effect function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array!CryptoError!Hmac {
+  return try (try Hmac).sha256(key, message)
+}
+
+export effect function hmacSha512(key: Uint8Array, message: Uint8Array): Uint8Array!CryptoError!Hmac {
+  return try (try Hmac).sha512(key, message)
+}

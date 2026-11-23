@@ -1,0 +1,49 @@
+// One-line Provider layer constructors (eliminating old multi-layer ceremony).
+
+import {
+  BatchTransport,
+  type BatchTransportConfig
+} from "../transport/BatchTransport.vibe"
+import { CustomTransport, type Eip1193Provider } from "../transport/CustomTransport.vibe"
+import { FallbackTransport, type FallbackTransportConfig } from "../transport/FallbackTransport.vibe"
+import { type HttpTransportConfig, HttpTransportFetch } from "../transport/HttpTransport.vibe"
+import { type MockRpcEntry, TestTransport } from "../transport/TestTransport.vibe"
+import { Transport } from "../transport/Transport.vibe"
+
+export interface HttpProviderConfig extends HttpTransportConfig {
+  /** Optional automatic JSON-RPC batching configuration */
+  readonly batch?: BatchTransportConfig | boolean
+}
+
+export function HttpProvider(options: HttpProviderConfig | string): Layer.Layer<Transport> {
+  if (typeof options === "string") {
+    return HttpTransportFetch(options)
+  }
+  const base = HttpTransportFetch(options)
+  if (options.batch === true) {
+    return BatchTransport(base)
+  }
+  if (options.batch !== undefined && options.batch !== false) {
+    return BatchTransport(base, options.batch)
+  }
+  return base
+}
+
+export function FallbackProvider(
+  endpoints: ReadonlyArray<string | Layer.Layer<Transport>>,
+  config?: FallbackTransportConfig
+): Layer.Layer<Transport> {
+  const layers = endpoints.map((ep) => (typeof ep === "string" ? HttpTransportFetch(ep) : ep))
+  return FallbackTransport(layers, config)
+}
+
+export function CustomProvider(provider: Eip1193Provider): Layer.Layer<Transport> {
+  return CustomTransport(provider)
+}
+
+export function TestProvider(
+  handlers: Record<string, MockRpcEntry>,
+  options?: { readonly latency?: Duration.Input }
+): Layer.Layer<Transport> {
+  return TestTransport(handlers, options)
+}

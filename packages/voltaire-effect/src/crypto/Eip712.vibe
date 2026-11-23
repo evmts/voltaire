@@ -1,0 +1,176 @@
+// EIP-712 typed structured data hashing, signing, and verification service.
+
+import type { AddressType } from "@tevm/voltaire/Address"
+import type { Domain, Message, Signature as Eip712Signature, TypedData, TypeDefinitions } from "@tevm/voltaire/EIP712"
+import type { HashType } from "@tevm/voltaire/Hash"
+import { CryptoError, errorMessage } from "../errors.vibe"
+
+export interface Eip712DomainInput {
+  readonly name?: string
+  readonly version?: string
+  readonly chainId?: number | bigint
+  readonly verifyingContract?: AddressType | `0x${string}`
+  readonly salt?: Uint8Array | `0x${string}`
+}
+
+export interface Eip712TypedDataInput {
+  readonly domain: Eip712DomainInput
+  readonly types: TypeDefinitions
+  readonly primaryType: string
+  readonly message: Message
+}
+
+module native {
+  import * as VoltaireEip712 from "@tevm/voltaire/EIP712"
+  import { Address as VoltaireAddress, type AddressType } from "@tevm/voltaire/Address"
+  import * as VoltaireHex from "@tevm/voltaire/Hex"
+  import type { Domain, Signature as Eip712Signature, TypedData, TypeDefinitions } from "@tevm/voltaire/EIP712"
+  import type { HashType } from "@tevm/voltaire/Hash"
+  import type { Eip712DomainInput, Eip712TypedDataInput } from "./Eip712.vibe"
+
+  function normalizeDomain(domain: Eip712DomainInput): Domain {
+    return {
+      ...domain,
+      chainId: domain.chainId !== undefined ? (Number(domain.chainId) as any) : undefined,
+      verifyingContract:
+        typeof domain.verifyingContract === "string"
+          ? VoltaireAddress.fromHex(domain.verifyingContract)
+          : domain.verifyingContract,
+      salt: typeof domain.salt === "string" ? (VoltaireHex.toBytes(domain.salt) as any) : domain.salt
+    } as Domain
+  }
+
+  function normalizeValue(type: string, value: unknown, types: TypeDefinitions): unknown {
+    if (type.endsWith("[]") && Array.isArray(value)) {
+      const inner = type.slice(0, -2)
+      return value.map((item) => normalizeValue(inner, item, types))
+    }
+    if (type === "address" && typeof value === "string") {
+      return VoltaireAddress.fromHex(value)
+    }
+    if ((type === "bytes" || /^bytes\d+$/.test(type)) && typeof value === "string") {
+      return VoltaireHex.toBytes(value as any)
+    }
+    const fields = types[type]
+    if (fields && value !== null && typeof value === "object") {
+      return normalizeStruct(type, value as Record<string, unknown>, types)
+    }
+    return value
+  }
+
+  function normalizeStruct(
+    typeName: string,
+    data: Record<string, unknown>,
+    types: TypeDefinitions
+  ): Record<string, unknown> {
+    const fields = types[typeName]
+    if (!fields) return data
+    const out: Record<string, unknown> = { ...data }
+    for (const field of fields) {
+      if (field.name in data) {
+        out[field.name] = normalizeValue(field.type, data[field.name], types)
+      }
+    }
+    return out
+  }
+
+  function normalizeTypedData(typedData: Eip712TypedDataInput): TypedData {
+    return {
+      ...typedData,
+      domain: normalizeDomain(typedData.domain),
+      message: normalizeStruct(typedData.primaryType, typedData.message as Record<string, unknown>, typedData.types) as any
+    } as TypedData
+  }
+
+  export function hashDomainRaw(domain: Eip712DomainInput): HashType {
+    return VoltaireEip712.hashDomain(normalizeDomain(domain))
+  }
+
+  export function hashTypedDataRaw(typedData: Eip712TypedDataInput): HashType {
+    return VoltaireEip712.hashTypedData(normalizeTypedData(typedData))
+  }
+
+  export function signTypedDataRaw(typedData: Eip712TypedDataInput, privateKey: Uint8Array): Eip712Signature {
+    return VoltaireEip712.signTypedData(normalizeTypedData(typedData), privateKey)
+  }
+
+  export function recoverAddressRaw(signature: Eip712Signature, typedData: Eip712TypedDataInput): AddressType {
+    return VoltaireEip712.recoverAddress(signature, normalizeTypedData(typedData))
+  }
+
+  export function verifyTypedDataRaw(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType): boolean {
+    return VoltaireEip712.verifyTypedData(signature, normalizeTypedData(typedData), address)
+  }
+}
+
+import {
+  hashDomainRaw,
+  hashTypedDataRaw,
+  recoverAddressRaw,
+  signTypedDataRaw,
+  verifyTypedDataRaw
+} from native
+
+export type { Domain, Eip712Signature, TypedData }
+
+export service Eip712 {
+  static readonly key = "voltaire-effect/crypto/Eip712"
+  hashDomain(domain: Eip712DomainInput): HashType!CryptoError
+  hashTypedData(typedData: Eip712TypedDataInput): HashType!CryptoError
+  signTypedData(typedData: Eip712TypedDataInput, privateKey: Uint8Array): Eip712Signature!CryptoError
+  recoverAddress(signature: Eip712Signature, typedData: Eip712TypedDataInput): AddressType!CryptoError
+  verifyTypedData(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType): boolean!CryptoError
+}
+
+export const Eip712Live = Layer.succeed(Eip712, {
+  effect hashDomain(domain: Eip712DomainInput) {
+    return try Effect.try({
+      try: () => hashDomainRaw(domain),
+      catch: (cause) => new CryptoError({ operation: "eip712.hashDomain", message: `EIP-712 domain hash failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect hashTypedData(typedData: Eip712TypedDataInput) {
+    return try Effect.try({
+      try: () => hashTypedDataRaw(typedData),
+      catch: (cause) => new CryptoError({ operation: "eip712.hashTypedData", message: `EIP-712 typed data hash failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect signTypedData(typedData: Eip712TypedDataInput, privateKey: Uint8Array) {
+    return try Effect.try({
+      try: () => signTypedDataRaw(typedData, privateKey),
+      catch: (cause) => new CryptoError({ operation: "eip712.signTypedData", message: `EIP-712 sign failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect recoverAddress(signature: Eip712Signature, typedData: Eip712TypedDataInput) {
+    return try Effect.try({
+      try: () => recoverAddressRaw(signature, typedData),
+      catch: (cause) => new CryptoError({ operation: "eip712.recoverAddress", message: `EIP-712 address recovery failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect verifyTypedData(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType) {
+    return try Effect.try({
+      try: () => verifyTypedDataRaw(signature, typedData, address),
+      catch: (cause) => new CryptoError({ operation: "eip712.verifyTypedData", message: `EIP-712 verification failed: ${errorMessage(cause)}`, cause })
+    })
+  }
+})
+
+export effect function hashDomain(domain: Eip712DomainInput): HashType!CryptoError!Eip712 {
+  return try (try Eip712).hashDomain(domain)
+}
+
+export effect function hashTypedData(typedData: Eip712TypedDataInput): HashType!CryptoError!Eip712 {
+  return try (try Eip712).hashTypedData(typedData)
+}
+
+export effect function signTypedData(typedData: Eip712TypedDataInput, privateKey: Uint8Array): Eip712Signature!CryptoError!Eip712 {
+  return try (try Eip712).signTypedData(typedData, privateKey)
+}
+
+export effect function recoverTypedDataAddress(signature: Eip712Signature, typedData: Eip712TypedDataInput): AddressType!CryptoError!Eip712 {
+  return try (try Eip712).recoverAddress(signature, typedData)
+}
+
+export effect function verifyTypedData(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType): boolean!CryptoError!Eip712 {
+  return try (try Eip712).verifyTypedData(signature, typedData, address)
+}

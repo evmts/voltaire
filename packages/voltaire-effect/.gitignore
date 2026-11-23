@@ -1,0 +1,4 @@
+dist/
+.vibe/
+.vibelang/
+*.tsbuildinfo

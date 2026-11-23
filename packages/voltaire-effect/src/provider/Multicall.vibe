@@ -1,0 +1,186 @@
+// Multicall3 aggregate3 and high-level ABI-aware multicall batching.
+
+import type { HexType } from "@tevm/voltaire/Hex"
+import { errorMessage, MulticallError, type RevertReason } from "../errors.vibe"
+import * as Abi from "../primitives/Abi.vibe"
+import * as Address from "../primitives/Address.vibe"
+import * as Hex from "../primitives/Hex.vibe"
+import { type BlockIdentifier, formatBlockIdentifier } from "../primitives/Uint.vibe"
+import { request, Transport } from "../transport/Transport.vibe"
+import { MULTICALL3_CANONICAL } from "./Chains.vibe"
+
+export const MULTICALL3_ADDRESS = MULTICALL3_CANONICAL
+
+// keccak256("aggregate3((address,bool,bytes)[])")[:4]
+const AGGREGATE3_SELECTOR = "0x82ad56cb"
+
+const AGGREGATE3_INPUT_PARAMS: ReadonlyArray<Abi.AbiParameter> = [
+  {
+    type: "tuple[]",
+    name: "calls",
+    components: [
+      { type: "address", name: "target" },
+      { type: "bool", name: "allowFailure" },
+      { type: "bytes", name: "callData" }
+    ]
+  }
+]
+
+const AGGREGATE3_OUTPUT_PARAMS: ReadonlyArray<Abi.AbiParameter> = [
+  {
+    type: "tuple[]",
+    name: "returnData",
+    components: [
+      { type: "bool", name: "success" },
+      { type: "bytes", name: "returnData" }
+    ]
+  }
+]
+
+export interface MulticallCall {
+  readonly target: Address.AddressInput
+  readonly callData: HexType | `0x${string}`
+  readonly allowFailure?: boolean
+}
+
+export interface MulticallResult {
+  readonly success: boolean
+  readonly returnData: HexType
+}
+
+export interface MulticallOptions {
+  readonly block?: BlockIdentifier
+  readonly multicallAddress?: `0x${string}`
+}
+
+export effect function aggregate3(
+  calls: ReadonlyArray<MulticallCall>,
+  options: MulticallOptions = {}
+): ReadonlyArray<MulticallResult>!MulticallError!Transport {
+  if (calls.length === 0) return []
+
+  const tuples: Array<readonly [`0x${string}`, boolean, HexType]> = []
+  for (const item of calls) {
+    const targetHex = typeof item.target === "string"
+      ? Address.toHex(
+          Address.fromHex(item.target) catch effect (e) => {
+            throw new MulticallError({ message: `Invalid multicall target: ${e.message}`, cause: e })
+          }
+        )
+      : Address.toHex(item.target)
+    const callData = Hex.from(item.callData) catch effect (e) => {
+      throw new MulticallError({ message: `Invalid multicall callData: ${e.message}`, cause: e })
+    }
+    tuples.push([targetHex, item.allowFailure ?? false, callData])
+  }
+
+  const encodedParams = Abi.encodeParameters(AGGREGATE3_INPUT_PARAMS, [tuples]) catch effect (e) => {
+    throw new MulticallError({ message: `Failed encoding aggregate3 calls: ${e.message}`, cause: e })
+  }
+  const fullCalldata = `${AGGREGATE3_SELECTOR}${encodedParams.slice(2)}` as HexType
+  const tag = formatBlockIdentifier(options.block) catch effect (e) => {
+    throw new MulticallError({ message: `Invalid block identifier: ${e.message}`, cause: e })
+  }
+  const multicallAddr = options.multicallAddress ?? MULTICALL3_ADDRESS
+
+  const raw = request<string>("eth_call", [{ to: multicallAddr, data: fullCalldata }, tag]) catch effect (e) => {
+    throw new MulticallError({ message: `Multicall3 RPC call failed: ${errorMessage(e)}`, cause: e })
+  }
+
+  const decoded = Abi.decodeParameters(AGGREGATE3_OUTPUT_PARAMS, raw as HexType) catch effect (e) => {
+    throw new MulticallError({ message: `Failed decoding aggregate3 return data: ${e.message}`, cause: e })
+  }
+
+  const rawResults = decoded[0] as ReadonlyArray<unknown>
+  const results: Array<MulticallResult> = []
+  for (const entry of rawResults) {
+    let success = false
+    let rawReturnData: Uint8Array | string = "0x"
+    if (Array.isArray(entry)) {
+      success = Boolean(entry[0])
+      rawReturnData = (entry[1] as Uint8Array | string) ?? "0x"
+    } else if (Predicate.isObject(entry)) {
+      const obj = entry as { readonly success?: unknown; readonly returnData?: unknown }
+      success = Boolean(obj.success)
+      rawReturnData = (obj.returnData as Uint8Array | string) ?? "0x"
+    }
+    const returnHex = typeof rawReturnData === "string"
+      ? Hex.from(rawReturnData) catch effect (e) => {
+          throw new MulticallError({ message: `Invalid returnData hex: ${e.message}`, cause: e })
+        }
+      : Hex.fromBytes(rawReturnData) catch effect (e) => {
+          throw new MulticallError({ message: `Invalid returnData bytes: ${e.message}`, cause: e })
+        }
+    results.push({ success, returnData: returnHex })
+  }
+  return results
+}
+
+export interface TypedMulticallRequest {
+  readonly address: Address.AddressInput
+  readonly abi: Abi.Abi
+  readonly functionName: string
+  readonly args?: ReadonlyArray<unknown>
+  readonly allowFailure?: boolean
+}
+
+export data DecodedMulticallItem {
+  Success { result: unknown }
+  Failure { reason: RevertReason; rawData: HexType }
+}
+
+// High-level ABI-aware multicall: encodes every call, executes 1 RPC call, decodes results & revert reasons!
+export effect function multicall(
+  calls: ReadonlyArray<TypedMulticallRequest>,
+  options: MulticallOptions & { readonly allowFailure?: boolean } = {}
+): ReadonlyArray<DecodedMulticallItem>!MulticallError!Transport {
+  if (calls.length === 0) return []
+  const defaultAllowFailure = options.allowFailure ?? true
+
+  const rawCalls: Array<MulticallCall> = []
+  for (const c of calls) {
+    const data = Abi.encodeFunctionData(c.abi, c.functionName, c.args ?? []) catch effect (e) => {
+      throw new MulticallError({
+        message: `Failed encoding multicall item "${c.functionName}": ${e.message}`,
+        cause: e
+      })
+    }
+    rawCalls.push({
+      target: c.address,
+      callData: data,
+      allowFailure: c.allowFailure ?? defaultAllowFailure
+    })
+  }
+
+  const rawResults = try aggregate3(rawCalls, options)
+  const out: Array<DecodedMulticallItem> = []
+  const failedIndices: Array<number> = []
+
+  for (let i = 0; i < calls.length; i++) {
+    const spec = calls[i]
+    const res = rawResults[i]
+    if (spec === undefined || res === undefined) continue
+    if (!res.success) {
+      failedIndices.push(i)
+      const reason = try Abi.decodeRevertReason(res.returnData, spec.abi)
+      out.push(DecodedMulticallItem.Failure({ reason, rawData: res.returnData }))
+    } else {
+      const value = Abi.decodeFunctionResult(spec.abi, spec.functionName, res.returnData) catch effect (e) => {
+        throw new MulticallError({
+          message: `Failed decoding multicall item "${spec.functionName}": ${e.message}`,
+          cause: e
+        })
+      }
+      out.push(DecodedMulticallItem.Success({ result: value }))
+    }
+  }
+
+  if (!defaultAllowFailure && failedIndices.length > 0) {
+    throw new MulticallError({
+      message: `Multicall failed on ${failedIndices.length} call(s): [${failedIndices.join(", ")}]`,
+      failedIndices
+    })
+  }
+
+  return out
+}

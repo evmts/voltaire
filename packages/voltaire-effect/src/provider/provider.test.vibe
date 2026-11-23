@@ -1,0 +1,207 @@
+import { assert, describe, it } from "@effect/vitest"
+import type { HexType } from "@tevm/voltaire/Hex"
+import * as Abi from "../primitives/Abi.vibe"
+import * as Address from "../primitives/Address.vibe"
+import {
+  Chain,
+  Ens,
+  EnsLive,
+  estimateFeesPerGas,
+  getBalance,
+  getBlock,
+  getBlockNumber,
+  getChainId,
+  getLogs,
+  getTransactionReceipt,
+  hoodi,
+  mainnet,
+  multicall,
+  namehash,
+  TestProvider,
+  waitForTransactionReceipt
+} from "./index.vibe"
+
+const VITALIK = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045" as const
+const TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" as const
+const RESOLVER = "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41" as const
+const TX_HASH = "0x1111111111111111111111111111111111111111111111111111111111111111" as const
+
+const erc20Abi: Abi.Abi = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }]
+  }
+]
+
+describe("provider", () => {
+  it.effect("fetches chainId, blockNumber, balance, block, and concurrent EIP-1559 fee estimate", effect () => {
+    const provider = TestProvider({
+      eth_chainId: "0x1",
+      eth_blockNumber: "0x1388",
+      eth_getBalance: "0xde0b6b3a7640000",
+      eth_maxPriorityFeePerGas: "0x59682f00", // 1.5 gwei
+      eth_blobBaseFee: "0x3b9aca00", // 1 gwei
+      eth_getBlockByNumber: {
+        number: "0x1388",
+        hash: TX_HASH,
+        parentHash: TX_HASH,
+        gasLimit: "0x1c9c380",
+        gasUsed: "0x5208",
+        timestamp: "0x67000000",
+        baseFeePerGas: "0x2540be400", // 10 gwei
+        transactions: []
+      }
+    })
+
+    provide provider {
+      const [chainId, blockNumber, balance, block, fees] = try.all [
+        getChainId(),
+        getBlockNumber(),
+        getBalance(VITALIK),
+        getBlock({ blockTag: "latest" }),
+        estimateFeesPerGas()
+      ]
+      try Effect.try(() => assert.strictEqual(chainId, 1n))
+      try Effect.try(() => assert.strictEqual(blockNumber, 5000n))
+      try Effect.try(() => assert.strictEqual(balance, 1000000000000000000n))
+      try Effect.try(() => assert.strictEqual(block.number, 5000n))
+      try Effect.try(() => assert.strictEqual(fees.type, "eip1559"))
+      // 10 gwei * 1.2 + 1.5 gwei = 13.5 gwei
+      try Effect.try(() => assert.strictEqual(fees.maxFeePerGas, 13500000000n))
+      try Effect.try(() => assert.strictEqual(fees.maxPriorityFeePerGas, 1500000000n))
+    }
+  })
+
+  it.effect("waitForTransactionReceipt polls on TestClock until desired confirmations are reached", effect () => {
+    let poll = 0
+    const provider = TestProvider({
+      eth_getTransactionReceipt: () => {
+        poll++
+        if (poll < 2) return null
+        return {
+          transactionHash: TX_HASH,
+          transactionIndex: "0x0",
+          blockHash: TX_HASH,
+          blockNumber: "0x64", // 100
+          from: VITALIK,
+          to: TOKEN,
+          cumulativeGasUsed: "0x5208",
+          gasUsed: "0x5208",
+          effectiveGasPrice: "0x3b9aca00",
+          contractAddress: null,
+          logs: [],
+          status: "0x1",
+          type: "0x2"
+        }
+      },
+      eth_blockNumber: () => (poll >= 3 ? "0x66" : "0x64") // 100 then 102 (3 confirmations)
+    })
+
+    provide provider {
+      const fiber = fork waitForTransactionReceipt(TX_HASH, {
+        confirmations: 3,
+        pollingInterval: "500 millis",
+        timeout: "10 seconds"
+      })
+      try TestClock.adjust("500 millis")
+      try TestClock.adjust("500 millis")
+      try TestClock.adjust("500 millis")
+      const receipt = join fiber
+      try Effect.try(() => assert.strictEqual(receipt.status, "success"))
+      try Effect.try(() => assert.strictEqual(receipt.blockNumber, 100n))
+    }
+  })
+
+  it.effect("multicall batches multiple reads and decodes successes and per-call reverts", effect () => {
+    const balanceReturn = try Abi.encodeParameters([{ type: "uint256" }], [42000n])
+    const revertBody = try Abi.encodeParameters([{ type: "string" }], ["Paused"])
+    const revertData = `0x08c379a0${revertBody.slice(2)}` as HexType
+
+    const aggregate3Output = try Abi.encodeParameters(
+      [
+        {
+          type: "tuple[]",
+          name: "returnData",
+          components: [
+            { type: "bool", name: "success" },
+            { type: "bytes", name: "returnData" }
+          ]
+        }
+      ],
+      [
+        [
+          [true, balanceReturn],
+          [false, revertData]
+        ]
+      ]
+    )
+
+    const provider = TestProvider({
+      eth_call: aggregate3Output
+    })
+
+    provide provider {
+      const results = try multicall([
+        { address: TOKEN, abi: erc20Abi, functionName: "balanceOf", args: [VITALIK] },
+        { address: TOKEN, abi: erc20Abi, functionName: "balanceOf", args: [RESOLVER] }
+      ])
+      try Effect.try(() => assert.strictEqual(results.length, 2))
+      const first = results[0]
+      const second = results[1]
+      try Effect.try(() => assert.strictEqual(first !== undefined && first._tag === "Success" && first.result === 42000n, true))
+      try Effect.try(() =>
+        assert.strictEqual(
+          second !== undefined && second._tag === "Failure" && Abi.formatRevertReason(second.reason) === "Reverted: Paused",
+          true
+        )
+      )
+    }
+  })
+
+  it.effect("ENS resolves names via Ens service and computes standard namehash", effect () => {
+    const hash = try namehash("vitalik.eth")
+    try Effect.try(() =>
+      assert.strictEqual(hash, "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835")
+    )
+
+    const resolverEncoded = try Abi.encodeParameters([{ type: "address" }], [RESOLVER])
+    const vitalikEncoded = try Abi.encodeParameters([{ type: "address" }], [VITALIK])
+    const textEncoded = try Abi.encodeParameters([{ type: "string" }], ["https://vitalik.eth.limo"])
+
+    const provider = TestProvider({
+      eth_call: (params) => {
+        const callObj = params[0] as { readonly to?: string; readonly data?: string }
+        if (callObj.to?.toLowerCase() === "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e") {
+          return resolverEncoded
+        }
+        if (callObj.data?.startsWith("0x3b3b57de")) {
+          return vitalikEncoded
+        }
+        return textEncoded
+      }
+    })
+
+    provide Layer.provide(EnsLive, provider) {
+      const ens = try Ens
+      const addrOpt = try ens.getAddress("vitalik.eth")
+      const urlOpt = try ens.getText("vitalik.eth", "url")
+      try Effect.try(() => assert.strictEqual(Option.isSome(addrOpt) && String(Address.toHex(addrOpt.value)) === VITALIK, true))
+      try Effect.try(() => assert.strictEqual(Option.isSome(urlOpt) && urlOpt.value === "https://vitalik.eth.limo", true))
+    }
+  })
+
+  it.effect("Chain service exposes mainnet and hoodi configs", effect () => {
+    provide mainnet {
+      const c = try Chain
+      try Effect.try(() => assert.strictEqual(c.id, 1))
+    }
+    provide hoodi {
+      const c = try Chain
+      try Effect.try(() => assert.strictEqual(c.id, 560048))
+      try Effect.try(() => assert.strictEqual(c.testnet, true))
+    }
+  })
+})

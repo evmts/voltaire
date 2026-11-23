@@ -1,0 +1,153 @@
+import { assert, describe, it } from "@effect/vitest"
+import * as Address from "../primitives/Address.vibe"
+import * as Hash from "../primitives/Hash.vibe"
+import * as Hex from "../primitives/Hex.vibe"
+import {
+  AesGcm,
+  Bip39,
+  Blake2,
+  CryptoLive,
+  Ed25519,
+  Eip712,
+  Hashing,
+  HdWalletService,
+  Keccak,
+  P256,
+  Secp256k1,
+  Signing
+} from "./index.vibe"
+
+// Hardhat/Anvil test account #0 private key (public test key only)
+const TEST_PRIVATE_KEY_HEX = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+const TEST_ADDRESS_HEX = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+const TEST_MNEMONIC = "test test test test test test test test test test test junk"
+
+describe("crypto", () => {
+  it.effect("Keccak computes transfer selector and hashes", effect () => {
+    provide CryptoLive {
+      const sel = try Keccak.selector("transfer(address,uint256)")
+      const topic = try Keccak.topic("Transfer(address,address,uint256)")
+      try Effect.try(() => assert.strictEqual(sel, "0xa9059cbb"))
+      try Effect.try(() =>
+        assert.strictEqual(
+          Hash.toHex(topic),
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        )
+      )
+    }
+  })
+
+  it.effect("Secp256k1 + EIP-191 sign, recover, and verify message", effect () => {
+    provide CryptoLive {
+      const pk = try Hex.toBytes(TEST_PRIVATE_KEY_HEX)
+      const sig = try Signing.signMessage("Hello Voltaire Effect 4!", pk)
+      const recovered = try Signing.recoverMessageAddress("Hello Voltaire Effect 4!", sig)
+      const verified = try Signing.verifyMessage("Hello Voltaire Effect 4!", sig, TEST_ADDRESS_HEX)
+      const wrongVerified = try Signing.verifyMessage("Tampered", sig, TEST_ADDRESS_HEX)
+      try Effect.try(() => assert.strictEqual(Address.toHex(recovered), TEST_ADDRESS_HEX))
+      try Effect.try(() => assert.strictEqual(verified, true))
+      try Effect.try(() => assert.strictEqual(wrongVerified, false))
+    }
+  })
+
+  it.effect("EIP-712 signs and verifies structured typed data", effect () => {
+    provide CryptoLive {
+      const pk = try Hex.toBytes(TEST_PRIVATE_KEY_HEX)
+      const expectedAddr = try Address.fromHex(TEST_ADDRESS_HEX)
+      const typedData = {
+        domain: {
+          name: "Voltaire",
+          version: "2",
+          chainId: 1n
+        },
+        types: {
+          Greeting: [
+            { name: "from", type: "address" },
+            { name: "text", type: "string" }
+          ]
+        },
+        primaryType: "Greeting",
+        message: {
+          from: TEST_ADDRESS_HEX,
+          text: "VibeLang rocks"
+        }
+      }
+      const sig = try Eip712.signTypedData(typedData, pk)
+      const ok = try Eip712.verifyTypedData(sig, typedData, expectedAddr)
+      const recovered = try Eip712.recoverTypedDataAddress(sig, typedData)
+      try Effect.try(() => assert.strictEqual(ok, true))
+      try Effect.try(() => assert.strictEqual(Address.equals(recovered, expectedAddr), true))
+    }
+  })
+
+  it.effect("SHA-256, BLAKE2b, RIPEMD-160, and HMAC produce expected digest lengths", effect () => {
+    provide CryptoLive {
+      const payload = new Uint8Array([1, 2, 3, 4])
+      const key = new Uint8Array([9, 8, 7, 6])
+      const [s256, b2, r160, mac256, mac512] = try.all [
+        Hashing.sha256(payload),
+        Hashing.blake2(payload, 32),
+        Hashing.ripemd160(payload),
+        Hashing.hmacSha256(key, payload),
+        Hashing.hmacSha512(key, payload)
+      ]
+      try Effect.try(() => assert.strictEqual(s256.length, 32))
+      try Effect.try(() => assert.strictEqual(b2.length, 32))
+      try Effect.try(() => assert.strictEqual(r160.length, 20))
+      try Effect.try(() => assert.strictEqual(mac256.length, 32))
+      try Effect.try(() => assert.strictEqual(mac512.length, 64))
+    }
+  })
+
+  it.effect("P-256, Ed25519, and AES-GCM roundtrip cleanly", effect () => {
+    provide CryptoLive {
+      const seed = new Uint8Array(32).fill(7)
+      const msg = new Uint8Array([10, 20, 30, 40])
+      const msgHash = try Hashing.sha256(msg)
+
+      const p256 = try P256
+      const p256Pub = try p256.derivePublicKey(seed)
+      const p256Sig = try p256.sign(msgHash, seed)
+      const p256Ok = try p256.verify(p256Sig, msgHash, p256Pub)
+      try Effect.try(() => assert.strictEqual(p256Ok, true))
+
+      const ed = try Ed25519
+      const kp = try ed.keypairFromSeed(seed)
+      const edSig = try ed.sign(msg, kp.secretKey)
+      const edOk = try ed.verify(edSig, msg, kp.publicKey)
+      try Effect.try(() => assert.strictEqual(edOk, true))
+
+      const aes = try AesGcm
+      const nonce = new Uint8Array(12).fill(3)
+      const ciphertext = try aes.encrypt(msg, seed, nonce)
+      const plaintext = try aes.decrypt(ciphertext, seed, nonce)
+      try Effect.try(() => assert.strictEqual(Signing.constantTimeEqual(plaintext, msg), true))
+    }
+  })
+
+  it.effect("ERC-6492 wraps and unwraps counterfactual signatures", effect () => {
+    const wrapped = try Signing.wrapErc6492Signature({
+      factory: TEST_ADDRESS_HEX,
+      factoryCalldata: "0xdeadbeef",
+      signature: "0x123456"
+    })
+    try Effect.try(() => assert.strictEqual(Signing.isErc6492Signature(wrapped), true))
+    const unwrapped = try Signing.unwrapErc6492Signature(wrapped)
+    try Effect.try(() => assert.strictEqual(Address.toHex(unwrapped.factory), TEST_ADDRESS_HEX))
+    try Effect.try(() => assert.strictEqual(unwrapped.factoryCalldata, "0xdeadbeef"))
+    try Effect.try(() => assert.strictEqual(unwrapped.signature, "0x123456"))
+  })
+
+  it.effect("BIP-39 + HDWallet derives the standard Hardhat account #0 key", effect () => {
+    provide CryptoLive {
+      const bip39 = try Bip39
+      const valid = try bip39.validateMnemonic(TEST_MNEMONIC)
+      try Effect.try(() => assert.strictEqual(valid, true))
+
+      const hd = try HdWalletService
+      const derivedKey = try hd.deriveFromMnemonic(TEST_MNEMONIC)
+      const derivedAddr = try Address.fromPrivateKey(derivedKey)
+      try Effect.try(() => assert.strictEqual(Address.toHex(derivedAddr), TEST_ADDRESS_HEX))
+    }
+  })
+})

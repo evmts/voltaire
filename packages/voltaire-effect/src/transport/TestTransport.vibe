@@ -1,0 +1,167 @@
+// Deterministic, inspectable TestTransport for Effect tests with full call recording.
+
+import {
+  RpcError,
+  type RpcTransportError,
+  TransportError,
+  TransportFailureReason
+} from "../errors.vibe"
+import {
+  type JsonRpcBatchItemResult,
+  JsonRpcBatchItemResult as BatchResult,
+  type JsonRpcCall,
+  Transport
+} from "./Transport.vibe"
+
+export type MockRpcHandler =
+  | ((params: ReadonlyArray<unknown>) => unknown!RpcTransportError)
+  | ((params: ReadonlyArray<unknown>) => unknown)
+
+export type MockRpcEntry =
+  | (unknown!RpcTransportError)
+  | MockRpcHandler
+  | string
+  | number
+  | boolean
+  | bigint
+  | null
+  | ReadonlyArray<unknown>
+  | Record<string, unknown>
+
+export interface RecordedRpcCall {
+  readonly method: string
+  readonly params: ReadonlyArray<unknown>
+  readonly batched: boolean
+}
+
+export interface TestTransportController {
+  readonly layer: Layer.Layer<Transport>
+  readonly calls: ReadonlyArray<RecordedRpcCall>!!
+  readonly batchCount: number!!
+  readonly clear: void!!
+}
+
+module handlerBridge {
+  import { Effect } from "effect"
+
+  /** @throws {never} */
+  export function isMockEffect(value: unknown): value is Effect.Effect<unknown, unknown> {
+    return Effect.isEffect(value)
+  }
+}
+
+import { isMockEffect } from handlerBridge
+
+// Creates a mock Transport layer with a method map (values, functions, or Effect handlers)
+// plus a controller to inspect recorded single and batch RPC calls.
+export function makeTestTransport(
+  handlers: Record<string, MockRpcEntry>,
+  options?: { readonly latency?: Duration.Input }
+): TestTransportController {
+  const recorded: Array<RecordedRpcCall> = []
+  let batches = 0
+
+  effect function normalizeFailure(method: string, cause: unknown): never!RpcTransportError {
+    if (cause instanceof RpcError || cause instanceof TransportError) {
+      throw cause
+    }
+    throw new TransportError({
+      message: `Mock handler for ${method} failed: ${String(cause)}`,
+      reason: TransportFailureReason.Network({ cause }),
+      method,
+      cause
+    })
+  }
+
+  effect function dispatchOne(method: string, params: ReadonlyArray<unknown>, batched: boolean): unknown!RpcTransportError {
+    recorded.push({ method, params, batched })
+    if (options?.latency !== undefined) {
+      try sleep(options.latency)
+    }
+    if (!(method in handlers)) {
+      throw new RpcError({
+        code: -32601,
+        message: `Mock transport: unhandled RPC method "${method}"`,
+        method
+      })
+    }
+    const entry = handlers[method]
+    if (Effect.isEffect(entry)) {
+      return entry catch effect (cause) => {
+        return try normalizeFailure(method, cause)
+      }
+    }
+    if (typeof entry === "function") {
+      const out = try Effect.try({
+        try: () => (entry as (p: ReadonlyArray<unknown>) => unknown)(params),
+        catch: (cause) =>
+          cause instanceof RpcError || cause instanceof TransportError
+            ? cause
+            : new TransportError({
+                message: `Mock handler for ${method} threw: ${String(cause)}`,
+                reason: TransportFailureReason.Network({ cause }),
+                method,
+                cause
+              })
+      })
+      if (isMockEffect(out)) {
+        return out catch effect (cause) => {
+          return try normalizeFailure(method, cause)
+        }
+      }
+      return out
+    }
+    return entry
+  }
+
+  const layer = Layer.succeed(Transport, {
+    effect request<T = unknown>(method: string, params?: ReadonlyArray<unknown>): T!RpcTransportError {
+      const value = try dispatchOne(method, params ?? [], false)
+      return value as T
+    },
+
+    effect requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+      batches++
+      const out: Array<JsonRpcBatchItemResult> = []
+      for (const req of requests) {
+        const res = try exit(dispatchOne(req.method, req.params ?? [], true))
+        if (Exit.isSuccess(res)) {
+          out.push(BatchResult.Ok({ value: res.value }))
+        } else {
+          const errOpt = Cause.findErrorOption(res.cause)
+          if (Option.isSome(errOpt)) {
+            const err = errOpt.value
+            if (err instanceof TransportError) {
+              throw err
+            }
+            out.push(BatchResult.Err({ error: err }))
+          } else {
+            out.push(
+              BatchResult.Err({
+                error: new RpcError({ code: -32603, message: "Mock batch defect", method: req.method })
+              })
+            )
+          }
+        }
+      }
+      return out
+    }
+  })
+
+  return {
+    layer,
+    calls: sync(() => [...recorded]),
+    batchCount: sync(() => batches),
+    clear: sync(() => {
+      recorded.length = 0
+      batches = 0
+    })
+  }
+}
+
+export function TestTransport(
+  handlers: Record<string, MockRpcEntry>,
+  options?: { readonly latency?: Duration.Input }
+): Layer.Layer<Transport> {
+  return makeTestTransport(handlers, options).layer
+}

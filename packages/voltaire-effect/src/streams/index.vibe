@@ -1,0 +1,294 @@
+// Reorg-aware Ethereum block, event log (with adaptive chunking), and transaction streams
+// built idiomatically with VibeLang `effect function*` stream producers.
+
+import type { HashType } from "@tevm/voltaire/Hash"
+import type { HexType } from "@tevm/voltaire/Hex"
+import { errorMessage, RpcError, StreamError } from "../errors.vibe"
+import * as Hash from "../primitives/Hash.vibe"
+import {
+  getBlock,
+  getBlockNumber,
+  getLogs,
+  getTransactionReceipt,
+  type LogFilter
+} from "../provider/Actions.vibe"
+import type { RpcBlock, RpcLog, RpcTransactionReceipt } from "../provider/Schemas.vibe"
+import { Transport } from "../transport/Transport.vibe"
+
+// ---------------------------------------------------------------------------
+// 1. Reorg-aware Block Stream
+// ---------------------------------------------------------------------------
+
+export data BlockStreamEvent {
+  Added { block: RpcBlock }
+  Reorg {
+    removed: ReadonlyArray<RpcBlock>
+    added: ReadonlyArray<RpcBlock>
+    commonAncestorNumber: bigint
+  }
+}
+
+export interface WatchBlocksOptions {
+  /** Polling interval between head checks (default: "1 second") */
+  readonly pollingInterval?: Duration.Input
+  /** Whether to include full transaction objects in emitted blocks */
+  readonly includeTransactions?: boolean
+  /** Starting block number (defaults to current chain head) */
+  readonly fromBlock?: bigint
+  /** Maximum canonical history retained for reorg rollback (default: 64) */
+  readonly maxReorgDepth?: number
+}
+
+// Watches new blocks and detects chain reorganizations by verifying parentHash linkage.
+export effect function* watchBlocks(options: WatchBlocksOptions = {}) {
+  const pollingInterval = options.pollingInterval ?? "1 second"
+  const includeTransactions = options.includeTransactions ?? false
+  const maxDepth = options.maxReorgDepth ?? 64
+
+  const history: Array<RpcBlock> = []
+  let nextExpected = options.fromBlock ?? (
+    getBlockNumber() catch effect (e) => {
+      throw new StreamError({ stream: "watchBlocks", message: `Failed reading initial head: ${errorMessage(e)}`, cause: e })
+    }
+  )
+
+  while (true) {
+    const headNumber = getBlockNumber() catch effect (e) => {
+      throw new StreamError({ stream: "watchBlocks", message: `Failed polling block number: ${errorMessage(e)}`, cause: e })
+    }
+
+    while (nextExpected <= headNumber) {
+      const block = getBlock({ blockNumber: nextExpected, includeTransactions }) catch effect (e) => {
+        throw new StreamError({ stream: "watchBlocks", message: `Failed fetching block ${nextExpected.toString()}: ${errorMessage(e)}`, cause: e })
+      }
+
+      const prev = history[history.length - 1]
+      if (prev !== undefined && prev.hash !== null && block.parentHash !== prev.hash) {
+        // Reorg detected! Walk backward until we locate the common ancestor.
+        const removed: Array<RpcBlock> = []
+        const added: Array<RpcBlock> = [block]
+        let cursor = block
+
+        while (history.length > 0) {
+          const tip = history[history.length - 1]
+          if (tip !== undefined && tip.hash !== null && cursor.parentHash === tip.hash) {
+            break
+          }
+          const popped = history.pop()
+          if (popped !== undefined) {
+            removed.push(popped)
+          }
+          if (cursor.number !== null && cursor.number > 0n) {
+            const parentBlock = getBlock({ blockHash: cursor.parentHash, includeTransactions }) catch effect (e) => {
+              throw new StreamError({ stream: "watchBlocks", message: `Failed walking reorg ancestor: ${errorMessage(e)}`, cause: e })
+            }
+            if (history.length > 0 && history[history.length - 1]?.hash === parentBlock.hash) {
+              break
+            }
+            added.unshift(parentBlock)
+            cursor = parentBlock
+          } else {
+            break
+          }
+        }
+
+        const ancestor = history[history.length - 1]?.number ?? (cursor.number !== null && cursor.number > 0n ? cursor.number - 1n : 0n)
+        for (const a of added) {
+          history.push(a)
+        }
+        while (history.length > maxDepth) {
+          history.shift()
+        }
+        yield BlockStreamEvent.Reorg({ removed, added, commonAncestorNumber: ancestor })
+      } else {
+        history.push(block)
+        while (history.length > maxDepth) {
+          history.shift()
+        }
+        yield BlockStreamEvent.Added({ block })
+      }
+
+      nextExpected = nextExpected + 1n
+    }
+
+    try sleep(pollingInterval)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 2. Adaptive Chunked Log Backfill & Live Event Stream
+// ---------------------------------------------------------------------------
+
+export interface BackfillLogsOptions {
+  readonly fromBlock: bigint
+  readonly toBlock: bigint
+  /** Initial block range per eth_getLogs request (default: 1000n) */
+  readonly chunkSize?: bigint
+  /** Minimum block range before failing on range-too-large errors (default: 1n) */
+  readonly minChunkSize?: bigint
+}
+
+function isRangeLimitError(cause: unknown): boolean {
+  if (cause instanceof RpcError) {
+    if (cause.code === -32005 || cause.code === -32602) return true
+    const msg = cause.message.toLowerCase()
+    return msg.includes("more than") || msg.includes("query returned") || msg.includes("block range") || msg.includes("too many")
+  }
+  return false
+}
+
+// Streams historical logs in chunks, automatically halving chunk size when RPC range limits hit.
+export effect function* backfillLogs(
+  filter: Omit<LogFilter, "fromBlock" | "toBlock" | "blockHash">,
+  options: BackfillLogsOptions
+) {
+  let cursor = options.fromBlock
+  let chunkSize = options.chunkSize ?? 1000n
+  const minChunkSize = options.minChunkSize ?? 1n
+
+  while (cursor <= options.toBlock) {
+    const end = cursor + chunkSize - 1n > options.toBlock ? options.toBlock : cursor + chunkSize - 1n
+    const attemptExit = try exit(
+      getLogs({
+        address: filter.address,
+        topics: filter.topics,
+        fromBlock: cursor,
+        toBlock: end
+      })
+    )
+
+    if (Exit.isSuccess(attemptExit)) {
+      for (const log of attemptExit.value) {
+        yield log
+      }
+      cursor = end + 1n
+    } else {
+      const errOpt = Cause.findErrorOption(attemptExit.cause)
+      const err = Option.isSome(errOpt) ? errOpt.value : attemptExit.cause
+      if (isRangeLimitError(err) && chunkSize > minChunkSize) {
+        const halved = chunkSize / 2n
+        chunkSize = halved < minChunkSize ? minChunkSize : halved
+      } else {
+        throw new StreamError({
+          stream: "backfillLogs",
+          message: `Failed fetching logs [${cursor.toString()}..${end.toString()}]: ${errorMessage(err)}`,
+          cause: err
+        })
+      }
+    }
+  }
+}
+
+export interface WatchLogsOptions {
+  readonly fromBlock?: bigint
+  readonly pollingInterval?: Duration.Input
+  readonly chunkSize?: bigint
+}
+
+// Streams logs starting from `fromBlock` (or current head) and continues tailing new blocks live.
+export effect function* watchLogs(
+  filter: Omit<LogFilter, "fromBlock" | "toBlock" | "blockHash">,
+  options: WatchLogsOptions = {}
+) {
+  const pollingInterval = options.pollingInterval ?? "1 second"
+  const chunkSize = options.chunkSize ?? 1000n
+  let cursor = options.fromBlock ?? (
+    getBlockNumber() catch effect (e) => {
+      throw new StreamError({ stream: "watchLogs", message: `Failed reading initial block: ${errorMessage(e)}`, cause: e })
+    }
+  )
+
+  while (true) {
+    const head = getBlockNumber() catch effect (e) => {
+      throw new StreamError({ stream: "watchLogs", message: `Failed polling block number: ${errorMessage(e)}`, cause: e })
+    }
+    if (cursor <= head) {
+      const batch = backfillLogs(filter, { fromBlock: cursor, toBlock: head, chunkSize })
+      for try (const log of batch) {
+        yield log
+      }
+      cursor = head + 1n
+    }
+    try sleep(pollingInterval)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3. Reorg-aware Transaction Lifecycle Stream
+// ---------------------------------------------------------------------------
+
+export data TransactionStreamEvent {
+  Pending { hash: HexType }
+  Included { hash: HexType; receipt: RpcTransactionReceipt; confirmations: number }
+  Confirmed { hash: HexType; receipt: RpcTransactionReceipt; confirmations: number }
+  Reorged { hash: HexType; previousBlockHash: `0x${string}`; previousBlockNumber: bigint }
+}
+
+export interface WatchTransactionOptions {
+  /** Confirmations required before emitting Confirmed and completing (default: 1) */
+  readonly confirmations?: number
+  /** Polling interval (default: "1 second") */
+  readonly pollingInterval?: Duration.Input
+}
+
+// Tracks a transaction from Pending -> Included -> Confirmed, emitting Reorged if its block disappears.
+export effect function* watchTransactionStatus(
+  hash: HashType | `0x${string}`,
+  options: WatchTransactionOptions = {}
+) {
+  const hashHex = (typeof hash === "string" ? hash : Hash.toHex(hash)) as HexType
+  const targetConfirmations = options.confirmations ?? 1
+  const pollingInterval = options.pollingInterval ?? "1 second"
+
+  let emittedPending = false
+  let lastReceipt: RpcTransactionReceipt | undefined = undefined
+  let lastConfirmations = 0
+
+  while (true) {
+    const receiptOpt = getTransactionReceipt(hashHex) catch effect (e) => {
+      throw new StreamError({ stream: "watchTransactionStatus", message: `Receipt check failed: ${errorMessage(e)}`, cause: e })
+    }
+
+    if (Option.isNone(receiptOpt)) {
+      if (lastReceipt !== undefined) {
+        yield TransactionStreamEvent.Reorged({
+          hash: hashHex,
+          previousBlockHash: lastReceipt.blockHash,
+          previousBlockNumber: lastReceipt.blockNumber
+        })
+        lastReceipt = undefined
+        lastConfirmations = 0
+      } else if (!emittedPending) {
+        emittedPending = true
+        yield TransactionStreamEvent.Pending({ hash: hashHex })
+      }
+    } else {
+      const receipt = receiptOpt.value
+      if (lastReceipt !== undefined && lastReceipt.blockHash !== receipt.blockHash) {
+        yield TransactionStreamEvent.Reorged({
+          hash: hashHex,
+          previousBlockHash: lastReceipt.blockHash,
+          previousBlockNumber: lastReceipt.blockNumber
+        })
+        lastConfirmations = 0
+      }
+
+      const head = getBlockNumber() catch effect (e) => {
+        throw new StreamError({ stream: "watchTransactionStatus", message: `Block number check failed: ${errorMessage(e)}`, cause: e })
+      }
+      const depth = head >= receipt.blockNumber ? Number(head - receipt.blockNumber + 1n) : 1
+      lastReceipt = receipt
+
+      if (depth >= targetConfirmations) {
+        yield TransactionStreamEvent.Confirmed({ hash: hashHex, receipt, confirmations: depth })
+        return
+      }
+      if (depth !== lastConfirmations) {
+        lastConfirmations = depth
+        yield TransactionStreamEvent.Included({ hash: hashHex, receipt, confirmations: depth })
+      }
+    }
+
+    try sleep(pollingInterval)
+  }
+}

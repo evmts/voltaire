@@ -1,5 +1,21 @@
 # voltaire-effect
 
+## 2.0.0
+
+### Major Changes
+
+- **Complete rewrite in VibeLang for Effect 4.1.1**:
+  - Replaced the Effect 3.19 implementation with an idiomatic VibeLang (`.vibe`) codebase targeting `effect@4.1.1`, compiled via `vibelang` directly to standard ESM `.js` + `.d.ts` + sourcemaps (with `vibelang-source` exports for VibeLang consumers).
+  - Enforced zero hidden throws (`EK0403`) and pure Effect `Clock`/`DateTime`/`Random` boundaries (`EK4402`) across every module.
+  - Replaced Effect 3 `FiberRef` transport overrides with Effect 4 `Context.Reference` services (`RpcTimeout`, `RpcRetry`, `RpcTracing`, `RpcHooks`) and built-in OpenTelemetry `withSpan` tracing.
+  - Added Effect 4 `Request` + `RequestResolver` automatic JSON-RPC batching (`BatchTransport`), sequential & hedged-race `FallbackTransport`, `RateLimitedTransport`, EIP-1193 `CustomTransport`, and `TestTransport`.
+  - Simplified provider setup to single-layer `HttpProvider`, `FallbackProvider`, `CustomProvider`, and `TestProvider` (eliminating redundant `Provider` + `HttpTransport` + `FetchHttpClient` layering) with built-in chain presets including `hoodi`.
+  - Fixed `Multicall3` `aggregate3` positional tuple encoding and added high-level ABI-aware `multicall` with per-call revert decoding.
+  - Added automatic Solidity `Error(string)`, `Panic(uint256)`, and custom ABI error decoding into `ContractRevertError`.
+  - Upgraded `Signer` with concurrent `try.all` transaction preparation, atomic per-address `NonceManager`, EIP-7702 `prepareAuthorization`, and `sendTransactionAndWait`.
+  - Added reorg-aware VibeLang `effect function*` streams (`watchBlocks`, adaptive-chunking `backfillLogs`/`watchLogs`, and `watchTransactionStatus`).
+  - Zero skipped tests: 11 test suites / 61 tests passing (including property & concurrency fuzzing).
+
 ## 1.1.0
 
 ### Minor Changes

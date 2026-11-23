@@ -1,0 +1,116 @@
+// voltaire-effect v2 — Effect 4 integration for Voltaire, written in VibeLang.
+
+export * from "./errors.vibe"
+
+// Namespaced modules
+export * as ContractModule from "./contract/index.vibe"
+export * as Crypto from "./crypto/index.vibe"
+export * as Primitives from "./primitives/index.vibe"
+export * as Provider from "./provider/index.vibe"
+export * as SignerModule from "./signer/index.vibe"
+export * as Standards from "./standards/index.vibe"
+export * as Streams from "./streams/index.vibe"
+export * as TransportModule from "./transport/index.vibe"
+
+// Top-level ergonomic exports for everyday Ethereum workflows
+export { Contract, makeContractRegistry } from "./contract/index.vibe"
+export type * from "./contract/types.vibe"
+export { CryptoLive, KeccakLive, KeccakService, Secp256k1Live, Secp256k1Service } from "./crypto/index.vibe"
+export { Abi, Address, Hash, Hex, Signature, Siwe, Transaction, Uint, Unit } from "./primitives/index.vibe"
+export {
+  aggregate3,
+  arbitrum,
+  base,
+  call,
+  Chain,
+  CustomProvider,
+  Ens,
+  EnsLive,
+  estimateFeesPerGas,
+  estimateGas,
+  FallbackProvider,
+  getBalance,
+  getBlock,
+  getBlockNumber,
+  getBlockReceipts,
+  getChainId,
+  getCode,
+  getEnsAddress,
+  getEnsAvatar,
+  getEnsName,
+  getEnsResolver,
+  getEnsText,
+  getFeeHistory,
+  getGasPrice,
+  getLogs,
+  getMaxPriorityFeePerGas,
+  getStorageAt,
+  getTransaction,
+  getTransactionCount,
+  getTransactionReceipt,
+  hoodi,
+  HttpProvider,
+  mainnet,
+  multicall,
+  MULTICALL3_ADDRESS,
+  optimism,
+  polygon,
+  sendRawTransaction,
+  sepolia,
+  simulateCalls,
+  TestProvider,
+  waitForTransactionReceipt
+} from "./provider/index.vibe"
+export {
+  Account,
+  JsonRpcAccount,
+  LocalAccount,
+  MnemonicAccount,
+  NonceManager,
+  NonceManagerLive,
+  Signer,
+  SignerFromMnemonic,
+  SignerFromPrivateKey,
+  SignerLive
+} from "./signer/index.vibe"
+export {
+  ERC20_ABI,
+  ERC721_ABI,
+  ERC1155_ABI,
+  ERC165_ABI,
+  erc20BalanceOf,
+  erc20Transfer,
+  erc721OwnerOf,
+  INTERFACE_IDS,
+  supportsInterface
+} from "./standards/index.vibe"
+export {
+  backfillLogs,
+  BlockStreamEvent,
+  TransactionStreamEvent,
+  watchBlocks,
+  watchLogs,
+  watchTransactionStatus
+} from "./streams/index.vibe"
+export {
+  BatchTransport,
+  CustomTransport,
+  FallbackTransport,
+  HttpTransport,
+  HttpTransportFetch,
+  makeTestTransport,
+  RateLimitedTransport,
+  request,
+  requestBatch,
+  RpcHooks,
+  RpcRetry,
+  RpcTimeout,
+  RpcTracing,
+  TestTransport,
+  Transport,
+  withoutRpcRetry,
+  withRpcHooks,
+  withRpcRetry,
+  withRpcTimeout,
+  withRpcTracing
+} from "./transport/index.vibe"

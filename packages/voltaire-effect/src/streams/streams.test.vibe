@@ -1,0 +1,163 @@
+import { assert, describe, it } from "@effect/vitest"
+import {
+  backfillLogs,
+  type BlockStreamEvent,
+  RpcError,
+  TestProvider,
+  type TransactionStreamEvent,
+  watchBlocks,
+  watchTransactionStatus
+} from "../index.vibe"
+
+const HASH_1 = "0x1111111111111111111111111111111111111111111111111111111111111111" as const
+const HASH_2A = "0x222222222222222222222222222222222222222222222222222222222222222a" as const
+const HASH_2B = "0x222222222222222222222222222222222222222222222222222222222222222b" as const
+const HASH_3B = "0x333333333333333333333333333333333333333333333333333333333333333b" as const
+const TX_HASH = "0x4444444444444444444444444444444444444444444444444444444444444444" as const
+const ADDR = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" as const
+
+function makeBlock(numHex: string, hash: string, parentHash: string) {
+  return {
+    number: numHex,
+    hash,
+    parentHash,
+    gasLimit: "0x1c9c380",
+    gasUsed: "0x5208",
+    timestamp: "0x67000000",
+    transactions: []
+  }
+}
+
+describe("streams", () => {
+  it.effect("watchBlocks emits Added events and detects chain Reorg via parentHash", effect () => {
+    let poll = 0
+    const provider = TestProvider({
+      eth_blockNumber: () => {
+        poll++
+        if (poll === 1) return "0x2" // blocks 1 and 2A
+        return "0x3" // block 3B whose parent is 2B (reorg!)
+      },
+      eth_getBlockByNumber: (params) => {
+        const tag = String(params[0])
+        if (tag === "0x1") return makeBlock("0x1", HASH_1, "0x0000000000000000000000000000000000000000000000000000000000000000")
+        if (tag === "0x2") return makeBlock("0x2", HASH_2A, HASH_1)
+        return makeBlock("0x3", HASH_3B, HASH_2B)
+      },
+      eth_getBlockByHash: (params) => {
+        const h = String(params[0])
+        if (h === HASH_2B) return makeBlock("0x2", HASH_2B, HASH_1)
+        return makeBlock("0x1", HASH_1, "0x0000000000000000000000000000000000000000000000000000000000000000")
+      }
+    })
+
+    provide provider {
+      const events: Array<BlockStreamEvent> = []
+      const fiber = fork effect {
+        const stream = watchBlocks({ fromBlock: 1n, pollingInterval: "100 millis" }).take(3)
+        for try (const ev of stream) {
+          events.push(ev)
+        }
+      }
+      try TestClock.adjust("100 millis")
+      try TestClock.adjust("100 millis")
+      join fiber
+
+      try Effect.try(() => assert.strictEqual(events.length, 3))
+      try Effect.try(() => assert.strictEqual(events[0]?._tag, "Added"))
+      try Effect.try(() => assert.strictEqual(events[1]?._tag, "Added"))
+      const third = events[2]
+      try Effect.try(() => assert.strictEqual(third?._tag, "Reorg"))
+      if (third !== undefined && third._tag === "Reorg") {
+        try Effect.try(() => assert.strictEqual(third.commonAncestorNumber, 1n))
+        try Effect.try(() => assert.strictEqual(third.removed.length, 1))
+        try Effect.try(() => assert.strictEqual(third.removed[0]?.hash, HASH_2A))
+        try Effect.try(() => assert.strictEqual(third.added.length, 2))
+        try Effect.try(() => assert.strictEqual(third.added[0]?.hash, HASH_2B))
+        try Effect.try(() => assert.strictEqual(third.added[1]?.hash, HASH_3B))
+      }
+    }
+  })
+
+  it.effect("backfillLogs adaptively halves chunk size when RPC rejects large block ranges", effect () => {
+    const requestedRanges: Array<string> = []
+    const provider = TestProvider({
+      eth_getLogs: (params) => {
+        const f = params[0] as { readonly fromBlock: string; readonly toBlock: string }
+        const from = Number.parseInt(f.fromBlock, 16)
+        const to = Number.parseInt(f.toBlock, 16)
+        requestedRanges.push(`${from}-${to}`)
+        // Reject any range > 4 blocks!
+        if (to - from + 1 > 4) {
+          return effect {
+            throw new RpcError({ code: -32005, message: "query returned more than 10000 results" })
+          }
+        }
+        return [
+          {
+            address: ADDR,
+            topics: [HASH_1],
+            data: "0x",
+            blockNumber: f.fromBlock,
+            transactionHash: TX_HASH,
+            transactionIndex: "0x0",
+            blockHash: HASH_1,
+            logIndex: "0x0",
+            removed: false
+          }
+        ]
+      }
+    })
+
+    provide provider {
+      const collected: Array<bigint | null> = []
+      const stream = backfillLogs({ address: ADDR }, { fromBlock: 0n, toBlock: 7n, chunkSize: 8n })
+      for try (const log of stream) {
+        collected.push(log.blockNumber)
+      }
+      // First tried 0-7 (failed, halved to 4), then succeeded on 0-3 and 4-7!
+      try Effect.try(() => assert.deepStrictEqual(requestedRanges, ["0-7", "0-3", "4-7"]))
+      try Effect.try(() => assert.deepStrictEqual(collected, [0n, 4n]))
+    }
+  })
+
+  it.effect("watchTransactionStatus tracks Pending -> Included -> Confirmed lifecycle", effect () => {
+    let step = 0
+    const provider = TestProvider({
+      eth_getTransactionReceipt: () => {
+        step++
+        if (step === 1) return null
+        return {
+          transactionHash: TX_HASH,
+          transactionIndex: "0x0",
+          blockHash: HASH_1,
+          blockNumber: "0xa", // 10
+          from: ADDR,
+          to: ADDR,
+          cumulativeGasUsed: "0x5208",
+          gasUsed: "0x5208",
+          contractAddress: null,
+          logs: [],
+          status: "0x1",
+          type: "0x2"
+        }
+      },
+      eth_blockNumber: () => (step === 2 ? "0xa" : "0xb") // 10 (1 conf) then 11 (2 confs -> Confirmed!)
+    })
+
+    provide provider {
+      const events: Array<TransactionStreamEvent> = []
+      const fiber = fork effect {
+        const stream = watchTransactionStatus(TX_HASH, { confirmations: 2, pollingInterval: "50 millis" })
+        for try (const ev of stream) {
+          events.push(ev)
+        }
+      }
+      try TestClock.adjust("50 millis")
+      try TestClock.adjust("50 millis")
+      try TestClock.adjust("50 millis")
+      join fiber
+
+      try Effect.try(() => assert.deepStrictEqual(events.map((e) => e._tag), ["Pending", "Included", "Confirmed"]))
+    }
+  })
+})

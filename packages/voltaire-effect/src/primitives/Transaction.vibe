@@ -1,0 +1,109 @@
+// Effect-wrapped Ethereum Transaction serialization, hashing, and recovery across all 5 EIP types.
+
+import type { AddressType } from "@tevm/voltaire/Address"
+import type { HashType } from "@tevm/voltaire/Hash"
+import type { HexType } from "@tevm/voltaire/Hex"
+import type { Any as VoltaireTxAny } from "@tevm/voltaire/Transaction"
+import { errorMessage, InvalidTransactionError } from "../errors.vibe"
+
+module native {
+  import * as VoltaireTx from "@tevm/voltaire/Transaction"
+  import * as VoltaireHex from "@tevm/voltaire/Hex"
+  import type { AddressType } from "@tevm/voltaire/Address"
+  import type { HashType } from "@tevm/voltaire/Hash"
+  import type { HexType } from "@tevm/voltaire/Hex"
+
+  export function serializeRaw(tx: VoltaireTx.Any): Uint8Array {
+    return VoltaireTx.serialize(tx)
+  }
+
+  export function serializeHexRaw(tx: VoltaireTx.Any): HexType {
+    return VoltaireHex.fromBytes(VoltaireTx.serialize(tx))
+  }
+
+  export function deserializeRaw(bytes: Uint8Array | HexType | `0x${string}`): VoltaireTx.Any {
+    const raw = typeof bytes === "string" ? VoltaireHex.toBytes(bytes as HexType) : bytes
+    return VoltaireTx.deserialize(raw)
+  }
+
+  export function hashRaw(tx: VoltaireTx.Any): HashType {
+    return VoltaireTx.hash(tx)
+  }
+
+  export function getSigningHashRaw(tx: VoltaireTx.Any): HashType {
+    return VoltaireTx.getSigningHash(tx)
+  }
+
+  export function getSenderRaw(tx: VoltaireTx.Any): AddressType {
+    return VoltaireTx.getSender(tx)
+  }
+
+  export function verifySignatureRaw(tx: VoltaireTx.Any): boolean {
+    return VoltaireTx.verifySignature(tx)
+  }
+
+  export const Type = VoltaireTx.Type
+}
+
+import {
+  deserializeRaw,
+  getSenderRaw,
+  getSigningHashRaw,
+  hashRaw,
+  serializeHexRaw,
+  serializeRaw,
+  Type,
+  verifySignatureRaw
+} from native
+
+export type { VoltaireTxAny as AnyTransaction }
+export { Type }
+
+export effect function serialize(tx: VoltaireTxAny): Uint8Array!InvalidTransactionError {
+  return try Effect.try({
+    try: () => serializeRaw(tx),
+    catch: (cause) => new InvalidTransactionError({ message: `Transaction serialization failed: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function serializeHex(tx: VoltaireTxAny): HexType!InvalidTransactionError {
+  return try Effect.try({
+    try: () => serializeHexRaw(tx),
+    catch: (cause) => new InvalidTransactionError({ message: `Transaction hex serialization failed: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function deserialize(bytes: Uint8Array | HexType | `0x${string}`): VoltaireTxAny!InvalidTransactionError {
+  return try Effect.try({
+    try: () => deserializeRaw(bytes),
+    catch: (cause) => new InvalidTransactionError({ message: `Transaction deserialization failed: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function hash(tx: VoltaireTxAny): HashType!InvalidTransactionError {
+  return try Effect.try({
+    try: () => hashRaw(tx),
+    catch: (cause) => new InvalidTransactionError({ message: `Transaction hash failed: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function getSigningHash(tx: VoltaireTxAny): HashType!InvalidTransactionError {
+  return try Effect.try({
+    try: () => getSigningHashRaw(tx),
+    catch: (cause) => new InvalidTransactionError({ message: `Transaction signing hash failed: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function getSender(tx: VoltaireTxAny): AddressType!InvalidTransactionError {
+  return try Effect.try({
+    try: () => getSenderRaw(tx),
+    catch: (cause) => new InvalidTransactionError({ message: `Transaction sender recovery failed: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function verifySignature(tx: VoltaireTxAny): boolean!InvalidTransactionError {
+  return try Effect.try({
+    try: () => verifySignatureRaw(tx),
+    catch: (cause) => new InvalidTransactionError({ message: `Transaction signature verification failed: ${errorMessage(cause)}`, cause })
+  })
+}

@@ -1,0 +1,123 @@
+// Resilient multi-endpoint FallbackTransport supporting sequential failover and hedged racing.
+
+import {
+  RpcError,
+  type RpcTransportError,
+  TransportError,
+  TransportFailureReason
+} from "../errors.vibe"
+import {
+  type JsonRpcBatchItemResult,
+  type JsonRpcCall,
+  Transport
+} from "./Transport.vibe"
+
+export interface FallbackTransportConfig {
+  /** "sequential" tries endpoints in order; "race" runs all concurrently and takes first success */
+  readonly strategy?: "sequential" | "race"
+  /** If false (default), deterministic on-chain reverts fail immediately without trying backups */
+  readonly failoverOnRevert?: boolean
+}
+
+export function FallbackTransport(
+  layers: ReadonlyArray<Layer.Layer<Transport, never, never>>,
+  config: FallbackTransportConfig = {}
+) {
+  const strategy = config.strategy ?? "sequential"
+  const failoverOnRevert = config.failoverOnRevert ?? false
+
+  return Layer.effect(
+    Transport,
+    effect {
+      if (layers.length === 0) {
+        return Transport.of({
+          effect request<T = unknown>(_method: string, _params?: ReadonlyArray<unknown>): T!RpcTransportError {
+            throw new TransportError({
+              message: "FallbackTransport configured with zero endpoints",
+              reason: TransportFailureReason.Unsupported({ message: "No transport layers provided" })
+            })
+          },
+          effect requestBatch(_requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+            throw new TransportError({
+              message: "FallbackTransport configured with zero endpoints",
+              reason: TransportFailureReason.Unsupported({ message: "No transport layers provided" })
+            })
+          }
+        })
+      }
+
+      const transports: Array<Context.Service.Shape<typeof Transport>> = []
+      for (const layer of layers) {
+        const ctx = try Layer.build(layer)
+        transports.push(Context.get(ctx, Transport))
+      }
+
+      return Transport.of({
+        effect request<T = unknown>(method: string, params?: ReadonlyArray<unknown>): T!RpcTransportError {
+          if (strategy === "race") {
+            const attempts = transports.map<T!RpcTransportError>((t) => t.request<T>(method, params))
+            return try.any attempts
+          }
+
+          let lastError: RpcTransportError | undefined = undefined
+          for (const t of transports) {
+            const res = try exit(t.request<T>(method, params))
+            if (Exit.isSuccess(res)) {
+              return res.value
+            }
+            const errOpt = Cause.findErrorOption(res.cause)
+            if (Option.isSome(errOpt)) {
+              const err = errOpt.value
+              if (!failoverOnRevert && err instanceof RpcError && err.isRevert) {
+                throw err
+              }
+              lastError = err
+            } else {
+              throw new TransportError({
+                message: `Transport defect on ${method}`,
+                reason: TransportFailureReason.Network({ cause: res.cause }),
+                method
+              })
+            }
+          }
+
+          if (lastError !== undefined) {
+            throw lastError
+          }
+          throw new TransportError({
+            message: `All ${transports.length} transports failed for ${method}`,
+            reason: TransportFailureReason.Network({ cause: "all transports failed" }),
+            method
+          })
+        },
+
+        effect requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+          if (strategy === "race") {
+            const attempts = transports.map<ReadonlyArray<JsonRpcBatchItemResult>!TransportError>((t) => t.requestBatch(requests))
+            return try.any attempts
+          }
+
+          let lastError: TransportError | undefined = undefined
+          for (const t of transports) {
+            const res = try exit(t.requestBatch(requests))
+            if (Exit.isSuccess(res)) {
+              return res.value
+            }
+            const errOpt = Cause.findErrorOption(res.cause)
+            if (Option.isSome(errOpt)) {
+              lastError = errOpt.value
+            }
+          }
+          if (lastError !== undefined) {
+            throw lastError
+          }
+          throw new TransportError({
+            message: `All ${transports.length} transports failed batch`,
+            reason: TransportFailureReason.Network({ cause: "all transports failed" }),
+            method: "batch"
+          })
+        }
+      })
+    }
+  )
+}

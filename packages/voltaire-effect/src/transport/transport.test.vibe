@@ -1,0 +1,216 @@
+import { assert, describe, it } from "@effect/vitest"
+import { HttpClient, HttpClientResponse } from "effect/http"
+import { RpcError, TransportError, TransportFailureReason } from "../errors.vibe"
+import {
+  BatchTransport,
+  CustomTransport,
+  FallbackTransport,
+  HttpTransport,
+  makeTestTransport,
+  RateLimitedTransport,
+  request,
+  TestTransport,
+  withRpcHooks,
+  withoutRpcRetry
+} from "./index.vibe"
+
+module web {
+  import { HttpClientResponse, type HttpClientRequest } from "effect/http"
+
+  /** @throws {never} */
+  export function decodeBody(req: HttpClientRequest.HttpClientRequest): string {
+    return req.body._tag === "Uint8Array" ? new TextDecoder().decode(req.body.body) : ""
+  }
+
+  /** @throws {never} */
+  export function jsonResponse(req: HttpClientRequest.HttpClientRequest, body: unknown, status = 200) {
+    return HttpClientResponse.fromWeb(
+      req,
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "content-type": "application/json" }
+      })
+    )
+  }
+
+  /** @throws {never} */
+  export function textResponse(req: HttpClientRequest.HttpClientRequest, body: string, status: number) {
+    return HttpClientResponse.fromWeb(req, new Response(body, { status }))
+  }
+}
+
+import { decodeBody, jsonResponse, textResponse } from web
+
+describe("transport", () => {
+  it.effect("TestTransport records calls and supports Context.Reference hooks with Clock", effect () => {
+    const observed: Array<{ readonly method: string; readonly durationMs: number }> = []
+    const ctrl = makeTestTransport({
+      eth_blockNumber: "0x10",
+      eth_chainId: () => "0x1"
+    })
+
+    const hooksLayer = withRpcHooks({
+      effect onResponse(res) {
+        observed.push({ method: res.method, durationMs: res.durationMs })
+        return res.result
+      }
+    })
+
+    provide ctrl.layer, hooksLayer {
+      const [block, chain] = try.all [
+        request<string>("eth_blockNumber"),
+        request<string>("eth_chainId")
+      ]
+      try Effect.try(() => assert.strictEqual(block, "0x10"))
+      try Effect.try(() => assert.strictEqual(chain, "0x1"))
+    }
+
+    const calls = try ctrl.calls
+    try Effect.try(() => assert.strictEqual(calls.length, 2))
+    try Effect.try(() => assert.strictEqual(observed.length, 2))
+  })
+
+  it.effect("HttpTransport retries retryable 503 errors but fails immediately on contract revert (code 3)", effect () => {
+    let attempts = 0
+    const mockHttpClient = HttpClient.make(effect (req) => {
+      attempts++
+      const bodyText = decodeBody(req)
+      if (bodyText.includes("eth_call")) {
+        return jsonResponse(req, {
+          jsonrpc: "2.0",
+          id: 1,
+          error: { code: 3, message: "execution reverted", data: "0x08c379a0" }
+        })
+      }
+      if (attempts < 2) {
+        return textResponse(req, "overloaded", 503)
+      }
+      return jsonResponse(req, { jsonrpc: "2.0", id: 2, result: "0x1234" })
+    })
+
+    const httpLayer = Layer.provide(
+      HttpTransport({
+        url: "https://rpc.example.test",
+        retry: { times: 3, baseDelay: "1 millis", jittered: false }
+      }),
+      Layer.succeed(HttpClient.HttpClient, mockHttpClient)
+    )
+
+    // Retryable 503 succeeds on 2nd attempt
+    provide httpLayer {
+      const fiber = fork request<string>("eth_blockNumber")
+      try TestClock.adjust("50 millis")
+      const bn = join fiber
+      try Effect.try(() => assert.strictEqual(bn, "0x1234"))
+      try Effect.try(() => assert.strictEqual(attempts, 2))
+    }
+
+    // Non-retryable revert fails immediately without retrying
+    const beforeRevert = attempts
+    provide httpLayer {
+      const tag = effect {
+        try request<string>("eth_call", [{ to: "0x0" }])
+        return "ok"
+      } catch (e) => e._tag
+      try Effect.try(() => assert.strictEqual(tag, "RpcError"))
+      try Effect.try(() => assert.strictEqual(attempts, beforeRevert + 1))
+    }
+  })
+
+  it.effect("BatchTransport collapses concurrent requests into a single JSON-RPC batch", effect () => {
+    const upstream = makeTestTransport({
+      eth_chainId: "0x1",
+      eth_blockNumber: "0x64",
+      eth_gasPrice: "0x3b9aca00"
+    })
+    const batched = BatchTransport(upstream.layer, { delay: "10 millis", maxBatchSize: 10 })
+
+    provide batched {
+      const fiber = fork effect {
+        return try.all [
+          request<string>("eth_chainId"),
+          request<string>("eth_blockNumber"),
+          request<string>("eth_gasPrice")
+        ]
+      }
+      try TestClock.adjust("20 millis")
+      const [chainId, blockNumber, gasPrice] = join fiber
+      try Effect.try(() => assert.strictEqual(chainId, "0x1"))
+      try Effect.try(() => assert.strictEqual(blockNumber, "0x64"))
+      try Effect.try(() => assert.strictEqual(gasPrice, "0x3b9aca00"))
+    }
+
+    const batches = try upstream.batchCount
+    try Effect.try(() => assert.strictEqual(batches, 1))
+  })
+
+  it.effect("FallbackTransport fails over sequentially on network errors and does not fail over on reverts", effect () => {
+    const failingPrimary = TestTransport({
+      eth_blockNumber: effect {
+        throw new TransportError({
+          message: "primary down",
+          reason: TransportFailureReason.Network({ cause: "ECONNREFUSED" })
+        })
+      },
+      eth_call: effect {
+        throw new RpcError({ code: 3, message: "execution reverted", data: "0x" })
+      }
+    })
+    const backupCtrl = makeTestTransport({
+      eth_blockNumber: "0x99",
+      eth_call: "0x01"
+    })
+
+    const fallback = FallbackTransport([failingPrimary, backupCtrl.layer], { strategy: "sequential" })
+
+    provide fallback {
+      const bn = try request<string>("eth_blockNumber")
+      try Effect.try(() => assert.strictEqual(bn, "0x99"))
+
+      const revertTag = effect {
+        try request<string>("eth_call", [])
+        return "ok"
+      } catch (e) => e._tag
+      try Effect.try(() => assert.strictEqual(revertTag, "RpcError"))
+    }
+
+    // Backup should only have been called for eth_blockNumber, NOT eth_call!
+    const backupCalls = try backupCtrl.calls
+    try Effect.try(() => assert.strictEqual(backupCalls.length, 1))
+    try Effect.try(() => assert.strictEqual(backupCalls[0]?.method, "eth_blockNumber"))
+  })
+
+  it.effect("FallbackTransport race mode returns fastest endpoint", effect () => {
+    const slow = TestTransport({ eth_blockNumber: "0x1" }, { latency: "500 millis" })
+    const fast = TestTransport({ eth_blockNumber: "0x2" }, { latency: "10 millis" })
+    const raced = FallbackTransport([slow, fast], { strategy: "race" })
+
+    provide raced {
+      const fiber = fork request<string>("eth_blockNumber")
+      try TestClock.adjust("20 millis")
+      const bn = join fiber
+      try Effect.try(() => assert.strictEqual(bn, "0x2"))
+    }
+  })
+
+  it.effect("CustomTransport adapts EIP-1193 providers and RateLimitedTransport enforces concurrency", effect () => {
+    const eip1193 = CustomTransport({
+      async request(args) {
+        if (args.method === "eth_chainId") return "0xa"
+        throw { code: 4001, message: "User rejected" }
+      }
+    })
+    const limited = RateLimitedTransport(eip1193, { maxConcurrent: 2 })
+
+    provide limited, withoutRpcRetry {
+      const id = try request<string>("eth_chainId")
+      try Effect.try(() => assert.strictEqual(id, "0xa"))
+
+      const rejected = effect {
+        try request<string>("eth_sendTransaction", [])
+        return false
+      } catch (e) => e._tag === "RpcError" && e.isUserRejected
+      try Effect.try(() => assert.strictEqual(rejected, true))
+    }
+  })
+})

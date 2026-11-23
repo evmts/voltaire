@@ -1,0 +1,323 @@
+// Effect 4 Schemas and typed operations for 20-byte Ethereum Addresses.
+
+import type { AddressType } from "@tevm/voltaire/Address"
+import type { HashType } from "@tevm/voltaire/Hash"
+import type { HexType } from "@tevm/voltaire/Hex"
+import { Keccak } from "../crypto/Keccak.vibe"
+import { CryptoError, errorMessage, InvalidAddressError } from "../errors.vibe"
+
+module native {
+  import { Address as VoltaireAddress, type AddressType, ZERO_ADDRESS, SIZE, HEX_SIZE } from "@tevm/voltaire/Address"
+  import type { HashType } from "@tevm/voltaire/Hash"
+  import type { HexType } from "@tevm/voltaire/Hex"
+
+  export function fromRaw(value: number | bigint | string | Uint8Array): AddressType {
+    return VoltaireAddress.from(value)
+  }
+
+  export function fromHexRaw(value: string): AddressType {
+    return VoltaireAddress.fromHex(value)
+  }
+
+  export function fromBytesRaw(value: Uint8Array): AddressType {
+    return VoltaireAddress.fromBytes(value)
+  }
+
+  export function fromNumberRaw(value: number | bigint): AddressType {
+    return VoltaireAddress.fromNumber(value)
+  }
+
+  export function fromPublicKeyRaw(publicKey: Uint8Array): AddressType {
+    return VoltaireAddress.fromPublicKey(publicKey)
+  }
+
+  export function fromPrivateKeyRaw(privateKey: Uint8Array): AddressType {
+    return VoltaireAddress.fromPrivateKey(privateKey)
+  }
+
+  export function fromAbiEncodedRaw(bytes: Uint8Array): AddressType {
+    return VoltaireAddress.fromAbiEncoded(bytes)
+  }
+
+  export function calculateCreateAddressRaw(sender: AddressType, nonce: bigint): AddressType {
+    return VoltaireAddress.calculateCreateAddress(sender, nonce)
+  }
+
+  export function calculateCreate2AddressRaw(sender: AddressType, salt: HashType, initCode: Uint8Array): AddressType {
+    return VoltaireAddress.calculateCreate2Address(sender, salt, initCode as any)
+  }
+
+  /** @throws {never} */
+  export function toHex(address: AddressType): HexType {
+    return VoltaireAddress.toHex(address)
+  }
+
+  /** @throws {never} */
+  export function toBytes(address: AddressType): Uint8Array {
+    return VoltaireAddress.toBytes(address)
+  }
+
+  /** @throws {never} */
+  export function toShortHex(address: AddressType, startLength?: number, endLength?: number): string {
+    return VoltaireAddress.toShortHex(address, startLength, endLength)
+  }
+
+  /** @throws {never} */
+  export function toAbiEncoded(address: AddressType): Uint8Array {
+    return VoltaireAddress.toAbiEncoded(address)
+  }
+
+  /** @throws {never} */
+  export function toU256(address: AddressType): bigint {
+    return VoltaireAddress.toU256(address)
+  }
+
+  /** @throws {never} */
+  export function isAddress(value: unknown): value is AddressType {
+    return VoltaireAddress.is(value)
+  }
+
+  /** @throws {never} */
+  export function isValid(value: string): boolean {
+    return VoltaireAddress.isValid(value)
+  }
+
+  /** @throws {never} */
+  export function isZero(address: AddressType): boolean {
+    return VoltaireAddress.isZero(address)
+  }
+
+  /** @throws {never} */
+  export function equals(a: AddressType, b: AddressType): boolean {
+    return VoltaireAddress.equals(a, b)
+  }
+
+  /** @throws {never} */
+  export function compare(a: AddressType, b: AddressType): number {
+    return VoltaireAddress.compare(a, b)
+  }
+
+  /** @throws {never} */
+  export function clone(address: AddressType): AddressType {
+    return VoltaireAddress.clone(address)
+  }
+
+  /** @throws {never} */
+  export function zero(): AddressType {
+    return VoltaireAddress.zero()
+  }
+
+  /** @throws {never} */
+  export function sortAddresses(addresses: ReadonlyArray<AddressType>): Array<AddressType> {
+    return VoltaireAddress.sortAddresses([...addresses])
+  }
+
+  /** @throws {never} */
+  export function deduplicateAddresses(addresses: ReadonlyArray<AddressType>): Array<AddressType> {
+    return VoltaireAddress.deduplicateAddresses([...addresses])
+  }
+
+  export { ZERO_ADDRESS, SIZE, HEX_SIZE }
+}
+
+import {
+  calculateCreate2AddressRaw,
+  calculateCreateAddressRaw,
+  clone,
+  compare,
+  deduplicateAddresses,
+  equals,
+  fromAbiEncodedRaw,
+  fromBytesRaw,
+  fromHexRaw,
+  fromNumberRaw,
+  fromPrivateKeyRaw,
+  fromPublicKeyRaw,
+  fromRaw,
+  HEX_SIZE,
+  isAddress,
+  isValid,
+  isZero,
+  SIZE,
+  sortAddresses,
+  toAbiEncoded,
+  toBytes,
+  toHex,
+  toShortHex,
+  toU256,
+  zero,
+  ZERO_ADDRESS
+} from native
+
+export type { AddressType }
+export type AddressInput = AddressType | `0x${string}`
+export {
+  clone,
+  compare,
+  deduplicateAddresses,
+  equals,
+  HEX_SIZE,
+  isAddress,
+  isValid,
+  isZero,
+  SIZE,
+  sortAddresses,
+  toAbiEncoded,
+  toBytes,
+  toHex,
+  toShortHex,
+  toU256,
+  zero,
+  ZERO_ADDRESS
+}
+
+export const AddressTypeSchema = Schema.declare<AddressType>(
+  (u): u is AddressType => isAddress(u),
+  { identifier: "Address", description: "20-byte Ethereum address" }
+)
+
+export const AddressHex = Schema.String.pipe(
+  Schema.decodeTo(AddressTypeSchema, {
+    decode: SchemaGetter.transformEffect(effect (s, options) => {
+      return fromHex(s) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
+      }
+    }),
+    encode: SchemaGetter.transform((addr): string => toHex(addr))
+  })
+)
+
+export const AddressBytes = Schema.Uint8Array.pipe(
+  Schema.decodeTo(AddressTypeSchema, {
+    decode: SchemaGetter.transformEffect(effect (b, options) => {
+      return fromBytes(b) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, b, options)
+      }
+    }),
+    encode: SchemaGetter.transform((addr): Uint8Array => toBytes(addr))
+  })
+)
+
+// EIP-55 checksummed Address Schema: verifies checksum on decode and computes checksum via Keccak on encode.
+export const AddressChecksummed = Schema.String.pipe(
+  Schema.decodeTo(AddressTypeSchema, {
+    decode: SchemaGetter.transformEffect(effect (s, options) => {
+      const addr = fromHex(s) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
+      }
+      const expected = toChecksummed(addr) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
+      }
+      if (s !== expected) {
+        throw new SchemaIssue.InvalidValue(
+          { message: `Invalid EIP-55 checksum for address: expected ${expected}, got ${s}` },
+          s,
+          options
+        )
+      }
+      return addr
+    }),
+    encode: SchemaGetter.transformEffect(effect (addr, options) => {
+      return toChecksummed(addr) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, addr, options)
+      }
+    })
+  })
+)
+
+export effect function from(value: AddressType | number | bigint | string | Uint8Array): AddressType!InvalidAddressError {
+  if (isAddress(value)) return value
+  return try Effect.try({
+    try: () => fromRaw(value),
+    catch: (cause) => new InvalidAddressError({ input: value, message: `Invalid address: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromHex(value: string): AddressType!InvalidAddressError {
+  return try Effect.try({
+    try: () => fromHexRaw(value),
+    catch: (cause) => new InvalidAddressError({ input: value, message: `Invalid hex address: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromBytes(value: Uint8Array): AddressType!InvalidAddressError {
+  return try Effect.try({
+    try: () => fromBytesRaw(value),
+    catch: (cause) => new InvalidAddressError({ input: value, message: `Invalid address bytes: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromNumber(value: number | bigint): AddressType!InvalidAddressError {
+  return try Effect.try({
+    try: () => fromNumberRaw(value),
+    catch: (cause) => new InvalidAddressError({ input: value, message: `Invalid numeric address: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromPublicKey(publicKey: Uint8Array): AddressType!InvalidAddressError {
+  return try Effect.try({
+    try: () => fromPublicKeyRaw(publicKey),
+    catch: (cause) => new InvalidAddressError({ input: publicKey, message: `Invalid public key for address: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromPrivateKey(privateKey: Uint8Array): AddressType!InvalidAddressError {
+  return try Effect.try({
+    try: () => fromPrivateKeyRaw(privateKey),
+    catch: (cause) => new InvalidAddressError({ input: "[redacted]", message: `Invalid private key for address: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromAbiEncoded(bytes: Uint8Array): AddressType!InvalidAddressError {
+  return try Effect.try({
+    try: () => fromAbiEncodedRaw(bytes),
+    catch: (cause) => new InvalidAddressError({ input: bytes, message: `Invalid ABI-encoded address: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function toChecksummed(address: AddressInput): `0x${string}`!(InvalidAddressError | CryptoError)!Keccak {
+  const addr = typeof address === "string" ? try fromHex(address) : address
+  const lower = toHex(addr).slice(2).toLowerCase()
+  const keccak = try Keccak
+  const digest = try keccak.hashString(lower)
+  let out = "0x"
+  for (let i = 0; i < 40; i++) {
+    const ch = lower[i] ?? "0"
+    const byteVal = digest[Math.floor(i / 2)] ?? 0
+    const nibble = i % 2 === 0 ? (byteVal >> 4) & 0x0f : byteVal & 0x0f
+    out += nibble >= 8 ? ch.toUpperCase() : ch
+  }
+  return out as `0x${string}`
+}
+
+export effect function isValidChecksum(address: string): boolean!CryptoError!Keccak {
+  const parsed = fromHex(address) catch () => undefined
+  if (parsed === undefined) return false
+  const expected = toChecksummed(parsed) catch effect (e) => {
+    return match (e) {
+      when CryptoError: throw e;
+      when InvalidAddressError: "";
+    }
+  }
+  return address === expected
+}
+
+export effect function calculateCreateAddress(sender: AddressInput, nonce: bigint): AddressType!InvalidAddressError {
+  const addr = typeof sender === "string" ? try fromHex(sender) : sender
+  return try Effect.try({
+    try: () => calculateCreateAddressRaw(addr, nonce),
+    catch: (cause) => new InvalidAddressError({ input: { sender, nonce }, message: `CREATE address calculation failed: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function calculateCreate2Address(
+  sender: AddressInput,
+  salt: HashType,
+  initCode: Uint8Array
+): AddressType!InvalidAddressError {
+  const addr = typeof sender === "string" ? try fromHex(sender) : sender
+  return try Effect.try({
+    try: () => calculateCreate2AddressRaw(addr, salt, initCode),
+    catch: (cause) => new InvalidAddressError({ input: { sender, salt }, message: `CREATE2 address calculation failed: ${errorMessage(cause)}`, cause })
+  })
+}

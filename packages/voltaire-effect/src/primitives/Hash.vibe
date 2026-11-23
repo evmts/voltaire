@@ -1,0 +1,132 @@
+// Effect 4 Schemas and typed operations for 32-byte Ethereum Hashes (Bytes32).
+
+import type { HashType } from "@tevm/voltaire/Hash"
+import type { HexType } from "@tevm/voltaire/Hex"
+import { errorMessage, InvalidHashError } from "../errors.vibe"
+
+module native {
+  import * as VoltaireHash from "@tevm/voltaire/Hash"
+  import type { HashType } from "@tevm/voltaire/Hash"
+  import type { HexType } from "@tevm/voltaire/Hex"
+
+  export function fromRaw(value: string | Uint8Array): HashType {
+    return VoltaireHash.from(value)
+  }
+
+  export function fromHexRaw(value: string): HashType {
+    return VoltaireHash.fromHex(value)
+  }
+
+  export function fromBytesRaw(value: Uint8Array): HashType {
+    return VoltaireHash.fromBytes(value)
+  }
+
+  /** @throws {never} */
+  export function toHex(hash: HashType): HexType {
+    return VoltaireHash.toHex(hash) as HexType
+  }
+
+  /** @throws {never} */
+  export function toBytes(hash: HashType): Uint8Array {
+    return VoltaireHash.toBytes(hash)
+  }
+
+  /** @throws {never} */
+  export function isHash(value: unknown): value is HashType {
+    return VoltaireHash.isHash(value)
+  }
+
+  /** @throws {never} */
+  export function isValidHex(value: string): boolean {
+    return VoltaireHash.isValidHex(value)
+  }
+
+  /** @throws {never} */
+  export function equals(a: HashType, b: HashType): boolean {
+    return VoltaireHash.equals(a, b)
+  }
+
+  /** @throws {never} */
+  export function isZero(hash: HashType): boolean {
+    return VoltaireHash.isZero(hash)
+  }
+
+  /** @throws {never} */
+  export function clone(hash: HashType): HashType {
+    return VoltaireHash.clone(hash)
+  }
+
+  /** @throws {never} */
+  export function zero(): HashType {
+    return VoltaireHash.clone(VoltaireHash.ZERO)
+  }
+
+  export const SIZE = VoltaireHash.SIZE
+}
+
+import {
+  clone,
+  equals,
+  fromBytesRaw,
+  fromHexRaw,
+  fromRaw,
+  isHash,
+  isValidHex,
+  isZero,
+  SIZE,
+  toBytes,
+  toHex,
+  zero
+} from native
+
+export type { HashType }
+export { clone, equals, isHash, isValidHex, isZero, SIZE, toBytes, toHex, zero }
+
+export const HashTypeSchema = Schema.declare<HashType>(
+  (u): u is HashType => isHash(u),
+  { identifier: "Hash", description: "32-byte Ethereum hash" }
+)
+
+export const HashHex = Schema.String.pipe(
+  Schema.decodeTo(HashTypeSchema, {
+    decode: SchemaGetter.transformEffect(effect (s, options) => {
+      return fromHex(s) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
+      }
+    }),
+    encode: SchemaGetter.transform((h): string => toHex(h))
+  })
+)
+
+export const HashBytes = Schema.Uint8Array.pipe(
+  Schema.decodeTo(HashTypeSchema, {
+    decode: SchemaGetter.transformEffect(effect (b, options) => {
+      return fromBytes(b) catch effect (e) => {
+        throw new SchemaIssue.InvalidValue({ message: e.message }, b, options)
+      }
+    }),
+    encode: SchemaGetter.transform((h): Uint8Array => toBytes(h))
+  })
+)
+
+export effect function from(value: HashType | string | Uint8Array): HashType!InvalidHashError {
+  if (isHash(value)) return value
+  return try Effect.try({
+    try: () => fromRaw(value),
+    catch: (cause) => new InvalidHashError({ input: value, message: `Invalid hash: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromHex(value: string): HashType!InvalidHashError {
+  return try Effect.try({
+    try: () => fromHexRaw(value),
+    catch: (cause) => new InvalidHashError({ input: value, message: `Invalid hex hash: ${errorMessage(cause)}`, cause })
+  })
+}
+
+export effect function fromBytes(value: Uint8Array): HashType!InvalidHashError {
+  return try Effect.try({
+    try: () => fromBytesRaw(value),
+    catch: (cause) => new InvalidHashError({ input: value, message: `Invalid hash bytes: ${errorMessage(cause)}`, cause })
+  })
+}

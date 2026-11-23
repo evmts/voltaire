@@ -1,0 +1,107 @@
+// Concurrent-safe NonceManager service using per-address Semaphore(1) + Ref.
+// Prevents nonce collisions when multiple fibers submit transactions concurrently.
+
+import { errorMessage, NonceError } from "../errors.vibe"
+import * as Address from "../primitives/Address.vibe"
+import { getTransactionCount } from "../provider/Actions.vibe"
+import { Transport } from "../transport/Transport.vibe"
+
+export service NonceManager {
+  static readonly key = "voltaire-effect/signer/NonceManager"
+  /** Atomically reserves and returns the next nonce for an address */
+  nextNonce(address: Address.AddressInput): bigint!NonceError
+  /** Reads the current next nonce without incrementing it */
+  peekNonce(address: Address.AddressInput): bigint!NonceError
+  /** Clears cached nonce for an address (forces fresh pending lookup on next call) */
+  reset(address: Address.AddressInput): void!!
+  /** Clears cached nonces for all addresses */
+  resetAll(): void!!
+}
+
+export const NonceManagerLive = Layer.effect(
+  NonceManager,
+  effect {
+    const transport = try Transport
+    const noncesRef = try Ref.make<Map<string, bigint>>(new Map())
+    const locksRef = try Ref.make<Map<string, Semaphore.Semaphore>>(new Map())
+    const lockCreationSem = try Semaphore.make(1)
+
+    effect function normalizeKey(address: Address.AddressInput): string!NonceError {
+      if (typeof address === "string") {
+        const parsed = Address.fromHex(address) catch effect (e) => {
+          throw new NonceError({ address, message: e.message, cause: e })
+        }
+        return Address.toHex(parsed).toLowerCase()
+      }
+      return Address.toHex(address).toLowerCase()
+    }
+
+    effect function getAddressLock(key: string): Semaphore.Semaphore!! {
+      const existing = (try Ref.get(locksRef)).get(key)
+      if (existing !== undefined) return existing
+      return try lockCreationSem.withPermits(1)(effect {
+        const current = try Ref.get(locksRef)
+        const doubleCheck = current.get(key)
+        if (doubleCheck !== undefined) return doubleCheck
+        const sem = try Semaphore.make(1)
+        const next = new Map(current)
+        next.set(key, sem)
+        try Ref.set(locksRef, next)
+        return sem
+      })
+    }
+
+    effect function fetchPendingNonce(key: string): bigint!NonceError {
+      return Effect.provideService(
+        getTransactionCount(key as `0x${string}`, "pending"),
+        Transport,
+        transport
+      ) catch effect (e) => {
+        throw new NonceError({
+          address: key,
+          message: `Failed fetching pending nonce for ${key}: ${errorMessage(e)}`,
+          cause: e
+        })
+      }
+    }
+
+    return NonceManager.of({
+      effect nextNonce(address: Address.AddressInput): bigint!NonceError {
+        const key = try normalizeKey(address)
+        const lock = try getAddressLock(key)
+        return try lock.withPermits(1)(effect {
+          const map = try Ref.get(noncesRef)
+          const cached = map.get(key)
+          const current = cached ?? try fetchPendingNonce(key)
+          try Ref.update(noncesRef, (latest) => {
+            const updated = new Map(latest)
+            updated.set(key, current + 1n)
+            return updated
+          })
+          return current
+        })
+      },
+
+      effect peekNonce(address: Address.AddressInput): bigint!NonceError {
+        const key = try normalizeKey(address)
+        const map = try Ref.get(noncesRef)
+        const cached = map.get(key)
+        if (cached !== undefined) return cached
+        return try fetchPendingNonce(key)
+      },
+
+      effect reset(address: Address.AddressInput): void!! {
+        const key = typeof address === "string" ? address.toLowerCase() : Address.toHex(address).toLowerCase()
+        try Ref.update(noncesRef, (map) => {
+          const next = new Map(map)
+          next.delete(key)
+          return next
+        })
+      },
+
+      effect resetAll(): void!! {
+        try Ref.set(noncesRef, new Map())
+      }
+    })
+  }
+)

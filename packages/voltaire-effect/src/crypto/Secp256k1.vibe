@@ -1,0 +1,132 @@
+// Secp256k1 elliptic-curve signing, verification, and key recovery service.
+
+import type { AddressType } from "@tevm/voltaire/Address"
+import type { HashType } from "@tevm/voltaire/Hash"
+import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1"
+import { CryptoError, errorMessage } from "../errors.vibe"
+
+module native {
+  import * as VoltaireSecp from "@tevm/voltaire/Secp256k1"
+  import { Address as VoltaireAddress, type AddressType } from "@tevm/voltaire/Address"
+  import type { HashType } from "@tevm/voltaire/Hash"
+  import type { Secp256k1SignatureType } from "@tevm/voltaire/Secp256k1"
+
+  export function signRaw(messageHash: HashType, privateKey: Uint8Array): Secp256k1SignatureType {
+    return VoltaireSecp.sign(messageHash, privateKey as any)
+  }
+
+  export function verifyRaw(
+    signature: Secp256k1SignatureType,
+    messageHash: HashType,
+    publicKey: Uint8Array
+  ): boolean {
+    return VoltaireSecp.verify(signature, messageHash, publicKey as any)
+  }
+
+  export function recoverPublicKeyRaw(
+    signature: Secp256k1SignatureType,
+    messageHash: HashType
+  ): Uint8Array {
+    return VoltaireSecp.recoverPublicKey(signature, messageHash)
+  }
+
+  export function derivePublicKeyRaw(privateKey: Uint8Array): Uint8Array {
+    return VoltaireSecp.derivePublicKey(privateKey as any)
+  }
+
+  export function publicKeyToAddressRaw(publicKey: Uint8Array): AddressType {
+    return VoltaireAddress.fromPublicKey(publicKey)
+  }
+
+  /** @throws {never} */
+  export function isValidPrivateKey(privateKey: Uint8Array): boolean {
+    return VoltaireSecp.isValidPrivateKey(privateKey)
+  }
+}
+
+import {
+  derivePublicKeyRaw,
+  isValidPrivateKey,
+  publicKeyToAddressRaw,
+  recoverPublicKeyRaw,
+  signRaw,
+  verifyRaw
+} from native
+
+export type { Secp256k1SignatureType }
+export { isValidPrivateKey }
+
+export service Secp256k1 {
+  static readonly key = "voltaire-effect/crypto/Secp256k1"
+  sign(messageHash: HashType, privateKey: Uint8Array): Secp256k1SignatureType!CryptoError
+  verify(signature: Secp256k1SignatureType, messageHash: HashType, publicKey: Uint8Array): boolean!CryptoError
+  recoverPublicKey(signature: Secp256k1SignatureType, messageHash: HashType): Uint8Array!CryptoError
+  recoverAddress(signature: Secp256k1SignatureType, messageHash: HashType): AddressType!CryptoError
+  derivePublicKey(privateKey: Uint8Array): Uint8Array!CryptoError
+}
+
+export const Secp256k1Live = Layer.succeed(Secp256k1, {
+  effect sign(messageHash: HashType, privateKey: Uint8Array) {
+    return try Effect.try({
+      try: () => signRaw(messageHash, privateKey),
+      catch: (cause) => new CryptoError({ operation: "secp256k1.sign", message: `Secp256k1 sign failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect verify(signature: Secp256k1SignatureType, messageHash: HashType, publicKey: Uint8Array) {
+    return try Effect.try({
+      try: () => verifyRaw(signature, messageHash, publicKey),
+      catch: (cause) => new CryptoError({ operation: "secp256k1.verify", message: `Secp256k1 verify failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect recoverPublicKey(signature: Secp256k1SignatureType, messageHash: HashType) {
+    return try Effect.try({
+      try: () => recoverPublicKeyRaw(signature, messageHash),
+      catch: (cause) => new CryptoError({ operation: "secp256k1.recoverPublicKey", message: `Secp256k1 public key recovery failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect recoverAddress(signature: Secp256k1SignatureType, messageHash: HashType) {
+    return try Effect.try({
+      try: () => publicKeyToAddressRaw(recoverPublicKeyRaw(signature, messageHash)),
+      catch: (cause) => new CryptoError({ operation: "secp256k1.recoverAddress", message: `Secp256k1 address recovery failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect derivePublicKey(privateKey: Uint8Array) {
+    return try Effect.try({
+      try: () => derivePublicKeyRaw(privateKey),
+      catch: (cause) => new CryptoError({ operation: "secp256k1.derivePublicKey", message: `Secp256k1 public key derivation failed: ${errorMessage(cause)}`, cause })
+    })
+  }
+})
+
+export effect function sign(messageHash: HashType, privateKey: Uint8Array): Secp256k1SignatureType!CryptoError!Secp256k1 {
+  return try (try Secp256k1).sign(messageHash, privateKey)
+}
+
+export effect function verify(signature: Secp256k1SignatureType, messageHash: HashType, publicKey: Uint8Array): boolean!CryptoError!Secp256k1 {
+  return try (try Secp256k1).verify(signature, messageHash, publicKey)
+}
+
+export effect function recoverPublicKey(signature: Secp256k1SignatureType, messageHash: HashType): Uint8Array!CryptoError!Secp256k1 {
+  return try (try Secp256k1).recoverPublicKey(signature, messageHash)
+}
+
+export effect function recoverAddress(signature: Secp256k1SignatureType, messageHash: HashType): AddressType!CryptoError!Secp256k1 {
+  return try (try Secp256k1).recoverAddress(signature, messageHash)
+}
+
+export effect function derivePublicKey(privateKey: Uint8Array): Uint8Array!CryptoError!Secp256k1 {
+  return try (try Secp256k1).derivePublicKey(privateKey)
+}
+
+// Generates a valid 32-byte private key using Effect's Random service.
+export effect function randomPrivateKey(): Uint8Array!! {
+  while (true) {
+    const candidate = new Uint8Array(32)
+    for (let i = 0; i < 32; i++) {
+      candidate[i] = try Random.nextIntBetween(0, 256)
+    }
+    if (isValidPrivateKey(candidate)) {
+      return candidate
+    }
+  }
+}

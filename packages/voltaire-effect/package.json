@@ -1,15 +1,15 @@
 {
 	"name": "voltaire-effect",
-	"version": "1.1.0",
-	"description": "Effect-TS integration for Voltaire Ethereum primitives library",
+	"version": "2.0.0",
+	"description": "Effect 4 integration for Voltaire Ethereum primitives, cryptography, transports, providers, signers, contracts, and streams — written in VibeLang",
 	"author": "TEVM",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/evmts/voltaire.git",
-		"directory": "voltaire-effect"
+		"directory": "packages/voltaire-effect"
 	},
-	"homepage": "https://github.com/evmts/voltaire/tree/main/voltaire-effect",
+	"homepage": "https://github.com/evmts/voltaire/tree/main/packages/voltaire-effect",
 	"bugs": {
 		"url": "https://github.com/evmts/voltaire/issues"
 	},
@@ -17,6 +17,8 @@
 		"ethereum",
 		"effect",
 		"effect-ts",
+		"vibelang",
+		"voltaire",
 		"crypto",
 		"blockchain",
 		"web3",
@@ -29,85 +31,100 @@
 	"files": [
 		"dist",
 		"src",
-		"README.md"
+		"!src/**/*.test.*",
+		"!src/testing",
+		"README.md",
+		"CHANGELOG.md"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"exports": {
+		"./package.json": "./package.json",
 		".": {
+			"vibelang-source": "./src/index.vibe",
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
+		"./errors": {
+			"vibelang-source": "./src/errors.vibe",
+			"types": "./dist/errors.d.ts",
+			"import": "./dist/errors.js"
+		},
 		"./primitives": {
+			"vibelang-source": "./src/primitives/index.vibe",
 			"types": "./dist/primitives/index.d.ts",
 			"import": "./dist/primitives/index.js"
 		},
 		"./crypto": {
+			"vibelang-source": "./src/crypto/index.vibe",
 			"types": "./dist/crypto/index.d.ts",
 			"import": "./dist/crypto/index.js"
 		},
+		"./transport": {
+			"vibelang-source": "./src/transport/index.vibe",
+			"types": "./dist/transport/index.d.ts",
+			"import": "./dist/transport/index.js"
+		},
+		"./provider": {
+			"vibelang-source": "./src/provider/index.vibe",
+			"types": "./dist/provider/index.d.ts",
+			"import": "./dist/provider/index.js"
+		},
+		"./contract": {
+			"vibelang-source": "./src/contract/index.vibe",
+			"types": "./dist/contract/index.d.ts",
+			"import": "./dist/contract/index.js"
+		},
+		"./signer": {
+			"vibelang-source": "./src/signer/index.vibe",
+			"types": "./dist/signer/index.d.ts",
+			"import": "./dist/signer/index.js"
+		},
+		"./streams": {
+			"vibelang-source": "./src/streams/index.vibe",
+			"types": "./dist/streams/index.d.ts",
+			"import": "./dist/streams/index.js"
+		},
+		"./standards": {
+			"vibelang-source": "./src/standards/index.vibe",
+			"types": "./dist/standards/index.d.ts",
+			"import": "./dist/standards/index.js"
+		},
 		"./services": {
+			"vibelang-source": "./src/services/index.vibe",
 			"types": "./dist/services/index.d.ts",
 			"import": "./dist/services/index.js"
-		},
-		"./native": {
-			"types": "./dist/native/index.d.ts",
-			"import": "./dist/native/index.js"
-		},
-		"./jsonrpc": {
-			"types": "./dist/jsonrpc/index.d.ts",
-			"import": "./dist/jsonrpc/index.js"
-		}
-	},
-	"typesVersions": {
-		"*": {
-			"primitives": [
-				"./dist/primitives/index.d.ts"
-			],
-			"crypto": [
-				"./dist/crypto/index.d.ts"
-			],
-			"services": [
-				"./dist/services/index.d.ts"
-			],
-			"native": [
-				"./dist/native/index.d.ts"
-			],
-			"jsonrpc": [
-				"./dist/jsonrpc/index.d.ts"
-			]
 		}
 	},
 	"sideEffects": false,
-	"peerDependencies": {
-		"@effect/platform": "^0.94.0",
-		"@tevm/voltaire": "workspace:*",
-		"effect": "^3.19.0"
+	"dependencies": {
+		"vibelang-runtime": "0.0.13"
 	},
-	"optionalDependencies": {
-		"@effect/platform-browser": "^0.74.0",
-		"@effect/platform-bun": "^0.87.0",
-		"@effect/platform-node": "^0.104.0"
+	"peerDependencies": {
+		"@tevm/voltaire": "workspace:*",
+		"effect": "4.1.1"
 	},
 	"devDependencies": {
-		"@effect/platform": "^0.94.0",
-		"@effect/platform-node": "^0.104.0",
-		"@effect/vitest": "^0.27.0",
-		"@types/node": "^22.0.0",
-		"astro": "^5.0.0",
-		"effect": "^3.19.0",
-		"tsup": "^8.4.0",
-		"typescript": "^5.9.3",
-		"vitest": "^2.1.8"
+		"@effect/platform-node": "4.1.1",
+		"@effect/vitest": "4.1.1",
+		"@tevm/voltaire": "workspace:*",
+		"@types/node": "^22.15.0",
+		"effect": "4.1.1",
+		"vibelang": "0.0.13",
+		"vibelang-vite": "0.0.13",
+		"vite": "^8.0.0",
+		"vitest": "5.0.5"
 	},
 	"scripts": {
-		"build": "tsup",
+		"build": "vibelang -p tsconfig.build.json",
+		"clean": "rm -rf dist .vibe",
+		"format": "vibelang format --write 'src/**/*.vibe'",
+		"format:check": "vibelang format --check 'src/**/*.vibe'",
+		"lint": "vibelang lint",
+		"prepublishOnly": "pnpm run typecheck && pnpm run build && pnpm run test:run",
 		"test": "vitest",
 		"test:run": "vitest run",
-		"typecheck": "tsc --noEmit",
-		"prepublishOnly": "pnpm run build && pnpm run typecheck",
-		"docs:dev": "cd docs && mintlify dev",
-		"docs:build": "cd docs && mintlify build"
-	},
-	"dependencies": {
-		"@shazow/whatsabi": "^0.25.0"
+		"typecheck": "vibelang --noEmit"
 	}
 }

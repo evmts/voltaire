@@ -1,0 +1,96 @@
+// Keccak-256 cryptographic hashing service backed by @tevm/voltaire.
+
+import type { HashType } from "@tevm/voltaire/Hash"
+import type { HexType } from "@tevm/voltaire/Hex"
+import { CryptoError, errorMessage } from "../errors.vibe"
+
+module native {
+  import * as VoltaireKeccak from "@tevm/voltaire/Keccak256"
+  import * as VoltaireHex from "@tevm/voltaire/Hex"
+  import type { HashType } from "@tevm/voltaire/Hash"
+  import type { HexType } from "@tevm/voltaire/Hex"
+
+  export function hashBytesRaw(data: Uint8Array): HashType {
+    return VoltaireKeccak.hash(data) as unknown as HashType
+  }
+
+  export function hashHexRaw(hex: string): HashType {
+    return VoltaireKeccak.hashHex(hex) as unknown as HashType
+  }
+
+  export function hashStringRaw(value: string): HashType {
+    return VoltaireKeccak.hashString(value) as unknown as HashType
+  }
+
+  export function selectorRaw(signature: string): HexType {
+    return VoltaireHex.fromBytes(VoltaireKeccak.selector(signature))
+  }
+
+  export function topicRaw(signature: string): HashType {
+    return VoltaireKeccak.topic(signature) as unknown as HashType
+  }
+}
+
+import { hashBytesRaw, hashHexRaw, hashStringRaw, selectorRaw, topicRaw } from native
+
+export service Keccak {
+  static readonly key = "voltaire-effect/crypto/Keccak"
+  hash(data: Uint8Array): HashType!CryptoError
+  hashHex(hex: string): HashType!CryptoError
+  hashString(value: string): HashType!CryptoError
+  selector(signature: string): HexType!CryptoError
+  topic(signature: string): HashType!CryptoError
+}
+
+export const KeccakLive = Layer.succeed(Keccak, {
+  effect hash(data: Uint8Array) {
+    return try Effect.try({
+      try: () => hashBytesRaw(data),
+      catch: (cause) => new CryptoError({ operation: "keccak256", message: `Keccak256 hash failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect hashHex(hex: string) {
+    return try Effect.try({
+      try: () => hashHexRaw(hex),
+      catch: (cause) => new CryptoError({ operation: "keccak256Hex", message: `Keccak256 hex hash failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect hashString(value: string) {
+    return try Effect.try({
+      try: () => hashStringRaw(value),
+      catch: (cause) => new CryptoError({ operation: "keccak256String", message: `Keccak256 string hash failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect selector(signature: string) {
+    return try Effect.try({
+      try: () => selectorRaw(signature),
+      catch: (cause) => new CryptoError({ operation: "selector", message: `Function selector hash failed: ${errorMessage(cause)}`, cause })
+    })
+  },
+  effect topic(signature: string) {
+    return try Effect.try({
+      try: () => topicRaw(signature),
+      catch: (cause) => new CryptoError({ operation: "topic", message: `Event topic hash failed: ${errorMessage(cause)}`, cause })
+    })
+  }
+})
+
+export effect function hash(data: Uint8Array): HashType!CryptoError!Keccak {
+  return try (try Keccak).hash(data)
+}
+
+export effect function hashHex(hex: string): HashType!CryptoError!Keccak {
+  return try (try Keccak).hashHex(hex)
+}
+
+export effect function hashString(value: string): HashType!CryptoError!Keccak {
+  return try (try Keccak).hashString(value)
+}
+
+export effect function selector(signature: string): HexType!CryptoError!Keccak {
+  return try (try Keccak).selector(signature)
+}
+
+export effect function topic(signature: string): HashType!CryptoError!Keccak {
+  return try (try Keccak).topic(signature)
+}

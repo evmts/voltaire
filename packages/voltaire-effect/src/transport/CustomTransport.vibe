@@ -1,0 +1,86 @@
+// Custom EIP-1193 provider adapter Transport (for browser wallets, MetaMask, Hardhat/Anvil, etc.).
+
+import {
+  errorMessage,
+  RpcError,
+  type RpcTransportError,
+  TransportError,
+  TransportFailureReason
+} from "../errors.vibe"
+import {
+  type JsonRpcBatchItemResult,
+  JsonRpcBatchItemResult as BatchResult,
+  type JsonRpcCall,
+  Transport
+} from "./Transport.vibe"
+
+export interface Eip1193Provider {
+  request(args: { readonly method: string; readonly params?: ReadonlyArray<unknown> }): Promise<unknown>
+}
+
+function mapProviderError(cause: unknown, method: string): RpcTransportError {
+  if (Predicate.isObject(cause) && "code" in cause && typeof (cause as { readonly code?: unknown }).code === "number") {
+    const rec = cause as { readonly code: number; readonly message?: string; readonly data?: unknown }
+    return new RpcError({
+      code: rec.code,
+      message: rec.message ?? errorMessage(cause),
+      method,
+      data: rec.data,
+      cause
+    })
+  }
+  return new TransportError({
+    message: `EIP-1193 request "${method}" failed: ${errorMessage(cause)}`,
+    reason: TransportFailureReason.Network({ cause }),
+    method,
+    cause
+  })
+}
+
+export function CustomTransport(provider: Eip1193Provider) {
+  return Layer.succeed(Transport, {
+    effect request<T = unknown>(method: string, params?: ReadonlyArray<unknown>): T!RpcTransportError {
+      const result = try tryPromise({
+        try: () => provider.request({ method, params: params ?? [] }),
+        catch: (cause) => mapProviderError(cause, method)
+      })
+      return result as T
+    },
+
+    effect requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+      const effects = requests.map<unknown!RpcTransportError>((req) =>
+        tryPromise({
+          try: () => provider.request({ method: req.method, params: req.params ?? [] }),
+          catch: (cause) => mapProviderError(cause, req.method)
+        })
+      )
+      const settled = try.allSettled effects
+
+      const results: Array<JsonRpcBatchItemResult> = []
+      for (let i = 0; i < settled.length; i++) {
+        const ex = settled[i]
+        const req = requests[i]
+        if (ex === undefined) continue
+        if (Exit.isSuccess(ex)) {
+          results.push(BatchResult.Ok({ value: ex.value }))
+        } else {
+          const errOpt = Cause.findErrorOption(ex.cause)
+          if (Option.isSome(errOpt) && errOpt.value instanceof RpcError) {
+            results.push(BatchResult.Err({ error: errOpt.value }))
+          } else {
+            results.push(
+              BatchResult.Err({
+                error: new RpcError({
+                  code: -32603,
+                  message: Option.isSome(errOpt) ? errOpt.value.message : "Provider batch item failed",
+                  method: req?.method
+                })
+              })
+            )
+          }
+        }
+      }
+      return results
+    }
+  })
+}

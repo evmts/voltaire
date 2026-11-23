@@ -1,0 +1,148 @@
+// Core JSON-RPC Transport service and Effect 4 Context.Reference configuration services.
+
+import {
+  RpcError,
+  type RpcTransportError,
+  TransportError
+} from "../errors.vibe"
+
+export interface JsonRpcCall {
+  readonly method: string
+  readonly params?: ReadonlyArray<unknown>
+}
+
+export data JsonRpcBatchItemResult {
+  Ok { value: unknown }
+  Err { error: RpcError }
+}
+
+export interface RpcRequestHookInput {
+  readonly method: string
+  readonly params: ReadonlyArray<unknown>
+}
+
+export interface RpcResponseHookInput {
+  readonly method: string
+  readonly params: ReadonlyArray<unknown>
+  readonly result: unknown
+  readonly durationMs: number
+}
+
+export interface RpcHooksConfig {
+  readonly onRequest?: (req: RpcRequestHookInput) => RpcRequestHookInput!!
+  readonly onResponse?: (res: RpcResponseHookInput) => unknown!!
+}
+
+export interface RpcRetryConfig {
+  readonly times: number
+  readonly baseDelay: Duration.Input
+  readonly jittered?: boolean
+}
+
+// Primary JSON-RPC Transport service.
+export service Transport {
+  static readonly key = "voltaire-effect/transport/Transport"
+  request<T = unknown>(method: string, params?: ReadonlyArray<unknown>): T!RpcTransportError
+  requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError
+}
+
+// Effect 4 Context.Reference config services (replaces Effect 3 FiberRef).
+export service RpcTimeout: Duration.Input {
+  static readonly key = "voltaire-effect/transport/RpcTimeout"
+  static readonly defaultValue = (): Duration.Input => "30 seconds"
+}
+
+export service RpcRetry: RpcRetryConfig | undefined {
+  static readonly key = "voltaire-effect/transport/RpcRetry"
+  static readonly defaultValue = (): RpcRetryConfig | undefined => ({
+    times: 3,
+    baseDelay: "250 millis",
+    jittered: true
+  })
+}
+
+export service RpcTracing: boolean {
+  static readonly key = "voltaire-effect/transport/RpcTracing"
+  static readonly defaultValue = () => true
+}
+
+export service RpcHooks: RpcHooksConfig {
+  static readonly key = "voltaire-effect/transport/RpcHooks"
+  static readonly defaultValue = (): RpcHooksConfig => ({})
+}
+
+export function isRetryableRpcTransportError(error: RpcTransportError): boolean {
+  return error.retryable
+}
+
+// Runs a raw JSON-RPC method through the current Transport service with optional span & hooks.
+export effect function request<T = unknown>(
+  method: string,
+  params?: ReadonlyArray<unknown>
+): T!RpcTransportError!Transport {
+  const transport = try Transport
+  const tracing = try RpcTracing
+  const hooks = try RpcHooks
+  const initialParams = params ?? []
+
+  const runCore = effect {
+    const req = hooks.onRequest
+      ? try hooks.onRequest({ method, params: initialParams })
+      : { method, params: initialParams }
+    const startMs = try Clock.currentTimeMillis
+    const value = try transport.request<T>(req.method, req.params)
+    const endMs = try Clock.currentTimeMillis
+    if (hooks.onResponse) {
+      const transformed = try hooks.onResponse({
+        method: req.method,
+        params: req.params,
+        result: value,
+        durationMs: endMs - startMs
+      })
+      return transformed as T
+    }
+    return value
+  }
+
+  if (tracing) {
+    return try withSpan(runCore, `rpc.${method}`, {
+      attributes: { "rpc.system": "ethereum-jsonrpc", "rpc.method": method }
+    })
+  }
+  return try runCore
+}
+
+// Runs an explicit JSON-RPC 2.0 batch through the current Transport service.
+export effect function requestBatch(
+  requests: ReadonlyArray<JsonRpcCall>
+): ReadonlyArray<JsonRpcBatchItemResult>!TransportError!Transport {
+  if (requests.length === 0) return []
+  const transport = try Transport
+  const tracing = try RpcTracing
+  const runCore = transport.requestBatch(requests)
+  if (tracing) {
+    return try withSpan(runCore, "rpc.batch", {
+      attributes: { "rpc.system": "ethereum-jsonrpc", "rpc.batch.size": requests.length }
+    })
+  }
+  return try runCore
+}
+
+// Scoped override helpers using Layer.succeed on Context.Reference services.
+export function withRpcTimeout(timeoutValue: Duration.Input) {
+  return Layer.succeed(RpcTimeout, timeoutValue)
+}
+
+export function withRpcRetry(config: RpcRetryConfig | undefined) {
+  return Layer.succeed(RpcRetry, config)
+}
+
+export const withoutRpcRetry = Layer.succeed(RpcRetry, undefined)
+
+export function withRpcTracing(enabled: boolean) {
+  return Layer.succeed(RpcTracing, enabled)
+}
+
+export function withRpcHooks(hooks: RpcHooksConfig) {
+  return Layer.succeed(RpcHooks, hooks)
+}

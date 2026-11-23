@@ -1,0 +1,11 @@
+{
+	"extends": "./tsconfig.json",
+	"exclude": [
+		"node_modules",
+		"dist",
+		".vibe",
+		"src/**/*.test.vibe",
+		"src/**/*.test.ts",
+		"src/testing/**"
+	]
+}
