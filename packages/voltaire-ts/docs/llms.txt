@@ -48,22 +48,22 @@ Ethereum primitives and cryptography library for TypeScript and Zig. Multi-langu
 ### Bytecode
 - [Bytecode Overview](/primitives/bytecode): EVM bytecode analysis and manipulation
 - [from](/primitives/bytecode/from): Universal bytecode constructor accepting multiple input formats
-- [fromHex](/primitives/bytecode/fromhex): Parse bytecode from hex strings
-- [fromUint8Array](/primitives/bytecode/fromuint8array): Create bytecode from Uint8Array
-- [toHex](/primitives/bytecode/tohex): Convert bytecode to hex string
+- [fromHex](/primitives/bytecode/fromHex): Parse bytecode from hex strings
+- [fromUint8Array](/primitives/bytecode/fromUint8Array): Create bytecode from Uint8Array
+- [toHex](/primitives/bytecode/toHex): Convert bytecode to hex string
 - [validate](/primitives/bytecode/validate): Validate bytecode structure and opcodes
 - [equals](/primitives/bytecode/equals): Compare bytecode equality
 - [analyze](/primitives/bytecode/analyze): Complete bytecode analysis (jump destinations, instructions, validity)
-- [analyzeJumpDestinations](/primitives/bytecode/analyzejumpdestinations): Find all valid JUMPDEST positions
-- [extractRuntime](/primitives/bytecode/extractruntime): Extract runtime bytecode from constructor bytecode
-- [formatInstruction](/primitives/bytecode/formatinstruction): Format single instruction for display
-- [formatInstructions](/primitives/bytecode/formatinstructions): Disassemble bytecode into human-readable format
-- [hasMetadata](/primitives/bytecode/hasmetadata): Detect compiler metadata presence
+- [analyzeJumpDestinations](/primitives/bytecode/analyzeJumpDestinations): Find all valid JUMPDEST positions
+- [extractRuntime](/primitives/bytecode/extractRuntime): Extract runtime bytecode from constructor bytecode
+- [formatInstruction](/primitives/bytecode/formatInstruction): Format single instruction for display
+- [formatInstructions](/primitives/bytecode/formatInstructions): Disassemble bytecode into human-readable format
+- [hasMetadata](/primitives/bytecode/hasMetadata): Detect compiler metadata presence
 - [hash](/primitives/bytecode/hash): Compute keccak256 hash of bytecode
-- [isValidJumpDest](/primitives/bytecode/isvalidjumpdest): Check if position is valid jump destination
-- [parseInstructions](/primitives/bytecode/parseinstructions): Parse bytecode into instruction array
+- [isValidJumpDest](/primitives/bytecode/isValidJumpDest): Check if position is valid jump destination
+- [parseInstructions](/primitives/bytecode/parseInstructions): Parse bytecode into instruction array
 - [size](/primitives/bytecode/size): Get bytecode size in bytes
-- [stripMetadata](/primitives/bytecode/stripmetadata): Remove compiler metadata from bytecode
+- [stripMetadata](/primitives/bytecode/stripMetadata): Remove compiler metadata from bytecode
 
 ### Chain
 - [Chain Overview](/primitives/chain): Chain ID definitions and utilities

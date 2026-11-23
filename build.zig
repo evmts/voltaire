@@ -1669,9 +1669,14 @@ fn addCryptoWasmBuilds(
 
 /// Links the system libraries that the Rust `crypto_wrappers` staticlib needs.
 /// Rust std references `_Unwind_*` symbols (std::sys::personality::gcc) even
-/// with panic=abort; on Linux glibc they live in libgcc_s.
+/// with panic=abort: on Linux glibc they live in libgcc_s, and on Windows GNU
+/// they live in Zig's bundled libunwind alongside WaitOnAddress/WakeByAddress*
+/// in api-ms-win-core-synch-l1-2-0.
 fn linkRustCryptoDeps(mod: *std.Build.Module, target: std.Build.ResolvedTarget) void {
     if (target.result.os.tag == .linux) {
         mod.linkSystemLibrary("gcc_s", .{});
+    } else if (target.result.os.tag == .windows and target.result.abi != .msvc) {
+        mod.linkSystemLibrary("unwind", .{});
+        mod.linkSystemLibrary("api-ms-win-core-synch-l1-2-0", .{});
     }
 }
