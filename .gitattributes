@@ -1,0 +1,5 @@
+# Embedded cryptographic fixtures and conformance vectors must preserve exact LF
+# bytes across platforms (e.g., KZG trusted setup SHA-256 verification on Windows).
+trusted_setup.txt text eol=lf
+packages/voltaire-zig/src/evm/precompiles/*.txt text eol=lf
+packages/voltaire-zig/src/evm/precompiles/vectors/*.txt text eol=lf
