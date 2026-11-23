@@ -4,6 +4,7 @@ import {
 	execute,
 	PrecompileAddress,
 } from "../evm/precompiles/precompiles.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 
 /**
  * Blake2f compression - EIP-152
@@ -447,7 +448,12 @@ describe("Blake2f Compression Function (0x09) - EIP-152", () => {
 	describe("Execute interface", () => {
 		it("should work through execute() function", () => {
 			const input = new Uint8Array(213);
-			const result = execute(PrecompileAddress.BLAKE2F, input, 100n);
+			const result = execute(
+				PrecompileAddress.BLAKE2F,
+				input,
+				100n,
+				Hardfork.DEFAULT,
+			);
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(64);
 		});

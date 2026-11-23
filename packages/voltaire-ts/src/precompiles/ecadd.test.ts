@@ -7,6 +7,7 @@ import {
 	execute,
 	PrecompileAddress,
 } from "../evm/precompiles/precompiles.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 
 /**
  * BN254 curve: y^2 = x^3 + 3 over Fp
@@ -384,7 +385,12 @@ describe("BN254 Point Addition (0x06) - EIP-196", () => {
 			input.set(gBytes, 0);
 			input.set(gBytes, 64);
 
-			const result = execute(PrecompileAddress.BN254_ADD, input, 1000n);
+			const result = execute(
+				PrecompileAddress.BN254_ADD,
+				input,
+				1000n,
+				Hardfork.DEFAULT,
+			);
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(150n);
 		});

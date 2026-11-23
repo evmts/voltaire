@@ -662,16 +662,6 @@
       "permanent": true
     },
     {
-      "source": "/primitives/ens/fundamentals",
-      "destination": "/primitives/ens",
-      "permanent": true
-    },
-    {
-      "source": "/primitives/ens/usage-patterns",
-      "destination": "/primitives/ens",
-      "permanent": true
-    },
-    {
       "source": "/primitives/denomination/fundamentals",
       "destination": "/primitives/denomination",
       "permanent": true
@@ -1415,6 +1405,7 @@
                   "primitives/abi/interface/erc165",
                   "primitives/rlp/index",
                   "primitives/rlp/fundamentals",
+                  "primitives/rlp/block-size-limit",
                   "primitives/ssz/index",
                   "primitives/base64/index",
                   "primitives/calldata/index",
@@ -1443,12 +1434,15 @@
                   "primitives/authorization/index",
                   "primitives/blob/index",
                   "primitives/feemarket/index",
+                  "primitives/feemarket/blob-schedules",
                   "primitives/block/index",
                   "primitives/block-header/index",
                   "primitives/block-body/index",
+                  "primitives/block-access-list/index",
                   "primitives/block-stream",
                   "primitives/eventlog/index",
                   "primitives/receipt/index",
+                  "primitives/receipt/receipt-manager",
                   "primitives/nonce/index",
                   "primitives/chain/index",
                   "primitives/chain-id/index",
@@ -1465,6 +1459,7 @@
                   "primitives/gas/index",
                   "primitives/gasconstants",
                   "primitives/hardfork/index",
+                  "primitives/hardfork/osaka",
                   "primitives/state/index",
                   "primitives/storage/index",
                   "primitives/storage-value/index",
@@ -1488,7 +1483,22 @@
                 "icon": "shield-halved",
                 "pages": [
                   "primitives/siwe/index",
-                  "primitives/ens/index",
+                  {
+                    "group": "ENS",
+                    "pages": [
+                      "primitives/ens/index",
+                      "primitives/ens/fundamentals",
+                      "primitives/ens/normalization",
+                      "primitives/ens/validation",
+                      "primitives/ens/encoding",
+                      "primitives/ens/branded-ens",
+                      "primitives/ens/ensip-standards",
+                      "primitives/ens/usage-patterns",
+                      "primitives/ens/errors",
+                      "primitives/ens/security",
+                      "primitives/ens/wasm"
+                    ]
+                  },
                   "primitives/signature/index",
                   "primitives/private-key/index",
                   "primitives/public-key/index",
@@ -1840,7 +1850,8 @@
                       "evm/precompiles/bls12-map-fp-to-g1",
                       "evm/precompiles/bls12-map-fp2-to-g2"
                     ]
-                  }
+                  },
+                  "evm/precompiles/p256verify"
                 ]
               }
             ]

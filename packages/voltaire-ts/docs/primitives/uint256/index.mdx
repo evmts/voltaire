@@ -70,6 +70,8 @@ Import `Uint256` (namespace) or `Uint` (callable constructor) from `@tevm/voltai
 | Group | Methods | Semantics |
 | --- | --- | --- |
 | Arithmetic | `plus`, `minus`, `times`, `toPower` | Wrapping modulo $2^{256}$ |
+| Checked arithmetic | `plusChecked`, `minusChecked`, `timesChecked` | Throw `UintOverflowError` (`plus`, `times`) or `UintNegativeError` (`minus`) instead of wrapping |
+| Explicit wrapping | `plusWrapping`, `minusWrapping`, `timesWrapping` | Same as `plus` / `minus` / `times`; name the intent at the call site |
 | Division | `dividedBy`, `modulo` | Truncating unsigned division; throws on zero divisor |
 | Bitwise | `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`, `shiftLeft`, `shiftRight` | Masked to 256 bits (`bitwiseNot(0n) === MAX`) |
 | Comparison | `equals`, `notEquals`, `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual`, `isZero`, `minimum`, `maximum` | Standard unsigned order |
@@ -80,6 +82,7 @@ Import `Uint256` (namespace) or `Uint` (callable constructor) from `@tevm/voltai
 
 - `Uint256.minus(0n, 1n)` wraps to `Uint256.MAX`.
 - `Uint256.plus(Uint256.MAX, 1n)` wraps to `0n`.
+- `Uint256.plusChecked(Uint256.MAX, 1n)` throws `UintOverflowError`; `Uint256.minusChecked(0n, 1n)` throws `UintNegativeError`.
 - `Uint256.shiftLeft(x, 256n)` and `Uint256.shiftRight(x, 256n)` yield `0n`.
 - `Uint256.fromAbiEncoded` throws `InvalidLengthError` if input length is not `32`.
 

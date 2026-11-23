@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { serializeG1, serializeG2 } from "../crypto/bn254/BN254.js";
+import { serializeG1 } from "../crypto/bn254/BN254.js";
 import { FR_MOD } from "../crypto/bn254/constants.js";
 import * as G1 from "../crypto/bn254/G1/index.js";
 import * as G2 from "../crypto/bn254/G2/index.js";
@@ -8,6 +8,26 @@ import {
 	execute,
 	PrecompileAddress,
 } from "../evm/precompiles/precompiles.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
+
+/**
+ * Encode a G2 point in EIP-197 wire order:
+ * `x_imag || x_real || y_imag || y_real` (`c1` before `c0`). Infinity is 128 zero bytes.
+ */
+function eip197G2(point: ReturnType<typeof G2.generator>): Uint8Array {
+	const out = new Uint8Array(128);
+	if (G2.isZero(point)) return out;
+	const { x, y } = G2.toAffine(point);
+	const word = (v: bigint) =>
+		Uint8Array.from(v.toString(16).padStart(64, "0").match(/../g) ?? [], (h) =>
+			Number.parseInt(h, 16),
+		);
+	out.set(word(x.c1), 0);
+	out.set(word(x.c0), 32);
+	out.set(word(y.c1), 64);
+	out.set(word(y.c0), 96);
+	return out;
+}
 
 /**
  * BN254 pairing check (ate pairing)
@@ -73,7 +93,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const inf = G1.infinity();
 
 			const infBytes = serializeG1(inf);
-			const qBytes = serializeG2(q);
+			const qBytes = eip197G2(q);
 
 			const input = new Uint8Array(192);
 			input.set(infBytes, 0);
@@ -91,7 +111,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const inf = G2.infinity();
 
 			const pBytes = serializeG1(p);
-			const infBytes = serializeG2(inf);
+			const infBytes = eip197G2(inf);
 
 			const input = new Uint8Array(192);
 			input.set(pBytes, 0);
@@ -107,7 +127,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const infQ = G2.infinity();
 
 			const infPBytes = serializeG1(infP);
-			const infQBytes = serializeG2(infQ);
+			const infQBytes = eip197G2(infQ);
 
 			const input = new Uint8Array(192);
 			input.set(infPBytes, 0);
@@ -126,9 +146,9 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const twoG2 = G2.mul(g2, 2n);
 
 			const twoG1Bytes = serializeG1(twoG1);
-			const g2Bytes = serializeG2(g2);
+			const g2Bytes = eip197G2(g2);
 			const g1Bytes = serializeG1(g1);
-			const twoG2Bytes = serializeG2(twoG2);
+			const twoG2Bytes = eip197G2(twoG2);
 
 			// Compute e(2*G1, G2)
 			const input1 = new Uint8Array(192);
@@ -157,9 +177,9 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const aG2 = G2.mul(g2, scalar);
 
 			const aG1Bytes = serializeG1(aG1);
-			const g2Bytes = serializeG2(g2);
+			const g2Bytes = eip197G2(g2);
 			const g1Bytes = serializeG1(g1);
-			const aG2Bytes = serializeG2(aG2);
+			const aG2Bytes = eip197G2(aG2);
 
 			// e(a*G1, G2)
 			const input1 = new Uint8Array(192);
@@ -187,7 +207,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const q = G2.mul(g2, 7n);
 
 			const pBytes = serializeG1(p);
-			const qBytes = serializeG2(q);
+			const qBytes = eip197G2(q);
 
 			const input = new Uint8Array(192);
 			input.set(pBytes, 0);
@@ -212,7 +232,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 
 			const pBytes = serializeG1(p);
 			const negPBytes = serializeG1(negP);
-			const qBytes = serializeG2(q);
+			const qBytes = eip197G2(q);
 
 			// Create input with 2 pairs: (P, Q) and (-P, Q)
 			const input = new Uint8Array(384); // 2 pairs
@@ -236,9 +256,9 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const q2 = G2.mul(g2, 7n);
 
 			const p1Bytes = serializeG1(p1);
-			const q1Bytes = serializeG2(q1);
+			const q1Bytes = eip197G2(q1);
 			const p2Bytes = serializeG1(p2);
-			const q2Bytes = serializeG2(q2);
+			const q2Bytes = eip197G2(q2);
 
 			// 2 pairs
 			const input = new Uint8Array(384);
@@ -262,7 +282,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const q = G2.mul(g2, largeScalar);
 
 			const pBytes = serializeG1(p);
-			const qBytes = serializeG2(q);
+			const qBytes = eip197G2(q);
 
 			const input = new Uint8Array(192);
 			input.set(pBytes, 0);
@@ -281,7 +301,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const q = G2.mul(g2, nearOrder);
 
 			const pBytes = serializeG1(p);
-			const qBytes = serializeG2(q);
+			const qBytes = eip197G2(q);
 
 			const input = new Uint8Array(192);
 			input.set(pBytes, 0);
@@ -333,7 +353,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 					const p = G1.mul(g1, BigInt(i + 1));
 					const q = G2.mul(g2, BigInt(i + 1));
 					const pBytes = serializeG1(p);
-					const qBytes = serializeG2(q);
+					const qBytes = eip197G2(q);
 					input.set(pBytes, 192 * i);
 					input.set(qBytes, 192 * i + 64);
 				}
@@ -349,7 +369,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const g2 = G2.generator();
 
 			const g1Bytes = serializeG1(g1);
-			const g2Bytes = serializeG2(g2);
+			const g2Bytes = eip197G2(g2);
 
 			const input = new Uint8Array(192);
 			input.set(g1Bytes, 0);
@@ -368,7 +388,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const q = G2.mul(g2, 0xffffffffffffffffn);
 
 			const pBytes = serializeG1(p);
-			const qBytes = serializeG2(q);
+			const qBytes = eip197G2(q);
 
 			const input = new Uint8Array(192);
 			input.set(pBytes, 0);
@@ -385,7 +405,7 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const invalidBytes = new Uint8Array(64);
 			invalidBytes.fill(0xff);
 			const g2 = G2.generator();
-			const g2Bytes = serializeG2(g2);
+			const g2Bytes = eip197G2(g2);
 
 			const input = new Uint8Array(192);
 			input.set(invalidBytes, 0);
@@ -423,13 +443,18 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 			const g1 = G1.generator();
 			const g2 = G2.generator();
 			const g1Bytes = serializeG1(g1);
-			const g2Bytes = serializeG2(g2);
+			const g2Bytes = eip197G2(g2);
 
 			const input = new Uint8Array(192);
 			input.set(g1Bytes, 0);
 			input.set(g2Bytes, 64);
 
-			const result = execute(PrecompileAddress.BN254_PAIRING, input, 100000n);
+			const result = execute(
+				PrecompileAddress.BN254_PAIRING,
+				input,
+				100000n,
+				Hardfork.DEFAULT,
+			);
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(79000n);
 		});
@@ -454,11 +479,11 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 
 			const input = new Uint8Array(576); // 3 pairs
 			input.set(serializeG1(p1), 0);
-			input.set(serializeG2(q1), 64);
+			input.set(eip197G2(q1), 64);
 			input.set(serializeG1(G1.negate(p2)), 192);
-			input.set(serializeG2(q2), 256);
+			input.set(eip197G2(q2), 256);
 			input.set(serializeG1(G1.negate(p3)), 384);
-			input.set(serializeG2(q3), 448);
+			input.set(eip197G2(q3), 448);
 
 			const gasNeeded = 45000n + 34000n * 3n;
 			const result = bn254Pairing(input, gasNeeded + 1000n);
@@ -480,9 +505,9 @@ describe("BN254 Pairing Check (0x08) - EIP-197", () => {
 
 			const input = new Uint8Array(384); // 2 pairs
 			input.set(serializeG1(sig), 0);
-			input.set(serializeG2(g2), 64);
+			input.set(eip197G2(g2), 64);
 			input.set(serializeG1(G1.negate(msg)), 192);
-			input.set(serializeG2(pk), 256);
+			input.set(eip197G2(pk), 256);
 
 			const gasNeeded = 45000n + 34000n * 2n;
 			const result = bn254Pairing(input, gasNeeded + 1000n);

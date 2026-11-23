@@ -19,41 +19,65 @@ describe("Keystore hex decoding", () => {
 	});
 });
 
+/**
+ * Default KDF cost (scrypt N = 262144, pbkdf2 c = 262144) takes 35-60 s per
+ * derivation under v8 coverage on 2-core CI runners. Tests that exercise the
+ * defaults or the N/c = 262144 spec vectors get this budget; every other test
+ * passes scryptN / pbkdf2C = 1024.
+ */
+const DEFAULT_KDF_TIMEOUT = 120_000;
+
 describe("Keystore", () => {
 	describe("encrypt / decrypt", () => {
-		it("encrypts and decrypts with scrypt (default)", async () => {
-			const privateKey = PrivateKey.from(
-				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			);
-			const password = "test-password";
+		it(
+			"encrypts and decrypts with scrypt (default)",
+			async () => {
+				const privateKey = PrivateKey.from(
+					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				);
+				const password = "test-password";
 
-			const keystore = await Keystore.encrypt(privateKey, password);
-			const decrypted = Keystore.decrypt(keystore, password);
+				const keystore = await Keystore.encrypt(privateKey, password);
+				const decrypted = Keystore.decrypt(keystore, password);
 
-			expect(decrypted).toEqual(privateKey);
-		}, 30000);
+				expect(decrypted).toEqual(privateKey);
+				const params = keystore.crypto.kdfparams as Keystore.ScryptParams;
+				expect(params.n).toBe(262144);
+			},
+			DEFAULT_KDF_TIMEOUT,
+		);
 
-		it("encrypts and decrypts with pbkdf2", async () => {
-			const privateKey = PrivateKey.from(
-				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			);
-			const password = "test-password";
+		it(
+			"encrypts and decrypts with pbkdf2",
+			async () => {
+				const privateKey = PrivateKey.from(
+					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				);
+				const password = "test-password";
 
-			const keystore = await Keystore.encrypt(privateKey, password, {
-				kdf: "pbkdf2",
-			});
-			const decrypted = Keystore.decrypt(keystore, password);
+				const keystore = await Keystore.encrypt(privateKey, password, {
+					kdf: "pbkdf2",
+				});
+				const decrypted = Keystore.decrypt(keystore, password);
 
-			expect(decrypted).toEqual(privateKey);
-		}, 30000);
+				expect(decrypted).toEqual(privateKey);
+				const params = keystore.crypto.kdfparams as Keystore.Pbkdf2Params;
+				expect(params.c).toBe(262144);
+			},
+			DEFAULT_KDF_TIMEOUT,
+		);
 
 		it("round-trip with different passwords", async () => {
 			const privateKey = PrivateKey.from(
 				"0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
 			);
 
-			const keystore1 = await Keystore.encrypt(privateKey, "password1");
-			const keystore2 = await Keystore.encrypt(privateKey, "password2");
+			const keystore1 = await Keystore.encrypt(privateKey, "password1", {
+				scryptN: 1024,
+			});
+			const keystore2 = await Keystore.encrypt(privateKey, "password2", {
+				scryptN: 1024,
+			});
 
 			expect(keystore1.crypto.ciphertext).not.toBe(keystore2.crypto.ciphertext);
 
@@ -69,7 +93,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "correct-password");
+			const keystore = await Keystore.encrypt(privateKey, "correct-password", {
+				scryptN: 1024,
+			});
 
 			expect(() => Keystore.decrypt(keystore, "wrong-password")).toThrow(
 				Keystore.InvalidMacError,
@@ -82,6 +108,7 @@ describe("Keystore", () => {
 			);
 
 			const keystore = await Keystore.encrypt(privateKey, "correct-password", {
+				pbkdf2C: 1024,
 				kdf: "pbkdf2",
 			});
 
@@ -95,7 +122,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "");
+			const keystore = await Keystore.encrypt(privateKey, "", {
+				scryptN: 1024,
+			});
 			const decrypted = Keystore.decrypt(keystore, "");
 
 			expect(decrypted).toEqual(privateKey);
@@ -107,7 +136,9 @@ describe("Keystore", () => {
 			);
 			const password = "pāšẅörd!@#$%^&*()[]{}|<>?/~`";
 
-			const keystore = await Keystore.encrypt(privateKey, password);
+			const keystore = await Keystore.encrypt(privateKey, password, {
+				scryptN: 1024,
+			});
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
@@ -119,7 +150,9 @@ describe("Keystore", () => {
 			);
 			const password = "a".repeat(1000);
 
-			const keystore = await Keystore.encrypt(privateKey, password);
+			const keystore = await Keystore.encrypt(privateKey, password, {
+				scryptN: 1024,
+			});
 			const decrypted = Keystore.decrypt(keystore, password);
 
 			expect(decrypted).toEqual(privateKey);
@@ -132,6 +165,7 @@ describe("Keystore", () => {
 			const customUuid = "12345678-1234-1234-1234-123456789abc";
 
 			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
 				uuid: customUuid,
 			});
 
@@ -143,8 +177,12 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore1 = await Keystore.encrypt(privateKey, "password");
-			const keystore2 = await Keystore.encrypt(privateKey, "password");
+			const keystore1 = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
+			const keystore2 = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			expect(keystore1.id).not.toBe(keystore2.id);
 		});
@@ -194,7 +232,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			expect(keystore.version).toBe(3);
 		});
@@ -204,7 +244,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			expect(keystore.crypto.cipher).toBe("aes-128-ctr");
 		});
@@ -214,7 +256,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			expect(keystore.id).toMatch(
 				/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
@@ -226,7 +270,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			expect(keystore.crypto.cipherparams.iv).toHaveLength(32);
 			expect(keystore.crypto.cipherparams.iv).toMatch(/^[0-9a-f]{32}$/);
@@ -237,7 +283,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			const params = keystore.crypto.kdfparams as Keystore.ScryptParams;
 			expect(params.salt).toHaveLength(64);
@@ -249,7 +297,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			expect(keystore.crypto.mac).toHaveLength(64);
 			expect(keystore.crypto.mac).toMatch(/^[0-9a-f]{64}$/);
@@ -260,7 +310,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			expect(keystore.crypto.ciphertext).toHaveLength(64);
 			expect(keystore.crypto.ciphertext).toMatch(/^[0-9a-f]{64}$/);
@@ -487,7 +539,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			// Corrupt ciphertext
 			keystore.crypto.ciphertext = `${keystore.crypto.ciphertext.slice(0, -2)}ff`;
@@ -506,7 +560,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			// Corrupt MAC
 			keystore.crypto.mac = `${keystore.crypto.mac.slice(0, -2)}ff`;
@@ -525,7 +581,9 @@ describe("Keystore", () => {
 				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			);
 
-			const keystore = await Keystore.encrypt(privateKey, "password");
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+			});
 
 			// Corrupt IV - MAC will still pass since it doesn't include IV,
 			// but decryption will produce garbage
@@ -537,74 +595,75 @@ describe("Keystore", () => {
 	});
 
 	describe("known test vectors", () => {
-		it.skip("decrypts known scrypt keystore", async () => {
-			// Note: Replace placeholder with a real test vector
-			// from the Web3 Secret Storage spec or a generated one
-			const keystore: Keystore.KeystoreV3 = {
-				version: 3,
-				id: "3198bc9c-6672-5ab3-d995-4942343ae5b6",
-				crypto: {
-					cipher: "aes-128-ctr",
-					ciphertext:
-						"d172bf743a674da9cdad04534d56926ef8358534d458fffccd4e6ad2fbde479c",
-					cipherparams: {
-						iv: "83dbcc02d8ccb40e466191a123791e0e",
-					},
-					kdf: "scrypt",
-					kdfparams: {
-						dklen: 32,
-						n: 262144,
-						r: 8,
-						p: 1,
-						salt: "ab0c7876052600dd703518d6fc3fe8984592145b591fc8fb5c6d43190334ba19",
-					},
-					mac: "2103ac29920d71da29f15d75b4a16dbe95cfd7ff8faea1056c33131d846e3097",
-				},
-			};
-
-			const password = "testpassword";
-			const expectedPrivateKey =
-				"0x7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
-
-			const decrypted = Keystore.decrypt(keystore, password);
-			const decryptedHex = `0x${Array.from(decrypted)
+		// Web3 Secret Storage Definition test vectors (password "testpassword"):
+		// https://ethereum.org/developers/docs/data-structures-and-encoding/web3-secret-storage
+		const specPrivateKey =
+			"0x7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
+		const toHex = (bytes: Uint8Array) =>
+			`0x${Array.from(bytes)
 				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("")}`;
 
-			expect(decryptedHex).toBe(expectedPrivateKey);
-		});
-
-		it("decrypts known pbkdf2 keystore", async () => {
-			// Known test vector from Web3 Secret Storage spec
-			const keystore: Keystore.KeystoreV3 = {
-				version: 3,
-				id: "e13b209c-3b2f-4327-bab0-3bef2e51630d",
-				crypto: {
-					cipher: "aes-128-ctr",
-					ciphertext:
-						"0144c9e4e11a5de372f7e53f3dbd87ec6c78df80f3f0b1ceb2159c9a06e3d7ac",
-					cipherparams: {
-						iv: "cecacd85e9cb89788b5aab2f93361233",
+		it(
+			"decrypts the spec scrypt keystore (N=262144, r=1, p=8)",
+			async () => {
+				const keystore: Keystore.KeystoreV3 = {
+					version: 3,
+					id: "3198bc9c-6672-5ab3-d995-4942343ae5b6",
+					crypto: {
+						cipher: "aes-128-ctr",
+						ciphertext:
+							"d172bf743a674da9cdad04534d56926ef8358534d458fffccd4e6ad2fbde479c",
+						cipherparams: {
+							iv: "83dbcc02d8ccb40e466191a123791e0e",
+						},
+						kdf: "scrypt",
+						kdfparams: {
+							dklen: 32,
+							n: 262144,
+							r: 1,
+							p: 8,
+							salt: "ab0c7876052600dd703518d6fc3fe8984592145b591fc8fb5c6d43190334ba19",
+						},
+						mac: "2103ac29920d71da29f15d75b4a16dbe95cfd7ff8faea1056c33131d846e3097",
 					},
-					kdf: "pbkdf2",
-					kdfparams: {
-						c: 262144,
-						dklen: 32,
-						prf: "hmac-sha256",
-						salt: "dc9e4a98886738bd8aae134a1f89aaa5a502c3fbd10e336136d4d5fe47448ad6",
+				};
+
+				const decrypted = Keystore.decrypt(keystore, "testpassword");
+				expect(toHex(decrypted)).toBe(specPrivateKey);
+			},
+			DEFAULT_KDF_TIMEOUT,
+		);
+
+		it(
+			"decrypts the spec pbkdf2 keystore (c=262144)",
+			async () => {
+				const keystore: Keystore.KeystoreV3 = {
+					version: 3,
+					id: "3198bc9c-6672-5ab3-d995-4942343ae5b6",
+					crypto: {
+						cipher: "aes-128-ctr",
+						ciphertext:
+							"5318b4d5bcd28de64ee5559e671353e16f075ecae9f99c7a79a38af5f869aa46",
+						cipherparams: {
+							iv: "6087dab2f9fdbbfaddc31a909735c1e6",
+						},
+						kdf: "pbkdf2",
+						kdfparams: {
+							c: 262144,
+							dklen: 32,
+							prf: "hmac-sha256",
+							salt: "ae3cd4e7013836a3df6bd7241b12db061dbe2c6785853cce422d148a624ce0bd",
+						},
+						mac: "517ead924a9d0dc3124507e3393d175ce3ff7c1e96529c6c555ce9e51205e9b2",
 					},
-					mac: "27b98c8676dc6619d077453b38db645a4c7c6e2df2f8e5c5c6f8e4e2c5f7e3e9",
-				},
-			};
+				};
 
-			const password = "testpassword";
-
-			// This should decrypt successfully (if MAC matches)
-			// Note: This is a synthetic test vector, not from official spec
-			expect(() => Keystore.decrypt(keystore, password)).not.toThrow(
-				Keystore.DecryptionError,
-			);
-		});
+				const decrypted = Keystore.decrypt(keystore, "testpassword");
+				expect(toHex(decrypted)).toBe(specPrivateKey);
+			},
+			DEFAULT_KDF_TIMEOUT,
+		);
 	});
 
 	describe("determinism", () => {
@@ -619,11 +678,13 @@ describe("Keystore", () => {
 			const uuid = "12345678-1234-1234-1234-123456789abc";
 
 			const keystore1 = await Keystore.encrypt(privateKey, password, {
+				scryptN: 1024,
 				salt,
 				iv,
 				uuid,
 			});
 			const keystore2 = await Keystore.encrypt(privateKey, password, {
+				scryptN: 1024,
 				salt,
 				iv,
 				uuid,
@@ -643,12 +704,14 @@ describe("Keystore", () => {
 			const uuid = "12345678-1234-1234-1234-123456789abc";
 
 			const keystore1 = await Keystore.encrypt(privateKey, password, {
+				pbkdf2C: 1024,
 				kdf: "pbkdf2",
 				salt,
 				iv,
 				uuid,
 			});
 			const keystore2 = await Keystore.encrypt(privateKey, password, {
+				pbkdf2C: 1024,
 				kdf: "pbkdf2",
 				salt,
 				iv,
@@ -668,9 +731,11 @@ describe("Keystore", () => {
 			const salt2 = new Uint8Array(32).fill(2);
 
 			const keystore1 = await Keystore.encrypt(privateKey, password, {
+				scryptN: 1024,
 				salt: salt1,
 			});
 			const keystore2 = await Keystore.encrypt(privateKey, password, {
+				scryptN: 1024,
 				salt: salt2,
 			});
 

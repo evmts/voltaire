@@ -690,14 +690,14 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			);
 			expect(resultByzantium.success).toBe(true);
 
-			// Still works in Frontier (implementation allows)
+			// MODEXP (0x05) activates in Byzantium (EIP-198); Frontier has no precompile there
 			const resultFrontier = execute(
 				PrecompileAddress.MODEXP,
 				input,
 				100000n,
 				frontier,
 			);
-			expect(resultFrontier.success).toBe(true);
+			expect(resultFrontier.success).toBe(false);
 		});
 
 		it("should verify BLAKE2F available from Istanbul", () => {

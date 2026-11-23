@@ -7,6 +7,7 @@ import {
 	execute,
 	PrecompileAddress,
 } from "../evm/precompiles/precompiles.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 
 /**
  * BN254 scalar multiplication on G1
@@ -470,7 +471,12 @@ describe("BN254 Scalar Multiplication (0x07) - EIP-196", () => {
 			input.set(gBytes, 0);
 			input.set(scalar, 64);
 
-			const result = execute(PrecompileAddress.BN254_MUL, input, 10000n);
+			const result = execute(
+				PrecompileAddress.BN254_MUL,
+				input,
+				10000n,
+				Hardfork.DEFAULT,
+			);
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(6000n);
 		});

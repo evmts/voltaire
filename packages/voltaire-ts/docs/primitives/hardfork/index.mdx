@@ -3,11 +3,11 @@ title: Hardfork
 description: Ordered Ethereum hardfork identifiers from Frontier to Prague and Osaka with chronological comparisons and EIP feature predicates.
 ---
 
-`Hardfork` (`HardforkType`) represents an Ethereum protocol upgrade in chronological order from `FRONTIER` through `PRAGUE` (`DEFAULT`) and `OSAKA`, providing version comparisons, range queries, and EIP activation predicates.
+`Hardfork` (`HardforkType`) represents an Ethereum protocol upgrade in chronological order from `FRONTIER` through `OSAKA` (`DEFAULT`) and `AMSTERDAM`, providing version comparisons, range queries, and EIP activation predicates.
 
 ```mermaid
 flowchart LR
-  F["FRONTIER"] --> B["BYZANTIUM"] --> I["ISTANBUL"] --> Be["BERLIN"] --> L["LONDON"] --> M["MERGE"] --> S["SHANGHAI"] --> C["CANCUN"] --> P["PRAGUE (DEFAULT)"] --> O["OSAKA"]
+  F["FRONTIER"] --> B["BYZANTIUM"] --> I["ISTANBUL"] --> Be["BERLIN"] --> L["LONDON"] --> M["MERGE"] --> S["SHANGHAI"] --> C["CANCUN"] --> P["PRAGUE"] --> O["OSAKA (DEFAULT)"] --> A["AMSTERDAM"]
 ```
 
 ## Hardfork Constants
@@ -27,10 +27,13 @@ flowchart LR
 | `MERGE` | `"merge"` (`paris` alias) | Proof-of-Stake, `PREVRANDAO` |
 | `SHANGHAI` | `"shanghai"` | EIP-3855 `PUSH0`, EIP-3860 initcode limit, EIP-4895 withdrawals |
 | `CANCUN` | `"cancun"` | EIP-4844 blobs, EIP-1153 `TLOAD`/`TSTORE`, EIP-5656 `MCOPY` |
-| `PRAGUE` (`DEFAULT`) | `"prague"` | EIP-7702 EOA delegation, EIP-2537 BLS12-381 precompiles |
-| `OSAKA` | `"osaka"` | EIP-7883 ModExp repricing |
+| `PRAGUE` | `"prague"` | EIP-7702 EOA delegation, EIP-2537 BLS12-381 precompiles |
+| `OSAKA` (`DEFAULT`) | `"osaka"` | [Fusaka](/primitives/hardfork/osaka): EIP-7951 `P256VERIFY`, EIP-7823/7883 ModExp bounds and repricing, EIP-7918 blob reserve price, EIP-7934 RLP block size cap, EIP-7594 PeerDAS, EIP-7892 BPO blob schedules |
+| `AMSTERDAM` | `"amsterdam"` (`glamsterdam` alias) | Upcoming (Glamsterdam): EIP-7928 [block-level access lists](/primitives/block-access-list) |
 
 Difficulty-bomb forks also included: `MUIR_GLACIER`, `ARROW_GLACIER`, `GRAY_GLACIER`.
+
+`Hardfork.DEFAULT` is `OSAKA`, the latest activated mainnet fork. `AMSTERDAM` is defined for forward-looking feature checks but is not yet scheduled on mainnet.
 
 ## Quick Start
 

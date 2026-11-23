@@ -57,6 +57,15 @@ function navPages(root: string): string[] {
 	return pages;
 }
 
+/** Mintlify serves a docs.json redirect source as its destination page. */
+function resolvesViaRedirect(root: string, link: string): boolean {
+	const json = JSON.parse(readFileSync(join(root, "docs.json"), "utf8"));
+	const redirects: { source: string; destination: string }[] =
+		json.redirects ?? [];
+	const hit = redirects.find((r) => r.source === link.replace(/\/$/, ""));
+	return hit !== undefined && pageExists(root, hit.destination);
+}
+
 function llms(root: string): string {
 	return readFileSync(join(root, "llms.txt"), "utf8");
 }
@@ -110,7 +119,7 @@ describe("llms.txt", () => {
 			.map((m) => m[1] as string)
 			.filter((p) => !p.startsWith("/docs/"));
 		const missing = [...urls, ...paths].filter(
-			(p) => !pageExists(effectDocs, p),
+			(p) => !pageExists(effectDocs, p) && !resolvesViaRedirect(effectDocs, p),
 		);
 		expect(missing).toEqual([]);
 	});
@@ -230,7 +239,7 @@ describe("Osaka / Amsterdam docs parity", () => {
 			"utf8",
 		);
 		expect(text).toMatch(
-			/\| 0x100 \| \[P256VERIFY\]\(\/evm\/precompiles\/p256verify\) \| 6,900 \| Osaka \|/,
+			/\| `0x100` \| `P256_VERIFY` \| \[p256Verify\]\(\/evm\/precompiles\/p256verify\) \| `6,900` \| Osaka \|/,
 		);
 	});
 

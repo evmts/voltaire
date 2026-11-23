@@ -1,9 +1,9 @@
 ---
 title: EVM Precompiles
-description: Reference for all 19 Ethereum precompiled contracts (0x01-0x13) implemented in @tevm/voltaire/precompiles.
+description: Reference for all 18 Ethereum precompiled contracts (0x01-0x11 and 0x100) implemented in @tevm/voltaire/precompiles.
 ---
 
-`@tevm/voltaire/precompiles` (also exported as `Precompiles` on `@tevm/voltaire/evm`) implements all `19` Ethereum precompiled contracts from `0x01` (`ECRECOVER`) through `0x13` (`BLS12_MAP_FP2_TO_G2`), including Osaka `MODEXP` bounds and gas pricing (EIP-7823 / EIP-7883).
+`@tevm/voltaire/precompiles` (also exported as `Precompiles` on `@tevm/voltaire/evm`) implements all `18` Ethereum precompiled contracts: `0x01` (`ECRECOVER`) through `0x11` (`BLS12_MAP_FP2_TO_G2`), plus Osaka `P256VERIFY` at `0x100` (EIP-7951). It includes Osaka `MODEXP` bounds and gas pricing (EIP-7823 / EIP-7883).
 
 ## Dispatch Flow
 
@@ -13,14 +13,16 @@ flowchart LR
     Check -->|"0x01..0x04\nFrontier+"| Core["ECRECOVER / SHA256\nRIPEMD160 / IDENTITY"]
     Check -->|"0x05..0x08\nByzantium+"| Byz["MODEXP (Osaka EIP-7823/7883)\nBN254 ADD / MUL / PAIRING"]
     Check -->|"0x09..0x0a\nIstanbul / Cancun"| Mid["BLAKE2F (0x09)\nPOINT_EVALUATION (0x0a)"]
-    Check -->|"0x0b..0x13\nPrague+"| Bls["BLS12-381 (EIP-2537)\nG1/G2 ADD, MUL, MSM, PAIRING, MAP"]
+    Check -->|"0x0b..0x11\nPrague+"| Bls["BLS12-381 (EIP-2537)\nG1/G2 ADD, MSM, PAIRING, MAP"]
+    Check -->|"0x100\nOsaka+"| P256["P256VERIFY (EIP-7951)"]
     Core --> Res["PrecompileResult\n{ success, output, gasUsed, error? }"]
     Byz --> Res
     Mid --> Res
     Bls --> Res
+    P256 --> Res
 ```
 
-## Complete Precompile Table (`0x01`-`0x13`)
+## Complete Precompile Table (`0x01`-`0x11`, `0x100`)
 
 | Address | Enum Key | Function | Gas Cost (Implemented) | Hardfork | Input -> Output |
 |---------|----------|----------|------------------------|----------|-----------------|
@@ -34,18 +36,17 @@ flowchart LR
 | `0x08` | `BN254_PAIRING` | [bn254Pairing](/evm/precompiles/bn254-pairing) | `45,000 + 34,000 * k` | Byzantium | `192 * k B` -> `32 B` (`0` or `1`) |
 | `0x09` | `BLAKE2F` | [blake2f](/evm/precompiles/blake2f) | `rounds` (`1` gas/round) | Istanbul | `213 B` -> `64 B` |
 | `0x0a` | `POINT_EVALUATION` | [pointEvaluation](/evm/precompiles/point-evaluation) | `50,000` | Cancun | `192 B` -> `64 B` (`4096 \|\| BLS_MODULUS`) |
-| `0x0b` | `BLS12_G1_ADD` | [bls12G1Add](/evm/precompiles/bls12-g1-add) | `500` | Prague | `256 B` -> `128 B` |
-| `0x0c` | `BLS12_G1_MUL` | [bls12G1Mul](/evm/precompiles/bls12-g1-mul) | `12,000` | Prague | `160 B` -> `128 B` |
-| `0x0d` | `BLS12_G1_MSM` | [bls12G1Msm](/evm/precompiles/bls12-g1-msm) | `12,000 * discount(k)` | Prague | `160 * k B` (`k >= 1`) -> `128 B` |
-| `0x0e` | `BLS12_G2_ADD` | [bls12G2Add](/evm/precompiles/bls12-g2-add) | `800` | Prague | `512 B` -> `256 B` |
-| `0x0f` | `BLS12_G2_MUL` | [bls12G2Mul](/evm/precompiles/bls12-g2-mul) | `45,000` | Prague | `288 B` -> `256 B` |
-| `0x10` | `BLS12_G2_MSM` | [bls12G2Msm](/evm/precompiles/bls12-g2-msm) | `45,000 * discount(k)` | Prague | `288 * k B` (`k >= 1`) -> `256 B` |
-| `0x11` | `BLS12_PAIRING` | [bls12Pairing](/evm/precompiles/bls12-pairing) | `65,000 + 43,000 * k` | Prague | `384 * k B` -> `32 B` (`0` or `1`) |
-| `0x12` | `BLS12_MAP_FP_TO_G1` | [bls12MapFpToG1](/evm/precompiles/bls12-map-fp-to-g1) | `5,500` | Prague | `64 B` -> `128 B` |
-| `0x13` | `BLS12_MAP_FP2_TO_G2` | [bls12MapFp2ToG2](/evm/precompiles/bls12-map-fp2-to-g2) | `75,000` | Prague | `128 B` -> `256 B` |
+| `0x0b` | `BLS12_G1_ADD` | [bls12G1Add](/evm/precompiles/bls12-g1-add) | `375` | Prague | `256 B` -> `128 B` |
+| `0x0c` | `BLS12_G1_MSM` | [bls12G1Msm](/evm/precompiles/bls12-g1-msm) | `k * 12,000 * discount(k) / 1000` | Prague | `160 * k B` (`k >= 1`) -> `128 B` |
+| `0x0d` | `BLS12_G2_ADD` | [bls12G2Add](/evm/precompiles/bls12-g2-add) | `600` | Prague | `512 B` -> `256 B` |
+| `0x0e` | `BLS12_G2_MSM` | [bls12G2Msm](/evm/precompiles/bls12-g2-msm) | `k * 22,500 * discount(k) / 1000` | Prague | `288 * k B` (`k >= 1`) -> `256 B` |
+| `0x0f` | `BLS12_PAIRING` | [bls12Pairing](/evm/precompiles/bls12-pairing) | `37,700 + 32,600 * k` | Prague | `384 * k B` -> `32 B` (`0` or `1`) |
+| `0x10` | `BLS12_MAP_FP_TO_G1` | [bls12MapFpToG1](/evm/precompiles/bls12-map-fp-to-g1) | `5,500` | Prague | `64 B` -> `128 B` |
+| `0x11` | `BLS12_MAP_FP2_TO_G2` | [bls12MapFp2ToG2](/evm/precompiles/bls12-map-fp2-to-g2) | `23,800` | Prague | `128 B` -> `256 B` |
+| `0x100` | `P256_VERIFY` | [p256Verify](/evm/precompiles/p256verify) | `6,900` | Osaka | `160 B (h,r,s,qx,qy)` -> `32 B` (`1`) or empty |
 
 <Note>
-EIP-7951 (`P256VERIFY` at `0x100`) is not yet part of `PrecompileAddress` in `@tevm/voltaire/precompiles`. For P-256 signature verification, use [P256](/crypto/p256) directly.
+EIP-2537 final addresses: G1 and G2 scalar multiplication are MSM calls with `k = 1`; there are no separate `G1MUL`/`G2MUL` precompiles. `isPrecompile(PrecompileAddress.P256_VERIFY, hardfork)` is `false` before `Hardfork.OSAKA`.
 </Note>
 
 ## Quick Start
@@ -97,13 +98,14 @@ export function execute(
 
 - **MODEXP (`0x05`) Osaka rules:** When `hardfork >= Hardfork.OSAKA`, `modexp` rejects `baseLen`, `expLen`, or `modLen` above `1024` bytes (EIP-7823), uses EIP-7883 gas calculation, and consumes all supplied `gasLimit` on exceptional failure. Defaults to `Hardfork.BERLIN` when `modexp(input, gasLimit)` is called directly without `hardfork`.
 - **ECRECOVER (`0x01`) invalid signatures:** Per the Yellow Paper, an unrecoverable or malformed signature succeeds (`success: true`), consumes `3,000` gas, and returns 32 zero bytes rather than failing.
-- **POINT_EVALUATION (`0x0a`):** Automatically calls `KZG.loadTrustedSetup()` if not yet initialized and verifies the KZG proof via `KZG.verifyKzgProof`. Note that the current TypeScript implementation verifies the KZG proof directly without checking `versionedHash == 0x01 || sha256(commitment)[1..32]`; callers validating untrusted transactions should verify the versioned hash separately.
-- **BLS12-381 (`0x0b`-`0x13`):** All 9 precompiles execute real curve and pairing arithmetic via `@noble/curves/bls12-381.js`, validating curve membership and subgroup membership on deserialization.
+- **POINT_EVALUATION (`0x0a`):** Automatically calls `KZG.loadTrustedSetup()` if not yet initialized and verifies the KZG proof via `KZG.verifyKzgProof`. Rejects the call unless `versionedHash == 0x01 || sha256(commitment)[1..32]` (EIP-4844 `kzg_to_versioned_hash`).
+- **BLS12-381 (`0x0b`-`0x11`):** All 7 precompiles execute real curve and pairing arithmetic via `@noble/curves/bls12-381.js`, validating curve membership and subgroup membership on deserialization.
 
 ## Related
 
 - [EVM Overview](/evm)
 - [BLS12-381 Precompiles](/evm/precompiles/bls12-381)
+- [P256VERIFY](/evm/precompiles/p256verify)
 - [BN254](/crypto/bn254)
 - [KZG Commitments](/crypto/kzg)
 - [Hardfork Primitive](/primitives/hardfork)
