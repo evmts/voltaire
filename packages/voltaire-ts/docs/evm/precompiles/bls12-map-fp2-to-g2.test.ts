@@ -3,7 +3,11 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, bls12MapFp2ToG2 } from "../../../src/evm/precompiles/precompiles.js";
+import {
+	bls12MapFp2ToG2,
+	execute,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 describe("bls12-map-fp2-to-g2.mdx documentation examples", () => {
@@ -19,22 +23,24 @@ describe("bls12-map-fp2-to-g2.mdx documentation examples", () => {
 	});
 
 	describe("Gas Cost section", () => {
-		it("should use exactly 75000 gas", () => {
-			// Doc states: Fixed: 75000 gas
+		it("should use exactly 23800 gas", () => {
+			// Doc states: Fixed: 23800 gas
 			const input = new Uint8Array(128);
 			const result = bls12MapFp2ToG2(input, 100000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(75000n);
+			expect(result.gasUsed).toBe(23800n);
 		});
 
 		it("should fail with insufficient gas", () => {
-			// Doc states: Out of gas: gasLimit < 75000
+			// Doc states: Out of gas: gasLimit < 23800
 			const input = new Uint8Array(128);
-			const result = bls12MapFp2ToG2(input, 74999n);
+			const result = bls12MapFp2ToG2(input, 23799n);
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
+			expect(result.gasUsed).toBe(23799n);
+			expect(result.output).toHaveLength(0);
 		});
 	});
 
@@ -140,7 +146,7 @@ describe("bls12-map-fp2-to-g2.mdx documentation examples", () => {
 			);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(75000n);
+			expect(result.gasUsed).toBe(23800n);
 		});
 
 		it("should be available from PRAGUE hardfork", () => {
@@ -156,35 +162,36 @@ describe("bls12-map-fp2-to-g2.mdx documentation examples", () => {
 		});
 
 		it("hardfork availability via isPrecompile function", async () => {
-			// NOTE: execute() does not enforce hardfork availability
-			// Use isPrecompile() to check availability
-			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
-			expect(isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.PRAGUE)).toBe(true);
-			expect(isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.CANCUN)).toBe(false);
+			const { isPrecompile } = await import(
+				"../../../src/evm/precompiles/precompiles.js"
+			);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.PRAGUE),
+			).toBe(true);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.CANCUN),
+			).toBe(false);
 		});
 	});
 
 	describe("Gas Comparison section", () => {
-		it("should use 75000 gas compared to map-fp-to-g1's 5500", () => {
+		it("should use 23800 gas compared to map-fp-to-g1's 5500", () => {
 			// Map to G2 is more expensive due to extension field operations
 			const input = new Uint8Array(128);
 			const result = bls12MapFp2ToG2(input, 100000n);
-			expect(result.gasUsed).toBe(75000n);
+			expect(result.gasUsed).toBe(23800n);
 		});
 	});
 
 	describe("Use Cases section", () => {
-		it("should support hash-to-curve operations for G2", () => {
-			// Doc states: Used for hash-to-curve operations in BLS signatures (G2 variant)
-			// We test that the precompile is callable with arbitrary input
-			const arbitraryInput = new Uint8Array(128);
-			for (let i = 0; i < 128; i++) {
-				arbitraryInput[i] = i;
-			}
+		it("should map an Fp2 element with two canonical components", () => {
+			const fieldInput = new Uint8Array(128);
+			fieldInput[63] = 1;
+			fieldInput[127] = 2;
 
-			const result = bls12MapFp2ToG2(arbitraryInput, 100000n);
+			const result = bls12MapFp2ToG2(fieldInput, 100000n);
 			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+			expect(result.output).toHaveLength(256);
 		});
 	});
 });

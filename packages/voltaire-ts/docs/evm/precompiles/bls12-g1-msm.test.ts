@@ -3,7 +3,11 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, bls12G1Msm } from "../../../src/evm/precompiles/precompiles.js";
+import {
+	bls12G1Msm,
+	execute,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 describe("bls12-g1-msm.mdx documentation examples", () => {
@@ -31,24 +35,22 @@ describe("bls12-g1-msm.mdx documentation examples", () => {
 			expect(result.gasUsed).toBe(12000n);
 		});
 
-		it("should apply discount for 2-3 pairs", () => {
-			// Doc states: 2-3 pairs: discount 820, gas per pair 9840
-			// For k=2, gas = (12000 * 2 * 820) / 1000 = 19680
+		it("should apply discount for 2 pairs", () => {
+			// For k=2, gas = (12000 * 2 * 949) / 1000 = 22776
 			const input = new Uint8Array(160 * 2); // 2 pairs
 			const result = bls12G1Msm(input, 30000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(19680n);
+			expect(result.gasUsed).toBe(22776n);
 		});
 
-		it("should apply discount for 4-7 pairs", () => {
-			// Doc states: 4-7 pairs: discount 580
-			// For k=4, gas = (12000 * 4 * 580) / 1000 = 27840
+		it("should apply discount for 4 pairs", () => {
+			// For k=4, gas = (12000 * 4 * 797) / 1000 = 38256
 			const input = new Uint8Array(160 * 4); // 4 pairs
 			const result = bls12G1Msm(input, 40000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(27840n);
+			expect(result.gasUsed).toBe(38256n);
 		});
 
 		it("should fail with insufficient gas", () => {
@@ -67,8 +69,6 @@ describe("bls12-g1-msm.mdx documentation examples", () => {
 
 			for (const size of validSizes) {
 				const input = new Uint8Array(size);
-				const k = size / 160;
-				// Estimate gas with discounts
 				const result = bls12G1Msm(input, 100000n);
 				expect(result.success).toBe(true);
 			}
@@ -123,7 +123,6 @@ describe("bls12-g1-msm.mdx documentation examples", () => {
 	describe("Gas Cost Comparison section", () => {
 		it("should be more efficient than individual operations for large batches", () => {
 			// Doc states: With 32 pairs, MSM is more efficient than individual ops
-			// Actual API uses multiplier-based formula, not discount/1000
 			const input = new Uint8Array(160 * 32);
 			const result = bls12G1Msm(input, 500000n);
 
@@ -160,23 +159,24 @@ describe("bls12-g1-msm.mdx documentation examples", () => {
 		});
 
 		it("hardfork availability via isPrecompile function", async () => {
-			// NOTE: execute() does not enforce hardfork availability
-			// Use isPrecompile() to check availability
-			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
-			expect(isPrecompile(PrecompileAddress.BLS12_G1_MSM, Hardfork.PRAGUE)).toBe(true);
-			expect(isPrecompile(PrecompileAddress.BLS12_G1_MSM, Hardfork.CANCUN)).toBe(false);
+			const { isPrecompile } = await import(
+				"../../../src/evm/precompiles/precompiles.js"
+			);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G1_MSM, Hardfork.PRAGUE),
+			).toBe(true);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G1_MSM, Hardfork.CANCUN),
+			).toBe(false);
 		});
 	});
 
 	describe("Discount Table from documentation", () => {
-		it("should apply correct discount for each batch size range", () => {
-			// API DISCREPANCY: Actual implementation uses EIP-2537 multiplier-based formula
-			// not the simple discount/1000 formula from documentation
-			// Actual: gas = BASE_GAS * multiplier where multiplier grows sub-linearly with k
+		it("should apply the G1 discount for each batch size", () => {
 			const testCases = [
-				{ k: 1, expectedGas: 12000n },  // multiplier=1.0
-				{ k: 2, expectedGas: 19680n },  // multiplier=1.64
-				{ k: 4, expectedGas: 27840n },  // multiplier=2.32
+				{ k: 1, expectedGas: 12000n },
+				{ k: 2, expectedGas: 22776n },
+				{ k: 4, expectedGas: 38256n },
 			];
 
 			for (const { k, expectedGas } of testCases) {

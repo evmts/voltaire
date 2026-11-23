@@ -4,44 +4,52 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-	PrecompileAddress,
-	execute,
 	bls12G1Add,
-	bls12G1Mul,
 	bls12G1Msm,
 	bls12G2Add,
-	bls12G2Mul,
 	bls12G2Msm,
-	bls12Pairing,
-	bls12MapFpToG1,
 	bls12MapFp2ToG2,
+	bls12MapFpToG1,
+	bls12Pairing,
+	execute,
+	PrecompileAddress,
 } from "../../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../../src/primitives/Hardfork/index.js";
 
 describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", () => {
 	describe("Precompile Summary Table", () => {
-		it("should have correct addresses 0x0B - 0x13", () => {
-			// Doc states: Addresses: 0x0B - 0x13
-			// API: PrecompileAddress values are padded hex strings
-			expect(PrecompileAddress.BLS12_G1_ADD.endsWith("0b")).toBe(true);
-			expect(PrecompileAddress.BLS12_G1_MUL.endsWith("0c")).toBe(true);
-			expect(PrecompileAddress.BLS12_G1_MSM.endsWith("0d")).toBe(true);
-			expect(PrecompileAddress.BLS12_G2_ADD.endsWith("0e")).toBe(true);
-			expect(PrecompileAddress.BLS12_G2_MUL.endsWith("0f")).toBe(true);
-			expect(PrecompileAddress.BLS12_G2_MSM.endsWith("10")).toBe(true);
-			expect(PrecompileAddress.BLS12_PAIRING.endsWith("11")).toBe(true);
-			expect(PrecompileAddress.BLS12_MAP_FP_TO_G1.endsWith("12")).toBe(true);
-			expect(PrecompileAddress.BLS12_MAP_FP2_TO_G2.endsWith("13")).toBe(true);
+		it("should have correct addresses 0x0b–0x11", () => {
+			expect(PrecompileAddress.BLS12_G1_ADD).toBe(
+				"0x000000000000000000000000000000000000000b",
+			);
+			expect(PrecompileAddress.BLS12_G1_MSM).toBe(
+				"0x000000000000000000000000000000000000000c",
+			);
+			expect(PrecompileAddress.BLS12_G2_ADD).toBe(
+				"0x000000000000000000000000000000000000000d",
+			);
+			expect(PrecompileAddress.BLS12_G2_MSM).toBe(
+				"0x000000000000000000000000000000000000000e",
+			);
+			expect(PrecompileAddress.BLS12_PAIRING).toBe(
+				"0x000000000000000000000000000000000000000f",
+			);
+			expect(PrecompileAddress.BLS12_MAP_FP_TO_G1).toBe(
+				"0x0000000000000000000000000000000000000010",
+			);
+			expect(PrecompileAddress.BLS12_MAP_FP2_TO_G2).toBe(
+				"0x0000000000000000000000000000000000000011",
+			);
 		});
 
 		it("should have correct fixed gas costs", () => {
 			// Doc table shows fixed gas costs
-			expect(bls12G1Add(new Uint8Array(256), 1000n).gasUsed).toBe(500n);
-			expect(bls12G1Mul(new Uint8Array(160), 20000n).gasUsed).toBe(12000n);
-			expect(bls12G2Add(new Uint8Array(512), 2000n).gasUsed).toBe(800n);
-			expect(bls12G2Mul(new Uint8Array(288), 50000n).gasUsed).toBe(45000n);
+			expect(bls12G1Add(new Uint8Array(256), 1000n).gasUsed).toBe(375n);
+			expect(bls12G2Add(new Uint8Array(512), 2000n).gasUsed).toBe(600n);
 			expect(bls12MapFpToG1(new Uint8Array(64), 10000n).gasUsed).toBe(5500n);
-			expect(bls12MapFp2ToG2(new Uint8Array(128), 100000n).gasUsed).toBe(75000n);
+			expect(bls12MapFp2ToG2(new Uint8Array(128), 100000n).gasUsed).toBe(
+				23800n,
+			);
 		});
 
 		it("should have correct input/output sizes for G1 operations", () => {
@@ -49,11 +57,6 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 			const addResult = bls12G1Add(new Uint8Array(256), 1000n);
 			expect(addResult.success).toBe(true);
 			expect(addResult.output.length).toBe(128);
-
-			// Doc states: G1_MUL: 160 input, 128 output
-			const mulResult = bls12G1Mul(new Uint8Array(160), 20000n);
-			expect(mulResult.success).toBe(true);
-			expect(mulResult.output.length).toBe(128);
 
 			// Doc states: G1_MSM: 160k input, 128 output
 			const msmResult = bls12G1Msm(new Uint8Array(160), 20000n);
@@ -67,11 +70,6 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 			expect(addResult.success).toBe(true);
 			expect(addResult.output.length).toBe(256);
 
-			// Doc states: G2_MUL: 288 input, 256 output
-			const mulResult = bls12G2Mul(new Uint8Array(288), 50000n);
-			expect(mulResult.success).toBe(true);
-			expect(mulResult.output.length).toBe(256);
-
 			// Doc states: G2_MSM: 288k input, 256 output
 			const msmResult = bls12G2Msm(new Uint8Array(288), 50000n);
 			expect(msmResult.success).toBe(true);
@@ -80,7 +78,7 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 
 		it("should have correct input/output sizes for pairing and map operations", () => {
 			// Doc states: PAIRING: 384k input, 32 output
-			const pairingResult = bls12Pairing(new Uint8Array(0), 100000n);
+			const pairingResult = bls12Pairing(new Uint8Array(384), 100000n);
 			expect(pairingResult.success).toBe(true);
 			expect(pairingResult.output.length).toBe(32);
 
@@ -104,15 +102,15 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 			const result = bls12G1Add(input, 1000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(500n);
+			expect(result.gasUsed).toBe(375n);
 			expect([...result.output].every((b) => b === 0)).toBe(true);
 		});
 
-		it("should handle G1_MUL with zero scalar", () => {
+		it("should return infinity for a single G1 pair with a zero scalar", () => {
 			// Doc states: Scalar multiplication on G1. Scalar is reduced modulo curve order.
 			// Point * 0 = Point at infinity
 			const input = new Uint8Array(160);
-			const result = bls12G1Mul(input, 20000n);
+			const result = bls12G1Msm(input, 20000n);
 
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(12000n);
@@ -121,12 +119,12 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 
 		it("should handle G1_MSM discount calculation", () => {
 			// Doc states: gas = (12000 × k × discount) / 1000
-			// For k=4, discount=580: gas = (12000 × 4 × 580) / 1000 = 27840
+			// For k=4, discount=797: gas = (12000 × 4 × 797) / 1000 = 38256
 			const input = new Uint8Array(160 * 4);
 			const result = bls12G1Msm(input, 50000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(27840n);
+			expect(result.gasUsed).toBe(38256n);
 		});
 	});
 
@@ -137,49 +135,48 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 			const result = bls12G2Add(input, 2000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(800n);
+			expect(result.gasUsed).toBe(600n);
 			expect([...result.output].every((b) => b === 0)).toBe(true);
 		});
 
-		it("should handle G2_MUL with zero scalar", () => {
+		it("should return infinity for a single G2 pair with a zero scalar", () => {
 			// Doc states: Scalar multiplication on G2
 			const input = new Uint8Array(288);
-			const result = bls12G2Mul(input, 50000n);
+			const result = bls12G2Msm(input, 50000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(45000n);
+			expect(result.gasUsed).toBe(22500n);
 			expect([...result.output].every((b) => b === 0)).toBe(true);
 		});
 
 		it("should handle G2_MSM discount calculation", () => {
-			// Doc states: Uses same discount table as G1_MSM. Base cost is 45000
-			// For k=2, discount=820: gas = (45000 × 2 × 820) / 1000 = 73800
+			// For k=2, the G2 multiplier is 1000 and the per-pair base cost is 22500.
 			const input = new Uint8Array(288 * 2);
 			const result = bls12G2Msm(input, 100000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(73800n);
+			expect(result.gasUsed).toBe(45000n);
 		});
 	});
 
 	describe("Pairing Operation", () => {
-		it("should handle BLS12_PAIRING with empty input", () => {
-			// Doc states: Empty input (k=0) is valid and returns success
+		it("should reject BLS12_PAIRING with empty input", () => {
+			// EIP-2537 requires at least one pair.
 			const input = new Uint8Array(0);
 			const result = bls12Pairing(input, 100000n);
 
-			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(65000n);
-			expect(result.output[31]).toBe(1);
+			expect(result.success).toBe(false);
+			expect(result.error).toBe("Invalid input length");
+			expect(result.gasUsed).toBe(100000n);
+			expect(result.output).toHaveLength(0);
 		});
 
 		it("should calculate pairing gas correctly", () => {
-			// Doc states: Gas Cost: 65000 + 43000k
-			// For k=2: 65000 + 43000*2 = 151000
+			// For two pairs, EIP-2537 charges 37700 + 32600 * 2 gas.
 			const input = new Uint8Array(384 * 2);
 			const result = bls12Pairing(input, 200000n);
 
-			expect(result.gasUsed).toBe(151000n);
+			expect(result.gasUsed).toBe(102900n);
 		});
 	});
 
@@ -200,7 +197,7 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 			const result = bls12MapFp2ToG2(input, 100000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(75000n);
+			expect(result.gasUsed).toBe(23800n);
 			expect(result.output.length).toBe(256);
 		});
 	});
@@ -221,12 +218,10 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 
 	describe("MSM Discount Table section", () => {
 		it("should apply discounts from table for G1_MSM", () => {
-			// API DISCREPANCY: Actual implementation uses EIP-2537 multiplier-based formula
-			// not the simple discount/1000 formula from documentation
 			const testCases = [
-				{ k: 1, expectedGas: 12000n },  // multiplier=1.0
-				{ k: 2, expectedGas: 19680n },  // multiplier=1.64
-				{ k: 4, expectedGas: 27840n },  // multiplier=2.32
+				{ k: 1, expectedGas: 12000n },
+				{ k: 2, expectedGas: 22776n },
+				{ k: 4, expectedGas: 38256n },
 			];
 
 			for (const { k, expectedGas } of testCases) {
@@ -244,9 +239,9 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 			expect(result.success).toBe(false);
 		});
 
-		it("should fail for invalid G1_MUL input length", () => {
-			// Doc states: Invalid input length (not 160 bytes)
-			const result = bls12G1Mul(new Uint8Array(159), 20000n);
+		it("should reject a truncated G1_MSM pair", () => {
+			// A G1 point-scalar pair occupies 160 bytes.
+			const result = bls12G1Msm(new Uint8Array(159), 20000n);
 			expect(result.success).toBe(false);
 		});
 
@@ -265,26 +260,41 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 
 	describe("Hardfork Availability section", () => {
 		it("should be available from PRAGUE hardfork", () => {
-			// Doc states: Introduced: Prague (planned)
-			const testPrecompiles = [
-				{ fn: bls12G1Add, input: new Uint8Array(256), gas: 1000n },
-				{ fn: bls12G1Mul, input: new Uint8Array(160), gas: 20000n },
-				{ fn: bls12G2Add, input: new Uint8Array(512), gas: 2000n },
-				{ fn: bls12G2Mul, input: new Uint8Array(288), gas: 50000n },
+			const operations = [
+				{ address: PrecompileAddress.BLS12_G1_ADD, size: 256, gas: 375n },
+				{ address: PrecompileAddress.BLS12_G1_MSM, size: 160, gas: 12000n },
+				{ address: PrecompileAddress.BLS12_G2_ADD, size: 512, gas: 600n },
+				{ address: PrecompileAddress.BLS12_G2_MSM, size: 288, gas: 22500n },
+				{ address: PrecompileAddress.BLS12_PAIRING, size: 384, gas: 70300n },
+				{ address: PrecompileAddress.BLS12_MAP_FP_TO_G1, size: 64, gas: 5500n },
+				{
+					address: PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+					size: 128,
+					gas: 23800n,
+				},
 			];
 
-			for (const { fn, input, gas } of testPrecompiles) {
-				const result = fn(input, gas);
-				expect(result.success).toBe(true);
+			for (const { address, size, gas } of operations) {
+				const input = new Uint8Array(size);
+				expect(execute(address, input, gas, Hardfork.PRAGUE).success).toBe(
+					true,
+				);
+				expect(execute(address, input, gas, Hardfork.CANCUN).error).toContain(
+					"Unknown precompile",
+				);
 			}
 		});
 
 		it("should check hardfork availability via isPrecompile", async () => {
-			// NOTE: execute() does not enforce hardfork availability
-			// Use isPrecompile() to check availability
-			const { isPrecompile } = await import("../../../../src/evm/precompiles/precompiles.js");
-			expect(isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.PRAGUE)).toBe(true);
-			expect(isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.CANCUN)).toBe(false);
+			const { isPrecompile } = await import(
+				"../../../../src/evm/precompiles/precompiles.js"
+			);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.PRAGUE),
+			).toBe(true);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.CANCUN),
+			).toBe(false);
 		});
 
 		it("should be available in PRAGUE hardfork via execute", () => {
@@ -308,9 +318,9 @@ describe("bls12-381/index.mdx (BLS12-381 Precompiles Overview) documentation", (
 			invalidInput.fill(0xff, 0, 128);
 
 			const result = bls12G1Add(invalidInput, 1000n);
-			// Should fail for invalid points (not just zeros which are valid infinity)
-			// The implementation may or may not validate - document actual behavior
-			expect(result.gasUsed).toBe(500n); // Gas is still charged
+			expect(result.success).toBe(false);
+			expect(result.gasUsed).toBe(1000n);
+			expect(result.output).toHaveLength(0);
 		});
 	});
 });

@@ -3,7 +3,11 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, bls12MapFpToG1 } from "../../../src/evm/precompiles/precompiles.js";
+import {
+	bls12MapFpToG1,
+	execute,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 describe("bls12-map-fp-to-g1.mdx documentation examples", () => {
@@ -141,26 +145,26 @@ describe("bls12-map-fp-to-g1.mdx documentation examples", () => {
 		});
 
 		it("hardfork availability via isPrecompile function", async () => {
-			// NOTE: execute() does not enforce hardfork availability
-			// Use isPrecompile() to check availability
-			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
-			expect(isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.PRAGUE)).toBe(true);
-			expect(isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.CANCUN)).toBe(false);
+			const { isPrecompile } = await import(
+				"../../../src/evm/precompiles/precompiles.js"
+			);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.PRAGUE),
+			).toBe(true);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.CANCUN),
+			).toBe(false);
 		});
 	});
 
 	describe("Use Cases section", () => {
-		it("should support hash-to-curve operations", () => {
-			// Doc states: Used for hash-to-curve operations in BLS signatures
-			// We test that the precompile is callable with arbitrary input
-			const arbitraryInput = new Uint8Array(64);
-			for (let i = 0; i < 64; i++) {
-				arbitraryInput[i] = i;
-			}
+		it("should map a canonically encoded field element", () => {
+			const fieldInput = new Uint8Array(64);
+			fieldInput[63] = 1;
 
-			const result = bls12MapFpToG1(arbitraryInput, 10000n);
+			const result = bls12MapFpToG1(fieldInput, 10000n);
 			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
+			expect(result.output).toHaveLength(128);
 		});
 	});
 });

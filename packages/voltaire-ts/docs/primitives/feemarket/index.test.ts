@@ -40,7 +40,7 @@ describe("FeeMarket Documentation - index.mdx", () => {
 			expect(nextBaseFee).toBeGreaterThan(parentBaseFee);
 		});
 
-		it("should keep base fee same when block is empty", async () => {
+		it("should reduce the base fee by 12.5% after an empty block", async () => {
 			const { BaseFee } = await import(
 				"../../../src/primitives/FeeMarket/index.js"
 			);
@@ -48,11 +48,9 @@ describe("FeeMarket Documentation - index.mdx", () => {
 			const parentBaseFee = 1_000_000_000n; // 1 gwei
 			const gasLimit = 30_000_000n;
 
-			// Empty block (gas used = 0) - per EIP-1559, base fee stays same
 			const nextBaseFee = BaseFee(0n, gasLimit, parentBaseFee);
 
-			// Base fee should stay same when block is empty
-			expect(nextBaseFee).toBe(parentBaseFee);
+			expect(nextBaseFee).toBe(875_000_000n);
 		});
 	});
 
@@ -215,17 +213,15 @@ describe("FeeMarket Documentation - index.mdx", () => {
 				"../../../src/primitives/FeeMarket/index.js"
 			);
 
-			// Valid state
-			expect(() =>
+			expect(
 				validateState({
 					baseFee: 30_000_000_000n,
 					gasUsed: 15_000_000n,
 					gasLimit: 30_000_000n,
-					blobBaseFee: 1n,
 					blobGasUsed: 0n,
 					excessBlobGas: 0n,
 				}),
-			).not.toThrow();
+			).toEqual([]);
 		});
 	});
 
@@ -259,10 +255,8 @@ describe("FeeMarket Documentation - index.mdx", () => {
 			);
 
 			expect(Eip1559).toBeDefined();
-			// Check for common EIP-1559 constants
-			expect(typeof Eip1559.BASE_FEE_CHANGE_DENOMINATOR).toBe("bigint");
-			expect(typeof Eip1559.ELASTICITY_MULTIPLIER).toBe("bigint");
-			expect(typeof Eip1559.MIN_BASE_FEE).toBe("bigint");
+			expect(Eip1559.BASE_FEE_CHANGE_DENOMINATOR).toBe(8n);
+			expect(Eip1559.ELASTICITY_MULTIPLIER).toBe(2n);
 		});
 	});
 

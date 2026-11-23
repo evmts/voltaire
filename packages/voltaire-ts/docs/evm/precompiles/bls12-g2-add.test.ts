@@ -3,7 +3,11 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, bls12G2Add } from "../../../src/evm/precompiles/precompiles.js";
+import {
+	bls12G2Add,
+	execute,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 describe("bls12-g2-add.mdx documentation examples", () => {
@@ -20,22 +24,24 @@ describe("bls12-g2-add.mdx documentation examples", () => {
 	});
 
 	describe("Gas Cost section", () => {
-		it("should use exactly 800 gas", () => {
-			// Doc states: Fixed: 800 gas
+		it("should use exactly 600 gas", () => {
+			// Doc states: Fixed: 600 gas
 			const input = new Uint8Array(512);
 			const result = bls12G2Add(input, 2000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(800n);
+			expect(result.gasUsed).toBe(600n);
 		});
 
 		it("should fail with insufficient gas", () => {
-			// Doc states: Out of gas: gasLimit < 800
+			// Doc states: Out of gas: gasLimit < 600
 			const input = new Uint8Array(512);
-			const result = bls12G2Add(input, 799n);
+			const result = bls12G2Add(input, 599n);
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
+			expect(result.gasUsed).toBe(599n);
+			expect(result.output).toHaveLength(0);
 		});
 	});
 
@@ -133,7 +139,7 @@ describe("bls12-g2-add.mdx documentation examples", () => {
 			);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(800n);
+			expect(result.gasUsed).toBe(600n);
 		});
 
 		it("should be available from PRAGUE hardfork", () => {
@@ -149,20 +155,24 @@ describe("bls12-g2-add.mdx documentation examples", () => {
 		});
 
 		it("hardfork availability via isPrecompile function", async () => {
-			// NOTE: execute() does not enforce hardfork availability
-			// Use isPrecompile() to check availability
-			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
-			expect(isPrecompile(PrecompileAddress.BLS12_G2_ADD, Hardfork.PRAGUE)).toBe(true);
-			expect(isPrecompile(PrecompileAddress.BLS12_G2_ADD, Hardfork.CANCUN)).toBe(false);
+			const { isPrecompile } = await import(
+				"../../../src/evm/precompiles/precompiles.js"
+			);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G2_ADD, Hardfork.PRAGUE),
+			).toBe(true);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G2_ADD, Hardfork.CANCUN),
+			).toBe(false);
 		});
 	});
 
 	describe("Gas Comparison section", () => {
-		it("should use 800 gas compared to G1 Add's 500", () => {
-			// Doc states: G1 Gas: 500, G2 Gas: 800, Ratio: 1.6x
+		it("should use 600 gas compared to G1 Add's 375", () => {
+			// Doc states: G1 Gas: 375, G2 Gas: 600, Ratio: 1.6x
 			const input = new Uint8Array(512);
 			const result = bls12G2Add(input, 2000n);
-			expect(result.gasUsed).toBe(800n);
+			expect(result.gasUsed).toBe(600n);
 		});
 	});
 });

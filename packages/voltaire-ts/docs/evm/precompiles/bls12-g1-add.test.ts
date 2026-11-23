@@ -3,7 +3,11 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, bls12G1Add } from "../../../src/evm/precompiles/precompiles.js";
+import {
+	bls12G1Add,
+	execute,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 describe("bls12-g1-add.mdx documentation examples", () => {
@@ -20,22 +24,24 @@ describe("bls12-g1-add.mdx documentation examples", () => {
 	});
 
 	describe("Gas Cost section", () => {
-		it("should use exactly 500 gas", () => {
-			// Doc states: Fixed: 500 gas
+		it("should use exactly 375 gas", () => {
+			// Doc states: Fixed: 375 gas
 			const input = new Uint8Array(256);
 			const result = bls12G1Add(input, 1000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(500n);
+			expect(result.gasUsed).toBe(375n);
 		});
 
 		it("should fail with insufficient gas", () => {
-			// Doc states: Out of gas: gasLimit < 500
+			// Doc states: Out of gas: gasLimit < 375
 			const input = new Uint8Array(256);
-			const result = bls12G1Add(input, 499n);
+			const result = bls12G1Add(input, 374n);
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
+			expect(result.gasUsed).toBe(374n);
+			expect(result.output).toHaveLength(0);
 		});
 	});
 
@@ -120,7 +126,7 @@ describe("bls12-g1-add.mdx documentation examples", () => {
 			);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(500n);
+			expect(result.gasUsed).toBe(375n);
 		});
 
 		it("should be available from PRAGUE hardfork", () => {
@@ -136,11 +142,15 @@ describe("bls12-g1-add.mdx documentation examples", () => {
 		});
 
 		it("hardfork availability via isPrecompile function", async () => {
-			// NOTE: execute() does not enforce hardfork availability
-			// Use isPrecompile() to check availability
-			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
-			expect(isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.PRAGUE)).toBe(true);
-			expect(isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.CANCUN)).toBe(false);
+			const { isPrecompile } = await import(
+				"../../../src/evm/precompiles/precompiles.js"
+			);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.PRAGUE),
+			).toBe(true);
+			expect(
+				isPrecompile(PrecompileAddress.BLS12_G1_ADD, Hardfork.CANCUN),
+			).toBe(false);
 		});
 	});
 

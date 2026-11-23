@@ -3,7 +3,13 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, bn254Mul } from "../../../src/evm/precompiles/precompiles.js";
+import { FP_MOD } from "../../../src/crypto/bn254/constants.js";
+import {
+	bn254Add,
+	bn254Mul,
+	execute,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 /**
@@ -59,6 +65,8 @@ describe("bn254-mul.mdx documentation examples", () => {
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
+			expect(result.gasUsed).toBe(5999n);
+			expect(result.output).toHaveLength(0);
 		});
 	});
 
@@ -161,7 +169,8 @@ describe("bn254-mul.mdx documentation examples", () => {
 		it("should handle scalar > group order", () => {
 			// Doc states: Scalar > group order: Automatically reduced modulo group order
 			// Group order: 21888242871839275222246405745257275088548364400416034343698204186575808495617
-			const groupOrder = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+			const groupOrder =
+				21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 			const input1 = buildScalarMulInput(1n, 2n, 1n);
 			const input2 = buildScalarMulInput(1n, 2n, groupOrder + 1n);
 
@@ -173,6 +182,21 @@ describe("bn254-mul.mdx documentation examples", () => {
 			// Both should produce the same result (wrapping)
 			expect([...result1.output]).toEqual([...result2.output]);
 		});
+	});
+
+	it("should halt when a G1 coordinate is at least the field modulus", () => {
+		const gasLimit = 10000n;
+		for (const [x, y] of [
+			[FP_MOD, 0n],
+			[FP_MOD + 1n, 2n],
+			[1n, FP_MOD + 2n],
+		] as const) {
+			const result = bn254Mul(buildScalarMulInput(x, y, 1n), gasLimit);
+			expect(result.success).toBe(false);
+			expect(result.error).toContain("canonical field element");
+			expect(result.gasUsed).toBe(gasLimit);
+			expect(result.output).toHaveLength(0);
+		}
 	});
 
 	describe("Integration with execute function", () => {
@@ -189,28 +213,38 @@ describe("bn254-mul.mdx documentation examples", () => {
 			expect(result.gasUsed).toBe(6000n);
 		});
 
-		it("should be available from BYZANTIUM hardfork", () => {
+		it("should charge the exact Byzantium and Istanbul prices", () => {
 			// Doc states: Introduced: Byzantium (EIP-196)
 			const input = buildScalarMulInput(1n, 2n, 1n);
-			const result = execute(
+			const byzantium = execute(
 				PrecompileAddress.BN254_MUL,
 				input,
-				10000n,
+				40000n,
 				Hardfork.BYZANTIUM,
 			);
-			expect(result.success).toBe(true);
+			const istanbul = execute(
+				PrecompileAddress.BN254_MUL,
+				input,
+				6000n,
+				Hardfork.ISTANBUL,
+			);
+			expect(byzantium.success).toBe(true);
+			expect(byzantium.gasUsed).toBe(40000n);
+			expect(istanbul.success).toBe(true);
+			expect(istanbul.gasUsed).toBe(6000n);
 		});
 	});
 
 	describe("Performance Considerations section", () => {
 		it("should be more expensive than addition", () => {
-			// Doc states: Scalar multiplication is ~40x more expensive than addition (6000 vs 150 gas)
 			const addInput = new Uint8Array(128);
 			const mulInput = buildScalarMulInput(1n, 2n, 2n);
 
-			// We can't import bn254Add directly in same test, but document the comparison
-			// Gas: 6000 for mul, 150 for add
-			const mulResult = bn254Mul(mulInput, 10000n);
+			const addResult = bn254Add(addInput, 10000n, Hardfork.ISTANBUL);
+			const mulResult = bn254Mul(mulInput, 10000n, Hardfork.ISTANBUL);
+			expect(addResult.success).toBe(true);
+			expect(mulResult.success).toBe(true);
+			expect(addResult.gasUsed).toBe(150n);
 			expect(mulResult.gasUsed).toBe(6000n);
 		});
 	});

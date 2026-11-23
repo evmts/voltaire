@@ -3,7 +3,12 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, bn254Add } from "../../../src/evm/precompiles/precompiles.js";
+import { FP_MOD } from "../../../src/crypto/bn254/constants.js";
+import {
+	bn254Add,
+	execute,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 /**
@@ -167,8 +172,26 @@ describe("bn254-add.mdx documentation examples", () => {
 			const result = bn254Add(input, 149n);
 
 			expect(result.success).toBe(false);
-			expect(result.gasUsed).toBe(150n);
+			expect(result.gasUsed).toBe(149n);
+			expect(result.output).toHaveLength(0);
 		});
+	});
+
+	it("should halt when a G1 coordinate is at least the field modulus", () => {
+		const gasLimit = 1000n;
+		for (const [x, y] of [
+			[FP_MOD, 0n],
+			[FP_MOD + 1n, 2n],
+			[1n, FP_MOD + 2n],
+		] as const) {
+			const input = new Uint8Array(128);
+			input.set(buildG1Point(x, y));
+			const result = bn254Add(input, gasLimit);
+			expect(result.success).toBe(false);
+			expect(result.error).toContain("canonical field element");
+			expect(result.gasUsed).toBe(gasLimit);
+			expect(result.output).toHaveLength(0);
+		}
 	});
 
 	describe("Integration with execute function", () => {
@@ -185,16 +208,25 @@ describe("bn254-add.mdx documentation examples", () => {
 			expect(result.gasUsed).toBe(150n);
 		});
 
-		it("should be available from BYZANTIUM hardfork", () => {
+		it("should charge the exact Byzantium and Istanbul prices", () => {
 			// Doc states: Introduced: Byzantium (EIP-196)
 			const input = new Uint8Array(128);
-			const result = execute(
+			const byzantium = execute(
 				PrecompileAddress.BN254_ADD,
 				input,
-				1000n,
+				500n,
 				Hardfork.BYZANTIUM,
 			);
-			expect(result.success).toBe(true);
+			const istanbul = execute(
+				PrecompileAddress.BN254_ADD,
+				input,
+				150n,
+				Hardfork.ISTANBUL,
+			);
+			expect(byzantium.success).toBe(true);
+			expect(byzantium.gasUsed).toBe(500n);
+			expect(istanbul.success).toBe(true);
+			expect(istanbul.gasUsed).toBe(150n);
 		});
 	});
 

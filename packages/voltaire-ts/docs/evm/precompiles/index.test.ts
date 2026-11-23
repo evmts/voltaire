@@ -2,30 +2,28 @@
  * Tests for index.mdx (precompiles overview) documentation examples
  * Validates that all precompiles are available and have correct addresses
  */
-import { beforeAll, describe, expect, it } from "vitest";
-import * as KZG from "../../../src/crypto/KZG/index.js";
+import { describe, expect, it } from "vitest";
 import {
-	PrecompileAddress,
-	execute,
-	ecrecover,
-	sha256,
-	ripemd160,
-	identity,
-	modexp,
+	blake2f,
+	bls12G1Add,
+	bls12G1Msm,
+	bls12G2Add,
+	bls12G2Msm,
+	bls12MapFp2ToG2,
+	bls12MapFpToG1,
+	bls12Pairing,
 	bn254Add,
 	bn254Mul,
 	bn254Pairing,
-	blake2f,
+	ecrecover,
+	execute,
+	identity,
+	isPrecompile,
+	modexp,
+	PrecompileAddress,
 	pointEvaluation,
-	bls12G1Add,
-	bls12G1Mul,
-	bls12G1Msm,
-	bls12G2Add,
-	bls12G2Mul,
-	bls12G2Msm,
-	bls12Pairing,
-	bls12MapFpToG1,
-	bls12MapFp2ToG2,
+	ripemd160,
+	sha256,
 } from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
@@ -59,30 +57,18 @@ describe("index.mdx (Precompiles Overview) documentation", () => {
 		});
 
 		it("should have correct addresses for Prague precompiles", () => {
-			// Doc states addresses for 0x0b-0x13
+			// Doc states addresses for 0x0b–0x11
 			expect(PrecompileAddress.BLS12_G1_ADD.endsWith("0b")).toBe(true);
-			expect(PrecompileAddress.BLS12_G1_MUL.endsWith("0c")).toBe(true);
-			expect(PrecompileAddress.BLS12_G1_MSM.endsWith("0d")).toBe(true);
-			expect(PrecompileAddress.BLS12_G2_ADD.endsWith("0e")).toBe(true);
-			expect(PrecompileAddress.BLS12_G2_MUL.endsWith("0f")).toBe(true);
-			expect(PrecompileAddress.BLS12_G2_MSM.endsWith("10")).toBe(true);
-			expect(PrecompileAddress.BLS12_PAIRING.endsWith("11")).toBe(true);
-			expect(PrecompileAddress.BLS12_MAP_FP_TO_G1.endsWith("12")).toBe(true);
-			expect(PrecompileAddress.BLS12_MAP_FP2_TO_G2.endsWith("13")).toBe(true);
+			expect(PrecompileAddress.BLS12_G1_MSM.endsWith("0c")).toBe(true);
+			expect(PrecompileAddress.BLS12_G2_ADD.endsWith("0d")).toBe(true);
+			expect(PrecompileAddress.BLS12_G2_MSM.endsWith("0e")).toBe(true);
+			expect(PrecompileAddress.BLS12_PAIRING.endsWith("0f")).toBe(true);
+			expect(PrecompileAddress.BLS12_MAP_FP_TO_G1.endsWith("10")).toBe(true);
+			expect(PrecompileAddress.BLS12_MAP_FP2_TO_G2.endsWith("11")).toBe(true);
 		});
 	});
 
 	describe("Hardfork Availability section", () => {
-		// Load KZG for pointEvaluation precompile (Cancun)
-		beforeAll(
-			() => {
-				if (!KZG.isInitialized()) {
-					KZG.loadTrustedSetup();
-				}
-			},
-			{ timeout: 60000 },
-		);
-
 		it("should have all Frontier precompiles available", () => {
 			// Doc states: Frontier introduced ecrecover, sha256, ripemd160, identity
 			const inputs = {
@@ -105,10 +91,23 @@ describe("index.mdx (Precompiles Overview) documentation", () => {
 			const bn254Input96 = new Uint8Array(96);
 			const bn254PairingInput = new Uint8Array(0);
 
-			expect(modexp(modexpInput, 10000n).gasUsed).toBeGreaterThan(0n);
-			expect(bn254Add(bn254Input128, 10000n).gasUsed).toBe(150n);
-			expect(bn254Mul(bn254Input96, 10000n).gasUsed).toBe(6000n);
-			expect(bn254Pairing(bn254PairingInput, 50000n).gasUsed).toBe(45000n);
+			expect(
+				execute(
+					PrecompileAddress.MODEXP,
+					modexpInput,
+					10000n,
+					Hardfork.BYZANTIUM,
+				).success,
+			).toBe(true);
+			expect(bn254Add(bn254Input128, 10000n, Hardfork.BYZANTIUM).gasUsed).toBe(
+				500n,
+			);
+			expect(bn254Mul(bn254Input96, 50000n, Hardfork.BYZANTIUM).gasUsed).toBe(
+				40000n,
+			);
+			expect(
+				bn254Pairing(bn254PairingInput, 110000n, Hardfork.BYZANTIUM).gasUsed,
+			).toBe(100000n);
 		});
 
 		it("should have Istanbul precompile available", () => {
@@ -120,21 +119,34 @@ describe("index.mdx (Precompiles Overview) documentation", () => {
 
 		it("should have Cancun precompile available", () => {
 			// Doc states: Cancun introduced point-evaluation
-			const input = new Uint8Array(192);
-			expect(pointEvaluation(input, 60000n).gasUsed).toBe(50000n);
+			expect(
+				isPrecompile(PrecompileAddress.POINT_EVALUATION, Hardfork.CANCUN),
+			).toBe(true);
+			const result = execute(
+				PrecompileAddress.POINT_EVALUATION,
+				new Uint8Array(192),
+				60000n,
+				Hardfork.CANCUN,
+			);
+			expect(result).toEqual({
+				success: false,
+				gasUsed: 60000n,
+				output: new Uint8Array(),
+				error: "Versioned hash does not match commitment",
+			});
 		});
 
 		it("should have Prague precompiles available", () => {
 			// Doc states: Prague introduces BLS12-381 precompiles
-			expect(bls12G1Add(new Uint8Array(256), 1000n).gasUsed).toBe(500n);
-			expect(bls12G1Mul(new Uint8Array(160), 20000n).gasUsed).toBe(12000n);
+			expect(bls12G1Add(new Uint8Array(256), 1000n).gasUsed).toBe(375n);
 			expect(bls12G1Msm(new Uint8Array(160), 20000n).gasUsed).toBe(12000n);
-			expect(bls12G2Add(new Uint8Array(512), 2000n).gasUsed).toBe(800n);
-			expect(bls12G2Mul(new Uint8Array(288), 50000n).gasUsed).toBe(45000n);
-			expect(bls12G2Msm(new Uint8Array(288), 50000n).gasUsed).toBe(45000n);
-			expect(bls12Pairing(new Uint8Array(0), 100000n).gasUsed).toBe(65000n);
+			expect(bls12G2Add(new Uint8Array(512), 2000n).gasUsed).toBe(600n);
+			expect(bls12G2Msm(new Uint8Array(288), 50000n).gasUsed).toBe(22500n);
+			expect(bls12Pairing(new Uint8Array(384), 100000n).gasUsed).toBe(70300n);
 			expect(bls12MapFpToG1(new Uint8Array(64), 10000n).gasUsed).toBe(5500n);
-			expect(bls12MapFp2ToG2(new Uint8Array(128), 100000n).gasUsed).toBe(75000n);
+			expect(bls12MapFp2ToG2(new Uint8Array(128), 100000n).gasUsed).toBe(
+				23800n,
+			);
 		});
 	});
 
@@ -153,11 +165,15 @@ describe("index.mdx (Precompiles Overview) documentation", () => {
 		});
 
 		it("should check hardfork availability via isPrecompile", async () => {
-			// NOTE: execute() does not enforce hardfork availability
-			// Use isPrecompile() to check availability
-			const { isPrecompile } = await import("../../../src/evm/precompiles/precompiles.js");
-			expect(isPrecompile(PrecompileAddress.POINT_EVALUATION, Hardfork.CANCUN)).toBe(true);
-			expect(isPrecompile(PrecompileAddress.POINT_EVALUATION, Hardfork.SHANGHAI)).toBe(false);
+			const { isPrecompile } = await import(
+				"../../../src/evm/precompiles/precompiles.js"
+			);
+			expect(
+				isPrecompile(PrecompileAddress.POINT_EVALUATION, Hardfork.CANCUN),
+			).toBe(true);
+			expect(
+				isPrecompile(PrecompileAddress.POINT_EVALUATION, Hardfork.SHANGHAI),
+			).toBe(false);
 		});
 	});
 
@@ -167,8 +183,8 @@ describe("index.mdx (Precompiles Overview) documentation", () => {
 			expect(ecrecover(new Uint8Array(128), 10000n).gasUsed).toBe(3000n);
 			expect(bn254Add(new Uint8Array(128), 10000n).gasUsed).toBe(150n);
 			expect(bn254Mul(new Uint8Array(96), 10000n).gasUsed).toBe(6000n);
-			expect(bls12G1Add(new Uint8Array(256), 10000n).gasUsed).toBe(500n);
-			expect(bls12G2Add(new Uint8Array(512), 10000n).gasUsed).toBe(800n);
+			expect(bls12G1Add(new Uint8Array(256), 10000n).gasUsed).toBe(375n);
+			expect(bls12G2Add(new Uint8Array(512), 10000n).gasUsed).toBe(600n);
 		});
 
 		it("should have documented dynamic gas costs", () => {
@@ -201,10 +217,8 @@ describe("index.mdx (Precompiles Overview) documentation", () => {
 			expect(typeof blake2f).toBe("function");
 			expect(typeof pointEvaluation).toBe("function");
 			expect(typeof bls12G1Add).toBe("function");
-			expect(typeof bls12G1Mul).toBe("function");
 			expect(typeof bls12G1Msm).toBe("function");
 			expect(typeof bls12G2Add).toBe("function");
-			expect(typeof bls12G2Mul).toBe("function");
 			expect(typeof bls12G2Msm).toBe("function");
 			expect(typeof bls12Pairing).toBe("function");
 			expect(typeof bls12MapFpToG1).toBe("function");

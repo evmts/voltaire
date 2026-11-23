@@ -3,7 +3,11 @@
  * Validates code examples work correctly with actual API
  */
 import { describe, expect, it } from "vitest";
-import { PrecompileAddress, execute, modexp } from "../../../src/evm/precompiles/precompiles.js";
+import {
+	execute,
+	modexp,
+	PrecompileAddress,
+} from "../../../src/evm/precompiles/precompiles.js";
 import * as Hardfork from "../../../src/primitives/Hardfork/index.js";
 
 /**
@@ -31,18 +35,10 @@ function buildModExpInput(
 ): Uint8Array {
 	// Header: 96 bytes (3 x 32-byte lengths)
 	const header = new Uint8Array(96);
-	// base_length
-	const baseLenBytes = new Uint8Array(32);
-	baseLenBytes[31] = baseLen;
-	header.set(baseLenBytes, 0);
-	// exp_length
-	const expLenBytes = new Uint8Array(32);
-	expLenBytes[31] = expLen;
-	header.set(expLenBytes, 32);
-	// mod_length
-	const modLenBytes = new Uint8Array(32);
-	modLenBytes[31] = modLen;
-	header.set(modLenBytes, 64);
+	const headerView = new DataView(header.buffer);
+	for (const [index, length] of [baseLen, expLen, modLen].entries()) {
+		headerView.setUint32(index * 32 + 28, length);
+	}
 
 	// Data: base || exp || mod
 	const input = new Uint8Array(96 + baseLen + expLen + modLen);
@@ -54,11 +50,15 @@ function buildModExpInput(
 	}
 	// Write exp (big-endian)
 	for (let i = 0; i < expLen; i++) {
-		input[96 + baseLen + expLen - 1 - i] = Number((exp >> BigInt(i * 8)) & 0xffn);
+		input[96 + baseLen + expLen - 1 - i] = Number(
+			(exp >> BigInt(i * 8)) & 0xffn,
+		);
 	}
 	// Write mod (big-endian)
 	for (let i = 0; i < modLen; i++) {
-		input[96 + baseLen + expLen + modLen - 1 - i] = Number((mod >> BigInt(i * 8)) & 0xffn);
+		input[96 + baseLen + expLen + modLen - 1 - i] = Number(
+			(mod >> BigInt(i * 8)) & 0xffn,
+		);
 	}
 
 	return input;
@@ -79,28 +79,46 @@ describe("modexp.mdx documentation examples", () => {
 	});
 
 	describe("Gas Cost section", () => {
-		it("should have minimum gas of 200", () => {
-			// Doc states: Minimum gas: 200
+		it("should charge 200 gas in Berlin and 500 gas in Osaka", () => {
 			const input = buildModExpInput(2n, 1, 3n, 1, 5n, 1);
-			const result = modexp(input, 10000n);
-
-			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBeGreaterThanOrEqual(200n);
+			const berlin = modexp(input, 200n, Hardfork.BERLIN);
+			const osaka = modexp(input, 500n, Hardfork.OSAKA);
+			expect(berlin.success).toBe(true);
+			expect(berlin.gasUsed).toBe(200n);
+			expect(osaka.success).toBe(true);
+			expect(osaka.gasUsed).toBe(500n);
 		});
 
 		it("should fail with insufficient gas", () => {
 			const input = buildModExpInput(2n, 1, 3n, 1, 5n, 1);
-			const result = modexp(input, 10n); // Likely need at least 200
-			expect(result.success).toBe(false);
+			const result = modexp(input, 499n, Hardfork.OSAKA);
+			expect(result).toEqual({
+				success: false,
+				output: new Uint8Array(),
+				gasUsed: 499n,
+				error: "Out of gas",
+			});
+		});
+
+		it("should price a long exponent and a 33-byte modulus under EIP-7883", () => {
+			// Complexity is 2 * ceil(33 / 8)^2 = 50.
+			// The leading 32 exponent bytes are zero, so the iteration count is 16.
+			const input = buildModExpInput(2n, 1, 3n, 33, 5n, 33);
+			const result = modexp(input, 1000n, Hardfork.OSAKA);
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(800n);
+			expect(result.output).toHaveLength(33);
+			expect(result.output[32]).toBe(3);
 		});
 	});
 
 	describe("Input Format section", () => {
-		it("should require minimum 96 bytes input", () => {
-			// Doc states: Minimum input length: 96 bytes (length headers only)
+		it("should right-pad a short length header", () => {
 			const shortInput = new Uint8Array(95);
-			const result = modexp(shortInput, 10000n);
-			expect(result.success).toBe(false);
+			const result = modexp(shortInput, 10000n, Hardfork.OSAKA);
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(500n);
+			expect(result.output).toHaveLength(0);
 		});
 
 		it("should accept 96 bytes header with zero lengths", () => {
@@ -108,6 +126,42 @@ describe("modexp.mdx documentation examples", () => {
 			const result = modexp(input, 10000n);
 			// With zero modLen, should return empty output
 			expect(result.success).toBe(true);
+		});
+
+		it("should cap each declared operand at 1024 bytes in Osaka", () => {
+			const gasLimit = 1_000_000n;
+			for (const operand of [0, 1, 2]) {
+				const lengths: [number, number, number] = [1, 1, 1];
+				lengths[operand] = 1024;
+				const withinLimit = buildModExpInput(
+					2n,
+					lengths[0],
+					3n,
+					lengths[1],
+					5n,
+					lengths[2],
+				);
+				const accepted = modexp(withinLimit, gasLimit, Hardfork.OSAKA);
+				expect(accepted.success).toBe(true);
+				expect(accepted.output).toHaveLength(lengths[2]);
+				expect(accepted.output[lengths[2] - 1]).toBe(3);
+
+				lengths[operand] = 1025;
+				const oversized = buildModExpInput(
+					2n,
+					lengths[0],
+					3n,
+					lengths[1],
+					5n,
+					lengths[2],
+				);
+				expect(modexp(oversized, gasLimit, Hardfork.PRAGUE).success).toBe(true);
+				const rejected = modexp(oversized, gasLimit, Hardfork.OSAKA);
+				expect(rejected.success).toBe(false);
+				expect(rejected.error).toContain("Osaka limit");
+				expect(rejected.gasUsed).toBe(gasLimit);
+				expect(rejected.output).toHaveLength(0);
+			}
 		});
 	});
 
@@ -141,12 +195,12 @@ describe("modexp.mdx documentation examples", () => {
 			// Doc Test 1: 2^3 mod 5 = 3
 			const input = hexToBytes(
 				"0x" +
-				"0000000000000000000000000000000000000000000000000000000000000001" + // base_len = 1
-				"0000000000000000000000000000000000000000000000000000000000000001" + // exp_len = 1
-				"0000000000000000000000000000000000000000000000000000000000000001" + // mod_len = 1
-				"02" + // base = 2
-				"03" + // exp = 3
-				"05"   // mod = 5
+					"0000000000000000000000000000000000000000000000000000000000000001" + // base_len = 1
+					"0000000000000000000000000000000000000000000000000000000000000001" + // exp_len = 1
+					"0000000000000000000000000000000000000000000000000000000000000001" + // mod_len = 1
+					"02" + // base = 2
+					"03" + // exp = 3
+					"05", // mod = 5
 			);
 
 			const result = modexp(input, 100000n);
@@ -158,12 +212,12 @@ describe("modexp.mdx documentation examples", () => {
 			// Doc Test 2: 3^1 mod 5 = 3
 			const input = hexToBytes(
 				"0x" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"03" + // base = 3
-				"01" + // exp = 1
-				"05"   // mod = 5
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"03" + // base = 3
+					"01" + // exp = 1
+					"05", // mod = 5
 			);
 
 			const result = modexp(input, 100000n);
@@ -176,12 +230,12 @@ describe("modexp.mdx documentation examples", () => {
 			// Doc states: Zero exponent: Returns 1 (any number to power 0 is 1)
 			const input = hexToBytes(
 				"0x" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"05" + // base = 5
-				"00" + // exp = 0
-				"07"   // mod = 7
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"05" + // base = 5
+					"00" + // exp = 0
+					"07", // mod = 7
 			);
 
 			const result = modexp(input, 100000n);
@@ -189,27 +243,21 @@ describe("modexp.mdx documentation examples", () => {
 			expect(result.output[0]).toBe(1);
 		});
 
-		// NOTE: The documentation says zero modulus returns error, but the implementation
-		// returns empty output. This is documented as an API discrepancy.
 		it("should handle zero modulus", () => {
 			// Doc Test 4: Zero modulus
-			// API DISCREPANCY: Doc says "Expected: Error (division by zero)"
-			// Actual implementation returns empty output (not error)
 			const input = hexToBytes(
 				"0x" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"0000000000000000000000000000000000000000000000000000000000000001" +
-				"02" + // base = 2
-				"03" + // exp = 3
-				"00"   // mod = 0
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"0000000000000000000000000000000000000000000000000000000000000001" +
+					"02" + // base = 2
+					"03" + // exp = 3
+					"00", // mod = 0
 			);
 
 			const result = modexp(input, 100000n);
-			// API DISCREPANCY: Implementation returns success with empty output
-			// Documentation says it should return error
 			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(0);
+			expect(result.output).toEqual(new Uint8Array(1));
 		});
 	});
 
