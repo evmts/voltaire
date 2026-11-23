@@ -743,7 +743,13 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
         return CryptoError.SigningFailed;
     }
 
-    const r = point_r.x % SECP256K1_N;
+    // Ethereum 1-bit recovery ID only represents R.x < n (R.x >= n occurs with
+    // probability ~2^-128 and cannot be recovered with v in {27, 28}).
+    if (point_r.x >= SECP256K1_N) {
+        return CryptoError.SigningFailed;
+    }
+
+    const r = point_r.x;
     if (r == 0) {
         return CryptoError.SigningFailed;
     }
@@ -789,19 +795,6 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
         s = SECP256K1_N - s;
         // When we flip s, we also need to flip the recovery ID
         recoveryId ^= 1;
-    }
-
-    // Verify signature by recovering public key
-    const recovered_address = unaudited_recoverAddress(hash, .{ .v = recoveryId, .r = r, .s = s }) catch {
-        return CryptoError.SigningFailed;
-    };
-    const expected_public_key = unaudited_getPublicKey(private_key) catch {
-        return CryptoError.SigningFailed;
-    };
-    const expected_address = expected_public_key.toAddress();
-
-    if (!constant_time.eql(&recovered_address.bytes, &expected_address.bytes)) {
-        return CryptoError.SigningFailed;
     }
 
     return Signature{

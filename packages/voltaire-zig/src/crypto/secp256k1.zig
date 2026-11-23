@@ -105,12 +105,21 @@ pub const AffinePoint = struct {
     pub fn scalarMul(self: Self, scalar: u256) Self {
         if (scalar == 0 or self.infinity) return Self.zero();
 
+        const reduced = scalar % SECP256K1_N;
+        if (reduced == 0) return Self.zero();
+
         // Convert scalar to bytes (big-endian)
         var scalar_bytes: [32]u8 = undefined;
         defer std.crypto.secureZero(u8, &scalar_bytes);
-        std.mem.writeInt(u256, &scalar_bytes, scalar, .big);
+        std.mem.writeInt(u256, &scalar_bytes, reduced, .big);
 
-        // Use std lib for scalar multiplication
+        // Fast path for generator multiplication avoids SEC1 encode + curve check
+        if (self.x == SECP256K1_GX and self.y == SECP256K1_GY) {
+            const result = Secp256k1.basePoint.mul(scalar_bytes, .big) catch return Self.zero();
+            return fromStdPoint(result) catch Self.zero();
+        }
+
+        // Use std lib for arbitrary point scalar multiplication
         const sec1 = self.toUncompressedSec1() catch return Self.zero();
         const pt = Secp256k1.fromSec1(&sec1) catch return Self.zero();
         const result = pt.mul(scalar_bytes, .big) catch return Self.zero();
@@ -257,65 +266,84 @@ pub fn unauditedRecoverAddress(
     return address;
 }
 
+inline fn feFromReduced(a_mod: u256) !Secp256k1.Fe {
+    var bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &bytes, a_mod, .big);
+    return Secp256k1.Fe.fromBytes(bytes, .big);
+}
+
+inline fn feToU256(fe: Secp256k1.Fe) u256 {
+    return std.mem.readInt(u256, &fe.toBytes(.big), .big);
+}
+
+inline fn scalarFromReduced(a_mod: u256) !Secp256k1.scalar.Scalar {
+    var bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &bytes, a_mod, .big);
+    return Secp256k1.scalar.Scalar.fromBytes(bytes, .big);
+}
+
+inline fn scalarToU256(sc: Secp256k1.scalar.Scalar) u256 {
+    return std.mem.readInt(u256, &sc.toBytes(.big), .big);
+}
+
+/// Compute std.crypto.ecc.Secp256k1 point from x-coordinate and recovery bit
+fn computeStdPointFromX(x: u256, recoveryId: u8) !Secp256k1 {
+    if (x >= SECP256K1_P) return error.InvalidSignature;
+    const x_fe = feFromReduced(x) catch return error.InvalidSignature;
+    const y_fe = Secp256k1.recoverY(x_fe, (recoveryId & 1) == 1) catch return error.InvalidSignature;
+    return Secp256k1{
+        .x = x_fe,
+        .y = y_fe,
+        .z = Secp256k1.Fe.one,
+    };
+}
+
 /// Internal: Recover public key point from signature components
 fn recoverPublicKeyPoint(hash: [32]u8, r: u256, s: u256, recoveryId: u8) !AffinePoint {
     if (r >= SECP256K1_P) return error.InvalidSignature;
 
-    // Step 1: Compute R point from r value
-    // x = r, compute y from curve equation y² = x³ + 7 mod p
-    const R = computePointFromX(r, recoveryId) catch return error.InvalidSignature;
+    // Step 1: Compute R point from r value using Fiat-Crypto field sqrt
+    const R_std = computeStdPointFromX(r, recoveryId) catch return error.InvalidSignature;
 
-    // Step 2: Compute message hash as scalar
-    const e = std.mem.readInt(u256, &hash, .big);
+    // Step 2: Compute scalars in Z_n using stdlib Secp256k1.scalar.Scalar
+    // Q = r^(-1) * (s*R - e*G) = (-e * r^(-1))*G + (s * r^(-1))*R
+    const r_scalar = scalarFromReduced(r) catch return error.InvalidSignature;
+    const s_scalar = scalarFromReduced(s) catch return error.InvalidSignature;
+    const r_inv = r_scalar.invert();
 
-    // Step 3: Compute r_inv = r^(-1) mod n
-    const r_inv = modInverse(r, SECP256K1_N) orelse return error.InvalidSignature;
+    const e_raw = std.mem.readInt(u256, &hash, .big);
+    const e_mod = e_raw % SECP256K1_N;
+    const e_scalar = scalarFromReduced(e_mod) catch return error.InvalidSignature;
 
-    // Step 4: Compute public key Q = r^(-1) * (s*R - e*G)
-    // sR
-    const sR = R.scalarMul(s);
-    if (sR.infinity) return error.InvalidSignature;
+    const u_1_scalar = e_scalar.neg().mul(r_inv);
+    const u_2_scalar = s_scalar.mul(r_inv);
 
-    // eG
-    const eG = AffinePoint.generator().scalarMul(e);
+    const u_1_bytes = u_1_scalar.toBytes(.big);
+    const u_2_bytes = u_2_scalar.toBytes(.big);
 
-    // sR - eG
-    const diff = sR.add(eG.negate());
-    if (diff.infinity) return error.InvalidSignature;
+    const u_1_zero = u_1_scalar.isZero();
+    const u_2_zero = u_2_scalar.isZero();
 
-    // r^(-1) * (sR - eG)
-    const Q = diff.scalarMul(r_inv);
+    const Q_std = if (u_1_zero and u_2_zero)
+        return error.InvalidSignature
+    else if (u_1_zero)
+        R_std.mulPublic(u_2_bytes, .big) catch return error.InvalidSignature
+    else if (u_2_zero)
+        Secp256k1.basePoint.mulPublic(u_1_bytes, .big) catch return error.InvalidSignature
+    else
+        Secp256k1.mulDoubleBasePublic(R_std, u_2_bytes, Secp256k1.basePoint, u_1_bytes, .big) catch return error.InvalidSignature;
+
+    Q_std.rejectIdentity() catch return error.InvalidSignature;
+    const Q = AffinePoint.fromStdPoint(Q_std) catch return error.InvalidSignature;
     if (Q.infinity) return error.InvalidSignature;
-
-    // Verify the signature
-    if (!verifySignature(hash, r, s, Q)) return error.InvalidSignature;
 
     return Q;
 }
 
 /// Compute point on curve from x-coordinate and recovery bit
 fn computePointFromX(x: u256, recoveryId: u8) !AffinePoint {
-    // y² = x³ + 7 mod p
-    const x3 = mulmod(mulmod(x, x, SECP256K1_P), x, SECP256K1_P);
-    const y2 = addmod(x3, SECP256K1_B, SECP256K1_P);
-
-    // y = sqrt(y²) mod p using Tonelli-Shanks for p ≡ 3 mod 4
-    // y = y²^((p+1)/4) mod p
-    const y = powmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
-
-    // Verify sqrt is correct
-    const y_sq = mulmod(y, y, SECP256K1_P);
-    if (y_sq != y2) return error.InvalidSignature;
-
-    // Choose y based on parity (recoveryId bit 0)
-    // Constant-time select to avoid branching on y's parity (which derives from x).
-    const y_is_odd: u8 = @truncate(y & 1);
-    const recovery_bit: u8 = recoveryId & 1;
-    // parity_match is 1 when y's parity equals the requested recovery bit.
-    const parity_match = constant_time.constantTimeNot(y_is_odd ^ recovery_bit);
-    const y_final = constant_time.constantTimeSelectU256(parity_match, y, SECP256K1_P - y);
-
-    return AffinePoint{ .x = x, .y = y_final, .infinity = false };
+    const pt = try computeStdPointFromX(x, recoveryId);
+    return AffinePoint.fromStdPoint(pt) catch return error.InvalidSignature;
 }
 
 /// Verify signature with public key
@@ -326,23 +354,39 @@ pub fn verifySignature(
     pub_key: AffinePoint,
 ) bool {
     if (pub_key.infinity) return false;
+    if (r == 0 or r >= SECP256K1_N or s == 0 or s >= SECP256K1_N) return false;
 
-    const e = std.mem.readInt(u256, &hash, .big);
+    const sec1 = pub_key.toUncompressedSec1() catch return false;
+    const Q_std = Secp256k1.fromSec1(&sec1) catch return false;
 
-    // s_inv = s^(-1) mod n
-    const s_inv = modInverse(s, SECP256K1_N) orelse return false;
+    const s_scalar = scalarFromReduced(s) catch return false;
+    const r_scalar = scalarFromReduced(r) catch return false;
+    const s_inv = s_scalar.invert();
 
-    // u_1 = e * s^(-1) mod n
-    const u_1 = mulmod(e, s_inv, SECP256K1_N);
+    const e_raw = std.mem.readInt(u256, &hash, .big);
+    const e_scalar = scalarFromReduced(e_raw % SECP256K1_N) catch return false;
 
-    // u_2 = r * s^(-1) mod n
-    const u_2 = mulmod(r, s_inv, SECP256K1_N);
+    // u_1 = e * s^(-1) mod n, u_2 = r * s^(-1) mod n
+    const u_1_scalar = e_scalar.mul(s_inv);
+    const u_2_scalar = r_scalar.mul(s_inv);
 
-    // R' = u_1*G + u_2*Q
-    const u1G = AffinePoint.generator().scalarMul(u_1);
-    const u2Q = pub_key.scalarMul(u_2);
-    const R_prime = u1G.add(u2Q);
+    const u_1_bytes = u_1_scalar.toBytes(.big);
+    const u_2_bytes = u_2_scalar.toBytes(.big);
 
+    const u_1_zero = u_1_scalar.isZero();
+    const u_2_zero = u_2_scalar.isZero();
+
+    const R_std = if (u_1_zero and u_2_zero)
+        return false
+    else if (u_1_zero)
+        Q_std.mulPublic(u_2_bytes, .big) catch return false
+    else if (u_2_zero)
+        Secp256k1.basePoint.mulPublic(u_1_bytes, .big) catch return false
+    else
+        Secp256k1.mulDoubleBasePublic(Q_std, u_2_bytes, Secp256k1.basePoint, u_1_bytes, .big) catch return false;
+
+    R_std.rejectIdentity() catch return false;
+    const R_prime = AffinePoint.fromStdPoint(R_std) catch return false;
     if (R_prime.infinity) return false;
 
     // r' = R'.x mod n
@@ -352,26 +396,26 @@ pub fn verifySignature(
 
 // Field arithmetic helpers
 
-/// Modular multiplication using shift-and-add for u256
+/// Modular multiplication with Fiat-Crypto fast paths for secp256k1 P and N
 pub fn mulmod(a: u256, b: u256, m: u256) u256 {
     if (m == 0 or a == 0 or b == 0) return 0;
 
     const a_mod = a % m;
     const b_mod = b % m;
+    if (a_mod == 0 or b_mod == 0) return 0;
 
-    var result: u256 = 0;
-    var multiplicand = a_mod;
-    var multiplier = b_mod;
-
-    while (multiplier > 0) {
-        if (multiplier & 1 == 1) {
-            result = addmod(result, multiplicand, m);
-        }
-        multiplicand = addmod(multiplicand, multiplicand, m);
-        multiplier >>= 1;
+    if (m == SECP256K1_P) {
+        const fa = feFromReduced(a_mod) catch unreachable;
+        const fb = feFromReduced(b_mod) catch unreachable;
+        return feToU256(fa.mul(fb));
+    }
+    if (m == SECP256K1_N) {
+        const sa = scalarFromReduced(a_mod) catch unreachable;
+        const sb = scalarFromReduced(b_mod) catch unreachable;
+        return scalarToU256(sa.mul(sb));
     }
 
-    return result;
+    return @truncate((@as(u512, a_mod) * @as(u512, b_mod)) % @as(u512, m));
 }
 
 /// Modular addition
@@ -430,6 +474,17 @@ fn ctMulmod(a: u256, b: u256, m: u256) u256 {
     const a_mod = a % m;
     const b_mod = b % m;
 
+    if (m == SECP256K1_P) {
+        const fa = feFromReduced(a_mod) catch unreachable;
+        const fb = feFromReduced(b_mod) catch unreachable;
+        return feToU256(fa.mul(fb));
+    }
+    if (m == SECP256K1_N) {
+        const sa = scalarFromReduced(a_mod) catch unreachable;
+        const sb = scalarFromReduced(b_mod) catch unreachable;
+        return scalarToU256(sa.mul(sb));
+    }
+
     var result: u256 = 0;
     var multiplicand = a_mod;
     var multiplier = b_mod;
@@ -484,8 +539,21 @@ pub fn modInverse(a: u256, m: u256) ?u256 {
     // m - 2 subtraction below from underflow. Not a secret-sensitive path.
     if (m == 1) return null;
 
+    const a_mod = a % m;
+    if (a_mod == 0) return null;
+
+    // Fast constant-time paths via stdlib Fiat-Crypto addition chains
+    if (m == SECP256K1_P) {
+        const fa = feFromReduced(a_mod) catch return null;
+        return feToU256(fa.invert());
+    }
+    if (m == SECP256K1_N) {
+        const sa = scalarFromReduced(a_mod) catch return null;
+        return scalarToU256(sa.invert());
+    }
+
     // inverse = a^(m-2) mod m
-    return ctPowmod(a, m - 2, m);
+    return ctPowmod(a_mod, m - 2, m);
 }
 
 // Legacy aliases for compatibility
@@ -498,6 +566,12 @@ pub const unauditedInvmod = modInverse;
 /// Compute modular square root
 pub fn unauditedSqrt(a: u256, p: u256) ?u256 {
     if (constant_time.constantTimeIsZeroU256(a) == 1) return 0;
+
+    if (p == SECP256K1_P and a < SECP256K1_P) {
+        const fa = feFromReduced(a) catch return null;
+        const root = fa.sqrt() catch return null;
+        return feToU256(root);
+    }
 
     const exp = (p + 1) / 4;
     const y = powmod(a, exp, p);
