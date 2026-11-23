@@ -169,6 +169,7 @@ export declare const Ed25519: {
     derivePublicKey: typeof import("../crypto/Ed25519/derivePublicKey.js").derivePublicKey;
     validateSecretKey: typeof import("../crypto/Ed25519/validateSecretKey.js").validateSecretKey;
     validatePublicKey: typeof import("../crypto/Ed25519/validatePublicKey.js").validatePublicKey;
+    isValidPublicKey: typeof import("../crypto/Ed25519/isValidPublicKey.js").isValidPublicKey;
     validateSeed: typeof import("../crypto/Ed25519/validateSeed.js").validateSeed;
     SECRET_KEY_SIZE: 32;
     PUBLIC_KEY_SIZE: 32;
@@ -194,6 +195,8 @@ export declare const X25519: {
     generateKeypair: typeof import("../crypto/X25519/generateKeypair.js").generateKeypair;
     validateSecretKey: typeof import("../crypto/X25519/validateSecretKey.js").validateSecretKey;
     validatePublicKey: typeof import("../crypto/X25519/validatePublicKey.js").validatePublicKey;
+    isValidPublicKey: typeof import("../crypto/X25519/isValidPublicKey.js").isValidPublicKey;
+    isWeakPublicKey: typeof import("../crypto/X25519/isWeakPublicKey.js").isWeakPublicKey;
     SECRET_KEY_SIZE: 32;
     PUBLIC_KEY_SIZE: 32;
     SHARED_SECRET_SIZE: 32;
@@ -281,6 +284,8 @@ export declare const AccessList: {
     COLD_STORAGE_ACCESS_COST: bigint;
     WARM_STORAGE_ACCESS_COST: bigint;
 };
+export * as BlockAccessList from "../primitives/BlockAccessList/index.js";
+export * as ExecutionPayloadBid from "../primitives/ExecutionPayloadBid/index.js";
 export declare const Bytecode: typeof BytecodeJS;
 export declare const Chain: typeof ChainJS;
 export declare const Opcode: typeof OpcodeJS;
@@ -330,6 +335,7 @@ export declare const ModExp: typeof import("../crypto/ModExp/compute.js").modexp
 };
 export { AesGcm } from "../crypto/AesGcm/AesGcm.js";
 export { ChaCha20Poly1305 } from "../crypto/ChaCha20Poly1305/ChaCha20Poly1305.js";
+export { ConstantTime } from "../crypto/ConstantTime/index.js";
 export { Bip39 } from "../crypto/Bip39/index.js";
 export * as Keystore from "../crypto/Keystore/index.js";
 declare const _wasmApi: {
@@ -488,6 +494,7 @@ declare const _wasmApi: {
         derivePublicKey: typeof import("../crypto/Ed25519/derivePublicKey.js").derivePublicKey;
         validateSecretKey: typeof import("../crypto/Ed25519/validateSecretKey.js").validateSecretKey;
         validatePublicKey: typeof import("../crypto/Ed25519/validatePublicKey.js").validatePublicKey;
+        isValidPublicKey: typeof import("../crypto/Ed25519/isValidPublicKey.js").isValidPublicKey;
         validateSeed: typeof import("../crypto/Ed25519/validateSeed.js").validateSeed;
         SECRET_KEY_SIZE: 32;
         PUBLIC_KEY_SIZE: 32;
@@ -507,6 +514,8 @@ declare const _wasmApi: {
         generateKeypair: typeof import("../crypto/X25519/generateKeypair.js").generateKeypair;
         validateSecretKey: typeof import("../crypto/X25519/validateSecretKey.js").validateSecretKey;
         validatePublicKey: typeof import("../crypto/X25519/validatePublicKey.js").validatePublicKey;
+        isValidPublicKey: typeof import("../crypto/X25519/isValidPublicKey.js").isValidPublicKey;
+        isWeakPublicKey: typeof import("../crypto/X25519/isWeakPublicKey.js").isWeakPublicKey;
         SECRET_KEY_SIZE: 32;
         PUBLIC_KEY_SIZE: 32;
         SHARED_SECRET_SIZE: 32;

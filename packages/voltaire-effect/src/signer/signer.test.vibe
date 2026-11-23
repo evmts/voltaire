@@ -10,7 +10,7 @@ import {
   NonceManager,
   NonceManagerLive,
   Signer,
-  SignerFromPrivateKey
+  SignerFromPrivateKey,
 } from "./index.vibe"
 
 const TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as const
@@ -27,7 +27,7 @@ describe("signer", () => {
       const auth = try local.signAuthorization({
         chainId: 1n,
         address: RECIPIENT,
-        nonce: 0n
+        nonce: 0n,
       })
       try Effect.try(() => assert.strictEqual(auth.chainId, 1n))
       try Effect.try(() => assert.strictEqual(String(auth.address), RECIPIENT))
@@ -42,7 +42,7 @@ describe("signer", () => {
 
   it.effect("NonceManager allocates strictly unique sequential nonces under concurrency", effect () => {
     const provider = TestProvider({
-      eth_getTransactionCount: "0xa" // 10
+      eth_getTransactionCount: "0xa", // 10
     })
 
     provide Layer.provide(NonceManagerLive, provider) {
@@ -52,7 +52,7 @@ describe("signer", () => {
         nm.nextNonce(TEST_ADDRESS),
         nm.nextNonce(TEST_ADDRESS),
         nm.nextNonce(TEST_ADDRESS),
-        nm.nextNonce(TEST_ADDRESS)
+        nm.nextNonce(TEST_ADDRESS),
       ]
       const sorted = [...nonces].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
       try Effect.try(() => assert.deepStrictEqual(sorted, [10n, 11n, 12n, 13n, 14n]))
@@ -79,12 +79,12 @@ describe("signer", () => {
         gasUsed: "0x5208",
         timestamp: "0x67000000",
         baseFeePerGas: "0x2540be400",
-        transactions: []
+        transactions: [],
       },
       eth_sendRawTransaction: (params) => {
         sentRawTxs.push(String(params[0]))
         return FAKE_TX_HASH
-      }
+      },
     })
 
     const signerLayer = Layer.provide(SignerFromPrivateKey(TEST_PRIVATE_KEY), provider)
@@ -93,7 +93,7 @@ describe("signer", () => {
       const signer = try Signer
       const signedHex = try signer.signTransaction({
         to: RECIPIENT,
-        value: 1000000000000000000n
+        value: 1000000000000000000n,
       })
       const decoded = try Transaction.deserialize(signedHex)
       const recoveredSender = try Transaction.getSender(decoded)
@@ -103,7 +103,7 @@ describe("signer", () => {
       // Second tx uses NonceManager -> nonce 6 automatically!
       const txHash = try signer.sendTransaction({
         to: RECIPIENT,
-        value: 500n
+        value: 500n,
       })
       try Effect.try(() => assert.strictEqual(String(Hash.toHex(txHash)), FAKE_TX_HASH))
       try Effect.try(() => assert.strictEqual(sentRawTxs.length, 1))

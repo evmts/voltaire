@@ -234,6 +234,8 @@ export const Rlp = RlpJS;
 export const Abi = AbiJS;
 export const Blob = BlobJS;
 export const AccessList = AccessListJS;
+export * as BlockAccessList from "../primitives/BlockAccessList/index.js";
+export * as ExecutionPayloadBid from "../primitives/ExecutionPayloadBid/index.js";
 export const Bytecode = BytecodeJS;
 export const Chain = ChainJS;
 export const Opcode = OpcodeJS;
@@ -259,6 +261,7 @@ export const ModExp = ModExpJS;
 // Import specific modules to avoid pulling in HDWallet via crypto/index.js
 export { AesGcm } from "../crypto/AesGcm/AesGcm.js";
 export { ChaCha20Poly1305 } from "../crypto/ChaCha20Poly1305/ChaCha20Poly1305.js";
+export { ConstantTime } from "../crypto/ConstantTime/index.js";
 export { Bip39 } from "../crypto/Bip39/index.js";
 export * as Keystore from "../crypto/Keystore/index.js";
 

@@ -1,4 +1,5 @@
 import * as Uint from "../Uint/index.js";
+import { normalizeDecimal } from "./normalizeDecimal.js";
 
 /**
  * @typedef {import('./EtherType.js').EtherType} Ether
@@ -23,10 +24,13 @@ import * as Uint from "../Uint/index.js";
 const WEI_PER_ETHER = 1_000_000_000_000_000_000n;
 const GWEI_PER_ETHER = 1_000_000_000n;
 const DECIMALS = 18;
+const DECIMAL_PATTERN =
+	/^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/;
 
 /**
  * Creates an Ether value from bigint, number, or string
- * Supports decimal strings like "1.5" or "0.001"
+ * Supports decimal strings like "1.5" or "0.001" and scientific notation
+ * (`1e-9`, `"1.5e3"`), stored as an exact plain decimal string
  *
  * @param {bigint | number | string} value
  * @returns {Ether}
@@ -39,14 +43,13 @@ export function from(value) {
 		if (!Number.isFinite(value)) {
 			throw new Error(`Invalid Ether value: ${value}`);
 		}
-		return /** @type {Ether} */ (value.toString());
+		return /** @type {Ether} */ (normalizeDecimal(value));
 	}
-	// string - validate it's a valid number
 	const trimmed = value.trim();
-	if (trimmed === "" || Number.isNaN(Number(trimmed))) {
+	if (!DECIMAL_PATTERN.test(trimmed)) {
 		throw new Error(`Invalid Ether value: ${value}`);
 	}
-	return /** @type {Ether} */ (trimmed);
+	return /** @type {Ether} */ (normalizeDecimal(trimmed));
 }
 
 /**
@@ -105,7 +108,7 @@ export function fromGwei(gwei) {
  * @returns {Wei}
  */
 export function toWei(ether) {
-	const str = String(ether);
+	const str = normalizeDecimal(String(ether));
 	const [intPart, decPart = ""] = str.split(".");
 
 	if (decPart.length > DECIMALS) {
@@ -134,7 +137,7 @@ export function toWei(ether) {
  * @returns {Gwei}
  */
 export function toGwei(ether) {
-	const str = String(ether);
+	const str = normalizeDecimal(String(ether));
 	const [intPart, decPart = ""] = str.split(".");
 
 	if (decPart.length > GWEI_DECIMALS) {
@@ -161,10 +164,18 @@ export function toGwei(ether) {
  *
  * @param {Ether} ether
  * @returns {Uint.Type}
+ * @throws {Error} If the value is negative or exceeds the Uint256 maximum
  */
 export function toU256(ether) {
-	// Convert to Wei first (which handles decimals), then cast to Uint
+	// Convert to Wei first (which handles decimals), then range-check: a
+	// Uint256 is never negative and never above 2^256 - 1.
 	const wei = toWei(ether);
+	if (wei < 0n) {
+		throw new Error(`Ether value cannot be negative as Uint256: ${ether}`);
+	}
+	if (wei > Uint.MAX) {
+		throw new Error(`Ether value exceeds Uint256 maximum: ${ether}`);
+	}
 	return /** @type {Uint.Type} */ (/** @type {unknown} */ (wei));
 }
 

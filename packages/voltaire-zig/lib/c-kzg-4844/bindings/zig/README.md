@@ -1,115 +1,54 @@
-# Zig Bindings for C-KZG-4844
+# Zig Bindings for the C-KZG Library
 
-Zig bindings for the C-KZG-4844 library, providing polynomial commitments for EIP-4844 and EIP-7594.
+This directory contains Zig bindings for the C-KZG-4844 library.
 
 ## Prerequisites
 
-- Zig 0.14.0 or later
+Use Zig `0.16.0` or greater.
 
-## Installation
+## Build
 
-### Using zig fetch
-
-```bash
-zig fetch https://github.com/ethereum/c-kzg-4844
+```sh
+zig build -Doptimize=ReleaseSafe
 ```
 
-The build system will automatically download the blst library when needed.
+## Test
 
-### Manual dependency
+Convert tests from YAML to JSON (requires [`yq`](https://github.com/mikefarah/yq)):
 
-Add this as a dependency in your `build.zig.zon`:
+```sh
+find tests -name "data.yaml" -exec sh -c 'yq -o=json "$1" > "$(dirname "$1")/data.json"' _ {} \;
+```
 
-```zig
-.dependencies = .{
-    .c_kzg_4844 = .{
-        .url = "https://github.com/ethereum/c-kzg-4844/archive/main.tar.gz",
-        .hash = "...", // zig will fill this in
-    },
-},
+Then run:
+
+```sh
+zig build test
 ```
 
 ## Usage
 
-### Basic Usage
+From the root of your Zig project:
+
+```sh
+zig fetch --save=ckzg https://github.com/ethereum/c-kzg-4844/archive/<commit>.tar.gz
+```
+
+Then wire the `ckzg` module into `build.zig`:
 
 ```zig
-const kzg = @import("c_kzg_4844");
-
-// Load trusted setup from file
-try kzg.loadTrustedSetupFile("trusted_setup.txt", 0);
-defer kzg.freeTrustedSetup();
-
-// Create a blob and compute commitment
-var blob: kzg.Blob = undefined;
-// ... fill blob with data ...
-
-const commitment = try kzg.blobToKZGCommitment(&blob);
-const proof = try kzg.computeBlobKZGProof(&blob, &commitment);
-const is_valid = try kzg.verifyBlobKZGProof(&blob, &commitment, &proof);
+const ckzg_dep = b.dependency("ckzg", .{
+    .target = target,
+    .optimize = optimize,
+});
+exe.root_module.addImport("ckzg", ckzg_dep.module("ckzg"));
 ```
 
-### Using Embedded Trusted Setup
+Then import and initialize:
 
 ```zig
-const kzg = @import("c_kzg_4844");
+const ckzg = @import("ckzg");
 
-// Load embedded trusted setup (includes ~807KB in binary)
-try kzg.loadTrustedSetupFromText(kzg.embedded_trusted_setup, 0);
-defer kzg.freeTrustedSetup();
-
-// Use KZG functions as normal...
+var settings = try ckzg.Settings.loadTrustedSetupFile("/path/to/trusted_setup.txt", 0);
+defer settings.deinit();
 ```
-
-### Dead Code Elimination
-
-The embedded trusted setup is only included when explicitly referenced:
-
-```zig
-// No embedded data included (dead code eliminated)
-try kzg.loadTrustedSetupFile("setup.txt", 0);
-
-// Embedded data included only when used
-try kzg.loadTrustedSetupFromText(kzg.embedded_trusted_setup, 0);
-```
-
-## API Reference
-
-### Loading Trusted Setup
-
-- `loadTrustedSetup(g1_monomial, g1_lagrange, g2_monomial, precompute)` - Load from raw bytes
-- `loadTrustedSetupFromText(text, precompute)` - Load from text format
-- `loadTrustedSetupFile(path, precompute)` - Load from file
-- `freeTrustedSetup()` - Free loaded setup
-
-### KZG Operations
-
-- `blobToKZGCommitment(blob)` - Convert blob to commitment
-- `computeKZGProof(blob, z)` - Compute proof at evaluation point
-- `verifyKZGProof(commitment, z, y, proof)` - Verify proof
-- `computeBlobKZGProof(blob, commitment)` - Compute blob proof
-- `verifyBlobKZGProof(blob, commitment, proof)` - Verify blob proof
-
-### Constants
-
-- `embedded_trusted_setup` - Embedded trusted setup data
-- `BYTES_PER_BLOB`, `BYTES_PER_COMMITMENT`, etc. - Size constants
-
-### Types
-
-- `Blob` - 131072 byte blob data
-- `KZGCommitment` - 48 byte commitment
-- `KZGProof` - 48 byte proof
-- `Bytes32`, `Bytes48` - Fixed-size byte arrays
-- `KZGError` - Error union for operations
-
-## Building
-
-```bash
-zig build
-zig build test
-```
-
-## License
-
-Same as the parent C-KZG-4844 library.

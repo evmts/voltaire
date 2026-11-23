@@ -30,26 +30,26 @@ import {
 
 // Export individual functions
 export {
+	addressCount,
+	assertValid,
+	create,
+	deduplicate,
 	from,
 	fromBytes,
-	is,
-	isItem,
-	create,
-	merge,
 	gasCost,
 	gasSavings,
 	hasSavings,
 	includesAddress,
 	includesStorageKey,
+	is,
+	isEmpty,
+	isItem,
 	keysFor,
-	deduplicate,
+	merge,
+	storageKeyCount,
+	toBytes,
 	withAddress,
 	withStorageKey,
-	assertValid,
-	toBytes,
-	addressCount,
-	storageKeyCount,
-	isEmpty,
 };
 
 /**

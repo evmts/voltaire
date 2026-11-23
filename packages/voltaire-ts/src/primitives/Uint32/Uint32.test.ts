@@ -28,6 +28,13 @@ describe("Uint32 Constants", () => {
 });
 
 describe("Uint32.from", () => {
+	it.each(["", " ", " 1", "1e3", "12.5", "12abc", "0b10", "0x", "+1"])(
+		"rejects invalid integer string %j",
+		(value) => {
+			expect(() => Uint32.from(value)).toThrow("Invalid Uint32 string");
+		},
+	);
+
 	it("creates from number", () => {
 		const value = Uint32.from(255);
 		expect(value).toBe(255);

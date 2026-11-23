@@ -19,13 +19,13 @@ import { importKey } from "./importKey.js";
 
 // Export individual functions
 export {
-	generateKey,
-	importKey,
-	exportKey,
-	encrypt,
 	decrypt,
-	generateNonce,
 	deriveKey,
+	encrypt,
+	exportKey,
+	generateKey,
+	generateNonce,
+	importKey,
 };
 
 /**

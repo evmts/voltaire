@@ -5,7 +5,7 @@ import { from } from "./from.js";
 import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
 import { toHex } from "./toHex.js";
-export { from, fromHex, fromBytes, toHex, equals };
+export { equals, from, fromBytes, fromHex, toHex };
 export declare const BeaconBlockRoot: {
     from: typeof from;
     fromHex: typeof fromHex;

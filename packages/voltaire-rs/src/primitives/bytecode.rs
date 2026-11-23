@@ -78,7 +78,7 @@ impl Bytecode {
     ///
     /// # Example
     /// ```
-    /// use voltaire_rs::primitives::bytecode::Bytecode;
+    /// use voltaire::primitives::bytecode::Bytecode;
     ///
     /// let code = vec![0x5b, 0x60, 0x5b, 0x00]; // JUMPDEST, PUSH1, 0x5b, STOP
     /// let bc = Bytecode::new(code);

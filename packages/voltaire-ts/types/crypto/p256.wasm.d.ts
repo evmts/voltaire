@@ -16,6 +16,7 @@ export declare namespace P256Wasm {
     const PRIVATE_KEY_SIZE = 32;
     const PUBLIC_KEY_SIZE = 64;
     const SIGNATURE_COMPONENT_SIZE = 32;
+    const MESSAGE_HASH_SIZE = 32;
     const SHARED_SECRET_SIZE = 32;
     class P256Error extends Error {
         readonly _tag: string;
@@ -39,5 +40,6 @@ export declare namespace P256Wasm {
     function ecdh(privateKey: PrivateKey, publicKey: PublicKey): Uint8Array;
     function validatePrivateKey(privateKey: PrivateKey): boolean;
     function validatePublicKey(publicKey: PublicKey): boolean;
+    function isValidPublicKey(publicKey: PublicKey): boolean;
 }
 //# sourceMappingURL=p256.wasm.d.ts.map

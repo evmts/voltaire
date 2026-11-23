@@ -1,14 +1,7 @@
 // Concurrency- & rate-limited Transport wrapper using Effect Semaphore + Clock.
 
-import {
-  type RpcTransportError,
-  TransportError
-} from "../errors.vibe"
-import {
-  type JsonRpcBatchItemResult,
-  type JsonRpcCall,
-  Transport
-} from "./Transport.vibe"
+import { type RpcTransportError, TransportError } from "../errors.vibe"
+import { type JsonRpcBatchItemResult, type JsonRpcCall, Transport } from "./Transport.vibe"
 
 export interface RateLimitedTransportConfig {
   /** Maximum concurrent in-flight requests (default: 10) */
@@ -19,7 +12,7 @@ export interface RateLimitedTransportConfig {
 
 export function RateLimitedTransport(
   baseLayer: Layer.Layer<Transport, never, never>,
-  config: RateLimitedTransportConfig = {}
+  config: RateLimitedTransportConfig = {},
 ) {
   const maxConcurrent = config.maxConcurrent ?? 10
   const minIntervalMs = config.minIntervalMs ?? 0
@@ -54,15 +47,17 @@ export function RateLimitedTransport(
               return try upstream.request<T>(method, params)
             })
           },
-          effect requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+          effect requestBatch(
+            requests: ReadonlyArray<JsonRpcCall>,
+          ): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
             return try sem.withPermits(1)(effect {
               try acquireSlot
               return try upstream.requestBatch(requests)
             })
-          }
+          },
         })
-      }
+      },
     ),
-    baseLayer
+    baseLayer,
   )
 }

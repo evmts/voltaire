@@ -35,13 +35,13 @@ pub const MaxPriorityFeePerGas = struct {
 
     /// Create MaxPriorityFeePerGas from bytes (big-endian, 32 bytes)
     pub fn fromBytes(bytes: [32]u8) Self {
-        return .{ .value = U256.from_bytes(bytes) };
+        return .{ .value = U256.from_be_bytes(&bytes) };
     }
 
     /// Convert to u64 (wei)
     /// Returns error if value exceeds u64 range
     pub fn toU64(self: Self) error{Overflow}!u64 {
-        return self.value.to_u64();
+        return self.value.to_u64() orelse error.Overflow;
     }
 
     /// Get value in wei as U256
@@ -58,12 +58,12 @@ pub const MaxPriorityFeePerGas = struct {
     /// Convert to gwei as u64
     /// Returns error if result exceeds u64 range
     pub fn toGweiU64(self: Self) error{Overflow}!u64 {
-        return self.toGwei().to_u64();
+        return self.toGwei().to_u64() orelse error.Overflow;
     }
 
     /// Convert to bytes (big-endian, 32 bytes)
     pub fn toBytes(self: Self) [32]u8 {
-        return self.value.to_bytes();
+        return self.value.to_be_bytes_exact();
     }
 
     /// Compare two MaxPriorityFeePerGas values

@@ -1,25 +1,134 @@
 ---
-title: "normalization"
-description: "ENS normalization documentation"
+title: "ENS Normalization"
+description: "Normalize and beautify ENS names per ENSIP-15 with normalize() and beautify()"
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/ens.ts">
   Run ENS examples in the interactive playground
 </Card>
 
-# normalization
+# ENS Normalization
 
-Documentation for ENS normalization.
+`normalize()` converts an ENS name to its canonical ENSIP-15 form. `beautify()` applies the same validation but returns a display form. Both delegate to [`@adraffy/ens-normalize`](https://github.com/adraffy/ens-normalize.js), the ENSIP-15 reference implementation, and wrap any failure in `DisallowedCharacterError`.
 
-<Note>
-This page is under construction. See [ENS Overview](/primitives/ens) for core functionality.
-</Note>
+## normalize(name)
 
-## Overview
+```typescript
+normalize(name: string | Ens): Ens
+```
 
-ENS operations for normalization.
+Returns the canonical form of `name`. Use this output for hashing, storage, comparison, and on-chain lookups.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+Ens.normalize("VITALIK.eth");     // "vitalik.eth"
+Ens.normalize("Nick.ETH");        // "nick.eth"
+Ens.normalize("Sub.Domain.ETH");  // "sub.domain.eth"
+Ens.normalize("vitalik.eth");     // "vitalik.eth" (already normalized)
+```
+
+Throws `DisallowedCharacterError` when the name cannot be normalized. See [Errors](/primitives/ens/errors).
+
+### What normalize changes
+
+| Input | Output | Rule |
+|-------|--------|------|
+| `"Nick.ETH"` | `"nick.eth"` | Case folding |
+| `"ｖｉｔａｌｉｋ.eth"` | `"vitalik.eth"` | Full-width characters mapped to ASCII |
+| `"Ⅻ.eth"` | `"xii.eth"` | Compatibility characters mapped |
+| `"café.eth"` (e + combining accent) | `"café.eth"` | Unicode NFC composition |
+| `"a'b.eth"` | `"a’b.eth"` | ASCII apostrophe mapped to U+2019 |
+| `"vitalik.eth​"` | `"vitalik.eth"` | Ignored characters (zero-width space) removed |
+| `"😀️.eth"` | `"😀.eth"` | Emoji presentation selector (FE0F) removed |
+
+### What normalize rejects
+
+| Input | Reason reported in `error.cause.message` |
+|-------|-----------------------------------------|
+| `"invalid\x00.eth"` | `disallowed character: {00}` |
+| `"a b.eth"` | `disallowed character: " " {20}` |
+| `"nick․eth"` | `disallowed character: "․" {2024}` (one-dot leader, not a period) |
+| `"nic‍k.eth"` | `disallowed character: {200D}` (zero-width joiner outside an emoji) |
+| `"a..eth"`, `".eth"`, `"eth."` | `empty label` |
+| `"ab--cd.eth"`, `"xn--abc.eth"` | `invalid label extension` |
+| `"a_b.eth"` | `underscore allowed only at start` |
+| `"́a.eth"` | `illegal placement: leading combining mark` |
+| `"аpple.eth"` (Cyrillic а) | `illegal mixture: Cyrillic + Latin` |
+| `"арре.eth"` (all Cyrillic) | `whole-script confusable: Cyrillic/Latin` |
+
+### Empty input
+
+`normalize("")` returns `""` and does not throw. `isValid("")` returns `false` and `validate("")` throws. Check emptiness yourself, or call `validate()` first, if an empty name is an error in your code.
+
+## beautify(name)
+
+```typescript
+beautify(name: string | Ens): Ens
+```
+
+Validates exactly like `normalize()` but returns a form meant for display:
+
+- Emoji keep or gain their presentation selector (U+FE0F).
+- Lowercase Greek `ξ` in a non-Greek label renders as `Ξ`.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+Ens.beautify("TEST.eth");   // "test.eth"
+Ens.beautify("💩.eth");     // "💩️.eth"
+Ens.normalize("💩.eth");    // "💩.eth"
+
+Ens.beautify("1️⃣.eth");    // "1️⃣.eth"
+Ens.normalize("1️⃣.eth");   // "1⃣.eth" (FE0F removed)
+
+Ens.beautify("abcξ.eth");   // "abcΞ.eth"
+```
+
+<Warning>
+Never hash or compare beautified names. `beautify()` output can differ from `normalize()` output, so its namehash differs too. Normalizing a beautified name returns the canonical form: `normalize(beautify("💩.eth")) === "💩.eth"`.
+</Warning>
+
+Throws `DisallowedCharacterError` for the same inputs as `normalize()`. The error's `docsPath` is `/primitives/ens/beautify#error-handling`.
+
+## Normalization does not happen implicitly
+
+`from()`, `namehash()`, and `labelhash()` never normalize. They use the string you pass byte for byte:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
+
+Hex.fromBytes(Ens.namehash("vitalik.eth"));
+// "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
+
+Hex.fromBytes(Ens.namehash("VITALIK.eth"));
+// A different hash: no registry node matches this name
+
+Hex.fromBytes(Ens.namehash(Ens.normalize("VITALIK.eth")));
+// "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
+```
+
+Call `normalize()` on every user-supplied name before hashing it.
+
+## Internal variants
+
+`_normalize(name: Ens): Ens` and `_beautify(name: Ens): Ens` take an already-branded name and skip the `String()` conversion and branding that the public wrappers perform. Behavior is otherwise identical.
+
+## Implementation
+
+| Function | Backed by |
+|----------|-----------|
+| `normalize`, `_normalize` | `ens_normalize` from `@adraffy/ens-normalize` |
+| `beautify`, `_beautify` | `ens_beautify` from `@adraffy/ens-normalize` |
+
+Both run in JavaScript. There is no WASM normalization path in the TypeScript package; see [WASM](/primitives/ens/wasm).
 
 ## See Also
 
 - [ENS Overview](/primitives/ens)
-- [ENS Normalization](/primitives/ens/normalization)
+- [Validation](/primitives/ens/validation) - `isValid()` and `validate()`
+- [Security](/primitives/ens/security) - Why normalization matters
+- [ENSIP Standards](/primitives/ens/ensip-standards) - ENSIP-15 rules
+- [Errors](/primitives/ens/errors) - Reading failure reasons
+- [ENSIP-15](https://docs.ens.domains/ensip/15) - ENS Name Normalization Standard

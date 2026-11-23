@@ -5,6 +5,7 @@
 
 import type { BlockchainFFIExports } from "../blockchain/Blockchain/index.js";
 import type { StateManagerFFIExports } from "../state-manager/StateManager/index.js";
+import { createScratch, scratchAlloc } from "../wasm-loader/scratch.js";
 
 type WasmModule = {
 	exports: Record<string, unknown>;
@@ -203,19 +204,17 @@ async function loadWasmBytes(
 function createWasmModule(instance: WebAssembly.Instance): WasmModule {
 	const exports = instance.exports as Record<string, unknown>;
 	const memory = exports.memory as WebAssembly.Memory;
-	let offset = 0x10000;
-
-	const ensure = (size: number) => {
-		const needed = offset + size;
-		if (needed <= memory.buffer.byteLength) return;
-		const pages = Math.ceil((needed - memory.buffer.byteLength) / 65536);
-		memory.grow(pages);
-	};
+	if (!(memory instanceof WebAssembly.Memory)) {
+		throw new Error("WASM module does not export memory");
+	}
+	// The module owns its initial memory (stack, static data, heap); JS
+	// scratch lives strictly above it. See wasm-loader/scratch.ts.
+	const scratch = createScratch(memory);
+	let offset = scratch.base;
 
 	const alloc = (size: number) => {
-		ensure(size);
-		const ptr = offset;
-		offset += size;
+		const { ptr, next } = scratchAlloc(scratch, offset, size);
+		offset = next;
 		return ptr;
 	};
 
@@ -247,7 +246,7 @@ function createWasmModule(instance: WebAssembly.Instance): WasmModule {
 		exports,
 		memory,
 		reset: () => {
-			offset = 0x10000;
+			offset = scratch.base;
 		},
 		alloc,
 		writeBytes,

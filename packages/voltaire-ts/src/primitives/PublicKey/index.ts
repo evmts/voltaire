@@ -16,10 +16,8 @@ import { toHex as _toHex } from "./toHex.js";
 import { Verify } from "./verify.js";
 
 // Export constructors
-export { from, fromPrivateKey };
-
 // Export factories (tree-shakeable)
-export { Verify };
+export { from, fromPrivateKey, Verify };
 
 // Instantiate with crypto dependencies
 const _verify = Verify({ secp256k1Verify });
@@ -116,7 +114,7 @@ export function isCompressed(bytes: Uint8Array): boolean {
 }
 
 // Export internal functions (tree-shakeable)
-export { _toHex, _toAddress, _verify, _compress, _decompress, _isCompressed };
+export { _compress, _decompress, _isCompressed, _toAddress, _toHex, _verify };
 
 // Export as namespace (convenience)
 export const PublicKey = {

@@ -39,6 +39,44 @@ pub const signers = @import("signers.zig");
 const modexp_module = @import("modexp.zig");
 pub const ModExp = modexp_module.ModExp;
 
+/// No declaration is skipped: every crypto file's inline tests compile and run.
+const untested_decls = [_][]const u8{};
+
+test {
+    // `pub const x = @import(...)` alone never analyzes a file's tests.
+    // Resolving every public declaration of this file pulls each imported
+    // file into the test build (`std.testing.refAllDecls`, minus the
+    // `untested_decls` list). Files with no public declaration here are
+    // imported by name below.
+    const std = @import("std");
+    inline for (comptime std.meta.declarations(@This())) |decl| {
+        const skip = comptime for (untested_decls) |name| {
+            if (std.mem.eql(u8, name, decl.name)) break true;
+        } else false;
+        if (!skip) _ = &@field(@This(), decl.name);
+    }
+
+    _ = modexp_module;
+    _ = blake2_module;
+    _ = ripemd160_module;
+    _ = @import("c_kzg.zig");
+    _ = @import("crypto.zig");
+    _ = @import("log.zig");
+    _ = @import("nfkd.zig");
+    _ = @import("blake2_c.zig");
+    _ = @import("bn254/FpMont.zig");
+    _ = @import("bn254/Fp2Mont.zig");
+    _ = @import("bn254/Fp4Mont.zig");
+    _ = @import("bn254/Fp6Mont.zig");
+    _ = @import("bn254/Fp12Mont.zig");
+    _ = @import("bn254/Fr.zig");
+    _ = @import("bn254/G1.zig");
+    _ = @import("bn254/G2.zig");
+    _ = @import("bn254/NAF.zig");
+    _ = @import("bn254/curve_parameters.zig");
+    _ = @import("bn254/pairing.zig");
+}
+
 // Hash implementations
 pub const Hash = @import("hash.zig");
 pub const HashAlgorithms = @import("hash_algorithms.zig");
@@ -57,9 +95,8 @@ pub const SHA256_Accel = @import("sha256_accel.zig");
 pub const Keccak256_Accel = @import("keccak256_accel.zig");
 pub const keccak_asm = @import("keccak_asm.zig");
 
-// Rust FFI wrappers (compiled from src/crypto/*.rs)
-pub const bn254_wrapper = @import("bn254_wrapper.rs");
-pub const keccak_wrapper = @import("keccak_wrapper.rs");
+// Rust FFI wrappers (src/crypto/bn254_wrapper.rs, keccak_wrapper.rs) are linked
+// as libcrypto_wrappers.a. Reach them through `bn254_arkworks` and `keccak_asm`.
 
 // KZG commitments for EIP-4844
 // c-kzg-4844 works in WASM as pure C (no platform-specific dependencies)
@@ -67,6 +104,9 @@ const builtin = @import("builtin");
 pub const kzg_trusted_setup = @import("kzg_trusted_setup.zig");
 pub const kzg_setup = @import("kzg_setup.zig");
 pub const c_kzg = @import("c_kzg");
+
+// EIP-7594 PeerDAS: cells and cell KZG proofs
+pub const peerdas = @import("peerdas.zig");
 
 // BN254 elliptic curve - dual implementations
 pub const bn254 = @import("bn254.zig"); // Pure Zig implementation

@@ -1,8 +1,22 @@
 import type { AbiType, Item } from "./AbiType.js";
 import type * as AbiConstructorNs from "./constructor/index.js";
+import type { decodeAbiParameters } from "./decodeAbiParameters.js";
+import type {
+	DecodeParameters,
+	decodeParameters,
+	encodeParameters,
+	Parameters,
+} from "./Encoding.js";
 import type * as AbiError from "./error/index.js";
 import type * as AbiEvent from "./event/index.js";
+import type {
+	findSelectorCollisions,
+	hasSelectorCollisions,
+	SelectorCollision,
+} from "./findSelectorCollisions.js";
 import type * as AbiFunction from "./function/index.js";
+import type * as AbiItem from "./Item/index.js";
+import type { Parameter } from "./parameter/index.js";
 
 /**
  * Abi class interface
@@ -21,9 +35,12 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
 	decode(functionName: string, data: Uint8Array): any[];
 	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
-	decodeData(data: Uint8Array): { item: Item; decoded: any[] };
+	decodeData(data: Uint8Array): {
+		functionName: string;
+		args: readonly unknown[];
+	};
 	// biome-ignore lint/suspicious/noExplicitAny: Log parsing accepts and returns dynamic types
-	parseLogs(logs: any[]): any[];
+	parseLogs(logs: readonly any[]): any[];
 
 	// Convenience getters for specific item types
 	getFunction(name: string): AbiFunction.FunctionType | undefined;
@@ -34,6 +51,8 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
 	getFallback(): any;
 	// biome-ignore lint/suspicious/noExplicitAny: Receive function type is not fully typed yet
 	getReceive(): any;
+	findSelectorCollisions(): SelectorCollision[];
+	hasSelectorCollisions(): boolean;
 }
 
 /**
@@ -41,14 +60,19 @@ export interface Abi<TItems extends readonly Item[] = readonly Item[]>
  */
 export interface AbiConstructor {
 	/**
-	 * Create Abi from items array
+	 * Create Abi from JSON ABI items and/or human-readable signatures
 	 */
-	(items: readonly Item[]): Abi;
+	(items: readonly (Item | string)[]): Abi;
 
 	/**
-	 * Create Abi from items array
+	 * Create Abi from JSON ABI items and/or human-readable signatures
 	 */
-	from(items: readonly Item[]): Abi;
+	from(items: readonly (Item | string)[]): Abi;
+
+	/**
+	 * Parse human-readable signatures into JSON ABI items
+	 */
+	parseHumanReadable(signatures: readonly (Item | string)[]): Item[];
 
 	// Static utility methods
 	getItem(
@@ -63,16 +87,29 @@ export interface AbiConstructor {
 	encode(abi: AbiType, functionName: string, args: any[]): Uint8Array;
 	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
 	decode(abi: AbiType, functionName: string, data: Uint8Array): any[];
-	// biome-ignore lint/suspicious/noExplicitAny: ABI decoding returns dynamic types based on function signature
-	decodeData(abi: AbiType, data: Uint8Array): { item: Item; decoded: any[] };
+	decodeData(
+		abi: AbiType,
+		data: Uint8Array,
+	): { functionName: string; args: readonly unknown[] };
 	// biome-ignore lint/suspicious/noExplicitAny: Log parsing accepts and returns dynamic types
-	parseLogs(abi: AbiType, logs: any[]): any[];
+	parseLogs(abi: AbiType, logs: readonly any[]): any[];
+	findSelectorCollisions: typeof findSelectorCollisions;
+	hasSelectorCollisions: typeof hasSelectorCollisions;
+
+	// Parameter encoding/decoding
+	encodeParameters: typeof encodeParameters;
+	decodeParameters: typeof decodeParameters;
+	decodeAbiParameters: typeof decodeAbiParameters;
+	Parameters: typeof Parameters;
+	DecodeParameters: typeof DecodeParameters;
 
 	// Sub-namespaces
 	Function: typeof AbiFunction;
 	Event: typeof AbiEvent;
 	Error: typeof AbiError;
 	Constructor: typeof AbiConstructorNs;
+	Item: typeof AbiItem;
+	Parameter: typeof Parameter;
 
 	prototype: Abi;
 }

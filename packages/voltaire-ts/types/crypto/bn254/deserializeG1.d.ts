@@ -6,6 +6,7 @@
  * @param {Uint8Array} bytes - 64-byte serialization
  * @returns {import('./G1PointType.js').G1PointType} G1 point
  * @throws {Bn254Error} If bytes length is invalid (must be 64 bytes)
+ * @throws {Bn254InvalidPointError} If a coordinate is >= the field modulus or the point is not on the curve
  * @example
  * ```javascript
  * import { deserializeG1 } from './crypto/bn254/deserializeG1.js';

@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { blake2b as nobleBlake2b } from "@noble/hashes/blake2.js";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
 	addressEquals,
 	addressFromHex,
@@ -20,7 +21,12 @@ import {
 	hashToHex,
 	hexToBytes,
 	keccak256,
+	kzgFreeTrustedSetup,
+	kzgIsInitialized,
+	kzgLoadTrustedSetup,
 	loadWasm,
+	p256Sign,
+	p256Verify,
 	resetMemory,
 	ripemd160,
 	rlpEncodeBytes,
@@ -70,6 +76,50 @@ describe("WASM Loader Infrastructure", () => {
 			expect(exports1).not.toBe(exports2);
 		});
 
+		it("forceReload clears KZG initialized state for the new instance", async () => {
+			// Loading the real trusted setup in WASM takes ~25 s, so count calls to
+			// a stubbed kzg_load_trusted_setup instead. Instance exports are frozen;
+			// wrap them in a plain object at instantiation.
+			let loads = 0;
+			const realInstantiate = WebAssembly.instantiate;
+			const spy = vi
+				.spyOn(WebAssembly, "instantiate")
+				.mockImplementation(async (...args: unknown[]) => {
+					const source = (await (
+						realInstantiate as (...a: unknown[]) => Promise<unknown>
+					)(...args)) as WebAssembly.WebAssemblyInstantiatedSource;
+					const exports = {
+						...source.instance.exports,
+						kzg_load_trusted_setup: () => {
+							loads++;
+							return 0;
+						},
+						kzg_free_trusted_setup: () => 0,
+					};
+					return {
+						module: source.module,
+						instance: { exports } as unknown as WebAssembly.Instance,
+					};
+				});
+			try {
+				await loadWasm(WASM_PATH, true);
+				kzgLoadTrustedSetup();
+				expect(kzgIsInitialized()).toBe(true);
+				expect(loads).toBe(1);
+
+				await loadWasm(WASM_PATH, true);
+				expect(kzgIsInitialized()).toBe(false);
+				// The new instance has no setup, so loading must call into WASM again.
+				kzgLoadTrustedSetup();
+				expect(loads).toBe(2);
+				kzgFreeTrustedSetup();
+				expect(kzgIsInitialized()).toBe(false);
+			} finally {
+				spy.mockRestore();
+				await loadWasm(WASM_PATH, true);
+			}
+		});
+
 		it("getExports returns valid exports object", () => {
 			const exports = getExports();
 			expect(exports).toBeDefined();
@@ -82,6 +132,38 @@ describe("WASM Loader Infrastructure", () => {
 			// For now, we test the error message format
 			const exports = getExports();
 			expect(exports).toBeDefined();
+		});
+	});
+
+	describe("P256 input lengths", () => {
+		const key = new Uint8Array(32).fill(1);
+		const hash = new Uint8Array(32).fill(2);
+
+		it("p256Sign rejects a message hash that is not 32 bytes", () => {
+			for (const len of [0, 31, 33, 100]) {
+				expect(() => p256Sign(new Uint8Array(len), key)).toThrow(
+					`P256 message hash must be 32 bytes, got ${len}`,
+				);
+			}
+			expect(() => p256Sign(hash, new Uint8Array(33))).toThrow(
+				"P256 private key must be 32 bytes, got 33",
+			);
+		});
+
+		it("p256Verify rejects a message hash that is not 32 bytes", () => {
+			const sig = p256Sign(hash, key);
+			const pub = new Uint8Array(64);
+			for (const len of [0, 31, 33, 100]) {
+				expect(() => p256Verify(new Uint8Array(len), sig, pub)).toThrow(
+					`P256 message hash must be 32 bytes, got ${len}`,
+				);
+			}
+			expect(() => p256Verify(hash, new Uint8Array(65), pub)).toThrow(
+				"P256 signature must be 64 bytes, got 65",
+			);
+			expect(() => p256Verify(hash, sig, new Uint8Array(65))).toThrow(
+				"P256 public key must be 64 bytes, got 65",
+			);
 		});
 	});
 
@@ -373,12 +455,20 @@ describe("WASM Loader Infrastructure", () => {
 			expect(hash).toHaveLength(64);
 		});
 
-		it("blake2Hash with custom output length", () => {
+		it("blake2Hash returns the correct digest or refuses, never a truncated BLAKE2b-512", () => {
 			const data = new Uint8Array([1, 2, 3]);
-			const hash16 = blake2Hash(data, 16);
-			expect(hash16).toHaveLength(16);
-			const hash32 = blake2Hash(data, 32);
-			expect(hash32).toHaveLength(32);
+			expect(blake2Hash(data, 64)).toEqual(nobleBlake2b(data));
+			// primitives.wasm built before the output-length fix exports a
+			// 3-parameter primitives_blake2b that always writes 64 bytes.
+			if (
+				getExports().blake2Hash ||
+				getExports().primitives_blake2b.length >= 4
+			) {
+				expect(blake2Hash(data, 16)).toEqual(nobleBlake2b(data, { dkLen: 16 }));
+				expect(blake2Hash(data, 32)).toEqual(nobleBlake2b(data, { dkLen: 32 }));
+			} else {
+				expect(() => blake2Hash(data, 32)).toThrow(/only supports 64-byte/);
+			}
 		});
 
 		it("solidityKeccak256 hashes packed data", () => {

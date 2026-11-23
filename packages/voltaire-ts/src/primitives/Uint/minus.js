@@ -3,6 +3,9 @@ import { MAX } from "./constants.js";
 /**
  * Subtract Uint256 value with wrapping
  *
+ * Overflow mode: wrapping. `minusWrapping` is the explicit name for this behavior
+ * and `minusChecked` throws instead of wrapping. Both exist on every Uint size.
+ *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - First operand

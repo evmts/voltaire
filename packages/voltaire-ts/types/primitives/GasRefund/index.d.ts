@@ -11,7 +11,7 @@ export declare function toBigInt(value: number | bigint | string): bigint;
 export declare function toHex(value: number | bigint | string): string;
 export declare function equals(value1: number | bigint | string, value2: number | bigint | string): boolean;
 export declare function cappedRefund(refund: number | bigint | string, gasUsed: bigint): import("./GasRefundType.js").GasRefundType;
-export { _toNumber, _toBigInt, _toHex, _equals, _cappedRefund };
+export { _cappedRefund, _equals, _toBigInt, _toHex, _toNumber };
 export declare const GasRefund: {
     from: typeof from;
     toNumber: typeof toNumber;

@@ -46,33 +46,50 @@ export const KeccakLive = Layer.succeed(Keccak, {
   effect hash(data: Uint8Array) {
     return try Effect.try({
       try: () => hashBytesRaw(data),
-      catch: (cause) => new CryptoError({ operation: "keccak256", message: `Keccak256 hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({ operation: "keccak256", message: `Keccak256 hash failed: ${errorMessage(cause)}`, cause }),
     })
   },
   effect hashHex(hex: string) {
     return try Effect.try({
       try: () => hashHexRaw(hex),
-      catch: (cause) => new CryptoError({ operation: "keccak256Hex", message: `Keccak256 hex hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "keccak256Hex",
+          message: `Keccak256 hex hash failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect hashString(value: string) {
     return try Effect.try({
       try: () => hashStringRaw(value),
-      catch: (cause) => new CryptoError({ operation: "keccak256String", message: `Keccak256 string hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "keccak256String",
+          message: `Keccak256 string hash failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect selector(signature: string) {
     return try Effect.try({
       try: () => selectorRaw(signature),
-      catch: (cause) => new CryptoError({ operation: "selector", message: `Function selector hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "selector",
+          message: `Function selector hash failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect topic(signature: string) {
     return try Effect.try({
       try: () => topicRaw(signature),
-      catch: (cause) => new CryptoError({ operation: "topic", message: `Event topic hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({ operation: "topic", message: `Event topic hash failed: ${errorMessage(cause)}`, cause }),
     })
-  }
+  },
 })
 
 export effect function hash(data: Uint8Array): HashType!CryptoError!Keccak {

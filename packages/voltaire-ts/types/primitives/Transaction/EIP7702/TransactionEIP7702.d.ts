@@ -45,8 +45,8 @@ import { deserialize } from "./deserialize.js";
 export const hash: (tx: import("./BrandedTransactionEIP7702.js").BrandedTransactionEIP7702) => Uint8Array;
 export const getSigningHash: (tx: import("./BrandedTransactionEIP7702.js").BrandedTransactionEIP7702) => Uint8Array;
 export const verifySignature: (tx: import("./BrandedTransactionEIP7702.js").BrandedTransactionEIP7702) => boolean;
-import { Hash } from "./hash.js";
 import { GetSigningHash } from "./getSigningHash.js";
+import { Hash } from "./hash.js";
 import { VerifySignature } from "./verifySignature.js";
-export { Hash, GetSigningHash, VerifySignature, deserialize, getEffectiveGasPrice, getSender, serialize };
+export { deserialize, GetSigningHash, getEffectiveGasPrice, getSender, Hash, serialize, VerifySignature };
 //# sourceMappingURL=TransactionEIP7702.d.ts.map

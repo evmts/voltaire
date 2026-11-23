@@ -3,7 +3,8 @@ import * as Hex from "../Hex/index.js";
 import * as BlockHeader from "./index.js";
 
 describe("BlockHeader.calculateHash", () => {
-	// Ethereum Mainnet Block 1 header - test data matching Zig implementation
+	// Ethereum Mainnet Block 1: ethereum/execution-specs@9d18733602f7a4ed41001c16525943ca0836af4c
+	// src/ethereum/assets/blocks/block_1.json
 	// Expected hash: 0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6
 	// Values match src/primitives/BlockHeader/BlockHeader.zig test vectors
 	const block1Header = {
@@ -17,9 +18,9 @@ describe("BlockHeader.calculateHash", () => {
 		),
 		// Coinbase (miner)
 		beneficiary: "0x05a56e2d52c817161883f50c441c3228cfe54d9f",
-		// State root - from Zig test vector
+		// State root from the upstream fixture
 		stateRoot: Hex.toBytes(
-			"0xd67e4d450343046425ae4271474353857ab860dbc0a1dce64b41a513722ecc47",
+			"0xd67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3",
 		),
 		// Empty transactions root (EMPTY_TRIE_ROOT)
 		transactionsRoot: Hex.toBytes(
@@ -32,7 +33,7 @@ describe("BlockHeader.calculateHash", () => {
 		// Empty logs bloom
 		logsBloom: new Uint8Array(256),
 		// Difficulty
-		difficulty: 17179869184n,
+		difficulty: 0x3ff800000n,
 		// Block number
 		number: 1n,
 		// Gas limit
@@ -41,8 +42,8 @@ describe("BlockHeader.calculateHash", () => {
 		gasUsed: 0n,
 		// Timestamp (July 30, 2015)
 		timestamp: 1438269988n,
-		// Extra data (empty)
-		extraData: new Uint8Array(0),
+		// Client version recorded by the miner
+		extraData: new TextEncoder().encode("Geth/v1.0.0/linux/go1.4.2"),
 		// Mix hash
 		mixHash: Hex.toBytes(
 			"0x969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f59",
@@ -55,8 +56,10 @@ describe("BlockHeader.calculateHash", () => {
 		const header = BlockHeader.from(block1Header);
 		const hash = BlockHeader.calculateHash(header);
 
-		// Should produce a 32-byte hash
-		expect(hash).toHaveLength(32);
+		// Match the canonical mainnet block hash, not just its length.
+		expect(Hex.fromBytes(hash)).toBe(
+			"0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6",
+		);
 
 		// Should be deterministic
 		const hash2 = BlockHeader.calculateHash(header);

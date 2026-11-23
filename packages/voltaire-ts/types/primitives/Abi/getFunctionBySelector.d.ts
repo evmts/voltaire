@@ -1,7 +1,7 @@
 /**
  * Find function in ABI by selector
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {import("../Hex/index.js").HexType | Uint8Array} selector - 4-byte function selector
  * @returns {import('./function/FunctionType.js').FunctionType} Function ABI item
  * @throws {AbiItemNotFoundError} If selector invalid length or function not found in ABI
@@ -22,5 +22,5 @@
  * // { type: "function", name: "transfer", ... }
  * ```
  */
-export function getFunctionBySelector(abi: import("./Abi.js").Abi, selector: import("../Hex/index.js").HexType | Uint8Array): import("./function/FunctionType.js").FunctionType;
+export function getFunctionBySelector(abi: import("./AbiType.js").AbiType, selector: import("../Hex/index.js").HexType | Uint8Array): import("./function/FunctionType.js").FunctionType;
 //# sourceMappingURL=getFunctionBySelector.d.ts.map

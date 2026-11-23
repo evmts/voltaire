@@ -63,9 +63,6 @@ fn encode_access_list(access_list: &AccessList) -> RlpItem {
     RlpItem::List(items)
 }
 
-/// Blob gas per blob (EIP-4844).
-pub const GAS_PER_BLOB: u64 = 131_072;
-
 /// Transaction envelope type.
 ///
 /// Identifies the transaction format based on the EIP that introduced it.
@@ -86,10 +83,15 @@ pub enum TransactionType {
 }
 
 impl TransactionType {
-    /// Detect transaction type from raw RLP-encoded bytes.
+    /// Detect transaction type from raw encoded bytes.
     ///
-    /// Typed transactions (EIP-2718) have a type byte prefix.
-    /// Legacy transactions start with RLP encoding (0xc0-0xff range).
+    /// Typed transactions (EIP-2718) start with a type byte `0x01..=0x04`.
+    /// Legacy transactions start with an RLP list prefix (`0xc0..=0xff`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for empty input, `0x00`, unknown or reserved type
+    /// bytes (`0x05..=0x7f`), and RLP string prefixes (`0x80..=0xbf`).
     ///
     /// # Examples
     ///
@@ -98,24 +100,31 @@ impl TransactionType {
     ///
     /// // EIP-1559 transaction (type byte 0x02)
     /// let raw = [0x02, 0xf8, 0x70];
-    /// assert_eq!(TransactionType::detect(&raw), TransactionType::Eip1559);
+    /// assert_eq!(TransactionType::detect(&raw)?, TransactionType::Eip1559);
     ///
     /// // Legacy transaction (starts with RLP list prefix)
     /// let raw = [0xf8, 0x70];
-    /// assert_eq!(TransactionType::detect(&raw), TransactionType::Legacy);
+    /// assert_eq!(TransactionType::detect(&raw)?, TransactionType::Legacy);
+    ///
+    /// assert!(TransactionType::detect(&[]).is_err());
+    /// # Ok::<(), voltaire::Error>(())
     /// ```
     #[inline]
-    pub fn detect(data: &[u8]) -> Self {
-        if data.is_empty() {
-            return Self::Legacy;
-        }
+    pub fn detect(data: &[u8]) -> Result<Self> {
+        let Some(&first) = data.first() else {
+            return Err(Error::invalid_input("empty transaction data"));
+        };
 
-        match data[0] {
-            0x01 => Self::Eip2930,
-            0x02 => Self::Eip1559,
-            0x03 => Self::Eip4844,
-            0x04 => Self::Eip7702,
-            _ => Self::Legacy,
+        match first {
+            0x01 => Ok(Self::Eip2930),
+            0x02 => Ok(Self::Eip1559),
+            0x03 => Ok(Self::Eip4844),
+            0x04 => Ok(Self::Eip7702),
+            0xc0..=0xff => Ok(Self::Legacy),
+            b => Err(Error::invalid_input(format!(
+                "invalid transaction type byte: 0x{:02x}",
+                b
+            ))),
         }
     }
 
@@ -243,11 +252,19 @@ impl LegacyTransaction {
         self.to.is_none()
     }
 
-    /// Get chain ID from EIP-155 v value.
+    /// Check if the signature uses EIP-155 replay protection (`v >= 35`).
+    #[inline]
+    pub fn is_replay_protected(&self) -> bool {
+        self.v >= 35
+    }
+
+    /// Get chain ID from EIP-155 v value (`v = chain_id * 2 + 35 + y_parity`).
     ///
-    /// Returns `None` for pre-EIP-155 transactions (v = 27 or 28).
+    /// Returns `None` for pre-EIP-155 transactions (v = 27 or 28). Returns
+    /// `Some(0)` for `v = 35` or `36`; use [`Self::is_replay_protected`] to
+    /// tell replay protection apart from the numeric chain ID.
     pub fn chain_id(&self) -> Option<u64> {
-        if self.v >= 37 {
+        if self.is_replay_protected() {
             Some((self.v - 35) / 2)
         } else {
             None
@@ -256,7 +273,7 @@ impl LegacyTransaction {
 
     /// Get y-parity from v value.
     pub fn y_parity(&self) -> u8 {
-        if self.v >= 37 {
+        if self.is_replay_protected() {
             ((self.v - 35) % 2) as u8
         } else if self.v == 28 {
             1
@@ -288,9 +305,9 @@ impl LegacyTransaction {
 
     /// Serialize the transaction for signing (EIP-155).
     ///
-    /// For EIP-155 transactions, includes chain_id, 0, 0 instead of v, r, s.
-    /// For pre-EIP-155, excludes signature fields entirely.
-    pub fn serialize_for_signing(&self, chain_id: u64) -> Vec<u8> {
+    /// `Some(chain_id)` appends `chain_id, 0, 0` (EIP-155, including
+    /// `chain_id = 0`). `None` signs the pre-EIP-155 six-field payload.
+    pub fn serialize_for_signing(&self, chain_id: Option<u64>) -> Vec<u8> {
         let mut items = vec![
             RlpItem::Bytes(encode_uint_minimal(self.nonce)),
             RlpItem::Bytes(u256_to_minimal_bytes(&self.gas_price)),
@@ -304,7 +321,7 @@ impl LegacyTransaction {
         ];
 
         // EIP-155: append chain_id, 0, 0
-        if chain_id > 0 {
+        if let Some(chain_id) = chain_id {
             items.push(RlpItem::Bytes(encode_uint_minimal(chain_id)));
             items.push(RlpItem::Bytes(vec![])); // 0
             items.push(RlpItem::Bytes(vec![])); // 0
@@ -319,7 +336,9 @@ impl LegacyTransaction {
     }
 
     /// Compute the hash used for signing.
-    pub fn signing_hash(&self, chain_id: u64) -> Hash {
+    ///
+    /// See [`Self::serialize_for_signing`] for the meaning of `chain_id`.
+    pub fn signing_hash(&self, chain_id: Option<u64>) -> Hash {
         keccak256(&self.serialize_for_signing(chain_id))
     }
 
@@ -329,8 +348,7 @@ impl LegacyTransaction {
             return Err(Error::invalid_signature("transaction is not signed"));
         }
 
-        let chain_id = self.chain_id().unwrap_or(0);
-        let hash = self.signing_hash(chain_id);
+        let hash = self.signing_hash(self.chain_id());
         let signature = Signature::new(self.r, self.s);
         let recovery_id = RecoveryId::new(self.y_parity())?;
 
@@ -773,8 +791,8 @@ pub struct Eip7702Transaction {
     pub max_fee_per_gas: U256,
     /// Gas limit.
     pub gas_limit: u64,
-    /// Recipient address (None for contract creation).
-    pub to: Option<Address>,
+    /// Recipient address. EIP-7702 forbids contract creation, so this is required.
+    pub to: Address,
     /// Value to transfer in wei.
     pub value: U256,
     /// Input data.
@@ -799,7 +817,7 @@ impl Default for Eip7702Transaction {
             max_priority_fee_per_gas: U256::ZERO,
             max_fee_per_gas: U256::ZERO,
             gas_limit: 21_000,
-            to: None,
+            to: Address::ZERO,
             value: U256::ZERO,
             data: Vec::new(),
             access_list: AccessList::empty(),
@@ -819,9 +837,11 @@ impl Eip7702Transaction {
     }
 
     /// Check if this is a contract creation transaction.
+    ///
+    /// Always `false`: EIP-7702 transactions cannot create contracts.
     #[inline]
-    pub fn is_contract_creation(&self) -> bool {
-        self.to.is_none()
+    pub const fn is_contract_creation(&self) -> bool {
+        false
     }
 
     /// Check if access list is non-empty.
@@ -914,7 +934,7 @@ impl Transaction {
             Self::Eip2930(tx) => tx.to,
             Self::Eip1559(tx) => tx.to,
             Self::Eip4844(tx) => Some(tx.to),
-            Self::Eip7702(tx) => tx.to,
+            Self::Eip7702(tx) => Some(tx.to),
         }
     }
 
@@ -1039,33 +1059,39 @@ mod tests {
     fn test_transaction_type_detect_legacy() {
         // RLP list prefix 0xf8 indicates legacy
         let data = [0xf8, 0x70, 0x80];
-        assert_eq!(TransactionType::detect(&data), TransactionType::Legacy);
+        assert_eq!(TransactionType::detect(&data).unwrap(), TransactionType::Legacy);
 
-        // Empty data is legacy
-        assert_eq!(TransactionType::detect(&[]), TransactionType::Legacy);
+        // 0xc0..=0xff is the RLP list prefix range, so legacy
+        for b in [0xc0u8, 0xf7, 0xf8, 0xff] {
+            assert_eq!(TransactionType::detect(&[b]).unwrap(), TransactionType::Legacy);
+        }
+    }
 
-        // 0xc0+ is RLP list prefix, so legacy
-        let data = [0xc0];
-        assert_eq!(TransactionType::detect(&data), TransactionType::Legacy);
+    #[test]
+    fn test_transaction_type_detect_rejects_invalid_prefixes() {
+        assert!(TransactionType::detect(&[]).is_err());
+        for b in [0x00u8, 0x05, 0x06, 0x7e, 0x7f, 0x80, 0x9f, 0xb7, 0xbf] {
+            assert!(TransactionType::detect(&[b, 0xc0]).is_err(), "0x{:02x}", b);
+        }
     }
 
     #[test]
     fn test_transaction_type_detect_typed() {
         // EIP-2930
         let data = [0x01, 0xf8, 0x70];
-        assert_eq!(TransactionType::detect(&data), TransactionType::Eip2930);
+        assert_eq!(TransactionType::detect(&data).unwrap(), TransactionType::Eip2930);
 
         // EIP-1559
         let data = [0x02, 0xf8, 0x70];
-        assert_eq!(TransactionType::detect(&data), TransactionType::Eip1559);
+        assert_eq!(TransactionType::detect(&data).unwrap(), TransactionType::Eip1559);
 
         // EIP-4844
         let data = [0x03, 0xf8, 0x70];
-        assert_eq!(TransactionType::detect(&data), TransactionType::Eip4844);
+        assert_eq!(TransactionType::detect(&data).unwrap(), TransactionType::Eip4844);
 
         // EIP-7702
         let data = [0x04, 0xf8, 0x70];
-        assert_eq!(TransactionType::detect(&data), TransactionType::Eip7702);
+        assert_eq!(TransactionType::detect(&data).unwrap(), TransactionType::Eip7702);
     }
 
     #[test]
@@ -1268,7 +1294,7 @@ mod tests {
     fn test_eip7702_transaction_default() {
         let tx = Eip7702Transaction::default();
         assert_eq!(tx.chain_id, 1);
-        assert!(tx.is_contract_creation());
+        assert!(!tx.is_contract_creation()); // EIP-7702 txs cannot create contracts
         assert_eq!(tx.authorization_count(), 0);
     }
 
@@ -1335,5 +1361,69 @@ mod tests {
         assert_eq!(tx.tx_type(), TransactionType::Eip4844);
         assert_eq!(tx.to(), Some(recipient));
         assert!(!tx.is_contract_creation());
+    }
+
+    #[test]
+    fn test_legacy_eip155_chain_id_zero() {
+        for (v, parity) in [(35u64, 0u8), (36, 1)] {
+            let tx = LegacyTransaction { v, ..Default::default() };
+            assert!(tx.is_replay_protected());
+            assert_eq!(tx.chain_id(), Some(0));
+            assert_eq!(tx.y_parity(), parity);
+        }
+        for v in [27u64, 28] {
+            let tx = LegacyTransaction { v, ..Default::default() };
+            assert!(!tx.is_replay_protected());
+            assert_eq!(tx.chain_id(), None);
+        }
+    }
+
+    #[test]
+    fn test_legacy_serialize_for_signing_chain_id_zero_is_eip155() {
+        let tx = LegacyTransaction::default();
+        let pre155 = tx.serialize_for_signing(None);
+        let chain0 = tx.serialize_for_signing(Some(0));
+        assert_ne!(pre155, chain0);
+        // EIP-155 with chain_id 0 appends rlp(0), rlp(0), rlp(0).
+        assert!(chain0.ends_with(&[0x80, 0x80, 0x80]));
+        assert_eq!(chain0.len(), pre155.len() + 3);
+    }
+
+    #[test]
+    fn test_legacy_eip155_spec_signing_vector() {
+        // Example from EIP-155.
+        let tx = LegacyTransaction {
+            nonce: 9,
+            gas_price: U256::from(20_000_000_000u64),
+            gas_limit: 21_000,
+            to: Some(Address::new([0x35; 20])),
+            value: U256::from(1_000_000_000_000_000_000u64),
+            data: Vec::new(),
+            v: 37,
+            ..Default::default()
+        };
+        assert_eq!(
+            hex::encode(tx.serialize_for_signing(tx.chain_id())),
+            "ec098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a764000080018080"
+        );
+        assert_eq!(
+            hex::encode(tx.signing_hash(Some(1)).as_bytes()),
+            "daf5a779ae972f972197303d7b574746c7ef83eadac0f2791ad23db92e4c8e53"
+        );
+    }
+
+    #[test]
+    fn test_eip7702_never_contract_creation() {
+        let target = Address::new([7u8; 20]);
+        let tx = Eip7702Transaction { to: target, ..Default::default() };
+        assert!(!tx.is_contract_creation());
+        let tx = Transaction::from(tx);
+        assert_eq!(tx.tx_type(), TransactionType::Eip7702);
+        assert_eq!(tx.to(), Some(target));
+        assert!(!tx.is_contract_creation());
+
+        let default_tx = Eip7702Transaction::default();
+        assert_eq!(default_tx.to, Address::ZERO);
+        assert!(!default_tx.is_contract_creation());
     }
 }

@@ -208,12 +208,12 @@ describe("Precompile: ModExp (0x05)", () => {
 			expect(bytesToBigint(result.output)).toBe(1n);
 		});
 
-		it("should handle zero modulus (returns empty output)", () => {
+		it("should return modulus-sized zero output for a zero modulus", () => {
 			const input = createModExpInput(5n, 3n, 0n);
 			const result = modexp(input, 100000n);
 
 			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(0);
+			expect(result.output).toEqual(new Uint8Array([0]));
 		});
 
 		it("should handle all zeros input", () => {
@@ -242,12 +242,13 @@ describe("Precompile: ModExp (0x05)", () => {
 			expect(result.gasUsed).toBeGreaterThanOrEqual(200n);
 		});
 
-		it("should calculate higher gas for larger inputs", () => {
+		it("should retain the Berlin floor for a 32-byte base and short exponent", () => {
 			const input = createModExpInput(2n ** 256n - 1n, 100n, 2n ** 256n - 1n);
 			const result = modexp(input, 10000000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBeGreaterThan(200n);
+			// max(200, 4^2 * 6 / 3) = 200 under EIP-2565.
+			expect(result.gasUsed).toBe(200n);
 		});
 
 		it("should calculate gas based on complexity", () => {
@@ -277,7 +278,8 @@ describe("Precompile: ModExp (0x05)", () => {
 			const result = modexp(input, 1000000000000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBeGreaterThan(100000n);
+			// 32^2 words * 255 iterations / 3.
+			expect(result.gasUsed).toBe(87040n);
 		});
 	});
 
@@ -301,12 +303,15 @@ describe("Precompile: ModExp (0x05)", () => {
 	});
 
 	describe("Invalid inputs", () => {
-		it("should fail with input too short (< 96 bytes)", () => {
+		it("should right-pad a short zero header", () => {
 			const input = new Uint8Array(95);
 			const result = modexp(input, 100000n);
 
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expect(result).toEqual({
+				success: true,
+				output: new Uint8Array(),
+				gasUsed: 200n,
+			});
 		});
 
 		it("should handle truncated base", () => {
@@ -477,8 +482,10 @@ describe("Precompile: ModExp (0x05)", () => {
 
 			const result = modexp(input, 1000000000000n);
 
-			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBeGreaterThanOrEqual(200n);
+			// Declared exponent bytes charge iterations even when calldata is absent.
+			expect(result.success).toBe(false);
+			expect(result.error).toBe("Out of gas");
+			expect(result.gasUsed).toBe(1000000000000n);
 		});
 
 		it("should handle reasonable large computation", () => {
@@ -499,20 +506,20 @@ describe("Precompile: ModExp (0x05)", () => {
 			expect(result1.gasUsed).toBeLessThan(1000n);
 		});
 
-		it("should use more gas for medium modulus (mixed complexity)", () => {
+		it("should apply the Berlin floor to a 65-byte modulus", () => {
 			const input = createModExpInput(2n, 100n, 2n ** 512n);
 			const result = modexp(input, 10000000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBeGreaterThan(1000n);
+			expect(result.gasUsed).toBe(200n); // max(200, 9^2 * 6 / 3)
 		});
 
-		it("should use most gas for large modulus (linear complexity)", () => {
+		it("should charge squared words for a 129-byte modulus", () => {
 			const input = createModExpInput(2n, 100n, 2n ** 1024n);
 			const result = modexp(input, 100000000n);
 
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBeGreaterThan(10000n);
+			expect(result.gasUsed).toBe(578n); // 17^2 * 6 / 3
 		});
 	});
 });

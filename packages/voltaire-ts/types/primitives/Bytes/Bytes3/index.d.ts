@@ -7,7 +7,7 @@ import { fromHex } from "./fromHex.js";
 import { size } from "./size.js";
 import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
-export { from, fromHex, toHex, toBytes, equals, compare, size, clone };
+export { clone, compare, equals, from, fromHex, size, toBytes, toHex };
 export declare const BytesType3: {
     from: typeof from;
     fromHex: typeof fromHex;

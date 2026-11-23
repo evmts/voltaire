@@ -28,7 +28,31 @@ import { supportsPUSH0 as _supportsPUSH0 } from "./supportsPUSH0.js";
 import { supportsTransientStorage as _supportsTransientStorage } from "./supportsTransientStorage.js";
 import { toString as _toString } from "./toString.js";
 
-export * from "./constants.js";
+export {
+	AMSTERDAM,
+	ARROW_GLACIER,
+	BERLIN,
+	BYZANTIUM,
+	CANCUN,
+	CONSTANTINOPLE,
+	DAO,
+	DEFAULT,
+	FRONTIER,
+	GRAY_GLACIER,
+	HARDFORK_ORDER,
+	HOMESTEAD,
+	ISTANBUL,
+	LONDON,
+	MERGE,
+	MUIR_GLACIER,
+	NAME_TO_HARDFORK,
+	OSAKA,
+	PETERSBURG,
+	PRAGUE,
+	SHANGHAI,
+	SPURIOUS_DRAGON,
+	TANGERINE_WHISTLE,
+} from "./constants.js";
 // Re-export type
 export type { HardforkType } from "./HardforkType.js";
 

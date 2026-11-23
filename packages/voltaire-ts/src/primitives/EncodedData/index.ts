@@ -38,4 +38,4 @@ export function equals(a: EncodedDataType, b: EncodedDataType): boolean {
 /**
  * Internal exports for advanced usage
  */
-export { _from, _fromBytes, _toBytes, _equals };
+export { _equals, _from, _fromBytes, _toBytes };

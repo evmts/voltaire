@@ -11,24 +11,46 @@ import { encode as rlpEncode } from "../Rlp/encode.js";
  * - EIP-1559 (London): + baseFeePerGas
  * - EIP-4895 (Shanghai): + withdrawalsRoot
  * - EIP-4844 (Cancun): + blobGasUsed, excessBlobGas, parentBeaconBlockRoot
+ * - EIP-7685 (Prague and Osaka): + requestsHash
+ * - EIP-7928 (Amsterdam): + blockAccessListHash
+ *
+ * Fork fields form an ordered suffix, and the three Cancun fields must appear together.
  *
  * @see https://voltaire.tevm.sh/primitives/block-header for BlockHeader documentation
  * @see https://ethereum.org/en/developers/docs/blocks/ for block documentation
  * @since 0.1.42
  * @param {import('./BlockHeaderType.js').BlockHeaderType} header - Block header to hash
  * @returns {import('../BlockHash/BlockHashType.js').BlockHashType} 32-byte block hash
- * @throws {never}
+ * @throws {Error} If a required fork field is missing
  * @example
  * ```javascript
- * import * as BlockHeader from './primitives/BlockHeader/index.js';
+ * import { BlockHeader } from "@tevm/voltaire";
  *
+ * const zeroHash = `0x${"00".repeat(32)}`;
  * const header = BlockHeader.from({
- *   parentHash: "0x...",
- *   // ... other fields
+ *   parentHash: zeroHash,
+ *   ommersHash: zeroHash,
+ *   beneficiary: `0x${"00".repeat(20)}`,
+ *   stateRoot: zeroHash,
+ *   transactionsRoot: zeroHash,
+ *   receiptsRoot: zeroHash,
+ *   logsBloom: new Uint8Array(256),
+ *   difficulty: 0n,
+ *   number: 1n,
+ *   gasLimit: 30000000n,
+ *   gasUsed: 0n,
+ *   timestamp: 1764798551n,
+ *   extraData: new Uint8Array(0),
+ *   mixHash: zeroHash,
+ *   nonce: new Uint8Array(8),
+ *   baseFeePerGas: 7n,
+ *   withdrawalsRoot: zeroHash,
+ *   blobGasUsed: 0n,
+ *   excessBlobGas: 0n,
+ *   parentBeaconBlockRoot: zeroHash,
+ *   requestsHash: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
  * });
- *
  * const hash = BlockHeader.calculateHash(header);
- * // => Uint8Array (32 bytes)
  * ```
  */
 export function calculateHash(header) {
@@ -66,27 +88,31 @@ export function calculateHash(header) {
 		header.nonce,
 	];
 
-	// Optional EIP-1559 field (baseFeePerGas)
-	if (header.baseFeePerGas !== undefined) {
-		fields.push(bigintToMinimalBytes(header.baseFeePerGas));
-
-		// Optional EIP-4895 field (withdrawalsRoot)
-		if (header.withdrawalsRoot !== undefined) {
-			fields.push(header.withdrawalsRoot);
-
-			// Optional EIP-4844 fields
-			if (header.blobGasUsed !== undefined) {
-				fields.push(bigintToMinimalBytes(header.blobGasUsed));
-
-				if (header.excessBlobGas !== undefined) {
-					fields.push(bigintToMinimalBytes(header.excessBlobGas));
-
-					if (header.parentBeaconBlockRoot !== undefined) {
-						fields.push(header.parentBeaconBlockRoot);
-					}
-				}
-			}
+	const forkFields = /** @type {const} */ ([
+		"baseFeePerGas",
+		"withdrawalsRoot",
+		"blobGasUsed",
+		"excessBlobGas",
+		"parentBeaconBlockRoot",
+		"requestsHash",
+		"blockAccessListHash",
+	]);
+	let missingField;
+	for (const field of forkFields) {
+		const value = header[field];
+		if (value == null) {
+			missingField ??= field;
+			continue;
 		}
+		if (missingField !== undefined) {
+			throw new Error(`Block header field ${field} requires ${missingField}`);
+		}
+		fields.push(
+			typeof value === "bigint" ? bigintToMinimalBytes(value) : value,
+		);
+	}
+	if (header.blobGasUsed != null && header.parentBeaconBlockRoot == null) {
+		throw new Error(`Incomplete Cancun block header, missing ${missingField}`);
 	}
 
 	// RLP encode the list

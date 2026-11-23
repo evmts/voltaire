@@ -1,13 +1,7 @@
 // HTTP JSON-RPC 2.0 Transport built directly on Effect 4 HttpClient.
 
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http"
-import {
-  errorMessage,
-  RpcError,
-  type RpcTransportError,
-  TransportError,
-  TransportFailureReason
-} from "../errors.vibe"
+import { errorMessage, RpcError, type RpcTransportError, TransportError, TransportFailureReason } from "../errors.vibe"
 import {
   type JsonRpcBatchItemResult,
   JsonRpcBatchItemResult as BatchResult,
@@ -15,7 +9,7 @@ import {
   RpcRetry,
   type RpcRetryConfig,
   RpcTimeout,
-  Transport
+  Transport,
 } from "./Transport.vibe"
 
 export interface HttpTransportConfig {
@@ -42,14 +36,14 @@ effect function executeHttpJson(
   headers: Record<string, string>,
   payload: unknown,
   effectiveTimeout: Duration.Input,
-  methodLabel: string
+  methodLabel: string,
 ): unknown!TransportError {
   const req = HttpClientRequest.post(url).pipe(
     HttpClientRequest.setHeaders({
       "content-type": "application/json",
-      ...headers
+      ...headers,
     }),
-    HttpClientRequest.bodyJsonUnsafe(payload)
+    HttpClientRequest.bodyJsonUnsafe(payload),
   )
 
   const executeAttempt = effect {
@@ -59,7 +53,7 @@ effect function executeHttpJson(
         reason: TransportFailureReason.Network({ cause }),
         url,
         method: methodLabel,
-        cause
+        cause,
       })
     }
   }
@@ -72,7 +66,7 @@ effect function executeHttpJson(
         reason: TransportFailureReason.Timeout({}),
         url,
         method: methodLabel,
-        cause: err
+        cause: err,
       });
     }
   }
@@ -83,7 +77,7 @@ effect function executeHttpJson(
       message: `HTTP ${response.status} from ${url} (${methodLabel})`,
       reason: TransportFailureReason.HttpStatus({ status: response.status, body: bodyText }),
       url,
-      method: methodLabel
+      method: methodLabel,
     })
   }
 
@@ -93,14 +87,14 @@ effect function executeHttpJson(
       reason: TransportFailureReason.InvalidResponse({ message: errorMessage(cause) }),
       url,
       method: methodLabel,
-      cause
+      cause,
     })
   }
 }
 
 effect function withConfiguredRetry<A, E extends RpcTransportError>(
   program: A!E,
-  retryConfig: RpcRetryConfig | undefined
+  retryConfig: RpcRetryConfig | undefined,
 ): A!E {
   if (retryConfig === undefined || retryConfig.times <= 0) {
     return try program
@@ -110,7 +104,7 @@ effect function withConfiguredRetry<A, E extends RpcTransportError>(
   return try retry(program, {
     schedule,
     times: retryConfig.times,
-    while: (err: E) => err.retryable
+    while: (err: E) => err.retryable,
   })
 }
 
@@ -142,7 +136,7 @@ export function HttpTransport(options: HttpTransportConfig | string) {
               headers,
               { jsonrpc: "2.0", id, method, params: params ?? [] },
               effectiveTimeout,
-              method
+              method,
             )
 
             if (!Predicate.isObject(json)) {
@@ -150,7 +144,7 @@ export function HttpTransport(options: HttpTransportConfig | string) {
                 message: `Malformed JSON-RPC response for ${method}`,
                 reason: TransportFailureReason.InvalidResponse({ message: "Response is not an object", body: json }),
                 url: config.url,
-                method
+                method,
               })
             }
 
@@ -160,7 +154,7 @@ export function HttpTransport(options: HttpTransportConfig | string) {
                 code: rpc.error.code,
                 message: rpc.error.message,
                 method,
-                data: rpc.error.data
+                data: rpc.error.data,
               })
             }
             return rpc.result as T
@@ -176,7 +170,14 @@ export function HttpTransport(options: HttpTransportConfig | string) {
 
           const attempt = effect {
             const ids: Array<number> = []
-            const payload: Array<{ readonly jsonrpc: "2.0"; readonly id: number; readonly method: string; readonly params: ReadonlyArray<unknown> }> = []
+            const payload: Array<
+              {
+                readonly jsonrpc: "2.0"
+                readonly id: number
+                readonly method: string
+                readonly params: ReadonlyArray<unknown>
+              }
+            > = []
             for (const req of requests) {
               const id = try nextRequestId
               ids.push(id)
@@ -184,7 +185,7 @@ export function HttpTransport(options: HttpTransportConfig | string) {
                 jsonrpc: "2.0",
                 id,
                 method: req.method,
-                params: req.params ?? []
+                params: req.params ?? [],
               })
             }
 
@@ -194,15 +195,18 @@ export function HttpTransport(options: HttpTransportConfig | string) {
               headers,
               payload,
               effectiveTimeout,
-              `batch(${requests.length})`
+              `batch(${requests.length})`,
             )
 
             if (!Array.isArray(json)) {
               throw new TransportError({
                 message: `Expected JSON-RPC batch array from ${config.url}`,
-                reason: TransportFailureReason.InvalidResponse({ message: "Batch response is not an array", body: json }),
+                reason: TransportFailureReason.InvalidResponse({
+                  message: "Batch response is not an array",
+                  body: json,
+                }),
                 url: config.url,
-                method: "batch"
+                method: "batch",
               })
             }
 
@@ -225,9 +229,9 @@ export function HttpTransport(options: HttpTransportConfig | string) {
                     error: new RpcError({
                       code: -32603,
                       message: `Missing response for batch item id ${id}`,
-                      method: req?.method
-                    })
-                  })
+                      method: req?.method,
+                    }),
+                  }),
                 )
               } else if (item.error !== undefined) {
                 results.push(
@@ -236,9 +240,9 @@ export function HttpTransport(options: HttpTransportConfig | string) {
                       code: item.error.code,
                       message: item.error.message,
                       method: req?.method,
-                      data: item.error.data
-                    })
-                  })
+                      data: item.error.data,
+                    }),
+                  }),
                 )
               } else {
                 results.push(BatchResult.Ok({ value: item.result }))
@@ -248,9 +252,9 @@ export function HttpTransport(options: HttpTransportConfig | string) {
           }
 
           return try withConfiguredRetry(attempt, effectiveRetry)
-        }
+        },
       })
-    }
+    },
   )
 }
 

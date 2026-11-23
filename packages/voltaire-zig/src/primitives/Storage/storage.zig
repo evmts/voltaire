@@ -10,6 +10,12 @@
 const std = @import("std");
 const crypto = @import("crypto");
 
+fn keccak256(data: []const u8) [32]u8 {
+    var out: [32]u8 = undefined;
+    crypto.Keccak256.hash(data, &out, .{});
+    return out;
+}
+
 /// Calculate ERC-7201 namespaced storage slot
 /// Formula: keccak256(keccak256(id) - 1) & ~0xff
 /// The result has the last byte cleared (set to 0x00)
@@ -18,7 +24,7 @@ const crypto = @import("crypto");
 /// @return 32-byte storage slot
 pub fn calculateErc7201(id: []const u8) [32]u8 {
     // First hash: keccak256(id)
-    const first_hash = crypto.Keccak256.hash(id);
+    const first_hash = keccak256(id);
 
     // Convert to u256, subtract 1
     var value: u256 = 0;
@@ -38,7 +44,7 @@ pub fn calculateErc7201(id: []const u8) [32]u8 {
     }
 
     // Second hash: keccak256(result - 1)
-    var second_hash = crypto.Keccak256.hash(&intermediate);
+    var second_hash = keccak256(&intermediate);
 
     // Clear last byte: & ~0xff
     second_hash[31] = 0x00;
@@ -53,7 +59,7 @@ pub fn calculateErc7201(id: []const u8) [32]u8 {
 /// @param id Storage namespace identifier string
 /// @return 32-byte storage slot
 pub fn calculateErc8042(id: []const u8) [32]u8 {
-    return crypto.Keccak256.hash(id);
+    return keccak256(id);
 }
 
 // ============================================================================
@@ -69,6 +75,11 @@ test "calculateErc7201 - basic functionality" {
 
     // Last byte should be 0x00
     try std.testing.expectEqual(@as(u8, 0), slot[31]);
+
+    // Reference value from the ERC-7201 specification
+    var expected: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "183a6125c38840424c4a85fa12bab2ab606c4b6d0e7cc73c0c06ba5300eab500");
+    try std.testing.expectEqualSlices(u8, &expected, &slot);
 }
 
 test "calculateErc7201 - deterministic" {
@@ -152,7 +163,7 @@ test "calculateErc8042 - empty string" {
 test "calculateErc8042 - matches direct keccak256" {
     const id = "test.namespace";
     const slot = calculateErc8042(id);
-    const direct_hash = crypto.Keccak256.hash(id);
+    const direct_hash = keccak256(id);
 
     try std.testing.expectEqual(direct_hash, slot);
 }

@@ -114,8 +114,9 @@ describe("ModExp", () => {
 		});
 
 		it("should scale with base/mod length (quadratic for small)", () => {
-			const gas1 = calculateGas(1n, 1n, 1n, 1n);
-			const gas64 = calculateGas(64n, 1n, 64n, 1n);
+			// Fifteen iterations put the larger operand above Berlin's 200-gas floor.
+			const gas1 = calculateGas(1n, 2n, 1n, 65535n);
+			const gas64 = calculateGas(64n, 2n, 64n, 65535n);
 			expect(gas64).toBeGreaterThan(gas1);
 		});
 

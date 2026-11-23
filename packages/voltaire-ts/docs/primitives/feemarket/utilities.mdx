@@ -329,11 +329,11 @@ const maxFeePerGas = FeeMarket.gweiToWei(2); // 2 gwei
 const maxPriorityFeePerGas = FeeMarket.gweiToWei(1); // 1 gwei
 ```
 
-**Precision:** Floors fractional wei (rounds down).
+**Precision:** Converts the number's decimal representation exactly, including scientific notation, and floors any fractional wei toward negative infinity.
 
 ```typescript
 const wei = FeeMarket.gweiToWei(1.9999999999);
-// wei === 1_999_999_999n (last digit floored)
+// wei === 1_999_999_999n
 ```
 
 **Usage:**

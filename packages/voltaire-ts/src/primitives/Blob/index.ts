@@ -1,5 +1,35 @@
+// Fork-dependent blob schedules & EIP-7918 fee helpers (EIP-7691, EIP-7892, EIP-7918)
+export type {
+	BlobScheduleType,
+	CalculateExcessBlobGasOptions,
+	ExcessBlobGasOptions,
+} from "../FeeMarket/BlobScheduleType.js";
+
+import * as BlobScheduleConstants from "../FeeMarket/blobSchedule.js";
+import { calculateBlobBaseFee } from "../FeeMarket/calculateBlobBaseFee.js";
+import {
+	calculateExcessBlobGas,
+	calculateExcessBlobGasEip7918,
+} from "../FeeMarket/calculateExcessBlobGas.js";
+import {
+	blobScheduleForHardfork,
+	blobScheduleForTimestamp,
+	getBlobSchedule,
+} from "../FeeMarket/getBlobSchedule.js";
+
+export const BlobSchedule = Object.freeze({
+	...BlobScheduleConstants,
+	forHardfork: blobScheduleForHardfork,
+	forTimestamp: blobScheduleForTimestamp,
+});
 export * from "./constants.js";
 export * from "./errors.js";
+export {
+	calculateBlobBaseFee,
+	calculateExcessBlobGas,
+	calculateExcessBlobGasEip7918,
+	getBlobSchedule,
+};
 
 import type {
 	BrandedBlob,
@@ -190,15 +220,15 @@ export const verifyBatch = ((
 
 // Export individual functions
 export {
+	calculateGas,
+	estimateBlobCount,
 	from,
 	fromData,
 	isValid,
-	toData,
 	isValidVersion,
-	calculateGas,
-	estimateBlobCount,
-	splitData,
 	joinData,
+	splitData,
+	toData,
 };
 
 // Nested namespaces for Commitment, Proof, and VersionedHash
@@ -258,7 +288,7 @@ const BrandedBlobNamespace = {
 };
 
 // Re-export factory functions for tree-shaking
-export { ToVersionedHash, ToCommitment, ToProof, Verify, VerifyBatch };
+export { ToCommitment, ToProof, ToVersionedHash, Verify, VerifyBatch };
 
 /**
  * Creates a Blob instance from various input types.
@@ -348,6 +378,11 @@ Blob.MAX_PER_TRANSACTION = BrandedBlobNamespace.MAX_PER_TRANSACTION;
 Blob.COMMITMENT_VERSION_KZG = BrandedBlobNamespace.COMMITMENT_VERSION_KZG;
 Blob.GAS_PER_BLOB = BrandedBlobNamespace.GAS_PER_BLOB;
 Blob.TARGET_GAS_PER_BLOCK = BrandedBlobNamespace.TARGET_GAS_PER_BLOCK;
+Blob.BlobSchedule = BlobSchedule;
+Blob.getBlobSchedule = getBlobSchedule;
+Blob.calculateBlobBaseFee = calculateBlobBaseFee;
+Blob.calculateExcessBlobGas = calculateExcessBlobGas;
+Blob.calculateExcessBlobGasEip7918 = calculateExcessBlobGasEip7918;
 
 // Nested namespaces
 Blob.Commitment = BrandedBlobNamespace.Commitment;

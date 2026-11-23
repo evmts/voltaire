@@ -1,6 +1,6 @@
 ---
-title: "create.js"
----
+
+## title: "create.js"
 
 # create.js
 
@@ -9,7 +9,7 @@ Create empty AccessList.
 ## Signature
 
 ```typescript
-function create(): BrandedAccessList
+function create(): BrandedAccessList;
 ```
 
 ## Returns

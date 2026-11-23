@@ -1,9 +1,11 @@
 import type { EtherType as BrandedEther } from "./EtherType.js";
+import { normalizeDecimal } from "./normalizeDecimal.js";
 
 /**
  * Create Ether from bigint, number, or string
  *
- * Ether is a string type to support decimal values like "1.5" or "0.001"
+ * Ether is a string type to support decimal values like "1.5" or "0.001".
+ * Scientific notation (`1e-9`, `"1.5e3"`) is stored as an exact plain decimal.
  *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0
@@ -32,7 +34,7 @@ export function from(value: bigint | number | string): BrandedEther {
 		if (value < 0) {
 			throw new Error(`Ether value cannot be negative: ${value}`);
 		}
-		return value.toString() as BrandedEther;
+		return normalizeDecimal(value) as BrandedEther;
 	}
 	// string - validate it's a valid number
 	const trimmed = value.trim();
@@ -43,5 +45,5 @@ export function from(value: bigint | number | string): BrandedEther {
 	if (numValue < 0) {
 		throw new Error(`Ether value cannot be negative: ${trimmed}`);
 	}
-	return trimmed as BrandedEther;
+	return normalizeDecimal(trimmed) as BrandedEther;
 }

@@ -164,17 +164,17 @@ pub fn toJson(status: SyncStatus, allocator: Allocator) ![]u8 {
         .syncing => |progress| {
             try buf.appendSlice(allocator, "{\"startingBlock\":\"0x");
             var start_buf: [16]u8 = undefined;
-            const start_len = std.fmt.formatIntBuf(&start_buf, progress.starting_block, 16, .lower, .{});
+            const start_len = std.fmt.printInt(&start_buf, progress.starting_block, 16, .lower, .{});
             try buf.appendSlice(allocator, start_buf[0..start_len]);
 
             try buf.appendSlice(allocator, "\",\"currentBlock\":\"0x");
             var curr_buf: [16]u8 = undefined;
-            const curr_len = std.fmt.formatIntBuf(&curr_buf, progress.current_block, 16, .lower, .{});
+            const curr_len = std.fmt.printInt(&curr_buf, progress.current_block, 16, .lower, .{});
             try buf.appendSlice(allocator, curr_buf[0..curr_len]);
 
             try buf.appendSlice(allocator, "\",\"highestBlock\":\"0x");
             var high_buf: [16]u8 = undefined;
-            const high_len = std.fmt.formatIntBuf(&high_buf, progress.highest_block, 16, .lower, .{});
+            const high_len = std.fmt.printInt(&high_buf, progress.highest_block, 16, .lower, .{});
             try buf.appendSlice(allocator, high_buf[0..high_len]);
             try buf.append(allocator, '"');
 
@@ -184,14 +184,14 @@ pub fn toJson(status: SyncStatus, allocator: Allocator) ![]u8 {
                 const ps_high: u128 = @truncate(ps >> 128);
                 if (ps_high > 0) {
                     var ps_buf: [64]u8 = undefined;
-                    const ps_len = std.fmt.formatIntBuf(&ps_buf, ps_high, 16, .lower, .{});
+                    const ps_len = std.fmt.printInt(&ps_buf, ps_high, 16, .lower, .{});
                     try buf.appendSlice(allocator, ps_buf[0..ps_len]);
                     var ps_low_buf: [32]u8 = undefined;
-                    const ps_low_len = std.fmt.formatIntBuf(&ps_low_buf, ps_low, 16, .lower, .{ .fill = '0', .width = 32 });
+                    const ps_low_len = std.fmt.printInt(&ps_low_buf, ps_low, 16, .lower, .{ .fill = '0', .width = 32 });
                     try buf.appendSlice(allocator, ps_low_buf[0..ps_low_len]);
                 } else {
                     var ps_buf: [32]u8 = undefined;
-                    const ps_len = std.fmt.formatIntBuf(&ps_buf, ps_low, 16, .lower, .{});
+                    const ps_len = std.fmt.printInt(&ps_buf, ps_low, 16, .lower, .{});
                     try buf.appendSlice(allocator, ps_buf[0..ps_len]);
                 }
                 try buf.append(allocator, '"');
@@ -203,14 +203,14 @@ pub fn toJson(status: SyncStatus, allocator: Allocator) ![]u8 {
                 const ks_high: u128 = @truncate(ks >> 128);
                 if (ks_high > 0) {
                     var ks_buf: [64]u8 = undefined;
-                    const ks_len = std.fmt.formatIntBuf(&ks_buf, ks_high, 16, .lower, .{});
+                    const ks_len = std.fmt.printInt(&ks_buf, ks_high, 16, .lower, .{});
                     try buf.appendSlice(allocator, ks_buf[0..ks_len]);
                     var ks_low_buf: [32]u8 = undefined;
-                    const ks_low_len = std.fmt.formatIntBuf(&ks_low_buf, ks_low, 16, .lower, .{ .fill = '0', .width = 32 });
+                    const ks_low_len = std.fmt.printInt(&ks_low_buf, ks_low, 16, .lower, .{ .fill = '0', .width = 32 });
                     try buf.appendSlice(allocator, ks_low_buf[0..ks_low_len]);
                 } else {
                     var ks_buf: [32]u8 = undefined;
-                    const ks_len = std.fmt.formatIntBuf(&ks_buf, ks_low, 16, .lower, .{});
+                    const ks_len = std.fmt.printInt(&ks_buf, ks_low, 16, .lower, .{});
                     try buf.appendSlice(allocator, ks_buf[0..ks_len]);
                 }
                 try buf.append(allocator, '"');

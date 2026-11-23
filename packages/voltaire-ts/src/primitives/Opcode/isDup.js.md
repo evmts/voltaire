@@ -1,6 +1,6 @@
 ---
-title: "isDup.js"
----
+
+## title: "isDup.js"
 
 # isDup.js
 
@@ -9,7 +9,7 @@ Check if opcode is DUP instruction (DUP1-DUP16).
 ## Signature
 
 ```typescript
-function isDup(opcode: BrandedOpcode): boolean
+function isDup(opcode: BrandedOpcode): boolean;
 ```
 
 ## Parameters
@@ -23,10 +23,10 @@ function isDup(opcode: BrandedOpcode): boolean
 ## Example
 
 ```typescript
-Opcode.isDup(Opcode.DUP1);   // true
-Opcode.isDup(Opcode.DUP16);  // true
-Opcode.isDup(Opcode.SWAP1);  // false
-Opcode.isDup(Opcode.PUSH1);  // false
+Opcode.isDup(Opcode.DUP1); // true
+Opcode.isDup(Opcode.DUP16); // true
+Opcode.isDup(Opcode.SWAP1); // false
+Opcode.isDup(Opcode.PUSH1); // false
 ```
 
 ## Notes

@@ -20,15 +20,18 @@ export function calculateRipemd160Cost(dataSize: bigint): bigint;
  */
 export function calculateIdentityCost(dataSize: bigint): bigint;
 /**
- * Calculate MODEXP precompile cost
+ * Calculate MODEXP gas using EIP-198 before Berlin, EIP-2565 from Berlin,
+ * and EIP-7883 from Osaka. Declared lengths are nonnegative byte counts.
+ * The precompile enforces operand bounds separately from this pricing helper.
  *
  * @param {bigint} baseLength - Length of base in bytes
  * @param {bigint} expLength - Length of exponent in bytes
  * @param {bigint} modLength - Length of modulus in bytes
  * @param {bigint} expHead - First 32 bytes of exponent
+ * @param {import('../Hardfork/HardforkType.js').HardforkType} [hardfork=Hardfork.BERLIN] - Active fork; defaults to Berlin pricing
  * @returns {bigint} Gas cost
  */
-export function calculateModExpCost(baseLength: bigint, expLength: bigint, modLength: bigint, expHead: bigint): bigint;
+export function calculateModExpCost(baseLength: bigint, expLength: bigint, modLength: bigint, expHead: bigint, hardfork?: import("../Hardfork/HardforkType.js").HardforkType): bigint;
 /**
  * Calculate ECPAIRING precompile cost
  *
@@ -95,17 +98,18 @@ export function calculateBls12G1MsmCost(pairCount: bigint): bigint;
  */
 export function calculateBls12G2MsmCost(pairCount: bigint): bigint;
 /**
- * Calculate BLS12_PAIRING precompile cost
+ * Calculate BLS12_PAIRING_CHECK precompile cost: `32600 * k + 37700`
  *
  * @param {bigint} pairCount - Number of G1-G2 pairs
  * @returns {bigint} Gas cost
  */
 export function calculateBls12PairingCost(pairCount: bigint): bigint;
 /**
- * EVM Precompile Gas Costs
+ * Calculate P256VERIFY precompile cost (EIP-7951, Osaka)
  *
- * Gas cost constants and calculation functions for all EVM precompiled contracts
+ * @returns {bigint} Gas cost (fixed at 6900, charged for every call)
  */
+export function calculateP256VerifyCost(): bigint;
 /**
  * ECRECOVER (address 0x01) - Fixed cost
  * @type {3000n}
@@ -162,7 +166,7 @@ export const ModExpLinearThreshold: 1024n;
  */
 export const EcAddIstanbul: 150n;
 /**
- * BN254 ECADD - Byzantium to Berlin
+ * BN254 ECADD - Byzantium until Istanbul (EIP-196)
  * @type {500n}
  */
 export const EcAddByzantium: 500n;
@@ -172,7 +176,7 @@ export const EcAddByzantium: 500n;
  */
 export const EcMulIstanbul: 6000n;
 /**
- * BN254 ECMUL - Byzantium to Berlin
+ * BN254 ECMUL - Byzantium until Istanbul (EIP-196)
  * @type {40000n}
  */
 export const EcMulByzantium: 40000n;
@@ -187,12 +191,12 @@ export const EcPairingBaseIstanbul: 45000n;
  */
 export const EcPairingPerPairIstanbul: 34000n;
 /**
- * BN254 ECPAIRING - Base cost (Byzantium to Berlin)
+ * BN254 ECPAIRING - Base cost (Byzantium until Istanbul, EIP-197)
  * @type {100000n}
  */
 export const EcPairingBaseByzantium: 100000n;
 /**
- * BN254 ECPAIRING - Per-pair cost (Byzantium to Berlin)
+ * BN254 ECPAIRING - Per-pair cost (Byzantium until Istanbul, EIP-197)
  * @type {80000n}
  */
 export const EcPairingPerPairByzantium: 80000n;
@@ -215,52 +219,69 @@ export function blake2f(rounds: bigint): bigint;
 export const PointEvaluation: 50000n;
 /**
  * BLS12_G1ADD (address 0x0b) - Fixed cost
- * @type {500n}
+ * @type {375n}
  */
-export const Bls12G1Add: 500n;
+export const Bls12G1Add: 375n;
 /**
- * BLS12_G1MUL (address 0x0c) - Fixed cost
- * @type {12000n}
- */
-export const Bls12G1Mul: 12000n;
-/**
- * BLS12_G1MSM (address 0x0d) - Base cost per point
+ * BLS12_G1MSM (address 0x0c) - G1 multiplication cost per pair, before discount
  * @type {12000n}
  */
 export const Bls12G1MsmBase: 12000n;
 /**
- * BLS12_G2ADD (address 0x0e) - Fixed cost
- * @type {800n}
+ * BLS12_G2ADD (address 0x0d) - Fixed cost
+ * @type {600n}
  */
-export const Bls12G2Add: 800n;
+export const Bls12G2Add: 600n;
 /**
- * BLS12_G2MUL (address 0x0f) - Fixed cost
- * @type {45000n}
+ * BLS12_G2MSM (address 0x0e) - G2 multiplication cost per pair, before discount
+ * @type {22500n}
  */
-export const Bls12G2Mul: 45000n;
+export const Bls12G2MsmBase: 22500n;
 /**
- * BLS12_G2MSM (address 0x10) - Base cost per point
- * @type {45000n}
+ * BLS12_PAIRING_CHECK (address 0x0f) - Base cost
+ * @type {37700n}
  */
-export const Bls12G2MsmBase: 45000n;
+export const Bls12PairingBase: 37700n;
 /**
- * BLS12_PAIRING (address 0x11) - Base cost
- * @type {65000n}
+ * BLS12_PAIRING_CHECK - Per-pair cost
+ * @type {32600n}
  */
-export const Bls12PairingBase: 65000n;
+export const Bls12PairingPerPair: 32600n;
 /**
- * BLS12_PAIRING - Per-pair cost
- * @type {43000n}
- */
-export const Bls12PairingPerPair: 43000n;
-/**
- * BLS12_MAP_FP_TO_G1 (address 0x12) - Fixed cost
+ * BLS12_MAP_FP_TO_G1 (address 0x10) - Fixed cost
  * @type {5500n}
  */
 export const Bls12MapFpToG1: 5500n;
 /**
- * BLS12_MAP_FP2_TO_G2 (address 0x13) - Fixed cost
- * @type {75000n}
+ * BLS12_MAP_FP2_TO_G2 (address 0x11) - Fixed cost
+ * @type {23800n}
  */
-export const Bls12MapFp2ToG2: 75000n;
+export const Bls12MapFp2ToG2: 23800n;
+/**
+ * MSM discount divisor (EIP-2537 `multiplier`)
+ * @type {1000n}
+ */
+export const Bls12MsmMultiplier: 1000n;
+/**
+ * G1 MSM discounts (EIP-2537). Entry `k - 1` is the discount for `k` pairs;
+ * the last entry (519) is `max_discount` for every `k > 128`.
+ * @type {readonly bigint[]}
+ */
+export const Bls12G1MsmDiscountTable: readonly bigint[];
+/**
+ * G2 MSM discounts (EIP-2537). Entry `k - 1` is the discount for `k` pairs;
+ * the last entry (524) is `max_discount` for every `k > 128`.
+ * @type {readonly bigint[]}
+ */
+export const Bls12G2MsmDiscountTable: readonly bigint[];
+/**
+ * P256VERIFY (address 0x0100) - Fixed cost (EIP-7951, Osaka)
+ * @type {6900n}
+ */
+export const P256Verify: 6900n;
+/**
+ * P256VERIFY (address 0x0100) - Fixed cost, EIP-7951 spec spelling
+ * @type {6900n}
+ */
+export const P256VERIFY_GAS: 6900n;
 //# sourceMappingURL=Precompile.d.ts.map

@@ -12,8 +12,7 @@ import { Keccak } from "./Keccak.vibe"
 import { Secp256k1 } from "./Secp256k1.vibe"
 
 // ERC-6492 magic suffix (32 bytes): 0x6492649264926492649264926492649264926492649264926492649264926492
-export const ERC6492_MAGIC_BYTES =
-  "0x6492649264926492649264926492649264926492649264926492649264926492" as HexType
+export const ERC6492_MAGIC_BYTES = "0x6492649264926492649264926492649264926492649264926492649264926492" as HexType
 
 module native {
   /** @throws {never} */
@@ -46,7 +45,7 @@ export effect function hashMessage(message: string | Uint8Array): HashType!Crypt
 
 export effect function signMessage(
   message: string | Uint8Array,
-  privateKey: Uint8Array
+  privateKey: Uint8Array,
 ): Secp256k1SignatureType!CryptoError!(Keccak | Secp256k1) {
   const digest = try hashMessage(message)
   return try (try Secp256k1).sign(digest, privateKey)
@@ -54,7 +53,7 @@ export effect function signMessage(
 
 export effect function recoverMessageAddress(
   message: string | Uint8Array,
-  signature: Secp256k1SignatureType
+  signature: Secp256k1SignatureType,
 ): AddressType!CryptoError!(Keccak | Secp256k1) {
   const digest = try hashMessage(message)
   return try (try Secp256k1).recoverAddress(signature, digest)
@@ -63,7 +62,7 @@ export effect function recoverMessageAddress(
 export effect function verifyMessage(
   message: string | Uint8Array,
   signature: Secp256k1SignatureType,
-  expectedAddress: Address.AddressInput
+  expectedAddress: Address.AddressInput,
 ): boolean!(CryptoError | InvalidAddressError)!(Keccak | Secp256k1) {
   const expected = typeof expectedAddress === "string" ? try Address.fromHex(expectedAddress) : expectedAddress
   const recovered = try recoverMessageAddress(message, signature)
@@ -87,8 +86,8 @@ export effect function wrapErc6492Signature(params: {
 }): HexType!CryptoError {
   const factoryAddr = typeof params.factory === "string"
     ? Address.fromHex(params.factory) catch effect (e) => {
-        throw new CryptoError({ operation: "erc6492.wrap", message: e.message, cause: e })
-      }
+      throw new CryptoError({ operation: "erc6492.wrap", message: e.message, cause: e })
+    }
     : params.factory
   const calldataHex = Hex.from(params.factoryCalldata) catch effect (e) => {
     throw new CryptoError({ operation: "erc6492.wrap", message: e.message, cause: e })
@@ -100,9 +99,9 @@ export effect function wrapErc6492Signature(params: {
     [
       { type: "address", name: "factory" },
       { type: "bytes", name: "factoryCalldata" },
-      { type: "bytes", name: "signature" }
+      { type: "bytes", name: "signature" },
     ],
-    [Address.toHex(factoryAddr), calldataHex, sigHex]
+    [Address.toHex(factoryAddr), calldataHex, sigHex],
   ) catch effect (e) => {
     throw new CryptoError({ operation: "erc6492.wrap", message: `ERC-6492 wrap failed: ${errorMessage(e)}`, cause: e })
   }
@@ -121,11 +120,15 @@ export effect function unwrapErc6492Signature(signature: HexType | string): Erc6
     [
       { type: "address", name: "factory" },
       { type: "bytes", name: "factoryCalldata" },
-      { type: "bytes", name: "signature" }
+      { type: "bytes", name: "signature" },
     ],
-    bodyHex
+    bodyHex,
   ) catch effect (e) => {
-    throw new CryptoError({ operation: "erc6492.unwrap", message: `ERC-6492 unwrap failed: ${errorMessage(e)}`, cause: e })
+    throw new CryptoError({
+      operation: "erc6492.unwrap",
+      message: `ERC-6492 unwrap failed: ${errorMessage(e)}`,
+      cause: e,
+    })
   }
   const factoryVal = decoded[0]
   const factoryAddr = Address.from(factoryVal as string | Uint8Array) catch effect (e) => {

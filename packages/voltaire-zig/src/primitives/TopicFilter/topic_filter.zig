@@ -364,39 +364,39 @@ test "isEmpty - topic at any position" {
 
 /// Serialize to JSON array
 pub fn toJson(filter: *const TopicFilter, allocator: std.mem.Allocator) ![]const u8 {
-    var list = std.ArrayList(u8).init(allocator);
-    errdefer list.deinit();
+    var list = std.ArrayList(u8){};
+    errdefer list.deinit(allocator);
 
-    try list.append('[');
+    try list.append(allocator, '[');
 
     for (0..filter.len) |i| {
-        if (i > 0) try list.append(',');
+        if (i > 0) try list.append(allocator, ',');
 
         const entry = &filter.entries[i];
         if (entry.count == 0) {
-            try list.appendSlice("null");
+            try list.appendSlice(allocator, "null");
         } else if (entry.count == 1) {
-            try list.append('"');
+            try list.append(allocator, '"');
             const hex = try Hash.toHex(&entry.hashes[0], allocator);
             defer allocator.free(hex);
-            try list.appendSlice(hex);
-            try list.append('"');
+            try list.appendSlice(allocator, hex);
+            try list.append(allocator, '"');
         } else {
-            try list.append('[');
+            try list.append(allocator, '[');
             for (0..entry.count) |j| {
-                if (j > 0) try list.append(',');
-                try list.append('"');
+                if (j > 0) try list.append(allocator, ',');
+                try list.append(allocator, '"');
                 const hex = try Hash.toHex(&entry.hashes[j], allocator);
                 defer allocator.free(hex);
-                try list.appendSlice(hex);
-                try list.append('"');
+                try list.appendSlice(allocator, hex);
+                try list.append(allocator, '"');
             }
-            try list.append(']');
+            try list.append(allocator, ']');
         }
     }
 
-    try list.append(']');
-    return list.toOwnedSlice();
+    try list.append(allocator, ']');
+    return list.toOwnedSlice(allocator);
 }
 
 test "toJson - empty filter" {

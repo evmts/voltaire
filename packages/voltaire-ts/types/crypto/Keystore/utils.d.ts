@@ -10,6 +10,7 @@ export function bytesToHex(bytes: Uint8Array): string;
  *
  * @param {string} hex - Hex string
  * @returns {Uint8Array} Bytes
+ * @throws {KeystoreError} If the hex digits are malformed
  */
 export function hexToBytes(hex: string): Uint8Array;
 /**

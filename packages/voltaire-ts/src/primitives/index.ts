@@ -18,8 +18,8 @@
  * ```
  */
 
-export { Abi } from "./Abi/Abi.js";
 export * as BrandedAbi from "./Abi/index.js";
+export { Abi } from "./Abi/index.js";
 export * as BrandedAccessList from "./AccessList/index.js";
 export { AccessList } from "./AccessList/index.js";
 // Core primitives
@@ -40,6 +40,7 @@ export * as BrandedBlob from "./Blob/index.js";
 export { Blob } from "./Blob/index.js";
 // Block types
 export * as Block from "./Block/index.js";
+export * as BlockAccessList from "./BlockAccessList/index.js";
 export * as BlockBody from "./BlockBody/index.js";
 export * as BlockFilter from "./BlockFilter/index.js";
 export * as BlockHash from "./BlockHash/index.js";
@@ -102,6 +103,7 @@ export * as ErrorSignature from "./ErrorSignature/index.js";
 export * as EventLog from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/index.js";
 export * as EventSignature from "./EventSignature/index.js";
+export * as ExecutionPayloadBid from "./ExecutionPayloadBid/index.js";
 // Errors
 export * from "./errors/index.js";
 export * as BrandedFeeMarket from "./FeeMarket/FeeMarket.js";

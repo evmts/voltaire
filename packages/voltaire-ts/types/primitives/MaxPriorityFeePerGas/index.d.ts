@@ -15,7 +15,7 @@ export declare function toNumber(priorityFee: bigint | number | string): number;
 export declare function toBigInt(priorityFee: bigint | number | string): bigint;
 export declare function equals(priorityFee1: bigint | number | string, priorityFee2: bigint | number | string): boolean;
 export declare function compare(priorityFee1: bigint | number | string, priorityFee2: bigint | number | string): number;
-export { _toGwei, _toWei, _toNumber, _toBigInt, _equals, _compare };
+export { _compare, _equals, _toBigInt, _toGwei, _toNumber, _toWei };
 export declare const MaxPriorityFeePerGas: {
     from: typeof from;
     fromGwei: typeof fromGwei;

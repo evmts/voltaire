@@ -1,7 +1,8 @@
+import { generateMnemonic as generateBip39Mnemonic } from "../Bip39/generateMnemonic.js";
 import { InvalidMnemonicError } from "./errors.js";
 
 /**
- * Generate BIP-39 mnemonic from entropy
+ * Generate BIP-39 mnemonic words from secure randomness.
  *
  * @param {128 | 256} [strength=128] - Entropy strength in bits
  * @returns {Promise<string[]>} Mnemonic words
@@ -16,44 +17,14 @@ export async function generateMnemonic(strength = 128) {
 		});
 	}
 
-	const { getLibwally } = await import("./ffi.js");
-	const libwally = await getLibwally();
-
-	const entropyLen = strength / 8;
-	const entropy = new Uint8Array(entropyLen);
-	// Cross-platform secure random fill
-	if (
-		typeof globalThis.crypto !== "undefined" &&
-		globalThis.crypto.getRandomValues
-	) {
-		globalThis.crypto.getRandomValues(entropy);
-	} else {
-		const nodeCrypto = await import("node:crypto");
-		if (nodeCrypto.webcrypto?.getRandomValues) {
-			nodeCrypto.webcrypto.getRandomValues(entropy);
-		} else {
-			const buf = nodeCrypto.randomBytes(entropyLen);
-			for (let i = 0; i < entropyLen; i++)
-				entropy[i] = /** @type {number} */ (buf[i]);
-		}
-	}
-
-	const outBuf = new Uint8Array(256);
-	const result = libwally.hdwallet_generate_mnemonic(
-		entropy,
-		entropyLen,
-		outBuf,
-		256,
-	);
-
-	if (result < 0) {
+	try {
+		return generateBip39Mnemonic(strength).split(" ");
+	} catch (error) {
 		throw new InvalidMnemonicError("Failed to generate mnemonic", {
 			code: -32000,
-			context: { strength, result },
+			context: { strength },
 			docsPath: "/crypto/hdwallet/generate-mnemonic#error-handling",
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
-
-	const mnemonicStr = new TextDecoder().decode(outBuf.slice(0, result));
-	return mnemonicStr.split(" ");
 }

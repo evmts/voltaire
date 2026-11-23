@@ -1,14 +1,25 @@
 const std = @import("std");
 const crypto = @import("crypto");
-const msmDiscount = @import("utils.zig").msmDiscount;
+const utils = @import("utils.zig");
 const PrecompileError = @import("common.zig").PrecompileError;
 const PrecompileResult = @import("common.zig").PrecompileResult;
 
-/// Gas costs for BLS12-381 G1 MSM
+/// Gas cost of one G1 multiplication (EIP-2537 `multiplication_cost`)
 pub const BASE_GAS: u64 = 12000;
-pub const MULTIPLIER: u64 = 50;
+/// Discount multiplier (EIP-2537 `multiplier`)
+pub const MULTIPLIER: u64 = utils.MSM_MULTIPLIER;
+/// Length of one (point, scalar) pair
+pub const PAIR_LEN: usize = 160;
 
-/// 0x0D: BLS12_G1MSM - BLS12-381 G1 multi-scalar multiplication
+/// EIP-2537 G1 MSM gas for `k` pairs: `k * 12000 * discount(k) / 1000`.
+pub fn gasCost(k: usize) u64 {
+    return utils.msmGas(k, BASE_GAS, &utils.G1_MSM_DISCOUNT);
+}
+
+/// 0x0C: BLS12_G1MSM - BLS12-381 G1 multi-scalar multiplication (EIP-2537)
+///
+/// Input: 160 * k bytes, k >= 1. Output: 128 bytes. Every point must be on
+/// the curve and in the order-r subgroup.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -18,15 +29,16 @@ pub fn execute(
         return error.InvalidInput;
     }
 
-    const k = input.len / 160;
-    const discount = msmDiscount(k);
-    const gas_cost = (BASE_GAS * k * discount) / 1000;
+    const k = input.len / PAIR_LEN;
+    const gas_cost = gasCost(k);
 
     if (gas_limit < gas_cost) {
         return error.OutOfGas;
     }
 
     const output = try allocator.alloc(u8, 128);
+    errdefer allocator.free(output);
+    @memset(output, 0);
     crypto.Crypto.bls12_381.g1Msm(input, output) catch {
         return error.InvalidPoint;
     };
@@ -49,8 +61,7 @@ test "bls12_g1_msm - gas cost with one pair" {
     // One point-scalar pair
     var input: [160]u8 = [_]u8{0} ** 160;
     const k: usize = 1;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -65,8 +76,7 @@ test "bls12_g1_msm - gas cost with two pairs" {
     // Two point-scalar pairs
     var input: [320]u8 = [_]u8{0} ** 320;
     const k: usize = 2;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -81,8 +91,7 @@ test "bls12_g1_msm - gas cost with four pairs" {
     // Four point-scalar pairs
     var input: [640]u8 = [_]u8{0} ** 640;
     const k: usize = 4;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -97,8 +106,7 @@ test "bls12_g1_msm - gas cost with eight pairs" {
     // Eight point-scalar pairs
     var input: [1280]u8 = [_]u8{0} ** 1280;
     const k: usize = 8;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -113,8 +121,7 @@ test "bls12_g1_msm - gas cost with sixteen pairs" {
     // Sixteen point-scalar pairs
     var input: [2560]u8 = [_]u8{0} ** 2560;
     const k: usize = 16;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -129,8 +136,7 @@ test "bls12_g1_msm - gas cost with thirty-two pairs" {
     // Thirty-two point-scalar pairs
     var input: [5120]u8 = [_]u8{0} ** 5120;
     const k: usize = 32;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -145,8 +151,7 @@ test "bls12_g1_msm - gas cost with sixty-four pairs" {
     // Sixty-four point-scalar pairs
     var input: [10240]u8 = [_]u8{0} ** 10240;
     const k: usize = 64;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -161,8 +166,7 @@ test "bls12_g1_msm - gas cost with one hundred twenty-eight pairs" {
     // One hundred twenty-eight point-scalar pairs
     var input: [20480]u8 = [_]u8{0} ** 20480;
     const k: usize = 128;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -172,24 +176,32 @@ test "bls12_g1_msm - gas cost with one hundred twenty-eight pairs" {
 }
 
 test "bls12_g1_msm - discount calculation validation" {
-    // Verify MSM discount tiers per EIP-2537
-    try testing.expectEqual(@as(u64, 1000), msmDiscount(1));
-    try testing.expectEqual(@as(u64, 820), msmDiscount(2));
-    try testing.expectEqual(@as(u64, 580), msmDiscount(4));
-    try testing.expectEqual(@as(u64, 430), msmDiscount(8));
-    try testing.expectEqual(@as(u64, 320), msmDiscount(16));
-    try testing.expectEqual(@as(u64, 250), msmDiscount(32));
-    try testing.expectEqual(@as(u64, 200), msmDiscount(64));
-    try testing.expectEqual(@as(u64, 174), msmDiscount(128));
+    // EIP-2537 G1 discount table, one entry per k
+    try testing.expectEqual(@as(u16, 1000), utils.G1_MSM_DISCOUNT[1 - 1]);
+    try testing.expectEqual(@as(u16, 949), utils.G1_MSM_DISCOUNT[2 - 1]);
+    try testing.expectEqual(@as(u16, 848), utils.G1_MSM_DISCOUNT[3 - 1]);
+    try testing.expectEqual(@as(u16, 797), utils.G1_MSM_DISCOUNT[4 - 1]);
+    try testing.expectEqual(@as(u16, 728), utils.G1_MSM_DISCOUNT[8 - 1]);
+    try testing.expectEqual(@as(u16, 677), utils.G1_MSM_DISCOUNT[16 - 1]);
+    try testing.expectEqual(@as(u16, 627), utils.G1_MSM_DISCOUNT[32 - 1]);
+    try testing.expectEqual(@as(u16, 576), utils.G1_MSM_DISCOUNT[64 - 1]);
+    try testing.expectEqual(@as(u16, 519), utils.G1_MSM_DISCOUNT[128 - 1]);
 
-    // Verify boundaries
-    try testing.expectEqual(@as(u64, 820), msmDiscount(3));
-    try testing.expectEqual(@as(u64, 580), msmDiscount(7));
-    try testing.expectEqual(@as(u64, 430), msmDiscount(15));
-    try testing.expectEqual(@as(u64, 320), msmDiscount(31));
-    try testing.expectEqual(@as(u64, 250), msmDiscount(63));
-    try testing.expectEqual(@as(u64, 200), msmDiscount(127));
-    try testing.expectEqual(@as(u64, 174), msmDiscount(256));
+    // Gas of the official EIP-2537 vectors
+    try testing.expectEqual(@as(u64, 0), gasCost(0));
+    try testing.expectEqual(@as(u64, 12000), gasCost(1));
+    try testing.expectEqual(@as(u64, 22776), gasCost(2));
+    try testing.expectEqual(@as(u64, 30528), gasCost(3));
+    try testing.expectEqual(@as(u64, 38256), gasCost(4));
+    try testing.expectEqual(@as(u64, 69888), gasCost(8));
+    try testing.expectEqual(@as(u64, 129984), gasCost(16));
+    try testing.expectEqual(@as(u64, 240768), gasCost(32));
+    try testing.expectEqual(@as(u64, 442368), gasCost(64));
+    try testing.expectEqual(@as(u64, 797184), gasCost(128));
+
+    // k > 128 uses max_discount = 519
+    try testing.expectEqual(@as(u64, 803412), gasCost(129));
+    try testing.expectEqual(@as(u64, 256 * 12000 * 519 / 1000), gasCost(256));
 }
 
 test "bls12_g1_msm - out of gas error" {
@@ -197,8 +209,7 @@ test "bls12_g1_msm - out of gas error" {
 
     var input: [160]u8 = [_]u8{0} ** 160;
     const k: usize = 1;
-    const discount = msmDiscount(k);
-    const required_gas = (BASE_GAS * k * discount) / 1000;
+    const required_gas = gasCost(k);
 
     const result = execute(allocator, &input, required_gas - 1);
     try testing.expectError(error.OutOfGas, result);
@@ -258,8 +269,7 @@ test "bls12_g1_msm - single point times scalar" {
     input[159] = 5; // scalar = 5
 
     const k: usize = 1;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -283,8 +293,7 @@ test "bls12_g1_msm - multiple points all at infinity" {
     // Four point-scalar pairs, all points at infinity
     var input: [640]u8 = [_]u8{0} ** 640;
     const k: usize = 4;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -323,8 +332,7 @@ test "bls12_g1_msm - multiple points with zero scalars" {
     // Second scalar remains 0
 
     const k: usize = 2;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = try execute(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -346,8 +354,7 @@ test "bls12_g1_msm - invalid point not on curve" {
     input[159] = 5; // scalar = 5
 
     const k: usize = 1;
-    const discount = msmDiscount(k);
-    const expected_gas = (BASE_GAS * k * discount) / 1000;
+    const expected_gas = gasCost(k);
 
     const result = execute(allocator, &input, expected_gas);
     try testing.expectError(error.InvalidPoint, result);
@@ -381,10 +388,10 @@ test "bls12_g1_msm - output size validation" {
 
 test "bls12_g1_msm - gas discount effect" {
     // Verify that gas cost per pair decreases with more pairs
-    const gas_1 = (BASE_GAS * 1 * msmDiscount(1)) / 1000;
-    const gas_2 = (BASE_GAS * 2 * msmDiscount(2)) / 1000;
-    const gas_4 = (BASE_GAS * 4 * msmDiscount(4)) / 1000;
-    const gas_8 = (BASE_GAS * 8 * msmDiscount(8)) / 1000;
+    const gas_1 = gasCost(1);
+    const gas_2 = gasCost(2);
+    const gas_4 = gasCost(4);
+    const gas_8 = gasCost(8);
 
     // Gas per pair should decrease as k increases
     const gas_per_pair_1 = gas_1 / 1;
@@ -395,4 +402,12 @@ test "bls12_g1_msm - gas discount effect" {
     try testing.expect(gas_per_pair_1 > gas_per_pair_2);
     try testing.expect(gas_per_pair_2 > gas_per_pair_4);
     try testing.expect(gas_per_pair_4 > gas_per_pair_8);
+}
+
+test "bls12_g1_msm - official EIP-2537 vectors" {
+    try utils.expectVectors(execute, @embedFile("vectors/eip2537_g1_msm.txt"), 30);
+}
+
+test "bls12_g1_msm - official EIP-2537 failure vectors" {
+    try utils.expectVectors(execute, @embedFile("vectors/eip2537_g1_msm_fail.txt"), 8);
 }

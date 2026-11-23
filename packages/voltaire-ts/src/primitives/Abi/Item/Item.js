@@ -16,10 +16,18 @@ import { isReceive } from "./isReceive.js";
  */
 
 // Static type guard methods
-export { isFunction, isEvent, isError, isConstructor, isFallback, isReceive };
-
 // Static utility methods
-export { format, formatWithArgs, getItem };
+export {
+	format,
+	formatWithArgs,
+	getItem,
+	isConstructor,
+	isError,
+	isEvent,
+	isFallback,
+	isFunction,
+	isReceive,
+};
 
 /**
  * Item "class" - a namespace object for ABI item operations

@@ -24,7 +24,23 @@ test "fuzz detectTransactionType" {
     const input = std.testing.fuzzInput(.{});
 
     // Should never panic on any input
-    const tx_type = transaction.detectTransactionType(input);
+    const tx_type = transaction.detectTransactionType(input) catch |err| {
+        // Only an RLP list prefix (0xc0..0xff) is legacy and only 0x01..0x04 are
+        // known typed envelopes; everything else, empty input included, is rejected
+        try std.testing.expectEqual(error.UnknownTransactionType, err);
+        if (input.len > 0) {
+            try std.testing.expect(input[0] == 0x00 or (input[0] >= 0x05 and input[0] <= 0xbf));
+        }
+        return;
+    };
+
+    // A detected type implies non-empty input with a matching first byte
+    try std.testing.expect(input.len > 0);
+    if (tx_type == TransactionType.legacy) {
+        try std.testing.expect(input[0] >= 0xc0);
+    } else {
+        try std.testing.expectEqual(@intFromEnum(tx_type), input[0]);
+    }
 
     // Should return one of the valid types
     try std.testing.expect(
@@ -34,11 +50,6 @@ test "fuzz detectTransactionType" {
             tx_type == TransactionType.eip4844 or
             tx_type == TransactionType.eip7702,
     );
-
-    // Empty input should return legacy
-    if (input.len == 0) {
-        try std.testing.expectEqual(TransactionType.legacy, tx_type);
-    }
 }
 
 // Test legacy transaction encoding with arbitrary values

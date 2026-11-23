@@ -18,7 +18,7 @@ import {
   multicall,
   namehash,
   TestProvider,
-  waitForTransactionReceipt
+  waitForTransactionReceipt,
 } from "./index.vibe"
 
 const VITALIK = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045" as const
@@ -32,8 +32,8 @@ const erc20Abi: Abi.Abi = [
     name: "balanceOf",
     stateMutability: "view",
     inputs: [{ name: "account", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }]
-  }
+    outputs: [{ name: "", type: "uint256" }],
+  },
 ]
 
 describe("provider", () => {
@@ -52,8 +52,8 @@ describe("provider", () => {
         gasUsed: "0x5208",
         timestamp: "0x67000000",
         baseFeePerGas: "0x2540be400", // 10 gwei
-        transactions: []
-      }
+        transactions: [],
+      },
     })
 
     provide provider {
@@ -62,7 +62,7 @@ describe("provider", () => {
         getBlockNumber(),
         getBalance(VITALIK),
         getBlock({ blockTag: "latest" }),
-        estimateFeesPerGas()
+        estimateFeesPerGas(),
       ]
       try Effect.try(() => assert.strictEqual(chainId, 1n))
       try Effect.try(() => assert.strictEqual(blockNumber, 5000n))
@@ -94,17 +94,17 @@ describe("provider", () => {
           contractAddress: null,
           logs: [],
           status: "0x1",
-          type: "0x2"
+          type: "0x2",
         }
       },
-      eth_blockNumber: () => (poll >= 3 ? "0x66" : "0x64") // 100 then 102 (3 confirmations)
+      eth_blockNumber: () => (poll >= 3 ? "0x66" : "0x64"), // 100 then 102 (3 confirmations)
     })
 
     provide provider {
       const fiber = fork waitForTransactionReceipt(TX_HASH, {
         confirmations: 3,
         pollingInterval: "500 millis",
-        timeout: "10 seconds"
+        timeout: "10 seconds",
       })
       try TestClock.adjust("500 millis")
       try TestClock.adjust("500 millis")
@@ -127,35 +127,38 @@ describe("provider", () => {
           name: "returnData",
           components: [
             { type: "bool", name: "success" },
-            { type: "bytes", name: "returnData" }
-          ]
-        }
+            { type: "bytes", name: "returnData" },
+          ],
+        },
       ],
       [
         [
           [true, balanceReturn],
-          [false, revertData]
-        ]
-      ]
+          [false, revertData],
+        ],
+      ],
     )
 
     const provider = TestProvider({
-      eth_call: aggregate3Output
+      eth_call: aggregate3Output,
     })
 
     provide provider {
       const results = try multicall([
         { address: TOKEN, abi: erc20Abi, functionName: "balanceOf", args: [VITALIK] },
-        { address: TOKEN, abi: erc20Abi, functionName: "balanceOf", args: [RESOLVER] }
+        { address: TOKEN, abi: erc20Abi, functionName: "balanceOf", args: [RESOLVER] },
       ])
       try Effect.try(() => assert.strictEqual(results.length, 2))
       const first = results[0]
       const second = results[1]
-      try Effect.try(() => assert.strictEqual(first !== undefined && first._tag === "Success" && first.result === 42000n, true))
+      try Effect.try(() =>
+        assert.strictEqual(first !== undefined && first._tag === "Success" && first.result === 42000n, true)
+      )
       try Effect.try(() =>
         assert.strictEqual(
-          second !== undefined && second._tag === "Failure" && Abi.formatRevertReason(second.reason) === "Reverted: Paused",
-          true
+          second !== undefined && second._tag === "Failure"
+            && Abi.formatRevertReason(second.reason) === "Reverted: Paused",
+          true,
         )
       )
     }
@@ -181,15 +184,19 @@ describe("provider", () => {
           return vitalikEncoded
         }
         return textEncoded
-      }
+      },
     })
 
     provide Layer.provide(EnsLive, provider) {
       const ens = try Ens
       const addrOpt = try ens.getAddress("vitalik.eth")
       const urlOpt = try ens.getText("vitalik.eth", "url")
-      try Effect.try(() => assert.strictEqual(Option.isSome(addrOpt) && String(Address.toHex(addrOpt.value)) === VITALIK, true))
-      try Effect.try(() => assert.strictEqual(Option.isSome(urlOpt) && urlOpt.value === "https://vitalik.eth.limo", true))
+      try Effect.try(() =>
+        assert.strictEqual(Option.isSome(addrOpt) && String(Address.toHex(addrOpt.value)) === VITALIK, true)
+      )
+      try Effect.try(() =>
+        assert.strictEqual(Option.isSome(urlOpt) && urlOpt.value === "https://vitalik.eth.limo", true)
+      )
     }
   })
 

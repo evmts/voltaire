@@ -15,8 +15,8 @@ import { fakeExponential } from "./fakeExponential.js";
 // ============================================================================
 
 describe("FeeMarket.Eip1559 Constants", () => {
-	it("has correct MIN_BASE_FEE", () => {
-		expect(FeeMarket.Eip1559.MIN_BASE_FEE).toBe(7n);
+	it("has no protocol minimum base fee constant", () => {
+		expect(FeeMarket.Eip1559).not.toHaveProperty("MIN_BASE_FEE");
 	});
 
 	it("has correct BASE_FEE_CHANGE_DENOMINATOR", () => {
@@ -72,9 +72,35 @@ describe("FeeMarket.BaseFee", () => {
 		expect(baseFee).toBe(1_000_000_000n);
 	});
 
-	it("keeps base fee unchanged for empty block", () => {
+	it("decreases base fee by 12.5% for empty block (EIP-1559 downward formula)", () => {
 		const baseFee = FeeMarket.BaseFee(0n, 30_000_000n, 1_000_000_000n);
-		expect(baseFee).toBe(1_000_000_000n);
+		expect(baseFee).toBe(875_000_000n);
+	});
+
+	it("decreases base fee every empty block, compounding", () => {
+		let baseFee = 1_000_000_000n;
+		for (let i = 0; i < 10; i++) {
+			const next = FeeMarket.BaseFee(0n, 30_000_000n, baseFee);
+			expect(next).toBe(baseFee - baseFee / 8n);
+			baseFee = next;
+		}
+		expect(baseFee).toBe(263_075_578n);
+	});
+
+	it("does not force a 1 wei minimum delta on downward updates", () => {
+		// 100 * 1 / 15M / 8 rounds to 0: unchanged
+		expect(FeeMarket.BaseFee(14_999_999n, 30_000_000n, 100n)).toBe(100n);
+		// 1e9 * 1 / 15M / 8 = 8 (not forced to anything else)
+		expect(FeeMarket.BaseFee(14_999_999n, 30_000_000n, 1_000_000_000n)).toBe(
+			999_999_992n,
+		);
+		// 8 wei, empty block: 8 / 8 = 1 -> 7
+		expect(FeeMarket.BaseFee(0n, 30_000_000n, 8n)).toBe(7n);
+	});
+
+	it("forces a 1 wei minimum delta on upward updates", () => {
+		// 1000 * 1 / 15M / 8 rounds to 0, forced to 1
+		expect(FeeMarket.BaseFee(15_000_001n, 30_000_000n, 1_000n)).toBe(1_001n);
 	});
 
 	it("increases base fee for full block", () => {
@@ -107,28 +133,20 @@ describe("FeeMarket.BaseFee", () => {
 		expect(baseFee).toBe(937_500_000n);
 	});
 
-	it("enforces minimum base fee", () => {
-		const baseFee = FeeMarket.BaseFee(
-			0n,
-			30_000_000n,
-			1n, // Below minimum
-		);
-		expect(baseFee).toBe(1n);
+	it.each([0n, 1n])("keeps a %s wei base fee at target", (baseFee) => {
+		expect(FeeMarket.BaseFee(15_000_000n, 30_000_000n, baseFee)).toBe(baseFee);
 	});
 
-	it("enforces minimum base fee on decrease", () => {
-		const baseFee = FeeMarket.BaseFee(
-			0n,
-			30_000_000n,
-			FeeMarket.Eip1559.MIN_BASE_FEE,
-		);
-		expect(baseFee).toBe(FeeMarket.Eip1559.MIN_BASE_FEE);
-	});
+	it.each([0n, 1n])(
+		"rounds the decrease on a %s wei base fee to zero",
+		(baseFee) => {
+			expect(FeeMarket.BaseFee(0n, 30_000_000n, baseFee)).toBe(baseFee);
+		},
+	);
 
 	it("handles very small base fee", () => {
-		const baseFee = FeeMarket.BaseFee(30_000_000n, 30_000_000n, 8n);
-		// Should still enforce minimum increase
-		expect(baseFee).toBeGreaterThan(8n);
+		expect(FeeMarket.BaseFee(30_000_000n, 30_000_000n, 0n)).toBe(1n);
+		expect(FeeMarket.BaseFee(30_000_000n, 30_000_000n, 1n)).toBe(2n);
 	});
 
 	it("handles maximum gas usage", () => {
@@ -1051,15 +1069,27 @@ describe("FeeMarket.validateState", () => {
 		expect(errors).toContain("gasUsed cannot exceed gasLimit");
 	});
 
-	it("detects baseFee below minimum", () => {
+	it.each([0n, 1n])("accepts a %s wei base fee", (baseFee) => {
+		expect(
+			FeeMarket.validateState({
+				gasUsed: 15_000_000n,
+				gasLimit: 30_000_000n,
+				baseFee,
+				excessBlobGas: 0n,
+				blobGasUsed: 0n,
+			}),
+		).toEqual([]);
+	});
+
+	it("detects negative baseFee", () => {
 		const errors = FeeMarket.validateState({
 			gasUsed: 15_000_000n,
 			gasLimit: 30_000_000n,
-			baseFee: 1n,
+			baseFee: -1n,
 			excessBlobGas: 0n,
 			blobGasUsed: 0n,
 		});
-		expect(errors).toContain("baseFee must be at least 7");
+		expect(errors).toContain("baseFee must be non-negative");
 	});
 
 	it("detects negative excessBlobGas", () => {
@@ -1173,6 +1203,41 @@ describe("FeeMarket.gweiToWei", () => {
 	it("truncates sub-wei precision", () => {
 		const wei = FeeMarket.gweiToWei(1.0000000001);
 		expect(wei).toBe(1_000_000_000n);
+	});
+
+	it.each([
+		[2.01, 2_010_000_000n],
+		[33.3, 33_300_000_000n],
+		[4.35, 4_350_000_000n],
+		[1.15, 1_150_000_000n],
+		[0.000000001, 1n],
+		[1.0000000009, 1_000_000_000n],
+		[1.9999999999999998, 1_999_999_999n],
+		[1e-9, 1n],
+		[1.5e-8, 15n],
+		[1e-10, 0n],
+		[1.5e2, 150_000_000_000n],
+		[1.5e21, 15n * 10n ** 29n],
+		[-2.01, -2_010_000_000n],
+		[-1.0000000009, -1_000_000_001n],
+		[-1e-10, -1n],
+		[-0, 0n],
+	])("converts %s gwei to %s wei", (gwei, wei) => {
+		expect(FeeMarket.gweiToWei(gwei)).toBe(wei);
+	});
+
+	it.each([NaN, Infinity, -Infinity, Number.MAX_VALUE, -Number.MAX_VALUE])(
+		"throws a RangeError for %s gwei",
+		(gwei) => {
+			expect(() => FeeMarket.gweiToWei(gwei)).toThrow(RangeError);
+		},
+	);
+
+	it("preserves numeric coercion for JavaScript callers", () => {
+		const convert = FeeMarket.gweiToWei as (gwei: unknown) => bigint;
+		expect(convert("2.01")).toBe(2_010_000_000n);
+		expect(() => convert("invalid")).toThrow(RangeError);
+		expect(() => convert(1n)).toThrow(TypeError);
 	});
 });
 

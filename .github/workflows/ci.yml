@@ -92,6 +92,32 @@ jobs:
       - name: Build for WASM
         run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
 
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Zig 0.15.2
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.2
+      - name: Test Rust crate (default features)
+        run: cargo test --manifest-path packages/voltaire-rs/Cargo.toml
+      # `cargo check` never links, so it cannot catch a missing or renamed
+      # libprimitives_c symbol. Build the C API and link and run the tests.
+      - name: Build libprimitives_c
+        run: zig build -Dwith-c-api=true -Doptimize=ReleaseFast
+      - name: Test Rust crate (native FFI bindings, links libprimitives_c)
+        env:
+          VOLTAIRE_LIB_DIR: ${{ github.workspace }}/zig-out/lib
+          LD_LIBRARY_PATH: ${{ github.workspace }}/zig-out/lib
+        run: |
+          test -f "$VOLTAIRE_LIB_DIR/libprimitives_c.a"
+          cargo test --manifest-path packages/voltaire-rs/Cargo.toml --features native
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -117,23 +143,19 @@ jobs:
         run: zig build -Doptimize=ReleaseFast -Dwith-c-api=false
       - name: Install Rust wasm32 target
         run: rustup target add wasm32-unknown-unknown
-      - name: Build WASM for TypeScript tests
-        run: |
-          zig build build-ts-wasm
-          zig build crypto-wasm
-      - name: Build fast WASM variant
-        run: zig build build-ts-wasm-fast
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'pnpm'
       - name: Install TypeScript dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build and stage WASM
+        run: pnpm --filter @tevm/zig build:wasm
       - name: Run typecheck
-        run: pnpm --filter @tevm/voltaire --filter @tevm/playground run typecheck
+        run: pnpm --filter @tevm/voltaire run typecheck
       - name: Run lint check
         run: pnpm -r run lint:check
       - name: Run format check
@@ -145,8 +167,18 @@ jobs:
         run: pnpm --filter @tevm/voltaire run build:dist
       - name: Build types
         run: pnpm --filter @tevm/voltaire run build:types
+      # Release waits on this workflow only, so voltaire-effect must be
+      # gated here, not just in voltaire-effect-ci.yml.
+      - name: Typecheck voltaire-effect
+        run: pnpm --filter voltaire-effect typecheck
+      - name: Test voltaire-effect
+        run: pnpm --filter voltaire-effect test:run
       - name: Run package validation
         run: pnpm --filter @tevm/voltaire run lint:package
+      - name: Build Effect distribution
+        run: pnpm --filter voltaire-effect build
+      - name: Verify workspace packaging
+        run: node scripts/verify-packaging.mjs --load
       - name: Run TypeScript tests with coverage
         run: pnpm --filter @tevm/voltaire run test:coverage
       # Native FFI tests disabled until libwally-core C API is fixed

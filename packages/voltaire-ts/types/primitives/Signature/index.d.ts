@@ -27,7 +27,7 @@ import { toHex } from "./toHex.js";
 import { toRpc } from "./toRpc.js";
 import { toTuple } from "./toTuple.js";
 import { verify } from "./verify.js";
-export { from, fromBytes, fromSecp256k1, fromP256, fromEd25519, fromCompact, fromDER, fromHex, fromRpc, fromTuple, toBytes, toCompact, toDER, toHex, toRpc, toTuple, getAlgorithm, getR, getS, getV, isCanonical, normalize, verify, is, isSignature, equals, };
+export { equals, from, fromBytes, fromCompact, fromDER, fromEd25519, fromHex, fromP256, fromRpc, fromSecp256k1, fromTuple, getAlgorithm, getR, getS, getV, is, isCanonical, isSignature, normalize, toBytes, toCompact, toDER, toHex, toRpc, toTuple, verify, };
 declare const Signature: {
     from: typeof from;
     fromBytes: typeof fromBytes;

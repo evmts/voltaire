@@ -29,8 +29,8 @@ export const ModExp: typeof modexp & {
     modexpBytes: typeof modexpBytes;
     calculateGas: typeof calculateGas;
 };
+import { calculateGas } from "./calculateGas.js";
 import { modexp } from "./compute.js";
 import { modexpBytes } from "./modexpBytes.js";
-import { calculateGas } from "./calculateGas.js";
-export { modexp, modexpBytes, calculateGas };
+export { calculateGas, modexp, modexpBytes };
 //# sourceMappingURL=ModExp.d.ts.map

@@ -1,6 +1,6 @@
 ---
-title: "includesAddress.js"
----
+
+## title: "includesAddress.js"
 
 # includesAddress.js
 
@@ -9,7 +9,10 @@ Check if address exists in access list.
 ## Signature
 
 ```typescript
-function includesAddress(list: BrandedAccessList, address: AddressType): boolean
+function includesAddress(
+	list: BrandedAccessList,
+	address: AddressType,
+): boolean;
 ```
 
 ## Parameters
@@ -27,7 +30,7 @@ function includesAddress(list: BrandedAccessList, address: AddressType): boolean
 const hasToken = AccessList.includesAddress(list, tokenAddress);
 
 if (!hasToken) {
-  list = list.withAddress(tokenAddress);
+	list = list.withAddress(tokenAddress);
 }
 ```
 

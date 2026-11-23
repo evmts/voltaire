@@ -1,6 +1,6 @@
 ---
-title: "isItem.js"
----
+
+## title: "isItem.js"
 
 # isItem.js
 
@@ -9,7 +9,7 @@ Type guard checking if value is valid AccessList.Item.
 ## Signature
 
 ```typescript
-function isItem(value: unknown): value is Item
+function isItem(value: unknown): value is Item;
 ```
 
 ## Parameters
@@ -26,9 +26,9 @@ function isItem(value: unknown): value is Item
 const item = { address: addr, storageKeys: [key] };
 
 if (AccessList.isItem(item)) {
-  // TypeScript knows item is Item
-  console.log(item.address);
-  console.log(item.storageKeys.length);
+	// TypeScript knows item is Item
+	console.log(item.address);
+	console.log(item.storageKeys.length);
 }
 ```
 

@@ -110,7 +110,7 @@ pub const TypedData = struct {
 
         // Hash the encoded message
         var message_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(self.message_encoded, &message_hash);
+        crypto.Keccak256.hash(self.message_encoded, &message_hash, .{});
 
         // Concatenate: "\x19\x01" || domainSeparator || messageHash
         var data: [2 + 32 + 32]u8 = undefined;
@@ -121,7 +121,7 @@ pub const TypedData = struct {
 
         // Hash the concatenated data
         var result: [32]u8 = undefined;
-        crypto.Keccak256.hash(&data, &result);
+        crypto.Keccak256.hash(&data, &result, .{});
         return result;
     }
 
@@ -138,7 +138,7 @@ pub const TypedData = struct {
 
         // Hash the encoded message
         var message_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(self.message_encoded, &message_hash);
+        crypto.Keccak256.hash(self.message_encoded, &message_hash, .{});
 
         // Concatenate: "\x19\x01" || domainSeparator || messageHash
         var result: [66]u8 = undefined;
@@ -195,7 +195,7 @@ pub fn hashTypedData(
 
     // Hash the concatenated data
     var result: [32]u8 = undefined;
-    crypto.Keccak256.hash(&data, &result);
+    crypto.Keccak256.hash(&data, &result, .{});
     return result;
 }
 
@@ -211,7 +211,7 @@ pub fn hashStruct(
     defer allocator.free(encoded);
 
     var result: [32]u8 = undefined;
-    crypto.Keccak256.hash(encoded, &result);
+    crypto.Keccak256.hash(encoded, &result, .{});
     return result;
 }
 
@@ -231,7 +231,7 @@ pub fn encodeData(
     defer allocator.free(type_string);
 
     var type_hash: [32]u8 = undefined;
-    crypto.Keccak256.hash(type_string, &type_hash);
+    crypto.Keccak256.hash(type_string, &type_hash, .{});
 
     // Get struct value
     const struct_val = switch (value) {
@@ -330,7 +330,7 @@ fn findTypeDependencies(
     type_name: []const u8,
     types: *const TypesMap,
     seen: *std.StringHashMapUnmanaged(void),
-) !void {
+) std.mem.Allocator.Error!void {
     // Skip if already seen
     if (seen.contains(type_name)) return;
     try seen.put(allocator, type_name, {});
@@ -357,13 +357,30 @@ fn getBaseType(type_str: []const u8) []const u8 {
     return type_str;
 }
 
+/// Errors returned while EIP-712 encoding a value
+pub const EncodeError = std.mem.Allocator.Error || error{
+    ExpectedAddress,
+    ExpectedArray,
+    ExpectedBool,
+    ExpectedBytes,
+    ExpectedFixedBytes,
+    ExpectedInt,
+    ExpectedString,
+    ExpectedStruct,
+    ExpectedUint,
+    InvalidType,
+    MissingField,
+    TypeNotFound,
+    UnknownType,
+};
+
 /// Encode a value according to its type
 pub fn encodeValue(
     allocator: std.mem.Allocator,
     type_str: []const u8,
     types: *const TypesMap,
     value: Value,
-) ![]u8 {
+) EncodeError![]u8 {
     // Handle string/bytes specially (need to hash)
     if (std.mem.eql(u8, type_str, "string")) {
         return try encodeStringValue(allocator, value);
@@ -397,7 +414,7 @@ fn encodeStringValue(allocator: std.mem.Allocator, value: Value) ![]u8 {
     };
 
     var hash: [32]u8 = undefined;
-    crypto.Keccak256.hash(str, &hash);
+    crypto.Keccak256.hash(str, &hash, .{});
 
     const result = try allocator.alloc(u8, 32);
     @memcpy(result, &hash);
@@ -412,7 +429,7 @@ fn encodeBytesValue(allocator: std.mem.Allocator, value: Value) ![]u8 {
     };
 
     var hash: [32]u8 = undefined;
-    crypto.Keccak256.hash(bytes, &hash);
+    crypto.Keccak256.hash(bytes, &hash, .{});
 
     const result = try allocator.alloc(u8, 32);
     @memcpy(result, &hash);
@@ -445,7 +462,7 @@ fn encodeArrayValue(
 
     // Hash the concatenated elements
     var hash: [32]u8 = undefined;
-    crypto.Keccak256.hash(encoded.items, &hash);
+    crypto.Keccak256.hash(encoded.items, &hash, .{});
 
     const result = try allocator.alloc(u8, 32);
     @memcpy(result, &hash);
@@ -455,6 +472,7 @@ fn encodeArrayValue(
 /// Encode atomic value (address, bool, uintN, intN, bytesN)
 fn encodeAtomicValue(allocator: std.mem.Allocator, type_str: []const u8, value: Value) ![]u8 {
     const result = try allocator.alloc(u8, 32);
+    errdefer allocator.free(result);
     @memset(result, 0);
 
     // Address: left-pad to 32 bytes
@@ -559,7 +577,7 @@ pub fn encodeType(primary_type: []const u8, fields: []const TypeField, allocator
 /// Hash a type string
 pub fn hashType(type_string: []const u8) [32]u8 {
     var result: [32]u8 = undefined;
-    crypto.Keccak256.hash(type_string, &result);
+    crypto.Keccak256.hash(type_string, &result, .{});
     return result;
 }
 
@@ -585,7 +603,7 @@ pub fn encodeBytes32(value: [32]u8) [32]u8 {
 /// Encode a string value (keccak256 hash)
 pub fn encodeString(value: []const u8) [32]u8 {
     var result: [32]u8 = undefined;
-    crypto.Keccak256.hash(value, &result);
+    crypto.Keccak256.hash(value, &result, .{});
     return result;
 }
 
@@ -826,7 +844,7 @@ test "encodeString: hashes string" {
 
     // Should be keccak256 of string
     var expected: [32]u8 = undefined;
-    crypto.Keccak256.hash(value, &expected);
+    crypto.Keccak256.hash(value, &expected, .{});
     try std.testing.expectEqualSlices(u8, &expected, &encoded);
 }
 
@@ -1024,7 +1042,7 @@ test "encodeValue: string" {
 
     // Should be keccak256("hello")
     var expected: [32]u8 = undefined;
-    crypto.Keccak256.hash("hello", &expected);
+    crypto.Keccak256.hash("hello", &expected, .{});
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 

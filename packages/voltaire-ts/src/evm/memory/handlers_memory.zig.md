@@ -20,6 +20,7 @@ The memory handlers implementation is **functionally correct** and well-document
 ### 1.1 ✅ All Opcodes Implemented
 
 All required memory opcodes are present and implemented:
+
 - ✅ MLOAD (0x51)
 - ✅ MSTORE (0x52)
 - ✅ MSTORE8 (0x53)
@@ -39,11 +40,13 @@ There are no explicit TODO comments in the code.
 ### 2.2 📝 Documentation Quality
 
 **Strengths:**
+
 - Each handler has a clear docstring
 - Helper functions are documented
 - Complex logic (MCOPY) has inline comments explaining edge cases
 
 **Potential Improvements:**
+
 - Could add gas cost documentation in docstrings (e.g., "/// MLOAD opcode (0x51) - Load word from memory (3 gas + memory expansion)")
 - Could document the Python reference equivalents for easier debugging
 
@@ -56,6 +59,7 @@ There are no explicit TODO comments in the code.
 **Issue:** Memory size updates are handled **inconsistently** across handlers.
 
 **MLOAD (Lines 33-38):**
+
 ```zig
 const end_bytes: u64 = @as(u64, off) + 32;
 const mem_cost = frame.memoryExpansionCost(end_bytes);
@@ -67,6 +71,7 @@ if (aligned_size_u32 > frame.memory_size) frame.memory_size = aligned_size_u32;
 ✅ Correctly updates `memory_size` **AFTER** gas is charged but **BEFORE** memory access.
 
 **MSTORE (Lines 59-70):**
+
 ```zig
 const end_bytes: u64 = @as(u64, off) + 32;
 const mem_cost = frame.memoryExpansionCost(end_bytes);
@@ -83,6 +88,7 @@ while (idx < 32) : (idx += 1) {
 ❌ **MISSING** explicit `memory_size` update. Relies on `frame.writeMemory()` to handle it.
 
 **MSTORE8 (Lines 75-85):**
+
 ```zig
 const end_bytes: u64 = @as(u64, off) + 1;
 const mem_cost = frame.memoryExpansionCost(end_bytes);
@@ -93,6 +99,7 @@ try frame.writeMemory(off, byte_value);  // ← writeMemory updates memory_size
 ❌ **MISSING** explicit `memory_size` update. Relies on `frame.writeMemory()`.
 
 **MCOPY (Lines 153-161):**
+
 ```zig
 const required_size = wordAlignedSize(max_memory_end);
 const required_size_u32 = std.math.cast(u32, required_size) orelse return error.OutOfBounds;
@@ -116,6 +123,7 @@ pub fn writeMemory(self: *Self, offset: u32, value: u8) !void {
 ```
 
 **Problem:** This is **WRONG** because:
+
 1. `writeMemory` updates `memory_size` **per byte**, not per 32-byte word
 2. For MSTORE (32 bytes), `memory_size` gets updated 32 times (once per byte write)
 3. Gas is already charged based on the final 32-byte expansion, but memory grows byte-by-byte
@@ -136,6 +144,7 @@ memory_write(evm.memory, start_position, value)
 ```
 
 **Recommendation:**
+
 1. ✅ Keep explicit `memory_size` update in all handlers (like MLOAD does)
 2. ❌ Remove implicit `memory_size` update from `writeMemory()` to avoid confusion
 3. OR: Add comment explaining why MSTORE/MSTORE8 rely on per-byte updates
@@ -149,6 +158,7 @@ memory_write(evm.memory, start_position, value)
 **Issue:** Zig code uses `GasFastestStep` and `GasQuickStep`, but Python reference uses `GAS_VERY_LOW` and `GAS_BASE`.
 
 **Python Reference (`execution-specs/.../cancun/vm/gas.py`):**
+
 ```python
 GAS_BASE = Uint(2)       # Used by MSIZE
 GAS_VERY_LOW = Uint(3)   # Used by MLOAD, MSTORE, MSTORE8, MCOPY
@@ -156,6 +166,7 @@ GAS_COPY = Uint(3)       # Used by MCOPY (per word)
 ```
 
 **Zig Implementation:**
+
 ```zig
 // MLOAD, MSTORE, MSTORE8, MCOPY base cost
 try frame.consumeGas(GasConstants.GasFastestStep + mem_cost);  // 3 gas
@@ -165,19 +176,23 @@ try frame.consumeGas(GasConstants.GasQuickStep);  // 2 gas
 ```
 
 **Mapping:**
-| Python Constant | Zig Constant | Value | Usage |
-|----------------|--------------|-------|-------|
-| `GAS_BASE` | `GasQuickStep` | 2 | MSIZE |
-| `GAS_VERY_LOW` | `GasFastestStep` | 3 | MLOAD, MSTORE, MSTORE8, MCOPY base |
-| `GAS_COPY` | Hardcoded `3` (line 19) | 3 | MCOPY per-word |
+
+| Python Constant | Zig Constant            | Value | Usage                              |
+| --------------- | ----------------------- | ----- | ---------------------------------- |
+| `GAS_BASE`      | `GasQuickStep`          | 2     | MSIZE                              |
+| `GAS_VERY_LOW`  | `GasFastestStep`        | 3     | MLOAD, MSTORE, MSTORE8, MCOPY base |
+| `GAS_COPY`      | Hardcoded `3` (line 19) | 3     | MCOPY per-word                     |
 
 **Issues:**
+
 1. **Semantic mismatch:** "GasFastestStep" suggests the cheapest operation, but it's actually MORE expensive than "GasQuickStep" (3 vs 2 gas)
 2. **Magic number:** MCOPY uses hardcoded `3` in `copyGasCost()` instead of a named constant
 3. **Maintainability:** If gas constants change in a future hardfork, the magic number won't update
 
 **Recommendation:**
+
 1. **Document the mapping** in a comment at the top of the file:
+
    ```zig
    /// Gas constants mapping:
    /// - GAS_BASE (2) = GasQuickStep (MSIZE)
@@ -185,6 +200,7 @@ try frame.consumeGas(GasConstants.GasQuickStep);  // 2 gas
    /// - GAS_COPY (3) = GasFastestStep (MCOPY per-word)
    ```
 2. **Replace magic number** in `copyGasCost()`:
+
    ```zig
    fn copyGasCost(size_bytes: u32) u64 {
        const words = (size_bytes + 31) / 32;
@@ -201,6 +217,7 @@ try frame.consumeGas(GasConstants.GasQuickStep);  // 2 gas
 **Issue:** MCOPY calculates total gas using saturating addition, but the intermediate `copy_cost` calculation could theoretically overflow before saturation is applied.
 
 **Lines 131-139:**
+
 ```zig
 const copy_cost: u64 = if (len <= std.math.maxInt(u32))
     copyGasCost(@intCast(len))
@@ -213,6 +230,7 @@ try frame.consumeGas(total_gas);
 ```
 
 **Analysis:**
+
 - If `len = maxInt(u32) = 4,294,967,295`, then `copyGasCost()` calculates:
   - `words = (4,294,967,295 + 31) / 32 = 134,217,728 words`
   - `cost = 134,217,728 * 3 = 402,653,184 gas` (fits in u64)
@@ -221,6 +239,7 @@ try frame.consumeGas(total_gas);
 **Verdict:** ✅ **NOT A BUG** - The code correctly handles overflow cases.
 
 **Minor Suggestion:** Add comment explaining the u32 threshold:
+
 ```zig
 // For copy cost, we need to handle len > u32::MAX specially
 // Maximum realistic gas: (maxInt(u32)/32) * 3 ≈ 400M gas (fits in u64)
@@ -252,6 +271,7 @@ else blk: {
 ```
 
 **Python Reference (`memory.py:147-169`):**
+
 ```python
 extend_memory = calculate_gas_extend_memory(
     evm.memory, [(source, length), (destination, length)]
@@ -259,6 +279,7 @@ extend_memory = calculate_gas_extend_memory(
 ```
 
 **Verdict:** ✅ **CORRECT** - Zig implementation properly:
+
 1. Handles zero-length copies (no memory expansion per EIP-5656)
 2. Calculates expansion for BOTH source and destination ranges
 3. Uses saturating arithmetic to prevent overflow
@@ -269,6 +290,7 @@ extend_memory = calculate_gas_extend_memory(
 ### 3.5 ⚠️ MCOPY Overlap Handling via Temporary Buffer
 
 **Lines 164-176:**
+
 ```zig
 // Copy via temporary buffer to handle overlapping regions
 const tmp = try frame.allocator.alloc(u8, len_u32);
@@ -287,17 +309,20 @@ while (i < len_u32) : (i += 1) {
 ```
 
 **Python Reference (`memory.py:173-174`):**
+
 ```python
 value = memory_read_bytes(evm.memory, source, length)
 memory_write(evm.memory, destination, value)
 ```
 
 **Analysis:**
+
 - ✅ Zig uses a temporary buffer to handle overlapping memory regions (correct per EIP-5656)
 - ✅ Python's `memory_read_bytes` returns a NEW Bytes object (immutable), so it also handles overlaps correctly
 - ✅ Arena allocator comment explains why no `defer` is needed
 
 **Potential Issue:** **Memory allocation failure** for large `len_u32` values.
+
 - If `len_u32 = 100MB`, allocator tries to allocate 100MB temp buffer
 - Gas was already charged (correctly), but allocation might fail with OOM
 - This should trigger an allocation error, which propagates as an error (correct behavior)
@@ -320,12 +345,14 @@ Looking at `execution-specs/.../vm/instructions/memory.py`, there's **NO** stati
 ### 3.7 ✅ PC Increment Timing
 
 All handlers correctly increment PC **after** the operation completes:
+
 ```zig
 // All handlers end with:
 frame.pc += 1;
 ```
 
 This matches Python's pattern:
+
 ```python
 # PROGRAM COUNTER
 evm.pc += Uint(1)
@@ -342,6 +369,7 @@ evm.pc += Uint(1)
 **Finding:** There are **NO unit tests** for any memory handler functions.
 
 **Search Results:**
+
 ```bash
 $ find . -name "*test*memory*.zig"
 # No results
@@ -353,6 +381,7 @@ $ grep -r "test.*mload\|test.*mstore" --include="*.zig"
 **Required Test Coverage:**
 
 #### 4.1.1 MLOAD Tests
+
 - [ ] Load from offset 0 (first word)
 - [ ] Load from offset 32 (second word)
 - [ ] Load from uninitialized memory (should return 0)
@@ -362,6 +391,7 @@ $ grep -r "test.*mload\|test.*mstore" --include="*.zig"
 - [ ] Gas cost verification (3 + expansion)
 
 #### 4.1.2 MSTORE Tests
+
 - [ ] Store to offset 0
 - [ ] Store to offset 32
 - [ ] Overwrite existing value
@@ -371,6 +401,7 @@ $ grep -r "test.*mload\|test.*mstore" --include="*.zig"
 - [ ] Gas cost verification
 
 #### 4.1.3 MSTORE8 Tests
+
 - [ ] Store single byte at offset 0
 - [ ] Store byte with value truncation (0x1234 → 0x34)
 - [ ] Store byte at end of word
@@ -378,6 +409,7 @@ $ grep -r "test.*mload\|test.*mstore" --include="*.zig"
 - [ ] Gas cost verification
 
 #### 4.1.4 MSIZE Tests
+
 - [ ] MSIZE returns 0 for pristine memory
 - [ ] MSIZE after MSTORE (should return 32)
 - [ ] MSIZE after multiple stores (should return highest aligned size)
@@ -385,6 +417,7 @@ $ grep -r "test.*mload\|test.*mstore" --include="*.zig"
 - [ ] Gas cost verification (2 gas, no expansion)
 
 #### 4.1.5 MCOPY Tests
+
 - [ ] Zero-length copy (gas charged, no operation)
 - [ ] Non-overlapping forward copy
 - [ ] Non-overlapping backward copy
@@ -398,12 +431,14 @@ $ grep -r "test.*mload\|test.*mstore" --include="*.zig"
 - [ ] Gas cost verification (base + copy + expansion)
 
 #### 4.1.6 Edge Cases
+
 - [ ] All operations with offset at u32 boundary
 - [ ] Memory expansion with quadratic cost verification
 - [ ] Gas exhaustion during memory expansion
 - [ ] Multiple operations on same frame (memory persistence)
 
 **Example Test Structure:**
+
 ```zig
 test "MLOAD: load from initialized memory" {
     const allocator = std.testing.allocator;
@@ -438,10 +473,12 @@ test "MLOAD: load from initialized memory" {
 **Finding:** The codebase relies on Ethereum spec tests (`ethereum/tests`) for validation.
 
 **Verification:**
+
 - `build.zig` includes spec test targets (e.g., `zig build specs-cancun-mcopy`)
 - `scripts/known-issues.json` references MCOPY spec tests
 
 **Issues:**
+
 1. Spec tests are **integration tests** - they test the entire EVM, not individual handlers
 2. If a spec test fails, it's hard to isolate whether the bug is in:
    - Memory handlers
@@ -464,6 +501,7 @@ test "MLOAD: load from initialized memory" {
 **Issue:** The code assumes `GasFastestStep = 3` and `GasQuickStep = 2`, but doesn't verify this at compile time.
 
 **Recommendation:** Add compile-time assertions in `handlers_memory.zig`:
+
 ```zig
 // Verify gas constants match Python reference
 comptime {
@@ -479,11 +517,13 @@ comptime {
 ### 5.2 ✅ Good: Helper Functions
 
 **Strengths:**
+
 - `add_u32()` provides safe addition with overflow checking
 - `wordAlignedSize()` centralizes word-alignment logic
 - `copyGasCost()` makes MCOPY gas calculation clear
 
 **Minor Improvement:** Add docstrings with examples:
+
 ```zig
 /// Helper function to calculate word-aligned size
 /// Examples: 0→0, 1→32, 32→32, 33→64
@@ -497,6 +537,7 @@ fn wordAlignedSize(byte_size: u64) u64 {
 ### 5.3 ✅ Good: Error Handling
 
 All handlers properly propagate errors:
+
 - Stack operations: `try frame.popStack()`, `try frame.pushStack()`
 - Memory operations: `try frame.writeMemory()`
 - Gas: `try frame.consumeGas()`
@@ -508,6 +549,7 @@ No silent failures via `catch {}` (per anti-patterns from CLAUDE.md).
 ### 5.4 ⚠️ MSIZE Comment Inaccuracy
 
 **Line 91 comment:**
+
 ```zig
 // Memory size is already tracked as word-aligned in memory_size field
 ```
@@ -522,6 +564,7 @@ if (word_aligned_size > self.memory_size) self.memory_size = word_aligned_size;
 So `memory_size` IS word-aligned (comment is correct), but it's updated incrementally during writes (comment doesn't explain this).
 
 **Better Comment:**
+
 ```zig
 // Memory size tracks the highest word-aligned size accessed
 // Updated incrementally by writeMemory() during MSTORE/MSTORE8
@@ -548,6 +591,7 @@ This correctly implements EIP-5656's Cancun activation.
 ### 5.6 ⚠️ Inconsistent Memory Expansion Patterns
 
 **MLOAD (lines 33-38):**
+
 ```zig
 const end_bytes: u64 = @as(u64, off) + 32;
 const mem_cost = frame.memoryExpansionCost(end_bytes);
@@ -558,6 +602,7 @@ if (aligned_size_u32 > frame.memory_size) frame.memory_size = aligned_size_u32;
 ```
 
 **MSTORE (lines 59-62):**
+
 ```zig
 const end_bytes: u64 = @as(u64, off) + 32;
 const mem_cost = frame.memoryExpansionCost(end_bytes);
@@ -566,6 +611,7 @@ try frame.consumeGas(GasConstants.GasFastestStep + mem_cost);
 ```
 
 **MCOPY (lines 153-161):**
+
 ```zig
 const max_memory_end = @max(src_end, dest_end);
 const required_size = wordAlignedSize(max_memory_end);
@@ -578,6 +624,7 @@ if (required_size_u32 > frame.memory_size) {
 **Issue:** Three different patterns for the same semantic operation (expand memory).
 
 **Recommendation:** Standardize with a helper:
+
 ```zig
 /// Expand memory to cover end_bytes, charge gas for expansion
 fn expandAndCharge(frame: *FrameType, end_bytes: u64, base_gas: u64) !void {
@@ -609,14 +656,14 @@ pub fn mload(frame: *FrameType) FrameType.EvmError!void {
 
 ### 6.1 Gas Costs Comparison
 
-| Operation | Python Gas | Zig Gas | Match? |
-|-----------|-----------|---------|--------|
-| MLOAD | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅ |
-| MSTORE | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅ |
-| MSTORE8 | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅ |
-| MSIZE | `GAS_BASE (2)` | `GasQuickStep (2)` | ✅ |
-| MCOPY base | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅ |
-| MCOPY per-word | `GAS_COPY (3)` | Hardcoded `3` | ⚠️ Should use constant |
+| Operation      | Python Gas         | Zig Gas              | Match?                 |
+| -------------- | ------------------ | -------------------- | ---------------------- |
+| MLOAD          | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅                     |
+| MSTORE         | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅                     |
+| MSTORE8        | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅                     |
+| MSIZE          | `GAS_BASE (2)`     | `GasQuickStep (2)`   | ✅                     |
+| MCOPY base     | `GAS_VERY_LOW (3)` | `GasFastestStep (3)` | ✅                     |
+| MCOPY per-word | `GAS_COPY (3)`     | Hardcoded `3`        | ⚠️ Should use constant |
 
 **Verdict:** Gas costs are **numerically correct** but naming differs.
 
@@ -624,15 +671,15 @@ pub fn mload(frame: *FrameType) FrameType.EvmError!void {
 
 ### 6.2 Semantic Comparison
 
-| Aspect | Python | Zig | Match? |
-|--------|--------|-----|--------|
-| Stack pop order | `start_position, value` (MSTORE) | `offset, value` | ✅ |
-| Gas charge timing | Before operation | Before operation | ✅ |
-| Memory expansion | Before write | Before write (via `memoryExpansionCost`) | ✅ |
-| PC increment | After operation | After operation | ✅ |
-| MCOPY overlap handling | Immutable read → write | Temp buffer → write | ✅ (equivalent) |
-| MCOPY zero-length | No expansion | No expansion | ✅ |
-| Hardfork guard (MCOPY) | File in `cancun/` dir | `isBefore(.CANCUN)` | ✅ |
+| Aspect                 | Python                           | Zig                                      | Match?          |
+| ---------------------- | -------------------------------- | ---------------------------------------- | --------------- |
+| Stack pop order        | `start_position, value` (MSTORE) | `offset, value`                          | ✅              |
+| Gas charge timing      | Before operation                 | Before operation                         | ✅              |
+| Memory expansion       | Before write                     | Before write (via `memoryExpansionCost`) | ✅              |
+| PC increment           | After operation                  | After operation                          | ✅              |
+| MCOPY overlap handling | Immutable read → write           | Temp buffer → write                      | ✅ (equivalent) |
+| MCOPY zero-length      | No expansion                     | No expansion                             | ✅              |
+| Hardfork guard (MCOPY) | File in `cancun/` dir            | `isBefore(.CANCUN)`                      | ✅              |
 
 **Verdict:** Semantic behavior is **fully compatible** with Python reference.
 
@@ -883,6 +930,7 @@ test "Memory expansion gas: quadratic cost" {
 ## 9. Summary
 
 **Strengths:**
+
 - ✅ All memory opcodes implemented correctly
 - ✅ Proper gas metering and memory expansion
 - ✅ Correct hardfork guards (MCOPY)
@@ -891,6 +939,7 @@ test "Memory expansion gas: quadratic cost" {
 - ✅ Semantically matches Python reference
 
 **Weaknesses:**
+
 - ❌ No unit tests (HIGH PRIORITY)
 - ⚠️ Inconsistent memory size tracking patterns (MEDIUM PRIORITY)
 - ⚠️ Gas constant naming differs from Python reference
@@ -898,6 +947,7 @@ test "Memory expansion gas: quadratic cost" {
 - ⚠️ Missing documentation for gas constant mapping
 
 **Action Items:**
+
 1. Add comprehensive unit tests (§8.1)
 2. Standardize memory expansion helper (§7.1.2)
 3. Document memory size update semantics (§7.1.3)
@@ -911,14 +961,17 @@ test "Memory expansion gas: quadratic cost" {
 ## Appendix A: File References
 
 **Python Reference (Authoritative):**
+
 - `/Users/williamcory/guillotine-mini/execution-specs/src/ethereum/forks/cancun/vm/instructions/memory.py`
 - `/Users/williamcory/guillotine-mini/execution-specs/src/ethereum/forks/cancun/vm/gas.py`
 
 **Zig Implementation:**
+
 - `/Users/williamcory/guillotine-mini/src/instructions/handlers_memory.zig` (this file)
 - `/Users/williamcory/guillotine-mini/src/frame.zig` (Frame struct, memory management)
 
 **Related Reviews:**
+
 - `/Users/williamcory/guillotine-mini/src/instructions/handlers_control_flow.zig.md`
 - `/Users/williamcory/guillotine-mini/src/instructions/handlers_block.zig.md`
 - `/Users/williamcory/guillotine-mini/src/instructions/handlers_arithmetic.zig.md`
@@ -928,6 +981,7 @@ test "Memory expansion gas: quadratic cost" {
 ## Appendix B: Gas Constant Values
 
 **From `execution-specs/.../cancun/vm/gas.py`:**
+
 ```python
 GAS_BASE = Uint(2)
 GAS_VERY_LOW = Uint(3)
@@ -935,6 +989,7 @@ GAS_COPY = Uint(3)
 ```
 
 **Expected Zig Mapping:**
+
 ```zig
 GasConstants.GasQuickStep = 2       // Maps to GAS_BASE
 GasConstants.GasFastestStep = 3     // Maps to GAS_VERY_LOW and GAS_COPY

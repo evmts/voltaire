@@ -1,6 +1,6 @@
 ---
-title: "pushBytes.js"
----
+
+## title: "pushBytes.js"
 
 # pushBytes.js
 
@@ -9,7 +9,7 @@ Get number of bytes pushed by PUSH instruction.
 ## Signature
 
 ```typescript
-function pushBytes(opcode: BrandedOpcode): number | undefined
+function pushBytes(opcode: BrandedOpcode): number | undefined;
 ```
 
 ## Parameters
@@ -23,11 +23,11 @@ function pushBytes(opcode: BrandedOpcode): number | undefined
 ## Example
 
 ```typescript
-Opcode.pushBytes(Opcode.PUSH0);   // 0
-Opcode.pushBytes(Opcode.PUSH1);   // 1
-Opcode.pushBytes(Opcode.PUSH2);   // 2
-Opcode.pushBytes(Opcode.PUSH32);  // 32
-Opcode.pushBytes(Opcode.ADD);     // undefined
+Opcode.pushBytes(Opcode.PUSH0); // 0
+Opcode.pushBytes(Opcode.PUSH1); // 1
+Opcode.pushBytes(Opcode.PUSH2); // 2
+Opcode.pushBytes(Opcode.PUSH32); // 32
+Opcode.pushBytes(Opcode.ADD); // undefined
 ```
 
 ## Notes

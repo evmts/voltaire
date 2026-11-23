@@ -98,6 +98,13 @@ pub fn from(value: anytype) !Bundler {
         return value;
     }
 
+    if (@typeInfo(T) == .pointer and @typeInfo(T).pointer.size == .one) {
+        const Child = @typeInfo(T).pointer.child;
+        if (@typeInfo(Child) == .array and @typeInfo(Child).array.child == u8) {
+            return from(@as([]const u8, value[0..]));
+        }
+    }
+
     if (T == []const u8 or T == []u8) {
         // Try as hex first
         if (value.len >= 40) {

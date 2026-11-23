@@ -2,7 +2,7 @@
 
 Core Ethereum primitives, cryptography, precompiles, and execution components written in Zig 0.15.
 
-Voltaire's Zig core serves both as a standalone Zig package and as the native/WASM foundation for the TypeScript, Rust, Go, Python, Swift, and C bindings in the Voltaire monorepo. Every type has an explicit byte layout, explicit allocator ownership, and compile-time validation where inputs are static.
+Voltaire's Zig core (published to npm as `@tevm/zig`) serves both as a standalone Zig package and as the native/WASM foundation for the TypeScript, Rust, Go, Python, Swift, and C bindings in the Voltaire monorepo. Every type has an explicit byte layout, explicit allocator ownership, and compile-time validation where inputs are static.
 
 ## Architecture
 

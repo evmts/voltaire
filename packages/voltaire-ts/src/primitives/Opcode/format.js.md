@@ -1,6 +1,6 @@
 ---
-title: "format.js"
----
+
+## title: "format.js"
 
 # format.js
 
@@ -9,7 +9,7 @@ Format instruction to human-readable string.
 ## Signature
 
 ```typescript
-function format(instruction: Instruction): string
+function format(instruction: Instruction): string;
 ```
 
 ## Parameters
@@ -24,17 +24,17 @@ function format(instruction: Instruction): string
 
 ```typescript
 const inst1 = {
-  offset: 0,
-  opcode: Opcode.PUSH1,
-  immediate: new Uint8Array([0x42])
+	offset: 0,
+	opcode: Opcode.PUSH1,
+	immediate: new Uint8Array([0x42]),
 };
-Opcode.format(inst1);  // "0x0000: PUSH1 0x42"
+Opcode.format(inst1); // "0x0000: PUSH1 0x42"
 
 const inst2 = {
-  offset: 4,
-  opcode: Opcode.ADD
+	offset: 4,
+	opcode: Opcode.ADD,
 };
-Opcode.format(inst2);  // "0x0004: ADD"
+Opcode.format(inst2); // "0x0004: ADD"
 ```
 
 ## Notes

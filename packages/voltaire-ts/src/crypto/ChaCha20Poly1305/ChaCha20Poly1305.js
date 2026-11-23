@@ -10,7 +10,7 @@ import { generateKey } from "./generateKey.js";
 import { generateNonce } from "./generateNonce.js";
 
 // Export individual functions
-export { generateKey, encrypt, decrypt, generateNonce };
+export { decrypt, encrypt, generateKey, generateNonce };
 
 /**
  * ChaCha20-Poly1305 Authenticated Encryption (RFC 8439)

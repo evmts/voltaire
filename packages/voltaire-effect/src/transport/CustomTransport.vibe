@@ -1,17 +1,11 @@
 // Custom EIP-1193 provider adapter Transport (for browser wallets, MetaMask, Hardhat/Anvil, etc.).
 
-import {
-  errorMessage,
-  RpcError,
-  type RpcTransportError,
-  TransportError,
-  TransportFailureReason
-} from "../errors.vibe"
+import { errorMessage, RpcError, type RpcTransportError, TransportError, TransportFailureReason } from "../errors.vibe"
 import {
   type JsonRpcBatchItemResult,
   JsonRpcBatchItemResult as BatchResult,
   type JsonRpcCall,
-  Transport
+  Transport,
 } from "./Transport.vibe"
 
 export interface Eip1193Provider {
@@ -26,14 +20,14 @@ function mapProviderError(cause: unknown, method: string): RpcTransportError {
       message: rec.message ?? errorMessage(cause),
       method,
       data: rec.data,
-      cause
+      cause,
     })
   }
   return new TransportError({
     message: `EIP-1193 request "${method}" failed: ${errorMessage(cause)}`,
     reason: TransportFailureReason.Network({ cause }),
     method,
-    cause
+    cause,
   })
 }
 
@@ -42,7 +36,7 @@ export function CustomTransport(provider: Eip1193Provider) {
     effect request<T = unknown>(method: string, params?: ReadonlyArray<unknown>): T!RpcTransportError {
       const result = try tryPromise({
         try: () => provider.request({ method, params: params ?? [] }),
-        catch: (cause) => mapProviderError(cause, method)
+        catch: (cause) => mapProviderError(cause, method),
       })
       return result as T
     },
@@ -51,7 +45,7 @@ export function CustomTransport(provider: Eip1193Provider) {
       const effects = requests.map<unknown!RpcTransportError>((req) =>
         tryPromise({
           try: () => provider.request({ method: req.method, params: req.params ?? [] }),
-          catch: (cause) => mapProviderError(cause, req.method)
+          catch: (cause) => mapProviderError(cause, req.method),
         })
       )
       const settled = try.allSettled effects
@@ -73,14 +67,14 @@ export function CustomTransport(provider: Eip1193Provider) {
                 error: new RpcError({
                   code: -32603,
                   message: Option.isSome(errOpt) ? errOpt.value.message : "Provider batch item failed",
-                  method: req?.method
-                })
-              })
+                  method: req?.method,
+                }),
+              }),
             )
           }
         }
       }
       return results
-    }
+    },
   })
 }

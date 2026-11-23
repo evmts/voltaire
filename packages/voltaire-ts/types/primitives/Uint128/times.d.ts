@@ -1,6 +1,9 @@
 /**
  * Multiply Uint128 value with wrapping
  *
+ * Overflow mode: wrapping. `timesWrapping` is the explicit name for this behavior
+ * and `timesChecked` throws instead of wrapping. Both exist on every Uint size.
+ *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
  * @param {import('./Uint128Type.js').Uint128Type} uint - First operand

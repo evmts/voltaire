@@ -71,7 +71,7 @@ pub fn unauditedBlake2bG(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x:
 /// This function implements BLAKE2b compression rounds without security review.
 /// Use at your own risk in production systems.
 pub fn unauditedBlake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) void {
-    const s = &BLAKE2B_SIGMA[round % 12];
+    const s = &BLAKE2B_SIGMA[round % 10];
 
     // Column mixing
     unauditedBlake2bG(v, 0, 4, 8, 12, message[s[0]], message[s[1]]);
@@ -86,7 +86,7 @@ pub fn unauditedBlake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) v
     unauditedBlake2bG(v, 3, 4, 9, 14, message[s[14]], message[s[15]]);
 }
 
-test "blake2b round schedule cycles every twelve permutations" {
+test "blake2b round schedule cycles every ten permutations" {
     const base_v = [16]u64{
         0x0123456789abcdef,
         0xfedcba9876543210,
@@ -125,16 +125,16 @@ test "blake2b round schedule cycles every twelve permutations" {
     };
 
     var round_0 = base_v;
-    var round_12 = base_v;
+    var round_10 = base_v;
     unauditedBlake2bRound(&round_0, &message, 0);
-    unauditedBlake2bRound(&round_12, &message, 12);
-    try std.testing.expectEqualSlices(u64, &round_0, &round_12);
+    unauditedBlake2bRound(&round_10, &message, 10);
+    try std.testing.expectEqualSlices(u64, &round_0, &round_10);
 
-    var round_1 = base_v;
-    var round_13 = base_v;
-    unauditedBlake2bRound(&round_1, &message, 1);
-    unauditedBlake2bRound(&round_13, &message, 13);
-    try std.testing.expectEqualSlices(u64, &round_1, &round_13);
+    var round_2 = base_v;
+    var round_12 = base_v;
+    unauditedBlake2bRound(&round_2, &message, 2);
+    unauditedBlake2bRound(&round_12, &message, 12);
+    try std.testing.expectEqualSlices(u64, &round_2, &round_12);
 }
 
 /// BLAKE2b compression function
@@ -588,11 +588,20 @@ test "blake2b compression - message schedule verification" {
 }
 
 // EIP-152 Test Vectors from https://eips.ethereum.org/EIPS/eip-152
+// EIP-152 wire format encodes each 64-bit state word in little-endian byte order,
+// so 8-byte hex chunks from the EIP-152 spec are byte-swapped into host u64 words.
+fn eip152Words(raw_be_hex: [8]u64) [8]u64 {
+    var out: [8]u64 = undefined;
+    for (raw_be_hex, 0..) |w, i| {
+        out[i] = @byteSwap(w);
+    }
+    return out;
+}
 
 test "EIP-152 test vector 4 - zero rounds" {
     // Test vector 4: zero rounds compression
     // Input: rounds=0, final=true, t=3
-    var h = [8]u64{
+    var h = eip152Words(.{
         0x48c9bdf267e6096a,
         0x3ba7ca8485ae67bb,
         0x2bf894fe72f36e3c,
@@ -601,7 +610,7 @@ test "EIP-152 test vector 4 - zero rounds" {
         0x1f6c3e2b8c68059b,
         0x6bbd41fbabd9831f,
         0x79217e1319cde05b,
-    };
+    });
 
     var m = [_]u64{0} ** 16;
     // "abc" message: 0x616263
@@ -612,7 +621,7 @@ test "EIP-152 test vector 4 - zero rounds" {
     unauditedBlake2fCompress(&h, &m, t, true, 0);
 
     // Expected output from EIP-152
-    const expected = [8]u64{
+    const expected = eip152Words(.{
         0x08c9bcf367e6096a,
         0x3ba7ca8485ae67bb,
         0x2bf894fe72f36e3c,
@@ -621,7 +630,7 @@ test "EIP-152 test vector 4 - zero rounds" {
         0x1f6c3e2b8c68059b,
         0x9442be0454267ce0,
         0x79217e1319cde05b,
-    };
+    });
 
     for (0..8) |i| {
         try std.testing.expectEqual(expected[i], h[i]);
@@ -631,7 +640,7 @@ test "EIP-152 test vector 4 - zero rounds" {
 test "EIP-152 test vector 5 - RFC 7693 Appendix A 'abc' with 12 rounds" {
     // Test vector 5: "abc" with 12 rounds (standard BLAKE2b)
     // This is the test vector from RFC 7693 Appendix A
-    var h = [8]u64{
+    var h = eip152Words(.{
         0x48c9bdf267e6096a,
         0x3ba7ca8485ae67bb,
         0x2bf894fe72f36e3c,
@@ -640,7 +649,7 @@ test "EIP-152 test vector 5 - RFC 7693 Appendix A 'abc' with 12 rounds" {
         0x1f6c3e2b8c68059b,
         0x6bbd41fbabd9831f,
         0x79217e1319cde05b,
-    };
+    });
 
     var m = [_]u64{0} ** 16;
     // "abc" message: 0x616263
@@ -651,7 +660,7 @@ test "EIP-152 test vector 5 - RFC 7693 Appendix A 'abc' with 12 rounds" {
     unauditedBlake2fCompress(&h, &m, t, true, 12);
 
     // Expected output from EIP-152 and RFC 7693
-    const expected = [8]u64{
+    const expected = eip152Words(.{
         0xba80a53f981c4d0d,
         0x6a2797b69f12f6e9,
         0x4c212f14685ac4b7,
@@ -660,7 +669,7 @@ test "EIP-152 test vector 5 - RFC 7693 Appendix A 'abc' with 12 rounds" {
         0xc252d5de4533cc95,
         0x18d38aa8dbf1925a,
         0xb92386edd4009923,
-    };
+    });
 
     for (0..8) |i| {
         try std.testing.expectEqual(expected[i], h[i]);
@@ -669,7 +678,7 @@ test "EIP-152 test vector 5 - RFC 7693 Appendix A 'abc' with 12 rounds" {
 
 test "EIP-152 test vector 6 - non-final block" {
     // Test vector 6: "abc" with 12 rounds, non-final block (f=false)
-    var h = [8]u64{
+    var h = eip152Words(.{
         0x48c9bdf267e6096a,
         0x3ba7ca8485ae67bb,
         0x2bf894fe72f36e3c,
@@ -678,7 +687,7 @@ test "EIP-152 test vector 6 - non-final block" {
         0x1f6c3e2b8c68059b,
         0x6bbd41fbabd9831f,
         0x79217e1319cde05b,
-    };
+    });
 
     var m = [_]u64{0} ** 16;
     // "abc" message: 0x616263
@@ -689,7 +698,7 @@ test "EIP-152 test vector 6 - non-final block" {
     unauditedBlake2fCompress(&h, &m, t, false, 12);
 
     // Expected output from EIP-152
-    const expected = [8]u64{
+    const expected = eip152Words(.{
         0x75ab69d3190a562c,
         0x51aef8d88f1c2775,
         0x876944407270c42c,
@@ -698,7 +707,7 @@ test "EIP-152 test vector 6 - non-final block" {
         0xd3e8d226039cd31b,
         0x4e426ac4f2d3d666,
         0xa610c2116fde4735,
-    };
+    });
 
     for (0..8) |i| {
         try std.testing.expectEqual(expected[i], h[i]);
@@ -707,7 +716,7 @@ test "EIP-152 test vector 6 - non-final block" {
 
 test "EIP-152 test vector 7 - single round" {
     // Test vector 7: "abc" with 1 round
-    var h = [8]u64{
+    var h = eip152Words(.{
         0x48c9bdf267e6096a,
         0x3ba7ca8485ae67bb,
         0x2bf894fe72f36e3c,
@@ -716,7 +725,7 @@ test "EIP-152 test vector 7 - single round" {
         0x1f6c3e2b8c68059b,
         0x6bbd41fbabd9831f,
         0x79217e1319cde05b,
-    };
+    });
 
     var m = [_]u64{0} ** 16;
     // "abc" message: 0x616263
@@ -727,7 +736,7 @@ test "EIP-152 test vector 7 - single round" {
     unauditedBlake2fCompress(&h, &m, t, true, 1);
 
     // Expected output from EIP-152
-    const expected = [8]u64{
+    const expected = eip152Words(.{
         0xb63a380cb2897d52,
         0x1994a85234ee2c18,
         0x1b5f844d2c624c00,
@@ -736,7 +745,7 @@ test "EIP-152 test vector 7 - single round" {
         0xf2f7e08993d53923,
         0xde3d64fcc68c034e,
         0x717b9293fed7a421,
-    };
+    });
 
     for (0..8) |i| {
         try std.testing.expectEqual(expected[i], h[i]);
@@ -744,8 +753,12 @@ test "EIP-152 test vector 7 - single round" {
 }
 
 test "EIP-152 test vector 8 - maximum rounds" {
+    // 4,294,967,295 rounds takes ~20s in optimized builds (verified in ReleaseSafe/ReleaseFast/ReleaseSmall CI)
+    // but 20+ minutes in unoptimized Debug builds.
+    if (@import("builtin").mode == .Debug) return error.SkipZigTest;
+
     // Test vector 8: "abc" with maximum rounds (0xffffffff = 4294967295)
-    var h = [8]u64{
+    var h = eip152Words(.{
         0x48c9bdf267e6096a,
         0x3ba7ca8485ae67bb,
         0x2bf894fe72f36e3c,
@@ -754,7 +767,7 @@ test "EIP-152 test vector 8 - maximum rounds" {
         0x1f6c3e2b8c68059b,
         0x6bbd41fbabd9831f,
         0x79217e1319cde05b,
-    };
+    });
 
     var m = [_]u64{0} ** 16;
     // "abc" message: 0x616263
@@ -765,7 +778,7 @@ test "EIP-152 test vector 8 - maximum rounds" {
     unauditedBlake2fCompress(&h, &m, t, true, 0xffffffff);
 
     // Expected output from EIP-152
-    const expected = [8]u64{
+    const expected = eip152Words(.{
         0xfc59093aafa9ab43,
         0xdaae0e914c57635c,
         0x5402d8e3d2130eb9,
@@ -774,7 +787,7 @@ test "EIP-152 test vector 8 - maximum rounds" {
         0x419e200e01846e6b,
         0x5df8cc7703041bbc,
         0xeb571de6631d2615,
-    };
+    });
 
     for (0..8) |i| {
         try std.testing.expectEqual(expected[i], h[i]);
@@ -851,6 +864,20 @@ test "blake2b compression - offset counter combinations" {
 
 /// Wrapper API for precompile usage
 pub const Blake2 = struct {
+    /// BLAKE2b with digest length `output.len` (1..=64 bytes). The length is
+    /// mixed into the parameter block (h[0] ^= 0x01010000 ^ nn per RFC 7693),
+    /// so BLAKE2b-256 is not a truncated BLAKE2b-512.
+    pub fn hashVariable(input: []const u8, output: []u8) error{InvalidOutputLength}!void {
+        switch (output.len) {
+            inline 1...64 => |n| {
+                var buf: [n]u8 = undefined;
+                std.crypto.hash.blake2.Blake2b(n * 8).hash(input, &buf, .{});
+                @memcpy(output, &buf);
+            },
+            else => return error.InvalidOutputLength,
+        }
+    }
+
     /// EIP-152 Blake2f compression function wrapper
     /// Input format: rounds(4)||h(64)||m(128)||t(16)||f(1) = 213 bytes total
     /// Output format: h(64) = 64 bytes
@@ -991,7 +1018,7 @@ test "Blake2.compress wrapper - EIP-152 format" {
     };
     for (0..8) |i| {
         const offset = 4 + i * 8;
-        std.mem.writeInt(u64, input[offset .. offset + 8], h_init[i], .little);
+        std.mem.writeInt(u64, input[offset..][0..8], h_init[i], .little);
     }
 
     // m = all zeros (little-endian)
@@ -1224,4 +1251,32 @@ test "blake2b compression - security property avalanche effect" {
     }
     // Expect at least 50% of words to differ
     try std.testing.expect(differences >= 4);
+}
+
+test "Blake2.hashVariable encodes digest length in the parameter block" {
+    var out32: [32]u8 = undefined;
+    try Blake2.hashVariable("", &out32);
+    var expected32: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected32, "0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8");
+    try std.testing.expectEqualSlices(u8, &expected32, &out32);
+
+    var out64: [64]u8 = undefined;
+    try Blake2.hashVariable("", &out64);
+    var expected64: [64]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected64, "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce");
+    try std.testing.expectEqualSlices(u8, &expected64, &out64);
+    // 32-byte digest must differ from the truncated 64-byte digest.
+    try std.testing.expect(!std.mem.eql(u8, &out32, out64[0..32]));
+
+    // Every length is its own digest, not a prefix of another.
+    var out31: [31]u8 = undefined;
+    try Blake2.hashVariable("abc", &out31);
+    var out33: [33]u8 = undefined;
+    try Blake2.hashVariable("abc", &out33);
+    try std.testing.expect(!std.mem.eql(u8, &out31, out33[0..31]));
+
+    var empty: [0]u8 = undefined;
+    try std.testing.expectError(error.InvalidOutputLength, Blake2.hashVariable("", &empty));
+    var big: [65]u8 = undefined;
+    try std.testing.expectError(error.InvalidOutputLength, Blake2.hashVariable("", &big));
 }

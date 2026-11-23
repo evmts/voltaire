@@ -35,34 +35,6 @@ import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
 import { zero } from "./zero.js";
 
-// Export individual functions for tree-shaking
-export {
-	// Constructors
-	from,
-	fromBytes,
-	fromHex,
-	fromNumber,
-	fromBigint,
-	// Converters
-	toHex,
-	toNumber,
-	toBigint,
-	// Comparison
-	equals,
-	compare,
-	isZero,
-	// Utilities
-	clone,
-	zero,
-	// Bitwise operations
-	bitwiseAnd,
-	bitwiseOr,
-	bitwiseXor,
-	// Min/Max
-	min,
-	max,
-};
-
 export { bitwiseAnd as _bitwiseAnd } from "./bitwiseAnd.js";
 export { bitwiseOr as _bitwiseOr } from "./bitwiseOr.js";
 export { bitwiseXor as _bitwiseXor } from "./bitwiseXor.js";
@@ -82,6 +54,33 @@ export { toBigint as _toBigint } from "./toBigint.js";
 export { toHex as _toHex } from "./toHex.js";
 export { toNumber as _toNumber } from "./toNumber.js";
 export { zero as _zero } from "./zero.js";
+// Export individual functions for tree-shaking
+export {
+	// Bitwise operations
+	bitwiseAnd,
+	bitwiseOr,
+	bitwiseXor,
+	// Utilities
+	clone,
+	compare,
+	// Comparison
+	equals,
+	// Constructors
+	from,
+	fromBigint,
+	fromBytes,
+	fromHex,
+	fromNumber,
+	isZero,
+	max,
+	// Min/Max
+	min,
+	toBigint,
+	// Converters
+	toHex,
+	toNumber,
+	zero,
+};
 
 // Namespace export for convenient grouped access
 export const Bytes32 = {

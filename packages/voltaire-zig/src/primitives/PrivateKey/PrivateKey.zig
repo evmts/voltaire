@@ -29,7 +29,7 @@
 //! ```
 
 const std = @import("std");
-const secp256k1 = @import("root").crypto.secp256k1;
+const Crypto = @import("crypto").Crypto;
 const Address = @import("../Address/address.zig");
 const Hex = @import("../Hex/Hex.zig");
 
@@ -64,17 +64,10 @@ pub fn fromHex(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
         return PrivateKeyError.InvalidLength;
     }
 
-    var result = try allocator.alloc(u8, 32);
+    const result = try allocator.alloc(u8, 32);
     errdefer allocator.free(result);
 
-    var i: usize = 0;
-    while (i < 32) : (i += 1) {
-        const hex_byte = hex_input[i * 2 .. i * 2 + 2];
-        result[i] = std.fmt.parseInt(u8, hex_byte, 16) catch {
-            allocator.free(result);
-            return PrivateKeyError.InvalidHexFormat;
-        };
-    }
+    _ = std.fmt.hexToBytes(result, hex_input) catch return PrivateKeyError.InvalidHexFormat;
 
     return result;
 }
@@ -192,7 +185,7 @@ test "PrivateKey.toHex - valid conversion" {
     const hex = try toHex(allocator, &pk);
     defer allocator.free(hex);
 
-    try std.testing.expectEqualStrings("0x12340000000000000000000000000000000000000000000000000000000000000000", hex);
+    try std.testing.expectEqualStrings("0x1234" ++ "00" ** 30, hex);
 }
 
 test "PrivateKey.toHex - roundtrip" {
@@ -223,30 +216,13 @@ pub fn toPublicKey(allocator: std.mem.Allocator, private_key: []const u8) ![]u8 
         return PrivateKeyError.InvalidLength;
     }
 
-    // Convert to u256 for secp256k1 operations
-    var pk_value: u256 = 0;
-    for (private_key, 0..) |byte, i| {
-        pk_value |= @as(u256, byte) << @intCast(8 * (31 - i));
-    }
+    // Derive public key point (validates key is in [1, n-1])
+    const point = try Crypto.unaudited_getPublicKey(private_key[0..32].*);
 
-    // Generate public key point using secp256k1
-    // This returns x,y coordinates on the curve
-    const point = try secp256k1.generatePublicKey(pk_value);
-
-    // Allocate 64 bytes for uncompressed public key (without 0x04 prefix)
-    var pubkey = try allocator.alloc(u8, 64);
-
-    // Convert x coordinate to bytes (big-endian)
-    var i: usize = 0;
-    while (i < 32) : (i += 1) {
-        pubkey[i] = @intCast((point.x >> @intCast(8 * (31 - i))) & 0xFF);
-    }
-
-    // Convert y coordinate to bytes (big-endian)
-    i = 0;
-    while (i < 32) : (i += 1) {
-        pubkey[32 + i] = @intCast((point.y >> @intCast(8 * (31 - i))) & 0xFF);
-    }
+    // 64-byte uncompressed public key (x || y, big-endian, without 0x04 prefix)
+    const pubkey = try allocator.alloc(u8, 64);
+    std.mem.writeInt(u256, pubkey[0..32], point.x, .big);
+    std.mem.writeInt(u256, pubkey[32..64], point.y, .big);
 
     return pubkey;
 }
@@ -284,9 +260,8 @@ pub fn toAddress(allocator: std.mem.Allocator, private_key: []const u8) ![]u8 {
     defer allocator.free(pubkey);
 
     // Hash the public key with keccak256
-    const crypto = @import("root").crypto;
     var hash: [32]u8 = undefined;
-    crypto.Crypto.keccak256(&hash, pubkey);
+    std.crypto.hash.sha3.Keccak256.hash(pubkey, &hash, .{});
 
     // Take last 20 bytes as address
     const addr = try allocator.alloc(u8, 20);
@@ -327,38 +302,12 @@ pub fn sign(allocator: std.mem.Allocator, private_key: []const u8, message_hash:
         return PrivateKeyError.InvalidLength;
     }
 
-    // Convert private key bytes to u256
-    var pk_value: u256 = 0;
-    for (private_key, 0..) |byte, i| {
-        pk_value |= @as(u256, byte) << @intCast(8 * (31 - i));
-    }
+    // Sign using secp256k1 ECDSA (RFC 6979 deterministic nonce)
+    const sig = try Crypto.unaudited_signHash(message_hash[0..32].*, private_key[0..32].*);
 
-    // Convert message hash to u256
-    var hash_value: u256 = 0;
-    for (message_hash, 0..) |byte, i| {
-        hash_value |= @as(u256, byte) << @intCast(8 * (31 - i));
-    }
-
-    // Sign using secp256k1
-    const sig = try secp256k1.sign(pk_value, hash_value);
-
-    // Allocate signature bytes (r + s + v = 32 + 32 + 1 = 65 bytes)
-    var result = try allocator.alloc(u8, 65);
-
-    // Encode r (32 bytes)
-    var i: usize = 0;
-    while (i < 32) : (i += 1) {
-        result[i] = @intCast((sig.r >> @intCast(8 * (31 - i))) & 0xFF);
-    }
-
-    // Encode s (32 bytes)
-    i = 0;
-    while (i < 32) : (i += 1) {
-        result[32 + i] = @intCast((sig.s >> @intCast(8 * (31 - i))) & 0xFF);
-    }
-
-    // Encode v (1 byte)
-    result[64] = sig.v;
+    // Signature bytes: r (32) || s (32) || v (1)
+    const result = try allocator.alloc(u8, 65);
+    result[0..65].* = sig.toBytes();
 
     return result;
 }

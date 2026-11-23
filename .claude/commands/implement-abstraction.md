@@ -2,7 +2,7 @@
 allowed-tools: Bash(bun run test:*), Bash(bun typecheck:*), Bash(git:*), Read, Edit, Write, Glob, Grep, Task, TodoWrite, WebFetch
 argument-hint: <abstraction-name> (e.g., "ethers-provider", "viem-publicclient")
 description: Implement ethers/viem-style abstraction as copyable example with tests and docs
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Implement Library Abstraction

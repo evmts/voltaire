@@ -8,8 +8,7 @@ import { isCompressed as _isCompressed } from "./isCompressed.js";
 import { toAddress as _toAddress } from "./toAddress.js";
 import { toHex as _toHex } from "./toHex.js";
 import { Verify } from "./verify.js";
-export { from, fromPrivateKey };
-export { Verify };
+export { from, fromPrivateKey, Verify };
 declare const _verify: (publicKey: import("./PublicKeyType.js").PublicKeyType, hash: import("../Hash/BrandedHash.js").BrandedHash, signature: import("../../crypto/Secp256k1/SignatureType.js").Secp256k1SignatureType) => boolean;
 export declare function toHex(publicKey: string): string;
 export declare function toAddress(publicKey: string): import("../Address/AddressType.js").AddressType;
@@ -69,7 +68,7 @@ export declare function decompress(compressed: Uint8Array): import("./PublicKeyT
  * ```
  */
 export declare function isCompressed(bytes: Uint8Array): boolean;
-export { _toHex, _toAddress, _verify, _compress, _decompress, _isCompressed };
+export { _compress, _decompress, _isCompressed, _toAddress, _toHex, _verify };
 export declare const PublicKey: {
     from: typeof from;
     fromPrivateKey: typeof fromPrivateKey;

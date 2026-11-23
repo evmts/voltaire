@@ -97,6 +97,18 @@ const Allocator = std.mem.Allocator;
 /// Reasonable limit for nested RLP structures
 pub const MAX_RLP_DEPTH: u32 = 32;
 
+/// EIP-7934 maximum block size before the safety margin, in bytes (10 MiB).
+pub const MAX_BLOCK_SIZE: usize = 10_485_760;
+/// EIP-7934 block size safety margin in bytes (2 MiB).
+pub const SAFETY_MARGIN: usize = 2_097_152;
+/// EIP-7934 maximum RLP-encoded execution block size in bytes (8 MiB).
+pub const MAX_RLP_BLOCK_SIZE: usize = MAX_BLOCK_SIZE - SAFETY_MARGIN;
+
+/// Check whether an RLP-encoded execution block exceeds the EIP-7934 byte limit.
+pub fn exceedsMaxRlpBlockSize(encoded: []const u8) bool {
+    return encoded.len > MAX_RLP_BLOCK_SIZE;
+}
+
 pub const RlpError = error{
     InputTooShort,
     InputTooLong,
@@ -799,6 +811,19 @@ fn getItemLength(input: []const u8) usize {
 }
 
 // Test cases
+test "EIP-7934 RLP block size limit" {
+    try std.testing.expectEqual(@as(usize, 10_485_760), MAX_BLOCK_SIZE);
+    try std.testing.expectEqual(@as(usize, 2_097_152), SAFETY_MARGIN);
+    try std.testing.expectEqual(@as(usize, 8_388_608), MAX_RLP_BLOCK_SIZE);
+
+    const encoded = try std.testing.allocator.alloc(u8, MAX_RLP_BLOCK_SIZE + 1);
+    defer std.testing.allocator.free(encoded);
+    try std.testing.expect(!exceedsMaxRlpBlockSize(encoded[0..0]));
+    try std.testing.expect(!exceedsMaxRlpBlockSize(encoded[0 .. MAX_RLP_BLOCK_SIZE - 1]));
+    try std.testing.expect(!exceedsMaxRlpBlockSize(encoded[0..MAX_RLP_BLOCK_SIZE]));
+    try std.testing.expect(exceedsMaxRlpBlockSize(encoded));
+}
+
 test "RLP single byte" {
     const testing = std.testing;
     const allocator = testing.allocator;
@@ -1337,6 +1362,23 @@ test "RLP stream decoding" {
     try testing.expectEqual(@as(usize, 0), remaining.len);
 }
 
+// The input is already RLP encoded: wrapping it with encode() would turn it
+// into a byte string and exercise only one list level, regardless of depth.
+fn wrapEncodedListForDepthTest(allocator: Allocator, encoded: []const u8) ![]u8 {
+    const length = try encodeLength(allocator, encoded.len);
+    defer allocator.free(length);
+    const prefix_len: usize = if (encoded.len < 56) 1 else 1 + length.len;
+    const result = try allocator.alloc(u8, prefix_len + encoded.len);
+    if (encoded.len < 56) {
+        result[0] = 0xc0 + @as(u8, @intCast(encoded.len));
+    } else {
+        result[0] = 0xf7 + @as(u8, @intCast(length.len));
+        @memcpy(result[1..prefix_len], length);
+    }
+    @memcpy(result[prefix_len..], encoded);
+    return result;
+}
+
 test "RLP recursion depth limit" {
     const testing = std.testing;
     const allocator = testing.allocator;
@@ -1353,14 +1395,10 @@ test "RLP recursion depth limit" {
     // Build nested structure: [[[[["inner"]]]]]
     var depth: u32 = 0;
     while (depth < MAX_RLP_DEPTH + 5) : (depth += 1) {
-        const list = [_][]const u8{current_encoded};
-        const new_encoded = try encode(allocator, list[0..]);
-        if (depth > 0) {
-            allocator.free(current_encoded);
-        }
+        const new_encoded = try wrapEncodedListForDepthTest(allocator, current_encoded);
+        allocator.free(current_encoded);
         current_encoded = new_encoded;
     }
-    defer if (MAX_RLP_DEPTH + 5 > 0) allocator.free(current_encoded);
 
     // Test 3: Decoding should fail with RecursionDepthExceeded
     const result = decode(allocator, current_encoded, false);
@@ -1378,14 +1416,10 @@ test "RLP max allowed depth" {
     // Build nested structure up to MAX_RLP_DEPTH - 1 levels
     var depth: u32 = 0;
     while (depth < MAX_RLP_DEPTH - 1) : (depth += 1) {
-        const list = [_][]const u8{current_encoded};
-        const new_encoded = try encode(allocator, list[0..]);
-        if (depth > 0) {
-            allocator.free(current_encoded);
-        }
+        const new_encoded = try wrapEncodedListForDepthTest(allocator, current_encoded);
+        allocator.free(current_encoded);
         current_encoded = new_encoded;
     }
-    defer if (MAX_RLP_DEPTH - 1 > 0) allocator.free(current_encoded);
 
     // This should succeed since we're at MAX_RLP_DEPTH - 1
     const decoded = try decode(allocator, current_encoded, false);
@@ -1405,14 +1439,10 @@ test "RLP depth limit edge case" {
 
     var depth: u32 = 0;
     while (depth < MAX_RLP_DEPTH - 1) : (depth += 1) {
-        const list = [_][]const u8{current_encoded};
-        const new_encoded = try encode(allocator, list[0..]);
-        if (depth > 0) {
-            allocator.free(current_encoded);
-        }
+        const new_encoded = try wrapEncodedListForDepthTest(allocator, current_encoded);
+        allocator.free(current_encoded);
         current_encoded = new_encoded;
     }
-    defer if (MAX_RLP_DEPTH - 1 > 0) allocator.free(current_encoded);
 
     // Decoding at exactly MAX_RLP_DEPTH should succeed
     const decoded = try decode(allocator, current_encoded, false);
@@ -1431,14 +1461,10 @@ test "RLP depth protection against attack" {
 
     var depth: u32 = 0;
     while (depth < attack_depth) : (depth += 1) {
-        const list = [_][]const u8{current_encoded};
-        const new_encoded = try encode(allocator, list[0..]);
-        if (depth > 0) {
-            allocator.free(current_encoded);
-        }
+        const new_encoded = try wrapEncodedListForDepthTest(allocator, current_encoded);
+        allocator.free(current_encoded);
         current_encoded = new_encoded;
     }
-    defer if (attack_depth > 0) allocator.free(current_encoded);
 
     // Should fail with RecursionDepthExceeded
     const result = decode(allocator, current_encoded, false);
@@ -1752,25 +1778,11 @@ test "RLP nested list round-trip - two levels" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    // Create [[1, 2], [3, 4]]
-    const list1_item1 = try encode(allocator, 1);
-    defer allocator.free(list1_item1);
-    const list1_item2 = try encode(allocator, 2);
-    defer allocator.free(list1_item2);
-    const list1_items = [_][]const u8{ list1_item1, list1_item2 };
-    const list1 = try encode(allocator, list1_items[0..]);
-    defer allocator.free(list1);
-
-    const list2_item1 = try encode(allocator, 3);
-    defer allocator.free(list2_item1);
-    const list2_item2 = try encode(allocator, 4);
-    defer allocator.free(list2_item2);
-    const list2_items = [_][]const u8{ list2_item1, list2_item2 };
-    const list2 = try encode(allocator, list2_items[0..]);
-    defer allocator.free(list2);
-
-    const outer_items = [_][]const u8{ list1, list2 };
-    const encoded = try encode(allocator, outer_items[0..]);
+    // Pass nested lists to encode(), rather than already-encoded byte strings.
+    const list1 = [_][]const u8{ &.{1}, &.{2} };
+    const list2 = [_][]const u8{ &.{3}, &.{4} };
+    const outer_items = [_][]const []const u8{ &list1, &list2 };
+    const encoded = try encode(allocator, &outer_items);
     defer allocator.free(encoded);
 
     const decoded = try decode(allocator, encoded, false);
@@ -1964,7 +1976,7 @@ test "RLP isCanonical - canonical encodings" {
     try testing.expect(isCanonical(&list));
 
     // Nested list
-    const nested = [_]u8{ 0xc4, 0xc2, 0x01, 0x02 };
+    const nested = [_]u8{ 0xc3, 0xc2, 0x01, 0x02 };
     try testing.expect(isCanonical(&nested));
 }
 

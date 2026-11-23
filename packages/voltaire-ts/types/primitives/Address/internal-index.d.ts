@@ -3,7 +3,6 @@ export { From, IsValid } from "./ChecksumAddress.js";
 export * from "./constants.js";
 export * from "./errors.js";
 import * as Checksummed from "./ChecksumAddress.js";
-export { Checksummed };
 export { CalculateCreate2Address } from "./calculateCreate2Address.js";
 export { CalculateCreateAddress } from "./calculateCreateAddress.js";
 export { FromPrivateKey } from "./fromPrivateKey.js";
@@ -11,6 +10,7 @@ export { FromPublicKey } from "./fromPublicKey.js";
 export { IsContract } from "./isContract.js";
 export { IsValidChecksum } from "./isValidChecksum.js";
 export { ToChecksummed } from "./toChecksummed.js";
+export { Checksummed };
 import { CalculateCreate2Address as CalculateCreate2AddressFactory } from "./calculateCreate2Address.js";
 import { CalculateCreateAddress as CalculateCreateAddressFactory } from "./calculateCreateAddress.js";
 import { FromPrivateKey as FromPrivateKeyFactory } from "./fromPrivateKey.js";
@@ -41,7 +41,7 @@ export declare const calculateCreateAddress: (address: import("./AddressType.js"
  *
  * For tree-shakeable version without auto-injected crypto, use `CalculateCreate2Address({ keccak256 })` factory
  */
-export declare const calculateCreate2Address: (arg0: import("./AddressType.js").AddressType, arg1: import("../Hash/HashType.js").HashType, arg2: import("../Bytecode/BytecodeType.js").BrandedBytecode) => import("./AddressType.js").AddressType;
+export declare const calculateCreate2Address: (address: import("./AddressType.js").AddressType, salt: import("../Hash/HashType.js").HashType, initCode: import("../Bytecode/BytecodeType.js").BrandedBytecode) => import("./AddressType.js").AddressType;
 /**
  * Create Address from secp256k1 public key coordinates (with auto-injected keccak256)
  *
@@ -88,8 +88,7 @@ import { zero } from "./zero.js";
 declare const assertWithKeccak: (value: string | Uint8Array, options?: {
     strict?: boolean;
 }) => import("./AddressType.js").AddressType;
-export { Assert };
-export { from, fromHex, fromBase64, fromBytes, fromNumber, fromAbiEncoded, toHex, toBytes, toLowercase, toUppercase, toU256, toAbiEncoded, toShortHex, isZero, equals, isValid, is, isAddress, zero, clone, compare, lessThan, greaterThan, sortAddresses, deduplicateAddresses, SIZE, assertWithKeccak as assert, };
+export { Assert, assertWithKeccak as assert, clone, compare, deduplicateAddresses, equals, from, fromAbiEncoded, fromBase64, fromBytes, fromHex, fromNumber, greaterThan, is, isAddress, isValid, isZero, lessThan, SIZE, sortAddresses, toAbiEncoded, toBytes, toHex, toLowercase, toShortHex, toU256, toUppercase, zero, };
 export declare const BrandedAddress: {
     from: typeof from;
     fromHex: typeof fromHex;
@@ -121,7 +120,7 @@ export declare const BrandedAddress: {
     clone: typeof clone;
     calculateCreateAddress: (address: import("./AddressType.js").AddressType, nonce: bigint) => import("./AddressType.js").AddressType;
     CalculateCreateAddress: typeof CalculateCreateAddressFactory;
-    calculateCreate2Address: (arg0: import("./AddressType.js").AddressType, arg1: import("../Hash/HashType.js").HashType, arg2: import("../Bytecode/BytecodeType.js").BrandedBytecode) => import("./AddressType.js").AddressType;
+    calculateCreate2Address: (address: import("./AddressType.js").AddressType, salt: import("../Hash/HashType.js").HashType, initCode: import("../Bytecode/BytecodeType.js").BrandedBytecode) => import("./AddressType.js").AddressType;
     CalculateCreate2Address: typeof CalculateCreate2AddressFactory;
     IsContract: typeof IsContract;
     compare: typeof compare;

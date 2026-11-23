@@ -1,16 +1,11 @@
 // Deterministic, inspectable TestTransport for Effect tests with full call recording.
 
-import {
-  RpcError,
-  type RpcTransportError,
-  TransportError,
-  TransportFailureReason
-} from "../errors.vibe"
+import { RpcError, type RpcTransportError, TransportError, TransportFailureReason } from "../errors.vibe"
 import {
   type JsonRpcBatchItemResult,
   JsonRpcBatchItemResult as BatchResult,
   type JsonRpcCall,
-  Transport
+  Transport,
 } from "./Transport.vibe"
 
 export type MockRpcHandler =
@@ -56,7 +51,7 @@ import { isMockEffect } from handlerBridge
 // plus a controller to inspect recorded single and batch RPC calls.
 export function makeTestTransport(
   handlers: Record<string, MockRpcEntry>,
-  options?: { readonly latency?: Duration.Input }
+  options?: { readonly latency?: Duration.Input },
 ): TestTransportController {
   const recorded: Array<RecordedRpcCall> = []
   let batches = 0
@@ -69,11 +64,15 @@ export function makeTestTransport(
       message: `Mock handler for ${method} failed: ${String(cause)}`,
       reason: TransportFailureReason.Network({ cause }),
       method,
-      cause
+      cause,
     })
   }
 
-  effect function dispatchOne(method: string, params: ReadonlyArray<unknown>, batched: boolean): unknown!RpcTransportError {
+  effect function dispatchOne(
+    method: string,
+    params: ReadonlyArray<unknown>,
+    batched: boolean,
+  ): unknown!RpcTransportError {
     recorded.push({ method, params, batched })
     if (options?.latency !== undefined) {
       try sleep(options.latency)
@@ -82,7 +81,7 @@ export function makeTestTransport(
       throw new RpcError({
         code: -32601,
         message: `Mock transport: unhandled RPC method "${method}"`,
-        method
+        method,
       })
     }
     const entry = handlers[method]
@@ -98,11 +97,11 @@ export function makeTestTransport(
           cause instanceof RpcError || cause instanceof TransportError
             ? cause
             : new TransportError({
-                message: `Mock handler for ${method} threw: ${String(cause)}`,
-                reason: TransportFailureReason.Network({ cause }),
-                method,
-                cause
-              })
+              message: `Mock handler for ${method} threw: ${String(cause)}`,
+              reason: TransportFailureReason.Network({ cause }),
+              method,
+              cause,
+            }),
       })
       if (isMockEffect(out)) {
         return out catch effect (cause) => {
@@ -138,14 +137,14 @@ export function makeTestTransport(
           } else {
             out.push(
               BatchResult.Err({
-                error: new RpcError({ code: -32603, message: "Mock batch defect", method: req.method })
-              })
+                error: new RpcError({ code: -32603, message: "Mock batch defect", method: req.method }),
+              }),
             )
           }
         }
       }
       return out
-    }
+    },
   })
 
   return {
@@ -155,13 +154,13 @@ export function makeTestTransport(
     clear: sync(() => {
       recorded.length = 0
       batches = 0
-    })
+    }),
   }
 }
 
 export function TestTransport(
   handlers: Record<string, MockRpcEntry>,
-  options?: { readonly latency?: Duration.Input }
+  options?: { readonly latency?: Duration.Input },
 ): Layer.Layer<Transport> {
   return makeTestTransport(handlers, options).layer
 }

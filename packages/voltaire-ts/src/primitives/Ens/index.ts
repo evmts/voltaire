@@ -39,14 +39,14 @@ const _labelhash = Labelhash({ keccak256 });
 
 // Internal exports
 export {
-	from,
-	_normalize,
 	_beautify,
-	_namehash,
 	_labelhash,
+	_namehash,
+	_normalize,
+	from,
 	is,
-	toString,
 	isValid,
+	toString,
 	validate,
 };
 

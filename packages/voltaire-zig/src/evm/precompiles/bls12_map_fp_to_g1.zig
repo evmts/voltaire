@@ -6,7 +6,10 @@ const PrecompileResult = @import("common.zig").PrecompileResult;
 /// Gas cost for BLS12-381 map field element to G1
 pub const GAS: u64 = 5500;
 
-/// 0x12: BLS12_MAP_FP_TO_G1 - BLS12-381 map field element to G1
+/// 0x10: BLS12_MAP_FP_TO_G1 - BLS12-381 map field element to G1 (EIP-2537)
+///
+/// Input: 64 bytes, one Fp element (16 zero bytes, then 48 bytes < p).
+/// Output: 128 bytes, a G1 point.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -21,8 +24,10 @@ pub fn execute(
     }
 
     const output = try allocator.alloc(u8, 128);
+    errdefer allocator.free(output);
+    @memset(output, 0);
     crypto.Crypto.bls12_381.mapFpToG1(input, output) catch {
-        return error.InvalidPoint;
+        return error.InvalidInput;
     };
 
     return PrecompileResult{
@@ -154,4 +159,12 @@ test "map fp to g1 - output size validation" {
     defer std.testing.allocator.free(result.output);
 
     try std.testing.expectEqual(@as(usize, 128), result.output.len);
+}
+
+test "map fp to g1 - official EIP-2537 vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_map_fp_to_g1.txt"), 5);
+}
+
+test "map fp to g1 - official EIP-2537 failure vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_map_fp_to_g1_fail.txt"), 5);
 }

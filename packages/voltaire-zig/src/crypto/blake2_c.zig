@@ -16,48 +16,18 @@ export fn blake2Hash(input_ptr: [*]const u8, input_len: usize, output_ptr: [*]u8
         return -1; // Invalid output length
     }
 
-    // Get input slice
-    const input = input_ptr[0..input_len];
-    const output = output_ptr[0..output_len];
-
-    // Use Blake2b with variable output length
-    // For proper Blake2b, the output length must be set during initialization
-    // Blake2b() takes BITS not bytes, so multiply by 8
-    // We support common lengths with proper initialization, fallback to truncation for others
-    switch (output_len) {
-        1 => {
-            var buf: [1]u8 = undefined;
-            std.crypto.hash.blake2.Blake2b(8).hash(input, &buf, .{});
-            @memcpy(output, &buf);
-        },
-        20 => {
-            var buf: [20]u8 = undefined;
-            std.crypto.hash.blake2.Blake2b(160).hash(input, &buf, .{});
-            @memcpy(output, &buf);
-        },
-        32 => {
-            var buf: [32]u8 = undefined;
-            std.crypto.hash.blake2.Blake2b256.hash(input, &buf, .{});
-            @memcpy(output, &buf);
-        },
-        48 => {
-            var buf: [48]u8 = undefined;
-            std.crypto.hash.blake2.Blake2b(384).hash(input, &buf, .{});
-            @memcpy(output, &buf);
-        },
-        64 => {
-            var buf: [64]u8 = undefined;
-            std.crypto.hash.blake2.Blake2b512.hash(input, &buf, .{});
-            @memcpy(output, &buf);
-        },
-        // For other lengths, compute Blake2b-512 and truncate
-        // This is NOT cryptographically proper but works for test compatibility
-        else => {
-            var full: [64]u8 = undefined;
-            std.crypto.hash.blake2.Blake2b512.hash(input, &full, .{});
-            @memcpy(output, full[0..output_len]);
-        },
-    }
+    // Digest length goes into the BLAKE2b parameter block; never truncate 512.
+    blake2.Blake2.hashVariable(input_ptr[0..input_len], output_ptr[0..output_len]) catch return -1;
 
     return 0; // Success
+}
+
+test "blake2Hash: output_len 32 of empty input is RFC 7693 BLAKE2b-256" {
+    var out: [32]u8 = undefined;
+    try std.testing.expectEqual(@as(i32, 0), blake2Hash("".ptr, 0, &out, 32));
+    var expected: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8");
+    try std.testing.expectEqualSlices(u8, &expected, &out);
+    try std.testing.expectEqual(@as(i32, -1), blake2Hash("".ptr, 0, &out, 0));
+    try std.testing.expectEqual(@as(i32, -1), blake2Hash("".ptr, 0, &out, 65));
 }

@@ -18,7 +18,7 @@ import { toHash } from "./toHash.js";
 import { toHex } from "./toHex.js";
 import { toUint8Array } from "./toUint8Array.js";
 import { zero } from "./zero.js";
-export { from, fromBytes, fromHex, fromNumber, fromBigint, toHex, toUint8Array, toBigint, toHash, toAddress, equals, compare, clone, size, zero, isZero, };
+export { clone, compare, equals, from, fromBigint, fromBytes, fromHex, fromNumber, isZero, size, toAddress, toBigint, toHash, toHex, toUint8Array, zero, };
 export declare function Bytes32(value: Bytes32Like): Bytes32Type;
 export declare namespace Bytes32 {
     var from: typeof import("./from.js").from;

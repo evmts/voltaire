@@ -24,8 +24,17 @@
 /**
  * Parse transaction from JSON-RPC format
  *
+ * Required fields are never defaulted: `nonce`, `gas`/`gasLimit`, `value`,
+ * `input`/`data`, `r`, `s`, and the fee, chain and parity fields of the
+ * transaction type must all be present. A missing `type` means legacy. A
+ * missing or null `to` is a contract creation. A missing `accessList` is
+ * empty.
+ *
  * @param {RpcTransaction} rpc - JSON-RPC formatted transaction
  * @returns {import('./types.js').Any} Parsed transaction
+ * @throws {InvalidFormatError} If the input is not a transaction object (for
+ * example a transaction hash from a hash-only block), or a required field is
+ * missing or not hex
  * @throws {InvalidLengthError} If address or hash length is invalid
  * @throws {InvalidTransactionTypeError} If transaction type is unknown
  *

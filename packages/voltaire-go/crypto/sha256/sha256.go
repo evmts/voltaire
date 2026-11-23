@@ -2,8 +2,8 @@
 package sha256
 
 import (
-	"github.com/voltaire-labs/voltaire-go/internal/ffi"
-	"github.com/voltaire-labs/voltaire-go/primitives/hash"
+	"github.com/evmts/voltaire/packages/voltaire-go/internal/ffi"
+	"github.com/evmts/voltaire/packages/voltaire-go/primitives/hash"
 )
 
 // Hash computes the SHA-256 hash of data.

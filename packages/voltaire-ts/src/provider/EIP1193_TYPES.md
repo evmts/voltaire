@@ -51,51 +51,55 @@ const accounts = await provider.request({
 
 ```typescript
 // Type-safe event listeners
-provider.on('chainChanged', (chainId: string) => {
-  console.log('Chain changed to:', parseInt(chainId, 16));
+provider.on("chainChanged", (chainId: string) => {
+	console.log("Chain changed to:", parseInt(chainId, 16));
 });
 
-provider.on('accountsChanged', (accounts: string[]) => {
-  if (accounts.length === 0) {
-    console.log('Disconnected');
-  } else {
-    console.log('Active account:', accounts[0]);
-  }
+provider.on("accountsChanged", (accounts: string[]) => {
+	if (accounts.length === 0) {
+		console.log("Disconnected");
+	} else {
+		console.log("Active account:", accounts[0]);
+	}
 });
 
-provider.on('connect', ({ chainId }) => {
-  console.log('Connected to chain:', chainId);
+provider.on("connect", ({ chainId }) => {
+	console.log("Connected to chain:", chainId);
 });
 
 // Chaining support
 provider
-  .on('chainChanged', handleChainChange)
-  .on('accountsChanged', handleAccountsChange);
+	.on("chainChanged", handleChainChange)
+	.on("accountsChanged", handleAccountsChange);
 ```
 
 ### Error Handling
 
 ```typescript
-import { ProviderRpcError, EIP1193ErrorCode } from '@tevm/voltaire/provider';
+import { ProviderRpcError, EIP1193ErrorCode } from "@tevm/voltaire/provider";
 
 try {
-  const result = await provider.request({
-    method: 'eth_sendTransaction',
-    params: [{ /* ... */ }]
-  });
+	const result = await provider.request({
+		method: "eth_sendTransaction",
+		params: [
+			{
+				/* ... */
+			},
+		],
+	});
 } catch (error) {
-  if (error instanceof ProviderRpcError) {
-    switch (error.code) {
-      case EIP1193ErrorCode.UserRejectedRequest:
-        console.log('User rejected the transaction');
-        break;
-      case EIP1193ErrorCode.Unauthorized:
-        console.log('Not authorized');
-        break;
-      default:
-        console.error('RPC error:', error.message);
-    }
-  }
+	if (error instanceof ProviderRpcError) {
+		switch (error.code) {
+			case EIP1193ErrorCode.UserRejectedRequest:
+				console.log("User rejected the transaction");
+				break;
+			case EIP1193ErrorCode.Unauthorized:
+				console.log("Not authorized");
+				break;
+			default:
+				console.error("RPC error:", error.message);
+		}
+	}
 }
 ```
 
@@ -106,35 +110,35 @@ try {
 Define your own RPC schema for custom methods:
 
 ```typescript
-import type { RpcSchema, TypedProvider } from '@tevm/voltaire/provider';
+import type { RpcSchema, TypedProvider } from "@tevm/voltaire/provider";
 
 // Define custom schema
 type CustomSchema = readonly [
-  {
-    Method: 'custom_method';
-    Parameters: [string, number];
-    ReturnType: { result: boolean };
-  },
-  {
-    Method: 'custom_query';
-    Parameters: [];
-    ReturnType: string[];
-  }
+	{
+		Method: "custom_method";
+		Parameters: [string, number];
+		ReturnType: { result: boolean };
+	},
+	{
+		Method: "custom_query";
+		Parameters: [];
+		ReturnType: string[];
+	},
 ];
 
 // Create provider with custom schema
 const customProvider: TypedProvider<CustomSchema> = {
-  request: async ({ method, params }) => {
-    // Implementation
-  },
-  on: () => customProvider,
-  removeListener: () => customProvider,
+	request: async ({ method, params }) => {
+		// Implementation
+	},
+	on: () => customProvider,
+	removeListener: () => customProvider,
 };
 
 // Type-safe custom method calls
 const result = await customProvider.request({
-  method: 'custom_method',
-  params: ['hello', 42]
+	method: "custom_method",
+	params: ["hello", 42],
 });
 // result is typed as { result: boolean }
 ```
@@ -192,7 +196,10 @@ provider.on('newBlock', (block) => {
 ### Extract Method Names
 
 ```typescript
-import type { RpcMethodNames, VoltaireRpcSchema } from '@tevm/voltaire/provider';
+import type {
+	RpcMethodNames,
+	VoltaireRpcSchema,
+} from "@tevm/voltaire/provider";
 
 type Methods = RpcMethodNames<VoltaireRpcSchema>;
 // 'eth_blockNumber' | 'eth_call' | 'eth_getBalance' | ...
@@ -201,18 +208,24 @@ type Methods = RpcMethodNames<VoltaireRpcSchema>;
 ### Extract Parameters
 
 ```typescript
-import type { RpcMethodParameters, VoltaireRpcSchema } from '@tevm/voltaire/provider';
+import type {
+	RpcMethodParameters,
+	VoltaireRpcSchema,
+} from "@tevm/voltaire/provider";
 
-type CallParams = RpcMethodParameters<VoltaireRpcSchema, 'eth_call'>;
+type CallParams = RpcMethodParameters<VoltaireRpcSchema, "eth_call">;
 // [{ to: string, data?: string, ... }, string]
 ```
 
 ### Extract Return Type
 
 ```typescript
-import type { RpcMethodReturnType, VoltaireRpcSchema } from '@tevm/voltaire/provider';
+import type {
+	RpcMethodReturnType,
+	VoltaireRpcSchema,
+} from "@tevm/voltaire/provider";
 
-type BlockNumber = RpcMethodReturnType<VoltaireRpcSchema, 'eth_blockNumber'>;
+type BlockNumber = RpcMethodReturnType<VoltaireRpcSchema, "eth_blockNumber">;
 // string
 ```
 
@@ -221,25 +234,25 @@ type BlockNumber = RpcMethodReturnType<VoltaireRpcSchema, 'eth_blockNumber'>;
 ### EIP-1193 Error Codes
 
 ```typescript
-import { EIP1193ErrorCode } from '@tevm/voltaire/provider';
+import { EIP1193ErrorCode } from "@tevm/voltaire/provider";
 
-EIP1193ErrorCode.UserRejectedRequest  // 4001
-EIP1193ErrorCode.Unauthorized         // 4100
-EIP1193ErrorCode.UnsupportedMethod    // 4200
-EIP1193ErrorCode.Disconnected         // 4900
-EIP1193ErrorCode.ChainDisconnected    // 4901
+EIP1193ErrorCode.UserRejectedRequest; // 4001
+EIP1193ErrorCode.Unauthorized; // 4100
+EIP1193ErrorCode.UnsupportedMethod; // 4200
+EIP1193ErrorCode.Disconnected; // 4900
+EIP1193ErrorCode.ChainDisconnected; // 4901
 ```
 
 ### JSON-RPC 2.0 Error Codes
 
 ```typescript
-import { JsonRpcErrorCode } from '@tevm/voltaire/provider';
+import { JsonRpcErrorCode } from "@tevm/voltaire/provider";
 
-JsonRpcErrorCode.ParseError       // -32700
-JsonRpcErrorCode.InvalidRequest   // -32600
-JsonRpcErrorCode.MethodNotFound   // -32601
-JsonRpcErrorCode.InvalidParams    // -32602
-JsonRpcErrorCode.InternalError    // -32603
+JsonRpcErrorCode.ParseError; // -32700
+JsonRpcErrorCode.InvalidRequest; // -32600
+JsonRpcErrorCode.MethodNotFound; // -32601
+JsonRpcErrorCode.InvalidParams; // -32602
+JsonRpcErrorCode.InternalError; // -32603
 ```
 
 ## Supported Methods
@@ -247,6 +260,7 @@ JsonRpcErrorCode.InternalError    // -32603
 VoltaireRpcSchema includes all standard Ethereum JSON-RPC methods:
 
 ### eth namespace (52 methods)
+
 - `eth_accounts`, `eth_blockNumber`, `eth_call`, `eth_chainId`
 - `eth_getBalance`, `eth_getCode`, `eth_getTransactionCount`
 - `eth_sendTransaction`, `eth_sendRawTransaction`
@@ -255,16 +269,19 @@ VoltaireRpcSchema includes all standard Ethereum JSON-RPC methods:
 - And 40+ more...
 
 ### debug namespace (5 methods)
+
 - `debug_getBadBlocks`, `debug_getRawBlock`, `debug_getRawHeader`
 - `debug_getRawReceipts`, `debug_getRawTransaction`
 
 ### engine namespace (20 methods)
+
 - `engine_newPayloadV1` through `engine_newPayloadV5`
 - `engine_getPayloadV1` through `engine_getPayloadV6`
 - `engine_forkchoiceUpdatedV1` through `engine_forkchoiceUpdatedV3`
 - And more consensus layer methods...
 
 ### anvil namespace (14 test methods)
+
 - `anvil_impersonateAccount`, `anvil_setBalance`, `anvil_setCode`
 - `evm_mine`, `evm_snapshot`, `evm_revert`
 - And other testing utilities...

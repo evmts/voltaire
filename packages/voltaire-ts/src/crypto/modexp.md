@@ -11,6 +11,7 @@ Modular exponentiation is a fundamental operation in public-key cryptography. Th
 Computes: `result = (base^exponent) % modulus`
 
 Using efficient algorithms:
+
 - Right-to-left binary method
 - Montgomery multiplication for large moduli
 - Sliding window optimization
@@ -40,6 +41,7 @@ Result padded/truncated to `mod_length` bytes.
 ### Gas Calculation
 
 Complex formula based on sizes:
+
 ```
 gas = mult_complexity(max(base_len, mod_len)) * max(adj_exp_len, 1) / GQUADDIVISOR
 
@@ -52,51 +54,49 @@ where:
 ## TypeScript API
 
 ```typescript
-import { Precompiles, Hardfork } from '@tevm/voltaire';
+import { Precompiles, Hardfork } from "@tevm/voltaire";
 
-function modexp(
-    base: bigint,
-    exponent: bigint,
-    modulus: bigint
-): bigint {
-    // Encode input
-    const baseBytes = bigintToBytes(base);
-    const expBytes = bigintToBytes(exponent);
-    const modBytes = bigintToBytes(modulus);
+function modexp(base: bigint, exponent: bigint, modulus: bigint): bigint {
+	// Encode input
+	const baseBytes = bigintToBytes(base);
+	const expBytes = bigintToBytes(exponent);
+	const modBytes = bigintToBytes(modulus);
 
-    const input = new Uint8Array(96 + baseBytes.length + expBytes.length + modBytes.length);
-    let offset = 0;
+	const input = new Uint8Array(
+		96 + baseBytes.length + expBytes.length + modBytes.length,
+	);
+	let offset = 0;
 
-    // Lengths
-    input.set(uint256ToBytes(BigInt(baseBytes.length)), offset);
-    offset += 32;
-    input.set(uint256ToBytes(BigInt(expBytes.length)), offset);
-    offset += 32;
-    input.set(uint256ToBytes(BigInt(modBytes.length)), offset);
-    offset += 32;
+	// Lengths
+	input.set(uint256ToBytes(BigInt(baseBytes.length)), offset);
+	offset += 32;
+	input.set(uint256ToBytes(BigInt(expBytes.length)), offset);
+	offset += 32;
+	input.set(uint256ToBytes(BigInt(modBytes.length)), offset);
+	offset += 32;
 
-    // Values
-    input.set(baseBytes, offset);
-    offset += baseBytes.length;
-    input.set(expBytes, offset);
-    offset += expBytes.length;
-    input.set(modBytes, offset);
+	// Values
+	input.set(baseBytes, offset);
+	offset += baseBytes.length;
+	input.set(expBytes, offset);
+	offset += expBytes.length;
+	input.set(modBytes, offset);
 
-    // Execute precompile
-    const result = Precompiles.execute('0x05', input, 100000n, Hardfork.CANCUN);
+	// Execute precompile
+	const result = Precompiles.execute("0x05", input, 100000n, Hardfork.CANCUN);
 
-    if (!result.success) {
-        throw new Error('ModExp failed');
-    }
+	if (!result.success) {
+		throw new Error("ModExp failed");
+	}
 
-    return bytesToBigint(result.output);
+	return bytesToBigint(result.output);
 }
 
 // Usage
 const result = modexp(
-    123456789n,  // base
-    65537n,      // exponent (common RSA public exponent)
-    9876543210n  // modulus
+	123456789n, // base
+	65537n, // exponent (common RSA public exponent)
+	9876543210n, // modulus
 );
 ```
 
@@ -107,18 +107,18 @@ const result = modexp(
 ```typescript
 // Verify RSA signature: signature^e ≡ hash (mod n)
 function verifyRSASignature(
-    message: Uint8Array,
-    signature: bigint,
-    publicKey: { e: bigint; n: bigint }
+	message: Uint8Array,
+	signature: bigint,
+	publicKey: { e: bigint; n: bigint },
 ): boolean {
-    // Hash message (typically SHA-256)
-    const messageHash = Sha256.hash(message);
-    const hashInt = bytesToBigint(messageHash);
+	// Hash message (typically SHA-256)
+	const messageHash = Sha256.hash(message);
+	const hashInt = bytesToBigint(messageHash);
 
-    // Verify: signature^e mod n == hash
-    const computed = modexp(signature, publicKey.e, publicKey.n);
+	// Verify: signature^e mod n == hash
+	const computed = modexp(signature, publicKey.e, publicKey.n);
 
-    return computed === hashInt;
+	return computed === hashInt;
 }
 ```
 
@@ -127,24 +127,24 @@ function verifyRSASignature(
 ```typescript
 // Compute g^x mod p
 function dhExchange(g: bigint, x: bigint, p: bigint): bigint {
-    return modexp(g, x, p);
+	return modexp(g, x, p);
 }
 
 // Example: Alice and Bob
-const p = 23n;  // Prime modulus
-const g = 5n;   // Generator
+const p = 23n; // Prime modulus
+const g = 5n; // Generator
 
 // Alice's private/public
 const alicePrivate = 6n;
-const alicePublic = dhExchange(g, alicePrivate, p);  // g^6 mod 23
+const alicePublic = dhExchange(g, alicePrivate, p); // g^6 mod 23
 
 // Bob's private/public
 const bobPrivate = 15n;
-const bobPublic = dhExchange(g, bobPrivate, p);  // g^15 mod 23
+const bobPublic = dhExchange(g, bobPrivate, p); // g^15 mod 23
 
 // Shared secret
-const aliceShared = dhExchange(bobPublic, alicePrivate, p);  // (g^15)^6 mod 23
-const bobShared = dhExchange(alicePublic, bobPrivate, p);    // (g^6)^15 mod 23
+const aliceShared = dhExchange(bobPublic, alicePrivate, p); // (g^15)^6 mod 23
+const bobShared = dhExchange(alicePublic, bobPrivate, p); // (g^6)^15 mod 23
 // aliceShared === bobShared
 ```
 
@@ -153,37 +153,37 @@ const bobShared = dhExchange(alicePublic, bobPrivate, p);    // (g^6)^15 mod 23
 ```typescript
 // Schnorr proof: Prove knowledge of x where y = g^x mod p
 function generateSchnorrProof(
-    g: bigint,
-    x: bigint,  // Secret
-    y: bigint,  // Public: y = g^x mod p
-    p: bigint
+	g: bigint,
+	x: bigint, // Secret
+	y: bigint, // Public: y = g^x mod p
+	p: bigint,
 ): { commitment: bigint; response: bigint } {
-    // Random commitment
-    const r = randomBigint(p);
-    const commitment = modexp(g, r, p);
+	// Random commitment
+	const r = randomBigint(p);
+	const commitment = modexp(g, r, p);
 
-    // Challenge (simulated - real implementation uses Fiat-Shamir)
-    const challenge = 42n;  // In practice: hash(g, y, commitment)
+	// Challenge (simulated - real implementation uses Fiat-Shamir)
+	const challenge = 42n; // In practice: hash(g, y, commitment)
 
-    // Response: r + challenge * x
-    const response = (r + challenge * x) % (p - 1n);
+	// Response: r + challenge * x
+	const response = (r + challenge * x) % (p - 1n);
 
-    return { commitment, response };
+	return { commitment, response };
 }
 
 function verifySchnorrProof(
-    g: bigint,
-    y: bigint,
-    proof: { commitment: bigint; response: bigint },
-    p: bigint
+	g: bigint,
+	y: bigint,
+	proof: { commitment: bigint; response: bigint },
+	p: bigint,
 ): boolean {
-    const challenge = 42n;
+	const challenge = 42n;
 
-    // Verify: g^response == commitment * y^challenge (mod p)
-    const left = modexp(g, proof.response, p);
-    const right = (proof.commitment * modexp(y, challenge, p)) % p;
+	// Verify: g^response == commitment * y^challenge (mod p)
+	const left = modexp(g, proof.response, p);
+	const right = (proof.commitment * modexp(y, challenge, p)) % p;
 
-    return left === right;
+	return left === right;
 }
 ```
 
@@ -195,20 +195,20 @@ For non-EVM environments, use native JavaScript:
 
 ```typescript
 function modexpJS(base: bigint, exp: bigint, mod: bigint): bigint {
-    if (mod === 1n) return 0n;
+	if (mod === 1n) return 0n;
 
-    let result = 1n;
-    base = base % mod;
+	let result = 1n;
+	base = base % mod;
 
-    while (exp > 0n) {
-        if (exp % 2n === 1n) {
-            result = (result * base) % mod;
-        }
-        exp = exp / 2n;
-        base = (base * base) % mod;
-    }
+	while (exp > 0n) {
+		if (exp % 2n === 1n) {
+			result = (result * base) % mod;
+		}
+		exp = exp / 2n;
+		base = (base * base) % mod;
+	}
 
-    return result;
+	return result;
 }
 ```
 
@@ -217,6 +217,7 @@ Note: Native implementation much slower than precompile for large numbers.
 ### Gas Optimization
 
 For on-chain use, optimize gas by:
+
 1. Minimizing input sizes (trim leading zeros)
 2. Using smallest sufficient modulus
 3. Considering alternative algorithms for small exponents
@@ -224,20 +225,24 @@ For on-chain use, optimize gas by:
 ### Security
 
 **Safe:**
+
 - Well-tested algorithm (used in RSA for decades)
 - Constant-time for same-size inputs (prevents timing attacks)
 
 **Caution:**
+
 - Not constant-time across different input sizes
 - Use padding for size-sensitive operations
 
 ## Performance
 
 **Precompile (0x05):**
+
 - ~1000x faster than EVM bytecode for large numbers
 - ~10x faster than pure JavaScript
 
 **Benchmarks** (2048-bit RSA verify):
+
 - EVM bytecode: ~5,000,000 gas
 - ModExp precompile: ~20,000 gas
 - Pure JavaScript: ~50ms
@@ -255,11 +260,13 @@ defer allocator.free(result);
 ## Testing
 
 Test coverage in:
+
 - `modexp.test.ts` - TypeScript tests
 - `modexp.zig` - Zig tests
 - EVM test vectors from Ethereum consensus tests
 
 Test cases include:
+
 - Small numbers (< 64 bytes)
 - Large numbers (256-4096 bits)
 - RSA common cases (e=65537)

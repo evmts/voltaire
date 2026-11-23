@@ -7,7 +7,7 @@ export { from };
 export declare function toNumber(nonce: number | bigint | string): number;
 export declare function toBigInt(nonce: number | bigint | string): bigint;
 export declare function increment(nonce: number | bigint | string): import("./NonceType.js").NonceType;
-export { _toNumber, _toBigInt, _increment };
+export { _increment, _toBigInt, _toNumber };
 export declare const Nonce: typeof from & {
     from: typeof from;
     toNumber: typeof toNumber;

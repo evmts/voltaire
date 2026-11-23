@@ -44,17 +44,17 @@ pub const SiweMessage = struct {
         try result.appendSlice(allocator, self.domain);
         try result.appendSlice(allocator, " wants you to sign in with your Ethereum account:\n");
 
-        // Address
-        const addr_hex = try hex.toHex(allocator, &self.address.bytes);
-        defer allocator.free(addr_hex);
-        try result.appendSlice(allocator, addr_hex);
+        // Address (EIP-4361 requires the EIP-55 checksummed form)
+        const addr_hex = address.toChecksummed(self.address);
+        try result.appendSlice(allocator, &addr_hex);
         try result.appendSlice(allocator, "\n\n");
 
-        // Statement (optional)
+        // Statement (optional). EIP-4361 ABNF: address LF LF [ statement LF ] LF "URI: "
         if (self.statement) |stmt| {
             try result.appendSlice(allocator, stmt);
-            try result.appendSlice(allocator, "\n\n");
+            try result.appendSlice(allocator, "\n");
         }
+        try result.appendSlice(allocator, "\n");
 
         // URI
         try result.appendSlice(allocator, "URI: ");
@@ -199,7 +199,8 @@ pub fn verifySiweMessage(
 
 // Parse SIWE message from string
 pub fn parseSiweMessage(allocator: Allocator, text: []const u8) !SiweMessage {
-    var lines = std.mem.tokenizeScalar(u8, text, '\n');
+    // Blank lines are significant (EIP-4361 ABNF), so split rather than tokenize
+    var lines = std.mem.splitScalar(u8, text, '\n');
 
     // Parse header
     const header = lines.next() orelse return SiweError.InvalidFormat;
@@ -210,18 +211,20 @@ pub fn parseSiweMessage(allocator: Allocator, text: []const u8) !SiweMessage {
     const addr_line = lines.next() orelse return SiweError.InvalidFormat;
     const addr = try address.fromHex(addr_line);
 
-    // Skip empty line
-    _ = lines.next();
+    // Blank line after address
+    const blank = lines.next() orelse return SiweError.InvalidFormat;
+    if (blank.len != 0) return SiweError.InvalidFormat;
 
-    // Parse statement (optional)
+    // Optional statement line, then a blank line
     var statement: ?[]const u8 = null;
     var next_line = lines.next() orelse return SiweError.InvalidFormat;
-
-    if (!std.mem.startsWith(u8, next_line, "URI: ")) {
+    if (next_line.len != 0) {
+        if (std.mem.startsWith(u8, next_line, "URI: ")) return SiweError.InvalidFormat;
         statement = next_line;
-        _ = lines.next(); // Skip empty line
-        next_line = lines.next() orelse return SiweError.InvalidFormat;
+        const blank2 = lines.next() orelse return SiweError.InvalidFormat;
+        if (blank2.len != 0) return SiweError.InvalidFormat;
     }
+    next_line = lines.next() orelse return SiweError.InvalidFormat;
 
     // Parse required fields
     if (!std.mem.startsWith(u8, next_line, "URI: ")) return SiweError.InvalidFormat;
@@ -369,15 +372,48 @@ test "SIWE message validation" {
     try testing.expectError(SiweError.InvalidIssuedAt, message.validate());
 }
 
-// NOTE: Signature verification test commented out - requires full crypto stack integration
-// test "SIWE message signature verification" {
-//     // This test would require:
-//     // 1. Generate private key
-//     // 2. Derive address from private key
-//     // 3. Sign message with private key
-//     // 4. Verify signature matches expected address
-//     // Integration tests should cover this end-to-end
-// }
+test "SIWE message signature verification" {
+    const allocator = testing.allocator;
+    const Crypto = crypto_pkg.Crypto;
+
+    // Deterministic test key; derive its address
+    const private_key = [_]u8{0x4c} ++ [_]u8{0x08} ** 30 ++ [_]u8{0x1f};
+    const public_key = try Crypto.unaudited_getPublicKey(private_key);
+    const signer = Address.fromPublicKey(public_key.x, public_key.y);
+
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = signer,
+        .statement = "Sign in to Example",
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    // Sign the EIP-191 hash of the formatted message
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+    const message_hash = try hash_mod.eip191HashMessage(formatted, allocator);
+    const sig = try Crypto.unaudited_signHash(message_hash, private_key);
+
+    var r: [32]u8 = undefined;
+    var s: [32]u8 = undefined;
+    std.mem.writeInt(u256, &r, sig.r, .big);
+    std.mem.writeInt(u256, &s, sig.s, .big);
+    const signature = Signature{ .r = r, .s = s, .v = sig.v };
+
+    try testing.expect(try verifySiweMessage(allocator, &message, signature));
+
+    // Tampered message no longer verifies against the signer
+    message.nonce = "99999999";
+    try testing.expect(!try verifySiweMessage(allocator, &message, signature));
+}
 
 test "SIWE message parsing" {
     const allocator = testing.allocator;
@@ -921,19 +957,19 @@ test "format() with different chain IDs" {
     };
 
     message.chain_id = 1;
-    var formatted = try message.format(allocator);
-    defer allocator.free(formatted);
-    try testing.expect(std.mem.indexOf(u8, formatted, "Chain ID: 1") != null);
+    const formatted1 = try message.format(allocator);
+    defer allocator.free(formatted1);
+    try testing.expect(std.mem.indexOf(u8, formatted1, "Chain ID: 1\n") != null);
 
     message.chain_id = 137;
-    formatted = try message.format(allocator);
-    defer allocator.free(formatted);
-    try testing.expect(std.mem.indexOf(u8, formatted, "Chain ID: 137") != null);
+    const formatted137 = try message.format(allocator);
+    defer allocator.free(formatted137);
+    try testing.expect(std.mem.indexOf(u8, formatted137, "Chain ID: 137") != null);
 
     message.chain_id = 42161;
-    formatted = try message.format(allocator);
-    defer allocator.free(formatted);
-    try testing.expect(std.mem.indexOf(u8, formatted, "Chain ID: 42161") != null);
+    const formatted42161 = try message.format(allocator);
+    defer allocator.free(formatted42161);
+    try testing.expect(std.mem.indexOf(u8, formatted42161, "Chain ID: 42161") != null);
 }
 
 test "validate() accepts all valid optional field combinations" {
@@ -974,4 +1010,43 @@ test "validate() accepts all valid optional field combinations" {
     try message.validate();
 
     _ = allocator;
+}
+
+test "format() matches EIP-4361 layout exactly" {
+    const allocator = testing.allocator;
+
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"),
+        .statement = "Sign in to Example",
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    const with_statement = try message.format(allocator);
+    defer allocator.free(with_statement);
+    try testing.expectEqualStrings(
+        "example.com wants you to sign in with your Ethereum account:\n" ++
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\n" ++
+            "Sign in to Example\n\n" ++
+            "URI: https://example.com\nVersion: 1\nChain ID: 1\nNonce: 32891756\nIssued At: 2021-09-30T16:25:24Z",
+        with_statement,
+    );
+
+    message.statement = null;
+    const without_statement = try message.format(allocator);
+    defer allocator.free(without_statement);
+    try testing.expectEqualStrings(
+        "example.com wants you to sign in with your Ethereum account:\n" ++
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\n\n" ++
+            "URI: https://example.com\nVersion: 1\nChain ID: 1\nNonce: 32891756\nIssued At: 2021-09-30T16:25:24Z",
+        without_statement,
+    );
 }

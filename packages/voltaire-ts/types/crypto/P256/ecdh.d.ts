@@ -10,7 +10,7 @@
  * @param {import('./P256PublicKeyType.js').P256PublicKeyType} publicKey - Their 64-byte uncompressed public key
  * @returns {Uint8Array} 32-byte shared secret
  * @throws {InvalidPrivateKeyError} If private key is invalid
- * @throws {InvalidPublicKeyError} If public key is invalid
+ * @throws {InvalidPublicKeyError} If public key has the wrong length, is the point at infinity, has a coordinate >= p, or is not on the curve
  * @throws {P256Error} If ECDH computation fails
  * @example
  * ```javascript

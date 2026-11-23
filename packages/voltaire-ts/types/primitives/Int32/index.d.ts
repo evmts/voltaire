@@ -35,5 +35,5 @@ import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
 import { toString } from "./toString.js";
-export { from, fromHex, fromBigInt, fromNumber, fromBytes, isValid, toHex, toBigInt, toNumber, toBytes, toString, clone, plus, minus, times, dividedBy, modulo, bitwiseAnd, bitwiseOr, bitwiseXor, bitwiseNot, shiftLeft, shiftRight, equals, lessThan, greaterThan, isZero, minimum, maximum, abs, negate, sign, isNegative, isPositive, MIN, MAX, ZERO, ONE, MINUS_ONE, SIZE, };
+export { abs, bitwiseAnd, bitwiseNot, bitwiseOr, bitwiseXor, clone, dividedBy, equals, from, fromBigInt, fromBytes, fromHex, fromNumber, greaterThan, isNegative, isPositive, isValid, isZero, lessThan, MAX, MIN, MINUS_ONE, maximum, minimum, minus, modulo, negate, ONE, plus, SIZE, shiftLeft, shiftRight, sign, times, toBigInt, toBytes, toHex, toNumber, toString, ZERO, };
 //# sourceMappingURL=index.d.ts.map

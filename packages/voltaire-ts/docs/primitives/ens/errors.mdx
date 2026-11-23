@@ -1,25 +1,143 @@
 ---
-title: "errors"
-description: "ENS errors documentation"
+title: "ENS Errors"
+description: "Error classes exported by the Ens module, which functions throw them, and how to read the failure reason"
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/ens.ts">
   Run ENS examples in the interactive playground
 </Card>
 
-# errors
+# ENS Errors
 
-Documentation for ENS errors.
+## Which functions throw
+
+| Function | Throws | When |
+|----------|--------|------|
+| `normalize`, `_normalize` | `DisallowedCharacterError` | ENSIP-15 normalization fails |
+| `beautify`, `_beautify` | `DisallowedCharacterError` | ENSIP-15 normalization fails |
+| `validate` | `DisallowedCharacterError` | Empty string, non-string, or normalization fails |
+| `isValid`, `is`, `from`, `toString` | Nothing | - |
+| `namehash`, `labelhash`, `Namehash`, `Labelhash` | Nothing | No validation is performed |
 
 <Note>
-This page is under construction. See [ENS Overview](/primitives/ens) for core functionality.
+Every ENSIP-15 failure surfaces as `DisallowedCharacterError`, including script mixtures, confusables, empty labels, and label extensions. The specific reason is in `error.cause.message`.
 </Note>
 
-## Overview
+## DisallowedCharacterError
 
-ENS operations for errors.
+```typescript
+import { DisallowedCharacterError } from '@tevm/voltaire/Ens';
+```
+
+Extends `InvalidFormatError` → `ValidationError` → `PrimitiveError` → `AbstractError` → `Error`.
+
+| Field | Value |
+|-------|-------|
+| `name` | `"DisallowedCharacterError"` |
+| `message` | `"Disallowed character: prohibited ENS character"`, followed by `Caused by:` and `Docs:` lines when present |
+| `code` | `-32602` |
+| `value` | The input name (`String(name)` for non-string input to `validate`) |
+| `expected` | `"Valid ENS name with allowed characters only"` |
+| `docsPath` | `/primitives/ens/normalize#error-handling`, `/primitives/ens/beautify#error-handling`, or `/primitives/ens/validate` |
+| `cause` | The `@adraffy/ens-normalize` error. Absent when `validate` rejects empty or non-string input. |
+| `_tag` | `"InvalidFormatError"` (inherited, not overridden) |
+
+### Reading the reason
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+try {
+  Ens.normalize("аpple.eth"); // Cyrillic а + Latin pple
+} catch (error) {
+  if (error instanceof Ens.DisallowedCharacterError) {
+    error.value;          // "аpple.eth"
+    error.code;           // -32602
+    error.cause?.message; // contains "illegal mixture: Cyrillic + Latin"
+  }
+}
+```
+
+The library's messages may also contain U+200E (left-to-right mark) after quoted labels. Match on substrings, not whole messages.
+
+Reasons observed from `@adraffy/ens-normalize` 1.11.1:
+
+| Input | `cause.message` contains |
+|-------|--------------------------|
+| `"invalid\x00.eth"` | `disallowed character: {00}` |
+| `"nic‍k.eth"` | `disallowed character: {200D}` |
+| `"a..eth"` | `empty label` |
+| `"ab--cd.eth"` | `invalid label extension: "ab--"` |
+| `"a_b.eth"` | `underscore allowed only at start` |
+| `"́a.eth"` | `illegal placement: leading combining mark` |
+| `"аpple.eth"` | `illegal mixture: Cyrillic + Latin` |
+| `"арре.eth"` | `whole-script confusable: Cyrillic/Latin` |
+
+These strings come from the third-party library and can change between its versions. Do not build control flow on exact wording.
+
+### Matching the error
+
+Use `instanceof` or `name`. Do not use `_tag`: it is `"InvalidFormatError"` for every Ens error class.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+function safeNormalize(input: string): Ens.Ens | null {
+  try {
+    return Ens.normalize(input);
+  } catch (error) {
+    if (error instanceof Ens.DisallowedCharacterError) return null;
+    throw error;
+  }
+}
+```
+
+## Exported but not thrown
+
+The module also exports five error classes with the same constructor shape and the same base class. No Ens function throws them today; they exist so callers can construct ENSIP-15-specific errors.
+
+| Class | Message | `expected` |
+|-------|---------|-----------|
+| `InvalidLabelExtensionError` | `Invalid label extension: double-dash at positions 2-3` | `Valid ENS label without double-dash at positions 2-3` |
+| `IllegalMixtureError` | `Illegal mixture: incompatible script combinations` | `Valid ENS name without mixed scripts` |
+| `WholeConfusableError` | `Whole confusable: name resembles different script` | `Valid ENS name without confusable characters` |
+| `EmptyLabelError` | `Empty label: zero-length label segment` | `Valid ENS name without empty labels` |
+| `InvalidUtf8Error` | `Invalid UTF-8: malformed UTF-8 encoding` | `Valid UTF-8 encoded ENS name` |
+
+All default `code` to `-32602`.
+
+```typescript
+import { IllegalMixtureError } from '@tevm/voltaire/Ens';
+
+const error = new IllegalMixtureError({
+  value: "аpple.eth",
+  docsPath: "/primitives/ens/errors",
+});
+error.name; // "IllegalMixtureError"
+error.code; // -32602
+```
+
+<Warning>
+`catch (e) { if (e instanceof Ens.IllegalMixtureError) ... }` never matches an error from `normalize()`. Catch `DisallowedCharacterError` and inspect `cause.message`.
+</Warning>
+
+## Constructor options
+
+Every Ens error class accepts:
+
+```typescript
+{
+  value: string;
+  code?: number;                     // default -32602
+  context?: Record<string, unknown>;
+  docsPath?: string;
+  cause?: Error;
+}
+```
 
 ## See Also
 
 - [ENS Overview](/primitives/ens)
-- [ENS Normalization](/primitives/ens/normalization)
+- [Validation](/primitives/ens/validation)
+- [Normalization](/primitives/ens/normalization)
+- [Security](/primitives/ens/security)

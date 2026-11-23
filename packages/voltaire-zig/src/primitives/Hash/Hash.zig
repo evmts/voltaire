@@ -61,14 +61,11 @@ test "fromBytes - creates independent copy" {
 /// Create Hash from hex string (with or without 0x prefix).
 /// Returns error if hex is invalid or not 32 bytes.
 pub fn fromHex(hex: []const u8) !Hash {
-    const bytes = try Hex.fromHex(std.testing.allocator, hex);
-    defer std.testing.allocator.free(bytes);
-
-    if (bytes.len != SIZE) {
-        return error.InvalidHashLength;
-    }
-
-    return fromBytes(bytes);
+    const digits = if (std.mem.startsWith(u8, hex, "0x")) hex[2..] else hex;
+    if (digits.len != SIZE * 2) return error.InvalidHashLength;
+    var result: Hash = undefined;
+    _ = std.fmt.hexToBytes(&result, digits) catch return error.InvalidHexCharacter;
+    return result;
 }
 
 test "fromHex - with 0x prefix" {
@@ -98,6 +95,12 @@ test "fromHex - invalid hex chars" {
 pub fn from(value: anytype) !Hash {
     const T = @TypeOf(value);
     if (T == Hash) return value;
+    if (@typeInfo(T) == .pointer and @typeInfo(T).pointer.size == .one) {
+        const Child = @typeInfo(T).pointer.child;
+        if (@typeInfo(Child) == .array and @typeInfo(Child).array.child == u8) {
+            return from(@as([]const u8, value[0..]));
+        }
+    }
 
     if (T == []const u8 or T == []u8) {
         // Check if it's hex (starts with 0x or all hex chars)
@@ -427,7 +430,7 @@ test "keccak256String - same as keccak256" {
 
 /// Compute Keccak256 hash of hex string
 pub fn keccak256Hex(hex: []const u8) !Hash {
-    const bytes = try Hex.toBytes(hex, std.testing.allocator);
+    const bytes = try Hex.hexToBytes(std.testing.allocator, hex);
     defer std.testing.allocator.free(bytes);
     return keccak256(bytes);
 }
@@ -437,7 +440,7 @@ test "keccak256Hex - valid hex" {
     const hash = try keccak256Hex(hex);
 
     // Verify by converting hex to bytes and hashing
-    const bytes = try Hex.toBytes(hex, std.testing.allocator);
+    const bytes = try Hex.hexToBytes(std.testing.allocator, hex);
     defer std.testing.allocator.free(bytes);
     const expected = keccak256(bytes);
 
@@ -504,45 +507,19 @@ pub fn merkleRoot(allocator: std.mem.Allocator, hashes: []const Hash) !Hash {
         return hashes[0];
     }
 
-    // Create working buffer for current level
-    var current = try allocator.alloc(Hash, hashes.len);
+    // Compact each level into the same owned allocation. Each output replaces
+    // only inputs already consumed, so no borrowed level survives a free.
+    const current = try allocator.dupe(Hash, hashes);
     defer allocator.free(current);
-    @memcpy(current, hashes);
-
     var current_len = hashes.len;
-
-    // Build tree bottom-up
     while (current_len > 1) {
-        const next_len = (current_len + 1) / 2;
-        var next = try allocator.alloc(Hash, next_len);
-        defer allocator.free(next);
-
         var i: usize = 0;
         while (i < current_len) : (i += 2) {
-            if (i + 1 < current_len) {
-                // Pair exists
-                const pair = [_]Hash{ current[i], current[i + 1] };
-                next[i / 2] = try concat(allocator, &pair);
-            } else {
-                // Odd one out - hash with itself
-                const pair = [_]Hash{ current[i], current[i] };
-                next[i / 2] = try concat(allocator, &pair);
-            }
+            const right = if (i + 1 < current_len) current[i + 1] else current[i];
+            const pair = [_]Hash{ current[i], right };
+            current[i / 2] = try concat(allocator, &pair);
         }
-
-        // Swap buffers
-        const temp = current;
-        current = next;
-        current_len = next_len;
-        allocator.free(temp);
-
-        // Re-allocate for next iteration if needed
-        if (current_len > 1) {
-            const new_current = try allocator.alloc(Hash, current_len);
-            @memcpy(new_current, current[0..current_len]);
-            allocator.free(current);
-            current = new_current;
-        }
+        current_len = current_len / 2 + current_len % 2;
     }
 
     return current[0];

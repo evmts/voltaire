@@ -1,6 +1,6 @@
 ---
-title: "info.js"
----
+
+## title: "info.js"
 
 # info.js
 
@@ -9,7 +9,7 @@ Get opcode metadata including gas cost and stack requirements.
 ## Signature
 
 ```typescript
-function info(opcode: BrandedOpcode): Info | undefined
+function info(opcode: BrandedOpcode): Info | undefined;
 ```
 
 ## Parameters
@@ -21,12 +21,13 @@ function info(opcode: BrandedOpcode): Info | undefined
 `Info | undefined` - Metadata object or undefined if opcode invalid
 
 ### Info Structure
+
 ```typescript
 {
-  gasCost: number;        // Base gas cost
-  stackInputs: number;    // Stack items consumed
-  stackOutputs: number;   // Stack items produced
-  name: string;           // Opcode name
+	gasCost: number; // Base gas cost
+	stackInputs: number; // Stack items consumed
+	stackOutputs: number; // Stack items produced
+	name: string; // Opcode name
 }
 ```
 
@@ -34,10 +35,10 @@ function info(opcode: BrandedOpcode): Info | undefined
 
 ```typescript
 const info = Opcode.info(Opcode.ADD);
-console.log(info?.name);          // "ADD"
-console.log(info?.gasCost);       // 3
-console.log(info?.stackInputs);   // 2
-console.log(info?.stackOutputs);  // 1
+console.log(info?.name); // "ADD"
+console.log(info?.gasCost); // 3
+console.log(info?.stackInputs); // 2
+console.log(info?.stackOutputs); // 1
 ```
 
 ## Notes

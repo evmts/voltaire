@@ -50,11 +50,11 @@ export const SHA256: typeof from & {
     OUTPUT_SIZE: number;
     BLOCK_SIZE: number;
 };
+import { create } from "./create.js";
 import { from } from "./from.js";
 import { hash } from "./hash.js";
-import { hashString } from "./hashString.js";
 import { hashHex } from "./hashHex.js";
+import { hashString } from "./hashString.js";
 import { toHex } from "./toHex.js";
-import { create } from "./create.js";
-export { from, hash, hashString, hashHex, toHex, create };
+export { create, from, hash, hashHex, hashString, toHex };
 //# sourceMappingURL=SHA256.d.ts.map

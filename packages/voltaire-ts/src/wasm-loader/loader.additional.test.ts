@@ -185,10 +185,17 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			expect(blob).toHaveLength(131072);
 		});
 
-		it("blobFromData encodes max data (~131KB)", () => {
-			const data = new Uint8Array(131000).fill(0xff);
+		it("blobFromData encodes max data (126972 bytes)", () => {
+			// 4096 field elements * 31 usable bytes - 4-byte length prefix
+			const data = new Uint8Array(126972).fill(0xff);
 			const blob = blobFromData(data);
 			expect(blob).toHaveLength(131072);
+		});
+
+		it("blobFromData rejects one byte over max data", () => {
+			expect(() => blobFromData(new Uint8Array(126973))).toThrow(
+				"Invalid length",
+			);
 		});
 
 		it("blobToData decodes blob", () => {
@@ -287,9 +294,12 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 			expect(count).toBeGreaterThanOrEqual(0);
 		});
 
-		it("blobEstimateCount for 131KB (1 blob)", () => {
-			const count = blobEstimateCount(131000);
-			expect(count).toBe(1);
+		it("blobEstimateCount for max data per blob (1 blob)", () => {
+			expect(blobEstimateCount(126972)).toBe(1);
+		});
+
+		it("blobEstimateCount for 131KB (2 blobs, over 126972 per blob)", () => {
+			expect(blobEstimateCount(131000)).toBe(2);
 		});
 
 		it("blobEstimateCount for 200KB (2 blobs)", () => {
@@ -741,7 +751,7 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 	describe("Boundary Conditions", () => {
 		it("blob operations with exact max data size", () => {
 			// Test with data at exact capacity
-			const maxData = new Uint8Array(131000); // Close to max
+			const maxData = new Uint8Array(126972); // MAX_DATA_PER_BLOB
 			maxData.fill(0xaa);
 			const blob = blobFromData(maxData);
 			const decoded = blobToData(blob);

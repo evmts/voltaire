@@ -5,11 +5,6 @@
  * @since 0.0.0
  */
 /**
- * Minimum base fee (wei)
- * @since 0.0.0
- */
-export const MIN_BASE_FEE: 7n;
-/**
  * Maximum base fee change per block (denominator for 12.5% = 1/8)
  * @since 0.0.0
  */

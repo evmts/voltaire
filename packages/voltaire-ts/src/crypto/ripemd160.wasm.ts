@@ -93,17 +93,13 @@ async function loadWasm(): Promise<void> {
 	};
 
 	// Load WASM file (support both Node.js and browser)
+	// One `new URL(..., import.meta.url)` literal for every runtime: bundlers
+	// and the @tevm/voltaire build rewrite it to the shipped dist/wasm asset.
+	const wasmPath = new URL("../../wasm/crypto/ripemd160.wasm", import.meta.url);
 	let buffer: ArrayBuffer;
-	if (typeof process !== "undefined" && process.versions?.node) {
+	if (wasmPath.protocol === "file:") {
 		// Node.js/Bun environment
 		const fs = await import("node:fs/promises");
-		const path = await import("node:path");
-		const url = await import("node:url");
-		const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-		const wasmPath = path.resolve(
-			__dirname,
-			"../../wasm/crypto/ripemd160.wasm",
-		);
 		const fileBuffer = await fs.readFile(wasmPath);
 		buffer = fileBuffer.buffer.slice(
 			fileBuffer.byteOffset,
@@ -111,11 +107,12 @@ async function loadWasm(): Promise<void> {
 		);
 	} else {
 		// Browser environment
-		const wasmPath = new URL(
-			"../../wasm/crypto/ripemd160.wasm",
-			import.meta.url,
-		);
 		const response = await fetch(wasmPath);
+		if (!response.ok) {
+			throw new Error(
+				`Failed to fetch ${wasmPath.href}: ${response.status} ${response.statusText}`,
+			);
+		}
 		buffer = await response.arrayBuffer();
 	}
 	const wasmModule = await WebAssembly.instantiate(buffer, importObject);

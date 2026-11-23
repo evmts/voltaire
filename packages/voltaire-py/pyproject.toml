@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "voltaire"
+name = "tevm-voltaire"
 version = "0.1.0"
 description = "Python bindings for Voltaire Ethereum primitives and cryptography"
 readme = "README.md"
@@ -36,9 +36,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/voltaire-eth/voltaire"
-Documentation = "https://voltaire.dev"
-Repository = "https://github.com/voltaire-eth/voltaire"
+Homepage = "https://github.com/evmts/voltaire"
+Documentation = "https://voltaire.tevm.sh"
+Repository = "https://github.com/evmts/voltaire"
 
 [tool.setuptools.packages.find]
 where = ["src"]

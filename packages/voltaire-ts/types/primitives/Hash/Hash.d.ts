@@ -1,5 +1,5 @@
 /**
- * @typedef {import(./HashType.js').HashType} HashType
+ * @typedef {import('./HashType.js').HashType} HashType
  */
 /**
  * Creates a Hash instance from a string or Uint8Array.
@@ -18,7 +18,7 @@
 export function Hash(value: any): any;
 export class Hash {
     /**
-     * @typedef {import(./HashType.js').HashType} HashType
+     * @typedef {import('./HashType.js').HashType} HashType
      */
     /**
      * Creates a Hash instance from a string or Uint8Array.
@@ -72,5 +72,6 @@ export namespace Hash {
     export let SIZE: any;
 }
 export * from "./constants.js";
+export type HashType = import("./HashType.js").HashType;
 declare const _ZERO: any;
 //# sourceMappingURL=Hash.d.ts.map

@@ -2,7 +2,8 @@ import type { EtherType as BrandedEther } from "./EtherType.js";
 /**
  * Create Ether from bigint, number, or string
  *
- * Ether is a string type to support decimal values like "1.5" or "0.001"
+ * Ether is a string type to support decimal values like "1.5" or "0.001".
+ * Scientific notation (`1e-9`, `"1.5e3"`) is stored as an exact plain decimal.
  *
  * @see https://voltaire.tevm.sh/primitives/denomination for Denomination documentation
  * @since 0.0.0

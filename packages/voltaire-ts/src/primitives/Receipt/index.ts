@@ -43,9 +43,14 @@ export const poll: (
 	options?: { interval?: number; timeout?: number; confirmations?: number },
 ) => Promise<ReceiptType> = _poll;
 
-export { _assertValid, _isPreByzantium, _poll };
-
+export {
+	type ReceiptLogFilter,
+	type ReceiptLookup,
+	ReceiptManager,
+	type ReceiptManagerType,
+} from "./ReceiptManager/index.js";
 /**
  * TransactionReceipt - alias for Receipt
  */
 export type { ReceiptType as TransactionReceiptType } from "./ReceiptType.js";
+export { _assertValid, _isPreByzantium, _poll };

@@ -15,7 +15,7 @@ describe("Opcode boundary tests", () => {
 		for (let byte = 0; byte <= 0xff; byte++) {
 			const isDefinedOpcode =
 				byte <= 0x0b || // Arithmetic
-				(byte >= 0x10 && byte <= 0x1d) || // Comparison/Bitwise
+				(byte >= 0x10 && byte <= 0x1e) || // Comparison/Bitwise (through Osaka CLZ)
 				byte === 0x20 || // KECCAK256
 				(byte >= 0x30 && byte <= 0x3f) || // Environmental
 				(byte >= 0x40 && byte <= 0x4a) || // Block info
@@ -38,7 +38,7 @@ describe("Opcode boundary tests", () => {
 	it("validates undefined opcode ranges", () => {
 		const undefinedRanges = [
 			[0x0c, 0x0f], // After SIGNEXTEND
-			[0x1e, 0x1f], // After SAR
+			[0x1f, 0x1f], // After CLZ
 			[0x21, 0x2f], // After KECCAK256
 			[0x4b, 0x4f], // After BLOBBASEFEE
 			[0xa5, 0xef], // After LOG4

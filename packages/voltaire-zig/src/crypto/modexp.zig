@@ -19,15 +19,15 @@
 //!
 //! ## Usage
 //! ```zig
-//! const modexp = @import("modexp");
+//! const std = @import("std");
+//! const ModExp = @import("crypto").ModExp;
 //!
-//! const base = [_]u8{0x03}; // 3
-//! const exp = [_]u8{0x0A}; // 10
-//! const mod = [_]u8{0x0D}; // 13
-//! var output: [1]u8 = undefined;
-//!
-//! // Compute 3^10 mod 13 = 9
-//! try modexp.unauditedModexp(allocator, &base, &exp, &mod, &output);
+//! pub fn main() !void {
+//!     const allocator = std.heap.page_allocator;
+//!     const result = try ModExp.modexp(allocator, &.{3}, &.{10}, &.{13});
+//!     defer allocator.free(result);
+//!     std.debug.assert(result[0] == 3); // 3^10 mod 13 = 3
+//! }
 //! ```
 //!
 //! ## Security Considerations
@@ -266,34 +266,46 @@ fn calculateEip2565MultiplicationComplexity(x: usize) u64 {
     return clampU128ToU64(words * words);
 }
 
-fn exponentHeadBitLength(exp_bytes: []const u8) u64 {
-    const head = exp_bytes[0..@min(exp_bytes.len, 32)];
+/// Bit length of the exponent head: the first `head_len` bytes of the
+/// exponent, where `head_len = min(exp_len, 32)`.
+///
+/// `exp_bytes` may be shorter than `head_len` (call data that ends inside the
+/// exponent). The missing trailing bytes are zeros, as EIP-198 right-pads
+/// call data, so they still count toward the bit length of a non-zero head.
+/// Bytes of `exp_bytes` past `head_len` are ignored.
+fn exponentHeadBitLength(exp_bytes: []const u8, head_len: usize) u64 {
+    std.debug.assert(head_len <= 32);
+    const present = exp_bytes[0..@min(exp_bytes.len, head_len)];
     var leading_zeros: usize = 0;
-    for (head) |byte| {
+    for (present) |byte| {
         if (byte != 0) break;
         leading_zeros += 1;
     }
-    if (leading_zeros == head.len) return 0;
+    // Every present byte is zero and every absent byte is padding zero.
+    if (leading_zeros == present.len) return 0;
 
-    const first_non_zero = head[leading_zeros];
+    const first_non_zero = present[leading_zeros];
     const first_byte_bits: u64 = 8 - @as(u64, @intCast(@clz(first_non_zero)));
-    return @as(u64, @intCast((head.len - leading_zeros - 1) * 8)) + first_byte_bits;
+    return @as(u64, @intCast((head_len - leading_zeros - 1) * 8)) + first_byte_bits;
 }
 
-fn calculateModexpIterations(exp_len: usize, exp_bytes: []const u8) u64 {
-    const head_bits = exponentHeadBitLength(exp_bytes);
+fn calculateModexpIterations(exp_len: usize, exp_bytes: []const u8, long_byte_cost: u64) u64 {
+    const effective_head_len = @min(exp_len, 32);
+    const head_bits = exponentHeadBitLength(exp_bytes, effective_head_len);
     const head_iterations = if (head_bits == 0) 0 else head_bits - 1;
     const adjusted = if (exp_len <= 32)
         head_iterations
     else
-        clampU128ToU64(@as(u128, @intCast(exp_len - 32)) * 8 + head_iterations);
+        clampU128ToU64(@as(u128, @intCast(exp_len - 32)) * long_byte_cost + head_iterations);
     return @max(adjusted, 1);
 }
 
-fn usesEip2565Gas(hardfork: anytype) bool {
+fn gasForkAtLeast(hardfork: anytype, target: @import("primitives").Hardfork) bool {
     return switch (@typeInfo(@TypeOf(hardfork))) {
-        .@"enum" => hardfork.isAtLeast(.BERLIN),
-        else => true,
+        .@"enum" => hardfork.isAtLeast(target),
+        .enum_literal => @as(@import("primitives").Hardfork, hardfork).isAtLeast(target),
+        // Preserve the legacy marker API's Berlin gas schedule.
+        else => @import("primitives").Hardfork.BERLIN.isAtLeast(target),
     };
 }
 
@@ -344,7 +356,10 @@ pub const ModExp = struct {
     }
 
     /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
-    /// Calculates gas cost for MODEXP operation (EIP-2565)
+    /// Calculates MODEXP gas using EIP-198 before Berlin, EIP-2565 from Berlin,
+    /// and EIP-7883 from Osaka. exp_bytes contains the right-padded exponent head
+    /// (at most 32 bytes); exp_len is the full declared exponent length.
+    /// Length bounds belong to the precompile. Costs saturate at maxInt(u64).
     /// WARNING: Custom gas calculation logic not audited
     pub fn calculateGas(
         base_len: usize,
@@ -355,9 +370,15 @@ pub const ModExp = struct {
     ) u64 {
         // Calculate maximum length for multiplication complexity
         const max_len = @max(base_len, mod_len);
-        const iteration_count = calculateModexpIterations(exp_len, exp_bytes);
+        const osaka = gasForkAtLeast(hardfork, .OSAKA);
+        const iteration_count = calculateModexpIterations(exp_len, exp_bytes, if (osaka) 16 else 8);
+        if (osaka) {
+            const words = (@as(u128, @intCast(max_len)) + 7) / 8;
+            const complexity = if (max_len <= 32) 16 else clampU128ToU64(2 * words * words);
+            return @max(500, mulDivToU64(complexity, iteration_count, 1));
+        }
 
-        if (usesEip2565Gas(hardfork)) {
+        if (gasForkAtLeast(hardfork, .BERLIN)) {
             const mult_complexity = calculateEip2565MultiplicationComplexity(max_len);
             const gas_cost = mulDivToU64(mult_complexity, iteration_count, 3);
             return @max(200, gas_cost);
@@ -367,6 +388,51 @@ pub const ModExp = struct {
         return mulDivToU64(mult_complexity, iteration_count, 20);
     }
 };
+
+test "ModExp gas schedules match EIP-198, EIP-2565 and EIP-7883 boundaries" {
+    const Hardfork = @import("primitives").Hardfork;
+    const head = [_]u8{0xff} ** 32;
+    try std.testing.expectEqual(@as(u64, 13056), ModExp.calculateGas(32, 32, 32, &head, Hardfork.BYZANTIUM));
+    try std.testing.expectEqual(@as(u64, 1360), ModExp.calculateGas(32, 32, 32, &head, Hardfork.PRAGUE));
+    try std.testing.expectEqual(@as(u64, 4080), ModExp.calculateGas(32, 32, 32, &head, Hardfork.OSAKA));
+    try std.testing.expectEqual(@as(u64, 12750), ModExp.calculateGas(33, 32, 33, &head, Hardfork.OSAKA));
+    // EELS treats a zero exponent head's bit contribution as zero, including
+    // long exponents: 16 * (33 - 32) iterations, not a negative bit contribution.
+    try std.testing.expectEqual(@as(u64, 2048), ModExp.calculateGas(64, 33, 64, &.{0}, Hardfork.OSAKA));
+    try std.testing.expectEqual(@as(u64, 34688), ModExp.calculateGas(64, 33, 64, &head, Hardfork.OSAKA));
+}
+
+test "ModExp gas right-pads an exponent shorter than its declared head" {
+    const Hardfork = @import("primitives").Hardfork;
+
+    // exp_len = 64 with one byte of exponent data: the 32-byte head is 0x01
+    // followed by 31 padding zeros, so its bit length is 249, not 1.
+    // iterations = 8 * (64 - 32) + (249 - 1) = 504; gas = 16 * 504 / 3.
+    var padded = [_]u8{0} ** 32;
+    padded[0] = 0x01;
+    try std.testing.expectEqual(@as(u64, 2688), ModExp.calculateGas(32, 64, 32, &padded, Hardfork.PRAGUE));
+    try std.testing.expectEqual(@as(u64, 2688), ModExp.calculateGas(32, 64, 32, &.{0x01}, Hardfork.PRAGUE));
+    try std.testing.expectEqual(@as(u64, 2688), ModExp.calculateGas(32, 64, 32, padded[0..7], Hardfork.PRAGUE));
+
+    // The same holds when the declared length is at most 32 bytes.
+    try std.testing.expectEqual(
+        ModExp.calculateGas(32, 4, 32, &.{ 0x01, 0, 0, 0 }, Hardfork.BYZANTIUM),
+        ModExp.calculateGas(32, 4, 32, &.{0x01}, Hardfork.BYZANTIUM),
+    );
+
+    // Bytes past the 32-byte head never change the head's bit length.
+    const long = [_]u8{0} ** 31 ++ [_]u8{0x01} ++ [_]u8{0xff} ** 8;
+    try std.testing.expectEqual(
+        ModExp.calculateGas(32, 40, 32, long[0..32], Hardfork.OSAKA),
+        ModExp.calculateGas(32, 40, 32, &long, Hardfork.OSAKA),
+    );
+
+    // A zero head stays zero however short the data is.
+    try std.testing.expectEqual(
+        ModExp.calculateGas(64, 33, 64, &.{0}, Hardfork.OSAKA),
+        ModExp.calculateGas(64, 33, 64, &.{}, Hardfork.OSAKA),
+    );
+}
 
 test "modexp: base^0 mod m = 1" {
     const allocator = std.testing.allocator;
@@ -478,9 +544,8 @@ test "modexp: large numbers - 2^255 mod 2^128" {
 
     try unauditedModexp(allocator, &base, &exp, &mod, &output);
 
-    // 2^255 mod 2^128 = 2^127
-    var expected: [17]u8 = .{0} ** 17;
-    expected[9] = 0x80; // 2^127 in big-endian
+    // 2^255 is an exact multiple of 2^128; the remainder is zero.
+    const expected: [17]u8 = .{0} ** 17;
 
     try std.testing.expectEqualSlices(u8, &expected, &output);
 }

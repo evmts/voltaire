@@ -21,17 +21,25 @@ export namespace KZG {
     export { verifyKzgProof };
     export { verifyBlobKzgProof };
     export { verifyBlobKzgProofBatch };
+    export { computeCells };
+    export { computeCellsAndKzgProofs };
+    export { verifyCellKzgProofBatch };
+    export { recoverCellsAndKzgProofs };
     export { blobToKzgCommitment as Commitment };
     export { computeKzgProof as Proof };
     export { computeBlobKzgProof as BlobProof };
 }
 export { BlobToKzgCommitment } from "./blobToKzgCommitment.js";
 export { ComputeBlobKzgProof } from "./computeBlobKzgProof.js";
+export { ComputeCells } from "./computeCells.js";
+export { ComputeCellsAndKzgProofs } from "./computeCellsAndKzgProofs.js";
 export { ComputeKzgProof } from "./computeKzgProof.js";
 export * from "./constants.js";
 export * from "./errors.js";
+export { RecoverCellsAndKzgProofs } from "./recoverCellsAndKzgProofs.js";
 export { VerifyBlobKzgProof } from "./verifyBlobKzgProof.js";
 export { VerifyBlobKzgProofBatch } from "./verifyBlobKzgProofBatch.js";
+export { VerifyCellKzgProofBatch } from "./verifyCellKzgProofBatch.js";
 export { VerifyKzgProof } from "./verifyKzgProof.js";
 /**
  * Instantiate factory functions with WASM bindings
@@ -70,11 +78,49 @@ export const verifyBlobKzgProof: (blob: Uint8Array, commitment: Uint8Array, proo
  * @type {(blobs: Uint8Array[], commitments: Uint8Array[], proofs: Uint8Array[]) => boolean}
  */
 export const verifyBlobKzgProofBatch: (blobs: Uint8Array[], commitments: Uint8Array[], proofs: Uint8Array[]) => boolean;
+/**
+ * EIP-7594 PeerDAS: compute all 128 cells of the extended blob
+ *
+ * Throws `KzgNotSupportedError` until the WASM loader exports PeerDAS.
+ * Inject a backend through the matching factory function instead.
+ * @type {(blob: Uint8Array) => Uint8Array[]}
+ */
+export const computeCells: (blob: Uint8Array) => Uint8Array[];
+/**
+ * EIP-7594 PeerDAS: compute all 128 cells and their KZG proofs
+ *
+ * Throws `KzgNotSupportedError` until the WASM loader exports PeerDAS.
+ * Inject a backend through the matching factory function instead.
+ * @type {(blob: Uint8Array) => { cells: Uint8Array[], proofs: Uint8Array[] }}
+ */
+export const computeCellsAndKzgProofs: (blob: Uint8Array) => {
+    cells: Uint8Array[];
+    proofs: Uint8Array[];
+};
+/**
+ * EIP-7594 PeerDAS: verify a batch of cell KZG proofs
+ *
+ * Throws `KzgNotSupportedError` until the WASM loader exports PeerDAS.
+ * Inject a backend through the matching factory function instead.
+ * @type {(commitments: Uint8Array[], cellIndices: number[], cells: Uint8Array[], proofs: Uint8Array[]) => boolean}
+ */
+export const verifyCellKzgProofBatch: (commitments: Uint8Array[], cellIndices: number[], cells: Uint8Array[], proofs: Uint8Array[]) => boolean;
+/**
+ * EIP-7594 PeerDAS: recover all cells and proofs from at least 64 cells
+ *
+ * Throws `KzgNotSupportedError` until the WASM loader exports PeerDAS.
+ * Inject a backend through the matching factory function instead.
+ * @type {(cellIndices: number[], cells: Uint8Array[]) => { cells: Uint8Array[], proofs: Uint8Array[] }}
+ */
+export const recoverCellsAndKzgProofs: (cellIndices: number[], cells: Uint8Array[]) => {
+    cells: Uint8Array[];
+    proofs: Uint8Array[];
+};
 import { loadTrustedSetup } from "./loadTrustedSetup.js";
 import { freeTrustedSetup } from "./loadTrustedSetup.js";
 import { isInitialized } from "./isInitialized.js";
 import { validateBlob } from "./validateBlob.js";
 import { createEmptyBlob } from "./createEmptyBlob.js";
 import { generateRandomBlob } from "./generateRandomBlob.js";
-export { validateBlob, createEmptyBlob, generateRandomBlob, loadTrustedSetup, freeTrustedSetup, isInitialized };
+export { createEmptyBlob, freeTrustedSetup, generateRandomBlob, isInitialized, loadTrustedSetup, validateBlob };
 //# sourceMappingURL=KZG.d.ts.map

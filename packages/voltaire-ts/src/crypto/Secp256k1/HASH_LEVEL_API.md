@@ -31,23 +31,25 @@ The hash-level API was added to match the behavior of other Ethereum libraries l
 Sign a pre-hashed 32-byte message.
 
 ```typescript
-import * as Secp256k1 from './crypto/Secp256k1/index.js';
-import * as Hash from './primitives/Hash/index.js';
-import * as PrivateKey from './primitives/PrivateKey/index.js';
+import * as Secp256k1 from "./crypto/Secp256k1/index.js";
+import * as Hash from "./primitives/Hash/index.js";
+import * as PrivateKey from "./primitives/PrivateKey/index.js";
 
-const hash = Hash.keccak256String('Hello!');
-const privateKey = PrivateKey.from('0x...');
+const hash = Hash.keccak256String("Hello!");
+const privateKey = PrivateKey.from("0x...");
 const signature = Secp256k1.signHash(hash, privateKey);
 // { r: Uint8Array(32), s: Uint8Array(32), v: 27 }
 ```
 
 **Parameters:**
+
 - `hash`: 32-byte hash (must be exactly 32 bytes)
 - `privateKey`: 32-byte private key
 
 **Returns:** Signature with `{ r, s, v }` components
 
 **Throws:**
+
 - `CryptoError` if hash is not exactly 32 bytes
 - `InvalidPrivateKeyError` if private key is invalid
 
@@ -61,6 +63,7 @@ const isValid = Secp256k1.verifyHash(signature, hash, publicKey);
 ```
 
 **Parameters:**
+
 - `signature`: Signature with `{ r, s, v }` components
 - `hash`: 32-byte hash (must be exactly 32 bytes)
 - `publicKey`: 64-byte uncompressed public key
@@ -68,6 +71,7 @@ const isValid = Secp256k1.verifyHash(signature, hash, publicKey);
 **Returns:** `boolean` - true if signature is valid
 
 **Throws:**
+
 - `CryptoError` if hash is not exactly 32 bytes
 
 ### recoverPublicKeyFromHash(signature, hash)
@@ -80,12 +84,14 @@ const publicKey = Secp256k1.recoverPublicKeyFromHash(signature, hash);
 ```
 
 **Parameters:**
+
 - `signature`: Signature with `{ r, s, v }` components
 - `hash`: 32-byte hash (must be exactly 32 bytes)
 
 **Returns:** 64-byte uncompressed public key
 
 **Throws:**
+
 - `CryptoError` if hash is not exactly 32 bytes
 - `InvalidSignatureError` if signature is invalid or recovery fails
 
@@ -93,7 +99,7 @@ const publicKey = Secp256k1.recoverPublicKeyFromHash(signature, hash);
 
 ```typescript
 // Hash-Level API (new)
-const hash = Hash.keccak256String('Hello!');
+const hash = Hash.keccak256String("Hello!");
 const sig1 = Secp256k1.signHash(hash, privateKey);
 const valid1 = Secp256k1.verifyHash(sig1, hash, publicKey);
 const recovered1 = Secp256k1.recoverPublicKeyFromHash(sig1, hash);
@@ -112,7 +118,7 @@ assert(sig1.r === sig2.r && sig1.s === sig2.s && sig1.v === sig2.v);
 ### 1. Custom Hashing Schemes
 
 ```typescript
-import * as SHA256 from './crypto/SHA256/index.js';
+import * as SHA256 from "./crypto/SHA256/index.js";
 
 // Use SHA256 instead of Keccak256
 const message = "Custom hashing";
@@ -124,7 +130,9 @@ const signature = Secp256k1.signHash(hash, privateKey);
 
 ```typescript
 // Hash already computed elsewhere
-const preComputedHash = Hash.from('0x4e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41');
+const preComputedHash = Hash.from(
+	"0x4e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd41",
+);
 const signature = Secp256k1.signHash(preComputedHash, privateKey);
 ```
 
@@ -132,7 +140,7 @@ const signature = Secp256k1.signHash(preComputedHash, privateKey);
 
 ```typescript
 // Voltaire signs
-const hash = Hash.keccak256String('Message');
+const hash = Hash.keccak256String("Message");
 const signature = Secp256k1.signHash(hash, privateKey);
 
 // OX verifies (same hash-level API)
@@ -158,10 +166,10 @@ All hash-level API functions validate that the hash is exactly 32 bytes:
 const invalidHash = new Uint8Array(16); // Wrong length
 
 try {
-  Secp256k1.signHash(invalidHash, privateKey);
+	Secp256k1.signHash(invalidHash, privateKey);
 } catch (error) {
-  console.log(error.message);
-  // "Hash must be exactly 32 bytes, got 16"
+	console.log(error.message);
+	// "Hash must be exactly 32 bytes, got 16"
 }
 ```
 

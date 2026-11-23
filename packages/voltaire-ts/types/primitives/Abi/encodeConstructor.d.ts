@@ -1,7 +1,7 @@
 /**
  * Encode constructor deployment data from ABI
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {readonly unknown[]} args - Constructor arguments
  * @returns {import("../Hex/index.js").HexType} Encoded constructor parameters (hex string)
  * @throws {AbiItemNotFoundError} If constructor not found in ABI
@@ -21,5 +21,5 @@
  * // This is appended to bytecode for deployment
  * ```
  */
-export function encodeConstructor(abi: import("./Abi.js").Abi, args: readonly unknown[]): import("../Hex/index.js").HexType;
+export function encodeConstructor(abi: import("./AbiType.js").AbiType, args: readonly unknown[]): import("../Hex/index.js").HexType;
 //# sourceMappingURL=encodeConstructor.d.ts.map

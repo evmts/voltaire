@@ -5,6 +5,7 @@ Pure TypeScript Keccak256 implementation using @noble/hashes.
 ## Overview
 
 Keccak256 is the cryptographic hash function used throughout Ethereum for:
+
 - Computing contract addresses
 - Hashing transaction data
 - Function and event signatures
@@ -43,6 +44,7 @@ const digest = Keccak256.hashString("hello");
 ```
 
 **Test Vectors:**
+
 - `""` → `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`
 - `"abc"` → `0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45`
 - `"hello"` → `0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8`
@@ -57,6 +59,7 @@ const digest = Keccak256.hashHex("0x1234");
 ```
 
 **Throws:**
+
 - If hex string has odd length
 - If hex string contains invalid characters
 
@@ -81,6 +84,7 @@ const selector = Keccak256.selector("transfer(address,uint256)");
 ```
 
 **Common Selectors:**
+
 - `transfer(address,uint256)` → `0xa9059cbb`
 - `balanceOf(address)` → `0x70a08231`
 - `approve(address,uint256)` → `0x095ea7b3`
@@ -95,6 +99,7 @@ const topic = Keccak256.topic("Transfer(address,address,uint256)");
 ```
 
 **Common Topics:**
+
 - `Transfer(address,address,uint256)` → `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef`
 - `Approval(address,address,uint256)` → `0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925`
 
@@ -112,6 +117,7 @@ const address = Keccak256.contractAddress(deployer, nonce);
 **Formula:** `keccak256(rlp([sender, nonce]))[12:]`
 
 **Throws:**
+
 - If sender is not 20 bytes
 
 #### `create2Address(sender: Uint8Array, salt: Uint8Array, initCodeHash: Uint8Array): Uint8Array`
@@ -129,6 +135,7 @@ const address = Keccak256.create2Address(deployer, salt, initCodeHash);
 **Formula:** `keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]`
 
 **Throws:**
+
 - If sender is not 20 bytes
 - If salt is not 32 bytes
 - If initCodeHash is not 32 bytes
@@ -138,7 +145,7 @@ const address = Keccak256.create2Address(deployer, salt, initCodeHash);
 ### Basic Hashing
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from "@tevm/voltaire";
 
 // Hash bytes
 const data = new Uint8Array([1, 2, 3, 4, 5]);
@@ -170,9 +177,9 @@ const transferTopic = Keccak256.topic("Transfer(address,address,uint256)");
 
 // Filter logs
 const logs = await provider.getLogs({
-  topics: [transferTopic],
-  fromBlock: 0,
-  toBlock: 'latest'
+	topics: [transferTopic],
+	fromBlock: 0,
+	toBlock: "latest",
 });
 ```
 
@@ -188,9 +195,9 @@ const futureAddress = Keccak256.contractAddress(deployerAddress, nonce);
 const salt = new Uint8Array(32);
 const initCodeHash = Keccak256.hash(initCode);
 const deterministicAddress = Keccak256.create2Address(
-  deployerAddress,
-  salt,
-  initCodeHash
+	deployerAddress,
+	salt,
+	initCodeHash,
 );
 ```
 
@@ -213,28 +220,29 @@ Benchmark results (ops/sec) on M1 MacBook Pro:
 ### Hash Performance by Size
 
 | Input Size | Ops/Sec | Throughput |
-|-----------|---------|------------|
-| Empty     | 376K    | N/A        |
-| 32 bytes  | 370K    | 11.3 MB/s  |
-| 256 bytes | 190K    | 46.3 MB/s  |
-| 1 KB      | 49K     | 48.0 MB/s  |
-| 4 KB      | 13K     | 50.6 MB/s  |
-| 16 KB     | 3.3K    | 51.3 MB/s  |
-| 64 KB     | 837     | 52.3 MB/s  |
+| ---------- | ------- | ---------- |
+| Empty      | 376K    | N/A        |
+| 32 bytes   | 370K    | 11.3 MB/s  |
+| 256 bytes  | 190K    | 46.3 MB/s  |
+| 1 KB       | 49K     | 48.0 MB/s  |
+| 4 KB       | 13K     | 50.6 MB/s  |
+| 16 KB      | 3.3K    | 51.3 MB/s  |
+| 64 KB      | 837     | 52.3 MB/s  |
 
 ### Operation Performance
 
-| Operation | Ops/Sec |
-|-----------|---------|
-| hash (32B) | 370K |
-| hashString | 354K |
-| hashHex | 329K |
-| selector | 355K |
-| topic | 354K |
-| contractAddress | 317K |
-| create2Address | 345K |
+| Operation       | Ops/Sec |
+| --------------- | ------- |
+| hash (32B)      | 370K    |
+| hashString      | 354K    |
+| hashHex         | 329K    |
+| selector        | 355K    |
+| topic           | 354K    |
+| contractAddress | 317K    |
+| create2Address  | 345K    |
 
 Performance characteristics:
+
 - Small inputs (<1KB): Overhead-dominated, ~350-370K ops/sec
 - Large inputs (>4KB): Throughput-limited, ~50 MB/s
 - Selector/topic computation: ~354-355K ops/sec
@@ -245,6 +253,7 @@ Performance characteristics:
 ### Noble Hashes
 
 Uses `@noble/hashes/sha3` for the underlying Keccak-256 implementation:
+
 - Audited cryptographic library
 - Pure TypeScript (no native dependencies)
 - Constant-time operations
@@ -267,26 +276,31 @@ Uses `@noble/hashes/sha3` for the underlying Keccak-256 implementation:
 ## Known Test Vectors
 
 Empty string:
+
 ```
 keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 ```
 
 "abc":
+
 ```
 keccak256("abc") = 0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45
 ```
 
 "The quick brown fox jumps over the lazy dog":
+
 ```
 keccak256(...) = 0x4d741b6f1eb29cb2a9b9911c82f56fa8d73b04959d3d9d222895df6c0b28aa15
 ```
 
 Single zero byte:
+
 ```
 keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
 ```
 
 Single 0xFF byte:
+
 ```
 keccak256(0xFF) = 0x8b1a944cf13a9a1c08facb2c9e98623ef3254d2ddb48113885c3e8e97fec8db9
 ```
@@ -294,27 +308,34 @@ keccak256(0xFF) = 0x8b1a944cf13a9a1c08facb2c9e98623ef3254d2ddb48113885c3e8e97fec
 ## Edge Cases
 
 ### Empty Input
+
 ```typescript
 const hash = Keccak256.hash(new Uint8Array(0));
 // Returns: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 ```
 
 ### Rate Boundary
+
 Input size at rate boundary (136 bytes) is handled correctly:
+
 ```typescript
 const data = new Uint8Array(136);
 const hash = Keccak256.hash(data);
 ```
 
 ### Large Inputs
+
 Tested with inputs up to 1MB:
+
 ```typescript
 const data = new Uint8Array(1024 * 1024);
 const hash = Keccak256.hash(data); // Works correctly
 ```
 
 ### Unicode
+
 UTF-8 encoding handles all Unicode correctly:
+
 ```typescript
 const hash = Keccak256.hashString("Hello 世界 🌍");
 ```

@@ -11,6 +11,7 @@
 //! - ForkBackend: Remote state fetcher with async request/continue bridge
 //! - JournaledState: Dual-cache orchestrator
 //! - StateManager: Main public API
+//! - ReceiptManager: Receipt store indexed by block and tx hash, with log filtering
 //!
 //! ## Usage
 //! ```zig
@@ -32,6 +33,7 @@ const StateCache = @import("StateCache.zig");
 const ForkBackendMod = @import("ForkBackend.zig");
 const JournaledStateMod = @import("JournaledState.zig");
 const StateManagerMod = @import("StateManager.zig");
+const ReceiptManagerMod = @import("ReceiptManager.zig");
 
 // Re-export StateCache types
 pub const AccountCache = StateCache.AccountCache;
@@ -52,10 +54,18 @@ pub const JournaledState = JournaledStateMod.JournaledState;
 // Re-export StateManager
 pub const StateManager = StateManagerMod.StateManager;
 
+// Re-export ReceiptManager
+pub const ReceiptManager = ReceiptManagerMod.ReceiptManager;
+pub const StoredReceipt = ReceiptManagerMod.StoredReceipt;
+pub const StoredLog = ReceiptManagerMod.StoredLog;
+pub const ReceiptLookup = ReceiptManagerMod.ReceiptLookup;
+pub const LogFilter = ReceiptManagerMod.LogFilter;
+
 test {
     // Run all tests in submodules
     _ = StateCache;
     _ = ForkBackendMod;
     _ = JournaledStateMod;
     _ = StateManagerMod;
+    _ = ReceiptManagerMod;
 }

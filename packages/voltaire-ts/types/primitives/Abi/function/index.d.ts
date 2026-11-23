@@ -15,10 +15,5 @@ export declare const encodeParams: typeof _encodeParams;
 export declare const decodeParams: typeof _decodeParams;
 export declare const encodeResult: typeof _encodeResult;
 export declare const decodeResult: typeof _decodeResult;
-export { getSignature as Signature };
-export { encodeParams as Params };
-export { decodeParams as DecodeParams };
-export { encodeResult as Result };
-export { decodeResult as DecodeResult };
-export { Function };
+export { decodeParams as DecodeParams, decodeResult as DecodeResult, encodeParams as Params, encodeResult as Result, Function, getSignature as Signature, };
 //# sourceMappingURL=index.d.ts.map

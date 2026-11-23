@@ -1,6 +1,6 @@
 ---
-title: "constants.js"
----
+
+## title: "constants.js"
 
 # constants.js
 
@@ -52,19 +52,20 @@ Gas cost for warm storage access (after warmed by access list).
 
 ```typescript
 import {
-  ADDRESS_COST,
-  STORAGE_KEY_COST,
-  COLD_ACCOUNT_ACCESS_COST,
-  COLD_STORAGE_ACCESS_COST,
-  WARM_STORAGE_ACCESS_COST
-} from './BrandedAccessList/constants.js';
+	ADDRESS_COST,
+	STORAGE_KEY_COST,
+	COLD_ACCOUNT_ACCESS_COST,
+	COLD_STORAGE_ACCESS_COST,
+	WARM_STORAGE_ACCESS_COST,
+} from "./BrandedAccessList/constants.js";
 
 // Calculate cost
-const cost = (addresses * ADDRESS_COST) + (keys * STORAGE_KEY_COST);
+const cost = addresses * ADDRESS_COST + keys * STORAGE_KEY_COST;
 
 // Calculate savings
-const savings = (addresses * (COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST)) +
-                (keys * (COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST));
+const savings =
+	addresses * (COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST) +
+	keys * (COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST);
 ```
 
 ## See Also

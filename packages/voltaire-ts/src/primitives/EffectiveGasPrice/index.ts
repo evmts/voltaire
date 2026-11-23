@@ -14,7 +14,7 @@ import { toNumber as _toNumber } from "./toNumber.js";
 import { toWei as _toWei } from "./toWei.js";
 
 // Export constructors (no wrapper needed)
-export { from, fromGwei, fromWei, calculate };
+export { calculate, from, fromGwei, fromWei };
 
 // Export public wrapper functions
 export function toGwei(effectivePrice: bigint | number | string): bigint {
@@ -48,7 +48,7 @@ export function compare(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toGwei, _toWei, _toNumber, _toBigInt, _equals, _compare };
+export { _compare, _equals, _toBigInt, _toGwei, _toNumber, _toWei };
 
 // Export as namespace (convenience)
 export const EffectiveGasPrice = {

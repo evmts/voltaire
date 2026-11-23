@@ -4,6 +4,7 @@
  * @param {import('./BinaryTreeType.js').BinaryTree} tree - Binary tree
  * @param {Uint8Array} k - 32-byte key
  * @returns {Uint8Array | null} Value or null if not found
+ * @throws {import('./errors.js').InvalidTreeStateError} If the lookup path crosses a pruned (hash-only) internal node
  *
  * @example
  * ```typescript

@@ -55,4 +55,11 @@ export type BlockHeaderType = {
 	readonly excessBlobGas?: Uint256Type;
 	/** EIP-4788: Parent beacon block root (post-Cancun) */
 	readonly parentBeaconBlockRoot?: HashType;
+	/** EIP-7685: execution-requests commitment, the 21st RLP field (Prague+). */
+	readonly requestsHash?: HashType;
+	/**
+	 * EIP-7928: `keccak256(rlp(blockAccessList))`, the 22nd RLP field (Amsterdam+).
+	 * Compute it with `BlockAccessList.calculateHash`.
+	 */
+	readonly blockAccessListHash?: HashType;
 };

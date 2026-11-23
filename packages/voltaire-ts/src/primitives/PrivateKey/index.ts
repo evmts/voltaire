@@ -16,10 +16,8 @@ import { toHex as _toHex } from "./toHex.js";
 import { toPublicKey as _toPublicKey } from "./toPublicKey.js";
 
 // Export constructors (no wrapper needed)
-export { from, fromBytes };
-
 // Export factories (tree-shakeable)
-export { Sign };
+export { from, fromBytes, Sign };
 
 // Instantiate with crypto dependencies
 const _sign = Sign({ secp256k1Sign });
@@ -45,7 +43,7 @@ export function sign(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toHex, _toPublicKey, _toAddress, _sign };
+export { _sign, _toAddress, _toHex, _toPublicKey };
 
 // Export as namespace (convenience)
 export const PrivateKey = {

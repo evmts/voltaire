@@ -82,7 +82,7 @@ import {
   normalizeRaw,
   toBytes,
   toHex,
-  toTupleRaw
+  toTupleRaw,
 } from native
 
 export type { SignatureType }
@@ -90,7 +90,7 @@ export { equals, getR, getS, getV, isCanonical, isSignature, toBytes, toHex }
 
 export const SignatureTypeSchema = Schema.declare<SignatureType>(
   (u): u is SignatureType => isSignature(u),
-  { identifier: "Signature", description: "Cryptographic signature" }
+  { identifier: "Signature", description: "Cryptographic signature" },
 )
 
 export const SignatureHex = Schema.String.pipe(
@@ -100,42 +100,55 @@ export const SignatureHex = Schema.String.pipe(
         throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
       }
     }),
-    encode: SchemaGetter.transform((sig): string => toHex(sig))
-  })
+    encode: SchemaGetter.transform((sig): string => toHex(sig)),
+  }),
 )
 
 export effect function from(value: SignatureType | string | Uint8Array): SignatureType!InvalidSignatureError {
   if (isSignature(value)) return value
   return try Effect.try({
     try: () => fromRaw(value),
-    catch: (cause) => new InvalidSignatureError({ input: value, message: `Invalid signature: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidSignatureError({ input: value, message: `Invalid signature: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function fromHex(hex: string): SignatureType!InvalidSignatureError {
   return try Effect.try({
     try: () => fromHexRaw(hex),
-    catch: (cause) => new InvalidSignatureError({ input: hex, message: `Invalid hex signature: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidSignatureError({ input: hex, message: `Invalid hex signature: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function fromSecp256k1(r: Uint8Array, s: Uint8Array, v: number): SignatureType!InvalidSignatureError {
   return try Effect.try({
     try: () => fromSecp256k1Raw(r, s, v),
-    catch: (cause) => new InvalidSignatureError({ input: { r, s, v }, message: `Invalid secp256k1 signature: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidSignatureError({
+        input: { r, s, v },
+        message: `Invalid secp256k1 signature: ${errorMessage(cause)}`,
+        cause,
+      }),
   })
 }
 
 export effect function toTuple(sig: SignatureType): readonly [number, Uint8Array, Uint8Array]!InvalidSignatureError {
   return try Effect.try({
     try: () => toTupleRaw(sig),
-    catch: (cause) => new InvalidSignatureError({ input: sig, message: `Failed extracting signature tuple: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidSignatureError({
+        input: sig,
+        message: `Failed extracting signature tuple: ${errorMessage(cause)}`,
+        cause,
+      }),
   })
 }
 
 export effect function normalize(sig: SignatureType): SignatureType!InvalidSignatureError {
   return try Effect.try({
     try: () => normalizeRaw(sig),
-    catch: (cause) => new InvalidSignatureError({ input: sig, message: `Failed normalizing signature: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidSignatureError({ input: sig, message: `Failed normalizing signature: ${errorMessage(cause)}`, cause }),
   })
 }

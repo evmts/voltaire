@@ -3,10 +3,17 @@ const crypto = @import("crypto");
 const PrecompileError = @import("common.zig").PrecompileError;
 const PrecompileResult = @import("common.zig").PrecompileResult;
 
-/// Gas cost for BLS12-381 G2 multiplication
-pub const GAS: u64 = 45000;
+/// Gas cost for BLS12-381 G2 multiplication (EIP-2537 `multiplication_cost`)
+pub const GAS: u64 = 22500;
 
-/// 0x0F: BLS12_G2MUL - BLS12-381 G2 multiplication
+/// BLS12-381 G2 scalar multiplication: the single-pair case of BLS12_G2MSM.
+///
+/// The final EIP-2537 has no separate G2MUL precompile, so this function is
+/// not dispatched at any address. It is a library helper with the gas of a
+/// one-pair MSM.
+///
+/// Input: 288 bytes, a G2 point (256 bytes) and a scalar (32 bytes).
+/// Output: 256 bytes. The point must be in the order-r subgroup.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -21,6 +28,8 @@ pub fn execute(
     }
 
     const output = try allocator.alloc(u8, 256);
+    errdefer allocator.free(output);
+    @memset(output, 0);
     crypto.Crypto.bls12_381.g2Mul(input, output) catch {
         return error.InvalidPoint;
     };
@@ -128,4 +137,12 @@ test "bls12_g2_mul - scalar one" {
             return err;
         }
     }
+}
+
+test "bls12_g2_mul - official EIP-2537 vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_g2_mul.txt"), 11);
+}
+
+test "bls12_g2_mul - official EIP-2537 failure vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_g2_mul_fail.txt"), 8);
 }

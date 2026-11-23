@@ -38,6 +38,8 @@ pub const Opcode = enum(u8) {
     SHL = 0x1b,
     SHR = 0x1c,
     SAR = 0x1d,
+    /// EIP-7939 (Osaka): one input, one output, five gas; zero yields 256.
+    CLZ = 0x1e,
     // 0x20s: Crypto
     KECCAK256 = 0x20,
     // 0x30s: Environmental Information
@@ -262,7 +264,7 @@ pub const Opcode = enum(u8) {
     /// Check if opcode is bitwise
     pub fn isBitwise(self: Opcode) bool {
         return switch (self) {
-            .AND, .OR, .XOR, .NOT, .BYTE, .SHL, .SHR, .SAR => true,
+            .AND, .OR, .XOR, .NOT, .BYTE, .SHL, .SHR, .SAR, .CLZ => true,
             else => false,
         };
     }
@@ -273,7 +275,7 @@ pub const Opcode = enum(u8) {
             // 0x00s: Stop and Arithmetic Operations
             0x00...0x0b => true,
             // 0x10s: Comparison & Bitwise Logic Operations
-            0x10...0x1d => true,
+            0x10...0x1e => true,
             // 0x20s: Crypto
             0x20 => true,
             // 0x30s: Environmental Information
@@ -342,6 +344,7 @@ pub const Opcode = enum(u8) {
             .SHL => "SHL",
             .SHR => "SHR",
             .SAR => "SAR",
+            .CLZ => "CLZ",
             .KECCAK256 => "KECCAK256",
             .ADDRESS => "ADDRESS",
             .BALANCE => "BALANCE",

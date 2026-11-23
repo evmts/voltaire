@@ -23,11 +23,13 @@ This file implements EVM block context instruction handlers (BLOCKHASH, COINBASE
 **Location:** Line 14
 
 **Issue:**
+
 ```zig
 try frame.consumeGas(GasConstants.GasExtStep);  // Uses 20 gas
 ```
 
 **Expected (Python Reference):**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/block.py:43
 charge_gas(evm, GAS_BLOCK_HASH)
@@ -40,6 +42,7 @@ The gas cost is technically correct (20 gas), but uses the wrong constant name. 
 
 **Recommendation:**
 Add `GasBlockHash` constant to `GasConstants` and use it:
+
 ```zig
 try frame.consumeGas(GasConstants.GasBlockHash);
 ```
@@ -51,6 +54,7 @@ try frame.consumeGas(GasConstants.GasBlockHash);
 **Location:** Lines 16-23
 
 **Issue:**
+
 ```zig
 // Simple mock: return a hash based on block number
 const current_block = evm.block_context.block_number;
@@ -63,6 +67,7 @@ if (block_number >= current_block or current_block > block_number + 256) {
 ```
 
 **Expected (Python Reference):**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/block.py:46-61
 max_block_number = block_number + Uint(256)
@@ -83,6 +88,7 @@ push(evm.stack, U256.from_be_bytes(current_block_hash))
 The mock implementation (`block_number * 0x123456789abcdef`) is NOT spec-compliant. The EVM must return actual block hashes from `evm.message.block_env.block_hashes`, not synthetic values. This will cause test failures in any test that verifies block hash values (e.g., EIP-2935 historical block hashes).
 
 **Recommendation:**
+
 1. Add `block_hashes` field to `BlockContext` structure
 2. Implement proper lookup with negative indexing: `block_hashes[-(current_block_number - block_number)]`
 3. Return 0 only when block is out of range (as currently implemented)
@@ -94,11 +100,13 @@ The mock implementation (`block_number * 0x123456789abcdef`) is NOT spec-complia
 **Location:** Line 103
 
 **Issue:**
+
 ```zig
 try frame.consumeGas(GasConstants.GasQuickStep);  // Uses 2 gas
 ```
 
 **Expected (Python Reference):**
+
 ```python
 # execution-specs/src/ethereum/forks/london/vm/instructions/environment.py:538
 charge_gas(evm, GAS_BASE)
@@ -111,6 +119,7 @@ While the cost (2 gas) is correct, the constant name is wrong. Python uses `GAS_
 
 **Verdict:**
 Actually, reviewing the gas constants:
+
 - `GasQuickStep = 2` in Zig primitives
 - `GAS_BASE = 2` in Python
 
@@ -126,11 +135,13 @@ This is acceptable as-is since both constants equal 2, but ideally the primitive
 **Location:** Line 114
 
 **Issue:**
+
 ```zig
 try frame.consumeGas(GasConstants.GasFastestStep);  // Uses 3 gas
 ```
 
 **Expected (Python Reference):**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/environment.py:564
 charge_gas(evm, GAS_BLOBHASH_OPCODE)
@@ -143,6 +154,7 @@ The gas cost (3 gas) is correct, but uses the wrong constant. Python uses `GAS_B
 
 **Recommendation:**
 Add `GasBlobHashOpcode` constant to `GasConstants` and use it:
+
 ```zig
 try frame.consumeGas(GasConstants.GasBlobHashOpcode);
 ```
@@ -156,11 +168,13 @@ try frame.consumeGas(GasConstants.GasBlobHashOpcode);
 **Location:** Line 147
 
 **Issue:**
+
 ```zig
 try frame.pushStack(evm.block_context.blob_base_fee);
 ```
 
 **Expected (Python Reference):**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/environment.py:594-596
 blob_base_fee = calculate_blob_gas_price(
@@ -173,6 +187,7 @@ push(evm.stack, U256(blob_base_fee))
 The Zig implementation assumes `blob_base_fee` is pre-calculated and stored in `block_context`. The Python reference calculates it on-demand from `excess_blob_gas`. This is acceptable if the `blob_base_fee` field is populated correctly by the host/test runner, but it's worth verifying that all callers compute this correctly.
 
 **Recommendation:**
+
 1. Document that `block_context.blob_base_fee` must be pre-calculated from `excess_blob_gas`
 2. Consider adding a helper function `calculateBlobGasPrice(excess_blob_gas)` for test consistency
 3. Add a comment explaining the relationship to `excess_blob_gas`
@@ -191,6 +206,7 @@ Makes cross-referencing with Python specs harder and obscures semantic meaning o
 
 **Recommendation:**
 Add semantic aliases to `GasConstants`:
+
 ```zig
 // Semantic aliases matching Python execution-specs
 pub const GasBase = GasQuickStep;  // 2 gas
@@ -206,6 +222,7 @@ pub const GasBlobHashOpcode = GasFastestStep;  // 3 gas
 Functions like `chainid`, `selfbalance`, `basefee`, `blobhash`, `blobbasefee` have hardfork guards but lack documentation on WHY the guard exists (EIP reference).
 
 **Example (Good):**
+
 ```zig
 /// CHAINID opcode (0x46) - Get chain ID (EIP-1344, Istanbul+)
 pub fn chainid(frame: *FrameType) FrameType.EvmError!void {
@@ -227,6 +244,7 @@ The file contains no inline `test` blocks. All testing relies on ethereum/tests 
 
 **Recommendation:**
 Add unit tests for:
+
 1. **BLOCKHASH boundary conditions:**
    - `block_number >= current_block` → returns 0
    - `current_block > block_number + 256` → returns 0
@@ -248,6 +266,7 @@ Add unit tests for:
    - Each opcode charges correct gas before execution
 
 **Example:**
+
 ```zig
 test "BLOCKHASH returns 0 for out-of-range blocks" {
     // Test setup...
@@ -280,19 +299,19 @@ test "BLOCKHASH returns 0 for out-of-range blocks" {
 
 ## Spec Compliance Summary
 
-| Opcode | Gas Cost | Logic | Hardfork Guard | Status |
-|--------|----------|-------|----------------|--------|
-| BLOCKHASH | ❌ Wrong constant (correct value) | ❌ Mock implementation | N/A | **BROKEN** |
-| COINBASE | ✅ Correct | ✅ Correct | N/A | **PASS** |
-| TIMESTAMP | ✅ Correct | ✅ Correct | N/A | **PASS** |
-| NUMBER | ✅ Correct | ✅ Correct | N/A | **PASS** |
-| DIFFICULTY | ✅ Correct | ✅ Correct | ✅ MERGE guard | **PASS** |
-| GASLIMIT | ✅ Correct | ✅ Correct | N/A | **PASS** |
-| CHAINID | ⚠️ Acceptable | ✅ Correct | ✅ ISTANBUL guard | **PASS** |
-| SELFBALANCE | ✅ Correct | ✅ Correct | ✅ ISTANBUL guard | **PASS** |
-| BASEFEE | ⚠️ Acceptable | ✅ Correct | ✅ LONDON guard | **PASS** |
-| BLOBHASH | ❌ Wrong constant (correct value) | ✅ Correct | ✅ CANCUN guard | **PASS*** |
-| BLOBBASEFEE | ⚠️ Acceptable | ⚠️ Assumes pre-calc | ✅ CANCUN guard | **PASS*** |
+| Opcode      | Gas Cost                          | Logic                  | Hardfork Guard    | Status     |
+| ----------- | --------------------------------- | ---------------------- | ----------------- | ---------- |
+| BLOCKHASH   | ❌ Wrong constant (correct value) | ❌ Mock implementation | N/A               | **BROKEN** |
+| COINBASE    | ✅ Correct                        | ✅ Correct             | N/A               | **PASS**   |
+| TIMESTAMP   | ✅ Correct                        | ✅ Correct             | N/A               | **PASS**   |
+| NUMBER      | ✅ Correct                        | ✅ Correct             | N/A               | **PASS**   |
+| DIFFICULTY  | ✅ Correct                        | ✅ Correct             | ✅ MERGE guard    | **PASS**   |
+| GASLIMIT    | ✅ Correct                        | ✅ Correct             | N/A               | **PASS**   |
+| CHAINID     | ⚠️ Acceptable                     | ✅ Correct             | ✅ ISTANBUL guard | **PASS**   |
+| SELFBALANCE | ✅ Correct                        | ✅ Correct             | ✅ ISTANBUL guard | **PASS**   |
+| BASEFEE     | ⚠️ Acceptable                     | ✅ Correct             | ✅ LONDON guard   | **PASS**   |
+| BLOBHASH    | ❌ Wrong constant (correct value) | ✅ Correct             | ✅ CANCUN guard   | **PASS***  |
+| BLOBBASEFEE | ⚠️ Acceptable                     | ⚠️ Assumes pre-calc    | ✅ CANCUN guard   | **PASS***  |
 
 **\*PASS** = Functionally correct but needs constant naming improvements
 
@@ -300,37 +319,37 @@ test "BLOCKHASH returns 0 for out-of-range blocks" {
 
 ## Gas Cost Reference Table
 
-| Opcode | Current (Zig) | Expected (Python) | Actual Value | Correct? |
-|--------|---------------|-------------------|--------------|----------|
-| BLOCKHASH | `GasExtStep` | `GAS_BLOCK_HASH` | 20 | ✅ Value / ❌ Name |
-| COINBASE | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
-| TIMESTAMP | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
-| NUMBER | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
-| DIFFICULTY | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
-| GASLIMIT | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
-| CHAINID | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
-| SELFBALANCE | `GasFastStep` | `GAS_FAST_STEP` | 5 | ✅ |
-| BASEFEE | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
-| BLOBHASH | `GasFastestStep` | `GAS_BLOBHASH_OPCODE` | 3 | ✅ Value / ❌ Name |
-| BLOBBASEFEE | `GasQuickStep` | `GAS_BASE` | 2 | ✅ |
+| Opcode      | Current (Zig)    | Expected (Python)     | Actual Value | Correct?           |
+| ----------- | ---------------- | --------------------- | ------------ | ------------------ |
+| BLOCKHASH   | `GasExtStep`     | `GAS_BLOCK_HASH`      | 20           | ✅ Value / ❌ Name |
+| COINBASE    | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
+| TIMESTAMP   | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
+| NUMBER      | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
+| DIFFICULTY  | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
+| GASLIMIT    | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
+| CHAINID     | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
+| SELFBALANCE | `GasFastStep`    | `GAS_FAST_STEP`       | 5            | ✅                 |
+| BASEFEE     | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
+| BLOBHASH    | `GasFastestStep` | `GAS_BLOBHASH_OPCODE` | 3            | ✅ Value / ❌ Name |
+| BLOBBASEFEE | `GasQuickStep`   | `GAS_BASE`            | 2            | ✅                 |
 
 ---
 
 ## Python Reference Cross-Reference
 
-| Opcode | Python File | Function Name | Line |
-|--------|-------------|---------------|------|
-| BLOCKHASH | `execution-specs/forks/cancun/vm/instructions/block.py` | `block_hash` | 21 |
-| COINBASE | `execution-specs/forks/cancun/vm/instructions/block.py` | `coinbase` | 67 |
-| TIMESTAMP | `execution-specs/forks/cancun/vm/instructions/block.py` | `timestamp` | 101 |
-| NUMBER | `execution-specs/forks/cancun/vm/instructions/block.py` | `number` | 135 |
-| DIFFICULTY | `execution-specs/forks/cancun/vm/instructions/block.py` | `prev_randao` | 168 |
-| GASLIMIT | `execution-specs/forks/cancun/vm/instructions/block.py` | `gas_limit` | 201 |
-| CHAINID | `execution-specs/forks/cancun/vm/instructions/block.py` | `chain_id` | 234 |
-| SELFBALANCE | `execution-specs/forks/istanbul/vm/instructions/environment.py` | `self_balance` | 474 |
-| BASEFEE | `execution-specs/forks/london/vm/instructions/environment.py` | `base_fee` | 524 |
-| BLOBHASH | `execution-specs/forks/cancun/vm/instructions/environment.py` | `blob_hash` | 550 |
-| BLOBBASEFEE | `execution-specs/forks/cancun/vm/instructions/environment.py` | `blob_base_fee` | 577 |
+| Opcode      | Python File                                                     | Function Name   | Line |
+| ----------- | --------------------------------------------------------------- | --------------- | ---- |
+| BLOCKHASH   | `execution-specs/forks/cancun/vm/instructions/block.py`         | `block_hash`    | 21   |
+| COINBASE    | `execution-specs/forks/cancun/vm/instructions/block.py`         | `coinbase`      | 67   |
+| TIMESTAMP   | `execution-specs/forks/cancun/vm/instructions/block.py`         | `timestamp`     | 101  |
+| NUMBER      | `execution-specs/forks/cancun/vm/instructions/block.py`         | `number`        | 135  |
+| DIFFICULTY  | `execution-specs/forks/cancun/vm/instructions/block.py`         | `prev_randao`   | 168  |
+| GASLIMIT    | `execution-specs/forks/cancun/vm/instructions/block.py`         | `gas_limit`     | 201  |
+| CHAINID     | `execution-specs/forks/cancun/vm/instructions/block.py`         | `chain_id`      | 234  |
+| SELFBALANCE | `execution-specs/forks/istanbul/vm/instructions/environment.py` | `self_balance`  | 474  |
+| BASEFEE     | `execution-specs/forks/london/vm/instructions/environment.py`   | `base_fee`      | 524  |
+| BLOBHASH    | `execution-specs/forks/cancun/vm/instructions/environment.py`   | `blob_hash`     | 550  |
+| BLOBBASEFEE | `execution-specs/forks/cancun/vm/instructions/environment.py`   | `blob_base_fee` | 577  |
 
 ---
 

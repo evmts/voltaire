@@ -929,6 +929,7 @@ pub const Permit2Domain = struct {
 /// Permit2 Domain typehash (without version)
 /// keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)")
 pub const PERMIT2_DOMAIN_TYPEHASH: [32]u8 = blk: {
+    @setEvalBranchQuota(100000); // comptime Keccak256 (multi-block input) exceeds the default 1000 branches
     var result: [32]u8 = undefined;
     Keccak256.hash("EIP712Domain(string name,uint256 chainId,address verifyingContract)", &result, .{});
     break :blk result;
@@ -937,6 +938,7 @@ pub const PERMIT2_DOMAIN_TYPEHASH: [32]u8 = blk: {
 /// PermitDetails typehash
 /// keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)")
 pub const PERMIT_DETAILS_TYPEHASH: [32]u8 = blk: {
+    @setEvalBranchQuota(100000); // comptime Keccak256 (multi-block input) exceeds the default 1000 branches
     var result: [32]u8 = undefined;
     Keccak256.hash("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)", &result, .{});
     break :blk result;
@@ -945,6 +947,7 @@ pub const PERMIT_DETAILS_TYPEHASH: [32]u8 = blk: {
 /// PermitSingle typehash
 /// keccak256("PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)")
 pub const PERMIT_SINGLE_TYPEHASH: [32]u8 = blk: {
+    @setEvalBranchQuota(100000); // comptime Keccak256 (multi-block input) exceeds the default 1000 branches
     var result: [32]u8 = undefined;
     Keccak256.hash("PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)", &result, .{});
     break :blk result;
@@ -953,6 +956,7 @@ pub const PERMIT_SINGLE_TYPEHASH: [32]u8 = blk: {
 /// PermitBatch typehash
 /// keccak256("PermitBatch(PermitDetails[] details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)")
 pub const PERMIT_BATCH_TYPEHASH: [32]u8 = blk: {
+    @setEvalBranchQuota(100000); // comptime Keccak256 (multi-block input) exceeds the default 1000 branches
     var result: [32]u8 = undefined;
     Keccak256.hash("PermitBatch(PermitDetails[] details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)", &result, .{});
     break :blk result;

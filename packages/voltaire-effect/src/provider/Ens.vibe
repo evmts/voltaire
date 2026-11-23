@@ -34,8 +34,8 @@ const ENS_REGISTRY_ABI: Abi.Abi = [
     name: "resolver",
     stateMutability: "view",
     inputs: [{ name: "node", type: "bytes32" }],
-    outputs: [{ name: "", type: "address" }]
-  }
+    outputs: [{ name: "", type: "address" }],
+  },
 ]
 
 const ENS_RESOLVER_ABI: Abi.Abi = [
@@ -44,14 +44,14 @@ const ENS_RESOLVER_ABI: Abi.Abi = [
     name: "addr",
     stateMutability: "view",
     inputs: [{ name: "node", type: "bytes32" }],
-    outputs: [{ name: "", type: "address" }]
+    outputs: [{ name: "", type: "address" }],
   },
   {
     type: "function",
     name: "name",
     stateMutability: "view",
     inputs: [{ name: "node", type: "bytes32" }],
-    outputs: [{ name: "", type: "string" }]
+    outputs: [{ name: "", type: "string" }],
   },
   {
     type: "function",
@@ -59,16 +59,16 @@ const ENS_RESOLVER_ABI: Abi.Abi = [
     stateMutability: "view",
     inputs: [
       { name: "node", type: "bytes32" },
-      { name: "key", type: "string" }
+      { name: "key", type: "string" },
     ],
-    outputs: [{ name: "", type: "string" }]
-  }
+    outputs: [{ name: "", type: "string" }],
+  },
 ]
 
 export effect function normalizeEnsName(name: string): string!EnsError {
   return try Effect.try({
     try: () => normalizeEnsRaw(name),
-    catch: (cause) => new EnsError({ name, message: `Invalid ENS name "${name}": ${errorMessage(cause)}`, cause })
+    catch: (cause) => new EnsError({ name, message: `Invalid ENS name "${name}": ${errorMessage(cause)}`, cause }),
   })
 }
 
@@ -76,13 +76,14 @@ export effect function namehash(name: string): HexType!EnsError {
   const normalized = try normalizeEnsName(name)
   return try Effect.try({
     try: () => namehashRaw(normalized),
-    catch: (cause) => new EnsError({ name, message: `ENS namehash failed for "${name}": ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new EnsError({ name, message: `ENS namehash failed for "${name}": ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function getEnsResolver(
   name: string,
-  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS
+  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS,
 ): Option.Option<AddressType>!EnsError!Transport {
   const node = try namehash(name)
   const data = Abi.encodeFunctionData(ENS_REGISTRY_ABI, "resolver", [node]) catch effect (e) => {
@@ -103,7 +104,7 @@ export effect function getEnsResolver(
 
 export effect function getEnsAddress(
   name: string,
-  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS
+  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS,
 ): Option.Option<AddressType>!EnsError!Transport {
   const resolverOpt = try getEnsResolver(name, registryAddress)
   if (Option.isNone(resolverOpt)) return Option.none()
@@ -126,12 +127,12 @@ export effect function getEnsAddress(
 
 export effect function getEnsName(
   address: Address.AddressInput,
-  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS
+  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS,
 ): Option.Option<string>!EnsError!Transport {
   const addr = typeof address === "string"
     ? Address.fromHex(address) catch effect (e) => {
-        throw new EnsError({ address, message: e.message, cause: e })
-      }
+      throw new EnsError({ address, message: e.message, cause: e })
+    }
     : address
   const reverseName = `${Address.toHex(addr).slice(2).toLowerCase()}.addr.reverse`
   const resolverOpt = try getEnsResolver(reverseName, registryAddress)
@@ -141,7 +142,11 @@ export effect function getEnsName(
     throw new EnsError({ address: Address.toHex(addr), message: e.message, cause: e })
   }
   const raw = call({ to: resolverOpt.value, data }) catch effect (e) => {
-    throw new EnsError({ address: Address.toHex(addr), message: `ENS reverse lookup failed: ${errorMessage(e)}`, cause: e })
+    throw new EnsError({
+      address: Address.toHex(addr),
+      message: `ENS reverse lookup failed: ${errorMessage(e)}`,
+      cause: e,
+    })
   }
   if (raw.length <= 2) return Option.none()
   const decoded = Abi.decodeFunctionResult(ENS_RESOLVER_ABI, "name", raw) catch effect (e) => {
@@ -153,7 +158,7 @@ export effect function getEnsName(
 export effect function getEnsText(
   name: string,
   key: string,
-  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS
+  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS,
 ): Option.Option<string>!EnsError!Transport {
   const resolverOpt = try getEnsResolver(name, registryAddress)
   if (Option.isNone(resolverOpt)) return Option.none()
@@ -173,7 +178,7 @@ export effect function getEnsText(
 
 export effect function getEnsAvatar(
   name: string,
-  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS
+  registryAddress: `0x${string}` = ENS_REGISTRY_ADDRESS,
 ): Option.Option<string>!EnsError!Transport {
   return try getEnsText(name, "avatar", registryAddress)
 }
@@ -196,7 +201,7 @@ export const EnsLive = Layer.effect(
       getAddress: (name) => Effect.provideService(getEnsAddress(name), Transport, transport),
       getName: (address) => Effect.provideService(getEnsName(address), Transport, transport),
       getText: (name, key) => Effect.provideService(getEnsText(name, key), Transport, transport),
-      getAvatar: (name) => Effect.provideService(getEnsAvatar(name), Transport, transport)
+      getAvatar: (name) => Effect.provideService(getEnsAvatar(name), Transport, transport),
     })
-  }
+  },
 )

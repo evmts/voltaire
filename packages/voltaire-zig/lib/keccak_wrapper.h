@@ -8,6 +8,10 @@
 #ifndef KECCAK_WRAPPER_H
 #define KECCAK_WRAPPER_H
 
+/* Lengths are size_t to match the Rust `usize` ABI on every target, including
+ * LLP64 Windows where a C long is only 32 bits. */
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,9 +36,9 @@ typedef enum {
  */
 KeccakResult keccak256(
     const unsigned char* input,
-    unsigned long input_len,
+    size_t input_len,
     unsigned char* output,
-    unsigned long output_len
+    size_t output_len
 );
 
 /**
@@ -48,16 +52,16 @@ KeccakResult keccak256(
  */
 KeccakResult keccak256_batch(
     const unsigned char** inputs,
-    const unsigned long* input_lens,
+    const size_t* input_lens,
     unsigned char** outputs,
-    unsigned long count
+    size_t count
 );
 
 /**
  * Get the output size for Keccak-256
  * @return 32 bytes
  */
-unsigned long keccak256_output_size(void);
+size_t keccak256_output_size(void);
 
 #ifdef __cplusplus
 }

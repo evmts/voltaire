@@ -80,7 +80,8 @@ export function decode(bytes, stream = false) {
 	}
 
 	try {
-		// Calculate item length to determine remainder
+		// Validates canonical framing and bounds of the item and of every
+		// nested item before anything is interpreted.
 		const itemLength = getRlpItemLength(bytes);
 		const item = bytes.slice(0, itemLength);
 		const remainder = bytes.slice(itemLength);

@@ -13,7 +13,7 @@ import { toU256 } from "./ether-toU256.js";
 import { toWei } from "./ether-toWei.js";
 
 // Export individually (tree-shakeable)
-export { from, fromWei, fromGwei, toWei, toGwei, toU256 };
+export { from, fromGwei, fromWei, toGwei, toU256, toWei };
 
 // Export as namespace (convenience)
 export const Ether = {

@@ -1,8 +1,10 @@
 const std = @import("std");
 const testing = std.testing;
 const Address = @import("../Address/address.zig").Address;
-const Hash = @import("../Hash/Hash.zig").Hash;
-const EventLog = @import("../EventLog/EventLog.zig").EventLog;
+const HashMod = @import("../Hash/Hash.zig");
+const Hash = HashMod.Hash;
+const EventLogMod = @import("../EventLog/EventLog.zig");
+const EventLog = EventLogMod.EventLog;
 const Allocator = std.mem.Allocator;
 
 /// Transaction receipt errors
@@ -162,8 +164,17 @@ pub const Receipt = struct {
     pub fn clone(self: Receipt, allocator: Allocator) !Receipt {
         // Copy logs
         const logs_copy = try allocator.alloc(EventLog, self.logs.len);
+        var copied: usize = 0;
+        errdefer {
+            for (logs_copy[0..copied]) |log| {
+                allocator.free(log.topics);
+                allocator.free(log.data);
+            }
+            allocator.free(logs_copy);
+        }
         for (self.logs, 0..) |log, i| {
-            logs_copy[i] = try EventLog.clone(allocator, log);
+            logs_copy[i] = try EventLogMod.clone(allocator, log);
+            copied += 1;
         }
 
         return Receipt{
@@ -171,7 +182,7 @@ pub const Receipt = struct {
             .transaction_index = self.transaction_index,
             .block_hash = self.block_hash,
             .block_number = self.block_number,
-            .from = self.from,
+            .sender = self.sender,
             .to = self.to,
             .cumulative_gas_used = self.cumulative_gas_used,
             .gas_used = self.gas_used,
@@ -238,8 +249,8 @@ pub fn assertValid(receipt: Receipt) ReceiptError!void {
 // ============================================================================
 
 fn createMockReceipt(allocator: Allocator) !Receipt {
-    const tx_hash = try Hash.fromHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
-    const block_hash = try Hash.fromHex("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890");
+    const tx_hash = try HashMod.fromHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    const block_hash = try HashMod.fromHex("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890");
     const from_addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1");
     const to_addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
 
@@ -252,7 +263,7 @@ fn createMockReceipt(allocator: Allocator) !Receipt {
         .transaction_index = 0,
         .block_hash = block_hash,
         .block_number = 100,
-        .from = from_addr,
+        .sender = from_addr,
         .to = to_addr,
         .cumulative_gas_used = 21000,
         .gas_used = 21000,
@@ -276,7 +287,7 @@ test "Receipt.from creates valid receipt" {
     const validated = try Receipt.from(receipt);
     try testing.expectEqual(receipt.transaction_index, validated.transaction_index);
     try testing.expectEqual(receipt.block_number, validated.block_number);
-    try testing.expect(receipt.transaction_hash.eql(validated.transaction_hash));
+    try testing.expectEqualSlices(u8, &receipt.transaction_hash, &validated.transaction_hash);
 }
 
 test "Receipt.from rejects invalid logs_bloom length" {
@@ -307,7 +318,7 @@ test "Receipt.isPreByzantium returns true for pre-Byzantium receipt" {
     defer receipt.deinit(allocator);
 
     // Convert to pre-Byzantium
-    const state_root = try Hash.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234");
+    const state_root = try HashMod.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234");
     receipt.status = null;
     receipt.root = state_root;
 
@@ -329,7 +340,7 @@ test "assertValid passes for pre-Byzantium receipt" {
     var receipt = try createMockReceipt(allocator);
     defer receipt.deinit(allocator);
 
-    const state_root = try Hash.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234");
+    const state_root = try HashMod.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234");
     receipt.status = null;
     receipt.root = state_root;
 
@@ -341,7 +352,7 @@ test "assertValid fails when both status and root present" {
     var receipt = try createMockReceipt(allocator);
     defer receipt.deinit(allocator);
 
-    const state_root = try Hash.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234");
+    const state_root = try HashMod.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234");
     receipt.root = state_root; // Now has both status and root
 
     try testing.expectError(error.ByzantiumForkIncompatibility, assertValid(receipt));
@@ -388,24 +399,49 @@ test "Receipt handles EIP-4844 blob fields" {
 
 test "Receipt.clone creates deep copy" {
     const allocator = testing.allocator;
-    const original = try createMockReceipt(allocator);
+    var original = try createMockReceipt(allocator);
     defer original.deinit(allocator);
+
+    // Give the receipt one log so the deep copy has heap data to duplicate
+    // (a zero-length allocation has no distinct address to compare).
+    const topics = try allocator.alloc(Hash, 1);
+    topics[0] = try HashMod.fromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+    const data = try allocator.alloc(u8, 32);
+    @memset(data, 0xab);
+    const logs = try allocator.alloc(EventLog, 1);
+    logs[0] = EventLog{
+        .address = Address.ZERO,
+        .topics = topics,
+        .data = data,
+        .block_number = 100,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = 0,
+        .removed = false,
+    };
+    allocator.free(original.logs);
+    original.logs = logs;
 
     const cloned = try original.clone(allocator);
     defer cloned.deinit(allocator);
 
     // Verify values are equal
-    try testing.expect(cloned.transaction_hash.eql(original.transaction_hash));
+    try testing.expectEqualSlices(u8, &original.transaction_hash, &cloned.transaction_hash);
     try testing.expectEqual(original.transaction_index, cloned.transaction_index);
-    try testing.expect(cloned.block_hash.eql(original.block_hash));
+    try testing.expectEqualSlices(u8, &original.block_hash, &cloned.block_hash);
     try testing.expectEqual(original.block_number, cloned.block_number);
-    try testing.expect(cloned.from.eql(original.from));
+    try testing.expect(cloned.sender.eql(original.sender));
     try testing.expectEqual(original.cumulative_gas_used, cloned.cumulative_gas_used);
     try testing.expectEqual(original.gas_used, cloned.gas_used);
     try testing.expectEqual(original.type, cloned.type);
 
     // Verify logs pointer is different (deep copy)
     try testing.expect(cloned.logs.ptr != original.logs.ptr);
+    try testing.expectEqual(@as(usize, 1), cloned.logs.len);
+    try testing.expect(cloned.logs[0].topics.ptr != original.logs[0].topics.ptr);
+    try testing.expect(cloned.logs[0].data.ptr != original.logs[0].data.ptr);
+    try testing.expectEqualSlices(u8, &original.logs[0].topics[0], &cloned.logs[0].topics[0]);
+    try testing.expectEqualSlices(u8, original.logs[0].data, cloned.logs[0].data);
 }
 
 test "TransactionStatus.isSuccess returns true for successful tx" {
@@ -479,7 +515,7 @@ test "Receipt with maximum gas values" {
 
 test "Receipt with logs" {
     const allocator = testing.allocator;
-    const topic0 = try Hash.fromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+    const topic0 = try HashMod.fromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 
     const topics = try allocator.alloc(Hash, 1);
     topics[0] = topic0;

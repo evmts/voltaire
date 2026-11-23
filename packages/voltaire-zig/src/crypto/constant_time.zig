@@ -17,6 +17,22 @@
 //! - `constantTimeSelect`: Constant-time conditional select
 //! - `constantTimeIsZeroU256`: Constant-time zero check for u256
 //! - `constantTimeIsZeroBytes`: Constant-time zero check for byte arrays
+//! - `eql` / `constantTimeEqual`: aliases of `constantTimeEqBytes`
+//! - `isZero`: alias of `constantTimeIsZeroBytes`
+//!
+//! ## Audit (issue #49)
+//! Every comparison of secret or authenticating bytes in `src/crypto` goes
+//! through this module, never `std.mem.eql`:
+//! - keystore MAC verification (`keystore.zig`)
+//! - BIP-39 mnemonic word lookup (`bip39.zig`)
+//! - secp256k1 private key range checks and recovered-address comparison
+//!   (`crypto.zig`, `signers.zig`)
+//! - hash equality and zero checks (`hash_utils.zig`)
+//! - X25519 all-zero shared secret check (`x25519.zig`)
+//!
+//! AES-GCM and ChaCha20-Poly1305 tags are verified inside `std.crypto`, which
+//! is constant-time. Comparisons of public keys and curve points during
+//! public-key validation are on public data and are left variable-time.
 //!
 //! ## Usage
 //! ```zig
@@ -203,24 +219,45 @@ pub fn constantTimeSelectU256(condition: u8, if_one: u256, if_zero: u256) u256 {
 pub fn constantTimeEqBytes(a: []const u8, b: []const u8) bool {
     if (a.len != b.len) return false;
 
+    // Volatile accumulator: every byte is read and folded in, and the optimizer
+    // cannot turn the loop into an early-exit comparison.
     var diff: u8 = 0;
+    const acc: *volatile u8 = &diff;
     for (a, b) |byte_a, byte_b| {
-        diff |= byte_a ^ byte_b;
+        acc.* |= byte_a ^ byte_b;
     }
-
-    return diff == 0;
+    const result = acc.*;
+    std.mem.doNotOptimizeAway(result);
+    return result == 0;
 }
 
 /// Constant-time zero check for byte arrays.
 /// Returns true if all bytes are zero, false otherwise.
 /// Executes in constant time regardless of content.
 pub fn constantTimeIsZeroBytes(bytes: []const u8) bool {
-    var acc: u8 = 0;
+    // Volatile accumulator blocks early-exit rewrites by the optimizer.
+    var acc_value: u8 = 0;
+    const acc: *volatile u8 = &acc_value;
     for (bytes) |byte| {
-        acc |= byte;
+        acc.* |= byte;
     }
-    return acc == 0;
+    const result = acc.*;
+    std.mem.doNotOptimizeAway(result);
+    return result == 0;
 }
+
+/// Constant-time equality for byte slices. Alias of `constantTimeEqBytes`.
+///
+/// Use this (never `std.mem.eql`) for MACs, HMAC tags, AEAD tags, private keys,
+/// shared secrets and password hashes. Only the lengths, which are public for
+/// fixed-size values, influence the running time.
+pub const eql = constantTimeEqBytes;
+
+/// Same function under the name the TypeScript API uses (`constantTimeEqual`).
+pub const constantTimeEqual = constantTimeEqBytes;
+
+/// Constant-time all-zero check for byte slices. Alias of `constantTimeIsZeroBytes`.
+pub const isZero = constantTimeIsZeroBytes;
 
 // ============================================================================
 // Conditional Operations
@@ -291,16 +328,14 @@ pub fn constantTimeCopyBytes(comptime N: usize, condition: u8, dst: *[N]u8, src:
 }
 
 /// Secure memory zeroing that cannot be optimized away.
-/// Uses a memory fence to prevent compiler optimizations.
+/// Uses the standard library's volatile writes to prevent dead-store removal.
 pub fn secureZero(comptime N: usize, buf: *[N]u8) void {
-    @memset(buf, 0);
-    std.atomic.fence(.seq_cst);
+    std.crypto.secureZero(u8, buf);
 }
 
 /// Secure memory zeroing for slices.
 pub fn secureZeroSlice(buf: []u8) void {
-    @memset(buf, 0);
-    std.atomic.fence(.seq_cst);
+    std.crypto.secureZero(u8, buf);
 }
 
 // ============================================================================
@@ -419,6 +454,44 @@ test "constantTimeEqBytes: different lengths" {
     const a = [_]u8{ 1, 2, 3 };
     const b = [_]u8{ 1, 2, 3, 4 };
     try std.testing.expect(!constantTimeEqBytes(&a, &b));
+}
+
+test "eql: detects a flipped bit at every position" {
+    const a = [_]u8{0xa5} ** 32;
+    try std.testing.expect(eql(&a, &a));
+    try std.testing.expect(constantTimeEqual(&a, &a));
+    for (0..a.len) |i| {
+        for (0..8) |bit| {
+            var b = a;
+            b[i] ^= @as(u8, 1) << @intCast(bit);
+            try std.testing.expect(!eql(&a, &b));
+            try std.testing.expect(!constantTimeEqual(&a, &b));
+        }
+    }
+}
+
+test "eql: differences do not cancel out" {
+    // 0x01 ^ 0x03 == 0x02 twice: an XOR-fold accumulator would report equal
+    const a = [_]u8{ 0x01, 0x01 };
+    const b = [_]u8{ 0x03, 0x03 };
+    try std.testing.expect(!eql(&a, &b));
+}
+
+test "eql: length mismatch and empty slices" {
+    const a = [_]u8{ 1, 2, 3 };
+    try std.testing.expect(!eql(&a, a[0..2]));
+    try std.testing.expect(!eql(a[0..2], &a));
+    try std.testing.expect(!eql(&a, &[_]u8{}));
+    try std.testing.expect(eql(&[_]u8{}, &[_]u8{}));
+}
+
+test "isZero: any single non-zero byte" {
+    try std.testing.expect(isZero(&([_]u8{0} ** 32)));
+    for (0..32) |i| {
+        var bytes = [_]u8{0} ** 32;
+        bytes[i] = 0x80;
+        try std.testing.expect(!isZero(&bytes));
+    }
 }
 
 test "constantTimeIsZeroBytes: all zeros" {

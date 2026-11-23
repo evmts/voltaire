@@ -151,15 +151,13 @@ test "fromBytes - too short" {
 
 /// Create CallData from hex string (with or without 0x prefix)
 pub fn fromHex(allocator: std.mem.Allocator, hex: []const u8) Error!CallData {
-    const bytes = Hex.decode(allocator, hex) catch |err| switch (err) {
-        error.InvalidHexCharacter => return Error.InvalidHexCharacter,
-        error.OutOfMemory => return Error.OutOfMemory,
-        else => return Error.InvalidHexFormat,
-    };
+    const digits = if (hex.len >= 2 and hex[0] == '0' and (hex[1] == 'x' or hex[1] == 'X')) hex[2..] else hex;
+    if (digits.len % 2 != 0) return Error.InvalidHexFormat;
+    const bytes = try allocator.alloc(u8, digits.len / 2);
     errdefer allocator.free(bytes);
+    _ = std.fmt.hexToBytes(bytes, digits) catch return Error.InvalidHexCharacter;
 
     if (bytes.len < MIN_SIZE) {
-        allocator.free(bytes);
         return Error.InvalidCallDataLength;
     }
 
@@ -210,7 +208,7 @@ test "fromHex - invalid hex" {
 
 /// Convert CallData to hex string with 0x prefix
 pub fn toHex(calldata: *const CallData, allocator: std.mem.Allocator) ![]u8 {
-    return try Hex.encode(allocator, calldata.data);
+    return try Hex.bytesToHex(allocator, calldata.data);
 }
 
 test "toHex - basic" {
@@ -286,7 +284,7 @@ test "hasSelector - not matching" {
 /// Compute function selector from signature string
 pub fn computeSelector(signature: []const u8) [SELECTOR_SIZE]u8 {
     var hash: [32]u8 = undefined;
-    crypto.Keccak256.hash(signature, &hash);
+    crypto.Keccak256.hash(signature, &hash, .{});
     return hash[0..SELECTOR_SIZE].*;
 }
 

@@ -1,6 +1,6 @@
 ---
-title: "from.js"
----
+
+## title: "from.js"
 
 # from.js
 
@@ -9,7 +9,7 @@ Universal constructor for AccessList from items array or RLP bytes.
 ## Signature
 
 ```typescript
-function from(value: readonly Item[] | Uint8Array): BrandedAccessList
+function from(value: readonly Item[] | Uint8Array): BrandedAccessList;
 ```
 
 ## Parameters
@@ -25,8 +25,8 @@ function from(value: readonly Item[] | Uint8Array): BrandedAccessList
 ```typescript
 // From items
 const list = AccessList.from([
-  { address: addr1, storageKeys: [key1, key2] },
-  { address: addr2, storageKeys: [] }
+	{ address: addr1, storageKeys: [key1, key2] },
+	{ address: addr2, storageKeys: [] },
 ]);
 
 // From RLP bytes

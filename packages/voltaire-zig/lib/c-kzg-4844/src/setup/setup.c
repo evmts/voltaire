@@ -79,7 +79,7 @@
  * factor changes, this constant is no longer correct.
  */
 static const fr_t ROOT_OF_UNITY = {
-    0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L
+    {0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,7 +110,7 @@ static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, size_t width)
 
     /* Compute powers of root */
     for (i = 2; i <= width; i++) {
-        blst_fr_mul(&out[i], &out[i - 1], root);
+        fr_mul(&out[i], &out[i - 1], root);
         if (fr_is_one(&out[i])) break;
     }
 

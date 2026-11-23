@@ -1,7 +1,7 @@
 /**
  * Decode function call data using ABI
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {import("../Hex/index.js").HexType | Uint8Array} data - Encoded function call data
  * @returns {{ name: string, params: readonly unknown[] }} Decoded function name and parameters
  * @throws {AbiInvalidSelectorError} If data too short for selector
@@ -23,7 +23,7 @@
  * // { name: "transfer", params: ["0x742d35...", 100n] }
  * ```
  */
-export function decodeFunction(abi: import("./Abi.js").Abi, data: import("../Hex/index.js").HexType | Uint8Array): {
+export function decodeFunction(abi: import("./AbiType.js").AbiType, data: import("../Hex/index.js").HexType | Uint8Array): {
     name: string;
     params: readonly unknown[];
 };

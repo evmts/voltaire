@@ -80,10 +80,19 @@ export function fromEther(ether) {
 /**
  * Converts Wei to Gwei
  *
+ * Gwei here is a whole number, so the Wei amount must be a multiple of
+ * 10^9. Use `BrandedWei.toGwei` for fractional gwei.
+ *
  * @param {Wei} wei
  * @returns {Gwei}
+ * @throws {Error} If wei is not a whole number of gwei
  */
 export function toGwei(wei) {
+	if (BigInt(wei) % WEI_PER_GWEI !== 0n) {
+		throw new Error(
+			`Wei value is not a whole number of Gwei (would lose precision): ${wei}`,
+		);
+	}
 	const gwei = Uint.dividedBy(
 		/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)),
 		Uint.from(WEI_PER_GWEI),

@@ -20,25 +20,25 @@ export namespace Base64 {
     export { calcEncodedSize };
     export { calcDecodedSize };
 }
-import { from } from "./from.js";
-import { fromUrlSafe } from "./fromUrlSafe.js";
-import { encode } from "./encode.js";
-import { encodeString } from "./encodeString.js";
-import { encodeUrlSafe } from "./encodeUrlSafe.js";
-import { encodeStringUrlSafe } from "./encodeStringUrlSafe.js";
+import { calcDecodedSize } from "./calcDecodedSize.js";
+import { calcEncodedSize } from "./calcEncodedSize.js";
 import { decode } from "./decode.js";
 import { decodeToString } from "./decodeToString.js";
 import { decodeUrlSafe } from "./decodeUrlSafe.js";
 import { decodeUrlSafeToString } from "./decodeUrlSafeToString.js";
+import { encode } from "./encode.js";
+import { encodeString } from "./encodeString.js";
+import { encodeStringUrlSafe } from "./encodeStringUrlSafe.js";
+import { encodeUrlSafe } from "./encodeUrlSafe.js";
+import { from } from "./from.js";
+import { fromUrlSafe } from "./fromUrlSafe.js";
+import { isValid } from "./isValid.js";
+import { isValidUrlSafe } from "./isValidUrlSafe.js";
+import { toBase64 } from "./toBase64.js";
+import { toBase64Url } from "./toBase64Url.js";
 import { toBytes } from "./toBytes.js";
 import { toBytesUrlSafe } from "./toBytesUrlSafe.js";
 import { toString } from "./toString.js";
 import { toStringUrlSafe } from "./toStringUrlSafe.js";
-import { toBase64 } from "./toBase64.js";
-import { toBase64Url } from "./toBase64Url.js";
-import { isValid } from "./isValid.js";
-import { isValidUrlSafe } from "./isValidUrlSafe.js";
-import { calcEncodedSize } from "./calcEncodedSize.js";
-import { calcDecodedSize } from "./calcDecodedSize.js";
-export { from, fromUrlSafe, encode, encodeString, encodeUrlSafe, encodeStringUrlSafe, decode, decodeToString, decodeUrlSafe, decodeUrlSafeToString, toBytes, toBytesUrlSafe, toString, toStringUrlSafe, toBase64, toBase64Url, isValid, isValidUrlSafe, calcEncodedSize, calcDecodedSize };
+export { calcDecodedSize, calcEncodedSize, decode, decodeToString, decodeUrlSafe, decodeUrlSafeToString, encode, encodeString, encodeStringUrlSafe, encodeUrlSafe, from, fromUrlSafe, isValid, isValidUrlSafe, toBase64, toBase64Url, toBytes, toBytesUrlSafe, toString, toStringUrlSafe };
 //# sourceMappingURL=Base64.d.ts.map

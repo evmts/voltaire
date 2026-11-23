@@ -25,7 +25,7 @@ export function equals(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toHex, _equals };
+export { _equals, _toHex };
 
 // Export as namespace (convenience)
 export const Paymaster = {

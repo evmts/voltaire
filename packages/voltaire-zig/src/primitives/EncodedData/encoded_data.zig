@@ -115,11 +115,11 @@ pub fn fromHex(allocator: std.mem.Allocator, hex: []const u8) Error!EncodedData 
         };
     }
 
-    const bytes = Hex.decode(allocator, hex) catch |err| switch (err) {
-        error.InvalidHexCharacter => return Error.InvalidHexCharacter,
-        error.OutOfMemory => return Error.OutOfMemory,
-        else => return Error.InvalidHexFormat,
-    };
+    const digits = if (hex.len >= 2 and hex[0] == '0' and (hex[1] == 'x' or hex[1] == 'X')) hex[2..] else hex;
+    if (digits.len % 2 != 0) return Error.InvalidHexFormat;
+    const bytes = try allocator.alloc(u8, digits.len / 2);
+    errdefer allocator.free(bytes);
+    _ = std.fmt.hexToBytes(bytes, digits) catch return Error.InvalidHexCharacter;
 
     return EncodedData{
         .data = bytes,
@@ -169,7 +169,7 @@ pub fn toHex(data: *const EncodedData, allocator: std.mem.Allocator) ![]u8 {
         result[1] = 'x';
         return result;
     }
-    return try Hex.encode(allocator, data.data);
+    return try Hex.bytesToHex(allocator, data.data);
 }
 
 test "toHex - basic" {

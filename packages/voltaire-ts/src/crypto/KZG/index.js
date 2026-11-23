@@ -26,6 +26,7 @@
  */
 
 export * from "./BlobType.js";
+export * from "./CellType.js";
 export * from "./constants.js";
 export * from "./errors.js";
 // Export factory functions (tree-shakeable)
@@ -34,8 +35,12 @@ export {
 	BlobToKzgCommitment,
 	blobToKzgCommitment,
 	ComputeBlobKzgProof,
+	ComputeCells,
+	ComputeCellsAndKzgProofs,
 	ComputeKzgProof,
 	computeBlobKzgProof,
+	computeCells,
+	computeCellsAndKzgProofs,
 	computeKzgProof,
 	createEmptyBlob,
 	freeTrustedSetup,
@@ -43,12 +48,16 @@ export {
 	isInitialized,
 	KZG,
 	loadTrustedSetup,
+	RecoverCellsAndKzgProofs,
+	recoverCellsAndKzgProofs,
 	VerifyBlobKzgProof,
 	VerifyBlobKzgProofBatch,
+	VerifyCellKzgProofBatch,
 	VerifyKzgProof,
 	validateBlob,
 	verifyBlobKzgProof,
 	verifyBlobKzgProofBatch,
+	verifyCellKzgProofBatch,
 	verifyKzgProof,
 } from "./KZG.js";
 export * from "./KzgCommitmentType.js";

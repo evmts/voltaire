@@ -32,11 +32,10 @@ module native {
     return {
       ...domain,
       chainId: domain.chainId !== undefined ? (Number(domain.chainId) as any) : undefined,
-      verifyingContract:
-        typeof domain.verifyingContract === "string"
-          ? VoltaireAddress.fromHex(domain.verifyingContract)
-          : domain.verifyingContract,
-      salt: typeof domain.salt === "string" ? (VoltaireHex.toBytes(domain.salt) as any) : domain.salt
+      verifyingContract: typeof domain.verifyingContract === "string"
+        ? VoltaireAddress.fromHex(domain.verifyingContract)
+        : domain.verifyingContract,
+      salt: typeof domain.salt === "string" ? (VoltaireHex.toBytes(domain.salt) as any) : domain.salt,
     } as Domain
   }
 
@@ -61,7 +60,7 @@ module native {
   function normalizeStruct(
     typeName: string,
     data: Record<string, unknown>,
-    types: TypeDefinitions
+    types: TypeDefinitions,
   ): Record<string, unknown> {
     const fields = types[typeName]
     if (!fields) return data
@@ -78,7 +77,11 @@ module native {
     return {
       ...typedData,
       domain: normalizeDomain(typedData.domain),
-      message: normalizeStruct(typedData.primaryType, typedData.message as Record<string, unknown>, typedData.types) as any
+      message: normalizeStruct(
+        typedData.primaryType,
+        typedData.message as Record<string, unknown>,
+        typedData.types,
+      ) as any,
     } as TypedData
   }
 
@@ -98,18 +101,16 @@ module native {
     return VoltaireEip712.recoverAddress(signature, normalizeTypedData(typedData))
   }
 
-  export function verifyTypedDataRaw(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType): boolean {
+  export function verifyTypedDataRaw(
+    signature: Eip712Signature,
+    typedData: Eip712TypedDataInput,
+    address: AddressType,
+  ): boolean {
     return VoltaireEip712.verifyTypedData(signature, normalizeTypedData(typedData), address)
   }
 }
 
-import {
-  hashDomainRaw,
-  hashTypedDataRaw,
-  recoverAddressRaw,
-  signTypedDataRaw,
-  verifyTypedDataRaw
-} from native
+import { hashDomainRaw, hashTypedDataRaw, recoverAddressRaw, signTypedDataRaw, verifyTypedDataRaw } from native
 
 export type { Domain, Eip712Signature, TypedData }
 
@@ -119,40 +120,69 @@ export service Eip712 {
   hashTypedData(typedData: Eip712TypedDataInput): HashType!CryptoError
   signTypedData(typedData: Eip712TypedDataInput, privateKey: Uint8Array): Eip712Signature!CryptoError
   recoverAddress(signature: Eip712Signature, typedData: Eip712TypedDataInput): AddressType!CryptoError
-  verifyTypedData(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType): boolean!CryptoError
+  verifyTypedData(
+    signature: Eip712Signature,
+    typedData: Eip712TypedDataInput,
+    address: AddressType,
+  ): boolean!CryptoError
 }
 
 export const Eip712Live = Layer.succeed(Eip712, {
   effect hashDomain(domain: Eip712DomainInput) {
     return try Effect.try({
       try: () => hashDomainRaw(domain),
-      catch: (cause) => new CryptoError({ operation: "eip712.hashDomain", message: `EIP-712 domain hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "eip712.hashDomain",
+          message: `EIP-712 domain hash failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect hashTypedData(typedData: Eip712TypedDataInput) {
     return try Effect.try({
       try: () => hashTypedDataRaw(typedData),
-      catch: (cause) => new CryptoError({ operation: "eip712.hashTypedData", message: `EIP-712 typed data hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "eip712.hashTypedData",
+          message: `EIP-712 typed data hash failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect signTypedData(typedData: Eip712TypedDataInput, privateKey: Uint8Array) {
     return try Effect.try({
       try: () => signTypedDataRaw(typedData, privateKey),
-      catch: (cause) => new CryptoError({ operation: "eip712.signTypedData", message: `EIP-712 sign failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "eip712.signTypedData",
+          message: `EIP-712 sign failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect recoverAddress(signature: Eip712Signature, typedData: Eip712TypedDataInput) {
     return try Effect.try({
       try: () => recoverAddressRaw(signature, typedData),
-      catch: (cause) => new CryptoError({ operation: "eip712.recoverAddress", message: `EIP-712 address recovery failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "eip712.recoverAddress",
+          message: `EIP-712 address recovery failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect verifyTypedData(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType) {
     return try Effect.try({
       try: () => verifyTypedDataRaw(signature, typedData, address),
-      catch: (cause) => new CryptoError({ operation: "eip712.verifyTypedData", message: `EIP-712 verification failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "eip712.verifyTypedData",
+          message: `EIP-712 verification failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
-  }
+  },
 })
 
 export effect function hashDomain(domain: Eip712DomainInput): HashType!CryptoError!Eip712 {
@@ -163,14 +193,24 @@ export effect function hashTypedData(typedData: Eip712TypedDataInput): HashType!
   return try (try Eip712).hashTypedData(typedData)
 }
 
-export effect function signTypedData(typedData: Eip712TypedDataInput, privateKey: Uint8Array): Eip712Signature!CryptoError!Eip712 {
+export effect function signTypedData(
+  typedData: Eip712TypedDataInput,
+  privateKey: Uint8Array,
+): Eip712Signature!CryptoError!Eip712 {
   return try (try Eip712).signTypedData(typedData, privateKey)
 }
 
-export effect function recoverTypedDataAddress(signature: Eip712Signature, typedData: Eip712TypedDataInput): AddressType!CryptoError!Eip712 {
+export effect function recoverTypedDataAddress(
+  signature: Eip712Signature,
+  typedData: Eip712TypedDataInput,
+): AddressType!CryptoError!Eip712 {
   return try (try Eip712).recoverAddress(signature, typedData)
 }
 
-export effect function verifyTypedData(signature: Eip712Signature, typedData: Eip712TypedDataInput, address: AddressType): boolean!CryptoError!Eip712 {
+export effect function verifyTypedData(
+  signature: Eip712Signature,
+  typedData: Eip712TypedDataInput,
+  address: AddressType,
+): boolean!CryptoError!Eip712 {
   return try (try Eip712).verifyTypedData(signature, typedData, address)
 }

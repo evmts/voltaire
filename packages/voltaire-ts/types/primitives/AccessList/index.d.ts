@@ -24,7 +24,7 @@ declare const toBytes: (list: BrandedAccessList) => Uint8Array;
 declare const addressCount: (list: BrandedAccessList) => number;
 declare const storageKeyCount: (list: BrandedAccessList) => number;
 declare const isEmpty: (list: BrandedAccessList) => boolean;
-export { from, fromBytes, is, isItem, create, merge, gasCost, gasSavings, hasSavings, includesAddress, includesStorageKey, keysFor, deduplicate, withAddress, withStorageKey, assertValid, toBytes, addressCount, storageKeyCount, isEmpty, };
+export { addressCount, assertValid, create, deduplicate, from, fromBytes, gasCost, gasSavings, hasSavings, includesAddress, includesStorageKey, is, isEmpty, isItem, keysFor, merge, storageKeyCount, toBytes, withAddress, withStorageKey, };
 /**
  * Namespace for AccessList operations
  */
@@ -55,6 +55,6 @@ declare const AccessList: {
     COLD_STORAGE_ACCESS_COST: bigint;
     WARM_STORAGE_ACCESS_COST: bigint;
 };
-export { AccessList };
 export type { AccessList as AccessListNamespace };
+export { AccessList };
 //# sourceMappingURL=index.d.ts.map

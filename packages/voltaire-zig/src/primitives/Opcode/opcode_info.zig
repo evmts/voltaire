@@ -8,7 +8,7 @@
 ///
 /// This data drives the jump table dispatch system and bytecode validation.
 const std = @import("std");
-const primitives = @import("root");
+const primitives = @import("../root.zig");
 const GasConstants = primitives.GasConstants;
 pub const Opcode = @import("../Opcode/opcode.zig").Opcode;
 
@@ -52,6 +52,7 @@ pub const OPCODE_INFO = blk: {
     info[0x1b] = .{ .gas_cost = GasConstants.GasFastestStep, .stack_inputs = 2, .stack_outputs = 1 }; // SHL
     info[0x1c] = .{ .gas_cost = GasConstants.GasFastestStep, .stack_inputs = 2, .stack_outputs = 1 }; // SHR
     info[0x1d] = .{ .gas_cost = GasConstants.GasFastestStep, .stack_inputs = 2, .stack_outputs = 1 }; // SAR
+    info[0x1e] = .{ .gas_cost = GasConstants.GasFastStep, .stack_inputs = 1, .stack_outputs = 1 }; // CLZ (EIP-7939)
 
     // 0x20s: Crypto
     info[0x20] = .{ .gas_cost = 30, .stack_inputs = 2, .stack_outputs = 1 }; // SHA3/KECCAK256 (dynamic, base cost)
@@ -148,6 +149,8 @@ pub const OPCODE_INFO = blk: {
 
 /// Hardfork-specific opcode availability
 pub const HARDFORK_OPCODES = struct {
+    /// EIP-7939: count leading zeros (Osaka).
+    pub const OSAKA_OPCODES = [_]u8{0x1e};
     // EIP-3855: PUSH0 opcode (Shanghai)
     pub const SHANGHAI_OPCODES = [_]u8{0x5f};
 
@@ -684,11 +687,11 @@ test "unimplemented opcodes have zero metadata" {
     try std.testing.expectEqual(@as(u4, 0), opcode_0c.stack_inputs);
     try std.testing.expectEqual(@as(u4, 0), opcode_0c.stack_outputs);
 
-    // 0x1e-0x1f (between SAR and KECCAK256)
-    const opcode_1e = OPCODE_INFO[0x1e];
-    try std.testing.expectEqual(@as(u16, 0), opcode_1e.gas_cost);
-    try std.testing.expectEqual(@as(u4, 0), opcode_1e.stack_inputs);
-    try std.testing.expectEqual(@as(u4, 0), opcode_1e.stack_outputs);
+    // 0x1f (between CLZ and KECCAK256)
+    const opcode_1f = OPCODE_INFO[0x1f];
+    try std.testing.expectEqual(@as(u16, 0), opcode_1f.gas_cost);
+    try std.testing.expectEqual(@as(u4, 0), opcode_1f.stack_inputs);
+    try std.testing.expectEqual(@as(u4, 0), opcode_1f.stack_outputs);
 
     // 0x21-0x2f (between KECCAK256 and ADDRESS)
     const opcode_21 = OPCODE_INFO[0x21];
@@ -867,4 +870,18 @@ test "gas costs for dynamic opcodes have base costs" {
     // CALL - warm access base cost
     const call_info = OPCODE_INFO[0xf1];
     try std.testing.expectEqual(@as(u16, 100), call_info.gas_cost);
+}
+
+test "EIP-7939 CLZ metadata agrees with Osaka execution" {
+    try std.testing.expectEqual(@as(u8, 0x1e), @intFromEnum(Opcode.CLZ));
+    try std.testing.expect(Opcode.isValid(0x1e));
+    try std.testing.expect(!Opcode.isValid(0x1f));
+    try std.testing.expect(Opcode.CLZ.isBitwise());
+    try std.testing.expectEqualStrings("CLZ", Opcode.CLZ.name());
+    const info = OPCODE_INFO[0x1e];
+    try std.testing.expectEqual(@as(u16, 5), info.gas_cost);
+    try std.testing.expectEqual(@as(u4, 1), info.stack_inputs);
+    try std.testing.expectEqual(@as(u4, 1), info.stack_outputs);
+    try std.testing.expectEqual(@as(u16, 1), getMinStackRequired(0x1e));
+    try std.testing.expectEqualSlices(u8, &.{0x1e}, &HARDFORK_OPCODES.OSAKA_OPCODES);
 }

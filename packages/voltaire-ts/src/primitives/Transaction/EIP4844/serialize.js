@@ -1,6 +1,11 @@
 import { encode } from "../../Rlp/encode.js";
 import { Type } from "../types.js";
-import { encodeAccessList, encodeBigintCompact } from "../utils.js";
+import {
+	encodeAccessList,
+	encodeBigintCompact,
+	encodeSignatureScalar,
+	encodeYParity,
+} from "../utils.js";
 
 /**
  * Serialize EIP-4844 transaction to RLP encoded bytes.
@@ -29,9 +34,9 @@ export function serialize(tx) {
 		encodeAccessList(tx.accessList),
 		encodeBigintCompact(tx.maxFeePerBlobGas),
 		tx.blobVersionedHashes.map((h) => h),
-		new Uint8Array([tx.yParity]),
-		tx.r,
-		tx.s,
+		encodeYParity(tx.yParity),
+		encodeSignatureScalar(tx.r),
+		encodeSignatureScalar(tx.s),
 	];
 	const rlpEncoded = encode(fields);
 

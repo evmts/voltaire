@@ -11,8 +11,8 @@ const basicTypes = @import("basicTypes.zig");
 pub fn isFixedSize(comptime T: type) bool {
     return switch (@typeInfo(T)) {
         .int, .bool => true,
-        .Array => |arr| isFixedSize(arr.child),
-        .Struct => |s| {
+        .array => |arr| isFixedSize(arr.child),
+        .@"struct" => |s| {
             inline for (s.fields) |field| {
                 if (!isFixedSize(field.type)) return false;
             }
@@ -29,11 +29,15 @@ pub fn fixedSize(comptime T: type) !usize {
     return switch (@typeInfo(T)) {
         .int => |int| int.bits / 8,
         .bool => 1,
-        .Array => |arr| {
+        .array => |arr| {
             const child_size = try fixedSize(arr.child);
             return arr.len * child_size;
         },
-        .Struct => @sizeOf(T),
+        .@"struct" => |s| {
+            var total: usize = 0;
+            inline for (s.fields) |field| total += try fixedSize(field.type);
+            return total;
+        },
         else => error.UnsupportedType,
     };
 }
@@ -42,13 +46,13 @@ pub fn fixedSize(comptime T: type) !usize {
 /// Caller owns returned memory
 pub fn encodeContainer(allocator: std.mem.Allocator, comptime T: type, value: T) ![]u8 {
     const type_info = @typeInfo(T);
-    if (type_info != .Struct) return error.NotAContainer;
+    if (type_info != .@"struct") return error.NotAContainer;
 
     // Calculate sizes
     var fixed_part_size: usize = 0;
     var variable_fields_count: usize = 0;
 
-    inline for (type_info.Struct.fields) |field| {
+    inline for (type_info.@"struct".fields) |field| {
         if (isFixedSize(field.type)) {
             fixed_part_size += try fixedSize(field.type);
         } else {
@@ -69,7 +73,7 @@ pub fn encodeContainer(allocator: std.mem.Allocator, comptime T: type, value: T)
 
     // Serialize fixed fields
     var offset: usize = 0;
-    inline for (type_info.Struct.fields) |field| {
+    inline for (type_info.@"struct".fields) |field| {
         const field_value = @field(value, field.name);
         const field_size = try fixedSize(field.type);
 
@@ -96,7 +100,7 @@ pub fn encodeContainer(allocator: std.mem.Allocator, comptime T: type, value: T)
             .bool => {
                 result[offset] = if (field_value) 1 else 0;
             },
-            .Array => {
+            .array => {
                 const field_bytes = std.mem.asBytes(&field_value);
                 @memcpy(result[offset..][0..field_size], field_bytes);
             },
@@ -127,6 +131,11 @@ test "fixedSize" {
     try std.testing.expectEqual(@as(usize, 8), try fixedSize(u64));
     try std.testing.expectEqual(@as(usize, 1), try fixedSize(bool));
     try std.testing.expectEqual(@as(usize, 32), try fixedSize([32]u8));
+}
+
+test "fixedSize struct is sum of field sizes, no padding" {
+    const S = struct { a: u8, b: u64 };
+    try std.testing.expectEqual(@as(usize, 9), try fixedSize(S));
 }
 
 test "encodeContainer simple struct" {

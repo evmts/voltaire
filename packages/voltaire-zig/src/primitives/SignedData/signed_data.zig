@@ -702,7 +702,7 @@ test "SignedMessage - fromSignature creates valid structure" {
 
     // Note: This will fail signature recovery with mock values
     // but tests the structure creation
-    const result = fromSignature(allocator, data, r, s, v);
+    var result = fromSignature(allocator, data, r, s, v);
 
     if (result) |*msg| {
         defer msg.deinit();

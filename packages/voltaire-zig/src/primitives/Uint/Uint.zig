@@ -75,7 +75,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         pub const ONE: Self = if (bits == 0) ZERO else if (limbs == 0) ZERO else Self.from_limbs(.{1} ++ .{0} ** (limbs - 1));
         pub const MIN: Self = ZERO;
         pub const MAX: Self = blk: {
-            var max_limbs = .{std.math.maxInt(u64)} ** limbs;
+            var max_limbs: [limbs]u64 = .{std.math.maxInt(u64)} ** limbs;
             if (limbs > 0 and MASK != std.math.maxInt(u64)) {
                 max_limbs[limbs - 1] = MASK;
             }
@@ -114,9 +114,9 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             }
 
             var limbs_arr: [limbs]u64 = .{0} ** limbs;
-            var remaining = value;
-            var i: usize = 0;
-            while (i < limbs and remaining > 0) : (i += 1) {
+            comptime var remaining = value;
+            comptime var i: usize = 0;
+            inline while (i < limbs and remaining > 0) : (i += 1) {
                 limbs_arr[i] = @truncate(remaining);
                 remaining = remaining >> 64;
             }
@@ -220,7 +220,8 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         }
 
         pub fn overflowing_neg(self: Self) struct { result: Self, overflow: bool } {
-            return ZERO.overflowing_sub(self);
+            const r = ZERO.overflowing_sub(self);
+            return .{ .result = r.result, .overflow = r.overflow };
         }
 
         pub fn checked_neg(self: Self) ?Self {
@@ -362,8 +363,9 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 var carry: u64 = 0;
                 for (0..limbs) |j| {
                     if (i + j >= limbs) {
-                        if (rhs.limbs[j] != 0) {
-                            overflow = true;
+                        // Any remaining nonzero rhs limb lands at or above 2^(64*limbs).
+                        for (rhs.limbs[j..]) |limb| {
+                            if (limb != 0) overflow = true;
                         }
                         break;
                     }
@@ -411,6 +413,18 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
 
         pub fn wrapping_mul(self: Self, rhs: Self) Self {
             return self.overflowing_mul(rhs).result;
+        }
+
+        pub fn saturating_add(self: Self, rhs: Self) Self {
+            const result = self.overflowing_add(rhs);
+            if (result.overflow) return MAX;
+            return result.result;
+        }
+
+        pub fn saturating_sub(self: Self, rhs: Self) Self {
+            const result = self.overflowing_sub(rhs);
+            if (result.overflow) return ZERO;
+            return result.result;
         }
 
         pub fn saturating_mul(self: Self, rhs: Self) Self {
@@ -571,6 +585,43 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             }
         }
 
+        /// Construct from little-endian limbs. Alias of `from_limbs`.
+        pub fn init(limbs_arr: [limbs]u64) Self {
+            return Self.from_limbs(limbs_arr);
+        }
+
+        /// Wrapping addition (mod 2^bits).
+        pub fn add(self: Self, rhs: Self) Self {
+            return self.wrapping_add(rhs);
+        }
+
+        /// Wrapping subtraction (mod 2^bits).
+        pub fn sub(self: Self, rhs: Self) Self {
+            return self.wrapping_sub(rhs);
+        }
+
+        /// Wrapping multiplication (mod 2^bits).
+        pub fn mul(self: Self, rhs: Self) Self {
+            return self.wrapping_mul(rhs);
+        }
+
+        /// Truncating division. Division by zero returns zero (EVM DIV semantics).
+        pub fn div(self: Self, rhs: Self) Self {
+            return self.wrapping_div(rhs);
+        }
+
+        /// Left shift; shifts >= bits give zero.
+        pub fn shl(self: Self, shift: usize) Self {
+            if (shift >= bits) return ZERO;
+            return self.wrapping_shl(@intCast(shift));
+        }
+
+        /// Logical right shift; shifts >= bits give zero.
+        pub fn shr(self: Self, shift: usize) Self {
+            if (shift >= bits) return ZERO;
+            return self.wrapping_shr(@intCast(shift));
+        }
+
         pub fn wrapping_shl(self: Self, shift: u32) Self {
             if (bits == 0 or shift >= bits) return ZERO;
             if (shift == 0) return self;
@@ -579,7 +630,8 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             if (comptime bits <= 256) {
                 const self_u256 = self.to_u256() orelse unreachable;
                 const shifted = if (shift >= 256) 0 else self_u256 << @intCast(shift);
-                return Self.from_u256(shifted);
+                // Bits shifted past `bits` are discarded (from_native masks; from_u256 asserts).
+                return Self.from_native(shifted);
             }
 
             // Optimized path for 256-bit numbers (fallback for larger types)
@@ -795,13 +847,13 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 }
             }
 
-            // Adjust for non-limb-aligned sizes
-            const total_bits = limbs * 64;
-            if (zeros > total_bits - bits) {
-                zeros = @intCast(total_bits - bits);
-            }
+            // The top limb has (limbs * 64 - bits) padding bits that are always zero.
+            return zeros - @as(u32, @intCast(limbs * 64 - bits));
+        }
 
-            return zeros;
+        /// Count leading zeros. Alias of `leading_zeros`.
+        pub fn clz(self: Self) u32 {
+            return self.leading_zeros();
         }
 
         pub fn bit_len(self: Self) usize {
@@ -883,8 +935,8 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             if (self.is_zero() or other.is_zero()) return Self.ZERO;
             const gcd_val = self.gcd(other);
             const div_result = other.checked_div(gcd_val);
-            if (div_result) |div| {
-                return self.checked_mul(div);
+            if (div_result) |q| {
+                return self.checked_mul(q);
             }
             return null;
         }
@@ -895,46 +947,35 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             return self.wrapping_rem(modulus);
         }
 
+        /// (self - rhs) mod modulus, without intermediate underflow. Zero modulus returns zero.
+        pub fn sub_mod(self: Self, rhs: Self, modulus: Self) Self {
+            if (modulus.is_zero()) return ZERO;
+            const a = self.reduce_mod(modulus);
+            const b = rhs.reduce_mod(modulus);
+            if (a.ge(b)) return a.wrapping_sub(b);
+            return modulus.wrapping_sub(b.wrapping_sub(a));
+        }
+
+        /// Smallest multiple of rhs that is >= self. Null if rhs is zero or the result overflows.
+        pub fn checked_next_multiple_of(self: Self, rhs: Self) ?Self {
+            if (rhs.is_zero()) return null;
+            const r = self.wrapping_rem(rhs);
+            if (r.is_zero()) return self;
+            return self.checked_add(rhs.wrapping_sub(r));
+        }
+
         pub fn add_mod(self: Self, rhs: Self, modulus: Self) Self {
             if (modulus.is_zero()) return Self.ZERO;
 
-            // Fast path for large modulus (>= 2^192)
-            if (limbs >= 3 and modulus.limbs[limbs - 1] != 0 and
-                self.limbs[limbs - 1] <= modulus.limbs[limbs - 1] and
-                rhs.limbs[limbs - 1] <= modulus.limbs[limbs - 1])
-            {
-
-                // Normalize operands in case they exceed modulus
-                const x_norm = if (self.ge(modulus)) self.wrapping_sub(modulus) else self;
-                const y_norm = if (rhs.ge(modulus)) rhs.wrapping_sub(modulus) else rhs;
-
-                const sum_result = x_norm.overflowing_add(y_norm);
-                const sum_val = sum_result.result;
-
-                const mod_result = sum_val.overflowing_sub(modulus);
-
-                if (sum_result.overflow or !mod_result.overflow) {
-                    return mod_result.result;
-                } else {
-                    return sum_val;
-                }
-            }
-
-            // Fast path for small values
-            if (self.lt(modulus) and rhs.lt(modulus)) {
-                const sum_result = self.wrapping_add(rhs);
-                if (sum_result.lt(self) or sum_result.ge(modulus)) {
-                    // Overflow occurred or sum >= modulus
-                    return sum_result.wrapping_sub(modulus);
-                }
-                return sum_result;
-            }
-
-            // Reduce operands first
+            // a, b < modulus, so a + b < 2 * modulus: one conditional subtraction suffices.
+            // If a + b carried out of `bits`, the wrapped sum minus modulus is the exact result.
             const a = self.reduce_mod(modulus);
             const b = rhs.reduce_mod(modulus);
-            const sum_val = a.wrapping_add(b);
-            return sum_val.reduce_mod(modulus);
+            const s = a.overflowing_add(b);
+            if (s.overflow or s.result.ge(modulus)) {
+                return s.result.wrapping_sub(modulus);
+            }
+            return s.result;
         }
 
         pub fn mul_mod(self: Self, rhs: Self, modulus: Self) Self {
@@ -1072,7 +1113,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
 
         pub fn rotate_left(self: Self, n: u32) Self {
             if (bits == 0) return ZERO;
-            const normalized = n % bits;
+            const normalized: u32 = @intCast(n % bits);
             if (normalized == 0) return self;
 
             const left = self.wrapping_shl(normalized);
@@ -1082,7 +1123,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
 
         pub fn rotate_right(self: Self, n: u32) Self {
             if (bits == 0) return ZERO;
-            const normalized = n % bits;
+            const normalized: u32 = @intCast(n % bits);
             if (normalized == 0) return self;
 
             const right = self.wrapping_shr(normalized);
@@ -1270,7 +1311,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             while (!n.is_zero()) {
                 const div_result = n.div_rem(base);
                 n = div_result.quotient;
-                const digit = @as(u8, @intCast(div_result.remainder.to_u64()));
+                const digit = @as(u8, @intCast(div_result.remainder.limbs[0]));
                 const c = if (digit < 10) '0' + digit else 'a' + digit - 10;
                 try digits.append(c);
             }
@@ -1282,31 +1323,27 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             return result;
         }
 
-        pub fn to_u64(self: Self) u64 {
+        /// Returns null if the value does not fit in a u64.
+        pub fn to_u64(self: Self) ?u64 {
             if (bits == 0) return 0;
+            for (self.limbs[1..]) |limb| {
+                if (limb != 0) return null;
+            }
             return self.limbs[0];
         }
 
-        pub fn format(
-            self: Self,
-            comptime fmt: []const u8,
-            options: std.fmt.FormatOptions,
-            writer: anytype,
-        ) !void {
-            _ = options;
+        /// Decimal output, used by `{f}`.
+        pub fn format(self: Self, writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            try self.format_decimal(writer);
+        }
 
-            if (fmt.len == 0) {
-                try self.format_decimal(writer);
-            } else if (fmt.len == 1) {
-                switch (fmt[0]) {
-                    'b' => try self.format_binary(writer),
-                    'o' => try self.format_octal(writer),
-                    'x' => try self.format_hex(writer, false),
-                    'X' => try self.format_hex(writer, true),
-                    else => try self.format_decimal(writer),
-                }
-            } else {
-                try self.format_decimal(writer);
+        /// Used by `{d}`, `{b}`, `{o}`, `{x}`, `{X}`. Non-decimal output is prefixed (0b, 0o, 0x).
+        pub fn formatNumber(self: Self, writer: *std.Io.Writer, number: std.fmt.Number) std.Io.Writer.Error!void {
+            switch (number.mode) {
+                .binary => try self.format_binary(writer),
+                .octal => try self.format_octal(writer),
+                .hex => try self.format_hex(writer, number.case == .upper),
+                .decimal, .scientific => try self.format_decimal(writer),
             }
         }
 
@@ -1324,7 +1361,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             while (!n.is_zero()) {
                 const div_result = n.div_rem(base);
                 n = div_result.quotient;
-                const digit = @as(u8, @intCast(div_result.remainder.to_u64()));
+                const digit = @as(u8, @intCast(div_result.remainder.limbs[0]));
                 index -= 1;
                 buffer[index] = '0' + digit;
             }
@@ -1351,14 +1388,14 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                     started = true;
                     while (j < 64) : (j -%= 1) {
                         const bit = (limb >> j) & 1;
-                        try writer.print("{}", .{bit});
+                        try writer.print("{d}", .{bit});
                         if (j == 0) break;
                     }
                 } else {
                     var j: u6 = 63;
                     while (j < 64) : (j -%= 1) {
                         const bit = (limb >> j) & 1;
-                        try writer.print("{}", .{bit});
+                        try writer.print("{d}", .{bit});
                         if (j == 0) break;
                     }
                 }
@@ -1380,7 +1417,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             while (!n.is_zero()) {
                 const div_result = n.div_rem(base);
                 n = div_result.quotient;
-                const digit = @as(u8, @intCast(div_result.remainder.to_u64()));
+                const digit = @as(u8, @intCast(div_result.remainder.limbs[0]));
                 index -= 1;
                 buffer[index] = '0' + digit;
             }
@@ -1671,39 +1708,20 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 return self;
             }
 
-            // Create first guess using bit length
+            // Integer Newton iteration from an initial guess >= the true root:
+            // x' = ((d-1)*x + n / x^(d-1)) / d decreases monotonically until x = floor(n^(1/d)).
+            const d: u32 = @intCast(degree);
+            const d_val = Self.from_u64(d);
+            const d_m1 = Self.from_u64(d - 1);
             const bit_length = self.bit_len();
-            var result = Self.ONE.shl(bit_length / degree);
+            var result = Self.ONE.shl((bit_length + degree - 1) / degree);
 
-            const deg_m1 = Self.from_int(degree - 1);
-
-            // Newton's method iteration
-            var decreasing = false;
             while (true) {
-                const power = result.pow(deg_m1);
-                if (power.is_zero()) {
-                    result = Self.ZERO;
-                    break;
-                }
-
-                const division = self.div(power);
-                const iter = division.add(deg_m1.mul(result)).div(Self.from_int(degree));
-
-                if (iter.eq(result)) {
-                    break;
-                }
-
-                if (iter.lt(result)) {
-                    decreasing = true;
-                    result = iter;
-                } else if (!decreasing) {
-                    // Cap increase at 2x to prevent overshooting
-                    const double = result.shl(1);
-                    result = if (iter.gt(double)) double else iter;
-                } else {
-                    // If we were decreasing and now would increase, we're done
-                    break;
-                }
+                const p = result.overflowing_pow(d - 1);
+                const division = if (p.overflow) Self.ZERO else self.wrapping_div(p.result);
+                const iter = division.wrapping_add(d_m1.wrapping_mul(result)).wrapping_div(d_val);
+                if (!iter.lt(result)) break;
+                result = iter;
             }
 
             return result;
@@ -1735,11 +1753,13 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 a = b;
                 b = r;
 
-                const new_x = if (x0.ge(q.mul(x1))) x0.sub(q.mul(x1)) else q.mul(x1).sub(x0);
+                // Bezout coefficients alternate in sign, so their magnitudes add:
+                // |x_{k+1}| = |x_{k-1}| + q * |x_k|. `sign` records which one is negative.
+                const new_x = x0.wrapping_add(q.wrapping_mul(x1));
                 x0 = x1;
                 x1 = new_x;
 
-                const new_y = if (y0.ge(q.mul(y1))) y0.sub(q.mul(y1)) else q.mul(y1).sub(y0);
+                const new_y = y0.wrapping_add(q.wrapping_mul(y1));
                 y0 = y1;
                 y1 = new_y;
 
@@ -1759,12 +1779,12 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
                 return null;
             }
 
-            // Compute the inverse
-            if (extended.sign) {
-                return extended.x.reduce_mod(modulus);
-            } else {
-                return modulus.sub(extended.y.reduce_mod(modulus));
-            }
+            // sign: self * x - modulus * y = 1, so x is the inverse.
+            // !sign: modulus * y - self * x = 1, so -x is the inverse.
+            const x = extended.x.reduce_mod(modulus);
+            if (extended.sign) return x;
+            if (x.is_zero()) return x;
+            return modulus.wrapping_sub(x);
         }
 
         pub inline fn from_u256(value: u256) Self {
@@ -2188,7 +2208,8 @@ test "Uint multiplication operations" {
     const large = U64.from_u64(std.math.maxInt(u64) / 2 + 1);
     const overflow_result = large.overflowing_mul(U64.from_u64(2));
     try testing.expect(overflow_result.overflow);
-    try testing.expectEqual(@as(u64, 2), overflow_result.result.limbs[0]);
+    // 2^63 * 2 = 2^64, which wraps to 0 in 64 bits
+    try testing.expectEqual(@as(u64, 0), overflow_result.result.limbs[0]);
 
     // Saturating multiplication
     const saturated = large.saturating_mul(U64.from_u64(3));
@@ -2336,8 +2357,9 @@ test "Uint multi-limb division" {
     const a = U128.from_limbs(.{ 0, 1 }); // 2^64
     const b = U128.from_limbs(.{ 2, 0 });
     const div_result = a.wrapping_div(b);
-    try testing.expectEqual(@as(u64, 0), div_result.limbs[0]);
-    try testing.expectEqual(@as(u64, std.math.maxInt(u64) / 2 + 1), div_result.limbs[1]);
+    // 2^64 / 2 = 2^63, which fits in the low limb
+    try testing.expectEqual(@as(u64, std.math.maxInt(u64) / 2 + 1), div_result.limbs[0]);
+    try testing.expectEqual(@as(u64, 0), div_result.limbs[1]);
 
     // Division with remainder
     const c = U128.from_limbs(.{ 100, 0 });
@@ -2352,8 +2374,9 @@ test "Uint multi-limb division" {
     const e = U128.from_limbs(.{ 0, 1000 });
     const f = U128.from_limbs(.{ 0, 10 });
     const large_div = e.wrapping_div(f);
-    try testing.expectEqual(@as(u64, 0), large_div.limbs[0]);
-    try testing.expectEqual(@as(u64, 100), large_div.limbs[1]);
+    // (1000 * 2^64) / (10 * 2^64) = 100
+    try testing.expectEqual(@as(u64, 100), large_div.limbs[0]);
+    try testing.expectEqual(@as(u64, 0), large_div.limbs[1]);
 }
 
 test "Uint shift operations" {
@@ -2724,7 +2747,7 @@ test "string parsing from_str_radix" {
     try testing.expectEqual(U64.ZERO, dec2);
 
     const dec3 = try U128.from_str_radix("12345678901234567890", 10);
-    const expected = U128.from_limbs(.{ 0xAB54A98CEB1F0AD2, 0xAB });
+    const expected = U128.from_limbs(.{ 0xAB54A98CEB1F0AD2, 0 }); // 12345678901234567890 < 2^64
     try testing.expect(dec3.eq(expected));
 
     // Binary parsing
@@ -2826,7 +2849,7 @@ test "string formatting to_string_radix" {
     try testing.expectEqualStrings("777", oct1);
 
     // Large number
-    const large = U128.from_limbs(.{ 0xAB54A98CEB1F0AD2, 0xAB });
+    const large = U128.from_limbs(.{ 0xAB54A98CEB1F0AD2, 0 }); // 12345678901234567890 < 2^64
     const large_str = try large.to_string_radix(allocator, 10);
     defer allocator.free(large_str);
     try testing.expectEqualStrings("12345678901234567890", large_str);
@@ -2839,11 +2862,11 @@ test "formatting with format()" {
     // Decimal formatting
     const dec1 = U64.from_u64(123);
     var buf: [100]u8 = undefined;
-    const result1 = try std.fmt.bufPrint(&buf, "{}", .{dec1});
+    const result1 = try std.fmt.bufPrint(&buf, "{f}", .{dec1});
     try testing.expectEqualStrings("123", result1);
 
     const dec2 = U64.ZERO;
-    const result2 = try std.fmt.bufPrint(&buf, "{}", .{dec2});
+    const result2 = try std.fmt.bufPrint(&buf, "{d}", .{dec2});
     try testing.expectEqualStrings("0", result2);
 
     // Binary formatting
@@ -3253,8 +3276,12 @@ test "modular arithmetic" {
 
     // add_mod with overflow
     const max = U64.MAX;
-    try testing.expectEqual(U64.from_u64(0), max.add_mod(U64.ONE, max));
-    try testing.expectEqual(U64.from_u64(2), max.add_mod(U64.from_u64(3), max));
+    // (2^64 - 1) + k mod (2^64 - 1) = k mod (2^64 - 1)
+    try testing.expectEqual(U64.from_u64(1), max.add_mod(U64.ONE, max));
+    try testing.expectEqual(U64.from_u64(3), max.add_mod(U64.from_u64(3), max));
+    // a + b exceeds 2^64 with a, b < modulus
+    const m = U64.from_u64(std.math.maxInt(u64) - 1);
+    try testing.expectEqual(U64.from_u64(std.math.maxInt(u64) - 3), U64.from_u64(std.math.maxInt(u64) - 2).add_mod(m, m.wrapping_add(U64.ONE)));
 
     // mul_mod
     try testing.expectEqual(U64.from_u64(0), U64.from_u64(5).mul_mod(U64.from_u64(3), U64.from_u64(0)));
@@ -3279,7 +3306,7 @@ test "modular arithmetic" {
     try testing.expectEqual(U64.from_u64(4), U64.from_u64(2).pow_mod(U64.from_u64(10), U64.from_u64(10)));
 
     // pow_mod with larger modulus
-    try testing.expectEqual(U64.from_u64(445), U64.from_u64(3).pow_mod(U64.from_u64(100), U64.from_u64(1000)));
+    try testing.expectEqual(U64.from_u64(1), U64.from_u64(3).pow_mod(U64.from_u64(100), U64.from_u64(1000))); // pow(3, 100, 1000) == 1
 }
 
 test "inv_ring" {
@@ -3416,14 +3443,14 @@ test "power of two operations" {
     try testing.expect(!U64.from_u64(0).is_power_of_two());
 
     // Test next_power_of_two
-    try testing.expectEqual(@as(u64, 1), U64.from_u64(0).next_power_of_two().to_u64().?);
-    try testing.expectEqual(@as(u64, 1), U64.from_u64(1).next_power_of_two().to_u64().?);
-    try testing.expectEqual(@as(u64, 2), U64.from_u64(2).next_power_of_two().to_u64().?);
-    try testing.expectEqual(@as(u64, 4), U64.from_u64(3).next_power_of_two().to_u64().?);
-    try testing.expectEqual(@as(u64, 8), U64.from_u64(5).next_power_of_two().to_u64().?);
-    try testing.expectEqual(@as(u64, 16), U64.from_u64(9).next_power_of_two().to_u64().?);
-    try testing.expectEqual(@as(u64, 16), U64.from_u64(15).next_power_of_two().to_u64().?);
-    try testing.expectEqual(@as(u64, 16), U64.from_u64(16).next_power_of_two().to_u64().?);
+    try testing.expectEqual(@as(u64, 1), U64.from_u64(0).next_power_of_two().?.to_u64().?);
+    try testing.expectEqual(@as(u64, 1), U64.from_u64(1).next_power_of_two().?.to_u64().?);
+    try testing.expectEqual(@as(u64, 2), U64.from_u64(2).next_power_of_two().?.to_u64().?);
+    try testing.expectEqual(@as(u64, 4), U64.from_u64(3).next_power_of_two().?.to_u64().?);
+    try testing.expectEqual(@as(u64, 8), U64.from_u64(5).next_power_of_two().?.to_u64().?);
+    try testing.expectEqual(@as(u64, 16), U64.from_u64(9).next_power_of_two().?.to_u64().?);
+    try testing.expectEqual(@as(u64, 16), U64.from_u64(15).next_power_of_two().?.to_u64().?);
+    try testing.expectEqual(@as(u64, 16), U64.from_u64(16).next_power_of_two().?.to_u64().?);
 
     // Test checked_next_power_of_two overflow
     const max_power = U64.ONE.shl(63);
@@ -3436,14 +3463,14 @@ test "next_multiple_of" {
     const U64 = Uint(64, 1);
 
     // Test exact multiple
-    try testing.expectEqual(@as(u64, 16), U64.from_u64(16).checked_next_multiple_of(U64.from_u64(8)).to_u64().?);
+    try testing.expectEqual(@as(u64, 16), U64.from_u64(16).checked_next_multiple_of(U64.from_u64(8)).?.to_u64().?);
 
     // Test rounding up
-    try testing.expectEqual(@as(u64, 24), U64.from_u64(17).checked_next_multiple_of(U64.from_u64(8)).to_u64().?);
-    try testing.expectEqual(@as(u64, 24), U64.from_u64(23).checked_next_multiple_of(U64.from_u64(8)).to_u64().?);
+    try testing.expectEqual(@as(u64, 24), U64.from_u64(17).checked_next_multiple_of(U64.from_u64(8)).?.to_u64().?);
+    try testing.expectEqual(@as(u64, 24), U64.from_u64(23).checked_next_multiple_of(U64.from_u64(8)).?.to_u64().?);
 
     // Test zero
-    try testing.expectEqual(@as(u64, 0), U64.ZERO.checked_next_multiple_of(U64.from_u64(5)).to_u64().?);
+    try testing.expectEqual(@as(u64, 0), U64.ZERO.checked_next_multiple_of(U64.from_u64(5)).?.to_u64().?);
 
     // Test division by zero
     try testing.expectEqual(@as(?U64, null), U64.from_u64(10).checked_next_multiple_of(U64.ZERO));
@@ -3554,8 +3581,8 @@ test "division edge cases from intx" {
         // Numerator smaller than denominator
         .{ .numerator = U512.from_u256(0x7000000000000000), .denominator = U512.from_u256(0x8000000000000000), .quotient = U512.ZERO, .remainder = U512.from_u256(0x7000000000000000) },
 
-        // Large division
-        .{ .numerator = U512.init(.{ 0x0000000009000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000009000000, 0x0000000000000000, 0x0000001e00000000 }), .denominator = U512.from_int(0xa), .quotient = U512.init(.{ 0xcccccccccccccccc, 0x6666666674cccccc, 0x6666666666666666, 0x6666666666666666, 0x6666666666666666, 0x666666666e666666, 0x0000000000000000, 0x0000000300000000 }), .remainder = U512.from_int(8) },
+        // Large division (quotient verified with Python big ints: divmod(n, 10))
+        .{ .numerator = U512.init(.{ 0x0000000009000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000009000000, 0x0000000000000000, 0x0000001e00000000 }), .denominator = U512.from_int(0xa), .quotient = U512.init(.{ 0x66666666674ccccc, 0x6666666666666666, 0x6666666666666666, 0x6666666666666666, 0x6666666666666666, 0x0000000000e66666, 0x0000000000000000, 0x0000000300000000 }), .remainder = U512.from_int(8) },
 
         // Very large numbers with all words used
         .{ .numerator = U512.init(.{ 0xffffffffffffffee, 0x0000000000000200, 0x0000000001000000, 0x0000000000000000, 0xfffffffffffffffe, 0x0000000000000000, 0x0000000800000010, 0xffffffffffff0000 }), .denominator = U512.init(.{ 0x0000000000000000, 0xffffffff10000000, 0x0000000000000000, 0x0000000000000005, 0xffffffffffffff00, 0xffffffffffffffff, 0xfffffffffffffffb, 0xffffffffffffffff }), .quotient = U512.ZERO, .remainder = U512.init(.{ 0xffffffffffffffee, 0x0000000000000200, 0x0000000001000000, 0x0000000000000000, 0xfffffffffffffffe, 0x0000000000000000, 0x0000000800000010, 0xffffffffffff0000 }) },
@@ -3598,17 +3625,17 @@ test "arithmetic edge cases from intx" {
 
     // Test overflow detection
     const overflow_test = U256.MAX.overflowing_add(U256.ONE);
-    try testing.expectEqual(U256.ZERO, overflow_test.value);
+    try testing.expectEqual(U256.ZERO, overflow_test.result);
     try testing.expectEqual(true, overflow_test.overflow);
 
     // Test underflow detection
     const underflow_test = U256.ZERO.overflowing_sub(U256.ONE);
-    try testing.expectEqual(U256.MAX, underflow_test.value);
+    try testing.expectEqual(U256.MAX, underflow_test.result);
     try testing.expectEqual(true, underflow_test.overflow);
 
     // Test multiplication overflow
     const mul_overflow = U256.MAX.overflowing_mul(U256.from_int(2));
-    try testing.expectEqual(U256.MAX.wrapping_sub(U256.ONE), mul_overflow.value);
+    try testing.expectEqual(U256.MAX.wrapping_sub(U256.ONE), mul_overflow.result);
     try testing.expectEqual(true, mul_overflow.overflow);
 }
 
@@ -3634,7 +3661,8 @@ test "bitwise operations from intx" {
     try testing.expectEqual(@as(u32, 256), U256.ZERO.clz());
     try testing.expectEqual(@as(u32, 0), U256.MAX.clz());
     try testing.expectEqual(@as(u32, 255), U256.ONE.clz());
-    try testing.expectEqual(@as(u32, 128), U256.init(.{ 0, 0, 0x8000000000000000, 0 }).clz());
+    // Highest set bit is bit 191, so 256 - 192 = 64 leading zeros
+    try testing.expectEqual(@as(u32, 64), U256.init(.{ 0, 0, 0x8000000000000000, 0 }).clz());
 
     // Test bit operations
     const bit_pattern = U256.init(.{ 0xAAAAAAAAAAAAAAAA, 0x5555555555555555, 0xFFFF0000FFFF0000, 0x0000FFFF0000FFFF });
@@ -3708,7 +3736,7 @@ test "modular arithmetic edge cases from intx" {
         }
     };
 
-    try test_mul_mod.run(U256.from_int(100), U256.from_int(200), U256.from_int(37), U256.from_int(1) // (100 * 200) % 37 = 1
+    try test_mul_mod.run(U256.from_int(100), U256.from_int(200), U256.from_int(37), U256.from_int(20) // (100 * 200) % 37 = 20
     );
 
     // Test with MAX values
@@ -3736,7 +3764,7 @@ test "additional edge cases from intx" {
                 const power = U256.ONE.shl(i);
                 const result = U256.MAX.div_rem(power);
                 const expected_quot = U256.MAX.shr(i);
-                const expected_rem = if (i == 0) U256.ZERO else U256.from_int((1 << i) - 1);
+                const expected_rem = if (i == 0) U256.ZERO else U256.ONE.shl(i).wrapping_sub(U256.ONE);
 
                 try testing.expectEqual(expected_quot, result.quotient);
                 try testing.expectEqual(expected_rem, result.remainder);
@@ -3767,7 +3795,7 @@ test "additional edge cases from intx" {
 
     for (perfect_squares) |ps| {
         const sqrt_result = ps.n.sqrt();
-        try testing.expectEqual(U256.from_int(ps.root), sqrt_result);
+        try testing.expectEqual(U256.from_u64(ps.root), sqrt_result);
     }
 
     // Test edge cases for GCD
@@ -4012,7 +4040,7 @@ test "product" {
     // Wrapping on overflow
     const overflow = [_]U256{ U256.MAX, U256.from_int(2) };
     const overflow_result = U256.product(&overflow);
-    const expected = (std.math.maxInt(u256) *% 2);
+    const expected = @as(u256, std.math.maxInt(u256)) *% 2;
     try testing.expectEqual(expected, overflow_result.to_native());
 }
 

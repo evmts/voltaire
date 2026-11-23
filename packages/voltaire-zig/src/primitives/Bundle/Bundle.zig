@@ -260,7 +260,7 @@ pub fn toHash(bundle: *const Bundle) BundleHash.BundleHash {
     for (bundle.transactions.items) |tx| {
         // Hash each transaction to get tx hash, then include in bundle hash
         var tx_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(tx, &tx_hash);
+        crypto.Keccak256.hash(tx, &tx_hash, .{});
         hasher.update(&tx_hash);
     }
 

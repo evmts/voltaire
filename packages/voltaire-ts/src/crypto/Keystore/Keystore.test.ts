@@ -1,6 +1,23 @@
+import { keccak_256 } from "@noble/hashes/sha3.js";
 import { describe, expect, it } from "vitest";
 import * as PrivateKey from "../../primitives/PrivateKey/index.js";
 import * as Keystore from "./index.js";
+import { hexToBytes } from "./utils.js";
+
+describe("Keystore hex decoding", () => {
+	it.each(["f", "0xabc", "g0", "0x0g", " 1"])(
+		"rejects malformed hex %j",
+		(hex) => {
+			expect(() => hexToBytes(hex)).toThrow(
+				/even number of hexadecimal digits/,
+			);
+		},
+	);
+
+	it.each(["00aB", "0x00aB"])("decodes mixed-case hex %s", (hex) => {
+		expect(hexToBytes(hex)).toEqual(new Uint8Array([0, 0xab]));
+	});
+});
 
 describe("Keystore", () => {
 	describe("encrypt / decrypt", () => {
@@ -662,81 +679,187 @@ describe("Keystore", () => {
 	});
 
 	describe("security", () => {
-		it(
-			"different IVs produce different ciphertexts",
-			{ timeout: 30000 },
-			async () => {
-				const privateKey = PrivateKey.from(
-					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-				);
-				const password = "password";
-				const salt = new Uint8Array(32).fill(1);
+		it("different IVs produce different ciphertexts", {
+			timeout: 30000,
+		}, async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+			const password = "password";
+			const salt = new Uint8Array(32).fill(1);
 
-				const iv1 = new Uint8Array(16).fill(1);
-				const iv2 = new Uint8Array(16).fill(2);
+			const iv1 = new Uint8Array(16).fill(1);
+			const iv2 = new Uint8Array(16).fill(2);
 
-				// Use low scrypt parameters for faster tests
-				const keystore1 = await Keystore.encrypt(privateKey, password, {
-					salt,
-					iv: iv1,
-					scryptN: 1024,
-					scryptR: 1,
-					scryptP: 1,
-				});
-				const keystore2 = await Keystore.encrypt(privateKey, password, {
-					salt,
-					iv: iv2,
-					scryptN: 1024,
-					scryptR: 1,
-					scryptP: 1,
-				});
+			// Use low scrypt parameters for faster tests
+			const keystore1 = await Keystore.encrypt(privateKey, password, {
+				salt,
+				iv: iv1,
+				scryptN: 1024,
+				scryptR: 1,
+				scryptP: 1,
+			});
+			const keystore2 = await Keystore.encrypt(privateKey, password, {
+				salt,
+				iv: iv2,
+				scryptN: 1024,
+				scryptR: 1,
+				scryptP: 1,
+			});
 
-				expect(keystore1.crypto.ciphertext).not.toBe(
-					keystore2.crypto.ciphertext,
-				);
+			expect(keystore1.crypto.ciphertext).not.toBe(keystore2.crypto.ciphertext);
 
-				const decrypted1 = Keystore.decrypt(keystore1, password);
-				const decrypted2 = Keystore.decrypt(keystore2, password);
+			const decrypted1 = Keystore.decrypt(keystore1, password);
+			const decrypted2 = Keystore.decrypt(keystore2, password);
 
-				expect(decrypted1).toEqual(privateKey);
-				expect(decrypted2).toEqual(privateKey);
+			expect(decrypted1).toEqual(privateKey);
+			expect(decrypted2).toEqual(privateKey);
+		});
+
+		it("constant-time MAC comparison (no early exit)", {
+			timeout: 30000,
+		}, async () => {
+			const privateKey = PrivateKey.from(
+				"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			);
+
+			// Use low scrypt parameters for faster tests
+			const keystore = await Keystore.encrypt(privateKey, "password", {
+				scryptN: 1024,
+				scryptR: 1,
+				scryptP: 1,
+			});
+
+			// Modify first byte of MAC
+			const corruptedKeystore1 = { ...keystore };
+			corruptedKeystore1.crypto = { ...keystore.crypto };
+			corruptedKeystore1.crypto.mac = `ff${keystore.crypto.mac.slice(2)}`;
+
+			// Modify last byte of MAC
+			const corruptedKeystore2 = { ...keystore };
+			corruptedKeystore2.crypto = { ...keystore.crypto };
+			corruptedKeystore2.crypto.mac = `${keystore.crypto.mac.slice(0, -2)}ff`;
+
+			// Both should fail
+			expect(() => Keystore.decrypt(corruptedKeystore1, "password")).toThrow(
+				Keystore.InvalidMacError,
+			);
+			expect(() => Keystore.decrypt(corruptedKeystore2, "password")).toThrow(
+				Keystore.InvalidMacError,
+			);
+		});
+	});
+
+	describe("parameter validation (forged keystores)", () => {
+		const toHex = (b: Uint8Array) =>
+			Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+		const ciphertext =
+			"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+		const forged = (
+			overrides: {
+				cipher?: string;
+				iv?: string;
+				mac?: string;
+				dklen?: number;
+				kdf?: "scrypt" | "pbkdf2";
+			} = {},
+		): Keystore.KeystoreV3 => {
+			const kdf = overrides.kdf ?? "scrypt";
+			const dklen = overrides.dklen ?? 32;
+			return {
+				version: 3,
+				id: "forged",
+				crypto: {
+					cipher: (overrides.cipher ?? "aes-128-ctr") as "aes-128-ctr",
+					ciphertext,
+					cipherparams: { iv: overrides.iv ?? "00".repeat(16) },
+					kdf,
+					kdfparams:
+						kdf === "scrypt"
+							? { dklen, n: 1024, r: 1, p: 1, salt: "11".repeat(32) }
+							: { dklen, c: 1, prf: "hmac-sha256", salt: "11".repeat(32) },
+					// MAC with an empty MAC key: keccak256(ciphertext)
+					mac:
+						overrides.mac ??
+						toHex(keccak_256(Uint8Array.from(Buffer.from(ciphertext, "hex")))),
+				},
+			} as Keystore.KeystoreV3;
+		};
+
+		it("rejects dklen 16 (empty MAC key bypass) for scrypt", () => {
+			expect(() => Keystore.decrypt(forged({ dklen: 16 }), "any")).toThrow(
+				Keystore.DecryptionError,
+			);
+		});
+
+		it("rejects dklen 16 (empty MAC key bypass) for pbkdf2", () => {
+			expect(() =>
+				Keystore.decrypt(forged({ dklen: 16, kdf: "pbkdf2" }), "any"),
+			).toThrow(Keystore.DecryptionError);
+		});
+
+		it("rejects dklen 31 and non-integer dklen", () => {
+			expect(() => Keystore.decrypt(forged({ dklen: 31 }), "x")).toThrow(
+				/dklen/,
+			);
+			expect(() => Keystore.decrypt(forged({ dklen: 32.5 }), "x")).toThrow(
+				/dklen/,
+			);
+		});
+
+		it("rejects unsupported cipher", () => {
+			expect(() =>
+				Keystore.decrypt(forged({ cipher: "aes-128-cbc" }), "x"),
+			).toThrow(/Unsupported cipher/);
+		});
+
+		it.each(["scrypt", "pbkdf2"] as const)(
+			"rejects dklen above 128 before running %s",
+			(kdf) => {
+				// 2^31 bytes would take gigabytes and minutes if the KDF ran.
+				for (const dklen of [129, 2 ** 31, Number.MAX_SAFE_INTEGER]) {
+					const start = performance.now();
+					expect(() => Keystore.decrypt(forged({ dklen, kdf }), "x")).toThrow(
+						Keystore.DecryptionError,
+					);
+					expect(() => Keystore.decrypt(forged({ dklen, kdf }), "x")).toThrow(
+						/dklen must be an integer between 32 and 128/,
+					);
+					expect(performance.now() - start).toBeLessThan(1000);
+				}
 			},
 		);
 
-		it(
-			"constant-time MAC comparison (no early exit)",
-			{ timeout: 30000 },
-			async () => {
-				const privateKey = PrivateKey.from(
-					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-				);
+		it("accepts dklen 128 up to MAC verification", () => {
+			expect(() => Keystore.decrypt(forged({ dklen: 128 }), "x")).toThrow(
+				Keystore.InvalidMacError,
+			);
+		});
 
-				// Use low scrypt parameters for faster tests
-				const keystore = await Keystore.encrypt(privateKey, "password", {
-					scryptN: 1024,
-					scryptR: 1,
-					scryptP: 1,
-				});
+		it("rejects IV that is not 16 bytes", () => {
+			expect(() =>
+				Keystore.decrypt(forged({ iv: "00".repeat(8) }), "x"),
+			).toThrow(/IV must be 16 bytes/);
+			expect(() =>
+				Keystore.decrypt(forged({ iv: "00".repeat(32) }), "x"),
+			).toThrow(/IV must be 16 bytes/);
+		});
 
-				// Modify first byte of MAC
-				const corruptedKeystore1 = { ...keystore };
-				corruptedKeystore1.crypto = { ...keystore.crypto };
-				corruptedKeystore1.crypto.mac = `ff${keystore.crypto.mac.slice(2)}`;
+		it("rejects MAC that is not 32 bytes", () => {
+			expect(() =>
+				Keystore.decrypt(forged({ mac: "00".repeat(16) }), "x"),
+			).toThrow(/MAC must be 32 bytes/);
+			expect(() => Keystore.decrypt(forged({ mac: "" }), "x")).toThrow(
+				/MAC must be 32 bytes/,
+			);
+		});
 
-				// Modify last byte of MAC
-				const corruptedKeystore2 = { ...keystore };
-				corruptedKeystore2.crypto = { ...keystore.crypto };
-				corruptedKeystore2.crypto.mac = `${keystore.crypto.mac.slice(0, -2)}ff`;
-
-				// Both should fail
-				expect(() => Keystore.decrypt(corruptedKeystore1, "password")).toThrow(
-					Keystore.InvalidMacError,
-				);
-				expect(() => Keystore.decrypt(corruptedKeystore2, "password")).toThrow(
-					Keystore.InvalidMacError,
-				);
-			},
-		);
+		it("still reports InvalidMacError for a well-formed keystore with wrong MAC", () => {
+			expect(() => Keystore.decrypt(forged(), "x")).toThrow(
+				Keystore.InvalidMacError,
+			);
+		});
 	});
 
 	describe("performance", () => {

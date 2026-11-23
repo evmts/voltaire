@@ -114,8 +114,7 @@ const validate: (code: BrandedBytecode) => boolean = _validate;
 
 // Export individual functions
 export {
-	from,
-	fromHex,
+	_getNextPc,
 	analyze,
 	analyzeBlocks,
 	analyzeGas,
@@ -126,8 +125,11 @@ export {
 	extractRuntime,
 	formatInstruction,
 	formatInstructions,
+	from,
+	fromHex,
 	getBlock,
 	getPushSize,
+	hash,
 	hasMetadata,
 	isPush,
 	isTerminator,
@@ -137,11 +139,9 @@ export {
 	scan,
 	size,
 	stripMetadata,
-	toHex,
 	toAbi,
+	toHex,
 	validate,
-	_getNextPc,
-	hash,
 };
 
 // Wrapper export (convenient, backward compat)

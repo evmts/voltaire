@@ -2,16 +2,20 @@
 import { p256 } from "@noble/curves/nist.js";
 import { PUBLIC_KEY_SIZE } from "./constants.js";
 import { InvalidPublicKeyError } from "./errors.js";
+import { validatePublicKey } from "./validatePublicKey.js";
 
 /**
  * Verify an ECDSA signature
+ *
+ * Verifies over `messageHash` as-is (no second SHA-256) and accepts both
+ * low-S and high-S signatures, matching EIP-7951 P256VERIFY and WebAuthn.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {import('./P256SignatureType.js').P256SignatureType} signature - ECDSA signature to verify (r and s are HashType)
  * @param {import('../../primitives/Hash/index.js').HashType | import('../SHA256/SHA256HashType.js').SHA256Hash | Uint8Array} messageHash - 32-byte message hash that was signed (accepts HashType, SHA256Hash, or raw Uint8Array)
  * @param {import('./P256PublicKeyType.js').P256PublicKeyType} publicKey - 64-byte uncompressed public key
- * @returns {boolean} True if signature is valid, false otherwise
+ * @returns {boolean} True if signature is valid, false otherwise (including when the public key is the point at infinity, has a coordinate >= p, or is not on the curve)
  * @throws {InvalidPublicKeyError} If public key format is invalid
  * @example
  * ```javascript
@@ -30,6 +34,11 @@ export function verify(signature, messageHash, publicKey) {
 		);
 	}
 
+	// A signature can never be valid under an invalid public key
+	if (!validatePublicKey(publicKey)) {
+		return false;
+	}
+
 	try {
 		// Combine r and s into compact signature format
 		const compactSig = new Uint8Array(64);
@@ -41,7 +50,12 @@ export function verify(signature, messageHash, publicKey) {
 		fullPublicKey[0] = 0x04;
 		fullPublicKey.set(publicKey, 1);
 
-		return p256.verify(compactSig, messageHash, fullPublicKey);
+		// messageHash is already a digest (no prehash). Accept high-S like
+		// EIP-7951 P256VERIFY and WebAuthn; P-256 has no malleability rule.
+		return p256.verify(compactSig, messageHash, fullPublicKey, {
+			prehash: false,
+			lowS: false,
+		});
 	} catch {
 		return false;
 	}

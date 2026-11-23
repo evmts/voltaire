@@ -14,12 +14,13 @@ use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::any::Any;
+use core::marker::PhantomData;
 use core::mem::{transmute, MaybeUninit};
 use core::ptr;
 use zeroize::Zeroize;
 
 #[cfg(feature = "std")]
-use std::sync::{atomic::*, mpsc::channel, Arc};
+use std::sync::{atomic::*, mpsc::sync_channel, Arc};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -190,11 +191,10 @@ impl blst_fp12 {
             }
         }
 
-        let (tx, rx) = channel();
         let counter = Arc::new(AtomicUsize::new(0));
-
         let stride = core::cmp::min((n_elems + n_workers - 1) / n_workers, 16);
         n_workers = core::cmp::min((n_elems + stride - 1) / stride, n_workers);
+        let (tx, rx) = sync_channel(n_workers);
         for _ in 0..n_workers {
             let tx = tx.clone();
             let counter = counter.clone();
@@ -279,21 +279,23 @@ impl blst_scalar {
 }
 
 #[derive(Debug)]
-pub struct Pairing {
+pub struct Pairing<'p> {
     v: Box<[u64]>,
+    p: PhantomData<&'p [u8]>,
 }
 
-impl Pairing {
-    pub fn new(hash_or_encode: bool, dst: &[u8]) -> Self {
+impl<'p> Pairing<'p> {
+    pub fn new(hash_or_encode: bool, dst: &'p [u8]) -> Self {
         let v: Vec<u64> = vec![0; unsafe { blst_pairing_sizeof() } / 8];
         let mut obj = Self {
             v: v.into_boxed_slice(),
+            p: PhantomData,
         };
         obj.init(hash_or_encode, dst);
         obj
     }
 
-    pub fn init(&mut self, hash_or_encode: bool, dst: &[u8]) {
+    pub fn init(&mut self, hash_or_encode: bool, dst: &'p [u8]) {
         unsafe {
             blst_pairing_init(
                 self.ctx(),
@@ -376,6 +378,10 @@ impl Pairing {
         msg: &[u8],
         aug: &[u8],
     ) -> BLST_ERROR {
+        if scalar.len() < (nbits + 7) / 8 {
+            panic!("scalar length mismatch");
+        }
+
         if pk.is::<blst_p1_affine>() {
             unsafe {
                 blst_pairing_chk_n_mul_n_aggr_pk_in_g1(
@@ -540,6 +546,7 @@ macro_rules! sig_variant_impl {
         $sig_ser_size:expr,
         $pk_add_or_dbl:ident,
         $pk_add_or_dbl_aff:ident,
+        $pk_cneg:ident,
         $sig_add_or_dbl:ident,
         $sig_add_or_dbl_aff:ident,
         $pk_is_inf:ident,
@@ -1044,6 +1051,14 @@ macro_rules! sig_variant_impl {
                 }
             }
 
+            pub fn sub_aggregate(&mut self, agg_pk: &AggregatePublicKey) {
+                unsafe {
+                    let mut tmp = agg_pk.clone();
+                    $pk_cneg(&mut tmp.point, true);
+                    $pk_add_or_dbl(&mut self.point, &self.point, &tmp.point);
+                }
+            }
+
             pub fn add_public_key(
                 &mut self,
                 pk: &PublicKey,
@@ -1199,11 +1214,10 @@ macro_rules! sig_variant_impl {
                 // TODO - check msg uniqueness?
 
                 let pool = mt::da_pool();
-                let (tx, rx) = channel();
                 let counter = Arc::new(AtomicUsize::new(0));
                 let valid = Arc::new(AtomicBool::new(true));
-
                 let n_workers = core::cmp::min(pool.max_count(), n_elems);
+                let (tx, rx) = sync_channel(n_workers);
                 for _ in 0..n_workers {
                     let tx = tx.clone();
                     let counter = counter.clone();
@@ -1321,11 +1335,10 @@ macro_rules! sig_variant_impl {
                 // TODO - check msg uniqueness?
 
                 let pool = mt::da_pool();
-                let (tx, rx) = channel();
                 let counter = Arc::new(AtomicUsize::new(0));
                 let valid = Arc::new(AtomicBool::new(true));
-
                 let n_workers = core::cmp::min(pool.max_count(), n_elems);
+                let (tx, rx) = sync_channel(n_workers);
                 for _ in 0..n_workers {
                     let tx = tx.clone();
                     let counter = counter.clone();
@@ -1752,7 +1765,7 @@ macro_rules! sig_variant_impl {
         #[cfg(test)]
         mod tests {
             use super::*;
-            use rand::{RngCore, SeedableRng};
+            use rand_core::{RngCore, SeedableRng};
             use rand_chacha::ChaCha20Rng;
 
             // Testing only - do not use for production
@@ -2223,6 +2236,7 @@ pub mod min_pk {
         192,
         blst_p1_add_or_double,
         blst_p1_add_or_double_affine,
+        blst_p1_cneg,
         blst_p2_add_or_double,
         blst_p2_add_or_double_affine,
         blst_p1_affine_is_inf,
@@ -2267,6 +2281,7 @@ pub mod min_sig {
         96,
         blst_p2_add_or_double,
         blst_p2_add_or_double_affine,
+        blst_p2_cneg,
         blst_p1_add_or_double,
         blst_p1_add_or_double_affine,
         blst_p2_affine_is_inf,
@@ -2294,7 +2309,7 @@ include!("pippenger-no_std.rs");
 #[cfg(test)]
 mod fp12_test {
     use super::*;
-    use rand::{RngCore, SeedableRng};
+    use rand_core::{RngCore, SeedableRng};
     use rand_chacha::ChaCha20Rng;
 
     #[test]
@@ -2347,7 +2362,7 @@ mod fp12_test {
 #[cfg(test)]
 mod sk_test {
     use super::*;
-    use rand::{RngCore, SeedableRng};
+    use rand_core::{RngCore, SeedableRng};
     use rand_chacha::ChaCha20Rng;
 
     #[test]

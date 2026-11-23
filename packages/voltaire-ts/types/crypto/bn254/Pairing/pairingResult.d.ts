@@ -1,6 +1,9 @@
 /**
  * Pairing result utilities
  *
+ * A pairing result is an Fp12 element encoded as a canonical integer
+ * (see `encodeFp12`); the identity of GT is `1n`.
+ *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
  */

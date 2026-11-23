@@ -59,7 +59,7 @@ export {
   sepolia,
   simulateCalls,
   TestProvider,
-  waitForTransactionReceipt
+  waitForTransactionReceipt,
 } from "./provider/index.vibe"
 export {
   Account,
@@ -71,7 +71,7 @@ export {
   Signer,
   SignerFromMnemonic,
   SignerFromPrivateKey,
-  SignerLive
+  SignerLive,
 } from "./signer/index.vibe"
 export {
   ERC20_ABI,
@@ -82,7 +82,7 @@ export {
   erc20Transfer,
   erc721OwnerOf,
   INTERFACE_IDS,
-  supportsInterface
+  supportsInterface,
 } from "./standards/index.vibe"
 export {
   backfillLogs,
@@ -90,7 +90,7 @@ export {
   TransactionStreamEvent,
   watchBlocks,
   watchLogs,
-  watchTransactionStatus
+  watchTransactionStatus,
 } from "./streams/index.vibe"
 export {
   BatchTransport,
@@ -112,5 +112,5 @@ export {
   withRpcHooks,
   withRpcRetry,
   withRpcTimeout,
-  withRpcTracing
+  withRpcTracing,
 } from "./transport/index.vibe"

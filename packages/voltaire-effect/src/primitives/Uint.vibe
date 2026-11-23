@@ -27,7 +27,7 @@ export effect function parseQuantity(value: string | bigint | number): bigint!In
     }
     return try Effect.try({
       try: () => BigInt(value),
-      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid integer quantity: ${value}`, cause })
+      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid integer quantity: ${value}`, cause }),
     })
   }
   const trimmed = value.trim()
@@ -37,7 +37,7 @@ export effect function parseQuantity(value: string | bigint | number): bigint!In
   if (HEX_QUANTITY_RE.test(trimmed)) {
     const n = try Effect.try({
       try: () => BigInt(trimmed),
-      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid hex quantity: ${value}`, cause })
+      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid hex quantity: ${value}`, cause }),
     })
     if (n > MAX_UINT256) {
       throw new InvalidUintError({ input: value, message: `Hex quantity exceeds uint256: ${value}` })
@@ -47,7 +47,7 @@ export effect function parseQuantity(value: string | bigint | number): bigint!In
   if (/^\d+$/.test(trimmed)) {
     const n = try Effect.try({
       try: () => BigInt(trimmed),
-      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid decimal uint256: ${value}`, cause })
+      catch: (cause) => new InvalidUintError({ input: value, message: `Invalid decimal uint256: ${value}`, cause }),
     })
     if (n > MAX_UINT256) {
       throw new InvalidUintError({ input: value, message: `Decimal quantity exceeds uint256: ${value}` })
@@ -68,7 +68,7 @@ export effect function fromBits(value: bigint | number | string, bits: number): 
   const n = try parseQuantity(value)
   const bitsBig = try Effect.try({
     try: () => BigInt(bits),
-    catch: (cause) => new InvalidUintError({ input: bits, message: `Invalid bit width: ${bits}`, cause })
+    catch: (cause) => new InvalidUintError({ input: bits, message: `Invalid bit width: ${bits}`, cause }),
   })
   const max = (1n << bitsBig) - 1n
   if (n > max) {
@@ -80,9 +80,9 @@ export effect function fromBits(value: bigint | number | string, bits: number): 
 export const Uint256Schema = Schema.BigInt.pipe(
   Schema.check(
     Schema.makeFilter((n) => n >= 0n && n <= MAX_UINT256, {
-      message: "Expected unsigned 256-bit integer (0 <= n < 2^256)"
-    })
-  )
+      message: "Expected unsigned 256-bit integer (0 <= n < 2^256)",
+    }),
+  ),
 )
 
 // Bidirectional JSON-RPC hex quantity ("0x1a") <-> bigint codec.
@@ -93,8 +93,8 @@ export const QuantityHex = Schema.String.pipe(
         throw new SchemaIssue.InvalidValue({ message: e.message }, s, options)
       }
     }),
-    encode: SchemaGetter.transform((n): string => formatQuantity(n))
-  })
+    encode: SchemaGetter.transform((n): string => formatQuantity(n)),
+  }),
 )
 
 // Bidirectional JSON-RPC hex quantity ("0x1") <-> safe number codec (for logIndex, txIndex, chainId, etc.).
@@ -109,8 +109,8 @@ export const QuantityNumber = Schema.String.pipe(
       }
       return Number(n)
     }),
-    encode: SchemaGetter.transform((n): string => `0x${n.toString(16)}`)
-  })
+    encode: SchemaGetter.transform((n): string => `0x${n.toString(16)}`),
+  }),
 )
 
 export type BlockTagName = "latest" | "earliest" | "pending" | "safe" | "finalized"

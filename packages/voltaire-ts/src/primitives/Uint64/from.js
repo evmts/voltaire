@@ -28,11 +28,12 @@ export function from(value) {
 	let bigintValue;
 
 	if (typeof value === "string") {
-		if (value.startsWith("0x") || value.startsWith("0X")) {
-			bigintValue = BigInt(value);
-		} else {
-			bigintValue = BigInt(value);
+		if (!/^0[xX][0-9a-fA-F]+$/.test(value) && !/^-?[0-9]+$/.test(value)) {
+			throw new Uint64NotIntegerError(`Invalid Uint64 string: ${value}`, {
+				value,
+			});
 		}
+		bigintValue = BigInt(value);
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
 			throw new Uint64NotIntegerError(

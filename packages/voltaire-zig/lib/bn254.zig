@@ -40,6 +40,21 @@ pub fn needsExplicitTarget(target: std.Build.ResolvedTarget) bool {
         t.abi != builtin.target.abi;
 }
 
+/// Directory Cargo writes build output to: `CARGO_TARGET_DIR` when set, else
+/// `target` in the build root. Cargo resolves a relative `CARGO_TARGET_DIR`
+/// against its working directory, which the Cargo build step sets to the build root.
+pub fn cargoTargetDir(b: *std.Build) std.Build.LazyPath {
+    // Zig 0.16 renamed `Graph.env_map` to `Graph.environ_map`.
+    const dir = if (@hasField(std.Build.Graph, "environ_map"))
+        b.graph.environ_map.get("CARGO_TARGET_DIR")
+    else
+        b.graph.env_map.get("CARGO_TARGET_DIR");
+    if (dir) |d| {
+        if (d.len > 0) return if (std.fs.path.isAbsolute(d)) .{ .cwd_relative = d } else b.path(d);
+    }
+    return b.path("target");
+}
+
 /// Link the archive Cargo built for this target, never a host archive during cross compilation.
 pub fn getRustLibraryPath(b: *std.Build, target: std.Build.ResolvedTarget) std.Build.LazyPath {
     const filename = if (target.result.os.tag == .windows and target.result.abi == .msvc)
@@ -47,7 +62,7 @@ pub fn getRustLibraryPath(b: *std.Build, target: std.Build.ResolvedTarget) std.B
     else
         "libcrypto_wrappers.a";
     if (needsExplicitTarget(target)) {
-        return b.path(b.fmt("target/{s}/release/{s}", .{ rustTargetTriple(target), filename }));
+        return cargoTargetDir(b).path(b, b.fmt("{s}/release/{s}", .{ rustTargetTriple(target), filename }));
     }
-    return b.path(b.fmt("target/release/{s}", .{filename}));
+    return cargoTargetDir(b).path(b, b.fmt("release/{s}", .{filename}));
 }

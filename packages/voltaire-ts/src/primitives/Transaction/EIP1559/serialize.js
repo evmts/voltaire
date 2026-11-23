@@ -4,6 +4,8 @@ import {
 	encodeAccessList,
 	encodeAddress,
 	encodeBigintCompact,
+	encodeSignatureScalar,
+	encodeYParity,
 } from "../utils.js";
 
 /**
@@ -31,9 +33,9 @@ export function serialize(tx) {
 		encodeBigintCompact(tx.value),
 		tx.data,
 		encodeAccessList(tx.accessList),
-		new Uint8Array([tx.yParity]),
-		tx.r,
-		tx.s,
+		encodeYParity(tx.yParity),
+		encodeSignatureScalar(tx.r),
+		encodeSignatureScalar(tx.s),
 	];
 	const rlpEncoded = encode(fields);
 

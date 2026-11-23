@@ -1,7 +1,6 @@
 export * from "./constants.js";
 export type * from "./types.js";
 import * as Precompile from "./Precompile.js";
-export { Precompile };
 export { calculateCallCost } from "./calculateCallCost.js";
 export { calculateCopyCost } from "./calculateCopyCost.js";
 export { calculateCreateCost } from "./calculateCreateCost.js";
@@ -27,8 +26,10 @@ export { keccak256Cost } from "./keccak256Cost.js";
 export { logCost } from "./logCost.js";
 export { maxRefund } from "./maxRefund.js";
 export { memoryExpansionCost } from "./memoryExpansionCost.js";
+export { P256VERIFY_GAS } from "./Precompile.js";
 export { sstoreCost } from "./sstoreCost.js";
 export { txIntrinsicGas } from "./txIntrinsicGas.js";
+export { Precompile };
 import { calculateCallCost } from "./calculateCallCost.js";
 import { calculateCopyCost } from "./calculateCopyCost.js";
 import { calculateCreateCost } from "./calculateCreateCost.js";

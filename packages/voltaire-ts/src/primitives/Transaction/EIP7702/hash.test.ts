@@ -233,7 +233,16 @@ describe("TransactionEIP7702.hash", () => {
 			value: 1000000000000000000n,
 			data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
 			accessList: [],
-			authorizationList: [],
+			authorizationList: [
+				{
+					chainId: 1n,
+					address: Address("0x1111111111111111111111111111111111111111"),
+					nonce: 7n,
+					yParity: 1,
+					r: new Uint8Array(32).fill(3),
+					s: new Uint8Array(32).fill(4),
+				},
+			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),

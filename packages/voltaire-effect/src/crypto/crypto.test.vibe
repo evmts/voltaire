@@ -14,7 +14,7 @@ import {
   Keccak,
   P256,
   Secp256k1,
-  Signing
+  Signing,
 } from "./index.vibe"
 
 // Hardhat/Anvil test account #0 private key (public test key only)
@@ -31,7 +31,7 @@ describe("crypto", () => {
       try Effect.try(() =>
         assert.strictEqual(
           Hash.toHex(topic),
-          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
         )
       )
     }
@@ -58,19 +58,19 @@ describe("crypto", () => {
         domain: {
           name: "Voltaire",
           version: "2",
-          chainId: 1n
+          chainId: 1n,
         },
         types: {
           Greeting: [
             { name: "from", type: "address" },
-            { name: "text", type: "string" }
-          ]
+            { name: "text", type: "string" },
+          ],
         },
         primaryType: "Greeting",
         message: {
           from: TEST_ADDRESS_HEX,
-          text: "VibeLang rocks"
-        }
+          text: "VibeLang rocks",
+        },
       }
       const sig = try Eip712.signTypedData(typedData, pk)
       const ok = try Eip712.verifyTypedData(sig, typedData, expectedAddr)
@@ -89,7 +89,7 @@ describe("crypto", () => {
         Hashing.blake2(payload, 32),
         Hashing.ripemd160(payload),
         Hashing.hmacSha256(key, payload),
-        Hashing.hmacSha512(key, payload)
+        Hashing.hmacSha512(key, payload),
       ]
       try Effect.try(() => assert.strictEqual(s256.length, 32))
       try Effect.try(() => assert.strictEqual(b2.length, 32))
@@ -129,7 +129,7 @@ describe("crypto", () => {
     const wrapped = try Signing.wrapErc6492Signature({
       factory: TEST_ADDRESS_HEX,
       factoryCalldata: "0xdeadbeef",
-      signature: "0x123456"
+      signature: "0x123456",
     })
     try Effect.try(() => assert.strictEqual(Signing.isErc6492Signature(wrapped), true))
     const unwrapped = try Signing.unwrapErc6492Signature(wrapped)

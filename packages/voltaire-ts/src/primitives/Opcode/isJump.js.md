@@ -1,6 +1,6 @@
 ---
-title: "isJump.js"
----
+
+## title: "isJump.js"
 
 # isJump.js
 
@@ -9,7 +9,7 @@ Check if opcode is jump instruction (JUMP or JUMPI).
 ## Signature
 
 ```typescript
-function isJump(opcode: BrandedOpcode): boolean
+function isJump(opcode: BrandedOpcode): boolean;
 ```
 
 ## Parameters
@@ -23,10 +23,10 @@ function isJump(opcode: BrandedOpcode): boolean
 ## Example
 
 ```typescript
-Opcode.isJump(Opcode.JUMP);    // true
-Opcode.isJump(Opcode.JUMPI);   // true
+Opcode.isJump(Opcode.JUMP); // true
+Opcode.isJump(Opcode.JUMPI); // true
 Opcode.isJump(Opcode.JUMPDEST); // false
-Opcode.isJump(Opcode.PC);      // false
+Opcode.isJump(Opcode.PC); // false
 ```
 
 ## Notes

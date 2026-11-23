@@ -1,19 +1,46 @@
 const std = @import("std");
 const crypto = @import("crypto");
 const bn254 = crypto.bn254;
+const Hardfork = @import("primitives").Hardfork;
 const PrecompileError = @import("common.zig").PrecompileError;
 const PrecompileResult = @import("common.zig").PrecompileResult;
 
-/// Gas cost for BN254 addition
+/// Gas cost for BN254 addition from Istanbul (EIP-1108)
 pub const GAS: u64 = 150;
+/// Gas cost for BN254 addition from Byzantium until Istanbul (EIP-196)
+pub const BYZANTIUM_GAS: u64 = 500;
 
-/// 0x06: BN254ADD - BN254 elliptic curve addition
+/// Gas cost of BN254 addition at `hardfork`.
+pub fn gasCost(hardfork: Hardfork) u64 {
+    return if (hardfork.isAtLeast(.ISTANBUL)) GAS else BYZANTIUM_GAS;
+}
+
+/// 0x06: BN254ADD - BN254 elliptic curve addition, at the Istanbul price.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
     gas_limit: u64,
 ) PrecompileError!PrecompileResult {
-    if (gas_limit < GAS) {
+    return executeAtGas(allocator, input, gas_limit, GAS);
+}
+
+/// 0x06: BN254ADD priced for `hardfork` (EIP-196 before Istanbul, EIP-1108 after).
+pub fn executeWithHardfork(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+    hardfork: Hardfork,
+) PrecompileError!PrecompileResult {
+    return executeAtGas(allocator, input, gas_limit, gasCost(hardfork));
+}
+
+fn executeAtGas(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+    gas_cost: u64,
+) PrecompileError!PrecompileResult {
+    if (gas_limit < gas_cost) {
         return error.OutOfGas;
     }
 
@@ -22,6 +49,8 @@ pub fn execute(
     @memcpy(input_buf[0..@min(input.len, 128)], input[0..@min(input.len, 128)]);
 
     const output = try allocator.alloc(u8, 64);
+    errdefer allocator.free(output);
+    @memset(output, 0);
 
     // Perform addition using pure Zig implementation
     bn254.bn254Add(&input_buf, output) catch {
@@ -30,7 +59,7 @@ pub fn execute(
 
     return PrecompileResult{
         .output = output,
-        .gas_used = GAS,
+        .gas_used = gas_cost,
     };
 }
 
@@ -126,8 +155,10 @@ test "bn254Add - geth chfast1" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input_hex = "2bd3e6d0f3b142924f5ca7b49ce5b9d54c4703d7ae5648e61d02268b1a0a9fb721611ce0a6af85915e2f1d70300909ce2e49dfad4a4619c8390cae66cefdb20400000000000000000000000000000000000000000000000011138ce750fa15c2";
-    const expected_hex = "070a8d6a982153cae4be29d434e8faef8a47b274a053f5a4ee2a6c9c13c31e5c031b8ce914eba3a9ffb989f9cdd5b0f01943074bf4f0f315690ec3cec6981afc";
+    // go-ethereum bn256Add.json vector "chfast1"
+
+    const input_hex = "18b18acfb4c2c30276db5411368e7185b311dd124691610c5d3b74034e093dc9063c909c4720840cb5134cb9f59fa749755796819658d32efc0d288198f3726607c2b7f58a84bd6145f00c9c2bc0bb1a187f20ff2c92963a88019e7c6a014eed06614e20c147e940f2d70da3f74c9a17df361706a4485c742bd6788478fa17d7";
+    const expected_hex = "2243525c5efd4b9c3d3c45ac0ca3fe4dd85e830a4ce6b65fa1eeaee202839703301d1d33be6da8e509df21cc35964723180eed7532537db9ae5e7d48f195c915";
 
     var input: [128]u8 = undefined;
     var expected: [64]u8 = undefined;
@@ -146,8 +177,10 @@ test "bn254Add - geth chfast2" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input_hex = "070a8d6a982153cae4be29d434e8faef8a47b274a053f5a4ee2a6c9c13c31e5c031b8ce914eba3a9ffb989f9cdd5b0f01943074bf4f0f315690ec3cec6981afc30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd46";
-    const expected_hex = "025a6f4181d2b4ea8b724290ffb40156eb0adb514c688556eb79cdea0752c2bb2eff3f31dea215f1eb86023a133a996eb6300b44da664d64251d05381bb8a02e";
+    // go-ethereum bn256Add.json vector "chfast2"
+
+    const input_hex = "2243525c5efd4b9c3d3c45ac0ca3fe4dd85e830a4ce6b65fa1eeaee202839703301d1d33be6da8e509df21cc35964723180eed7532537db9ae5e7d48f195c91518b18acfb4c2c30276db5411368e7185b311dd124691610c5d3b74034e093dc9063c909c4720840cb5134cb9f59fa749755796819658d32efc0d288198f37266";
+    const expected_hex = "2bd3e6d0f3b142924f5ca7b49ce5b9d54c4703d7ae5648e61d02268b1a0a9fb721611ce0a6af85915e2f1d70300909ce2e49dfad4a4619c8390cae66cefdb204";
 
     var input: [128]u8 = undefined;
     var expected: [64]u8 = undefined;
@@ -220,7 +253,9 @@ test "bn254Add - geth cdetrio4 invalid point not on curve" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input_hex = "0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    // (1, 1) does not satisfy y^2 = x^3 + 3.
+
+    const input_hex = "0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
     var input: [128]u8 = undefined;
     _ = try std.fmt.hexToBytes(&input, input_hex);
@@ -273,8 +308,10 @@ test "bn254Add - geth cdetrio7 another valid addition" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input_hex = "17c139df0efee0f766bc0204762b774362e4ded88953a39ce849a8a7fa163fa901e0559bacb160664764a357af8a9fe70baa9258e0b959273ffc5718c6d4cc7c17c139df0efee0f766bc0204762b774362e4ded88953a39ce849a8a7fa163fa92e83f8d734803fc370eba25ed1f6b8768bd6d83887b87165fc2434fe11a830cb0";
-    const expected_hex = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    // G + 2G = 3G for the generator G = (1, 2).
+
+    const input_hex = "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd315ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4";
+    const expected_hex = "0769bf9ac56bea3ff40232bcb1b6bd159315d84715b8e679f2d355961915abf02ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261";
 
     var input: [128]u8 = undefined;
     var expected: [64]u8 = undefined;
@@ -313,8 +350,11 @@ test "bn254Add - geth cdetrio9 same point addition" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
+    // Expected value is P + P for the on-curve input point P, checked against
+    // an independent affine-coordinate reference implementation.
+
     const input_hex = "039730ea8dff1254c0fee9c0ea777d29a9c710b7e616683f194f18c43b43b869073a5ffcc6fc7a28c30723d6e58ce577356982d65b833a5a5c15bf9024b43d98039730ea8dff1254c0fee9c0ea777d29a9c710b7e616683f194f18c43b43b869073a5ffcc6fc7a28c30723d6e58ce577356982d65b833a5a5c15bf9024b43d98";
-    const expected_hex = "1d739bd53b93e2d05f48f9626e5c6803e8cf53e8afb48a62337e42e555e44fa30f13d0f0fbf2aa7969e5b86f27ca82e381bb0b495dc2be5e6ed7d28ce5efde77";
+    const expected_hex = "2dbc7ba68f840c758c76373cd37b2cd78d6b02bee047cf401e8db90d73ce56f7062800987ee0dae9f9f36e1f050eb2621cbb4aa7c50b1c168ecc319370889de2";
 
     var input: [128]u8 = undefined;
     var expected: [64]u8 = undefined;
@@ -333,8 +373,11 @@ test "bn254Add - geth cdetrio10 point doubling" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
+    // Expected value is P + P for the on-curve input point P, checked against
+    // an independent affine-coordinate reference implementation.
+
     const input_hex = "17c139df0efee0f766bc0204762b774362e4ded88953a39ce849a8a7fa163fa901e0559bacb160664764a357af8a9fe70baa9258e0b959273ffc5718c6d4cc7c17c139df0efee0f766bc0204762b774362e4ded88953a39ce849a8a7fa163fa901e0559bacb160664764a357af8a9fe70baa9258e0b959273ffc5718c6d4cc7c";
-    const expected_hex = "0b5e9eed0ad939a5c58c738d8efb0dcf0e4ce0e74c81d8f1e23e2f8e67ca91612aa51f92cdccb75a71fea08abf02ca867b5a03e86c40a36a2ec7c0baa8b57eef";
+    const expected_hex = "09d3a257b99f1ad804a9e2354ea71c72da7fa518f4ca7904c6951d924b4045b4174be12ae3fd899d55d3e487fa103f951a24ca0f670ecae802209b2518ccca6c";
 
     var input: [128]u8 = undefined;
     var expected: [64]u8 = undefined;
@@ -406,4 +449,62 @@ test "bn254Add - geth cdetrio14 zero point with valid point" {
 
     try testing.expectEqual(@as(usize, 64), result.output.len);
     try testing.expectEqualSlices(u8, &expected, result.output);
+}
+
+test "bn254Add - official EIP-196 vectors (go-ethereum bn256Add.json)" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip196_add.txt"), 16);
+}
+
+test "bn254Add - non-canonical coordinates that alias valid points are rejected" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Each case reduces modulo p to a valid input: (p + 1, 2) and (1, p + 2)
+    // alias the generator (1, 2), and (p, 0) and (0, p) alias infinity.
+    const cases = [_][]const u8{
+        "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd48" ++ "0000000000000000000000000000000000000000000000000000000000000002",
+        "0000000000000000000000000000000000000000000000000000000000000001" ++ "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49",
+        "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47" ++ "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000000" ++ "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47",
+        // Second point non-canonical, first point the generator.
+        "0000000000000000000000000000000000000000000000000000000000000001" ++ "0000000000000000000000000000000000000000000000000000000000000002" ++ "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd48" ++ "0000000000000000000000000000000000000000000000000000000000000002",
+        "0000000000000000000000000000000000000000000000000000000000000001" ++ "0000000000000000000000000000000000000000000000000000000000000002" ++ "0000000000000000000000000000000000000000000000000000000000000001" ++ "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49",
+    };
+    for (cases) |case| {
+        var input: [128]u8 = [_]u8{0} ** 128;
+        _ = try std.fmt.hexToBytes(&input, case);
+        try testing.expectError(error.InvalidPoint, execute(allocator, &input, 1_000_000));
+    }
+
+    // The canonical generator plus infinity still succeeds.
+    var input: [128]u8 = [_]u8{0} ** 128;
+    input[31] = 1;
+    input[63] = 2;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+    try testing.expectEqualSlices(u8, input[0..64], result.output);
+}
+
+test "bn254Add - Byzantium and Istanbul pricing" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    try testing.expectEqual(@as(u64, 500), gasCost(.BYZANTIUM));
+    try testing.expectEqual(@as(u64, 500), gasCost(.PETERSBURG));
+    try testing.expectEqual(@as(u64, 150), gasCost(.ISTANBUL));
+    try testing.expectEqual(@as(u64, 150), gasCost(.PRAGUE));
+
+    const input = [_]u8{0} ** 128;
+
+    // EIP-196 price before Istanbul
+    try testing.expectError(error.OutOfGas, executeWithHardfork(allocator, &input, 499, .BYZANTIUM));
+    const byzantium = try executeWithHardfork(allocator, &input, 500, .BYZANTIUM);
+    defer byzantium.deinit(allocator);
+    try testing.expectEqual(@as(u64, 500), byzantium.gas_used);
+
+    // EIP-1108 price from Istanbul
+    try testing.expectError(error.OutOfGas, executeWithHardfork(allocator, &input, 149, .ISTANBUL));
+    const istanbul = try executeWithHardfork(allocator, &input, 150, .ISTANBUL);
+    defer istanbul.deinit(allocator);
+    try testing.expectEqual(@as(u64, 150), istanbul.gas_used);
 }

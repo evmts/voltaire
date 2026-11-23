@@ -1,6 +1,6 @@
 ---
-title: "dupPosition.js"
----
+
+## title: "dupPosition.js"
 
 # dupPosition.js
 
@@ -9,7 +9,7 @@ Get stack position for DUP instruction.
 ## Signature
 
 ```typescript
-function dupPosition(opcode: BrandedOpcode): number | undefined
+function dupPosition(opcode: BrandedOpcode): number | undefined;
 ```
 
 ## Parameters
@@ -23,11 +23,11 @@ function dupPosition(opcode: BrandedOpcode): number | undefined
 ## Example
 
 ```typescript
-Opcode.dupPosition(Opcode.DUP1);   // 1
-Opcode.dupPosition(Opcode.DUP2);   // 2
-Opcode.dupPosition(Opcode.DUP16);  // 16
-Opcode.dupPosition(Opcode.SWAP1);  // undefined
-Opcode.dupPosition(Opcode.ADD);    // undefined
+Opcode.dupPosition(Opcode.DUP1); // 1
+Opcode.dupPosition(Opcode.DUP2); // 2
+Opcode.dupPosition(Opcode.DUP16); // 16
+Opcode.dupPosition(Opcode.SWAP1); // undefined
+Opcode.dupPosition(Opcode.ADD); // undefined
 ```
 
 ## Notes

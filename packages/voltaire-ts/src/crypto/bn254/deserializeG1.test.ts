@@ -1,9 +1,17 @@
 import { describe, expect, test } from "vitest";
 import { FP_MOD, G1_GENERATOR_X, G1_GENERATOR_Y } from "./constants.js";
 import { deserializeG1 } from "./deserializeG1.js";
-import { Bn254Error } from "./errors.js";
+import { Bn254Error, Bn254InvalidPointError } from "./errors.js";
 import * as G1 from "./G1/index.js";
 import { serializeG1 } from "./serializeG1.js";
+
+const be32 = (value: bigint) => {
+	const hex = value.toString(16).padStart(64, "0");
+	if (hex.length !== 64) throw new Error("value does not fit 32 bytes");
+	return Uint8Array.from({ length: 32 }, (_, i) =>
+		Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16),
+	);
+};
 
 describe("deserializeG1", () => {
 	describe("basic deserialization", () => {
@@ -203,18 +211,31 @@ describe("deserializeG1", () => {
 			for (let i = 0; i < 32; i++) {
 				bytes[i] = Number.parseInt(modBytes.slice(i * 2, i * 2 + 2), 16);
 			}
-			// y = 0
-			// This should be handled by fromAffine validation
-			try {
-				const point = deserializeG1(bytes);
-				// If accepted, should be infinity or reduced modulo field
-				if (!G1.isZero(point)) {
-					expect(G1.isOnCurve(point)).toBe(true);
-				}
-			} catch (err) {
-				// Expected: invalid coordinate >= field modulus
-				expect(err).toBeDefined();
-			}
+			// y = 0: (p, 0) must not reduce to the point at infinity (0, 0)
+			expect(() => deserializeG1(bytes)).toThrow(Bn254InvalidPointError);
+			expect(() => deserializeG1(bytes)).toThrow("canonical field element");
+		});
+
+		test("rejects (1 + p, 2): the generator with a non-canonical x", () => {
+			const bytes = new Uint8Array(64);
+			bytes.set(be32(G1_GENERATOR_X + FP_MOD), 0);
+			bytes.set(be32(G1_GENERATOR_Y), 32);
+			expect(() => deserializeG1(bytes)).toThrow("canonical field element");
+		});
+
+		test("rejects (1, 2 + p): the generator with a non-canonical y", () => {
+			const bytes = new Uint8Array(64);
+			bytes.set(be32(G1_GENERATOR_X), 0);
+			bytes.set(be32(G1_GENERATOR_Y + FP_MOD), 32);
+			expect(() => deserializeG1(bytes)).toThrow("canonical field element");
+		});
+
+		test("accepts the largest canonical coordinates only when on curve", () => {
+			const bytes = new Uint8Array(64);
+			bytes.set(be32(FP_MOD - 1n), 0);
+			bytes.set(be32(FP_MOD - 1n), 32);
+			// In range, so the failure is the curve equation, not the range check.
+			expect(() => deserializeG1(bytes)).toThrow("not on bn254 G1 curve");
 		});
 
 		test("handles x coordinate > field modulus", () => {
@@ -224,15 +245,8 @@ describe("deserializeG1", () => {
 			for (let i = 0; i < 32; i++) {
 				bytes[i] = Number.parseInt(overMod.slice(i * 2, i * 2 + 2), 16);
 			}
-			// This should be handled by fromAffine validation
-			try {
-				const point = deserializeG1(bytes);
-				// If accepted, should be reduced modulo field and validated
-				expect(G1.isOnCurve(point)).toBe(true);
-			} catch (err) {
-				// Expected: invalid coordinate
-				expect(err).toBeDefined();
-			}
+			expect(() => deserializeG1(bytes)).toThrow(Bn254InvalidPointError);
+			expect(() => deserializeG1(bytes)).toThrow("canonical field element");
 		});
 
 		test("handles point with valid x but y not satisfying curve equation", () => {

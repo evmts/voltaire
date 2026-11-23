@@ -40,8 +40,13 @@ const ForkBlockCacheModule = @import("ForkBlockCache.zig");
 pub const BlockStore = @import("BlockStore.zig").BlockStore;
 pub const ForkBlockCache = ForkBlockCacheModule.ForkBlockCache;
 pub const Blockchain = @import("Blockchain.zig").Blockchain;
+/// Tag accepted by Blockchain.getBlockByTag.
 pub const BlockTag = Blockchain.BlockTag;
 
 test {
     @import("std").testing.refAllDecls(@This());
+}
+
+test "BlockTag re-exports the blockchain tag type" {
+    try @import("std").testing.expect(BlockTag == Blockchain.BlockTag);
 }

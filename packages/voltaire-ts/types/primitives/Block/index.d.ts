@@ -2,9 +2,9 @@ export type { BlockType } from "./BlockType.js";
 import { calculateHash as _calculateHash } from "./calculateHash.js";
 import { from as _from } from "./from.js";
 import { fromRpc as _fromRpc } from "./fromRpc.js";
-export { _from, _fromRpc, _calculateHash };
 export type { RpcBlockBody, RpcWithdrawal } from "../BlockBody/index.js";
 export type { RpcBlockHeader } from "../BlockHeader/index.js";
+export { _calculateHash, _from, _fromRpc };
 /**
  * RPC block format (full JSON-RPC eth_getBlockByNumber/Hash response)
  */

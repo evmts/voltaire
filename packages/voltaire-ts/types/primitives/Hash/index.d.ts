@@ -5,7 +5,7 @@ import { Keccak256 as _Keccak256Factory } from "./keccak256.js";
 import { Keccak256Hex as _Keccak256HexFactory } from "./keccak256Hex.js";
 import { Keccak256String as _Keccak256StringFactory } from "./keccak256String.js";
 import { MerkleRoot as _MerkleRootFactory } from "./merkleRoot.js";
-export { _Keccak256Factory, _Keccak256HexFactory, _Keccak256StringFactory, _MerkleRootFactory, _ConcatFactory, };
+export { _ConcatFactory, _Keccak256Factory, _Keccak256HexFactory, _Keccak256StringFactory, _MerkleRootFactory, };
 export declare const keccak256: (data: Uint8Array) => HashType;
 export declare const keccak256Hex: (hex: string) => HashType;
 export declare const keccak256String: (str: string) => HashType;

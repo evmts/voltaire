@@ -1,29 +1,64 @@
 import { InvalidRangeError } from "../errors/index.js";
+import { DEFAULT } from "../Hardfork/constants.js";
+import type { HardforkType } from "../Hardfork/HardforkType.js";
+import { exceedsTxGasLimit, MAX_TX_GAS_LIMIT } from "./exceedsTxGasLimit.js";
+
+const DOCS = "/primitives/transaction/validate-gas-limit#error-handling";
 
 /**
- * Validate gas limit is valid
- * @param this Transaction
- * @throws {InvalidRangeError} If gas limit is non-positive or exceeds maximum
+ * Options for {@link validateGasLimit}.
  */
-export function validateGasLimit(this: { gasLimit: bigint }): void {
+export type ValidateGasLimitOptions = {
+	/** Hardfork the transaction executes under. Defaults to the latest stable fork. */
+	hardfork?: HardforkType;
+	/** Block gas limit; the transaction gas limit may not exceed it. */
+	blockGasLimit?: bigint;
+};
+
+/**
+ * Validate a transaction gas limit.
+ *
+ * - The gas limit must be positive.
+ * - From Osaka (the default hardfork), it must not exceed the EIP-7825 cap of
+ *   `2^24` (16,777,216) gas.
+ * - If `blockGasLimit` is given, it must not exceed the block gas limit.
+ *
+ * @param this Transaction
+ * @param options Hardfork and optional block gas limit
+ * @throws {InvalidRangeError} If gas limit is non-positive or exceeds a cap
+ */
+export function validateGasLimit(
+	this: { gasLimit: bigint },
+	options: ValidateGasLimitOptions = {},
+): void {
+	const { hardfork = DEFAULT, blockGasLimit } = options;
 	if (this.gasLimit <= 0n) {
 		throw new InvalidRangeError("Gas limit must be positive", {
 			code: -32602,
 			value: this.gasLimit,
 			expected: "Positive gas limit value",
-			docsPath: "/primitives/transaction/validate-gas-limit#error-handling",
+			docsPath: DOCS,
 		});
 	}
-	// Check gas limit doesn't exceed reasonable maximum (30M gas)
-	const MAX_GAS_LIMIT = 30_000_000n;
-	if (this.gasLimit > MAX_GAS_LIMIT) {
+	if (exceedsTxGasLimit(this, hardfork)) {
 		throw new InvalidRangeError(
-			`Gas limit exceeds maximum of ${MAX_GAS_LIMIT}`,
+			`Gas limit exceeds maximum of ${MAX_TX_GAS_LIMIT} (EIP-7825, ${hardfork})`,
 			{
 				code: -32602,
 				value: this.gasLimit,
-				expected: `Gas limit <= ${MAX_GAS_LIMIT}`,
-				docsPath: "/primitives/transaction/validate-gas-limit#error-handling",
+				expected: `Gas limit <= ${MAX_TX_GAS_LIMIT}`,
+				docsPath: DOCS,
+			},
+		);
+	}
+	if (blockGasLimit !== undefined && this.gasLimit > blockGasLimit) {
+		throw new InvalidRangeError(
+			`Gas limit exceeds maximum of ${blockGasLimit} (block gas limit)`,
+			{
+				code: -32602,
+				value: this.gasLimit,
+				expected: `Gas limit <= ${blockGasLimit}`,
+				docsPath: DOCS,
 			},
 		);
 	}

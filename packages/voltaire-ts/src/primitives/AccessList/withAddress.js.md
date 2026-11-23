@@ -1,6 +1,6 @@
 ---
-title: "withAddress.js"
----
+
+## title: "withAddress.js"
 
 # withAddress.js
 
@@ -10,9 +10,9 @@ Add address to access list if not already present.
 
 ```typescript
 function withAddress(
-  list: BrandedAccessList,
-  address: AddressType
-): BrandedAccessList
+	list: BrandedAccessList,
+	address: AddressType,
+): BrandedAccessList;
 ```
 
 ## Parameters

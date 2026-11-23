@@ -40,7 +40,7 @@ declare const stripMetadata: (code: BrandedBytecode) => BrandedBytecode;
 declare const toHex: (code: BrandedBytecode, prefix?: boolean) => string;
 declare const toAbi: (bytecode: BrandedBytecode) => BrandedAbi;
 declare const validate: (code: BrandedBytecode) => boolean;
-export { from, fromHex, analyze, analyzeBlocks, analyzeGas, analyzeJumpDestinations, analyzeStack, detectFusions, equals, extractRuntime, formatInstruction, formatInstructions, getBlock, getPushSize, hasMetadata, isPush, isTerminator, isValidJumpDest, parseInstructions, prettyPrint, scan, size, stripMetadata, toHex, toAbi, validate, _getNextPc, hash, };
+export { _getNextPc, analyze, analyzeBlocks, analyzeGas, analyzeJumpDestinations, analyzeStack, detectFusions, equals, extractRuntime, formatInstruction, formatInstructions, from, fromHex, getBlock, getPushSize, hash, hasMetadata, isPush, isTerminator, isValidJumpDest, parseInstructions, prettyPrint, scan, size, stripMetadata, toAbi, toHex, validate, };
 declare const BrandedBytecodeNamespace: {
     from: (value: string | Uint8Array) => BrandedBytecode;
     fromHex: (hex: string) => BrandedBytecode;

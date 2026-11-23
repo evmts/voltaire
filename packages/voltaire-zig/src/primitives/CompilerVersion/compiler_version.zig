@@ -130,17 +130,20 @@ pub fn parse(version: CompilerVersion) !ParsedVersion {
         v = v[1..];
     }
 
-    // Check for nightly
-    const nightly = std.mem.indexOf(u8, v, "nightly") != null;
-
-    // Find commit hash separator
-    var commit: ?[]const u8 = null;
+    // Split off build metadata ("+commit.<hash>" or "+<build>")
+    var build: ?[]const u8 = null;
     var version_part = v;
-    if (std.mem.indexOf(u8, v, "+commit.")) |pos| {
+    if (std.mem.indexOfScalar(u8, v, '+')) |pos| {
         version_part = v[0..pos];
-        commit = v[pos + 8 ..];
-    } else if (std.mem.indexOf(u8, v, "+")) |pos| {
-        version_part = v[0..pos];
+        const meta = v[pos + 1 ..];
+        build = if (std.mem.startsWith(u8, meta, "commit.")) meta["commit.".len..] else meta;
+    }
+
+    // Split off prerelease ("-nightly.2023.1.1")
+    var prerelease: ?[]const u8 = null;
+    if (std.mem.indexOfScalar(u8, version_part, '-')) |pos| {
+        prerelease = version_part[pos + 1 ..];
+        version_part = version_part[0..pos];
     }
 
     // Parse major.minor.patch
@@ -157,8 +160,8 @@ pub fn parse(version: CompilerVersion) !ParsedVersion {
         .major = major,
         .minor = minor,
         .patch = patch,
-        .commit = commit,
-        .nightly = nightly,
+        .prerelease = prerelease,
+        .build = build,
     };
 }
 
@@ -187,13 +190,14 @@ pub fn getPatch(version: CompilerVersion) !u16 {
 /// Get commit hash (if present)
 pub fn getCommit(version: CompilerVersion) !?[]const u8 {
     const parsed = try parse(version);
-    return parsed.commit;
+    return parsed.commit();
 }
 
 /// Check if version is nightly
 pub fn isNightly(version: CompilerVersion) !bool {
     const parsed = try parse(version);
-    return parsed.nightly;
+    const pre = parsed.prerelease orelse return false;
+    return std.mem.indexOf(u8, pre, "nightly") != null;
 }
 
 // ============================================================================
@@ -279,7 +283,7 @@ test "CompilerVersion.parse parses simple version" {
     try std.testing.expectEqual(@as(u16, 0), parsed.major);
     try std.testing.expectEqual(@as(u16, 8), parsed.minor);
     try std.testing.expectEqual(@as(u16, 20), parsed.patch);
-    try std.testing.expect(parsed.commit == null);
+    try std.testing.expect(parsed.commit() == null);
 }
 
 test "CompilerVersion.parse parses version with v prefix" {
@@ -294,8 +298,8 @@ test "CompilerVersion.parse parses version with commit" {
     try std.testing.expectEqual(@as(u16, 0), parsed.major);
     try std.testing.expectEqual(@as(u16, 8), parsed.minor);
     try std.testing.expectEqual(@as(u16, 20), parsed.patch);
-    try std.testing.expect(parsed.commit != null);
-    try std.testing.expectEqualStrings("a1b2c3d4", parsed.commit.?);
+    try std.testing.expect(parsed.commit() != null);
+    try std.testing.expectEqualStrings("a1b2c3d4", parsed.commit().?);
 }
 
 test "CompilerVersion.parse parses full version" {
@@ -303,7 +307,7 @@ test "CompilerVersion.parse parses full version" {
     try std.testing.expectEqual(@as(u16, 0), parsed.major);
     try std.testing.expectEqual(@as(u16, 8), parsed.minor);
     try std.testing.expectEqual(@as(u16, 20), parsed.patch);
-    try std.testing.expectEqualStrings("a1b2c3d4", parsed.commit.?);
+    try std.testing.expectEqualStrings("a1b2c3d4", parsed.commit().?);
 }
 
 test "CompilerVersion.getMajor" {
@@ -382,4 +386,13 @@ test "CompilerVersion.parse invalid version" {
     try std.testing.expectError(error.InvalidVersion, parse("invalid"));
     try std.testing.expectError(error.InvalidVersion, parse("0.8"));
     try std.testing.expectError(error.InvalidVersion, parse("abc.def.ghi"));
+}
+
+test "CompilerVersion.parse parses nightly prerelease with commit" {
+    const parsed = try parse("v0.8.21-nightly.2023.6.1+commit.deadbeef");
+    try std.testing.expectEqual(@as(u16, 21), parsed.patch);
+    try std.testing.expectEqualStrings("nightly.2023.6.1", parsed.prerelease.?);
+    try std.testing.expectEqualStrings("deadbeef", parsed.commit().?);
+    try std.testing.expect(try isNightly("v0.8.21-nightly.2023.6.1+commit.deadbeef"));
+    try std.testing.expect(!try isNightly("0.8.20+commit.a1b2c3d4"));
 }

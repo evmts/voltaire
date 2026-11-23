@@ -81,15 +81,15 @@ pub fn getChange(diff: *const StorageDiff, slot: [32]u8) ?StorageChange {
 
 /// Get all changed slots
 pub fn getKeys(diff: *const StorageDiff, allocator: std.mem.Allocator) ![][32]u8 {
-    var keys = std.ArrayList([32]u8).init(allocator);
-    errdefer keys.deinit();
+    var keys = std.ArrayList([32]u8){};
+    errdefer keys.deinit(allocator);
 
     var it = diff.changes.keyIterator();
     while (it.next()) |key| {
-        try keys.append(key.*);
+        try keys.append(allocator, key.*);
     }
 
-    return keys.toOwnedSlice();
+    return keys.toOwnedSlice(allocator);
 }
 
 /// Get number of changed slots
@@ -211,17 +211,17 @@ pub fn fromJson(allocator: std.mem.Allocator, address: Address.Address, json_str
                 const from_val_hex = entry.value_ptr.string;
 
                 var slot: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&slot, slot_hex);
+                slot = try Hex.hexToBytesFixed(32, slot_hex);
 
                 var from_val: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&from_val, from_val_hex);
+                from_val = try Hex.hexToBytesFixed(32, from_val_hex);
 
                 // Check for 'to' value in post
                 var to_val: ?[32]u8 = null;
                 if (obj.get("post")) |post| {
                     if (post.object.get("storage")) |post_storage| {
                         if (post_storage.object.get(slot_hex)) |pv| {
-                            _ = try Hex.hexToBytes(&to_val.?, pv.string);
+                            to_val = try Hex.hexToBytesFixed(32, pv.string);
                         }
                     }
                 }
@@ -240,11 +240,11 @@ pub fn fromJson(allocator: std.mem.Allocator, address: Address.Address, json_str
 
                 // Skip if already processed from pre
                 var slot: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&slot, slot_hex);
+                slot = try Hex.hexToBytesFixed(32, slot_hex);
                 if (diff.changes.contains(slot)) continue;
 
                 var to_val: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&to_val, entry.value_ptr.string);
+                to_val = try Hex.hexToBytesFixed(32, entry.value_ptr.string);
 
                 try setChange(&diff, slot, null, to_val);
             }

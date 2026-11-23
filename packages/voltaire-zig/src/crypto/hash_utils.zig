@@ -40,6 +40,7 @@
 const std = @import("std");
 const crypto = std.crypto;
 const testing = std.testing;
+const constant_time = @import("constant_time.zig");
 
 // Hash types
 pub const Hash = [32]u8;
@@ -123,12 +124,14 @@ pub fn toHexUpper(hash: Hash) [66]u8 {
     return result;
 }
 
+/// Constant-time: hashes are compared against MACs and commitments.
 pub fn isZero(hash: Hash) bool {
-    return std.mem.eql(u8, &hash, &ZERO_HASH);
+    return constant_time.isZero(&hash);
 }
 
+/// Constant-time: hashes are compared against MACs and commitments.
 pub fn equal(a: Hash, b: Hash) bool {
-    return std.mem.eql(u8, &a, &b);
+    return constant_time.eql(&a, &b);
 }
 
 // Keccak256 hashing functions
@@ -548,4 +551,19 @@ test "well known hash values" {
         0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70,
     };
     try testing.expectEqual(expected_empty, EMPTY_KECCAK256);
+}
+
+test "hash_utils equal and isZero are byte-exact" {
+    const a = keccak256("a");
+    var b = a;
+    try testing.expect(equal(a, b));
+    for (0..32) |i| {
+        b = a;
+        b[i] ^= 0x80;
+        try testing.expect(!equal(a, b));
+    }
+    try testing.expect(isZero(ZERO_HASH));
+    var z = ZERO_HASH;
+    z[31] = 1;
+    try testing.expect(!isZero(z));
 }

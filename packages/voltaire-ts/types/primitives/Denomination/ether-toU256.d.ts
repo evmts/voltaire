@@ -9,7 +9,7 @@ import type { EtherType as BrandedEther } from "./EtherType.js";
  * @since 0.0.0
  * @param ether - Amount in Ether (string)
  * @returns Uint256 value in Wei
- * @throws {Error} If ether value has more than 18 decimal places
+ * @throws {Error} If ether value has more than 18 decimal places, is negative, or exceeds the Uint256 maximum
  * @example
  * ```typescript
  * const u256_1 = Ether.toU256(Ether.from("1"));   // 1000000000000000000n

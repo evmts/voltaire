@@ -156,76 +156,31 @@ const cost3 = Precompile.calculateIdentityCost(100n);  // 27n (15 + 4*3)
 
 ## MODEXP (0x05)
 
-Modular exponentiation (EIP-2565).
-
-### Constants
-
-```typescript
-Precompile.ModExpMin: 200n
-Precompile.ModExpQuadraticThreshold: 64n
-Precompile.ModExpLinearThreshold: 1024n
-```
-
-### calculateModExpCost
-
-Calculate MODEXP precompile cost.
-
-#### Signature
+`Precompile.calculateModExpCost(baseLength, exponentLength, modulusLength,
+exponentHead, hardfork?)` returns exact bigint gas. Lengths are byte counts; the
+head contains the first `min(exponentLength, 32)` bytes, including zero padding.
+The optional branded hardfork defaults to Berlin. Operand bounds are enforced
+by the precompile, separately from this helper.
 
 ```typescript
-function calculateModExpCost(
-  baseLength: bigint,
-  expLength: bigint,
-  modLength: bigint,
-  expHead: bigint
-): bigint
+import { Precompile } from '@tevm/voltaire/GasConstants';
+import * as Hardfork from '@tevm/voltaire/Hardfork';
+
+const head = (1n << 256n) - 1n;
+console.log(Precompile.calculateModExpCost(32n, 32n, 32n, head)); // 1360n
+console.log(Precompile.calculateModExpCost(32n, 32n, 32n, head, Hardfork.OSAKA)); // 4080n
 ```
 
-#### Parameters
+Byzantium uses EIP-198 pricing. Berlin through Prague uses EIP-2565 with a
+200-gas minimum and squared eight-byte word counts. Osaka uses EIP-7883:
+a 500-gas minimum, complexity 16 for operands through 32 bytes and twice the
+squared word count for larger operands, with sixteen iterations per exponent
+byte after the first 32. The [ModExp documentation](/evm/precompiles/modexp)
+provides the complete formulas and execution examples.
 
-- `baseLength` - Length of base in bytes
-- `expLength` - Length of exponent in bytes
-- `modLength` - Length of modulus in bytes
-- `expHead` - First 32 bytes of exponent (for complexity calculation)
-
-#### Formula
-
-```
-maxLength = max(baseLength, modLength)
-
-// Adjusted exponent length
-If expLength <= 32:
-  adjExpLen = log2(expHead)
-Else:
-  adjExpLen = 8 * (expLength - 32) + log2(expHead)
-
-// Complexity based on maxLength
-If maxLength <= 64:
-  complexity = maxLength² / 4
-Else if maxLength <= 1024:
-  complexity = maxLength² / 16 + 96 * maxLength - 3072
-Else:
-  complexity = maxLength² / 64 + 480 * maxLength - 199680
-
-// Final cost
-cost = max(200, complexity * adjExpLen / 20)
-```
-
-#### Example
-
-```typescript
-// Small RSA (256-bit)
-const cost1 = Precompile.calculateModExpCost(32n, 32n, 32n, 65537n);
-// ~200n (minimum)
-
-// RSA-2048
-const cost2 = Precompile.calculateModExpCost(256n, 256n, 256n, 65537n);
-// ~13000n (varies by exponent)
-
-// Large modulus
-const cost3 = Precompile.calculateModExpCost(2048n, 256n, 2048n, 3n);
-// Very high (depends on complexity)
-```
+`ModExpMin` remains the historical Berlin minimum (200).
+`ModExpQuadraticThreshold` (64) and `ModExpLinearThreshold` (1,024) describe
+EIP-198's piecewise formula.
 
 ## BN254 Curve Operations
 
@@ -403,7 +358,7 @@ const cost = Precompile.ecPairingCost.call({
 | Precompile | Operation | Cost |
 |------------|-----------|------|
 | ECRECOVER (0x01) | Signature recovery | 3000 gas (fixed) |
-| MODEXP (0x05) | Modular exponentiation | Minimum 200 gas (variable) |
+| MODEXP (0x05) | Modular exponentiation | Fork-dependent: Berlin minimum 200, Osaka minimum 500 |
 
 ## Usage Patterns
 

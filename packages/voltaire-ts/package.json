@@ -19,6 +19,10 @@
 		"url": "git+https://github.com/evmts/voltaire.git",
 		"directory": "packages/voltaire-ts"
 	},
+	"homepage": "https://voltaire.tevm.sh/",
+	"bugs": {
+		"url": "https://github.com/evmts/voltaire/issues"
+	},
 	"license": "MIT",
 	"contributors": [
 		"Fucory (x.com/fucory)",
@@ -36,6 +40,7 @@
 		},
 		"./native": {
 			"types": "./types/native/index.d.ts",
+			"bun": "./dist/native/index.js",
 			"import": "./dist/native/index.js",
 			"require": "./dist/native/index.cjs"
 		},
@@ -89,6 +94,11 @@
 			"import": "./dist/primitives/Blob/index.js",
 			"require": "./dist/primitives/Blob/index.cjs"
 		},
+		"./BlockAccessList": {
+			"types": "./types/primitives/BlockAccessList/index.d.ts",
+			"import": "./dist/primitives/BlockAccessList/index.js",
+			"require": "./dist/primitives/BlockAccessList/index.cjs"
+		},
 		"./BloomFilter": {
 			"types": "./types/primitives/BloomFilter/index.d.ts",
 			"import": "./dist/primitives/BloomFilter/index.js",
@@ -133,6 +143,11 @@
 			"types": "./types/primitives/errors/index.d.ts",
 			"import": "./dist/primitives/errors/index.js",
 			"require": "./dist/primitives/errors/index.cjs"
+		},
+		"./ExecutionPayloadBid": {
+			"types": "./types/primitives/ExecutionPayloadBid/index.d.ts",
+			"import": "./dist/primitives/ExecutionPayloadBid/index.js",
+			"require": "./dist/primitives/ExecutionPayloadBid/index.cjs"
 		},
 		"./FeeMarket": {
 			"types": "./types/primitives/FeeMarket/index.d.ts",
@@ -234,6 +249,11 @@
 			"import": "./dist/crypto/ChaCha20Poly1305/index.js",
 			"require": "./dist/crypto/ChaCha20Poly1305/index.cjs"
 		},
+		"./ConstantTime": {
+			"types": "./types/crypto/ConstantTime/index.d.ts",
+			"import": "./dist/crypto/ConstantTime/index.js",
+			"require": "./dist/crypto/ConstantTime/index.cjs"
+		},
 		"./Ed25519": {
 			"types": "./types/crypto/Ed25519/index.d.ts",
 			"import": "./dist/crypto/Ed25519/index.js",
@@ -260,9 +280,9 @@
 			"require": "./dist/crypto/Keccak256/Keccak256.native.cjs"
 		},
 		"./Keccak256/wasm": {
-			"types": "./types/crypto/Keccak256/index.d.ts",
-			"import": "./dist/crypto/Keccak256/index.js",
-			"require": "./dist/crypto/Keccak256/index.cjs"
+			"types": "./types/crypto/keccak256.wasm.d.ts",
+			"import": "./dist/crypto/keccak256.wasm.js",
+			"require": "./dist/crypto/keccak256.wasm.cjs"
 		},
 		"./KZG": {
 			"types": "./types/crypto/KZG/index.d.ts",
@@ -319,6 +339,7 @@
 			"import": "./dist/evm/*/index.js",
 			"require": "./dist/evm/*/index.cjs"
 		},
+		"./evm/system/lib": null,
 		"./precompiles": {
 			"types": "./types/evm/precompiles/index.d.ts",
 			"import": "./dist/evm/precompiles/index.js",
@@ -418,6 +439,9 @@
 			"Blob": [
 				"./types/primitives/Blob/index.d.ts"
 			],
+			"BlockAccessList": [
+				"./types/primitives/BlockAccessList/index.d.ts"
+			],
 			"BloomFilter": [
 				"./types/primitives/BloomFilter/index.d.ts"
 			],
@@ -430,6 +454,9 @@
 			"Chain": [
 				"./types/primitives/Chain/index.d.ts"
 			],
+			"ContractCode": [
+				"./types/primitives/ContractCode/index.d.ts"
+			],
 			"Denomination": [
 				"./types/primitives/Denomination/index.d.ts"
 			],
@@ -441,6 +468,9 @@
 			],
 			"errors": [
 				"./types/primitives/errors/index.d.ts"
+			],
+			"ExecutionPayloadBid": [
+				"./types/primitives/ExecutionPayloadBid/index.d.ts"
 			],
 			"FeeMarket": [
 				"./types/primitives/FeeMarket/index.d.ts"
@@ -457,11 +487,23 @@
 			"Hex": [
 				"./types/primitives/Hex/index.d.ts"
 			],
+			"InitCode": [
+				"./types/primitives/InitCode/index.d.ts"
+			],
+			"LogFilter": [
+				"./types/primitives/LogFilter/index.d.ts"
+			],
 			"Opcode": [
 				"./types/primitives/Opcode/index.d.ts"
 			],
 			"Rlp": [
 				"./types/primitives/Rlp/index.d.ts"
+			],
+			"PrivateKey": [
+				"./types/primitives/PrivateKey/index.d.ts"
+			],
+			"PublicKey": [
+				"./types/primitives/PublicKey/index.d.ts"
 			],
 			"Signature": [
 				"./types/primitives/Signature/index.d.ts"
@@ -490,6 +532,9 @@
 			"ChaCha20Poly1305": [
 				"./types/crypto/ChaCha20Poly1305/index.d.ts"
 			],
+			"ConstantTime": [
+				"./types/crypto/ConstantTime/index.d.ts"
+			],
 			"Ed25519": [
 				"./types/crypto/Ed25519/index.d.ts"
 			],
@@ -506,7 +551,7 @@
 				"./types/crypto/Keccak256/Keccak256.native.d.ts"
 			],
 			"Keccak256/wasm": [
-				"./types/crypto/Keccak256/index.d.ts"
+				"./types/crypto/keccak256.wasm.d.ts"
 			],
 			"KZG": [
 				"./types/crypto/KZG/index.d.ts"
@@ -522,6 +567,9 @@
 			],
 			"SHA256": [
 				"./types/crypto/SHA256/index.d.ts"
+			],
+			"signers": [
+				"./types/crypto/signers/index.d.ts"
 			],
 			"jsonrpc": [
 				"./dist/jsonrpc/index.d.ts"
@@ -540,16 +588,52 @@
 			],
 			"precompiles": [
 				"./types/evm/precompiles/index.d.ts"
+			],
+			"block": [
+				"./types/block/index.d.ts"
+			],
+			"contract": [
+				"./types/contract/index.d.ts"
+			],
+			"transaction": [
+				"./types/transaction/index.d.ts"
+			],
+			"stream": [
+				"./types/stream/index.d.ts"
+			],
+			"AesGcm": [
+				"./types/crypto/AesGcm/index.d.ts"
+			],
+			"Bls12381": [
+				"./types/crypto/Bls12381/index.d.ts"
+			],
+			"BN254": [
+				"./types/crypto/bn254/index.d.ts"
+			],
+			"HMAC": [
+				"./types/crypto/HMAC/index.d.ts"
+			],
+			"Keystore": [
+				"./types/crypto/Keystore/index.d.ts"
+			],
+			"ModExp": [
+				"./types/crypto/ModExp/index.d.ts"
+			],
+			"X25519": [
+				"./types/crypto/X25519/index.d.ts"
 			]
 		}
 	},
 	"files": [
 		"dist",
 		"types",
-		"bin"
+		"README.md",
+		"LICENSE",
+		"!types/**/*.{js,test.d.ts,test.d.ts.map,test-d.d.ts,test-d.d.ts.map}"
 	],
 	"publishConfig": {
-		"access": "public"
+		"access": "public",
+		"provenance": true
 	},
 	"engines": {
 		"node": ">=18"
@@ -568,15 +652,13 @@
 		"test": "vitest --watch",
 		"test:coverage": "vitest --coverage --run",
 		"test:run": "vitest run",
+		"test:wasm": "vitest run wasm",
 		"typecheck": "tsc --noEmit",
 		"prepublishOnly": "pnpm build && pnpm lint:package && pnpm test:run"
 	},
 	"devDependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.1.76",
-		"@biomejs/biome": "^2.3.10",
-		"@noble/curves": "^2.0.1",
-		"@noble/hashes": "^2.0.1",
-		"@noble/secp256k1": "^3.0.0",
+		"@biomejs/biome": "^2.6.8",
 		"@playwright/test": "^1.57.0",
 		"@size-limit/file": "^12.0.0",
 		"@size-limit/preset-small-lib": "^12.0.0",
@@ -586,47 +668,52 @@
 		"@types/bun": "latest",
 		"@types/node": "^25.0.3",
 		"@vitest/coverage-v8": "^4.0.16",
-		"abitype": "^1.2.3",
+		"abitype": "^1.3.0",
 		"astro": "^5.16.6",
 		"astro-live-code": "^0.0.6",
 		"astro-mcp": "^0.4.2",
 		"effect": "^3.12.6",
-		"ethers": "^6.16.0",
+		"ethers": "^6.17.0",
 		"happy-dom": "^20.0.11",
 		"mintlify": "^4.2.255",
 		"mitata": "^1.0.34",
-		"ox": "^0.11.1",
 		"react": "^19.2.3",
 		"react-dom": "^19.2.3",
 		"size-limit": "^12.0.0",
-		"smithers-orchestrator": "^0.3.0",
 		"tsup": "^8.5.1",
 		"typedoc": "^0.28.15",
 		"typedoc-plugin-frontmatter": "^1.3.1",
 		"typedoc-plugin-markdown": "^4.9.0",
 		"typescript": "^5.9.3",
-		"viem": "^2.43.4",
+		"viem": "^2.58.4",
 		"vitest": "4.0.16"
 	},
 	"peerDependencies": {
-		"abitype": "^1.1.1"
+		"abitype": "^1.1.1",
+		"ffi-napi": "^4.0.3",
+		"ref-napi": "^3.0.3"
 	},
 	"peerDependenciesMeta": {
 		"abitype": {
 			"optional": true
+		},
+		"ffi-napi": {
+			"optional": true
+		},
+		"ref-napi": {
+			"optional": true
 		}
-	},
-	"optionalDependencies": {
-		"effect": "^3.19.13"
 	},
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.11.1",
-		"@codesandbox/sandpack-react": "^2.20.0",
-		"@noble/ciphers": "^2.1.1",
-		"@scure/bip32": "^2.0.1",
-		"@scure/bip39": "^2.0.1",
-		"@shazow/whatsabi": "^0.25.0",
+		"@noble/ciphers": "^2.4.0",
+		"@noble/curves": "^2.4.0",
+		"@noble/hashes": "^2.4.0",
+		"@noble/secp256k1": "^3.2.0",
+		"@scure/bip32": "^2.4.0",
+		"@scure/bip39": "^2.4.0",
+		"@shazow/whatsabi": "^0.30.0",
 		"@tevm/chains": "^0.0.1",
-		"modern-monaco": "^0.3.6"
+		"ox": "^0.11.1"
 	}
 }

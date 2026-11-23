@@ -11,16 +11,12 @@ import {
   ProviderDecodeError,
   ReceiptTimeoutError,
   type RpcTransportError,
-  TransactionNotFoundError
+  TransactionNotFoundError,
 } from "../errors.vibe"
 import * as Address from "../primitives/Address.vibe"
 import * as Hash from "../primitives/Hash.vibe"
 import * as Hex from "../primitives/Hex.vibe"
-import {
-  type BlockIdentifier,
-  formatBlockIdentifier,
-  formatQuantity
-} from "../primitives/Uint.vibe"
+import { type BlockIdentifier, formatBlockIdentifier, formatQuantity } from "../primitives/Uint.vibe"
 import { request, Transport } from "../transport/Transport.vibe"
 import {
   decodeFeeHistory,
@@ -34,7 +30,7 @@ import {
   type RpcBlock,
   type RpcLog,
   type RpcTransaction,
-  type RpcTransactionReceipt
+  type RpcTransactionReceipt,
 } from "./Schemas.vibe"
 
 export interface CallRequest {
@@ -125,7 +121,7 @@ export effect function getBlockNumber(): bigint!(RpcTransportError | ProviderDec
 
 export effect function getBalance(
   address: Address.AddressInput,
-  block?: BlockIdentifier
+  block?: BlockIdentifier,
 ): bigint!(RpcTransportError | ProviderDecodeError | InvalidAddressError | InvalidUintError)!Transport {
   const addrHex = try normalizeAddressHex(address)
   const tag = try formatBlockIdentifier(block)
@@ -135,7 +131,7 @@ export effect function getBalance(
 
 export effect function getCode(
   address: Address.AddressInput,
-  block?: BlockIdentifier
+  block?: BlockIdentifier,
 ): HexType!(RpcTransportError | InvalidAddressError | InvalidUintError | InvalidHexError)!Transport {
   const addrHex = try normalizeAddressHex(address)
   const tag = try formatBlockIdentifier(block)
@@ -146,7 +142,7 @@ export effect function getCode(
 export effect function getStorageAt(
   address: Address.AddressInput,
   slot: bigint | HexType | `0x${string}`,
-  block?: BlockIdentifier
+  block?: BlockIdentifier,
 ): HexType!(RpcTransportError | InvalidAddressError | InvalidUintError | InvalidHexError)!Transport {
   const addrHex = try normalizeAddressHex(address)
   const slotHex = typeof slot === "bigint" ? formatQuantity(slot) : try Hex.from(slot)
@@ -157,7 +153,7 @@ export effect function getStorageAt(
 
 export effect function getTransactionCount(
   address: Address.AddressInput,
-  block?: BlockIdentifier
+  block?: BlockIdentifier,
 ): bigint!(RpcTransportError | ProviderDecodeError | InvalidAddressError | InvalidUintError)!Transport {
   const addrHex = try normalizeAddressHex(address)
   const tag = try formatBlockIdentifier(block)
@@ -183,7 +179,7 @@ export effect function getBlobBaseFee(): bigint!(RpcTransportError | ProviderDec
 export effect function getFeeHistory(
   blockCount: number | bigint,
   newestBlock: BlockIdentifier = "latest",
-  rewardPercentiles: ReadonlyArray<number> = []
+  rewardPercentiles: ReadonlyArray<number> = [],
 ): FeeHistory!(RpcTransportError | ProviderDecodeError | InvalidUintError)!Transport {
   const countHex = typeof blockCount === "bigint" ? formatQuantity(blockCount) : `0x${blockCount.toString(16)}`
   const newestTag = try formatBlockIdentifier(newestBlock)
@@ -210,7 +206,7 @@ export effect function estimateFeesPerGas(options?: {
     effect {
       const bf = getBlobBaseFee() catch () => undefined
       return bf
-    }
+    },
   ]
 
   if (block.baseFeePerGas !== undefined && block.baseFeePerGas !== null) {
@@ -222,20 +218,20 @@ export effect function estimateFeesPerGas(options?: {
       baseFeePerGas: baseFee,
       maxPriorityFeePerGas: priorityFee,
       maxFeePerGas: maxFee,
-      maxFeePerBlobGas: blobFeeOpt !== undefined ? (blobFeeOpt * multiplier) / 100n : undefined
+      maxFeePerBlobGas: blobFeeOpt !== undefined ? (blobFeeOpt * multiplier) / 100n : undefined,
     }
   }
 
   const gasPrice = try getGasPrice()
   return {
     type: "legacy",
-    gasPrice
+    gasPrice,
   }
 }
 
 export effect function call(
   tx: CallRequest,
-  block?: BlockIdentifier
+  block?: BlockIdentifier,
 ): HexType!(RpcTransportError | InvalidAddressError | InvalidUintError | InvalidHexError)!Transport {
   const formatted = try formatCallRequest(tx)
   const tag = try formatBlockIdentifier(block)
@@ -245,7 +241,7 @@ export effect function call(
 
 export effect function estimateGas(
   tx: CallRequest,
-  block?: BlockIdentifier
+  block?: BlockIdentifier,
 ): bigint!(RpcTransportError | ProviderDecodeError | InvalidAddressError | InvalidUintError)!Transport {
   const formatted = try formatCallRequest(tx)
   const params = block !== undefined ? [formatted, try formatBlockIdentifier(block)] : [formatted]
@@ -254,7 +250,7 @@ export effect function estimateGas(
 }
 
 export effect function getBlock(
-  options: GetBlockOptions = {}
+  options: GetBlockOptions = {},
 ): RpcBlock!(RpcTransportError | ProviderDecodeError | BlockNotFoundError | InvalidUintError)!Transport {
   const includeTxs = options.includeTransactions ?? false
   if (options.blockHash !== undefined) {
@@ -272,14 +268,14 @@ export effect function getBlock(
   if (raw === null || raw === undefined) {
     throw new BlockNotFoundError({
       block: typeof selector === "bigint" ? selector : String(selector),
-      message: `Block ${String(selector)} not found`
+      message: `Block ${String(selector)} not found`,
     })
   }
   return try decodeRpcBlock(raw, "eth_getBlockByNumber")
 }
 
 export effect function getBlockReceipts(
-  block: BlockIdentifier = "latest"
+  block: BlockIdentifier = "latest",
 ): ReadonlyArray<RpcTransactionReceipt>!(RpcTransportError | ProviderDecodeError | InvalidUintError)!Transport {
   const tag = try formatBlockIdentifier(block)
   const raw = try request<unknown>("eth_getBlockReceipts", [tag])
@@ -294,7 +290,7 @@ export effect function getBlockReceipts(
 }
 
 export effect function getTransaction(
-  hash: HashType | `0x${string}`
+  hash: HashType | `0x${string}`,
 ): RpcTransaction!(RpcTransportError | ProviderDecodeError | TransactionNotFoundError)!Transport {
   const hashHex = typeof hash === "string" ? hash : Hash.toHex(hash)
   const raw = try request<unknown>("eth_getTransactionByHash", [hashHex])
@@ -305,7 +301,7 @@ export effect function getTransaction(
 }
 
 export effect function getTransactionReceipt(
-  hash: HashType | `0x${string}`
+  hash: HashType | `0x${string}`,
 ): Option.Option<RpcTransactionReceipt>!(RpcTransportError | ProviderDecodeError)!Transport {
   const hashHex = typeof hash === "string" ? hash : Hash.toHex(hash)
   const raw = try request<unknown>("eth_getTransactionReceipt", [hashHex])
@@ -318,7 +314,7 @@ export effect function getTransactionReceipt(
 // Polls for transaction receipt until confirmed to the desired confirmation depth.
 export effect function waitForTransactionReceipt(
   hash: HashType | `0x${string}`,
-  options: WaitForReceiptOptions = {}
+  options: WaitForReceiptOptions = {},
 ): RpcTransactionReceipt!(RpcTransportError | ProviderDecodeError | ReceiptTimeoutError)!Transport {
   const hashHex = typeof hash === "string" ? hash : Hash.toHex(hash)
   const confirmations = options.confirmations ?? 1
@@ -348,7 +344,7 @@ export effect function waitForTransactionReceipt(
       when { _tag: "TimeoutError" }: throw new ReceiptTimeoutError({
         hash: hashHex,
         confirmations,
-        message: `Timed out waiting for transaction ${hashHex} (${confirmations} confirmation(s))`
+        message: `Timed out waiting for transaction ${hashHex} (${confirmations} confirmation(s))`,
       });
       default: throw err;
     }
@@ -356,7 +352,7 @@ export effect function waitForTransactionReceipt(
 }
 
 export effect function getLogs(
-  filter: LogFilter
+  filter: LogFilter,
 ): ReadonlyArray<RpcLog>!(RpcTransportError | ProviderDecodeError | InvalidAddressError | InvalidUintError)!Transport {
   const rpcFilter: Record<string, unknown> = {}
   if (filter.address !== undefined) {
@@ -395,7 +391,7 @@ export effect function getLogs(
 }
 
 export effect function sendRawTransaction(
-  signedTx: HexType | `0x${string}`
+  signedTx: HexType | `0x${string}`,
 ): HashType!(RpcTransportError | InvalidHashError)!Transport {
   const raw = try request<string>("eth_sendRawTransaction", [signedTx])
   return try Hash.fromHex(raw)
@@ -403,7 +399,7 @@ export effect function sendRawTransaction(
 
 export effect function simulateCalls(
   payload: Record<string, unknown>,
-  block: BlockIdentifier = "latest"
+  block: BlockIdentifier = "latest",
 ): unknown!(RpcTransportError | InvalidUintError)!Transport {
   const tag = try formatBlockIdentifier(block)
   return try request<unknown>("eth_simulateV1", [payload, tag])

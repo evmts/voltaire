@@ -1,14 +1,49 @@
+import { bn254 } from "@noble/curves/bn254.js";
 import { describe, expect, test } from "vitest";
 import {
+	B_G2_C0,
+	B_G2_C1,
 	FR_MOD,
 	G2_GENERATOR_X_C0,
 	G2_GENERATOR_X_C1,
 	G2_GENERATOR_Y_C0,
 	G2_GENERATOR_Y_C1,
 } from "../constants.js";
+import { Bn254InvalidPointError, Bn254SubgroupCheckError } from "../errors.js";
 import * as Fp2 from "../Fp2/index.js";
 import type { G2PointType } from "../G2PointType.js";
 import * as G2 from "./index.js";
+
+/** Twist points y^2 = x^3 + 3/(9+u) with x = (n, 0), built without validation. */
+function twistPoints(): G2PointType[] {
+	const F = bn254.fields.Fp2;
+	const b = F.create({ c0: B_G2_C0, c1: B_G2_C1 });
+	const points: G2PointType[] = [];
+	for (let n = 1n; n < 40n; n++) {
+		const x = F.create({ c0: n, c1: 0n });
+		const rhs = F.add(F.mul(F.sqr(x), x), b);
+		try {
+			const y = F.sqrt(rhs);
+			if (F.eql(F.sqr(y), rhs)) {
+				points.push({ x, y, z: Fp2.create(1n, 0n) } as G2PointType);
+			}
+		} catch {
+			// x^3 + b is not a square in Fp2
+		}
+	}
+	return points;
+}
+
+/** [n]P by double-and-add with no reduction of n modulo the group order. */
+function mulUnreduced(point: G2PointType, n: bigint): G2PointType {
+	let result = G2.infinity();
+	let base = point;
+	for (let k = n; k > 0n; k >>= 1n) {
+		if (k & 1n) result = G2.add(result, base);
+		base = G2.double(base);
+	}
+	return result;
+}
 
 describe("G2 curve operations", () => {
 	describe("generator", () => {
@@ -409,6 +444,57 @@ describe("G2 curve operations", () => {
 				const point = G2.mul(gen, k);
 				expect(G2.isInSubgroup(point)).toBe(true);
 			}
+		});
+	});
+
+	describe("isInSubgroup rejects twist points of the wrong order", () => {
+		const points = twistPoints();
+
+		test("fixture points are on the twist curve", () => {
+			expect(points.length).toBeGreaterThan(3);
+			for (const point of points) expect(G2.isOnCurve(point)).toBe(true);
+		});
+
+		test("agrees with unreduced [r]P = O for every fixture point", () => {
+			for (const point of points) {
+				const expected = G2.isZero(mulUnreduced(point, FR_MOD));
+				expect(expected).toBe(false);
+				expect(G2.isInSubgroup(point)).toBe(expected);
+			}
+		});
+
+		test("unreduced [r]G = O for the generator", () => {
+			expect(G2.isZero(mulUnreduced(G2.generator(), FR_MOD))).toBe(true);
+			expect(G2.isInSubgroup(mulUnreduced(G2.generator(), FR_MOD - 1n))).toBe(
+				true,
+			);
+		});
+
+		test("generator plus an off-subgroup point is off-subgroup", () => {
+			const point = points[0] as G2PointType;
+			expect(G2.isInSubgroup(G2.add(G2.generator(), point))).toBe(false);
+			// Projective input (z != 1) takes the same path.
+			expect(G2.isInSubgroup(G2.double(point))).toBe(false);
+		});
+
+		test("off-curve point is not in the subgroup", () => {
+			const gen = G2.generator();
+			const offCurve = {
+				...gen,
+				y: Fp2.create(gen.y.c0 + 1n, gen.y.c1),
+			} as G2PointType;
+			expect(G2.isInSubgroup(offCurve)).toBe(false);
+		});
+
+		test("fromAffine throws Bn254SubgroupCheckError, not on-curve error", () => {
+			const point = points[0] as G2PointType;
+			expect(() => G2.fromAffine(point.x, point.y)).toThrow(
+				Bn254SubgroupCheckError,
+			);
+			const gen = G2.generator();
+			expect(() =>
+				G2.fromAffine(gen.x, Fp2.create(gen.y.c0 + 1n, gen.y.c1)),
+			).toThrow(Bn254InvalidPointError);
 		});
 	});
 

@@ -30,7 +30,7 @@ import { toHex } from "./toHex.js";
 import { toString } from "./toString.js";
 
 // Factory exports (tree-shakeable)
-export { Keccak256, Keccak256Hex, Keccak256String, MerkleRoot, Concat };
+export { Concat, Keccak256, Keccak256Hex, Keccak256String, MerkleRoot };
 
 // Wrapper exports (convenient, backward compat)
 /** @type {(data: Uint8Array) => HashType} */
@@ -46,22 +46,22 @@ export const concat = Concat({ keccak256: keccak256Impl });
 
 // Export non-crypto functions
 export {
+	assert,
+	clone,
+	equals,
+	format,
 	from,
 	fromBytes,
 	fromHex,
 	isHash,
 	isValidHex,
-	assert,
+	isZero,
 	random,
+	SIZE,
+	slice,
 	toBytes,
 	toHex,
 	toString,
-	equals,
-	isZero,
-	clone,
-	slice,
-	format,
-	SIZE,
 	ZERO,
 };
 

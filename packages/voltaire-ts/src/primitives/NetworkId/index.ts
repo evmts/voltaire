@@ -22,7 +22,7 @@ export function equals(networkId1: number, networkId2: number): boolean {
 }
 
 // Export internal functions (tree-shakeable)
-export { _toNumber, _equals };
+export { _equals, _toNumber };
 
 // Export as namespace (convenience)
 export const NetworkId = {

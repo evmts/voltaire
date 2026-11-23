@@ -13,7 +13,7 @@ import { size } from "./size.js";
 import { toHex } from "./toHex.js";
 import { toUint8Array } from "./toUint8Array.js";
 import { zero } from "./zero.js";
-export { from, fromBytes, fromHex, toHex, toUint8Array, equals, compare, clone, size, zero, isZero, };
+export { clone, compare, equals, from, fromBytes, fromHex, isZero, size, toHex, toUint8Array, zero, };
 export declare function Bytes64(value: Bytes64Like): Bytes64Type;
 export declare namespace Bytes64 {
     var from: typeof import("./from.js").from;

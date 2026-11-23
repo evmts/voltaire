@@ -50,9 +50,11 @@
 
 export { assertSigned as assertSigned_internal } from "./assertSigned.js";
 export { deserialize } from "./deserialize.js";
+export { deserializeUnsigned } from "./deserializeUnsigned.js";
 
 // Export operations (internal methods with _internal suffix)
 export { detectType } from "./detectType.js";
+export { exceedsTxGasLimit, MAX_TX_GAS_LIMIT } from "./exceedsTxGasLimit.js";
 export { format as format_internal } from "./format.js";
 export { fromRpc } from "./fromRpc.js";
 export { getAccessList as getAccessList_internal } from "./getAccessList.js";
@@ -75,12 +77,17 @@ export {
 	replaceWith as replaceWith_internal,
 } from "./replaceWith.js";
 export { serialize as serialize_internal } from "./serialize.js";
+export { serializeUnsigned } from "./serializeUnsigned.js";
 export { toRpc } from "./toRpc.js";
 export * from "./typeGuards.js";
 // Export types
 export * from "./types.js";
+export type * from "./UnsignedType.js";
 export { validateChainId as validateChainId_internal } from "./validateChainId.js";
-export { validateGasLimit as validateGasLimit_internal } from "./validateGasLimit.js";
+export {
+	type ValidateGasLimitOptions,
+	validateGasLimit as validateGasLimit_internal,
+} from "./validateGasLimit.js";
 export { validateGasPrice as validateGasPrice_internal } from "./validateGasPrice.js";
 export { validateNonce as validateNonce_internal } from "./validateNonce.js";
 export { validateValue as validateValue_internal } from "./validateValue.js";
@@ -124,7 +131,10 @@ import type {
 	VersionedHash,
 } from "./types.js";
 import { validateChainId as _validateChainId } from "./validateChainId.js";
-import { validateGasLimit as _validateGasLimit } from "./validateGasLimit.js";
+import {
+	validateGasLimit as _validateGasLimit,
+	type ValidateGasLimitOptions,
+} from "./validateGasLimit.js";
 import { validateGasPrice as _validateGasPrice } from "./validateGasPrice.js";
 import { validateNonce as _validateNonce } from "./validateNonce.js";
 import { validateValue as _validateValue } from "./validateValue.js";
@@ -269,10 +279,14 @@ export function validateGasPrice(tx: Any): void {
 }
 
 /**
- * Validate gas limit is valid
+ * Validate gas limit: positive, within the EIP-7825 cap (`2^24`) from Osaka
+ * (the default hardfork), and within `blockGasLimit` when given.
  */
-export function validateGasLimit(tx: Any): void {
-	_validateGasLimit.call(tx);
+export function validateGasLimit(
+	tx: Any,
+	options?: ValidateGasLimitOptions,
+): void {
+	_validateGasLimit.call(tx, options);
 }
 
 /**

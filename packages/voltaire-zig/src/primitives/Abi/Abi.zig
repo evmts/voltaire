@@ -27,6 +27,8 @@ pub const encodeAbiParameters = mod.encodeAbiParameters;
 pub const encodeFunctionData = mod.encodeFunctionData;
 pub const encodeEventTopics = mod.encodeEventTopics;
 pub const encodePacked = mod.encodePacked;
+pub const encodePackedStrict = mod.encodePackedStrict;
+pub const PackedError = mod.PackedError;
 
 // Core decoding functions
 pub const decodeAbiParameters = mod.decodeAbiParameters;

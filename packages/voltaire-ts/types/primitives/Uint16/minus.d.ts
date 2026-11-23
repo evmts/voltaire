@@ -1,6 +1,9 @@
 /**
  * Subtract two Uint16 values with underflow checking
  *
+ * Overflow mode: checked. `minusChecked` is the explicit name for this behavior
+ * and `minusWrapping` wraps instead of throwing. Both exist on every Uint size.
+ *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
  * @param {import('./Uint16Type.js').Uint16Type} a - First operand

@@ -6,6 +6,7 @@ import {
 	InvalidPublicKeyError,
 	P256Error,
 } from "./errors.js";
+import { validatePublicKey } from "./validatePublicKey.js";
 
 /**
  * Perform ECDH key exchange
@@ -19,7 +20,7 @@ import {
  * @param {import('./P256PublicKeyType.js').P256PublicKeyType} publicKey - Their 64-byte uncompressed public key
  * @returns {Uint8Array} 32-byte shared secret
  * @throws {InvalidPrivateKeyError} If private key is invalid
- * @throws {InvalidPublicKeyError} If public key is invalid
+ * @throws {InvalidPublicKeyError} If public key has the wrong length, is the point at infinity, has a coordinate >= p, or is not on the curve
  * @throws {P256Error} If ECDH computation fails
  * @example
  * ```javascript
@@ -39,6 +40,14 @@ export function ecdh(privateKey, publicKey) {
 	if (publicKey.length !== PUBLIC_KEY_SIZE) {
 		throw new InvalidPublicKeyError(
 			`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
+		);
+	}
+
+	// Full public-key validation (SEC 1 3.2.2.1): blocks invalid-curve and
+	// point-at-infinity attacks before the private key touches the point.
+	if (!validatePublicKey(publicKey)) {
+		throw new InvalidPublicKeyError(
+			"Public key is not a valid point on the P256 curve",
 		);
 	}
 

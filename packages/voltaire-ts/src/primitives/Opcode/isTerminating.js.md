@@ -1,6 +1,6 @@
 ---
-title: "isTerminating.js"
----
+
+## title: "isTerminating.js"
 
 # isTerminating.js
 
@@ -9,7 +9,7 @@ Check if opcode terminates execution.
 ## Signature
 
 ```typescript
-function isTerminating(opcode: BrandedOpcode): boolean
+function isTerminating(opcode: BrandedOpcode): boolean;
 ```
 
 ## Parameters
@@ -23,13 +23,13 @@ function isTerminating(opcode: BrandedOpcode): boolean
 ## Example
 
 ```typescript
-Opcode.isTerminating(Opcode.STOP);        // true
-Opcode.isTerminating(Opcode.RETURN);      // true
-Opcode.isTerminating(Opcode.REVERT);      // true
-Opcode.isTerminating(Opcode.INVALID);     // true
+Opcode.isTerminating(Opcode.STOP); // true
+Opcode.isTerminating(Opcode.RETURN); // true
+Opcode.isTerminating(Opcode.REVERT); // true
+Opcode.isTerminating(Opcode.INVALID); // true
 Opcode.isTerminating(Opcode.SELFDESTRUCT); // true
-Opcode.isTerminating(Opcode.JUMP);        // false
-Opcode.isTerminating(Opcode.ADD);         // false
+Opcode.isTerminating(Opcode.JUMP); // false
+Opcode.isTerminating(Opcode.ADD); // false
 ```
 
 ## Notes

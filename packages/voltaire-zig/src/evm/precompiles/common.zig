@@ -18,6 +18,10 @@ pub const PrecompileError = error{
     InvalidPairing,
     OutOfGas,
     NotImplemented,
+    /// KZG trusted setup is not loaded: a node configuration error, not a bad
+    /// proof. Kept distinct from InvalidInput so callers do not report it as
+    /// an exceptional halt caused by the transaction.
+    TrustedSetupNotLoaded,
     // Keccak errors (from keccak_asm)
     ExecutionError,
     StateError,

@@ -12,7 +12,7 @@ import {
   RpcError,
   SignerFromPrivateKey,
   supportsInterface,
-  TestProvider
+  TestProvider,
 } from "../index.vibe"
 
 const TEST_PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as const
@@ -28,9 +28,9 @@ const vaultAbi = [
     name: "InsufficientBalance",
     inputs: [
       { name: "available", type: "uint256" },
-      { name: "required", type: "uint256" }
-    ]
-  }
+      { name: "required", type: "uint256" },
+    ],
+  },
 ] as const
 
 describe("contract & standards", () => {
@@ -60,7 +60,7 @@ describe("contract & standards", () => {
         gasUsed: "0x5208",
         timestamp: "0x67000000",
         baseFeePerGas: "0x2540be400",
-        transactions: []
+        transactions: [],
       },
       eth_sendRawTransaction: FAKE_TX_HASH,
       eth_getLogs: [
@@ -73,9 +73,9 @@ describe("contract & standards", () => {
           transactionIndex: "0x0",
           blockHash: FAKE_TX_HASH,
           logIndex: "0x2",
-          removed: false
-        }
-      ]
+          removed: false,
+        },
+      ],
     })
 
     const signerLayer = Layer.provide(SignerFromPrivateKey(TEST_PK), provider)
@@ -94,7 +94,7 @@ describe("contract & standards", () => {
         usdc.simulate.transfer(USER, 100n),
         usdc.estimateGas.transfer(USER, 100n),
         usdc.write.transfer(USER, 100n),
-        usdc.getEvents("Transfer", { fromBlock: 0n, toBlock: "latest" })
+        usdc.getEvents("Transfer", { fromBlock: 0n, toBlock: "latest" }),
       ]
       try Effect.try(() => assert.strictEqual(bal, 5000000n))
       try Effect.try(() => assert.strictEqual(simOk, true))
@@ -113,9 +113,9 @@ describe("contract & standards", () => {
     const errArgs = try Abi.encodeParameters(
       [
         { type: "uint256", name: "available" },
-        { type: "uint256", name: "required" }
+        { type: "uint256", name: "required" },
       ],
-      [100n, 500n]
+      [100n, 500n],
     )
     // Encode using standard Error(string) too to verify both paths; here use Error(string) + custom check
     const errStringArgs = try Abi.encodeParameters([{ type: "string" }], ["ERC20: insufficient allowance"])
@@ -124,7 +124,7 @@ describe("contract & standards", () => {
     const provider = TestProvider({
       eth_call: effect {
         throw new RpcError({ code: 3, message: "execution reverted", data: revertData })
-      }
+      },
     })
 
     provide provider {
@@ -151,12 +151,12 @@ describe("contract & standards", () => {
         const callObj = params[0] as { readonly data?: string }
         if (callObj.data?.startsWith("0x01ffc9a7")) return boolTrueHex
         return balanceHex
-      }
+      },
     })
 
     const Contracts = makeContractRegistry({
       USDC: { abi: ERC20_ABI, address: USDC_ADDRESS },
-      ERC20: { abi: ERC20_ABI }
+      ERC20: { abi: ERC20_ABI },
     })
 
     provide provider, Contracts.layer {
@@ -166,7 +166,7 @@ describe("contract & standards", () => {
         USDC.read.balanceOf(USER),
         weth.read.balanceOf(USER),
         erc20BalanceOf(USDC_ADDRESS, USER),
-        supportsInterface(USDC_ADDRESS, INTERFACE_IDS.ERC721)
+        supportsInterface(USDC_ADDRESS, INTERFACE_IDS.ERC721),
       ]
       try Effect.try(() => assert.strictEqual(usdcBal, 999n))
       try Effect.try(() => assert.strictEqual(wethBal, 999n))

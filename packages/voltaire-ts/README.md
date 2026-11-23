@@ -14,13 +14,13 @@ pnpm add @tevm/voltaire
 ## Quick Start
 
 ```typescript
-import { Address, Wei } from '@tevm/voltaire';
-import { Abi } from '@tevm/voltaire/Abi';
-import { Hex } from '@tevm/voltaire/Hex';
-import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import { Address, Wei } from "@tevm/voltaire";
+import { Abi } from "@tevm/voltaire/Abi";
+import { Hex } from "@tevm/voltaire/Hex";
+import { Keccak256 } from "@tevm/voltaire/Keccak256";
 
 // Branded 20-byte Uint8Array — validated at construction
-const recipient = Address('0xd8da6bf26964af9d7eed9e03e53415d37aa96045');
+const recipient = Address("0xd8da6bf26964af9d7eed9e03e53415d37aa96045");
 Address.toChecksummed(recipient); // "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 
 // Compile-time unit safety (Wei ≠ Gwei ≠ Ether)
@@ -28,32 +28,32 @@ const amount = Wei(1_000_000_000_000_000_000n);
 Wei.toEther(amount); // 1n
 
 // Selectors and ABI encoding
-const selector = Hex.fromBytes(Keccak256.selector('transfer(address,uint256)')); // "0xa9059cbb"
+const selector = Hex.fromBytes(Keccak256.selector("transfer(address,uint256)")); // "0xa9059cbb"
 const erc20 = Abi([
-  {
-    type: 'function',
-    name: 'transfer',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { type: 'address', name: 'to' },
-      { type: 'uint256', name: 'amount' },
-    ],
-    outputs: [{ type: 'bool' }],
-  },
+	{
+		type: "function",
+		name: "transfer",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ type: "address", name: "to" },
+			{ type: "uint256", name: "amount" },
+		],
+		outputs: [{ type: "bool" }],
+	},
 ] as const);
 
-const calldata = erc20.encode('transfer', [recipient.toHex(), amount]);
+const calldata = erc20.encode("transfer", [recipient.toHex(), amount]);
 ```
 
 ## Entrypoints
 
-| Import | Backend | Runtime | Use Case |
-| --- | --- | --- | --- |
-| `@tevm/voltaire` | Pure TS | Browser, Node, Bun, Deno | Default; zero boundary overhead |
-| `@tevm/voltaire/<Module>` | Pure TS | Browser, Node, Bun, Deno | Subpath tree-shaking (`/Address`, `/Abi`, `/Keccak256`, ...) |
-| `@tevm/voltaire/functional` | Pure TS | Browser, Node, Bun, Deno | Stateless functions for smallest browser bundles |
-| `@tevm/voltaire/wasm` | Zig → WASM | Browser, Node, Bun, Deno | Faster & smaller crypto (`Keccak256`, `Secp256k1`, `Bls12381`, `KZG`) |
-| `@tevm/voltaire/native` | Zig → C FFI | Bun only | Highest server throughput |
+| Import                      | Backend     | Runtime                  | Use Case                                                              |
+| --------------------------- | ----------- | ------------------------ | --------------------------------------------------------------------- |
+| `@tevm/voltaire`            | Pure TS     | Browser, Node, Bun, Deno | Default; zero boundary overhead                                       |
+| `@tevm/voltaire/<Module>`   | Pure TS     | Browser, Node, Bun, Deno | Subpath tree-shaking (`/Address`, `/Abi`, `/Keccak256`, ...)          |
+| `@tevm/voltaire/functional` | Pure TS     | Browser, Node, Bun, Deno | Stateless functions for smallest browser bundles                      |
+| `@tevm/voltaire/wasm`       | Zig → WASM  | Browser, Node, Bun, Deno | Faster & smaller crypto (`Keccak256`, `Secp256k1`, `Bls12381`, `KZG`) |
+| `@tevm/voltaire/native`     | Zig → C FFI | Bun only                 | Highest server throughput                                             |
 
 ## Included Modules
 

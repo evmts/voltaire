@@ -1,6 +1,6 @@
+import type { brand } from "../../brand.js";
 import type { Uint256Type } from "../Uint/Uint256Type.js";
 import type { EtherType } from "./EtherType.js";
-import type { GweiType } from "./GweiType.js";
 import type { WeiType } from "./WeiType.js";
 
 /**
@@ -17,9 +17,12 @@ export interface GweiConstructor {
 }
 
 /**
- * Gwei instance type - a branded bigint representing gwei amounts
+ * Gwei instance type - a branded bigint representing whole gwei amounts.
+ *
+ * Distinct from the decimal-string `GweiType` of the `BrandedGwei`
+ * namespace, which supports fractional gwei.
  */
-export type Gwei = GweiType;
+export type Gwei = bigint & { readonly [brand]: "Gwei" };
 export declare const Gwei: GweiConstructor;
 
 export declare function from(value: bigint | number | string): Gwei;

@@ -143,39 +143,20 @@ impl Blake2b {
     }
 
     /// Update hasher with more data.
-    pub fn update(&mut self, data: &[u8]) {
-        let mut offset = 0;
-
-        // Fill buffer if partially filled
-        if self.buffer_len > 0 {
-            let needed = Self::BLOCK_SIZE - self.buffer_len;
-            if data.len() < needed {
-                self.buffer[self.buffer_len..self.buffer_len + data.len()]
-                    .copy_from_slice(data);
-                self.buffer_len += data.len();
-                return;
+    ///
+    /// A full block stays buffered until more input arrives, so `finalize`
+    /// always compresses the true last block with the final flag set.
+    pub fn update(&mut self, mut data: &[u8]) {
+        while !data.is_empty() {
+            if self.buffer_len == Self::BLOCK_SIZE {
+                self.increment_counter(Self::BLOCK_SIZE as u64);
+                self.compress(false);
+                self.buffer_len = 0;
             }
-
-            self.buffer[self.buffer_len..].copy_from_slice(&data[..needed]);
-            self.increment_counter(Self::BLOCK_SIZE as u64);
-            self.compress(false);
-            offset = needed;
-            self.buffer_len = 0;
-        }
-
-        // Process full blocks (keeping one block for finalization)
-        while offset + Self::BLOCK_SIZE < data.len() {
-            self.buffer.copy_from_slice(&data[offset..offset + Self::BLOCK_SIZE]);
-            self.increment_counter(Self::BLOCK_SIZE as u64);
-            self.compress(false);
-            offset += Self::BLOCK_SIZE;
-        }
-
-        // Store remainder
-        let remaining = data.len() - offset;
-        if remaining > 0 {
-            self.buffer[..remaining].copy_from_slice(&data[offset..]);
-            self.buffer_len = remaining;
+            let take = (Self::BLOCK_SIZE - self.buffer_len).min(data.len());
+            self.buffer[self.buffer_len..self.buffer_len + take].copy_from_slice(&data[..take]);
+            self.buffer_len += take;
+            data = &data[take..];
         }
     }
 
@@ -304,36 +285,20 @@ impl Blake2s {
     }
 
     /// Update hasher with more data.
-    pub fn update(&mut self, data: &[u8]) {
-        let mut offset = 0;
-
-        if self.buffer_len > 0 {
-            let needed = Self::BLOCK_SIZE - self.buffer_len;
-            if data.len() < needed {
-                self.buffer[self.buffer_len..self.buffer_len + data.len()]
-                    .copy_from_slice(data);
-                self.buffer_len += data.len();
-                return;
+    ///
+    /// A full block stays buffered until more input arrives, so `finalize`
+    /// always compresses the true last block with the final flag set.
+    pub fn update(&mut self, mut data: &[u8]) {
+        while !data.is_empty() {
+            if self.buffer_len == Self::BLOCK_SIZE {
+                self.increment_counter(Self::BLOCK_SIZE as u32);
+                self.compress(false);
+                self.buffer_len = 0;
             }
-
-            self.buffer[self.buffer_len..].copy_from_slice(&data[..needed]);
-            self.increment_counter(Self::BLOCK_SIZE as u32);
-            self.compress(false);
-            offset = needed;
-            self.buffer_len = 0;
-        }
-
-        while offset + Self::BLOCK_SIZE < data.len() {
-            self.buffer.copy_from_slice(&data[offset..offset + Self::BLOCK_SIZE]);
-            self.increment_counter(Self::BLOCK_SIZE as u32);
-            self.compress(false);
-            offset += Self::BLOCK_SIZE;
-        }
-
-        let remaining = data.len() - offset;
-        if remaining > 0 {
-            self.buffer[..remaining].copy_from_slice(&data[offset..]);
-            self.buffer_len = remaining;
+            let take = (Self::BLOCK_SIZE - self.buffer_len).min(data.len());
+            self.buffer[self.buffer_len..self.buffer_len + take].copy_from_slice(&data[..take]);
+            self.buffer_len += take;
+            data = &data[take..];
         }
     }
 
@@ -567,5 +532,81 @@ mod tests {
         let mut hasher = Blake2s::new(32);
         hasher.update(&data);
         assert_eq!(hasher.finalize(), hash);
+    }
+
+    fn pattern(n: usize) -> Vec<u8> {
+        (0..n).map(|i| (i % 251) as u8).collect()
+    }
+
+    // Reference digests from Python hashlib (RFC 7693 implementations).
+    const B128: &str = "2319e3789c47e2daa5fe807f61bec2a1a6537fa03f19ff32e87eecbfd64b7e0e8ccff439ac333b040f19b0c4ddd11a61e24ac1fe0f10a039806c5dcc0da3d115";
+    const B256: &str = "93463ac058b6163eb43be3f5bb32b28541498f4e3366f1effe253ad44e1e076e41c3616046027c82a7124f8f4746668ad10b12e8e25a95ac8f3151df01cd5a93";
+    const B129: &str = "f59711d44a031d5f97a9413c065d1e614c417ede998590325f49bad2fd444d3e4418be19aec4e11449ac1a57207898bc57d76a1bcf3566292c20c683a5c4648f";
+    const S64: &str = "56f34e8b96557e90c1f24b52d0c89d51086acf1b00f634cf1dde9233b8eaaa3e";
+    const S128: &str = "1fa877de67259d19863a2a34bcc6962a2b25fcbf5cbecd7ede8f1fa36688a796";
+    const S65: &str = "1b53ee94aaf34e4b159d48de352c7f0661d0a40edff95a0b1639b4090e974472";
+
+    fn b2b_split(data: &[u8], cuts: &[usize]) -> String {
+        let mut h = Blake2b::new(64);
+        let mut prev = 0;
+        for &c in cuts {
+            h.update(&data[prev..c]);
+            prev = c;
+        }
+        h.update(&data[prev..]);
+        hex::encode(h.finalize())
+    }
+
+    fn b2s_split(data: &[u8], cuts: &[usize]) -> String {
+        let mut h = Blake2s::new(32);
+        let mut prev = 0;
+        for &c in cuts {
+            h.update(&data[prev..c]);
+            prev = c;
+        }
+        h.update(&data[prev..]);
+        hex::encode(h.finalize())
+    }
+
+    #[test]
+    fn test_blake2b_block_boundary_vectors() {
+        let d128 = pattern(128);
+        assert_eq!(hex::encode(blake2b(&d128, 64)), B128);
+        assert_eq!(b2b_split(&d128, &[]), B128);
+        assert_eq!(b2b_split(&d128, &[64]), B128);
+        assert_eq!(b2b_split(&d128, &[128]), B128); // trailing empty update
+        assert_eq!(b2b_split(&d128, &[0, 1, 127]), B128);
+
+        let d256 = pattern(256);
+        assert_eq!(hex::encode(blake2b(&d256, 64)), B256);
+        assert_eq!(b2b_split(&d256, &[128]), B256);
+        assert_eq!(b2b_split(&d256, &[64, 128, 192]), B256);
+        assert_eq!(b2b_split(&d256, &[100, 228]), B256);
+
+        let d129 = pattern(129);
+        assert_eq!(hex::encode(blake2b(&d129, 64)), B129);
+        assert_eq!(b2b_split(&d129, &[128]), B129);
+        assert_eq!(b2b_split(&d129, &[64, 128]), B129);
+    }
+
+    #[test]
+    fn test_blake2s_block_boundary_vectors() {
+        let d64 = pattern(64);
+        assert_eq!(hex::encode(blake2s(&d64, 32)), S64);
+        assert_eq!(b2s_split(&d64, &[]), S64);
+        assert_eq!(b2s_split(&d64, &[32]), S64);
+        assert_eq!(b2s_split(&d64, &[64]), S64);
+        assert_eq!(b2s_split(&d64, &[0, 1, 63]), S64);
+
+        let d128 = pattern(128);
+        assert_eq!(hex::encode(blake2s(&d128, 32)), S128);
+        assert_eq!(b2s_split(&d128, &[64]), S128);
+        assert_eq!(b2s_split(&d128, &[32, 64, 96]), S128);
+        assert_eq!(b2s_split(&d128, &[50, 114]), S128);
+
+        let d65 = pattern(65);
+        assert_eq!(hex::encode(blake2s(&d65, 32)), S65);
+        assert_eq!(b2s_split(&d65, &[64]), S65);
+        assert_eq!(b2s_split(&d65, &[32, 64]), S65);
     }
 }

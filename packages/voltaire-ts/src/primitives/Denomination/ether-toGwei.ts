@@ -1,5 +1,6 @@
 import type { EtherType as BrandedEther } from "./EtherType.js";
 import type { GweiType as BrandedGwei } from "./GweiType.js";
+import { normalizeDecimal } from "./normalizeDecimal.js";
 
 const SHIFT = 9; // Ether to Gwei: shift decimal 9 places right
 
@@ -21,7 +22,7 @@ const SHIFT = 9; // Ether to Gwei: shift decimal 9 places right
  * ```
  */
 export function toGwei(ether: BrandedEther): BrandedGwei {
-	const str = ether.toString();
+	const str = normalizeDecimal(ether.toString());
 	const [intPart, decPart = ""] = str.split(".");
 
 	if (decPart.length <= SHIFT) {

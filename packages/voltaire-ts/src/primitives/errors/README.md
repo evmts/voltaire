@@ -37,17 +37,17 @@ Error
 ### Basic Example
 
 ```typescript
-import { InvalidFormatError } from '@tevm/primitives';
+import { InvalidFormatError } from "@tevm/primitives";
 
 function validateAddress(value: string) {
-  if (!value.startsWith('0x')) {
-    throw new InvalidFormatError("Invalid address format", {
-      code: "INVALID_ADDRESS",
-      value,
-      expected: "0x-prefixed 20 bytes",
-      context: { length: value.length }
-    });
-  }
+	if (!value.startsWith("0x")) {
+		throw new InvalidFormatError("Invalid address format", {
+			code: "INVALID_ADDRESS",
+			value,
+			expected: "0x-prefixed 20 bytes",
+			context: { length: value.length },
+		});
+	}
 }
 ```
 
@@ -55,14 +55,14 @@ function validateAddress(value: string) {
 
 ```typescript
 try {
-  validateAddress("deadbeef");
+	validateAddress("deadbeef");
 } catch (e) {
-  if (e instanceof InvalidFormatError) {
-    console.error(e.code);      // "INVALID_ADDRESS"
-    console.error(e.value);     // "deadbeef"
-    console.error(e.expected);  // "0x-prefixed 20 bytes"
-    console.error(e.context);   // { length: 8 }
-  }
+	if (e instanceof InvalidFormatError) {
+		console.error(e.code); // "INVALID_ADDRESS"
+		console.error(e.value); // "deadbeef"
+		console.error(e.expected); // "0x-prefixed 20 bytes"
+		console.error(e.context); // { length: 8 }
+	}
 }
 ```
 
@@ -70,19 +70,19 @@ try {
 
 ```typescript
 function handleError(err: Error) {
-  if (err instanceof InvalidFormatError) {
-    return "Please check your input format";
-  }
-  if (err instanceof InvalidLengthError) {
-    return "Input has wrong length";
-  }
-  if (err instanceof ValidationError) {
-    return "Validation failed";
-  }
-  if (err instanceof PrimitiveError) {
-    return "Primitive operation failed";
-  }
-  return "Unknown error";
+	if (err instanceof InvalidFormatError) {
+		return "Please check your input format";
+	}
+	if (err instanceof InvalidLengthError) {
+		return "Input has wrong length";
+	}
+	if (err instanceof ValidationError) {
+		return "Validation failed";
+	}
+	if (err instanceof PrimitiveError) {
+		return "Primitive operation failed";
+	}
+	return "Unknown error";
 }
 ```
 

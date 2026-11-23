@@ -152,8 +152,10 @@ test "fromHex - valid EntryPoint v0.7" {
 }
 
 test "fromHex - invalid hex" {
-    const result = fromHex("0xinvalid");
-    try std.testing.expectError(error.InvalidHexString, result);
+    // Wrong length is rejected before character validation
+    try std.testing.expectError(error.InvalidHexFormat, fromHex("0xinvalid"));
+    // Correct length with non-hex characters
+    try std.testing.expectError(error.InvalidHexString, fromHex("0xzz" ++ "00" ** 19));
 }
 
 test "fromHex - wrong length" {

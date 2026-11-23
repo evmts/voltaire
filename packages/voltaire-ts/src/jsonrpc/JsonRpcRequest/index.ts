@@ -25,7 +25,7 @@ export function withParams<TParams>(
 }
 
 // Export internal functions (tree-shakeable)
-export { _withParams, _isNotification };
+export { _isNotification, _withParams };
 
 // Export as namespace (convenience)
 export const JsonRpcRequest = {

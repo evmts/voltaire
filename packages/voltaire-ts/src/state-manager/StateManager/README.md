@@ -5,6 +5,7 @@ TypeScript bindings for Zig StateManager implementation with fork backend suppor
 ## Overview
 
 This package provides a TypeScript wrapper around the Zig StateManager implementation, enabling:
+
 - Fork-capable state management (read from remote chains)
 - Checkpoint/revert journaling for transaction execution
 - Snapshot/revert for testing (tevm_snapshot/tevm_revert)
@@ -59,23 +60,23 @@ StateManager (TS)
 ### Basic (In-Memory)
 
 ```typescript
-import { StateManager } from './state-manager/StateManager/index.js';
-import * as Address from './primitives/Address/index.js';
+import { StateManager } from "./state-manager/StateManager/index.js";
+import * as Address from "./primitives/Address/index.js";
 
 // Create in-memory state manager
 const manager = new StateManager({ ffi: ffiExports });
 
-const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
 
 // Set state
 await manager.setBalance(address, 1000n);
 await manager.setNonce(address, 5n);
-await manager.setStorage(address, '0x0', '0x123');
+await manager.setStorage(address, "0x0", "0x123");
 
 // Read state
-const balance = await manager.getBalance(address);  // 1000n
-const nonce = await manager.getNonce(address);      // 5n
-const storage = await manager.getStorage(address, '0x0');  // "0x123"
+const balance = await manager.getBalance(address); // 1000n
+const nonce = await manager.getNonce(address); // 5n
+const storage = await manager.getStorage(address, "0x0"); // "0x123"
 
 // Cleanup
 manager.destroy();
@@ -84,13 +85,13 @@ manager.destroy();
 ### Fork Mode
 
 ```typescript
-import { StateManager } from './state-manager/StateManager/index.js';
-import { RpcClientAdapter } from './state-manager/StateManager/RpcClientAdapter.js';
-import { HttpProvider } from './provider/HttpProvider.js';
+import { StateManager } from "./state-manager/StateManager/index.js";
+import { RpcClientAdapter } from "./state-manager/StateManager/RpcClientAdapter.js";
+import { HttpProvider } from "./provider/HttpProvider.js";
 
 // Create HTTP provider
 const httpProvider = new HttpProvider({
-  url: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY'
+	url: "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY",
 });
 
 // Create RPC client adapter
@@ -98,14 +99,14 @@ const rpcClient = new RpcClientAdapter({ provider: httpProvider });
 
 // Create state manager with fork backend
 const manager = new StateManager({
-  rpcClient,
-  forkBlockTag: '0x112a880',  // Block 18000000
-  maxCacheSize: 10000,
-  ffi: ffiExports
+	rpcClient,
+	forkBlockTag: "0x112a880", // Block 18000000
+	maxCacheSize: 10000,
+	ffi: ffiExports,
 });
 
 // Read from fork (fetches from remote if not cached)
-const usdcAddress = Address.from('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48');
+const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 const balance = await manager.getBalance(usdcAddress);
 const code = await manager.getCode(usdcAddress);
 
@@ -119,7 +120,7 @@ manager.destroy();
 
 ```typescript
 const manager = new StateManager({ ffi: ffiExports });
-const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
 
 // Initial state
 await manager.setBalance(address, 1000n);
@@ -129,17 +130,17 @@ await manager.checkpoint();
 
 // Modify state
 await manager.setBalance(address, 2000n);
-console.log(await manager.getBalance(address));  // 2000n
+console.log(await manager.getBalance(address)); // 2000n
 
 // Revert to checkpoint
 manager.revert();
-console.log(await manager.getBalance(address));  // 1000n (reverted)
+console.log(await manager.getBalance(address)); // 1000n (reverted)
 
 // OR commit checkpoint
 await manager.checkpoint();
 await manager.setBalance(address, 3000n);
-manager.commit();  // Merges into parent
-console.log(await manager.getBalance(address));  // 3000n (committed)
+manager.commit(); // Merges into parent
+console.log(await manager.getBalance(address)); // 3000n (committed)
 
 manager.destroy();
 ```
@@ -148,35 +149,35 @@ manager.destroy();
 
 ```typescript
 const manager = new StateManager({ ffi: ffiExports });
-const address = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
 
 // Setup initial state
 await manager.setBalance(address, 1000n);
 
 // Create snapshot
 const snapId = await manager.snapshot();
-console.log('Snapshot ID:', snapId);  // 0n
+console.log("Snapshot ID:", snapId); // 0n
 
 // Modify state
 await manager.setBalance(address, 2000n);
 await manager.setNonce(address, 10n);
 
 // Create another snapshot
-const snapId2 = await manager.snapshot();  // 1n
+const snapId2 = await manager.snapshot(); // 1n
 
 // Modify again
 await manager.setBalance(address, 3000n);
 
 // Revert to first snapshot
 await manager.revertToSnapshot(snapId);
-console.log(await manager.getBalance(address));  // 1000n
-console.log(await manager.getNonce(address));    // 0n
+console.log(await manager.getBalance(address)); // 1000n
+console.log(await manager.getNonce(address)); // 0n
 
 // snapId2 is no longer valid (cleared when reverted past)
 try {
-  await manager.revertToSnapshot(snapId2);
+	await manager.revertToSnapshot(snapId2);
 } catch (err) {
-  console.log('Invalid snapshot:', err.message);
+	console.log("Invalid snapshot:", err.message);
 }
 
 manager.destroy();
@@ -193,6 +194,7 @@ new StateManager(options: StateManagerOptions)
 ```
 
 **Options**:
+
 - `ffi: StateManagerFFIExports` - FFI library exports (required)
 - `rpcClient?: RpcClient` - RPC client for fork mode (optional)
 - `forkBlockTag?: string` - Block tag for fork (default: "latest")
@@ -201,6 +203,7 @@ new StateManager(options: StateManagerOptions)
 #### Methods
 
 **State Operations**:
+
 - `async getBalance(address: Address): Promise<bigint>`
 - `async setBalance(address: Address, balance: bigint): Promise<void>`
 - `async getNonce(address: Address): Promise<bigint>`
@@ -211,19 +214,23 @@ new StateManager(options: StateManagerOptions)
 - `async setCode(address: Address, code: Hex): Promise<void>`
 
 **Checkpoint Operations**:
+
 - `async checkpoint(): Promise<void>` - Create checkpoint (LIFO stack)
 - `revert(): void` - Revert to last checkpoint
 - `commit(): void` - Commit last checkpoint
 
 **Snapshot Operations**:
+
 - `async snapshot(): Promise<bigint>` - Create snapshot, returns ID
 - `async revertToSnapshot(snapshotId: bigint): Promise<void>` - Revert to snapshot
 
 **Cache Management**:
+
 - `clearCaches(): void` - Clear all caches
 - `clearForkCache(): void` - Clear only fork cache
 
 **Lifecycle**:
+
 - `destroy(): void` - Free resources (MUST call when done)
 
 ### RpcClientAdapter Class
@@ -235,6 +242,7 @@ new RpcClientAdapter(options: RpcClientAdapterOptions)
 ```
 
 **Options**:
+
 - `provider: Provider` - EIP-1193 provider (required)
 - `timeout?: number` - Request timeout in ms (default: 30000)
 - `retries?: number` - Retry attempts (default: 3)
@@ -251,21 +259,22 @@ new RpcClientAdapter(options: RpcClientAdapterOptions)
 
 ```typescript
 try {
-  const balance = await manager.getBalance(address);
+	const balance = await manager.getBalance(address);
 } catch (err) {
-  if (err.message.includes('Invalid hex')) {
-    // Handle invalid address format
-  } else if (err.message.includes('RPC request failed')) {
-    // Handle RPC failure (network error, etc.)
-  } else if (err.message.includes('Invalid snapshot')) {
-    // Handle invalid snapshot ID
-  } else {
-    // Other errors
-  }
+	if (err.message.includes("Invalid hex")) {
+		// Handle invalid address format
+	} else if (err.message.includes("RPC request failed")) {
+		// Handle RPC failure (network error, etc.)
+	} else if (err.message.includes("Invalid snapshot")) {
+		// Handle invalid snapshot ID
+	} else {
+		// Other errors
+	}
 }
 ```
 
 **Error Codes** (from c_api.zig):
+
 - `STATE_MANAGER_SUCCESS = 0` - Success
 - `STATE_MANAGER_ERROR_INVALID_INPUT = -1` - Invalid input parameter
 - `STATE_MANAGER_ERROR_OUT_OF_MEMORY = -2` - Out of memory
@@ -283,7 +292,7 @@ const manager = new StateManager({ ffi: ffiExports });
 
 // Use manager...
 
-manager.destroy();  // MUST call to free Zig memory
+manager.destroy(); // MUST call to free Zig memory
 // After destroy(), manager is invalid
 ```
 
@@ -292,10 +301,10 @@ manager.destroy();  // MUST call to free Zig memory
 ```typescript
 const manager = new StateManager({ ffi: ffiExports });
 try {
-  // Use manager
-  await manager.setBalance(address, 1000n);
+	// Use manager
+	await manager.setBalance(address, 1000n);
 } finally {
-  manager.destroy();
+	manager.destroy();
 }
 ```
 

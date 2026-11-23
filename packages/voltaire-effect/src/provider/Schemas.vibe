@@ -129,11 +129,14 @@ export effect function decodeRpcLog(raw: unknown, method = "eth_getLogs"): RpcLo
     transactionIndex: try decodeOptionalNumber(obj["transactionIndex"], method, "transactionIndex"),
     blockHash: typeof obj["blockHash"] === "string" ? (obj["blockHash"] as `0x${string}`) : null,
     logIndex: try decodeOptionalNumber(obj["logIndex"], method, "logIndex"),
-    removed: obj["removed"] === true
+    removed: obj["removed"] === true,
   }
 }
 
-export effect function decodeRpcTransaction(raw: unknown, method = "eth_getTransactionByHash"): RpcTransaction!ProviderDecodeError {
+export effect function decodeRpcTransaction(
+  raw: unknown,
+  method = "eth_getTransactionByHash",
+): RpcTransaction!ProviderDecodeError {
   if (!Predicate.isObject(raw)) {
     throw new ProviderDecodeError({ method, message: "Expected transaction object" })
   }
@@ -158,7 +161,7 @@ export effect function decodeRpcTransaction(raw: unknown, method = "eth_getTrans
     maxFeePerBlobGas: try decodeOptionalQty(obj["maxFeePerBlobGas"], method, "maxFeePerBlobGas"),
     input: asHex(obj["input"] ?? obj["data"] ?? "0x") as HexType,
     type: typeVal,
-    chainId: try decodeOptionalQty(obj["chainId"], method, "chainId")
+    chainId: try decodeOptionalQty(obj["chainId"], method, "chainId"),
   }
 }
 
@@ -184,7 +187,9 @@ export effect function decodeRpcBlock(raw: unknown, method = "eth_getBlockByNumb
     nonce: typeof obj["nonce"] === "string" ? (obj["nonce"] as `0x${string}`) : null,
     sha3Uncles: typeof obj["sha3Uncles"] === "string" ? (obj["sha3Uncles"] as `0x${string}`) : undefined,
     logsBloom: typeof obj["logsBloom"] === "string" ? (obj["logsBloom"] as `0x${string}`) : null,
-    transactionsRoot: typeof obj["transactionsRoot"] === "string" ? (obj["transactionsRoot"] as `0x${string}`) : undefined,
+    transactionsRoot: typeof obj["transactionsRoot"] === "string"
+      ? (obj["transactionsRoot"] as `0x${string}`)
+      : undefined,
     stateRoot: typeof obj["stateRoot"] === "string" ? (obj["stateRoot"] as `0x${string}`) : undefined,
     receiptsRoot: typeof obj["receiptsRoot"] === "string" ? (obj["receiptsRoot"] as `0x${string}`) : undefined,
     miner: typeof obj["miner"] === "string" ? (obj["miner"] as `0x${string}`) : undefined,
@@ -195,12 +200,17 @@ export effect function decodeRpcBlock(raw: unknown, method = "eth_getBlockByNumb
     blobGasUsed: try decodeOptionalQty(obj["blobGasUsed"], method, "blobGasUsed"),
     excessBlobGas: try decodeOptionalQty(obj["excessBlobGas"], method, "excessBlobGas"),
     withdrawalsRoot: typeof obj["withdrawalsRoot"] === "string" ? (obj["withdrawalsRoot"] as `0x${string}`) : null,
-    parentBeaconBlockRoot: typeof obj["parentBeaconBlockRoot"] === "string" ? (obj["parentBeaconBlockRoot"] as `0x${string}`) : null,
-    transactions: txs
+    parentBeaconBlockRoot: typeof obj["parentBeaconBlockRoot"] === "string"
+      ? (obj["parentBeaconBlockRoot"] as `0x${string}`)
+      : null,
+    transactions: txs,
   }
 }
 
-export effect function decodeRpcReceipt(raw: unknown, method = "eth_getTransactionReceipt"): RpcTransactionReceipt!ProviderDecodeError {
+export effect function decodeRpcReceipt(
+  raw: unknown,
+  method = "eth_getTransactionReceipt",
+): RpcTransactionReceipt!ProviderDecodeError {
   if (!Predicate.isObject(raw)) {
     throw new ProviderDecodeError({ method, message: "Expected receipt object" })
   }
@@ -233,7 +243,7 @@ export effect function decodeRpcReceipt(raw: unknown, method = "eth_getTransacti
     logs,
     logsBloom: typeof obj["logsBloom"] === "string" ? (obj["logsBloom"] as `0x${string}`) : undefined,
     status,
-    type: typeVal
+    type: typeVal,
   }
 }
 

@@ -38,12 +38,12 @@ export const hashCode = _hashCodeImpl as (key: StorageKeyLike) => number;
 // Export internal functions (tree-shakeable)
 export {
 	_createImpl as _create,
-	_fromImpl as _from,
-	_isImpl as _is,
 	_equalsImpl as _equals,
-	_toStringImpl as _toString,
+	_fromImpl as _from,
 	_fromStringImpl as _fromString,
 	_hashCodeImpl as _hashCode,
+	_isImpl as _is,
+	_toStringImpl as _toString,
 };
 
 // Namespace export

@@ -3,7 +3,7 @@
  * Looks up event by topic0 (event signature hash) for non-anonymous events,
  * or by indexed parameter count for anonymous events.
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {Object} log - Log object with data and topics
  * @param {import("../Hex/index.js").HexType | Uint8Array} log.data - Log data bytes
  * @param {readonly (import("../Hex/index.js").HexType | Uint8Array)[]} log.topics - Log topics (topic0 is event selector for non-anonymous)
@@ -35,7 +35,7 @@
  * // { event: "Transfer", params: { from: "0x742d...", to: "0xa1b2...", value: 100n } }
  * ```
  */
-export function decodeLog(abi: import("./Abi.js").Abi, log: {
+export function decodeLog(abi: import("./AbiType.js").AbiType, log: {
     data: import("../Hex/index.js").HexType | Uint8Array;
     topics: readonly (import("../Hex/index.js").HexType | Uint8Array)[];
 }): {

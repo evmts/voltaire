@@ -63,14 +63,18 @@ test "fromBytes - creates independent copy" {
 /// Create BundleHash from hex string (with or without 0x prefix).
 /// Returns error if hex is invalid or not 32 bytes.
 pub fn fromHex(hex: []const u8) !BundleHash {
-    const bytes = try Hex.toBytes(hex, std.testing.allocator);
-    defer std.testing.allocator.free(bytes);
-
-    if (bytes.len != SIZE) {
+    const digits = if (hex.len >= 2 and hex[0] == '0' and (hex[1] == 'x' or hex[1] == 'X')) hex[2..] else hex;
+    if (digits.len != SIZE * 2) {
         return error.InvalidBundleHashLength;
     }
 
-    return fromBytes(bytes);
+    var result: BundleHash = undefined;
+    for (0..SIZE) |i| {
+        const high = std.fmt.charToDigit(digits[i * 2], 16) catch return error.InvalidHexCharacter;
+        const low = std.fmt.charToDigit(digits[i * 2 + 1], 16) catch return error.InvalidHexCharacter;
+        result[i] = high * 16 + low;
+    }
+    return result;
 }
 
 test "fromHex - with 0x prefix" {
@@ -150,6 +154,12 @@ test "fromTransactionHashes - order matters" {
 pub fn from(value: anytype) !BundleHash {
     const T = @TypeOf(value);
     if (T == BundleHash) return value;
+    if (@typeInfo(T) == .pointer and @typeInfo(T).pointer.size == .one) {
+        const Child = @typeInfo(T).pointer.child;
+        if (@typeInfo(Child) == .array and @typeInfo(Child).array.child == u8) {
+            return from(@as([]const u8, value[0..]));
+        }
+    }
 
     if (T == []const u8 or T == []u8) {
         // Check if it's hex (starts with 0x)

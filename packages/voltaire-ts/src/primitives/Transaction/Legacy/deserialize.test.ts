@@ -175,12 +175,14 @@ describe("TransactionLegacy.deserialize", () => {
 
 	it("round-trips transaction with max values", () => {
 		const maxUint256 = 2n ** 256n - 1n;
+		// nonce (EIP-2681) and gasLimit are 64-bit; the rest are 256-bit.
+		const maxUint64 = 2n ** 64n - 1n;
 		const original = {
 			__tag: "TransactionLegacy" as const,
 			type: Type.Legacy,
-			nonce: maxUint256,
+			nonce: maxUint64,
 			gasPrice: maxUint256,
-			gasLimit: maxUint256,
+			gasLimit: maxUint64,
 			to: Address("0x742d35cc6634c0532925a3b844bc9e7595f0beb0"),
 			value: maxUint256,
 			data: new Uint8Array(),

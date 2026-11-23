@@ -1,6 +1,6 @@
 ---
-title: "storageKeyCount.js"
----
+
+## title: "storageKeyCount.js"
 
 # storageKeyCount.js
 
@@ -9,7 +9,7 @@ Count total storage keys across all addresses.
 ## Signature
 
 ```typescript
-function storageKeyCount(list: BrandedAccessList): number
+function storageKeyCount(list: BrandedAccessList): number;
 ```
 
 ## Parameters

@@ -1,6 +1,6 @@
 ---
-title: "EventLog Constructors"
----
+
+## title: "EventLog Constructors"
 
 # EventLog Constructors
 
@@ -15,6 +15,7 @@ EventLog(params: EventLogParams): BrandedEventLog
 ```
 
 **Parameters:**
+
 - `address`: Contract address that emitted the log
 - `topics`: Array of topic hashes (topic0 = event signature, topic1-3 = indexed parameters)
 - `data`: Non-indexed event data as Uint8Array
@@ -28,18 +29,21 @@ EventLog(params: EventLogParams): BrandedEventLog
 **Returns:** BrandedEventLog instance
 
 **Example:**
+
 ```javascript
 const log = EventLog({
-  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
-  topics: [
-    Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
-    Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f6...'),
-    Hash.fromHex('0x000000000000000000000000f6e5d4c3b2a1...'),
-  ],
-  data: new Uint8Array([0, 0, 0, 0, 0, 0, 0, 1]),
-  blockNumber: 18000000n,
-  transactionHash: Hash.fromHex('0x...'),
-  logIndex: 5,
+	address: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+	topics: [
+		Hash.fromHex(
+			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+		),
+		Hash.fromHex("0x000000000000000000000000a1b2c3d4e5f6..."),
+		Hash.fromHex("0x000000000000000000000000f6e5d4c3b2a1..."),
+	],
+	data: new Uint8Array([0, 0, 0, 0, 0, 0, 0, 1]),
+	blockNumber: 18000000n,
+	transactionHash: Hash.fromHex("0x..."),
+	logIndex: 5,
 });
 ```
 
@@ -54,12 +58,13 @@ from(params: EventLogParams): BrandedEventLog
 Same parameters and behavior as factory function.
 
 **Example:**
+
 ```javascript
 const log = EventLog.from({
-  address: contractAddress,
-  topics: [eventSignature, indexedParam1],
-  data: eventData,
-  blockNumber: 18000000n,
+	address: contractAddress,
+	topics: [eventSignature, indexedParam1],
+	data: eventData,
+	blockNumber: 18000000n,
 });
 ```
 
@@ -74,11 +79,12 @@ create(params: EventLogParams): BrandedEventLog
 Same parameters and behavior as factory function.
 
 **Example:**
+
 ```javascript
 const log = EventLog.create({
-  address: contractAddress,
-  topics: [eventSignature],
-  data: new Uint8Array([]),
+	address: contractAddress,
+	topics: [eventSignature],
+	data: new Uint8Array([]),
 });
 ```
 
@@ -91,21 +97,24 @@ clone(log: BrandedEventLog): BrandedEventLog
 ```
 
 **Parameters:**
+
 - `log`: Event log to clone
 
 **Returns:** Deep cloned event log
 
 **Details:**
+
 - Creates new topics array
 - Creates new Uint8Array copy of data
 - Copies all other properties
 
 **Example:**
+
 ```javascript
 const original = EventLog.create({
-  address: contractAddress,
-  topics: [eventSignature],
-  data: new Uint8Array([1, 2, 3]),
+	address: contractAddress,
+	topics: [eventSignature],
+	data: new Uint8Array([1, 2, 3]),
 });
 
 const cloned = EventLog.clone(original);
@@ -126,20 +135,23 @@ copy(log: BrandedEventLog): BrandedEventLog
 ```
 
 **Parameters:**
+
 - `log`: Event log to copy
 
 **Returns:** Shallow copied event log
 
 **Details:**
+
 - Uses object spread
 - topics and data arrays are shared references
 
 **Example:**
+
 ```javascript
 const original = EventLog.create({
-  address: contractAddress,
-  topics: [eventSignature],
-  data: new Uint8Array([1, 2, 3]),
+	address: contractAddress,
+	topics: [eventSignature],
+	data: new Uint8Array([1, 2, 3]),
 });
 
 const copied = EventLog.copy(original);
@@ -154,24 +166,24 @@ const copied2 = original.copy();
 ```javascript
 // Transform RPC log response
 const rpcLog = {
-  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2',
-  topics: [
-    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    '0x000000000000000000000000a1b2c3d4e5f6...',
-  ],
-  data: '0x0000000000000000000000000000000000000000000000000000000000000001',
-  blockNumber: '0x112a880',
-  transactionHash: '0x...',
-  logIndex: '0x5',
+	address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+	topics: [
+		"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+		"0x000000000000000000000000a1b2c3d4e5f6...",
+	],
+	data: "0x0000000000000000000000000000000000000000000000000000000000000001",
+	blockNumber: "0x112a880",
+	transactionHash: "0x...",
+	logIndex: "0x5",
 };
 
 const log = EventLog({
-  address: Address.fromHex(rpcLog.address),
-  topics: rpcLog.topics.map(Hash.fromHex),
-  data: Hex.toBytes(rpcLog.data),
-  blockNumber: BigInt(rpcLog.blockNumber),
-  transactionHash: Hash.fromHex(rpcLog.transactionHash),
-  logIndex: Number(rpcLog.logIndex),
+	address: Address.fromHex(rpcLog.address),
+	topics: rpcLog.topics.map(Hash.fromHex),
+	data: Hex.toBytes(rpcLog.data),
+	blockNumber: BigInt(rpcLog.blockNumber),
+	transactionHash: Hash.fromHex(rpcLog.transactionHash),
+	logIndex: Number(rpcLog.logIndex),
 });
 ```
 
@@ -180,29 +192,31 @@ const log = EventLog({
 ```javascript
 // Minimal test log
 const testLog = EventLog({
-  address: Address.zero(),
-  topics: [Hash.fromHex('0xddf252ad...')],
-  data: new Uint8Array([]),
+	address: Address.zero(),
+	topics: [Hash.fromHex("0xddf252ad...")],
+	data: new Uint8Array([]),
 });
 
 // With all fields
 const fullLog = EventLog({
-  address: Address.fromHex('0x...'),
-  topics: [eventSig, from, to],
-  data: Hex.toBytes('0x0000...0001'),
-  blockNumber: 18000000n,
-  blockHash: Hash.fromHex('0x...'),
-  transactionHash: Hash.fromHex('0x...'),
-  transactionIndex: 10,
-  logIndex: 5,
-  removed: false,
+	address: Address.fromHex("0x..."),
+	topics: [eventSig, from, to],
+	data: Hex.toBytes("0x0000...0001"),
+	blockNumber: 18000000n,
+	blockHash: Hash.fromHex("0x..."),
+	transactionHash: Hash.fromHex("0x..."),
+	transactionIndex: 10,
+	logIndex: 5,
+	removed: false,
 });
 ```
 
 ### Cloning for Modifications
 
 ```javascript
-const log = EventLog({ /* ... */ });
+const log = EventLog({
+	/* ... */
+});
 
 // Clone before modifying
 const modified = EventLog.clone(log);

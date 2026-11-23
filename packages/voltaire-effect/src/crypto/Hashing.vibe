@@ -33,14 +33,7 @@ module native {
   }
 }
 
-import {
-  blake2Raw,
-  hmacSha256Raw,
-  hmacSha512Raw,
-  ripemd160Raw,
-  sha256Raw,
-  sha256StringRaw
-} from native
+import { blake2Raw, hmacSha256Raw, hmacSha512Raw, ripemd160Raw, sha256Raw, sha256StringRaw } from native
 
 export service Sha256 {
   static readonly key = "voltaire-effect/crypto/Sha256"
@@ -68,48 +61,58 @@ export const Sha256Live = Layer.succeed(Sha256, {
   effect hash(data: Uint8Array) {
     return try Effect.try({
       try: () => sha256Raw(data),
-      catch: (cause) => new CryptoError({ operation: "sha256", message: `SHA-256 hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({ operation: "sha256", message: `SHA-256 hash failed: ${errorMessage(cause)}`, cause }),
     })
   },
   effect hashString(value: string) {
     return try Effect.try({
       try: () => sha256StringRaw(value),
-      catch: (cause) => new CryptoError({ operation: "sha256String", message: `SHA-256 string hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "sha256String",
+          message: `SHA-256 string hash failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
-  }
+  },
 })
 
 export const Blake2Live = Layer.succeed(Blake2, {
   effect hash(data: Uint8Array, outputLength?: number) {
     return try Effect.try({
       try: () => blake2Raw(data, outputLength),
-      catch: (cause) => new CryptoError({ operation: "blake2", message: `BLAKE2b hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({ operation: "blake2", message: `BLAKE2b hash failed: ${errorMessage(cause)}`, cause }),
     })
-  }
+  },
 })
 
 export const Ripemd160Live = Layer.succeed(Ripemd160, {
   effect hash(data: Uint8Array) {
     return try Effect.try({
       try: () => ripemd160Raw(data),
-      catch: (cause) => new CryptoError({ operation: "ripemd160", message: `RIPEMD-160 hash failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({ operation: "ripemd160", message: `RIPEMD-160 hash failed: ${errorMessage(cause)}`, cause }),
     })
-  }
+  },
 })
 
 export const HmacLive = Layer.succeed(Hmac, {
   effect sha256(key: Uint8Array, message: Uint8Array) {
     return try Effect.try({
       try: () => hmacSha256Raw(key, message),
-      catch: (cause) => new CryptoError({ operation: "hmac.sha256", message: `HMAC-SHA256 failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({ operation: "hmac.sha256", message: `HMAC-SHA256 failed: ${errorMessage(cause)}`, cause }),
     })
   },
   effect sha512(key: Uint8Array, message: Uint8Array) {
     return try Effect.try({
       try: () => hmacSha512Raw(key, message),
-      catch: (cause) => new CryptoError({ operation: "hmac.sha512", message: `HMAC-SHA512 failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({ operation: "hmac.sha512", message: `HMAC-SHA512 failed: ${errorMessage(cause)}`, cause }),
     })
-  }
+  },
 })
 
 export effect function sha256(data: Uint8Array): Uint8Array!CryptoError!Sha256 {

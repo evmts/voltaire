@@ -1,11 +1,11 @@
 /**
- * Final exponentiation (simplified)
+ * Final exponentiation `f^((p^12 - 1) / r)` in Fp12.
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
  * @param {{value: bigint}} f - Miller loop result
- * @returns {{value: bigint}} Final exponentiation result
- * @throws {never}
+ * @returns {{value: bigint}} Element of GT, encoded as a canonical integer
+ * @throws {import('../errors.js').Bn254Error} If f is not a canonical Fp12 encoding
  * @example
  * ```javascript
  * import * as Pairing from './crypto/bn254/Pairing/index.js';

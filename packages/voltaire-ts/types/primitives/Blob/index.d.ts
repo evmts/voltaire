@@ -1,5 +1,32 @@
+export type { BlobScheduleType, CalculateExcessBlobGasOptions, ExcessBlobGasOptions, } from "../FeeMarket/BlobScheduleType.js";
+import { calculateBlobBaseFee } from "../FeeMarket/calculateBlobBaseFee.js";
+import { calculateExcessBlobGas, calculateExcessBlobGasEip7918 } from "../FeeMarket/calculateExcessBlobGas.js";
+import { blobScheduleForHardfork, blobScheduleForTimestamp, getBlobSchedule } from "../FeeMarket/getBlobSchedule.js";
+export declare const BlobSchedule: Readonly<{
+    forHardfork: typeof blobScheduleForHardfork;
+    forTimestamp: typeof blobScheduleForTimestamp;
+    GAS_PER_BLOB: 131072n;
+    MIN_BLOB_BASE_FEE: 1n;
+    BLOB_BASE_COST: 8192n;
+    CANCUN: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    PRAGUE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    OSAKA: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    BPO1: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    BPO2: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    CANCUN_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    PRAGUE_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    OSAKA_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    BPO1_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    BPO2_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+    CANCUN_TIMESTAMP: 1710338135n;
+    PRAGUE_TIMESTAMP: 1746612311n;
+    OSAKA_TIMESTAMP: 1764798551n;
+    BPO1_TIMESTAMP: 1765290071n;
+    BPO2_TIMESTAMP: 1767747671n;
+}>;
 export * from "./constants.js";
 export * from "./errors.js";
+export { calculateBlobBaseFee, calculateExcessBlobGas, calculateExcessBlobGasEip7918, getBlobSchedule, };
 import type { BrandedBlob, Commitment as CommitmentType, Proof as ProofType, VersionedHash as VersionedHashType } from "./BlobType.js";
 export type { BrandedBlob, Commitment, Proof, VersionedHash, } from "./BlobType.js";
 declare const calculateGas: (blobCount: number) => number;
@@ -41,7 +68,7 @@ export declare const verify: (blob: BrandedBlob, commitment: CommitmentType, pro
  * @throws {BlobNotImplementedError} Always (not yet implemented)
  */
 export declare const verifyBatch: (blobs: readonly BrandedBlob[], commitments: readonly CommitmentType[], proofs: readonly ProofType[]) => boolean;
-export { from, fromData, isValid, toData, isValidVersion, calculateGas, estimateBlobCount, splitData, joinData, };
+export { calculateGas, estimateBlobCount, from, fromData, isValid, isValidVersion, joinData, splitData, toData, };
 export declare const CommitmentNamespace: {
     isValid: (commitment: Uint8Array) => boolean;
     toVersionedHash: (commitment: CommitmentType) => VersionedHashType;
@@ -54,7 +81,7 @@ export declare const VersionedHashNamespace: {
     getVersion: (hash: Uint8Array) => number;
     version: (hash: Uint8Array) => number;
 };
-export { ToVersionedHash, ToCommitment, ToProof, Verify, VerifyBatch };
+export { ToCommitment, ToProof, ToVersionedHash, Verify, VerifyBatch };
 /**
  * Creates a Blob instance from various input types.
  *
@@ -104,6 +131,32 @@ export declare namespace Blob {
     var COMMITMENT_VERSION_KZG: number;
     var GAS_PER_BLOB: number;
     var TARGET_GAS_PER_BLOCK: number;
+    var BlobSchedule: Readonly<{
+        forHardfork: typeof blobScheduleForHardfork;
+        forTimestamp: typeof blobScheduleForTimestamp;
+        GAS_PER_BLOB: 131072n;
+        MIN_BLOB_BASE_FEE: 1n;
+        BLOB_BASE_COST: 8192n;
+        CANCUN: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        PRAGUE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        OSAKA: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        BPO1: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        BPO2: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        CANCUN_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        PRAGUE_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        OSAKA_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        BPO1_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        BPO2_BLOB_SCHEDULE: Readonly<import("../FeeMarket/BlobScheduleType.js").BlobScheduleType>;
+        CANCUN_TIMESTAMP: 1710338135n;
+        PRAGUE_TIMESTAMP: 1746612311n;
+        OSAKA_TIMESTAMP: 1764798551n;
+        BPO1_TIMESTAMP: 1765290071n;
+        BPO2_TIMESTAMP: 1767747671n;
+    }>;
+    var getBlobSchedule: typeof import("../FeeMarket/getBlobSchedule.js").getBlobSchedule;
+    var calculateBlobBaseFee: typeof import("../FeeMarket/calculateBlobBaseFee.js").calculateBlobBaseFee;
+    var calculateExcessBlobGas: typeof import("../FeeMarket/calculateExcessBlobGas.js").calculateExcessBlobGas;
+    var calculateExcessBlobGasEip7918: typeof import("../FeeMarket/calculateExcessBlobGas.js").calculateExcessBlobGasEip7918;
     var Commitment: {
         isValid: (commitment: Uint8Array) => boolean;
         toVersionedHash: (commitment: CommitmentType) => VersionedHashType;

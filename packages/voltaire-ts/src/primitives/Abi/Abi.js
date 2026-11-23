@@ -1,5 +1,6 @@
 import * as ConstructorNs from "./constructor/index.js";
 import { decode } from "./decode.js";
+import { decodeAbiParameters } from "./decodeAbiParameters.js";
 import { decodeData } from "./decodeData.js";
 import {
 	DecodeParameters,
@@ -20,6 +21,7 @@ import * as FunctionNs from "./function/index.js";
 import { getItem } from "./getItem.js";
 import * as ItemNs from "./Item/index.js";
 import { Parameter } from "./parameter/index.js";
+import { parseHumanReadable } from "./parseHumanReadable.js";
 import { parseLogs } from "./parseLogs.js";
 
 /**
@@ -27,9 +29,12 @@ import { parseLogs } from "./parseLogs.js";
  *
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0
- * @param {readonly import('./AbiType.js').Item[]} items - ABI items
+ * Accepts JSON ABI items, human-readable signatures
+ * (`"function transfer(address to, uint256 amount) returns (bool)"`), or a mix.
+ *
+ * @param {readonly (import('./AbiType.js').Item | string)[]} items - ABI items or human-readable signatures
  * @returns {import('./AbiConstructor.js').Abi} Abi instance
- * @throws {never}
+ * @throws {import('./Errors.js').AbiParseError} If a human-readable signature is malformed
  * @example
  * ```javascript
  * import { Abi } from './primitives/Abi/index.js';
@@ -39,18 +44,25 @@ import { parseLogs } from "./parseLogs.js";
  * ```
  */
 export function Abi(items) {
-	const result = /** @type {*} */ (Array.from(items));
+	const result = /** @type {*} */ (toItems(items));
 	Object.setPrototypeOf(result, Abi.prototype);
 	return result;
 }
 
+/**
+ * Parse string entries; copy JSON items unchanged.
+ * @param {readonly (import('./AbiType.js').Item | string)[]} items
+ */
+function toItems(items) {
+	return items.some((item) => typeof item === "string")
+		? parseHumanReadable(/** @type {*} */ (items))
+		: Array.from(items);
+}
+
 // Static constructor
-/** @param {readonly import('./Item/ItemType.js').ItemType[]} items */
-Abi.from = (items) => {
-	const result = /** @type {*} */ (Array.from(items));
-	Object.setPrototypeOf(result, Abi.prototype);
-	return result;
-};
+/** @param {readonly (import('./Item/ItemType.js').ItemType | string)[]} items */
+Abi.from = (items) => Abi(/** @type {*} */ (items));
+Abi.parseHumanReadable = parseHumanReadable;
 
 // Static utility methods
 Abi.getItem = getItem;
@@ -66,6 +78,7 @@ Abi.hasSelectorCollisions = hasSelectorCollisions;
 // Parameter encoding/decoding methods
 Abi.encodeParameters = encodeParameters;
 Abi.decodeParameters = decodeParameters;
+Abi.decodeAbiParameters = decodeAbiParameters;
 
 // Constructor-style aliases (data-first pattern)
 Abi.Parameters = Parameters;

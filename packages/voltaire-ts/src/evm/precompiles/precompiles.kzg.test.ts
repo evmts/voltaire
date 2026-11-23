@@ -8,6 +8,7 @@ import {
 } from "../../crypto/KZG/constants.js";
 import * as Kzg from "../../crypto/KZG/index.js";
 import { hasNativeKzg } from "../../crypto/KZG/test-utils.js";
+import { SHA256 } from "../../crypto/SHA256/index.js";
 import { pointEvaluation } from "./precompiles.js";
 
 describe.skipIf(!hasNativeKzg)(
@@ -31,14 +32,22 @@ describe.skipIf(!hasNativeKzg)(
 			return z;
 		};
 
-		// Helper: create versioned hash from commitment (keccak256 with 0x01 prefix)
+		// Helper: kzg_to_versioned_hash = 0x01 || sha256(commitment)[1:]
 		const createVersionedHash = (commitment: Uint8Array): Uint8Array => {
-			const prefixed = new Uint8Array(49);
-			prefixed[0] = 0x01;
-			prefixed.set(commitment, 1);
-			const hash = new Uint8Array(Keccak256.hash(prefixed));
-			hash[0] = 0x01; // Set version byte
+			const hash = new Uint8Array(SHA256.hash(commitment));
+			hash[0] = 0x01; // VERSIONED_HASH_VERSION_KZG
 			return hash;
+		};
+
+		// An exceptional halt consumes all forwarded gas and returns no output
+		const expectHalt = (
+			result: ReturnType<typeof pointEvaluation>,
+			gasLimit: bigint,
+		) => {
+			expect(result.success).toBe(false);
+			expect(result.error).toBeDefined();
+			expect(result.gasUsed).toBe(gasLimit);
+			expect(result.output).toEqual(new Uint8Array(0));
 		};
 
 		// Helper: build 192-byte EIP-4844 input
@@ -87,17 +96,15 @@ describe.skipIf(!hasNativeKzg)(
 				const input = new Uint8Array(192);
 				const result = pointEvaluation(input, 49999n);
 
-				expect(result.success).toBe(false);
-				expect(result.gasUsed).toBe(50000n);
 				expect(result.error).toBe("Out of gas");
+				expectHalt(result, 49999n);
 			});
 
 			it("should consume gas even on failure", () => {
 				const input = new Uint8Array(100); // Invalid length
 				const result = pointEvaluation(input, 100000n);
 
-				expect(result.success).toBe(false);
-				expect(result.gasUsed).toBe(50000n);
+				expectHalt(result, 100000n);
 			});
 		});
 
@@ -233,7 +240,7 @@ describe.skipIf(!hasNativeKzg)(
 				expect(secondHalf).toEqual(BLS_MODULUS);
 			});
 
-			it("should return zeros for invalid proof", () => {
+			it("should halt with no output for invalid proof", () => {
 				const blob = Kzg.generateRandomBlob();
 				const commitment = Kzg.KZG.Commitment(blob);
 				const z = createValidFieldElement(0x42);
@@ -246,11 +253,8 @@ describe.skipIf(!hasNativeKzg)(
 				}
 
 				const input = buildInput(commitment, z, y, corruptedProof);
-				const result = pointEvaluation(input, 50000n);
-				expect(result.success).toBe(true);
-				expect(result.output.length).toBe(64);
-				// Invalid proof should return all zeros
-				expect(result.output.every((b) => b === 0)).toBe(true);
+				// Invalid proof is an exceptional halt, not 64 zero bytes
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 		});
 
@@ -264,7 +268,47 @@ describe.skipIf(!hasNativeKzg)(
 				const input = buildInput(commitment, z, y, proof);
 				// Should succeed with valid versioned hash
 				const result = pointEvaluation(input, 50000n);
+				expect(result.success).toBe(true);
 				expect(result.gasUsed).toBe(50000n);
+			});
+
+			it("should halt when the versioned hash does not match the commitment", () => {
+				const blob = Kzg.generateRandomBlob();
+				const commitment = Kzg.KZG.Commitment(blob);
+				const z = createValidFieldElement(0x42);
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
+
+				for (let i = 0; i < 32; i++) {
+					const input = buildInput(commitment, z, y, proof);
+					input[i] = (input[i] ?? 0) ^ 0x01;
+					expectHalt(pointEvaluation(input, 60000n), 60000n);
+				}
+			});
+
+			it("should halt for a keccak256-derived versioned hash", () => {
+				const blob = Kzg.generateRandomBlob();
+				const commitment = Kzg.KZG.Commitment(blob);
+				const z = createValidFieldElement(0x42);
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
+
+				const input = buildInput(commitment, z, y, proof);
+				const keccakHash = new Uint8Array(Keccak256.hash(commitment));
+				keccakHash[0] = 0x01;
+				input.set(keccakHash, 0);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
+			});
+
+			it("should halt for the raw sha256 without the version byte", () => {
+				const blob = Kzg.generateRandomBlob();
+				const commitment = Kzg.KZG.Commitment(blob);
+				const z = createValidFieldElement(0x42);
+				const { proof, y } = Kzg.KZG.Proof(blob, z);
+
+				const raw = new Uint8Array(SHA256.hash(commitment));
+				if (raw[0] === 0x01) return; // 1 in 256: raw hash already carries the version byte
+				const input = buildInput(commitment, z, y, proof);
+				input.set(raw, 0);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 
 			it("should parse z value (bytes 32-64)", () => {
@@ -327,9 +371,7 @@ describe.skipIf(!hasNativeKzg)(
 				invalidCommitment.fill(0xff); // All 0xff is not a valid point
 
 				const input = buildInput(invalidCommitment, z, y, proof);
-				const result = pointEvaluation(input, 50000n);
-				// Should fail or return false verification
-				expect(result.gasUsed).toBe(50000n);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 
 			it("should reject all-zero commitment", () => {
@@ -340,9 +382,7 @@ describe.skipIf(!hasNativeKzg)(
 				const zeroCommitment = new Uint8Array(48); // All zeros
 
 				const input = buildInput(zeroCommitment, z, y, proof);
-				const result = pointEvaluation(input, 50000n);
-				// Point at infinity might be valid or invalid depending on implementation
-				expect(result.gasUsed).toBe(50000n);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 
 			it("should reject wrong commitment for given proof", () => {
@@ -354,10 +394,7 @@ describe.skipIf(!hasNativeKzg)(
 				const { proof, y } = Kzg.KZG.Proof(blob1, z);
 
 				const input = buildInput(wrongCommitment, z, y, proof);
-				const result = pointEvaluation(input, 50000n);
-				expect(result.success).toBe(true);
-				// Verification should fail - output should be zeros
-				expect(result.output.every((b) => b === 0)).toBe(true);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 		});
 
@@ -373,10 +410,7 @@ describe.skipIf(!hasNativeKzg)(
 				corruptedProof[10] ^= 0xff;
 
 				const input = buildInput(commitment, z, y, corruptedProof);
-				const result = pointEvaluation(input, 50000n);
-				expect(result.success).toBe(true);
-				// Verification should fail
-				expect(result.output.every((b) => b === 0)).toBe(true);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 
 			it("should reject all-zero proof", () => {
@@ -388,9 +422,7 @@ describe.skipIf(!hasNativeKzg)(
 				const zeroProof = new Uint8Array(48);
 
 				const input = buildInput(commitment, z, y, zeroProof);
-				const result = pointEvaluation(input, 50000n);
-				// Verification should fail
-				expect(result.gasUsed).toBe(50000n);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 
 			it("should reject all-ones proof", () => {
@@ -403,9 +435,7 @@ describe.skipIf(!hasNativeKzg)(
 				onesProof.fill(0xff);
 
 				const input = buildInput(commitment, z, y, onesProof);
-				const result = pointEvaluation(input, 50000n);
-				// Verification should fail
-				expect(result.gasUsed).toBe(50000n);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 
 			it("should reject proof from different evaluation point", () => {
@@ -418,10 +448,7 @@ describe.skipIf(!hasNativeKzg)(
 				const { proof, y } = Kzg.KZG.Proof(blob, z2);
 
 				const input = buildInput(commitment, z1, y, proof);
-				const result = pointEvaluation(input, 50000n);
-				expect(result.success).toBe(true);
-				// Verification should fail
-				expect(result.output.every((b) => b === 0)).toBe(true);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 
 			it("should reject proof with wrong y value", () => {
@@ -435,10 +462,7 @@ describe.skipIf(!hasNativeKzg)(
 				wrongY[31] ^= 0x01;
 
 				const input = buildInput(commitment, z, wrongY, proof);
-				const result = pointEvaluation(input, 50000n);
-				expect(result.success).toBe(true);
-				// Verification should fail
-				expect(result.output.every((b) => b === 0)).toBe(true);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 		});
 
@@ -470,9 +494,7 @@ describe.skipIf(!hasNativeKzg)(
 
 				// Use commitment bytes as proof (invalid but tests parsing)
 				const input = buildInput(commitment, z, z, commitment);
-				const result = pointEvaluation(input, 50000n);
-				// Should handle gracefully
-				expect(result.gasUsed).toBe(50000n);
+				expectHalt(pointEvaluation(input, 60000n), 60000n);
 			});
 		});
 

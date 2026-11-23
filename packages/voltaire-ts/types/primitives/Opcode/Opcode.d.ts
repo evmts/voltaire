@@ -27,6 +27,7 @@ export const BrandedOpcode: {
     SHL: import("./OpcodeType.js").OpcodeType;
     SHR: import("./OpcodeType.js").OpcodeType;
     SAR: import("./OpcodeType.js").OpcodeType;
+    CLZ: import("./OpcodeType.js").OpcodeType;
     KECCAK256: import("./OpcodeType.js").OpcodeType;
     ADDRESS: import("./OpcodeType.js").OpcodeType;
     BALANCE: import("./OpcodeType.js").OpcodeType;
@@ -254,5 +255,5 @@ export namespace Opcode {
     export { pushOpcode };
     export { swapPosition };
 }
-export { disassemble, dupPosition, format, getCategory, getDescription, getGasCost, getName, getPushSize, getStackEffect, getStackInput, getStackOutput, info, isDup, isJump, isJumpDestination, isLog, isPush, isSwap, isTerminating, isTerminator, isValid, isValidJumpDest, isValidOpcode, jumpDests, logTopics, name, parse, pushBytes, pushOpcode, swapPosition, disassemble as _disassemble, dupPosition as _dupPosition, format as _format, getCategory as _getCategory, getDescription as _getDescription, getGasCost as _getGasCost, getName as _getName, getPushSize as _getPushSize, getStackEffect as _getStackEffect, getStackInput as _getStackInput, getStackOutput as _getStackOutput, info as _info, isDup as _isDup, isJump as _isJump, isJumpDestination as _isJumpDestination, isLog as _isLog, isPush as _isPush, isSwap as _isSwap, isTerminating as _isTerminating, isTerminator as _isTerminator, isValid as _isValid, isValidJumpDest as _isValidJumpDest, isValidOpcode as _isValidOpcode, jumpDests as _jumpDests, logTopics as _logTopics, name as _name, parse as _parse, pushBytes as _pushBytes, pushOpcode as _pushOpcode, swapPosition as _swapPosition };
+export { disassemble, disassemble as _disassemble, dupPosition, dupPosition as _dupPosition, format, format as _format, getCategory, getCategory as _getCategory, getDescription, getDescription as _getDescription, getGasCost, getGasCost as _getGasCost, getName, getName as _getName, getPushSize, getPushSize as _getPushSize, getStackEffect, getStackEffect as _getStackEffect, getStackInput, getStackInput as _getStackInput, getStackOutput, getStackOutput as _getStackOutput, info, info as _info, isDup, isDup as _isDup, isJump, isJump as _isJump, isJumpDestination, isJumpDestination as _isJumpDestination, isLog, isLog as _isLog, isPush, isPush as _isPush, isSwap, isSwap as _isSwap, isTerminating, isTerminating as _isTerminating, isTerminator, isTerminator as _isTerminator, isValid, isValid as _isValid, isValidJumpDest, isValidJumpDest as _isValidJumpDest, isValidOpcode, isValidOpcode as _isValidOpcode, jumpDests, jumpDests as _jumpDests, logTopics, logTopics as _logTopics, name, name as _name, parse, parse as _parse, pushBytes, pushBytes as _pushBytes, pushOpcode, pushOpcode as _pushOpcode, swapPosition, swapPosition as _swapPosition };
 //# sourceMappingURL=Opcode.d.ts.map

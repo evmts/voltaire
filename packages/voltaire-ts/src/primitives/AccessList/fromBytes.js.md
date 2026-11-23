@@ -1,6 +1,6 @@
 ---
-title: "fromBytes.js"
----
+
+## title: "fromBytes.js"
 
 # fromBytes.js
 
@@ -9,7 +9,7 @@ Decode RLP bytes to AccessList.
 ## Signature
 
 ```typescript
-function fromBytes(bytes: Uint8Array): BrandedAccessList
+function fromBytes(bytes: Uint8Array): BrandedAccessList;
 ```
 
 ## Parameters

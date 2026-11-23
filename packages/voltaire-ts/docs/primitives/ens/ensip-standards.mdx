@@ -1,25 +1,101 @@
 ---
-title: "ensip standards"
-description: "ENS ensip-standards documentation"
+title: "ENSIP Standards"
+description: "Which ENS Improvement Proposals the Ens module implements: ENSIP-1 namehash and ENSIP-15 normalization"
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/ens.ts">
   Run ENS examples in the interactive playground
 </Card>
 
-# ensip standards
+# ENSIP Standards
 
-Documentation for ENS ensip-standards.
+The Ens module implements two ENS Improvement Proposals:
 
-<Note>
-This page is under construction. See [ENS Overview](/primitives/ens) for core functionality.
-</Note>
+| Standard | Scope | Functions |
+|----------|-------|-----------|
+| [ENSIP-1](https://docs.ens.domains/ensip/1) (EIP-137) | Name hashing | `namehash`, `labelhash`, `Namehash`, `Labelhash` |
+| [ENSIP-15](https://docs.ens.domains/ensip/15) | Name normalization | `normalize`, `beautify`, `isValid`, `validate` |
 
-## Overview
+## ENSIP-1: Namehash
 
-ENS operations for ensip-standards.
+ENSIP-1 (originally [EIP-137](https://eips.ethereum.org/EIPS/eip-137)) defines how a name maps to a 32-byte registry node:
+
+```text
+namehash('')         = 0x00 * 32
+namehash(label.rest) = keccak256(namehash(rest) ‖ keccak256(label))
+labelhash(label)     = keccak256(label)
+```
+
+`namehash` splits on `.` and processes labels right to left. Each label is UTF-8 encoded before hashing.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
+
+Hex.fromBytes(Ens.namehash(""));
+// "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+Hex.fromBytes(Ens.namehash("eth"));
+// "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
+
+Hex.fromBytes(Ens.namehash("vitalik.eth"));
+// "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
+
+Hex.fromBytes(Ens.labelhash("vitalik"));
+// "0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc"
+```
+
+### Deviations to know
+
+ENSIP-1 requires names to be normalized before hashing. The hash functions here do not normalize or validate:
+
+- Case is hashed as given. `namehash("VITALIK.eth")` differs from `namehash("vitalik.eth")`.
+- Empty labels are skipped. `namehash("a..eth")` equals `namehash("a.eth")`, and `namehash(".eth")` and `namehash("eth.")` equal `namehash("eth")`. `normalize()` rejects all three inputs.
+- `labelhash` hashes its whole input. `labelhash("vitalik.eth")` is the keccak256 of the 11-byte string, not a namehash.
+
+Call `normalize()` first. See [Encoding](/primitives/ens/encoding) for the full API.
+
+## ENSIP-15: Normalization
+
+ENSIP-15 defines a single canonical form for every valid name and rejects names that can be visually confused. The module delegates to [`@adraffy/ens-normalize`](https://github.com/adraffy/ens-normalize.js), the reference implementation by the author of ENSIP-15:
+
+| Module function | Library function |
+|-----------------|------------------|
+| `normalize`, `_normalize` | `ens_normalize` |
+| `beautify`, `_beautify` | `ens_beautify` |
+| `isValid`, `validate` | `ens_normalize` (result discarded) |
+
+ENSIP-15 rules you will see in practice:
+
+| Rule | Example |
+|------|---------|
+| Mapping (case folding, compatibility forms) | `"Nick.ETH"` → `"nick.eth"`, `"Ⅻ.eth"` → `"xii.eth"` |
+| NFC composition | `"café.eth"` → `"café.eth"` |
+| Ignored characters removed | `"vitalik.eth​"` → `"vitalik.eth"` |
+| Emoji: FE0F removed by `normalize`, kept by `beautify` | `"😀️.eth"` → `"😀.eth"` |
+| Disallowed characters | `"a b.eth"`, `"nic‍k.eth"` rejected |
+| Empty labels | `"a..eth"` rejected |
+| Label extension (`??--`) | `"xn--abc.eth"` rejected |
+| Underscore only at label start | `"_ab.eth"` valid, `"a_b.eth"` rejected |
+| Leading combining mark | `"́a.eth"` rejected |
+| Single script per label | `"аpple.eth"` (Cyrillic + Latin) rejected |
+| Whole-script confusables | `"арре.eth"` (all Cyrillic, reads as "appe") rejected |
+
+The exact normalization tables are those shipped with the installed `@adraffy/ens-normalize` version (`^1.11.1` in `package.json`).
+
+## Not implemented
+
+| Standard | Status |
+|----------|--------|
+| [ENSIP-10](https://docs.ens.domains/ensip/10) Wildcard resolution | No DNS wire-format name encoding is exported. Encode names yourself for `resolve(bytes,bytes)`. |
+| Resolution (registry, resolver, reverse records) | Not part of this module. See [ENS Resolution skill](/skills/ens-resolution). |
+
+`namehash` works for any name, including reverse names: `namehash("addr.reverse")` returns `0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2`.
 
 ## See Also
 
 - [ENS Overview](/primitives/ens)
-- [ENS Normalization](/primitives/ens/normalization)
+- [Encoding](/primitives/ens/encoding) - namehash and labelhash API
+- [Normalization](/primitives/ens/normalization) - normalize and beautify API
+- [Security](/primitives/ens/security)
+- [ENS Resolution skill](/skills/ens-resolution)

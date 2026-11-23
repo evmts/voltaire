@@ -19,8 +19,6 @@
 //!
 //! - [`primitives`] - Core types: Address, Hash, U256, Hex, RLP
 //! - [`crypto`] - Cryptographic operations: Keccak256, secp256k1, SHA256
-//! - [`state`] - State management with fork support
-//! - [`blockchain`] - Blockchain queries and block data
 //!
 //! ## Example
 //!
@@ -58,12 +56,6 @@ extern crate alloc;
 pub mod error;
 pub mod primitives;
 pub mod crypto;
-
-#[cfg(feature = "native")]
-pub mod state;
-
-#[cfg(feature = "native")]
-pub mod blockchain;
 
 #[cfg(feature = "native")]
 mod ffi;

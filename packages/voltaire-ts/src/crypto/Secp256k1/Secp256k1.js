@@ -31,22 +31,22 @@ import { verifyHash } from "./verifyHash.js";
 
 // Export individual functions
 export {
+	addPoints,
+	createKeyPair,
+	derivePublicKey,
+	ecdh,
+	ecdh as getSharedSecret, // Alias for API compatibility
+	isValidPrivateKey,
+	isValidPublicKey,
+	isValidSignature,
+	randomPrivateKey,
+	recoverPublicKey,
+	recoverPublicKeyFromHash,
+	scalarMultiply,
 	sign,
 	signHash,
 	verify,
 	verifyHash,
-	recoverPublicKey,
-	recoverPublicKeyFromHash,
-	derivePublicKey,
-	isValidSignature,
-	isValidPublicKey,
-	isValidPrivateKey,
-	randomPrivateKey,
-	createKeyPair,
-	ecdh,
-	ecdh as getSharedSecret, // Alias for API compatibility
-	addPoints,
-	scalarMultiply,
 };
 
 export const Signature = SignatureMethods;

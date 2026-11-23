@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.1.20"
     `java-library`
 }
 
@@ -13,9 +13,9 @@ repositories {
 val zigOutNative = "${projectDir}/../zig-out/native"
 
 dependencies {
-    implementation("net.java.dev.jna:jna:5.14.0")
+    implementation("net.java.dev.jna:jna:5.17.0")
     testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
 }
 
 tasks.test {

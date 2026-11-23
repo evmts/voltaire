@@ -1,6 +1,13 @@
 use crate::KzgSettings;
-use alloc::{boxed::Box, sync::Arc};
-use once_cell::race::OnceBox;
+use alloc::sync::Arc;
+
+#[cfg(not(feature = "std"))]
+use once_cell::race::OnceBox as OnceLock;
+#[cfg(feature = "std")]
+use std::sync::OnceLock;
+
+#[cfg(feature = "std")]
+use once_cell as _;
 
 /// Default G1 monomial bytes.
 const ETH_G1_MONOMIAL_POINTS: &[u8] = include_bytes!("./g1_monomial_bytes.bin");
@@ -12,6 +19,8 @@ const ETH_G2_MONOMIAL_POINTS: &[u8] = include_bytes!("./g2_monomial_bytes.bin");
 /// Returns default Ethereum mainnet KZG settings.
 ///
 /// If you need a cloneable settings use `ethereum_kzg_settings_arc` instead.
+///
+/// Note: Precompute values 0-15 (inclusive) are supported.
 pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
     ethereum_kzg_settings_inner(precompute).as_ref()
 }
@@ -19,13 +28,21 @@ pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
 /// Returns default Ethereum mainnet KZG settings as an `Arc`.
 ///
 /// It is useful for sharing the settings in multiple places.
+///
+/// Note: Precompute values 0-15 (inclusive) are supported.
 pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
     ethereum_kzg_settings_inner(precompute).clone()
 }
 
 fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
-    static DEFAULT: OnceBox<Arc<KzgSettings>> = OnceBox::new();
-    DEFAULT.get_or_init(|| {
+    static CACHES: [OnceLock<Arc<KzgSettings>>; 16] = [const { OnceLock::new() }; 16];
+
+    assert!(
+        precompute <= 15,
+        "Unsupported precompute value: {precompute}. Only values 0-15 (inclusive) are supported."
+    );
+
+    CACHES[precompute as usize].get_or_init(|| {
         let settings = KzgSettings::load_trusted_setup(
             ETH_G1_MONOMIAL_POINTS,
             ETH_G1_LAGRANGE_POINTS,
@@ -33,7 +50,8 @@ fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
             precompute,
         )
         .expect("failed to load default trusted setup");
-        Box::new(Arc::new(settings))
+        #[allow(clippy::useless_conversion)] // `std`: no-op, `not(std)`: allocates into a `Box`.
+        Arc::new(settings).into()
     })
 }
 

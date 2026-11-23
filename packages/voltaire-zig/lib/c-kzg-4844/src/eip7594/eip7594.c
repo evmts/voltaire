@@ -16,6 +16,7 @@
 
 #include "eip7594/eip7594.h"
 #include "common/alloc.h"
+#include "common/ec.h"
 #include "common/fr.h"
 #include "common/lincomb.h"
 #include "common/utils.h"
@@ -65,6 +66,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     fr_t *poly_lagrange = NULL;
     fr_t *data_fr = NULL;
     g1_t *proofs_g1 = NULL;
+    blst_p1_affine *proofs_affine = NULL;
 
     /* If both of these are null, something is wrong */
     if (cells == NULL && proofs == NULL) {
@@ -131,9 +133,17 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         ret = bit_reversal_permutation(proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Convert all of the proofs to byte-form */
+        /* Allocate space for affine proofs */
+        ret = c_kzg_malloc((void **)&proofs_affine, CELLS_PER_EXT_BLOB * sizeof(blst_p1_affine));
+        if (ret != C_KZG_OK) goto out;
+
+        /* Batch convert proofs to affine */
+        const blst_p1 *proofs_arg[2] = {proofs_g1, NULL};
+        blst_p1s_to_affine(proofs_affine, proofs_arg, CELLS_PER_EXT_BLOB);
+
+        /* Compress all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-            bytes_from_g1(&proofs[i], &proofs_g1[i]);
+            blst_p1_affine_compress(proofs[i].bytes, &proofs_affine[i]);
         }
     }
 
@@ -142,6 +152,7 @@ out:
     c_kzg_free(poly_lagrange);
     c_kzg_free(data_fr);
     c_kzg_free(proofs_g1);
+    c_kzg_free(proofs_affine);
     return ret;
 }
 
@@ -174,6 +185,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     C_KZG_RET ret;
     fr_t *recovered_cells_fr = NULL;
     g1_t *recovered_proofs_g1 = NULL;
+    blst_p1_affine *recovered_proofs_affine = NULL;
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_EXT_BLOB) {
@@ -206,9 +218,9 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     ret = new_g1_array(&recovered_proofs_g1, CELLS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
-    /* Initialize all cells as missing */
+    /* Initialize all cells to zero */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
-        recovered_cells_fr[i] = FR_NULL;
+        recovered_cells_fr[i] = FR_ZERO;
     }
 
     /* Populate recovered_cells_fr with available cells at the right places */
@@ -268,15 +280,26 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         ret = bit_reversal_permutation(recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Convert all of the proofs to byte-form */
+        /* Allocate space for affine proofs */
+        ret = c_kzg_malloc(
+            (void **)&recovered_proofs_affine, CELLS_PER_EXT_BLOB * sizeof(blst_p1_affine)
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /* Batch convert proofs to affine */
+        const blst_p1 *recovered_proofs_arg[2] = {recovered_proofs_g1, NULL};
+        blst_p1s_to_affine(recovered_proofs_affine, recovered_proofs_arg, CELLS_PER_EXT_BLOB);
+
+        /* Compress all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-            bytes_from_g1(&recovered_proofs[i], &recovered_proofs_g1[i]);
+            blst_p1_affine_compress(recovered_proofs[i].bytes, &recovered_proofs_affine[i]);
         }
     }
 
 out:
     c_kzg_free(recovered_cells_fr);
     c_kzg_free(recovered_proofs_g1);
+    c_kzg_free(recovered_proofs_affine);
     return ret;
 }
 
@@ -496,7 +519,7 @@ static C_KZG_RET compute_weighted_sum_of_commitments(
 
     /* Update commitment weights */
     for (uint64_t i = 0; i < num_cells; i++) {
-        blst_fr_add(
+        fr_add(
             &commitment_weights[commitment_indices[i]],
             &commitment_weights[commitment_indices[i]],
             &r_powers[i]
@@ -650,12 +673,12 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
             if (ret != C_KZG_OK) goto out;
 
             /* Scale the field element by the appropriate power of r */
-            blst_fr_mul(&scaled_fr, &original_fr, &r_powers[cell_index]);
+            fr_mul(&scaled_fr, &original_fr, &r_powers[cell_index]);
 
             /* Figure out the right index for this field element within the extended array */
             size_t array_index = column_index * FIELD_ELEMENTS_PER_CELL + fr_index;
             /* Aggregate the scaled field element into the array */
-            blst_fr_add(
+            fr_add(
                 &aggregated_column_cells[array_index],
                 &aggregated_column_cells[array_index],
                 &scaled_fr
@@ -720,7 +743,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
         /* Update the aggregated poly */
         for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
-            blst_fr_add(
+            fr_add(
                 &aggregated_interpolation_poly[k],
                 &aggregated_interpolation_poly[k],
                 &column_interpolation_poly[k]
@@ -778,7 +801,7 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
         get_coset_shift_pow_for_cell(&h_k_pow, cell_indices[i], s);
 
         /* Scale the power of r by h_k^n */
-        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &h_k_pow);
+        fr_mul(&weighted_powers_of_r[i], &r_powers[i], &h_k_pow);
     }
 
     ret = g1_lincomb_fast(weighted_proof_sum_out, proofs_g1, weighted_powers_of_r, num_cells);
@@ -922,9 +945,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Subtract commitment from sum by adding the negated commitment */
-    blst_p1_cneg(&interpolation_poly_commit, true);
-    blst_p1_add(&final_g1_sum, &final_g1_sum, &interpolation_poly_commit);
+    /* Subtract the commitment from the sum */
+    g1_sub(&final_g1_sum, &final_g1_sum, &interpolation_poly_commit);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Compute sum of the proofs scaled by the coset factors
@@ -935,7 +957,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     );
     if (ret != C_KZG_OK) goto out;
 
-    blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_sum_of_proofs);
+    g1_add(&final_g1_sum, &final_g1_sum, &weighted_sum_of_proofs);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Do the final pairing check

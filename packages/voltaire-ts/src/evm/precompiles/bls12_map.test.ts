@@ -1,3 +1,4 @@
+import { bls12_381 } from "@noble/curves/bls12-381.js";
 import { describe, expect, it } from "vitest";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
 import {
@@ -6,19 +7,8 @@ import {
 	execute,
 	isPrecompile,
 	PrecompileAddress,
+	type PrecompileResult,
 } from "./precompiles.js";
-
-/**
- * Helper: Convert hex string to Uint8Array
- */
-function _hexToBytes(hex: string): Uint8Array {
-	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-	const bytes = new Uint8Array(clean.length / 2);
-	for (let i = 0; i < clean.length; i += 2) {
-		bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
-	}
-	return bytes;
-}
 
 /**
  * Helper: Convert Uint8Array to hex string
@@ -42,33 +32,65 @@ function bigintToBytes(n: bigint, size: number): Uint8Array {
 	return bytes;
 }
 
-describe("Precompile: BLS12_MAP_FP_TO_G1 (0x12)", () => {
-	// BLS12-381 base field modulus
-	const BLS_MODULUS =
-		0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
+const toBigInt = (bytes: Uint8Array) => BigInt(`0x${bytesToHex(bytes)}`);
+
+// BLS12-381 base field modulus
+const BLS_MODULUS =
+	0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
+
+/** An exceptional halt consumes all forwarded gas and returns no output. */
+function expectHalt(result: PrecompileResult, gasLimit: bigint): void {
+	expect(result.success).toBe(false);
+	expect(result.error).toBeDefined();
+	expect(result.gasUsed).toBe(gasLimit);
+	expect(result.output).toEqual(new Uint8Array(0));
+}
+
+function decodeG1(output: Uint8Array) {
+	return bls12_381.G1.Point.fromAffine({
+		x: toBigInt(output.subarray(0, 64)),
+		y: toBigInt(output.subarray(64, 128)),
+	});
+}
+
+function decodeG2(output: Uint8Array) {
+	const Fp2 = bls12_381.fields.Fp2;
+	return bls12_381.G2.Point.fromAffine({
+		x: Fp2.create({
+			c0: toBigInt(output.subarray(0, 64)),
+			c1: toBigInt(output.subarray(64, 128)),
+		}),
+		y: Fp2.create({
+			c0: toBigInt(output.subarray(128, 192)),
+			c1: toBigInt(output.subarray(192, 256)),
+		}),
+	});
+}
+
+describe("Precompile: BLS12_MAP_FP_TO_G1 (0x10)", () => {
+	const fp = (value: bigint) => bigintToBytes(value, 64);
+
+	it("should live at address 0x10", () => {
+		expect(PrecompileAddress.BLS12_MAP_FP_TO_G1).toBe(
+			"0x0000000000000000000000000000000000000010",
+		);
+	});
 
 	describe("Gas calculation", () => {
 		it("should use exactly 5500 gas", () => {
-			const input = new Uint8Array(64).fill(0);
-			const result = bls12MapFpToG1(input, 10000n);
-
+			const result = bls12MapFpToG1(fp(0n), 10000n);
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(5500n);
 		});
 
 		it("should fail with insufficient gas (5499)", () => {
-			const input = new Uint8Array(64).fill(0);
-			const result = bls12MapFpToG1(input, 5499n);
-
-			expect(result.success).toBe(false);
+			const result = bls12MapFpToG1(fp(0n), 5499n);
 			expect(result.error).toBe("Out of gas");
-			expect(result.gasUsed).toBe(5500n);
+			expectHalt(result, 5499n);
 		});
 
 		it("should succeed with exact gas (5500)", () => {
-			const input = new Uint8Array(64).fill(0);
-			const result = bls12MapFpToG1(input, 5500n);
-
+			const result = bls12MapFpToG1(fp(0n), 5500n);
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(5500n);
 		});
@@ -76,551 +98,433 @@ describe("Precompile: BLS12_MAP_FP_TO_G1 (0x12)", () => {
 
 	describe("Input validation", () => {
 		it("should reject empty input", () => {
-			const input = new Uint8Array(0);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expectHalt(bls12MapFpToG1(new Uint8Array(0), 10000n), 10000n);
 		});
 
 		it("should reject input shorter than 64 bytes", () => {
-			const input = new Uint8Array(63);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expectHalt(bls12MapFpToG1(new Uint8Array(63), 10000n), 10000n);
+			expectHalt(bls12MapFpToG1(new Uint8Array(48), 10000n), 10000n);
 		});
 
 		it("should accept exactly 64 bytes", () => {
-			const input = new Uint8Array(64).fill(0);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
+			expect(bls12MapFpToG1(new Uint8Array(64), 10000n).success).toBe(true);
 		});
 
 		it("should reject input longer than 64 bytes", () => {
-			const input = new Uint8Array(65);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expectHalt(bls12MapFpToG1(new Uint8Array(65), 10000n), 10000n);
+			expectHalt(bls12MapFpToG1(new Uint8Array(128), 10000n), 10000n);
 		});
 	});
 
 	describe("Output validation", () => {
 		it("should always return 128 bytes (G1 point)", () => {
-			const input = new Uint8Array(64).fill(0);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
+			for (const u of [0n, 1n, 2n ** 200n, BLS_MODULUS - 1n]) {
+				expect(bls12MapFpToG1(fp(u), 10000n).output.length).toBe(128);
+			}
 		});
 
-		it("should return valid G1 point for zero input", () => {
-			const input = new Uint8Array(64).fill(0);
-			const result = bls12MapFpToG1(input, 10000n);
-
+		it("should return a point in the G1 subgroup for zero input", () => {
+			const result = bls12MapFpToG1(fp(0n), 10000n);
 			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
-
-			// G1 point should not be all zeros (except identity)
-			const _isAllZero = [...result.output].every((b) => b === 0);
-			// Zero maps to a valid point (not necessarily identity)
-			expect(result.output.length).toBe(128);
+			const point = decodeG1(result.output);
+			point.assertValidity();
+			expect(point.is0()).toBe(false);
 		});
 
 		it("should return different points for different inputs", () => {
-			const input1 = new Uint8Array(64).fill(0);
-			const input2 = new Uint8Array(64).fill(1);
-
-			const result1 = bls12MapFpToG1(input1, 10000n);
-			const result2 = bls12MapFpToG1(input2, 10000n);
-
+			const result1 = bls12MapFpToG1(fp(1n), 10000n);
+			const result2 = bls12MapFpToG1(fp(2n), 10000n);
 			expect(result1.success).toBe(true);
 			expect(result2.success).toBe(true);
-
-			// Points should be different
 			expect(bytesToHex(result1.output)).not.toBe(bytesToHex(result2.output));
 		});
 	});
 
 	describe("Valid field elements", () => {
-		it("should map zero to G1 point", () => {
-			const input = new Uint8Array(64).fill(0);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
-		});
-
-		it("should map one to G1 point", () => {
-			const input = new Uint8Array(64);
-			input[63] = 1; // Field element = 1
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
-		});
-
-		it("should map small field element to G1 point", () => {
-			const input = new Uint8Array(64);
-			input[63] = 42; // Field element = 42
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
-		});
-
-		it("should map maximum valid field element (modulus - 1)", () => {
-			const maxValid = BLS_MODULUS - 1n;
-			const input = bigintToBytes(maxValid, 64);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(128);
-		});
-
-		it("should map random valid field elements", () => {
-			const testValues = [
-				123456789n,
-				999999999999n,
+		it("should map valid field elements to subgroup points", () => {
+			const elements = [
+				0n,
+				1n,
+				42n,
+				0xdeadbeefn,
 				BLS_MODULUS / 2n,
-				BLS_MODULUS / 4n,
-				BLS_MODULUS - 100n,
+				BLS_MODULUS - 2n,
+				BLS_MODULUS - 1n,
 			];
-
-			for (const value of testValues) {
-				const input = bigintToBytes(value, 64);
-				const result = bls12MapFpToG1(input, 10000n);
-
+			for (const u of elements) {
+				const result = bls12MapFpToG1(fp(u), 10000n);
 				expect(result.success).toBe(true);
-				expect(result.output.length).toBe(128);
+				expect(result.gasUsed).toBe(5500n);
+				decodeG1(result.output).assertValidity();
+			}
+		});
+
+		it("should equal the direct field-to-curve map with one cofactor clearing", () => {
+			const map = bls12_381.G1.mapToCurve as unknown as (
+				u: bigint,
+			) => ReturnType<typeof decodeG1>;
+			for (const u of [0n, 7n, BLS_MODULUS - 1n]) {
+				const expected = map(u).toAffine();
+				const result = bls12MapFpToG1(fp(u), 10000n);
+				expect(bytesToHex(result.output)).toBe(
+					bytesToHex(bigintToBytes(expected.x, 64)) +
+						bytesToHex(bigintToBytes(expected.y, 64)),
+				);
+			}
+		});
+
+		it("should not hash the input (hashToCurve gives a different point)", () => {
+			for (const u of [0n, 7n, BLS_MODULUS - 1n]) {
+				const input = fp(u);
+				const hashed = bls12_381.G1.hashToCurve(input).toAffine();
+				const result = bls12MapFpToG1(input, 10000n);
+				expect(toBigInt(result.output.subarray(0, 64))).not.toBe(hashed.x);
 			}
 		});
 	});
 
 	describe("Invalid field elements", () => {
-		it("should handle field element equal to modulus (reduced internally)", () => {
-			const input = bigintToBytes(BLS_MODULUS, 64);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			// Implementation may reduce modulo BLS_MODULUS internally
-			// So this could succeed (mapped as 0) or fail
-			expect(result.success || result.error).toBeDefined();
+		it("should reject a field element equal to the modulus", () => {
+			expectHalt(bls12MapFpToG1(fp(BLS_MODULUS), 10000n), 10000n);
 		});
 
-		it("should handle field element greater than modulus (reduced internally)", () => {
-			const input = bigintToBytes(BLS_MODULUS + 1n, 64);
-			const result = bls12MapFpToG1(input, 10000n);
-
-			// Implementation may reduce modulo BLS_MODULUS internally
-			expect(result.success || result.error).toBeDefined();
+		it("should reject a field element greater than the modulus", () => {
+			expectHalt(bls12MapFpToG1(fp(BLS_MODULUS + 1n), 10000n), 10000n);
+			expectHalt(bls12MapFpToG1(fp(2n ** 383n), 10000n), 10000n);
 		});
 
-		it("should handle maximum possible 64-byte value", () => {
-			const input = new Uint8Array(64).fill(0xff);
-			const result = bls12MapFpToG1(input, 10000n);
+		it("should reject the maximum possible 64-byte value", () => {
+			expectHalt(bls12MapFpToG1(new Uint8Array(64).fill(0xff), 10000n), 10000n);
+		});
 
-			// 2^512 - 1 >> BLS_MODULUS, but may be reduced
-			expect(result.success || result.error).toBeDefined();
+		it("should reject non-zero top 16 bytes even when the low 48 bytes are valid", () => {
+			for (let i = 0; i < 16; i++) {
+				const input = fp(1n);
+				input[i] = 0x80;
+				expectHalt(bls12MapFpToG1(input, 10000n), 10000n);
+			}
+			expectHalt(bls12MapFpToG1(new Uint8Array(64).fill(1), 10000n), 10000n);
 		});
 	});
 
 	describe("Edge cases", () => {
 		it("should be deterministic (same input produces same output)", () => {
-			const input = new Uint8Array(64);
-			input[63] = 123;
-
-			const result1 = bls12MapFpToG1(input, 10000n);
-			const result2 = bls12MapFpToG1(input, 10000n);
-			const result3 = bls12MapFpToG1(input, 10000n);
-
-			expect(result1.success).toBe(true);
-			expect(result2.success).toBe(true);
-			expect(result3.success).toBe(true);
-
-			expect(bytesToHex(result1.output)).toBe(bytesToHex(result2.output));
-			expect(bytesToHex(result2.output)).toBe(bytesToHex(result3.output));
+			const a = bls12MapFpToG1(fp(12345n), 10000n);
+			const b = bls12MapFpToG1(fp(12345n), 10000n);
+			expect(a).toEqual(b);
 		});
 
-		it("should handle boundary near modulus", () => {
-			const values = [
-				BLS_MODULUS - 1n,
-				BLS_MODULUS - 2n,
-				BLS_MODULUS - 10n,
-				BLS_MODULUS - 100n,
-			];
-
-			for (const value of values) {
-				const input = bigintToBytes(value, 64);
-				const result = bls12MapFpToG1(input, 10000n);
-
-				expect(result.success).toBe(true);
-				expect(result.output.length).toBe(128);
-			}
+		it("should accept modulus - 1 and reject modulus", () => {
+			expect(bls12MapFpToG1(fp(BLS_MODULUS - 1n), 10000n).success).toBe(true);
+			expectHalt(bls12MapFpToG1(fp(BLS_MODULUS), 10000n), 10000n);
 		});
 	});
 
 	describe("Integration", () => {
 		it("should work via execute function", () => {
-			const input = new Uint8Array(64).fill(0);
 			const result = execute(
 				PrecompileAddress.BLS12_MAP_FP_TO_G1,
-				input,
+				fp(9n),
 				10000n,
 				Hardfork.PRAGUE,
 			);
-
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(128);
 			expect(result.gasUsed).toBe(5500n);
+			expect(result.output).toEqual(bls12MapFpToG1(fp(9n), 10000n).output);
+		});
+
+		it("should halt with gasLimit through execute on a non-canonical element", () => {
+			expectHalt(
+				execute(
+					PrecompileAddress.BLS12_MAP_FP_TO_G1,
+					fp(BLS_MODULUS),
+					10000n,
+					Hardfork.PRAGUE,
+				),
+				10000n,
+			);
 		});
 	});
 });
 
-describe("Precompile: BLS12_MAP_FP2_TO_G2 (0x13)", () => {
-	const BLS_MODULUS =
-		0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn;
+describe("Precompile: BLS12_MAP_FP2_TO_G2 (0x11)", () => {
+	const fp2 = (c0: bigint, c1: bigint) => {
+		const input = new Uint8Array(128);
+		input.set(bigintToBytes(c0, 64), 0);
+		input.set(bigintToBytes(c1, 64), 64);
+		return input;
+	};
+
+	it("should live at address 0x11", () => {
+		expect(PrecompileAddress.BLS12_MAP_FP2_TO_G2).toBe(
+			"0x0000000000000000000000000000000000000011",
+		);
+	});
 
 	describe("Gas calculation", () => {
-		it("should use exactly 75000 gas", () => {
-			const input = new Uint8Array(128).fill(0);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
+		it("should use exactly 23800 gas", () => {
+			const result = bls12MapFp2ToG2(fp2(0n, 0n), 100000n);
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(75000n);
+			expect(result.gasUsed).toBe(23800n);
 		});
 
-		it("should fail with insufficient gas (74999)", () => {
-			const input = new Uint8Array(128).fill(0);
-			const result = bls12MapFp2ToG2(input, 74999n);
-
-			expect(result.success).toBe(false);
+		it("should fail with insufficient gas (23799)", () => {
+			const result = bls12MapFp2ToG2(fp2(0n, 0n), 23799n);
 			expect(result.error).toBe("Out of gas");
-			expect(result.gasUsed).toBe(75000n);
+			expectHalt(result, 23799n);
 		});
 
-		it("should succeed with exact gas (75000)", () => {
-			const input = new Uint8Array(128).fill(0);
-			const result = bls12MapFp2ToG2(input, 75000n);
-
+		it("should succeed with exact gas (23800)", () => {
+			const result = bls12MapFp2ToG2(fp2(0n, 0n), 23800n);
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(75000n);
+			expect(result.gasUsed).toBe(23800n);
 		});
 	});
 
 	describe("Input validation", () => {
 		it("should reject empty input", () => {
-			const input = new Uint8Array(0);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expectHalt(bls12MapFp2ToG2(new Uint8Array(0), 100000n), 100000n);
 		});
 
 		it("should reject input shorter than 128 bytes", () => {
-			const input = new Uint8Array(127);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expectHalt(bls12MapFp2ToG2(new Uint8Array(127), 100000n), 100000n);
+			expectHalt(bls12MapFp2ToG2(new Uint8Array(64), 100000n), 100000n);
 		});
 
 		it("should accept exactly 128 bytes", () => {
-			const input = new Uint8Array(128).fill(0);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+			expect(bls12MapFp2ToG2(new Uint8Array(128), 100000n).success).toBe(true);
 		});
 
 		it("should reject input longer than 128 bytes", () => {
-			const input = new Uint8Array(129);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid input length");
+			expectHalt(bls12MapFp2ToG2(new Uint8Array(129), 100000n), 100000n);
+			expectHalt(bls12MapFp2ToG2(new Uint8Array(256), 100000n), 100000n);
 		});
 	});
 
 	describe("Output validation", () => {
 		it("should always return 256 bytes (G2 point)", () => {
-			const input = new Uint8Array(128).fill(0);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+			for (const [c0, c1] of [
+				[0n, 0n],
+				[1n, 2n],
+				[BLS_MODULUS - 1n, BLS_MODULUS - 1n],
+			] as Array<[bigint, bigint]>) {
+				expect(bls12MapFp2ToG2(fp2(c0, c1), 100000n).output.length).toBe(256);
+			}
 		});
 
-		it("should return valid G2 point for zero input", () => {
-			const input = new Uint8Array(128).fill(0);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
+		it("should return a point in the G2 subgroup for zero input", () => {
+			const result = bls12MapFp2ToG2(fp2(0n, 0n), 100000n);
 			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+			const point = decodeG2(result.output);
+			point.assertValidity();
+			expect(point.is0()).toBe(false);
 		});
 
 		it("should return different points for different inputs", () => {
-			const input1 = new Uint8Array(128).fill(0);
-			const input2 = new Uint8Array(128).fill(1);
-
-			const result1 = bls12MapFp2ToG2(input1, 100000n);
-			const result2 = bls12MapFp2ToG2(input2, 100000n);
-
+			const result1 = bls12MapFp2ToG2(fp2(1n, 1n), 100000n);
+			const result2 = bls12MapFp2ToG2(fp2(2n, 2n), 100000n);
 			expect(result1.success).toBe(true);
 			expect(result2.success).toBe(true);
-
 			expect(bytesToHex(result1.output)).not.toBe(bytesToHex(result2.output));
 		});
 	});
 
 	describe("Valid Fp2 elements", () => {
-		it("should map zero Fp2 element to G2 point", () => {
-			const input = new Uint8Array(128).fill(0);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+		it("should map valid Fp2 elements to subgroup points", () => {
+			const elements: Array<[bigint, bigint]> = [
+				[0n, 0n],
+				[1n, 0n],
+				[0n, 1n],
+				[5n, 9n],
+				[BLS_MODULUS - 1n, 0n],
+				[0n, BLS_MODULUS - 1n],
+				[BLS_MODULUS - 1n, BLS_MODULUS - 1n],
+			];
+			for (const [c0, c1] of elements) {
+				const result = bls12MapFp2ToG2(fp2(c0, c1), 100000n);
+				expect(result.success).toBe(true);
+				expect(result.gasUsed).toBe(23800n);
+				decodeG2(result.output).assertValidity();
+			}
 		});
 
-		it("should map Fp2(1, 0) to G2 point", () => {
-			const input = new Uint8Array(128);
-			input[63] = 1; // c0 = 1
-			// c1 = 0 (already zero)
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+		it("should treat c0 and c1 as distinct coefficients", () => {
+			expect(bytesToHex(bls12MapFp2ToG2(fp2(1n, 0n), 100000n).output)).not.toBe(
+				bytesToHex(bls12MapFp2ToG2(fp2(0n, 1n), 100000n).output),
+			);
 		});
 
-		it("should map Fp2(0, 1) to G2 point", () => {
-			const input = new Uint8Array(128);
-			// c0 = 0 (already zero)
-			input[127] = 1; // c1 = 1
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+		it("should equal the direct field-to-curve map with one cofactor clearing", () => {
+			const map = bls12_381.G2.mapToCurve as unknown as (
+				u: [bigint, bigint],
+			) => ReturnType<typeof decodeG2>;
+			for (const [c0, c1] of [
+				[0n, 0n],
+				[7n, 11n],
+			] as Array<[bigint, bigint]>) {
+				const expected = map([c0, c1]);
+				const result = bls12MapFp2ToG2(fp2(c0, c1), 100000n);
+				expect(decodeG2(result.output).equals(expected)).toBe(true);
+			}
 		});
 
-		it("should map small Fp2 elements to G2 points", () => {
-			const input = new Uint8Array(128);
-			input[63] = 42; // c0 = 42
-			input[127] = 99; // c1 = 99
+		it("should not hash the input (hashToCurve gives a different point)", () => {
+			const input = fp2(7n, 11n);
+			const hashed = bls12_381.G2.hashToCurve(input);
 			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
-		});
-
-		it("should map maximum valid Fp2 element", () => {
-			const maxValid = BLS_MODULUS - 1n;
-			const input = new Uint8Array(128);
-			input.set(bigintToBytes(maxValid, 64), 0); // c0
-			input.set(bigintToBytes(maxValid, 64), 64); // c1
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(256);
+			expect(decodeG2(result.output).equals(hashed)).toBe(false);
 		});
 	});
 
 	describe("Invalid Fp2 elements", () => {
-		it("should handle when c0 >= modulus (reduced internally)", () => {
-			const input = new Uint8Array(128);
-			input.set(bigintToBytes(BLS_MODULUS, 64), 0); // c0 = modulus
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			// Implementation may reduce modulo BLS_MODULUS internally
-			expect(result.success || result.error).toBeDefined();
+		it("should reject c0 >= modulus", () => {
+			expectHalt(bls12MapFp2ToG2(fp2(BLS_MODULUS, 0n), 100000n), 100000n);
+			expectHalt(bls12MapFp2ToG2(fp2(BLS_MODULUS + 1n, 1n), 100000n), 100000n);
 		});
 
-		it("should handle when c1 >= modulus (reduced internally)", () => {
-			const input = new Uint8Array(128);
-			// c0 = 0 (valid)
-			input.set(bigintToBytes(BLS_MODULUS, 64), 64); // c1 = modulus
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			// Implementation may reduce modulo BLS_MODULUS internally
-			expect(result.success || result.error).toBeDefined();
+		it("should reject c1 >= modulus", () => {
+			expectHalt(bls12MapFp2ToG2(fp2(0n, BLS_MODULUS), 100000n), 100000n);
+			expectHalt(bls12MapFp2ToG2(fp2(1n, BLS_MODULUS + 1n), 100000n), 100000n);
 		});
 
-		it("should handle when both components >= modulus (reduced internally)", () => {
-			const input = new Uint8Array(128);
-			input.set(bigintToBytes(BLS_MODULUS + 1n, 64), 0);
-			input.set(bigintToBytes(BLS_MODULUS + 1n, 64), 64);
-			const result = bls12MapFp2ToG2(input, 100000n);
-
-			// Implementation may reduce modulo BLS_MODULUS internally
-			expect(result.success || result.error).toBeDefined();
+		it("should reject both components >= modulus", () => {
+			expectHalt(
+				bls12MapFp2ToG2(fp2(BLS_MODULUS, BLS_MODULUS), 100000n),
+				100000n,
+			);
 		});
 
-		it("should handle maximum possible 128-byte value", () => {
-			const input = new Uint8Array(128).fill(0xff);
-			const result = bls12MapFp2ToG2(input, 100000n);
+		it("should reject the maximum possible 128-byte value", () => {
+			expectHalt(
+				bls12MapFp2ToG2(new Uint8Array(128).fill(0xff), 100000n),
+				100000n,
+			);
+		});
 
-			// Implementation may reduce modulo BLS_MODULUS internally
-			expect(result.success || result.error).toBeDefined();
+		it("should reject non-zero top 16 bytes in either component", () => {
+			for (const base of [0, 64]) {
+				for (let i = 0; i < 16; i++) {
+					const input = fp2(1n, 1n);
+					input[base + i] = 0x80;
+					expectHalt(bls12MapFp2ToG2(input, 100000n), 100000n);
+				}
+			}
+			expectHalt(
+				bls12MapFp2ToG2(new Uint8Array(128).fill(1), 100000n),
+				100000n,
+			);
 		});
 	});
 
 	describe("Edge cases", () => {
 		it("should be deterministic (same input produces same output)", () => {
-			const input = new Uint8Array(128);
-			input[63] = 123;
-			input[127] = 45;
-
-			const result1 = bls12MapFp2ToG2(input, 100000n);
-			const result2 = bls12MapFp2ToG2(input, 100000n);
-			const result3 = bls12MapFp2ToG2(input, 100000n);
-
-			expect(result1.success).toBe(true);
-			expect(result2.success).toBe(true);
-			expect(result3.success).toBe(true);
-
-			expect(bytesToHex(result1.output)).toBe(bytesToHex(result2.output));
-			expect(bytesToHex(result2.output)).toBe(bytesToHex(result3.output));
-		});
-
-		it("should handle boundary near modulus for both components", () => {
-			const values = [BLS_MODULUS - 1n, BLS_MODULUS - 2n, BLS_MODULUS - 10n];
-
-			for (const val of values) {
-				const input = new Uint8Array(128);
-				input.set(bigintToBytes(val, 64), 0);
-				input.set(bigintToBytes(val, 64), 64);
-				const result = bls12MapFp2ToG2(input, 100000n);
-
-				expect(result.success).toBe(true);
-				expect(result.output.length).toBe(256);
-			}
+			const a = bls12MapFp2ToG2(fp2(123n, 456n), 100000n);
+			const b = bls12MapFp2ToG2(fp2(123n, 456n), 100000n);
+			expect(a).toEqual(b);
 		});
 
 		it("should handle asymmetric Fp2 elements", () => {
-			// c0 large, c1 small
-			const input1 = new Uint8Array(128);
-			input1.set(bigintToBytes(BLS_MODULUS - 1n, 64), 0);
-			input1[127] = 1;
-
-			const result1 = bls12MapFp2ToG2(input1, 100000n);
-			expect(result1.success).toBe(true);
-
-			// c0 small, c1 large
-			const input2 = new Uint8Array(128);
-			input2[63] = 1;
-			input2.set(bigintToBytes(BLS_MODULUS - 1n, 64), 64);
-
-			const result2 = bls12MapFp2ToG2(input2, 100000n);
-			expect(result2.success).toBe(true);
-
-			// Should produce different points
-			expect(bytesToHex(result1.output)).not.toBe(bytesToHex(result2.output));
+			const a = bls12MapFp2ToG2(fp2(1n, BLS_MODULUS - 1n), 100000n);
+			const b = bls12MapFp2ToG2(fp2(BLS_MODULUS - 1n, 1n), 100000n);
+			expect(a.success).toBe(true);
+			expect(b.success).toBe(true);
+			expect(bytesToHex(a.output)).not.toBe(bytesToHex(b.output));
 		});
 	});
 
 	describe("Integration", () => {
 		it("should work via execute function", () => {
-			const input = new Uint8Array(128).fill(0);
 			const result = execute(
 				PrecompileAddress.BLS12_MAP_FP2_TO_G2,
-				input,
+				fp2(3n, 4n),
 				100000n,
 				Hardfork.PRAGUE,
 			);
-
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(256);
-			expect(result.gasUsed).toBe(75000n);
+			expect(result.gasUsed).toBe(23800n);
 		});
 	});
 
 	describe("Comparison with map_fp_to_g1", () => {
 		it("should be more expensive than map_fp_to_g1", () => {
-			// G2 mapping: 75000 gas
-			// G1 mapping: 5500 gas
-			const g1Gas = 5500n;
-			const g2Gas = 75000n;
-
-			expect(g2Gas).toBeGreaterThan(g1Gas);
-			expect(g2Gas / g1Gas).toBeGreaterThan(10n); // ~13.6x more expensive
+			const g1 = bls12MapFpToG1(new Uint8Array(64), 100000n);
+			const g2 = bls12MapFp2ToG2(new Uint8Array(128), 100000n);
+			expect(g2.gasUsed - g1.gasUsed).toBe(18300n);
 		});
 
 		it("should produce larger output than map_fp_to_g1", () => {
-			// G1 point: 128 bytes
-			// G2 point: 256 bytes
-			const g1Input = new Uint8Array(64).fill(0);
-			const g2Input = new Uint8Array(128).fill(0);
-
-			const g1Result = bls12MapFpToG1(g1Input, 10000n);
-			const g2Result = bls12MapFp2ToG2(g2Input, 100000n);
-
-			expect(g1Result.success).toBe(true);
-			expect(g2Result.success).toBe(true);
-
-			expect(g2Result.output.length).toBe(g1Result.output.length * 2);
+			const g1 = bls12MapFpToG1(new Uint8Array(64), 100000n);
+			const g2 = bls12MapFp2ToG2(new Uint8Array(128), 100000n);
+			expect(g1.output.length).toBe(128);
+			expect(g2.output.length).toBe(256);
 		});
 	});
 });
 
 describe("BLS12 Map Hardfork Activation", () => {
-	describe("BLS12_MAP_FP_TO_G1 (0x12)", () => {
-		it("should NOT be available before Prague (Cancun)", () => {
-			expect(
-				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.CANCUN),
-			).toBe(false);
+	const cases: Array<[string, string, number, bigint]> = [
+		[
+			"BLS12_MAP_FP_TO_G1 (0x10)",
+			PrecompileAddress.BLS12_MAP_FP_TO_G1,
+			64,
+			5500n,
+		],
+		[
+			"BLS12_MAP_FP2_TO_G2 (0x11)",
+			PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+			128,
+			23800n,
+		],
+	];
+
+	for (const [name, address, length, gas] of cases) {
+		describe(name, () => {
+			it("should NOT be available before Prague (Cancun)", () => {
+				expect(isPrecompile(address, Hardfork.CANCUN)).toBe(false);
+				const result = execute(
+					address,
+					new Uint8Array(length),
+					100000n,
+					Hardfork.CANCUN,
+				);
+				expect(result.success).toBe(false);
+				expect(result.gasUsed).toBe(0n);
+				expect(result.error).toContain("Unknown precompile");
+			});
+
+			it("should NOT be available before Prague (Shanghai)", () => {
+				expect(isPrecompile(address, Hardfork.SHANGHAI)).toBe(false);
+			});
+
+			it("should be available from Prague hardfork", () => {
+				for (const fork of [
+					Hardfork.PRAGUE,
+					Hardfork.OSAKA,
+					Hardfork.AMSTERDAM,
+				]) {
+					expect(isPrecompile(address, fork)).toBe(true);
+					const result = execute(
+						address,
+						new Uint8Array(length),
+						100000n,
+						fork,
+					);
+					expect(result.success).toBe(true);
+					expect(result.gasUsed).toBe(gas);
+				}
+			});
 		});
+	}
 
-		it("should NOT be available before Prague (Shanghai)", () => {
-			expect(
-				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.SHANGHAI),
-			).toBe(false);
-		});
-
-		it("should be available from Prague hardfork", () => {
-			expect(
-				isPrecompile(PrecompileAddress.BLS12_MAP_FP_TO_G1, Hardfork.PRAGUE),
-			).toBe(true);
-
-			const input = new Uint8Array(64).fill(0);
-			const pragueResult = execute(
-				PrecompileAddress.BLS12_MAP_FP_TO_G1,
-				input,
-				10000n,
-				Hardfork.PRAGUE,
-			);
-			expect(pragueResult.success).toBe(true);
-			expect(pragueResult.gasUsed).toBe(5500n);
-		});
-	});
-
-	describe("BLS12_MAP_FP2_TO_G2 (0x13)", () => {
-		it("should NOT be available before Prague (Cancun)", () => {
-			expect(
-				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.CANCUN),
-			).toBe(false);
-		});
-
-		it("should NOT be available before Prague (Shanghai)", () => {
-			expect(
-				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.SHANGHAI),
-			).toBe(false);
-		});
-
-		it("should be available from Prague hardfork", () => {
-			expect(
-				isPrecompile(PrecompileAddress.BLS12_MAP_FP2_TO_G2, Hardfork.PRAGUE),
-			).toBe(true);
-
-			const input = new Uint8Array(128).fill(0);
-			const pragueResult = execute(
-				PrecompileAddress.BLS12_MAP_FP2_TO_G2,
-				input,
-				100000n,
-				Hardfork.PRAGUE,
-			);
-			expect(pragueResult.success).toBe(true);
-			expect(pragueResult.gasUsed).toBe(75000n);
-		});
+	it("the pre-final map addresses 0x12 and 0x13 are not precompiles", () => {
+		for (const address of [
+			"0x0000000000000000000000000000000000000012",
+			"0x0000000000000000000000000000000000000013",
+		]) {
+			expect(isPrecompile(address, Hardfork.PRAGUE)).toBe(false);
+			expect(isPrecompile(address, Hardfork.OSAKA)).toBe(false);
+		}
 	});
 });

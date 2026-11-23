@@ -2,7 +2,7 @@
 allowed-tools: Bash(zig build:*), Bash(zig build test:*), Bash(zig build test-opcodes:*), Bash(zig build test-snailtracer:*), Bash(zig build test-synthetic:*), Bash(zig build test-fusions:*), Read, Edit, MultiEdit, Bash(echo:*), Bash(grep:*), Bash(find:*)
 argument-hint: <test-command> <file-path> [--function <name>]
 description: Systematically isolate the exact line causing a crash through methodical code bisection
-model: claude-sonnet-4-20250514
+model: sonnet
 ---
 
 # Crash Bisection Debugging Command

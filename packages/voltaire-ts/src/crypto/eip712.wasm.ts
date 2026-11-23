@@ -18,6 +18,7 @@
 
 import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
 import type { HashType } from "../primitives/Hash/index.js";
+import { constantTimeEqual } from "./ConstantTime/constantTimeEqual.js";
 import type {
 	Domain,
 	Message,
@@ -36,10 +37,10 @@ import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 
 // Re-export error types
 export {
-	Eip712Error,
 	Eip712EncodingError,
-	Eip712TypeNotFoundError,
+	Eip712Error,
 	Eip712InvalidMessageError,
+	Eip712TypeNotFoundError,
 };
 
 // ============================================================================
@@ -378,7 +379,7 @@ export namespace Eip712Wasm {
 	): boolean {
 		try {
 			const recovered = recoverAddress(signature, typedData);
-			return bytesEqual(recovered, address);
+			return constantTimeEqual(recovered, address);
 		} catch {
 			return false;
 		}
@@ -433,14 +434,6 @@ export namespace Eip712Wasm {
 			bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 		}
 		return bytes;
-	}
-
-	function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
-		if (a.length !== b.length) return false;
-		for (let i = 0; i < a.length; i++) {
-			if (a[i] !== b[i]) return false;
-		}
-		return true;
 	}
 }
 

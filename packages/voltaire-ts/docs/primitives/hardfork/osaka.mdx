@@ -1,0 +1,79 @@
+---
+title: Osaka (Fusaka)
+description: Osaka hardfork activation, included EIPs, BPO blob schedule, and how Voltaire gates on it
+---
+
+## Overview
+
+Osaka is the execution-layer half of the Fusaka upgrade (Fulu on the consensus layer). Voltaire sets `DEFAULT = OSAKA`, so APIs that take an optional hardfork use Osaka rules unless you pass another fork.
+
+| Field | Value |
+|-------|-------|
+| Constant | `Hardfork.OSAKA` (`"osaka"`) |
+| Mainnet activation | Dec 3, 2025 21:49:11 UTC |
+| Timestamp | `1764798551` |
+| Epoch | `411392` |
+| Slot | `13164544` |
+| Previous fork | `PRAGUE` |
+| Next fork | `AMSTERDAM` (Glamsterdam) |
+
+```typescript
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+Hardfork.DEFAULT === Hardfork.OSAKA;                 // true
+Hardfork.isAtLeast(Hardfork.OSAKA, Hardfork.PRAGUE); // true
+Hardfork.fromString('osaka');                        // Hardfork.OSAKA
+```
+
+## Included EIPs
+
+| EIP | Name | Voltaire surface |
+|-----|------|------------------|
+| [EIP-7594](https://eips.ethereum.org/EIPS/eip-7594) | PeerDAS: peer data availability sampling | [KZG](/crypto/kzg) cell proofs |
+| [EIP-7823](https://eips.ethereum.org/EIPS/eip-7823) | ModExp input upper bounds (1024 bytes) | [MODEXP](/evm/precompiles/modexp) |
+| [EIP-7825](https://eips.ethereum.org/EIPS/eip-7825) | Transaction gas limit cap (2^24) | [Transaction](/primitives/transaction) |
+| [EIP-7883](https://eips.ethereum.org/EIPS/eip-7883) | ModExp gas cost increase | [MODEXP](/evm/precompiles/modexp) |
+| [EIP-7892](https://eips.ethereum.org/EIPS/eip-7892) | Blob parameter only (BPO) hardforks | [Blob schedules](/primitives/feemarket/blob-schedules) |
+| [EIP-7918](https://eips.ethereum.org/EIPS/eip-7918) | Blob base fee bounded by execution cost | [Blob schedules](/primitives/feemarket/blob-schedules) |
+| [EIP-7934](https://eips.ethereum.org/EIPS/eip-7934) | RLP execution block size limit (8 MiB) | [Block size limit](/primitives/rlp/block-size-limit) |
+| [EIP-7939](https://eips.ethereum.org/EIPS/eip-7939) | CLZ (count leading zeros) opcode | [Opcode](/primitives/opcode) |
+| [EIP-7951](https://eips.ethereum.org/EIPS/eip-7951) | secp256r1 precompile | [P256VERIFY](/evm/precompiles/p256verify) |
+
+Fusaka also ships networking and consensus-only EIPs (EIP-7642 eth/69, EIP-7910 `eth_config`, EIP-7917 deterministic proposer lookahead) that have no execution-primitive surface. The full list is in the [Fusaka meta EIP-7607](https://eips.ethereum.org/EIPS/eip-7607).
+
+## BPO blob schedule
+
+EIP-7892 lets clients raise blob limits without a named hardfork. Each BPO fork changes only the blob schedule and activates by timestamp.
+
+| Fork | Timestamp | Target | Max | Base fee update fraction |
+|------|-----------|--------|-----|--------------------------|
+| Osaka | `1764798551` | 6 | 9 | `5_007_716` |
+| BPO1 | `1765290071` (Dec 9, 2025) | 10 | 15 | `8_346_193` |
+| BPO2 | `1767747671` (Jan 7, 2026) | 14 | 21 | `11_684_671` |
+
+See [Blob schedules](/primitives/feemarket/blob-schedules) for the fee formulas.
+
+## Gating on Osaka
+
+```typescript
+import { Hardfork, type HardforkType } from '@tevm/voltaire/primitives/Hardfork';
+
+function hasP256Verify(fork: HardforkType): boolean {
+  return Hardfork.isAtLeast(fork, Hardfork.OSAKA);
+}
+
+hasP256Verify(Hardfork.PRAGUE); // false
+hasP256Verify(Hardfork.OSAKA);  // true
+```
+
+<Note>
+Pass `Hardfork.PRAGUE` explicitly to reproduce pre-Osaka behavior, for example when replaying blocks before timestamp `1764798551`.
+</Note>
+
+## Related
+
+- [Hardfork timeline](/primitives/hardfork/hardforks)
+- [Hardfork API](/primitives/hardfork)
+- [P256VERIFY precompile](/evm/precompiles/p256verify)
+- [Blob schedules](/primitives/feemarket/blob-schedules)
+- [RLP block size limit](/primitives/rlp/block-size-limit)

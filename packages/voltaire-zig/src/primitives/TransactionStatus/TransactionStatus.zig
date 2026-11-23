@@ -596,12 +596,21 @@ test "transitionToReplaced - from included fails" {
 /// Convert status to string representation
 pub fn toString(status: *const TransactionStatus) []const u8 {
     return switch (status.*) {
+        .unknown => "unknown",
         .pending => "pending",
         .included => "included",
         .confirmed => "confirmed",
         .failed => "failed",
+        .dropped => "dropped",
         .replaced => "replaced",
     };
+}
+
+test "toString - unknown and dropped" {
+    const unknown_status: TransactionStatus = .{ .unknown = {} };
+    try std.testing.expectEqualStrings("unknown", toString(&unknown_status));
+    const dropped_status: TransactionStatus = .{ .dropped = .{ .reason = null } };
+    try std.testing.expectEqualStrings("dropped", toString(&dropped_status));
 }
 
 test "toString - pending" {
@@ -636,6 +645,7 @@ test "toString - replaced" {
 /// Check if two statuses are equal (full equality including data)
 pub fn equals(a: *const TransactionStatus, b: *const TransactionStatus) bool {
     return switch (a.*) {
+        .unknown => b.* == .unknown,
         .pending => b.* == .pending,
         .included => |data_a| switch (b.*) {
             .included => |data_b| data_a.block_number == data_b.block_number and data_a.gas_used == data_b.gas_used,
@@ -659,11 +669,33 @@ pub fn equals(a: *const TransactionStatus, b: *const TransactionStatus) bool {
             },
             else => false,
         },
+        .dropped => |data_a| switch (b.*) {
+            .dropped => |data_b| blk: {
+                if (data_a.reason == null and data_b.reason == null) break :blk true;
+                if (data_a.reason != null and data_b.reason != null) {
+                    break :blk std.mem.eql(u8, data_a.reason.?, data_b.reason.?);
+                }
+                break :blk false;
+            },
+            else => false,
+        },
         .replaced => |data_a| switch (b.*) {
             .replaced => |data_b| std.mem.eql(u8, &data_a.replacement_hash, &data_b.replacement_hash),
             else => false,
         },
     };
+}
+
+test "equals - unknown and dropped" {
+    const unk_a: TransactionStatus = .{ .unknown = {} };
+    const unk_b: TransactionStatus = .{ .unknown = {} };
+    try std.testing.expect(equals(&unk_a, &unk_b));
+    const d1: TransactionStatus = .{ .dropped = .{ .reason = "underpriced" } };
+    const d2: TransactionStatus = .{ .dropped = .{ .reason = "underpriced" } };
+    const d3: TransactionStatus = .{ .dropped = .{ .reason = null } };
+    try std.testing.expect(equals(&d1, &d2));
+    try std.testing.expect(!equals(&d1, &d3));
+    try std.testing.expect(!equals(&unk_a, &d3));
 }
 
 test "equals - pending equal" {

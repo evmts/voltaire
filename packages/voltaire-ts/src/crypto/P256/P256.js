@@ -32,7 +32,9 @@ export * from "./P256PublicKeyType.js";
 export * from "./P256SignatureType.js";
 
 import {
+	CURVE_B,
 	CURVE_ORDER,
+	FIELD_PRIME,
 	PRIVATE_KEY_SIZE,
 	PUBLIC_KEY_SIZE,
 	SHARED_SECRET_SIZE,
@@ -40,6 +42,7 @@ import {
 } from "./constants.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 import { ecdh } from "./ecdh.js";
+import { isValidPublicKey } from "./isValidPublicKey.js";
 import { randomPrivateKey } from "./randomPrivateKey.js";
 import { sign } from "./sign.js";
 import { validatePrivateKey } from "./validatePrivateKey.js";
@@ -48,13 +51,14 @@ import { verify } from "./verify.js";
 
 // Export individual functions
 export {
-	sign,
-	verify,
 	derivePublicKey,
 	ecdh,
+	isValidPublicKey,
 	randomPrivateKey,
+	sign,
 	validatePrivateKey,
 	validatePublicKey,
+	verify,
 };
 
 /**
@@ -74,7 +78,10 @@ export const P256 = {
 	randomPrivateKey,
 	validatePrivateKey,
 	validatePublicKey,
+	isValidPublicKey,
 	CURVE_ORDER,
+	FIELD_PRIME,
+	CURVE_B,
 	PRIVATE_KEY_SIZE,
 	PUBLIC_KEY_SIZE,
 	SIGNATURE_COMPONENT_SIZE,

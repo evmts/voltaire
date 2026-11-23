@@ -12,7 +12,7 @@ import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
 
 // Export individual functions
-export { from, fromHex, toHex, toBytes, equals, compare, size, clone };
+export { clone, compare, equals, from, fromHex, size, toBytes, toHex };
 
 // Callable constructor
 export function Bytes4(value: Uint8Array | string | number[]): Bytes4Type {

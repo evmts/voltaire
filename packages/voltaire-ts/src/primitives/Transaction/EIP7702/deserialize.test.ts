@@ -16,7 +16,16 @@ describe("TransactionEIP7702.deserialize", () => {
 			value: 0n,
 			data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
 			accessList: [],
-			authorizationList: [],
+			authorizationList: [
+				{
+					chainId: 1n,
+					address: Address("0x1111111111111111111111111111111111111111"),
+					nonce: 7n,
+					yParity: 1,
+					r: new Uint8Array(32).fill(3),
+					s: new Uint8Array(32).fill(4),
+				},
+			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
@@ -40,7 +49,17 @@ describe("TransactionEIP7702.deserialize", () => {
 		);
 		expect(deserialized.value).toBe(original.value);
 		expect(deserialized.data).toEqual(original.data);
-		expect(deserialized.authorizationList.length).toBe(0);
+		expect(deserialized.authorizationList.length).toBe(1);
+		const auth = deserialized.authorizationList[0];
+		const expectedAuth = original.authorizationList[0];
+		expect(auth?.chainId).toBe(expectedAuth?.chainId);
+		expect(new Uint8Array(auth?.address ?? [])).toEqual(
+			new Uint8Array(expectedAuth?.address ?? []),
+		);
+		expect(auth?.nonce).toBe(expectedAuth?.nonce);
+		expect(auth?.yParity).toBe(expectedAuth?.yParity);
+		expect(auth?.r).toEqual(expectedAuth?.r);
+		expect(auth?.s).toEqual(expectedAuth?.s);
 		expect(deserialized.yParity).toBe(original.yParity);
 		expect(deserialized.r).toEqual(original.r);
 		expect(deserialized.s).toEqual(original.s);

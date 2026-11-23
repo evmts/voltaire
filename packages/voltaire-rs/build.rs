@@ -6,22 +6,15 @@ fn main() {
     // Only link native library when feature is enabled
     #[cfg(feature = "native")]
     {
-        // Look for the library in the parent voltaire-zig package
-        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-        let voltaire_zig = std::path::Path::new(&manifest_dir)
-            .parent()
-            .unwrap()
-            .join("voltaire-zig")
-            .join("zig-out")
-            .join("lib");
-
-        if voltaire_zig.exists() {
-            println!("cargo:rustc-link-search=native={}", voltaire_zig.display());
-            println!("cargo:rustc-link-lib=static=voltaire");
-        } else {
-            // Try system paths
-            println!("cargo:rustc-link-lib=voltaire");
-        }
+        println!("cargo:rerun-if-env-changed=VOLTAIRE_LIB_DIR");
+        let lib_dir = std::env::var_os("VOLTAIRE_LIB_DIR")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| {
+                let manifest_dir = std::env::var_os("CARGO_MANIFEST_DIR").unwrap();
+                std::path::PathBuf::from(manifest_dir).join("../../zig-out/lib")
+            });
+        println!("cargo:rustc-link-search=native={}", lib_dir.display());
+        println!("cargo:rustc-link-lib=static=primitives_c");
 
         // Also link C runtime
         #[cfg(target_os = "macos")]

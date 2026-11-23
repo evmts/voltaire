@@ -7,6 +7,8 @@
 
 import type { HashType } from "../primitives/Hash/HashType.js";
 import * as loader from "../wasm-loader/loader.js";
+import { validatePrivateKey as validateP256PrivateKey } from "./P256/validatePrivateKey.js";
+import { validatePublicKey as validateP256PublicKey } from "./P256/validatePublicKey.js";
 
 // ============================================================================
 // Main P256Wasm Namespace
@@ -34,6 +36,7 @@ export namespace P256Wasm {
 	export const PRIVATE_KEY_SIZE = 32;
 	export const PUBLIC_KEY_SIZE = 64;
 	export const SIGNATURE_COMPONENT_SIZE = 32;
+	export const MESSAGE_HASH_SIZE = 32;
 	export const SHARED_SECRET_SIZE = 32;
 
 	// ==========================================================================
@@ -80,6 +83,12 @@ export namespace P256Wasm {
 		messageHash: HashType,
 		privateKey: PrivateKey,
 	): Signature {
+		if (messageHash.length !== MESSAGE_HASH_SIZE) {
+			throw new P256Error(
+				`Message hash must be ${MESSAGE_HASH_SIZE} bytes, got ${messageHash.length}`,
+			);
+		}
+
 		if (privateKey.length !== PRIVATE_KEY_SIZE) {
 			throw new InvalidPrivateKeyError(
 				`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
@@ -106,6 +115,12 @@ export namespace P256Wasm {
 		messageHash: HashType,
 		publicKey: PublicKey,
 	): boolean {
+		if (messageHash.length !== MESSAGE_HASH_SIZE) {
+			throw new P256Error(
+				`Message hash must be ${MESSAGE_HASH_SIZE} bytes, got ${messageHash.length}`,
+			);
+		}
+
 		if (publicKey.length !== PUBLIC_KEY_SIZE) {
 			throw new InvalidPublicKeyError(
 				`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
@@ -138,6 +153,9 @@ export namespace P256Wasm {
 		// Reject invalid ranges
 		if (r === 0n || r >= CURVE_ORDER) return false;
 		if (s === 0n || s >= CURVE_ORDER) return false;
+
+		// A signature can never be valid under an invalid public key
+		if (!validateP256PublicKey(publicKey)) return false;
 
 		try {
 			const sig = new Uint8Array(64);
@@ -192,6 +210,13 @@ export namespace P256Wasm {
 			);
 		}
 
+		// Full public-key validation: blocks invalid-curve and infinity attacks
+		if (!validateP256PublicKey(publicKey)) {
+			throw new InvalidPublicKeyError(
+				"Public key is not a valid point on the P256 curve",
+			);
+		}
+
 		try {
 			return loader.p256Ecdh(privateKey, publicKey);
 		} catch (error) {
@@ -204,26 +229,14 @@ export namespace P256Wasm {
 	// ==========================================================================
 
 	export function validatePrivateKey(privateKey: PrivateKey): boolean {
-		if (privateKey.length !== PRIVATE_KEY_SIZE) {
-			return false;
-		}
-
-		// Check if key is in valid range [1, n-1]
-		const keyBigInt = BigInt(
-			`0x${Array.from(privateKey)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("")}`,
-		);
-		return keyBigInt > 0n && keyBigInt < CURVE_ORDER;
+		return validateP256PrivateKey(privateKey);
 	}
 
 	export function validatePublicKey(publicKey: PublicKey): boolean {
-		if (publicKey.length !== PUBLIC_KEY_SIZE) {
-			return false;
-		}
+		return validateP256PublicKey(publicKey);
+	}
 
-		// Basic validation - should be on curve, but checking that requires curve ops
-		// For now just check it's not all zeros
-		return publicKey.some((b) => b !== 0);
+	export function isValidPublicKey(publicKey: PublicKey): boolean {
+		return validateP256PublicKey(publicKey);
 	}
 }

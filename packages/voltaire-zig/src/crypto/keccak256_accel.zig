@@ -245,8 +245,8 @@ test "Keccak256 hardware acceleration correctness" {
         // Debug print what we get from standard library
         if (tv.input.len > 0) {
             std.log.debug("Input: {s}", .{tv.input});
-            std.log.debug("Expected: {x}", .{std.fmt.fmtSliceHexLower(&tv.expected)});
-            std.log.debug("Std lib:  {x}", .{std.fmt.fmtSliceHexLower(&std_output)});
+            std.log.debug("Expected: {s}", .{&std.fmt.bytesToHex(tv.expected, .lower)});
+            std.log.debug("Std lib:  {s}", .{&std.fmt.bytesToHex(std_output, .lower)});
         }
 
         // Now test our implementation

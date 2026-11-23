@@ -4,6 +4,9 @@ import { Uint8OverflowError } from "./errors.js";
 /**
  * Multiply two Uint8 values with overflow checking
  *
+ * Overflow mode: checked. `timesChecked` is the explicit name for this behavior
+ * and `timesWrapping` wraps instead of throwing. Both exist on every Uint size.
+ *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
  * @param {import('./Uint8Type.js').Uint8Type} a - First operand

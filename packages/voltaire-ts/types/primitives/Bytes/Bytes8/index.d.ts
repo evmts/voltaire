@@ -8,7 +8,7 @@ import { fromHex } from "./fromHex.js";
 import { size } from "./size.js";
 import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
-export { from, fromHex, toHex, toBytes, equals, compare, size, clone };
+export { clone, compare, equals, from, fromHex, size, toBytes, toHex };
 export declare function Bytes8(value: Uint8Array | string | number[]): Bytes8Type;
 export declare namespace Bytes8 {
     var from: typeof import("./from.js").from;

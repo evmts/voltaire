@@ -1,6 +1,6 @@
 ---
-title: "merge.js"
----
+
+## title: "merge.js"
 
 # merge.js
 
@@ -9,7 +9,7 @@ Combine multiple access lists with automatic deduplication.
 ## Signature
 
 ```typescript
-function merge(...lists: readonly BrandedAccessList[]): BrandedAccessList
+function merge(...lists: readonly BrandedAccessList[]): BrandedAccessList;
 ```
 
 ## Parameters
@@ -23,15 +23,9 @@ function merge(...lists: readonly BrandedAccessList[]): BrandedAccessList
 ## Example
 
 ```typescript
-const list1 = AccessList.from([
-  { address: token1, storageKeys: [key1] }
-]);
-const list2 = AccessList.from([
-  { address: token2, storageKeys: [key2] }
-]);
-const list3 = AccessList.from([
-  { address: token1, storageKeys: [key3] }
-]);
+const list1 = AccessList.from([{ address: token1, storageKeys: [key1] }]);
+const list2 = AccessList.from([{ address: token2, storageKeys: [key2] }]);
+const list3 = AccessList.from([{ address: token1, storageKeys: [key3] }]);
 
 const merged = AccessList.merge(list1, list2, list3);
 // Result: [

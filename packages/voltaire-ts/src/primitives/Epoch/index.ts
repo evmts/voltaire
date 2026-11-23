@@ -6,7 +6,7 @@ import { toBigInt } from "./toBigInt.js";
 import { toNumber } from "./toNumber.js";
 import { toSlot } from "./toSlot.js";
 
-export { from, toNumber, toBigInt, equals, toSlot };
+export { equals, from, toBigInt, toNumber, toSlot };
 
 export const Epoch = {
 	from,

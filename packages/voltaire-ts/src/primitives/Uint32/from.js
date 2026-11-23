@@ -30,11 +30,12 @@ export function from(value) {
 	let numberValue;
 
 	if (typeof value === "string") {
-		if (value.startsWith("0x") || value.startsWith("0X")) {
-			numberValue = Number(BigInt(value));
-		} else {
-			numberValue = Number(value);
+		if (!/^0[xX][0-9a-fA-F]+$/.test(value) && !/^-?[0-9]+$/.test(value)) {
+			throw new Uint32NotIntegerError(`Invalid Uint32 string: ${value}`, {
+				value,
+			});
 		}
+		numberValue = Number(value);
 	} else if (typeof value === "bigint") {
 		numberValue = Number(value);
 	} else {

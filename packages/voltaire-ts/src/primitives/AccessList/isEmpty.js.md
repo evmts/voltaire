@@ -1,6 +1,6 @@
 ---
-title: "isEmpty.js"
----
+
+## title: "isEmpty.js"
 
 # isEmpty.js
 
@@ -9,7 +9,7 @@ Check if access list is empty.
 ## Signature
 
 ```typescript
-function isEmpty(list: BrandedAccessList): boolean
+function isEmpty(list: BrandedAccessList): boolean;
 ```
 
 ## Parameters
@@ -24,9 +24,9 @@ function isEmpty(list: BrandedAccessList): boolean
 
 ```typescript
 if (AccessList.isEmpty(list)) {
-  console.log('No access list entries');
-  // Skip access list in transaction
-  tx.accessList = undefined;
+	console.log("No access list entries");
+	// Skip access list in transaction
+	tx.accessList = undefined;
 }
 ```
 

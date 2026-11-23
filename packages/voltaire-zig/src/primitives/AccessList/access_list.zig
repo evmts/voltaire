@@ -63,7 +63,7 @@ pub fn isStorageKeyInAccessList(
     for (accessList) |entry| {
         if (entry.address.eql(addr)) {
             for (entry.storage_keys) |key| {
-                if (key.eql(storage_key)) {
+                if (std.mem.eql(u8, &key, &storage_key)) {
                     return true;
                 }
             }
@@ -72,48 +72,52 @@ pub fn isStorageKeyInAccessList(
     return false;
 }
 
-// RLP encode access list
-pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
-    // First, encode each entry as a list of [address, [storageKeys...]]
-    var entries = std.array_list.AlignedManaged([]const u8, null).init(allocator);
-    defer {
-        for (entries.items) |item| {
-            allocator.free(item);
-        }
-        entries.deinit();
+// Wrap an already-RLP-encoded payload in a list header
+fn wrapRlpList(allocator: Allocator, payload: []const u8) ![]u8 {
+    var out = std.ArrayList(u8){};
+    errdefer out.deinit(allocator);
+    if (payload.len < 56) {
+        try out.append(allocator, 0xc0 + @as(u8, @intCast(payload.len)));
+    } else {
+        const len_bytes = try rlp.encodeLength(allocator, payload.len);
+        defer allocator.free(len_bytes);
+        try out.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
+        try out.appendSlice(allocator, len_bytes);
     }
+    try out.appendSlice(allocator, payload);
+    return out.toOwnedSlice(allocator);
+}
+
+// RLP encode access list: [[address, [storageKey, ...]], ...]
+pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
+    var body = std.ArrayList(u8){};
+    defer body.deinit(allocator);
 
     for (accessList) |entry| {
-        // Encode the address
         const encodedAddress = try rlp.encodeBytes(allocator, &entry.address.bytes);
         defer allocator.free(encodedAddress);
 
-        // Encode storage keys
-        var encodedKeys = std.array_list.AlignedManaged([]const u8, null).init(allocator);
-        defer {
-            for (encodedKeys.items) |item| {
-                allocator.free(item);
-            }
-            encodedKeys.deinit();
-        }
-
+        var keysBody = std.ArrayList(u8){};
+        defer keysBody.deinit(allocator);
         for (entry.storage_keys) |key| {
-            const encodedKey = try rlp.encodeBytes(allocator, &key.bytes);
-            try encodedKeys.append(encodedKey);
+            const encodedKey = try rlp.encodeBytes(allocator, &key);
+            defer allocator.free(encodedKey);
+            try keysBody.appendSlice(allocator, encodedKey);
         }
-
-        // Encode the list of storage keys
-        const keysListEncoded = try rlp.encode(allocator, encodedKeys.items);
+        const keysListEncoded = try wrapRlpList(allocator, keysBody.items);
         defer allocator.free(keysListEncoded);
 
-        // Create entry as [address, storageKeysList]
-        var entryItems = [_][]const u8{ encodedAddress, keysListEncoded };
-        const entryEncoded = try rlp.encode(allocator, &entryItems);
-        try entries.append(entryEncoded);
+        var entryBody = std.ArrayList(u8){};
+        defer entryBody.deinit(allocator);
+        try entryBody.appendSlice(allocator, encodedAddress);
+        try entryBody.appendSlice(allocator, keysListEncoded);
+
+        const entryEncoded = try wrapRlpList(allocator, entryBody.items);
+        defer allocator.free(entryEncoded);
+        try body.appendSlice(allocator, entryEncoded);
     }
 
-    // Encode the entire access list
-    return try rlp.encode(allocator, entries.items);
+    return wrapRlpList(allocator, body.items);
 }
 
 // RLP decode access list
@@ -129,6 +133,7 @@ pub fn decodeAccessList(allocator: Allocator, bytes: []const u8) ![]AccessListEn
 
     var result = std.array_list.AlignedManaged(AccessListEntry, null).init(allocator);
     defer result.deinit();
+    errdefer for (result.items) |entry| allocator.free(entry.storage_keys);
 
     for (list) |item| {
         // Each item must be [address, [storageKeys...]]
@@ -161,6 +166,7 @@ pub fn decodeAccessList(allocator: Allocator, bytes: []const u8) ![]AccessListEn
         };
 
         var keys = try allocator.alloc(Hash, keysList.len);
+        errdefer allocator.free(keys);
         for (keysList, 0..) |keyData, i| {
             const keyBytes = switch (keyData) {
                 .String => |s| s,
@@ -168,11 +174,10 @@ pub fn decodeAccessList(allocator: Allocator, bytes: []const u8) ![]AccessListEn
             };
 
             if (keyBytes.len != 32) {
-                allocator.free(keys);
                 return error.InvalidAccessListKeyLength;
             }
 
-            @memcpy(&keys[i].bytes, keyBytes);
+            @memcpy(&keys[i], keyBytes);
         }
 
         try result.append(.{
@@ -208,6 +213,7 @@ pub fn deduplicateAccessList(
 ) ![]AccessListEntry {
     var result = std.array_list.AlignedManaged(AccessListEntry, null).init(allocator);
     defer result.deinit();
+    errdefer for (result.items) |entry| allocator.free(entry.storage_keys);
 
     for (accessList) |entry| {
         // Check if address already exists
@@ -225,7 +231,7 @@ pub fn deduplicateAccessList(
                 for (entry.storage_keys) |newKey| {
                     var isDuplicate = false;
                     for (existing.storage_keys) |existingKey| {
-                        if (newKey.eql(existingKey)) {
+                        if (std.mem.eql(u8, &newKey, &existingKey)) {
                             isDuplicate = true;
                             break;
                         }
@@ -235,16 +241,20 @@ pub fn deduplicateAccessList(
                     }
                 }
 
-                existing.storage_keys = try keys.toOwnedSlice();
+                const merged = try keys.toOwnedSlice();
+                allocator.free(existing.storage_keys);
+                existing.storage_keys = merged;
                 found = true;
                 break;
             }
         }
 
         if (!found) {
+            const keysCopy = try allocator.dupe(Hash, entry.storage_keys);
+            errdefer allocator.free(keysCopy);
             try result.append(.{
                 .address = entry.address,
-                .storage_keys = try allocator.dupe(Hash, entry.storage_keys),
+                .storage_keys = keysCopy,
             });
         }
     }
@@ -340,6 +350,7 @@ pub fn withAddress(
 }
 
 // Add storage key to access list (immutable)
+// Caller owns the returned slice and every entry's storage_keys slice.
 pub fn withStorageKey(
     allocator: Allocator,
     accessList: AccessList,
@@ -348,41 +359,37 @@ pub fn withStorageKey(
 ) ![]AccessListEntry {
     var result = std.array_list.AlignedManaged(AccessListEntry, null).init(allocator);
     defer result.deinit();
+    errdefer for (result.items) |entry| allocator.free(entry.storage_keys);
 
     var found = false;
     for (accessList) |entry| {
+        var addKey = false;
         if (entry.address.eql(addr)) {
             found = true;
-            // Check if key already exists
-            var hasKey = false;
+            addKey = true;
             for (entry.storage_keys) |key| {
-                if (key.eql(storage_key)) {
-                    hasKey = true;
+                if (std.mem.eql(u8, &key, &storage_key)) {
+                    addKey = false;
                     break;
                 }
             }
-
-            if (hasKey) {
-                // Key exists, just copy entry
-                try result.append(entry);
-            } else {
-                // Add new key
-                var keys = try allocator.alloc(Hash, entry.storage_keys.len + 1);
-                @memcpy(keys[0..entry.storage_keys.len], entry.storage_keys);
-                keys[entry.storage_keys.len] = storage_key;
-                try result.append(.{
-                    .address = entry.address,
-                    .storage_keys = keys,
-                });
-            }
-        } else {
-            try result.append(entry);
         }
+
+        const n = entry.storage_keys.len + @intFromBool(addKey);
+        const keys = try allocator.alloc(Hash, n);
+        errdefer allocator.free(keys);
+        @memcpy(keys[0..entry.storage_keys.len], entry.storage_keys);
+        if (addKey) keys[entry.storage_keys.len] = storage_key;
+        try result.append(.{
+            .address = entry.address,
+            .storage_keys = keys,
+        });
     }
 
     // If address not found, add it with the storage key
     if (!found) {
-        var keys = try allocator.alloc(Hash, 1);
+        const keys = try allocator.alloc(Hash, 1);
+        errdefer allocator.free(keys);
         keys[0] = storage_key;
         try result.append(.{
             .address = addr,
@@ -399,8 +406,8 @@ test "access list gas calculation" {
     _ = testing.allocator;
 
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -422,8 +429,8 @@ test "access list gas calculation" {
 
 test "access list membership checks" {
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -441,8 +448,8 @@ test "access list membership checks" {
     try testing.expect(!isAddressInAccessList(&accessList, addr2));
 
     // Test storage key membership
-    const key1 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
-    const key3 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003");
+    const key1 = try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
+    const key3 = try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003");
 
     try testing.expect(isStorageKeyInAccessList(&accessList, addr1, key1));
     try testing.expect(!isStorageKeyInAccessList(&accessList, addr1, key3));
@@ -463,7 +470,7 @@ test "access list RLP encoding" {
     const allocator = testing.allocator;
 
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -485,8 +492,8 @@ test "access list RLP roundtrip" {
     const allocator = testing.allocator;
 
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -517,8 +524,8 @@ test "access list RLP roundtrip" {
     try testing.expectEqual(@as(usize, 2), decoded.len);
     try testing.expect(decoded[0].address.eql(accessList[0].address));
     try testing.expectEqual(@as(usize, 2), decoded[0].storage_keys.len);
-    try testing.expect(decoded[0].storage_keys[0].eql(storage_keys[0]));
-    try testing.expect(decoded[0].storage_keys[1].eql(storage_keys[1]));
+    try testing.expect(std.mem.eql(u8, &decoded[0].storage_keys[0], &storage_keys[0]));
+    try testing.expect(std.mem.eql(u8, &decoded[0].storage_keys[1], &storage_keys[1]));
     try testing.expect(decoded[1].address.eql(accessList[1].address));
     try testing.expectEqual(@as(usize, 0), decoded[1].storage_keys.len);
 }
@@ -538,8 +545,8 @@ test "decode empty access list" {
 
 test "access list gas savings" {
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -563,13 +570,13 @@ test "complex access list" {
 
     // Multiple addresses with varying storage keys
     const keys1 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003"),
     };
 
     const keys2 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000004"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000004"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -606,13 +613,13 @@ test "deduplicate access list" {
     const allocator = testing.allocator;
 
     const keys1 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const keys2 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"), // Duplicate
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"), // Duplicate
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -663,7 +670,7 @@ test "access list with single address no storage keys" {
 
 test "access list membership with non-existent address" {
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -674,7 +681,7 @@ test "access list membership with non-existent address" {
     };
 
     const non_existent = try Address.fromHex("0x9999999999999999999999999999999999999999");
-    const key = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
+    const key = try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
 
     // Address not in list
     try testing.expect(!isAddressInAccessList(&accessList, non_existent));
@@ -695,7 +702,7 @@ test "access list with maximum practical size" {
 
     for (0..100) |i| {
         for (0..10) |j| {
-            all_keys[i][j] = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
+            all_keys[i][j] = try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
         }
 
         var addr_bytes: [20]u8 = undefined;
@@ -717,11 +724,11 @@ test "deduplicate access list with no duplicates" {
     const allocator = testing.allocator;
 
     const keys1 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const keys2 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -775,7 +782,7 @@ test "access list RLP encoding with large storage keys" {
     for (0..50) |i| {
         var key_bytes: [32]u8 = undefined;
         @memset(&key_bytes, @intCast(i));
-        storage_keys[i] = Hash{ .bytes = key_bytes };
+        storage_keys[i] = key_bytes;
     }
 
     const accessList = [_]AccessListEntry{
@@ -795,7 +802,7 @@ test "access list RLP encoding with large storage keys" {
 
 test "addressCount" {
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -817,12 +824,12 @@ test "addressCount" {
 
 test "storageKeyCount" {
     const keys1 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const keys2 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -863,7 +870,7 @@ test "hasSavings" {
 
     // List with entries has savings
     const storage_keys = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const accessList = [_]AccessListEntry{
@@ -878,8 +885,8 @@ test "hasSavings" {
 
 test "keysFor" {
     const keys1 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const addr1 = try Address.fromHex("0x1111111111111111111111111111111111111111");
@@ -906,11 +913,11 @@ test "mergeAccessLists" {
     const allocator = testing.allocator;
 
     const keys1 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const keys2 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const list1 = [_]AccessListEntry{
@@ -948,11 +955,11 @@ test "mergeAccessLists with duplicates" {
     const allocator = testing.allocator;
 
     const keys1 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const keys2 = [_]Hash{
-        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+        try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
@@ -1017,8 +1024,8 @@ test "withStorageKey" {
     const allocator = testing.allocator;
 
     const addr1 = try Address.fromHex("0x1111111111111111111111111111111111111111");
-    const key1 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
-    const key2 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002");
+    const key1 = try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
+    const key2 = try hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002");
 
     // Add to empty list
     const empty: AccessList = &.{};

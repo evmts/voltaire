@@ -53,7 +53,7 @@ import {
   serializeHexRaw,
   serializeRaw,
   Type,
-  verifySignatureRaw
+  verifySignatureRaw,
 } from native
 
 export type { VoltaireTxAny as AnyTransaction }
@@ -62,48 +62,58 @@ export { Type }
 export effect function serialize(tx: VoltaireTxAny): Uint8Array!InvalidTransactionError {
   return try Effect.try({
     try: () => serializeRaw(tx),
-    catch: (cause) => new InvalidTransactionError({ message: `Transaction serialization failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidTransactionError({ message: `Transaction serialization failed: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function serializeHex(tx: VoltaireTxAny): HexType!InvalidTransactionError {
   return try Effect.try({
     try: () => serializeHexRaw(tx),
-    catch: (cause) => new InvalidTransactionError({ message: `Transaction hex serialization failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidTransactionError({ message: `Transaction hex serialization failed: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function deserialize(bytes: Uint8Array | HexType | `0x${string}`): VoltaireTxAny!InvalidTransactionError {
   return try Effect.try({
     try: () => deserializeRaw(bytes),
-    catch: (cause) => new InvalidTransactionError({ message: `Transaction deserialization failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidTransactionError({ message: `Transaction deserialization failed: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function hash(tx: VoltaireTxAny): HashType!InvalidTransactionError {
   return try Effect.try({
     try: () => hashRaw(tx),
-    catch: (cause) => new InvalidTransactionError({ message: `Transaction hash failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidTransactionError({ message: `Transaction hash failed: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function getSigningHash(tx: VoltaireTxAny): HashType!InvalidTransactionError {
   return try Effect.try({
     try: () => getSigningHashRaw(tx),
-    catch: (cause) => new InvalidTransactionError({ message: `Transaction signing hash failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidTransactionError({ message: `Transaction signing hash failed: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function getSender(tx: VoltaireTxAny): AddressType!InvalidTransactionError {
   return try Effect.try({
     try: () => getSenderRaw(tx),
-    catch: (cause) => new InvalidTransactionError({ message: `Transaction sender recovery failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidTransactionError({ message: `Transaction sender recovery failed: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function verifySignature(tx: VoltaireTxAny): boolean!InvalidTransactionError {
   return try Effect.try({
     try: () => verifySignatureRaw(tx),
-    catch: (cause) => new InvalidTransactionError({ message: `Transaction signature verification failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new InvalidTransactionError({
+        message: `Transaction signature verification failed: ${errorMessage(cause)}`,
+        cause,
+      }),
   })
 }

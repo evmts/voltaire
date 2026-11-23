@@ -1,6 +1,9 @@
 /**
  * Subtract Uint32 value with wrapping
  *
+ * Overflow mode: wrapping. `minusWrapping` is the explicit name for this behavior
+ * and `minusChecked` throws instead of wrapping. Both exist on every Uint size.
+ *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
  * @param {import('./Uint32Type.js').Uint32Type} uint - First operand

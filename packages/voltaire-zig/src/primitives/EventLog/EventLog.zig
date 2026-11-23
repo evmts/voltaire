@@ -43,62 +43,52 @@ pub fn parseEventLog(allocator: Allocator, log: EventLog, sig: EventSignature) !
     var result = std.array_list.AlignedManaged(abi_encoding.AbiValue, null).init(allocator);
     defer result.deinit();
 
-    var topic_index: usize = 1; // Skip topic0 (event signature)
+    // Decode non-indexed parameters from data first
     var data_types = std.array_list.AlignedManaged(abi_encoding.AbiType, null).init(allocator);
     defer data_types.deinit();
-
-    // Process each input
     for (sig.inputs) |input| {
-        if (input.indexed) {
-            // Read from topics
-            if (topic_index < log.topics.len) {
-                const topic = log.topics[topic_index];
-                topic_index += 1;
-
-                // For indexed parameters, decode based on type
-                switch (input.type) {
-                    .address => {
-                        var addr: Address = undefined;
-                        @memcpy(&addr.bytes, topic.bytes[12..32]);
-                        try result.append(abi_encoding.addressValue(addr));
-                    },
-                    .uint256 => {
-                        const value = topic.to_u256();
-                        try result.append(abi_encoding.uint256Value(value));
-                    },
-                    .string, .bytes => {
-                        // Dynamic types are hashed when indexed
-                        // We can't recover the original value
-                        try result.append(abi_encoding.bytesValue(&topic.bytes));
-                    },
-                    else => {
-                        // Handle other types as needed
-                        try result.append(abi_encoding.uint256Value(0));
-                    },
-                }
-            }
-        } else {
-            // Will be decoded from data later
-            try data_types.append(input.type);
-        }
+        if (!input.indexed) try data_types.append(input.type);
     }
 
-    // Decode non-indexed parameters from data
-    if (data_types.items.len > 0) {
-        const data_values = try abi_encoding.decodeAbiParameters(allocator, log.data, data_types.items);
-        defer allocator.free(data_values);
+    const data_values: []abi_encoding.AbiValue = if (data_types.items.len > 0)
+        try abi_encoding.decodeAbiParameters(allocator, log.data, data_types.items)
+    else
+        &[_]abi_encoding.AbiValue{};
+    defer if (data_types.items.len > 0) allocator.free(data_values);
 
-        // Insert data values at their correct positions
-        var data_index: usize = 0;
-        var result_index: usize = 0;
-        for (sig.inputs) |input| {
-            if (!input.indexed) {
-                if (data_index < data_values.len) {
-                    try result.insert(result_index, data_values[data_index]);
-                    data_index += 1;
-                }
+    // Emit values in signature order; indexed values missing from topics are omitted
+    var topic_index: usize = 1; // Skip topic0 (event signature)
+    var data_index: usize = 0;
+    for (sig.inputs) |input| {
+        if (!input.indexed) {
+            if (data_index < data_values.len) {
+                try result.append(data_values[data_index]);
+                data_index += 1;
             }
-            result_index += 1;
+            continue;
+        }
+        if (topic_index >= log.topics.len) continue;
+        const topic = &log.topics[topic_index];
+        topic_index += 1;
+
+        // For indexed parameters, decode based on type
+        switch (input.type) {
+            .address => {
+                var addr: Address = undefined;
+                @memcpy(&addr.bytes, topic[12..32]);
+                try result.append(abi_encoding.addressValue(addr));
+            },
+            .uint256 => {
+                try result.append(abi_encoding.uint256_value(hash.toU256(topic.*)));
+            },
+            .string, .bytes => {
+                // Dynamic types are hashed when indexed; the topic holds keccak256 of the value
+                try result.append(abi_encoding.bytesValue(topic[0..]));
+            },
+            else => {
+                // Handle other types as needed
+                try result.append(abi_encoding.uint256_value(0));
+            },
         }
     }
 
@@ -115,7 +105,7 @@ pub fn filterLogsByTopics(logs: []const EventLog, filter_topics: []const ?Hash) 
 
         for (filter_topics, 0..) |filter_topic, i| {
             if (filter_topic) |topic| {
-                if (i >= log.topics.len or !log.topics[i].eql(topic)) {
+                if (i >= log.topics.len or !hash.equal(log.topics[i], topic)) {
                     match = false;
                     break;
                 }
@@ -156,7 +146,7 @@ test "parse event log with no indexed parameters" {
     const values = [_]abi_encoding.AbiValue{
         abi_encoding.addressValue(from_addr),
         abi_encoding.addressValue(to_addr),
-        abi_encoding.uint256Value(value),
+        abi_encoding.uint256_value(value),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -204,16 +194,16 @@ test "parse event log with indexed parameters" {
     const to_addr = try Address.fromHex("0x0000000000000000000000000000000000000002");
 
     // Create topics for indexed parameters
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &from_addr.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &from_addr.bytes);
 
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &to_addr.bytes);
+    var topic2 = hash.ZERO_HASH;
+    @memcpy(topic2[12..32], &to_addr.bytes);
 
     // Only non-indexed parameter in data
     const value: u256 = 1000;
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
+        abi_encoding.uint256_value(value),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -300,15 +290,15 @@ test "parse anonymous event" {
     const from_addr = try Address.fromHex("0x0000000000000000000000000000000000000001");
     const to_addr = try Address.fromHex("0x0000000000000000000000000000000000000002");
 
-    var topic0 = Hash.ZERO;
-    @memcpy(topic0.bytes[12..32], &from_addr.bytes);
+    var topic0 = hash.ZERO_HASH;
+    @memcpy(topic0[12..32], &from_addr.bytes);
 
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &to_addr.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &to_addr.bytes);
 
     const value: u256 = 1000;
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
+        abi_encoding.uint256_value(value),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -343,20 +333,20 @@ test "parse ERC20 Transfer event" {
     };
 
     // Real Transfer event signature
-    const topic0 = try Hash.fromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+    const topic0 = try hash.fromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 
     const from_addr = try Address.fromHex("0x1234567890123456789012345678901234567890");
     const to_addr = try Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
 
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &from_addr.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &from_addr.bytes);
 
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &to_addr.bytes);
+    var topic2 = hash.ZERO_HASH;
+    @memcpy(topic2[12..32], &to_addr.bytes);
 
     const value: u256 = 1_000_000_000_000_000_000; // 1 ETH
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
+        abi_encoding.uint256_value(value),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -367,7 +357,7 @@ test "parse ERC20 Transfer event" {
         .topics = &[_]Hash{ topic0, topic1, topic2 },
         .data = data,
         .block_number = 17000000,
-        .transaction_hash = try Hash.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234"),
+        .transaction_hash = try hash.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234"),
         .transaction_index = 42,
         .log_index = 123,
         .removed = false,
@@ -402,17 +392,17 @@ test "parse event with multiple data parameters" {
     const sender = try Address.fromHex("0x0000000000000000000000000000000000000001");
     const to = try Address.fromHex("0x0000000000000000000000000000000000000002");
 
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &sender.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &sender.bytes);
 
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &to.bytes);
+    var topic2 = hash.ZERO_HASH;
+    @memcpy(topic2[12..32], &to.bytes);
 
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(1000), // amount0In
-        abi_encoding.uint256Value(0), // amount1In
-        abi_encoding.uint256Value(0), // amount0Out
-        abi_encoding.uint256Value(2000), // amount1Out
+        abi_encoding.uint256_value(1000), // amount0In
+        abi_encoding.uint256_value(0), // amount1In
+        abi_encoding.uint256_value(0), // amount0Out
+        abi_encoding.uint256_value(2000), // amount1Out
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -443,7 +433,7 @@ test "parse event with multiple data parameters" {
 
 test "filter logs by topics" {
     const topic0 = hash.keccak256("Transfer(address,address,uint256)");
-    const from_topic = try Hash.fromHex("0x0000000000000000000000001234567890123456789012345678901234567890");
+    const from_topic = try hash.fromHex("0x0000000000000000000000001234567890123456789012345678901234567890");
 
     const logs = [_]EventLog{
         // Matching log
@@ -460,7 +450,7 @@ test "filter logs by topics" {
         // Non-matching log (different topic0)
         .{
             .address = Address.ZERO,
-            .topics = &[_]Hash{ Hash.ZERO, from_topic },
+            .topics = &[_]Hash{ hash.ZERO_HASH, from_topic },
             .data = &[_]u8{},
             .block_number = 2,
             .transaction_hash = null,
@@ -519,7 +509,7 @@ pub fn matchesTopics(log: EventLog, filter_topics: []const ?Hash) bool {
     // Check each filter topic
     for (filter_topics, 0..) |filter_topic, i| {
         if (filter_topic) |topic| {
-            if (!log.topics[i].eql(topic)) return false;
+            if (!hash.equal(log.topics[i], topic)) return false;
         }
         // null is wildcard, always matches
     }
@@ -665,7 +655,7 @@ test "getTopic0 returns first topic" {
 
     const result = getTopic0(log);
     try testing.expect(result != null);
-    try testing.expect(result.?.eql(topic0));
+    try testing.expect(hash.equal(result.?, topic0));
 }
 
 test "getTopic0 returns null for empty topics" {
@@ -705,8 +695,8 @@ test "getIndexedTopics returns topics excluding topic0" {
     defer allocator.free(indexed);
 
     try testing.expectEqual(@as(usize, 2), indexed.len);
-    try testing.expect(indexed[0].eql(topic1));
-    try testing.expect(indexed[1].eql(topic2));
+    try testing.expect(hash.equal(indexed[0], topic1));
+    try testing.expect(hash.equal(indexed[1], topic2));
 }
 
 test "getIndexedTopics returns empty for single topic" {
@@ -1187,7 +1177,7 @@ test "clone creates deep copy" {
     // Verify values are equal
     try testing.expect(cloned.address.eql(original.address));
     try testing.expectEqual(original.topics.len, cloned.topics.len);
-    try testing.expect(cloned.topics[0].eql(original.topics[0]));
+    try testing.expect(hash.equal(cloned.topics[0], original.topics[0]));
     try testing.expectEqualSlices(u8, original.data, cloned.data);
     try testing.expectEqual(original.block_number, cloned.block_number);
     try testing.expectEqual(original.transaction_index, cloned.transaction_index);
@@ -1215,14 +1205,13 @@ test "parse event with indexed uint256 in topic" {
 
     // Create topic for indexed uint256
     const old_value: u256 = 12345678901234567890;
-    var topic1 = Hash.ZERO;
-    const old_value_bytes = std.mem.toBytes(old_value);
-    @memcpy(&topic1.bytes, &old_value_bytes);
+    var topic1 = hash.ZERO_HASH;
+    std.mem.writeInt(u256, &topic1, old_value, .big);
 
     // Non-indexed parameter in data
     const new_value: u256 = 98765432109876543210;
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(new_value),
+        abi_encoding.uint256_value(new_value),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -1267,17 +1256,17 @@ test "parse event with mixed parameter ordering" {
     const addr1 = try Address.fromHex("0x0000000000000000000000000000000000000001");
     const addr2 = try Address.fromHex("0x0000000000000000000000000000000000000002");
 
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &addr1.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &addr1.bytes);
 
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &addr2.bytes);
+    var topic2 = hash.ZERO_HASH;
+    @memcpy(topic2[12..32], &addr2.bytes);
 
     // Non-indexed parameters in data
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(100),
-        abi_encoding.uint256Value(200),
-        abi_encoding.uint256Value(300),
+        abi_encoding.uint256_value(100),
+        abi_encoding.uint256_value(200),
+        abi_encoding.uint256_value(300),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -1325,7 +1314,7 @@ test "parse event with indexed string cannot recover original value" {
 
     const timestamp: u256 = 1234567890;
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(timestamp),
+        abi_encoding.uint256_value(timestamp),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -1371,7 +1360,7 @@ test "parse event with indexed bytes type" {
 
     const update_id: u256 = 42;
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(update_id),
+        abi_encoding.uint256_value(update_id),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -1394,7 +1383,7 @@ test "parse event with indexed bytes type" {
     try testing.expectEqual(@as(usize, 2), parsed.len);
     // First value is the hash bytes, not the original data
     try testing.expectEqual(@as(usize, 32), parsed[0].bytes.len);
-    try testing.expectEqualSlices(u8, &data_hash.bytes, parsed[0].bytes);
+    try testing.expectEqualSlices(u8, &data_hash, parsed[0].bytes);
     try testing.expectEqual(update_id, parsed[1].uint256);
 }
 
@@ -1415,13 +1404,13 @@ test "parse event with missing topics returns incomplete data" {
 
     const from_addr = try Address.fromHex("0x0000000000000000000000000000000000000001");
 
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &from_addr.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &from_addr.bytes);
 
     // Missing topic2 (to address)
     const value: u256 = 1000;
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
+        abi_encoding.uint256_value(value),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -1465,14 +1454,14 @@ test "parse event with empty data and all indexed parameters" {
     const addr2 = try Address.fromHex("0x0000000000000000000000000000000000000002");
     const addr3 = try Address.fromHex("0x0000000000000000000000000000000000000003");
 
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &addr1.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &addr1.bytes);
 
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &addr2.bytes);
+    var topic2 = hash.ZERO_HASH;
+    @memcpy(topic2[12..32], &addr2.bytes);
 
-    var topic3 = Hash.ZERO;
-    @memcpy(topic3.bytes[12..32], &addr3.bytes);
+    var topic3 = hash.ZERO_HASH;
+    @memcpy(topic3[12..32], &addr3.bytes);
 
     const log = EventLog{
         .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
@@ -1511,15 +1500,15 @@ test "parse event with zero address and zero value" {
     // Zero address (mint/burn scenarios)
     const zero_addr = Address.ZERO;
 
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &zero_addr.bytes);
+    var topic1 = hash.ZERO_HASH;
+    @memcpy(topic1[12..32], &zero_addr.bytes);
 
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &zero_addr.bytes);
+    var topic2 = hash.ZERO_HASH;
+    @memcpy(topic2[12..32], &zero_addr.bytes);
 
     // Zero value
     const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(0),
+        abi_encoding.uint256_value(0),
     };
 
     const data = try abi_encoding.encodeAbiParameters(allocator, &values);
@@ -1559,9 +1548,8 @@ test "parse event with maximum uint256 value" {
 
     // Maximum uint256 value
     const max_value: u256 = std.math.maxInt(u256);
-    var topic1 = Hash.ZERO;
-    const max_value_bytes = std.mem.toBytes(max_value);
-    @memcpy(&topic1.bytes, &max_value_bytes);
+    var topic1 = hash.ZERO_HASH;
+    std.mem.writeInt(u256, &topic1, max_value, .big);
 
     const log = EventLog{
         .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),

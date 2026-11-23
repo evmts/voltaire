@@ -1,0 +1,121 @@
+---
+title: "0x100 P256VERIFY"
+description: "secp256r1 (P-256) ECDSA signature verification precompile (EIP-7951, Osaka)"
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000100`
+**Introduced:** Osaka (Fusaka, December 3, 2025)
+**EIP:** [EIP-7951](https://eips.ethereum.org/EIPS/eip-7951)
+
+P256VERIFY verifies an ECDSA signature over the secp256r1 (NIST P-256) curve. P-256 is the curve used by passkeys (WebAuthn), Apple Secure Enclave, Android Keystore, and most hardware security modules. Before Osaka, verifying a P-256 signature in Solidity cost several hundred thousand gas.
+
+EIP-7951 uses the same address and interface as [RIP-7212](https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md), which many L2s already deploy. Contracts written against RIP-7212 run unchanged on L1 after Osaka. The L1 gas cost differs: 6,900 instead of RIP-7212's 3,450.
+
+## Gas Cost
+
+**Fixed:** `6900` gas
+
+The cost is the same for valid and invalid inputs. A call with `gasLimit < 6900` fails with out of gas.
+
+## Input Format
+
+Input is exactly 160 bytes:
+
+```
+Offset | Length | Field | Description
+-------|--------|-------|----------------------------------
+0      | 32     | hash  | Message hash (big-endian)
+32     | 32     | r     | Signature r (big-endian)
+64     | 32     | s     | Signature s (big-endian)
+96     | 32     | qx    | Public key x coordinate (big-endian)
+128    | 32     | qy    | Public key y coordinate (big-endian)
+```
+
+## Output Format
+
+| Result | Output |
+|--------|--------|
+| Valid signature | 32 bytes: `0x0000…0001` |
+| Any failure | Empty (0 bytes) |
+
+The call itself succeeds in both cases and charges 6,900 gas. Callers must check the output length: an empty return means "not verified", not "reverted".
+
+The precompile returns empty output when any of these hold:
+
+- Input length is not 160 bytes
+- `r` or `s` is `0` or `>= n`
+- `qx` or `qy` is `>= p`
+- The public key is the point at infinity `(0, 0)`
+- The public key is not on the curve `y² = x³ + ax + b (mod p)`
+- The signature does not verify
+
+### High-s signatures
+
+P256VERIFY accepts signatures with `s > n/2`. Unlike ECRECOVER on secp256k1 ([EIP-2](https://eips.ethereum.org/EIPS/eip-2)), it applies no low-s rule. WebAuthn authenticators produce high-s signatures, so a low-s check would reject valid passkey assertions. If your protocol needs non-malleable signatures, enforce `s <= n/2` in the calling contract.
+
+## Curve Parameters
+
+```
+p = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff
+n = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
+a = p - 3
+b = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b
+```
+
+## Usage
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// hash || r || s || qx || qy, each 32 bytes
+const input = new Uint8Array(160);
+input.set(messageHash, 0);
+input.set(r, 32);
+input.set(s, 64);
+input.set(qx, 96);
+input.set(qy, 128);
+
+const result = execute(
+  PrecompileAddress.P256_VERIFY,
+  input,
+  6900n,
+  Hardfork.OSAKA,
+);
+
+const verified = result.output.length === 32 && result.output[31] === 1;
+```
+
+The precompile exists only from Osaka on. Check availability before calling:
+
+```typescript
+import { isPrecompile } from '@tevm/voltaire/precompiles';
+
+isPrecompile('0x0000000000000000000000000000000000000100', Hardfork.PRAGUE); // false
+isPrecompile('0x0000000000000000000000000000000000000100', Hardfork.OSAKA);  // true
+```
+
+### Off-chain verification
+
+To verify a P-256 signature outside the EVM, use the [P256](/crypto/p256) module directly:
+
+```typescript
+import * as P256 from '@tevm/voltaire/P256';
+
+const valid = P256.verify(signature, messageHash, publicKey);
+```
+
+## Related
+
+- [Precompiles overview](/evm/precompiles)
+- [Osaka hardfork](/primitives/hardfork/osaka)
+- [P256 crypto](/crypto/p256)
+- [ECRECOVER (0x01)](/evm/precompiles/ecrecover) - secp256k1 recovery
+
+## References
+
+- [EIP-7951: Precompile for secp256r1 curve support](https://eips.ethereum.org/EIPS/eip-7951)
+- [RIP-7212: Precompile for secp256r1 curve support](https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md)
+- [SEC 2: Recommended Elliptic Curve Domain Parameters](https://www.secg.org/sec2-v2.pdf)

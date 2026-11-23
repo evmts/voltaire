@@ -9,14 +9,14 @@ import { toBigInt as _toBigInt } from "./toBigInt.js";
 import { toGwei as _toGwei } from "./toGwei.js";
 import { toNumber as _toNumber } from "./toNumber.js";
 import { toWei as _toWei } from "./toWei.js";
-export { from, fromGwei, fromWei, calculate };
+export { calculate, from, fromGwei, fromWei };
 export declare function toGwei(effectivePrice: bigint | number | string): bigint;
 export declare function toWei(effectivePrice: bigint | number | string): bigint;
 export declare function toNumber(effectivePrice: bigint | number | string): number;
 export declare function toBigInt(effectivePrice: bigint | number | string): bigint;
 export declare function equals(effectivePrice1: bigint | number | string, effectivePrice2: bigint | number | string): boolean;
 export declare function compare(effectivePrice1: bigint | number | string, effectivePrice2: bigint | number | string): number;
-export { _toGwei, _toWei, _toNumber, _toBigInt, _equals, _compare };
+export { _compare, _equals, _toBigInt, _toGwei, _toNumber, _toWei };
 export declare const EffectiveGasPrice: {
     from: typeof from;
     fromGwei: typeof fromGwei;

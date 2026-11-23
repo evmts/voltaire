@@ -6,6 +6,7 @@
  */
 
 import { ed25519 } from "@noble/curves/ed25519.js";
+import { validatePublicKey as validateEd25519PublicKey } from "./Ed25519/validatePublicKey.js";
 
 // ============================================================================
 // Main Ed25519Wasm Namespace
@@ -142,6 +143,10 @@ export namespace Ed25519Wasm {
 		}
 
 		try {
+			// Strict RFC 8032 key decoding, then reject small-order keys
+			if (ed25519.Point.fromBytes(publicKey, false).isSmallOrder()) {
+				return false;
+			}
 			return ed25519.verify(signature, message, publicKey);
 		} catch {
 			return false;
@@ -188,11 +193,11 @@ export namespace Ed25519Wasm {
 	}
 
 	export function validatePublicKey(publicKey: PublicKey): boolean {
-		if (publicKey.length !== PUBLIC_KEY_SIZE) {
-			return false;
-		}
-		// Basic check - should not be all zeros
-		return publicKey.some((b) => b !== 0);
+		return validateEd25519PublicKey(publicKey);
+	}
+
+	export function isValidPublicKey(publicKey: PublicKey): boolean {
+		return validateEd25519PublicKey(publicKey);
 	}
 
 	export function validateSeed(seed: Seed): boolean {

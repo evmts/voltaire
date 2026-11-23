@@ -66,5 +66,25 @@ export declare class KzgVerificationError extends KzgError {
         cause?: Error;
     });
 }
+/**
+ * Operation not supported by the active KZG backend
+ *
+ * Thrown by the default EIP-7594 PeerDAS functions when the loaded WASM build
+ * does not export the cell functions. Inject a backend through the factory
+ * functions (`ComputeCells`, `ComputeCellsAndKzgProofs`,
+ * `VerifyCellKzgProofBatch`, `RecoverCellsAndKzgProofs`) instead.
+ *
+ * @see https://voltaire.tevm.sh/crypto/kzg
+ * @since 0.0.0
+ */
+export declare class KzgNotSupportedError extends KzgError {
+    readonly _tag: "KzgNotSupportedError";
+    constructor(message: string, options?: {
+        code?: number;
+        context?: Record<string, unknown>;
+        docsPath?: string;
+        cause?: Error;
+    });
+}
 export type { InvalidFormatError, InvalidLengthError };
 //# sourceMappingURL=errors.d.ts.map

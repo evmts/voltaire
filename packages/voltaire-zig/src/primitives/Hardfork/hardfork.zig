@@ -37,7 +37,8 @@
 //! - **SHANGHAI** (April 2023): Added PUSH0 opcode
 //! - **CANCUN** (March 2024): Proto-danksharding with blobs
 //! - **PRAGUE** (May 2025): BLS12-381 precompiles, EIP-7702
-//! - **OSAKA** (TBD): ModExp improvements
+//! - **OSAKA** (December 2025): ModExp improvements and RLP block size limit
+//! - **AMSTERDAM** (upcoming): Amsterdam execution fork (Glamsterdam)
 
 /// Ethereum hardfork identifiers.
 ///
@@ -107,16 +108,18 @@ pub const Hardfork = enum {
     /// EIP-7251: Increase max effective balance.
     /// EIP-7002: Execution layer triggerable exits.
     PRAGUE,
-    /// Osaka fork (TBD).
+    /// Osaka execution fork (Fusaka), activated on December 3, 2025 at 21:49:11 UTC.
     /// EIP-7883: ModExp gas increase.
     /// EIP-7823: ModExp upper bounds.
     /// EIP-7825: Transaction gas limit cap.
     /// EIP-7934: Block RLP limit.
     OSAKA,
+    /// Upcoming Amsterdam execution fork (Glamsterdam).
+    AMSTERDAM,
 
     /// Default hardfork for new chains.
-    /// Set to latest stable fork (currently PRAGUE).
-    pub const DEFAULT = Hardfork.PRAGUE;
+    /// Set to the latest stable fork (currently OSAKA).
+    pub const DEFAULT = Hardfork.OSAKA;
 
     /// Convert hardfork to its numeric representation for version comparisons
     pub fn toInt(self: Hardfork) u32 {
@@ -255,6 +258,7 @@ pub const Hardfork = enum {
             .CANCUN => "cancun",
             .PRAGUE => "prague",
             .OSAKA => "osaka",
+            .AMSTERDAM => "amsterdam",
         };
     }
 
@@ -264,7 +268,7 @@ pub const Hardfork = enum {
     }
 
     /// Get all hardfork names
-    pub fn allNames() [19][]const u8 {
+    pub fn allNames() [20][]const u8 {
         return [_][]const u8{
             "frontier",
             "homestead",
@@ -285,11 +289,12 @@ pub const Hardfork = enum {
             "cancun",
             "prague",
             "osaka",
+            "amsterdam",
         };
     }
 
     /// Get all hardfork enum values
-    pub fn allIds() [19]Hardfork {
+    pub fn allIds() [20]Hardfork {
         return [_]Hardfork{
             .FRONTIER,
             .HOMESTEAD,
@@ -310,6 +315,7 @@ pub const Hardfork = enum {
             .CANCUN,
             .PRAGUE,
             .OSAKA,
+            .AMSTERDAM,
         };
     }
 
@@ -386,8 +392,8 @@ pub const Hardfork = enum {
             .MERGE => 15537394,
             .SHANGHAI => 17034870,
             .CANCUN => 19426587,
-            .PRAGUE => null, // Not yet activated on mainnet
-            .OSAKA => null, // Not yet activated on mainnet
+            .PRAGUE => 22431084, // May 7, 2025 at 10:05:11 UTC
+            .OSAKA, .AMSTERDAM => null, // Timestamp-based forks
         };
     }
 
@@ -399,10 +405,14 @@ pub const Hardfork = enum {
             .MERGE => 1663224162,
             .SHANGHAI => 1681338455,
             .CANCUN => 1710338135,
-            .PRAGUE => null, // Not yet activated on mainnet
-            .OSAKA => null, // Not yet activated on mainnet
+            .PRAGUE => 1746612311, // May 7, 2025 at 10:05:11 UTC
+            .OSAKA => 1764798551, // December 3, 2025 at 21:49:11 UTC
+            .AMSTERDAM => null,
         };
     }
+
+    /// Alias for the mainnet activation timestamp.
+    pub const activationTimestamp = mainnetActivationTimestamp;
 
     /// Check if a specific EIP number is active in this hardfork
     /// This delegates to the Eips struct for the actual EIP tracking
@@ -447,6 +457,8 @@ pub const Hardfork = enum {
         if (std.ascii.eqlIgnoreCase(clean_name, "Cancun")) return .CANCUN;
         if (std.ascii.eqlIgnoreCase(clean_name, "Prague")) return .PRAGUE;
         if (std.ascii.eqlIgnoreCase(clean_name, "Osaka")) return .OSAKA;
+        if (std.ascii.eqlIgnoreCase(clean_name, "Amsterdam")) return .AMSTERDAM;
+        if (std.ascii.eqlIgnoreCase(clean_name, "Glamsterdam")) return .AMSTERDAM; // Alias for Amsterdam
 
         return null;
     }
@@ -459,17 +471,17 @@ pub const ForkTransition = struct {
     at_block: ?u64,
     at_timestamp: ?u64,
 
-    /// Parse a transition fork name like "ShanghaiToCancunAtTime15k" or "BerlinToLondonAt5"
+    /// Parse a case-insensitive transition name such as "ShanghaiToCancunAtTime15k".
     pub fn fromString(name: []const u8) ?ForkTransition {
         // Look for "To" pattern
-        const to_index = std.mem.indexOf(u8, name, "To") orelse return null;
+        const to_index = std.ascii.indexOfIgnoreCase(name, "To") orelse return null;
 
         // Extract "from" fork
         const from_str = name[0..to_index];
         const from_fork = Hardfork.fromString(from_str) orelse return null;
 
         // Find "At" pattern
-        const at_index = std.mem.indexOf(u8, name[to_index..], "At") orelse return null;
+        const at_index = std.ascii.indexOfIgnoreCase(name[to_index..], "At") orelse return null;
         const at_pos = to_index + at_index;
 
         // Extract "to" fork
@@ -480,9 +492,9 @@ pub const ForkTransition = struct {
         const transition_str = name[at_pos + 2 ..];
 
         // Check if it's a timestamp (contains "Time") or block number
-        if (std.mem.indexOf(u8, transition_str, "Time") != null) {
+        if (std.ascii.indexOfIgnoreCase(transition_str, "Time") != null) {
             // Extract number from "Time15k" -> "15k"
-            const time_index = std.mem.indexOf(u8, transition_str, "Time") orelse return null;
+            const time_index = std.ascii.indexOfIgnoreCase(transition_str, "Time") orelse return null;
             const num_str = transition_str[time_index + 4 ..];
             const timestamp = parseNumber(num_str) catch return null;
             return ForkTransition{
@@ -609,15 +621,15 @@ test "ForkTransition getActiveFork by timestamp" {
 }
 
 test "parseNumber" {
-    try testing.expectEqual(@as(?u64, 42), parseNumber("42"));
-    try testing.expectEqual(@as(?u64, 15000), parseNumber("15k"));
-    try testing.expectEqual(@as(?u64, 1000), parseNumber("1k"));
-    try testing.expectEqual(@as(?u64, null), parseNumber(""));
-    try testing.expectEqual(@as(?u64, null), parseNumber("invalid"));
+    try testing.expectEqual(@as(u64, 42), try parseNumber("42"));
+    try testing.expectEqual(@as(u64, 15000), try parseNumber("15k"));
+    try testing.expectEqual(@as(u64, 1000), try parseNumber("1k"));
+    try testing.expectError(error.EmptyString, parseNumber(""));
+    try testing.expectError(error.InvalidFormat, parseNumber("invalid"));
 }
 
 test "Hardfork DEFAULT constant" {
-    try testing.expectEqual(Hardfork.PRAGUE, Hardfork.DEFAULT);
+    try testing.expectEqual(Hardfork.OSAKA, Hardfork.DEFAULT);
 }
 
 test "all hardfork variants exist" {
@@ -641,6 +653,7 @@ test "all hardfork variants exist" {
     const cancun = Hardfork.CANCUN;
     const prague = Hardfork.PRAGUE;
     const osaka = Hardfork.OSAKA;
+    const amsterdam = Hardfork.AMSTERDAM;
 
     // Verify each has a valid integer representation
     try testing.expectEqual(@as(u32, 0), frontier.toInt());
@@ -662,6 +675,7 @@ test "all hardfork variants exist" {
     try testing.expectEqual(@as(u32, 16), cancun.toInt());
     try testing.expectEqual(@as(u32, 17), prague.toInt());
     try testing.expectEqual(@as(u32, 18), osaka.toInt());
+    try testing.expectEqual(@as(u32, 19), amsterdam.toInt());
 }
 
 test "hardfork ordering is sequential" {
@@ -758,6 +772,9 @@ test "fromString all hardforks" {
     try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString("Cancun").?);
     try testing.expectEqual(Hardfork.PRAGUE, Hardfork.fromString("Prague").?);
     try testing.expectEqual(Hardfork.OSAKA, Hardfork.fromString("Osaka").?);
+    try testing.expectEqual(Hardfork.AMSTERDAM, Hardfork.fromString("Amsterdam").?);
+    try testing.expectEqual(Hardfork.AMSTERDAM, Hardfork.fromString("Glamsterdam").?);
+    try testing.expectEqualStrings("amsterdam", Hardfork.AMSTERDAM.toString());
 }
 
 test "fromString aliases" {
@@ -971,6 +988,7 @@ test "hardfork comparison chain" {
         .CANCUN,
         .PRAGUE,
         .OSAKA,
+        .AMSTERDAM,
     };
 
     // Each fork should be before all later forks
@@ -1031,7 +1049,7 @@ test "mainnet activation blocks" {
     try testing.expectEqual(@as(?u64, 15537394), Hardfork.MERGE.mainnetActivationBlock());
     try testing.expectEqual(@as(?u64, 17034870), Hardfork.SHANGHAI.mainnetActivationBlock());
     try testing.expectEqual(@as(?u64, 19426587), Hardfork.CANCUN.mainnetActivationBlock());
-    try testing.expectEqual(@as(?u64, null), Hardfork.PRAGUE.mainnetActivationBlock());
+    try testing.expectEqual(@as(?u64, 22431084), Hardfork.PRAGUE.mainnetActivationBlock());
     try testing.expectEqual(@as(?u64, null), Hardfork.OSAKA.mainnetActivationBlock());
 }
 
@@ -1046,8 +1064,11 @@ test "mainnet activation timestamps" {
     try testing.expectEqual(@as(?u64, 1663224162), Hardfork.MERGE.mainnetActivationTimestamp());
     try testing.expectEqual(@as(?u64, 1681338455), Hardfork.SHANGHAI.mainnetActivationTimestamp());
     try testing.expectEqual(@as(?u64, 1710338135), Hardfork.CANCUN.mainnetActivationTimestamp());
-    try testing.expectEqual(@as(?u64, null), Hardfork.PRAGUE.mainnetActivationTimestamp());
-    try testing.expectEqual(@as(?u64, null), Hardfork.OSAKA.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, 1746612311), Hardfork.PRAGUE.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, 1746612311), Hardfork.activationTimestamp(.PRAGUE));
+    try testing.expectEqual(@as(?u64, 1764798551), Hardfork.OSAKA.mainnetActivationTimestamp());
+    try testing.expectEqual(@as(?u64, 1764798551), Hardfork.activationTimestamp(.OSAKA));
+    try testing.expectEqual(@as(?u64, null), Hardfork.AMSTERDAM.mainnetActivationTimestamp());
 }
 
 test "mainnet activation block ordering" {
@@ -1058,6 +1079,7 @@ test "mainnet activation block ordering" {
     const merge = Hardfork.MERGE.mainnetActivationBlock().?;
     const shanghai = Hardfork.SHANGHAI.mainnetActivationBlock().?;
     const cancun = Hardfork.CANCUN.mainnetActivationBlock().?;
+    const prague = Hardfork.PRAGUE.mainnetActivationBlock().?;
 
     try testing.expect(frontier < homestead);
     try testing.expect(homestead < berlin);
@@ -1065,15 +1087,20 @@ test "mainnet activation block ordering" {
     try testing.expect(london < merge);
     try testing.expect(merge < shanghai);
     try testing.expect(shanghai < cancun);
+    try testing.expect(cancun < prague);
 }
 
 test "mainnet activation timestamp ordering" {
     const merge = Hardfork.MERGE.mainnetActivationTimestamp().?;
     const shanghai = Hardfork.SHANGHAI.mainnetActivationTimestamp().?;
     const cancun = Hardfork.CANCUN.mainnetActivationTimestamp().?;
+    const prague = Hardfork.PRAGUE.mainnetActivationTimestamp().?;
+    const osaka = Hardfork.OSAKA.mainnetActivationTimestamp().?;
 
     try testing.expect(merge < shanghai);
     try testing.expect(shanghai < cancun);
+    try testing.expect(cancun < prague);
+    try testing.expect(prague < osaka);
 }
 
 test "isEipActive delegation" {
@@ -1280,10 +1307,11 @@ test "isValidName" {
 
 test "allNames" {
     const names = Hardfork.allNames();
-    try testing.expectEqual(@as(usize, 19), names.len);
+    try testing.expectEqual(@as(usize, 20), names.len);
     try testing.expectEqualStrings("frontier", names[0]);
     try testing.expectEqualStrings("cancun", names[16]);
     try testing.expectEqualStrings("osaka", names[18]);
+    try testing.expectEqualStrings("amsterdam", names[19]);
 
     // All names should be valid
     for (names) |name| {
@@ -1293,10 +1321,11 @@ test "allNames" {
 
 test "allIds" {
     const ids = Hardfork.allIds();
-    try testing.expectEqual(@as(usize, 19), ids.len);
+    try testing.expectEqual(@as(usize, 20), ids.len);
     try testing.expectEqual(Hardfork.FRONTIER, ids[0]);
     try testing.expectEqual(Hardfork.CANCUN, ids[16]);
     try testing.expectEqual(Hardfork.OSAKA, ids[18]);
+    try testing.expectEqual(Hardfork.AMSTERDAM, ids[19]);
 }
 
 // ============================================================================
@@ -1372,4 +1401,9 @@ test "isPostMerge" {
 test "isPoS" {
     try testing.expect(Hardfork.MERGE.isPoS());
     try testing.expect(!Hardfork.LONDON.isPoS());
+}
+
+test "EIP-7939 activates at Osaka" {
+    try std.testing.expect(!Hardfork.PRAGUE.isEipActive(7939));
+    try std.testing.expect(Hardfork.OSAKA.isEipActive(7939));
 }

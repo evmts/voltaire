@@ -4,7 +4,6 @@
  * @see https://voltaire.tevm.sh/primitives/authorization
  * @since 0.0.0
  * @param {import("./AuthorizationType.js").AuthorizationType} auth - Authorization to validate
- * @throws {InvalidAddressError} if address is zero address
  * @throws {InvalidYParityError} if yParity is not 0 or 1
  * @throws {InvalidSignatureComponentError} if r or s is zero
  * @throws {InvalidSignatureRangeError} if r >= curve order

@@ -48,7 +48,7 @@ export function calculateCost(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toNumber, _toBigInt, _toHex, _equals, _compare, _calculateCost };
+export { _calculateCost, _compare, _equals, _toBigInt, _toHex, _toNumber };
 
 // Export as namespace (convenience)
 export const GasUsed = {

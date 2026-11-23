@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/voltaire-labs/voltaire-go/internal/ffi"
+	"github.com/evmts/voltaire/packages/voltaire-go/internal/ffi"
 )
 
 // Size is the size of a U256 in bytes.

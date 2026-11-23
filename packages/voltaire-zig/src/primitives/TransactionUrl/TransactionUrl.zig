@@ -80,7 +80,8 @@ test "fromHex - creates from hex string" {
 }
 
 test "fromHex - invalid hex" {
-    try std.testing.expectError(error.InvalidHexString, fromHex("0xinvalid"));
+    try std.testing.expectError(error.InvalidHexFormat, fromHex("0xinvalid"));
+    try std.testing.expectError(error.InvalidHexString, fromHex("0xzz" ++ "00" ** 19));
 }
 
 // ============================================================================
@@ -160,7 +161,7 @@ fn parseQueryString(allocator: std.mem.Allocator, query: []const u8, result: *Pa
                 result.gas_price = std.fmt.parseInt(u256, value, 10) catch return error.InvalidGasPrice;
             } else if (std.mem.eql(u8, key, "data")) {
                 // Parse hex data
-                result.data = Hex.toBytes(value, allocator) catch return error.InvalidData;
+                result.data = Hex.hexToBytes(allocator, value) catch return error.InvalidData;
             }
             // Ignore unknown parameters
         }
@@ -249,7 +250,7 @@ pub fn format(allocator: std.mem.Allocator, url: ParsedTransactionUrl) ![]u8 {
     var has_params = false;
 
     if (url.value) |value| {
-        try result.append(if (has_params) '&' else '?');
+        try result.append(allocator, if (has_params) '&' else '?');
         has_params = true;
         try result.appendSlice(allocator, "value=");
         var buf: [78]u8 = undefined; // u256 max is 78 digits
@@ -258,7 +259,7 @@ pub fn format(allocator: std.mem.Allocator, url: ParsedTransactionUrl) ![]u8 {
     }
 
     if (url.gas) |gas| {
-        try result.append(if (has_params) '&' else '?');
+        try result.append(allocator, if (has_params) '&' else '?');
         has_params = true;
         try result.appendSlice(allocator, "gas=");
         var buf: [20]u8 = undefined;
@@ -267,7 +268,7 @@ pub fn format(allocator: std.mem.Allocator, url: ParsedTransactionUrl) ![]u8 {
     }
 
     if (url.gas_price) |gas_price| {
-        try result.append(if (has_params) '&' else '?');
+        try result.append(allocator, if (has_params) '&' else '?');
         has_params = true;
         try result.appendSlice(allocator, "gasPrice=");
         var buf: [78]u8 = undefined;
@@ -276,7 +277,7 @@ pub fn format(allocator: std.mem.Allocator, url: ParsedTransactionUrl) ![]u8 {
     }
 
     if (url.data) |data| {
-        try result.append(if (has_params) '&' else '?');
+        try result.append(allocator, if (has_params) '&' else '?');
         // has_params = true; // Not needed as last param
         try result.appendSlice(allocator, "data=");
         const hex = try Hex.toHex(allocator, data);

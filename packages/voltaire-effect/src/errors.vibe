@@ -262,7 +262,10 @@ export error RateLimitError {
 
 export function errorMessage(cause: unknown): string {
   if (cause instanceof Error) return cause.message
-  if (Predicate.isObject(cause) && "message" in cause && typeof (cause as { readonly message?: unknown }).message === "string") {
+  if (
+    Predicate.isObject(cause) && "message" in cause
+    && typeof (cause as { readonly message?: unknown }).message === "string"
+  ) {
     return (cause as { readonly message: string }).message
   }
   return String(cause)

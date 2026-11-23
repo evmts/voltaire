@@ -35,6 +35,7 @@ macos
 *.o
 *.o.o  
 *.a
+/packages/voltaire-zig/lib/c-kzg-4844/blst/libblst.a
 *.a.o
 *.so
 *.dylib
@@ -82,7 +83,7 @@ node_modules
 # misc
 /.sass-cache
 /connect.lock
-/coverage
+**/coverage/
 /libpeerconnection.log
 npm-debug.log
 testem.log
@@ -107,10 +108,12 @@ _
 .zig-cache/
 zig-out/
 zig-cache/
+zig-pkg/
 /bin/
 /wasm/
 
 # Local generated docs metadata
+.vibe/
 /docs-starlight/.astro/
 /docs-starlight/.vercel/
 

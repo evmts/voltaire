@@ -1,6 +1,6 @@
 ---
-title: "withStorageKey.js"
----
+
+## title: "withStorageKey.js"
 
 # withStorageKey.js
 
@@ -10,10 +10,10 @@ Add storage key for address (adds address if needed).
 
 ```typescript
 function withStorageKey(
-  list: BrandedAccessList,
-  address: AddressType,
-  key: HashType
-): BrandedAccessList
+	list: BrandedAccessList,
+	address: AddressType,
+	key: HashType,
+): BrandedAccessList;
 ```
 
 ## Parameters

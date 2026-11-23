@@ -1,12 +1,15 @@
 /**
  * Verify an ECDSA signature
  *
+ * Verifies over `messageHash` as-is (no second SHA-256) and accepts both
+ * low-S and high-S signatures, matching EIP-7951 P256VERIFY and WebAuthn.
+ *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
  * @param {import('./P256SignatureType.js').P256SignatureType} signature - ECDSA signature to verify (r and s are HashType)
  * @param {import('../../primitives/Hash/index.js').HashType | import('../SHA256/SHA256HashType.js').SHA256Hash | Uint8Array} messageHash - 32-byte message hash that was signed (accepts HashType, SHA256Hash, or raw Uint8Array)
  * @param {import('./P256PublicKeyType.js').P256PublicKeyType} publicKey - 64-byte uncompressed public key
- * @returns {boolean} True if signature is valid, false otherwise
+ * @returns {boolean} True if signature is valid, false otherwise (including when the public key is the point at infinity, has a coordinate >= p, or is not on the curve)
  * @throws {InvalidPublicKeyError} If public key format is invalid
  * @example
  * ```javascript

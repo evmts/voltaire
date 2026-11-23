@@ -879,8 +879,8 @@ test "verifyMPTProof - simple leaf node verification" {
     // RLP encoding of the leaf:
     // - "\x20\x01" (2 bytes) -> 0x82 0x20 0x01
     // - "\x12\x34" (2 bytes) -> 0x82 0x12 0x34
-    // - List of 7 bytes total -> 0xc7 ...
-    const leaf_node = [_]u8{ 0xc5, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+    // - List payload of 6 bytes -> 0xc6 ...
+    const leaf_node = [_]u8{ 0xc6, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
 
     // Compute root hash (hash of the leaf node)
     var root: Hash.Hash = undefined;
@@ -900,7 +900,7 @@ test "verifyMPTProof - simple leaf node verification" {
 test "verifyMPTProof - leaf node with wrong value fails" {
     const allocator = std.testing.allocator;
 
-    const leaf_node = [_]u8{ 0xc5, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+    const leaf_node = [_]u8{ 0xc6, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
 
     var root: Hash.Hash = undefined;
     crypto.Keccak256.hash(&leaf_node, &root, .{});
@@ -918,7 +918,7 @@ test "verifyMPTProof - leaf node with wrong value fails" {
 test "verifyMPTProof - invalid root hash fails" {
     const allocator = std.testing.allocator;
 
-    const leaf_node = [_]u8{ 0xc5, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+    const leaf_node = [_]u8{ 0xc6, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
 
     // Wrong root hash
     const wrong_root = [_]u8{0xff} ** 32;

@@ -111,15 +111,15 @@ pub fn getAccount(diff: *StateDiff, address: Address.Address) ?*AccountDiff {
 
 /// Get all addresses with changes
 pub fn getAddresses(diff: *StateDiff, allocator: std.mem.Allocator) ![]Address.Address {
-    var addresses = std.ArrayList(Address.Address).init(allocator);
-    errdefer addresses.deinit();
+    var addresses = std.ArrayList(Address.Address){};
+    errdefer addresses.deinit(allocator);
 
     var it = diff.accounts.keyIterator();
     while (it.next()) |key| {
-        try addresses.append(Address.Address{ .bytes = key.* });
+        try addresses.append(allocator, Address.Address{ .bytes = key.* });
     }
 
-    return addresses.toOwnedSlice();
+    return addresses.toOwnedSlice(allocator);
 }
 
 /// Get number of accounts with changes
@@ -229,7 +229,7 @@ pub fn fromPrestateJson(allocator: std.mem.Allocator, json_str: []const u8) !Sta
         const account_obj = entry.value_ptr.object;
 
         var addr_bytes: [20]u8 = undefined;
-        _ = try Hex.hexToBytes(&addr_bytes, addr_hex);
+        addr_bytes = try Hex.hexToBytesFixed(20, addr_hex);
         const address = Address.Address{ .bytes = addr_bytes };
 
         // Balance
@@ -277,16 +277,16 @@ pub fn fromPrestateJson(allocator: std.mem.Allocator, json_str: []const u8) !Sta
                 const from_val_hex = storage_entry.value_ptr.string;
 
                 var slot: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&slot, slot_hex);
+                slot = try Hex.hexToBytesFixed(32, slot_hex);
 
                 var from_val: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&from_val, from_val_hex);
+                from_val = try Hex.hexToBytesFixed(32, from_val_hex);
 
                 var to_val: ?[32]u8 = null;
                 if (post.get(addr_hex)) |p| {
                     if (p.object.get("storage")) |ps| {
                         if (ps.object.get(slot_hex)) |pv| {
-                            _ = try Hex.hexToBytes(&to_val.?, pv.string);
+                            to_val = try Hex.hexToBytesFixed(32, pv.string);
                         }
                     }
                 }
@@ -319,14 +319,14 @@ pub fn fromPrestateJson(allocator: std.mem.Allocator, json_str: []const u8) !Sta
                     }
 
                     var addr_bytes: [20]u8 = undefined;
-                    _ = try Hex.hexToBytes(&addr_bytes, addr_hex);
+                    addr_bytes = try Hex.hexToBytesFixed(20, addr_hex);
                     const address = Address.Address{ .bytes = addr_bytes };
 
                     var slot: [32]u8 = undefined;
-                    _ = try Hex.hexToBytes(&slot, slot_hex);
+                    slot = try Hex.hexToBytesFixed(32, slot_hex);
 
                     var to_val: [32]u8 = undefined;
-                    _ = try Hex.hexToBytes(&to_val, storage_entry.value_ptr.string);
+                    to_val = try Hex.hexToBytesFixed(32, storage_entry.value_ptr.string);
 
                     try setStorageChange(&diff, address, slot, null, to_val);
                 }
@@ -336,7 +336,7 @@ pub fn fromPrestateJson(allocator: std.mem.Allocator, json_str: []const u8) !Sta
 
         // New account (not in pre)
         var addr_bytes: [20]u8 = undefined;
-        _ = try Hex.hexToBytes(&addr_bytes, addr_hex);
+        addr_bytes = try Hex.hexToBytesFixed(20, addr_hex);
         const address = Address.Address{ .bytes = addr_bytes };
 
         if (account_obj.get("balance")) |bal| {
@@ -361,10 +361,10 @@ pub fn fromPrestateJson(allocator: std.mem.Allocator, json_str: []const u8) !Sta
                 const to_val_hex = storage_entry.value_ptr.string;
 
                 var slot: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&slot, slot_hex);
+                slot = try Hex.hexToBytesFixed(32, slot_hex);
 
                 var to_val: [32]u8 = undefined;
-                _ = try Hex.hexToBytes(&to_val, to_val_hex);
+                to_val = try Hex.hexToBytesFixed(32, to_val_hex);
 
                 try setStorageChange(&diff, address, slot, null, to_val);
             }
@@ -810,7 +810,7 @@ test "StateDiff.fromPrestateJson parses nonce increment" {
 
     // Check the address was parsed correctly
     var expected_addr: [20]u8 = undefined;
-    _ = try Hex.hexToBytes(&expected_addr, "0x35a9f94af726f07b5162df7e828cc9dc8439e7d0");
+    expected_addr = try Hex.hexToBytesFixed(20, "0x35a9f94af726f07b5162df7e828cc9dc8439e7d0");
     const address = Address.Address{ .bytes = expected_addr };
 
     try std.testing.expect(hasAccount(&diff, address));
@@ -834,7 +834,7 @@ test "StateDiff.fromPrestateJson parses storage changes" {
     defer diff.deinit();
 
     var addr_bytes: [20]u8 = undefined;
-    _ = try Hex.hexToBytes(&addr_bytes, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    addr_bytes = try Hex.hexToBytesFixed(20, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     const address = Address.Address{ .bytes = addr_bytes };
 
     try std.testing.expect(hasStorageChanges(&diff, address));
@@ -843,7 +843,7 @@ test "StateDiff.fromPrestateJson parses storage changes" {
     try std.testing.expect(account != null);
 
     var slot: [32]u8 = undefined;
-    _ = try Hex.hexToBytes(&slot, "0x0000000000000000000000000000000000000000000000000000000000000001");
+    slot = try Hex.hexToBytesFixed(32, "0x0000000000000000000000000000000000000000000000000000000000000001");
 
     const change = account.?.storage.get(slot);
     try std.testing.expect(change != null);
@@ -867,7 +867,7 @@ test "StateDiff.fromPrestateJson parses new account" {
     defer diff.deinit();
 
     var addr_bytes: [20]u8 = undefined;
-    _ = try Hex.hexToBytes(&addr_bytes, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    addr_bytes = try Hex.hexToBytesFixed(20, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     const address = Address.Address{ .bytes = addr_bytes };
 
     try std.testing.expect(hasAccount(&diff, address));

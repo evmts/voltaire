@@ -46,6 +46,7 @@ const primitives = @import("primitives");
 const Crypto = @import("crypto.zig");
 const Hash = @import("hash.zig");
 const secp256k1 = @import("secp256k1.zig");
+const constant_time = @import("constant_time.zig");
 const Eip712 = @import("eip712.zig");
 
 // Types
@@ -443,9 +444,8 @@ pub fn isValidSigner(signer: *const LocalSigner) bool {
         return false;
     }
 
-    // Check that the address is not zero
-    const zero_address = [_]u8{0} ** 20;
-    if (std.mem.eql(u8, &signer.address.bytes, &zero_address)) {
+    // Check that the address is not zero (constant-time)
+    if (constant_time.constantTimeIsZeroBytes(&signer.address.bytes)) {
         return false;
     }
 
@@ -465,7 +465,7 @@ pub fn isValidSigner(signer: *const LocalSigner) bool {
         return false;
     };
 
-    return std.mem.eql(u8, &recovered_address.bytes, &signer.address.bytes);
+    return constant_time.eql(&recovered_address.bytes, &signer.address.bytes);
 }
 
 /// Validate a signer by checking if it can sign and verify a test message
@@ -622,7 +622,7 @@ test "LocalSigner - signer interface" {
 }
 
 test "LocalSigner - invalid private key zero" {
-    const zero_key = PrivateKey{0} ** 32;
+    const zero_key: PrivateKey = [_]u8{0} ** 32;
     const result = LocalSigner.init(zero_key);
     try testing.expectError(SignerError.InvalidPrivateKey, result);
 }

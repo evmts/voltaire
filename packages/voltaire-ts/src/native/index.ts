@@ -72,6 +72,8 @@ export {
 	Transaction,
 	AccessList,
 	BrandedAccessList,
+	BlockAccessList,
+	ExecutionPayloadBid,
 	Authorization,
 	BrandedAuthorization,
 
@@ -257,6 +259,7 @@ export {
 	Ed25519,
 	AesGcm,
 	ChaCha20Poly1305,
+	ConstantTime,
 	Bip39,
 	Keystore,
 	P256,
@@ -264,8 +267,7 @@ export {
 	ModExp,
 } from "../crypto/index.js";
 
-// HDWallet uses native FFI - only available in native entry point
-export * as HDWallet from "../crypto/HDWallet/index.js";
+export * as HDWallet from "../crypto/HDWallet/native.js";
 
 // Re-export crypto types
 export type { Keccak256Hash } from "../crypto/Keccak256/Keccak256HashType.js";

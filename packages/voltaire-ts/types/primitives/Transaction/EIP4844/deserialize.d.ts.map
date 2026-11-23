@@ -1,1 +1,1 @@
-{"version":3,"file":"deserialize.d.ts","sourceRoot":"","sources":["../../../../src/primitives/Transaction/EIP4844/deserialize.js"],"names":[],"mappings":"AAMA;;;;;;;;;;;;;GAaG;AACH,kCATW,UAAU,GACR,OAAO,aAAa,EAAE,OAAO,CAkKzC"}
+{"version":3,"file":"deserialize.d.ts","sourceRoot":"","sources":["../../../../src/primitives/Transaction/EIP4844/deserialize.js"],"names":[],"mappings":"AAaA;;;;;;;;;;;;;GAaG;AACH,kCATW,UAAU,GACR,OAAO,aAAa,EAAE,OAAO,CAoIzC"}

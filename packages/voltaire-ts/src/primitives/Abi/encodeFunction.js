@@ -6,7 +6,7 @@ import * as Function from "./function/index.js";
 /**
  * Encode function call data from ABI by function name
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {string} functionName - Function name to encode
  * @param {readonly unknown[]} args - Function arguments
  * @returns {import("../Hex/index.js").HexType} Encoded function call data (hex string)

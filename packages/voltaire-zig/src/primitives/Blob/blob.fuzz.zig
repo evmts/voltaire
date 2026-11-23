@@ -42,13 +42,17 @@ fn fuzzEncodeBlobDataLengthLimits(_: void, input: []const u8) !void {
     const result = blob.encodeBlobData(allocator, input) catch |err| {
         // Only expected error is DataTooLarge
         try testing.expectEqual(blob.BlobError.DataTooLarge, err);
-        try testing.expect(input.len > blob.BYTES_PER_BLOB - 1);
+        try testing.expect(input.len > blob.MAX_DATA_PER_BLOB);
         return;
     };
 
     // If successful, should be exactly BYTES_PER_BLOB size
     try testing.expectEqual(@as(usize, blob.BYTES_PER_BLOB), result.len);
-    try testing.expect(input.len <= blob.BYTES_PER_BLOB - 1);
+    try testing.expect(input.len <= blob.MAX_DATA_PER_BLOB);
+    // Byte 0 of every field element stays zero
+    for (0..blob.FIELD_ELEMENTS_PER_BLOB) |i| {
+        try testing.expectEqual(@as(u8, 0), result[i * blob.BYTES_PER_FIELD_ELEMENT]);
+    }
 }
 
 test "fuzz encodeBlobData length limits" {
@@ -71,7 +75,7 @@ fn fuzzDecodeBlobDataInvalidLengths(_: void, input: []const u8) !void {
     defer allocator.free(result);
 
     // If successful, decoded data should be valid
-    try testing.expect(result.len <= blob.BYTES_PER_BLOB - 8);
+    try testing.expect(result.len <= blob.MAX_DATA_PER_BLOB);
 }
 
 test "fuzz decodeBlobData invalid lengths" {
@@ -79,7 +83,7 @@ test "fuzz decodeBlobData invalid lengths" {
 }
 
 fn fuzzBlobEncodingRoundtrip(_: void, input: []const u8) !void {
-    if (input.len > blob.BYTES_PER_BLOB - 9) return; // Need room for length prefix
+    if (input.len > blob.MAX_DATA_PER_BLOB) return;
 
     const allocator = testing.allocator;
 
@@ -714,15 +718,16 @@ test "fuzz commitment hashing is deterministic" {
 }
 
 fn fuzzBlobEncodingPreservesLengthInfo(_: void, input: []const u8) !void {
-    if (input.len > blob.BYTES_PER_BLOB - 9) return;
+    if (input.len > blob.MAX_DATA_PER_BLOB) return;
 
     const allocator = testing.allocator;
 
     const encoded = blob.encodeBlobData(allocator, input) catch return;
 
-    // First 8 bytes should be length
-    const stored_len = std.mem.bytesToValue(usize, encoded[0..8]);
-    try testing.expectEqual(input.len, stored_len);
+    // Bytes 1..4 hold the big-endian length; byte 0 stays zero
+    try testing.expectEqual(@as(u8, 0), encoded[0]);
+    const stored_len = std.mem.readInt(u32, encoded[1..5], .big);
+    try testing.expectEqual(@as(u32, @intCast(input.len)), stored_len);
 
     // Decode and verify
     const decoded = blob.decodeBlobData(allocator, encoded) catch return;

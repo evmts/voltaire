@@ -6,7 +6,7 @@
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
-use crate::crypto::keccak256;
+use crate::crypto::sha256;
 use crate::error::{Error, Result};
 
 // ============================================================================
@@ -59,7 +59,7 @@ const BLS_MODULUS: [u8; 32] = [
 /// A blob containing 131072 bytes of data.
 pub type Blob = [u8; BYTES_PER_BLOB];
 
-/// A versioned hash (32 bytes: version byte + truncated keccak256).
+/// A versioned hash (32 bytes: version byte + `sha256(commitment)[1..32]`).
 pub type BlobHash = [u8; 32];
 
 // ============================================================================
@@ -199,17 +199,36 @@ fn is_valid_field_element(element: &[u8]) -> bool {
 // Versioned Hash
 // ============================================================================
 
-/// Compute versioned hash from blob.
+/// Size of a KZG commitment (48-byte compressed BLS12-381 G1 point).
+pub const BYTES_PER_COMMITMENT: usize = 48;
+
+/// A KZG commitment (48-byte compressed BLS12-381 G1 point).
+pub type KzgCommitment = [u8; BYTES_PER_COMMITMENT];
+
+/// Compute the EIP-4844 versioned hash of a KZG commitment.
 ///
-/// The versioned hash is: version_byte || keccak256(blob)[1:]
-/// This is a placeholder that uses keccak256 directly on the blob.
-/// In production, this should use the KZG commitment.
-pub fn blob_to_versioned_hash(blob: &Blob) -> BlobHash {
-    let hash = keccak256(blob);
-    let mut versioned = [0u8; 32];
+/// `versioned_hash = 0x01 || sha256(commitment)[1..32]`
+pub fn commitment_to_versioned_hash(commitment: &KzgCommitment) -> BlobHash {
+    let mut versioned = sha256(commitment);
     versioned[0] = VERSIONED_HASH_VERSION_KZG;
-    versioned[1..].copy_from_slice(&hash.as_bytes()[1..]);
     versioned
+}
+
+/// Compute the EIP-4844 versioned hash of a blob.
+///
+/// The versioned hash commits to the blob's KZG commitment, not to the raw
+/// blob bytes. This crate has no KZG implementation, so it cannot derive the
+/// commitment.
+///
+/// # Errors
+///
+/// Always returns [`Error::Unsupported`]. Compute the KZG commitment with a
+/// KZG library and pass it to [`commitment_to_versioned_hash`].
+pub fn blob_to_versioned_hash(blob: &Blob) -> Result<BlobHash> {
+    let _ = blob;
+    Err(Error::unsupported(
+        "blob_to_versioned_hash needs a KZG commitment; compute it with a KZG library and call commitment_to_versioned_hash",
+    ))
 }
 
 /// Validate that a versioned hash has a valid version byte.
@@ -230,6 +249,7 @@ pub const fn calculate_blob_gas(blob_count: u32) -> u64 {
 /// Estimate number of blobs needed for given data size.
 ///
 /// Each blob can hold approximately 127KB of data (31 bytes per field element).
+/// Saturates at `u32::MAX` when the count does not fit in a `u32`.
 pub fn estimate_blob_count(data_size: usize) -> u32 {
     if data_size == 0 {
         return 0;
@@ -238,8 +258,9 @@ pub fn estimate_blob_count(data_size: usize) -> u32 {
     // Usable bytes per blob: 31 * 4096 - 4 = 126972
     let usable_per_blob = 31 * FIELD_ELEMENTS_PER_BLOB - 4;
 
-    // Ceiling division
-    ((data_size + usable_per_blob - 1) / usable_per_blob) as u32
+    // Overflow-safe ceiling division
+    let count = (data_size - 1) / usable_per_blob + 1;
+    u32::try_from(count).unwrap_or(u32::MAX)
 }
 
 /// Calculate blob gas price using EIP-4844 exponential formula.
@@ -275,20 +296,64 @@ pub fn fake_exponential(factor: u64, numerator: u64, denominator: u64) -> u64 {
     let mut numerator_accum = factor as u128 * denominator as u128;
     let denominator = denominator as u128;
     let numerator = numerator as u128;
+    // Once output / denominator exceeds this, the result saturates to u64::MAX.
+    let limit = (u64::MAX as u128 + 1) * denominator;
 
     let mut i = 1u128;
     while numerator_accum > 0 {
-        output += numerator_accum;
-        numerator_accum = (numerator_accum * numerator) / (denominator * i);
+        // Terms are non-negative, so output only grows: saturate once it passes the limit.
+        output = match output.checked_add(numerator_accum) {
+            Some(sum) if sum < limit => sum,
+            _ => return u64::MAX,
+        };
+        // denominator < 2^64 and i < 2^64 before the output saturates, so this fits.
+        let divisor = denominator * i;
+        numerator_accum = match mul_div_u128(numerator_accum, numerator, divisor) {
+            Some(next) => next,
+            // The next term exceeds 2^128, so the result exceeds 2^128 / 2^64.
+            None => return u64::MAX,
+        };
         i += 1;
     }
 
-    let result = output / denominator;
-    if result > u64::MAX as u128 {
-        u64::MAX
-    } else {
-        result as u64
+    (output / denominator) as u64
+}
+
+/// Compute `a * b / d` with a 256-bit intermediate product.
+///
+/// Returns `None` if the quotient does not fit in a u128. `d` must be non-zero.
+fn mul_div_u128(a: u128, b: u128, d: u128) -> Option<u128> {
+    const MASK: u128 = u64::MAX as u128;
+    let (a_hi, a_lo) = (a >> 64, a & MASK);
+    let (b_hi, b_lo) = (b >> 64, b & MASK);
+
+    // Schoolbook multiply into (hi, lo) 128-bit halves.
+    let ll = a_lo * b_lo;
+    let lh = a_lo * b_hi;
+    let hl = a_hi * b_lo;
+    let hh = a_hi * b_hi;
+    let mid = (ll >> 64) + (lh & MASK) + (hl & MASK);
+    let lo = (ll & MASK) | (mid << 64);
+    let hi = hh + (lh >> 64) + (hl >> 64) + (mid >> 64);
+
+    // The quotient fits in a u128 exactly when hi < d.
+    if hi >= d {
+        return None;
     }
+
+    // Restoring long division of (hi, lo) by d; remainder starts at hi < d.
+    let mut rem = hi;
+    let mut quot = 0u128;
+    for bit in (0..128).rev() {
+        let carry = rem >> 127;
+        rem = (rem << 1) | ((lo >> bit) & 1);
+        quot <<= 1;
+        if carry == 1 || rem >= d {
+            rem = rem.wrapping_sub(d);
+            quot |= 1;
+        }
+    }
+    Some(quot)
 }
 
 // ============================================================================
@@ -397,15 +462,36 @@ mod tests {
     }
 
     #[test]
-    fn test_versioned_hash() {
-        let blob = [0u8; BYTES_PER_BLOB];
-        let hash = blob_to_versioned_hash(&blob);
-
-        // Version byte should be 0x01
-        assert_eq!(hash[0], VERSIONED_HASH_VERSION_KZG);
-
-        // Should be valid
+    fn test_commitment_to_versioned_hash_empty_blob_vector() {
+        // KZG commitment of the all-zero blob is the compressed G1 identity.
+        let mut commitment = [0u8; BYTES_PER_COMMITMENT];
+        commitment[0] = 0xc0;
+        let hash = commitment_to_versioned_hash(&commitment);
+        let expected =
+            hex::decode("010657f37554c781402a22917dee2f75def7ab966d7b770905398eba3c444014")
+                .unwrap();
+        assert_eq!(hash.as_slice(), expected.as_slice());
         assert!(validate_versioned_hash(&hash));
+    }
+
+    #[test]
+    fn test_commitment_to_versioned_hash_is_sha256_not_keccak() {
+        let commitment = [0x42u8; BYTES_PER_COMMITMENT];
+        let hash = commitment_to_versioned_hash(&commitment);
+        let digest = sha256(&commitment);
+        assert_eq!(hash[0], VERSIONED_HASH_VERSION_KZG);
+        assert_eq!(&hash[1..], &digest[1..]);
+        let keccak = crate::crypto::keccak256(&commitment);
+        assert_ne!(&hash[1..], &keccak.as_bytes()[1..]);
+    }
+
+    #[test]
+    fn test_blob_to_versioned_hash_is_unsupported() {
+        let blob = [0u8; BYTES_PER_BLOB];
+        assert!(matches!(
+            blob_to_versioned_hash(&blob),
+            Err(Error::Unsupported(_))
+        ));
     }
 
     #[test]
@@ -436,6 +522,19 @@ mod tests {
         assert_eq!(estimate_blob_count(100), 1);
         assert_eq!(estimate_blob_count(126972), 1); // Max per blob
         assert_eq!(estimate_blob_count(126973), 2); // Just over one blob
+    }
+
+    #[test]
+    fn test_estimate_blob_count_boundaries_do_not_overflow() {
+        let per_blob = 31 * FIELD_ELEMENTS_PER_BLOB - 4;
+        // u32::MAX bytes: ceil(4294967295 / 126972) = 33827
+        assert_eq!(estimate_blob_count(u32::MAX as usize), 33827);
+        assert_eq!(
+            estimate_blob_count(usize::MAX),
+            u32::try_from((usize::MAX - 1) / per_blob + 1).unwrap_or(u32::MAX)
+        );
+        #[cfg(target_pointer_width = "64")]
+        assert_eq!(estimate_blob_count(usize::MAX), u32::MAX);
     }
 
     #[test]
@@ -495,6 +594,35 @@ mod tests {
     }
 
     #[test]
+    fn test_fake_exponential_wide_intermediate_small_result() {
+        // factor * denominator * numerator exceeds u128, but the result is
+        // factor * e^(2^20 / (2^64 - 1)), which is just above factor.
+        let factor = 1u64 << 63;
+        let result = fake_exponential(factor, 1 << 20, u64::MAX);
+        assert!(result >= factor && result < factor + (1 << 44));
+    }
+
+    #[test]
+    fn test_fake_exponential_eip4844_vectors() {
+        // Vectors from the EIP-4844 reference test table.
+        assert_eq!(fake_exponential(1, 0, 1), 1);
+        assert_eq!(fake_exponential(38493, 0, 1000), 38493);
+        assert_eq!(fake_exponential(0, 1234, 2345), 0);
+        assert_eq!(fake_exponential(1, 2, 1), 6);
+        assert_eq!(fake_exponential(2, 5, 2), 23);
+        assert_eq!(fake_exponential(1, 50000000, 2225652), 5709098764);
+    }
+
+    #[test]
+    fn test_mul_div_u128() {
+        assert_eq!(mul_div_u128(u128::MAX, u128::MAX, u128::MAX), Some(u128::MAX));
+        assert_eq!(mul_div_u128(u128::MAX, 2, 2), Some(u128::MAX));
+        assert_eq!(mul_div_u128(u128::MAX, 2, 1), None);
+        assert_eq!(mul_div_u128(1 << 100, 1 << 100, 1 << 90), Some(1 << 110));
+        assert_eq!(mul_div_u128(7, 9, 4), Some(15));
+    }
+
+    #[test]
     fn test_blob_roundtrip_various_sizes() {
         for size in [0, 1, 27, 28, 31, 32, 100, 1000, 10000] {
             let data: Vec<u8> = (0..size).map(|i| i as u8).collect();
@@ -506,11 +634,9 @@ mod tests {
 
     #[test]
     fn test_versioned_hash_deterministic() {
-        let data = b"test blob data";
-        let blob = blob_from_data(data).unwrap();
-
-        let hash1 = blob_to_versioned_hash(&blob);
-        let hash2 = blob_to_versioned_hash(&blob);
+        let commitment = [0x07u8; BYTES_PER_COMMITMENT];
+        let hash1 = commitment_to_versioned_hash(&commitment);
+        let hash2 = commitment_to_versioned_hash(&commitment);
 
         assert_eq!(hash1, hash2);
     }

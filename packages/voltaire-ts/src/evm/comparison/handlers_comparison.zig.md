@@ -15,6 +15,7 @@ The comparison handlers file implements the six EVM comparison opcodes (LT, GT, 
 ### Status: NONE IDENTIFIED
 
 All six required comparison opcodes are fully implemented:
+
 - ✅ `lt` (0x10) - Unsigned less than
 - ✅ `gt` (0x11) - Unsigned greater than
 - ✅ `slt` (0x12) - Signed less than
@@ -23,6 +24,7 @@ All six required comparison opcodes are fully implemented:
 - ✅ `iszero` (0x15) - Zero check
 
 Each operation correctly:
+
 1. Consumes gas (`GasFastestStep`)
 2. Pops the required number of stack elements
 3. Performs the comparison (with proper signed conversion for SLT/SGT)
@@ -50,6 +52,7 @@ No TODO comments or incomplete work markers exist in the file.
 **Location:** Lines 13, 22, 31, 42, 53, 62
 
 **Python Reference:**
+
 ```python
 # execution-specs/src/ethereum/forks/paris/vm/gas.py
 GAS_VERY_LOW = Uint(3)
@@ -61,11 +64,13 @@ def less_than(evm: Evm) -> None:
 ```
 
 **Current Zig:**
+
 ```zig
 try frame.consumeGas(GasConstants.GasFastestStep);  // ← Should verify this equals 3
 ```
 
 **Recommendation:**
+
 - Verify that `GasFastestStep = 3` in the primitives package
 - Consider adding a compile-time assertion or comment linking to the Python reference
 - Alternatively, rename to `GasVeryLow` in the primitives package to match Python naming
@@ -77,6 +82,7 @@ try frame.consumeGas(GasConstants.GasFastestStep);  // ← Should verify this eq
 **Issue:** Unlike the Python reference, the Zig implementation doesn't explicitly document the order of operations (STACK → GAS → OPERATION → RESULT → PC).
 
 **Python Pattern (lines 32-45):**
+
 ```python
 # STACK
 left = pop(evm.stack)
@@ -101,6 +107,7 @@ evm.pc += Uint(1)
 **Severity:** Very Low (Readability)
 
 **Issue:** Inconsistent variable naming across operations:
+
 - `lt`, `gt`: Use `a`, `b`
 - `slt`, `sgt`: Use `a`, `b` then `a_signed`, `b_signed`
 - `eq`: Uses `top`, `second`
@@ -121,12 +128,14 @@ evm.pc += Uint(1)
 **Status:** No inline `test` blocks exist in this file.
 
 **Comparison with other handlers:**
+
 - Other handler files (e.g., `handlers_bitwise.zig`, `handlers_arithmetic.zig`) also lack unit tests
 - Testing relies entirely on ethereum/tests spec tests
 
 **Recommendation:** Add unit tests for:
 
 1. **Edge Cases:**
+
    ```zig
    test "lt: boundary values" {
        // Test: 0 < 1, MAX < 0, MAX < MAX, 0 < 0
@@ -138,6 +147,7 @@ evm.pc += Uint(1)
    ```
 
 2. **Gas Consumption:**
+
    ```zig
    test "all comparison ops consume GasFastestStep" {
        // Verify each op consumes exactly 3 gas
@@ -145,6 +155,7 @@ evm.pc += Uint(1)
    ```
 
 3. **Stack Effects:**
+
    ```zig
    test "comparison ops pop 2 push 1 (or pop 1 push 1 for iszero)" {
        // Verify stack manipulation correctness
@@ -152,6 +163,7 @@ evm.pc += Uint(1)
    ```
 
 4. **PC Increment:**
+
    ```zig
    test "all comparison ops increment PC by 1" {
        // Verify PC behavior
@@ -163,6 +175,7 @@ evm.pc += Uint(1)
 **Status:** Covered by ethereum/tests
 
 The following spec test suites exercise these opcodes:
+
 - `stArgsZeroOneBalance/ltNonConstFiller.yml`
 - `stArgsZeroOneBalance/gtNonConstFiller.yml`
 - `stArgsZeroOneBalance/sltNonConstFiller.yml`
@@ -172,6 +185,7 @@ The following spec test suites exercise these opcodes:
 - `VMTests/vmArithmeticTest/twoOpsFiller.yml` (includes comparison ops)
 
 **Run with:**
+
 ```bash
 TEST_FILTER="ltNonConst" zig build specs
 TEST_FILTER="comparison" zig build specs
@@ -182,6 +196,7 @@ TEST_FILTER="comparison" zig build specs
 **Severity:** Low (Coverage Gap)
 
 **Missing Test Scenarios:**
+
 1. Two's complement edge cases (INT_MIN vs INT_MAX)
 2. Sign bit boundary (0x7FFF...FFFF vs 0x8000...0000)
 3. -1 comparisons (all bits set)
@@ -205,6 +220,7 @@ const b_signed = @as(i256, @bitCast(b));
 ```
 
 This matches the Python reference pattern:
+
 ```python
 left = pop(evm.stack).to_signed()  # Python's U256.to_signed()
 right = pop(evm.stack).to_signed()
@@ -215,11 +231,13 @@ right = pop(evm.stack).to_signed()
 **Status:** CORRECT
 
 All operations correctly return `1` for true, `0` for false:
+
 ```zig
 try frame.pushStack(if (a < b) 1 else 0);  // ✅ Matches EVM spec
 ```
 
 This matches Python:
+
 ```python
 result = U256(left < right)  # Python bool coerced to 1/0
 ```
@@ -229,6 +247,7 @@ result = U256(left < right)  # Python bool coerced to 1/0
 **Status:** EXCELLENT
 
 The `Handlers(FrameType: type)` pattern is well-designed:
+
 - ✅ Type-safe generic programming
 - ✅ Clear interface requirements documented (consumeGas, popStack, pushStack, pc)
 - ✅ Enables compile-time polymorphism
@@ -239,6 +258,7 @@ The `Handlers(FrameType: type)` pattern is well-designed:
 **Severity:** Low (Completeness)
 
 **Current State:**
+
 - ✅ File has a docstring describing purpose
 - ✅ Each function has an inline comment describing the opcode
 - ❌ Missing: Parameter documentation
@@ -279,18 +299,19 @@ pub fn lt(frame: *FrameType) FrameType.EvmError!void {
 
 ### Comparison Matrix
 
-| Aspect | Python Reference | Zig Implementation | Match? |
-|--------|------------------|-------------------|--------|
-| **Operation Order** | Stack → Gas → Op → Result → PC | Gas → Stack → Op → Result → PC | ⚠️ Different order |
-| **Gas Cost** | `GAS_VERY_LOW` (3) | `GasFastestStep` | ❓ Needs verification |
-| **Unsigned Comparison** | `U256(left < right)` | `if (a < b) 1 else 0` | ✅ Equivalent |
-| **Signed Conversion** | `.to_signed()` method | `@bitCast(i256)` | ✅ Equivalent |
-| **Result Encoding** | `U256(bool)` → 1/0 | `if (cond) 1 else 0` | ✅ Match |
-| **PC Increment** | `+= Uint(1)` | `+= 1` | ✅ Match |
+| Aspect                  | Python Reference               | Zig Implementation             | Match?                |
+| ----------------------- | ------------------------------ | ------------------------------ | --------------------- |
+| **Operation Order**     | Stack → Gas → Op → Result → PC | Gas → Stack → Op → Result → PC | ⚠️ Different order    |
+| **Gas Cost**            | `GAS_VERY_LOW` (3)             | `GasFastestStep`               | ❓ Needs verification |
+| **Unsigned Comparison** | `U256(left < right)`           | `if (a < b) 1 else 0`          | ✅ Equivalent         |
+| **Signed Conversion**   | `.to_signed()` method          | `@bitCast(i256)`               | ✅ Equivalent         |
+| **Result Encoding**     | `U256(bool)` → 1/0             | `if (cond) 1 else 0`           | ✅ Match              |
+| **PC Increment**        | `+= Uint(1)`                   | `+= 1`                         | ✅ Match              |
 
 ### 6.1 Operation Order Divergence ⚠️
 
 **Python:**
+
 ```python
 left = pop(evm.stack)     # 1. Pop stack FIRST
 right = pop(evm.stack)
@@ -299,6 +320,7 @@ result = U256(left < right)
 ```
 
 **Zig:**
+
 ```zig
 try frame.consumeGas(GasConstants.GasFastestStep);  // 1. Charge gas FIRST
 const a = try frame.popStack();  // 2. Pop stack SECOND
@@ -306,6 +328,7 @@ const b = try frame.popStack();
 ```
 
 **Impact:**
+
 - **Functional:** No difference (both will fail correctly if insufficient gas or stack underflow)
 - **Trace Comparison:** Will show **different divergence points** if failures occur
 - **Debugging:** Harder to match execution traces with Python reference
@@ -362,19 +385,20 @@ const b = try frame.popStack();
 ## 10. Comparison with Execution-Specs
 
 ### Reference Implementation
+
 - **File:** `execution-specs/src/ethereum/forks/paris/vm/instructions/comparison.py`
 - **Lines:** 1-178
 - **Functions:** `less_than`, `signed_less_than`, `greater_than`, `signed_greater_than`, `equal`, `is_zero`
 
 ### Key Differences
 
-| Feature | Python | Zig | Notes |
-|---------|--------|-----|-------|
-| **Function naming** | `less_than` | `lt` | Zig uses opcode mnemonic (acceptable) |
-| **Variable naming** | `left`, `right` | `a`, `b` or `top`, `second` | Inconsistent in Zig |
-| **Gas constant** | `GAS_VERY_LOW` | `GasFastestStep` | Names differ, values should match |
-| **Operation order** | Stack → Gas → Op | Gas → Stack → Op | **Critical divergence** |
-| **Documentation** | Extensive docstrings | Minimal comments | Zig lacks detail |
+| Feature             | Python               | Zig                         | Notes                                 |
+| ------------------- | -------------------- | --------------------------- | ------------------------------------- |
+| **Function naming** | `less_than`          | `lt`                        | Zig uses opcode mnemonic (acceptable) |
+| **Variable naming** | `left`, `right`      | `a`, `b` or `top`, `second` | Inconsistent in Zig                   |
+| **Gas constant**    | `GAS_VERY_LOW`       | `GasFastestStep`            | Names differ, values should match     |
+| **Operation order** | Stack → Gas → Op     | Gas → Stack → Op            | **Critical divergence**               |
+| **Documentation**   | Extensive docstrings | Minimal comments            | Zig lacks detail                      |
 
 ### Correctness Verification
 
@@ -385,6 +409,7 @@ const b = try frame.popStack();
 ## 11. Test Execution Guide
 
 ### Run Comparison Tests
+
 ```bash
 # All comparison tests
 TEST_FILTER="NonConst" zig build specs
@@ -399,6 +424,7 @@ bun scripts/isolate-test.ts "ltNonConst"
 ```
 
 ### Expected Spec Test Coverage
+
 - **stArgsZeroOneBalance:** Tests comparison with 0, 1, and balance values
 - **VMTests/vmArithmeticTest:** Tests edge cases and combinations
 
@@ -407,14 +433,17 @@ bun scripts/isolate-test.ts "ltNonConst"
 ## 12. Related Files
 
 ### Dependencies
+
 - `/Users/williamcory/guillotine-mini/src/frame.zig` - Integrates these handlers
 - Primitives package (external) - Provides `GasConstants`
 
 ### Similar Handler Files
+
 - `/Users/williamcory/guillotine-mini/src/instructions/handlers_bitwise.zig` - Similar structure
 - `/Users/williamcory/guillotine-mini/src/instructions/handlers_arithmetic.zig` - Similar gas patterns
 
 ### Python Reference
+
 - `/Users/williamcory/guillotine-mini/execution-specs/src/ethereum/forks/paris/vm/instructions/comparison.py`
 - `/Users/williamcory/guillotine-mini/execution-specs/src/ethereum/forks/paris/vm/gas.py`
 

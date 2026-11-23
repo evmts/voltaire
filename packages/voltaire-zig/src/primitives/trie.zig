@@ -745,7 +745,7 @@ test "Node - union operations" {
     {
         var node = Node{ .Empty = {} };
         defer node.deinit(allocator);
-        try testing.expectEqual(NodeType.Empty, node);
+        try testing.expectEqual(NodeType.Empty, std.meta.activeTag(node));
     }
 
     // Test leaf node
@@ -754,7 +754,7 @@ test "Node - union operations" {
         const leaf = try LeafNode.init(allocator, &nibbles, "value");
         var node = Node{ .Leaf = leaf };
         defer node.deinit(allocator);
-        try testing.expectEqual(NodeType.Leaf, node);
+        try testing.expectEqual(NodeType.Leaf, std.meta.activeTag(node));
     }
 
     // Test clone
@@ -767,7 +767,7 @@ test "Node - union operations" {
         var cloned = try node.clone(allocator);
         defer cloned.deinit(allocator);
 
-        try testing.expectEqual(NodeType.Leaf, cloned);
+        try testing.expectEqual(NodeType.Leaf, std.meta.activeTag(cloned));
     }
 }
 
@@ -864,7 +864,13 @@ pub const Trie = struct {
         const hash_str = try hash_to_string(self.allocator, &hash);
         errdefer self.allocator.free(hash_str);
 
-        try self.nodes.put(hash_str, node);
+        const gop = try self.nodes.getOrPut(hash_str);
+        if (gop.found_existing) {
+            self.allocator.free(hash_str);
+            var existing = gop.value_ptr.*;
+            existing.deinit(self.allocator);
+        }
+        gop.value_ptr.* = node;
         return hash;
     }
 
@@ -1131,8 +1137,9 @@ pub const Trie = struct {
             branch.set_child(@intCast(ext.nibbles[common_len]), ext.child_hash);
         }
 
-        // New value goes into branch
-        if (new_nibbles.len == common_len + 1) {
+        // New key ends exactly at the branch: value lives in the branch itself.
+        // Otherwise it becomes a leaf under its next nibble (possibly with an empty path).
+        if (new_nibbles.len == common_len) {
             branch.value = try self.allocator.dupe(u8, new_value);
         } else {
             const new_leaf = try LeafNode.init(self.allocator, new_nibbles[common_len + 1 ..], new_value);
@@ -1163,10 +1170,34 @@ fn common_prefix_length(a: []const u8, b: []const u8) usize {
     return i;
 }
 
-/// Hash a node using Keccak256
+fn wrapRlpList(allocator: Allocator, items: []const []const u8) ![]u8 {
+    var payload_len: usize = 0;
+    for (items) |item| payload_len += item.len;
+
+    var out = std.ArrayList(u8){};
+    errdefer out.deinit(allocator);
+
+    if (payload_len <= 55) {
+        try out.ensureTotalCapacity(allocator, 1 + payload_len);
+        out.appendAssumeCapacity(@as(u8, @intCast(0xc0 + payload_len)));
+    } else {
+        var len_buf: [8]u8 = undefined;
+        var len_len: usize = 0;
+        var rem = payload_len;
+        while (rem > 0) : (rem >>= 8) {
+            len_buf[7 - len_len] = @as(u8, @truncate(rem));
+            len_len += 1;
+        }
+        try out.ensureTotalCapacity(allocator, 1 + len_len + payload_len);
+        out.appendAssumeCapacity(@as(u8, @intCast(0xf7 + len_len)));
+        out.appendSliceAssumeCapacity(len_buf[8 - len_len ..]);
+    }
+    for (items) |item| out.appendSliceAssumeCapacity(item);
+    return out.toOwnedSlice(allocator);
+}
+
+/// Hash a node using canonical Ethereum RLP encoding + Keccak256
 fn hash_node(allocator: Allocator, node: *const Node) ![32]u8 {
-    // For now, use a simple hash based on node content
-    // In production, this should use RLP encoding + Keccak256
     const Rlp = @import("Rlp/Rlp.zig");
 
     const encoded = switch (node.*) {
@@ -1186,7 +1217,7 @@ fn hash_node(allocator: Allocator, node: *const Node) ![32]u8 {
             try list.append(allocator, try Rlp.encode(allocator, path_encoded));
             try list.append(allocator, try Rlp.encode(allocator, leaf.value));
 
-            break :blk try Rlp.encode(allocator, list.items);
+            break :blk try wrapRlpList(allocator, list.items);
         },
         .Extension => |ext| blk: {
             const path_encoded = try encodePath(allocator, ext.nibbles, false);
@@ -1203,7 +1234,7 @@ fn hash_node(allocator: Allocator, node: *const Node) ![32]u8 {
             try list.append(allocator, try Rlp.encode(allocator, path_encoded));
             try list.append(allocator, try Rlp.encode(allocator, &ext.child_hash));
 
-            break :blk try Rlp.encode(allocator, list.items);
+            break :blk try wrapRlpList(allocator, list.items);
         },
         .Branch => |branch| blk: {
             var list = std.ArrayList([]const u8){};
@@ -1230,7 +1261,7 @@ fn hash_node(allocator: Allocator, node: *const Node) ![32]u8 {
                 try list.append(allocator, try Rlp.encode(allocator, ""));
             }
 
-            break :blk try Rlp.encode(allocator, list.items);
+            break :blk try wrapRlpList(allocator, list.items);
         },
     };
     defer allocator.free(encoded);

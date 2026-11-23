@@ -1,1 +1,1 @@
-{"version":3,"file":"isValidPrivateKey.d.ts","sourceRoot":"","sources":["../../../src/crypto/Secp256k1/isValidPrivateKey.js"],"names":[],"mappings":"AAyBA;;;;;;;;;;;;;;;;;GAiBG;AACH,8CAVW,UAAU,GACR,OAAO,CAsBnB"}
+{"version":3,"file":"isValidPrivateKey.d.ts","sourceRoot":"","sources":["../../../src/crypto/Secp256k1/isValidPrivateKey.js"],"names":[],"mappings":"AAMA;;;;;;;;;;;;;;;;;GAiBG;AACH,8CAVW,UAAU,GACR,OAAO,CAcnB"}

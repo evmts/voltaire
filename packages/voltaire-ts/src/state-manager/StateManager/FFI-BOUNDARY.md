@@ -46,18 +46,20 @@ The StateManager FFI layer bridges Zig implementation with TypeScript, providing
 
 ```typescript
 // TypeScript creates handle
-const handle = ffi.state_manager_create();  // Zig allocates StateManager
+const handle = ffi.state_manager_create(); // Zig allocates StateManager
 // ...use handle...
-ffi.state_manager_destroy(handle);          // Zig frees StateManager
+ffi.state_manager_destroy(handle); // Zig frees StateManager
 ```
 
 **Lifecycle**:
+
 1. `state_manager_create()` → Zig allocates `StateManager` struct
 2. Returns opaque handle (`*anyopaque` cast to `bigint`)
 3. TypeScript stores handle as `bigint`
 4. `state_manager_destroy(handle)` → Zig frees `StateManager`
 
 **Invariants**:
+
 - Handle MUST be destroyed exactly once
 - Using handle after destroy is undefined behavior
 - Handles are NOT transferable across FFI library loads
@@ -86,14 +88,14 @@ ffi.state_manager_get_balance_sync(handle, addressHex, outBuffer, 67);
 
 ```typescript
 // TypeScript allocates buffer
-const buffer = new Uint8Array(67);  // "0x" + 64 hex + null terminator
+const buffer = new Uint8Array(67); // "0x" + 64 hex + null terminator
 
 // Zig writes into buffer
 const result = ffi.state_manager_get_balance_sync(
-  handle,
-  addressHex,
-  buffer,   // ← Zig writes here
-  67        // ← buffer length
+	handle,
+	addressHex,
+	buffer, // ← Zig writes here
+	67, // ← buffer length
 );
 
 // TypeScript owns buffer, reads result
@@ -103,6 +105,7 @@ const hex = new TextDecoder().decode(buffer.subarray(0, buffer.indexOf(0)));
 **Ownership**: TypeScript owns output buffers. Zig MUST NOT allocate or free.
 
 **Buffer Sizes**:
+
 - Balance/storage: 67 bytes (`"0x" + 64 hex digits + null`)
 - Nonce: `BigUint64Array(1)` (8 bytes)
 - Code: Variable length (call `get_code_len_sync` first)
@@ -137,6 +140,7 @@ Fork backend needs to fetch state from remote RPC (async), but Zig doesn't have 
 ### Design
 
 **Components**:
+
 1. **RPC Client VTable** (Zig struct with function pointers)
 2. **Pending Requests Map** (TypeScript `Map<requestId, {resolve, reject}>`)
 3. **Callback Functions** (TypeScript → Zig → TypeScript)
@@ -233,10 +237,12 @@ const getProofVtable = (
 ### Current Implementation
 
 **Synchronous only** - works in both:
+
 - Native: Direct function calls
 - WASM: Module imports/exports
 
 **Async RPC** - requires different implementation:
+
 - Native: Callback function pointers
 - WASM: `Table` + message passing
 
@@ -261,16 +267,16 @@ pub const STATE_MANAGER_ERROR_INVALID_HEX: c_int = -5;
 const result = ffi.state_manager_get_balance_sync(handle, address, buffer, 67);
 
 if (result !== STATE_MANAGER_SUCCESS) {
-  switch (result) {
-    case STATE_MANAGER_ERROR_INVALID_HEX:
-      throw new Error(`Invalid hex address: ${address}`);
-    case STATE_MANAGER_ERROR_RPC_FAILED:
-      throw new Error('RPC request failed');
-    case STATE_MANAGER_ERROR_OUT_OF_MEMORY:
-      throw new Error('Out of memory');
-    default:
-      throw new Error(`StateManager error: ${result}`);
-  }
+	switch (result) {
+		case STATE_MANAGER_ERROR_INVALID_HEX:
+			throw new Error(`Invalid hex address: ${address}`);
+		case STATE_MANAGER_ERROR_RPC_FAILED:
+			throw new Error("RPC request failed");
+		case STATE_MANAGER_ERROR_OUT_OF_MEMORY:
+			throw new Error("Out of memory");
+		default:
+			throw new Error(`StateManager error: ${result}`);
+	}
 }
 ```
 
@@ -309,10 +315,10 @@ const addr = Address.from(addr_slice) catch ...;  // → Address (20 bytes)
 // Zig → TypeScript
 // Zig writes: "0x00000000000000000000000000000000000000000000000000000000000003e8"
 const hexString = new TextDecoder().decode(buffer.subarray(0, nullIndex));
-const balance = BigInt(hexString);  // → 1000n
+const balance = BigInt(hexString); // → 1000n
 
 // TypeScript → Zig
-const balanceHex = `0x${balance.toString(16)}`;  // 1000n → "0x3e8"
+const balanceHex = `0x${balance.toString(16)}`; // 1000n → "0x3e8"
 ffi.state_manager_set_balance(handle, addressHex, balanceHex);
 ```
 
@@ -322,10 +328,10 @@ ffi.state_manager_set_balance(handle, addressHex, balanceHex);
 // Zig → TypeScript
 const codeBuffer = new Uint8Array(codeLen);
 ffi.state_manager_get_code_sync(handle, addressHex, codeBuffer, codeLen);
-const hex = Hex.fromBytes(codeBuffer);  // Uint8Array → "0x6060..."
+const hex = Hex.fromBytes(codeBuffer); // Uint8Array → "0x6060..."
 
 // TypeScript → Zig
-const codeBytes = Hex.toBytes(code);  // "0x6060..." → Uint8Array
+const codeBytes = Hex.toBytes(code); // "0x6060..." → Uint8Array
 ffi.state_manager_set_code(handle, addressHex, codeBytes, codeBytes.length);
 ```
 
@@ -335,12 +341,12 @@ ffi.state_manager_set_code(handle, addressHex, codeBytes, codeBytes.length);
 
 ### Snapshot vs Checkpoint
 
-| Feature       | Checkpoint                  | Snapshot                       |
-|---------------|-----------------------------|--------------------------------|
-| **Purpose**   | EVM execution rollback      | Testing (tevm_snapshot/revert) |
-| **Granularity** | Stack-based (LIFO)        | Random-access by ID            |
-| **ID**        | None (implicit depth)       | Explicit u64 ID                |
-| **Revert**    | Pop one level               | Revert to specific ID          |
+| Feature         | Checkpoint             | Snapshot                       |
+| --------------- | ---------------------- | ------------------------------ |
+| **Purpose**     | EVM execution rollback | Testing (tevm_snapshot/revert) |
+| **Granularity** | Stack-based (LIFO)     | Random-access by ID            |
+| **ID**          | None (implicit depth)  | Explicit u64 ID                |
+| **Revert**      | Pop one level          | Revert to specific ID          |
 
 ### Checkpoint (Internal)
 
@@ -353,6 +359,7 @@ manager.commit();                // Merge into parent
 ```
 
 **Zig implementation**:
+
 ```zig
 pub fn checkpoint(self: *StateManager) !void {
     try self.journaled_state.checkpoint();  // Pushes to all 3 caches
@@ -372,6 +379,7 @@ await manager.revertToSnapshot(snapId);    // Revert to snapshot 0
 ```
 
 **Zig implementation**:
+
 ```zig
 pub fn snapshot(self: *StateManager) !u64 {
     const snapshot_id = self.snapshot_counter;
@@ -438,43 +446,43 @@ test "c_api - get/set balance" {
 ### Integration Tests (TypeScript)
 
 ```typescript
-import { describe, test, expect } from 'vitest';
-import { StateManager } from './index.js';
-import * as Address from '../../primitives/Address/index.js';
+import { describe, test, expect } from "vitest";
+import { StateManager } from "./index.js";
+import * as Address from "../../primitives/Address/index.js";
 
-describe('StateManager FFI', () => {
-  test('create and destroy', () => {
-    const manager = new StateManager({ ffi: ffiExports });
-    expect(manager).toBeDefined();
-    manager.destroy();
-  });
+describe("StateManager FFI", () => {
+	test("create and destroy", () => {
+		const manager = new StateManager({ ffi: ffiExports });
+		expect(manager).toBeDefined();
+		manager.destroy();
+	});
 
-  test('get/set balance', async () => {
-    const manager = new StateManager({ ffi: ffiExports });
-    const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+	test("get/set balance", async () => {
+		const manager = new StateManager({ ffi: ffiExports });
+		const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
 
-    await manager.setBalance(addr, 1000n);
-    const balance = await manager.getBalance(addr);
+		await manager.setBalance(addr, 1000n);
+		const balance = await manager.getBalance(addr);
 
-    expect(balance).toBe(1000n);
-    manager.destroy();
-  });
+		expect(balance).toBe(1000n);
+		manager.destroy();
+	});
 
-  test('snapshot and revert', async () => {
-    const manager = new StateManager({ ffi: ffiExports });
-    const addr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+	test("snapshot and revert", async () => {
+		const manager = new StateManager({ ffi: ffiExports });
+		const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
 
-    await manager.setBalance(addr, 1000n);
-    const snapId = await manager.snapshot();
+		await manager.setBalance(addr, 1000n);
+		const snapId = await manager.snapshot();
 
-    await manager.setBalance(addr, 2000n);
-    expect(await manager.getBalance(addr)).toBe(2000n);
+		await manager.setBalance(addr, 2000n);
+		expect(await manager.getBalance(addr)).toBe(2000n);
 
-    await manager.revertToSnapshot(snapId);
-    expect(await manager.getBalance(addr)).toBe(1000n);
+		await manager.revertToSnapshot(snapId);
+		expect(await manager.getBalance(addr)).toBe(1000n);
 
-    manager.destroy();
-  });
+		manager.destroy();
+	});
 });
 ```
 
@@ -501,20 +509,23 @@ manager.getMetrics() → {
 
 **StateManager**: ~1KB base + cache overhead
 **Fork Cache**: `max_cache_size * (account_size + storage_slots + code_size)`
-  - Default: 10,000 entries
-  - Account: ~100 bytes each
-  - Storage: ~50 bytes per slot
-  - Code: Variable (can be large)
+
+- Default: 10,000 entries
+- Account: ~100 bytes each
+- Storage: ~50 bytes per slot
+- Code: Variable (can be large)
 
 **Estimate**: 10MB - 100MB for typical fork usage
 
 ### RPC Latency
 
 **Blocking calls**: Current implementation blocks Zig thread
+
 - HTTP: ~50-200ms per request
 - Impact: State access stalls until RPC returns
 
 **Future async**: Non-blocking with callbacks
+
 - State access returns immediately
 - Callback invoked when RPC completes
 - Better throughput with concurrent requests
@@ -533,6 +544,7 @@ manager.getMetrics() → {
 ### Batch RPC Calls
 
 Fetch multiple accounts/slots in single `eth_getProof` call:
+
 ```typescript
 await rpcClient.getProof(address, [slot1, slot2, slot3], blockTag);
 ```
@@ -544,9 +556,10 @@ Export cache statistics, RPC call counts, latency percentiles.
 ### Persistent Cache
 
 Save fork cache to disk for faster subsequent runs:
+
 ```typescript
-await manager.saveCacheToFile('fork-cache.db');
-await manager.loadCacheFromFile('fork-cache.db');
+await manager.saveCacheToFile("fork-cache.db");
+await manager.loadCacheFromFile("fork-cache.db");
 ```
 
 ---

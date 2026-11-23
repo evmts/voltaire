@@ -179,6 +179,8 @@ describe("Hardfork.fromString", () => {
 			"cancun",
 			"prague",
 			"osaka",
+			"amsterdam",
+			"glamsterdam",
 		];
 
 		for (const name of validNames) {
@@ -505,8 +507,16 @@ describe("Hardfork.range", () => {
 // ============================================================================
 
 describe("Hardfork edge cases", () => {
-	it("DEFAULT is set to PRAGUE", () => {
-		expect(Hardfork.DEFAULT).toBe(Hardfork.PRAGUE);
+	it("DEFAULT is set to OSAKA", () => {
+		expect(Hardfork.DEFAULT).toBe(Hardfork.OSAKA);
+	});
+
+	it("orders Amsterdam after Osaka and resolves the Glamsterdam alias", () => {
+		expect(Hardfork.allIds().slice(-2)).toEqual([
+			Hardfork.OSAKA,
+			Hardfork.AMSTERDAM,
+		]);
+		expect(Hardfork.fromString("Glamsterdam")).toBe(Hardfork.AMSTERDAM);
 	});
 
 	it("fromString roundtrips with toString", () => {
@@ -537,6 +547,7 @@ describe("Hardfork edge cases", () => {
 		expect(Hardfork.CANCUN).toBe("cancun");
 		expect(Hardfork.PRAGUE).toBe("prague");
 		expect(Hardfork.OSAKA).toBe("osaka");
+		expect(Hardfork.AMSTERDAM).toBe("amsterdam");
 	});
 
 	it("comparison operations work across full range", () => {

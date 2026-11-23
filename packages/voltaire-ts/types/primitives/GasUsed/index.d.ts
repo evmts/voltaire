@@ -13,7 +13,7 @@ export declare function toHex(value: number | bigint | string): string;
 export declare function equals(value1: number | bigint | string, value2: number | bigint | string): boolean;
 export declare function compare(value1: number | bigint | string, value2: number | bigint | string): number;
 export declare function calculateCost(gasUsed: number | bigint | string, gasPrice: bigint): bigint;
-export { _toNumber, _toBigInt, _toHex, _equals, _compare, _calculateCost };
+export { _calculateCost, _compare, _equals, _toBigInt, _toHex, _toNumber };
 export declare const GasUsed: {
     from: typeof from;
     toNumber: typeof toNumber;

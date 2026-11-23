@@ -1,6 +1,6 @@
 ---
-title: "isLog.js"
----
+
+## title: "isLog.js"
 
 # isLog.js
 
@@ -9,7 +9,7 @@ Check if opcode is LOG instruction (LOG0-LOG4).
 ## Signature
 
 ```typescript
-function isLog(opcode: BrandedOpcode): boolean
+function isLog(opcode: BrandedOpcode): boolean;
 ```
 
 ## Parameters
@@ -23,8 +23,8 @@ function isLog(opcode: BrandedOpcode): boolean
 ## Example
 
 ```typescript
-Opcode.isLog(Opcode.LOG0);   // true
-Opcode.isLog(Opcode.LOG4);   // true
+Opcode.isLog(Opcode.LOG0); // true
+Opcode.isLog(Opcode.LOG4); // true
 Opcode.isLog(Opcode.SSTORE); // false
 ```
 

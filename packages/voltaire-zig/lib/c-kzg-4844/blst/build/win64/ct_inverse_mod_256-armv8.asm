@@ -22,6 +22,7 @@ __SIZEOF_POINTER__ SETA 64/8
  if :def:	__CHERI_PURE_CAPABILITY__
 	add	x1,sp,#16+511
 	alignd	c1,c1,#9
+	scbnds	c1,c1,#512
  else
 	add	x1, sp, #16+511
 	and	x1, x1, #-512
@@ -41,7 +42,7 @@ __SIZEOF_POINTER__ SETA 64/8
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	str	x12,[x0,#8*8]
@@ -50,18 +51,18 @@ __SIZEOF_POINTER__ SETA 64/8
 	mov	x13, x15
 	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
-	str	x12, [x0,#8*9]
+	str	x12, [x0,#8*10]
 
 
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -73,29 +74,27 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256_n_shift_by_31
 
 	ldr	x8, [x1,#8*8]
-	ldr	x9, [x1,#8*13]
+	ldr	x9, [x1,#8*14]
 	madd	x4, x16, x8, xzr
 	madd	x4, x17, x9, x4
-	str	x4, [x0,#8*4]
 	asr	x5, x4, #63
-	stp	x5, x5, [x0,#8*5]
-	stp	x5, x5, [x0,#8*7]
+	stp	x4, x5, [x0,#8*4]
+	stp	x5, x5, [x0,#8*6]
 
 	madd	x4, x12, x8, xzr
 	madd	x4, x13, x9, x4
-	str	x4, [x0,#8*9]
 	asr	x5, x4, #63
-	stp	x5, x5, [x0,#8*10]
+	stp	x4, x5, [x0,#8*10]
 	stp	x5, x5, [x0,#8*12]
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -108,25 +107,19 @@ __SIZEOF_POINTER__ SETA 64/8
 
 	add	x0,x0,#8*4
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	stp	x22, x22, [x0,#8*4]
-	stp	x22, x22, [x0,#8*6]
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -139,25 +132,19 @@ __SIZEOF_POINTER__ SETA 64/8
 
 	add	x0,x0,#8*4
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	stp	x22, x22, [x0,#8*4]
-	stp	x22, x22, [x0,#8*6]
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -170,25 +157,19 @@ __SIZEOF_POINTER__ SETA 64/8
 
 	add	x0,x0,#8*4
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	stp	x22, x22, [x0,#8*4]
-	stp	x22, x22, [x0,#8*6]
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -201,25 +182,19 @@ __SIZEOF_POINTER__ SETA 64/8
 
 	add	x0,x0,#8*4
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	stp	x22, x22, [x0,#8*4]
-	stp	x22, x22, [x0,#8*6]
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -232,25 +207,19 @@ __SIZEOF_POINTER__ SETA 64/8
 
 	add	x0,x0,#8*4
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	stp	x22, x22, [x0,#8*4]
-	stp	x22, x22, [x0,#8*6]
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -263,25 +232,24 @@ __SIZEOF_POINTER__ SETA 64/8
 
 	add	x0,x0,#8*4
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	str	x22, [x0,#8*4]
-
+	asr	x24, x24, #63
+	str	x24, [x0,#8*4]
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
-	adc	x22, x22, x23
-	stp	x22, x22, [x0,#8*4]
-	stp	x22, x22, [x0,#8*6]
+	asr	x24, x24, #63
+	stp	x24, x24, [x0,#8*4]
+	stp	x24, x24, [x0,#8*6]
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -296,21 +264,20 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -325,21 +292,20 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -354,21 +320,20 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -383,21 +348,20 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -412,21 +376,20 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -441,21 +404,20 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	bl	__ab_approximation_31_256
 
 	eor	x0, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c0,csp,x0
+	scvalue	c0,c1,x0
  endif
 	bl	__smul_256_n_shift_by_31
 	mov	x16, x12
@@ -470,16 +432,15 @@ __SIZEOF_POINTER__ SETA 64/8
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
-
 	mov	x16, x12
 	mov	x17, x13
-	add	x0,x0,#8*5
+	add	x0,x0,#8*6
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
 
 	eor	x1, x1, #256
  if :def:	__CHERI_PURE_CAPABILITY__
-	scvalue	c1,csp,x1
+	scvalue	c1,c0,x1
  endif
 	mov	x2, #47
 
@@ -581,11 +542,11 @@ __SIZEOF_POINTER__ SETA 64/8
 	adcs	x6, x6, x20
 	adcs	x24, x24, x21
 	adc	x26, xzr, xzr
-	ldp	x8, x9, [x1,#8*0+104]
+	ldp	x8, x9, [x1,#8*0+112]
 	asr	x14, x17, #63
-	ldp	x10, x11, [x1,#8*2+104]
+	ldp	x10, x11, [x1,#8*2+112]
 	eor	x17, x17, x14
-	ldr	x23, [x1,#8*4+104]
+	ldr	x23, [x1,#8*4+112]
 
 	eor	x8, x8, x14
 	sub	x17, x17, x14
@@ -627,9 +588,9 @@ __SIZEOF_POINTER__ SETA 64/8
 	ALIGN	32
 |__smul_512x63_tail| PROC
 	umulh	x24, x7, x16
-	ldp	x5, x6, [x1,#8*18]
+	ldr	x5, [x1,#8*19]
 	adc	x26, x26, xzr
-	ldr	x7, [x1,#8*20]
+	ldp	x6, x7, [x1,#8*20]
 	and	x22, x22, x16
 
 	umulh	x11, x11, x17

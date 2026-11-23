@@ -42,6 +42,7 @@ Rlp.decodeArray = BrandedRlpNs.decodeArray;
 Rlp.decodeObject = BrandedRlpNs.decodeObject;
 Rlp.decodeValue = BrandedRlpNs.decodeValue;
 Rlp.getEncodedLength = BrandedRlpNs.getEncodedLength;
+Rlp.exceedsMaxRlpBlockSize = BrandedRlpNs.exceedsMaxRlpBlockSize;
 Rlp.flatten = BrandedRlpNs.flatten;
 Rlp.equals = BrandedRlpNs.equals;
 Rlp.toJSON = BrandedRlpNs.toJSON;

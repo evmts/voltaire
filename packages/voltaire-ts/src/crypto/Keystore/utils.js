@@ -1,5 +1,7 @@
 // @ts-nocheck
 
+import { KeystoreError } from "./errors.js";
+
 /**
  * Convert Uint8Array to hex string (without 0x prefix)
  *
@@ -17,9 +19,13 @@ export function bytesToHex(bytes) {
  *
  * @param {string} hex - Hex string
  * @returns {Uint8Array} Bytes
+ * @throws {KeystoreError} If the hex digits are malformed
  */
 export function hexToBytes(hex) {
 	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (clean.length % 2 !== 0 || /[^0-9a-fA-F]/.test(clean)) {
+		throw new KeystoreError("Expected an even number of hexadecimal digits");
+	}
 	const bytes = new Uint8Array(clean.length / 2);
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);

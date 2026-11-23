@@ -2,13 +2,7 @@
 
 import type { HashType } from "@tevm/voltaire/Hash"
 import type { HexType } from "@tevm/voltaire/Hex"
-import {
-  AbiDecodeError,
-  AbiEncodeError,
-  AbiItemNotFoundError,
-  errorMessage,
-  RevertReason
-} from "../errors.vibe"
+import { AbiDecodeError, AbiEncodeError, AbiItemNotFoundError, errorMessage, RevertReason } from "../errors.vibe"
 
 export interface AbiParameter {
   readonly type: string
@@ -41,11 +35,18 @@ module native {
     return VoltaireAbi.encodeFunction(abi as any, functionName, args)
   }
 
-  export function decodeFunctionDataRaw(abi: Abi, data: HexType | Uint8Array): { readonly name: string; readonly params: ReadonlyArray<unknown> } {
+  export function decodeFunctionDataRaw(
+    abi: Abi,
+    data: HexType | Uint8Array,
+  ): { readonly name: string; readonly params: ReadonlyArray<unknown> } {
     return VoltaireAbi.decodeFunction(abi as any, data)
   }
 
-  export function decodeFunctionResultRaw(abi: Abi, functionName: string, data: HexType | Uint8Array): ReadonlyArray<unknown> {
+  export function decodeFunctionResultRaw(
+    abi: Abi,
+    functionName: string,
+    data: HexType | Uint8Array,
+  ): ReadonlyArray<unknown> {
     const fn = abi.find((item) => item.type === "function" && item.name === functionName)
     if (!fn) throw new Error(`Function "${functionName}" not found in ABI`)
     const bytes = typeof data === "string" ? VoltaireHex.toBytes(data) : data
@@ -57,7 +58,10 @@ module native {
     return VoltaireHex.fromBytes(encoded)
   }
 
-  export function decodeParametersRaw(params: ReadonlyArray<AbiParameter>, data: HexType | Uint8Array): ReadonlyArray<unknown> {
+  export function decodeParametersRaw(
+    params: ReadonlyArray<AbiParameter>,
+    data: HexType | Uint8Array,
+  ): ReadonlyArray<unknown> {
     const bytes = typeof data === "string" ? VoltaireHex.toBytes(data) : data
     return VoltaireAbi.decodeParameters(params as any, bytes)
   }
@@ -85,7 +89,7 @@ module native {
   export function decodeEventLogRaw(
     ev: AbiItem,
     data: HexType | Uint8Array,
-    topics: ReadonlyArray<HexType | HashType>
+    topics: ReadonlyArray<HexType | HashType>,
   ): Record<string, unknown> {
     const dataBytes = typeof data === "string" ? VoltaireHex.toBytes(data) : data
     const topicHashes = topics.map((t) =>
@@ -126,7 +130,7 @@ import {
   getErrorSignatureRaw,
   getEventTopicRaw,
   getFunctionSelectorRaw,
-  hexToBytesRaw
+  hexToBytesRaw,
 } from native
 
 const PANIC_DESCRIPTIONS: Record<string, string> = {
@@ -139,7 +143,7 @@ const PANIC_DESCRIPTIONS: Record<string, string> = {
   "49": "Pop on empty array",
   "50": "Array index out of bounds",
   "65": "Out of memory",
-  "81": "Called zero-initialized function pointer"
+  "81": "Called zero-initialized function pointer",
 }
 
 export effect function findFunction(abi: Abi, name: string): AbiItem!AbiItemNotFoundError {
@@ -169,7 +173,7 @@ export effect function findError(abi: Abi, name: string): AbiItem!AbiItemNotFoun
 export effect function encodeFunctionData(
   abi: Abi,
   functionName: string,
-  args: ReadonlyArray<unknown> = []
+  args: ReadonlyArray<unknown> = [],
 ): HexType!(AbiItemNotFoundError | AbiEncodeError) {
   try findFunction(abi, functionName)
   return try Effect.try({
@@ -178,14 +182,14 @@ export effect function encodeFunctionData(
       new AbiEncodeError({
         functionName,
         message: `Failed encoding "${functionName}": ${errorMessage(cause)}`,
-        cause
-      })
+        cause,
+      }),
   })
 }
 
 export effect function decodeFunctionData(
   abi: Abi,
-  data: HexType | Uint8Array
+  data: HexType | Uint8Array,
 ): { readonly name: string; readonly params: ReadonlyArray<unknown> }!AbiDecodeError {
   return try Effect.try({
     try: () => decodeFunctionDataRaw(abi, data),
@@ -193,15 +197,15 @@ export effect function decodeFunctionData(
       new AbiDecodeError({
         data: typeof data === "string" ? data : undefined,
         message: `Failed decoding function calldata: ${errorMessage(cause)}`,
-        cause
-      })
+        cause,
+      }),
   })
 }
 
 export effect function decodeFunctionResult(
   abi: Abi,
   functionName: string,
-  data: HexType | Uint8Array
+  data: HexType | Uint8Array,
 ): unknown!(AbiItemNotFoundError | AbiDecodeError) {
   const fn = try findFunction(abi, functionName)
   const decoded = try Effect.try({
@@ -211,8 +215,8 @@ export effect function decodeFunctionResult(
         functionName,
         data: typeof data === "string" ? data : undefined,
         message: `Failed decoding result for "${functionName}": ${errorMessage(cause)}`,
-        cause
-      })
+        cause,
+      }),
   })
   const outputCount = fn.outputs?.length ?? 0
   if (outputCount === 0) return undefined
@@ -222,17 +226,17 @@ export effect function decodeFunctionResult(
 
 export effect function encodeParameters(
   params: ReadonlyArray<AbiParameter>,
-  values: ReadonlyArray<unknown>
+  values: ReadonlyArray<unknown>,
 ): HexType!AbiEncodeError {
   return try Effect.try({
     try: () => encodeParametersRaw(params, values),
-    catch: (cause) => new AbiEncodeError({ message: `Failed encoding ABI parameters: ${errorMessage(cause)}`, cause })
+    catch: (cause) => new AbiEncodeError({ message: `Failed encoding ABI parameters: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function decodeParameters(
   params: ReadonlyArray<AbiParameter>,
-  data: HexType | Uint8Array
+  data: HexType | Uint8Array,
 ): ReadonlyArray<unknown>!AbiDecodeError {
   return try Effect.try({
     try: () => decodeParametersRaw(params, data),
@@ -240,26 +244,30 @@ export effect function decodeParameters(
       new AbiDecodeError({
         data: typeof data === "string" ? data : undefined,
         message: `Failed decoding ABI parameters: ${errorMessage(cause)}`,
-        cause
-      })
+        cause,
+      }),
   })
 }
 
 export effect function encodePacked(
   types: ReadonlyArray<string>,
-  values: ReadonlyArray<unknown>
+  values: ReadonlyArray<unknown>,
 ): HexType!AbiEncodeError {
   return try Effect.try({
     try: () => encodePackedRaw(types, values),
-    catch: (cause) => new AbiEncodeError({ message: `Failed packed ABI encoding: ${errorMessage(cause)}`, cause })
+    catch: (cause) => new AbiEncodeError({ message: `Failed packed ABI encoding: ${errorMessage(cause)}`, cause }),
   })
 }
 
-export effect function getFunctionSelector(abi: Abi, functionName: string): HexType!(AbiItemNotFoundError | AbiEncodeError) {
+export effect function getFunctionSelector(
+  abi: Abi,
+  functionName: string,
+): HexType!(AbiItemNotFoundError | AbiEncodeError) {
   const fn = try findFunction(abi, functionName)
   return try Effect.try({
     try: () => getFunctionSelectorRaw(fn),
-    catch: (cause) => new AbiEncodeError({ functionName, message: `Failed computing selector: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new AbiEncodeError({ functionName, message: `Failed computing selector: ${errorMessage(cause)}`, cause }),
   })
 }
 
@@ -267,19 +275,29 @@ export effect function getEventTopic(abi: Abi, eventName: string): HexType!(AbiI
   const ev = try findEvent(abi, eventName)
   return try Effect.try({
     try: () => getEventTopicRaw(ev),
-    catch: (cause) => new AbiEncodeError({ functionName: eventName, message: `Failed computing event topic: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new AbiEncodeError({
+        functionName: eventName,
+        message: `Failed computing event topic: ${errorMessage(cause)}`,
+        cause,
+      }),
   })
 }
 
 export effect function encodeEventTopics(
   abi: Abi,
   eventName: string,
-  args: Record<string, unknown> = {}
+  args: Record<string, unknown> = {},
 ): ReadonlyArray<HexType | null>!(AbiItemNotFoundError | AbiEncodeError) {
   const ev = try findEvent(abi, eventName)
   return try Effect.try({
     try: () => encodeEventTopicsRaw(ev, args),
-    catch: (cause) => new AbiEncodeError({ functionName: eventName, message: `Failed encoding event topics: ${errorMessage(cause)}`, cause })
+    catch: (cause) =>
+      new AbiEncodeError({
+        functionName: eventName,
+        message: `Failed encoding event topics: ${errorMessage(cause)}`,
+        cause,
+      }),
   })
 }
 
@@ -287,7 +305,7 @@ export effect function decodeEventLog(
   abi: Abi,
   eventName: string,
   data: HexType | Uint8Array,
-  topics: ReadonlyArray<HexType | HashType>
+  topics: ReadonlyArray<HexType | HashType>,
 ): Record<string, unknown>!(AbiItemNotFoundError | AbiDecodeError) {
   const ev = try findEvent(abi, eventName)
   return try Effect.try({
@@ -297,8 +315,8 @@ export effect function decodeEventLog(
         functionName: eventName,
         data: typeof data === "string" ? data : undefined,
         message: `Failed decoding event "${eventName}": ${errorMessage(cause)}`,
-        cause
-      })
+        cause,
+      }),
   })
 }
 
@@ -352,8 +370,9 @@ export function formatRevertReason(reason: RevertReason): string {
   return match (reason) {
     when { _tag: "ErrorString", reason: let msg }: `Reverted: ${msg}`;
     when { _tag: "Panic", let code, let description }: `Panic(0x${code.toString(16)}): ${description}`;
-    when { _tag: "Custom", let name, let args }:
-      args.length > 0 ? `Custom error ${name}(${args.map((a) => String(a)).join(", ")})` : `Custom error ${name}()`;
+    when { _tag: "Custom", let name, let args }: args.length > 0
+      ? `Custom error ${name}(${args.map((a) => String(a)).join(", ")})`
+      : `Custom error ${name}()`;
     when { _tag: "Raw", let data }: data === "0x" ? "Execution reverted without reason" : `Reverted with data ${data}`;
   }
 }

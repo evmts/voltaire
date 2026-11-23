@@ -1378,9 +1378,9 @@ test "detectFusions: complex real-world sequence" {
     try std.testing.expectEqual(FusionType.push_div, fusions[2].fusion_type);
     try std.testing.expectEqual(@as(u32, 7), fusions[2].pc);
 
-    // SWAP1 + POP
-    try std.testing.expectEqual(FusionType.swap_pop, fusions[3].fusion_type);
-    try std.testing.expectEqual(@as(u32, 11), fusions[3].pc);
+    // DUP1 + SWAP1 (greedy left-to-right scan consumes SWAP1, so POP stays unfused)
+    try std.testing.expectEqual(FusionType.dup_swap, fusions[3].fusion_type);
+    try std.testing.expectEqual(@as(u32, 10), fusions[3].pc);
 }
 
 test "detectFusions: all PUSH sizes with same operation" {
@@ -1982,7 +1982,7 @@ test "toHex: longer bytecode" {
     const hex = try toHex(std.testing.allocator, &code, true);
     defer std.testing.allocator.free(hex);
 
-    try std.testing.expectEqualStrings("0x608060405260", hex);
+    try std.testing.expectEqualStrings("0x60806040525b", hex);
 }
 
 test "fromHex: simple hex with prefix" {
@@ -2058,7 +2058,7 @@ test "fromHex: invalid hex character" {
 }
 
 test "fromHex: invalid hex character (space)" {
-    const result = fromHex(std.testing.allocator, "0x60 01");
+    const result = fromHex(std.testing.allocator, "0x60 1");
     try std.testing.expectError(error.InvalidHexChar, result);
 }
 

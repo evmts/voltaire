@@ -15,11 +15,13 @@
  * @property {string} extraData - Extra data (hex)
  * @property {string} mixHash - PoW mix hash (32 bytes hex)
  * @property {string} nonce - PoW nonce (8 bytes hex)
- * @property {string} [baseFeePerGas] - Base fee per gas (hex, EIP-1559)
- * @property {string} [withdrawalsRoot] - Withdrawals root (32 bytes hex, post-Shanghai)
- * @property {string} [blobGasUsed] - Blob gas used (hex, EIP-4844)
- * @property {string} [excessBlobGas] - Excess blob gas (hex, EIP-4844)
- * @property {string} [parentBeaconBlockRoot] - Parent beacon block root (32 bytes hex, EIP-4788)
+ * @property {string | null} [baseFeePerGas] - Base fee per gas (hex, EIP-1559)
+ * @property {string | null} [withdrawalsRoot] - Withdrawals root (32 bytes hex, post-Shanghai)
+ * @property {string | null} [blobGasUsed] - Blob gas used (hex, EIP-4844)
+ * @property {string | null} [excessBlobGas] - Excess blob gas (hex, EIP-4844)
+ * @property {string | null} [parentBeaconBlockRoot] - Parent beacon block root (32 bytes hex, EIP-4788)
+ * @property {string | null} [requestsHash] - Execution-requests commitment (32 bytes hex, EIP-7685)
+ * @property {string | null} [blockAccessListHash] - Block access list commitment (32 bytes hex, EIP-7928)
  */
 /**
  * Convert RPC block header format to BlockHeader
@@ -35,26 +37,31 @@
  * @throws {import('../errors/index.js').InvalidLengthError} If field length is incorrect
  * @example
  * ```javascript
- * import * as BlockHeader from './primitives/BlockHeader/index.js';
- * const rpcHeader = {
- *   parentHash: "0x...",
- *   sha3Uncles: "0x...",
- *   miner: "0x...",
- *   stateRoot: "0x...",
- *   transactionsRoot: "0x...",
- *   receiptsRoot: "0x...",
- *   logsBloom: "0x...",
+ * import { BlockHeader } from "@tevm/voltaire";
+ * const zeroHash = `0x${"00".repeat(32)}`;
+ * const header = BlockHeader.fromRpc({
+ *   parentHash: zeroHash,
+ *   sha3Uncles: zeroHash,
+ *   miner: `0x${"00".repeat(20)}`,
+ *   stateRoot: zeroHash,
+ *   transactionsRoot: zeroHash,
+ *   receiptsRoot: zeroHash,
+ *   logsBloom: `0x${"00".repeat(256)}`,
  *   difficulty: "0x0",
  *   number: "0x1",
  *   gasLimit: "0x1c9c380",
- *   gasUsed: "0x5208",
- *   timestamp: "0x5f5e100",
+ *   gasUsed: "0x0",
+ *   timestamp: "0x69303a57",
  *   extraData: "0x",
- *   mixHash: "0x...",
+ *   mixHash: zeroHash,
  *   nonce: "0x0000000000000000",
- *   baseFeePerGas: "0x3b9aca00"
- * };
- * const header = BlockHeader.fromRpc(rpcHeader);
+ *   baseFeePerGas: "0x7",
+ *   withdrawalsRoot: zeroHash,
+ *   blobGasUsed: "0x0",
+ *   excessBlobGas: "0x0",
+ *   parentBeaconBlockRoot: zeroHash,
+ *   requestsHash: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ * });
  * ```
  */
 export function fromRpc(rpc: RpcBlockHeader): import("./BlockHeaderType.js").BlockHeaderType;
@@ -122,22 +129,30 @@ export type RpcBlockHeader = {
     /**
      * - Base fee per gas (hex, EIP-1559)
      */
-    baseFeePerGas?: string | undefined;
+    baseFeePerGas?: string | null | undefined;
     /**
      * - Withdrawals root (32 bytes hex, post-Shanghai)
      */
-    withdrawalsRoot?: string | undefined;
+    withdrawalsRoot?: string | null | undefined;
     /**
      * - Blob gas used (hex, EIP-4844)
      */
-    blobGasUsed?: string | undefined;
+    blobGasUsed?: string | null | undefined;
     /**
      * - Excess blob gas (hex, EIP-4844)
      */
-    excessBlobGas?: string | undefined;
+    excessBlobGas?: string | null | undefined;
     /**
      * - Parent beacon block root (32 bytes hex, EIP-4788)
      */
-    parentBeaconBlockRoot?: string | undefined;
+    parentBeaconBlockRoot?: string | null | undefined;
+    /**
+     * - Execution-requests commitment (32 bytes hex, EIP-7685)
+     */
+    requestsHash?: string | null | undefined;
+    /**
+     * - Block access list commitment (32 bytes hex, EIP-7928)
+     */
+    blockAccessListHash?: string | null | undefined;
 };
 //# sourceMappingURL=fromRpc.d.ts.map

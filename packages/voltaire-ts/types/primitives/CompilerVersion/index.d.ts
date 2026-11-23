@@ -19,7 +19,7 @@ export declare function getMajor(version: string): number;
 export declare function getMinor(version: string): number;
 export declare function getPatch(version: string): number;
 export declare function isCompatible(version: string, range: string): boolean;
-export { _parse, _compare, _getMajor, _getMinor, _getPatch, _isCompatible };
+export { _compare, _getMajor, _getMinor, _getPatch, _isCompatible, _parse };
 export declare const CompilerVersion: {
     from: typeof from;
     parse: typeof parse;

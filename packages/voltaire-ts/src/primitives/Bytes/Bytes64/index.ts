@@ -22,17 +22,17 @@ import { zero } from "./zero.js";
 
 // Export individual functions
 export {
+	clone,
+	compare,
+	equals,
 	from,
 	fromBytes,
 	fromHex,
+	isZero,
+	size,
 	toHex,
 	toUint8Array,
-	equals,
-	compare,
-	clone,
-	size,
 	zero,
-	isZero,
 };
 
 // Callable constructor

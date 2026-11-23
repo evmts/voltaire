@@ -17,7 +17,7 @@ declare const validate: (name: string) => void;
 export { Labelhash, Namehash };
 declare const _namehash: (name: EnsType) => Uint8Array;
 declare const _labelhash: (label: EnsType) => Uint8Array;
-export { from, _normalize, _beautify, _namehash, _labelhash, is, toString, isValid, validate, };
+export { _beautify, _labelhash, _namehash, _normalize, from, is, isValid, toString, validate, };
 export declare function normalize(name: string | EnsType): EnsType;
 export declare function beautify(name: string | EnsType): EnsType;
 export declare function namehash(name: string | EnsType): Uint8Array;

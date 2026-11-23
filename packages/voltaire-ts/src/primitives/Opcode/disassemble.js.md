@@ -1,6 +1,6 @@
 ---
-title: "disassemble.js"
----
+
+## title: "disassemble.js"
 
 # disassemble.js
 
@@ -9,7 +9,7 @@ Disassemble bytecode to human-readable strings.
 ## Signature
 
 ```typescript
-function disassemble(bytecode: Uint8Array): string[]
+function disassemble(bytecode: Uint8Array): string[];
 ```
 
 ## Parameters
@@ -42,24 +42,24 @@ console.log(asm.join('
 
 ```typescript
 function disassembleWithAnalysis(bytecode: Uint8Array): void {
-  const instructions = Opcode.parse(bytecode);
-  const dests = Opcode.jumpDests(bytecode);
+	const instructions = Opcode.parse(bytecode);
+	const dests = Opcode.jumpDests(bytecode);
 
-  for (const inst of instructions) {
-    const formatted = Opcode.format(inst);
-    const info = Opcode.info(inst.opcode);
+	for (const inst of instructions) {
+		const formatted = Opcode.format(inst);
+		const info = Opcode.info(inst.opcode);
 
-    console.log(formatted);
+		console.log(formatted);
 
-    if (info) {
-      console.log(`  Gas: ${info.gasCost}`);
-      console.log(`  Stack: ${info.stackInputs} → ${info.stackOutputs}`);
-    }
+		if (info) {
+			console.log(`  Gas: ${info.gasCost}`);
+			console.log(`  Stack: ${info.stackInputs} → ${info.stackOutputs}`);
+		}
 
-    if (dests.has(inst.offset)) {
-      console.log(`  [JUMPDEST]`);
-    }
-  }
+		if (dests.has(inst.offset)) {
+			console.log(`  [JUMPDEST]`);
+		}
+	}
 }
 ```
 

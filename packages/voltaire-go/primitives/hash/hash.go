@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/voltaire-labs/voltaire-go/internal/ffi"
+	"github.com/evmts/voltaire/packages/voltaire-go/internal/ffi"
 )
 
 // Size is the size of a hash in bytes.

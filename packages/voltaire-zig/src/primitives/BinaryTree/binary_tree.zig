@@ -1,6 +1,5 @@
 const std = @import("std");
-const crypto = @import("root").crypto;
-const blake3 = crypto.Blake3;
+const blake3 = std.crypto.hash.Blake3;
 
 /// Binary State Tree (EIP-7864) - Unified tree structure for Ethereum state
 ///
@@ -139,13 +138,16 @@ pub fn deinit(self: *BinaryTree) void {
     // Node cleanup handled by allocator
 }
 
+/// Errors from tree insertion
+pub const InsertError = std.mem.Allocator.Error || error{InvalidTreeState};
+
 /// Insert value at key
 pub fn insert(self: *BinaryTree, k: [32]u8, v: [32]u8) !void {
     const split = splitKey(k);
     self.root = try self.insertNode(self.root, split.stem, split.idx, v, 0);
 }
 
-fn insertNode(self: *BinaryTree, node: Node, stem: Stem, idx: u8, v: [32]u8, depth: usize) std.mem.Allocator.Error!Node {
+fn insertNode(self: *BinaryTree, node: Node, stem: Stem, idx: u8, v: [32]u8, depth: usize) InsertError!Node {
     switch (node) {
         .empty => {
             // Create new stem node

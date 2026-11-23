@@ -1,6 +1,7 @@
 # BLAKE2b Hash Function
 
 BLAKE2 is a cryptographic hash function that is:
+
 - **Faster** than MD5, SHA-1, SHA-2, and SHA-3
 - **At least as secure** as SHA-3
 - **Optimized** for 64-bit platforms
@@ -31,6 +32,7 @@ bun add @noble/hashes
 Hash data with BLAKE2b.
 
 **Parameters:**
+
 - `data: Uint8Array | string` - Input data to hash
 - `outputLength?: number` - Output length in bytes (1-64, default: 64)
 
@@ -39,8 +41,9 @@ Hash data with BLAKE2b.
 **Throws:** `Error` if outputLength is invalid (< 1 or > 64)
 
 **Example:**
+
 ```typescript
-import { Blake2 } from '@tevm/voltaire';
+import { Blake2 } from "@tevm/voltaire";
 
 // Hash with default 64-byte output
 const hash = Blake2.hash(new Uint8Array([1, 2, 3]));
@@ -58,6 +61,7 @@ const hash64 = Blake2.hash(data, 64);
 Hash string with BLAKE2b (convenience function).
 
 **Parameters:**
+
 - `str: string` - Input string to hash
 - `outputLength?: number` - Output length in bytes (1-64, default: 64)
 
@@ -66,8 +70,9 @@ Hash string with BLAKE2b (convenience function).
 **Throws:** `Error` if outputLength is invalid
 
 **Example:**
+
 ```typescript
-import { Blake2 } from '@tevm/voltaire';
+import { Blake2 } from "@tevm/voltaire";
 
 // Hash string with default output
 const hash = Blake2.hashString("hello world");
@@ -90,14 +95,14 @@ const contentHash = Blake2.hash(new Uint8Array(fileContent), 32);
 
 ```typescript
 // For password hashing, use BLAKE2 with a salt
-import { blake2b } from '@noble/hashes/blake2b';
+import { blake2b } from "@noble/hashes/blake2b";
 
 const password = "user_password";
 const salt = crypto.getRandomValues(new Uint8Array(16));
 
 const hash = blake2b(new TextEncoder().encode(password), {
-  dkLen: 32,
-  key: salt,
+	dkLen: 32,
+	key: salt,
 });
 ```
 
@@ -105,7 +110,9 @@ const hash = blake2b(new TextEncoder().encode(password), {
 
 ```typescript
 // Fast checksums for data integrity
-const data = new Uint8Array([/* ... */]);
+const data = new Uint8Array([
+	/* ... */
+]);
 const checksum = Blake2.hash(data, 16); // 128-bit checksum
 ```
 
@@ -114,10 +121,10 @@ const checksum = Blake2.hash(data, 16); // 128-bit checksum
 ```typescript
 // Hash nodes in Merkle tree
 function hashNodes(left: Uint8Array, right: Uint8Array): Uint8Array {
-  const combined = new Uint8Array(left.length + right.length);
-  combined.set(left);
-  combined.set(right, left.length);
-  return Blake2.hash(combined, 32);
+	const combined = new Uint8Array(left.length + right.length);
+	combined.set(left);
+	combined.set(right, left.length);
+	return Blake2.hash(combined, 32);
 }
 ```
 
@@ -125,13 +132,13 @@ function hashNodes(left: Uint8Array, right: Uint8Array): Uint8Array {
 
 BLAKE2b supports any output length from 1 to 64 bytes. Common variants:
 
-| Name | Output Length | Use Case |
-|------|---------------|----------|
-| BLAKE2b-160 | 20 bytes | Similar to SHA-1 |
-| BLAKE2b-224 | 28 bytes | Similar to SHA-224 |
-| BLAKE2b-256 | 32 bytes | Similar to SHA-256 |
-| BLAKE2b-384 | 48 bytes | Similar to SHA-384 |
-| BLAKE2b-512 | 64 bytes | Similar to SHA-512 (default) |
+| Name        | Output Length | Use Case                     |
+| ----------- | ------------- | ---------------------------- |
+| BLAKE2b-160 | 20 bytes      | Similar to SHA-1             |
+| BLAKE2b-224 | 28 bytes      | Similar to SHA-224           |
+| BLAKE2b-256 | 32 bytes      | Similar to SHA-256           |
+| BLAKE2b-384 | 48 bytes      | Similar to SHA-384           |
+| BLAKE2b-512 | 64 bytes      | Similar to SHA-512 (default) |
 
 ```typescript
 // Different output lengths for different use cases
@@ -145,11 +152,13 @@ const hash512 = Blake2.hash(data, 64); // SHA-512 replacement
 BLAKE2b offers excellent performance across all input sizes:
 
 ### Throughput
+
 - **Small inputs (< 1 KB):** ~1-5 million ops/sec
 - **Medium inputs (1-64 KB):** ~500 MB/sec
 - **Large inputs (> 1 MB):** ~800 MB/sec on modern CPUs
 
 ### Comparison with Other Algorithms
+
 ```
 BLAKE2b:  ~800 MB/sec (this implementation)
 SHA-256:  ~400 MB/sec
@@ -163,17 +172,21 @@ Performance scales linearly with input size and has minimal overhead for variabl
 ## Security Properties
 
 ### Cryptographic Strength
+
 - **Collision resistance:** 2^(n/2) operations for n-bit output
 - **Preimage resistance:** 2^n operations for n-bit output
 - **Second preimage resistance:** 2^n operations for n-bit output
 
 ### Audited Implementation
+
 This implementation uses [@noble/hashes](https://github.com/paulmillr/noble-hashes), which has been:
+
 - Audited by multiple security firms
 - Thoroughly tested against RFC 7693 test vectors
 - Used in production by major projects
 
 ### Use Cases
+
 - ✅ **Cryptographic hashing:** Digital signatures, certificates
 - ✅ **Data integrity:** Checksums, content addressing
 - ✅ **Key derivation:** With proper salt/key parameter
@@ -184,29 +197,30 @@ This implementation uses [@noble/hashes](https://github.com/paulmillr/noble-hash
 
 ```typescript
 // Empty input (BLAKE2b-512)
-Blake2.hash(new Uint8Array([]))
+Blake2.hash(new Uint8Array([]));
 // => 786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419...
 
 // "abc" (BLAKE2b-512)
-Blake2.hash(new Uint8Array([0x61, 0x62, 0x63]))
+Blake2.hash(new Uint8Array([0x61, 0x62, 0x63]));
 // => ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d1...
 
 // Empty input (BLAKE2b-256)
-Blake2.hash(new Uint8Array([]), 32)
+Blake2.hash(new Uint8Array([]), 32);
 // => 0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8
 ```
 
 ## Comparison with SHA-2 and SHA-3
 
-| Feature | BLAKE2b | SHA-256 | SHA-512 | SHA3-256 |
-|---------|---------|---------|---------|----------|
-| Speed | ⚡⚡⚡⚡⚡ | ⚡⚡⚡ | ⚡⚡⚡⚡ | ⚡⚡ |
-| Security | ✅ Strong | ✅ Strong | ✅ Strong | ✅ Strong |
-| Output Length | 1-64 bytes | 32 bytes | 64 bytes | 32 bytes |
-| Key Support | ✅ Yes | ❌ No | ❌ No | ❌ No |
-| Standardized | RFC 7693 | NIST FIPS | NIST FIPS | NIST FIPS |
+| Feature       | BLAKE2b    | SHA-256   | SHA-512   | SHA3-256  |
+| ------------- | ---------- | --------- | --------- | --------- |
+| Speed         | ⚡⚡⚡⚡⚡ | ⚡⚡⚡    | ⚡⚡⚡⚡  | ⚡⚡      |
+| Security      | ✅ Strong  | ✅ Strong | ✅ Strong | ✅ Strong |
+| Output Length | 1-64 bytes | 32 bytes  | 64 bytes  | 32 bytes  |
+| Key Support   | ✅ Yes     | ❌ No     | ❌ No     | ❌ No     |
+| Standardized  | RFC 7693   | NIST FIPS | NIST FIPS | NIST FIPS |
 
 ### When to Use BLAKE2b
+
 - Need high performance hashing
 - Variable output length required
 - Modern cryptographic requirements
@@ -214,6 +228,7 @@ Blake2.hash(new Uint8Array([]), 32)
 - Merkle tree construction
 
 ### When to Use SHA-2/SHA-3
+
 - Regulatory compliance requires NIST standards
 - Interoperability with existing systems using SHA-2/SHA-3
 - Long-term archival (SHA-2 has longer track record)
@@ -222,17 +237,17 @@ Blake2.hash(new Uint8Array([]), 32)
 
 ```typescript
 try {
-  // Invalid output length
-  Blake2.hash(data, 0);
+	// Invalid output length
+	Blake2.hash(data, 0);
 } catch (error) {
-  // Error: Invalid output length: 0. Must be between 1 and 64 bytes.
+	// Error: Invalid output length: 0. Must be between 1 and 64 bytes.
 }
 
 try {
-  // Output length too large
-  Blake2.hash(data, 100);
+	// Output length too large
+	Blake2.hash(data, 100);
 } catch (error) {
-  // Error: Invalid output length: 100. Must be between 1 and 64 bytes.
+	// Error: Invalid output length: 100. Must be between 1 and 64 bytes.
 }
 ```
 
@@ -246,6 +261,7 @@ try {
 ## Implementation Notes
 
 ### Why @noble/hashes?
+
 - **Audited:** Multiple security audits
 - **Fast:** Optimized JavaScript/TypeScript implementation
 - **Tested:** Comprehensive test suite with RFC vectors
@@ -253,11 +269,13 @@ try {
 - **TypeScript:** Full type safety
 
 ### Alternatives Considered
+
 - Native implementation: More complexity, harder to audit
 - c-kzg-4844: Overkill for simple hashing
 - Node crypto: Not available in all environments
 
 ### Future Enhancements
+
 - Key/salt support (available in @noble/hashes)
 - Streaming API for large files
 - BLAKE2s variant (32-bit optimized)

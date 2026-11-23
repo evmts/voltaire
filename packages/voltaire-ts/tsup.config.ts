@@ -1,4 +1,82 @@
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createTsUpOptions } from "@tevm/tsupconfig";
+import type { Options } from "tsup";
+
+const packageDir = path.dirname(fileURLToPath(import.meta.url));
+const distDir = path.join(packageDir, "dist");
+/** Shipped WASM lives here: dist/wasm/primitives.wasm, dist/wasm/crypto/*.wasm. */
+const distWasmDir = path.join(distDir, "wasm");
+/** Fresh WASM from `pnpm --filter @tevm/zig build:wasm`, committed in git. */
+const wasmSourceDir = path.join(packageDir, "../voltaire-zig/wasm");
+
+/**
+ * Every bundled `new URL("<...>.wasm", import.meta.url)` names its asset
+ * relative to its source file. With `splitting: false` the same module is
+ * inlined into entries at different depths, so no single relative literal
+ * works. This plugin rewrites each literal, per output file, to the asset in
+ * dist/wasm. The asset is the path after the first `wasm/` or `wasm-loader/`
+ * segment: `../../wasm/crypto/ripemd160.wasm` -> `crypto/ripemd160.wasm`.
+ * CJS output reads `importMetaUrl` from the tsup shim instead.
+ */
+const WASM_URL =
+	/new URL\(\s*(["'`])([^"'`]*\.wasm)\1\s*,\s*(import\.meta\.url|importMetaUrl)\s*\)/g;
+
+function wasmAssetName(literal: string): string | null {
+	const match = literal.match(/(?:^|\/)wasm(?:-loader)?\/(.+\.wasm)$/);
+	return match?.[1] ?? null;
+}
+
+function rewriteWasmUrls(code: string, outputFile: string): string {
+	return code.replace(WASM_URL, (_whole, quote, literal, base) => {
+		const asset = wasmAssetName(literal);
+		if (!asset) {
+			throw new Error(
+				`${outputFile}: cannot map ${literal} to an asset in dist/wasm`,
+			);
+		}
+		if (!existsSync(path.join(wasmSourceDir, asset))) {
+			throw new Error(
+				`${outputFile}: ${literal} needs ${asset}, missing from ${wasmSourceDir}. Run pnpm --filter @tevm/zig build:wasm.`,
+			);
+		}
+		let rel = path
+			.relative(path.dirname(outputFile), path.join(distWasmDir, asset))
+			.split(path.sep)
+			.join("/");
+		if (!rel.startsWith(".")) rel = `./${rel}`;
+		return `new URL(${quote}${rel}${quote}, ${base})`;
+	});
+}
+
+const wasmAssetUrls = {
+	name: "voltaire-wasm-asset-urls",
+	renderChunk(code: string, chunk: { path: string }) {
+		if (!/\.(c|m)?js$/.test(chunk.path)) return;
+		const next = rewriteWasmUrls(code, chunk.path);
+		return next === code ? undefined : { code: next };
+	},
+};
+
+/** Copies every *.wasm under the source directory into dist/wasm. */
+async function copyWasmAssets(): Promise<void> {
+	const assets = existsSync(wasmSourceDir)
+		? readdirSync(wasmSourceDir, { recursive: true })
+				.map(String)
+				.filter((name) => name.endsWith(".wasm"))
+		: [];
+	if (assets.length === 0) {
+		throw new Error(
+			`No WASM assets in ${wasmSourceDir}. Run pnpm --filter @tevm/zig build:wasm.`,
+		);
+	}
+	for (const asset of assets) {
+		const target = path.join(distWasmDir, asset);
+		mkdirSync(path.dirname(target), { recursive: true });
+		copyFileSync(path.join(wasmSourceDir, asset), target);
+	}
+}
 
 // Pure JS entry points - no native FFI dependencies
 const pureJsEntries = [
@@ -34,6 +112,7 @@ const pureJsEntries = [
 	"src/primitives/Base64/index.ts",
 	"src/primitives/BinaryTree/index.ts",
 	"src/primitives/Blob/index.ts",
+	"src/primitives/BlockAccessList/index.ts",
 	"src/primitives/BloomFilter/index.ts",
 	"src/primitives/Bytecode/index.ts",
 	"src/primitives/Bytes/index.ts",
@@ -44,28 +123,14 @@ const pureJsEntries = [
 	"src/primitives/Ens/index.ts",
 	"src/primitives/EventLog/index.ts",
 	"src/primitives/errors/index.ts",
+	"src/primitives/ExecutionPayloadBid/index.ts",
 	"src/primitives/FeeMarket/index.js",
 	"src/primitives/GasConstants/index.ts",
 	"src/primitives/Hardfork/index.ts",
 	"src/primitives/Hash/index.ts",
 	"src/primitives/Hex/index.ts",
 	"src/primitives/LogFilter/index.ts",
-	// Effect Schema entrypoints
-	"src/primitives/Hash/effect.ts",
-	"src/primitives/Hex/effect.ts",
-	"src/primitives/Uint/effect.ts",
-	"src/primitives/Transaction/effect.ts",
-	"src/primitives/Signature/effect.ts",
-	"src/primitives/Bytecode/effect.ts",
-	"src/primitives/Base64/effect.ts",
-	"src/primitives/Ens/effect.ts",
-	"src/primitives/EventLog/effect.ts",
-	"src/primitives/AccessList/effect.ts",
-	"src/primitives/Transaction/Authorization/effect.ts",
 	"src/primitives/Opcode/index.ts",
-	"src/primitives/Rlp/effect.ts",
-	"src/primitives/Blob/effect.ts",
-	"src/primitives/State/effect.ts",
 	"src/primitives/Rlp/index.ts",
 	"src/primitives/Signature/index.ts",
 	"src/primitives/PrivateKey/index.ts",
@@ -75,13 +140,17 @@ const pureJsEntries = [
 	"src/primitives/Transaction/index.ts",
 	"src/primitives/Trie/index.ts",
 	"src/primitives/Uint/index.ts",
-	// Crypto (pure JS only - no HDWallet, no native Keccak256)
+	// Crypto (pure JS)
 	"src/crypto/Bip39/index.js",
 	"src/crypto/Blake2/index.ts",
 	"src/crypto/ChaCha20Poly1305/index.ts",
+	"src/crypto/ConstantTime/index.ts",
 	"src/crypto/Ed25519/index.js",
 	"src/crypto/EIP712/index.js",
+	"src/crypto/HDWallet/index.ts",
 	"src/crypto/Keccak256/index.ts",
+	// WASM Keccak256 (./Keccak256/wasm)
+	"src/crypto/keccak256.wasm.ts",
 	"src/crypto/KZG/index.js",
 	"src/crypto/P256/index.js",
 	"src/crypto/Ripemd160/index.ts",
@@ -110,7 +179,6 @@ const pureJsEntries = [
 // Native FFI entry points - require ffi-napi/ref-napi
 const nativeEntries = [
 	"src/native/index.ts",
-	"src/crypto/HDWallet/index.ts",
 	"src/crypto/Keccak256/Keccak256.native.ts",
 ];
 
@@ -132,12 +200,20 @@ const nativeConfigs = Array.isArray(nativeConfig)
 	? nativeConfig
 	: [nativeConfig];
 
+// `shims` gives CJS output a real import.meta.url, which the WASM loaders need.
+const shared: Options = { shims: true, plugins: [wasmAssetUrls] };
+
 export default [
 	// Pure JS bundles - no external FFI
-	...pureConfigs,
+	...pureConfigs.map((c, i) => ({
+		...c,
+		...shared,
+		...(i === 0 ? { onSuccess: copyWasmAssets } : {}),
+	})),
 	// Native bundles - FFI marked as external
 	...nativeConfigs.map((c) => ({
 		...c,
+		...shared,
 		external: [...(c.external || []), "ffi-napi", "ref-napi", "ref-struct-di"],
 	})),
 ];

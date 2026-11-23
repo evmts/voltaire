@@ -419,7 +419,8 @@ test "License.fromSource handles whitespace variations" {
     try std.testing.expectEqualStrings("MIT", fromSource(source1).?);
 
     const source2 = "// \t SPDX-License-Identifier:\tUnlicensed\n";
-    try std.testing.expect(fromSource(source2) == null); // "Unlicensed" fails isValid (lowercase)
+    // isValid checks SPDX identifier characters only (SPDX ids are case-insensitive), so tab-separated mixed case parses
+    try std.testing.expectEqualStrings("Unlicensed", fromSource(source2).?);
 
     const source3 = "// SPDX-License-Identifier: UNLICENSED\n";
     try std.testing.expectEqualStrings("UNLICENSED", fromSource(source3).?);

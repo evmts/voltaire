@@ -63,14 +63,14 @@ test "fromBytes - creates independent copy" {
 /// Create StorageValue from hex string (with or without 0x prefix).
 /// Returns error if hex is invalid or not 32 bytes.
 pub fn fromHex(hex: []const u8) !StorageValue {
-    const bytes = try Hex.toBytes(hex, std.testing.allocator);
-    defer std.testing.allocator.free(bytes);
-
-    if (bytes.len != SIZE) {
+    const digits = if (hex.len >= 2 and hex[0] == '0' and (hex[1] == 'x' or hex[1] == 'X')) hex[2..] else hex;
+    if (digits.len != SIZE * 2) {
         return error.InvalidStorageValueLength;
     }
 
-    return fromBytes(bytes);
+    var result: StorageValue = undefined;
+    _ = std.fmt.hexToBytes(&result, digits) catch return error.InvalidHexCharacter;
+    return result;
 }
 
 test "fromHex - with 0x prefix" {
@@ -161,6 +161,15 @@ pub fn from(value: anytype) !StorageValue {
 
     if (T == u256) {
         return fromUint256(value);
+    }
+
+    // Pointers to u8 arrays (string literals, `bytes[0..]` with comptime bounds) coerce to slices
+    switch (@typeInfo(T)) {
+        .pointer => |ptr| if (ptr.size == .one) switch (@typeInfo(ptr.child)) {
+            .array => |arr| if (arr.child == u8) return from(@as([]const u8, value)),
+            else => {},
+        },
+        else => {},
     }
 
     @compileError("Unsupported type for StorageValue.from: " ++ @typeName(T));

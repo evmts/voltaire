@@ -1,6 +1,6 @@
 ---
-title: "hasSavings.js"
----
+
+## title: "hasSavings.js"
 
 # hasSavings.js
 
@@ -9,7 +9,7 @@ Check if access list provides net gas savings.
 ## Signature
 
 ```typescript
-function hasSavings(list: BrandedAccessList): boolean
+function hasSavings(list: BrandedAccessList): boolean;
 ```
 
 ## Parameters
@@ -32,11 +32,11 @@ hasSavings = gasSavings(list) > gasCost(list)
 const list = buildAccessList();
 
 if (AccessList.hasSavings(list)) {
-  // Include in transaction
-  tx.accessList = list;
+	// Include in transaction
+	tx.accessList = list;
 } else {
-  // Skip access list
-  tx.accessList = [];
+	// Skip access list
+	tx.accessList = [];
 }
 ```
 

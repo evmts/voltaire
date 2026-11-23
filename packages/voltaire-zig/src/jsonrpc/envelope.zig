@@ -283,8 +283,9 @@ fn parseRequest(allocator: std.mem.Allocator, value: std.json.Value) !RequestEnv
 
     const params_value = obj.get("params");
     if (params_value) |raw| {
+        // JSON-RPC 2.0 section 4.2: params, when present, MUST be a structured value.
         switch (raw) {
-            .array, .object, .null => {},
+            .array, .object => {},
             else => return error.InvalidRequest,
         }
     }
@@ -341,6 +342,19 @@ test "parseSingleOrBatch rejects missing jsonrpc field" {
     const allocator = std.testing.allocator;
     const body = "{\"id\":1,\"method\":\"x\"}";
     try std.testing.expectError(error.InvalidRequest, parseSingleOrBatch(allocator, body));
+}
+
+test "parseSingleOrBatch rejects non-structured params including null" {
+    const allocator = std.testing.allocator;
+    const bodies = [_][]const u8{
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"x\",\"params\":null}",
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"x\",\"params\":1}",
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"x\",\"params\":\"a\"}",
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"x\",\"params\":true}",
+    };
+    for (bodies) |body| {
+        try std.testing.expectError(error.InvalidRequest, parseSingleOrBatch(allocator, body));
+    }
 }
 
 test "ResponseEnvelope serializes success" {

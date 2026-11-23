@@ -1,0 +1,23 @@
+import { MAX } from "./constants.js";
+
+/**
+ * Subtract two Uint8 values with wrapping
+ *
+ * Returns the exact result modulo 2^8 and never throws. Every Uint size
+ * exposes this function with the same semantics.
+ *
+ * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
+ * @since 0.0.0
+ * @param {import('./Uint8Type.js').Uint8Type} a - First operand
+ * @param {import('./Uint8Type.js').Uint8Type} b - Second operand
+ * @returns {import('./Uint8Type.js').Uint8Type} Difference (a - b) mod 2^8
+ * @throws {never}
+ * @example
+ * ```javascript
+ * import * as Uint8 from './primitives/Uint8/index.js';
+ * Uint8.minusWrapping(Uint8.from(0), Uint8.from(1)); // Uint8.MAX
+ * ```
+ */
+export function minusWrapping(a, b) {
+	return /** @type {import('./Uint8Type.js').Uint8Type} */ ((a - b) & MAX);
+}

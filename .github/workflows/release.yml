@@ -1,13 +1,19 @@
 name: Release
 
+# Publishing waits for CI to pass on the exact main commit it ships. A
+# manual dispatch gets no bypass: it publishes only if the CI workflow
+# already succeeded for a push of that same commit.
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
   id-token: write
@@ -16,10 +22,37 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    # workflow_run's branch filter matches a fork PR whose branch is named
+    # main, so also require a push to this repository.
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    env:
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
+      - name: Require CI success for this commit
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          count=$(gh api \
+            "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$RELEASE_SHA&event=push&branch=main&status=success&per_page=1" \
+            --jq '.total_count')
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No successful CI push run on main for $RELEASE_SHA; refusing to publish."
+            exit 1
+          fi
+          echo "CI succeeded for $RELEASE_SHA."
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          ref: ${{ env.RELEASE_SHA }}
 
       - name: Install Zig 0.15.2
         uses: goto-bus-stop/setup-zig@v2
@@ -28,12 +61,6 @@ jobs:
 
       - name: Install Rust wasm32 target
         run: rustup target add wasm32-unknown-unknown
-
-      - name: Build Zig + WASM
-        run: |
-          zig build -Doptimize=ReleaseFast
-          zig build build-ts-wasm
-          zig build crypto-wasm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -48,27 +75,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm --filter @tevm/voltaire build && pnpm --filter voltaire-effect build
-
+      # `pnpm release` builds WASM and every package, verifies them with
+      # --load, then publishes those exact files with --ignore-scripts.
       - name: Create Release Pull Request or Publish
-        id: changesets
         uses: changesets/action@v1
         with:
           publish: pnpm release
           version: pnpm version-packages
+          # The publish script reports tags for Changesets to create through the API.
+          commitMode: github-api
           title: "chore: version packages"
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create GitHub Release
-        if: steps.changesets.outputs.published == 'true'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ fromJSON(steps.changesets.outputs.publishedPackages)[0].version }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # publish-npm.mjs refuses to publish unless this matches HEAD; it is
+          # set only after CI success for RELEASE_SHA is established above.
+          CI_VERIFIED_SHA: ${{ env.RELEASE_SHA }}

@@ -15,6 +15,7 @@ import { encodeList } from "./encodeList.js";
 import { encodeObject } from "./encodeObject.js";
 import { encodeVariadic } from "./encodeVariadic.js";
 import { equals } from "./equals.js";
+import { exceedsMaxRlpBlockSize } from "./exceedsMaxRlpBlockSize.js";
 import { flatten } from "./flatten.js";
 import { from } from "./from.js";
 import { fromJSON } from "./fromJSON.js";
@@ -32,33 +33,34 @@ import { validate } from "./validate.js";
 
 // Export individual functions
 export {
-	from,
-	isData,
-	isBytesData,
-	isListData,
-	encode,
-	encodeBytes,
-	encodeList,
-	encodeArray,
-	encodeObject,
-	encodeVariadic,
 	decode,
 	decodeArray,
+	decodeBatch,
 	decodeObject,
 	decodeValue,
-	getEncodedLength,
-	flatten,
+	encode,
+	encodeArray,
+	encodeBatch,
+	encodeBytes,
+	encodeList,
+	encodeObject,
+	encodeVariadic,
 	equals,
+	exceedsMaxRlpBlockSize,
+	flatten,
+	from,
+	fromJSON,
+	getEncodedLength,
+	getLength,
+	isBytesData,
+	isCanonical,
+	isData,
+	isList,
+	isListData,
+	isString,
 	toJSON,
 	toRaw,
-	fromJSON,
 	validate,
-	isCanonical,
-	getLength,
-	isList,
-	isString,
-	encodeBatch,
-	decodeBatch,
 };
 
 // Namespace export
@@ -78,6 +80,7 @@ export const BrandedRlp = {
 	decodeObject,
 	decodeValue,
 	getEncodedLength,
+	exceedsMaxRlpBlockSize,
 	flatten,
 	equals,
 	toJSON,

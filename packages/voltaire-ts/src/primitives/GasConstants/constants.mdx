@@ -506,3 +506,58 @@ const logData = GasConstants.LogData;        // 8n
 - [Calculation Functions](./calculation-functions.mdx) - Complex cost calculations
 - [Hardfork Utilities](./hardfork-utilities.mdx) - Fork-specific costs
 - [Precompiles](./precompiles.mdx) - Precompile gas costs
+
+## Osaka transaction gas limit
+
+`TxGasLimitOsaka` is `16777216n`. EIP-7825 rejects transactions declaring more
+than this limit from Osaka, independently of the block gas limit. The Zig
+counterpart is `GasConstants.TxGasLimitOsaka` (`u64`). Apply it in transaction
+validation, not to individual EVM frames or non-validating calls.
+
+```typescript
+import { GasConstants } from "@tevm/voltaire"
+const declaredGas = 16777217n
+console.log(declaredGas <= GasConstants.TxGasLimitOsaka) // false
+```
+
+## Amsterdam state gas repricing
+
+Amsterdam splits gas into state gas and regular gas. EIP-8037 prices new state
+at `AmsterdamCostPerStateByte` (1530 gas) per byte. EIP-8038 reprices state
+access. The constants carry an `Amsterdam` prefix and the pre-Amsterdam
+constants are unchanged, so select by hardfork at the call site. Zig exports
+the same names as `u64`.
+
+Both EIPs were in Last Call when these values were recorded (2026-11). EIP-8037
+marks `COLD_ACCOUNT_ACCESS`, `ACCOUNT_WRITE`, and `CREATE_ACCESS` as not final.
+
+| Constant | Value | EIP parameter |
+| --- | --- | --- |
+| `AmsterdamCostPerStateByte` | `1530n` | EIP-8037 `CPSB` |
+| `AmsterdamStateBytesPerStorageSet` | `64n` | EIP-8037 `STATE_BYTES_PER_STORAGE_SET` |
+| `AmsterdamStateBytesPerNewAccount` | `120n` | EIP-8037 `STATE_BYTES_PER_NEW_ACCOUNT` |
+| `AmsterdamStateBytesPerAuthBase` | `23n` | EIP-8037 `STATE_BYTES_PER_AUTH_BASE` |
+| `AmsterdamStateGasStorageSet` | `97920n` | State gas replacing `GAS_STORAGE_SET` (20000) |
+| `AmsterdamStateGasNewAccount` | `183600n` | State gas replacing `GAS_NEW_ACCOUNT` (25000) |
+| `AmsterdamStateGasCodeDepositByte` | `1530n` | State gas replacing `GAS_CODE_DEPOSIT` (200 per byte) |
+| `AmsterdamStateGasAuthBase` | `35190n` | State share of `PER_AUTH_BASE_COST` (12500) |
+| `AmsterdamExecutionPerAuthBase` | `7816n` | EIP-8037 `EXECUTION_PER_AUTH_BASE_COST` |
+| `AmsterdamSystemMaxSstoresPerCall` | `16n` | EIP-8037 `SYSTEM_MAX_SSTORES_PER_CALL` |
+| `AmsterdamSystemCallGasLimit` | `31566720n` | EIP-8037 `SYSTEM_CALL_GAS_LIMIT` |
+| `AmsterdamTxMaxTotalGasLimit` | `4294967295n` | EIP-8037 `TX_MAX_TOTAL_GAS_LIMIT` |
+| `AmsterdamColdAccountAccess` | `3000n` | EIP-8038 `COLD_ACCOUNT_ACCESS` (was 2600) |
+| `AmsterdamColdStorageAccess` | `2100n` | EIP-8038 `COLD_STORAGE_ACCESS` (unchanged) |
+| `AmsterdamWarmAccess` | `100n` | EIP-8038 `WARM_ACCESS` (unchanged) |
+| `AmsterdamAccountWrite` | `9000n` | EIP-8038 `ACCOUNT_WRITE` (was 6700) |
+| `AmsterdamStorageWrite` | `10000n` | EIP-8038 `STORAGE_WRITE` (was 2800) |
+| `AmsterdamCreateAccess` | `12000n` | EIP-8038 `CREATE_ACCESS` (was 7000) |
+| `AmsterdamCallValue` | `11300n` | EIP-8038 `CALL_VALUE` (was 9000) |
+| `AmsterdamStorageClearRefund` | `11616n` | EIP-8038 `STORAGE_CLEAR_REFUND` (was 4800) |
+| `AmsterdamAccessListAddress` | `2900n` | EIP-8038 `ACCESS_LIST_ADDRESS_COST` (was 2400) |
+| `AmsterdamAccessListStorageKey` | `2000n` | EIP-8038 `ACCESS_LIST_STORAGE_KEY_COST` (was 1900) |
+
+```typescript
+import { GasConstants } from "@tevm/voltaire"
+// State gas for an SSTORE that creates a slot in Amsterdam.
+console.log(GasConstants.AmsterdamStateGasStorageSet) // 97920n
+```

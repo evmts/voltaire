@@ -17,19 +17,19 @@ pub fn createCKzgLibrary(
         }),
     });
 
-    lib.linkLibC();
-    lib.linkLibrary(blst_lib);
+    lib.root_module.link_libc = true;
+    lib.root_module.linkLibrary(blst_lib);
 
     // -fPIC required for shared libraries on Linux (ignored on Windows/macOS)
-    lib.addCSourceFiles(.{
+    lib.root_module.addCSourceFiles(.{
         .files = &.{
             "packages/voltaire-zig/lib/c-kzg-4844/src/ckzg.c",
         },
         .flags = &.{ "-std=c99", "-fPIC", "-fno-sanitize=undefined" },
     });
 
-    lib.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
-    lib.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+    lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
+    lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
 
     return lib;
 }

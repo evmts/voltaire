@@ -1,6 +1,10 @@
+import { readFileSync } from "node:fs";
+import { bn254 } from "@noble/curves/bn254.js";
 import { describe, expect, test } from "vitest";
 import { serializeG1, serializeG2 } from "../../crypto/bn254/BN254.js";
 import {
+	B_G2_C0,
+	B_G2_C1,
 	FP_MOD,
 	FR_MOD,
 	G1_GENERATOR_X,
@@ -295,13 +299,15 @@ describe("BN254 precompiles", () => {
 
 		test("executes via generic execute function", () => {
 			const input = new Uint8Array(96);
+			// Byzantium charges the EIP-196 price (40000), not the Istanbul 6000
 			const result = execute(
 				PrecompileAddress.BN254_MUL,
 				input,
-				10000n,
+				40000n,
 				Hardfork.BYZANTIUM,
 			);
 			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(40000n);
 		});
 	});
 
@@ -527,6 +533,190 @@ describe("BN254 precompiles", () => {
 		});
 	});
 
+	describe("go-ethereum EIP-196 / EIP-197 conformance vectors", () => {
+		const expectHalt = (
+			result: ReturnType<typeof bn254Add>,
+			gasLimit: bigint,
+		) => {
+			expect(result.success).toBe(false);
+			expect(result.error).toBeDefined();
+			expect(result.gasUsed).toBe(gasLimit);
+			expect(result.output).toEqual(new Uint8Array(0));
+		};
+
+		const suites = [
+			["eip196_add", "./eip196_add.vectors.txt", bn254Add, 16],
+			["eip196_mul", "./eip196_mul.vectors.txt", bn254Mul, 19],
+			["eip197_pairing", "./eip197_pairing.vectors.txt", bn254Pairing, 14],
+		] as const;
+
+		for (const [suite, file, precompile, count] of suites) {
+			describe(suite, () => {
+				const vectors = loadVectors(file);
+
+				test(`has ${count} vectors`, () => {
+					expect(vectors.length).toBe(count);
+				});
+
+				for (const vector of vectors) {
+					test(vector.name, () => {
+						if (vector.expected === "ERR") {
+							expectHalt(precompile(vector.input, vector.gas), vector.gas);
+							return;
+						}
+						const result = precompile(vector.input, vector.gas);
+						expect(result.success).toBe(true);
+						expect(toHex(result.output)).toBe(vector.expected);
+						expect(result.gasUsed).toBe(vector.gas);
+						expectHalt(
+							precompile(vector.input, vector.gas - 1n),
+							vector.gas - 1n,
+						);
+					});
+				}
+			});
+		}
+
+		describe("eip197_pairing named cases", () => {
+			const g1 = serializeG1(G1.generator());
+			const g1Neg = serializeG1(G1.negate(G1.generator()));
+			const g2 = eip197G2(G2.generator());
+
+			test("empty input returns 1", () => {
+				const result = bn254Pairing(new Uint8Array(0), 45000n);
+				expect(result.success).toBe(true);
+				expect(result.output).toEqual(TRUE_WORD);
+			});
+
+			test("one_point: e(G1, G2) returns 0", () => {
+				const result = bn254Pairing(concat(g1, g2), 79000n);
+				expect(result.success).toBe(true);
+				expect(result.output).toEqual(new Uint8Array(32));
+			});
+
+			test("pairing_check: e(G1, G2) * e(-G1, G2) returns 1", () => {
+				const result = bn254Pairing(concat(g1, g2, g1Neg, g2), 113000n);
+				expect(result.success).toBe(true);
+				expect(result.output).toEqual(TRUE_WORD);
+			});
+
+			test("pairing_check: e(2*G1, 3*G2) * e(-6*G1, G2) returns 1", () => {
+				const input = concat(
+					serializeG1(G1.mul(G1.generator(), 2n)),
+					eip197G2(G2.mul(G2.generator(), 3n)),
+					serializeG1(G1.negate(G1.mul(G1.generator(), 6n))),
+					g2,
+				);
+				const result = bn254Pairing(input, 113000n);
+				expect(result.success).toBe(true);
+				expect(result.output).toEqual(TRUE_WORD);
+			});
+
+			test("pairing_check: e(2*G1, 3*G2) * e(-5*G1, G2) returns 0", () => {
+				const input = concat(
+					serializeG1(G1.mul(G1.generator(), 2n)),
+					eip197G2(G2.mul(G2.generator(), 3n)),
+					serializeG1(G1.negate(G1.mul(G1.generator(), 5n))),
+					g2,
+				);
+				const result = bn254Pairing(input, 113000n);
+				expect(result.success).toBe(true);
+				expect(result.output).toEqual(new Uint8Array(32));
+			});
+
+			test("G2 in (c0, c1) order instead of EIP-197 (c1, c0) halts", () => {
+				const swapped = serializeG2(G2.generator());
+				expect(swapped).not.toEqual(g2);
+				expectHalt(bn254Pairing(concat(g1, swapped), 79000n), 79000n);
+			});
+
+			test("on-curve G2 point outside the subgroup halts", () => {
+				const { x, y } = offSubgroupG2();
+				const offSubgroup = eip197Coords(x, y);
+				expectHalt(bn254Pairing(concat(g1, offSubgroup), 79000n), 79000n);
+				// Also when paired with G1 infinity, which would otherwise contribute 1.
+				expectHalt(
+					bn254Pairing(concat(new Uint8Array(64), offSubgroup), 79000n),
+					79000n,
+				);
+				expectHalt(
+					bn254Pairing(concat(g1, g2, g1Neg, offSubgroup), 113000n),
+					113000n,
+				);
+			});
+
+			test("off-curve G2 point halts", () => {
+				const affine = G2.toAffine(G2.generator());
+				const offCurve = eip197Coords(affine.x, {
+					c0: affine.y.c0 + 1n,
+					c1: affine.y.c1,
+				});
+				expectHalt(bn254Pairing(concat(g1, offCurve), 79000n), 79000n);
+			});
+
+			test("non-canonical G1 x = 1 + FP_MOD halts (no mod p reduction)", () => {
+				const nonCanonical = concat(
+					bigIntToBytes32(1n + FP_MOD),
+					bigIntToBytes32(2n),
+				);
+				expectHalt(bn254Pairing(concat(nonCanonical, g2), 79000n), 79000n);
+				const yNonCanonical = concat(
+					bigIntToBytes32(1n),
+					bigIntToBytes32(2n + FP_MOD),
+				);
+				expectHalt(bn254Pairing(concat(yNonCanonical, g2), 79000n), 79000n);
+			});
+
+			test("non-canonical G2 coordinate (c + FP_MOD) halts", () => {
+				const affine = G2.toAffine(G2.generator());
+				const coords = [affine.x.c1, affine.x.c0, affine.y.c1, affine.y.c0];
+				for (let i = 0; i < coords.length; i++) {
+					const lifted = coords.map((c, j) => (i === j ? c + FP_MOD : c));
+					// Every lifted coordinate must still fit 32 bytes for the case to be real.
+					expect(lifted.every((c) => c < 1n << 256n)).toBe(true);
+					const point = concat(...lifted.map(bigIntToBytes32));
+					expectHalt(bn254Pairing(concat(g1, point), 79000n), 79000n);
+				}
+			});
+		});
+
+		describe("eip196 non-canonical coordinates", () => {
+			const nonCanonicalG1 = concat(
+				bigIntToBytes32(1n + FP_MOD),
+				bigIntToBytes32(2n),
+			);
+			const generator = serializeG1(G1.generator());
+
+			test("eip196_add halts on x = 1 + FP_MOD in either operand", () => {
+				expectHalt(bn254Add(concat(nonCanonicalG1, generator), 150n), 150n);
+				expectHalt(bn254Add(concat(generator, nonCanonicalG1), 150n), 150n);
+				expectHalt(
+					bn254Add(concat(nonCanonicalG1, new Uint8Array(64)), 150n),
+					150n,
+				);
+			});
+
+			test("eip196_add halts on y = 2 + FP_MOD and on (FP_MOD, FP_MOD)", () => {
+				const y = concat(bigIntToBytes32(1n), bigIntToBytes32(2n + FP_MOD));
+				expectHalt(bn254Add(concat(y, generator), 150n), 150n);
+				// (p, p) reduces to (0, 0); it is not the point at infinity.
+				const pp = concat(bigIntToBytes32(FP_MOD), bigIntToBytes32(FP_MOD));
+				expectHalt(bn254Add(concat(pp, generator), 150n), 150n);
+			});
+
+			test("eip196_mul halts on x = 1 + FP_MOD", () => {
+				expectHalt(
+					bn254Mul(concat(nonCanonicalG1, bigIntToBytes32(2n)), 6000n),
+					6000n,
+				);
+				expectHalt(
+					bn254Mul(concat(nonCanonicalG1, bigIntToBytes32(0n)), 6000n),
+					6000n,
+				);
+			});
+		});
+	});
+
 	describe("Error handling and edge cases", () => {
 		describe("bn254Add error cases", () => {
 			test("fails with invalid point (not on curve)", () => {
@@ -540,17 +730,16 @@ describe("BN254 precompiles", () => {
 				expect(result.error).toBeDefined();
 			});
 
-			test("accepts point where x equals field modulus (wraps to 0)", () => {
+			test("rejects point where x equals field modulus (no reduction)", () => {
 				const input = new Uint8Array(128);
-				// Set x to be FP_MOD (wraps to 0)
+				// x = FP_MOD is not a canonical field element (EIP-196)
 				const modBytes = bigIntToBytes32(FP_MOD);
 				input.set(modBytes, 0);
-				// This creates point (0, y) which must be checked for curve validity
 
 				const result = bn254Add(input, 1000n);
-				// May succeed or fail depending on whether (0, y) is on curve
-				// The precompile implementation may reduce modulo FP_MOD
-				expect(result.gasUsed).toBe(150n);
+				expect(result.success).toBe(false);
+				expect(result.gasUsed).toBe(1000n);
+				expect(result.output.length).toBe(0);
 			});
 
 			test("fails with point where y >= field modulus", () => {
@@ -688,7 +877,7 @@ describe("BN254 precompiles", () => {
 				// G1 at infinity (all zeros)
 				// G2 generator
 				const g2gen = G2.generator();
-				const g2Bytes = serializeG2(g2gen);
+				const g2Bytes = eip197G2(g2gen);
 				input.set(g2Bytes, 64);
 
 				const result = bn254Pairing(input, 100000n);
@@ -700,14 +889,15 @@ describe("BN254 precompiles", () => {
 				const g1 = G1.generator();
 				const g2 = G2.generator();
 				const g1Bytes = serializeG1(g1);
-				const g2Bytes = serializeG2(g2);
+				const g2Bytes = eip197G2(g2);
 
 				input.set(g1Bytes, 0);
 				input.set(g2Bytes, 64);
 
 				const result = bn254Pairing(input, 100000n);
 				expect(result.success).toBe(true);
-				expect(result.output.length).toBe(32);
+				// e(G1, G2) != 1: the pairing is non-degenerate
+				expect(result.output).toEqual(new Uint8Array(32));
 			});
 
 			test("pairing check with negated point", () => {
@@ -718,7 +908,7 @@ describe("BN254 precompiles", () => {
 
 				const g1Bytes = serializeG1(g1);
 				const g1NegBytes = serializeG1(g1Neg);
-				const g2Bytes = serializeG2(g2);
+				const g2Bytes = eip197G2(g2);
 
 				// First pair: (G1, G2)
 				input.set(g1Bytes, 0);
@@ -729,10 +919,8 @@ describe("BN254 precompiles", () => {
 
 				const result = bn254Pairing(input, 200000n);
 				expect(result.success).toBe(true);
-				// e(P, Q) * e(-P, Q) should equal 1 mathematically
-				// but the exact result depends on pairing implementation
-				expect(result.output.length).toBe(32);
-				expect([0, 1]).toContain(result.output[31]);
+				// e(P, Q) * e(-P, Q) = 1
+				expect(result.output).toEqual(TRUE_WORD);
 			});
 
 			test("pairing check with 3 pairs", () => {
@@ -740,7 +928,7 @@ describe("BN254 precompiles", () => {
 				const g1 = G1.generator();
 				const g2 = G2.generator();
 				const g1Bytes = serializeG1(g1);
-				const g2Bytes = serializeG2(g2);
+				const g2Bytes = eip197G2(g2);
 
 				// Fill all three pairs with same points (simplified test)
 				for (let i = 0; i < 3; i++) {
@@ -752,6 +940,8 @@ describe("BN254 precompiles", () => {
 				const result = bn254Pairing(input, expectedGas + 10000n);
 				expect(result.success).toBe(true);
 				expect(result.gasUsed).toBe(expectedGas);
+				// e(G1, G2)^3 != 1
+				expect(result.output).toEqual(new Uint8Array(32));
 			});
 		});
 	});
@@ -856,7 +1046,7 @@ describe("BN254 precompiles", () => {
 			input.set(genBytes, 0);
 			input.set(genBytes, 64);
 
-			const direct = bn254Add(input, 1000n);
+			const direct = bn254Add(input, 1000n, Hardfork.BYZANTIUM);
 			const viaExecute = execute(
 				PrecompileAddress.BN254_ADD,
 				input,
@@ -881,7 +1071,256 @@ describe("BN254 precompiles", () => {
 			expect(result2.success).toBe(false);
 		});
 	});
+
+	describe("Hardfork gas schedule (EIP-196/197 vs EIP-1108)", () => {
+		const preIstanbul = [
+			Hardfork.BYZANTIUM,
+			Hardfork.CONSTANTINOPLE,
+			Hardfork.PETERSBURG,
+		];
+		const istanbulOnward = [
+			Hardfork.ISTANBUL,
+			Hardfork.BERLIN,
+			Hardfork.LONDON,
+			Hardfork.MERGE,
+			Hardfork.SHANGHAI,
+			Hardfork.CANCUN,
+			Hardfork.PRAGUE,
+			Hardfork.OSAKA,
+			Hardfork.AMSTERDAM,
+		];
+		const pairingInput = (k: number) => new Uint8Array(192 * k);
+
+		test("ECADD costs 500 before Istanbul and 150 from Istanbul", () => {
+			const input = new Uint8Array(128);
+			for (const fork of preIstanbul) {
+				expect(bn254Add(input, 500n, fork).gasUsed).toBe(500n);
+				expect(bn254Add(input, 500n, fork).success).toBe(true);
+				const short = bn254Add(input, 499n, fork);
+				expect(short.success).toBe(false);
+				expect(short.gasUsed).toBe(499n);
+				expect(
+					execute(PrecompileAddress.BN254_ADD, input, 1000n, fork).gasUsed,
+				).toBe(500n);
+			}
+			for (const fork of istanbulOnward) {
+				expect(bn254Add(input, 150n, fork).gasUsed).toBe(150n);
+				expect(bn254Add(input, 150n, fork).success).toBe(true);
+				expect(bn254Add(input, 149n, fork).success).toBe(false);
+				expect(
+					execute(PrecompileAddress.BN254_ADD, input, 1000n, fork).gasUsed,
+				).toBe(150n);
+			}
+		});
+
+		test("ECMUL costs 40000 before Istanbul and 6000 from Istanbul", () => {
+			const input = new Uint8Array(96);
+			for (const fork of preIstanbul) {
+				expect(bn254Mul(input, 40000n, fork).gasUsed).toBe(40000n);
+				expect(bn254Mul(input, 40000n, fork).success).toBe(true);
+				const short = bn254Mul(input, 39999n, fork);
+				expect(short.success).toBe(false);
+				expect(short.gasUsed).toBe(39999n);
+				expect(
+					execute(PrecompileAddress.BN254_MUL, input, 50000n, fork).gasUsed,
+				).toBe(40000n);
+			}
+			for (const fork of istanbulOnward) {
+				expect(bn254Mul(input, 6000n, fork).gasUsed).toBe(6000n);
+				expect(bn254Mul(input, 6000n, fork).success).toBe(true);
+				expect(bn254Mul(input, 5999n, fork).success).toBe(false);
+				expect(
+					execute(PrecompileAddress.BN254_MUL, input, 50000n, fork).gasUsed,
+				).toBe(6000n);
+			}
+		});
+
+		test("ECPAIRING costs 100000 + 80000k before Istanbul and 45000 + 34000k from Istanbul", () => {
+			for (const k of [0, 1, 2, 3]) {
+				const input = pairingInput(k);
+				const byzantium = 100000n + 80000n * BigInt(k);
+				const istanbul = 45000n + 34000n * BigInt(k);
+				for (const fork of preIstanbul) {
+					const ok = bn254Pairing(input, byzantium, fork);
+					expect(ok.success).toBe(true);
+					expect(ok.gasUsed).toBe(byzantium);
+					const short = bn254Pairing(input, byzantium - 1n, fork);
+					expect(short.success).toBe(false);
+					expect(short.gasUsed).toBe(byzantium - 1n);
+					expect(
+						execute(PrecompileAddress.BN254_PAIRING, input, 1000000n, fork)
+							.gasUsed,
+					).toBe(byzantium);
+				}
+				for (const fork of istanbulOnward) {
+					const ok = bn254Pairing(input, istanbul, fork);
+					expect(ok.success).toBe(true);
+					expect(ok.gasUsed).toBe(istanbul);
+					expect(bn254Pairing(input, istanbul - 1n, fork).success).toBe(false);
+					expect(
+						execute(PrecompileAddress.BN254_PAIRING, input, 1000000n, fork)
+							.gasUsed,
+					).toBe(istanbul);
+				}
+			}
+		});
+
+		test("direct calls default to the latest stable fork pricing", () => {
+			expect(bn254Add(new Uint8Array(128), 1000n).gasUsed).toBe(150n);
+			expect(bn254Mul(new Uint8Array(96), 10000n).gasUsed).toBe(6000n);
+			expect(bn254Pairing(new Uint8Array(192), 100000n).gasUsed).toBe(79000n);
+		});
+
+		test("execute refuses BN254 addresses before Byzantium without running", () => {
+			for (const address of [
+				PrecompileAddress.BN254_ADD,
+				PrecompileAddress.BN254_MUL,
+				PrecompileAddress.BN254_PAIRING,
+			]) {
+				const result = execute(
+					address,
+					new Uint8Array(0),
+					1000000n,
+					Hardfork.SPURIOUS_DRAGON,
+				);
+				expect(result.success).toBe(false);
+				expect(result.gasUsed).toBe(0n);
+				expect(result.error).toContain("Unknown precompile");
+			}
+		});
+	});
+
+	describe("Exceptional halts consume all forwarded gas", () => {
+		const expectHalt = (
+			result: ReturnType<typeof bn254Add>,
+			gasLimit: bigint,
+		) => {
+			expect(result.success).toBe(false);
+			expect(result.error).toBeDefined();
+			expect(result.gasUsed).toBe(gasLimit);
+			expect(result.output).toEqual(new Uint8Array(0));
+		};
+
+		test("out of gas never reports more than gasLimit", () => {
+			expectHalt(bn254Add(new Uint8Array(128), 149n), 149n);
+			expectHalt(bn254Mul(new Uint8Array(96), 5999n), 5999n);
+			expectHalt(bn254Pairing(new Uint8Array(192), 78999n), 78999n);
+			expectHalt(bn254Pairing(new Uint8Array(0), 0n), 0n);
+		});
+
+		test("malformed pairing length halts with gasLimit, never 0", () => {
+			for (const length of [1, 191, 193, 383, 385]) {
+				for (const fork of [Hardfork.BYZANTIUM, Hardfork.OSAKA]) {
+					expectHalt(
+						bn254Pairing(new Uint8Array(length), 500000n, fork),
+						500000n,
+					);
+					expectHalt(
+						execute(
+							PrecompileAddress.BN254_PAIRING,
+							new Uint8Array(length),
+							500000n,
+							fork,
+						),
+						500000n,
+					);
+				}
+			}
+		});
+
+		test("invalid points halt with gasLimit", () => {
+			const notOnCurve = new Uint8Array(128);
+			notOnCurve[31] = 1;
+			notOnCurve[63] = 3;
+			expectHalt(bn254Add(notOnCurve, 1000n), 1000n);
+			expectHalt(bn254Mul(notOnCurve.subarray(0, 96), 10000n), 10000n);
+
+			const badPair = new Uint8Array(192);
+			badPair[31] = 1;
+			badPair[63] = 3;
+			expectHalt(bn254Pairing(badPair, 200000n), 200000n);
+		});
+	});
 });
+
+/** go-ethereum `core/vm/testdata/precompiles/bn256*.json`, as `name|input|output or ERR|gas`. */
+function loadVectors(file: string) {
+	return readFileSync(new URL(file, import.meta.url), "utf8")
+		.split("\n")
+		.filter((line) => line.length > 0 && !line.startsWith("#"))
+		.map((line) => {
+			const [name, input, expected, gas] = line.split("|");
+			if (name === undefined || input === undefined || !expected || !gas) {
+				throw new Error(`Malformed vector line: ${line.slice(0, 40)}`);
+			}
+			return { name, input: fromHex(input), expected, gas: BigInt(gas) };
+		});
+}
+
+function fromHex(hex: string): Uint8Array {
+	const bytes = new Uint8Array(hex.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+}
+
+function toHex(bytes: Uint8Array): string {
+	return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function concat(...parts: Uint8Array[]): Uint8Array {
+	const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+	let off = 0;
+	for (const part of parts) {
+		out.set(part, off);
+		off += part.length;
+	}
+	return out;
+}
+
+const TRUE_WORD = bigIntToBytes32(1n);
+
+/** EIP-197 G2 wire order: x_imag || x_real || y_imag || y_real (c1 before c0). */
+function eip197Coords(x: Fp2Coords, y: Fp2Coords): Uint8Array {
+	return concat(
+		bigIntToBytes32(x.c1),
+		bigIntToBytes32(x.c0),
+		bigIntToBytes32(y.c1),
+		bigIntToBytes32(y.c0),
+	);
+}
+
+type Fp2Coords = { c0: bigint; c1: bigint };
+
+function eip197G2(point: ReturnType<typeof G2.generator>): Uint8Array {
+	if (G2.isZero(point)) return new Uint8Array(128);
+	const affine = G2.toAffine(point);
+	return eip197Coords(affine.x, affine.y);
+}
+
+/**
+ * First point on the twist curve y^2 = x^3 + 3/(9+u) with x = (n, 0) that is
+ * outside the order-r subgroup. The twist cofactor is ~2^254, so a point
+ * picked by x is in the subgroup with negligible probability.
+ */
+function offSubgroupG2(): { x: Fp2Coords; y: Fp2Coords } {
+	const { Fp2 } = bn254.fields;
+	const b = Fp2.create({ c0: B_G2_C0, c1: B_G2_C1 });
+	for (let n = 1n; n < 100n; n++) {
+		const x = Fp2.create({ c0: n, c1: 0n });
+		const rhs = Fp2.add(Fp2.mul(Fp2.sqr(x), x), b);
+		let y: Fp2Coords;
+		try {
+			y = Fp2.sqrt(rhs);
+		} catch {
+			continue;
+		}
+		if (!Fp2.eql(Fp2.sqr(y), rhs)) continue;
+		if (!bn254.G2.Point.fromAffine({ x, y }).isTorsionFree()) return { x, y };
+	}
+	throw new Error("no off-subgroup G2 point found");
+}
 
 // Helper function to convert bigint to 32-byte big-endian array
 function bigIntToBytes32(value: bigint): Uint8Array {

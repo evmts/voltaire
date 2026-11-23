@@ -1,7 +1,7 @@
 /**
  * Encode function call data from ABI by function name
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {string} functionName - Function name to encode
  * @param {readonly unknown[]} args - Function arguments
  * @returns {import("../Hex/index.js").HexType} Encoded function call data (hex string)
@@ -25,5 +25,5 @@
  * ]);
  * ```
  */
-export function encodeFunction(abi: import("./Abi.js").Abi, functionName: string, args: readonly unknown[]): import("../Hex/index.js").HexType;
+export function encodeFunction(abi: import("./AbiType.js").AbiType, functionName: string, args: readonly unknown[]): import("../Hex/index.js").HexType;
 //# sourceMappingURL=encodeFunction.d.ts.map

@@ -1,6 +1,9 @@
 /**
  * Multiply Uint64 value with wrapping
  *
+ * Overflow mode: wrapping. `timesWrapping` is the explicit name for this behavior
+ * and `timesChecked` throws instead of wrapping. Both exist on every Uint size.
+ *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  * @param {import('./Uint64Type.js').Uint64Type} uint - First operand

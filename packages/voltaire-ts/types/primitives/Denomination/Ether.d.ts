@@ -1,6 +1,7 @@
 /**
  * Creates an Ether value from bigint, number, or string
- * Supports decimal strings like "1.5" or "0.001"
+ * Supports decimal strings like "1.5" or "0.001" and scientific notation
+ * (`1e-9`, `"1.5e3"`), stored as an exact plain decimal string
  *
  * @param {bigint | number | string} value
  * @returns {Ether}
@@ -44,6 +45,7 @@ export function toGwei(ether: Ether): Gwei;
  *
  * @param {Ether} ether
  * @returns {Uint.Type}
+ * @throws {Error} If the value is negative or exceeds the Uint256 maximum
  */
 export function toU256(ether: Ether): Uint.Type;
 export type Ether = import("./EtherType.js").EtherType;

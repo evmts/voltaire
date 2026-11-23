@@ -10,8 +10,18 @@ export type Node = {
     readonly type: "empty";
 } | {
     readonly type: "internal";
+    /** Hash of the left subtree (zero hash when empty) */
     readonly left: Uint8Array;
+    /** Hash of the right subtree (zero hash when empty) */
     readonly right: Uint8Array;
+    /**
+     * Left subtree. Absent for hash-only (pruned) nodes; `get`/`insert`
+     * treat an absent child with a zero hash as empty and throw
+     * `InvalidTreeStateError` when the hash is non-zero.
+     */
+    readonly leftChild?: Node;
+    /** Right subtree. Same semantics as `leftChild`. */
+    readonly rightChild?: Node;
 } | {
     readonly type: "stem";
     readonly stem: Uint8Array;

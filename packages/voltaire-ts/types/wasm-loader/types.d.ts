@@ -65,7 +65,12 @@ export interface WasmExports {
     primitives_eip191_hash_message: (msgPtr: number, msgLen: number, outPtr: number) => number;
     primitives_sha256: (dataPtr: number, dataLen: number, outPtr: number) => number;
     primitives_ripemd160: (dataPtr: number, dataLen: number, outPtr: number) => number;
-    primitives_blake2b: (dataPtr: number, dataLen: number, outPtr: number) => number;
+    /**
+     * BLAKE2b. Modules built after the output-length fix take `outLen`
+     * (1..64) and write `outLen` bytes; older modules take three parameters
+     * and always write 64 bytes. Check `.length` to tell them apart.
+     */
+    primitives_blake2b: (dataPtr: number, dataLen: number, outPtr: number, outLen?: number) => number;
     blake2Hash?: (inputPtr: number, inputLen: number, outputPtr: number, outputLen: number) => number;
     primitives_solidity_keccak256: (dataPtr: number, dataLen: number, outPtr: number) => number;
     primitives_solidity_sha256: (dataPtr: number, dataLen: number, outPtr: number) => number;

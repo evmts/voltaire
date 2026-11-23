@@ -31,6 +31,7 @@ const Hash = @import("../Hash/Hash.zig");
 const BlockHeader = @import("../BlockHeader/BlockHeader.zig");
 const BlockBody = @import("../BlockBody/BlockBody.zig");
 const Rlp = @import("../Rlp/Rlp.zig");
+const TrieHash = @import("../TrieHash/TrieHash.zig");
 const crypto = @import("crypto");
 
 /// Block structure
@@ -61,23 +62,19 @@ pub fn from(
     body: *const BlockBody.BlockBody,
     allocator: std.mem.Allocator,
 ) !Block {
-    // Compute hash
-    const block_hash = try BlockHeader.hash(header, allocator);
-
-    // Compute size (header RLP + body RLP)
     const header_encoded = try BlockHeader.rlpEncode(header, allocator);
     defer allocator.free(header_encoded);
+    const encoded = try BlockBody.rlpEncodeWithHeader(body, allocator, header_encoded);
+    defer allocator.free(encoded);
 
-    const body_encoded = try BlockBody.rlpEncode(body, allocator);
-    defer allocator.free(body_encoded);
-
-    const total_size = header_encoded.len + body_encoded.len;
+    var block_hash: Hash.Hash = undefined;
+    crypto.Keccak256.hash(header_encoded, &block_hash, .{});
 
     return Block{
         .header = header.*,
         .body = body.*,
         .hash = block_hash,
-        .size = total_size,
+        .size = encoded.len,
     };
 }
 
@@ -128,297 +125,9 @@ test "fromHeader - creates block with empty body" {
 /// RLP encode the complete block
 /// Format: [header, transactions, ommers, withdrawals?]
 pub fn rlpEncode(block: *const Block, allocator: std.mem.Allocator) ![]u8 {
-    var outer_fields = std.ArrayList([]u8){};
-    defer {
-        for (outer_fields.items) |item| {
-            allocator.free(item);
-        }
-        outer_fields.deinit(allocator);
-    }
-
-    // Encode header as RLP list
-    const header_encoded = try BlockHeader.rlpEncode(&block.header, allocator);
-    try outer_fields.append(allocator, header_encoded);
-
-    // Encode body components individually (transactions list)
-    {
-        var tx_list = std.ArrayList(u8){};
-        defer tx_list.deinit(allocator);
-
-        var tx_total_len: usize = 0;
-        var encoded_txs = std.ArrayList([]u8){};
-        defer {
-            for (encoded_txs.items) |item| {
-                allocator.free(item);
-            }
-            encoded_txs.deinit(allocator);
-        }
-
-        for (block.body.transactions) |tx| {
-            const encoded = try Rlp.encodeBytes(allocator, tx.raw);
-            try encoded_txs.append(allocator, encoded);
-            tx_total_len += encoded.len;
-        }
-
-        if (tx_total_len < 56) {
-            try tx_list.append(allocator, 0xc0 + @as(u8, @intCast(tx_total_len)));
-        } else {
-            const len_bytes = try Rlp.encodeLength(allocator, tx_total_len);
-            defer allocator.free(len_bytes);
-            try tx_list.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
-            try tx_list.appendSlice(allocator, len_bytes);
-        }
-
-        for (encoded_txs.items) |encoded| {
-            try tx_list.appendSlice(allocator, encoded);
-        }
-
-        try outer_fields.append(allocator, try tx_list.toOwnedSlice(allocator));
-    }
-
-    // Encode ommers list
-    {
-        var ommer_list = std.ArrayList(u8){};
-        defer ommer_list.deinit(allocator);
-
-        var ommer_total_len: usize = 0;
-        var encoded_ommers = std.ArrayList([]u8){};
-        defer {
-            for (encoded_ommers.items) |item| {
-                allocator.free(item);
-            }
-            encoded_ommers.deinit(allocator);
-        }
-
-        for (block.body.ommers) |*ommer| {
-            const encoded = try rlpEncodeUncle(ommer, allocator);
-            try encoded_ommers.append(allocator, encoded);
-            ommer_total_len += encoded.len;
-        }
-
-        if (ommer_total_len < 56) {
-            try ommer_list.append(allocator, 0xc0 + @as(u8, @intCast(ommer_total_len)));
-        } else {
-            const len_bytes = try Rlp.encodeLength(allocator, ommer_total_len);
-            defer allocator.free(len_bytes);
-            try ommer_list.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
-            try ommer_list.appendSlice(allocator, len_bytes);
-        }
-
-        for (encoded_ommers.items) |encoded| {
-            try ommer_list.appendSlice(allocator, encoded);
-        }
-
-        try outer_fields.append(allocator, try ommer_list.toOwnedSlice(allocator));
-    }
-
-    // Encode withdrawals list (if present)
-    if (block.body.withdrawals) |withdrawals| {
-        var withdrawal_list = std.ArrayList(u8){};
-        defer withdrawal_list.deinit(allocator);
-
-        var withdrawal_total_len: usize = 0;
-        var encoded_withdrawals = std.ArrayList([]u8){};
-        defer {
-            for (encoded_withdrawals.items) |item| {
-                allocator.free(item);
-            }
-            encoded_withdrawals.deinit(allocator);
-        }
-
-        for (withdrawals) |*w| {
-            const encoded = try rlpEncodeWithdrawal(w, allocator);
-            try encoded_withdrawals.append(allocator, encoded);
-            withdrawal_total_len += encoded.len;
-        }
-
-        if (withdrawal_total_len < 56) {
-            try withdrawal_list.append(allocator, 0xc0 + @as(u8, @intCast(withdrawal_total_len)));
-        } else {
-            const len_bytes = try Rlp.encodeLength(allocator, withdrawal_total_len);
-            defer allocator.free(len_bytes);
-            try withdrawal_list.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
-            try withdrawal_list.appendSlice(allocator, len_bytes);
-        }
-
-        for (encoded_withdrawals.items) |encoded| {
-            try withdrawal_list.appendSlice(allocator, encoded);
-        }
-
-        try outer_fields.append(allocator, try withdrawal_list.toOwnedSlice(allocator));
-    }
-
-    // Build outer list
-    var total_len: usize = 0;
-    for (outer_fields.items) |field| {
-        total_len += field.len;
-    }
-
-    var result = std.ArrayList(u8){};
-    defer result.deinit(allocator);
-
-    if (total_len < 56) {
-        try result.append(allocator, 0xc0 + @as(u8, @intCast(total_len)));
-    } else {
-        const len_bytes = try Rlp.encodeLength(allocator, total_len);
-        defer allocator.free(len_bytes);
-        try result.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
-        try result.appendSlice(allocator, len_bytes);
-    }
-
-    for (outer_fields.items) |field| {
-        try result.appendSlice(allocator, field);
-    }
-
-    return try result.toOwnedSlice(allocator);
-}
-
-/// Helper to encode u256 as big-endian bytes without leading zeros
-fn encodeU256(allocator: std.mem.Allocator, value: u256) ![]u8 {
-    if (value == 0) {
-        return allocator.alloc(u8, 0);
-    }
-
-    var bytes: [32]u8 = undefined;
-    std.mem.writeInt(u256, &bytes, value, .big);
-
-    var start: usize = 0;
-    while (start < 32 and bytes[start] == 0) : (start += 1) {}
-
-    const result = try allocator.alloc(u8, 32 - start);
-    @memcpy(result, bytes[start..]);
-    return result;
-}
-
-/// Helper to encode u64 as big-endian bytes without leading zeros
-fn encodeU64(allocator: std.mem.Allocator, value: u64) ![]u8 {
-    if (value == 0) {
-        return allocator.alloc(u8, 0);
-    }
-
-    var bytes: [8]u8 = undefined;
-    std.mem.writeInt(u64, &bytes, value, .big);
-
-    var start: usize = 0;
-    while (start < 8 and bytes[start] == 0) : (start += 1) {}
-
-    const result = try allocator.alloc(u8, 8 - start);
-    @memcpy(result, bytes[start..]);
-    return result;
-}
-
-/// RLP encode an uncle header
-fn rlpEncodeUncle(uncle: *const BlockBody.UncleHeader, allocator: std.mem.Allocator) ![]u8 {
-    var fields = std.ArrayList([]u8){};
-    defer {
-        for (fields.items) |item| {
-            allocator.free(item);
-        }
-        fields.deinit(allocator);
-    }
-
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.parent_hash));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.ommers_hash));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.beneficiary.bytes));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.state_root));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.transactions_root));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.receipts_root));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.logs_bloom));
-
-    const difficulty_bytes = try encodeU256(allocator, uncle.difficulty);
-    defer allocator.free(difficulty_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, difficulty_bytes));
-
-    const number_bytes = try encodeU64(allocator, uncle.number);
-    defer allocator.free(number_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, number_bytes));
-
-    const gas_limit_bytes = try encodeU64(allocator, uncle.gas_limit);
-    defer allocator.free(gas_limit_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, gas_limit_bytes));
-
-    const gas_used_bytes = try encodeU64(allocator, uncle.gas_used);
-    defer allocator.free(gas_used_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, gas_used_bytes));
-
-    const timestamp_bytes = try encodeU64(allocator, uncle.timestamp);
-    defer allocator.free(timestamp_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, timestamp_bytes));
-
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, uncle.extra_data));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.mix_hash));
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &uncle.nonce));
-
-    var total_len: usize = 0;
-    for (fields.items) |field| {
-        total_len += field.len;
-    }
-
-    var result = std.ArrayList(u8){};
-    defer result.deinit(allocator);
-
-    if (total_len < 56) {
-        try result.append(allocator, 0xc0 + @as(u8, @intCast(total_len)));
-    } else {
-        const len_bytes = try Rlp.encodeLength(allocator, total_len);
-        defer allocator.free(len_bytes);
-        try result.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
-        try result.appendSlice(allocator, len_bytes);
-    }
-
-    for (fields.items) |field| {
-        try result.appendSlice(allocator, field);
-    }
-
-    return try result.toOwnedSlice(allocator);
-}
-
-/// RLP encode a withdrawal
-fn rlpEncodeWithdrawal(withdrawal: *const BlockBody.Withdrawal, allocator: std.mem.Allocator) ![]u8 {
-    var fields = std.ArrayList([]u8){};
-    defer {
-        for (fields.items) |item| {
-            allocator.free(item);
-        }
-        fields.deinit(allocator);
-    }
-
-    const index_bytes = try encodeU64(allocator, withdrawal.index);
-    defer allocator.free(index_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, index_bytes));
-
-    const validator_bytes = try encodeU64(allocator, withdrawal.validator_index);
-    defer allocator.free(validator_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, validator_bytes));
-
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &withdrawal.address.bytes));
-
-    const amount_bytes = try encodeU64(allocator, withdrawal.amount);
-    defer allocator.free(amount_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, amount_bytes));
-
-    var total_len: usize = 0;
-    for (fields.items) |field| {
-        total_len += field.len;
-    }
-
-    var result = std.ArrayList(u8){};
-    defer result.deinit(allocator);
-
-    if (total_len < 56) {
-        try result.append(allocator, 0xc0 + @as(u8, @intCast(total_len)));
-    } else {
-        const len_bytes = try Rlp.encodeLength(allocator, total_len);
-        defer allocator.free(len_bytes);
-        try result.append(allocator, 0xf7 + @as(u8, @intCast(len_bytes.len)));
-        try result.appendSlice(allocator, len_bytes);
-    }
-
-    for (fields.items) |field| {
-        try result.appendSlice(allocator, field);
-    }
-
-    return try result.toOwnedSlice(allocator);
+    const header = try BlockHeader.rlpEncode(&block.header, allocator);
+    defer allocator.free(header);
+    return BlockBody.rlpEncodeWithHeader(&block.body, allocator, header);
 }
 
 test "rlpEncode - basic block" {
@@ -729,15 +438,30 @@ test "validateHash - valid block" {
     try std.testing.expect(try validateHash(&block, allocator));
 }
 
-/// Validate that transactions root matches computed root
-/// Note: This is a placeholder - full MPT root computation would be needed
-pub fn hasValidTransactionsRoot(block: *const Block) bool {
-    // If no transactions, check for empty trie root
-    if (block.body.transactions.len == 0) {
-        return Hash.equals(&block.header.transactions_root, &BlockHeader.EMPTY_TRANSACTIONS_ROOT);
+/// Validate the ordered transaction trie commitment.
+///
+/// `allocator` backs the scratch trie; nothing allocated here outlives the
+/// call. Computation failures (out of memory) are returned, not read as an
+/// invalid root.
+pub fn hasValidTransactionsRoot(block: *const Block, allocator: std.mem.Allocator) !bool {
+    const root = try transactionsRoot(block.body.transactions, allocator);
+    return Hash.equals(&root, &block.header.transactions_root);
+}
+
+fn transactionsRoot(transactions: []const BlockBody.TransactionData, allocator: std.mem.Allocator) !Hash.Hash {
+    if (transactions.len == 0) return TrieHash.EMPTY_TRIE_ROOT;
+
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const scratch = arena.allocator();
+
+    const keys = try scratch.alloc([]const u8, transactions.len);
+    const values = try scratch.alloc([]const u8, transactions.len);
+    for (transactions, 0..) |tx, index| {
+        keys[index] = try Rlp.encode(scratch, index);
+        values[index] = tx.raw;
     }
-    // For non-empty, would need MPT computation
-    return true;
+    return TrieHash.trie_root(scratch, keys, values);
 }
 
 test "hasValidTransactionsRoot - empty transactions" {
@@ -747,13 +471,63 @@ test "hasValidTransactionsRoot - empty transactions" {
     const body = BlockBody.init();
     const block = try from(&header, &body, allocator);
 
-    try std.testing.expect(hasValidTransactionsRoot(&block));
+    try std.testing.expect(try hasValidTransactionsRoot(&block, allocator));
+}
+
+test "hasValidTransactionsRoot - commits to transaction order and raw envelopes" {
+    const allocator = std.testing.allocator;
+    const legacy = "\xc9\x80\x80\x80\x80\x80\x80\x1b\x01\x01";
+    const typed = "\x02\xcc\x01\x80\x80\x80\x80\x80\x80\x80\xc0\x80\x01\x01";
+
+    // RLP indices 0 and 1 are 0x80 and 0x01. The root branch inlines
+    // the leaf for index 1 in slot 0 and the leaf for index 0 in slot 8.
+    const branch = "\xed\xd0\x31\x8e" ++ typed ++ ("\x80" ** 7) ++
+        "\xcc\x30\x8a" ++ legacy ++ ("\x80" ** 8);
+    var header = BlockHeader.init();
+    crypto.Keccak256.hash(branch, &header.transactions_root, .{});
+
+    const body: BlockBody.BlockBody = .{
+        .transactions = &.{ .{ .raw = legacy }, .{ .raw = typed } },
+        .withdrawals = &.{},
+    };
+    var block = try from(&header, &body, allocator);
+    try std.testing.expect(try hasValidTransactionsRoot(&block, allocator));
+
+    const encoded = try rlpEncode(&block, allocator);
+    defer allocator.free(encoded);
+    try std.testing.expectEqual(encoded.len, block.size);
+    const decoded = try Rlp.decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 4), decoded.data.List.len);
+    const txs = decoded.data.List[1].List;
+    try std.testing.expectEqual(@as(usize, 9), txs[0].List.len);
+    try std.testing.expectEqualSlices(u8, typed, txs[1].String);
+
+    block.body.transactions = &.{ .{ .raw = typed }, .{ .raw = legacy } };
+    try std.testing.expect(!try hasValidTransactionsRoot(&block, allocator));
+    const swapped_root = try transactionsRoot(block.body.transactions, allocator);
+    try std.testing.expect(!Hash.equals(&header.transactions_root, &swapped_root));
+    block.header.transactions_root = swapped_root;
+    try std.testing.expect(try hasValidTransactionsRoot(&block, allocator));
 }
 
 /// Validate that ommers hash matches computed hash
 pub fn hasValidOmmersHash(block: *const Block, allocator: std.mem.Allocator) !bool {
     const computed = try BlockBody.ommersHash(&block.body, allocator);
     return Hash.equals(&block.header.ommers_hash, &computed);
+}
+
+test "hasValidTransactionsRoot - returns allocation failure instead of false" {
+    const allocator = std.testing.allocator;
+    const header = BlockHeader.init();
+    const body: BlockBody.BlockBody = .{
+        .transactions = &.{.{ .raw = "\xc9\x80\x80\x80\x80\x80\x80\x1b\x01\x01" }},
+        .withdrawals = &.{},
+    };
+    const block = try from(&header, &body, allocator);
+
+    var failing = std.testing.FailingAllocator.init(allocator, .{ .fail_index = 0 });
+    try std.testing.expectError(error.OutOfMemory, hasValidTransactionsRoot(&block, failing.allocator()));
 }
 
 test "hasValidOmmersHash - empty ommers" {

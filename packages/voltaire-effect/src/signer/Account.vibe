@@ -3,7 +3,14 @@
 import type { AddressType } from "@tevm/voltaire/Address"
 import type { HexType } from "@tevm/voltaire/Hex"
 import type { SignatureType } from "@tevm/voltaire/Signature"
-import { CryptoLive, Eip712 as Eip712Ns, HdWalletService, KeccakService, Secp256k1Service, Signing } from "../crypto/index.vibe"
+import {
+  CryptoLive,
+  Eip712 as Eip712Ns,
+  HdWalletService,
+  KeccakService,
+  Secp256k1Service,
+  Signing,
+} from "../crypto/index.vibe"
 import { AccountError, errorMessage } from "../errors.vibe"
 import * as Address from "../primitives/Address.vibe"
 import * as Hash from "../primitives/Hash.vibe"
@@ -68,7 +75,7 @@ module native {
     const empty32 = new Uint8Array(32)
     const accessList = (tx.accessList ?? []).map((entry) => ({
       address: typeof entry.address === "string" ? VoltaireAddress.fromHex(entry.address) : entry.address,
-      storageKeys: entry.storageKeys.map((k) => VoltaireHash.fromHex(k))
+      storageKeys: entry.storageKeys.map((k) => VoltaireHash.fromHex(k)),
     }))
 
     switch (tx.type) {
@@ -83,7 +90,7 @@ module native {
           data: tx.data,
           v: tx.chainId * 2n + 35n,
           r: empty32,
-          s: empty32
+          s: empty32,
         }
       case 1:
         return {
@@ -98,7 +105,7 @@ module native {
           accessList,
           yParity: 0,
           r: empty32,
-          s: empty32
+          s: empty32,
         }
       case 2:
         return {
@@ -114,7 +121,7 @@ module native {
           accessList,
           yParity: 0,
           r: empty32,
-          s: empty32
+          s: empty32,
         }
       case 3:
         if (!tx.to) throw new Error("EIP-4844 transactions require a 'to' address")
@@ -133,7 +140,7 @@ module native {
           blobVersionedHashes: (tx.blobVersionedHashes ?? []).map((h) => VoltaireHash.fromHex(h)),
           yParity: 0,
           r: empty32,
-          s: empty32
+          s: empty32,
         }
       case 4:
         return {
@@ -153,11 +160,11 @@ module native {
             nonce: a.nonce,
             yParity: a.yParity,
             r: VoltaireHex.toBytes(a.r),
-            s: VoltaireHex.toBytes(a.s)
+            s: VoltaireHex.toBytes(a.s),
           })),
           yParity: 0,
           r: empty32,
-          s: empty32
+          s: empty32,
         }
     }
   }
@@ -170,7 +177,7 @@ module native {
     const rlpEncoded = VoltaireRlp.encode([
       bigintToMinimalBytes(auth.chainId),
       addrBytes,
-      bigintToMinimalBytes(auth.nonce)
+      bigintToMinimalBytes(auth.nonce),
     ])
     const out = new Uint8Array(1 + rlpEncoded.length)
     out[0] = 0x05
@@ -226,7 +233,12 @@ effect function buildLocalAccountFromKey(keyBytes: Uint8Array): Context.Service.
       provide CryptoLive {
         const placeholder = try Effect.try({
           try: () => buildTxForSigningHash(tx),
-          catch: (cause) => new AccountError({ action: "signTransaction", message: `Invalid transaction: ${errorMessage(cause)}`, cause })
+          catch: (cause) =>
+            new AccountError({
+              action: "signTransaction",
+              message: `Invalid transaction: ${errorMessage(cause)}`,
+              cause,
+            }),
         })
         const signingHash = Transaction.getSigningHash(placeholder) catch effect (e) => {
           throw new AccountError({ action: "signTransaction", message: e.message, cause: e })
@@ -245,14 +257,19 @@ effect function buildLocalAccountFromKey(keyBytes: Uint8Array): Context.Service.
       provide CryptoLive {
         const addrHex = typeof auth.address === "string"
           ? Address.toHex(
-              Address.fromHex(auth.address) catch effect (e) => {
-                throw new AccountError({ action: "signAuthorization", message: e.message, cause: e })
-              }
-            )
+            Address.fromHex(auth.address) catch effect (e) => {
+              throw new AccountError({ action: "signAuthorization", message: e.message, cause: e })
+            },
+          )
           : Address.toHex(auth.address)
         const payload = try Effect.try({
           try: () => encodeEip7702AuthPayload(auth),
-          catch: (cause) => new AccountError({ action: "signAuthorization", message: `Failed encoding EIP-7702 authorization: ${errorMessage(cause)}`, cause })
+          catch: (cause) =>
+            new AccountError({
+              action: "signAuthorization",
+              message: `Failed encoding EIP-7702 authorization: ${errorMessage(cause)}`,
+              cause,
+            }),
         })
         const keccak = try KeccakService
         const digest = keccak.hash(payload) catch effect (e) => {
@@ -275,10 +292,10 @@ effect function buildLocalAccountFromKey(keyBytes: Uint8Array): Context.Service.
           nonce: auth.nonce,
           yParity,
           r: rHex,
-          s: sHex
+          s: sHex,
         }
       }
-    }
+    },
   })
 }
 
@@ -288,17 +305,17 @@ export function LocalAccount(privateKey: Uint8Array | HexType | `0x${string}`): 
     effect {
       const keyBytes = typeof privateKey === "string"
         ? Hex.toBytes(privateKey) catch effect (e) => {
-            throw new AccountError({ action: "init", message: `Invalid private key hex: ${e.message}`, cause: e })
-          }
+          throw new AccountError({ action: "init", message: `Invalid private key hex: ${e.message}`, cause: e })
+        }
         : privateKey
       return try buildLocalAccountFromKey(keyBytes)
-    }
+    },
   )
 }
 
 export function MnemonicAccount(
   mnemonic: string,
-  options?: { readonly path?: string; readonly passphrase?: string }
+  options?: { readonly path?: string; readonly passphrase?: string },
 ): Layer.Layer<Account, AccountError> {
   return Layer.effect(
     Account,
@@ -310,7 +327,7 @@ export function MnemonicAccount(
         }
         return try buildLocalAccountFromKey(keyBytes)
       }
-    }
+    },
   )
 }
 
@@ -321,8 +338,8 @@ export function JsonRpcAccount(addressInput: Address.AddressInput): Layer.Layer<
       const transport = try Transport
       const address = typeof addressInput === "string"
         ? Address.fromHex(addressInput) catch effect (e) => {
-            throw new AccountError({ action: "init", message: e.message, cause: e })
-          }
+          throw new AccountError({ action: "init", message: e.message, cause: e })
+        }
         : addressInput
       const addrHex = Address.toHex(address)
 
@@ -331,15 +348,15 @@ export function JsonRpcAccount(addressInput: Address.AddressInput): Layer.Layer<
         effect signMessage(message: string | Uint8Array): SignatureType!AccountError {
           const msgHex = typeof message === "string"
             ? Hex.fromString(message) catch effect (e) => {
-                throw new AccountError({ action: "signMessage", message: e.message, cause: e })
-              }
+              throw new AccountError({ action: "signMessage", message: e.message, cause: e })
+            }
             : Hex.fromBytes(message) catch effect (e) => {
-                throw new AccountError({ action: "signMessage", message: e.message, cause: e })
-              }
+              throw new AccountError({ action: "signMessage", message: e.message, cause: e })
+            }
           const rawSig = Effect.provideService(
             request<string>("personal_sign", [msgHex, addrHex]),
             Transport,
-            transport
+            transport,
           ) catch effect (e) => {
             throw new AccountError({ action: "signMessage", message: e.message, cause: e })
           }
@@ -351,12 +368,17 @@ export function JsonRpcAccount(addressInput: Address.AddressInput): Layer.Layer<
         effect signTypedData(typedData: Eip712Ns.Eip712TypedDataInput): SignatureType!AccountError {
           const payload = try Effect.try({
             try: () => JSON.stringify(typedData, (_k, v) => (typeof v === "bigint" ? v.toString() : v)),
-            catch: (cause) => new AccountError({ action: "signTypedData", message: `Failed serializing typed data: ${errorMessage(cause)}`, cause })
+            catch: (cause) =>
+              new AccountError({
+                action: "signTypedData",
+                message: `Failed serializing typed data: ${errorMessage(cause)}`,
+                cause,
+              }),
           })
           const rawSig = Effect.provideService(
             request<string>("eth_signTypedData_v4", [addrHex, payload]),
             Transport,
-            transport
+            transport,
           ) catch effect (e) => {
             throw new AccountError({ action: "signTypedData", message: e.message, cause: e })
           }
@@ -368,17 +390,17 @@ export function JsonRpcAccount(addressInput: Address.AddressInput): Layer.Layer<
         effect signTransaction(_tx: SignableTransaction): SignatureType!AccountError {
           throw new AccountError({
             action: "signTransaction",
-            message: "JsonRpcAccount does not support offline signTransaction; use LocalAccount or eth_sendTransaction"
+            message: "JsonRpcAccount does not support offline signTransaction; use LocalAccount or eth_sendTransaction",
           })
         },
 
         effect signAuthorization(_auth: UnsignedAuthorization): SignedAuthorization!AccountError {
           throw new AccountError({
             action: "signAuthorization",
-            message: "JsonRpcAccount does not support offline EIP-7702 signAuthorization; use LocalAccount"
+            message: "JsonRpcAccount does not support offline EIP-7702 signAuthorization; use LocalAccount",
           })
-        }
+        },
       })
-    }
+    },
   )
 }

@@ -28,13 +28,19 @@ import { lessThanOrEqual } from "./lessThanOrEqual.js";
 import { maximum } from "./maximum.js";
 import { minimum } from "./minimum.js";
 import { minus } from "./minus.js";
+import { minusChecked } from "./minusChecked.js";
+import { minusWrapping } from "./minusWrapping.js";
 import { modulo } from "./modulo.js";
 import { notEquals } from "./notEquals.js";
 import { plus } from "./plus.js";
+import { plusChecked } from "./plusChecked.js";
+import { plusWrapping } from "./plusWrapping.js";
 import { popCount } from "./popCount.js";
 import { shiftLeft } from "./shiftLeft.js";
 import { shiftRight } from "./shiftRight.js";
 import { times } from "./times.js";
+import { timesChecked } from "./timesChecked.js";
+import { timesWrapping } from "./timesWrapping.js";
 import { toAbiEncoded } from "./toAbiEncoded.js";
 import { toBigInt } from "./toBigInt.js";
 import { toBytes } from "./toBytes.js";
@@ -47,44 +53,50 @@ import { tryFrom } from "./tryFrom.js";
 
 // Export individual functions
 export {
-	from,
-	fromHex,
-	fromBigInt,
-	fromNumber,
-	fromBytes,
-	fromAbiEncoded,
-	tryFrom,
-	isValid,
-	toHex,
-	toBigInt,
-	toNumber,
-	toBytes,
-	toAbiEncoded,
-	toString,
-	plus,
-	minus,
-	times,
-	dividedBy,
-	modulo,
-	toPower,
+	bitLength,
 	bitwiseAnd,
+	bitwiseNot,
 	bitwiseOr,
 	bitwiseXor,
-	bitwiseNot,
-	shiftLeft,
-	shiftRight,
+	dividedBy,
 	equals,
-	notEquals,
-	lessThan,
-	lessThanOrEqual,
+	from,
+	fromAbiEncoded,
+	fromBigInt,
+	fromBytes,
+	fromHex,
+	fromNumber,
 	greaterThan,
 	greaterThanOrEqual,
+	isValid,
 	isZero,
-	minimum,
-	maximum,
-	bitLength,
 	leadingZeros,
+	lessThan,
+	lessThanOrEqual,
+	maximum,
+	minimum,
+	minus,
+	minusChecked,
+	minusWrapping,
+	modulo,
+	notEquals,
+	plus,
+	plusChecked,
+	plusWrapping,
 	popCount,
+	shiftLeft,
+	shiftRight,
+	times,
+	timesChecked,
+	timesWrapping,
+	toAbiEncoded,
+	toBigInt,
+	toBytes,
+	toHex,
+	toNumber,
+	toPower,
+	toString,
+	tryFrom,
 };
 
 /**
@@ -119,6 +131,12 @@ Uint.toString = toString;
 Uint.plus = plus;
 Uint.minus = minus;
 Uint.times = times;
+Uint.plusChecked = plusChecked;
+Uint.minusChecked = minusChecked;
+Uint.timesChecked = timesChecked;
+Uint.plusWrapping = plusWrapping;
+Uint.minusWrapping = minusWrapping;
+Uint.timesWrapping = timesWrapping;
 Uint.dividedBy = dividedBy;
 Uint.modulo = modulo;
 Uint.toPower = toPower;

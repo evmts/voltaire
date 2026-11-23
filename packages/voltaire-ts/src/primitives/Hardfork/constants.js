@@ -64,16 +64,24 @@ export const CANCUN = /** @type {HardforkType} */ ("cancun");
 /** @type {HardforkType} Prague-Electra fork (May 2025). EIP-2537: BLS12-381 precompiles. EIP-7702: Set EOA account code for one transaction. */
 export const PRAGUE = /** @type {HardforkType} */ ("prague");
 
-/** @type {HardforkType} Osaka fork (TBD). EIP-7883: ModExp gas increase. */
-export const OSAKA = /** @type {HardforkType} */ ("osaka");
-
 /**
- * Default hardfork for new chains.
- * Set to latest stable fork (currently PRAGUE).
+ * Osaka execution fork (Fusaka). Activated on mainnet December 3, 2025 at
+ * 21:49:11 UTC (Unix timestamp 1764798551, epoch 411392, slot 13164544).
  *
  * @type {HardforkType}
  */
-export const DEFAULT = PRAGUE;
+export const OSAKA = /** @type {HardforkType} */ ("osaka");
+
+/** @type {HardforkType} Upcoming Amsterdam execution fork (Glamsterdam). */
+export const AMSTERDAM = /** @type {HardforkType} */ ("amsterdam");
+
+/**
+ * Default hardfork for new chains.
+ * Set to the latest stable fork (currently OSAKA).
+ *
+ * @type {HardforkType}
+ */
+export const DEFAULT = OSAKA;
 
 /**
  * Hardfork ordering for version comparison
@@ -99,6 +107,7 @@ export const HARDFORK_ORDER = [
 	CANCUN,
 	PRAGUE,
 	OSAKA,
+	AMSTERDAM,
 ];
 
 /**
@@ -127,4 +136,6 @@ export const NAME_TO_HARDFORK = {
 	cancun: CANCUN,
 	prague: PRAGUE,
 	osaka: OSAKA,
+	amsterdam: AMSTERDAM,
+	glamsterdam: AMSTERDAM, // alias
 };

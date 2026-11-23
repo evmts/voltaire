@@ -35,6 +35,7 @@ try frame.pushStack(0);
 ```
 
 **Python Reference (Cancun):**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/environment.py:330-359
 def extcodesize(evm: Evm) -> None:
@@ -57,6 +58,7 @@ def extcodesize(evm: Evm) -> None:
 **Impact:** ALL tests requiring EXTCODESIZE will fail (warm coinbase tests, contract interaction tests, etc.)
 
 **Fix Required:**
+
 ```zig
 // Should retrieve actual code from host or evm.code
 const code = if (evm.host) |h| h.getCode(ext_addr) else evm.code.get(ext_addr) orelse &[_]u8{};
@@ -78,6 +80,7 @@ try frame.pushStack(empty_hash);
 ```
 
 **Python Reference (Cancun):**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/environment.py:462-496
 def extcodehash(evm: Evm) -> None:
@@ -106,6 +109,7 @@ def extcodehash(evm: Evm) -> None:
 **Impact:** All tests verifying contract code hashes will fail. This affects contract verification, proxy pattern detection, and EIP-1052 tests.
 
 **Fix Required:**
+
 ```zig
 // Should check if account exists and compute actual hash
 const code = if (evm.host) |h| h.getCode(ext_addr) else evm.code.get(ext_addr) orelse &[_]u8{};
@@ -133,6 +137,7 @@ const code = if (evm.host) |h| h.getCode(ext_addr) else evm.code.get(ext_addr) o
 ```
 
 **Problems:**
+
 1. Uses different fallback mechanism than other EXTCODE* opcodes
 2. `evm.code` map may not be properly populated
 3. No verification that the retrieved code is from the correct hardfork state
@@ -142,6 +147,7 @@ const code = if (evm.host) |h| h.getCode(ext_addr) else evm.code.get(ext_addr) o
 **Impact:** EXTCODECOPY may return wrong code if state is not properly synchronized. Tests comparing copied code will fail.
 
 **Fix Required:**
+
 - Standardize state access pattern across all EXTCODE* operations
 - Ensure `evm.code` map is properly populated from host state
 - Add comment explaining fallback behavior
@@ -195,6 +201,7 @@ if (size > 0) {
 **Problem:** Memory expansion cost is charged **after** access cost, and memory_size is manually updated (line 254). Other opcodes (CALLDATACOPY, CODECOPY, RETURNDATACOPY) charge all gas at once.
 
 **Correct Pattern (from CALLDATACOPY, line 125-138):**
+
 ```zig
 const end_bytes_copy: u64 = @as(u64, dest_off) + @as(u64, len);
 const mem_cost4 = frame.memoryExpansionCost(end_bytes_copy);
@@ -206,6 +213,7 @@ try frame.consumeGas(GasConstants.GasFastestStep + mem_cost4 + copy_cost);  // A
 **Impact:** Gas metering order matters in edge cases where gas runs out. This could cause subtle divergence from Python reference in out-of-gas scenarios.
 
 **Fix Required:** Refactor EXTCODECOPY to match the standard pattern:
+
 1. Calculate all costs (access + copy + memory expansion)
 2. Charge gas once
 3. Let writeMemory handle memory size updates
@@ -263,6 +271,7 @@ else
 **Problem:** EXTCODESIZE is missing the Istanbul fork case (should be 700, not 20 between Istanbul-Berlin). This is a **BUG**.
 
 **Python Reference confirms:**
+
 ```python
 # All account access operations follow same pattern:
 # - Pre-Tangerine: 20 gas (or lower for specific ops)
@@ -272,6 +281,7 @@ else
 ```
 
 **Fix Required:**
+
 1. Create helper function `externalAccountAccessCost(hardfork: Hardfork, address: Address) -> u64`
 2. Standardize across all account access operations
 3. Add missing Istanbul case in EXTCODESIZE
@@ -301,6 +311,7 @@ const addr = Address{ .bytes = addr_bytes };
 ### ✅ Good: Proper Hardfork Guards
 
 Examples:
+
 - RETURNDATASIZE (line 281): `if (evm.hardfork.isBefore(.BYZANTIUM)) return error.InvalidOpcode;`
 - RETURNDATACOPY (line 292): Same check
 - EXTCODEHASH (line 334): `if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;`
@@ -316,6 +327,7 @@ These correctly prevent opcodes from executing in pre-activation hardforks.
 Based on grep results, the following test categories exist but are likely failing:
 
 **EXTCODESIZE Tests:**
+
 ```
 test/specs/generated/blockchain_tests_engine/eest/shanghai/eip3651_warm_coinbase/
   - warm_coinbase_gas_usage[fork_Cancun-EXTCODESIZE]
@@ -325,6 +337,7 @@ test/specs/generated/blockchain_tests_engine/eest/shanghai/eip3651_warm_coinbase
 ```
 
 **EXTCODECOPY Tests:**
+
 ```
 test/specs/generated/blockchain_tests_engine/eest/shanghai/eip3651_warm_coinbase/
   - warm_coinbase_gas_usage[fork_Cancun-EXTCODECOPY]
@@ -333,6 +346,7 @@ test/specs/generated/blockchain_tests_engine/eest/shanghai/eip3651_warm_coinbase
 ```
 
 **EXTCODEHASH Tests:**
+
 ```
 test/specs/generated/blockchain_tests_engine/eest/shanghai/eip3651_warm_coinbase/
   - warm_coinbase_gas_usage[fork_Cancun-EXTCODEHASH]
@@ -350,6 +364,7 @@ bun scripts/isolate-test.ts "warm_coinbase_gas_usage[fork_Cancun-EXTCODEHASH]"
 ```
 
 Expected failures:
+
 - EXTCODESIZE: Returns 0 when it should return actual code length
 - EXTCODECOPY: May copy wrong/no code
 - EXTCODEHASH: Returns empty hash for all accounts
@@ -376,6 +391,7 @@ const idx: usize = @intCast(idx_u32);
 ### 🟡 Medium: Bounds Check Inconsistency
 
 **RETURNDATACOPY (line 303-308):**
+
 ```zig
 const rd_len: usize = frame.return_data.len;
 const src_usize: usize = @intCast(src_off);
@@ -388,6 +404,7 @@ if (src_usize > rd_len or len_usize > rd_len - src_usize) {
 This is a **good** overflow-safe bounds check.
 
 **CALLDATALOAD (line 100-103):**
+
 ```zig
 if (offset > std.math.maxInt(u32)) {
     try frame.pushStack(0);
@@ -403,6 +420,7 @@ This returns 0 for out-of-bounds instead of error. This is correct per EVM spec 
 ### 🟢 Low: Missing Inline Hints
 
 Helper functions (line 18-32) could benefit from `inline` keyword:
+
 - `copyGasCost` (line 18) - ✅ Already called as function
 - `wordCount` (line 24) - Good candidate for `inline`
 - `wordAlignedSize` (line 29) - Good candidate for `inline`
@@ -418,6 +436,7 @@ Line 354: `const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca
 **Issue:** Magic number without explanation.
 
 **Fix:** Define constant with comment:
+
 ```zig
 // EMPTY_CODE_HASH = keccak256("") per EVM spec
 const EMPTY_CODE_HASH: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
@@ -430,6 +449,7 @@ const EMPTY_CODE_HASH: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b
 ### ✅ Good: Overflow Protection
 
 The `add_u32` helper (line 13-15) properly catches overflow:
+
 ```zig
 inline fn add_u32(a: u32, b: u32) FrameType.EvmError!u32 {
     return std.math.add(u32, a, b) catch return error.OutOfBounds;
@@ -445,6 +465,7 @@ All memory operations check bounds before access (CALLDATACOPY line 144-147, RET
 ### ⚠️ Concern: State Access Without Validation
 
 EXTCODECOPY (line 257) retrieves code from external state without checking:
+
 - Account existence
 - Code size limits
 - Potential null pointer dereference if host is not properly initialized
@@ -474,6 +495,7 @@ CALLDATACOPY (line 141-148), CODECOPY (line 175-181), and EXTCODECOPY (line 261-
 **Impact:** Performance degradation for large copies (e.g., CODECOPY of large contracts).
 
 **Optimization:**
+
 ```zig
 // Instead of:
 while (i < len) : (i += 1) {
@@ -491,41 +513,45 @@ try frame.writeMemoryBulk(dst_idx, source_slice[src_off..src_off+len]);
 
 ### Cross-Reference with Python execution-specs
 
-| Opcode | Python File | Zig Status | Notes |
-|--------|-------------|------------|-------|
-| ADDRESS | environment.py:address | ✅ Correct | Gas: 2 (GasQuickStep) |
-| BALANCE | environment.py:balance | ⚠️ Missing Istanbul case in pre-Berlin | Should be 700 gas Istanbul+ |
-| ORIGIN | environment.py:origin | ✅ Correct | Gas: 2 |
-| CALLER | environment.py:caller | ✅ Correct | Gas: 2 |
-| CALLVALUE | environment.py:callvalue | ✅ Correct | Gas: 2 |
-| CALLDATALOAD | environment.py:calldataload | ✅ Correct | Gas: 3, zero-padding correct |
-| CALLDATASIZE | environment.py:calldatasize | ✅ Correct | Gas: 2 |
-| CALLDATACOPY | environment.py:calldatacopy | ✅ Correct | Gas: 3 + mem + copy |
-| CODESIZE | environment.py:codesize | ✅ Correct | Gas: 2 |
-| CODECOPY | environment.py:codecopy | ✅ Correct | Gas: 3 + mem + copy |
-| GASPRICE | environment.py:gasprice | ✅ Correct | Gas: 2 |
-| EXTCODESIZE | environment.py:extcodesize | 🔴 WRONG | Returns 0, missing Istanbul gas |
-| EXTCODECOPY | environment.py:extcodecopy | 🔴 INCOMPLETE | Wrong gas order, may return wrong code |
-| EXTCODEHASH | environment.py:extcodehash | 🔴 WRONG | Returns empty hash, missing Istanbul gas |
-| RETURNDATASIZE | environment.py:returndatasize | ✅ Correct | Byzantium+ only |
-| RETURNDATACOPY | environment.py:returndatacopy | ✅ Correct | Byzantium+ only |
-| GAS | environment.py:gas | ✅ Correct | Gas: 2 |
+| Opcode         | Python File                   | Zig Status                             | Notes                                    |
+| -------------- | ----------------------------- | -------------------------------------- | ---------------------------------------- |
+| ADDRESS        | environment.py:address        | ✅ Correct                             | Gas: 2 (GasQuickStep)                    |
+| BALANCE        | environment.py:balance        | ⚠️ Missing Istanbul case in pre-Berlin | Should be 700 gas Istanbul+              |
+| ORIGIN         | environment.py:origin         | ✅ Correct                             | Gas: 2                                   |
+| CALLER         | environment.py:caller         | ✅ Correct                             | Gas: 2                                   |
+| CALLVALUE      | environment.py:callvalue      | ✅ Correct                             | Gas: 2                                   |
+| CALLDATALOAD   | environment.py:calldataload   | ✅ Correct                             | Gas: 3, zero-padding correct             |
+| CALLDATASIZE   | environment.py:calldatasize   | ✅ Correct                             | Gas: 2                                   |
+| CALLDATACOPY   | environment.py:calldatacopy   | ✅ Correct                             | Gas: 3 + mem + copy                      |
+| CODESIZE       | environment.py:codesize       | ✅ Correct                             | Gas: 2                                   |
+| CODECOPY       | environment.py:codecopy       | ✅ Correct                             | Gas: 3 + mem + copy                      |
+| GASPRICE       | environment.py:gasprice       | ✅ Correct                             | Gas: 2                                   |
+| EXTCODESIZE    | environment.py:extcodesize    | 🔴 WRONG                               | Returns 0, missing Istanbul gas          |
+| EXTCODECOPY    | environment.py:extcodecopy    | 🔴 INCOMPLETE                          | Wrong gas order, may return wrong code   |
+| EXTCODEHASH    | environment.py:extcodehash    | 🔴 WRONG                               | Returns empty hash, missing Istanbul gas |
+| RETURNDATASIZE | environment.py:returndatasize | ✅ Correct                             | Byzantium+ only                          |
+| RETURNDATACOPY | environment.py:returndatacopy | ✅ Correct                             | Byzantium+ only                          |
+| GAS            | environment.py:gas            | ✅ Correct                             | Gas: 2                                   |
 
 ### Hardfork-Specific Issues
 
 **Istanbul (EIP-1884):**
+
 - BALANCE should cost 700 gas (currently correct)
 - EXTCODEHASH should cost 700 gas (currently 400 for Constantinople-Istanbul)
 - EXTCODESIZE missing Istanbul case (falls through to 20 gas, should be 700)
 
 **Berlin (EIP-2929):**
+
 - All account access operations should use warm/cold tracking (✅ correct)
 - accessAddress() properly called for Berlin+
 
 **Constantinople (EIP-1052):**
+
 - EXTCODEHASH properly guarded (✅ correct)
 
 **Byzantium (EIP-211):**
+
 - RETURNDATASIZE/RETURNDATACOPY properly guarded (✅ correct)
 
 ---
@@ -588,17 +614,20 @@ This file contains **3 critical bugs** that are likely causing significant test 
 Additionally, there are **several code quality issues** around gas metering consistency and state access patterns.
 
 **Estimated Fix Effort:**
+
 - Critical bugs: 4-6 hours (requires proper host/state integration)
 - Gas standardization: 2-3 hours
 - Code quality improvements: 2-3 hours
 - **Total: 8-12 hours**
 
 **Risk Assessment:**
+
 - **High Risk:** EXTCODE* operations affect contract interaction tests extensively
 - **Medium Risk:** Gas metering inconsistencies may cause subtle divergences
 - **Low Risk:** Performance optimizations are nice-to-have
 
 **Next Steps:**
+
 1. Fix EXTCODE* operations immediately (Priority 1)
 2. Run test suite to verify fixes: `bun scripts/test-subset.ts "extcode"`
 3. Address gas metering standardization (Priority 2)

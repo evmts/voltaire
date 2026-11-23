@@ -18,20 +18,20 @@ import { toHex } from "./toHex.js";
 
 // Export individual functions
 export {
+	decode,
+	encode,
+	equals,
 	from,
 	fromBytes,
 	fromHex,
-	toHex,
-	toBytes,
 	getSelector,
 	hasSelector,
-	equals,
 	is,
 	isValid,
-	encode,
-	decode,
 	MIN_SIZE,
 	SELECTOR_SIZE,
+	toBytes,
+	toHex,
 };
 
 // Namespace export

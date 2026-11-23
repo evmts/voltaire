@@ -4,9 +4,10 @@
  * Formula:
  * - gasTarget = gasLimit / 2
  * - If gasUsed > gasTarget: baseFee increases (up to 12.5%)
- * - If gasUsed < gasTarget: baseFee decreases (up to 12.5%)
+ * - If gasUsed < gasTarget: baseFee decreases (up to 12.5%), including an
+ *   empty parent block (gasUsed = 0 -> -12.5%)
+ * - Upward changes are at least 1 wei; downward changes have no minimum
  * - If gasUsed == gasTarget: baseFee stays same
- * - Always: baseFee >= MIN_BASE_FEE (7 wei)
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0

@@ -61,6 +61,7 @@ function createInfoTable() {
 	add(constants.SHL, GAS_FASTEST_STEP, 2, 1, "SHL");
 	add(constants.SHR, GAS_FASTEST_STEP, 2, 1, "SHR");
 	add(constants.SAR, GAS_FASTEST_STEP, 2, 1, "SAR");
+	add(constants.CLZ, GAS_FAST_STEP, 1, 1, "CLZ");
 
 	// 0x20s: Crypto
 	add(constants.KECCAK256, 30, 2, 1, "KECCAK256");

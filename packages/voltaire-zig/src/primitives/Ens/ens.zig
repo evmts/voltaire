@@ -89,14 +89,14 @@ pub fn namehash(allocator: std.mem.Allocator, name: []const u8) ![]u8 {
         if (label.len == 0) continue;
 
         // Hash the label
-        const label_hash = crypto.hash.keccak256(label);
+        const label_hash = crypto.Hash.keccak256(label);
 
         // Concatenate parent hash and label hash, then hash again
         var combined: [64]u8 = undefined;
         @memcpy(combined[0..32], hash);
         @memcpy(combined[32..64], &label_hash);
 
-        const new_hash = crypto.hash.keccak256(&combined);
+        const new_hash = crypto.Hash.keccak256(&combined);
         @memcpy(hash, &new_hash);
     }
 
@@ -107,7 +107,7 @@ pub fn namehash(allocator: std.mem.Allocator, name: []const u8) ![]u8 {
 /// Implements EIP-137: labelhash(label) = keccak256(label)
 /// Caller owns returned memory
 pub fn labelhash(allocator: std.mem.Allocator, label: []const u8) ![]u8 {
-    const hash_value = crypto.hash.keccak256(label);
+    const hash_value = crypto.Hash.keccak256(label);
     const result = try allocator.alloc(u8, 32);
     @memcpy(result, &hash_value);
     return result;

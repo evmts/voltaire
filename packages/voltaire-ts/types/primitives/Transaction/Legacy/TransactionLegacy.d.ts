@@ -42,11 +42,11 @@ import { serialize } from "./serialize.js";
 import { getChainId } from "./getChainId.js";
 import { getSender } from "./getSender.js";
 import { deserialize } from "./deserialize.js";
-import { Hash } from "./hash.js";
 import { GetSigningHash } from "./getSigningHash.js";
-import { VerifySignature } from "./verifySignature.js";
 export const getSigningHash: (this: import("./TransactionLegacyType.js").TransactionLegacyType) => Uint8Array;
+import { Hash } from "./hash.js";
 export const hash: (this: import("./TransactionLegacyType.js").TransactionLegacyType) => Uint8Array;
+import { VerifySignature } from "./verifySignature.js";
 export const verifySignature: (this: import("./TransactionLegacyType.js").TransactionLegacyType) => boolean;
-export { Hash, GetSigningHash, VerifySignature, deserialize, getChainId, getSender, serialize };
+export { deserialize, GetSigningHash, getChainId, getSender, Hash, serialize, VerifySignature };
 //# sourceMappingURL=TransactionLegacy.d.ts.map

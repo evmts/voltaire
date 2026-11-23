@@ -1,25 +1,194 @@
 ---
-title: "usage patterns"
-description: "ENS usage-patterns documentation"
+title: "ENS Usage Patterns"
+description: "Common recipes for the Ens module: parsing user input, computing registry nodes, display, and custom keccak256"
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/ens.ts">
   Run ENS examples in the interactive playground
 </Card>
 
-# usage patterns
+# ENS Usage Patterns
 
-Documentation for ENS usage-patterns.
+All examples import the module as a namespace:
 
-<Note>
-This page is under construction. See [ENS Overview](/primitives/ens) for core functionality.
-</Note>
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
+```
 
-## Overview
+## Parse user input
 
-ENS operations for usage-patterns.
+Normalize once, reject empty input, and keep the normalized value for everything downstream.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+type ParseResult =
+  | { ok: true; name: Ens.Ens }
+  | { ok: false; reason: string };
+
+function parseName(input: string): ParseResult {
+  if (input.length === 0) {
+    return { ok: false, reason: "empty" };
+  }
+  try {
+    return { ok: true, name: Ens.normalize(input) };
+  } catch (error) {
+    if (error instanceof Ens.DisallowedCharacterError) {
+      return { ok: false, reason: error.cause?.message ?? error.message };
+    }
+    throw error;
+  }
+}
+
+parseName("Nick.ETH");       // { ok: true, name: "nick.eth" }
+parseName("аpple.eth"); // { ok: false, reason: "... illegal mixture: Cyrillic + Latin ..." }
+parseName("");               // { ok: false, reason: "empty" }
+```
+
+## Validate a form field
+
+Use `isValid()` for a yes/no check, such as enabling a submit button. It accepts names that are valid but not normalized.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+Ens.isValid("vitalik.eth");  // true
+Ens.isValid("VITALIK.eth");  // true
+Ens.isValid("a..eth");       // false
+Ens.isValid("");             // false
+```
+
+Normalize the value again on submit; `isValid()` does not return the canonical form.
+
+## Compute a registry node
+
+The ENS registry and resolvers key records by namehash.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
+
+const node = Ens.namehash(Ens.normalize("Vitalik.ETH"));
+Hex.fromBytes(node);
+// "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
+```
+
+Pass `node` as the `bytes32 node` argument of `resolver(node)`, `addr(node)`, or `text(node, key)`. The [ENS Resolution skill](/skills/ens-resolution) shows the contract calls.
+
+## Compute a labelhash
+
+The `.eth` registrar uses the labelhash of the second-level label as the ERC-721 token ID.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
+
+const label = Ens.labelhash(Ens.normalize("Vitalik"));
+Hex.fromBytes(label);
+// "0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc"
+
+const tokenId = BigInt(Hex.fromBytes(label));
+```
+
+`labelhash` does not split on dots. Pass one label, not a full name.
+
+## Verify the namehash recursion
+
+`namehash(label.parent) = keccak256(namehash(parent) ‖ labelhash(label))`:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Hex from '@tevm/voltaire/Hex';
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256';
+
+const parent = Ens.namehash("eth");
+const label = Ens.labelhash("vitalik");
+
+const combined = new Uint8Array(64);
+combined.set(parent, 0);
+combined.set(label, 32);
+
+Hex.fromBytes(keccak256(combined)) === Hex.fromBytes(Ens.namehash("vitalik.eth")); // true
+```
+
+## Reverse record node
+
+Reverse records live under `<address-hex-without-0x, lowercase>.addr.reverse`.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+const reverseNode = Ens.namehash(`${address.slice(2).toLowerCase()}.addr.reverse`);
+```
+
+After reading the name from the reverse resolver, normalize it and resolve it forward. Accept it only if the forward address matches.
+
+## Display a name
+
+Hash `normalize()` output. Show `beautify()` output.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+const input = "💩.eth";
+const canonical = Ens.normalize(input); // "💩.eth"      -> hash, store, compare
+const display = Ens.beautify(input);    // "💩️.eth" -> render
+```
+
+## Compare names
+
+Compare normalized strings. Raw strings give false negatives.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+function sameName(a: string, b: string): boolean {
+  return Ens.normalize(a) === Ens.normalize(b);
+}
+
+sameName("Nick.ETH", "nick.eth");               // true
+sameName("ｖｉｔａｌｉｋ.eth", "vitalik.eth");   // true (full-width mapped)
+```
+
+## Narrow unknown input
+
+`is()` narrows `unknown` to `Ens` when the value is a non-empty string. Normalize afterwards; `is()` does not validate.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+function fromJson(value: unknown): Ens.Ens {
+  if (!Ens.is(value)) {
+    throw new Error("expected a non-empty string");
+  }
+  return Ens.normalize(value);
+}
+```
+
+## Inject a keccak256 implementation
+
+The `Namehash` and `Labelhash` factories take keccak256 as a dependency. Use them to share one hash implementation across your app or to swap in WASM.
+
+```typescript
+import { Namehash, Labelhash, normalize } from '@tevm/voltaire/Ens';
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256';
+
+const namehash = Namehash({ keccak256 });
+const labelhash = Labelhash({ keccak256 });
+
+namehash(normalize("vitalik.eth")); // Uint8Array(32)
+labelhash(normalize("vitalik"));    // Uint8Array(32)
+```
+
+See [WASM](/primitives/ens/wasm) for the WASM keccak256 variant.
 
 ## See Also
 
 - [ENS Overview](/primitives/ens)
-- [ENS Normalization](/primitives/ens/normalization)
+- [Fundamentals](/primitives/ens/fundamentals)
+- [Encoding](/primitives/ens/encoding)
+- [Security](/primitives/ens/security)
+- [ENS skill](/skills/ens)
+- [ENS Resolution skill](/skills/ens-resolution)

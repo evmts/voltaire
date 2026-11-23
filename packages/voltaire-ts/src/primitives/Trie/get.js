@@ -63,9 +63,7 @@ function lookupAt(nodes, nodeHash, nibbles) {
 function toHex(bytes) {
 	let hex = "";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += /** @type {number} */ (bytes[i])
-			.toString(16)
-			.padStart(2, "0");
+		hex += /** @type {number} */ (bytes[i]).toString(16).padStart(2, "0");
 	}
 	return hex;
 }

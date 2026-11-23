@@ -35,6 +35,7 @@ const DESCRIPTIONS = new Map([
 	[constants.SHL, "Left shift operation"],
 	[constants.SHR, "Logical right shift operation"],
 	[constants.SAR, "Arithmetic right shift operation"],
+	[constants.CLZ, "Count leading zero bits in a 256-bit word"],
 
 	// 0x20s: Crypto
 	[constants.KECCAK256, "Compute Keccak-256 hash"],

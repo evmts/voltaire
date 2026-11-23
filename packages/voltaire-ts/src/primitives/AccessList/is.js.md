@@ -1,6 +1,6 @@
 ---
-title: "is.js"
----
+
+## title: "is.js"
 
 # is.js
 
@@ -9,7 +9,7 @@ Type guard checking if value is valid AccessList.
 ## Signature
 
 ```typescript
-function is(value: unknown): value is BrandedAccessList
+function is(value: unknown): value is BrandedAccessList;
 ```
 
 ## Parameters
@@ -24,8 +24,8 @@ function is(value: unknown): value is BrandedAccessList
 
 ```typescript
 if (AccessList.is(maybeList)) {
-  // TypeScript knows maybeList is BrandedAccessList
-  const cost = maybeList.gasCost();
+	// TypeScript knows maybeList is BrandedAccessList
+	const cost = maybeList.gasCost();
 }
 ```
 

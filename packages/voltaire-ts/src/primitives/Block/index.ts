@@ -6,12 +6,11 @@ import { calculateHash as _calculateHash } from "./calculateHash.js";
 import { from as _from } from "./from.js";
 import { fromRpc as _fromRpc } from "./fromRpc.js";
 
-// Export internal functions (tree-shakeable)
-export { _from, _fromRpc, _calculateHash };
-
 export type { RpcBlockBody, RpcWithdrawal } from "../BlockBody/index.js";
 // Re-export RPC types from dependencies
 export type { RpcBlockHeader } from "../BlockHeader/index.js";
+// Export internal functions (tree-shakeable)
+export { _calculateHash, _from, _fromRpc };
 
 /**
  * RPC block format (full JSON-RPC eth_getBlockByNumber/Hash response)

@@ -2,7 +2,14 @@ import { COMMITMENT_VERSION_KZG } from "../../Blob/constants.js";
 import { DecodingError } from "../../errors/index.js";
 import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
-import { decodeAccessList, decodeBigint } from "../utils.js";
+import {
+	decodeAccessList,
+	decodeBytesField,
+	decodeListField,
+	decodeSignatureScalar,
+	decodeUint,
+	decodeYParity,
+} from "../utils.js";
 
 /**
  * Deserialize RLP encoded EIP-4844 transaction.
@@ -53,24 +60,16 @@ export function deserialize(data) {
 		);
 	}
 
-	const chainId = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[0]).value,
+	const chainId = decodeUint(fields[0], 32, "chainId");
+	const nonce = decodeUint(fields[1], 8, "nonce");
+	const maxPriorityFeePerGas = decodeUint(
+		fields[2],
+		32,
+		"maxPriorityFeePerGas",
 	);
-	const nonce = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[1]).value,
-	);
-	const maxPriorityFeePerGas = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[2]).value,
-	);
-	const maxFeePerGas = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[3]).value,
-	);
-	const gasLimit = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[4]).value,
-	);
-	const toBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[5]
-	).value;
+	const maxFeePerGas = decodeUint(fields[3], 32, "maxFeePerGas");
+	const gasLimit = decodeUint(fields[4], 8, "gasLimit");
+	const toBytes = decodeBytesField(fields[5], "to");
 	if (toBytes.length !== 20) {
 		throw new DecodingError(
 			"EIP-4844 transaction to address must be 20 bytes (cannot be null)",
@@ -84,76 +83,54 @@ export function deserialize(data) {
 	const to = /** @type {import('../../Address/index.js').AddressType} */ (
 		toBytes
 	);
-	const value = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[6]).value,
-	);
-	const dataBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[7]
-	).value;
-	const accessList = decodeAccessList(/** @type {any} */ (fields[8]).value);
-	const maxFeePerBlobGas = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[9]).value,
-	);
+	const value = decodeUint(fields[6], 32, "value");
+	const dataBytes = decodeBytesField(fields[7], "data");
+	const accessList = decodeAccessList(decodeListField(fields[8], "accessList"));
+	const maxFeePerBlobGas = decodeUint(fields[9], 32, "maxFeePerBlobGas");
 
-	const blobHashesData = /** @type {any} */ (fields[10]);
-	if (blobHashesData.type !== "list") {
-		throw new DecodingError("Invalid blob versioned hashes", {
-			code: -32602,
-			context: { type: blobHashesData.type },
-			docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
-		});
-	}
-	const blobVersionedHashes = blobHashesData.value.map(
-		(/** @type {any} */ hashData, /** @type {number} */ index) => {
-			if (hashData.type !== "bytes" || hashData.value.length !== 32) {
-				throw new DecodingError("Invalid blob versioned hash", {
-					code: -32602,
-					context: { type: hashData.type, length: hashData.value?.length },
-					docsPath:
-						"/primitives/transaction/eip4844/deserialize#error-handling",
-				});
-			}
-			// EIP-4844: Version byte must be COMMITMENT_VERSION_KZG (0x01)
-			if (hashData.value[0] !== COMMITMENT_VERSION_KZG) {
-				throw new DecodingError(
-					`Invalid blob versioned hash version byte at index ${index}: expected 0x01, got 0x${hashData.value[0].toString(16).padStart(2, "0")}`,
-					{
-						code: "INVALID_BLOB_HASH_VERSION",
-						context: {
-							index,
-							versionByte: hashData.value[0],
-							expected: COMMITMENT_VERSION_KZG,
-						},
-						docsPath:
-							"/primitives/transaction/eip4844/deserialize#error-handling",
-					},
-				);
-			}
-			return /** @type {import('../../Hash/index.js').HashType} */ (
-				hashData.value
-			);
-		},
-	);
-
-	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[11]
-	).value;
-	const yParity =
-		yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
-	if (yParity !== 0 && yParity !== 1) {
+	const blobHashes = decodeListField(fields[10], "blobVersionedHashes");
+	if (blobHashes.length === 0) {
 		throw new DecodingError(
-			`Invalid yParity: expected 0 or 1, got ${yParity}`,
+			"EIP-4844 transaction must have at least one blob versioned hash",
 			{
 				code: -32602,
-				context: { yParity },
+				context: { length: 0 },
 				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
 			},
 		);
 	}
-	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[12])
-		.value;
-	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[13])
-		.value;
+	const blobVersionedHashes = blobHashes.map((hashData, index) => {
+		if (hashData.type !== "bytes" || hashData.value.length !== 32) {
+			throw new DecodingError("Invalid blob versioned hash", {
+				code: -32602,
+				context: { type: hashData.type, length: hashData.value.length },
+				docsPath: "/primitives/transaction/eip4844/deserialize#error-handling",
+			});
+		}
+		// EIP-4844: Version byte must be COMMITMENT_VERSION_KZG (0x01)
+		if (hashData.value[0] !== COMMITMENT_VERSION_KZG) {
+			throw new DecodingError(
+				`Invalid blob versioned hash version byte at index ${index}: expected 0x01, got 0x${Number(hashData.value[0]).toString(16).padStart(2, "0")}`,
+				{
+					code: "INVALID_BLOB_HASH_VERSION",
+					context: {
+						index,
+						versionByte: hashData.value[0],
+						expected: COMMITMENT_VERSION_KZG,
+					},
+					docsPath:
+						"/primitives/transaction/eip4844/deserialize#error-handling",
+				},
+			);
+		}
+		return /** @type {import('../../Hash/index.js').HashType} */ (
+			hashData.value
+		);
+	});
+
+	const yParity = decodeYParity(fields[11]);
+	const r = decodeSignatureScalar(decodeBytesField(fields[12], "r"));
+	const s = decodeSignatureScalar(decodeBytesField(fields[13], "s"));
 
 	return {
 		type: Type.EIP4844,

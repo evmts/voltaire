@@ -1,6 +1,6 @@
 ---
-title: "EventLog WASM Implementation"
----
+
+## title: "EventLog WASM Implementation"
 
 # EventLog WASM Implementation
 
@@ -26,16 +26,18 @@ matchesAddressWasm(
 ```
 
 **Parameters:**
+
 - `logAddress`: Log emitter address
 - `filterAddresses`: Array of filter addresses (empty = match all)
 
 **Returns:** `true` if log address matches any filter address
 
 **Example:**
-```typescript
-import { matchesAddressWasm } from './EventLog.wasm.js';
 
-const logAddr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
+```typescript
+import { matchesAddressWasm } from "./EventLog.wasm.js";
+
+const logAddr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
 
 // Check against single address
 const matches1 = matchesAddressWasm(logAddr, [tokenAddress]);
@@ -56,17 +58,19 @@ matchesTopicWasm(
 ```
 
 **Parameters:**
+
 - `logTopic`: Log topic hash (32 bytes)
 - `filterTopic`: Filter topic hash, or null to match any
 
 **Returns:** `true` if topic matches filter
 
 **Example:**
-```typescript
-import { matchesTopicWasm } from './EventLog.wasm.js';
 
-const topic0 = Hash.fromHex('0xddf252ad...');
-const eventSig = Hash.fromHex('0xddf252ad...');
+```typescript
+import { matchesTopicWasm } from "./EventLog.wasm.js";
+
+const topic0 = Hash.fromHex("0xddf252ad...");
+const eventSig = Hash.fromHex("0xddf252ad...");
 
 // Exact match
 const matches1 = matchesTopicWasm(topic0, eventSig);
@@ -87,26 +91,28 @@ matchesTopicsWasm(
 ```
 
 **Parameters:**
+
 - `logTopics`: Array of log topic hashes
 - `filterTopics`: Array of filter topics (null entries match any)
 
 **Returns:** `true` if all non-null filter topics match
 
 **Example:**
+
 ```typescript
-import { matchesTopicsWasm } from './EventLog.wasm.js';
+import { matchesTopicsWasm } from "./EventLog.wasm.js";
 
 const logTopics = [
-  Hash.fromHex('0xddf252ad...'), // Transfer signature
-  Hash.fromHex('0x000...abc'),   // from
-  Hash.fromHex('0x000...def'),   // to
+	Hash.fromHex("0xddf252ad..."), // Transfer signature
+	Hash.fromHex("0x000...abc"), // from
+	Hash.fromHex("0x000...def"), // to
 ];
 
 // Match signature, any from, specific to
 const matches = matchesTopicsWasm(logTopics, [
-  Hash.fromHex('0xddf252ad...'),
-  null,
-  Hash.fromHex('0x000...def'),
+	Hash.fromHex("0xddf252ad..."),
+	null,
+	Hash.fromHex("0x000...def"),
 ]);
 ```
 
@@ -122,14 +128,16 @@ filterByAddressWasm<T extends { address: AddressType }>(
 ```
 
 **Parameters:**
+
 - `logs`: Array of event logs
 - `filterAddresses`: Array of filter addresses
 
 **Returns:** Filtered logs matching any address
 
 **Example:**
+
 ```typescript
-import { filterByAddressWasm } from './EventLog.wasm.js';
+import { filterByAddressWasm } from "./EventLog.wasm.js";
 
 const allLogs = [log1, log2, log3, log4];
 
@@ -149,22 +157,24 @@ filterByTopicsWasm<T extends { topics: HashType[] }>(
 ```
 
 **Parameters:**
+
 - `logs`: Array of event logs
 - `filterTopics`: Topic filter array (null = match any)
 
 **Returns:** Filtered logs matching all topics
 
 **Example:**
+
 ```typescript
-import { filterByTopicsWasm } from './EventLog.wasm.js';
+import { filterByTopicsWasm } from "./EventLog.wasm.js";
 
 const allLogs = [log1, log2, log3, log4];
 
 // Filter for Transfer events to specific address
 const filtered = filterByTopicsWasm(allLogs, [
-  transferEventSig,
-  null,         // from any
-  userAddress,  // to user
+	transferEventSig,
+	null, // from any
+	userAddress, // to user
 ]);
 ```
 
@@ -181,6 +191,7 @@ filterLogsWasm<T extends { address: AddressType; topics: HashType[] }>(
 ```
 
 **Parameters:**
+
 - `logs`: Array of event logs
 - `filterAddresses`: Array of filter addresses (empty = match all)
 - `filterTopics`: Array of filter topics (null entries = match any)
@@ -188,16 +199,17 @@ filterLogsWasm<T extends { address: AddressType; topics: HashType[] }>(
 **Returns:** Filtered logs matching both address and topics
 
 **Example:**
+
 ```typescript
-import { filterLogsWasm } from './EventLog.wasm.js';
+import { filterLogsWasm } from "./EventLog.wasm.js";
 
 const allLogs = [log1, log2, log3, log4];
 
 // Filter for Transfer events from USDC to user
 const filtered = filterLogsWasm(
-  allLogs,
-  [usdcAddress],
-  [transferSig, null, userAddressHash]
+	allLogs,
+	[usdcAddress],
+	[transferSig, null, userAddressHash],
 );
 ```
 
@@ -214,13 +226,14 @@ isWasmEventLogAvailable(): boolean
 **Returns:** `true` if WASM module loaded successfully
 
 **Example:**
+
 ```typescript
-import { isWasmEventLogAvailable } from './EventLog.wasm.js';
+import { isWasmEventLogAvailable } from "./EventLog.wasm.js";
 
 if (isWasmEventLogAvailable()) {
-  console.log('Using WASM-accelerated filtering');
+	console.log("Using WASM-accelerated filtering");
 } else {
-  console.log('Falling back to JavaScript implementation');
+	console.log("Falling back to JavaScript implementation");
 }
 ```
 
@@ -245,12 +258,13 @@ getImplementationStatus(): {
 **Returns:** Object with WASM availability and supported primitives
 
 **Example:**
+
 ```typescript
-import { getImplementationStatus } from './EventLog.wasm.js';
+import { getImplementationStatus } from "./EventLog.wasm.js";
 
 const status = getImplementationStatus();
-console.log('WASM available:', status.wasmAvailable);
-console.log('Supported operations:', status.primitives);
+console.log("WASM available:", status.wasmAvailable);
+console.log("Supported operations:", status.primitives);
 ```
 
 ## Usage Patterns
@@ -258,63 +272,59 @@ console.log('Supported operations:', status.primitives);
 ### Automatic Fallback
 
 ```typescript
-import { EventLog } from './EventLog.js';
-import { filterLogsWasm, isWasmEventLogAvailable } from './EventLog.wasm.js';
+import { EventLog } from "./EventLog.js";
+import { filterLogsWasm, isWasmEventLogAvailable } from "./EventLog.wasm.js";
 
 function filterLogs(logs, filter) {
-  if (isWasmEventLogAvailable()) {
-    // Use WASM for better performance
-    return filterLogsWasm(
-      logs,
-      filter.address ? [filter.address] : [],
-      filter.topics ?? []
-    );
-  } else {
-    // Fall back to JavaScript
-    return EventLog.filterLogs(logs, filter);
-  }
+	if (isWasmEventLogAvailable()) {
+		// Use WASM for better performance
+		return filterLogsWasm(
+			logs,
+			filter.address ? [filter.address] : [],
+			filter.topics ?? [],
+		);
+	} else {
+		// Fall back to JavaScript
+		return EventLog.filterLogs(logs, filter);
+	}
 }
 ```
 
 ### Performance Comparison
 
 ```typescript
-import { EventLog } from './EventLog.js';
-import { filterLogsWasm } from './EventLog.wasm.js';
+import { EventLog } from "./EventLog.js";
+import { filterLogsWasm } from "./EventLog.wasm.js";
 
 const logs = generateLargeLogSet(100000);
 
 // JavaScript implementation
-console.time('JS');
+console.time("JS");
 const jsResult = EventLog.filterLogs(logs, {
-  address: tokenAddress,
-  topics: [TRANSFER_SIG],
+	address: tokenAddress,
+	topics: [TRANSFER_SIG],
 });
-console.timeEnd('JS');
+console.timeEnd("JS");
 
 // WASM implementation
-console.time('WASM');
-const wasmResult = filterLogsWasm(
-  logs,
-  [tokenAddress],
-  [TRANSFER_SIG]
-);
-console.timeEnd('WASM');
+console.time("WASM");
+const wasmResult = filterLogsWasm(logs, [tokenAddress], [TRANSFER_SIG]);
+console.timeEnd("WASM");
 ```
 
 ### Batched Processing
 
 ```typescript
-import { filterByAddressWasm, filterByTopicsWasm } from './EventLog.wasm.js';
+import { filterByAddressWasm, filterByTopicsWasm } from "./EventLog.wasm.js";
 
 // Process large log set in stages
 const allLogs = fetchAllLogs();
 
 // Stage 1: Filter by contract addresses
 const contractLogs = filterByAddressWasm(allLogs, [
-  usdcAddress,
-  daiAddress,
-  wethAddress,
+	usdcAddress,
+	daiAddress,
+	wethAddress,
 ]);
 
 // Stage 2: Filter by event signatures
@@ -322,52 +332,56 @@ const transferLogs = filterByTopicsWasm(contractLogs, [TRANSFER_SIG]);
 
 // Stage 3: Further filter by indexed parameters
 const userTransfers = filterByTopicsWasm(transferLogs, [
-  TRANSFER_SIG,
-  null,
-  userAddressHash,
+	TRANSFER_SIG,
+	null,
+	userAddressHash,
 ]);
 ```
 
 ### Conditional WASM Usage
 
 ```typescript
-import { EventLog } from './EventLog.js';
-import { filterLogsWasm, isWasmEventLogAvailable } from './EventLog.wasm.js';
+import { EventLog } from "./EventLog.js";
+import { filterLogsWasm, isWasmEventLogAvailable } from "./EventLog.wasm.js";
 
 const WASM_THRESHOLD = 1000; // Use WASM for large datasets
 
 function smartFilter(logs, filter) {
-  const useWasm = logs.length >= WASM_THRESHOLD && isWasmEventLogAvailable();
+	const useWasm = logs.length >= WASM_THRESHOLD && isWasmEventLogAvailable();
 
-  if (useWasm) {
-    return filterLogsWasm(
-      logs,
-      filter.address ? (Array.isArray(filter.address) ? filter.address : [filter.address]) : [],
-      filter.topics ?? []
-    );
-  }
+	if (useWasm) {
+		return filterLogsWasm(
+			logs,
+			filter.address
+				? Array.isArray(filter.address)
+					? filter.address
+					: [filter.address]
+				: [],
+			filter.topics ?? [],
+		);
+	}
 
-  return EventLog.filterLogs(logs, filter);
+	return EventLog.filterLogs(logs, filter);
 }
 ```
 
 ### Error Handling
 
 ```typescript
-import { filterLogsWasm, isWasmEventLogAvailable } from './EventLog.wasm.js';
-import { EventLog } from './EventLog.js';
+import { filterLogsWasm, isWasmEventLogAvailable } from "./EventLog.wasm.js";
+import { EventLog } from "./EventLog.js";
 
 function safeFilterWasm(logs, addresses, topics) {
-  if (!isWasmEventLogAvailable()) {
-    throw new Error('WASM not available');
-  }
+	if (!isWasmEventLogAvailable()) {
+		throw new Error("WASM not available");
+	}
 
-  try {
-    return filterLogsWasm(logs, addresses, topics);
-  } catch (error) {
-    console.error('WASM filtering failed, falling back to JS:', error);
-    return EventLog.filterLogs(logs, { address: addresses, topics });
-  }
+	try {
+		return filterLogsWasm(logs, addresses, topics);
+	} catch (error) {
+		console.error("WASM filtering failed, falling back to JS:", error);
+		return EventLog.filterLogs(logs, { address: addresses, topics });
+	}
 }
 ```
 
@@ -376,12 +390,14 @@ function safeFilterWasm(logs, addresses, topics) {
 ### When to Use WASM
 
 **Use WASM for:**
+
 - Large log sets (>1000 logs)
 - Tight filter loops
 - Real-time log processing
 - High-throughput applications
 
 **Use JavaScript for:**
+
 - Small log sets (<1000 logs)
 - One-off queries
 - Development/debugging
@@ -432,6 +448,7 @@ const matches = matchesAddressWasm(logAddr, [filterAddr]);
 ### Memory Management
 
 WASM functions handle memory efficiently:
+
 - No allocations for simple comparisons
 - Minimal copying for batch operations
 - Automatic cleanup via WASM memory management
@@ -444,11 +461,11 @@ WASM module loaded via loader:
 import * as loader from "../../wasm-loader/loader.js";
 
 export function matchesAddressWasm(logAddress, filterAddresses) {
-  const { Hex } = require("./hex.js");
-  return loader.eventLogMatchesAddress(
-    Hex.toBytes(logAddress),
-    filterAddresses.map(a => Hex.toBytes(a))
-  );
+	const { Hex } = require("./hex.js");
+	return loader.eventLogMatchesAddress(
+		Hex.toBytes(logAddress),
+		filterAddresses.map((a) => Hex.toBytes(a)),
+	);
 }
 ```
 
@@ -464,24 +481,28 @@ export function matchesAddressWasm(logAddress, filterAddresses) {
 Always provide JavaScript fallback:
 
 ```typescript
-import { EventLog } from './EventLog.js';
-import { filterLogsWasm, isWasmEventLogAvailable } from './EventLog.wasm.js';
+import { EventLog } from "./EventLog.js";
+import { filterLogsWasm, isWasmEventLogAvailable } from "./EventLog.wasm.js";
 
 // Unified API
 export function filterLogs(logs, filter) {
-  if (isWasmEventLogAvailable()) {
-    try {
-      return filterLogsWasm(
-        logs,
-        filter.address ? (Array.isArray(filter.address) ? filter.address : [filter.address]) : [],
-        filter.topics ?? []
-      );
-    } catch (e) {
-      console.warn('WASM failed, using JS:', e);
-    }
-  }
+	if (isWasmEventLogAvailable()) {
+		try {
+			return filterLogsWasm(
+				logs,
+				filter.address
+					? Array.isArray(filter.address)
+						? filter.address
+						: [filter.address]
+					: [],
+				filter.topics ?? [],
+			);
+		} catch (e) {
+			console.warn("WASM failed, using JS:", e);
+		}
+	}
 
-  return EventLog.filterLogs(logs, filter);
+	return EventLog.filterLogs(logs, filter);
 }
 ```
 

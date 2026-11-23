@@ -25,24 +25,24 @@ export namespace Bls12381 {
     export { Pairing };
 }
 export default Bls12381;
-import * as Fp from "./Fp/index.js";
-import * as Fp2 from "./Fp2/index.js";
-import * as Fr from "./Fr/index.js";
-import * as G1 from "./G1/index.js";
-import * as G2 from "./G2/index.js";
-import * as Pairing from "./Pairing/index.js";
-import { sign } from "./sign.js";
-import { signPoint } from "./sign.js";
-import { verify } from "./verify.js";
-import { verifyPoint } from "./verify.js";
 import { aggregate } from "./aggregate.js";
 import { aggregatePublicKeys } from "./aggregate.js";
 import { aggregateVerify } from "./aggregateVerify.js";
 import { batchVerify } from "./aggregateVerify.js";
-import { fastAggregateVerify } from "./aggregateVerify.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 import { derivePublicKeyPoint } from "./derivePublicKey.js";
-import { randomPrivateKey } from "./randomPrivateKey.js";
+import * as Fp from "./Fp/index.js";
+import * as Fp2 from "./Fp2/index.js";
+import * as Fr from "./Fr/index.js";
+import { fastAggregateVerify } from "./aggregateVerify.js";
+import * as G1 from "./G1/index.js";
+import * as G2 from "./G2/index.js";
 import { isValidPrivateKey } from "./randomPrivateKey.js";
-export { Fp, Fp2, Fr, G1, G2, Pairing, sign, signPoint, verify, verifyPoint, aggregate, aggregatePublicKeys, aggregateVerify, batchVerify, fastAggregateVerify, derivePublicKey, derivePublicKeyPoint, randomPrivateKey, isValidPrivateKey };
+import * as Pairing from "./Pairing/index.js";
+import { randomPrivateKey } from "./randomPrivateKey.js";
+import { sign } from "./sign.js";
+import { signPoint } from "./sign.js";
+import { verify } from "./verify.js";
+import { verifyPoint } from "./verify.js";
+export { aggregate, aggregatePublicKeys, aggregateVerify, batchVerify, derivePublicKey, derivePublicKeyPoint, Fp, Fp2, Fr, fastAggregateVerify, G1, G2, isValidPrivateKey, Pairing, randomPrivateKey, sign, signPoint, verify, verifyPoint };
 //# sourceMappingURL=Bls12381.d.ts.map

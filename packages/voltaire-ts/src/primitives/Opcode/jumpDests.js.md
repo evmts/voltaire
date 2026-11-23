@@ -1,6 +1,6 @@
 ---
-title: "jumpDests.js"
----
+
+## title: "jumpDests.js"
 
 # jumpDests.js
 
@@ -9,7 +9,7 @@ Find all valid JUMPDEST locations in bytecode.
 ## Signature
 
 ```typescript
-function jumpDests(bytecode: Uint8Array): Set<number>
+function jumpDests(bytecode: Uint8Array): Set<number>;
 ```
 
 ## Parameters
@@ -24,11 +24,11 @@ function jumpDests(bytecode: Uint8Array): Set<number>
 
 ```typescript
 const bytecode = new Uint8Array([0x5b, 0x60, 0x01, 0x5b]);
-const dests = Opcode.jumpDests(bytecode);  // Set { 0, 3 }
+const dests = Opcode.jumpDests(bytecode); // Set { 0, 3 }
 
-console.log(dests.has(0));  // true (JUMPDEST at 0)
-console.log(dests.has(3));  // true (JUMPDEST at 3)
-console.log(dests.has(1));  // false (PUSH1 at 1)
+console.log(dests.has(0)); // true (JUMPDEST at 0)
+console.log(dests.has(3)); // true (JUMPDEST at 3)
+console.log(dests.has(1)); // false (PUSH1 at 1)
 ```
 
 ## Example with Invalid PUSH Data
@@ -36,7 +36,7 @@ console.log(dests.has(1));  // false (PUSH1 at 1)
 ```typescript
 // PUSH1 with JUMPDEST as immediate data
 const bytecode = new Uint8Array([0x60, 0x5b, 0x5b]);
-const dests = Opcode.jumpDests(bytecode);  // Set { 2 }
+const dests = Opcode.jumpDests(bytecode); // Set { 2 }
 // Only offset 2 is valid; offset 1 is inside PUSH immediate
 ```
 

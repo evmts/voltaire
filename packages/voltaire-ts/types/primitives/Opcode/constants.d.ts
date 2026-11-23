@@ -28,6 +28,12 @@ export const BYTE: import("./OpcodeType.js").OpcodeType;
 export const SHL: import("./OpcodeType.js").OpcodeType;
 export const SHR: import("./OpcodeType.js").OpcodeType;
 export const SAR: import("./OpcodeType.js").OpcodeType;
+/**
+ * Count leading zero bits in a 256-bit word (EIP-7939, Osaka).
+ * Consumes one stack word and produces one word; zero produces 256.
+ * Costs five gas. Execution before Osaka must reject this opcode.
+ */
+export const CLZ: import("./OpcodeType.js").OpcodeType;
 export const KECCAK256: import("./OpcodeType.js").OpcodeType;
 export const ADDRESS: import("./OpcodeType.js").OpcodeType;
 export const BALANCE: import("./OpcodeType.js").OpcodeType;

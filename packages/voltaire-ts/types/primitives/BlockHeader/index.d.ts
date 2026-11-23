@@ -2,7 +2,7 @@ export type { BlockHeaderType } from "./BlockHeaderType.js";
 import { calculateHash as _calculateHash } from "./calculateHash.js";
 import { from as _from } from "./from.js";
 import { fromRpc as _fromRpc } from "./fromRpc.js";
-export { _from, _fromRpc, _calculateHash };
+export { _calculateHash, _from, _fromRpc };
 export declare function from(params: {
     parentHash: import("../BlockHash/BlockHashType.js").BlockHashType | string;
     ommersHash: import("../Hash/HashType.js").HashType | string;
@@ -24,6 +24,10 @@ export declare function from(params: {
     blobGasUsed?: bigint | number | string;
     excessBlobGas?: bigint | number | string;
     parentBeaconBlockRoot?: import("../Hash/HashType.js").HashType | string;
+    /** EIP-7685 execution-requests commitment (Prague+). */
+    requestsHash?: import("../Hash/HashType.js").HashType | string;
+    /** EIP-7928 block access list commitment (Amsterdam+). */
+    blockAccessListHash?: import("../Hash/HashType.js").HashType | string;
 }): import("./BlockHeaderType.js").BlockHeaderType;
 /**
  * RPC block header format (JSON-RPC response)
@@ -49,6 +53,10 @@ export type RpcBlockHeader = {
     blobGasUsed?: string;
     excessBlobGas?: string;
     parentBeaconBlockRoot?: string;
+    /** EIP-7685 execution-requests commitment as 32-byte hex (Prague+). */
+    requestsHash?: string;
+    /** EIP-7928 block access list commitment as 32-byte hex (Amsterdam+). */
+    blockAccessListHash?: string;
 };
 /**
  * Convert RPC block header format to BlockHeader

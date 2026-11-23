@@ -1,6 +1,6 @@
 ---
-title: "assertValid.js"
----
+
+## title: "assertValid.js"
 
 # assertValid.js
 
@@ -9,7 +9,7 @@ Validate AccessList structure with detailed error messages.
 ## Signature
 
 ```typescript
-function assertValid(list: unknown): asserts list is BrandedAccessList
+function assertValid(list: unknown): asserts list is BrandedAccessList;
 ```
 
 ## Parameters
@@ -31,11 +31,11 @@ Nothing (asserts type)
 
 ```typescript
 try {
-  AccessList.assertValid(list);
-  // Safe to use as AccessList
-  processAccessList(list);
+	AccessList.assertValid(list);
+	// Safe to use as AccessList
+	processAccessList(list);
 } catch (err) {
-  console.error('Invalid:', err.message);
+	console.error("Invalid:", err.message);
 }
 ```
 

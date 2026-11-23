@@ -10,7 +10,7 @@ import {
   ContractWriteError,
   errorMessage,
   InvalidAddressError,
-  RpcError
+  RpcError,
 } from "../errors.vibe"
 import * as Abi from "../primitives/Abi.vibe"
 import * as Address from "../primitives/Address.vibe"
@@ -27,7 +27,7 @@ import type {
   DecodedEvent,
   ExtractEventNames,
   ReadOptions,
-  WriteOptions
+  WriteOptions,
 } from "./types.vibe"
 
 export type * from "./types.vibe"
@@ -40,12 +40,12 @@ function isReadOptionsObject(value: unknown): value is ReadOptions {
 function isWriteOptionsObject(value: unknown): value is WriteOptions {
   if (!Predicate.isObject(value) || Array.isArray(value)) return false
   return (
-    "value" in value ||
-    "gasLimit" in value ||
-    "gasPrice" in value ||
-    "maxFeePerGas" in value ||
-    "maxPriorityFeePerGas" in value ||
-    "nonce" in value
+    "value" in value
+    || "gasLimit" in value
+    || "gasPrice" in value
+    || "maxFeePerGas" in value
+    || "maxPriorityFeePerGas" in value
+    || "nonce" in value
   )
 }
 
@@ -58,7 +58,9 @@ function splitReadArgs(argsAndOpts: ReadonlyArray<unknown>, inputCount: number):
     if (last === undefined) {
       return { args: argsAndOpts.slice(0, inputCount), options: {} }
     }
-    if (isReadOptionsObject(last) || (Predicate.isObject(last) && !Array.isArray(last) && Object.keys(last).length === 0)) {
+    if (
+      isReadOptionsObject(last) || (Predicate.isObject(last) && !Array.isArray(last) && Object.keys(last).length === 0)
+    ) {
       return { args: argsAndOpts.slice(0, -1), options: last as ReadOptions }
     }
   }
@@ -74,7 +76,9 @@ function splitWriteArgs(argsAndOpts: ReadonlyArray<unknown>, inputCount: number)
     if (last === undefined) {
       return { args: argsAndOpts.slice(0, inputCount), options: {} }
     }
-    if (isWriteOptionsObject(last) || (Predicate.isObject(last) && !Array.isArray(last) && Object.keys(last).length === 0)) {
+    if (
+      isWriteOptionsObject(last) || (Predicate.isObject(last) && !Array.isArray(last) && Object.keys(last).length === 0)
+    ) {
       return { args: argsAndOpts.slice(0, -1), options: last as WriteOptions }
     }
   }
@@ -86,7 +90,7 @@ effect function mapCallError(
   addressHex: string,
   method: string,
   abi: Abi.Abi,
-  cause: unknown
+  cause: unknown,
 ): never!(ContractCallError | ContractRevertError) {
   if (cause instanceof RpcError && cause.isRevert) {
     const rawData = cause.revertData ?? "0x"
@@ -96,30 +100,39 @@ effect function mapCallError(
       method,
       reason,
       rawData,
-      message: `${method} on ${addressHex}: ${Abi.formatRevertReason(reason)}`
+      message: `${method} on ${addressHex}: ${Abi.formatRevertReason(reason)}`,
     })
   }
   throw new ContractCallError({
     address: addressHex,
     method,
     message: `${method} on ${addressHex} failed: ${errorMessage(cause)}`,
-    cause
+    cause,
   })
 }
 
 // Creates a type-safe ContractInstance with .read, .write, .simulate, .estimateGas, and .getEvents.
 export effect function Contract<const TAbi extends Abi.Abi>(
   addressInput: Address.AddressInput,
-  abi: TAbi
+  abi: TAbi,
 ): ContractInstance<TAbi>!InvalidAddressError {
   const address: AddressType = typeof addressInput === "string"
     ? try Address.fromHex(addressInput)
     : addressInput
   const addressHex = Address.toHex(address)
 
-  const readRecord: Record<string, (...args: ReadonlyArray<unknown>) => unknown!(ContractCallError | ContractRevertError)!Transport> = {}
-  const simulateRecord: Record<string, (...args: ReadonlyArray<unknown>) => unknown!(ContractCallError | ContractRevertError)!Transport> = {}
-  const estimateGasRecord: Record<string, (...args: ReadonlyArray<unknown>) => bigint!(ContractCallError | ContractRevertError)!Transport> = {}
+  const readRecord: Record<
+    string,
+    (...args: ReadonlyArray<unknown>) => unknown!(ContractCallError | ContractRevertError)!Transport
+  > = {}
+  const simulateRecord: Record<
+    string,
+    (...args: ReadonlyArray<unknown>) => unknown!(ContractCallError | ContractRevertError)!Transport
+  > = {}
+  const estimateGasRecord: Record<
+    string,
+    (...args: ReadonlyArray<unknown>) => bigint!(ContractCallError | ContractRevertError)!Transport
+  > = {}
   const writeRecord: Record<string, (...args: ReadonlyArray<unknown>) => HashType!ContractWriteError!Signer> = {}
 
   for (const item of abi) {
@@ -167,7 +180,7 @@ export effect function Contract<const TAbi extends Abi.Abi>(
           gas: options.gasLimit,
           gasPrice: options.gasPrice,
           maxFeePerGas: options.maxFeePerGas,
-          maxPriorityFeePerGas: options.maxPriorityFeePerGas
+          maxPriorityFeePerGas: options.maxPriorityFeePerGas,
         }) catch effect (e) => {
           return try mapCallError(addressHex, fnName, abi, e)
         }
@@ -187,13 +200,13 @@ export effect function Contract<const TAbi extends Abi.Abi>(
           gasPrice: options.gasPrice,
           maxFeePerGas: options.maxFeePerGas,
           maxPriorityFeePerGas: options.maxPriorityFeePerGas,
-          nonce: options.nonce
+          nonce: options.nonce,
         }) catch effect (e) => {
           throw new ContractWriteError({
             address: addressHex,
             method: fnName,
             message: `${fnName} on ${addressHex} failed: ${e.message}`,
-            cause: e
+            cause: e,
           })
         }
       }
@@ -202,42 +215,42 @@ export effect function Contract<const TAbi extends Abi.Abi>(
 
   const getEvents = effect <E extends ExtractEventNames<TAbi>>(
     eventName: E,
-    filter?: ContractEventFilter
+    filter?: ContractEventFilter,
   ): ReadonlyArray<DecodedEvent>!ContractEventError!Transport => {
     const topics = filter?.args !== undefined
       ? Abi.encodeEventTopics(abi, eventName, filter.args) catch effect (e) => {
-          throw new ContractEventError({ address: addressHex, event: eventName, message: e.message, cause: e })
-        }
+        throw new ContractEventError({ address: addressHex, event: eventName, message: e.message, cause: e })
+      }
       : [
-          Abi.getEventTopic(abi, eventName) catch effect (e) => {
-            throw new ContractEventError({ address: addressHex, event: eventName, message: e.message, cause: e })
-          }
-        ]
+        Abi.getEventTopic(abi, eventName) catch effect (e) => {
+          throw new ContractEventError({ address: addressHex, event: eventName, message: e.message, cause: e })
+        },
+      ]
 
     const logs = getLogs({
       address: addressHex,
       topics: topics as ReadonlyArray<`0x${string}` | null>,
       fromBlock: filter?.fromBlock,
-      toBlock: filter?.toBlock
+      toBlock: filter?.toBlock,
     }) catch effect (e) => {
       throw new ContractEventError({
         address: addressHex,
         event: eventName,
         message: `Fetching ${eventName} logs on ${addressHex} failed: ${errorMessage(e)}`,
-        cause: e
+        cause: e,
       })
     }
 
     const decoded: Array<DecodedEvent> = []
     for (const log of logs) {
       const args = Abi.decodeEventLog(abi, eventName, log.data, log.topics as ReadonlyArray<HexType>) catch effect (e) => {
-        throw new ContractEventError({
-          address: addressHex,
-          event: eventName,
-          message: `Decoding ${eventName} log failed: ${e.message}`,
-          cause: e
-        })
-      }
+          throw new ContractEventError({
+            address: addressHex,
+            event: eventName,
+            message: `Decoding ${eventName} log failed: ${e.message}`,
+            cause: e,
+          })
+        }
       decoded.push({
         eventName,
         args,
@@ -245,7 +258,7 @@ export effect function Contract<const TAbi extends Abi.Abi>(
         blockNumber: log.blockNumber,
         blockHash: log.blockHash,
         transactionHash: log.transactionHash,
-        logIndex: log.logIndex
+        logIndex: log.logIndex,
       })
     }
     return decoded
@@ -258,7 +271,7 @@ export effect function Contract<const TAbi extends Abi.Abi>(
     write: writeRecord as unknown as ContractInstance<TAbi>["write"],
     simulate: simulateRecord as unknown as ContractInstance<TAbi>["simulate"],
     estimateGas: estimateGasRecord as unknown as ContractInstance<TAbi>["estimateGas"],
-    getEvents
+    getEvents,
   }
 }
 
@@ -276,7 +289,7 @@ import { makeRegistryService } from registryHelper
 // Defines a typed ContractRegistry Service + Layer supporting pre-addressed contracts, factories, and mixed mode.
 export function makeContractRegistry<const TConfig extends ContractRegistryConfig>(
   config: TConfig,
-  serviceKey = "voltaire-effect/contract/ContractRegistry"
+  serviceKey = "voltaire-effect/contract/ContractRegistry",
 ): ContractRegistry<TConfig> {
   type Shape = ContractRegistryShape<TConfig>
   const Service = makeRegistryService<Shape>(serviceKey)
@@ -291,13 +304,13 @@ export function makeContractRegistry<const TConfig extends ContractRegistryConfi
         } else {
           const factory: ContractFactory<Abi.Abi> = {
             abi: def.abi,
-            at: (addr) => Contract(addr, def.abi)
+            at: (addr) => Contract(addr, def.abi),
           }
           registry[name] = factory
         }
       }
       return registry as Shape
-    }
+    },
   )
 
   return { Service, layer }

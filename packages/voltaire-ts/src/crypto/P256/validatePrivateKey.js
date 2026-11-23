@@ -1,11 +1,13 @@
-// @ts-nocheck
-import { p256 } from "@noble/curves/nist.js";
-import { PRIVATE_KEY_SIZE } from "./constants.js";
+import { numberToBytesBE } from "@noble/curves/utils.js";
+import { constantTimeIsValidScalar } from "../ConstantTime/constantTimeIsValidScalar.js";
+import { CURVE_ORDER, PRIVATE_KEY_SIZE } from "./constants.js";
+
+const ORDER_BYTES = numberToBytesBE(CURVE_ORDER, PRIVATE_KEY_SIZE);
 
 /**
  * Validate a private key
  *
- * Checks if the private key is in the valid range [1, n-1]
+ * Checks in constant time if the private key is in the valid range [1, n-1]
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
@@ -20,15 +22,12 @@ import { PRIVATE_KEY_SIZE } from "./constants.js";
  * ```
  */
 export function validatePrivateKey(privateKey) {
+	if (!(privateKey instanceof Uint8Array)) {
+		return false;
+	}
 	if (privateKey.length !== PRIVATE_KEY_SIZE) {
 		return false;
 	}
 
-	try {
-		// Try to derive public key - will fail if invalid
-		p256.getPublicKey(privateKey, false);
-		return true;
-	} catch {
-		return false;
-	}
+	return constantTimeIsValidScalar(privateKey, ORDER_BYTES);
 }

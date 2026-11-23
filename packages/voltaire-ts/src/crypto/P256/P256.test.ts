@@ -1,5 +1,7 @@
 import { p256 } from "@noble/curves/nist.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { describe, expect, it } from "vitest";
+import { p256Verify } from "../../evm/precompiles/p256verify.js";
 import { Hash } from "../../primitives/Hash/index.js";
 import { InvalidPrivateKeyError, InvalidPublicKeyError } from "./errors.js";
 import { P256 } from "./P256.js";
@@ -153,7 +155,7 @@ describe("P256", () => {
 			const messageHash = Hash.keccak256String("Test message");
 
 			const signature = P256.sign(messageHash, privateKey);
-			const nobleSig = p256.sign(messageHash, privateKey);
+			const nobleSig = p256.sign(messageHash, privateKey, { prehash: false });
 
 			// @noble returns compact 64-byte signature, extract r and s
 			const nobleR = nobleSig.slice(0, 32);
@@ -289,7 +291,9 @@ describe("P256", () => {
 			fullPublicKey[0] = 0x04;
 			fullPublicKey.set(publicKey, 1);
 
-			const nobleValid = p256.verify(compactSig, messageHash, fullPublicKey);
+			const nobleValid = p256.verify(compactSig, messageHash, fullPublicKey, {
+				prehash: false,
+			});
 
 			expect(ourValid).toBe(nobleValid);
 			expect(ourValid).toBe(true);
@@ -1014,6 +1018,138 @@ describe("P256", () => {
 			// validatePublicKey returns boolean, doesn't throw
 			const isValid = P256.validatePublicKey(publicKey);
 			expect(typeof isValid).toBe("boolean");
+		});
+	});
+	describe("Prehashed digest semantics (no double hash)", () => {
+		const hex = (h: string) =>
+			Uint8Array.from(h.match(/../g) ?? [], (b) => Number.parseInt(b, 16));
+		const toHex = (b: Uint8Array) =>
+			Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+		const N =
+			0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
+
+		// RFC 6979 A.2.5 (P-256, SHA-256)
+		const D = hex(
+			"c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
+		);
+		const UX =
+			"60fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6";
+		const UY =
+			"7903fe1008b8bc99a41ae9e95628bc64f2f1b20c2d7e9f5177a3c294d4462299";
+		const enc = new TextEncoder();
+
+		it("matches RFC 6979 A.2.5 for message 'sample' (lowS: false)", () => {
+			const h = sha256(enc.encode("sample"));
+			const sig = P256.sign(h, D, { lowS: false });
+			expect(toHex(sig.r)).toBe(
+				"efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716",
+			);
+			expect(toHex(sig.s)).toBe(
+				"f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8",
+			);
+		});
+
+		it("normalizes RFC 6979 'sample' to low-S by default", () => {
+			const h = sha256(enc.encode("sample"));
+			const sig = P256.sign(h, D);
+			const highS =
+				0xf7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8n;
+			expect(toHex(sig.r)).toBe(
+				"efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716",
+			);
+			expect(BigInt(`0x${toHex(sig.s)}`)).toBe(N - highS);
+		});
+
+		it("matches RFC 6979 A.2.5 for message 'test'", () => {
+			const h = sha256(enc.encode("test"));
+			const sig = P256.sign(h, D);
+			expect(toHex(sig.r)).toBe(
+				"f1abb023518351cd71d881567b1ea663ed3efcf6c5132b354f28d3b0b7d38367",
+			);
+			expect(toHex(sig.s)).toBe(
+				"019f4113742a2b14bd25926b49c649155f267e60d3814b4c0cc84250e46f0083",
+			);
+		});
+
+		it("derives the RFC 6979 A.2.5 public key", () => {
+			expect(toHex(P256.derivePublicKey(D))).toBe(UX + UY);
+		});
+
+		it("verifies the high-S RFC 6979 signature (WebAuthn / EIP-7951)", () => {
+			const h = sha256(enc.encode("sample"));
+			const sig = {
+				r: Hash.from(
+					hex(
+						"efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716",
+					),
+				),
+				s: Hash.from(
+					hex(
+						"f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8",
+					),
+				),
+			};
+			expect(P256.verify(sig, h, hex(UX + UY))).toBe(true);
+		});
+
+		it("rejects a signature over SHA-256(messageHash) (no double hash)", () => {
+			const h = sha256(enc.encode("sample"));
+			// Signature produced by the old double-hashing behaviour
+			const doubleHashed = p256.sign(h, D, { prehash: true });
+			const sig = {
+				r: Hash.from(doubleHashed.slice(0, 32)),
+				s: Hash.from(doubleHashed.slice(32, 64)),
+			};
+			expect(P256.verify(sig, h, hex(UX + UY))).toBe(false);
+		});
+
+		it("cannot re-enable prehash through options", () => {
+			const h = sha256(enc.encode("test"));
+			const sig = P256.sign(h, D, {
+				prehash: true,
+			} as unknown as Parameters<typeof P256.sign>[2]);
+			expect(toHex(sig.r)).toBe(
+				"f1abb023518351cd71d881567b1ea663ed3efcf6c5132b354f28d3b0b7d38367",
+			);
+		});
+
+		it("P256.sign output passes EIP-7951 p256Verify", () => {
+			for (const privateKey of [D, new Uint8Array(32).fill(7)]) {
+				const publicKey = P256.derivePublicKey(privateKey);
+				for (const msg of ["sample", "test", "webauthn"]) {
+					for (const lowS of [true, false]) {
+						const h = sha256(enc.encode(msg));
+						const sig = P256.sign(h, privateKey, { lowS });
+						const input = new Uint8Array(160);
+						input.set(h, 0);
+						input.set(sig.r, 32);
+						input.set(sig.s, 64);
+						input.set(publicKey, 96);
+						const result = p256Verify(input, 6900n);
+						expect(result.success).toBe(true);
+						expect(result.output.length).toBe(32);
+						expect(result.output[31]).toBe(1);
+					}
+				}
+			}
+		});
+
+		it("throws InvalidPrivateKeyError for zero private key", () => {
+			const h = sha256(enc.encode("test"));
+			expect(() => P256.sign(h, new Uint8Array(32))).toThrow(
+				InvalidPrivateKeyError,
+			);
+		});
+
+		it("throws InvalidPrivateKeyError for private key >= n", () => {
+			const h = sha256(enc.encode("test"));
+			const n = hex(
+				"ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+			);
+			expect(() => P256.sign(h, n)).toThrow(InvalidPrivateKeyError);
+			expect(() => P256.sign(h, new Uint8Array(32).fill(0xff))).toThrow(
+				InvalidPrivateKeyError,
+			);
 		});
 	});
 });

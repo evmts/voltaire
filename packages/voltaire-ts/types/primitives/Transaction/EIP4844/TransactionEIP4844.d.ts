@@ -47,9 +47,9 @@ import { getBlobGasCost } from "./getBlobGasCost.js";
 export const hash: (tx: import("./TransactionEIP4844Type.js").TransactionEIP4844Type) => Uint8Array;
 export const getSigningHash: (tx: import("./TransactionEIP4844Type.js").TransactionEIP4844Type) => Uint8Array;
 export const verifySignature: (tx: import("./TransactionEIP4844Type.js").TransactionEIP4844Type) => boolean;
-import { Hash } from "./hash.js";
-import { GetSigningHash } from "./getSigningHash.js";
-import { VerifySignature } from "./verifySignature.js";
 import { deserialize } from "./deserialize.js";
-export { Hash, GetSigningHash, VerifySignature, deserialize, getBlobGasCost, getEffectiveGasPrice, getSender, serialize };
+import { GetSigningHash } from "./getSigningHash.js";
+import { Hash } from "./hash.js";
+import { VerifySignature } from "./verifySignature.js";
+export { deserialize, GetSigningHash, getBlobGasCost, getEffectiveGasPrice, getSender, Hash, serialize, VerifySignature };
 //# sourceMappingURL=TransactionEIP4844.d.ts.map

@@ -47,7 +47,7 @@ export function compare(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toGwei, _toWei, _toNumber, _toBigInt, _equals, _compare };
+export { _compare, _equals, _toBigInt, _toGwei, _toNumber, _toWei };
 
 // Export as namespace (convenience)
 export const BaseFeePerGas = {

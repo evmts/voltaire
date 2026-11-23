@@ -268,14 +268,12 @@ describe("Authorization.validate", () => {
 		expect(() => Authorization.validate(auth)).not.toThrow();
 	});
 
-	it("throws for zero address", () => {
+	it("accepts zero address, which clears the delegation (EIP-7702)", () => {
 		const auth = { ...validAuth, address: zeroAddress };
-		expect(() => Authorization.validate(auth)).toThrow(
-			Authorization.ValidationError,
-		);
-		expect(() => Authorization.validate(auth)).toThrow(
-			"Address cannot be zero address",
-		);
+		expect(() => Authorization.validate(auth)).not.toThrow();
+		expect(() =>
+			Authorization.validate({ ...auth, chainId: 0n }),
+		).not.toThrow();
 	});
 
 	it("throws for invalid yParity (2)", () => {

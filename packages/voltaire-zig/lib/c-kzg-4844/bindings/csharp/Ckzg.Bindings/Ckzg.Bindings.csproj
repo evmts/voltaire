@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <OutputType>Library</OutputType>
         <RootNamespace>Ckzg</RootNamespace>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -23,7 +23,7 @@
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/ethereum/c-kzg-4844</RepositoryUrl>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <Version>0.2.1.1</Version>
+        <Version>0.2.1.8</Version>
         <!-- Disable the warnings about using UInt64-->
         <NoWarn>$(NoWarn);IDE0049</NoWarn>
     </PropertyGroup>
@@ -43,7 +43,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

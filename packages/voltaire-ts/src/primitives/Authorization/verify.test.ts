@@ -477,18 +477,23 @@ describe("Authorization.verify - r value boundaries", () => {
 // Zero Address Tests
 // ============================================================================
 
-describe("Authorization.verify - zero address validation", () => {
-	it("throws for zero delegated address", () => {
-		const zeroAddress = createAddress(0);
-		const auth: AuthorizationType = {
-			chainId: 1n,
-			address: zeroAddress,
-			nonce: 0n,
-			yParity: 0,
-			r: 0x123n,
-			s: 0x456n,
-		};
-		expect(() => verify(auth)).toThrow("Address cannot be zero address");
+describe("Authorization.verify - zero address clears delegation", () => {
+	const privateKey = new Uint8Array(32);
+	privateKey.fill(1);
+
+	it("accepts a signed authorization for the zero address (EIP-7702)", () => {
+		const auth = sign(
+			{ chainId: 1n, address: createAddress(0), nonce: 0n },
+			privateKey,
+		);
+		const authority = verify(auth);
+		expect(authority).toBeInstanceOf(Uint8Array);
+		expect(authority.length).toBe(20);
+		expect(authority).toEqual(
+			verify(
+				sign({ chainId: 1n, address: createAddress(1), nonce: 0n }, privateKey),
+			),
+		);
 	});
 });
 

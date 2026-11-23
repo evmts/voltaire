@@ -5,14 +5,13 @@ import { Sign } from "./sign.js";
 import { toAddress as _toAddress } from "./toAddress.js";
 import { toHex as _toHex } from "./toHex.js";
 import { toPublicKey as _toPublicKey } from "./toPublicKey.js";
-export { from, fromBytes };
-export { Sign };
+export { from, fromBytes, Sign };
 declare const _sign: (privateKey: import("./PrivateKeyType.js").PrivateKeyType, hash: import("../Hash/HashType.js").HashType) => import("../../crypto/Secp256k1/SignatureType.js").Secp256k1SignatureType;
 export declare function toHex(privateKey: string): string;
 export declare function toPublicKey(privateKey: string): import("../PublicKey/PublicKeyType.js").PublicKeyType;
 export declare function toAddress(privateKey: string): import("../Address/AddressType.js").AddressType;
 export declare function sign(privateKey: string, hash: import("../Hash/HashType.js").HashType): import("../../crypto/Secp256k1/SignatureType.js").Secp256k1SignatureType;
-export { _toHex, _toPublicKey, _toAddress, _sign };
+export { _sign, _toAddress, _toHex, _toPublicKey };
 export declare const PrivateKey: {
     from: typeof from;
     fromBytes: typeof fromBytes;

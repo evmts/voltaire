@@ -32,11 +32,12 @@ export const encodeResult = _encodeResult;
 export const decodeResult = _decodeResult;
 
 // Constructor-style aliases (data-first pattern)
-export { getSignature as Signature };
-export { encodeParams as Params };
-export { decodeParams as DecodeParams };
-export { encodeResult as Result };
-export { decodeResult as DecodeResult };
-
 // Also export the Function factory itself
-export { Function };
+export {
+	decodeParams as DecodeParams,
+	decodeResult as DecodeResult,
+	encodeParams as Params,
+	encodeResult as Result,
+	Function,
+	getSignature as Signature,
+};

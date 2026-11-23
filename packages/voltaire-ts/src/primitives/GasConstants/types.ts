@@ -1,16 +1,40 @@
+import type { HardforkType } from "../Hardfork/HardforkType.js";
+
 /**
- * Ethereum hardfork identifiers
+ * Canonical hardfork names and their accepted aliases
+ * (`paris` = `merge`, `constantinoplefix` = `petersburg`,
+ * `glamsterdam` = `amsterdam`).
  */
-export type Hardfork =
+export type HardforkName =
+	| "frontier"
 	| "homestead"
+	| "dao"
+	| "tangerinewhistle"
+	| "spuriousdragon"
 	| "byzantium"
 	| "constantinople"
+	| "petersburg"
+	| "constantinoplefix"
 	| "istanbul"
+	| "muirglacier"
 	| "berlin"
 	| "london"
+	| "arrowglacier"
+	| "grayglacier"
+	| "merge"
 	| "paris"
 	| "shanghai"
-	| "cancun";
+	| "cancun"
+	| "prague"
+	| "osaka"
+	| "amsterdam"
+	| "glamsterdam";
+
+/**
+ * Ethereum hardfork identifier: a hardfork name or a branded
+ * `Hardfork` primitive value (for example `Hardfork.OSAKA`).
+ */
+export type Hardfork = HardforkName | HardforkType;
 
 /**
  * Gas configuration for hardfork-specific calculations

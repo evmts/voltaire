@@ -30,17 +30,18 @@ const verifySignature = VerifySignature({
 });
 
 // Re-export factories for tree-shaking
-export { Hash, GetSigningHash, VerifySignature };
-
 // Export individual functions (instantiated with crypto)
 export {
 	deserialize,
+	GetSigningHash,
 	getBlobGasCost,
 	getEffectiveGasPrice,
 	getSender,
 	getSigningHash,
+	Hash,
 	hash,
 	serialize,
+	VerifySignature,
 	verifySignature,
 };
 

@@ -1,8 +1,14 @@
 import { encode } from "../../Rlp/encode.js";
-import { encodeAddress, encodeBigintCompact } from "../utils.js";
+import {
+	encodeAddress,
+	encodeBigintCompact,
+	encodeSignatureScalar,
+} from "../utils.js";
 
 /**
  * Serialize legacy transaction to RLP encoded bytes.
+ *
+ * `r` and `s` are RLP integers: leading zero bytes are stripped.
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
@@ -24,8 +30,8 @@ export function serialize() {
 		encodeBigintCompact(this.value),
 		this.data,
 		encodeBigintCompact(this.v),
-		this.r,
-		this.s,
+		encodeSignatureScalar(this.r),
+		encodeSignatureScalar(this.s),
 	];
 	return encode(fields);
 }

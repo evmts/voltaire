@@ -30,6 +30,8 @@ let isInitialized = false;
  */
 async function ensureInit(): Promise<void> {
 	if (isInitialized) return;
+	// Resolves next to the source in development. The @tevm/voltaire build
+	// rewrites this literal to the shipped dist/wasm/primitives.wasm.
 	await loader.loadWasm(
 		new URL("../wasm-loader/primitives.wasm", import.meta.url),
 	);

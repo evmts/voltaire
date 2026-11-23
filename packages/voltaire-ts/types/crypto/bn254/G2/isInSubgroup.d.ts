@@ -1,5 +1,9 @@
 /**
- * Check if G2 point is in the correct subgroup
+ * Check if G2 point is in the order-r subgroup of the twist curve.
+ *
+ * The twist has a large cofactor, so on-curve points are almost never in the
+ * subgroup. The check is `psi(P) == [6x^2]P` (untwist-Frobenius-twist
+ * endomorphism), which holds exactly for points of order r.
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
@@ -10,9 +14,7 @@
  * ```javascript
  * import * as G2 from './crypto/bn254/G2/index.js';
  * const point = G2.generator();
- * if (G2.isInSubgroup(point)) {
- *   console.log('Point is in subgroup');
- * }
+ * G2.isInSubgroup(point); // true
  * ```
  */
 export function isInSubgroup(point: import("../G2PointType.js").G2PointType): boolean;

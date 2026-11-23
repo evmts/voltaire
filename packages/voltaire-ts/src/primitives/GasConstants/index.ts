@@ -6,7 +6,6 @@ export type * from "./types.js";
 
 // Import Precompile namespace
 import * as Precompile from "./Precompile.js";
-export { Precompile };
 
 // Calculate functions with typed imports
 export { calculateCallCost } from "./calculateCallCost.js";
@@ -18,7 +17,6 @@ export { calculateMaxRefund } from "./calculateMaxRefund.js";
 export { calculateMemoryExpansionCost } from "./calculateMemoryExpansionCost.js";
 export { calculateSstoreCost } from "./calculateSstoreCost.js";
 export { calculateTxIntrinsicGas } from "./calculateTxIntrinsicGas.js";
-
 // Convenience functions
 export { callCost } from "./callCost.js";
 export { copyCost } from "./copyCost.js";
@@ -38,8 +36,10 @@ export { keccak256Cost } from "./keccak256Cost.js";
 export { logCost } from "./logCost.js";
 export { maxRefund } from "./maxRefund.js";
 export { memoryExpansionCost } from "./memoryExpansionCost.js";
+export { P256VERIFY_GAS } from "./Precompile.js";
 export { sstoreCost } from "./sstoreCost.js";
 export { txIntrinsicGas } from "./txIntrinsicGas.js";
+export { Precompile };
 
 // Re-import for namespace export
 import { calculateCallCost } from "./calculateCallCost.js";

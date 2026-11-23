@@ -42,6 +42,7 @@ export declare namespace Ed25519Wasm {
     function derivePublicKey(secretKey: SecretKey): PublicKey;
     function validateSecretKey(secretKey: SecretKey): boolean;
     function validatePublicKey(publicKey: PublicKey): boolean;
+    function isValidPublicKey(publicKey: PublicKey): boolean;
     function validateSeed(seed: Seed): boolean;
 }
 //# sourceMappingURL=ed25519.wasm.d.ts.map

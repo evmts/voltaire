@@ -1,12 +1,16 @@
 /**
- * Miller loop computation (simplified)
+ * Optimal ate Miller loop over Fp12 (no final exponentiation).
+ *
+ * The result is an Fp12 element encoded as a canonical integer (see
+ * `encodeFp12`). A pair holding a point at infinity gives the identity `1n`.
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
  * @param {import('../G1PointType.js').G1PointType} p - G1 point
  * @param {import('../G2PointType.js').G2PointType} q - G2 point
  * @returns {{value: bigint}} Miller loop result
- * @throws {never}
+ * @throws {import('../errors.js').Bn254InvalidPointError} If a point is not on its curve
+ * @throws {import('../errors.js').Bn254SubgroupCheckError} If q is outside the G2 subgroup
  * @example
  * ```javascript
  * import * as Pairing from './crypto/bn254/Pairing/index.js';

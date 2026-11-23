@@ -12,8 +12,9 @@
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
-import { FR_MOD } from "./constants.js";
+import { constantTimeIsZero } from "../ConstantTime/constantTimeIsZero.js";
 import { InvalidScalarError, SignatureError } from "./errors.js";
+import { isValidPrivateKey } from "./randomPrivateKey.js";
 
 // Ethereum consensus uses "short signatures" scheme
 // Signatures are G1 points (48 bytes compressed)
@@ -51,17 +52,13 @@ export function sign(message, privateKey) {
 	}
 
 	// Check if private key is zero
-	const isZero = privateKey.every((byte) => byte === 0);
+	const isZero = constantTimeIsZero(privateKey);
 	if (isZero) {
 		throw new InvalidScalarError("Private key cannot be zero");
 	}
 
-	// Convert to scalar and validate it's in range
-	let scalar = 0n;
-	for (let i = 0; i < 32; i++) {
-		scalar = (scalar << 8n) | BigInt(privateKey[i]);
-	}
-	if (scalar >= FR_MOD) {
+	// Validate range in constant time
+	if (!isValidPrivateKey(privateKey)) {
 		throw new InvalidScalarError("Private key must be less than curve order");
 	}
 
@@ -97,13 +94,14 @@ export function signPoint(messagePoint, privateKey) {
 		throw new InvalidScalarError("Private key must be 32 bytes");
 	}
 
+	if (!isValidPrivateKey(privateKey)) {
+		throw new InvalidScalarError("Invalid private key scalar");
+	}
+
 	// Convert to scalar
 	let scalar = 0n;
 	for (let i = 0; i < 32; i++) {
 		scalar = (scalar << 8n) | BigInt(privateKey[i]);
-	}
-	if (scalar === 0n || scalar >= FR_MOD) {
-		throw new InvalidScalarError("Invalid private key scalar");
 	}
 
 	try {

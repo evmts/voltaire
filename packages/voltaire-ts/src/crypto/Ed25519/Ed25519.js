@@ -10,6 +10,7 @@ import {
 	SIGNATURE_SIZE,
 } from "./constants.js";
 import { derivePublicKey } from "./derivePublicKey.js";
+import { isValidPublicKey } from "./isValidPublicKey.js";
 import { keypairFromSeed } from "./keypairFromSeed.js";
 import { sign } from "./sign.js";
 import { validatePublicKey } from "./validatePublicKey.js";
@@ -19,13 +20,14 @@ import { verify } from "./verify.js";
 
 // Export individual functions
 export {
+	derivePublicKey,
+	isValidPublicKey,
 	keypairFromSeed,
 	sign,
-	verify,
-	derivePublicKey,
-	validateSecretKey,
 	validatePublicKey,
+	validateSecretKey,
 	validateSeed,
+	verify,
 };
 
 /**
@@ -58,6 +60,7 @@ export const Ed25519 = {
 	derivePublicKey,
 	validateSecretKey,
 	validatePublicKey,
+	isValidPublicKey,
 	validateSeed,
 	SECRET_KEY_SIZE,
 	PUBLIC_KEY_SIZE,

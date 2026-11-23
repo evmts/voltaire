@@ -1,3 +1,5 @@
+import { getStemBit } from "./getStemBit.js";
+import { resolveChild } from "./resolveChild.js";
 import { splitKey } from "./splitKey.js";
 
 /**
@@ -6,6 +8,7 @@ import { splitKey } from "./splitKey.js";
  * @param {import('./BinaryTreeType.js').BinaryTree} tree - Binary tree
  * @param {Uint8Array} k - 32-byte key
  * @returns {Uint8Array | null} Value or null if not found
+ * @throws {import('./errors.js').InvalidTreeStateError} If the lookup path crosses a pruned (hash-only) internal node
  *
  * @example
  * ```typescript
@@ -24,10 +27,10 @@ export function get(tree, k) {
  * @param {import('./BinaryTreeType.js').Node} node
  * @param {Uint8Array} stem
  * @param {number} idx
- * @param {number} _depth
+ * @param {number} depth
  * @returns {Uint8Array | null}
  */
-function getNode(node, stem, idx, _depth) {
+function getNode(node, stem, idx, depth) {
 	switch (node.type) {
 		case "empty":
 			return null;
@@ -36,11 +39,13 @@ function getNode(node, stem, idx, _depth) {
 				return node.values[idx] || null;
 			}
 			return null;
-		case "internal": {
-			// Would need to traverse to child node
-			// Simplified for now
-			return null;
-		}
+		case "internal":
+			return getNode(
+				resolveChild(node, getStemBit(stem, depth)),
+				stem,
+				idx,
+				depth + 1,
+			);
 		case "leaf":
 			return null;
 	}

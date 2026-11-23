@@ -25,18 +25,18 @@ import { VerifyTypedData } from "./verifyTypedData.js";
 
 // Export factories (tree-shakeable)
 export {
-	HashDomain,
 	EncodeData,
-	encodeType,
 	EncodeValue,
+	encodeType,
 	format,
+	HashDomain,
 	HashStruct,
 	HashType,
 	HashTypedData,
 	RecoverAddress,
 	SignTypedData,
-	validate,
 	VerifyTypedData,
+	validate,
 };
 
 // Create interdependent instances (bottom-up)
@@ -84,6 +84,7 @@ function signTypedData(typedData, privateKey) {
 
 // Export convenience wrappers with auto-injected crypto
 export {
+	_signTypedData,
 	encodeData,
 	encodeValue,
 	hashDomain,
@@ -93,7 +94,6 @@ export {
 	recoverAddress,
 	signTypedData,
 	verifyTypedData,
-	_signTypedData,
 };
 
 /**

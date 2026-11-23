@@ -12,11 +12,11 @@ import { MerkleRoot as _MerkleRootFactory } from "./merkleRoot.js";
 
 // Factory exports (internal, prefixed with _ to avoid collision with crypto/Keccak256)
 export {
+	_ConcatFactory,
 	_Keccak256Factory,
 	_Keccak256HexFactory,
 	_Keccak256StringFactory,
 	_MerkleRootFactory,
-	_ConcatFactory,
 };
 
 // Wrapper exports with proper types

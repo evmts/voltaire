@@ -3,9 +3,12 @@
  *
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0
- * @param {readonly import('./AbiType.js').Item[]} items - ABI items
+ * Accepts JSON ABI items, human-readable signatures
+ * (`"function transfer(address to, uint256 amount) returns (bool)"`), or a mix.
+ *
+ * @param {readonly (import('./AbiType.js').Item | string)[]} items - ABI items or human-readable signatures
  * @returns {import('./AbiConstructor.js').Abi} Abi instance
- * @throws {never}
+ * @throws {import('./Errors.js').AbiParseError} If a human-readable signature is malformed
  * @example
  * ```javascript
  * import { Abi } from './primitives/Abi/index.js';
@@ -14,16 +17,19 @@
  * ]);
  * ```
  */
-export function Abi(items: readonly import("./AbiType.js").Item[]): import("./AbiConstructor.js").Abi;
+export function Abi(items: readonly (import("./AbiType.js").Item | string)[]): import("./AbiConstructor.js").Abi;
 export class Abi {
     /**
      * Factory function for creating Abi instances
      *
      * @see https://voltaire.tevm.sh/primitives/abi
      * @since 0.0.0
-     * @param {readonly import('./AbiType.js').Item[]} items - ABI items
+     * Accepts JSON ABI items, human-readable signatures
+     * (`"function transfer(address to, uint256 amount) returns (bool)"`), or a mix.
+     *
+     * @param {readonly (import('./AbiType.js').Item | string)[]} items - ABI items or human-readable signatures
      * @returns {import('./AbiConstructor.js').Abi} Abi instance
-     * @throws {never}
+     * @throws {import('./Errors.js').AbiParseError} If a human-readable signature is malformed
      * @example
      * ```javascript
      * import { Abi } from './primitives/Abi/index.js';
@@ -32,7 +38,7 @@ export class Abi {
      * ]);
      * ```
      */
-    constructor(items: readonly import("./AbiType.js").Item[]);
+    constructor(items: readonly (import("./AbiType.js").Item | string)[]);
     /** @param {string} name @param {"function" | "event" | "constructor" | "error" | "fallback" | "receive"} [type] */
     getItem(name: string, type?: "function" | "event" | "constructor" | "error" | "fallback" | "receive"): any;
     format(): any;
@@ -69,8 +75,9 @@ export class Abi {
     toString(): string;
 }
 export namespace Abi {
-    /** @param {readonly import('./Item/ItemType.js').ItemType[]} items */
-    export function from(items: readonly import("./Item/ItemType.js").ItemType[]): any;
+    /** @param {readonly (import('./Item/ItemType.js').ItemType | string)[]} items */
+    export function from(items: readonly (import("./Item/ItemType.js").ItemType | string)[]): import("./AbiConstructor.js").Abi<readonly import("./AbiType.js").Item[]>;
+    export { parseHumanReadable };
     export { getItem };
     export { format };
     export { formatWithArgs };
@@ -82,6 +89,7 @@ export namespace Abi {
     export { hasSelectorCollisions };
     export { encodeParameters };
     export { decodeParameters };
+    export { decodeAbiParameters };
     export { Parameters };
     export { DecodeParameters };
     export let Function: typeof FunctionNs.Function;
@@ -107,6 +115,7 @@ export namespace Abi {
     export { ItemNs as Item };
     export { Parameter };
 }
+import { parseHumanReadable } from "./parseHumanReadable.js";
 import { getItem } from "./getItem.js";
 import { format } from "./format.js";
 import { formatWithArgs } from "./formatWithArgs.js";
@@ -118,6 +127,7 @@ import { findSelectorCollisions } from "./findSelectorCollisions.js";
 import { hasSelectorCollisions } from "./findSelectorCollisions.js";
 import { encodeParameters } from "./Encoding.js";
 import { decodeParameters } from "./Encoding.js";
+import { decodeAbiParameters } from "./decodeAbiParameters.js";
 import { Parameters } from "./Encoding.js";
 import { DecodeParameters } from "./Encoding.js";
 import * as FunctionNs from "./function/index.js";

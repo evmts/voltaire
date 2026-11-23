@@ -219,6 +219,12 @@ pub fn from(value: anytype) FilterIdError!FilterId {
         }
         return fromBytes(value);
     }
+    // String literals / pointers to u8 arrays coerce to slices
+    const info = @typeInfo(T);
+    if (info == .pointer and info.pointer.size == .one) {
+        const child = @typeInfo(info.pointer.child);
+        if (child == .array and child.array.child == u8) return from(@as([]const u8, value));
+    }
     @compileError("Unsupported type for FilterId.from: " ++ @typeName(T));
 }
 

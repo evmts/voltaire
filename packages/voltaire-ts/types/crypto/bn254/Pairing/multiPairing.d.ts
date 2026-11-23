@@ -1,13 +1,16 @@
 /**
- * Multi-pairing: compute product of pairings
+ * Multi-pairing: product of optimal ate pairings `e(P1,Q1) * e(P2,Q2) * ...`
  *
- * More efficient than computing pairings individually
+ * Shares one Miller loop and one final exponentiation across all pairs. The
+ * result is an element of GT encoded as a canonical integer (see `encodeFp12`);
+ * the empty product is the identity `1n`.
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
  * @param {Array<[import('../G1PointType.js').G1PointType, import('../G2PointType.js').G2PointType]>} pairs - Array of G1/G2 point pairs
  * @returns {{value: bigint}} Pairing result
- * @throws {never}
+ * @throws {import('../errors.js').Bn254InvalidPointError} If a point is not on its curve
+ * @throws {import('../errors.js').Bn254SubgroupCheckError} If a G2 point is outside the subgroup
  * @example
  * ```javascript
  * import * as Pairing from './crypto/bn254/Pairing/index.js';

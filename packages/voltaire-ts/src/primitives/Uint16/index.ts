@@ -22,12 +22,18 @@ import { lessThan } from "./lessThan.js";
 import { maximum } from "./maximum.js";
 import { minimum } from "./minimum.js";
 import { minus } from "./minus.js";
+import { minusChecked } from "./minusChecked.js";
+import { minusWrapping } from "./minusWrapping.js";
 import { modulo } from "./modulo.js";
 import { plus } from "./plus.js";
+import { plusChecked } from "./plusChecked.js";
+import { plusWrapping } from "./plusWrapping.js";
 import { popCount } from "./popCount.js";
 import { shiftLeft } from "./shiftLeft.js";
 import { shiftRight } from "./shiftRight.js";
 import { times } from "./times.js";
+import { timesChecked } from "./timesChecked.js";
+import { timesWrapping } from "./timesWrapping.js";
 import { toBigint } from "./toBigint.js";
 import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
@@ -36,37 +42,43 @@ import { toNumber } from "./toNumber.js";
 import { toString } from "./toString.js";
 
 export {
-	from,
-	fromHex,
-	fromBigint,
-	fromNumber,
-	fromBytes,
-	isValid,
-	toHex,
-	toBigint,
-	toNumber,
-	toBytes,
-	toString,
-	plus,
-	minus,
-	times,
-	dividedBy,
-	modulo,
+	bitLength,
 	bitwiseAnd,
+	bitwiseNot,
 	bitwiseOr,
 	bitwiseXor,
-	bitwiseNot,
+	dividedBy,
+	equals,
+	from,
+	fromBigint,
+	fromBytes,
+	fromHex,
+	fromNumber,
+	greaterThan,
+	isValid,
+	isZero,
+	leadingZeros,
+	lessThan,
+	maximum,
+	minimum,
+	minus,
+	minusChecked,
+	minusWrapping,
+	modulo,
+	plus,
+	plusChecked,
+	plusWrapping,
+	popCount,
 	shiftLeft,
 	shiftRight,
-	equals,
-	lessThan,
-	greaterThan,
-	isZero,
-	minimum,
-	maximum,
-	bitLength,
-	leadingZeros,
-	popCount,
+	times,
+	timesChecked,
+	timesWrapping,
+	toBigint,
+	toBytes,
+	toHex,
+	toNumber,
+	toString,
 };
 
 export const Uint16Type = {
@@ -84,6 +96,12 @@ export const Uint16Type = {
 	plus,
 	minus,
 	times,
+	plusChecked,
+	minusChecked,
+	timesChecked,
+	plusWrapping,
+	minusWrapping,
+	timesWrapping,
 	dividedBy,
 	modulo,
 	bitwiseAnd,

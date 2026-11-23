@@ -33,35 +33,40 @@ export interface NativeModule {
 	primitives_hash_equals(a: Uint8Array, b: Uint8Array): boolean;
 
 	// Hex operations
+	/** Returns the number of bytes written, or a negative error code. */
 	primitives_hex_to_bytes(
 		hex: string,
 		output: Uint8Array,
-		lengthOut: Uint8Array,
+		outputLength: number,
 	): number;
+	/** Returns the number of characters written, or a negative error code. */
 	primitives_bytes_to_hex(
 		bytes: Uint8Array,
 		length: number,
 		output: Uint8Array,
-		lengthOut: Uint8Array,
+		outputLength: number,
 	): number;
 
 	// secp256k1 operations
 	primitives_secp256k1_recover_address(
-		hash: Uint8Array,
-		recoveryId: number,
-		signature: Uint8Array,
-		output: Uint8Array,
+		messageHash: Uint8Array,
+		r: Uint8Array,
+		s: Uint8Array,
+		v: number,
+		outAddress: Uint8Array,
 	): number;
 	secp256k1Sign(
-		hash: Uint8Array,
+		messageHash: Uint8Array,
 		privateKey: Uint8Array,
-		output: Uint8Array,
+		outSignature: Uint8Array,
+		outRecoveryId: Uint8Array,
 	): number;
+	/** Returns 1 when the signature is valid and 0 otherwise. */
 	secp256k1Verify(
-		hash: Uint8Array,
+		messageHash: Uint8Array,
 		signature: Uint8Array,
 		publicKey: Uint8Array,
-	): boolean;
+	): number;
 	secp256k1DerivePublicKey(privateKey: Uint8Array, output: Uint8Array): number;
 
 	// Hash functions

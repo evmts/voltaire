@@ -76,12 +76,14 @@ pub const BlockData = extern struct {
 #### Serialization Flow
 
 **Zig → TypeScript (Read)**:
+
 1. Blockchain.getBlockByHash() returns Zig Block
 2. serializeBlock() converts Block → BlockData
 3. TypeScript receives BlockData buffer
 4. deserializeBlock() converts BlockData → TS Block
 
 **TypeScript → Zig (Write)**:
+
 1. TS creates Block object
 2. serializeBlock() converts Block → BlockData buffer
 3. Zig receives BlockData via FFI
@@ -104,19 +106,19 @@ pub const RpcVTable = struct {
 ```typescript
 // TypeScript creates vtable
 const vtable = {
-    fetchByNumber: createFunctionPointer((ctx, num) => {
-        return rpcClient.getBlockByNumber(num);
-    }),
-    fetchByHash: createFunctionPointer((ctx, hash) => {
-        return rpcClient.getBlockByHash(hash);
-    }),
+	fetchByNumber: createFunctionPointer((ctx, num) => {
+		return rpcClient.getBlockByNumber(num);
+	}),
+	fetchByHash: createFunctionPointer((ctx, hash) => {
+		return rpcClient.getBlockByHash(hash);
+	}),
 };
 
 const cache = ffi.fork_block_cache_create(
-    rpcContext,
-    vtable.fetchByNumber,
-    vtable.fetchByHash,
-    forkBlockNumber
+	rpcContext,
+	vtable.fetchByNumber,
+	vtable.fetchByHash,
+	forkBlockNumber,
 );
 ```
 
@@ -125,26 +127,33 @@ const cache = ffi.fork_block_cache_create(
 ### Lifecycle
 
 #### `blockchain_create() → BlockchainHandle | null`
+
 Create in-memory only blockchain.
 
 #### `blockchain_create_with_fork(forkCache) → BlockchainHandle | null`
+
 Create blockchain with fork cache.
 
 #### `blockchain_destroy(handle)`
+
 Free blockchain resources.
 
 #### `fork_block_cache_create(rpcContext, vtableFetchByNumber, vtableFetchByHash, forkBlockNumber) → ForkBlockCacheHandle | null`
+
 Create fork cache with RPC vtable.
 
 #### `fork_block_cache_destroy(handle)`
+
 Free fork cache resources.
 
 ### Block Operations
 
 #### `blockchain_get_block_by_hash(handle, blockHashPtr, outBlockData) → c_int`
+
 Get block by hash. Returns error code (0 = success, -3 = not found).
 
 **Parameters**:
+
 - `handle`: Blockchain handle
 - `blockHashPtr`: 32-byte block hash buffer
 - `outBlockData`: Output buffer for BlockData struct
@@ -152,50 +161,64 @@ Get block by hash. Returns error code (0 = success, -3 = not found).
 **Returns**: `BLOCKCHAIN_SUCCESS` or error code
 
 #### `blockchain_get_block_by_number(handle, number, outBlockData) → c_int`
+
 Get block by number (canonical chain only).
 
 #### `blockchain_get_canonical_hash(handle, number, outHash) → c_int`
+
 Get canonical hash for block number.
 
 **Parameters**:
+
 - `outHash`: 32-byte output buffer
 
 #### `blockchain_get_head_block_number(handle, outNumber) → c_int`
+
 Get current head block number.
 
 **Parameters**:
+
 - `outNumber`: Pointer to u64 output
 
 #### `blockchain_put_block(handle, blockData) → c_int`
+
 Put block in local storage (validates parent linkage).
 
 **Parameters**:
+
 - `blockData`: BlockData struct buffer
 
 **Returns**: `BLOCKCHAIN_SUCCESS` or error code
 
 #### `blockchain_set_canonical_head(handle, blockHashPtr) → c_int`
+
 Set canonical head (makes block and ancestors canonical).
 
 **Errors**:
+
 - `BLOCKCHAIN_ERROR_BLOCK_NOT_FOUND`: Block doesn't exist
 - `BLOCKCHAIN_ERROR_ORPHAN_HEAD`: Block is orphan (no parent)
 
 #### `blockchain_has_block(handle, blockHashPtr) → bool`
+
 Check if block exists (local or fork cache).
 
 ### Statistics
 
 #### `blockchain_local_block_count(handle) → usize`
+
 Get total blocks in local storage.
 
 #### `blockchain_orphan_count(handle) → usize`
+
 Get orphan block count.
 
 #### `blockchain_canonical_chain_length(handle) → usize`
+
 Get canonical chain length.
 
 #### `blockchain_is_fork_block(handle, number) → bool`
+
 Check if block number is within fork boundary.
 
 ## Error Codes
@@ -213,12 +236,14 @@ pub const BLOCKCHAIN_ERROR_INVALID_HASH: c_int = -6;
 ## Memory Management
 
 ### Zig Responsibilities
+
 - Allocate/free Blockchain instances
 - Allocate/free ForkBlockCache instances
 - Manage block storage lifetime
 - Block data is copied during putBlock (TS buffer can be freed)
 
 ### TypeScript Responsibilities
+
 - Allocate BlockData buffers for output (1KB typical)
 - Free buffers after use
 - Keep handles alive until destroy() called
@@ -259,6 +284,7 @@ private serializeBlock(block: Block): Uint8Array {
 ```
 
 ### Benefits of Binary Format
+
 1. **Performance**: No JSON parsing overhead
 2. **Type Safety**: Exact memory layout match
 3. **Size**: Smaller serialized size
@@ -279,11 +305,13 @@ This avoids complex nested struct serialization across FFI.
 ## Fork Mode Flow
 
 ### Setup
+
 1. TypeScript creates RPC client adapter
 2. TypeScript creates fork cache with vtable
 3. TypeScript creates blockchain with fork cache
 
 ### Block Fetch (Fork Cache Hit)
+
 1. TS: `blockchain.getBlockByNumber(12345n)`
 2. Zig: Check local storage → miss
 3. Zig: Check fork cache → call vtable.fetch_block_by_number
@@ -293,6 +321,7 @@ This avoids complex nested struct serialization across FFI.
 7. TS: Deserialize → return Block
 
 ### Block Fetch (Local Hit)
+
 1. TS: `blockchain.getBlockByNumber(12345n)`
 2. Zig: Check local storage → hit
 3. Zig: Return BlockData immediately
@@ -304,7 +333,7 @@ This avoids complex nested struct serialization across FFI.
 
 ```typescript
 const blockchain = new Blockchain({
-    ffi: ffiExports
+	ffi: ffiExports,
 });
 
 const genesis = createGenesisBlock(1);
@@ -321,9 +350,9 @@ blockchain.destroy();
 
 ```typescript
 const blockchain = new Blockchain({
-    rpcClient: new RpcClientAdapter(httpProvider),
-    forkBlockNumber: 1000000n,
-    ffi: ffiExports
+	rpcClient: new RpcClientAdapter(httpProvider),
+	forkBlockNumber: 1000000n,
+	ffi: ffiExports,
 });
 
 // Fetch from remote (block 500 ≤ fork point)
@@ -340,12 +369,14 @@ blockchain.destroy();
 ## Known Limitations
 
 ### Current Implementation
+
 1. **JSON Serialization**: Placeholder (slow, not production-ready)
 2. **RPC Vtable**: Function pointer creation not implemented
 3. **Memory Leaks**: BlockData buffers may leak without proper cleanup
 4. **No Streaming**: Large blocks must fit in single buffer
 
 ### Future Improvements
+
 1. Implement binary struct serialization (matching BlockData exactly)
 2. Add FFI function pointer helpers for vtable creation
 3. Implement automatic buffer management (arena allocator)
@@ -358,11 +389,13 @@ blockchain.destroy();
 ### Unit Tests
 
 Run Zig tests:
+
 ```bash
 zig build test
 ```
 
 Run TypeScript tests:
+
 ```bash
 pnpm test src/blockchain/
 ```
@@ -370,15 +403,16 @@ pnpm test src/blockchain/
 ### Integration Tests
 
 Test FFI boundary with real blocks:
+
 ```typescript
 test("FFI: round-trip block serialization", async () => {
-    const blockchain = new Blockchain({ ffi });
-    const block = createTestBlock();
+	const blockchain = new Blockchain({ ffi });
+	const block = createTestBlock();
 
-    await blockchain.putBlock(block);
-    const retrieved = await blockchain.getBlockByHash(block.hash);
+	await blockchain.putBlock(block);
+	const retrieved = await blockchain.getBlockByHash(block.hash);
 
-    expect(retrieved).toEqual(block);
+	expect(retrieved).toEqual(block);
 });
 ```
 
@@ -402,16 +436,17 @@ export fn blockchain_get_block_by_hash(...) {
 ```typescript
 const originalGetBlock = ffi.blockchain_get_block_by_hash;
 ffi.blockchain_get_block_by_hash = (...args) => {
-    console.log("FFI: blockchain_get_block_by_hash", args);
-    const result = originalGetBlock(...args);
-    console.log("FFI result:", result);
-    return result;
+	console.log("FFI: blockchain_get_block_by_hash", args);
+	const result = originalGetBlock(...args);
+	console.log("FFI result:", result);
+	return result;
 };
 ```
 
 ## Contributing
 
 When modifying FFI boundary:
+
 1. Update both c_api.zig and index.ts
 2. Update this documentation
 3. Add tests for new functionality

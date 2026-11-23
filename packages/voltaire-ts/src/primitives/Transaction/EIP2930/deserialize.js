@@ -1,7 +1,14 @@
 import { DecodingError, InvalidFormatError } from "../../errors/index.js";
 import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
-import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
+import {
+	decodeAccessList,
+	decodeAddress,
+	decodeBytesField,
+	decodeSignatureScalar,
+	decodeUint,
+	decodeYParity,
+} from "../utils.js";
 
 /**
  * Deserialize RLP encoded EIP-2930 transaction.
@@ -53,29 +60,15 @@ export function deserialize(data) {
 		);
 	}
 
-	const chainId = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[0]).value,
-	);
-	const nonce = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[1]).value,
-	);
-	const gasPrice = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[2]).value,
-	);
-	const gasLimit = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[3]).value,
-	);
-	const to = decodeAddress(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[4]).value,
-	);
-	const value = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[5]).value,
-	);
-	const dataBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[6]
-	).value;
+	const chainId = decodeUint(fields[0], 32, "chainId");
+	const nonce = decodeUint(fields[1], 8, "nonce");
+	const gasPrice = decodeUint(fields[2], 32, "gasPrice");
+	const gasLimit = decodeUint(fields[3], 8, "gasLimit");
+	const to = decodeAddress(decodeBytesField(fields[4], "to"));
+	const value = decodeUint(fields[5], 32, "value");
+	const dataBytes = decodeBytesField(fields[6], "data");
 	const accessListField = fields[7];
-	if (!accessListField || accessListField.type !== "list") {
+	if (accessListField?.type !== "list") {
 		throw new InvalidFormatError(
 			"Invalid EIP-2930 transaction: expected list for accessList",
 			{
@@ -86,29 +79,10 @@ export function deserialize(data) {
 			},
 		);
 	}
-	const accessList = decodeAccessList(
-		/** @type {import('../../Rlp/BrandedRlp.js').BrandedRlp[]} */ (
-			accessListField.value
-		),
-	);
-	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[8]
-	).value;
-	const yParity = yParityBytes.length > 0 ? (yParityBytes[0] ?? 0) : 0;
-	if (yParity !== 0 && yParity !== 1) {
-		throw new DecodingError(
-			`Invalid yParity: expected 0 or 1, got ${yParity}`,
-			{
-				code: -32602,
-				context: { yParity },
-				docsPath: "/primitives/transaction/eip2930/deserialize#error-handling",
-			},
-		);
-	}
-	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[9])
-		.value;
-	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[10])
-		.value;
+	const accessList = decodeAccessList(accessListField.value);
+	const yParity = decodeYParity(fields[8]);
+	const r = decodeSignatureScalar(decodeBytesField(fields[9], "r"));
+	const s = decodeSignatureScalar(decodeBytesField(fields[10], "s"));
 
 	return /** @type {import('./TransactionEIP2930Type.js').TransactionEIP2930Type} */ (
 		/** @type {any} */ ({

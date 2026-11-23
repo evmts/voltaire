@@ -24,12 +24,18 @@ import { lessThan } from "./lessThan.js";
 import { maximum } from "./maximum.js";
 import { minimum } from "./minimum.js";
 import { minus } from "./minus.js";
+import { minusChecked } from "./minusChecked.js";
+import { minusWrapping } from "./minusWrapping.js";
 import { modulo } from "./modulo.js";
 import { plus } from "./plus.js";
+import { plusChecked } from "./plusChecked.js";
+import { plusWrapping } from "./plusWrapping.js";
 import { popCount } from "./popCount.js";
 import { shiftLeft } from "./shiftLeft.js";
 import { shiftRight } from "./shiftRight.js";
 import { times } from "./times.js";
+import { timesChecked } from "./timesChecked.js";
+import { timesWrapping } from "./timesWrapping.js";
 import { toAbiEncoded } from "./toAbiEncoded.js";
 import { toBigInt } from "./toBigInt.js";
 import { toBytes } from "./toBytes.js";
@@ -41,42 +47,48 @@ import { toString } from "./toString.js";
 import { tryFrom } from "./tryFrom.js";
 
 export {
-	from,
-	fromHex,
-	fromBigInt,
-	fromNumber,
-	fromBytes,
-	fromAbiEncoded,
-	tryFrom,
-	isValid,
-	toHex,
-	toBigInt,
-	toNumber,
-	toBytes,
-	toAbiEncoded,
-	toString,
-	clone,
-	plus,
-	minus,
-	times,
-	dividedBy,
-	modulo,
-	toPower,
+	bitLength,
 	bitwiseAnd,
+	bitwiseNot,
 	bitwiseOr,
 	bitwiseXor,
-	bitwiseNot,
+	clone,
+	dividedBy,
+	equals,
+	from,
+	fromAbiEncoded,
+	fromBigInt,
+	fromBytes,
+	fromHex,
+	fromNumber,
+	greaterThan,
+	isValid,
+	isZero,
+	leadingZeros,
+	lessThan,
+	maximum,
+	minimum,
+	minus,
+	minusChecked,
+	minusWrapping,
+	modulo,
+	plus,
+	plusChecked,
+	plusWrapping,
+	popCount,
 	shiftLeft,
 	shiftRight,
-	equals,
-	lessThan,
-	greaterThan,
-	isZero,
-	minimum,
-	maximum,
-	bitLength,
-	leadingZeros,
-	popCount,
+	times,
+	timesChecked,
+	timesWrapping,
+	toAbiEncoded,
+	toBigInt,
+	toBytes,
+	toHex,
+	toNumber,
+	toPower,
+	toString,
+	tryFrom,
 };
 
 export const Uint64 = {
@@ -98,6 +110,12 @@ export const Uint64 = {
 	plus,
 	minus,
 	times,
+	plusChecked,
+	minusChecked,
+	timesChecked,
+	plusWrapping,
+	minusWrapping,
+	timesWrapping,
 	dividedBy,
 	modulo,
 	toPower,

@@ -3,9 +3,12 @@ import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
 import {
 	decodeAccessList,
-	decodeAddress,
 	decodeAuthorizationList,
-	decodeBigint,
+	decodeBytesField,
+	decodeListField,
+	decodeSignatureScalar,
+	decodeUint,
+	decodeYParity,
 } from "../utils.js";
 
 /**
@@ -57,53 +60,50 @@ export function deserialize(data) {
 		);
 	}
 
-	const chainId = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[0]).value,
+	const chainId = decodeUint(fields[0], 32, "chainId");
+	const nonce = decodeUint(fields[1], 8, "nonce");
+	const maxPriorityFeePerGas = decodeUint(
+		fields[2],
+		32,
+		"maxPriorityFeePerGas",
 	);
-	const nonce = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[1]).value,
-	);
-	const maxPriorityFeePerGas = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[2]).value,
-	);
-	const maxFeePerGas = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[3]).value,
-	);
-	const gasLimit = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[4]).value,
-	);
-	const to = decodeAddress(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[5]).value,
-	);
-	const value = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[6]).value,
-	);
-	const dataBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[7]
-	).value;
-	const accessList = decodeAccessList(/** @type {any} */ (fields[8]).value);
-	const authorizationList = decodeAuthorizationList(
-		/** @type {any} */ (fields[9]).value,
-	);
-	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[10]
-	).value;
-	const yParity =
-		yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
-	if (yParity !== 0 && yParity !== 1) {
+	const maxFeePerGas = decodeUint(fields[3], 32, "maxFeePerGas");
+	const gasLimit = decodeUint(fields[4], 8, "gasLimit");
+	const toBytes = decodeBytesField(fields[5], "to");
+	if (toBytes.length !== 20) {
 		throw new DecodingError(
-			`Invalid yParity: expected 0 or 1, got ${yParity}`,
+			"EIP-7702 transaction to address must be 20 bytes (cannot be null)",
 			{
 				code: -32602,
-				context: { yParity },
+				context: { length: toBytes.length },
 				docsPath: "/primitives/transaction/eip7702/deserialize#error-handling",
 			},
 		);
 	}
-	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[11])
-		.value;
-	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[12])
-		.value;
+	const to = /** @type {import('../../Address/index.js').AddressType} */ (
+		toBytes
+	);
+	const value = decodeUint(fields[6], 32, "value");
+	const dataBytes = decodeBytesField(fields[7], "data");
+	const accessList = decodeAccessList(decodeListField(fields[8], "accessList"));
+	const authorizationField = fields[9];
+	if (
+		authorizationField?.type !== "list" ||
+		authorizationField.value.length === 0
+	) {
+		throw new DecodingError(
+			"EIP-7702 transaction must have a non-empty authorization list",
+			{
+				code: -32602,
+				context: { type: authorizationField?.type },
+				docsPath: "/primitives/transaction/eip7702/deserialize#error-handling",
+			},
+		);
+	}
+	const authorizationList = decodeAuthorizationList(authorizationField);
+	const yParity = decodeYParity(fields[10]);
+	const r = decodeSignatureScalar(decodeBytesField(fields[11], "r"));
+	const s = decodeSignatureScalar(decodeBytesField(fields[12], "s"));
 
 	return {
 		type: Type.EIP7702,

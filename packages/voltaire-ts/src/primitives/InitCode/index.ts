@@ -7,12 +7,9 @@ import { toHex as _toHex } from "./toHex.js";
 
 // Re-export types
 export type * from "./InitCodeType.js";
-
 // Export internal functions
-export { _equals, _estimateGas, _extractRuntime, _toHex };
-
 // Export factory functions
-export { from, fromHex };
+export { _equals, _estimateGas, _extractRuntime, _toHex, from, fromHex };
 
 // Wrapper exports
 export function equals(

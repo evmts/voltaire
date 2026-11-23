@@ -1,6 +1,80 @@
 import { describe, expect, it } from "vitest";
+import { HDWallet as PublicHDWallet } from "../../index.js";
 import * as Bip39 from "../Bip39/Bip39.js";
+import { derive } from "./derive.js";
+import { InvalidPathError } from "./errors.js";
 import * as HDWallet from "./HDWallet.js";
+import { parsePath } from "./parsePath.js";
+
+describe("BIP-32 path parsing", () => {
+	it.each(["1e3", "0x10", "12abc", "2147483648'", "2147483648"])(
+		"rejects invalid component %s",
+		(component) => {
+			expect(() => parsePath(`m/44'/${component}`)).toThrow(InvalidPathError);
+		},
+	);
+
+	it.each(["m/1//2", "m/1/", "m//1", "m/", "m/44'/60'//0/0", "1//2", "/1", ""])(
+		"rejects empty segment in %j, agreeing with isValidPath",
+		(path) => {
+			expect(() => parsePath(path)).toThrow(InvalidPathError);
+			expect(HDWallet.isValidPath(path)).toBe(false);
+		},
+	);
+
+	it("rejects an empty segment before loading the native library", async () => {
+		await expect(derive({ handle: 0 }, "m/1//2")).rejects.toThrow(
+			InvalidPathError,
+		);
+	});
+
+	it("parses the largest normal and hardened indices", () => {
+		expect(parsePath("M/2147483647/2147483647'/0h/1H")).toEqual([
+			0x7fffffff, 0xffffffff, 0x80000000, 0x80000001,
+		]);
+	});
+
+	it("rejects a malformed path before loading the native library", async () => {
+		await expect(derive({ handle: 0 }, "m/12abc")).rejects.toThrow(
+			InvalidPathError,
+		);
+	});
+
+	it.each([-1, 1.5, 0x100000000])(
+		"rejects an invalid pre-parsed index %s",
+		async (index) => {
+			await expect(derive({ handle: 0 }, [index])).rejects.toThrow(
+				InvalidPathError,
+			);
+		},
+	);
+});
+
+describe("HDWallet public export", () => {
+	const phrase =
+		"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+	it("derives the BIP-39 test vector seed and creates a wallet", async () => {
+		const seed = await PublicHDWallet.mnemonicToSeed(
+			phrase.split(" "),
+			"TREZOR",
+		);
+		expect(Buffer.from(seed).toString("hex")).toBe(
+			"c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
+		);
+		const wallet = PublicHDWallet.fromSeed(seed);
+		expect(PublicHDWallet.getPublicKey(wallet)).toHaveLength(33);
+	});
+
+	it("generates and validates a mnemonic", async () => {
+		const words = await PublicHDWallet.generateMnemonic();
+		expect(words).toHaveLength(12);
+		expect(await PublicHDWallet.validateMnemonic(words)).toBe(true);
+		expect(
+			await PublicHDWallet.validateMnemonic(phrase.replace("about", "abandon")),
+		).toBe(false);
+	});
+});
 
 describe("HDWallet", () => {
 	describe("fromSeed", () => {
@@ -720,27 +794,65 @@ describe("HDWallet", () => {
 			expect(HDWallet.parseIndex(maxNormal)).toBe(0x7fffffff);
 		});
 
-		it("parses index > 2^31-1 (parseIndex allows, deriveChild will validate)", () => {
-			const overMax = "2147483648"; // 2^31
-			// parseIndex just parses, doesn't validate range
-			expect(HDWallet.parseIndex(overMax)).toBe(2147483648);
+		it("rejects base index > 2^31-1", () => {
+			expect(() => HDWallet.parseIndex("2147483648")).toThrow(
+				HDWallet.InvalidPathError,
+			);
+			expect(() => HDWallet.parseIndex("2147483648'")).toThrow(
+				HDWallet.InvalidPathError,
+			);
+			expect(() => HDWallet.parseIndex("4294967295")).toThrow(
+				HDWallet.InvalidPathError,
+			);
+			expect(() => HDWallet.parseIndex("99999999999999999999")).toThrow(
+				HDWallet.InvalidPathError,
+			);
 		});
 
 		it("throws on negative strings", () => {
 			expect(() => HDWallet.parseIndex("-1")).toThrow();
 			expect(() => HDWallet.parseIndex("-100")).toThrow();
+			expect(() => HDWallet.parseIndex("-1'")).toThrow();
 		});
 
-		it("parses hex strings as decimal (0x ignored)", () => {
-			// parseInt with base 10 stops at 'x'
-			expect(HDWallet.parseIndex("0x10")).toBe(0);
-			expect(HDWallet.parseIndex("0xFF")).toBe(0);
+		it("rejects hex strings", () => {
+			expect(() => HDWallet.parseIndex("0x10")).toThrow(
+				HDWallet.InvalidPathError,
+			);
+			expect(() => HDWallet.parseIndex("0xFF")).toThrow(
+				HDWallet.InvalidPathError,
+			);
 		});
 
-		it("parses integers from strings with floats", () => {
-			// parseInt truncates floats
-			expect(HDWallet.parseIndex("1.5")).toBe(1);
-			expect(HDWallet.parseIndex("99.9")).toBe(99);
+		it("rejects decimals and trailing garbage", () => {
+			for (const bad of ["1.5", "99.9", "1abc", "1e3", "1'h", "1''", "1hh"]) {
+				expect(() => HDWallet.parseIndex(bad)).toThrow(
+					HDWallet.InvalidPathError,
+				);
+			}
+		});
+
+		it("rejects whitespace and signs", () => {
+			for (const bad of [" 1", "1 ", "+1", "1 '", "\t0"]) {
+				expect(() => HDWallet.parseIndex(bad)).toThrow(
+					HDWallet.InvalidPathError,
+				);
+			}
+		});
+
+		it("rejects a lone hardened marker", () => {
+			for (const bad of ["'", "h", "H"]) {
+				expect(() => HDWallet.parseIndex(bad)).toThrow(
+					HDWallet.InvalidPathError,
+				);
+			}
+		});
+
+		it("applies the hardened offset only on an explicit suffix", () => {
+			expect(HDWallet.parseIndex("44")).toBe(44);
+			expect(HDWallet.parseIndex("44'")).toBe(44 + 0x80000000);
+			expect(HDWallet.parseIndex("44h")).toBe(44 + 0x80000000);
+			expect(HDWallet.parseIndex("44H")).toBe(44 + 0x80000000);
 		});
 
 		it("throws on non-numeric strings", () => {

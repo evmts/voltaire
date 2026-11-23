@@ -1,6 +1,6 @@
 ---
-title: "EventLog Utilities"
----
+
+## title: "EventLog Utilities"
 
 # EventLog Utilities
 
@@ -15,22 +15,25 @@ isRemoved(log: BrandedEventLog): boolean
 ```
 
 **Parameters:**
+
 - `log`: Event log to check
 
 **Returns:** `true` if log.removed === true
 
 **Details:**
+
 - Checks the `removed` field which indicates chain reorg
 - Returns false if removed field is false or undefined
 - Used to filter out invalidated logs
 
 **Example:**
+
 ```javascript
 const log = EventLog({
-  address: contractAddress,
-  topics: [eventSig],
-  data: new Uint8Array([]),
-  removed: true, // marked as removed due to reorg
+	address: contractAddress,
+	topics: [eventSig],
+	data: new Uint8Array([]),
+	removed: true, // marked as removed due to reorg
 });
 
 const removed = EventLog.isRemoved(log);
@@ -48,13 +51,17 @@ wasRemoved(log: BrandedEventLog): boolean
 ```
 
 **Parameters:**
+
 - `log`: Event log to check
 
 **Returns:** `true` if log.removed === true
 
 **Example:**
+
 ```javascript
-const log = EventLog({ /* ... */ });
+const log = EventLog({
+	/* ... */
+});
 
 const removed = EventLog.wasRemoved(log);
 // or
@@ -72,6 +79,7 @@ sortLogs(logs: readonly BrandedEventLog[]): BrandedEventLog[]
 ```
 
 **Parameters:**
+
 - `logs`: Array of event logs to sort
 
 **Returns:** New array sorted by block number (ascending) then log index (ascending)
@@ -79,6 +87,7 @@ sortLogs(logs: readonly BrandedEventLog[]): BrandedEventLog[]
 **Aliases:** `EventLog.sort(logs)`
 
 **Details:**
+
 - Creates new sorted array (doesn't modify input)
 - Primary sort: block number (ascending)
 - Secondary sort: log index (ascending)
@@ -86,11 +95,12 @@ sortLogs(logs: readonly BrandedEventLog[]): BrandedEventLog[]
 - Logs without logIndex treated as index 0
 
 **Example:**
+
 ```javascript
 const logs = [
-  EventLog({ /* ... */ blockNumber: 18000002n, logIndex: 5 }),
-  EventLog({ /* ... */ blockNumber: 18000001n, logIndex: 10 }),
-  EventLog({ /* ... */ blockNumber: 18000002n, logIndex: 2 }),
+	EventLog({ /* ... */ blockNumber: 18000002n, logIndex: 5 }),
+	EventLog({ /* ... */ blockNumber: 18000001n, logIndex: 10 }),
+	EventLog({ /* ... */ blockNumber: 18000002n, logIndex: 2 }),
 ];
 
 const sorted = EventLog.sortLogs(logs);
@@ -109,10 +119,10 @@ const sorted = EventLog.sort(logs);
 
 ```javascript
 // Remove logs invalidated by chain reorg
-const activeLogs = allLogs.filter(log => !log.isRemoved());
+const activeLogs = allLogs.filter((log) => !log.isRemoved());
 
 // Equivalent
-const activeLogs = allLogs.filter(log => !EventLog.isRemoved(log));
+const activeLogs = allLogs.filter((log) => !EventLog.isRemoved(log));
 ```
 
 ### Sorting After Filtering
@@ -120,7 +130,7 @@ const activeLogs = allLogs.filter(log => !EventLog.isRemoved(log));
 ```javascript
 // Get all Transfer events sorted chronologically
 const transferLogs = EventLog.filterLogs(allLogs, {
-  topics: [TRANSFER_SIG],
+	topics: [TRANSFER_SIG],
 });
 
 const sorted = EventLog.sortLogs(transferLogs);
@@ -133,12 +143,12 @@ const sorted = EventLog.sortLogs(transferLogs);
 const sortedLogs = EventLog.sortLogs(allLogs);
 
 for (const log of sortedLogs) {
-  if (log.isRemoved()) {
-    console.log('Skipping removed log');
-    continue;
-  }
+	if (log.isRemoved()) {
+		console.log("Skipping removed log");
+		continue;
+	}
 
-  processLog(log);
+	processLog(log);
 }
 ```
 
@@ -149,8 +159,8 @@ for (const log of sortedLogs) {
 const sorted = EventLog.sortLogs(logs);
 const latest = sorted[sorted.length - 1];
 
-console.log('Latest block:', latest.blockNumber);
-console.log('Latest index:', latest.logIndex);
+console.log("Latest block:", latest.blockNumber);
+console.log("Latest index:", latest.logIndex);
 ```
 
 ### Grouping by Block
@@ -161,17 +171,17 @@ const sortedLogs = EventLog.sortLogs(allLogs);
 
 const byBlock = new Map();
 for (const log of sortedLogs) {
-  const blockNum = log.blockNumber ?? 0n;
-  if (!byBlock.has(blockNum)) {
-    byBlock.set(blockNum, []);
-  }
-  byBlock.get(blockNum).push(log);
+	const blockNum = log.blockNumber ?? 0n;
+	if (!byBlock.has(blockNum)) {
+		byBlock.set(blockNum, []);
+	}
+	byBlock.get(blockNum).push(log);
 }
 
 // Process each block's logs in order
 for (const [blockNumber, blockLogs] of byBlock) {
-  console.log(`Block ${blockNumber}: ${blockLogs.length} logs`);
-  // blockLogs already sorted by logIndex within block
+	console.log(`Block ${blockNumber}: ${blockLogs.length} logs`);
+	// blockLogs already sorted by logIndex within block
 }
 ```
 
@@ -180,15 +190,15 @@ for (const [blockNumber, blockLogs] of byBlock) {
 ```javascript
 // Compare two sets of logs to detect removed events
 function detectReorg(oldLogs, newLogs) {
-  const removed = newLogs.filter(log => log.isRemoved());
+	const removed = newLogs.filter((log) => log.isRemoved());
 
-  if (removed.length > 0) {
-    console.log(`Detected reorg: ${removed.length} logs removed`);
+	if (removed.length > 0) {
+		console.log(`Detected reorg: ${removed.length} logs removed`);
 
-    for (const log of removed) {
-      console.log(`Block ${log.blockNumber}, Index ${log.logIndex}`);
-    }
-  }
+		for (const log of removed) {
+			console.log(`Block ${log.blockNumber}, Index ${log.logIndex}`);
+		}
+	}
 }
 ```
 
@@ -208,17 +218,16 @@ const sorted = EventLog.sortLogs(dedupedLogs);
 
 ```javascript
 // Process events in exact blockchain order
-const sorted = EventLog.sortLogs(allLogs)
-  .filter(log => !log.wasRemoved());
+const sorted = EventLog.sortLogs(allLogs).filter((log) => !log.wasRemoved());
 
 let prevBlock = 0n;
 for (const log of sorted) {
-  if (log.blockNumber > prevBlock) {
-    console.log(`\nProcessing block ${log.blockNumber}`);
-    prevBlock = log.blockNumber;
-  }
+	if (log.blockNumber > prevBlock) {
+		console.log(`\nProcessing block ${log.blockNumber}`);
+		prevBlock = log.blockNumber;
+	}
 
-  console.log(`  Log ${log.logIndex}: ${log.address}`);
+	console.log(`  Log ${log.logIndex}: ${log.address}`);
 }
 ```
 
@@ -227,9 +236,11 @@ for (const log of sorted) {
 ```javascript
 // Sort handles missing blockNumber/logIndex gracefully
 const logs = [
-  EventLog({ /* ... */ blockNumber: 100n }), // no logIndex
-  EventLog({ /* ... */ }), // no blockNumber or logIndex
-  EventLog({ /* ... */ blockNumber: 50n, logIndex: 5 }),
+	EventLog({ /* ... */ blockNumber: 100n }), // no logIndex
+	EventLog({
+		/* ... */
+	}), // no blockNumber or logIndex
+	EventLog({ /* ... */ blockNumber: 50n, logIndex: 5 }),
 ];
 
 const sorted = EventLog.sortLogs(logs);
@@ -241,28 +252,28 @@ const sorted = EventLog.sortLogs(logs);
 
 ```javascript
 function verifyLogOrder(logs) {
-  for (let i = 1; i < logs.length; i++) {
-    const prev = logs[i - 1];
-    const curr = logs[i];
+	for (let i = 1; i < logs.length; i++) {
+		const prev = logs[i - 1];
+		const curr = logs[i];
 
-    const prevBlock = prev.blockNumber ?? 0n;
-    const currBlock = curr.blockNumber ?? 0n;
+		const prevBlock = prev.blockNumber ?? 0n;
+		const currBlock = curr.blockNumber ?? 0n;
 
-    if (currBlock < prevBlock) {
-      throw new Error('Logs not sorted by block');
-    }
+		if (currBlock < prevBlock) {
+			throw new Error("Logs not sorted by block");
+		}
 
-    if (currBlock === prevBlock) {
-      const prevIndex = prev.logIndex ?? 0;
-      const currIndex = curr.logIndex ?? 0;
+		if (currBlock === prevBlock) {
+			const prevIndex = prev.logIndex ?? 0;
+			const currIndex = curr.logIndex ?? 0;
 
-      if (currIndex < prevIndex) {
-        throw new Error('Logs not sorted by index within block');
-      }
-    }
-  }
+			if (currIndex < prevIndex) {
+				throw new Error("Logs not sorted by index within block");
+			}
+		}
+	}
 
-  return true;
+	return true;
 }
 
 const sorted = EventLog.sortLogs(unsortedLogs);
@@ -274,17 +285,17 @@ verifyLogOrder(sorted); // true
 ```javascript
 // Sort and paginate logs
 function paginateLogs(logs, page, pageSize) {
-  const sorted = EventLog.sortLogs(logs);
-  const start = page * pageSize;
-  const end = start + pageSize;
+	const sorted = EventLog.sortLogs(logs);
+	const start = page * pageSize;
+	const end = start + pageSize;
 
-  return {
-    logs: sorted.slice(start, end),
-    total: sorted.length,
-    page,
-    pageSize,
-    hasMore: end < sorted.length,
-  };
+	return {
+		logs: sorted.slice(start, end),
+		total: sorted.length,
+		page,
+		pageSize,
+		hasMore: end < sorted.length,
+	};
 }
 
 const result = paginateLogs(allLogs, 0, 100);
@@ -309,18 +320,18 @@ The sort algorithm:
 ```javascript
 // Equivalent implementation
 function sortLogs(logs) {
-  return [...logs].sort((a, b) => {
-    const blockA = a.blockNumber ?? 0n;
-    const blockB = b.blockNumber ?? 0n;
+	return [...logs].sort((a, b) => {
+		const blockA = a.blockNumber ?? 0n;
+		const blockB = b.blockNumber ?? 0n;
 
-    if (blockA !== blockB) {
-      return blockA < blockB ? -1 : 1;
-    }
+		if (blockA !== blockB) {
+			return blockA < blockB ? -1 : 1;
+		}
 
-    const indexA = a.logIndex ?? 0;
-    const indexB = b.logIndex ?? 0;
-    return indexA - indexB;
-  });
+		const indexA = a.logIndex ?? 0;
+		const indexB = b.logIndex ?? 0;
+		return indexA - indexB;
+	});
 }
 ```
 
@@ -331,25 +342,25 @@ Chain reorgs can cause logs to be removed:
 ```javascript
 // Initial state
 const log = EventLog({
-  address: contractAddress,
-  topics: [TRANSFER_SIG],
-  data: valueData,
-  blockNumber: 18000000n,
-  blockHash: Hash.fromHex('0xabc...'),
-  removed: false,
+	address: contractAddress,
+	topics: [TRANSFER_SIG],
+	data: valueData,
+	blockNumber: 18000000n,
+	blockHash: Hash.fromHex("0xabc..."),
+	removed: false,
 });
 
 // After reorg, same log marked as removed
 const updatedLog = {
-  ...log,
-  removed: true,
+	...log,
+	removed: true,
 };
 
 console.log(log.isRemoved()); // false
 console.log(updatedLog.isRemoved()); // true
 
 // Filter out removed logs
-const validLogs = logs.filter(log => !log.wasRemoved());
+const validLogs = logs.filter((log) => !log.wasRemoved());
 ```
 
 ## Implementation Notes

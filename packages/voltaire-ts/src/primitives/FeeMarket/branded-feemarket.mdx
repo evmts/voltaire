@@ -51,15 +51,14 @@ Construct next block's base fee using EIP-1559 formula.
 ```javascript
 const gasTarget = gasLimit / ELASTICITY_MULTIPLIER;
 
-if (gasUsed === 0n) return baseFee;
 if (gasUsed === gasTarget) return baseFee;
 
 if (gasUsed > gasTarget) {
   const delta = (baseFee * (gasUsed - gasTarget)) / gasTarget / 8n;
-  return baseFee + max(delta, 1n);
+  return baseFee + (delta > 0n ? delta : 1n);
 } else {
   const delta = (baseFee * (gasTarget - gasUsed)) / gasTarget / 8n;
-  return max(baseFee - max(delta, 1n), MIN_BASE_FEE);
+  return baseFee - delta;
 }
 ```
 
@@ -304,7 +303,7 @@ Validate block state parameters.
 - `gasUsed >= 0`
 - `gasLimit > 0`
 - `gasUsed <= gasLimit`
-- `baseFee >= MIN_BASE_FEE`
+- `baseFee >= 0n`
 - `excessBlobGas >= 0`
 - `blobGasUsed >= 0`
 - `blobGasUsed <= MAX_BLOB_GAS_PER_BLOCK`

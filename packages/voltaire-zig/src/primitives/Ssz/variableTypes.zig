@@ -161,8 +161,8 @@ test "encodeBitvector" {
     defer allocator.free(result);
 
     try std.testing.expectEqual(@as(usize, 1), result.len);
-    // Binary: 01011101 (reversed due to LSB first)
-    try std.testing.expectEqual(@as(u8, 0b01011101), result[0]);
+    // SSZ packs bit i into byte i/8 at position i%8 (LSB first): bits 0,2,3,6 set
+    try std.testing.expectEqual(@as(u8, 0b01001101), result[0]);
 }
 
 test "encodeBitvector multi-byte" {

@@ -2,9 +2,13 @@ import { blake3 } from "@noble/hashes/blake3.js";
 import { InvalidTreeStateError } from "./errors.js";
 import { getStemBit } from "./getStemBit.js";
 import { HashNode } from "./hashNode.js";
+import { resolveChild } from "./resolveChild.js";
 import { splitKey } from "./splitKey.js";
 
 const hashNode = HashNode({ blake3 });
+
+/** @type {import('./BinaryTreeType.js').EmptyNode} */
+const EMPTY = { type: "empty" };
 
 /**
  * Insert value at key
@@ -55,17 +59,18 @@ function insertNode(node, stem, idx, v, depth) {
 			return splitStems(node, stem, idx, v, depth);
 		}
 		case "internal": {
-			// Internal nodes in a Merkle tree only store hashes
-			// We cannot traverse them, so we cannot insert into a tree with internal root
-			// This is a limitation of the current implementation
-			throw new InvalidTreeStateError(
-				"Cannot insert into tree with internal node at this depth - tree structure limitation",
-				{
-					value: "internal",
-					expected: "empty or stem",
-					docsPath: "/primitives/binary-tree/insert#limitations",
-				},
+			const bit = getStemBit(stem, depth);
+			const child = insertNode(
+				resolveChild(node, bit),
+				stem,
+				idx,
+				v,
+				depth + 1,
 			);
+			if (bit === 0) {
+				return internal(child, node.rightChild, undefined, node.right);
+			}
+			return internal(node.leftChild, child, node.left);
 		}
 		case "leaf":
 			throw new InvalidTreeStateError("Cannot insert into leaf node", {
@@ -95,22 +100,10 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 
 	if (existingBit === newBit) {
 		const child = splitStems(existing, newStem, newIdx, newVal, depth + 1);
-		const childHash = hashNode(
-			/** @type {import('./BinaryTreeType.js').Node} */ (child),
-		);
-
 		if (existingBit === 0) {
-			return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
-				type: "internal",
-				left: childHash,
-				right: new Uint8Array(32),
-			});
+			return internal(child, undefined);
 		}
-		return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
-			type: "internal",
-			left: new Uint8Array(32),
-			right: childHash,
-		});
+		return internal(undefined, child);
 	}
 
 	const newValues = new Array(256).fill(null);
@@ -122,21 +115,33 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 		values: newValues,
 	};
 
-	const existingHash = hashNode(existing);
-	const newHash = hashNode(newStemNode);
-
 	if (existingBit === 0) {
-		return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
-			type: "internal",
-			left: existingHash,
-			right: newHash,
-		});
+		return internal(existing, newStemNode);
 	}
-	return /** @type {import('./BinaryTreeType.js').InternalNode} */ ({
+	return internal(newStemNode, existing);
+}
+
+/**
+ * Build an internal node that keeps its children and caches their hashes.
+ * Pass a hash to reuse an unchanged side, including a pruned side that has
+ * a hash but no child.
+ *
+ * @param {import('./BinaryTreeType.js').Node | undefined} leftChild
+ * @param {import('./BinaryTreeType.js').Node | undefined} rightChild
+ * @param {Uint8Array} [left] - Known left hash
+ * @param {Uint8Array} [right] - Known right hash
+ * @returns {import('./BinaryTreeType.js').InternalNode}
+ */
+function internal(leftChild, rightChild, left, right) {
+	/** @type {{ type: "internal"; left: Uint8Array; right: Uint8Array; leftChild?: import('./BinaryTreeType.js').Node; rightChild?: import('./BinaryTreeType.js').Node }} */
+	const node = {
 		type: "internal",
-		left: newHash,
-		right: existingHash,
-	});
+		left: left ?? hashNode(leftChild ?? EMPTY),
+		right: right ?? hashNode(rightChild ?? EMPTY),
+	};
+	if (leftChild) node.leftChild = leftChild;
+	if (rightChild) node.rightChild = rightChild;
+	return node;
 }
 
 /** @param {Uint8Array} a @param {Uint8Array} b */

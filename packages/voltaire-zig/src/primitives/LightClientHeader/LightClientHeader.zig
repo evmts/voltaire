@@ -282,7 +282,8 @@ test "LightClientHeader: from creates header and exposes fields" {
     try std.testing.expectEqual(@as(u64, 42), header.beacon.slot);
     try std.testing.expectEqual(@as(u64, 43), header.beacon.proposer_index);
     try std.testing.expectEqual(@as(u64, 52), header.execution.block_number);
-    try std.testing.expectEqual(@as(u64, 54), header.execution.excess_blob_gas);
+    try std.testing.expectEqual(@as(u64, 54), header.execution.blob_gas_used);
+    try std.testing.expectEqual(@as(u64, 55), header.execution.excess_blob_gas);
     try std.testing.expectEqual(@as(u8, 21), header.execution_branch[0][0]);
 }
 

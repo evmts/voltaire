@@ -1,18 +1,20 @@
-import { CURVE_PARAM_T } from "../constants.js";
-import * as Fr from "../Fr/index.js";
-import * as G1 from "../G1/index.js";
-import * as G2 from "../G2/index.js";
-import { pairingResultOne } from "./pairingResult.js";
+import { bn254 } from "@noble/curves/bn254.js";
+import { encodeFp12 } from "./encodeFp12.js";
+import { toNoblePairs } from "./toNoblePairs.js";
 
 /**
- * Miller loop computation (simplified)
+ * Optimal ate Miller loop over Fp12 (no final exponentiation).
+ *
+ * The result is an Fp12 element encoded as a canonical integer (see
+ * `encodeFp12`). A pair holding a point at infinity gives the identity `1n`.
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
  * @param {import('../G1PointType.js').G1PointType} p - G1 point
  * @param {import('../G2PointType.js').G2PointType} q - G2 point
  * @returns {{value: bigint}} Miller loop result
- * @throws {never}
+ * @throws {import('../errors.js').Bn254InvalidPointError} If a point is not on its curve
+ * @throws {import('../errors.js').Bn254SubgroupCheckError} If q is outside the G2 subgroup
  * @example
  * ```javascript
  * import * as Pairing from './crypto/bn254/Pairing/index.js';
@@ -22,23 +24,7 @@ import { pairingResultOne } from "./pairingResult.js";
  * ```
  */
 export function millerLoop(p, q) {
-	if (G1.isZero(p) || G2.isZero(q)) {
-		return pairingResultOne();
-	}
-
-	const p_aff = G1.toAffine(p);
-	const q_aff = G2.toAffine(q);
-
-	let f = 1n;
-	const t_bits = CURVE_PARAM_T.toString(2);
-
-	for (let i = 1; i < t_bits.length; i++) {
-		f = Fr.mul(Fr.mul(f, f), p_aff.x);
-
-		if (t_bits[i] === "1") {
-			f = Fr.mul(f, q_aff.x.c0);
-		}
-	}
-
-	return { value: f };
+	return {
+		value: encodeFp12(bn254.pairingBatch(toNoblePairs([[p, q]]), false)),
+	};
 }

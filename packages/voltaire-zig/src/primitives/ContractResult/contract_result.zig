@@ -438,7 +438,7 @@ pub fn toHex(result: *const ContractResult, allocator: std.mem.Allocator) ![]u8 
         hex[1] = 'x';
         return hex;
     }
-    return try Hex.encode(allocator, result.data);
+    return try Hex.bytesToHex(allocator, result.data);
 }
 
 test "toHex - success with data" {

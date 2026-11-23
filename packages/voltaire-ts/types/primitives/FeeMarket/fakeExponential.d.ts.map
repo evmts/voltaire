@@ -1,1 +1,1 @@
-{"version":3,"file":"fakeExponential.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/fakeExponential.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;;;;;;;GAoBG;AACH,wCAXW,MAAM,aACN,MAAM,eACN,MAAM,GACJ,MAAM,CAyBlB"}
+{"version":3,"file":"fakeExponential.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/fakeExponential.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;;;;;;;;;;;GAwBG;AACH,wCAZW,MAAM,aACN,MAAM,eACN,MAAM,cACN,MAAM,GACJ,MAAM,CAuClB"}

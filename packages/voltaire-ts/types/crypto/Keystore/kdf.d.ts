@@ -16,6 +16,7 @@ export function isPowerOfTwo(n: number): boolean;
  * @param {number} dklen - Derived key length (default: 32)
  * @returns {Uint8Array} Derived key
  * @throws {InvalidScryptNError} If n is not a power of 2
+ * @throws {KeystoreError} If n, r, p, or dklen is outside its allowed range
  */
 export function deriveScrypt(password: string | Uint8Array, salt: Uint8Array, n?: number, r?: number, p?: number, dklen?: number): Uint8Array;
 /**
@@ -34,6 +35,13 @@ export function isValidIterationCount(c: number): boolean;
  * @param {number} dklen - Derived key length (default: 32)
  * @returns {Uint8Array} Derived key
  * @throws {InvalidPbkdf2IterationsError} If c is not a positive integer
+ * @throws {KeystoreError} If c exceeds the allowed maximum or dklen is outside its allowed range
  */
 export function derivePbkdf2(password: string | Uint8Array, salt: Uint8Array, c?: number, dklen?: number): Uint8Array;
+/**
+ * Largest derived key length accepted, in bytes. Keystore v3 uses 32. PBKDF2
+ * work grows with dklen (one full iteration chain per 32 output bytes), so
+ * an unbounded dklen from an untrusted keystore is unbounded work.
+ */
+export const MAX_DKLEN: 128;
 //# sourceMappingURL=kdf.d.ts.map

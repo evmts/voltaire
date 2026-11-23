@@ -6,6 +6,9 @@
  */
 
 import * as loader from "../wasm-loader/loader.js";
+import { constantTimeIsZero } from "./ConstantTime/constantTimeIsZero.js";
+import { isWeakPublicKey as isWeakX25519PublicKey } from "./X25519/isWeakPublicKey.js";
+import { validatePublicKey as validateX25519PublicKey } from "./X25519/validatePublicKey.js";
 
 // ============================================================================
 // Main X25519Wasm Namespace
@@ -94,11 +97,27 @@ export namespace X25519Wasm {
 			);
 		}
 
+		if (isWeakX25519PublicKey(publicKey)) {
+			throw new InvalidPublicKeyError(
+				"Public key is a low-order point (all-zero shared secret)",
+			);
+		}
+
+		let shared: SharedSecret;
 		try {
-			return loader.x25519Scalarmult(secretKey, publicKey);
+			shared = loader.x25519Scalarmult(secretKey, publicKey);
 		} catch (error) {
 			throw new X25519Error(`Scalar multiplication failed: ${error}`);
 		}
+
+		// RFC 7748 section 6.1: abort on an all-zero shared secret
+		if (constantTimeIsZero(shared)) {
+			throw new InvalidPublicKeyError(
+				"Shared secret is all zeros (low-order public key)",
+			);
+		}
+
+		return shared;
 	}
 
 	// ==========================================================================
@@ -131,10 +150,14 @@ export namespace X25519Wasm {
 	}
 
 	export function validatePublicKey(publicKey: PublicKey): boolean {
-		if (publicKey.length !== PUBLIC_KEY_SIZE) {
-			return false;
-		}
-		// Basic check - should not be all zeros
-		return publicKey.some((b) => b !== 0);
+		return validateX25519PublicKey(publicKey);
+	}
+
+	export function isValidPublicKey(publicKey: PublicKey): boolean {
+		return validateX25519PublicKey(publicKey);
+	}
+
+	export function isWeakPublicKey(publicKey: PublicKey): boolean {
+		return isWeakX25519PublicKey(publicKey);
 	}
 }

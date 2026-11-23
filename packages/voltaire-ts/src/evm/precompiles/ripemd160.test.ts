@@ -108,7 +108,8 @@ describe("Precompile: RIPEMD160 (0x03)", () => {
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
-			expect(result.gasUsed).toBe(600n);
+			expect(result.gasUsed).toBe(599n);
+			expect(result.output.length).toBe(0);
 		});
 
 		it("should succeed with exact gas (600)", () => {
@@ -125,7 +126,8 @@ describe("Precompile: RIPEMD160 (0x03)", () => {
 
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Out of gas");
-			expect(result.gasUsed).toBe(720n);
+			expect(result.gasUsed).toBe(719n);
+			expect(result.output.length).toBe(0);
 		});
 
 		it("should succeed with exact gas for 32-byte input", () => {
@@ -461,7 +463,7 @@ describe("Precompile: RIPEMD160 (0x03)", () => {
 				Hardfork.ISTANBUL,
 				Hardfork.BERLIN,
 				Hardfork.LONDON,
-				Hardfork.PARIS,
+				Hardfork.MERGE,
 				Hardfork.SHANGHAI,
 				Hardfork.CANCUN,
 				Hardfork.PRAGUE,

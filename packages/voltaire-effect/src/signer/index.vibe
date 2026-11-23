@@ -6,7 +6,7 @@ export {
   MnemonicAccount,
   type SignableTransaction,
   type SignedAuthorization,
-  type UnsignedAuthorization
+  type UnsignedAuthorization,
 } from "./Account.vibe"
 export { NonceManager, NonceManagerLive } from "./NonceManager.vibe"
 export {
@@ -16,5 +16,5 @@ export {
   SignerFromMnemonic,
   SignerFromPrivateKey,
   SignerLive,
-  type TransactionRequest
+  type TransactionRequest,
 } from "./Signer.vibe"

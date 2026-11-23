@@ -11,7 +11,7 @@ import {
   request,
   TestTransport,
   withRpcHooks,
-  withoutRpcRetry
+  withoutRpcRetry,
 } from "./index.vibe"
 
 module web {
@@ -28,8 +28,8 @@ module web {
       req,
       new Response(JSON.stringify(body), {
         status,
-        headers: { "content-type": "application/json" }
-      })
+        headers: { "content-type": "application/json" },
+      }),
     )
   }
 
@@ -46,20 +46,20 @@ describe("transport", () => {
     const observed: Array<{ readonly method: string; readonly durationMs: number }> = []
     const ctrl = makeTestTransport({
       eth_blockNumber: "0x10",
-      eth_chainId: () => "0x1"
+      eth_chainId: () => "0x1",
     })
 
     const hooksLayer = withRpcHooks({
       effect onResponse(res) {
         observed.push({ method: res.method, durationMs: res.durationMs })
         return res.result
-      }
+      },
     })
 
     provide ctrl.layer, hooksLayer {
       const [block, chain] = try.all [
         request<string>("eth_blockNumber"),
-        request<string>("eth_chainId")
+        request<string>("eth_chainId"),
       ]
       try Effect.try(() => assert.strictEqual(block, "0x10"))
       try Effect.try(() => assert.strictEqual(chain, "0x1"))
@@ -79,7 +79,7 @@ describe("transport", () => {
         return jsonResponse(req, {
           jsonrpc: "2.0",
           id: 1,
-          error: { code: 3, message: "execution reverted", data: "0x08c379a0" }
+          error: { code: 3, message: "execution reverted", data: "0x08c379a0" },
         })
       }
       if (attempts < 2) {
@@ -91,9 +91,9 @@ describe("transport", () => {
     const httpLayer = Layer.provide(
       HttpTransport({
         url: "https://rpc.example.test",
-        retry: { times: 3, baseDelay: "1 millis", jittered: false }
+        retry: { times: 3, baseDelay: "1 millis", jittered: false },
       }),
-      Layer.succeed(HttpClient.HttpClient, mockHttpClient)
+      Layer.succeed(HttpClient.HttpClient, mockHttpClient),
     )
 
     // Retryable 503 succeeds on 2nd attempt
@@ -121,7 +121,7 @@ describe("transport", () => {
     const upstream = makeTestTransport({
       eth_chainId: "0x1",
       eth_blockNumber: "0x64",
-      eth_gasPrice: "0x3b9aca00"
+      eth_gasPrice: "0x3b9aca00",
     })
     const batched = BatchTransport(upstream.layer, { delay: "10 millis", maxBatchSize: 10 })
 
@@ -130,7 +130,7 @@ describe("transport", () => {
         return try.all [
           request<string>("eth_chainId"),
           request<string>("eth_blockNumber"),
-          request<string>("eth_gasPrice")
+          request<string>("eth_gasPrice"),
         ]
       }
       try TestClock.adjust("20 millis")
@@ -149,16 +149,16 @@ describe("transport", () => {
       eth_blockNumber: effect {
         throw new TransportError({
           message: "primary down",
-          reason: TransportFailureReason.Network({ cause: "ECONNREFUSED" })
+          reason: TransportFailureReason.Network({ cause: "ECONNREFUSED" }),
         })
       },
       eth_call: effect {
         throw new RpcError({ code: 3, message: "execution reverted", data: "0x" })
-      }
+      },
     })
     const backupCtrl = makeTestTransport({
       eth_blockNumber: "0x99",
-      eth_call: "0x01"
+      eth_call: "0x01",
     })
 
     const fallback = FallbackTransport([failingPrimary, backupCtrl.layer], { strategy: "sequential" })
@@ -198,7 +198,7 @@ describe("transport", () => {
       async request(args) {
         if (args.method === "eth_chainId") return "0xa"
         throw { code: 4001, message: "User rejected" }
-      }
+      },
     })
     const limited = RateLimitedTransport(eip1193, { maxConcurrent: 2 })
 

@@ -23,35 +23,35 @@ The Provider module implements the Provider interface for Ethereum JSON-RPC comm
 ### HTTP Provider
 
 ```typescript
-import { HttpProvider } from '@tevm/voltaire/provider';
+import { HttpProvider } from "@tevm/voltaire/provider";
 
 const provider = new HttpProvider({
-  url: 'https://eth.example.com',
-  timeout: 30000,
-  retry: 3
+	url: "https://eth.example.com",
+	timeout: 30000,
+	retry: 3,
 });
 
 const blockNumber = await provider.eth_blockNumber();
 if (!blockNumber.error) {
-  console.log('Block:', blockNumber.result);
+	console.log("Block:", blockNumber.result);
 }
 ```
 
 ### WebSocket Provider
 
 ```typescript
-import { WebSocketProvider } from '@tevm/voltaire/provider';
+import { WebSocketProvider } from "@tevm/voltaire/provider";
 
 const provider = new WebSocketProvider({
-  url: 'wss://eth.example.com',
-  reconnect: true
+	url: "wss://eth.example.com",
+	reconnect: true,
 });
 
 await provider.connect();
 
 // Real-time event subscriptions
 for await (const block of provider.events.newHeads()) {
-  console.log('New block:', block.number);
+	console.log("New block:", block.number);
 }
 ```
 
@@ -72,12 +72,12 @@ src/provider/
 All methods return `Response<T>` containing either result or error:
 
 ```typescript
-const result = await provider.eth_getBalance('0x...', 'latest');
+const result = await provider.eth_getBalance("0x...", "latest");
 
 if (result.error) {
-  console.error('Error:', result.error.code, result.error.message);
+	console.error("Error:", result.error.code, result.error.message);
 } else {
-  console.log('Balance:', result.result);
+	console.log("Balance:", result.result);
 }
 ```
 
@@ -88,27 +88,27 @@ Subscribe to blockchain events using async generators:
 ```typescript
 // New blocks
 for await (const block of provider.events.newHeads()) {
-  console.log('Block:', block.number);
+	console.log("Block:", block.number);
 }
 
 // Contract logs
-for await (const log of provider.events.logs({ address: '0x...' })) {
-  console.log('Event:', log.topics[0]);
+for await (const log of provider.events.logs({ address: "0x..." })) {
+	console.log("Event:", log.topics[0]);
 }
 
 // Pending transactions
 for await (const txHash of provider.events.newPendingTransactions()) {
-  console.log('Pending tx:', txHash);
+	console.log("Pending tx:", txHash);
 }
 ```
 
 ### Transport Differences
 
 | Transport | Events Implementation | Real-time | Reconnect |
-|-----------|----------------------|-----------|-----------|
-| HTTP | Polling (filters) | No | N/A |
-| WebSocket | Native pub/sub | Yes | Yes |
-| InMemory | Direct | Yes | N/A |
+| --------- | --------------------- | --------- | --------- |
+| HTTP      | Polling (filters)     | No        | N/A       |
+| WebSocket | Native pub/sub        | Yes       | Yes       |
+| InMemory  | Direct                | Yes       | N/A       |
 
 ## Methods
 
@@ -117,11 +117,11 @@ for await (const txHash of provider.events.newPendingTransactions()) {
 Standard Ethereum operations: blocks, transactions, state, filters, gas
 
 ```typescript
-provider.eth_blockNumber()
-provider.eth_getBalance(address, blockTag)
-provider.eth_call(params, blockTag)
-provider.eth_sendRawTransaction(signedTx)
-provider.eth_getLogs(params)
+provider.eth_blockNumber();
+provider.eth_getBalance(address, blockTag);
+provider.eth_call(params, blockTag);
+provider.eth_sendRawTransaction(signedTx);
+provider.eth_getLogs(params);
 // ... 35 more
 ```
 
@@ -130,11 +130,11 @@ provider.eth_getLogs(params)
 Debugging and transaction tracing
 
 ```typescript
-provider.debug_traceTransaction(txHash, options)
-provider.debug_traceBlockByNumber(blockTag, options)
-provider.debug_traceBlockByHash(blockHash, options)
-provider.debug_traceCall(params, blockTag, options)
-provider.debug_getRawBlock(blockTag)
+provider.debug_traceTransaction(txHash, options);
+provider.debug_traceBlockByNumber(blockTag, options);
+provider.debug_traceBlockByHash(blockHash, options);
+provider.debug_traceCall(params, blockTag, options);
+provider.debug_getRawBlock(blockTag);
 ```
 
 ### engine Namespace (20 methods)
@@ -142,9 +142,9 @@ provider.debug_getRawBlock(blockTag)
 Consensus layer integration (Engine API)
 
 ```typescript
-provider.engine_newPayloadV3(payload, blobHashes, beaconRoot)
-provider.engine_forkchoiceUpdatedV3(forkchoice, payloadAttrs)
-provider.engine_getPayloadV3(payloadId)
+provider.engine_newPayloadV3(payload, blobHashes, beaconRoot);
+provider.engine_forkchoiceUpdatedV3(forkchoice, payloadAttrs);
+provider.engine_getPayloadV3(payloadId);
 // ... 17 more
 ```
 
@@ -156,15 +156,15 @@ Errors are returned as values, not exceptions:
 const result = await provider.eth_call(params);
 
 if (result.error) {
-  switch (result.error.code) {
-    case -32700: // Parse error
-    case -32600: // Invalid request
-    case -32601: // Method not found
-    case -32602: // Invalid params
-    case -32603: // Internal error
-    case 3:      // Execution reverted
-      console.error('Error:', result.error.message);
-  }
+	switch (result.error.code) {
+		case -32700: // Parse error
+		case -32600: // Invalid request
+		case -32601: // Method not found
+		case -32602: // Invalid params
+		case -32603: // Internal error
+		case 3: // Execution reverted
+			console.error("Error:", result.error.message);
+	}
 }
 ```
 
@@ -173,10 +173,10 @@ if (result.error) {
 Configure timeout and retry behavior per request:
 
 ```typescript
-const result = await provider.eth_call(params, 'latest', {
-  timeout: 60000,      // 60 second timeout
-  retry: 5,            // Retry 5 times
-  retryDelay: 2000     // 2 second delay between retries
+const result = await provider.eth_call(params, "latest", {
+	timeout: 60000, // 60 second timeout
+	retry: 5, // Retry 5 times
+	retryDelay: 2000, // 2 second delay between retries
 });
 ```
 
@@ -185,16 +185,16 @@ const result = await provider.eth_call(params, 'latest', {
 Provider interface uses plain strings for simplicity. For full type safety with branded primitives, use wrapper functions:
 
 ```typescript
-import * as Address from '@tevm/voltaire/primitives/Address';
-import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Address from "@tevm/voltaire/primitives/Address";
+import * as Hash from "@tevm/voltaire/primitives/Hash";
 
 // Convert branded types to strings for provider
-const address = Address.from('0x...');
-const result = await provider.eth_getBalance(Address.toHex(address), 'latest');
+const address = Address.from("0x...");
+const result = await provider.eth_getBalance(Address.toHex(address), "latest");
 
 // Convert response back to branded types
 if (!result.error) {
-  const balance = Quantity.from(result.result);
+	const balance = Quantity.from(result.result);
 }
 ```
 
@@ -204,14 +204,14 @@ For testing, use InMemoryProvider (once implemented) or HttpProvider with a loca
 
 ```typescript
 // Local test node (Anvil, Hardhat, Ganache)
-const provider = new HttpProvider('http://localhost:8545');
+const provider = new HttpProvider("http://localhost:8545");
 
 // Or mock responses for unit tests
 class MockProvider implements Provider {
-  async eth_blockNumber() {
-    return { result: '0x123456' };
-  }
-  // ... implement other methods
+	async eth_blockNumber() {
+		return { result: "0x123456" };
+	}
+	// ... implement other methods
 }
 ```
 
@@ -222,9 +222,9 @@ InMemoryProvider will execute transactions using Voltaire's built-in EVM:
 ```typescript
 // Coming with EVM documentation
 const provider = new InMemoryProvider({
-  chainId: 1,
-  forkUrl: 'https://eth.example.com',
-  forkBlockNumber: 18000000
+	chainId: 1,
+	forkUrl: "https://eth.example.com",
+	forkBlockNumber: 18000000,
 });
 
 // Instant execution, no network

@@ -3,10 +3,13 @@ const crypto = @import("crypto");
 const PrecompileError = @import("common.zig").PrecompileError;
 const PrecompileResult = @import("common.zig").PrecompileResult;
 
-/// Gas cost for BLS12-381 map field element to G2
-pub const GAS: u64 = 75000;
+/// Gas cost for BLS12-381 map field element to G2 (EIP-2537)
+pub const GAS: u64 = 23800;
 
-/// 0x13: BLS12_MAP_FP2_TO_G2 - BLS12-381 map field element to G2
+/// 0x11: BLS12_MAP_FP2_TO_G2 - BLS12-381 map field element to G2 (EIP-2537)
+///
+/// Input: 128 bytes, one Fp2 element (c0 || c1, 64 bytes each).
+/// Output: 256 bytes, a G2 point.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -21,8 +24,10 @@ pub fn execute(
     }
 
     const output = try allocator.alloc(u8, 256);
+    errdefer allocator.free(output);
+    @memset(output, 0);
     crypto.Crypto.bls12_381.mapFp2ToG2(input, output) catch {
-        return error.InvalidPoint;
+        return error.InvalidInput;
     };
 
     return PrecompileResult{
@@ -211,7 +216,7 @@ test "map fp2 to g2 - test vector 3" {
 
 test "map fp2 to g2 - gas cost validation" {
     // Verify the gas cost constant matches EIP-2537 specification
-    try std.testing.expectEqual(@as(u64, 75000), GAS);
+    try std.testing.expectEqual(@as(u64, 23800), GAS);
 }
 
 test "map fp2 to g2 - output size validation" {
@@ -221,4 +226,12 @@ test "map fp2 to g2 - output size validation" {
     defer std.testing.allocator.free(result.output);
 
     try std.testing.expectEqual(@as(usize, 256), result.output.len);
+}
+
+test "map fp2 to g2 - official EIP-2537 vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_map_fp2_to_g2.txt"), 5);
+}
+
+test "map fp2 to g2 - official EIP-2537 failure vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_map_fp2_to_g2_fail.txt"), 5);
 }

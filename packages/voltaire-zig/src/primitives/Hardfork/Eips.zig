@@ -37,7 +37,7 @@
 const primitives = @import("../root.zig");
 const std = @import("std");
 
-pub const Hardfork = primitives.Hardfork.Hardfork;
+pub const Hardfork = primitives.Hardfork;
 
 /// EIP Override entry - allows enabling/disabling specific EIPs
 pub const EipOverride = struct {
@@ -182,32 +182,57 @@ pub const Eips = struct {
     /// - No longer fully refunds SELFDESTRUCT
     /// Returns the refund amount to be applied
     pub fn eip_3529_gas_refund_cap(self: Self, gas_used: u64, refund_counter: u64) u64 {
-        if (!self.hardfork.isAtLeast(.LONDON)) return @min(refund_counter, gas_used / 2);
+        if (!self.is_eip_active(3529)) return @min(refund_counter, gas_used / 2);
         return @min(refund_counter, gas_used / 5);
     }
 
+    /// SLOAD cost before EIP-2929 split it into cold and warm:
+    /// 50 (Frontier, Homestead), 200 (Tangerine Whistle..Petersburg, EIP-150),
+    /// 800 (Istanbul, Muir Glacier, EIP-1884).
+    fn pre_berlin_sload_cost(self: Self) u64 {
+        if (self.is_eip_active(1884)) return 800;
+        if (self.is_eip_active(150)) return 200;
+        return 50;
+    }
+
+    /// CALL-family account access cost before EIP-2929:
+    /// 40 (Frontier, Homestead), 700 (Tangerine Whistle..Muir Glacier, EIP-150).
+    fn pre_berlin_call_cost(self: Self) u64 {
+        if (self.is_eip_active(150)) return 700;
+        return 40;
+    }
+
+    // The gas helpers below ask `is_eip_active`, never the raw hardfork, so a
+    // configured `EipOverride` changes the cost the same way it changes the
+    // feature flag.
+
     /// EIP-2929: Gas cost increases for state access opcodes
-    /// Berlin hardfork introduced access lists and changed gas costs
+    /// Berlin hardfork introduced access lists and changed gas costs.
+    /// Cold SLOAD is 2100 from Berlin; earlier forks return their flat SLOAD
+    /// cost (50, 200, or 800).
     pub fn eip_2929_cold_sload_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) return 200;
+        if (!self.is_eip_active(2929)) return self.pre_berlin_sload_cost();
         return 2100;
     }
 
-    /// EIP-2929: Warm storage access cost
+    /// EIP-2929: Warm storage access cost. 100 from Berlin; earlier forks
+    /// return their flat SLOAD cost (50, 200, or 800).
     pub fn eip_2929_warm_storage_read_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) return 200;
+        if (!self.is_eip_active(2929)) return self.pre_berlin_sload_cost();
         return 100;
     }
 
-    /// EIP-2929: Cold account access cost
+    /// EIP-2929: Cold account access cost. 2600 from Berlin; earlier forks
+    /// return the flat CALL cost (40 or 700).
     pub fn eip_2929_cold_account_access_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) return 700;
+        if (!self.is_eip_active(2929)) return self.pre_berlin_call_cost();
         return 2600;
     }
 
-    /// EIP-2929: Warm account access cost
+    /// EIP-2929: Warm account access cost. 100 from Berlin; earlier forks
+    /// return the flat CALL cost (40 or 700).
     pub fn eip_2929_warm_account_access_cost(self: Self) u64 {
-        if (!self.hardfork.isAtLeast(.BERLIN)) return 700;
+        if (!self.is_eip_active(2929)) return self.pre_berlin_call_cost();
         return 100;
     }
 
@@ -232,14 +257,14 @@ pub const Eips = struct {
     /// EIP-7702: Base gas cost per authorization
     /// Prague hardfork introduced authorization lists
     pub fn eip_7702_per_auth_base_cost(self: Self) i64 {
-        if (!self.hardfork.isAtLeast(.PRAGUE)) return 0;
+        if (!self.is_eip_active(7702)) return 0;
         return 12500;
     }
 
     /// EIP-7702: Additional gas cost for empty account
     /// Prague hardfork introduced authorization lists
     pub fn eip_7702_per_empty_account_cost(self: Self) i64 {
-        if (!self.hardfork.isAtLeast(.PRAGUE)) return 0;
+        if (!self.is_eip_active(7702)) return 0;
         return 25000;
     }
 
@@ -254,12 +279,19 @@ pub const Eips = struct {
         return 0x6000; // 24KB limit
     }
 
-    /// EIP-3860: Initcode size limit
-    /// Pre-Shanghai: 24KB limit (EIP-170)
-    /// Post-Shanghai: 48KB limit
-    pub fn size_limit(self: Self) u64 {
+    /// EIP-3860: Maximum initcode size.
+    /// Before EIP-3860 (Shanghai) initcode has no size limit: returns `null`.
+    /// With EIP-3860: 49152 bytes (2 * the EIP-170 deployed code limit).
+    /// The 24576-byte EIP-170 limit applies to deployed code, never to initcode;
+    /// see `eip_170_max_code_size`.
+    pub fn max_initcode_size(self: Self) ?u64 {
         if (self.is_eip_active(3860)) return 0xC000;
-        return 0x6000;
+        return null;
+    }
+
+    /// EIP-3860: Initcode size limit. Same as `max_initcode_size`.
+    pub fn size_limit(self: Self) ?u64 {
+        return self.max_initcode_size();
     }
 
     /// EIP-3860: Initcode gas cost per word
@@ -276,88 +308,74 @@ pub const Eips = struct {
 
     /// Get SSTORE gas costs based on hardfork and state
     ///
-    /// Implements:
-    /// - Pre-Constantinople: Simple gas model (Frontier-Byzantium)
-    /// - EIP-1283 (Constantinople): Net gas metering for SSTORE
-    /// - EIP-2200 (Istanbul): Reentrancy protection (2300 gas minimum)
-    /// - EIP-2929 (Berlin): Cold storage access costs
-    /// - EIP-3529 (London): Reduced gas refunds
+    /// Rules by hardfork:
+    /// - Frontier through Byzantium, and Petersburg: legacy rules. 20000 to set a
+    ///   zero slot, 5000 otherwise, 15000 refund when clearing. Petersburg removed
+    ///   EIP-1283.
+    /// - Constantinople: EIP-1283 net metering (no-op and dirty writes cost 200).
+    /// - Istanbul and Muir Glacier: EIP-2200 net metering (SLOAD_GAS 800).
+    /// - Berlin+: EIP-2929. No-op and dirty writes cost 100 (warm read), reset
+    ///   costs 5000 - 2100 = 2900, and a cold slot adds 2100 to every case.
+    /// - London+: EIP-3529 lowers the clear refund from 15000 to 4800.
+    ///
+    /// Not modeled here:
+    /// - The EIP-2200 sentry (SSTORE fails when gas left <= 2300); callers check it.
+    /// - Amsterdam EIP-8037 state gas and EIP-8038 regular gas repricing. This
+    ///   function returns one gas dimension, so Amsterdam gets London+ rules.
+    ///   Use the `GasConstants.Amsterdam*` values for Amsterdam SSTORE pricing.
     ///
     /// Parameters:
     /// - current: Current value in storage slot
     /// - new: New value being written
     /// - original: Original value at start of transaction
-    /// - is_cold: Whether this is a cold storage access (EIP-2929)
+    /// - is_cold: Whether this is a cold storage access (EIP-2929, Berlin+)
     ///
-    /// Returns: SstoreGasCost with gas cost and refund amount
+    /// Returns: SstoreGasCost with the gas cost and the signed refund counter
+    /// delta. The delta is negative when a write undoes an earlier clear refund.
     pub fn sstore_gas_cost(self: Self, current: u256, new: u256, original: u256, is_cold: bool) SstoreGasCost {
-        // Pre-Constantinople (Frontier through Byzantium): Simple model
-        if (self.hardfork.isBefore(.CONSTANTINOPLE)) {
-            if (current == 0 and new != 0) {
-                // Setting from zero to non-zero (storage expansion)
-                return .{ .gas = 20000, .refund = 0 };
-            }
-            if (current != 0 and new == 0) {
-                // Clearing storage (non-zero to zero)
-                return .{ .gas = 5000, .refund = 15000 };
-            }
-            // Modifying existing non-zero value
+        const set: u64 = 20000;
+
+        // Legacy rules: no net metering active (Frontier through Byzantium, and
+        // Petersburg, unless an override turns EIP-1283 or EIP-2200 on)
+        const eip_2200 = self.is_eip_active(2200);
+        if (!eip_2200 and !self.is_eip_active(1283)) {
+            if (current == 0 and new != 0) return .{ .gas = set, .refund = 0 };
+            if (current != 0 and new == 0) return .{ .gas = 5000, .refund = 15000 };
             return .{ .gas = 5000, .refund = 0 };
         }
 
-        // EIP-1283/EIP-2200 (Constantinople/Istanbul+): Net gas metering
-        var gas: u64 = 0;
-        var refund: u64 = 0;
+        // Net metering: EIP-1283 (Constantinople), EIP-2200 (Istanbul+)
+        const berlin = self.is_eip_active(2929);
+        const sload: u64 = if (berlin) 100 else if (eip_2200) 800 else 200;
+        const reset: u64 = if (berlin) 5000 - 2100 else 5000;
+        const clear: i64 = if (self.is_eip_active(3529)) 4800 else 15000;
 
-        // EIP-2929 (Berlin+): Add cold access cost if applicable
-        if (self.hardfork.isAtLeast(.BERLIN) and is_cold) {
-            gas += 2100; // Cold SLOAD cost
-        }
+        var gas: u64 = if (berlin and is_cold) 2100 else 0;
+        var refund: i64 = 0;
 
-        // EIP-1283/EIP-2200: Net gas metering based on state transitions
         if (current == new) {
-            // No-op: storing same value
-            gas += if (self.hardfork.isAtLeast(.BERLIN)) 100 else 200;
+            gas += sload;
         } else if (original == current) {
-            // First time writing to this slot in the current transaction
             if (original == 0) {
-                // Setting a previously empty slot (most expensive)
-                gas += 20000;
+                gas += set;
             } else {
-                // Modifying an existing non-zero value
-                gas += 5000;
-
-                // Refund if clearing the slot
-                if (new == 0) {
-                    // EIP-3529 (London+): Reduced refund
-                    refund = if (self.hardfork.isAtLeast(.LONDON)) 4800 else 15000;
-                }
+                gas += reset;
+                if (new == 0) refund += clear;
             }
         } else {
-            // Slot was already modified in this transaction (dirty write)
-            gas += if (self.hardfork.isAtLeast(.BERLIN)) 100 else 200;
-
-            // EIP-1283/EIP-2200: Complex refund logic for reverting changes
+            gas += sload;
             if (original != 0) {
                 if (current == 0) {
-                    // Previously cleared in this tx, now setting again
-                    // Remove the refund we gave earlier
-                    const clear_refund = if (self.hardfork.isAtLeast(.LONDON)) @as(i64, -4800) else @as(i64, -15000);
-                    refund = @bitCast(@as(i64, @bitCast(refund)) + clear_refund);
+                    refund -= clear;
                 } else if (new == 0) {
-                    // Clearing slot that was modified but not cleared before
-                    refund += if (self.hardfork.isAtLeast(.LONDON)) 4800 else 15000;
+                    refund += clear;
                 }
             }
-
             if (original == new) {
-                // Reverting to original value
                 if (original == 0) {
-                    // Reverting to original zero - refund the set cost
-                    refund += if (self.hardfork.isAtLeast(.ISTANBUL)) 19900 else 19800;
+                    refund += @intCast(set - sload);
                 } else {
-                    // Reverting to original non-zero - refund the reset cost
-                    refund += if (self.hardfork.isAtLeast(.ISTANBUL)) 4900 else 4800;
+                    refund += @intCast(reset - sload);
                 }
             }
         }
@@ -367,7 +385,8 @@ pub const Eips = struct {
 
     pub const SstoreGasCost = struct {
         gas: u64,
-        refund: u64,
+        /// Signed refund counter delta; negative when an earlier refund is undone.
+        refund: i64,
     };
 
     /// EIP-3529: Apply gas refund after transaction
@@ -381,6 +400,11 @@ pub const Eips = struct {
     // EIP Activation Tracking
     // ============================================================================
 
+    const cancun_eips = [_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399, 3651, 3855, 3860, 4895, 1153, 4788, 4844, 5656, 6780, 7516 };
+    const prague_eips = cancun_eips ++ [_]u16{ 2537, 2935, 6110, 7002, 7251, 7702, 7623, 7685, 7691 };
+    const osaka_eips = prague_eips ++ [_]u16{ 7883, 7823, 7825, 7934, 7939, 7594, 7642, 7892, 7910, 7918, 7951 };
+    const amsterdam_eips = osaka_eips ++ [_]u16{ 7732, 7928, 8037, 8038 };
+
     /// Get all active EIPs for the current hardfork
     pub fn get_active_eips(self: Self) []const u16 {
         return switch (self.hardfork) {
@@ -391,18 +415,19 @@ pub const Eips = struct {
             .SPURIOUS_DRAGON => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170 },
             .BYZANTIUM => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658 },
             .CONSTANTINOPLE => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283 },
-            .PETERSBURG => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283 },
-            .ISTANBUL => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200 },
-            .MUIR_GLACIER => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200 },
-            .BERLIN => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930 },
-            .LONDON => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541 },
-            .ARROW_GLACIER => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345 },
-            .GRAY_GLACIER => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133 },
-            .MERGE => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399 },
-            .SHANGHAI => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399, 3651, 3855, 3860, 4895 },
-            .CANCUN => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399, 3651, 3855, 3860, 4895, 1153, 4788, 4844, 5656, 6780, 7516 },
-            .PRAGUE => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399, 3651, 3855, 3860, 4895, 1153, 4788, 4844, 5656, 6780, 7516, 2537, 2935, 3074, 6110, 7002, 7702 },
-            .OSAKA => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 1283, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399, 3651, 3855, 3860, 4895, 1153, 4788, 4844, 5656, 6780, 7516, 2537, 2935, 6110, 7002, 7702, 7883, 7823, 7825, 7934 },
+            .PETERSBURG => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052 },
+            .ISTANBUL => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200 },
+            .MUIR_GLACIER => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200 },
+            .BERLIN => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930 },
+            .LONDON => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541 },
+            .ARROW_GLACIER => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345 },
+            .GRAY_GLACIER => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133 },
+            .MERGE => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399 },
+            .SHANGHAI => &[_]u16{ 2, 7, 8, 150, 155, 160, 161, 170, 100, 140, 196, 197, 198, 211, 214, 649, 658, 145, 1014, 1052, 152, 1108, 1344, 1884, 2028, 2200, 2565, 2718, 2929, 2930, 1559, 3198, 3529, 3541, 4345, 5133, 3675, 4399, 3651, 3855, 3860, 4895 },
+            .CANCUN => &cancun_eips,
+            .PRAGUE => &prague_eips,
+            .OSAKA => &osaka_eips,
+            .AMSTERDAM => &amsterdam_eips,
         };
     }
 
@@ -443,12 +468,21 @@ test "eip_3529_gas_refund_cap post-London" {
 }
 
 test "eip_2929_storage_costs pre-Berlin" {
-    const eips = Eips{ .hardfork = Hardfork.ISTANBUL };
-
-    try std.testing.expectEqual(@as(u64, 200), eips.eip_2929_cold_sload_cost());
-    try std.testing.expectEqual(@as(u64, 200), eips.eip_2929_warm_storage_read_cost());
-    try std.testing.expectEqual(@as(u64, 700), eips.eip_2929_cold_account_access_cost());
-    try std.testing.expectEqual(@as(u64, 700), eips.eip_2929_warm_account_access_cost());
+    const Era = struct { forks: []const Hardfork, sload: u64, call: u64 };
+    const eras = [_]Era{
+        .{ .forks = &.{ .FRONTIER, .HOMESTEAD }, .sload = 50, .call = 40 },
+        .{ .forks = &.{ .TANGERINE_WHISTLE, .SPURIOUS_DRAGON, .BYZANTIUM, .CONSTANTINOPLE, .PETERSBURG }, .sload = 200, .call = 700 },
+        .{ .forks = &.{ .ISTANBUL, .MUIR_GLACIER }, .sload = 800, .call = 700 },
+    };
+    for (eras) |era| {
+        for (era.forks) |fork| {
+            const eips = Eips{ .hardfork = fork };
+            try std.testing.expectEqual(era.sload, eips.eip_2929_cold_sload_cost());
+            try std.testing.expectEqual(era.sload, eips.eip_2929_warm_storage_read_cost());
+            try std.testing.expectEqual(era.call, eips.eip_2929_cold_account_access_cost());
+            try std.testing.expectEqual(era.call, eips.eip_2929_warm_account_access_cost());
+        }
+    }
 }
 
 test "eip_2929_storage_costs post-Berlin" {
@@ -492,23 +526,46 @@ test "is_eip_active progression" {
     try std.testing.expect(!frontier.is_eip_active(170));
 }
 
+test "Prague, Osaka, and Amsterdam EIP activation" {
+    for ([_]u16{ 7251, 7623, 7685, 7691 }) |eip| {
+        try std.testing.expect(!Hardfork.CANCUN.isEipActive(eip));
+        try std.testing.expect(Hardfork.PRAGUE.isEipActive(eip));
+        try std.testing.expect(Hardfork.OSAKA.isEipActive(eip));
+    }
+    try std.testing.expect(!Hardfork.PRAGUE.isEipActive(3074));
+
+    for ([_]u16{ 7594, 7642, 7823, 7825, 7883, 7892, 7910, 7918, 7934, 7939, 7951 }) |eip| {
+        try std.testing.expect(!Hardfork.PRAGUE.isEipActive(eip));
+        try std.testing.expect(Hardfork.OSAKA.isEipActive(eip));
+    }
+
+    const osaka = Eips{ .hardfork = .OSAKA };
+    for (osaka.get_active_eips()) |eip| {
+        try std.testing.expect(Hardfork.AMSTERDAM.isEipActive(eip));
+    }
+    for ([_]u16{ 7732, 7928, 8037, 8038 }) |eip| {
+        try std.testing.expect(!Hardfork.OSAKA.isEipActive(eip));
+        try std.testing.expect(Hardfork.AMSTERDAM.isEipActive(eip));
+    }
+}
+
 test "sstore_gas_cost pre-Constantinople" {
     const frontier = Eips{ .hardfork = Hardfork.FRONTIER };
 
     // Set from zero to non-zero
     var cost = frontier.sstore_gas_cost(0, 1, 0, false);
     try std.testing.expectEqual(@as(u64, 20000), cost.gas);
-    try std.testing.expectEqual(@as(u64, 0), cost.refund);
+    try std.testing.expectEqual(@as(i64, 0), cost.refund);
 
     // Clear from non-zero to zero
     cost = frontier.sstore_gas_cost(1, 0, 1, false);
     try std.testing.expectEqual(@as(u64, 5000), cost.gas);
-    try std.testing.expectEqual(@as(u64, 15000), cost.refund);
+    try std.testing.expectEqual(@as(i64, 15000), cost.refund);
 
     // Modify non-zero value
     cost = frontier.sstore_gas_cost(1, 2, 1, false);
     try std.testing.expectEqual(@as(u64, 5000), cost.gas);
-    try std.testing.expectEqual(@as(u64, 0), cost.refund);
+    try std.testing.expectEqual(@as(i64, 0), cost.refund);
 }
 
 test "sstore_gas_cost Berlin cold access" {
@@ -521,6 +578,158 @@ test "sstore_gas_cost Berlin cold access" {
     // Set from zero with cold access
     cost = berlin.sstore_gas_cost(0, 1, 0, true);
     try std.testing.expectEqual(@as(u64, 22100), cost.gas); // 2100 + 20000
+}
+
+test "EIP-1283 active only in Constantinople" {
+    try std.testing.expect(!Hardfork.BYZANTIUM.isEipActive(1283));
+    try std.testing.expect(Hardfork.CONSTANTINOPLE.isEipActive(1283));
+    try std.testing.expect(!Hardfork.PETERSBURG.isEipActive(1283));
+    try std.testing.expect(!Hardfork.ISTANBUL.isEipActive(1283));
+    try std.testing.expect(!Hardfork.BERLIN.isEipActive(1283));
+    try std.testing.expect(!Hardfork.CANCUN.isEipActive(1283));
+    try std.testing.expect(!Hardfork.AMSTERDAM.isEipActive(1283));
+    try std.testing.expect(Hardfork.ISTANBUL.isEipActive(2200));
+    try std.testing.expect(Hardfork.PRAGUE.isEipActive(2200));
+}
+
+test "sstore_gas_cost Petersburg uses legacy rules" {
+    const petersburg = Eips{ .hardfork = Hardfork.PETERSBURG };
+
+    // No-op on a non-zero slot: legacy 5000, not net-metered 200
+    var cost = petersburg.sstore_gas_cost(1, 1, 1, false);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+    try std.testing.expectEqual(@as(i64, 0), cost.refund);
+
+    // Set zero slot: 20000 even when dirty (original != current)
+    cost = petersburg.sstore_gas_cost(0, 1, 1, false);
+    try std.testing.expectEqual(@as(u64, 20000), cost.gas);
+    try std.testing.expectEqual(@as(i64, 0), cost.refund);
+
+    // Reset: 5000
+    cost = petersburg.sstore_gas_cost(1, 2, 1, false);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+
+    // Clear: 5000 + 15000 refund
+    cost = petersburg.sstore_gas_cost(1, 0, 1, false);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+    try std.testing.expectEqual(@as(i64, 15000), cost.refund);
+
+    // Cold flag has no effect before Berlin
+    cost = petersburg.sstore_gas_cost(1, 2, 1, true);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+}
+
+test "sstore_gas_cost Constantinople EIP-1283" {
+    const c = Eips{ .hardfork = Hardfork.CONSTANTINOPLE };
+
+    var cost = c.sstore_gas_cost(1, 1, 1, false);
+    try std.testing.expectEqual(@as(u64, 200), cost.gas);
+    cost = c.sstore_gas_cost(0, 1, 0, false);
+    try std.testing.expectEqual(@as(u64, 20000), cost.gas);
+    cost = c.sstore_gas_cost(1, 2, 1, false);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+    // Dirty write restoring original zero: refund 20000 - 200
+    cost = c.sstore_gas_cost(1, 0, 0, false);
+    try std.testing.expectEqual(@as(u64, 200), cost.gas);
+    try std.testing.expectEqual(@as(i64, 19800), cost.refund);
+    // Dirty write restoring original non-zero: refund 5000 - 200
+    cost = c.sstore_gas_cost(2, 1, 1, false);
+    try std.testing.expectEqual(@as(i64, 4800), cost.refund);
+}
+
+test "sstore_gas_cost Istanbul EIP-2200" {
+    const i = Eips{ .hardfork = Hardfork.ISTANBUL };
+
+    var cost = i.sstore_gas_cost(1, 1, 1, false);
+    try std.testing.expectEqual(@as(u64, 800), cost.gas);
+    cost = i.sstore_gas_cost(1, 2, 1, false);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+    cost = i.sstore_gas_cost(1, 0, 1, false);
+    try std.testing.expectEqual(@as(i64, 15000), cost.refund);
+    // Restore original zero: 20000 - 800
+    cost = i.sstore_gas_cost(1, 0, 0, false);
+    try std.testing.expectEqual(@as(u64, 800), cost.gas);
+    try std.testing.expectEqual(@as(i64, 19200), cost.refund);
+    // Restore original non-zero: 5000 - 800
+    cost = i.sstore_gas_cost(2, 1, 1, false);
+    try std.testing.expectEqual(@as(i64, 4200), cost.refund);
+}
+
+test "sstore_gas_cost Berlin reset warm 2900 cold 5000" {
+    const berlin = Eips{ .hardfork = Hardfork.BERLIN };
+
+    var cost = berlin.sstore_gas_cost(1, 2, 1, false);
+    try std.testing.expectEqual(@as(u64, 2900), cost.gas);
+    try std.testing.expectEqual(@as(i64, 0), cost.refund);
+
+    cost = berlin.sstore_gas_cost(1, 2, 1, true);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+
+    // Clear (warm): 2900 gas, pre-London 15000 refund
+    cost = berlin.sstore_gas_cost(1, 0, 1, false);
+    try std.testing.expectEqual(@as(u64, 2900), cost.gas);
+    try std.testing.expectEqual(@as(i64, 15000), cost.refund);
+
+    // Restore original non-zero: 2900 - 100
+    cost = berlin.sstore_gas_cost(2, 1, 1, false);
+    try std.testing.expectEqual(@as(u64, 100), cost.gas);
+    try std.testing.expectEqual(@as(i64, 2800), cost.refund);
+
+    // Restore original zero: 20000 - 100
+    cost = berlin.sstore_gas_cost(1, 0, 0, false);
+    try std.testing.expectEqual(@as(i64, 19900), cost.refund);
+}
+
+test "sstore_gas_cost London clear refund 4800" {
+    const london = Eips{ .hardfork = Hardfork.LONDON };
+
+    const cost = london.sstore_gas_cost(1, 0, 1, true);
+    try std.testing.expectEqual(@as(u64, 5000), cost.gas);
+    try std.testing.expectEqual(@as(i64, 4800), cost.refund);
+}
+
+test "sstore_gas_cost negative refund delta" {
+    // Slot cleared earlier in the tx (original 1, current 0), now set to 2:
+    // the clear refund is removed.
+    const istanbul = Eips{ .hardfork = Hardfork.ISTANBUL };
+    var cost = istanbul.sstore_gas_cost(0, 2, 1, false);
+    try std.testing.expectEqual(@as(u64, 800), cost.gas);
+    try std.testing.expectEqual(@as(i64, -15000), cost.refund);
+
+    const london = Eips{ .hardfork = Hardfork.LONDON };
+    cost = london.sstore_gas_cost(0, 2, 1, false);
+    try std.testing.expectEqual(@as(u64, 100), cost.gas);
+    try std.testing.expectEqual(@as(i64, -4800), cost.refund);
+
+    // Cleared then restored to original: -4800 + (2900 - 100)
+    cost = london.sstore_gas_cost(0, 1, 1, false);
+    try std.testing.expectEqual(@as(i64, -2000), cost.refund);
+}
+
+test "Amsterdam EIP-8037 state gas is not modeled by sstore_gas_cost" {
+    const GasConstants = primitives.GasConstants;
+    try std.testing.expect(!Hardfork.OSAKA.isEipActive(8037));
+    try std.testing.expect(Hardfork.AMSTERDAM.isEipActive(8037));
+    try std.testing.expect(Hardfork.AMSTERDAM.isEipActive(8038));
+
+    // Documented: Amsterdam falls back to London+ single-dimension rules.
+    const amsterdam = Eips{ .hardfork = Hardfork.AMSTERDAM };
+    const london = Eips{ .hardfork = Hardfork.LONDON };
+    const cases = [_][3]u256{ .{ 0, 1, 0 }, .{ 1, 2, 1 }, .{ 1, 0, 1 }, .{ 0, 2, 1 }, .{ 2, 1, 1 } };
+    for (cases) |c| {
+        for ([_]bool{ false, true }) |cold| {
+            const a = amsterdam.sstore_gas_cost(c[0], c[1], c[2], cold);
+            const l = london.sstore_gas_cost(c[0], c[1], c[2], cold);
+            try std.testing.expectEqual(l.gas, a.gas);
+            try std.testing.expectEqual(l.refund, a.refund);
+        }
+    }
+
+    // The Amsterdam values callers must use instead (EIP-8037 / EIP-8038)
+    try std.testing.expectEqual(@as(u64, 1530), GasConstants.AmsterdamCostPerStateByte);
+    try std.testing.expectEqual(@as(u64, 97920), GasConstants.AmsterdamStateGasStorageSet);
+    try std.testing.expectEqual(@as(u64, 10000), GasConstants.AmsterdamStorageWrite);
+    try std.testing.expectEqual(@as(u64, 11616), GasConstants.AmsterdamStorageClearRefund);
 }
 
 test "EIP overrides enable future EIPs" {
@@ -547,4 +756,92 @@ test "EIP overrides disable existing EIPs" {
     const plain_cancun = Eips{ .hardfork = Hardfork.CANCUN };
     try std.testing.expect(plain_cancun.is_eip_active(4844));
     try std.testing.expect(!cancun_restricted.is_eip_active(4844));
+}
+
+test "max_initcode_size is absent before EIP-3860 and 49152 from Shanghai" {
+    const pre = [_]Hardfork{ .FRONTIER, .HOMESTEAD, .SPURIOUS_DRAGON, .BYZANTIUM, .ISTANBUL, .BERLIN, .LONDON, .MERGE };
+    for (pre) |fork| {
+        const eips = Eips{ .hardfork = fork };
+        // No initcode limit; never the 24576 deployed-code limit
+        try std.testing.expectEqual(@as(?u64, null), eips.max_initcode_size());
+        try std.testing.expectEqual(@as(?u64, null), eips.size_limit());
+        try std.testing.expectEqual(@as(u64, 0), eips.word_cost());
+    }
+
+    const post = [_]Hardfork{ .SHANGHAI, .CANCUN, .PRAGUE, .OSAKA, .AMSTERDAM };
+    for (post) |fork| {
+        const eips = Eips{ .hardfork = fork };
+        try std.testing.expectEqual(@as(?u64, 49152), eips.max_initcode_size());
+        try std.testing.expectEqual(@as(?u64, 49152), eips.size_limit());
+        try std.testing.expectEqual(@as(u64, 2), eips.word_cost());
+        // Deployed code limit stays 24576
+        try std.testing.expectEqual(@as(u32, 24576), eips.eip_170_max_code_size());
+    }
+
+    // Overrides apply
+    const london_3860 = Eips{ .hardfork = .LONDON, .overrides = &.{.{ .eip = 3860, .enabled = true }} };
+    try std.testing.expectEqual(@as(?u64, 49152), london_3860.max_initcode_size());
+    const shanghai_no_3860 = Eips{ .hardfork = .SHANGHAI, .overrides = &.{.{ .eip = 3860, .enabled = false }} };
+    try std.testing.expectEqual(@as(?u64, null), shanghai_no_3860.max_initcode_size());
+}
+
+test "gas helpers respect EIP overrides: London with EIP-3529 disabled" {
+    const london = Eips{ .hardfork = .LONDON };
+    const no_3529 = Eips{ .hardfork = .LONDON, .overrides = &.{.{ .eip = 3529, .enabled = false }} };
+
+    // Refund cap: gas_used / 5 with EIP-3529, gas_used / 2 without
+    try std.testing.expectEqual(@as(u64, 20), london.eip_3529_gas_refund_cap(100, 100));
+    try std.testing.expectEqual(@as(u64, 50), no_3529.eip_3529_gas_refund_cap(100, 100));
+    try std.testing.expectEqual(@as(u64, 920), london.eip_3529_apply_gas_refund(1000, 900, 100));
+    try std.testing.expectEqual(@as(u64, 950), no_3529.eip_3529_apply_gas_refund(1000, 900, 100));
+
+    // SSTORE clear refund: 4800 with EIP-3529, 15000 without; gas unchanged
+    try std.testing.expectEqual(@as(i64, 4800), london.sstore_gas_cost(1, 0, 1, false).refund);
+    const cleared = no_3529.sstore_gas_cost(1, 0, 1, false);
+    try std.testing.expectEqual(@as(i64, 15000), cleared.refund);
+    try std.testing.expectEqual(@as(u64, 2900), cleared.gas);
+
+    // Enabling EIP-3529 early on Berlin lowers the cap and refund there
+    const berlin_3529 = Eips{ .hardfork = .BERLIN, .overrides = &.{.{ .eip = 3529, .enabled = true }} };
+    try std.testing.expectEqual(@as(u64, 20), berlin_3529.eip_3529_gas_refund_cap(100, 100));
+    try std.testing.expectEqual(@as(i64, 4800), berlin_3529.sstore_gas_cost(1, 0, 1, false).refund);
+}
+
+test "gas helpers respect EIP overrides: EIP-2929, EIP-7702, net metering" {
+    // Berlin with EIP-2929 disabled falls back to Istanbul pricing
+    const berlin_no_2929 = Eips{ .hardfork = .BERLIN, .overrides = &.{.{ .eip = 2929, .enabled = false }} };
+    try std.testing.expectEqual(@as(u64, 800), berlin_no_2929.eip_2929_cold_sload_cost());
+    try std.testing.expectEqual(@as(u64, 800), berlin_no_2929.eip_2929_warm_storage_read_cost());
+    try std.testing.expectEqual(@as(u64, 700), berlin_no_2929.eip_2929_cold_account_access_cost());
+    try std.testing.expectEqual(@as(u64, 700), berlin_no_2929.eip_2929_warm_account_access_cost());
+    // Cold flag has no effect and no-op costs the EIP-2200 SLOAD gas
+    try std.testing.expectEqual(@as(u64, 800), berlin_no_2929.sstore_gas_cost(1, 1, 1, true).gas);
+    try std.testing.expectEqual(@as(u64, 5000), berlin_no_2929.sstore_gas_cost(1, 2, 1, true).gas);
+
+    // Istanbul with EIP-2929 enabled gets Berlin pricing
+    const istanbul_2929 = Eips{ .hardfork = .ISTANBUL, .overrides = &.{.{ .eip = 2929, .enabled = true }} };
+    try std.testing.expectEqual(@as(u64, 2100), istanbul_2929.eip_2929_cold_sload_cost());
+    try std.testing.expectEqual(@as(u64, 100), istanbul_2929.eip_2929_warm_storage_read_cost());
+    try std.testing.expectEqual(@as(u64, 2600), istanbul_2929.eip_2929_cold_account_access_cost());
+    try std.testing.expectEqual(@as(u64, 100), istanbul_2929.eip_2929_warm_account_access_cost());
+    try std.testing.expectEqual(@as(u64, 2200), istanbul_2929.sstore_gas_cost(1, 1, 1, true).gas);
+
+    // Istanbul with EIP-1884 disabled keeps the EIP-150 SLOAD cost
+    const istanbul_no_1884 = Eips{ .hardfork = .ISTANBUL, .overrides = &.{.{ .eip = 1884, .enabled = false }} };
+    try std.testing.expectEqual(@as(u64, 200), istanbul_no_1884.eip_2929_cold_sload_cost());
+
+    // EIP-7702 authorization costs follow the EIP, not the fork
+    const cancun_7702 = Eips{ .hardfork = .CANCUN, .overrides = &.{.{ .eip = 7702, .enabled = true }} };
+    try std.testing.expectEqual(@as(i64, 12500), cancun_7702.eip_7702_per_auth_base_cost());
+    try std.testing.expectEqual(@as(i64, 25000), cancun_7702.eip_7702_per_empty_account_cost());
+    const prague_no_7702 = Eips{ .hardfork = .PRAGUE, .overrides = &.{.{ .eip = 7702, .enabled = false }} };
+    try std.testing.expectEqual(@as(i64, 0), prague_no_7702.eip_7702_per_auth_base_cost());
+    try std.testing.expectEqual(@as(i64, 0), prague_no_7702.eip_7702_per_empty_account_cost());
+
+    // Istanbul with EIP-2200 disabled uses legacy SSTORE rules
+    const istanbul_no_2200 = Eips{ .hardfork = .ISTANBUL, .overrides = &.{.{ .eip = 2200, .enabled = false }} };
+    try std.testing.expectEqual(@as(u64, 5000), istanbul_no_2200.sstore_gas_cost(1, 1, 1, false).gas);
+    // Petersburg with EIP-1283 re-enabled uses net metering
+    const petersburg_1283 = Eips{ .hardfork = .PETERSBURG, .overrides = &.{.{ .eip = 1283, .enabled = true }} };
+    try std.testing.expectEqual(@as(u64, 200), petersburg_1283.sstore_gas_cost(1, 1, 1, false).gas);
 }

@@ -321,7 +321,7 @@ pub fn hash(uncle: *const Uncle, allocator: std.mem.Allocator) !Hash.Hash {
     defer allocator.free(encoded);
 
     var result: Hash.Hash = undefined;
-    crypto.Keccak256.hash(encoded, &result);
+    crypto.Keccak256.hash(encoded, &result, .{});
     return result;
 }
 

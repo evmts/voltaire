@@ -64,14 +64,18 @@ test "fromBytes - creates independent copy" {
 /// Create Bytes32 from hex string (with or without 0x prefix).
 /// Returns error if hex is invalid or not 32 bytes.
 pub fn fromHex(hex: []const u8) !Bytes32 {
-    const bytes = try Hex.toBytes(hex, std.testing.allocator);
-    defer std.testing.allocator.free(bytes);
-
-    if (bytes.len != SIZE) {
+    const digits = if (hex.len >= 2 and hex[0] == '0' and (hex[1] == 'x' or hex[1] == 'X')) hex[2..] else hex;
+    if (digits.len != SIZE * 2) {
         return error.InvalidBytes32Length;
     }
 
-    return fromBytes(bytes);
+    var result: Bytes32 = undefined;
+    for (0..SIZE) |i| {
+        const high = std.fmt.charToDigit(digits[i * 2], 16) catch return error.InvalidHexCharacter;
+        const low = std.fmt.charToDigit(digits[i * 2 + 1], 16) catch return error.InvalidHexCharacter;
+        result[i] = high * 16 + low;
+    }
+    return result;
 }
 
 test "fromHex - with 0x prefix" {
@@ -162,6 +166,12 @@ test "fromBigint - mid value" {
 pub fn from(value: anytype) !Bytes32 {
     const T = @TypeOf(value);
     if (T == Bytes32) return value;
+    if (@typeInfo(T) == .pointer and @typeInfo(T).pointer.size == .one) {
+        const Child = @typeInfo(T).pointer.child;
+        if (@typeInfo(Child) == .array and @typeInfo(Child).array.child == u8) {
+            return from(@as([]const u8, value[0..]));
+        }
+    }
 
     if (T == []const u8 or T == []u8) {
         // Check if it's hex (starts with 0x or all hex chars)
@@ -310,19 +320,19 @@ test "toHash - conversion" {
 
 /// Convert Bytes32 to Address (last 20 bytes)
 pub fn toAddress(b32: *const Bytes32) Address.Address {
-    return Address.fromBytes(b32[SIZE - Address.SIZE ..]);
+    return .{ .bytes = b32[SIZE - 20 ..][0..20].* };
 }
 
 test "toAddress - extracts last 20 bytes" {
     var b32: Bytes32 = ZERO;
     // Set last 20 bytes to 0xff
-    for (SIZE - Address.SIZE..SIZE) |i| {
+    for (SIZE - 20..SIZE) |i| {
         b32[i] = 0xff;
     }
     const addr = toAddress(&b32);
     try std.testing.expectEqual(@as(u8, 0), b32[0]); // First bytes still zero
-    try std.testing.expectEqual(@as(u8, 0xff), addr[0]); // Address is last 20
-    try std.testing.expectEqual(@as(u8, 0xff), addr[19]);
+    try std.testing.expectEqual(@as(u8, 0xff), addr.bytes[0]); // Address is last 20
+    try std.testing.expectEqual(@as(u8, 0xff), addr.bytes[19]);
 }
 
 // ============================================================================

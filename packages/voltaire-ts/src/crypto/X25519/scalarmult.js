@@ -1,10 +1,12 @@
 import { x25519 } from "@noble/curves/ed25519.js";
+import { constantTimeIsZero } from "../ConstantTime/constantTimeIsZero.js";
 import { PUBLIC_KEY_SIZE, SECRET_KEY_SIZE } from "./constants.js";
 import {
 	InvalidPublicKeyError,
 	InvalidSecretKeyError,
 	X25519Error,
 } from "./errors.js";
+import { isWeakPublicKey } from "./isWeakPublicKey.js";
 
 /**
  * Perform X25519 scalar multiplication (ECDH)
@@ -17,7 +19,7 @@ import {
  * @param {import('./PublicKey.js').PublicKey} publicKey - Their 32-byte public key
  * @returns {import('./SharedSecret.js').SharedSecret} 32-byte shared secret
  * @throws {InvalidSecretKeyError} If secret key is invalid
- * @throws {InvalidPublicKeyError} If public key is invalid
+ * @throws {InvalidPublicKeyError} If public key has the wrong length, is a low-order point, or yields an all-zero shared secret (RFC 7748 section 6.1)
  * @throws {X25519Error} If scalar multiplication fails
  * @example
  * ```javascript
@@ -41,9 +43,27 @@ export function scalarmult(secretKey, publicKey) {
 		);
 	}
 
+	if (isWeakPublicKey(publicKey)) {
+		throw new InvalidPublicKeyError(
+			"Public key is a low-order point (all-zero shared secret)",
+		);
+	}
+
+	/** @type {Uint8Array} */
+	let shared;
 	try {
-		return x25519.getSharedSecret(secretKey, publicKey);
+		shared = x25519.getSharedSecret(secretKey, publicKey);
 	} catch (error) {
 		throw new X25519Error(`Scalar multiplication failed: ${error}`);
 	}
+
+	// RFC 7748 section 6.1: abort on an all-zero shared secret. Checked in
+	// constant time and independently of the low-order list above.
+	if (constantTimeIsZero(shared)) {
+		throw new InvalidPublicKeyError(
+			"Shared secret is all zeros (low-order public key)",
+		);
+	}
+
+	return shared;
 }

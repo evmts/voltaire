@@ -10,7 +10,7 @@ import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
 
 // Export individual functions
-export { from, fromHex, toHex, toBytes, equals, compare, size, clone };
+export { clone, compare, equals, from, fromHex, size, toBytes, toHex };
 
 // Namespace export
 export const BytesType2 = {

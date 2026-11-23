@@ -14,12 +14,14 @@ The `handlers_storage.zig` file implements the four EVM storage opcodes with com
 **Overall Assessment:** ⚠️ CRITICAL ISSUES FOUND
 
 **Key Strengths:**
+
 - Detailed comments explaining EIP-2200, EIP-3529, and refund logic
 - Correct hardfork guards for TLOAD/TSTORE (Cancun+)
 - Proper static call context checks
 - Matches Python reference implementation structure
 
 **Critical Issues:**
+
 - **BUG:** SSTORE static call check happens AFTER gas consumption (line 126 in Python happens BEFORE)
 - **BUG:** Missing refund subtraction safety check could cause underflow
 - No unit tests for storage handlers
@@ -37,6 +39,7 @@ The `handlers_storage.zig` file implements the four EVM storage opcodes with com
 
 **Issue:**
 The storage handlers have no dedicated unit tests. While spec tests cover many scenarios, unit tests are needed for:
+
 - Gas cost calculations across hardforks
 - Refund logic edge cases (underflow, overflow)
 - Static call violations at the right time
@@ -44,6 +47,7 @@ The storage handlers have no dedicated unit tests. While spec tests cover many s
 - Transient storage isolation between calls
 
 **Evidence:**
+
 ```bash
 # No test files found
 Glob pattern: **/*storage*test*.zig -> No files found
@@ -52,6 +56,7 @@ Glob pattern: **/test_*storage*.zig -> No files found
 
 **Recommendation:**
 Add comprehensive unit tests in `/Users/williamcory/guillotine-mini/test/instructions/test_handlers_storage.zig`:
+
 ```zig
 test "SSTORE: refund calculation for clearing storage" {
     // Test case: original=100, current=100, new=0
@@ -93,6 +98,7 @@ Add hardfork-specific tests to verify correct gas costs and refund behavior for 
 No TODO, FIXME, XXX, HACK, or BUG comments found in the file.
 
 However, the complexity of the refund logic suggests implicit TODOs:
+
 - Refactor refund logic into testable helper functions
 - Add overflow/underflow guards for refund counter
 
@@ -109,6 +115,7 @@ However, the complexity of the refund logic suggests implicit TODOs:
 The Python reference checks `is_static` AFTER charging gas (line 126-128), but our implementation checks it at line 31 BEFORE gas calculation. This is a **critical divergence** from the specification.
 
 **Python Reference (cancun/vm/instructions/storage.py:126-128):**
+
 ```python
 charge_gas(evm, gas_cost)  # Line 126: Charge gas FIRST
 if evm.message.is_static:   # Line 127-128: THEN check static
@@ -116,6 +123,7 @@ if evm.message.is_static:   # Line 127-128: THEN check static
 ```
 
 **Current Zig Implementation (lines 30-31):**
+
 ```zig
 // EIP-214: SSTORE cannot modify state in static call context
 if (frame.is_static) return error.StaticCallViolation;  // ❌ TOO EARLY!
@@ -125,11 +133,13 @@ try frame.consumeGas(gas_cost);  // Line 77
 ```
 
 **Impact:**
+
 - In a static call context, SSTORE should consume gas before failing
 - Current implementation fails immediately without consuming gas
 - This breaks spec compliance and could cause trace divergence
 
 **Correct Order:**
+
 ```zig
 pub fn sstore(frame: *FrameType) FrameType.EvmError!void {
     const evm = frame.getEvm();
@@ -170,6 +180,7 @@ pub fn sstore(frame: *FrameType) FrameType.EvmError!void {
 The refund subtraction checks `>= 15000` and `>= SstoreRefundGas` before subtracting, but this is insufficient. If `evm.gas_refund` is 15000-4800 = 10200, and we try to subtract 15000, the check passes but subtraction would underflow.
 
 **Current Code (lines 127-129):**
+
 ```zig
 if (evm.gas_refund >= GasConstants.SstoreRefundGas) {
     evm.gas_refund -= GasConstants.SstoreRefundGas;
@@ -180,6 +191,7 @@ if (evm.gas_refund >= GasConstants.SstoreRefundGas) {
 This should be an exact equality check or proper underflow protection. The Python reference uses `refund_counter -= int(...)` which can go negative, but Zig's unsigned integers cannot.
 
 **Recommendation:**
+
 ```zig
 // Option 1: Use signed refund counter (matches Python)
 // In evm.zig: gas_refund: i64 (not u64)
@@ -202,12 +214,14 @@ if (evm.gas_refund == GasConstants.SstoreRefundGas) {
 
 **Issue:**
 The refund logic spans 71 lines with nested conditions across three hardfork variants (pre-Istanbul, Istanbul-London, London+). This makes it:
+
 - Hard to verify correctness
 - Difficult to test exhaustively
 - Prone to subtle bugs during maintenance
 
 **Recommendation:**
 Refactor into separate helper functions:
+
 ```zig
 /// Calculate SSTORE refund for pre-Istanbul hardforks
 fn calculateRefundPreIstanbul(current: u256, value: u256) i64 {
@@ -257,6 +271,7 @@ fn calculateRefundLondon(
 ```
 
 **Benefits:**
+
 - Each function is unit testable
 - Logic is isolated by hardfork
 - Easier to compare with Python reference
@@ -271,6 +286,7 @@ fn calculateRefundLondon(
 Comments contain hardcoded values (15000, 20000, 5000, 4800, 100, 2100) that could become outdated if gas constants change.
 
 **Current:**
+
 ```zig
 // Case 1: Clearing storage for the first time in the transaction
 if (original_value != 0 and current_value != 0 and value == 0) {
@@ -279,6 +295,7 @@ if (original_value != 0 and current_value != 0 and value == 0) {
 ```
 
 **Better:**
+
 ```zig
 // Case 1: Clearing storage for the first time in the transaction
 // Refund: GAS_STORAGE_CLEAR_REFUND (15000 in Istanbul-London)
@@ -297,6 +314,7 @@ TLOAD/TSTORE return `error.InvalidOpcode` for pre-Cancun hardforks, but there's 
 
 **Recommendation:**
 Add explicit tests:
+
 ```zig
 test "TLOAD: returns InvalidOpcode before Cancun" {
     var frame = createTestFrame(.SHANGHAI); // Pre-Cancun
@@ -315,6 +333,7 @@ test "TLOAD: returns InvalidOpcode before Cancun" {
 **Location:** N/A (missing test file)
 
 **Coverage Gaps:**
+
 1. **Gas Cost Calculations:**
    - Cold access (2100 gas)
    - Warm access (100 gas)
@@ -351,6 +370,7 @@ test "TLOAD: returns InvalidOpcode before Cancun" {
 
 **Issue:**
 No explicit verification that all ethereum/tests GeneralStateTests for storage operations pass. Need to run:
+
 ```bash
 TEST_FILTER="sstore" zig build specs
 TEST_FILTER="sload" zig build specs
@@ -370,6 +390,7 @@ TEST_FILTER="tstore" zig build specs
 Storage refund logic has complex invariants that would benefit from property-based testing:
 
 **Properties to Test:**
+
 1. **Idempotency:** Storing the same value twice doesn't change refunds
 2. **Refund Symmetry:** Clear → Restore should net to zero refund change
 3. **Refund Bounds:** Total refund never exceeds gas consumed
@@ -377,6 +398,7 @@ Storage refund logic has complex invariants that would benefit from property-bas
 
 **Recommendation:**
 Add property-based tests using Zig's testing infrastructure:
+
 ```zig
 test "SSTORE: refund invariants" {
     var prng = std.rand.DefaultPrng.init(0);
@@ -413,12 +435,14 @@ test "SSTORE: refund invariants" {
 
 **Issue:**
 The `Handlers` struct comment (lines 6-8) specifies required methods/fields but doesn't document:
+
 - Thread safety (is this safe to call from multiple threads?)
 - Lifecycle (when is Evm pointer valid?)
 - Error propagation strategy
 - Hardfork compatibility matrix
 
 **Recommendation:**
+
 ```zig
 /// Storage opcode handlers for the EVM
 ///
@@ -454,6 +478,7 @@ pub fn Handlers(FrameType: type) type {
 
 **Issue:**
 Storage operations are critical hot paths in EVM execution. There are no benchmarks for:
+
 - SLOAD/SSTORE throughput
 - Access list lookup performance
 - Original storage caching effectiveness
@@ -461,6 +486,7 @@ Storage operations are critical hot paths in EVM execution. There are no benchma
 
 **Recommendation:**
 Add benchmark tests:
+
 ```zig
 test "benchmark: SLOAD warm access" {
     // Measure SLOAD performance with warm access
@@ -484,11 +510,13 @@ test "benchmark: access list lookup" {
 The code checks `if (evm.gas_refund >= value)` before subtraction, suggesting `gas_refund` is unsigned. But Python's `refund_counter: int` can go negative. This is a **semantic mismatch**.
 
 **Python Reference:**
+
 ```python
 evm.refund_counter -= int(GAS_STORAGE_CLEAR_REFUND)  # Can go negative!
 ```
 
 **Current Zig Implementation:**
+
 ```zig
 if (evm.gas_refund >= GasConstants.SstoreRefundGas) {
     evm.gas_refund -= GasConstants.SstoreRefundGas;  // Prevents negative
@@ -496,11 +524,13 @@ if (evm.gas_refund >= GasConstants.SstoreRefundGas) {
 ```
 
 **Recommendation:**
+
 1. **Verify `gas_refund` type in `evm.zig`:**
    - If `u64`: Add comment explaining why we diverge from Python
    - If `i64`: Remove the conditional and allow negative values
 
 2. **Add explicit test:**
+
    ```zig
    test "SSTORE: refund counter can go negative" {
        // Match Python behavior: refund_counter can be negative
@@ -518,6 +548,7 @@ The SSTORE function has excellent comments referencing EIP-2200, EIP-2929, EIP-3
 
 **Recommendation:**
 Add EIP references to all functions:
+
 ```zig
 /// SLOAD opcode (0x54) - Load word from storage
 ///
@@ -540,6 +571,7 @@ pub fn sload(frame: *FrameType) FrameType.EvmError!void {
 
 **Issue:**
 Storage handlers would benefit from fuzz testing to find edge cases:
+
 - Random storage key/value combinations
 - Random hardfork transitions
 - Random gas amounts near limits (e.g., gas_remaining = 2301 for SSTORE)
@@ -554,6 +586,7 @@ Integrate with AFL or libFuzzer for continuous fuzzing of storage operations.
 ### 6.1 Operation Order Mismatch (CRITICAL)
 
 **Python SSTORE (cancun/vm/instructions/storage.py:69-132):**
+
 ```python
 def sstore(evm: Evm) -> None:
     # STACK (lines 79-81)
@@ -595,6 +628,7 @@ def sstore(evm: Evm) -> None:
 ```
 
 **Current Zig Implementation:**
+
 ```zig
 pub fn sstore(frame: *FrameType) FrameType.EvmError!void {
     const evm = frame.getEvm();
@@ -636,6 +670,7 @@ pub fn sstore(frame: *FrameType) FrameType.EvmError!void {
 ### 6.2 TSTORE Gas Charge Order Mismatch
 
 **Python TSTORE (cancun/vm/instructions/storage.py:177-178):**
+
 ```python
 # GAS (line 177)
 charge_gas(evm, GAS_WARM_ACCESS)
@@ -646,6 +681,7 @@ if evm.message.is_static:
 ```
 
 **Current Zig TSTORE (lines 181-179):**
+
 ```zig
 // ❌ WRONG: Static check at line 179 (before gas)
 if (frame.is_static) return error.StaticCallViolation;
@@ -659,9 +695,11 @@ try frame.consumeGas(GasConstants.TStoreGas);
 ### 6.3 Correct Implementations
 
 **SLOAD (lines 12-24):** ✅ Matches Python reference perfectly
+
 - Stack pop → Gas charge → Storage read → Stack push → PC increment
 
 **TLOAD (lines 158-169):** ✅ Matches Python reference perfectly
+
 - Hardfork check → Gas charge → Stack pop → Storage read → Stack push → PC increment
 
 ---
@@ -669,12 +707,14 @@ try frame.consumeGas(GasConstants.TStoreGas);
 ## 7. Recommendations Summary
 
 ### Immediate (Critical)
+
 1. **FIX:** Move SSTORE static call check to after gas consumption (line 31 → after line 151)
 2. **FIX:** Move TSTORE static call check to after gas consumption (line 179 → after line 181)
 3. **FIX:** Change `gas_refund` type to `i64` to match Python's signed `refund_counter`
 4. **VERIFY:** Run all storage-related spec tests to confirm no regressions
 
 ### Short-term (High Priority)
+
 1. **ADD:** Comprehensive unit tests for all four handlers
 2. **ADD:** Refund edge case tests (underflow, overflow, independent checks)
 3. **ADD:** Static call timing tests
@@ -682,6 +722,7 @@ try frame.consumeGas(GasConstants.TStoreGas);
 5. **DOCUMENT:** Add EIP references and lifecycle documentation
 
 ### Long-term (Medium Priority)
+
 1. **ADD:** Property-based tests for refund invariants
 2. **ADD:** Benchmark tests for performance tracking
 3. **ADD:** Fuzz testing integration
@@ -692,14 +733,14 @@ try frame.consumeGas(GasConstants.TStoreGas);
 
 ## 8. Risk Assessment
 
-| Risk Category | Level | Mitigation |
-|---------------|-------|------------|
-| **Correctness** | 🔴 CRITICAL | Static call timing bugs cause spec divergence. Fix immediately. |
-| **Maintainability** | 🟡 MEDIUM | Complex refund logic is hard to verify. Refactor into functions. |
-| **Performance** | 🟢 LOW | No obvious performance issues. Add benchmarks to track. |
-| **Security** | 🟡 MEDIUM | Refund underflow could cause issues. Use signed counter. |
-| **Testing** | 🔴 CRITICAL | No unit tests. Add comprehensive test suite. |
-| **Documentation** | 🟡 MEDIUM | Missing EIP references and lifecycle docs. Add inline docs. |
+| Risk Category       | Level       | Mitigation                                                       |
+| ------------------- | ----------- | ---------------------------------------------------------------- |
+| **Correctness**     | 🔴 CRITICAL | Static call timing bugs cause spec divergence. Fix immediately.  |
+| **Maintainability** | 🟡 MEDIUM   | Complex refund logic is hard to verify. Refactor into functions. |
+| **Performance**     | 🟢 LOW      | No obvious performance issues. Add benchmarks to track.          |
+| **Security**        | 🟡 MEDIUM   | Refund underflow could cause issues. Use signed counter.         |
+| **Testing**         | 🔴 CRITICAL | No unit tests. Add comprehensive test suite.                     |
+| **Documentation**   | 🟡 MEDIUM   | Missing EIP references and lifecycle docs. Add inline docs.      |
 
 ---
 
@@ -710,12 +751,14 @@ The storage handlers implementation is well-structured and mostly correct, but h
 The complex refund logic is difficult to verify and would benefit from refactoring into separate testable functions. The lack of unit tests is a significant gap that should be addressed before making further changes.
 
 **Recommended Actions:**
+
 1. Fix static call check timing in SSTORE and TSTORE (same day)
 2. Add comprehensive unit tests (within 1 week)
 3. Refactor refund logic into helper functions (within 2 weeks)
 4. Run and document spec test coverage (within 1 week)
 
 **Files to Review Next:**
+
 - `/Users/williamcory/guillotine-mini/src/evm.zig` - Verify `gas_refund` type and storage interface
 - `/Users/williamcory/guillotine-mini/src/frame.zig` - Verify handler integration and error propagation
 - `/Users/williamcory/guillotine-mini/test/specs/runner.zig` - Verify spec test coverage for storage operations

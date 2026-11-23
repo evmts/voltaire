@@ -8,7 +8,7 @@ export { from };
 export declare function toString(protocolVersion: string): string;
 export declare function equals(protocolVersion1: string, protocolVersion2: string): boolean;
 export declare function compare(protocolVersion1: string, protocolVersion2: string): number;
-export { _toString, _equals, _compare };
+export { _compare, _equals, _toString };
 export declare const ProtocolVersion: {
     from: typeof from;
     toString: typeof toString;

@@ -1,7 +1,3 @@
-export { Hex, fromBytes, toBytes } from "./Hex.js";
-export * from "./Hex.js";
-export type { HexType, Sized, Bytes } from "./HexType.js";
-
 // Standalone function exports (matching index.js)
 export { assertSize } from "./assertSize.js";
 export { clone } from "./clone.js";
@@ -12,6 +8,9 @@ export { fromBigInt } from "./fromBigInt.js";
 export { fromBoolean } from "./fromBoolean.js";
 export { fromNumber } from "./fromNumber.js";
 export { fromString } from "./fromString.js";
+export * from "./Hex.js";
+export { fromBytes, Hex, toBytes } from "./Hex.js";
+export type { Bytes, HexType, Sized } from "./HexType.js";
 export { isHex } from "./isHex.js";
 export { isSized } from "./isSized.js";
 export { pad } from "./pad.js";

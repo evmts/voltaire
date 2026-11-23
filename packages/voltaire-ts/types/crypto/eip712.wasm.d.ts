@@ -20,7 +20,7 @@ import type { HashType } from "../primitives/Hash/index.js";
 import type { Domain, Message, TypeDefinitions, TypedData } from "./EIP712/index.js";
 import { Eip712EncodingError, Eip712Error, Eip712InvalidMessageError, Eip712TypeNotFoundError } from "./EIP712/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
-export { Eip712Error, Eip712EncodingError, Eip712TypeNotFoundError, Eip712InvalidMessageError, };
+export { Eip712EncodingError, Eip712Error, Eip712InvalidMessageError, Eip712TypeNotFoundError, };
 export declare namespace Eip712Wasm {
     type Signature = Secp256k1Wasm.Signature;
     type Types = TypeDefinitions;

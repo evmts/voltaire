@@ -1,0 +1,59 @@
+---
+title: Block Access List (EIP-7928)
+description: Block-level access lists for Amsterdam (Glamsterdam) - what they record, how the Engine API carries them, and Voltaire support status
+---
+
+## Overview
+
+A block-level access list (BAL), defined by [EIP-7928](https://eips.ethereum.org/EIPS/eip-7928), records every account and storage slot a block touches, together with the post-transaction state changes. It ships in the [Amsterdam](/primitives/hardfork/hardforks) (Glamsterdam) fork, after [Osaka](/primitives/hardfork/osaka).
+
+With the list in hand, a client can:
+
+- prefetch all touched state from disk in parallel before execution
+- execute independent transactions in parallel
+- validate state changes without executing, for example when syncing
+
+Unlike the transaction-level [access list](/primitives/accesslist) from EIP-2930, the BAL is mandatory, covers the whole block, and includes written values, not just keys.
+
+## Engine API
+
+The Engine API carries the BAL as RLP bytes. From the vendored [execution-apis](https://github.com/ethereum/execution-apis) Amsterdam spec:
+
+- `ExecutionPayloadV4` extends `ExecutionPayloadV3` with `blockAccessList: DATA`, the RLP-encoded block access list.
+- `engine_newPayloadV5` accepts `ExecutionPayloadV4`. The client returns `-32602: Invalid params` if `blockAccessList` is missing. It executes the payload, compares the computed access list with the provided one, and returns `{status: INVALID, latestValidHash: null, validationError}` if the list is malformed or does not match.
+- `engine_getPayloadV6` returns `ExecutionPayloadV4`. While building the block, the client collects every account access and state change and fills `blockAccessList`.
+- `engine_newPayloadV4` and `engine_getPayloadV5` (Osaka) return `-38005: Unsupported fork` for payloads with a timestamp at or after Amsterdam activation.
+
+## Block header
+
+EIP-7928 adds a commitment to the BAL to the block header, so a light client can check a received list against the header without re-executing:
+
+```
+blockAccessListHash = keccak256(rlp(blockAccessList))
+```
+
+## Voltaire support
+
+<Warning>
+The `BlockAccessList` TypeScript and Zig modules are not released yet. This page will document their API when they land. Until then, treat `blockAccessList` as opaque RLP bytes: decode it with [RLP](/primitives/rlp) and hash it with [Keccak256](/crypto/keccak256).
+</Warning>
+
+```typescript
+import { Rlp } from '@tevm/voltaire/Rlp';
+import { Keccak256Hash } from '@tevm/voltaire/Keccak256';
+
+// payload.blockAccessList: Uint8Array from engine_getPayloadV6
+const decoded = Rlp.decode(payload.blockAccessList);
+const hash = Keccak256Hash.from(payload.blockAccessList); // compare with header blockAccessListHash
+```
+
+## Related
+
+- [Access list (EIP-2930)](/primitives/accesslist)
+- [Block header](/primitives/block-header)
+- [Hardfork timeline](/primitives/hardfork/hardforks)
+
+## References
+
+- [EIP-7928: Block-level access lists](https://eips.ethereum.org/EIPS/eip-7928)
+- [Engine API: Amsterdam](https://github.com/ethereum/execution-apis/blob/main/src/engine/amsterdam.md)

@@ -7,7 +7,7 @@ export { from };
 export declare function toString(peerId: string): string;
 export declare function equals(peerId1: string, peerId2: string): boolean;
 export declare function parse(peerId: string): import("./PeerIdType.js").EnodeComponents;
-export { _toString, _equals, _parse };
+export { _equals, _parse, _toString };
 export declare const PeerId: {
     from: typeof from;
     toString: typeof toString;

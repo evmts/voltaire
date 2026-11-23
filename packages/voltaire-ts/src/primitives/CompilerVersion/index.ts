@@ -45,7 +45,7 @@ export function isCompatible(version: string, range: string): boolean {
 }
 
 // Export internal functions (tree-shakeable)
-export { _parse, _compare, _getMajor, _getMinor, _getPatch, _isCompatible };
+export { _compare, _getMajor, _getMinor, _getPatch, _isCompatible, _parse };
 
 // Export as namespace (convenience)
 export const CompilerVersion = {

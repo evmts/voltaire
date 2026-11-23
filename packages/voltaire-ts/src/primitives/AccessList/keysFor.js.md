@@ -1,6 +1,6 @@
 ---
-title: "keysFor.js"
----
+
+## title: "keysFor.js"
 
 # keysFor.js
 
@@ -10,9 +10,9 @@ Get all storage keys for an address.
 
 ```typescript
 function keysFor(
-  list: BrandedAccessList,
-  address: AddressType
-): readonly HashType[] | undefined
+	list: BrandedAccessList,
+	address: AddressType,
+): readonly HashType[] | undefined;
 ```
 
 ## Parameters
@@ -30,12 +30,12 @@ function keysFor(
 const keys = AccessList.keysFor(list, tokenAddress);
 
 if (keys) {
-  console.log(`Token has ${keys.length} storage keys`);
-  for (const key of keys) {
-    console.log(key.toHex());
-  }
+	console.log(`Token has ${keys.length} storage keys`);
+	for (const key of keys) {
+		console.log(key.toHex());
+	}
 } else {
-  console.log('Token not in access list');
+	console.log("Token not in access list");
 }
 ```
 

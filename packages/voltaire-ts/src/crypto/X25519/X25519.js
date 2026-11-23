@@ -11,6 +11,8 @@ import {
 import { derivePublicKey } from "./derivePublicKey.js";
 import { generateKeypair } from "./generateKeypair.js";
 import { generateSecretKey } from "./generateSecretKey.js";
+import { isValidPublicKey } from "./isValidPublicKey.js";
+import { isWeakPublicKey } from "./isWeakPublicKey.js";
 import { keypairFromSeed } from "./keypairFromSeed.js";
 import { scalarmult } from "./scalarmult.js";
 import { validatePublicKey } from "./validatePublicKey.js";
@@ -19,12 +21,14 @@ import { validateSecretKey } from "./validateSecretKey.js";
 // Export individual functions
 export {
 	derivePublicKey,
-	scalarmult,
-	keypairFromSeed,
-	generateSecretKey,
 	generateKeypair,
-	validateSecretKey,
+	generateSecretKey,
+	isValidPublicKey,
+	isWeakPublicKey,
+	keypairFromSeed,
+	scalarmult,
 	validatePublicKey,
+	validateSecretKey,
 };
 
 /**
@@ -61,6 +65,8 @@ export const X25519 = {
 	generateKeypair,
 	validateSecretKey,
 	validatePublicKey,
+	isValidPublicKey,
+	isWeakPublicKey,
 	SECRET_KEY_SIZE,
 	PUBLIC_KEY_SIZE,
 	SHARED_SECRET_SIZE,

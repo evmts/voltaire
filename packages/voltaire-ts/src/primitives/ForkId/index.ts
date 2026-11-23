@@ -22,7 +22,7 @@ export function matches(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toBytes, _matches };
+export { _matches, _toBytes };
 
 // Export as namespace (convenience)
 export const ForkId = {

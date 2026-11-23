@@ -21,25 +21,27 @@ npm install @tevm/voltaire
 ## Quick Start
 
 ```typescript
-import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
-import { Hash } from '@tevm/voltaire/primitives/hash';
+import { Secp256k1 } from "@tevm/voltaire/crypto/secp256k1";
+import { Hash } from "@tevm/voltaire/primitives/hash";
 
 // Generate keys
 const privateKey = new Uint8Array(32); // Your private key
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
 // Sign a message
-const messageHash = Hash.keccak256String('Hello, Ethereum!');
+const messageHash = Hash.keccak256String("Hello, Ethereum!");
 const signature = Secp256k1.sign(messageHash, privateKey);
 
 // Verify signature
 const valid = Secp256k1.verify(signature, messageHash, publicKey);
-console.log('Valid:', valid); // true
+console.log("Valid:", valid); // true
 
 // Recover public key from signature
 const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
-console.log('Recovered matches original:',
-  recovered.every((b, i) => b === publicKey[i])); // true
+console.log(
+	"Recovered matches original:",
+	recovered.every((b, i) => b === publicKey[i]),
+); // true
 ```
 
 ## API Reference
@@ -52,9 +54,9 @@ ECDSA signature with Ethereum-compatible v value:
 
 ```typescript
 type Signature = {
-  r: Uint8Array;  // 32 bytes: x-coordinate of ephemeral public key
-  s: Uint8Array;  // 32 bytes: signature proof value
-  v: number;      // Recovery id: 27 or 28 for Ethereum
+	r: Uint8Array; // 32 bytes: x-coordinate of ephemeral public key
+	s: Uint8Array; // 32 bytes: signature proof value
+	v: number; // Recovery id: 27 or 28 for Ethereum
 };
 ```
 
@@ -77,10 +79,10 @@ type PrivateKey = Uint8Array; // 32 bytes
 ### Constants
 
 ```typescript
-Secp256k1.CURVE_ORDER              // Curve order (n)
-Secp256k1.PRIVATE_KEY_SIZE         // 32 bytes
-Secp256k1.PUBLIC_KEY_SIZE          // 64 bytes
-Secp256k1.SIGNATURE_COMPONENT_SIZE // 32 bytes
+Secp256k1.CURVE_ORDER; // Curve order (n)
+Secp256k1.PRIVATE_KEY_SIZE; // 32 bytes
+Secp256k1.PUBLIC_KEY_SIZE; // 64 bytes
+Secp256k1.SIGNATURE_COMPONENT_SIZE; // 32 bytes
 ```
 
 ### Core Operations
@@ -90,23 +92,25 @@ Secp256k1.SIGNATURE_COMPONENT_SIZE // 32 bytes
 Sign a message hash with a private key. Uses deterministic ECDSA (RFC 6979).
 
 ```typescript
-function sign(messageHash: Hash, privateKey: PrivateKey): Signature
+function sign(messageHash: Hash, privateKey: PrivateKey): Signature;
 ```
 
 **Parameters:**
+
 - `messageHash`: 32-byte hash to sign
 - `privateKey`: 32-byte private key
 
 **Returns:** ECDSA signature with r, s, v components
 
 **Throws:**
+
 - `InvalidPrivateKeyError`: If private key is invalid
 - `Secp256k1Error`: If signing fails
 
 **Example:**
 
 ```typescript
-const messageHash = Hash.keccak256String('Hello!');
+const messageHash = Hash.keccak256String("Hello!");
 const privateKey = new Uint8Array(32);
 const signature = Secp256k1.sign(messageHash, privateKey);
 console.log(signature.v); // 27 or 28
@@ -118,13 +122,14 @@ Verify an ECDSA signature against a public key.
 
 ```typescript
 function verify(
-  signature: Signature,
-  messageHash: Hash,
-  publicKey: PublicKey
-): boolean
+	signature: Signature,
+	messageHash: Hash,
+	publicKey: PublicKey,
+): boolean;
 ```
 
 **Parameters:**
+
 - `signature`: ECDSA signature with r, s, v
 - `messageHash`: 32-byte hash that was signed
 - `publicKey`: 64-byte uncompressed public key
@@ -132,6 +137,7 @@ function verify(
 **Returns:** `true` if signature is valid, `false` otherwise
 
 **Throws:**
+
 - `InvalidPublicKeyError`: If public key is invalid
 - `InvalidSignatureError`: If signature format is invalid
 
@@ -140,7 +146,7 @@ function verify(
 ```typescript
 const valid = Secp256k1.verify(signature, messageHash, publicKey);
 if (valid) {
-  console.log('Signature verified!');
+	console.log("Signature verified!");
 }
 ```
 
@@ -149,16 +155,18 @@ if (valid) {
 Recover the public key that created a signature. This is what enables Ethereum's address recovery.
 
 ```typescript
-function recoverPublicKey(signature: Signature, messageHash: Hash): PublicKey
+function recoverPublicKey(signature: Signature, messageHash: Hash): PublicKey;
 ```
 
 **Parameters:**
+
 - `signature`: ECDSA signature with r, s, v
 - `messageHash`: 32-byte hash that was signed
 
 **Returns:** 64-byte uncompressed public key
 
 **Throws:**
+
 - `InvalidSignatureError`: If signature is invalid or recovery fails
 
 **Example:**
@@ -173,15 +181,17 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 Derive public key from private key using scalar multiplication.
 
 ```typescript
-function derivePublicKey(privateKey: PrivateKey): PublicKey
+function derivePublicKey(privateKey: PrivateKey): PublicKey;
 ```
 
 **Parameters:**
+
 - `privateKey`: 32-byte private key
 
 **Returns:** 64-byte uncompressed public key
 
 **Throws:**
+
 - `InvalidPrivateKeyError`: If private key is invalid
 
 **Example:**
@@ -199,7 +209,7 @@ console.log(publicKey.length); // 64
 Validate signature components (r, s in [1, n-1], low-s, valid v).
 
 ```typescript
-function isValidSignature(signature: Signature): boolean
+function isValidSignature(signature: Signature): boolean;
 ```
 
 #### `Secp256k1.isValidPublicKey(publicKey)`
@@ -207,7 +217,7 @@ function isValidSignature(signature: Signature): boolean
 Check if public key is a valid point on the curve.
 
 ```typescript
-function isValidPublicKey(publicKey: PublicKey): boolean
+function isValidPublicKey(publicKey: PublicKey): boolean;
 ```
 
 #### `Secp256k1.isValidPrivateKey(privateKey)`
@@ -215,7 +225,7 @@ function isValidPublicKey(publicKey: PublicKey): boolean
 Check if private key is in valid range [1, n-1].
 
 ```typescript
-function isValidPrivateKey(privateKey: PrivateKey): boolean
+function isValidPrivateKey(privateKey: PrivateKey): boolean;
 ```
 
 ### Signature Formatting
@@ -225,7 +235,7 @@ function isValidPrivateKey(privateKey: PrivateKey): boolean
 Convert signature to compact format (64 bytes: r || s).
 
 ```typescript
-function toCompact(this: Signature): Uint8Array
+function toCompact(this: Signature): Uint8Array;
 ```
 
 **Example:**
@@ -240,7 +250,7 @@ console.log(compact.length); // 64
 Convert signature to bytes with v appended (65 bytes: r || s || v).
 
 ```typescript
-function toBytes(this: Signature): Uint8Array
+function toBytes(this: Signature): Uint8Array;
 ```
 
 **Example:**
@@ -255,7 +265,7 @@ console.log(bytes.length); // 65
 Create signature from compact format.
 
 ```typescript
-function fromCompact(compact: Uint8Array, v: number): Signature
+function fromCompact(compact: Uint8Array, v: number): Signature;
 ```
 
 **Example:**
@@ -269,7 +279,7 @@ const signature = Secp256k1.Signature.fromCompact(compact, 27);
 Create signature from bytes (65 bytes: r || s || v).
 
 ```typescript
-function fromBytes(bytes: Uint8Array): Signature
+function fromBytes(bytes: Uint8Array): Signature;
 ```
 
 **Example:**
@@ -301,74 +311,74 @@ const signedTx = { ...txData, ...signature };
 ### Verify Message Signature
 
 ```typescript
-import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
-import { Hash } from '@tevm/voltaire/primitives/hash';
+import { Secp256k1 } from "@tevm/voltaire/crypto/secp256k1";
+import { Hash } from "@tevm/voltaire/primitives/hash";
 
 function verifyMessage(
-  message: string,
-  signature: Secp256k1.Signature,
-  expectedAddress: Address
+	message: string,
+	signature: Secp256k1.Signature,
+	expectedAddress: Address,
 ): boolean {
-  // Hash message with Ethereum prefix
-  const messageHash = Hash.keccak256String(
-    `\x19Ethereum Signed Message:\n${message.length}${message}`
-  );
+	// Hash message with Ethereum prefix
+	const messageHash = Hash.keccak256String(
+		`\x19Ethereum Signed Message:\n${message.length}${message}`,
+	);
 
-  // Recover signer's public key
-  const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+	// Recover signer's public key
+	const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
 
-  // Derive address from public key
-  const pubKeyHash = Hash.keccak256(publicKey);
-  const address = pubKeyHash.slice(-20);
+	// Derive address from public key
+	const pubKeyHash = Hash.keccak256(publicKey);
+	const address = pubKeyHash.slice(-20);
 
-  // Compare addresses
-  return address.every((b, i) => b === expectedAddress[i]);
+	// Compare addresses
+	return address.every((b, i) => b === expectedAddress[i]);
 }
 ```
 
 ### Key Generation
 
 ```typescript
-import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
-import { randomBytes } from 'crypto';
+import { Secp256k1 } from "@tevm/voltaire/crypto/secp256k1";
+import { randomBytes } from "crypto";
 
 // Generate random private key
 let privateKey: Uint8Array;
 do {
-  privateKey = randomBytes(32);
+	privateKey = randomBytes(32);
 } while (!Secp256k1.isValidPrivateKey(privateKey));
 
 // Derive public key
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 
-console.log('Generated key pair');
-console.log('Private key:', Hex.fromBytes(privateKey));
-console.log('Public key:', Hex.fromBytes(publicKey));
+console.log("Generated key pair");
+console.log("Private key:", Hex.fromBytes(privateKey));
+console.log("Public key:", Hex.fromBytes(publicKey));
 ```
 
 ### Signature Verification Before Broadcasting
 
 ```typescript
-import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
+import { Secp256k1 } from "@tevm/voltaire/crypto/secp256k1";
 
 function prepareTransaction(txHash: Hash, privateKey: Uint8Array) {
-  // Sign transaction
-  const signature = Secp256k1.sign(txHash, privateKey);
+	// Sign transaction
+	const signature = Secp256k1.sign(txHash, privateKey);
 
-  // Validate signature before broadcasting
-  if (!Secp256k1.isValidSignature(signature)) {
-    throw new Error('Generated invalid signature');
-  }
+	// Validate signature before broadcasting
+	if (!Secp256k1.isValidSignature(signature)) {
+		throw new Error("Generated invalid signature");
+	}
 
-  // Verify we can recover the correct public key
-  const publicKey = Secp256k1.derivePublicKey(privateKey);
-  const recovered = Secp256k1.recoverPublicKey(signature, txHash);
+	// Verify we can recover the correct public key
+	const publicKey = Secp256k1.derivePublicKey(privateKey);
+	const recovered = Secp256k1.recoverPublicKey(signature, txHash);
 
-  if (!recovered.every((b, i) => b === publicKey[i])) {
-    throw new Error('Signature verification failed');
-  }
+	if (!recovered.every((b, i) => b === publicKey[i])) {
+		throw new Error("Signature verification failed");
+	}
 
-  return signature;
+	return signature;
 }
 ```
 
@@ -376,12 +386,12 @@ function prepareTransaction(txHash: Hash, privateKey: Uint8Array) {
 
 Benchmarks on Apple M1 Pro:
 
-| Operation | Speed |
-|-----------|-------|
-| sign | ~20,000 ops/sec |
-| verify | ~7,000 ops/sec |
-| derivePublicKey | ~25,000 ops/sec |
-| recoverPublicKey | ~4,000 ops/sec |
+| Operation        | Speed              |
+| ---------------- | ------------------ |
+| sign             | ~20,000 ops/sec    |
+| verify           | ~7,000 ops/sec     |
+| derivePublicKey  | ~25,000 ops/sec    |
+| recoverPublicKey | ~4,000 ops/sec     |
 | isValidSignature | ~5,000,000 ops/sec |
 
 Run benchmarks:
@@ -396,12 +406,13 @@ bun run src/crypto/secp256k1.bench.ts
 
 **⚠️ CRITICAL: The Zig secp256k1 implementation contains known timing attack vulnerabilities.**
 
-| Implementation | Status | Security Properties | Recommendation |
-|---------------|--------|-------------------|----------------|
-| **TypeScript** | ✅ Production-ready | @noble/curves (audited, constant-time) | **Use for all production cryptographic operations** |
-| **Zig** | ⚠️ Unaudited | Custom implementation with potential timing attacks (see `secp256k1.zig:14`) | Educational/testing only |
+| Implementation | Status              | Security Properties                                                          | Recommendation                                      |
+| -------------- | ------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------- |
+| **TypeScript** | ✅ Production-ready | @noble/curves (audited, constant-time)                                       | **Use for all production cryptographic operations** |
+| **Zig**        | ⚠️ Unaudited        | Custom implementation with potential timing attacks (see `secp256k1.zig:14`) | Educational/testing only                            |
 
 The Zig implementation has explicit warnings about:
+
 - Potential timing attacks in modular arithmetic
 - Unvalidated against known ECC vulnerabilities
 - Custom point arithmetic may have edge case bugs
@@ -416,6 +427,7 @@ This implementation uses `@noble/curves`, a well-audited cryptographic library. 
 ### Deterministic Signatures
 
 Signatures use RFC 6979 deterministic ECDSA. This means:
+
 - Same message + same key = same signature
 - No need for secure random number generation during signing
 - Eliminates nonce reuse attacks
@@ -445,17 +457,18 @@ All operations throw typed errors:
 
 ```typescript
 try {
-  const signature = Secp256k1.sign(messageHash, privateKey);
+	const signature = Secp256k1.sign(messageHash, privateKey);
 } catch (error) {
-  if (error instanceof InvalidPrivateKeyError) {
-    console.error('Invalid private key:', error.message);
-  } else if (error instanceof Secp256k1Error) {
-    console.error('Signing failed:', error.message);
-  }
+	if (error instanceof InvalidPrivateKeyError) {
+		console.error("Invalid private key:", error.message);
+	} else if (error instanceof Secp256k1Error) {
+		console.error("Signing failed:", error.message);
+	}
 }
 ```
 
 Error types:
+
 - `Secp256k1Error`: Base error class
 - `InvalidSignatureError`: Signature validation or recovery failed
 - `InvalidPublicKeyError`: Public key validation failed
@@ -483,6 +496,7 @@ bun test src/crypto/secp256k1.test.ts
 ```
 
 Test coverage includes:
+
 - Known test vectors from Ethereum
 - Edge cases (zero/max values)
 - Invalid inputs and error handling

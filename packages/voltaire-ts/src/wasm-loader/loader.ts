@@ -10,6 +10,7 @@ import type { Secp256k1PublicKeyType } from "../crypto/Secp256k1/Secp256k1Public
 import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
 import type { HashType } from "../primitives/Hash/HashType.js";
 import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js";
+import { createScratch, type Scratch, scratchAlloc } from "./scratch.js";
 import type { WasiImports, WasmExports } from "./types.js";
 import { ErrorCode } from "./types.js";
 
@@ -19,8 +20,10 @@ const nodeCryptoModule: typeof import("node:crypto") | null = null;
 let wasmInstance: WebAssembly.Instance | null = null;
 let wasmMemory: WebAssembly.Memory | null = null;
 let wasmExports: WasmExports | null = null;
-let memoryOffset = 0; // Simple bump allocator
-let loadedWasmPath: string | null = null; // Track loaded WASM file
+let scratch: Scratch | null = null; // JS-owned region above module memory
+let memoryOffset = 0; // Bump pointer inside `scratch`
+let loadedWasmPath: string | null = null; // Track loaded WASM file or URL
+let loadedWasmBuffer: ArrayBuffer | null = null; // Track loaded ArrayBuffer by identity
 
 /**
  * Error messages for error codes
@@ -67,19 +70,26 @@ export async function loadWasm(
 			? wasmPath.href
 			: typeof wasmPath === "string"
 				? wasmPath
-				: "[ArrayBuffer]";
+				: null;
+	const sameSource =
+		pathStr === null
+			? loadedWasmBuffer === wasmPath
+			: loadedWasmPath === pathStr;
 
-	if (wasmInstance && !forceReload && loadedWasmPath === pathStr) {
-		return; // Already loaded same file
+	if (wasmInstance && !forceReload && sameSource) {
+		return; // Already loaded same file or same ArrayBuffer object
 	}
 
 	// Reset state for reload
-	if (forceReload || loadedWasmPath !== pathStr) {
-		wasmInstance = null;
-		wasmMemory = null;
-		wasmExports = null;
-		memoryOffset = 0;
-	}
+	wasmInstance = null;
+	wasmMemory = null;
+	wasmExports = null;
+	scratch = null;
+	memoryOffset = 0;
+	loadedWasmPath = null;
+	loadedWasmBuffer = null;
+	// A new instance has fresh linear memory with no trusted setup loaded.
+	kzgInitialized = false;
 
 	// Minimal WASI shim for wasm32-wasi modules
 	const wasi: WasiImports = {
@@ -277,14 +287,17 @@ export async function loadWasm(
 		throw new Error("WASM module does not export memory");
 	}
 
-	// Initialize memory offset for JS allocations
-	// WASM static data is at 16MB+ (seen in objdump: segment starts at i32=16777216)
-	// WASM stack typically starts high and grows down
-	// Start JS allocations at 64KB to be safe, leaving low memory for WASM stack
-	memoryOffset = 64 * 1024;
+	// The module owns all of its initial memory (stack, static data, heap).
+	// Reserve JS scratch strictly above it; see scratch.ts.
+	scratch = createScratch(wasmMemory);
+	memoryOffset = scratch.base;
 
-	// Track loaded path for reload detection
-	loadedWasmPath = pathStr;
+	// Track loaded source for reload detection
+	if (pathStr === null) {
+		loadedWasmBuffer = wasmPath as ArrayBuffer;
+	} else {
+		loadedWasmPath = pathStr;
+	}
 }
 
 /**
@@ -314,33 +327,13 @@ export function getExports(): WasmExports {
  * @returns Pointer to allocated memory
  */
 function malloc(size: number): number {
-	// Check if WASM is initialized
-	if (!wasmMemory || !wasmMemory.buffer) {
+	if (!wasmMemory || !scratch) {
 		throw new Error(
 			"WASM memory not initialized. Ensure loadWasm() is called before using primitives.",
 		);
 	}
-
-	// Align to 8 bytes
-	const aligned = (size + 7) & ~7;
-	const ptr = memoryOffset;
-	memoryOffset += aligned;
-
-	// Grow memory if needed
-	const pagesNeeded = Math.ceil(memoryOffset / 65536);
-	const currentPages = wasmMemory.buffer.byteLength / 65536;
-
-	if (pagesNeeded > currentPages) {
-		const pagesToGrow = pagesNeeded - currentPages;
-		try {
-			wasmMemory.grow(pagesToGrow);
-		} catch (_e) {
-			throw new Error(
-				`Out of memory: failed to grow WASM memory from ${currentPages} to ${pagesNeeded} pages (tried to grow by ${pagesToGrow} pages). Current offset: ${memoryOffset}, requested size: ${size}`,
-			);
-		}
-	}
-
+	const { ptr, next } = scratchAlloc(scratch, memoryOffset, size);
+	memoryOffset = next;
 	return ptr;
 }
 
@@ -358,7 +351,9 @@ function malloc(size: number): number {
  * ```
  */
 export function resetMemory(): void {
-	memoryOffset = 64 * 1024;
+	if (scratch) {
+		memoryOffset = scratch.base;
+	}
 }
 
 /**
@@ -901,7 +896,7 @@ export function blake2b(data: Uint8Array): Uint8Array {
 		const outPtr = malloc(64);
 
 		writeBytes(data, dataPtr);
-		const result = exports.primitives_blake2b(dataPtr, data.length, outPtr);
+		const result = exports.primitives_blake2b(dataPtr, data.length, outPtr, 64);
 		checkResult(result);
 		return readBytes(outPtr, 64);
 	} finally {
@@ -916,18 +911,40 @@ export function blake2b(data: Uint8Array): Uint8Array {
  * @returns BLAKE2b hash of specified length
  */
 export function blake2Hash(data: Uint8Array, outputLength: number): Uint8Array {
+	if (
+		!Number.isInteger(outputLength) ||
+		outputLength < 1 ||
+		outputLength > 64
+	) {
+		throw new Error(
+			`BLAKE2b output length must be an integer in 1..64, got ${outputLength}`,
+		);
+	}
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
+		// BLAKE2b with digest length N is not a truncation of BLAKE2b-512, so
+		// a module whose primitives_blake2b lacks the output length parameter
+		// can only produce the 64-byte digest.
+		if (
+			!exports.blake2Hash &&
+			exports.primitives_blake2b.length < 4 &&
+			outputLength !== 64
+		) {
+			throw new Error(
+				`Loaded WASM primitives_blake2b only supports 64-byte output, got ${outputLength}`,
+			);
+		}
 		const dataPtr = malloc(data.length);
-		const outPtr = malloc(outputLength);
+		// Always reserve 64 bytes so a module writing a full BLAKE2b-512
+		// digest cannot overrun the buffer.
+		const outPtr = malloc(64);
 
 		writeBytes(data, dataPtr);
 
-		// Use crypto-specific blake2Hash if available, otherwise primitives_blake2b (64-byte only)
 		const result = exports.blake2Hash
 			? exports.blake2Hash(dataPtr, data.length, outPtr, outputLength)
-			: exports.primitives_blake2b(dataPtr, data.length, outPtr);
+			: exports.primitives_blake2b(dataPtr, data.length, outPtr, outputLength);
 
 		checkResult(result);
 		return readBytes(outPtr, outputLength);
@@ -2355,7 +2372,10 @@ export function authorizationValidate(auth: {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
-		const authPtr = malloc(20 + 8 + 8 + 8 + 32 + 32); // Full struct size
+		// PrimitivesAuthorization extern struct (112 bytes, 8-byte aligned):
+		// 0: chain_id (u64), 8: address ([20]u8), 28..32: pad, 32: nonce (u64),
+		// 40: v (u64), 48: r ([32]u8), 80: s ([32]u8)
+		const authPtr = malloc(112);
 
 		if (!wasmMemory) {
 			throw new Error("WASM memory not initialized");
@@ -2365,10 +2385,11 @@ export function authorizationValidate(auth: {
 		const view = new DataView(wasmMemory.buffer);
 		const memory = new Uint8Array(wasmMemory.buffer);
 
+		memory.fill(0, authPtr, authPtr + 112);
 		view.setBigUint64(authPtr, auth.chainId, true);
 		memory.set(auth.address, authPtr + 8);
-		view.setBigUint64(authPtr + 28, auth.nonce, true);
-		view.setBigUint64(authPtr + 36, BigInt(auth.yParity), true);
+		view.setBigUint64(authPtr + 32, auth.nonce, true);
+		view.setBigUint64(authPtr + 40, BigInt(auth.yParity), true);
 
 		// Write r and s as big-endian
 		const rBytes = new Uint8Array(32);
@@ -2384,8 +2405,8 @@ export function authorizationValidate(auth: {
 		sView.setBigUint64(16, (auth.s >> 64n) & 0xffffffffffffffffn, false);
 		sView.setBigUint64(24, auth.s & 0xffffffffffffffffn, false);
 
-		memory.set(rBytes, authPtr + 44);
-		memory.set(sBytes, authPtr + 76);
+		memory.set(rBytes, authPtr + 48);
+		memory.set(sBytes, authPtr + 80);
 
 		const result = exports.primitives_authorization_validate(authPtr);
 		checkResult(result);
@@ -2444,7 +2465,8 @@ export function authorizationAuthority(auth: {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
-		const authPtr = malloc(108);
+		// PrimitivesAuthorization extern struct (112 bytes, 8-byte aligned)
+		const authPtr = malloc(112);
 		const outPtr = malloc(20);
 
 		if (!wasmMemory) {
@@ -2455,10 +2477,11 @@ export function authorizationAuthority(auth: {
 		const view = new DataView(wasmMemory.buffer);
 		const memory = new Uint8Array(wasmMemory.buffer);
 
+		memory.fill(0, authPtr, authPtr + 112);
 		view.setBigUint64(authPtr, auth.chainId, true);
 		memory.set(auth.address, authPtr + 8);
-		view.setBigUint64(authPtr + 28, auth.nonce, true);
-		view.setBigUint64(authPtr + 36, BigInt(auth.yParity), true);
+		view.setBigUint64(authPtr + 32, auth.nonce, true);
+		view.setBigUint64(authPtr + 40, BigInt(auth.yParity), true);
 
 		const rBytes = new Uint8Array(32);
 		const sBytes = new Uint8Array(32);
@@ -2473,8 +2496,8 @@ export function authorizationAuthority(auth: {
 		sView.setBigUint64(16, (auth.s >> 64n) & 0xffffffffffffffffn, false);
 		sView.setBigUint64(24, auth.s & 0xffffffffffffffffn, false);
 
-		memory.set(rBytes, authPtr + 44);
-		memory.set(sBytes, authPtr + 76);
+		memory.set(rBytes, authPtr + 48);
+		memory.set(sBytes, authPtr + 80);
 
 		const result = exports.primitives_authorization_authority(authPtr, outPtr);
 		checkResult(result);
@@ -3001,6 +3024,18 @@ export function ed25519KeypairFromSeed(seed: Uint8Array): {
 // ============================================================================
 
 /**
+ * Throw unless `bytes` has exactly `expected` bytes.
+ * @param name - Value name used in the error message
+ * @param bytes - Input to check
+ * @param expected - Required length in bytes
+ */
+function assertLength(name: string, bytes: Uint8Array, expected: number): void {
+	if (bytes.length !== expected) {
+		throw new Error(`${name} must be ${expected} bytes, got ${bytes.length}`);
+	}
+}
+
+/**
  * Sign message hash with P256 private key
  * @param messageHash - 32-byte message hash
  * @param privateKey - 32-byte private key
@@ -3010,6 +3045,10 @@ export function p256Sign(
 	messageHash: Uint8Array,
 	privateKey: Uint8Array,
 ): Uint8Array {
+	// Validate before writing: the WASM buffers are fixed-size, so a longer
+	// input would overwrite adjacent allocations.
+	assertLength("P256 message hash", messageHash, 32);
+	assertLength("P256 private key", privateKey, 32);
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -3043,6 +3082,11 @@ export function p256Verify(
 	signature: Uint8Array,
 	publicKey: Uint8Array,
 ): boolean {
+	// Validate before writing: the WASM buffers are fixed-size, so a longer
+	// input would overwrite adjacent allocations.
+	assertLength("P256 message hash", messageHash, 32);
+	assertLength("P256 signature", signature, 64);
+	assertLength("P256 public key", publicKey, 64);
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -3067,6 +3111,7 @@ export function p256Verify(
  * @returns Uncompressed public key (64 bytes)
  */
 export function p256DerivePublicKey(privateKey: Uint8Array): Uint8Array {
+	assertLength("P256 private key", privateKey, 32);
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -3096,6 +3141,8 @@ export function p256Ecdh(
 	privateKey: Uint8Array,
 	publicKey: Uint8Array,
 ): Uint8Array {
+	assertLength("P256 private key", privateKey, 32);
+	assertLength("P256 public key", publicKey, 64);
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();

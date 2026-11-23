@@ -5,7 +5,7 @@ import * as AbiFunction from "./function/index.js";
 /**
  * Decode function call data using ABI
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {import("../Hex/index.js").HexType | Uint8Array} data - Encoded function call data
  * @returns {{ name: string, params: readonly unknown[] }} Decoded function name and parameters
  * @throws {AbiInvalidSelectorError} If data too short for selector

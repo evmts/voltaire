@@ -52,8 +52,8 @@ pub const Protocols = struct {
 
 /// Node information structure
 pub const NodeInfo = struct {
-    /// Enode URL of the node
-    enode: PeerId.PeerId,
+    /// Enode URL of the node (enode://PUBKEY@IP:PORT?discport=DISCPORT)
+    enode: []const u8,
     /// Node ID (hex-encoded public key)
     id: []const u8,
     /// External IP address
@@ -114,9 +114,15 @@ pub const NodeInfo = struct {
         return false;
     }
 
-    /// Get the node's public key from enode URL
+    /// Get the node's public key (hex, as written) from enode URL
+    /// Returns null if the enode URL has no "enode://" prefix or no "@" separator
     pub fn getPublicKey(self: Self) ?[]const u8 {
-        return self.enode.getNodeId();
+        const prefix = "enode://";
+        if (!std.mem.startsWith(u8, self.enode, prefix)) return null;
+        const rest = self.enode[prefix.len..];
+        const at = std.mem.indexOfScalar(u8, rest, '@') orelse return null;
+        if (at == 0) return null;
+        return rest[0..at];
     }
 
     /// Check equality with another NodeInfo
@@ -127,19 +133,19 @@ pub const NodeInfo = struct {
 
     /// Parse enode URL components from this node's enode
     pub fn parseEnode(self: Self) !PeerId.EnodeComponents {
-        return self.enode.parse();
+        return PeerId.parseEnode(self.enode);
     }
 
     /// Format as enode URL string
     /// Returns the stored enode URL
     pub fn toEnode(self: Self) []const u8 {
-        return self.enode.toString();
+        return self.enode;
     }
 };
 
 /// Create NodeInfo from components
 pub fn init(
-    enode: PeerId.PeerId,
+    enode: []const u8,
     id: []const u8,
     ip: []const u8,
     listen_addr: []const u8,
@@ -164,7 +170,7 @@ pub const from = init;
 // Tests
 
 fn createTestNode(with_eth: bool) NodeInfo {
-    const enode = PeerId.from("enode://abc123def456@192.168.1.1:30303") catch unreachable;
+    const enode = "enode://abc123def456@192.168.1.1:30303";
     var genesis: [32]u8 = undefined;
     var head: [32]u8 = undefined;
     @memset(&genesis, 0xAA);
@@ -252,7 +258,7 @@ test "NodeInfo: isMainnet returns false when eth not supported" {
 }
 
 test "NodeInfo: isMainnet returns false for non-mainnet" {
-    const enode = PeerId.from("enode://abc@192.168.1.1:30303") catch unreachable;
+    const enode = "enode://abc@192.168.1.1:30303";
     var genesis: [32]u8 = undefined;
     var head: [32]u8 = undefined;
     @memset(&genesis, 0);
@@ -302,7 +308,7 @@ test "NodeInfo: access id field" {
 }
 
 test "NodeInfo: complete workflow" {
-    const enode = PeerId.from("enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@203.0.113.100:30303") catch unreachable;
+    const enode = "enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@203.0.113.100:30303";
     var genesis: [32]u8 = undefined;
     var head: [32]u8 = undefined;
     @memset(&genesis, 0xD4);
@@ -352,7 +358,7 @@ test "NodeInfo: equals returns true for same node ID" {
 
 test "NodeInfo: equals returns false for different node IDs" {
     const node1 = createTestNode(true);
-    const enode2 = PeerId.from("enode://different@192.168.1.2:30304") catch unreachable;
+    const enode2 = "enode://different@192.168.1.2:30304";
     const node2 = init(
         enode2,
         "different_id",
@@ -373,7 +379,7 @@ test "NodeInfo: toEnode returns enode URL string" {
 
 test "NodeInfo: parseEnode extracts components" {
     const enode_str = "enode://6f8a80d14311c39f35f516fa664deaaaa13e85b2f7493f37f6144d86991ec012937307647bd3b9a82abe2974e1407241d54947bbb39763a4cac9f77166ad92a0@192.168.1.100:30303?discport=30301";
-    const enode = PeerId.from(enode_str) catch unreachable;
+    const enode = enode_str;
     var genesis: [32]u8 = undefined;
     var head: [32]u8 = undefined;
     @memset(&genesis, 0);
@@ -396,7 +402,7 @@ test "NodeInfo: parseEnode extracts components" {
 }
 
 test "NodeInfo: from alias works same as init" {
-    const enode = PeerId.from("enode://abc@10.0.0.1:30303") catch unreachable;
+    const enode = "enode://abc@10.0.0.1:30303";
     const node = from(
         enode,
         "abc",

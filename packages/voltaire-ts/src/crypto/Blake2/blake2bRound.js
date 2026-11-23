@@ -44,7 +44,8 @@ function G(v, a, b, c, d, x, y) {
  * @param {number} round - Round number
  */
 export function blake2bRound(v, m, round) {
-	const s = /** @type {number[]} */ (SIGMA[round % 12]);
+	// Per RFC 7693 §3.2 and EIP-152, the 10-row sigma schedule repeats modulo 10.
+	const s = /** @type {number[]} */ (SIGMA[round % 10]);
 
 	// Column mixing
 	G(

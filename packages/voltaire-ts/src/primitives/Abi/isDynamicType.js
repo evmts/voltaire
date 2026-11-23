@@ -17,7 +17,8 @@ export function isDynamicType(type, components) {
 		const match = type.match(/^(.+)\[(\d+)\]$/);
 		if (match?.[1]) {
 			const elementType = /** @type {Parameter["type"]} */ (match[1]);
-			return isDynamicType(elementType);
+			// Pass components through: `tuple[N]` is dynamic iff its tuple is.
+			return isDynamicType(elementType, components);
 		}
 	}
 	return false;

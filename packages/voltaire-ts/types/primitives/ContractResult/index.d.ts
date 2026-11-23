@@ -41,5 +41,5 @@ export declare function unwrapOr(result: ContractResultType, defaultValue: Retur
 /**
  * Internal exports for advanced usage
  */
-export { _from, _success, _failure, _isSuccess, _isFailure, _unwrap, _unwrapOr, };
+export { _failure, _from, _isFailure, _isSuccess, _success, _unwrap, _unwrapOr, };
 //# sourceMappingURL=index.d.ts.map

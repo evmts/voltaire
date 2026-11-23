@@ -50,6 +50,10 @@ pub enum Error {
     #[error("unsupported type: {0}")]
     UnsupportedType(String),
 
+    /// Operation is not supported by this build.
+    #[error("unsupported: {0}")]
+    Unsupported(String),
+
     /// Maximum length exceeded.
     #[error("max length exceeded: {max}")]
     MaxLengthExceeded {
@@ -126,6 +130,12 @@ impl Error {
     #[inline]
     pub fn invalid_input(msg: impl Into<String>) -> Self {
         Self::InvalidInput(msg.into())
+    }
+
+    /// Create an Unsupported error.
+    #[inline]
+    pub fn unsupported(msg: impl Into<String>) -> Self {
+        Self::Unsupported(msg.into())
     }
 
     /// Create an InvalidSignature error.

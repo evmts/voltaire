@@ -25,6 +25,16 @@ export const TARGET_BLOB_GAS_PER_BLOCK: 393216n;
  */
 export const BLOB_GAS_PER_BLOB: 131072n;
 /**
+ * Spec-named alias for {@link BLOB_GAS_PER_BLOB} (2^17 = 131,072)
+ * @since 0.0.0
+ */
+export const GAS_PER_BLOB: 131072n;
+/**
+ * EIP-7918 execution cost bound per blob in units of base fee (2^13 = 8,192)
+ * @since 0.0.0
+ */
+export const BLOB_BASE_COST: 8192n;
+/**
  * Maximum blobs per block
  * @since 0.0.0
  */

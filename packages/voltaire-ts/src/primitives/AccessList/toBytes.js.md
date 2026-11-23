@@ -1,6 +1,6 @@
 ---
-title: "toBytes.js"
----
+
+## title: "toBytes.js"
 
 # toBytes.js
 
@@ -9,7 +9,7 @@ Encode access list to RLP bytes.
 ## Signature
 
 ```typescript
-function toBytes(list: BrandedAccessList): Uint8Array
+function toBytes(list: BrandedAccessList): Uint8Array;
 ```
 
 ## Parameters
@@ -24,8 +24,8 @@ function toBytes(list: BrandedAccessList): Uint8Array
 
 ```typescript
 const list = AccessList.from([
-  { address: addr1, storageKeys: [key1, key2] },
-  { address: addr2, storageKeys: [] }
+	{ address: addr1, storageKeys: [key1, key2] },
+	{ address: addr2, storageKeys: [] },
 ]);
 
 const bytes = AccessList.toBytes(list);

@@ -117,7 +117,9 @@ pub const TraceConfig = struct {
 
     /// Check if memory tracking is enabled
     pub fn tracksMemory(self: Self) bool {
-        return !self.disable_memory or self.enable_memory;
+        // geth structLogger captures memory only when enableMemory is set (off by default);
+        // legacy disableMemory still wins when both are set
+        return self.enable_memory and !self.disable_memory;
     }
 
     /// Encode to JSON

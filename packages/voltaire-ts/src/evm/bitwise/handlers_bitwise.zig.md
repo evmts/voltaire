@@ -19,6 +19,7 @@ The bitwise handlers file implements EVM bitwise operations (AND, OR, XOR, NOT, 
 ### ✅ All Core Operations Implemented
 
 All required bitwise operations are implemented:
+
 - AND (0x16) - Line 12
 - OR (0x17) - Line 21
 - XOR (0x18) - Line 30
@@ -53,9 +54,11 @@ No TODO comments found in the file.
 ### ⚠️ Implicit Technical Debt
 
 1. **Type Cast Safety (lines 51, 71, 90, 114):**
+
    ```zig
    const result = if (i >= 32) 0 else (x >> @intCast(8 * (31 - i))) & 0xff;
    ```
+
    - Using `@intCast` without validation could panic if input exceeds type bounds
    - While protected by `if` statements, the safety guarantees are implicit
    - Consider using `@truncate` or adding explicit safety assertions
@@ -84,11 +87,13 @@ if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
 ```
 
 **Issue:** The error handling for pre-Constantinople forks returns `error.InvalidOpcode`, but:
+
 - No documentation explaining why this error is appropriate
 - No test coverage for this error path (see section 4)
 - Inconsistent with how other handlers might handle hardfork incompatibility
 
 **Recommendation:**
+
 - Add doc comments explaining the error semantics
 - Consider a more specific error like `error.OpcodeNotYetActivated`
 - Add test coverage for pre-Constantinople execution attempts
@@ -103,11 +108,13 @@ const result = if (shift >= 256) ...
 ```
 
 **Issue:**
+
 - `32` and `256` are magic numbers
 - Not immediately clear why these values are significant
 - Reduces maintainability
 
 **Recommendation:**
+
 ```zig
 const BYTES_PER_WORD = 32;
 const BITS_PER_WORD = 256;
@@ -127,11 +134,13 @@ break :blk @as(u256, @bitCast(value_signed >> @as(u8, @intCast(shift))));
 ```
 
 **Issue:**
+
 - `@bitCast` between signed/unsigned without safety checks
 - Assumes two's complement representation (safe on all current Zig targets, but not guaranteed)
 - No documentation about sign bit behavior
 
 **Recommendation:**
+
 - Add compile-time assertion that platform uses two's complement
 - Document the sign extension behavior explicitly
 - Consider using explicit sign bit extraction for clarity
@@ -152,6 +161,7 @@ break :blk @as(u256, @bitCast(value_signed >> @as(u8, @intCast(shift))));
 **Finding:** The handlers_bitwise.zig file contains **zero inline unit tests**.
 
 **Impact:**
+
 - Cannot verify correctness in isolation
 - Edge cases (shift >= 256, byte index >= 32, negative SAR) are untested
 - Hardfork validation (Constantinople check) is untested
@@ -160,10 +170,12 @@ break :blk @as(u256, @bitCast(value_signed >> @as(u8, @intCast(shift))));
 ### ⚠️ Partial: Spec Tests Only
 
 **Finding:** Bitwise operations are only tested via ethereum/tests spec tests:
+
 - `/test/specs/generated/*/eip145_bitwise_shift/shift_combinations/combinations.zig`
 - General state tests may include bitwise operations incidentally
 
 **Limitations:**
+
 - Spec tests are integration tests, not unit tests
 - May not cover all edge cases
 - Harder to debug when failures occur
@@ -172,6 +184,7 @@ break :blk @as(u256, @bitCast(value_signed >> @as(u8, @intCast(shift))));
 ### 📋 Recommended Test Cases
 
 #### 4.1 Basic Operation Tests
+
 ```zig
 test "AND operation" {
     // Test: 0xFF & 0xF0 = 0xF0
@@ -196,6 +209,7 @@ test "NOT operation" {
 ```
 
 #### 4.2 BYTE Operation Edge Cases
+
 ```zig
 test "BYTE extraction at boundaries" {
     // Test: i=0 extracts first (most significant) byte
@@ -207,6 +221,7 @@ test "BYTE extraction at boundaries" {
 ```
 
 #### 4.3 Shift Operation Edge Cases
+
 ```zig
 test "SHL edge cases" {
     // Test: shift=0 returns original value
@@ -231,6 +246,7 @@ test "SAR edge cases" {
 ```
 
 #### 4.4 Hardfork Validation Tests
+
 ```zig
 test "SHL rejects pre-Constantinople" {
     // Setup frame with hardfork=BYZANTIUM
@@ -249,6 +265,7 @@ test "SAR rejects pre-Constantinople" {
 ```
 
 #### 4.5 Gas Consumption Tests
+
 ```zig
 test "all operations consume GasFastestStep" {
     // Verify gas = 3 for all operations
@@ -264,30 +281,33 @@ test "all operations consume GasFastestStep" {
 
 Verified against `/Users/williamcory/guillotine-mini/execution-specs/src/ethereum/forks/constantinople/vm/instructions/bitwise.py`
 
-| Operation | Python Reference | Zig Implementation | Match |
-|-----------|-----------------|-------------------|-------|
-| **AND** (line 21) | `x & y` | `a & b` | ✅ |
-| **OR** (line 46) | `x \| y` | `a \| b` | ✅ |
-| **XOR** (line 71) | `x ^ y` | `a ^ b` | ✅ |
-| **NOT** (line 96) | `~x` | `~a` | ✅ |
-| **BYTE** (line 120) | Complex extraction | `(x >> @intCast(8 * (31 - i))) & 0xff` | ✅ |
-| **SHL** (line 156) | `(value << shift) & MAX_VALUE` if shift < 256 else 0 | `value << shift` if shift < 256 else 0 | ✅ |
-| **SHR** (line 186) | `value >> shift` if shift < 256 else 0 | `value >> shift` if shift < 256 else 0 | ✅ |
-| **SAR** (line 216) | Signed shift with sign extension | Signed shift via bitCast | ✅ |
+| Operation           | Python Reference                                     | Zig Implementation                     | Match |
+| ------------------- | ---------------------------------------------------- | -------------------------------------- | ----- |
+| **AND** (line 21)   | `x & y`                                              | `a & b`                                | ✅    |
+| **OR** (line 46)    | `x \| y`                                             | `a \| b`                               | ✅    |
+| **XOR** (line 71)   | `x ^ y`                                              | `a ^ b`                                | ✅    |
+| **NOT** (line 96)   | `~x`                                                 | `~a`                                   | ✅    |
+| **BYTE** (line 120) | Complex extraction                                   | `(x >> @intCast(8 * (31 - i))) & 0xff` | ✅    |
+| **SHL** (line 156)  | `(value << shift) & MAX_VALUE` if shift < 256 else 0 | `value << shift` if shift < 256 else 0 | ✅    |
+| **SHR** (line 186)  | `value >> shift` if shift < 256 else 0               | `value >> shift` if shift < 256 else 0 | ✅    |
+| **SAR** (line 216)  | Signed shift with sign extension                     | Signed shift via bitCast               | ✅    |
 
 ### ⚠️ Minor Discrepancy: Python Explicit Masking
 
 **Python SHL (line 176):**
+
 ```python
 result = U256((value << shift) & Uint(U256.MAX_VALUE))
 ```
 
 **Zig SHL (line 71):**
+
 ```zig
 value << @as(u8, @intCast(shift))
 ```
 
 **Analysis:**
+
 - Python explicitly masks to 256 bits after shift
 - Zig relies on u256 type to wrap automatically
 - Both should produce same result, but Zig is less defensive
@@ -300,12 +320,14 @@ value << @as(u8, @intCast(shift))
 ### 6.1 Documentation Quality
 
 **Current State:**
+
 - Minimal doc comments (only operation name and opcode)
 - No parameter documentation
 - No examples
 - No links to EIPs
 
 **Recommendation:**
+
 ```zig
 /// BYTE opcode (0x1a) - Extract byte from word
 ///
@@ -333,15 +355,18 @@ pub fn byte(frame: *FrameType) FrameType.EvmError!void {
 **Issue:** `@intCast` is used without explicit bounds checking in several places.
 
 **Example (line 51):**
+
 ```zig
 const result = if (i >= 32) 0 else (x >> @intCast(8 * (31 - i))) & 0xff;
 ```
 
 **Problem:**
+
 - If `i > 31` but `i < 32`, the cast could still fail
 - The multiplication `8 * (31 - i)` could overflow for large `i` values (though protected by the if)
 
 **Recommendation:**
+
 ```zig
 const result = if (i >= 32)
     0
@@ -356,6 +381,7 @@ else blk: {
 **Issue:** The order of operands for operations like AND, OR, XOR doesn't matter (commutative), but for BYTE and shifts it does.
 
 **Current Code (BYTE, line 49-50):**
+
 ```zig
 const i = try frame.popStack();  // TOS
 const x = try frame.popStack();  // TOS-1
@@ -364,6 +390,7 @@ const x = try frame.popStack();  // TOS-1
 **Question:** Is this the correct order per EVM spec?
 
 **Verification Against Python (line 133-134):**
+
 ```python
 byte_index = pop(evm.stack)  # TOS
 word = pop(evm.stack)        # TOS-1
@@ -372,6 +399,7 @@ word = pop(evm.stack)        # TOS-1
 **Result:** ✅ Order matches Python reference
 
 **Recommendation:** Add comment clarifying stack order:
+
 ```zig
 const i = try frame.popStack();  // TOS: byte index
 const x = try frame.popStack();  // TOS-1: word to extract from
@@ -380,11 +408,13 @@ const x = try frame.popStack();  // TOS-1: word to extract from
 ### 6.4 Performance Considerations
 
 **Current Implementation:**
+
 - No obvious performance issues
 - All operations are O(1)
 - No unnecessary allocations
 
 **Potential Optimization:**
+
 - Shift operations could potentially use SIMD for batch processing
 - However, premature optimization - current implementation is clear and correct
 
@@ -393,6 +423,7 @@ const x = try frame.popStack();  // TOS-1: word to extract from
 **Issue:** Constantinople shift operations (EIP-145) are not referenced in documentation.
 
 **Recommendation:**
+
 ```zig
 /// SHL opcode (0x1b) - Shift left operation
 /// Introduced in Constantinople hardfork (EIP-145)
@@ -406,6 +437,7 @@ const x = try frame.popStack();  // TOS-1: word to extract from
 Based on the project structure, there should be similar handler files for other instruction categories:
 
 **Recommended Consistency Check:**
+
 - Do other handlers follow the same pattern?
 - Is hardfork checking consistent across all handler files?
 - Are gas costs verified consistently?
@@ -453,6 +485,7 @@ zig build specs-constantinople
 ```
 
 **Expected Results:**
+
 - All shift operations should pass for Constantinople+
 - All basic bitwise operations should pass for all hardforks
 - No crashes or undefined behavior
@@ -464,6 +497,7 @@ zig build specs-constantinople
 The `handlers_bitwise.zig` file implements EVM bitwise operations correctly according to the Python execution-specs reference. The code is clean, well-structured, and follows good generic programming patterns.
 
 **Strengths:**
+
 - ✅ Correct implementations matching Python reference
 - ✅ Proper gas accounting
 - ✅ Clear, consistent structure
@@ -471,6 +505,7 @@ The `handlers_bitwise.zig` file implements EVM bitwise operations correctly acco
 - ✅ Appropriate hardfork guards
 
 **Weaknesses:**
+
 - ❌ No unit test coverage (critical gap)
 - ⚠️ Minimal documentation
 - ⚠️ Magic numbers without named constants

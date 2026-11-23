@@ -1,6 +1,6 @@
 ---
-title: "addressCount.js"
----
+
+## title: "addressCount.js"
 
 # addressCount.js
 
@@ -9,7 +9,7 @@ Count total addresses in access list.
 ## Signature
 
 ```typescript
-function addressCount(list: BrandedAccessList): number
+function addressCount(list: BrandedAccessList): number;
 ```
 
 ## Parameters
@@ -27,7 +27,7 @@ const count = AccessList.addressCount(list);
 console.log(`Accessing ${count} contracts`);
 
 if (count > 10) {
-  console.warn('Large access list may not be beneficial');
+	console.warn("Large access list may not be beneficial");
 }
 ```
 

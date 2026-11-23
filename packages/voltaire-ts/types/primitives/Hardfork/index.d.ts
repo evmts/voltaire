@@ -1,5 +1,5 @@
 import type { HardforkType } from "./HardforkType.js";
-export * from "./constants.js";
+export { AMSTERDAM, ARROW_GLACIER, BERLIN, BYZANTIUM, CANCUN, CONSTANTINOPLE, DAO, DEFAULT, FRONTIER, GRAY_GLACIER, HARDFORK_ORDER, HOMESTEAD, ISTANBUL, LONDON, MERGE, MUIR_GLACIER, NAME_TO_HARDFORK, OSAKA, PETERSBURG, PRAGUE, SHANGHAI, SPURIOUS_DRAGON, TANGERINE_WHISTLE, } from "./constants.js";
 export type { HardforkType } from "./HardforkType.js";
 export declare const fromString: (name: string) => HardforkType | undefined;
 export declare const toString: (fork: HardforkType) => string;

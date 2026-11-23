@@ -13,12 +13,13 @@ export * from "./P256SignatureType.js";
  */
 export const P256: P256Constructor;
 export type P256Constructor = import("./P256Constructor.js").P256Constructor;
-import { sign } from "./sign.js";
-import { verify } from "./verify.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 import { ecdh } from "./ecdh.js";
+import { isValidPublicKey } from "./isValidPublicKey.js";
 import { randomPrivateKey } from "./randomPrivateKey.js";
+import { sign } from "./sign.js";
 import { validatePrivateKey } from "./validatePrivateKey.js";
 import { validatePublicKey } from "./validatePublicKey.js";
-export { sign, verify, derivePublicKey, ecdh, randomPrivateKey, validatePrivateKey, validatePublicKey };
+import { verify } from "./verify.js";
+export { derivePublicKey, ecdh, isValidPublicKey, randomPrivateKey, sign, validatePrivateKey, validatePublicKey, verify };
 //# sourceMappingURL=P256.d.ts.map

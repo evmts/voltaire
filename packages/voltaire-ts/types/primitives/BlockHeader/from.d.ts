@@ -15,11 +15,13 @@
  * @property {Uint8Array} extraData
  * @property {string | Uint8Array} mixHash
  * @property {Uint8Array} nonce
- * @property {bigint} [baseFeePerGas]
- * @property {string | Uint8Array} [withdrawalsRoot]
- * @property {bigint} [blobGasUsed]
- * @property {bigint} [excessBlobGas]
- * @property {string | Uint8Array} [parentBeaconBlockRoot]
+ * @property {bigint | null} [baseFeePerGas]
+ * @property {string | Uint8Array | null} [withdrawalsRoot]
+ * @property {bigint | null} [blobGasUsed]
+ * @property {bigint | null} [excessBlobGas]
+ * @property {string | Uint8Array | null} [parentBeaconBlockRoot]
+ * @property {string | Uint8Array | null} [requestsHash] - EIP-7685 commitment (Prague and later)
+ * @property {string | Uint8Array | null} [blockAccessListHash] - EIP-7928 commitment (Amsterdam and later)
  */
 /**
  * Create BlockHeader from components
@@ -28,32 +30,36 @@
  * @returns {import('./BlockHeaderType.js').BlockHeaderType} BlockHeader
  *
  * @example
- * ```typescript
+ * ```javascript
+ * import { BlockHeader } from "@tevm/voltaire";
+ *
+ * const zeroHash = `0x${"00".repeat(32)}`;
  * const header = BlockHeader.from({
- *   parentHash: "0x1234...",
- *   ommersHash: "0x5678...",
- *   beneficiary: "0xabcd...",
- *   stateRoot: "0xef01...",
- *   transactionsRoot: "0x2345...",
- *   receiptsRoot: "0x6789...",
+ *   parentHash: zeroHash,
+ *   ommersHash: zeroHash,
+ *   beneficiary: `0x${"00".repeat(20)}`,
+ *   stateRoot: zeroHash,
+ *   transactionsRoot: zeroHash,
+ *   receiptsRoot: zeroHash,
  *   logsBloom: new Uint8Array(256),
  *   difficulty: 0n,
- *   number: 12345n,
+ *   number: 1n,
  *   gasLimit: 30000000n,
- *   gasUsed: 21000n,
- *   timestamp: 1234567890n,
+ *   gasUsed: 0n,
+ *   timestamp: 1764798551n,
  *   extraData: new Uint8Array(0),
- *   mixHash: "0xabcd...",
+ *   mixHash: zeroHash,
  *   nonce: new Uint8Array(8),
- *   baseFeePerGas: 1000000000n, // EIP-1559
- *   withdrawalsRoot: "0xdef0...", // Post-Shanghai
- *   blobGasUsed: 262144n, // EIP-4844
- *   excessBlobGas: 0n, // EIP-4844
- *   parentBeaconBlockRoot: "0x0123..." // EIP-4788
+ *   baseFeePerGas: 7n,
+ *   withdrawalsRoot: zeroHash,
+ *   blobGasUsed: 0n,
+ *   excessBlobGas: 0n,
+ *   parentBeaconBlockRoot: zeroHash,
+ *   requestsHash: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
  * });
  * ```
  */
-export function from({ parentHash, ommersHash, beneficiary, stateRoot, transactionsRoot, receiptsRoot, logsBloom, difficulty, number, gasLimit, gasUsed, timestamp, extraData, mixHash, nonce, baseFeePerGas, withdrawalsRoot, blobGasUsed, excessBlobGas, parentBeaconBlockRoot, }: BlockHeaderParams): import("./BlockHeaderType.js").BlockHeaderType;
+export function from({ parentHash, ommersHash, beneficiary, stateRoot, transactionsRoot, receiptsRoot, logsBloom, difficulty, number, gasLimit, gasUsed, timestamp, extraData, mixHash, nonce, baseFeePerGas, withdrawalsRoot, blobGasUsed, excessBlobGas, parentBeaconBlockRoot, requestsHash, blockAccessListHash, }: BlockHeaderParams): import("./BlockHeaderType.js").BlockHeaderType;
 export type BlockHeaderParams = {
     parentHash: string | Uint8Array;
     ommersHash: string | Uint8Array;
@@ -70,10 +76,18 @@ export type BlockHeaderParams = {
     extraData: Uint8Array;
     mixHash: string | Uint8Array;
     nonce: Uint8Array;
-    baseFeePerGas?: bigint | undefined;
-    withdrawalsRoot?: string | Uint8Array<ArrayBufferLike> | undefined;
-    blobGasUsed?: bigint | undefined;
-    excessBlobGas?: bigint | undefined;
-    parentBeaconBlockRoot?: string | Uint8Array<ArrayBufferLike> | undefined;
+    baseFeePerGas?: bigint | null | undefined;
+    withdrawalsRoot?: string | Uint8Array<ArrayBufferLike> | null | undefined;
+    blobGasUsed?: bigint | null | undefined;
+    excessBlobGas?: bigint | null | undefined;
+    parentBeaconBlockRoot?: string | Uint8Array<ArrayBufferLike> | null | undefined;
+    /**
+     * - EIP-7685 commitment (Prague and later)
+     */
+    requestsHash?: string | Uint8Array<ArrayBufferLike> | null | undefined;
+    /**
+     * - EIP-7928 commitment (Amsterdam and later)
+     */
+    blockAccessListHash?: string | Uint8Array<ArrayBufferLike> | null | undefined;
 };
 //# sourceMappingURL=from.d.ts.map

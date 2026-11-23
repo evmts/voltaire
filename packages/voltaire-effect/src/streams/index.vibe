@@ -5,13 +5,7 @@ import type { HashType } from "@tevm/voltaire/Hash"
 import type { HexType } from "@tevm/voltaire/Hex"
 import { errorMessage, RpcError, StreamError } from "../errors.vibe"
 import * as Hash from "../primitives/Hash.vibe"
-import {
-  getBlock,
-  getBlockNumber,
-  getLogs,
-  getTransactionReceipt,
-  type LogFilter
-} from "../provider/Actions.vibe"
+import { getBlock, getBlockNumber, getLogs, getTransactionReceipt, type LogFilter } from "../provider/Actions.vibe"
 import type { RpcBlock, RpcLog, RpcTransactionReceipt } from "../provider/Schemas.vibe"
 import { Transport } from "../transport/Transport.vibe"
 
@@ -48,18 +42,30 @@ export effect function* watchBlocks(options: WatchBlocksOptions = {}) {
   const history: Array<RpcBlock> = []
   let nextExpected = options.fromBlock ?? (
     getBlockNumber() catch effect (e) => {
-      throw new StreamError({ stream: "watchBlocks", message: `Failed reading initial head: ${errorMessage(e)}`, cause: e })
+      throw new StreamError({
+        stream: "watchBlocks",
+        message: `Failed reading initial head: ${errorMessage(e)}`,
+        cause: e,
+      })
     }
   )
 
   while (true) {
     const headNumber = getBlockNumber() catch effect (e) => {
-      throw new StreamError({ stream: "watchBlocks", message: `Failed polling block number: ${errorMessage(e)}`, cause: e })
+      throw new StreamError({
+        stream: "watchBlocks",
+        message: `Failed polling block number: ${errorMessage(e)}`,
+        cause: e,
+      })
     }
 
     while (nextExpected <= headNumber) {
       const block = getBlock({ blockNumber: nextExpected, includeTransactions }) catch effect (e) => {
-        throw new StreamError({ stream: "watchBlocks", message: `Failed fetching block ${nextExpected.toString()}: ${errorMessage(e)}`, cause: e })
+        throw new StreamError({
+          stream: "watchBlocks",
+          message: `Failed fetching block ${nextExpected.toString()}: ${errorMessage(e)}`,
+          cause: e,
+        })
       }
 
       const prev = history[history.length - 1]
@@ -80,7 +86,11 @@ export effect function* watchBlocks(options: WatchBlocksOptions = {}) {
           }
           if (cursor.number !== null && cursor.number > 0n) {
             const parentBlock = getBlock({ blockHash: cursor.parentHash, includeTransactions }) catch effect (e) => {
-              throw new StreamError({ stream: "watchBlocks", message: `Failed walking reorg ancestor: ${errorMessage(e)}`, cause: e })
+              throw new StreamError({
+                stream: "watchBlocks",
+                message: `Failed walking reorg ancestor: ${errorMessage(e)}`,
+                cause: e,
+              })
             }
             if (history.length > 0 && history[history.length - 1]?.hash === parentBlock.hash) {
               break
@@ -92,7 +102,8 @@ export effect function* watchBlocks(options: WatchBlocksOptions = {}) {
           }
         }
 
-        const ancestor = history[history.length - 1]?.number ?? (cursor.number !== null && cursor.number > 0n ? cursor.number - 1n : 0n)
+        const ancestor = history[history.length - 1]?.number
+          ?? (cursor.number !== null && cursor.number > 0n ? cursor.number - 1n : 0n)
         for (const a of added) {
           history.push(a)
         }
@@ -132,7 +143,8 @@ function isRangeLimitError(cause: unknown): boolean {
   if (cause instanceof RpcError) {
     if (cause.code === -32005 || cause.code === -32602) return true
     const msg = cause.message.toLowerCase()
-    return msg.includes("more than") || msg.includes("query returned") || msg.includes("block range") || msg.includes("too many")
+    return msg.includes("more than") || msg.includes("query returned") || msg.includes("block range")
+      || msg.includes("too many")
   }
   return false
 }
@@ -140,7 +152,7 @@ function isRangeLimitError(cause: unknown): boolean {
 // Streams historical logs in chunks, automatically halving chunk size when RPC range limits hit.
 export effect function* backfillLogs(
   filter: Omit<LogFilter, "fromBlock" | "toBlock" | "blockHash">,
-  options: BackfillLogsOptions
+  options: BackfillLogsOptions,
 ) {
   let cursor = options.fromBlock
   let chunkSize = options.chunkSize ?? 1000n
@@ -153,8 +165,8 @@ export effect function* backfillLogs(
         address: filter.address,
         topics: filter.topics,
         fromBlock: cursor,
-        toBlock: end
-      })
+        toBlock: end,
+      }),
     )
 
     if (Exit.isSuccess(attemptExit)) {
@@ -172,7 +184,7 @@ export effect function* backfillLogs(
         throw new StreamError({
           stream: "backfillLogs",
           message: `Failed fetching logs [${cursor.toString()}..${end.toString()}]: ${errorMessage(err)}`,
-          cause: err
+          cause: err,
         })
       }
     }
@@ -188,19 +200,27 @@ export interface WatchLogsOptions {
 // Streams logs starting from `fromBlock` (or current head) and continues tailing new blocks live.
 export effect function* watchLogs(
   filter: Omit<LogFilter, "fromBlock" | "toBlock" | "blockHash">,
-  options: WatchLogsOptions = {}
+  options: WatchLogsOptions = {},
 ) {
   const pollingInterval = options.pollingInterval ?? "1 second"
   const chunkSize = options.chunkSize ?? 1000n
   let cursor = options.fromBlock ?? (
     getBlockNumber() catch effect (e) => {
-      throw new StreamError({ stream: "watchLogs", message: `Failed reading initial block: ${errorMessage(e)}`, cause: e })
+      throw new StreamError({
+        stream: "watchLogs",
+        message: `Failed reading initial block: ${errorMessage(e)}`,
+        cause: e,
+      })
     }
   )
 
   while (true) {
     const head = getBlockNumber() catch effect (e) => {
-      throw new StreamError({ stream: "watchLogs", message: `Failed polling block number: ${errorMessage(e)}`, cause: e })
+      throw new StreamError({
+        stream: "watchLogs",
+        message: `Failed polling block number: ${errorMessage(e)}`,
+        cause: e,
+      })
     }
     if (cursor <= head) {
       const batch = backfillLogs(filter, { fromBlock: cursor, toBlock: head, chunkSize })
@@ -234,7 +254,7 @@ export interface WatchTransactionOptions {
 // Tracks a transaction from Pending -> Included -> Confirmed, emitting Reorged if its block disappears.
 export effect function* watchTransactionStatus(
   hash: HashType | `0x${string}`,
-  options: WatchTransactionOptions = {}
+  options: WatchTransactionOptions = {},
 ) {
   const hashHex = (typeof hash === "string" ? hash : Hash.toHex(hash)) as HexType
   const targetConfirmations = options.confirmations ?? 1
@@ -246,7 +266,11 @@ export effect function* watchTransactionStatus(
 
   while (true) {
     const receiptOpt = getTransactionReceipt(hashHex) catch effect (e) => {
-      throw new StreamError({ stream: "watchTransactionStatus", message: `Receipt check failed: ${errorMessage(e)}`, cause: e })
+      throw new StreamError({
+        stream: "watchTransactionStatus",
+        message: `Receipt check failed: ${errorMessage(e)}`,
+        cause: e,
+      })
     }
 
     if (Option.isNone(receiptOpt)) {
@@ -254,7 +278,7 @@ export effect function* watchTransactionStatus(
         yield TransactionStreamEvent.Reorged({
           hash: hashHex,
           previousBlockHash: lastReceipt.blockHash,
-          previousBlockNumber: lastReceipt.blockNumber
+          previousBlockNumber: lastReceipt.blockNumber,
         })
         lastReceipt = undefined
         lastConfirmations = 0
@@ -268,13 +292,17 @@ export effect function* watchTransactionStatus(
         yield TransactionStreamEvent.Reorged({
           hash: hashHex,
           previousBlockHash: lastReceipt.blockHash,
-          previousBlockNumber: lastReceipt.blockNumber
+          previousBlockNumber: lastReceipt.blockNumber,
         })
         lastConfirmations = 0
       }
 
       const head = getBlockNumber() catch effect (e) => {
-        throw new StreamError({ stream: "watchTransactionStatus", message: `Block number check failed: ${errorMessage(e)}`, cause: e })
+        throw new StreamError({
+          stream: "watchTransactionStatus",
+          message: `Block number check failed: ${errorMessage(e)}`,
+          cause: e,
+        })
       }
       const depth = head >= receipt.blockNumber ? Number(head - receipt.blockNumber + 1n) : 1
       lastReceipt = receipt

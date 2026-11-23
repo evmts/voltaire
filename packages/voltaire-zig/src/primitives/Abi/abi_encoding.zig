@@ -29,7 +29,7 @@ fn safeIntCast(comptime T: type, value: anytype) AbiError!T {
     const value_info = @typeInfo(@TypeOf(value));
     const target_info = @typeInfo(T);
 
-    if (value_info != .int or target_info != .int) {
+    if ((value_info != .int and value_info != .comptime_int) or target_info != .int) {
         return AbiError.IntegerCastOverflow;
     }
 
@@ -57,10 +57,50 @@ fn validateRecursionDepth(depth: usize) AbiError!void {
     }
 }
 
+/// Maximum array elements one `decodeAbiParameters` call may decode in total.
+/// Every element takes a 32-byte head word, so input within `MAX_ABI_LENGTH`
+/// that does not reuse offsets never holds more.
+pub const MAX_DECODE_ELEMENTS: usize = MAX_ABI_LENGTH / 32;
+
+/// Allocation budget shared by every value decoded in one
+/// `decodeAbiParameters` call.
+///
+/// The per-allocation checks bound one array or one byte string. They do not
+/// bound the sum: offsets may point many parameters, or many elements of a
+/// nested array, at the same bytes, so a small input could otherwise
+/// materialize `count * MAX_ABI_LENGTH`. The budget counts array elements and
+/// materialized bytes (byte-string payloads and typed array storage) across
+/// the whole call and fails with `MaxLengthExceeded` when either runs out.
+const DecodeBudget = struct {
+    elements: usize = MAX_DECODE_ELEMENTS,
+    bytes: usize = MAX_ABI_LENGTH,
+
+    fn takeElements(self: *DecodeBudget, n: usize) AbiError!void {
+        if (n > self.elements) return AbiError.MaxLengthExceeded;
+        self.elements -= n;
+    }
+
+    fn takeBytes(self: *DecodeBudget, n: usize) AbiError!void {
+        if (n > self.bytes) return AbiError.MaxLengthExceeded;
+        self.bytes -= n;
+    }
+};
+
 // Cursor for reading bytes
 const Cursor = struct {
     data: []const u8,
     position: usize,
+    /// Shared decode budget. Cursors derived from this one keep the pointer.
+    /// `null` (a bare `Cursor.init`) applies only the per-allocation limits.
+    budget: ?*DecodeBudget = null,
+
+    fn chargeElements(self: *const Cursor, n: usize) AbiError!void {
+        if (self.budget) |budget| try budget.takeElements(n);
+    }
+
+    fn chargeBytes(self: *const Cursor, n: usize) AbiError!void {
+        if (self.budget) |budget| try budget.takeBytes(n);
+    }
 
     pub fn init(data: []const u8) Cursor {
         return Cursor{
@@ -74,7 +114,7 @@ const Cursor = struct {
     }
 
     pub fn readBytes(self: *Cursor, len: usize) AbiError![]const u8 {
-        if (self.position + len > self.data.len) return AbiError.OutOfBounds;
+        if (len > self.data.len or self.position > self.data.len - len) return AbiError.OutOfBounds;
         const result = self.data[self.position .. self.position + len];
         self.position += len;
         return result;
@@ -100,10 +140,21 @@ const Cursor = struct {
         return bytes[0..32].*;
     }
 
+    /// Read an offset word and return a cursor at `base + offset`.
+    /// Fails with `OutOfBounds` when the sum overflows or leaves the data.
+    pub fn followOffset(self: *Cursor, base: usize) AbiError!Cursor {
+        const offset = try self.readU256Word();
+        const offset_usize = std.math.cast(usize, offset) orelse return AbiError.OutOfBounds;
+        const target = std.math.add(usize, base, offset_usize) catch return AbiError.OutOfBounds;
+        if (target > self.data.len) return AbiError.OutOfBounds;
+        return self.atPosition(target);
+    }
+
     pub fn atPosition(self: *const Cursor, pos: usize) Cursor {
         return Cursor{
             .data = self.data,
             .position = pos,
+            .budget = self.budget,
         };
     }
 };
@@ -315,6 +366,14 @@ pub fn createFunctionSignature(allocator: std.mem.Allocator, name: []const u8, t
 
 // ABI Decoding Functions
 
+/// True when every byte of `bytes` equals `value`. No early exit.
+fn allBytes(bytes: []const u8, value: u8) bool {
+    var diff: u8 = 0;
+    for (bytes) |b| diff |= b ^ value;
+    return diff == 0;
+}
+
+/// Decode `uintN`. Strict: the `32 - N/8` high bytes must be zero.
 fn decode_uint(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T {
     if (bits > 256 or bits % 8 != 0) return AbiError.InvalidType;
 
@@ -325,10 +384,13 @@ fn decode_uint(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T
     if (T == u256) {
         return std.mem.readInt(u256, &word, .big);
     } else {
+        if (!allBytes(word[0..start_offset], 0)) return AbiError.InvalidData;
         return std.mem.readInt(T, word[start_offset..32], .big);
     }
 }
 
+/// Decode `intN`. Strict: the high bytes must sign-extend the value
+/// (0x00 for non-negative, 0xff for negative).
 fn decode_int(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T {
     if (bits > 256 or bits % 8 != 0) return AbiError.InvalidType;
 
@@ -337,52 +399,88 @@ fn decode_int(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T 
     const start_offset = 32 - bytes_len;
 
     if (T == i256) {
-        // i256 is not natively supported in Zig as there is no i256 type.
-        // This is intentional - Solidity's int256 is rarely used in practice.
-        // If needed, use uint256 and handle sign bit manually, or use a big integer library.
-        return AbiError.UnsupportedType;
+        // The whole word is the big-endian two's complement value
+        return @bitCast(std.mem.readInt(u256, &word, .big));
     } else {
         const unsigned = std.mem.readInt(std.meta.Int(.unsigned, @bitSizeOf(T)), word[start_offset..32], .big);
-        return @bitCast(unsigned);
+        const value: T = @bitCast(unsigned);
+        const padding: u8 = if (value < 0) 0xff else 0x00;
+        if (!allBytes(word[0..start_offset], padding)) return AbiError.InvalidData;
+        return value;
     }
 }
 
+/// Decode `address`. Strict: the 12 high bytes must be zero.
 fn decode_address(cursor: *Cursor) AbiError!address.Address {
     const word = try cursor.readWord();
+    if (!allBytes(word[0..12], 0)) return AbiError.InvalidData;
     var address_result: address.Address = undefined;
     @memcpy(&address_result.bytes, word[12..32]);
     return address_result;
 }
 
+/// Decode `bool`. Strict: the word must be exactly 0 or 1.
 fn decode_bool(cursor: *Cursor) AbiError!bool {
     const word = try cursor.readWord();
-    return word[31] != 0;
+    if (!allBytes(word[0..31], 0) or word[31] > 1) return AbiError.InvalidData;
+    return word[31] == 1;
 }
 
+/// Decode `bytesN`. Strict: the `32 - N` low bytes must be zero.
 fn decode_bytes_fixed(cursor: *Cursor, comptime size: usize) AbiError![size]u8 {
     const word = try cursor.readWord();
+    if (!allBytes(word[size..32], 0)) return AbiError.InvalidData;
     var result: [size]u8 = undefined;
     @memcpy(&result, word[0..size]);
     return result;
 }
 
+/// Free the heap memory owned by a decoded value.
+pub fn freeAbiValue(allocator: std.mem.Allocator, value: AbiValue) void {
+    switch (value) {
+        .bytes, .string => |v| allocator.free(v),
+        .@"uint256[]" => |v| allocator.free(v),
+        .@"bytes32[]" => |v| allocator.free(v),
+        .@"address[]" => |v| allocator.free(v),
+        .@"bool[]" => |v| allocator.free(v),
+        .@"string[]" => |v| {
+            for (v) |item| allocator.free(item);
+            allocator.free(v);
+        },
+        .@"uint256[][]" => |v| {
+            for (v) |item| allocator.free(item);
+            allocator.free(v);
+        },
+        else => {},
+    }
+}
+
+/// Free a slice returned by `decodeAbiParameters` and every value in it.
+pub fn freeAbiValues(allocator: std.mem.Allocator, values: []const AbiValue) void {
+    for (values) |value| freeAbiValue(allocator, value);
+    allocator.free(values);
+}
+
 fn decode_bytes_dynamic(allocator: std.mem.Allocator, cursor: *Cursor, static_position: usize) AbiError![]u8 {
-    const offset = try cursor.readU256Word();
-    const offset_usize = try safeIntCast(usize, offset);
-    var offset_cursor = cursor.atPosition(static_position + offset_usize);
+    var offset_cursor = try cursor.followOffset(static_position);
 
     const length = try offset_cursor.readU256Word();
-    const length_usize = try safeIntCast(usize, length);
+    const length_usize = std.math.cast(usize, length) orelse return AbiError.OutOfBounds;
 
-    // Validate allocation size before allocating
+    // Reject before allocating: first the DoS limit, then lengths the
+    // remaining data cannot hold.
     try validateAllocationSize(length_usize);
+    if (length_usize > offset_cursor.data.len - offset_cursor.position) return AbiError.OutOfBounds;
+
+    // Count the payload against the budget shared by the whole decode call
+    try offset_cursor.chargeBytes(length_usize);
 
     if (length_usize == 0) {
         return try allocator.alloc(u8, 0);
     }
 
     // Calculate padded length (round up to 32-byte boundary)
-    const padded_length = ((length_usize + 31) / 32) * 32;
+    const padded_length = (std.math.add(usize, length_usize, 31) catch return AbiError.OutOfBounds) / 32 * 32;
     try validateAllocationSize(padded_length);
 
     const data = try offset_cursor.readBytes(padded_length);
@@ -406,22 +504,37 @@ fn decode_string(allocator: std.mem.Allocator, cursor: *Cursor, static_position:
 fn decode_array(allocator: std.mem.Allocator, cursor: *Cursor, element_type: AbiType, static_position: usize, depth: usize) AbiError![]AbiValue {
     try validateRecursionDepth(depth);
 
-    const offset = try cursor.readU256Word();
-    const offset_usize = try safeIntCast(usize, offset);
-    var offset_cursor = cursor.atPosition(static_position + offset_usize);
+    var offset_cursor = try cursor.followOffset(static_position);
 
     const length = try offset_cursor.readU256Word();
-    const length_usize = try safeIntCast(usize, length);
+    const length_usize = std.math.cast(usize, length) orelse return AbiError.OutOfBounds;
+
+    // Elements are encoded as a tuple that starts right after the length
+    // word. Offsets of dynamic elements are relative to that position, not
+    // to the enclosing tuple.
+    const elements_position = offset_cursor.position;
 
     // Validate total allocation size
-    const total_size = length_usize * @sizeOf(AbiValue);
+    const total_size = std.math.mul(usize, length_usize, @sizeOf(AbiValue)) catch return AbiError.OutOfBounds;
     try validateAllocationSize(total_size);
 
+    // Every element takes at least one 32-byte head word. Reject lengths the
+    // remaining data cannot hold before allocating anything.
+    if (length_usize > (offset_cursor.data.len - elements_position) / 32) return AbiError.OutOfBounds;
+
+    // Count the elements against the budget shared by the whole decode call
+    try offset_cursor.chargeElements(length_usize);
+
     var result = try allocator.alloc(AbiValue, length_usize);
-    errdefer allocator.free(result);
+    var decoded: usize = 0;
+    errdefer {
+        for (result[0..decoded]) |value| freeAbiValue(allocator, value);
+        allocator.free(result);
+    }
 
     for (0..length_usize) |i| {
-        result[i] = try decode_parameter(allocator, &offset_cursor, element_type, static_position, depth + 1);
+        result[i] = try decode_parameter(allocator, &offset_cursor, element_type, elements_position, depth + 1);
+        decoded += 1;
     }
 
     return result;
@@ -442,7 +555,7 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
         .int32 => AbiValue{ .int32 = try decode_int(cursor, i32, 32) },
         .int64 => AbiValue{ .int64 = try decode_int(cursor, i64, 64) },
         .int128 => AbiValue{ .int128 = try decode_int(cursor, i128, 128) },
-        .int256 => return AbiError.UnsupportedType, // i256 not natively supported in Zig
+        .int256 => AbiValue{ .int256 = try decode_int(cursor, i256, 256) },
         .address => AbiValue{ .address = try decode_address(cursor) },
         .bool => AbiValue{ .bool = try decode_bool(cursor) },
         .bytes1 => AbiValue{ .bytes1 = try decode_bytes_fixed(cursor, 1) },
@@ -459,6 +572,7 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
             defer allocator.free(array_values);
 
             try validateAllocationSize(array_values.len * @sizeOf(u256));
+            try cursor.chargeBytes(array_values.len * @sizeOf(u256));
             var result = try allocator.alloc(u256, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -471,6 +585,7 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
             defer allocator.free(array_values);
 
             try validateAllocationSize(array_values.len * @sizeOf([32]u8));
+            try cursor.chargeBytes(array_values.len * @sizeOf([32]u8));
             var result = try allocator.alloc([32]u8, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -483,6 +598,7 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
             defer allocator.free(array_values);
 
             try validateAllocationSize(array_values.len * @sizeOf(address.Address));
+            try cursor.chargeBytes(array_values.len * @sizeOf(address.Address));
             var result = try allocator.alloc(address.Address, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -493,8 +609,11 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
         .@"string[]" => {
             const array_values = try decode_array(allocator, cursor, .string, static_position, depth);
             defer allocator.free(array_values);
+            // The elements own memory until the typed slice takes them over
+            errdefer for (array_values) |value| freeAbiValue(allocator, value);
 
             try validateAllocationSize(array_values.len * @sizeOf([]const u8));
+            try cursor.chargeBytes(array_values.len * @sizeOf([]const u8));
             var result = try allocator.alloc([]const u8, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -507,6 +626,7 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
             defer allocator.free(array_values);
 
             try validateAllocationSize(array_values.len * @sizeOf(bool));
+            try cursor.chargeBytes(array_values.len * @sizeOf(bool));
             var result = try allocator.alloc(bool, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -517,8 +637,11 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
         .@"uint256[][]" => {
             const array_values = try decode_array(allocator, cursor, .@"uint256[]", static_position, depth);
             defer allocator.free(array_values);
+            // The elements own memory until the typed slice takes them over
+            errdefer for (array_values) |value| freeAbiValue(allocator, value);
 
             try validateAllocationSize(array_values.len * @sizeOf([]const u256));
+            try cursor.chargeBytes(array_values.len * @sizeOf([]const u256));
             var result = try allocator.alloc([]const u256, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -577,13 +700,22 @@ pub fn decodeAbiParameters(allocator: std.mem.Allocator, data: []const u8, types
     try validateAllocationSize(data.len);
     try validateAllocationSize(types.len * @sizeOf(AbiValue));
 
+    // One budget for the whole call: every parameter and nested value draws on it
+    var budget = DecodeBudget{};
     var cursor = Cursor.init(data);
+    cursor.budget = &budget;
     const result = try allocator.alloc(AbiValue, types.len);
+    var decoded: usize = 0;
+    errdefer {
+        for (result[0..decoded]) |value| freeAbiValue(allocator, value);
+        allocator.free(result);
+    }
 
     var consumed: usize = 0;
     for (types, 0..) |abi_type, i| {
         cursor.setPosition(consumed);
         result[i] = try decode_parameter(allocator, &cursor, abi_type, 0, 0);
+        decoded += 1;
         // Fixed arrays take multiple 32-byte slots, others take 32 bytes
         if (abi_type.is_fixed_array()) {
             consumed += abi_type.size().?;
@@ -612,20 +744,20 @@ pub fn decodeFunctionData(allocator: std.mem.Allocator, data: []const u8, types:
 
 // ABI Encoding Functions
 
-// Helper to determine if a type is dynamic
-fn is_dynamic(abi_type: AbiType) bool {
-    return switch (abi_type) {
-        .string, .bytes, .@"uint256[]", .@"bytes32[]", .@"address[]", .@"string[]" => true,
-        else => false,
-    };
-}
-
-// Helper to get static size for static types
-fn get_static_size(abi_type: AbiType) ?usize {
-    return switch (abi_type) {
-        .uint8, .uint16, .uint32, .uint64, .uint128, .uint256, .int8, .int16, .int32, .int64, .int128, .int256, .address, .bool, .bytes1, .bytes2, .bytes3, .bytes4, .bytes8, .bytes16, .bytes32 => 32,
-        .string, .bytes, .@"uint256[]", .@"bytes32[]", .@"address[]", .@"string[]" => null,
-    };
+/// The 32-byte ABI word of an elementary value: `uintN`/`bool`/`address`
+/// left-padded with zeros, `intN` sign-extended, `bytesN` right-padded.
+/// Returns `InvalidType` for dynamic and array values.
+fn abiWord(value: AbiValue) AbiError![32]u8 {
+    var word = [_]u8{0} ** 32;
+    switch (value) {
+        inline .uint8, .uint16, .uint32, .uint64, .uint128, .uint256 => |val| std.mem.writeInt(u256, &word, val, .big),
+        inline .int8, .int16, .int32, .int64, .int128, .int256 => |val| std.mem.writeInt(u256, &word, @bitCast(@as(i256, val)), .big),
+        .address => |val| @memcpy(word[12..32], &val.bytes),
+        .bool => |val| word[31] = @intFromBool(val),
+        inline .bytes1, .bytes2, .bytes3, .bytes4, .bytes8, .bytes16, .bytes32 => |val| @memcpy(word[0..val.len], &val),
+        else => return AbiError.InvalidType,
+    }
+    return word;
 }
 
 // Encode a single static parameter
@@ -711,11 +843,9 @@ fn encode_static_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8 
                 @memset(result[0..16], 0xff);
             }
         },
-        .int256 => {
-            // i256 is not natively supported in Zig as there is no i256 type.
-            // This is intentional - Solidity's int256 is rarely used in practice.
-            // If needed, use uint256 and handle sign bit manually, or use a big integer library.
-            return AbiError.UnsupportedType;
+        .int256 => |val| {
+            // Big-endian two's complement fills the whole word
+            std.mem.writeInt(u256, result[0..32], @bitCast(val), .big);
         },
         .address => |val| {
             // Address is 20 bytes, right-aligned (left-padded with zeros)
@@ -1129,28 +1259,35 @@ pub fn encodeAbiParameters(allocator: std.mem.Allocator, values: []const AbiValu
     for (values) |value| {
         const abi_type = value.get_type();
 
-        if (is_dynamic(abi_type)) {
+        if (abi_type.is_dynamic()) {
             // Dynamic type: add 32 bytes for offset pointer in static part
             static_size += 32;
 
             // Encode the dynamic data
             const dynamic_data = try encode_dynamic_parameter(allocator, value);
-            try dynamic_parts.append(dynamic_data);
+            {
+                // The list owns the part only once append succeeds
+                errdefer allocator.free(dynamic_data);
+                try dynamic_parts.append(dynamic_data);
+            }
             dynamic_size += dynamic_data.len;
 
             // Create offset pointer for static part
             const offset_pointer = try allocator.alloc(u8, 32);
+            errdefer allocator.free(offset_pointer);
             @memset(offset_pointer, 0);
             // Offset will be calculated in second pass
             try static_parts.append(offset_pointer);
         } else if (abi_type.is_fixed_array()) {
             // Fixed array: encode inline (multiple 32-byte slots)
             const array_data = try encode_fixed_array_parameter(allocator, value);
+            errdefer allocator.free(array_data);
             try static_parts.append(array_data);
             static_size += array_data.len;
         } else {
             // Static type: encode directly
             const static_data = try encode_static_parameter(allocator, value);
+            errdefer allocator.free(static_data);
             try static_parts.append(static_data);
             static_size += 32;
         }
@@ -1163,7 +1300,7 @@ pub fn encodeAbiParameters(allocator: std.mem.Allocator, values: []const AbiValu
     for (values, 0..) |value, i| {
         const abi_type = value.get_type();
 
-        if (is_dynamic(abi_type)) {
+        if (abi_type.is_dynamic()) {
             // Update the offset pointer
             var offset_bytes: [32]u8 = undefined;
             @memset(&offset_bytes, 0);
@@ -1208,212 +1345,155 @@ pub fn encodeFunctionData(allocator: std.mem.Allocator, selector: Selector, para
     return result;
 }
 
+/// Hash one array element in the in-place encoding Solidity uses for indexed
+/// arrays: the element's bytes right-padded with zeros to a multiple of 32.
+fn hashPadded(hasher: *std.crypto.hash.sha3.Keccak256, bytes: []const u8) void {
+    const zeros = [_]u8{0} ** 32;
+    hasher.update(bytes);
+    hasher.update(zeros[0 .. (32 - bytes.len % 32) % 32]);
+}
+
+/// Encode one indexed event argument as a 32-byte topic (Solidity ABI spec,
+/// "Encoding of Indexed Event Parameters"). Caller owns the returned slice.
+///
+/// - Elementary types (`bool`, `uintN`, `intN`, `address`, `bytesN`): the
+///   32-byte ABI word.
+/// - `bytes` and `string`: keccak256 of the contents, no padding, no length.
+/// - Arrays, dynamic or fixed: keccak256 of the concatenated elements, each
+///   padded to a multiple of 32 bytes (`string` elements too), no length
+///   prefix at any level.
+fn encodeIndexedTopic(allocator: std.mem.Allocator, value: AbiValue) ![]u8 {
+    var word: [32]u8 = undefined;
+    const abi_type = value.get_type();
+    if (!abi_type.is_dynamic() and !abi_type.is_fixed_array()) {
+        word = try abiWord(value);
+    } else {
+        var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
+        switch (value) {
+            .bytes, .string => |val| hasher.update(val),
+            .@"string[]" => |val| for (val) |item| hashPadded(&hasher, item),
+            .@"bytes32[]" => |val| for (val) |item| hasher.update(&item),
+            .@"uint256[]" => |val| for (val) |item| hasher.update(&(try abiWord(.{ .uint256 = item }))),
+            .@"address[]" => |val| for (val) |item| hasher.update(&(try abiWord(.{ .address = item }))),
+            .@"bool[]" => |val| for (val) |item| hasher.update(&(try abiWord(.{ .bool = item }))),
+            .@"uint256[][]" => |val| for (val) |arr| {
+                for (arr) |item| hasher.update(&(try abiWord(.{ .uint256 = item })));
+            },
+            inline .@"uint256[2]", .@"uint256[3]" => |arr| for (arr) |item| hasher.update(&(try abiWord(.{ .uint256 = item }))),
+            .@"address[2]" => |arr| for (arr) |item| hasher.update(&(try abiWord(.{ .address = item }))),
+            .@"bool[4]" => |arr| for (arr) |item| hasher.update(&(try abiWord(.{ .bool = item }))),
+            .@"bytes4[2]" => |arr| for (arr) |item| hasher.update(&(try abiWord(.{ .bytes4 = item }))),
+            else => return AbiError.InvalidType,
+        }
+        hasher.final(&word);
+    }
+    return allocator.dupe(u8, &word);
+}
+
+/// Topics of an event: `keccak256(event_signature)` followed by one 32-byte
+/// topic per indexed value (see `encodeIndexedTopic`). Caller owns the outer
+/// slice and every topic.
 pub fn encodeEventTopics(allocator: std.mem.Allocator, event_signature: []const u8, indexed_values: []const AbiValue) ![][]u8 {
     var topics = std.array_list.AlignedManaged([]u8, null).init(allocator);
     defer topics.deinit();
+    errdefer for (topics.items) |topic| allocator.free(topic);
+
+    try topics.ensureTotalCapacity(indexed_values.len + 1);
 
     // First topic is the event signature hash
     var signature_hash: [32]u8 = undefined;
     std.crypto.hash.sha3.Keccak256.hash(event_signature, &signature_hash, .{});
-    const first_topic = try allocator.alloc(u8, 32);
-    @memcpy(first_topic, &signature_hash);
-    try topics.append(first_topic);
+    topics.appendAssumeCapacity(try allocator.dupe(u8, &signature_hash));
 
     // Add indexed parameters as topics
     for (indexed_values) |value| {
-        var topic = try allocator.alloc(u8, 32);
-        @memset(topic, 0);
-
-        switch (value) {
-            .address => |addr| {
-                @memcpy(topic[12..32], &addr);
-            },
-            .uint256 => |val| {
-                var bytes: [32]u8 = undefined;
-                std.mem.writeInt(u256, &bytes, val, .big);
-                @memcpy(topic, &bytes);
-            },
-            else => {
-                // For other types, leave as zeros
-            },
-        }
-
-        try topics.append(topic);
+        topics.appendAssumeCapacity(try encodeIndexedTopic(allocator, value));
     }
 
     return topics.toOwnedSlice();
 }
 
-// Simple packed encoding
-pub fn encodePacked(allocator: std.mem.Allocator, values: []const AbiValue) ![]u8 {
-    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
-    defer result.deinit();
+pub const PackedError = error{ UnsupportedType, OutOfMemory };
 
+/// Append `values` in Solidity's non-standard packed mode.
+///
+/// - Elementary values use their natural width with no padding
+///   (`uint16` is 2 bytes, `address` 20, `bool` 1, `bytesN` N).
+/// - `bytes` and `string` are appended as-is, no length.
+/// - Array elements, dynamic or fixed arrays alike, are each padded to
+///   32 bytes like standard ABI words: `address[]` and `bool[]` left-padded,
+///   `bytesN[]` right-padded. No length prefix.
+///
+/// `strict` selects what happens for the shapes solc rejects in packed mode,
+/// nested arrays (`uint256[][]`) and arrays of dynamic types (`string[]`):
+/// `UnsupportedType` when strict, otherwise the viem/ethers encoding
+/// (elements concatenated; `string` elements unpadded).
+fn appendPacked(result: *std.array_list.AlignedManaged(u8, null), values: []const AbiValue, comptime strict: bool) (if (strict) PackedError else error{OutOfMemory})!void {
     for (values) |value| {
         switch (value) {
-            .uint8 => |val| {
-                try result.append(val);
-            },
-            .uint16 => |val| {
-                var bytes: [2]u8 = undefined;
-                std.mem.writeInt(u16, &bytes, val, .big);
+            inline .uint8, .uint16, .uint32, .uint64, .uint128, .uint256 => |val| {
+                var bytes: [@sizeOf(@TypeOf(val))]u8 = undefined;
+                std.mem.writeInt(@TypeOf(val), &bytes, val, .big);
                 try result.appendSlice(&bytes);
             },
-            .uint32 => |val| {
-                var bytes: [4]u8 = undefined;
-                std.mem.writeInt(u32, &bytes, val, .big);
+            inline .int8, .int16, .int32, .int64, .int128, .int256 => |val| {
+                const Unsigned = std.meta.Int(.unsigned, @bitSizeOf(@TypeOf(val)));
+                var bytes: [@sizeOf(Unsigned)]u8 = undefined;
+                std.mem.writeInt(Unsigned, &bytes, @bitCast(val), .big);
                 try result.appendSlice(&bytes);
             },
-            .uint64 => |val| {
-                var bytes: [8]u8 = undefined;
-                std.mem.writeInt(u64, &bytes, val, .big);
-                try result.appendSlice(&bytes);
-            },
-            .uint128 => |val| {
-                var bytes: [16]u8 = undefined;
-                std.mem.writeInt(u128, &bytes, val, .big);
-                try result.appendSlice(&bytes);
-            },
-            .uint256 => |val| {
-                var bytes: [32]u8 = undefined;
-                std.mem.writeInt(u256, &bytes, val, .big);
-                try result.appendSlice(&bytes);
-            },
-            .int8 => |val| {
-                const unsigned: u8 = @bitCast(val);
-                try result.append(unsigned);
-            },
-            .int16 => |val| {
-                var bytes: [2]u8 = undefined;
-                const unsigned: u16 = @bitCast(val);
-                std.mem.writeInt(u16, &bytes, unsigned, .big);
-                try result.appendSlice(&bytes);
-            },
-            .int32 => |val| {
-                var bytes: [4]u8 = undefined;
-                const unsigned: u32 = @bitCast(val);
-                std.mem.writeInt(u32, &bytes, unsigned, .big);
-                try result.appendSlice(&bytes);
-            },
-            .int64 => |val| {
-                var bytes: [8]u8 = undefined;
-                const unsigned: u64 = @bitCast(val);
-                std.mem.writeInt(u64, &bytes, unsigned, .big);
-                try result.appendSlice(&bytes);
-            },
-            .int128 => |val| {
-                var bytes: [16]u8 = undefined;
-                const unsigned: u128 = @bitCast(val);
-                std.mem.writeInt(u128, &bytes, unsigned, .big);
-                try result.appendSlice(&bytes);
-            },
-            .int256 => |val| {
-                var bytes: [32]u8 = undefined;
-                const unsigned: u256 = @bitCast(val);
-                std.mem.writeInt(u256, &bytes, unsigned, .big);
-                try result.appendSlice(&bytes);
-            },
-            .address => |val| {
-                try result.appendSlice(&val.bytes);
-            },
-            .bool => |val| {
-                try result.append(if (val) 1 else 0);
-            },
-            .bytes1 => |val| {
-                try result.appendSlice(&val);
-            },
-            .bytes2 => |val| {
-                try result.appendSlice(&val);
-            },
-            .bytes3 => |val| {
-                try result.appendSlice(&val);
-            },
-            .bytes4 => |val| {
-                try result.appendSlice(&val);
-            },
-            .bytes8 => |val| {
-                try result.appendSlice(&val);
-            },
-            .bytes16 => |val| {
-                try result.appendSlice(&val);
-            },
-            .bytes32 => |val| {
-                try result.appendSlice(&val);
-            },
-            .bytes => |val| {
-                try result.appendSlice(val);
-            },
-            .string => |val| {
-                try result.appendSlice(val);
-            },
-            .@"uint256[]" => |val| {
-                for (val) |item| {
-                    var bytes: [32]u8 = undefined;
-                    std.mem.writeInt(u256, &bytes, item, .big);
-                    try result.appendSlice(&bytes);
-                }
-            },
-            .@"bytes32[]" => |val| {
-                for (val) |item| {
-                    try result.appendSlice(&item);
-                }
-            },
-            .@"address[]" => |val| {
-                for (val) |item| {
-                    try result.appendSlice(&item.bytes);
-                }
-            },
+            .address => |val| try result.appendSlice(&val.bytes),
+            .bool => |val| try result.append(@intFromBool(val)),
+            inline .bytes1, .bytes2, .bytes3, .bytes4, .bytes8, .bytes16, .bytes32 => |val| try result.appendSlice(&val),
+            .bytes, .string => |val| try result.appendSlice(val),
+
+            // Arrays: every element is a 32-byte word
+            .@"bytes32[]" => |val| for (val) |item| try result.appendSlice(&item),
+            .@"uint256[]" => |val| for (val) |item| try result.appendSlice(&(abiWord(.{ .uint256 = item }) catch unreachable)),
+            .@"address[]" => |val| for (val) |item| try result.appendSlice(&(abiWord(.{ .address = item }) catch unreachable)),
+            .@"bool[]" => |val| for (val) |item| try result.appendSlice(&(abiWord(.{ .bool = item }) catch unreachable)),
+            inline .@"uint256[2]", .@"uint256[3]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .uint256 = item }) catch unreachable)),
+            .@"address[2]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .address = item }) catch unreachable)),
+            .@"bool[4]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .bool = item }) catch unreachable)),
+            .@"bytes4[2]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .bytes4 = item }) catch unreachable)),
+
+            // Shapes solc rejects in packed mode
             .@"string[]" => |val| {
-                for (val) |item| {
-                    try result.appendSlice(item);
-                }
-            },
-            .@"bool[]" => |val| {
-                for (val) |item| {
-                    try result.append(if (item) 1 else 0);
-                }
+                if (strict) return error.UnsupportedType;
+                for (val) |item| try result.appendSlice(item);
             },
             .@"uint256[][]" => |val| {
+                if (strict) return error.UnsupportedType;
                 for (val) |arr| {
-                    for (arr) |item| {
-                        var bytes: [32]u8 = undefined;
-                        std.mem.writeInt(u256, &bytes, item, .big);
-                        try result.appendSlice(&bytes);
-                    }
-                }
-            },
-            .@"uint256[2]" => |arr| {
-                for (arr) |item| {
-                    var bytes: [32]u8 = undefined;
-                    std.mem.writeInt(u256, &bytes, item, .big);
-                    try result.appendSlice(&bytes);
-                }
-            },
-            .@"uint256[3]" => |arr| {
-                for (arr) |item| {
-                    var bytes: [32]u8 = undefined;
-                    std.mem.writeInt(u256, &bytes, item, .big);
-                    try result.appendSlice(&bytes);
-                }
-            },
-            .@"address[2]" => |arr| {
-                for (arr) |item| {
-                    try result.appendSlice(&item.bytes);
-                }
-            },
-            .@"bool[4]" => |arr| {
-                for (arr) |item| {
-                    try result.append(if (item) 1 else 0);
-                }
-            },
-            .@"bytes4[2]" => |arr| {
-                for (arr) |item| {
-                    try result.appendSlice(&item);
+                    for (arr) |item| try result.appendSlice(&(abiWord(.{ .uint256 = item }) catch unreachable));
                 }
             },
         }
     }
+}
 
+/// Solidity `abi.encodePacked`, strict: array elements are padded to 32 bytes
+/// and the shapes solc rejects in packed mode return `error.UnsupportedType`:
+/// nested arrays (`uint256[][]`) and arrays of dynamic types (`string[]`).
+/// Caller owns the returned slice.
+pub fn encodePackedStrict(allocator: std.mem.Allocator, values: []const AbiValue) PackedError![]u8 {
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer result.deinit();
+    try appendPacked(&result, values, true);
+    return result.toOwnedSlice();
+}
+
+/// Packed encoding with the same array padding as `encodePackedStrict`.
+/// Caller owns the returned slice.
+///
+/// The error set is `error{OutOfMemory}` only, which the C API switches on
+/// exhaustively, so this entry point cannot report `UnsupportedType`. For the
+/// two shapes solc rejects (`string[]`, `uint256[][]`) it returns the
+/// viem/ethers encoding instead. Use `encodePackedStrict` to reject them.
+pub fn encodePacked(allocator: std.mem.Allocator, values: []const AbiValue) error{OutOfMemory}![]u8 {
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer result.deinit();
+    try appendPacked(&result, values, false);
     return result.toOwnedSlice();
 }
 
@@ -1937,13 +2017,10 @@ test "encodePacked - fixed array address[2]" {
     const encoded = try encodePacked(allocator, &values);
     defer allocator.free(encoded);
 
-    try std.testing.expectEqual(@as(usize, 40), encoded.len);
-    for (encoded[0..20]) |b| {
-        try std.testing.expectEqual(@as(u8, 0x11), b);
-    }
-    for (encoded[20..40]) |b| {
-        try std.testing.expectEqual(@as(u8, 0x22), b);
-    }
+    // Array elements are padded to 32 bytes: 12 zero bytes, then the address
+    try std.testing.expectEqual(@as(usize, 64), encoded.len);
+    try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 12 ++ [_]u8{0x11} ** 20), encoded[0..32]);
+    try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 12 ++ [_]u8{0x22} ** 20), encoded[32..64]);
 }
 
 test "encodePacked - fixed array bool[4]" {
@@ -1953,11 +2030,10 @@ test "encodePacked - fixed array bool[4]" {
     const encoded = try encodePacked(allocator, &values);
     defer allocator.free(encoded);
 
-    try std.testing.expectEqual(@as(usize, 4), encoded.len);
-    try std.testing.expectEqual(@as(u8, 1), encoded[0]);
-    try std.testing.expectEqual(@as(u8, 0), encoded[1]);
-    try std.testing.expectEqual(@as(u8, 1), encoded[2]);
-    try std.testing.expectEqual(@as(u8, 0), encoded[3]);
+    // Array elements are padded to 32 bytes: one word per bool
+    try std.testing.expectEqual(@as(usize, 128), encoded.len);
+    const want = testWord(1) ++ testWord(0) ++ testWord(1) ++ testWord(0);
+    try std.testing.expectEqualSlices(u8, &want, encoded);
 }
 
 test "encodePacked - fixed array bytes4[2]" {
@@ -1969,11 +2045,10 @@ test "encodePacked - fixed array bytes4[2]" {
     const encoded = try encodePacked(allocator, &values);
     defer allocator.free(encoded);
 
-    try std.testing.expectEqual(@as(usize, 8), encoded.len);
-    try std.testing.expectEqual(@as(u8, 0x12), encoded[0]);
-    try std.testing.expectEqual(@as(u8, 0x78), encoded[3]);
-    try std.testing.expectEqual(@as(u8, 0x9A), encoded[4]);
-    try std.testing.expectEqual(@as(u8, 0xF0), encoded[7]);
+    // Array elements are padded to 32 bytes: bytes4 is right-padded
+    try std.testing.expectEqual(@as(usize, 64), encoded.len);
+    try std.testing.expectEqualSlices(u8, &(b1 ++ [_]u8{0} ** 28), encoded[0..32]);
+    try std.testing.expectEqualSlices(u8, &(b2 ++ [_]u8{0} ** 28), encoded[32..64]);
 }
 
 test "encodePacked - uint8 + address + bool (22 bytes)" {
@@ -2195,7 +2270,7 @@ test "function data encoding" {
 
     const selector = computeSelector("transfer(address,uint256)");
     const params = [_]AbiValue{
-        addressValue([_]u8{0x12} ** 20),
+        addressValue(address.Address{ .bytes = [_]u8{0x12} ** 20 }),
         uint256_value(1000),
     };
 
@@ -2283,22 +2358,9 @@ pub const ErrorResult = struct {
 
     pub fn deinit(self: *ErrorResult, allocator: std.mem.Allocator) void {
         allocator.free(self.error_data);
-        if (self.decoded_params) |params| {
-            for (params) |param| {
-                switch (param) {
-                    .string, .bytes => |slice| allocator.free(slice),
-                    .@"uint256[]" => |arr| allocator.free(arr),
-                    .@"bytes32[]" => |arr| allocator.free(arr),
-                    .@"address[]" => |arr| allocator.free(arr),
-                    .@"string[]" => |arr| {
-                        for (arr) |str| allocator.free(str);
-                        allocator.free(arr);
-                    },
-                    else => {},
-                }
-            }
-            allocator.free(params);
-        }
+        // freeAbiValues knows every heap-owning variant (bool[], uint256[][], ...)
+        if (self.decoded_params) |params| freeAbiValues(allocator, params);
+        self.decoded_params = null;
     }
 };
 
@@ -2324,8 +2386,14 @@ pub fn createErrorResult(allocator: std.mem.Allocator, selector: Selector, error
     };
 }
 
+/// Decode the parameters after the 4-byte selector into `decoded_params`.
+/// Values from an earlier decode are freed and replaced. On error the earlier
+/// values stay in place.
 pub fn decodeErrorResultWithTypes(allocator: std.mem.Allocator, error_result: *ErrorResult, error_types: []const AbiType) !void {
-    error_result.decoded_params = try decodeAbiParameters(allocator, error_result.error_data[4..], error_types);
+    if (error_result.error_data.len < 4) return AbiError.DataTooSmall;
+    const decoded = try decodeAbiParameters(allocator, error_result.error_data[4..], error_types);
+    if (error_result.decoded_params) |previous| freeAbiValues(allocator, previous);
+    error_result.decoded_params = decoded;
 }
 
 // Test ABI encoding of uint types
@@ -2340,7 +2408,7 @@ test "encode uint256" {
 
     try std.testing.expectEqual(@as(usize, 32), encoded.len);
 
-    const expected = [_]u8{0} ** 28 ++ [_]u8{ 0x00, 0x00, 0x10, 0xf2, 0xc };
+    const expected = [_]u8{0} ** 29 ++ [_]u8{ 0x01, 0x0f, 0x2c };
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 
@@ -2400,11 +2468,11 @@ test "encode int32 negative two's complement" {
 
 // Test ABI encoding of addresses
 test "encode address" {
-    const addr: address.Address = [_]u8{
+    const addr = address.Address{ .bytes = [_]u8{
         0x14, 0xdC, 0x79, 0x96, 0x4d, 0xa2, 0xC0, 0x8b,
         0x23, 0x69, 0x8B, 0x3D, 0x3c, 0xc7, 0xCa, 0x32,
         0x19, 0x3d, 0x99, 0x55,
-    };
+    } };
 
     const values = [_]AbiValue{
         addressValue(addr),
@@ -2414,7 +2482,7 @@ test "encode address" {
     defer std.testing.allocator.free(encoded);
 
     // Address should be right-padded with zeros
-    const expected = [_]u8{0} ** 12 ++ addr;
+    const expected = [_]u8{0} ** 12 ++ addr.bytes;
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 
@@ -2449,7 +2517,7 @@ test "encode bool" {
 
 // Test ABI decoding
 test "decode uint256" {
-    const data = [_]u8{0} ** 28 ++ [_]u8{ 0x00, 0x00, 0x10, 0xf2, 0xc };
+    const data = [_]u8{0} ** 29 ++ [_]u8{ 0x01, 0x0f, 0x2c };
     const types = [_]AbiType{.uint256};
 
     const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
@@ -2487,20 +2555,20 @@ test "decode int32 negative" {
 }
 
 test "decode address" {
-    const expectedAddr: address.Address = [_]u8{
+    const expectedAddr = address.Address{ .bytes = [_]u8{
         0x14, 0xdC, 0x79, 0x96, 0x4d, 0xa2, 0xC0, 0x8b,
         0x23, 0x69, 0x8B, 0x3D, 0x3c, 0xc7, 0xCa, 0x32,
         0x19, 0x3d, 0x99, 0x55,
-    };
+    } };
 
-    const data = [_]u8{0} ** 12 ++ expectedAddr;
+    const data = [_]u8{0} ** 12 ++ expectedAddr.bytes;
     const types = [_]AbiType{.address};
 
     const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
     defer std.testing.allocator.free(decoded);
 
     try std.testing.expectEqual(@as(usize, 1), decoded.len);
-    try std.testing.expectEqualSlices(u8, &expectedAddr, &decoded[0].address);
+    try std.testing.expectEqualSlices(u8, &expectedAddr.bytes, &decoded[0].address.bytes);
 }
 
 test "decode bool" {
@@ -2543,7 +2611,7 @@ test "compute selector" {
 test "encode function data" {
     const selector = computeSelector("transfer(address,uint256)");
 
-    const recipient: address.Address = [_]u8{0x12} ** 20;
+    const recipient = address.Address{ .bytes = [_]u8{0x12} ** 20 };
     const params = [_]AbiValue{
         addressValue(recipient),
         uint256_value(1000),
@@ -2633,7 +2701,7 @@ test "decode with insufficient data" {
 
 // Test complex types
 test "encode and decode multiple types" {
-    const addr: address.Address = [_]u8{0xaa} ** 20;
+    const addr = address.Address{ .bytes = [_]u8{0xaa} ** 20 };
     const originalValues = [_]AbiValue{
         uint256_value(42),
         boolValue(true),
@@ -2649,7 +2717,7 @@ test "encode and decode multiple types" {
 
     try std.testing.expectEqual(@as(u256, 42), decoded[0].uint256);
     try std.testing.expectEqual(true, decoded[1].bool);
-    try std.testing.expectEqualSlices(u8, &addr, &decoded[2].address);
+    try std.testing.expectEqualSlices(u8, &addr.bytes, &decoded[2].address.bytes);
 }
 
 // Test ABI encoding with ox and viem test cases
@@ -2663,7 +2731,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "0000000000000000000000000000000000000000000000000000000000010f2c";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2676,7 +2744,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "0000000000000000000000000000000000000000000000000000000000000020";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2684,17 +2752,17 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
 
     // Test address
     {
-        const addr: address.Address = [_]u8{
+        const addr = address.Address{ .bytes = [_]u8{
             0x14, 0xdC, 0x79, 0x96, 0x4d, 0xa2, 0xC0, 0x8b,
             0x23, 0x69, 0x8B, 0x3D, 0x3c, 0xc7, 0xCa, 0x32,
             0x19, 0x3d, 0x99, 0x55,
-        };
+        } };
         const values = [_]AbiValue{addressValue(addr)};
         const encoded = try encodeAbiParameters(allocator, &values);
         defer allocator.free(encoded);
 
         const expected = "00000000000000000000000014dc79964da2c08b23698b3d3cc7ca32193d9955";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2707,7 +2775,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "0000000000000000000000000000000000000000000000000000000000000001";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2720,7 +2788,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "0000000000000000000000000000000000000000000000000000000000000000";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2733,7 +2801,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "000000000000000000000000000000000000000000000000000000007fffffff";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2746,7 +2814,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffff80000000";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2754,11 +2822,11 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
 
     // Test multiple static types (uint256, bool, address)
     {
-        const addr: address.Address = [_]u8{
+        const addr = address.Address{ .bytes = [_]u8{
             0xc9, 0x61, 0x14, 0x5a, 0x54, 0xC9, 0x6E, 0x3a,
             0xE9, 0xbA, 0xA0, 0x48, 0xc4, 0xF4, 0xD6, 0xb0,
             0x4C, 0x13, 0x91, 0x6b,
-        };
+        } };
         const values = [_]AbiValue{
             uint256_value(420),
             boolValue(true),
@@ -2768,7 +2836,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "00000000000000000000000000000000000000000000000000000000000001a40000000000000000000000000000000000000000000000000000000000000001000000000000000000000000c961145a54c96e3ae9baa048c4f4d6b04c13916b";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2781,7 +2849,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000057761676d69000000000000000000000000000000000000000000000000000000";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2798,7 +2866,7 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001a4000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000057761676d69000000000000000000000000000000000000000000000000000000";
-        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+        const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
         defer allocator.free(actual_hex);
 
         try std.testing.expectEqualStrings(expected, actual_hex);
@@ -2986,8 +3054,8 @@ test "ABI bytes32 array encoding" {
 test "ABI address array encoding" {
     const allocator = std.testing.allocator;
 
-    const addr1: address.Address = [_]u8{0x11} ** 20;
-    const addr2: address.Address = [_]u8{0x22} ** 20;
+    const addr1 = address.Address{ .bytes = [_]u8{0x11} ** 20 };
+    const addr2 = address.Address{ .bytes = [_]u8{0x22} ** 20 };
     const arr = [_]address.Address{ addr1, addr2 };
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
@@ -3004,8 +3072,8 @@ test "ABI address array encoding" {
     }
 
     try std.testing.expectEqual(@as(usize, 2), decoded[0].@"address[]".len);
-    try std.testing.expectEqualSlices(u8, &addr1, &decoded[0].@"address[]"[0]);
-    try std.testing.expectEqualSlices(u8, &addr2, &decoded[0].@"address[]"[1]);
+    try std.testing.expectEqualSlices(u8, &addr1.bytes, &decoded[0].@"address[]"[0].bytes);
+    try std.testing.expectEqualSlices(u8, &addr2.bytes, &decoded[0].@"address[]"[1].bytes);
 }
 
 test "ABI string array encoding" {
@@ -3138,7 +3206,7 @@ test "ABI decode function data with no parameters" {
 test "ABI encode event topics with indexed values" {
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0xaa} ** 20;
+    const addr = address.Address{ .bytes = [_]u8{0xaa} ** 20 };
     const indexed = [_]AbiValue{
         addressValue(addr),
         uint256_value(1000),
@@ -3296,9 +3364,9 @@ test "ABI dynamic array - single element uint256 array" {
 test "ABI dynamic array - multiple elements address array" {
     const allocator = std.testing.allocator;
 
-    const addr1: address.Address = [_]u8{0x11} ** 20;
-    const addr2: address.Address = [_]u8{0x22} ** 20;
-    const addr3: address.Address = [_]u8{0x33} ** 20;
+    const addr1 = address.Address{ .bytes = [_]u8{0x11} ** 20 };
+    const addr2 = address.Address{ .bytes = [_]u8{0x22} ** 20 };
+    const addr3 = address.Address{ .bytes = [_]u8{0x33} ** 20 };
     const arr = [_]address.Address{ addr1, addr2, addr3 };
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
@@ -3315,9 +3383,9 @@ test "ABI dynamic array - multiple elements address array" {
     }
 
     try std.testing.expectEqual(@as(usize, 3), decoded[0].@"address[]".len);
-    try std.testing.expectEqualSlices(u8, &addr1, &decoded[0].@"address[]"[0]);
-    try std.testing.expectEqualSlices(u8, &addr2, &decoded[0].@"address[]"[1]);
-    try std.testing.expectEqualSlices(u8, &addr3, &decoded[0].@"address[]"[2]);
+    try std.testing.expectEqualSlices(u8, &addr1.bytes, &decoded[0].@"address[]"[0].bytes);
+    try std.testing.expectEqualSlices(u8, &addr2.bytes, &decoded[0].@"address[]"[1].bytes);
+    try std.testing.expectEqualSlices(u8, &addr3.bytes, &decoded[0].@"address[]"[2].bytes);
 }
 
 test "ABI dynamic array - empty string array" {
@@ -3467,7 +3535,7 @@ test "ABI dynamic array - mixed static and dynamic array encoding" {
 test "ABI dynamic array - address array with zero addresses" {
     const allocator = std.testing.allocator;
 
-    const zero_addr: address.Address = [_]u8{0} ** 20;
+    const zero_addr = address.Address{ .bytes = [_]u8{0} ** 20 };
     const arr = [_]address.Address{zero_addr} ** 5;
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
@@ -3485,7 +3553,7 @@ test "ABI dynamic array - address array with zero addresses" {
 
     try std.testing.expectEqual(@as(usize, 5), decoded[0].@"address[]".len);
     for (decoded[0].@"address[]") |addr| {
-        try std.testing.expectEqualSlices(u8, &zero_addr, &addr);
+        try std.testing.expectEqualSlices(u8, &zero_addr.bytes, &addr.bytes);
     }
 }
 
@@ -3663,7 +3731,7 @@ test "ABI boundary - int128 maximum value" {
 test "ABI boundary - address zero (0x0000...0000)" {
     const allocator = std.testing.allocator;
 
-    const zero_addr: address.Address = [_]u8{0} ** 20;
+    const zero_addr = address.Address{ .bytes = [_]u8{0} ** 20 };
     const values = [_]AbiValue{
         addressValue(zero_addr),
     };
@@ -3675,13 +3743,13 @@ test "ABI boundary - address zero (0x0000...0000)" {
     const decoded = try decodeAbiParameters(allocator, encoded, &types);
     defer allocator.free(decoded);
 
-    try std.testing.expectEqualSlices(u8, &zero_addr, &decoded[0].address);
+    try std.testing.expectEqualSlices(u8, &zero_addr.bytes, &decoded[0].address.bytes);
 }
 
 test "ABI boundary - address maximum (0xFFFF...FFFF)" {
     const allocator = std.testing.allocator;
 
-    const max_addr: address.Address = [_]u8{0xFF} ** 20;
+    const max_addr = address.Address{ .bytes = [_]u8{0xFF} ** 20 };
     const values = [_]AbiValue{
         addressValue(max_addr),
     };
@@ -3693,7 +3761,7 @@ test "ABI boundary - address maximum (0xFFFF...FFFF)" {
     const decoded = try decodeAbiParameters(allocator, encoded, &types);
     defer allocator.free(decoded);
 
-    try std.testing.expectEqualSlices(u8, &max_addr, &decoded[0].address);
+    try std.testing.expectEqualSlices(u8, &max_addr.bytes, &decoded[0].address.bytes);
 }
 
 test "ABI boundary - bytes1 vs bytes32 comparison" {
@@ -4003,11 +4071,11 @@ test "ABI error - string array with invalid nested offset" {
 test "ABI cross-validation - ethers.js ERC20 transfer encoding" {
     const allocator = std.testing.allocator;
 
-    const recipient: address.Address = [_]u8{
+    const recipient = address.Address{ .bytes = [_]u8{
         0xd8, 0xda, 0x6b, 0xf2, 0x69, 0x64, 0xaf, 0x9d,
         0x7e, 0xed, 0x9e, 0x03, 0xe5, 0x34, 0x15, 0xd3,
         0x7a, 0xa9, 0x60, 0x45,
-    };
+    } };
     const amount: u256 = 1000000000000000000;
 
     const values = [_]AbiValue{
@@ -4019,7 +4087,7 @@ test "ABI cross-validation - ethers.js ERC20 transfer encoding" {
     defer allocator.free(encoded);
 
     const expected_hex = "000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa960450000000000000000000000000000000000000000000000000de0b6b3a7640000";
-    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
     defer allocator.free(actual_hex);
 
     try std.testing.expectEqualStrings(expected_hex, actual_hex);
@@ -4028,11 +4096,11 @@ test "ABI cross-validation - ethers.js ERC20 transfer encoding" {
 test "ABI cross-validation - web3.js approve encoding" {
     const allocator = std.testing.allocator;
 
-    const spender: address.Address = [_]u8{
+    const spender = address.Address{ .bytes = [_]u8{
         0x7a, 0x25, 0x0d, 0x56, 0x30, 0xb4, 0xcf, 0x53,
         0x99, 0x39, 0xc1, 0xf0, 0x7d, 0x1e, 0x3e, 0xa4,
         0x0f, 0x60, 0x63, 0xaf,
-    };
+    } };
     const max_uint256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
     const values = [_]AbiValue{
@@ -4044,7 +4112,7 @@ test "ABI cross-validation - web3.js approve encoding" {
     defer allocator.free(encoded);
 
     const expected_hex = "0000000000000000000000007a250d5630b4cf539939c1f07d1e3ea40f6063afffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
     defer allocator.free(actual_hex);
 
     try std.testing.expectEqualStrings(expected_hex, actual_hex);
@@ -4061,7 +4129,7 @@ test "ABI cross-validation - viem string encoding 'Hello World'" {
     defer allocator.free(encoded);
 
     const expected_hex = "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000b48656c6c6f20576f726c64000000000000000000000000000000000000000000";
-    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
     defer allocator.free(actual_hex);
 
     try std.testing.expectEqualStrings(expected_hex, actual_hex);
@@ -4070,11 +4138,11 @@ test "ABI cross-validation - viem string encoding 'Hello World'" {
 test "ABI cross-validation - ethers.js multiple parameters encoding" {
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{
+    const addr = address.Address{ .bytes = [_]u8{
         0xc9, 0x61, 0x14, 0x5a, 0x54, 0xc9, 0x6e, 0x3a,
         0xe9, 0xba, 0xa0, 0x48, 0xc4, 0xf4, 0xd6, 0xb0,
         0x4c, 0x13, 0x91, 0x6b,
-    };
+    } };
     const values = [_]AbiValue{
         uint256_value(420),
         boolValue(true),
@@ -4085,7 +4153,7 @@ test "ABI cross-validation - ethers.js multiple parameters encoding" {
     defer allocator.free(encoded);
 
     const expected_hex = "00000000000000000000000000000000000000000000000000000000000001a40000000000000000000000000000000000000000000000000000000000000001000000000000000000000000c961145a54c96e3ae9baa048c4f4d6b04c13916b";
-    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
     defer allocator.free(actual_hex);
 
     try std.testing.expectEqualStrings(expected_hex, actual_hex);
@@ -4094,11 +4162,11 @@ test "ABI cross-validation - ethers.js multiple parameters encoding" {
 test "ABI cross-validation - real contract function encoding" {
     const allocator = std.testing.allocator;
 
-    const addr1: address.Address = [_]u8{0x11} ** 20;
-    const addr2: address.Address = [_]u8{0x22} ** 20;
+    const addr1 = address.Address{ .bytes = [_]u8{0x11} ** 20 };
+    const addr2 = address.Address{ .bytes = [_]u8{0x22} ** 20 };
     const path = [_]address.Address{ addr1, addr2 };
 
-    const to_addr: address.Address = [_]u8{0x33} ** 20;
+    const to_addr = address.Address{ .bytes = [_]u8{0x33} ** 20 };
 
     const values = [_]AbiValue{
         uint256_value(1000000000000000000),
@@ -4121,7 +4189,7 @@ test "ABI cross-validation - real contract function encoding" {
     try std.testing.expectEqual(@as(u256, 1000000000000000000), decoded[0].uint256);
     try std.testing.expectEqual(@as(u256, 900000000000000000), decoded[1].uint256);
     try std.testing.expectEqual(@as(usize, 2), decoded[2].@"address[]".len);
-    try std.testing.expectEqualSlices(u8, &to_addr, &decoded[3].address);
+    try std.testing.expectEqualSlices(u8, &to_addr.bytes, &decoded[3].address.bytes);
     try std.testing.expectEqual(@as(u256, 1700000000), decoded[4].uint256);
 }
 
@@ -4136,8 +4204,8 @@ test "ABI cross-validation - bytes encoding with known hash" {
     const encoded = try encodeAbiParameters(allocator, &values);
     defer allocator.free(encoded);
 
-    const expected_hex = "00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000008deadbeefcafebabe0000000000000000000000000000000000000000000000";
-    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    const expected_hex = "00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000008deadbeefcafebabe000000000000000000000000000000000000000000000000";
+    const actual_hex = try std.fmt.allocPrint(allocator, "{x}", .{encoded});
     defer allocator.free(actual_hex);
 
     try std.testing.expectEqualStrings(expected_hex, actual_hex);
@@ -5077,7 +5145,7 @@ test "arrays - address[] empty" {
 test "arrays - address[] single element" {
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0x11} ** 20;
+    const addr = address.Address{ .bytes = [_]u8{0x11} ** 20 };
     const arr = [_]address.Address{addr};
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
@@ -5094,7 +5162,7 @@ test "arrays - address[] single element" {
     }
 
     try std.testing.expectEqual(@as(usize, 1), decoded[0].@"address[]".len);
-    try std.testing.expectEqualSlices(u8, &addr, &decoded[0].@"address[]"[0]);
+    try std.testing.expectEqualSlices(u8, &addr.bytes, &decoded[0].@"address[]"[0].bytes);
 }
 
 test "arrays - string[] empty" {
@@ -5154,7 +5222,7 @@ test "nested - tuple in tuple (all static) ((uint256, address), bool)" {
     // In ABI encoding, nested tuples flatten: ((uint256, address), bool) → uint256, address, bool
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
     const values = [_]AbiValue{
         uint256_value(100),
         addressValue(addr),
@@ -5184,7 +5252,7 @@ test "nested - tuple in tuple with dynamic ((uint256, string), address)" {
     // With dynamic string in middle
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
     const values = [_]AbiValue{
         uint256_value(42),
         stringValue("hello"),
@@ -5215,7 +5283,7 @@ test "nested - triple nesting (((uint256, bool), address), bytes4)" {
     // All tuples flatten to: uint256, bool, address, bytes4
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
     const values = [_]AbiValue{
         uint256_value(123),
         boolValue(false),
@@ -5243,7 +5311,7 @@ test "nested - tuple with array (uint256[], address) - tuple flattens" {
     // Flattens to: uint256[], address
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
     const arr = [_]u256{ 1, 2, 3 };
     const values = [_]AbiValue{
         .{ .@"uint256[]" = &arr },
@@ -5276,7 +5344,7 @@ test "nested - tuple with multiple arrays (address, uint256[], bool[])" {
     // Multiple dynamic types require correct offset calculation
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
     const nums = [_]u256{ 10, 20 };
     const bools = [_]bool{ true, false, true };
 
@@ -5318,7 +5386,7 @@ test "nested - complex mixed (address, uint256[], (bool, string))" {
     // Two dynamic types: uint256[] and string
     const allocator = std.testing.allocator;
 
-    const addr: address.Address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
     const nums = [_]u256{100};
 
     const values = [_]AbiValue{
@@ -5564,7 +5632,7 @@ test "FunctionDefinition - encode_params transfer" {
     const func = CommonPatterns.erc20_transfer();
 
     const args = [_]AbiValue{
-        addressValue([_]u8{0x74} ++ [_]u8{0x2d} ++ [_]u8{0x35} ++ [_]u8{0xcc} ++ [_]u8{0x66} ++ [_]u8{0x34} ++ [_]u8{0xc0} ++ [_]u8{0x53} ++ [_]u8{0x29} ++ [_]u8{0x25} ++ [_]u8{0xa3} ++ [_]u8{0xb8} ++ [_]u8{0x44} ++ [_]u8{0xbc} ++ [_]u8{0x9e} ++ [_]u8{0x75} ++ [_]u8{0x95} ++ [_]u8{0xf2} ++ [_]u8{0x51} ++ [_]u8{0xe3}),
+        addressValue(address.Address{ .bytes = [_]u8{0x74} ++ [_]u8{0x2d} ++ [_]u8{0x35} ++ [_]u8{0xcc} ++ [_]u8{0x66} ++ [_]u8{0x34} ++ [_]u8{0xc0} ++ [_]u8{0x53} ++ [_]u8{0x29} ++ [_]u8{0x25} ++ [_]u8{0xa3} ++ [_]u8{0xb8} ++ [_]u8{0x44} ++ [_]u8{0xbc} ++ [_]u8{0x9e} ++ [_]u8{0x75} ++ [_]u8{0x95} ++ [_]u8{0xf2} ++ [_]u8{0x51} ++ [_]u8{0xe3} }),
         uint256_value(100),
     };
 
@@ -5585,7 +5653,7 @@ test "FunctionDefinition - decode_params transfer" {
 
     // First encode
     const args = [_]AbiValue{
-        addressValue([_]u8{0x12} ** 20),
+        addressValue(address.Address{ .bytes = [_]u8{0x12} ** 20 }),
         uint256_value(1000),
     };
 
@@ -5597,7 +5665,7 @@ test "FunctionDefinition - decode_params transfer" {
     defer allocator.free(decoded);
 
     try std.testing.expectEqual(@as(usize, 2), decoded.len);
-    try std.testing.expectEqualSlices(u8, &args[0].address, &decoded[0].address);
+    try std.testing.expectEqualSlices(u8, &args[0].address.bytes, &decoded[0].address.bytes);
     try std.testing.expectEqual(@as(u256, 1000), decoded[1].uint256);
 }
 
@@ -5702,7 +5770,7 @@ test "FunctionDefinition - round trip encode/decode" {
 
     // Original arguments
     const args = [_]AbiValue{
-        addressValue([_]u8{0xAB} ** 20),
+        addressValue(address.Address{ .bytes = [_]u8{0xAB} ** 20 }),
         uint256_value(999999),
     };
 
@@ -5716,7 +5784,7 @@ test "FunctionDefinition - round trip encode/decode" {
 
     // Verify round trip
     try std.testing.expectEqual(@as(usize, 2), decoded.len);
-    try std.testing.expectEqualSlices(u8, &args[0].address, &decoded[0].address);
+    try std.testing.expectEqualSlices(u8, &args[0].address.bytes, &decoded[0].address.bytes);
     try std.testing.expectEqual(@as(u256, 999999), decoded[1].uint256);
 }
 
@@ -5862,7 +5930,7 @@ test "error - decode data with invalid selector" {
 
     // Create data with wrong selector
     const wrong_selector = [_]u8{ 0xFF, 0xFF, 0xFF, 0xFF };
-    var data = std.ArrayList(u8).init(allocator);
+    var data = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer data.deinit();
     try data.appendSlice(&wrong_selector);
     try data.appendSlice(&[_]u8{0} ** 64); // dummy params
@@ -5962,7 +6030,7 @@ test "constructor - encode params with multiple params" {
 
     const addr = [_]u8{0x12} ** 20;
     const values = [_]AbiValue{
-        addressValue(addr),
+        addressValue(address.Address{ .bytes = addr }),
         uint256_value(1000),
         boolValue(true),
     };
@@ -6019,7 +6087,7 @@ test "constructor - decode params" {
     const addr = [_]u8{0xAB} ** 20;
     const values = [_]AbiValue{
         uint256_value(999),
-        addressValue(addr),
+        addressValue(address.Address{ .bytes = addr }),
     };
     const encoded = try constructor.encode_data(allocator, &values);
     defer allocator.free(encoded);
@@ -6038,7 +6106,7 @@ test "constructor - decode params" {
 
     try std.testing.expectEqual(@as(usize, 2), decoded.len);
     try std.testing.expectEqual(@as(u256, 999), decoded[0].uint256);
-    try std.testing.expectEqualSlices(u8, &addr, &decoded[1].address);
+    try std.testing.expectEqualSlices(u8, &addr, &decoded[1].address.bytes);
 }
 
 // ============================================================================
@@ -6101,12 +6169,13 @@ pub fn encodeEventTopicsFromDef(
 ) ![][]u8 {
     var topics = std.array_list.AlignedManaged([]u8, null).init(allocator);
     defer topics.deinit();
+    errdefer for (topics.items) |topic| allocator.free(topic);
 
     // Add topic0 for non-anonymous events
     if (!event.anonymous) {
         const selector = try getEventSelector(allocator, event);
-        const topic0 = try allocator.alloc(u8, 32);
-        @memcpy(topic0, &selector);
+        const topic0 = try allocator.dupe(u8, &selector);
+        errdefer allocator.free(topic0);
         try topics.append(topic0);
     }
 
@@ -6120,64 +6189,13 @@ pub fn encodeEventTopicsFromDef(
             return AbiError.InvalidData;
         }
 
-        var topic = try allocator.alloc(u8, 32);
-        @memset(topic, 0);
-
         const value = indexed_values[indexed_idx];
         indexed_idx += 1;
 
-        // For dynamic types, hash the encoded value
-        if (isDynamicEventType(param.type_name)) {
-            // Encode the value first
-            const single_val = [_]AbiValue{value};
-            const encoded_val = try encodeAbiParameters(allocator, &single_val);
-            defer allocator.free(encoded_val);
-
-            // Hash it
-            var hash_result: [32]u8 = undefined;
-            std.crypto.hash.sha3.Keccak256.hash(encoded_val, &hash_result, .{});
-            @memcpy(topic, &hash_result);
-        } else {
-            // For static types, encode normally
-            switch (value) {
-                .address => |addr| {
-                    @memcpy(topic[12..32], &addr);
-                },
-                .uint256 => |val| {
-                    var bytes: [32]u8 = undefined;
-                    std.mem.writeInt(u256, &bytes, val, .big);
-                    @memcpy(topic, &bytes);
-                },
-                .uint8 => |val| {
-                    topic[31] = val;
-                },
-                .uint16 => |val| {
-                    var bytes: [2]u8 = undefined;
-                    std.mem.writeInt(u16, &bytes, val, .big);
-                    @memcpy(topic[30..32], &bytes);
-                },
-                .uint32 => |val| {
-                    var bytes: [4]u8 = undefined;
-                    std.mem.writeInt(u32, &bytes, val, .big);
-                    @memcpy(topic[28..32], &bytes);
-                },
-                .uint64 => |val| {
-                    var bytes: [8]u8 = undefined;
-                    std.mem.writeInt(u64, &bytes, val, .big);
-                    @memcpy(topic[24..32], &bytes);
-                },
-                .bool => |val| {
-                    topic[31] = if (val) 1 else 0;
-                },
-                .bytes32 => |val| {
-                    @memcpy(topic, &val);
-                },
-                else => {
-                    // Unsupported type, leave as zeros
-                },
-            }
-        }
-
+        // Elementary values are the ABI word; dynamic and array values are
+        // hashed in place (see encodeIndexedTopic)
+        const topic = try encodeIndexedTopic(allocator, value);
+        errdefer allocator.free(topic);
         try topics.append(topic);
     }
 
@@ -6246,7 +6264,7 @@ pub fn decodeEventLog(
                 if (std.mem.eql(u8, param.type_name, "address")) {
                     var addr: [20]u8 = undefined;
                     @memcpy(&addr, topic[12..32]);
-                    try result.append(addressValue(addr));
+                    try result.append(addressValue(address.Address{ .bytes = addr }));
                 } else if (std.mem.eql(u8, param.type_name, "uint256")) {
                     const val = std.mem.readInt(u256, topic[0..32], .big);
                     try result.append(.{ .uint256 = val });
@@ -6358,8 +6376,8 @@ test "Event - selector for Transfer event" {
     const expected = [_]u8{
         0xdd, 0xf2, 0x52, 0xad, 0x1b, 0xe2, 0xc8, 0x9b,
         0x69, 0xc2, 0xb0, 0x68, 0xfc, 0x37, 0x8d, 0xaa,
-        0x95, 0x2b, 0xa7, 0x7f, 0x16, 0x3c, 0x4a, 0x11,
-        0x62, 0x8f, 0x55, 0xa4, 0xdf, 0x52, 0x3b, 0x3e,
+        0x95, 0x2b, 0xa7, 0xf1, 0x63, 0xc4, 0xa1, 0x16,
+        0x28, 0xf5, 0x5a, 0x4d, 0xf5, 0x23, 0xb3, 0xef,
     };
 
     try std.testing.expectEqualSlices(u8, &expected, &selector);
@@ -6412,8 +6430,8 @@ test "Event - encode topics with 2 indexed addresses" {
     const to_addr: [20]u8 = [_]u8{0x22} ** 20;
 
     const indexed = [_]AbiValue{
-        addressValue(from_addr),
-        addressValue(to_addr),
+        addressValue(address.Address{ .bytes = from_addr }),
+        addressValue(address.Address{ .bytes = to_addr }),
     };
 
     const topics = try encodeEventTopicsFromDef(allocator, event, &indexed);
@@ -6463,7 +6481,7 @@ test "Event - anonymous event (no topic0)" {
 
     const addr: [20]u8 = [_]u8{0xaa} ** 20;
     const indexed = [_]AbiValue{
-        addressValue(addr),
+        addressValue(address.Address{ .bytes = addr }),
         .{ .uint256 = 42 },
     };
 
@@ -6538,8 +6556,8 @@ test "Event - decode log with indexed and non-indexed params" {
     const from_addr: [20]u8 = [_]u8{0x11} ** 20;
     const to_addr: [20]u8 = [_]u8{0x22} ** 20;
     const indexed = [_]AbiValue{
-        addressValue(from_addr),
-        addressValue(to_addr),
+        addressValue(address.Address{ .bytes = from_addr }),
+        addressValue(address.Address{ .bytes = to_addr }),
     };
 
     const topics = try encodeEventTopicsFromDef(allocator, event, &indexed);
@@ -6563,8 +6581,8 @@ test "Event - decode log with indexed and non-indexed params" {
     try std.testing.expectEqual(@as(usize, 3), decoded.len);
 
     // Check decoded values
-    try std.testing.expectEqualSlices(u8, &from_addr, &decoded[0].address);
-    try std.testing.expectEqualSlices(u8, &to_addr, &decoded[1].address);
+    try std.testing.expectEqualSlices(u8, &from_addr, &decoded[0].address.bytes);
+    try std.testing.expectEqualSlices(u8, &to_addr, &decoded[1].address.bytes);
     try std.testing.expectEqual(value, decoded[2].uint256);
 }
 
@@ -6610,4 +6628,791 @@ test "Event - full selector is 32 bytes (not 4 bytes)" {
 
     // Event selector is FULL 32 bytes (unlike function selector which is 4 bytes)
     try std.testing.expectEqual(@as(usize, 32), selector.len);
+}
+
+// ============================================================================
+// Decoder hardening: nested array offsets, bounds, canonical padding, cleanup
+// ============================================================================
+
+fn testWord(comptime n: u256) [32]u8 {
+    var w: [32]u8 = undefined;
+    std.mem.writeInt(u256, &w, n, .big);
+    return w;
+}
+
+fn testPadRight(comptime text: []const u8) [32]u8 {
+    var w = [_]u8{0} ** 32;
+    @memcpy(w[0..text.len], text);
+    return w;
+}
+
+// abi.encode(["hello", "world"]) for a single `string[]` parameter, as
+// produced by Solidity. Element offsets (0x40, 0x80) are relative to the
+// position right after the array length word.
+const solidity_string_array = testWord(0x20) ++ testWord(2) ++
+    testWord(0x40) ++ testWord(0x80) ++
+    testWord(5) ++ testPadRight("hello") ++
+    testWord(5) ++ testPadRight("world");
+
+test "ABI string[] - Solidity vector round-trip" {
+    const allocator = std.testing.allocator;
+
+    const decoded = try decodeAbiParameters(allocator, &solidity_string_array, &[_]AbiType{.@"string[]"});
+    defer freeAbiValues(allocator, decoded);
+
+    try std.testing.expectEqual(@as(usize, 1), decoded.len);
+    const strings = decoded[0].@"string[]";
+    try std.testing.expectEqual(@as(usize, 2), strings.len);
+    try std.testing.expectEqualStrings("hello", strings[0]);
+    try std.testing.expectEqualStrings("world", strings[1]);
+
+    const encoded = try encodeAbiParameters(allocator, decoded);
+    defer allocator.free(encoded);
+    try std.testing.expectEqualSlices(u8, &solidity_string_array, encoded);
+}
+
+test "ABI string[] - element offsets are relative to the array, not the tuple" {
+    const allocator = std.testing.allocator;
+
+    // abi.encode(uint256(7), ["hello", "world"]): the array sits at 0x40, so
+    // tuple-relative element offsets would point at the wrong words.
+    const data = testWord(7) ++ testWord(0x40) ++ solidity_string_array[32..].*;
+
+    const decoded = try decodeAbiParameters(allocator, &data, &[_]AbiType{ .uint256, .@"string[]" });
+    defer freeAbiValues(allocator, decoded);
+
+    try std.testing.expectEqual(@as(u256, 7), decoded[0].uint256);
+    try std.testing.expectEqualStrings("hello", decoded[1].@"string[]"[0]);
+    try std.testing.expectEqualStrings("world", decoded[1].@"string[]"[1]);
+
+    const encoded = try encodeAbiParameters(allocator, decoded);
+    defer allocator.free(encoded);
+    try std.testing.expectEqualSlices(u8, &data, encoded);
+}
+
+test "ABI uint256[][] - Solidity vector round-trip" {
+    const allocator = std.testing.allocator;
+
+    // abi.encode([[1, 2], [3]]) for a single `uint256[][]` parameter
+    const data = testWord(0x20) ++ testWord(2) ++
+        testWord(0x40) ++ testWord(0xa0) ++
+        testWord(2) ++ testWord(1) ++ testWord(2) ++
+        testWord(1) ++ testWord(3);
+
+    const decoded = try decodeAbiParameters(allocator, &data, &[_]AbiType{.@"uint256[][]"});
+    defer freeAbiValues(allocator, decoded);
+
+    const outer = decoded[0].@"uint256[][]";
+    try std.testing.expectEqual(@as(usize, 2), outer.len);
+    try std.testing.expectEqualSlices(u256, &[_]u256{ 1, 2 }, outer[0]);
+    try std.testing.expectEqualSlices(u256, &[_]u256{3}, outer[1]);
+
+    const encoded = try encodeAbiParameters(allocator, decoded);
+    defer allocator.free(encoded);
+    try std.testing.expectEqualSlices(u8, &data, encoded);
+}
+
+test "ABI bool[] and uint256[][] encode as dynamic types" {
+    const allocator = std.testing.allocator;
+
+    try std.testing.expect(AbiType.@"bool[]".is_dynamic());
+    try std.testing.expect(AbiType.@"uint256[][]".is_dynamic());
+
+    // abi.encode([true, false, true])
+    const expected = testWord(0x20) ++ testWord(3) ++ testWord(1) ++ testWord(0) ++ testWord(1);
+    const encoded = try encodeAbiParameters(allocator, &[_]AbiValue{.{ .@"bool[]" = &[_]bool{ true, false, true } }});
+    defer allocator.free(encoded);
+    try std.testing.expectEqualSlices(u8, &expected, encoded);
+
+    const decoded = try decodeAbiParameters(allocator, encoded, &[_]AbiType{.@"bool[]"});
+    defer freeAbiValues(allocator, decoded);
+    try std.testing.expectEqualSlices(bool, &[_]bool{ true, false, true }, decoded[0].@"bool[]");
+}
+
+test "ABI Cursor.readBytes rejects lengths that overflow usize" {
+    var cursor = Cursor.init(&[_]u8{0} ** 64);
+    cursor.setPosition(32);
+
+    try std.testing.expectError(AbiError.OutOfBounds, cursor.readBytes(std.math.maxInt(usize)));
+    try std.testing.expectError(AbiError.OutOfBounds, cursor.readBytes(std.math.maxInt(usize) - 31));
+    try std.testing.expectError(AbiError.OutOfBounds, cursor.readBytes(33));
+    try std.testing.expectEqual(@as(usize, 32), cursor.position);
+    try std.testing.expectEqual(@as(usize, 32), (try cursor.readBytes(32)).len);
+
+    // A position past the end never underflows
+    cursor.setPosition(1000);
+    try std.testing.expectError(AbiError.OutOfBounds, cursor.readBytes(0));
+}
+
+test "ABI decode rejects offsets that overflow or leave the data" {
+    const allocator = std.testing.allocator;
+    const max_usize: u256 = std.math.maxInt(usize);
+
+    inline for (.{ AbiType.bytes, AbiType.string, AbiType.@"uint256[]", AbiType.@"string[]", AbiType.@"uint256[][]" }) |abi_type| {
+        // Offset = usize max: `static_position + offset` must not wrap
+        const wrap = testWord(max_usize) ++ testWord(0);
+        try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(allocator, &wrap, &[_]AbiType{abi_type}));
+
+        // Offset above usize
+        const huge = testWord(1 << @bitSizeOf(usize)) ++ testWord(0);
+        try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(allocator, &huge, &[_]AbiType{abi_type}));
+
+        // Offset one word past the end
+        const past = testWord(0x60) ++ testWord(0);
+        try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(allocator, &past, &[_]AbiType{abi_type}));
+    }
+
+    // Nested: inner element offset = usize max, relative to a non-zero base
+    const nested = testWord(0x20) ++ testWord(1) ++ testWord(max_usize) ++ testWord(0);
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(allocator, &nested, &[_]AbiType{.@"string[]"}));
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(allocator, &nested, &[_]AbiType{.@"uint256[][]"}));
+}
+
+test "ABI decode rejects array lengths the data cannot hold before allocating" {
+    // A failing allocator proves the length is rejected before any element
+    // buffer is requested: the only allocation allowed is the result slice.
+    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 1 });
+    const allocator = failing.allocator();
+
+    // Claims 3 elements, holds 2
+    const short = testWord(0x20) ++ testWord(3) ++ testWord(1) ++ testWord(2);
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(allocator, &short, &[_]AbiType{.@"uint256[]"}));
+
+    // Claims 1000 elements (32 KB of AbiValue, under the DoS limit), holds none
+    failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 1 });
+    const empty = testWord(0x20) ++ testWord(1000);
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(failing.allocator(), &empty, &[_]AbiType{.@"uint256[]"}));
+
+    // Length above usize
+    const big = testWord(0x20) ++ testWord(1 << @bitSizeOf(usize));
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(std.testing.allocator, &big, &[_]AbiType{.@"uint256[]"}));
+
+    // Length whose `length * @sizeOf(AbiValue)` wraps usize
+    const wrap = testWord(0x20) ++ testWord(std.math.maxInt(usize) / 2);
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(std.testing.allocator, &wrap, &[_]AbiType{.@"uint256[]"}));
+
+    // bytes length above the remaining data
+    const bytes_short = testWord(0x20) ++ testWord(33) ++ testWord(0);
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(std.testing.allocator, &bytes_short, &[_]AbiType{.bytes}));
+}
+
+test "ABI decode enforces canonical padding" {
+    const allocator = std.testing.allocator;
+    const Case = struct { abi_type: AbiType, word: [32]u8, valid: bool };
+    const ff = [_]u8{0xff} ** 32;
+    const cases = [_]Case{
+        // uintN: high bytes must be zero
+        .{ .abi_type = .uint8, .word = testWord(0xff), .valid = true },
+        .{ .abi_type = .uint8, .word = testWord(0x100), .valid = false },
+        .{ .abi_type = .uint16, .word = testWord(0xffff), .valid = true },
+        .{ .abi_type = .uint16, .word = testWord(0x1_0000), .valid = false },
+        .{ .abi_type = .uint32, .word = testWord(0xffff_ffff), .valid = true },
+        .{ .abi_type = .uint32, .word = testWord(0x1_0000_0000), .valid = false },
+        .{ .abi_type = .uint64, .word = testWord(std.math.maxInt(u64)), .valid = true },
+        .{ .abi_type = .uint64, .word = testWord(1 << 64), .valid = false },
+        .{ .abi_type = .uint128, .word = testWord(std.math.maxInt(u128)), .valid = true },
+        .{ .abi_type = .uint128, .word = testWord(1 << 128), .valid = false },
+        .{ .abi_type = .uint128, .word = testWord(1 << 255), .valid = false },
+        .{ .abi_type = .uint256, .word = ff, .valid = true },
+        // intN: high bytes must sign-extend
+        .{ .abi_type = .int8, .word = testWord(0x7f), .valid = true },
+        .{ .abi_type = .int8, .word = ff, .valid = true }, // -1
+        .{ .abi_type = .int8, .word = testWord(0x80), .valid = false }, // 128 does not fit
+        .{ .abi_type = .int8, .word = testWord(0xff), .valid = false }, // 255 does not fit
+        .{ .abi_type = .int8, .word = [_]u8{0xff} ** 31 ++ [_]u8{0x7f}, .valid = false }, // ff.. padding on a positive
+        .{ .abi_type = .int8, .word = [_]u8{0x01} ++ [_]u8{0xff} ** 31, .valid = false },
+        .{ .abi_type = .int16, .word = [_]u8{0xff} ** 30 ++ [_]u8{ 0x80, 0x00 }, .valid = true }, // min
+        .{ .abi_type = .int16, .word = testWord(0x8000), .valid = false },
+        .{ .abi_type = .int32, .word = [_]u8{0xff} ** 28 ++ [_]u8{ 0x80, 0, 0, 0 }, .valid = true },
+        .{ .abi_type = .int32, .word = testWord(0x8000_0000), .valid = false },
+        .{ .abi_type = .int64, .word = ff, .valid = true },
+        .{ .abi_type = .int64, .word = testWord(1 << 63), .valid = false },
+        .{ .abi_type = .int128, .word = ff, .valid = true },
+        .{ .abi_type = .int128, .word = testWord(1 << 127), .valid = false },
+        // address: 12 high bytes must be zero
+        .{ .abi_type = .address, .word = [_]u8{0} ** 12 ++ [_]u8{0xff} ** 20, .valid = true },
+        .{ .abi_type = .address, .word = [_]u8{0} ** 11 ++ [_]u8{0x01} ++ [_]u8{0xff} ** 20, .valid = false },
+        .{ .abi_type = .address, .word = ff, .valid = false },
+        // bool: exactly 0 or 1
+        .{ .abi_type = .bool, .word = testWord(0), .valid = true },
+        .{ .abi_type = .bool, .word = testWord(1), .valid = true },
+        .{ .abi_type = .bool, .word = testWord(2), .valid = false },
+        .{ .abi_type = .bool, .word = testWord(0x100), .valid = false },
+        .{ .abi_type = .bool, .word = testWord(0x101), .valid = false },
+        .{ .abi_type = .bool, .word = ff, .valid = false },
+        // bytesN: low bytes must be zero
+        .{ .abi_type = .bytes1, .word = [_]u8{0xab} ++ [_]u8{0} ** 31, .valid = true },
+        .{ .abi_type = .bytes1, .word = [_]u8{0xab} ++ [_]u8{0} ** 30 ++ [_]u8{1}, .valid = false },
+        .{ .abi_type = .bytes4, .word = [_]u8{0xab} ** 4 ++ [_]u8{0} ** 28, .valid = true },
+        .{ .abi_type = .bytes4, .word = [_]u8{0xab} ** 5 ++ [_]u8{0} ** 27, .valid = false },
+        .{ .abi_type = .bytes16, .word = [_]u8{0xab} ** 16 ++ [_]u8{0} ** 16, .valid = true },
+        .{ .abi_type = .bytes16, .word = [_]u8{0xab} ** 16 ++ [_]u8{0} ** 15 ++ [_]u8{1}, .valid = false },
+        .{ .abi_type = .bytes32, .word = ff, .valid = true },
+    };
+
+    for (cases) |case| {
+        const result = decodeAbiParameters(allocator, &case.word, &[_]AbiType{case.abi_type});
+        if (case.valid) {
+            const decoded = try result;
+            defer freeAbiValues(allocator, decoded);
+            // A canonical word re-encodes to the same bytes
+            const encoded = try encodeAbiParameters(allocator, decoded);
+            defer allocator.free(encoded);
+            try std.testing.expectEqualSlices(u8, &case.word, encoded);
+        } else {
+            try std.testing.expectError(AbiError.InvalidData, result);
+        }
+    }
+
+    // Padding is also enforced inside arrays
+    const bad_bool_array = testWord(0x20) ++ testWord(2) ++ testWord(1) ++ testWord(2);
+    try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &bad_bool_array, &[_]AbiType{.@"bool[]"}));
+    const bad_address_array = testWord(0x20) ++ testWord(1) ++ [_]u8{0xff} ** 32;
+    try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &bad_address_array, &[_]AbiType{.@"address[]"}));
+    const bad_fixed = testWord(1) ++ testWord(1) ++ testWord(0) ++ testWord(3);
+    try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &bad_fixed, &[_]AbiType{.@"bool[4]"}));
+}
+
+test "ABI decode frees already-decoded values when a later value fails" {
+    // std.testing.allocator fails the test on any leak.
+    const allocator = std.testing.allocator;
+
+    // (string, bool): the string decodes and allocates, then the bool is invalid
+    const tuple = testWord(0x40) ++ testWord(2) ++ testWord(5) ++ testPadRight("hello");
+    try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &tuple, &[_]AbiType{ .string, .bool }));
+
+    // string[]: element 0 decodes and allocates, element 1 has invalid UTF-8
+    const strings = testWord(0x20) ++ testWord(2) ++
+        testWord(0x40) ++ testWord(0x80) ++
+        testWord(5) ++ testPadRight("hello") ++
+        testWord(2) ++ testPadRight("\xff\xfe");
+    try std.testing.expectError(AbiError.InvalidUtf8, decodeAbiParameters(allocator, &strings, &[_]AbiType{.@"string[]"}));
+
+    // uint256[][]: inner array 0 decodes and allocates, inner array 1 is truncated
+    const nested = testWord(0x20) ++ testWord(2) ++
+        testWord(0x40) ++ testWord(0xa0) ++
+        testWord(2) ++ testWord(1) ++ testWord(2) ++
+        testWord(4) ++ testWord(3);
+    try std.testing.expectError(AbiError.OutOfBounds, decodeAbiParameters(allocator, &nested, &[_]AbiType{.@"uint256[][]"}));
+
+    // (string[], uint256[][], uint8): two nested values decode, then the last is invalid
+    const head = testWord(0x60) ++ testWord(0x140) ++ testWord(0x100);
+    const mixed = head ++ solidity_string_array[32..].* ++
+        testWord(1) ++ testWord(0x20) ++ testWord(1) ++ testWord(9);
+    try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &mixed, &[_]AbiType{ .@"string[]", .@"uint256[][]", .uint8 }));
+}
+
+test "ABI decode leaks nothing under allocation failure at every step" {
+    const Ctx = struct {
+        fn run(allocator: std.mem.Allocator, data: []const u8, types: []const AbiType) !void {
+            const decoded = try decodeAbiParameters(allocator, data, types);
+            freeAbiValues(allocator, decoded);
+        }
+    };
+
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Ctx.run, .{
+        @as([]const u8, &solidity_string_array),
+        @as([]const AbiType, &[_]AbiType{.@"string[]"}),
+    });
+
+    const nested = testWord(0x20) ++ testWord(2) ++
+        testWord(0x40) ++ testWord(0xa0) ++
+        testWord(2) ++ testWord(1) ++ testWord(2) ++
+        testWord(1) ++ testWord(3);
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Ctx.run, .{
+        @as([]const u8, &nested),
+        @as([]const AbiType, &[_]AbiType{.@"uint256[][]"}),
+    });
+
+    const tuple = testWord(0x60) ++ testWord(1) ++ testWord(0xa0) ++
+        testWord(5) ++ testPadRight("hello") ++
+        testWord(3) ++ testPadRight("abc");
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Ctx.run, .{
+        @as([]const u8, &tuple),
+        @as([]const AbiType, &[_]AbiType{ .string, .bool, .bytes }),
+    });
+}
+
+// ============================================================================
+// Review round 3 regressions
+// ============================================================================
+
+fn testHex32(comptime text: *const [64]u8) [32]u8 {
+    var out: [32]u8 = undefined;
+    _ = std.fmt.hexToBytes(&out, text) catch unreachable;
+    return out;
+}
+
+test "int256 standard encode and decode: 0, -1, minInt, maxInt" {
+    const allocator = std.testing.allocator;
+
+    const Vector = struct { value: i256, word: [32]u8 };
+    const vectors = [_]Vector{
+        .{ .value = 0, .word = [_]u8{0} ** 32 },
+        .{ .value = -1, .word = [_]u8{0xff} ** 32 },
+        .{ .value = std.math.minInt(i256), .word = [_]u8{0x80} ++ [_]u8{0} ** 31 },
+        .{ .value = std.math.maxInt(i256), .word = [_]u8{0x7f} ++ [_]u8{0xff} ** 31 },
+        .{ .value = 1, .word = testWord(1) },
+        .{ .value = -2, .word = [_]u8{0xff} ** 31 ++ [_]u8{0xfe} },
+    };
+
+    for (vectors) |vector| {
+        const encoded = try encodeAbiParameters(allocator, &[_]AbiValue{.{ .int256 = vector.value }});
+        defer allocator.free(encoded);
+        try std.testing.expectEqualSlices(u8, &vector.word, encoded);
+
+        const decoded = try decodeAbiParameters(allocator, &vector.word, &[_]AbiType{.int256});
+        defer freeAbiValues(allocator, decoded);
+        try std.testing.expectEqual(@as(usize, 1), decoded.len);
+        try std.testing.expectEqual(vector.value, decoded[0].int256);
+    }
+}
+
+test "int256 round-trips beside dynamic values and through function data" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .int256 = std.math.minInt(i256) },
+        .{ .string = "negative" },
+        .{ .int256 = -1_000_000_000_000_000_000 },
+    };
+    const types = [_]AbiType{ .int256, .string, .int256 };
+
+    const selector = computeSelector("f(int256,string,int256)");
+    const call = try encodeFunctionData(allocator, selector, &values);
+    defer allocator.free(call);
+
+    const decoded = try decodeFunctionData(allocator, call, &types);
+    defer freeAbiValues(allocator, decoded.parameters);
+    try std.testing.expectEqual(std.math.minInt(i256), decoded.parameters[0].int256);
+    try std.testing.expectEqualStrings("negative", decoded.parameters[1].string);
+    try std.testing.expectEqual(@as(i256, -1_000_000_000_000_000_000), decoded.parameters[2].int256);
+}
+
+test "ErrorResult.deinit frees bool[] and uint256[][] decoded params" {
+    const allocator = std.testing.allocator;
+
+    const flags = [_]bool{ true, false, true };
+    const row0 = [_]u256{ 1, 2 };
+    const row1 = [_]u256{3};
+    const rows = [_][]const u256{ &row0, &row1 };
+    const names = [_][]const u8{ "a", "bc" };
+    const params = [_]AbiValue{
+        .{ .@"bool[]" = &flags },
+        .{ .@"uint256[][]" = &rows },
+        .{ .@"string[]" = &names },
+        .{ .bytes = "\xde\xad" },
+    };
+    const types = [_]AbiType{ .@"bool[]", .@"uint256[][]", .@"string[]", .bytes };
+
+    const selector = computeSelector("E(bool[],uint256[][],string[],bytes)");
+    const data = try encodeErrorResult(allocator, selector, &params);
+    defer allocator.free(data);
+
+    // testing.allocator fails the test on any leak
+    var result = try createErrorResult(allocator, selector, data);
+    defer result.deinit(allocator);
+
+    try decodeErrorResultWithTypes(allocator, &result, &types);
+    const decoded = result.decoded_params.?;
+    try std.testing.expectEqualSlices(bool, &flags, decoded[0].@"bool[]");
+    try std.testing.expectEqualSlices(u256, &row0, decoded[1].@"uint256[][]"[0]);
+    try std.testing.expectEqualSlices(u256, &row1, decoded[1].@"uint256[][]"[1]);
+}
+
+test "decodeErrorResultWithTypes replaces earlier values without leaking" {
+    const allocator = std.testing.allocator;
+
+    const flags = [_]bool{ true, true };
+    const row = [_]u256{ 7, 8, 9 };
+    const rows = [_][]const u256{&row};
+    const params = [_]AbiValue{ .{ .@"bool[]" = &flags }, .{ .@"uint256[][]" = &rows }, .{ .string = "again" } };
+    const types = [_]AbiType{ .@"bool[]", .@"uint256[][]", .string };
+
+    const selector = computeSelector("E(bool[],uint256[][],string)");
+    const data = try encodeErrorResult(allocator, selector, &params);
+    defer allocator.free(data);
+
+    var result = try createErrorResult(allocator, selector, data);
+    defer result.deinit(allocator);
+
+    // Decode three times: each call frees the values of the one before
+    try decodeErrorResultWithTypes(allocator, &result, &types);
+    try decodeErrorResultWithTypes(allocator, &result, &types);
+    try decodeErrorResultWithTypes(allocator, &result, &types);
+    try std.testing.expectEqualStrings("again", result.decoded_params.?[2].string);
+
+    // A failed decode keeps the earlier values
+    try std.testing.expectError(AbiError.InvalidData, decodeErrorResultWithTypes(allocator, &result, &[_]AbiType{.bool}));
+    try std.testing.expectEqualStrings("again", result.decoded_params.?[2].string);
+
+    // Data shorter than a selector is rejected, not sliced out of bounds
+    var short = try createErrorResult(allocator, selector, &[_]u8{ 1, 2 });
+    defer short.deinit(allocator);
+    try std.testing.expectError(AbiError.DataTooSmall, decodeErrorResultWithTypes(allocator, &short, &types));
+}
+
+fn encodeMixedForAllocationFailure(allocator: std.mem.Allocator) !void {
+    const numbers = [_]u256{ 1, 2, 3 };
+    const names = [_][]const u8{ "a", "bc" };
+    const row = [_]u256{4};
+    const rows = [_][]const u256{&row};
+    const values = [_]AbiValue{
+        .{ .uint256 = 1 },
+        .{ .string = "hello" },
+        .{ .@"uint256[2]" = .{ 1, 2 } },
+        .{ .@"uint256[]" = &numbers },
+        .{ .int256 = -1 },
+        .{ .@"string[]" = &names },
+        .{ .@"uint256[][]" = &rows },
+        .{ .bool = true },
+        .{ .bytes = "\x01\x02\x03" },
+    };
+    const encoded = try encodeAbiParameters(allocator, &values);
+    allocator.free(encoded);
+}
+
+test "encodeAbiParameters frees every part when any allocation fails" {
+    // Fails each allocation in turn (FailingAllocator) and checks for leaks
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, encodeMixedForAllocationFailure, .{});
+}
+
+fn encodeTopicsForAllocationFailure(allocator: std.mem.Allocator) !void {
+    const numbers = [_]u256{ 1, 2 };
+    const indexed = [_]AbiValue{ .{ .bool = true }, .{ .string = "hello" }, .{ .@"uint256[]" = &numbers } };
+    const topics = try encodeEventTopics(allocator, "E(bool,string,uint256[])", &indexed);
+    for (topics) |topic| allocator.free(topic);
+    allocator.free(topics);
+
+    const event = EventDefinition{ .name = "E", .inputs = &[_]EventParameter{
+        .{ .type_name = "bool", .indexed = true },
+        .{ .type_name = "string", .indexed = true },
+        .{ .type_name = "uint256[]", .indexed = true },
+    } };
+    const from_def = try encodeEventTopicsFromDef(allocator, event, &indexed);
+    for (from_def) |topic| allocator.free(topic);
+    allocator.free(from_def);
+}
+
+test "event topic encoders free every topic when any allocation fails" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, encodeTopicsForAllocationFailure, .{});
+}
+
+test "decodeAbiParameters shares one element budget across aliased nested arrays" {
+    const allocator = std.testing.allocator;
+
+    // uint256[][] whose outer offsets all point at ONE inner array of
+    // `inner` elements. The input stays ~320 KB; the decoded size is
+    // outer * inner elements.
+    const inner: usize = 10_000;
+    const Build = struct {
+        fn data(alloc: std.mem.Allocator, outer: usize, inner_len: usize) ![]u8 {
+            const total = 32 + 32 + outer * 32 + 32 + inner_len * 32;
+            const buf = try alloc.alloc(u8, total);
+            @memset(buf, 0);
+            std.mem.writeInt(u256, buf[0..32], 0x20, .big);
+            std.mem.writeInt(u256, buf[32..64], outer, .big);
+            for (0..outer) |i| {
+                // Offsets are relative to the start of the element heads
+                std.mem.writeInt(u256, buf[64 + i * 32 ..][0..32], outer * 32, .big);
+            }
+            const inner_at = 64 + outer * 32;
+            std.mem.writeInt(u256, buf[inner_at..][0..32], inner_len, .big);
+            for (0..inner_len) |i| {
+                std.mem.writeInt(u256, buf[inner_at + 32 + i * 32 ..][0..32], i, .big);
+            }
+            return buf;
+        }
+    };
+    const types = [_]AbiType{.@"uint256[][]"};
+
+    // 30 * 10_000 = 300_000 elements, 9.6 MB: inside both budgets
+    {
+        const data = try Build.data(allocator, 30, inner);
+        defer allocator.free(data);
+        const decoded = try decodeAbiParameters(allocator, data, &types);
+        defer freeAbiValues(allocator, decoded);
+        try std.testing.expectEqual(@as(usize, 30), decoded[0].@"uint256[][]".len);
+        try std.testing.expectEqual(@as(u256, 9_999), decoded[0].@"uint256[][]"[29][9_999]);
+    }
+
+    // 40 * 10_000 = 400_000 elements: over MAX_DECODE_ELEMENTS (327_680)
+    {
+        try std.testing.expect(40 * inner > MAX_DECODE_ELEMENTS);
+        const data = try Build.data(allocator, 40, inner);
+        defer allocator.free(data);
+        try std.testing.expectError(AbiError.MaxLengthExceeded, decodeAbiParameters(allocator, data, &types));
+    }
+}
+
+test "decodeAbiParameters shares one byte budget across aliased bytes parameters" {
+    const allocator = std.testing.allocator;
+
+    // N `bytes` parameters whose offsets all point at ONE 1 MiB payload
+    const payload: usize = 1024 * 1024;
+    const Build = struct {
+        fn data(alloc: std.mem.Allocator, count: usize, len: usize) ![]u8 {
+            const buf = try alloc.alloc(u8, count * 32 + 32 + len);
+            @memset(buf, 0xab);
+            for (0..count) |i| std.mem.writeInt(u256, buf[i * 32 ..][0..32], count * 32, .big);
+            std.mem.writeInt(u256, buf[count * 32 ..][0..32], len, .big);
+            return buf;
+        }
+    };
+
+    // 10 MiB materialized: exactly the budget
+    {
+        const types = [_]AbiType{.bytes} ** 10;
+        const data = try Build.data(allocator, 10, payload);
+        defer allocator.free(data);
+        const decoded = try decodeAbiParameters(allocator, data, &types);
+        defer freeAbiValues(allocator, decoded);
+        try std.testing.expectEqual(payload, decoded[9].bytes.len);
+    }
+
+    // 11 MiB materialized from a ~1 MiB input: rejected, nothing leaked
+    {
+        const types = [_]AbiType{.bytes} ** 11;
+        const data = try Build.data(allocator, 11, payload);
+        defer allocator.free(data);
+        try std.testing.expectError(AbiError.MaxLengthExceeded, decodeAbiParameters(allocator, data, &types));
+    }
+
+    // The budget is per call: a second call starts fresh
+    {
+        const types = [_]AbiType{.bytes} ** 10;
+        const data = try Build.data(allocator, 10, payload);
+        defer allocator.free(data);
+        const decoded = try decodeAbiParameters(allocator, data, &types);
+        defer freeAbiValues(allocator, decoded);
+        try std.testing.expectEqual(@as(usize, 10), decoded.len);
+    }
+}
+
+fn expectTopics(indexed: []const AbiValue, want: []const [32]u8) !void {
+    const allocator = std.testing.allocator;
+    const topics = try encodeEventTopics(allocator, "E()", indexed);
+    defer {
+        for (topics) |topic| allocator.free(topic);
+        allocator.free(topics);
+    }
+    try std.testing.expectEqual(want.len + 1, topics.len);
+    for (want, topics[1..]) |expected, topic| {
+        try std.testing.expectEqualSlices(u8, &expected, topic);
+    }
+}
+
+test "encodeEventTopics: topic0 is keccak256 of the signature" {
+    const allocator = std.testing.allocator;
+    const topics = try encodeEventTopics(allocator, "Transfer(address,address,uint256)", &.{});
+    defer {
+        for (topics) |topic| allocator.free(topic);
+        allocator.free(topics);
+    }
+    try std.testing.expectEqual(@as(usize, 1), topics.len);
+    try std.testing.expectEqualSlices(u8, &testHex32("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"), topics[0]);
+}
+
+test "encodeEventTopics: every elementary type is its 32-byte ABI word" {
+    const addr = address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const indexed = [_]AbiValue{
+        .{ .bool = true },
+        .{ .bool = false },
+        .{ .uint8 = 0xff },
+        .{ .uint16 = 0x1234 },
+        .{ .uint32 = 0xdeadbeef },
+        .{ .uint64 = std.math.maxInt(u64) },
+        .{ .uint128 = std.math.maxInt(u128) },
+        .{ .uint256 = 1000 },
+        .{ .int8 = -1 },
+        .{ .int16 = -2 },
+        .{ .int32 = 5 },
+        .{ .int64 = std.math.minInt(i64) },
+        .{ .int128 = -1 },
+        .{ .int256 = std.math.minInt(i256) },
+        .{ .address = addr },
+        .{ .bytes1 = .{0x01} },
+        .{ .bytes2 = .{ 0x01, 0x02 } },
+        .{ .bytes3 = .{ 0x01, 0x02, 0x03 } },
+        .{ .bytes4 = .{ 0x12, 0x34, 0x56, 0x78 } },
+        .{ .bytes8 = [_]u8{0x08} ** 8 },
+        .{ .bytes16 = [_]u8{0x16} ** 16 },
+        .{ .bytes32 = [_]u8{0x32} ** 32 },
+    };
+    const want = [_][32]u8{
+        testWord(1),
+        testWord(0),
+        testWord(0xff),
+        testWord(0x1234),
+        testWord(0xdeadbeef),
+        testWord(std.math.maxInt(u64)),
+        testWord(std.math.maxInt(u128)),
+        testWord(1000),
+        [_]u8{0xff} ** 32,
+        [_]u8{0xff} ** 31 ++ [_]u8{0xfe},
+        testWord(5),
+        [_]u8{0xff} ** 24 ++ [_]u8{0x80} ++ [_]u8{0} ** 7,
+        [_]u8{0xff} ** 32,
+        [_]u8{0x80} ++ [_]u8{0} ** 31,
+        [_]u8{0} ** 12 ++ [_]u8{0xaa} ** 20,
+        [_]u8{0x01} ++ [_]u8{0} ** 31,
+        [_]u8{ 0x01, 0x02 } ++ [_]u8{0} ** 30,
+        [_]u8{ 0x01, 0x02, 0x03 } ++ [_]u8{0} ** 29,
+        [_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{0} ** 28,
+        [_]u8{0x08} ** 8 ++ [_]u8{0} ** 24,
+        [_]u8{0x16} ** 16 ++ [_]u8{0} ** 16,
+        [_]u8{0x32} ** 32,
+    };
+    try expectTopics(&indexed, &want);
+}
+
+test "encodeEventTopics: string and bytes are keccak256 of the contents" {
+    const indexed = [_]AbiValue{
+        .{ .string = "hello" },
+        .{ .bytes = "\xde\xad\xbe\xef" },
+        .{ .string = "" },
+    };
+    const want = [_][32]u8{
+        // cast keccak "hello"
+        testHex32("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"),
+        // cast keccak 0xdeadbeef
+        testHex32("d4fd4e189132273036449fc9e11198c739161b4c0116a9a2dccdfa1c492006f1"),
+        // keccak256 of empty input
+        testHex32("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"),
+    };
+    try expectTopics(&indexed, &want);
+}
+
+test "encodeEventTopics: arrays hash their elements padded to 32 bytes, no length" {
+    const numbers = [_]u256{ 1, 2 };
+    const names = [_][]const u8{ "hello", "world" };
+    const addrs = [_]address.Address{ .{ .bytes = [_]u8{0x11} ** 20 }, .{ .bytes = [_]u8{0x22} ** 20 } };
+    const flags = [_]bool{ true, false };
+    const hashes = [_][32]u8{ [_]u8{0xaa} ** 32, [_]u8{0xbb} ** 32 };
+    const row0 = [_]u256{1};
+    const row1 = [_]u256{2};
+    const rows = [_][]const u256{ &row0, &row1 };
+
+    const indexed = [_]AbiValue{
+        .{ .@"uint256[]" = &numbers },
+        .{ .@"string[]" = &names },
+        .{ .@"address[]" = &addrs },
+        .{ .@"bool[]" = &flags },
+        .{ .@"bytes32[]" = &hashes },
+        .{ .@"uint256[][]" = &rows },
+        .{ .@"uint256[2]" = .{ 1, 2 } },
+        .{ .@"address[2]" = addrs },
+        .{ .@"bool[4]" = .{ true, false, true, false } },
+        .{ .@"bytes4[2]" = .{ .{ 0x12, 0x34, 0x56, 0x78 }, .{ 0x9a, 0xbc, 0xde, 0xf0 } } },
+    };
+
+    const one_two = testWord(1) ++ testWord(2);
+    const addr_words = [_]u8{0} ** 12 ++ [_]u8{0x11} ** 20 ++ [_]u8{0} ** 12 ++ [_]u8{0x22} ** 20;
+    const want = [_][32]u8{
+        // cast keccak of word(1) ++ word(2)
+        testHex32("e90b7bceb6e7df5418fb78d8ee546e97c83a08bbccc01a0644d599ccd2a7c2e0"),
+        // cast keccak of "hello" and "world", each right-padded to 32 bytes
+        testHex32("efcfaab04a0d9eacb11af2f871a90bae131874f9f74f16130b9ac6079768153f"),
+        hash.keccak256(&addr_words),
+        hash.keccak256(&(testWord(1) ++ testWord(0))),
+        hash.keccak256(&([_]u8{0xaa} ** 32 ++ [_]u8{0xbb} ** 32)),
+        // Nested arrays flatten: no length prefix at any level
+        hash.keccak256(&one_two),
+        hash.keccak256(&one_two),
+        hash.keccak256(&addr_words),
+        hash.keccak256(&(testWord(1) ++ testWord(0) ++ testWord(1) ++ testWord(0))),
+        hash.keccak256(&([_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{0} ** 28 ++ [_]u8{ 0x9a, 0xbc, 0xde, 0xf0 } ++ [_]u8{0} ** 28)),
+    };
+    try expectTopics(&indexed, &want);
+
+    // An empty array hashes empty input
+    const empty = [_]AbiValue{.{ .@"uint256[]" = &.{} }};
+    try expectTopics(&empty, &.{testHex32("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")});
+}
+
+test "encodeEventTopicsFromDef: elementary words and in-place hashes for dynamic values" {
+    const allocator = std.testing.allocator;
+
+    const numbers = [_]u256{ 1, 2 };
+    const event = EventDefinition{ .name = "E", .inputs = &[_]EventParameter{
+        .{ .type_name = "int256", .indexed = true },
+        .{ .type_name = "bytes4", .indexed = true },
+        .{ .type_name = "uint256", .indexed = false },
+        .{ .type_name = "string", .indexed = true },
+    } };
+    const indexed = [_]AbiValue{ .{ .int256 = -1 }, .{ .bytes4 = .{ 0x12, 0x34, 0x56, 0x78 } }, .{ .string = "hello" } };
+
+    const topics = try encodeEventTopicsFromDef(allocator, event, &indexed);
+    defer {
+        for (topics) |topic| allocator.free(topic);
+        allocator.free(topics);
+    }
+    try std.testing.expectEqual(@as(usize, 4), topics.len);
+    try std.testing.expectEqualSlices(u8, &([_]u8{0xff} ** 32), topics[1]);
+    try std.testing.expectEqualSlices(u8, &([_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{0} ** 28), topics[2]);
+    // keccak256("hello"), not the hash of the offset/length ABI encoding
+    try std.testing.expectEqualSlices(u8, &testHex32("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"), topics[3]);
+
+    const array_event = EventDefinition{ .name = "A", .anonymous = true, .inputs = &[_]EventParameter{
+        .{ .type_name = "uint256[]", .indexed = true },
+    } };
+    const array_topics = try encodeEventTopicsFromDef(allocator, array_event, &[_]AbiValue{.{ .@"uint256[]" = &numbers }});
+    defer {
+        for (array_topics) |topic| allocator.free(topic);
+        allocator.free(array_topics);
+    }
+    try std.testing.expectEqual(@as(usize, 1), array_topics.len);
+    try std.testing.expectEqualSlices(u8, &testHex32("e90b7bceb6e7df5418fb78d8ee546e97c83a08bbccc01a0644d599ccd2a7c2e0"), array_topics[0]);
+}
+
+test "encodePacked - dynamic array elements are padded to 32 bytes" {
+    const allocator = std.testing.allocator;
+
+    const addrs = [_]address.Address{ .{ .bytes = [_]u8{0x11} ** 20 }, .{ .bytes = [_]u8{0x22} ** 20 } };
+    const flags = [_]bool{ true, false };
+    const values = [_]AbiValue{
+        .{ .@"address[]" = &addrs },
+        .{ .@"bool[]" = &flags },
+    };
+
+    // cast abi-encode --packed "f(address[],bool[])" "[0x1111..,0x2222..]" "[true,false]"
+    const want = [_]u8{0} ** 12 ++ [_]u8{0x11} ** 20 ++ [_]u8{0} ** 12 ++ [_]u8{0x22} ** 20 ++ testWord(1) ++ testWord(0);
+
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+    try std.testing.expectEqualSlices(u8, &want, encoded);
+
+    const strict = try encodePackedStrict(allocator, &values);
+    defer allocator.free(strict);
+    try std.testing.expectEqualSlices(u8, &want, strict);
+
+    // Outside an array the same values stay unpadded
+    const scalars = try encodePackedStrict(allocator, &[_]AbiValue{ .{ .address = addrs[0] }, .{ .bool = true }, .{ .bytes4 = .{ 1, 2, 3, 4 } } });
+    defer allocator.free(scalars);
+    try std.testing.expectEqualSlices(u8, &([_]u8{0x11} ** 20 ++ [_]u8{ 1, 1, 2, 3, 4 }), scalars);
+
+    // Empty arrays add nothing
+    const empty = try encodePackedStrict(allocator, &[_]AbiValue{ .{ .@"address[]" = &.{} }, .{ .@"bool[]" = &.{} } });
+    defer allocator.free(empty);
+    try std.testing.expectEqual(@as(usize, 0), empty.len);
+}
+
+test "encodePackedStrict rejects nested arrays and arrays of dynamic types" {
+    const allocator = std.testing.allocator;
+
+    const row = [_]u256{ 1, 2 };
+    const rows = [_][]const u256{&row};
+    const names = [_][]const u8{ "hello", "world" };
+
+    try std.testing.expectError(error.UnsupportedType, encodePackedStrict(allocator, &[_]AbiValue{.{ .@"uint256[][]" = &rows }}));
+    try std.testing.expectError(error.UnsupportedType, encodePackedStrict(allocator, &[_]AbiValue{.{ .@"string[]" = &names }}));
+    // Rejected after earlier values were already appended: nothing leaks
+    try std.testing.expectError(error.UnsupportedType, encodePackedStrict(allocator, &[_]AbiValue{ .{ .string = "prefix" }, .{ .@"uint256[][]" = &rows } }));
+    // Empty nested arrays are rejected by type, not by content
+    try std.testing.expectError(error.UnsupportedType, encodePackedStrict(allocator, &[_]AbiValue{.{ .@"uint256[][]" = &.{} }}));
+
+    // Supported arrays pass
+    const ok = try encodePackedStrict(allocator, &[_]AbiValue{.{ .@"uint256[]" = &row }});
+    defer allocator.free(ok);
+    try std.testing.expectEqualSlices(u8, &(testWord(1) ++ testWord(2)), ok);
 }

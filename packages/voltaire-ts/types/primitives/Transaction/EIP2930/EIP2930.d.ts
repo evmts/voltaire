@@ -41,9 +41,9 @@ import { getSender } from "./getSender.js";
 export const hash: (tx: import("./TransactionEIP2930Type.js").TransactionEIP2930Type) => Uint8Array;
 export const getSigningHash: (tx: import("./TransactionEIP2930Type.js").TransactionEIP2930Type) => Uint8Array;
 export const verifySignature: (tx: import("./TransactionEIP2930Type.js").TransactionEIP2930Type) => boolean;
-import { Hash } from "./hash.js";
-import { GetSigningHash } from "./getSigningHash.js";
-import { VerifySignature } from "./verifySignature.js";
 import { deserialize } from "./deserialize.js";
-export { Hash, GetSigningHash, VerifySignature, deserialize, serialize, getSender };
+import { GetSigningHash } from "./getSigningHash.js";
+import { Hash } from "./hash.js";
+import { VerifySignature } from "./verifySignature.js";
+export { deserialize, GetSigningHash, getSender, Hash, serialize, VerifySignature };
 //# sourceMappingURL=EIP2930.d.ts.map

@@ -25,7 +25,7 @@ export function getCategory(opcode) {
 	}
 
 	// Comparison & Bitwise Logic
-	if (opcode >= constants.LT && opcode <= constants.SAR) {
+	if (opcode >= constants.LT && opcode <= constants.CLZ) {
 		return "logic";
 	}
 

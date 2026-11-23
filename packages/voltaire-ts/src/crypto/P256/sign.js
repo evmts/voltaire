@@ -3,6 +3,7 @@ import { p256 } from "@noble/curves/nist.js";
 import { Hash } from "../../primitives/Hash/index.js";
 import { PRIVATE_KEY_SIZE } from "./constants.js";
 import { InvalidPrivateKeyError, P256Error } from "./errors.js";
+import { validatePrivateKey } from "./validatePrivateKey.js";
 
 /**
  * @typedef {Object} P256SignOptions
@@ -17,6 +18,8 @@ import { InvalidPrivateKeyError, P256Error } from "./errors.js";
 /**
  * Sign a message hash with a private key
  *
+ * Signs `messageHash` as-is (no second SHA-256). The result verifies under
+ * EIP-7951 P256VERIFY, WebAuthn, and the Zig implementation.
  * Uses deterministic ECDSA (RFC 6979) for signature generation by default.
  * Set `extraEntropy: false` to explicitly ensure deterministic signatures
  * matching ox/viem behavior.
@@ -27,7 +30,7 @@ import { InvalidPrivateKeyError, P256Error } from "./errors.js";
  * @param {import('./P256PrivateKeyType.js').P256PrivateKeyType} privateKey - 32-byte private key
  * @param {P256SignOptions} [options] - Signing options
  * @returns {import('./P256SignatureType.js').P256SignatureType} ECDSA signature with r, s components
- * @throws {InvalidPrivateKeyError} If private key is invalid
+ * @throws {InvalidPrivateKeyError} If private key is not 32 bytes or not in [1, n-1]
  * @throws {P256Error} If signing fails
  * @example
  * ```javascript
@@ -50,9 +53,17 @@ export function sign(messageHash, privateKey, options) {
 			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
 		);
 	}
+	if (!validatePrivateKey(privateKey)) {
+		throw new InvalidPrivateKeyError("Private key must be in range [1, n-1]");
+	}
 
 	try {
-		const sig = p256.sign(messageHash, privateKey, options);
+		// messageHash is already a digest: prehash is forced off and cannot be
+		// re-enabled through options.
+		const sig = p256.sign(messageHash, privateKey, {
+			...options,
+			prehash: false,
+		});
 		return {
 			r: Hash.from(sig.slice(0, 32)),
 			s: Hash.from(sig.slice(32, 64)),

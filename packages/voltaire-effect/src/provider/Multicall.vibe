@@ -21,9 +21,9 @@ const AGGREGATE3_INPUT_PARAMS: ReadonlyArray<Abi.AbiParameter> = [
     components: [
       { type: "address", name: "target" },
       { type: "bool", name: "allowFailure" },
-      { type: "bytes", name: "callData" }
-    ]
-  }
+      { type: "bytes", name: "callData" },
+    ],
+  },
 ]
 
 const AGGREGATE3_OUTPUT_PARAMS: ReadonlyArray<Abi.AbiParameter> = [
@@ -32,9 +32,9 @@ const AGGREGATE3_OUTPUT_PARAMS: ReadonlyArray<Abi.AbiParameter> = [
     name: "returnData",
     components: [
       { type: "bool", name: "success" },
-      { type: "bytes", name: "returnData" }
-    ]
-  }
+      { type: "bytes", name: "returnData" },
+    ],
+  },
 ]
 
 export interface MulticallCall {
@@ -55,7 +55,7 @@ export interface MulticallOptions {
 
 export effect function aggregate3(
   calls: ReadonlyArray<MulticallCall>,
-  options: MulticallOptions = {}
+  options: MulticallOptions = {},
 ): ReadonlyArray<MulticallResult>!MulticallError!Transport {
   if (calls.length === 0) return []
 
@@ -63,10 +63,10 @@ export effect function aggregate3(
   for (const item of calls) {
     const targetHex = typeof item.target === "string"
       ? Address.toHex(
-          Address.fromHex(item.target) catch effect (e) => {
-            throw new MulticallError({ message: `Invalid multicall target: ${e.message}`, cause: e })
-          }
-        )
+        Address.fromHex(item.target) catch effect (e) => {
+          throw new MulticallError({ message: `Invalid multicall target: ${e.message}`, cause: e })
+        },
+      )
       : Address.toHex(item.target)
     const callData = Hex.from(item.callData) catch effect (e) => {
       throw new MulticallError({ message: `Invalid multicall callData: ${e.message}`, cause: e })
@@ -106,11 +106,11 @@ export effect function aggregate3(
     }
     const returnHex = typeof rawReturnData === "string"
       ? Hex.from(rawReturnData) catch effect (e) => {
-          throw new MulticallError({ message: `Invalid returnData hex: ${e.message}`, cause: e })
-        }
+        throw new MulticallError({ message: `Invalid returnData hex: ${e.message}`, cause: e })
+      }
       : Hex.fromBytes(rawReturnData) catch effect (e) => {
-          throw new MulticallError({ message: `Invalid returnData bytes: ${e.message}`, cause: e })
-        }
+        throw new MulticallError({ message: `Invalid returnData bytes: ${e.message}`, cause: e })
+      }
     results.push({ success, returnData: returnHex })
   }
   return results
@@ -132,7 +132,7 @@ export data DecodedMulticallItem {
 // High-level ABI-aware multicall: encodes every call, executes 1 RPC call, decodes results & revert reasons!
 export effect function multicall(
   calls: ReadonlyArray<TypedMulticallRequest>,
-  options: MulticallOptions & { readonly allowFailure?: boolean } = {}
+  options: MulticallOptions & { readonly allowFailure?: boolean } = {},
 ): ReadonlyArray<DecodedMulticallItem>!MulticallError!Transport {
   if (calls.length === 0) return []
   const defaultAllowFailure = options.allowFailure ?? true
@@ -142,13 +142,13 @@ export effect function multicall(
     const data = Abi.encodeFunctionData(c.abi, c.functionName, c.args ?? []) catch effect (e) => {
       throw new MulticallError({
         message: `Failed encoding multicall item "${c.functionName}": ${e.message}`,
-        cause: e
+        cause: e,
       })
     }
     rawCalls.push({
       target: c.address,
       callData: data,
-      allowFailure: c.allowFailure ?? defaultAllowFailure
+      allowFailure: c.allowFailure ?? defaultAllowFailure,
     })
   }
 
@@ -168,7 +168,7 @@ export effect function multicall(
       const value = Abi.decodeFunctionResult(spec.abi, spec.functionName, res.returnData) catch effect (e) => {
         throw new MulticallError({
           message: `Failed decoding multicall item "${spec.functionName}": ${e.message}`,
-          cause: e
+          cause: e,
         })
       }
       out.push(DecodedMulticallItem.Success({ result: value }))
@@ -178,7 +178,7 @@ export effect function multicall(
   if (!defaultAllowFailure && failedIndices.length > 0) {
     throw new MulticallError({
       message: `Multicall failed on ${failedIndices.length} call(s): [${failedIndices.join(", ")}]`,
-      failedIndices
+      failedIndices,
     })
   }
 

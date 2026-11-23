@@ -23,8 +23,12 @@ export function fromEther(ether: Ether): Wei;
 /**
  * Converts Wei to Gwei
  *
+ * Gwei here is a whole number, so the Wei amount must be a multiple of
+ * 10^9. Use `BrandedWei.toGwei` for fractional gwei.
+ *
  * @param {Wei} wei
  * @returns {Gwei}
+ * @throws {Error} If wei is not a whole number of gwei
  */
 export function toGwei(wei: Wei): Gwei;
 /**

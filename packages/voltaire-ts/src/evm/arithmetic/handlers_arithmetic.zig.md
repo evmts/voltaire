@@ -52,6 +52,7 @@ pub fn add(frame: *FrameType) FrameType.EvmError!void {
 ```
 
 **Python reference (correct order):**
+
 ```python
 def add(evm: Evm) -> None:
     # STACK FIRST ✅
@@ -75,6 +76,7 @@ If stack underflow occurs during `popStack()`, the gas should NOT be charged. Th
 ALL handlers in this file (add, mul, sub, div, sdiv, mod, smod, addmod, mulmod, exp, signextend)
 
 **Recommended fix:**
+
 ```zig
 pub fn add(frame: *FrameType) FrameType.EvmError!void {
     // 1. Pop stack arguments
@@ -104,6 +106,7 @@ pub fn add(frame: *FrameType) FrameType.EvmError!void {
 **Impact:** Bypasses primitives library, violates DRY principle, comment indicates missing constant
 
 **Problem:**
+
 ```zig
 // EIP-160: GAS_EXPONENTIATION_PER_BYTE = 50 (missing from primitives lib)
 const EXP_BYTE_COST: u64 = 50;
@@ -117,11 +120,13 @@ GAS_EXPONENTIATION_PER_BYTE = Uint(50)
 ```
 
 **Why it matters:**
+
 - Violates single source of truth principle
 - If gas costs change in a future hardfork, this hardcoded value will be missed
 - Bypasses the `GasConstants` module that should be the canonical source
 
 **Recommended fix:**
+
 1. Add `GasExponentiationPerByte` to the primitives library's `GasConstants`
 2. Update this file to use: `GasConstants.GasExponentiationPerByte`
 3. Remove the hardcoded constant
@@ -135,6 +140,7 @@ GAS_EXPONENTIATION_PER_BYTE = Uint(50)
 **Impact:** Incorrect results for edge cases involving MIN_SIGNED and -1
 
 **Problem in SDIV:**
+
 ```zig
 // Line 58-59: Wrong check
 else if (top == MIN_SIGNED and second == std.math.maxInt(u256))
@@ -142,6 +148,7 @@ else if (top == MIN_SIGNED and second == std.math.maxInt(u256))
 ```
 
 **Python reference (correct):**
+
 ```python
 # Lines 166-167
 elif dividend == -U255_CEIL_VALUE and divisor == -1:
@@ -151,6 +158,7 @@ elif dividend == -U255_CEIL_VALUE and divisor == -1:
 **Issue:** The Zig code checks `second == std.math.maxInt(u256)` (which is 2^256-1), but it should check if `second_signed == -1`. In two's complement, -1 is represented as `0xFFFF...FFFF` (all bits set), which equals `maxInt(u256)`, BUT the semantic check should be on the SIGNED value.
 
 **Correct implementation:**
+
 ```zig
 const MIN_SIGNED = @as(u256, 1) << 255;
 const result = if (second == 0)
@@ -162,6 +170,7 @@ else
 ```
 
 **Problem in SMOD:**
+
 ```zig
 // Line 86-87: Wrong check and wrong result
 else if (top == MIN_SIGNED and second == std.math.maxInt(u256))
@@ -169,6 +178,7 @@ else if (top == MIN_SIGNED and second == std.math.maxInt(u256))
 ```
 
 **Python reference (correct):**
+
 ```python
 # Lines 227-230
 if y == 0:
@@ -189,6 +199,7 @@ The Python implementation doesn't have a special case for MIN_SIGNED/-1; it uses
 
 **Problem:**
 The EXP opcode gas cost changed in EIP-160 (Spurious Dragon hardfork):
+
 - **Pre-Spurious Dragon:** `GAS_EXPONENTIATION` (10 gas)
 - **Post-Spurious Dragon:** `GAS_EXPONENTIATION + GAS_EXPONENTIATION_PER_BYTE * byte_length(exponent)`
 
@@ -200,10 +211,12 @@ try frame.consumeGas(GasConstants.GasSlowStep + dynamic_gas);
 ```
 
 **Python reference confirms this was a hardfork change:**
+
 - `execution-specs/src/ethereum/forks/homestead/vm/instructions/arithmetic.py` (pre-EIP-160)
 - `execution-specs/src/ethereum/forks/spurious_dragon/vm/instructions/arithmetic.py` (post-EIP-160)
 
 **Recommended fix:**
+
 ```zig
 pub fn exp(frame: *FrameType) FrameType.EvmError!void {
     const base = try frame.popStack();
@@ -235,19 +248,21 @@ pub fn exp(frame: *FrameType) FrameType.EvmError!void {
 **Problem:**
 The Zig code uses different constant names than the Python reference:
 
-| Python Reference | Zig Implementation | Value |
-|------------------|-------------------|-------|
-| `GAS_VERY_LOW` | `GasFastestStep` | 3 |
-| `GAS_LOW` | `GasFastStep` | 5 |
-| `GAS_MID` | `GasMidStep` | 8 |
-| `GAS_EXPONENTIATION` | `GasSlowStep` | 10 |
+| Python Reference     | Zig Implementation | Value |
+| -------------------- | ------------------ | ----- |
+| `GAS_VERY_LOW`       | `GasFastestStep`   | 3     |
+| `GAS_LOW`            | `GasFastStep`      | 5     |
+| `GAS_MID`            | `GasMidStep`       | 8     |
+| `GAS_EXPONENTIATION` | `GasSlowStep`      | 10    |
 
 **Why it matters:**
+
 - Makes cross-referencing with Python reference harder
 - "Fastest/Fast/Mid/Slow" are relative terms, "VERY_LOW/LOW/MID/HIGH" are absolute tiers
 - Increases cognitive load when debugging against Python reference
 
 **Example confusion:**
+
 ```zig
 // What tier is "Fast"? Is it faster than "Mid"?
 try frame.consumeGas(GasConstants.GasFastStep);  // Actually GAS_LOW (5)
@@ -285,6 +300,7 @@ if (is_negative) {
 ```
 
 **Python reference (more explicit):**
+
 ```python
 # Lines 360-368
 value_bytes = Bytes(value.to_be_bytes32())
@@ -301,12 +317,14 @@ else:
 ```
 
 **Issues:**
+
 1. Truncation of `byte_index * 8 + 7` to `u8` could overflow if byte_index > 31 (though guarded by line 171)
 2. The bit manipulation logic is correct BUT harder to audit than byte-based approach
 3. No comments explaining WHY this approach vs byte-based
 
 **Recommendation:**
 Add detailed comments explaining:
+
 - Why bit-based approach chosen over byte-based
 - Mathematical proof that `value | ~mask` produces sign extension
 - Example walkthrough for a concrete value
@@ -328,12 +346,14 @@ pub fn div(frame: *FrameType) FrameType.EvmError!void {
 ```
 
 **Missing documentation:**
+
 - Can this return `StackUnderflow` error? (Yes, if stack has < 2 items)
 - Can this return `OutOfGas` error? (Yes, from consumeGas)
 - What's the expected stack state on entry? (At least 2 items)
 - What's the guaranteed stack state on success? (Same depth - 2 + 1 = -1)
 
 **Recommended fix:**
+
 ```zig
 /// DIV opcode (0x04) - Integer division
 ///
@@ -362,6 +382,7 @@ pub fn div(frame: *FrameType) FrameType.EvmError!void {
 ### 2.1 Implicit TODO: Gas Constant Integration
 
 **Evidence:** Line 143-144
+
 ```zig
 // EIP-160: GAS_EXPONENTIATION_PER_BYTE = 50 (missing from primitives lib)
 const EXP_BYTE_COST: u64 = 50;
@@ -370,6 +391,7 @@ const EXP_BYTE_COST: u64 = 50;
 **Status:** Comment indicates this is a temporary workaround pending primitives library update.
 
 **Action Required:**
+
 1. File issue with primitives library to add `GasExponentiationPerByte` constant
 2. Create follow-up task to replace hardcoded value once primitives is updated
 3. Add build warning if using hardcoded value for > 30 days (technical debt tracker)
@@ -381,6 +403,7 @@ const EXP_BYTE_COST: u64 = 50;
 **Status:** Missing feature for full hardfork compliance
 
 **Action Required:**
+
 1. Add hardfork context to Frame type (architectural change)
 2. Implement pre-Spurious Dragon gas calculation path
 3. Add integration tests for both hardfork variants
@@ -396,6 +419,7 @@ const EXP_BYTE_COST: u64 = 50;
 **Impact:** Reduced readability
 
 **Problem:**
+
 ```zig
 // Explicit type annotations in addmod/mulmod
 const a_wide = @as(u512, a);
@@ -412,6 +436,7 @@ const a = try frame.popStack();  // Type inferred as u256
 
 **Recommendation:**
 Either:
+
 - Always use explicit type annotations for clarity: `const a: u256 = try frame.popStack();`
 - OR document why addmod/mulmod need explicit `@as()` (preventing overflow during intermediate calc)
 
@@ -422,6 +447,7 @@ Either:
 **Impact:** Reduced maintainability
 
 **Examples:**
+
 ```zig
 // Line 135: What is the significance of 0?
 if (exponent == 0) break :blk 0;
@@ -439,6 +465,7 @@ const bit_index = @as(u8, @truncate(byte_index * 8 + 7));
 ```
 
 **Recommendation:**
+
 ```zig
 const BITS_PER_BYTE = 8;
 const BYTES_PER_U256 = 32;
@@ -459,6 +486,7 @@ const bit_index = @as(u8, @truncate(byte_index * BITS_PER_BYTE + (BITS_PER_BYTE 
 
 **Problem:**
 Every opcode repeats the pattern:
+
 1. Gas consumption
 2. Stack operations
 3. Result calculation
@@ -467,6 +495,7 @@ Every opcode repeats the pattern:
 This could be abstracted into a helper for simple operations:
 
 **Potential abstraction:**
+
 ```zig
 /// Helper for binary operations (2 inputs, 1 output)
 fn binaryOp(
@@ -503,6 +532,7 @@ fn wrappingAdd(a: u256, b: u256) u256 {
 **Impact:** Cannot verify correctness in isolation
 
 **Evidence:**
+
 - No `test` blocks in this file
 - No separate test file found (`grep -r "handlers_arithmetic" test/`)
 - Relies entirely on spec tests (black-box testing)
@@ -510,6 +540,7 @@ fn wrappingAdd(a: u256, b: u256) u256 {
 **Required unit tests:**
 
 #### 4.1.1 Basic Arithmetic Tests
+
 ```zig
 test "ADD: basic addition" {
     // Test: 5 + 3 = 8
@@ -530,6 +561,7 @@ test "SUB: subtraction with underflow" {
 ```
 
 #### 4.1.2 Division by Zero Tests
+
 ```zig
 test "DIV: division by zero returns 0" {
     // Test: 10 / 0 = 0 (EVM spec)
@@ -550,6 +582,7 @@ test "SMOD: signed modulo by zero" {
 ```
 
 #### 4.1.3 Signed Integer Edge Cases
+
 ```zig
 test "SDIV: MIN_SIGNED / -1 = MIN_SIGNED" {
     // Test the overflow edge case
@@ -574,6 +607,7 @@ test "SIGNEXTEND: various byte indices" {
 ```
 
 #### 4.1.4 EXP Tests
+
 ```zig
 test "EXP: basic exponentiation" {
     // Test: 2^3 = 8
@@ -595,6 +629,7 @@ test "EXP: gas calculation by byte length" {
 ```
 
 #### 4.1.5 ADDMOD/MULMOD Tests
+
 ```zig
 test "ADDMOD: modular addition" {
     // Test: (5 + 7) % 10 = 2
@@ -610,6 +645,7 @@ test "MULMOD: modular multiplication" {
 ```
 
 #### 4.1.6 Gas Consumption Tests
+
 ```zig
 test "gas costs match GasConstants" {
     // Verify each opcode charges correct amount
@@ -626,6 +662,7 @@ test "gas charged before operation" {
 ```
 
 #### 4.1.7 Stack State Tests
+
 ```zig
 test "stack depth changes correctly" {
     // Test: ADD consumes 2, produces 1 (net -1)
@@ -639,6 +676,7 @@ test "stack underflow error" {
 ```
 
 #### 4.1.8 PC Increment Tests
+
 ```zig
 test "PC incremented after execution" {
     // Verify PC += 1 for all opcodes
@@ -648,11 +686,13 @@ test "PC incremented after execution" {
 ### 4.2 Integration Test Gaps
 
 **Missing coverage:**
+
 - No tests comparing Zig implementation output against Python reference for same inputs
 - No fuzz testing for arithmetic edge cases
 - No performance benchmarks (e.g., EXP with large exponents)
 
 **Recommended additions:**
+
 1. Property-based testing using QuickCheck-style framework
 2. Differential testing against Python execution-specs
 3. Benchmark suite for gas-intensive operations (EXP, MULMOD)
@@ -671,6 +711,7 @@ test "PC incremented after execution" {
 When errors occur, there's no context about which opcode failed or what the inputs were.
 
 **Example:**
+
 ```zig
 pub fn div(frame: *FrameType) FrameType.EvmError!void {
     try frame.consumeGas(GasConstants.GasFastStep);  // If this fails, you get OutOfGas
@@ -680,6 +721,7 @@ pub fn div(frame: *FrameType) FrameType.EvmError!void {
 
 **Recommendation:**
 Consider adding error context via Zig's error return traces or custom error types:
+
 ```zig
 const ArithmeticError = error {
     OutOfGas,
@@ -705,12 +747,14 @@ pub fn div(frame: *FrameType) ArithmeticError!void {
 The EXP implementation uses basic exponentiation by squaring, which is correct but may not be optimal for crypto operations.
 
 **Potential optimizations:**
+
 1. Use LLVM intrinsics for exponentiation if available
 2. Specialize for common bases (2, 10)
 3. Early exit for exponent = 0 or 1 (currently checks in byte_len but still does full computation)
 
 **Benchmark needed:**
 Compare performance against:
+
 - geth's EXP implementation
 - REVM's EXP implementation
 - Python reference (will be slower, but good baseline)
@@ -725,6 +769,7 @@ Compare performance against:
 No runtime assertions to catch invariant violations during development.
 
 **Example assertions needed:**
+
 ```zig
 pub fn add(frame: *FrameType) FrameType.EvmError!void {
     std.debug.assert(frame.pc < frame.code.len);  // PC in bounds
@@ -751,48 +796,49 @@ pub fn add(frame: *FrameType) FrameType.EvmError!void {
 
 ### 6.1 Critical (Must Fix Before Production)
 
-| Priority | Issue | Recommended Fix | Estimated Effort |
-|----------|-------|----------------|------------------|
-| P0 | 1.1: Gas charging order | Reorder operations in all handlers | 2 hours |
-| P0 | 1.2: Hardcoded gas constant | Add to primitives library | 4 hours |
-| P0 | 1.3: SDIV/SMOD edge cases | Fix edge case checks | 1 hour |
-| P0 | 1.4: Missing hardfork guards | Add hardfork context to Frame | 8 hours (architectural) |
-| P0 | 4.1: Missing unit tests | Write comprehensive test suite | 16 hours |
+| Priority | Issue                        | Recommended Fix                    | Estimated Effort        |
+| -------- | ---------------------------- | ---------------------------------- | ----------------------- |
+| P0       | 1.1: Gas charging order      | Reorder operations in all handlers | 2 hours                 |
+| P0       | 1.2: Hardcoded gas constant  | Add to primitives library          | 4 hours                 |
+| P0       | 1.3: SDIV/SMOD edge cases    | Fix edge case checks               | 1 hour                  |
+| P0       | 1.4: Missing hardfork guards | Add hardfork context to Frame      | 8 hours (architectural) |
+| P0       | 4.1: Missing unit tests      | Write comprehensive test suite     | 16 hours                |
 
 **Total Critical Path:** ~31 hours
 
 ### 6.2 High (Should Fix Soon)
 
-| Priority | Issue | Recommended Fix | Estimated Effort |
-|----------|-------|----------------|------------------|
-| P1 | 1.5: Gas constant naming | Align with Python reference | 4 hours |
-| P1 | 1.6: SIGNEXTEND complexity | Add detailed comments | 2 hours |
-| P1 | 4.2: Integration test gaps | Add differential tests | 8 hours |
+| Priority | Issue                      | Recommended Fix             | Estimated Effort |
+| -------- | -------------------------- | --------------------------- | ---------------- |
+| P1       | 1.5: Gas constant naming   | Align with Python reference | 4 hours          |
+| P1       | 1.6: SIGNEXTEND complexity | Add detailed comments       | 2 hours          |
+| P1       | 4.2: Integration test gaps | Add differential tests      | 8 hours          |
 
 **Total High Priority:** ~14 hours
 
 ### 6.3 Medium (Nice to Have)
 
-| Priority | Issue | Recommended Fix | Estimated Effort |
-|----------|-------|----------------|------------------|
-| P2 | 1.7: Missing documentation | Add comprehensive docs | 4 hours |
-| P2 | 3.1: Type annotation inconsistency | Standardize style | 1 hour |
-| P2 | 3.2: Magic numbers | Extract named constants | 2 hours |
-| P2 | 5.1: No error context | Add error logging | 4 hours |
-| P2 | 5.3: Lack of assertions | Add debug assertions | 4 hours |
+| Priority | Issue                              | Recommended Fix         | Estimated Effort |
+| -------- | ---------------------------------- | ----------------------- | ---------------- |
+| P2       | 1.7: Missing documentation         | Add comprehensive docs  | 4 hours          |
+| P2       | 3.1: Type annotation inconsistency | Standardize style       | 1 hour           |
+| P2       | 3.2: Magic numbers                 | Extract named constants | 2 hours          |
+| P2       | 5.1: No error context              | Add error logging       | 4 hours          |
+| P2       | 5.3: Lack of assertions            | Add debug assertions    | 4 hours          |
 
 **Total Medium Priority:** ~15 hours
 
 ### 6.4 Low (Technical Debt)
 
-| Priority | Issue | Recommended Fix | Estimated Effort |
-|----------|-------|----------------|------------------|
-| P3 | 3.3: DRY violation | Create helper abstractions | 8 hours |
-| P3 | 5.2: Performance optimizations | Benchmark and optimize | 16 hours |
+| Priority | Issue                          | Recommended Fix            | Estimated Effort |
+| -------- | ------------------------------ | -------------------------- | ---------------- |
+| P3       | 3.3: DRY violation             | Create helper abstractions | 8 hours          |
+| P3       | 5.2: Performance optimizations | Benchmark and optimize     | 16 hours         |
 
 **Total Low Priority:** ~24 hours
 
 ### 6.5 Grand Total Estimated Effort
+
 **84 hours** (~2 weeks for one developer, or 1 week for team of 2)
 
 ---
@@ -835,21 +881,22 @@ Based on this review, these related files should also be audited:
 
 For each opcode, comparison with Python reference:
 
-| Opcode | Zig Gas Cost | Python Gas Cost | Match? | Stack Order | Match? | Edge Cases | Match? |
-|--------|--------------|-----------------|--------|-------------|--------|------------|--------|
-| ADD | GasFastestStep (3) | GAS_VERY_LOW (3) | ✅ | Wrong order | ❌ | Overflow wraps | ✅ |
-| SUB | GasFastestStep (3) | GAS_VERY_LOW (3) | ✅ | Wrong order | ❌ | Underflow wraps | ✅ |
-| MUL | GasFastStep (5) | GAS_LOW (5) | ✅ | Wrong order | ❌ | Overflow wraps | ✅ |
-| DIV | GasFastStep (5) | GAS_LOW (5) | ✅ | Wrong order | ❌ | Div by 0 → 0 | ✅ |
-| SDIV | GasFastStep (5) | GAS_LOW (5) | ✅ | Wrong order | ❌ | MIN/-1 edge case | ⚠️ |
-| MOD | GasFastStep (5) | GAS_LOW (5) | ✅ | Wrong order | ❌ | Mod by 0 → 0 | ✅ |
-| SMOD | GasFastStep (5) | GAS_LOW (5) | ✅ | Wrong order | ❌ | Sign handling | ⚠️ |
-| ADDMOD | GasMidStep (8) | GAS_MID (8) | ✅ | Wrong order | ❌ | Uses u512 | ✅ |
-| MULMOD | GasMidStep (8) | GAS_MID (8) | ✅ | Wrong order | ❌ | Uses u512 | ✅ |
-| EXP | GasSlowStep (10) + dynamic | GAS_EXP (10) + dynamic | ✅ | Wrong order | ❌ | Byte length calc | ✅ |
-| SIGNEXTEND | GasFastStep (5) | GAS_LOW (5) | ✅ | Wrong order | ❌ | Bit vs byte approach | ⚠️ |
+| Opcode     | Zig Gas Cost               | Python Gas Cost        | Match? | Stack Order | Match? | Edge Cases           | Match? |
+| ---------- | -------------------------- | ---------------------- | ------ | ----------- | ------ | -------------------- | ------ |
+| ADD        | GasFastestStep (3)         | GAS_VERY_LOW (3)       | ✅     | Wrong order | ❌     | Overflow wraps       | ✅     |
+| SUB        | GasFastestStep (3)         | GAS_VERY_LOW (3)       | ✅     | Wrong order | ❌     | Underflow wraps      | ✅     |
+| MUL        | GasFastStep (5)            | GAS_LOW (5)            | ✅     | Wrong order | ❌     | Overflow wraps       | ✅     |
+| DIV        | GasFastStep (5)            | GAS_LOW (5)            | ✅     | Wrong order | ❌     | Div by 0 → 0         | ✅     |
+| SDIV       | GasFastStep (5)            | GAS_LOW (5)            | ✅     | Wrong order | ❌     | MIN/-1 edge case     | ⚠️     |
+| MOD        | GasFastStep (5)            | GAS_LOW (5)            | ✅     | Wrong order | ❌     | Mod by 0 → 0         | ✅     |
+| SMOD       | GasFastStep (5)            | GAS_LOW (5)            | ✅     | Wrong order | ❌     | Sign handling        | ⚠️     |
+| ADDMOD     | GasMidStep (8)             | GAS_MID (8)            | ✅     | Wrong order | ❌     | Uses u512            | ✅     |
+| MULMOD     | GasMidStep (8)             | GAS_MID (8)            | ✅     | Wrong order | ❌     | Uses u512            | ✅     |
+| EXP        | GasSlowStep (10) + dynamic | GAS_EXP (10) + dynamic | ✅     | Wrong order | ❌     | Byte length calc     | ✅     |
+| SIGNEXTEND | GasFastStep (5)            | GAS_LOW (5)            | ✅     | Wrong order | ❌     | Bit vs byte approach | ⚠️     |
 
 **Legend:**
+
 - ✅ Correct implementation
 - ❌ Incorrect implementation
 - ⚠️ Potentially incorrect or unclear
@@ -860,21 +907,22 @@ For each opcode, comparison with Python reference:
 
 For quick reference when debugging:
 
-| Opcode | Python File | Line | Function |
-|--------|-------------|------|----------|
-| ADD | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 31-56 | `def add(evm: Evm)` |
-| SUB | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 58-83 | `def sub(evm: Evm)` |
-| MUL | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 85-110 | `def mul(evm: Evm)` |
-| DIV | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 112-140 | `def div(evm: Evm)` |
-| SDIV | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 145-176 | `def sdiv(evm: Evm)` |
-| MOD | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 178-206 | `def mod(evm: Evm)` |
-| SMOD | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 208-236 | `def smod(evm: Evm)` |
-| ADDMOD | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 238-267 | `def addmod(evm: Evm)` |
-| MULMOD | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 269-298 | `def mulmod(evm: Evm)` |
-| EXP | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 300-331 | `def exp(evm: Evm)` |
+| Opcode     | Python File                                                | Line    | Function                   |
+| ---------- | ---------------------------------------------------------- | ------- | -------------------------- |
+| ADD        | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 31-56   | `def add(evm: Evm)`        |
+| SUB        | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 58-83   | `def sub(evm: Evm)`        |
+| MUL        | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 85-110  | `def mul(evm: Evm)`        |
+| DIV        | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 112-140 | `def div(evm: Evm)`        |
+| SDIV       | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 145-176 | `def sdiv(evm: Evm)`       |
+| MOD        | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 178-206 | `def mod(evm: Evm)`        |
+| SMOD       | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 208-236 | `def smod(evm: Evm)`       |
+| ADDMOD     | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 238-267 | `def addmod(evm: Evm)`     |
+| MULMOD     | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 269-298 | `def mulmod(evm: Evm)`     |
+| EXP        | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 300-331 | `def exp(evm: Evm)`        |
 | SIGNEXTEND | `execution-specs/.../cancun/vm/instructions/arithmetic.py` | 333-374 | `def signextend(evm: Evm)` |
 
 Gas constants:
+
 - `execution-specs/.../cancun/vm/gas.py` (lines 27-37)
 
 ---
@@ -893,6 +941,7 @@ This file implements core EVM arithmetic operations but requires significant cor
 **Estimated Total Remediation Time:** 2 weeks (84 hours) for comprehensive fixes and testing.
 
 **Next Steps:**
+
 1. Fix gas charging order (2 hours, affects all 11 opcodes)
 2. Add comprehensive unit tests (16 hours, ~150 test cases)
 3. Add `GasExponentiationPerByte` to primitives (4 hours)

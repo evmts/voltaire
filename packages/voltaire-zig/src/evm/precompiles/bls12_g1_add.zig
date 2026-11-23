@@ -3,10 +3,14 @@ const crypto = @import("crypto");
 const PrecompileError = @import("common.zig").PrecompileError;
 const PrecompileResult = @import("common.zig").PrecompileResult;
 
-/// Gas cost for BLS12-381 G1 addition
-pub const GAS: u64 = 500;
+/// Gas cost for BLS12-381 G1 addition (EIP-2537)
+pub const GAS: u64 = 375;
 
-/// 0x0B: BLS12_G1ADD - BLS12-381 G1 addition
+/// 0x0B: BLS12_G1ADD - BLS12-381 G1 addition (EIP-2537)
+///
+/// Input: 256 bytes, two G1 points of 128 bytes each. Output: 128 bytes.
+/// A non-canonical coordinate or a point off the curve is an error. EIP-2537
+/// specifies no subgroup check for this operation.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -21,6 +25,8 @@ pub fn execute(
     }
 
     const output = try allocator.alloc(u8, 128);
+    errdefer allocator.free(output);
+    @memset(output, 0);
     crypto.Crypto.bls12_381.g1Add(input, output) catch {
         return error.InvalidPoint;
     };
@@ -228,16 +234,13 @@ test "bls12_g1_add - point plus negative equals infinity" {
         0xfc, 0xf5, 0xe0, 0x95, 0xd5, 0xd0, 0x0a, 0xf6, 0x00, 0xdb, 0x18, 0xcb, 0x2c, 0x04, 0xb3, 0xed,
         0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4, 0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
     };
-    // Negative of G has same x but negated y (mod field)
-    // -y = q - y where q is the field modulus
-    // For BLS12-381: q = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
-    // This is complex to compute, so we'll just verify the operation handles it correctly
-    // The C library should handle this calculation
+    // Negative of G has the same x and y' = p - y, where p is the field modulus
+    // 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
     const g1_neg_y = [_]u8{
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x11, 0x4c, 0x0b, 0x7e, 0x1c, 0x55, 0x5f, 0x0e, 0x5f, 0x61, 0xcf, 0x12, 0x8b, 0xe6, 0x25, 0x1b,
-        0x03, 0x0a, 0x1f, 0x6a, 0x2a, 0x8f, 0xf5, 0x09, 0xff, 0x24, 0xe7, 0x34, 0xd3, 0xfb, 0x4c, 0x12,
-        0x2f, 0xc3, 0x38, 0xbb, 0x5d, 0x77, 0x75, 0x1b, 0xf3, 0x55, 0xdc, 0xd6, 0xb9, 0x3a, 0x18, 0x1e,
+        0x11, 0x4d, 0x1d, 0x68, 0x55, 0xd5, 0x45, 0xa8, 0xaa, 0x7d, 0x76, 0xc8, 0xcf, 0x2e, 0x21, 0xf2,
+        0x67, 0x81, 0x6a, 0xef, 0x1d, 0xb5, 0x07, 0xc9, 0x66, 0x55, 0xb9, 0xd5, 0xca, 0xac, 0x42, 0x36,
+        0x4e, 0x6f, 0x38, 0xba, 0x0e, 0xcb, 0x75, 0x1b, 0xad, 0x54, 0xdc, 0xd6, 0xb9, 0x39, 0xc2, 0xca,
     };
 
     // First point: G
@@ -280,4 +283,38 @@ test "bls12_g1_add - output size validation" {
 
     // Output should always be 128 bytes (64 bytes x + 64 bytes y)
     try testing.expectEqual(@as(usize, 128), result.output.len);
+}
+
+test "bls12_g1_add - official EIP-2537 vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_g1_add.txt"), 9);
+}
+
+test "bls12_g1_add - official EIP-2537 failure vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_g1_add_fail.txt"), 7);
+}
+
+test "bls12_g1_add - gas is 375 (EIP-2537)" {
+    try testing.expectEqual(@as(u64, 375), GAS);
+}
+
+test "bls12_g1_add - non-canonical coordinates are errors" {
+    const allocator = testing.allocator;
+
+    // x = p (the field modulus) is not a field element.
+    const p = [_]u8{0} ** 16 ++ [_]u8{
+        0x1a, 0x01, 0x11, 0xea, 0x39, 0x7f, 0xe6, 0x9a, 0x4b, 0x1b, 0xa7, 0xb6, 0x43, 0x4b, 0xac, 0xd7,
+        0x64, 0x77, 0x4b, 0x84, 0xf3, 0x85, 0x12, 0xbf, 0x67, 0x30, 0xd2, 0xa0, 0xf6, 0xb0, 0xf6, 0x24,
+        0x1e, 0xab, 0xff, 0xfe, 0xb1, 0x53, 0xff, 0xff, 0xb9, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xaa, 0xab,
+    };
+    var input: [256]u8 = [_]u8{0} ** 256;
+    @memcpy(input[0..64], &p);
+    try testing.expectError(error.InvalidPoint, execute(allocator, &input, GAS));
+
+    // A non-zero byte in the 16-byte padding of an otherwise valid encoding.
+    input = [_]u8{0} ** 256;
+    input[0] = 1;
+    try testing.expectError(error.InvalidPoint, execute(allocator, &input, GAS));
+    input = [_]u8{0} ** 256;
+    input[128 + 64 + 15] = 1;
+    try testing.expectError(error.InvalidPoint, execute(allocator, &input, GAS));
 }

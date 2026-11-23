@@ -3,7 +3,7 @@ import * as Event from "./event/index.js";
 
 /**
  * Count indexed parameters in an event
- * @param {import('./event/index.js').Event} event
+ * @param {import('./event/index.js').EventType} event
  * @returns {number}
  */
 function countIndexedParams(event) {

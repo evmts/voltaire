@@ -1,33 +1,14 @@
-// @ts-nocheck
+import { numberToBytesBE } from "@noble/curves/utils.js";
+import { constantTimeIsValidScalar } from "../ConstantTime/constantTimeIsValidScalar.js";
 import { CURVE_ORDER, PRIVATE_KEY_SIZE } from "./constants.js";
-import { InvalidPrivateKeyError } from "./errors.js";
 
-/**
- * Convert 32-byte big-endian array to bigint
- * @param {Uint8Array} bytes
- * @returns {bigint}
- * @throws {InvalidPrivateKeyError} If bytes is not 32 bytes
- */
-function bytes32ToBigInt(bytes) {
-	if (bytes.length !== 32) {
-		throw new InvalidPrivateKeyError(`Expected 32 bytes, got ${bytes.length}`, {
-			code: "SECP256K1_INVALID_PRIVATE_KEY_LENGTH",
-			context: { length: bytes.length, expected: 32 },
-			docsPath: "/crypto/secp256k1#error-handling",
-		});
-	}
-	let result = 0n;
-	for (let i = 0; i < 32; i++) {
-		result = (result << 8n) | BigInt(bytes[i] ?? 0);
-	}
-	return result;
-}
+const ORDER_BYTES = numberToBytesBE(CURVE_ORDER, PRIVATE_KEY_SIZE);
 
 /**
  * Validate private key
  *
- * Checks that the private key is within valid range [1, n-1] where n
- * is the curve order.
+ * Checks in constant time that the private key is within valid range [1, n-1]
+ * where n is the curve order.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
@@ -42,16 +23,8 @@ function bytes32ToBigInt(bytes) {
  * ```
  */
 export function isValidPrivateKey(privateKey) {
+	if (!(privateKey instanceof Uint8Array)) return false;
 	if (privateKey.length !== PRIVATE_KEY_SIZE) return false;
 
-	try {
-		const value = bytes32ToBigInt(privateKey);
-
-		// Private key must be in [1, n-1]
-		if (value === 0n || value >= CURVE_ORDER) return false;
-
-		return true;
-	} catch {
-		return false;
-	}
+	return constantTimeIsValidScalar(privateKey, ORDER_BYTES);
 }

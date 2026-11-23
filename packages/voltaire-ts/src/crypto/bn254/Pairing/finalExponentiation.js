@@ -1,14 +1,15 @@
-import { FP_MOD, FR_MOD } from "../constants.js";
-import * as Fr from "../Fr/index.js";
+import { bn254 } from "@noble/curves/bn254.js";
+import { decodeFp12 } from "./decodeFp12.js";
+import { encodeFp12 } from "./encodeFp12.js";
 
 /**
- * Final exponentiation (simplified)
+ * Final exponentiation `f^((p^12 - 1) / r)` in Fp12.
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
  * @param {{value: bigint}} f - Miller loop result
- * @returns {{value: bigint}} Final exponentiation result
- * @throws {never}
+ * @returns {{value: bigint}} Element of GT, encoded as a canonical integer
+ * @throws {import('../errors.js').Bn254Error} If f is not a canonical Fp12 encoding
  * @example
  * ```javascript
  * import * as Pairing from './crypto/bn254/Pairing/index.js';
@@ -19,7 +20,6 @@ import * as Fr from "../Fr/index.js";
  * ```
  */
 export function finalExponentiation(f) {
-	const exp = (FP_MOD ** 12n - 1n) / FR_MOD;
-	const result = Fr.pow(f.value, exp);
-	return { value: result };
+	const { Fp12 } = bn254.fields;
+	return { value: encodeFp12(Fp12.finalExponentiate(decodeFp12(f.value))) };
 }

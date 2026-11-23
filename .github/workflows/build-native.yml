@@ -24,8 +24,8 @@ jobs:
           - os: macos-15
             platform: darwin-arm64
             zig-target: aarch64-macos
-          # macOS x64 - use macos-13 which is the last x64 runner
-          - os: macos-13
+          # macOS Intel builds the x64 library and its dependencies natively.
+          - os: macos-15-intel
             platform: darwin-x64
             zig-target: x86_64-macos
           # Linux x64 - ubuntu-latest is x64
@@ -79,7 +79,7 @@ jobs:
         with:
           path: |
             ~/.cache/zig
-            zig-cache/
+            .zig-cache/
           key: ${{ runner.os }}-zig-${{ matrix.platform }}-${{ hashFiles('build.zig', 'build.zig.zon') }}
 
       - name: Install dependencies
@@ -102,19 +102,21 @@ jobs:
       - name: Verify build output
         shell: bash
         run: |
-          if [ "${{ matrix.platform }}" == "win32-x64" ]; then
-            ls -lh zig-out/native/${{ matrix.platform }}/*.dll || echo "No DLL found"
-          elif [ "${{ matrix.platform }}" == "darwin-arm64" ] || [ "${{ matrix.platform }}" == "darwin-x64" ]; then
-            ls -lh zig-out/native/${{ matrix.platform }}/*.dylib || echo "No dylib found"
-          else
-            ls -lh zig-out/native/${{ matrix.platform }}/*.so || echo "No so found"
-          fi
+          set -euo pipefail
+          case "${{ matrix.platform }}" in
+            win32-*) ext=dll ;;
+            darwin-*) ext=dylib ;;
+            *) ext=so ;;
+          esac
+          # Fails the job when the library is missing.
+          ls -lh zig-out/native/${{ matrix.platform }}/*.$ext
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: native-${{ matrix.platform }}
           path: zig-out/native/${{ matrix.platform }}/
+          if-no-files-found: error
           retention-days: 7
 
   package-natives:
@@ -155,4 +157,5 @@ jobs:
         with:
           name: native-all-platforms
           path: native/
+          if-no-files-found: error
           retention-days: 30

@@ -1,5 +1,5 @@
 /**
- * Generate BIP-39 mnemonic from entropy
+ * Generate BIP-39 mnemonic words from secure randomness.
  *
  * @param {128 | 256} [strength=128] - Entropy strength in bits
  * @returns {Promise<string[]>} Mnemonic words

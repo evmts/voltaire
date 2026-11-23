@@ -54,6 +54,7 @@ type BlockHeaderType = {
   readonly blobGasUsed?: Uint256Type     // EIP-4844 (Cancun)
   readonly excessBlobGas?: Uint256Type   // EIP-4844 (Cancun)
   readonly parentBeaconBlockRoot?: HashType // EIP-4788 (Cancun)
+  readonly requestsHash?: HashType // EIP-7685 (Prague and Osaka)
 }
 ```
 
@@ -137,6 +138,14 @@ const header = BlockHeader.from({
 | excessBlobGas | Excess blob gas for pricing |
 | parentBeaconBlockRoot | Beacon chain parent root |
 
+### EIP-7685 (Prague and Osaka)
+
+`requestsHash` is a 32-byte execution-requests commitment appended after
+`parentBeaconBlockRoot` as the 21st RLP field. `from`, `fromRpc`, and
+`calculateHash` preserve it. Omitting it from a Prague or Osaka header changes
+the block hash. The Zig field is `requests_hash`; its RLP encoder and decoder
+use the same field order.
+
 ## Post-Merge Changes
 
 After The Merge, several fields are deprecated but still present:
@@ -157,3 +166,7 @@ const postMergeHeader = BlockHeader.from({
 - [BlockBody](/primitives/block-body) - Block body
 - [BlockHash](/primitives/block-hash) - Block identifier
 - [BloomFilter](/primitives/bloomfilter) - Logs bloom filter
+
+For Zig `rlpDecode`, the returned `extra_data` slice belongs to the caller.
+Free it with the allocator passed to the decoder after using the header.
+The decoder preserves those bytes independently of the encoded input.

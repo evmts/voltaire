@@ -8,6 +8,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import type { HashType } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
+import { constantTimeEqual } from "./ConstantTime/constantTimeEqual.js";
 import {
 	InvalidPrivateKeyError,
 	InvalidPublicKeyError,
@@ -15,6 +16,7 @@ import {
 	Secp256k1 as NobleSecp256k1,
 	Secp256k1Error,
 } from "./Secp256k1/index.js";
+import { isValidPrivateKey as validatePrivateScalar } from "./Secp256k1/isValidPrivateKey.js";
 
 // ============================================================================
 // Main Secp256k1Wasm Namespace
@@ -123,8 +125,8 @@ export namespace Secp256k1Wasm {
 			recPrefixed[0] = 0x04;
 			recPrefixed.set(recovered, 1);
 
-			// Compare points by serialized bytes to avoid coordinate leaks
-			return bytesEqual(prefixed, recPrefixed);
+			// Compare points by serialized bytes in constant time to avoid coordinate leaks
+			return constantTimeEqual(prefixed, recPrefixed);
 		} catch {
 			return false;
 		}
@@ -257,18 +259,7 @@ export namespace Secp256k1Wasm {
 	}
 
 	export function isValidPrivateKey(privateKey: PrivateKey): boolean {
-		if (privateKey.length !== PRIVATE_KEY_SIZE) return false;
-
-		try {
-			const value = bytes32ToBigInt(privateKey);
-
-			// Private key must be in [1, n-1]
-			if (value === 0n || value >= CURVE_ORDER) return false;
-
-			return true;
-		} catch {
-			return false;
-		}
+		return validatePrivateScalar(privateKey);
 	}
 
 	// ==========================================================================
@@ -345,13 +336,6 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
 		offset += arr.length;
 	}
 	return result;
-}
-
-function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
-	if (a.length !== b.length) return false;
-	let diff = 0;
-	for (let i = 0; i < a.length; i++) diff |= (a[i] ?? 0) ^ (b[i] ?? 0);
-	return diff === 0;
 }
 
 export default Secp256k1Wasm;

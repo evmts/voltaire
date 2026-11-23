@@ -8,7 +8,6 @@ export * from "./constants.js";
 export * from "./errors.js";
 
 import * as Checksummed from "./ChecksumAddress.js";
-export { Checksummed };
 
 export { CalculateCreate2Address } from "./calculateCreate2Address.js";
 export { CalculateCreateAddress } from "./calculateCreateAddress.js";
@@ -18,6 +17,7 @@ export { IsContract } from "./isContract.js";
 export { IsValidChecksum } from "./isValidChecksum.js";
 // Export factory functions from wrappers
 export { ToChecksummed } from "./toChecksummed.js";
+export { Checksummed };
 
 // Export backward-compatible wrappers that inject dependencies automatically
 import { hash as keccak256 } from "../../crypto/Keccak256/hash.js";
@@ -84,9 +84,11 @@ export const fromPrivateKey = FromPrivateKeyFactory({
 });
 
 import * as Lowercase from "./LowercaseAddress.js";
+
 export { Lowercase };
 
 import * as Uppercase from "./UppercaseAddress.js";
+
 export { Uppercase };
 
 import { Assert, assert } from "./assert.js";
@@ -123,37 +125,36 @@ const assertWithKeccak = (
 	options?: { strict?: boolean },
 ) => assert(value, { ...options, keccak256 });
 
-export { Assert };
-
 // Export individual functions (toChecksummed, isValidChecksum, calculateCreateAddress, calculateCreate2Address, fromPublicKey, fromPrivateKey already exported as const above)
 export {
-	from,
-	fromHex,
-	fromBase64,
-	fromBytes,
-	fromNumber,
-	fromAbiEncoded,
-	toHex,
-	toBytes,
-	toLowercase,
-	toUppercase,
-	toU256,
-	toAbiEncoded,
-	toShortHex,
-	isZero,
-	equals,
-	isValid,
-	is,
-	isAddress,
-	zero,
+	Assert,
+	assertWithKeccak as assert,
 	clone,
 	compare,
-	lessThan,
-	greaterThan,
-	sortAddresses,
 	deduplicateAddresses,
+	equals,
+	from,
+	fromAbiEncoded,
+	fromBase64,
+	fromBytes,
+	fromHex,
+	fromNumber,
+	greaterThan,
+	is,
+	isAddress,
+	isValid,
+	isZero,
+	lessThan,
 	SIZE,
-	assertWithKeccak as assert,
+	sortAddresses,
+	toAbiEncoded,
+	toBytes,
+	toHex,
+	toLowercase,
+	toShortHex,
+	toU256,
+	toUppercase,
+	zero,
 };
 
 // Namespace export

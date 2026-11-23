@@ -90,9 +90,7 @@ pub fn fromPublicKey(pk: PublicKey) PeerId {
 
 /// Convert PeerId to hex string (128 characters, no prefix)
 pub fn toHex(peer_id: PeerId) [128]u8 {
-    var result: [128]u8 = undefined;
-    _ = std.fmt.bytesToHex(&result, &peer_id, .lower);
-    return result;
+    return std.fmt.bytesToHex(peer_id, .lower);
 }
 
 /// Convert PeerId to hex string with 0x prefix (130 characters)
@@ -100,7 +98,7 @@ pub fn toHexPrefixed(peer_id: PeerId) [130]u8 {
     var result: [130]u8 = undefined;
     result[0] = '0';
     result[1] = 'x';
-    _ = std.fmt.bytesToHex(result[2..], &peer_id, .lower);
+    result[2..].* = std.fmt.bytesToHex(peer_id, .lower);
     return result;
 }
 

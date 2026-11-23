@@ -17,6 +17,12 @@ pub const ForkConfig = struct {
     capella: Fork,
     deneb: Fork,
     electra: Fork,
+    fulu: Fork,
+    /// Null when the network config schedules no Gloas fork.
+    gloas: ?Fork = null,
+
+    /// Epoch value consensus configs use for an unscheduled fork (2^64 - 1).
+    pub const FAR_FUTURE_EPOCH: u64 = std.math.maxInt(u64);
 
     pub fn mainnet() ForkConfig {
         return .{
@@ -26,6 +32,7 @@ pub const ForkConfig = struct {
             .capella = .{ .epoch = 194048, .fork_version = .{ 0x03, 0x00, 0x00, 0x00 } },
             .deneb = .{ .epoch = 269568, .fork_version = .{ 0x04, 0x00, 0x00, 0x00 } },
             .electra = .{ .epoch = 364032, .fork_version = .{ 0x05, 0x00, 0x00, 0x00 } },
+            .fulu = .{ .epoch = 411392, .fork_version = .{ 0x06, 0x00, 0x00, 0x00 } },
         };
     }
 
@@ -37,6 +44,8 @@ pub const ForkConfig = struct {
             .capella = .{ .epoch = 56832, .fork_version = .{ 0x90, 0x00, 0x00, 0x72 } },
             .deneb = .{ .epoch = 132608, .fork_version = .{ 0x90, 0x00, 0x00, 0x73 } },
             .electra = .{ .epoch = 222464, .fork_version = .{ 0x90, 0x00, 0x00, 0x74 } },
+            .fulu = .{ .epoch = 272640, .fork_version = .{ 0x90, 0x00, 0x00, 0x75 } },
+            .gloas = .{ .epoch = 353024, .fork_version = .{ 0x90, 0x00, 0x00, 0x76 } },
         };
     }
 
@@ -48,10 +57,31 @@ pub const ForkConfig = struct {
             .capella = .{ .epoch = 256, .fork_version = .{ 0x04, 0x01, 0x70, 0x00 } },
             .deneb = .{ .epoch = 29696, .fork_version = .{ 0x05, 0x01, 0x70, 0x00 } },
             .electra = .{ .epoch = 115968, .fork_version = .{ 0x06, 0x01, 0x70, 0x00 } },
+            .fulu = .{ .epoch = 165120, .fork_version = .{ 0x07, 0x01, 0x70, 0x00 } },
+        };
+    }
+
+    pub fn hoodi() ForkConfig {
+        return .{
+            .genesis = .{ .epoch = 0, .fork_version = .{ 0x10, 0x00, 0x09, 0x10 } },
+            .altair = .{ .epoch = 0, .fork_version = .{ 0x20, 0x00, 0x09, 0x10 } },
+            .bellatrix = .{ .epoch = 0, .fork_version = .{ 0x30, 0x00, 0x09, 0x10 } },
+            .capella = .{ .epoch = 0, .fork_version = .{ 0x40, 0x00, 0x09, 0x10 } },
+            .deneb = .{ .epoch = 0, .fork_version = .{ 0x50, 0x00, 0x09, 0x10 } },
+            .electra = .{ .epoch = 2048, .fork_version = .{ 0x60, 0x00, 0x09, 0x10 } },
+            .fulu = .{ .epoch = 50688, .fork_version = .{ 0x70, 0x00, 0x09, 0x10 } },
         };
     }
 
     pub fn forkVersionForEpoch(self: ForkConfig, epoch: u64) [4]u8 {
+        if (self.gloas) |gloas| {
+            if (epoch >= gloas.epoch) {
+                return gloas.fork_version;
+            }
+        }
+        if (epoch >= self.fulu.epoch) {
+            return self.fulu.fork_version;
+        }
         if (epoch >= self.electra.epoch) {
             return self.electra.fork_version;
         }
@@ -99,5 +129,8 @@ test "ForkConfig: forkVersionForEpoch handles boundaries and ranges" {
     try std.testing.expectEqual(@as([4]u8, .{ 0x03, 0x00, 0x00, 0x00 }), config.forkVersionForEpoch(200000));
     try std.testing.expectEqual(@as([4]u8, .{ 0x04, 0x00, 0x00, 0x00 }), config.forkVersionForEpoch(300000));
     try std.testing.expectEqual(@as([4]u8, .{ 0x05, 0x00, 0x00, 0x00 }), config.forkVersionForEpoch(364032));
-    try std.testing.expectEqual(@as([4]u8, .{ 0x05, 0x00, 0x00, 0x00 }), config.forkVersionForEpoch(500000));
+    try std.testing.expectEqual(@as([4]u8, .{ 0x05, 0x00, 0x00, 0x00 }), config.forkVersionForEpoch(411391));
+    // Fulu activated on mainnet at epoch 411392 with fork version 0x06000000
+    try std.testing.expectEqual(@as([4]u8, .{ 0x06, 0x00, 0x00, 0x00 }), config.forkVersionForEpoch(411392));
+    try std.testing.expectEqual(@as([4]u8, .{ 0x06, 0x00, 0x00, 0x00 }), config.forkVersionForEpoch(500000));
 }

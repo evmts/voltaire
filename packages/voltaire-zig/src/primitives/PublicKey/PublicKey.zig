@@ -14,14 +14,7 @@ pub const PublicKey = @This();
 bytes: [64]u8,
 
 /// Format public key for std.fmt output
-pub fn format(
-    self: PublicKey,
-    comptime fmt: []const u8,
-    options: std.fmt.FormatOptions,
-    writer: anytype,
-) !void {
-    _ = fmt;
-    _ = options;
+pub fn format(self: PublicKey, writer: *std.Io.Writer) std.Io.Writer.Error!void {
     const hex = toHex(self);
     try writer.writeAll(&hex);
 }
@@ -48,7 +41,7 @@ pub fn toHex(pk: PublicKey) [130]u8 {
     var result: [130]u8 = undefined;
     result[0] = '0';
     result[1] = 'x';
-    _ = bytes_to_hex(&result[2..], &pk.bytes, Case.lower);
+    result[2..].* = bytes_to_hex(pk.bytes, Case.lower);
     return result;
 }
 

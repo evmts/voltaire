@@ -25,7 +25,7 @@ export function parse(peerId: string) {
 }
 
 // Export internal functions (tree-shakeable)
-export { _toString, _equals, _parse };
+export { _equals, _parse, _toString };
 
 // Export as namespace (convenience)
 export const PeerId = {

@@ -23,7 +23,7 @@ export {
   sendRawTransaction,
   simulateCalls,
   type WaitForReceiptOptions,
-  waitForTransactionReceipt
+  waitForTransactionReceipt,
 } from "./Actions.vibe"
 export {
   arbitrum,
@@ -45,7 +45,7 @@ export {
   polygon,
   polygonConfig,
   sepolia,
-  sepoliaConfig
+  sepoliaConfig,
 } from "./Chains.vibe"
 export {
   Ens,
@@ -57,7 +57,7 @@ export {
   getEnsResolver,
   getEnsText,
   namehash,
-  normalizeEnsName
+  normalizeEnsName,
 } from "./Ens.vibe"
 export {
   aggregate3,
@@ -67,20 +67,14 @@ export {
   type MulticallCall,
   type MulticallOptions,
   type MulticallResult,
-  type TypedMulticallRequest
+  type TypedMulticallRequest,
 } from "./Multicall.vibe"
-export {
-  CustomProvider,
-  FallbackProvider,
-  HttpProvider,
-  type HttpProviderConfig,
-  TestProvider
-} from "./Providers.vibe"
+export { CustomProvider, FallbackProvider, HttpProvider, type HttpProviderConfig, TestProvider } from "./Providers.vibe"
 export {
   type FeeEstimate,
   type FeeHistory,
   type RpcBlock,
   type RpcLog,
   type RpcTransaction,
-  type RpcTransactionReceipt
+  type RpcTransactionReceipt,
 } from "./Schemas.vibe"

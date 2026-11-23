@@ -979,7 +979,7 @@ test "G1 point operations" {
 
     // Add
     const g1_added = g1.add(&g1);
-    try testing.expect(g1_added.isEqual(&g1_doubled));
+    try testing.expect(blst.blst_p1_is_equal(&g1_added.point, &g1_doubled.point));
 
     // Negate
     const g1_neg = g1.negate();
@@ -1003,7 +1003,7 @@ test "G2 point operations" {
 
     // Add
     const g2_added = g2.add(&g2);
-    try testing.expect(g2_added.isEqual(&g2_doubled));
+    try testing.expect(blst.blst_p2_is_equal(&g2_added.point, &g2_doubled.point));
 
     // Negate
     const g2_neg = g2.negate();
@@ -1113,11 +1113,11 @@ test "hash to G2" {
 
     // Same message should produce same hash
     const h2 = G2Point.hashToG2(message, dst);
-    try testing.expect(h.isEqual(&h2));
+    try testing.expect(blst.blst_p2_is_equal(&h.point, &h2.point));
 
     // Different message should produce different hash
     const h3 = G2Point.hashToG2("different message", dst);
-    try testing.expect(!h.isEqual(&h3));
+    try testing.expect(!blst.blst_p2_is_equal(&h.point, &h3.point));
 }
 
 test "pairing bilinearity" {

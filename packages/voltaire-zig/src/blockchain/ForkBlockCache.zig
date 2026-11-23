@@ -311,6 +311,12 @@ pub const ForkBlockCache = struct {
                 header.parent_beacon_block_root = root;
             } else |_| {}
         }
+        if (getString(obj, "requestsHash")) |requests_hash| {
+            header.requests_hash = parseHexFixed(32, requests_hash) catch null;
+        }
+        if (getString(obj, "blockAccessListHash")) |block_access_list_hash| {
+            header.block_access_list_hash = parseHexFixed(32, block_access_list_hash) catch null;
+        }
 
         const size = if (getString(obj, "size")) |size_str| parseHexU64(size_str) catch 0 else 0;
 
@@ -481,4 +487,21 @@ test "ForkBlockCache - continue caches block" {
     const block = try cache.getBlockByNumber(7);
     try std.testing.expect(block != null);
     try std.testing.expectEqual(@as(u64, 7), block.?.header.number);
+}
+
+test "ForkBlockCache - preserves Prague and Amsterdam header commitments" {
+    var cache = try ForkBlockCache.init(std.testing.allocator, 1000);
+    defer cache.deinit();
+
+    try std.testing.expectError(error.RpcPending, cache.getBlockByNumber(7));
+    const request = cache.nextRequest() orelse return error.TestUnexpectedResult;
+
+    const response = "{\"hash\":\"0x" ++ ("11" ** 32) ++
+        "\",\"requestsHash\":\"0x" ++ ("22" ** 32) ++
+        "\",\"blockAccessListHash\":\"0x" ++ ("33" ** 32) ++ "\"}";
+    try cache.continueRequest(request.id, response);
+
+    const block = (try cache.getBlockByNumber(7)) orelse return error.TestUnexpectedResult;
+    try std.testing.expectEqual(@as(?Hash.Hash, @as(Hash.Hash, @splat(0x22))), block.header.requests_hash);
+    try std.testing.expectEqual(@as(?Hash.Hash, @as(Hash.Hash, @splat(0x33))), block.header.block_access_list_hash);
 }

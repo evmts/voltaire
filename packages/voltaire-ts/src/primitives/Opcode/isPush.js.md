@@ -1,6 +1,6 @@
 ---
-title: "isPush.js"
----
+
+## title: "isPush.js"
 
 # isPush.js
 
@@ -9,7 +9,7 @@ Check if opcode is PUSH instruction (PUSH0-PUSH32).
 ## Signature
 
 ```typescript
-function isPush(opcode: BrandedOpcode): boolean
+function isPush(opcode: BrandedOpcode): boolean;
 ```
 
 ## Parameters
@@ -23,11 +23,11 @@ function isPush(opcode: BrandedOpcode): boolean
 ## Example
 
 ```typescript
-Opcode.isPush(Opcode.PUSH0);   // true
-Opcode.isPush(Opcode.PUSH1);   // true
-Opcode.isPush(Opcode.PUSH32);  // true
-Opcode.isPush(Opcode.ADD);     // false
-Opcode.isPush(Opcode.DUP1);    // false
+Opcode.isPush(Opcode.PUSH0); // true
+Opcode.isPush(Opcode.PUSH1); // true
+Opcode.isPush(Opcode.PUSH32); // true
+Opcode.isPush(Opcode.ADD); // false
+Opcode.isPush(Opcode.DUP1); // false
 ```
 
 ## Notes

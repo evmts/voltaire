@@ -122,7 +122,7 @@ pub const Domain = struct {
 
         // Compute typeHash = keccak256(typeString)
         var type_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(type_string, &type_hash);
+        crypto.Keccak256.hash(type_string, &type_hash, .{});
 
         // Encode domain data
         var encoded_data = std.ArrayList(u8){};
@@ -135,14 +135,14 @@ pub const Domain = struct {
         if (self.name) |name| {
             // keccak256(name)
             var name_hash: [32]u8 = undefined;
-            crypto.Keccak256.hash(name, &name_hash);
+            crypto.Keccak256.hash(name, &name_hash, .{});
             try encoded_data.appendSlice(allocator, &name_hash);
         }
 
         if (self.version) |version| {
             // keccak256(version)
             var version_hash: [32]u8 = undefined;
-            crypto.Keccak256.hash(version, &version_hash);
+            crypto.Keccak256.hash(version, &version_hash, .{});
             try encoded_data.appendSlice(allocator, &version_hash);
         }
 
@@ -167,7 +167,7 @@ pub const Domain = struct {
 
         // Hash the encoded data
         var result: [32]u8 = undefined;
-        crypto.Keccak256.hash(encoded_data.items, &result);
+        crypto.Keccak256.hash(encoded_data.items, &result, .{});
 
         return DomainSeparator.from(result);
     }

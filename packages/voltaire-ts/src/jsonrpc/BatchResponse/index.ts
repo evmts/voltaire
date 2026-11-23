@@ -32,7 +32,7 @@ export function results(batch: BatchResponseType): JsonRpcResponseType[] {
 }
 
 // Export internal functions (tree-shakeable)
-export { _findById, _errors, _results };
+export { _errors, _findById, _results };
 
 // Export as namespace (convenience)
 export const BatchResponse = {

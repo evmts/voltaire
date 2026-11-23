@@ -1,6 +1,6 @@
 ---
-title: "isValidJumpDest.js"
----
+
+## title: "isValidJumpDest.js"
 
 # isValidJumpDest.js
 
@@ -9,7 +9,7 @@ Check if bytecode offset is a valid jump destination.
 ## Signature
 
 ```typescript
-function isValidJumpDest(bytecode: Uint8Array, offset: number): boolean
+function isValidJumpDest(bytecode: Uint8Array, offset: number): boolean;
 ```
 
 ## Parameters
@@ -25,22 +25,22 @@ function isValidJumpDest(bytecode: Uint8Array, offset: number): boolean
 
 ```typescript
 const bytecode = new Uint8Array([0x5b, 0x60, 0x5b]);
-Opcode.isValidJumpDest(bytecode, 0);  // true (JUMPDEST)
-Opcode.isValidJumpDest(bytecode, 1);  // false (PUSH1)
-Opcode.isValidJumpDest(bytecode, 2);  // false (inside PUSH data)
+Opcode.isValidJumpDest(bytecode, 0); // true (JUMPDEST)
+Opcode.isValidJumpDest(bytecode, 1); // false (PUSH1)
+Opcode.isValidJumpDest(bytecode, 2); // false (inside PUSH data)
 ```
 
 ## Example with JUMP Validation
 
 ```typescript
 function isValidJump(bytecode: Uint8Array, jumpTarget: number): boolean {
-  return Opcode.isValidJumpDest(bytecode, jumpTarget);
+	return Opcode.isValidJumpDest(bytecode, jumpTarget);
 }
 
 // Validate runtime jump
-const code = new Uint8Array([0x5b, 0x60, 0x00, 0x56]);  // JUMPDEST, PUSH1 0, JUMP
+const code = new Uint8Array([0x5b, 0x60, 0x00, 0x56]); // JUMPDEST, PUSH1 0, JUMP
 if (isValidJump(code, 0)) {
-  console.log("Jump to 0 is valid");
+	console.log("Jump to 0 is valid");
 }
 ```
 

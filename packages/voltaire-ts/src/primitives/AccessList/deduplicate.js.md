@@ -1,6 +1,6 @@
 ---
-title: "deduplicate.js"
----
+
+## title: "deduplicate.js"
 
 # deduplicate.js
 
@@ -9,7 +9,7 @@ Remove duplicate addresses and storage keys.
 ## Signature
 
 ```typescript
-function deduplicate(list: BrandedAccessList): BrandedAccessList
+function deduplicate(list: BrandedAccessList): BrandedAccessList;
 ```
 
 ## Parameters
@@ -24,9 +24,9 @@ function deduplicate(list: BrandedAccessList): BrandedAccessList
 
 ```typescript
 const list = AccessList.from([
-  { address: token, storageKeys: [key1, key2] },
-  { address: token, storageKeys: [key2, key3] },  // Duplicate address
-  { address: router, storageKeys: [key1] }
+	{ address: token, storageKeys: [key1, key2] },
+	{ address: token, storageKeys: [key2, key3] }, // Duplicate address
+	{ address: router, storageKeys: [key1] },
 ]);
 
 const deduped = AccessList.deduplicate(list);

@@ -1,4 +1,5 @@
-import { Bn254Error } from "./errors.js";
+import { FP_MOD } from "./constants.js";
+import { Bn254Error, Bn254InvalidPointError } from "./errors.js";
 import * as G1 from "./G1/index.js";
 
 /**
@@ -9,6 +10,7 @@ import * as G1 from "./G1/index.js";
  * @param {Uint8Array} bytes - 64-byte serialization
  * @returns {import('./G1PointType.js').G1PointType} G1 point
  * @throws {Bn254Error} If bytes length is invalid (must be 64 bytes)
+ * @throws {Bn254InvalidPointError} If a coordinate is >= the field modulus or the point is not on the curve
  * @example
  * ```javascript
  * import { deserializeG1 } from './crypto/bn254/deserializeG1.js';
@@ -27,6 +29,17 @@ export function deserializeG1(bytes) {
 
 	const x = BigInt(`0x${bytesToHex(bytes.slice(0, 32))}`);
 	const y = BigInt(`0x${bytesToHex(bytes.slice(32, 64))}`);
+
+	if (x >= FP_MOD || y >= FP_MOD) {
+		throw new Bn254InvalidPointError(
+			"G1 coordinate is not a canonical field element (>= field modulus)",
+			{
+				code: -32602,
+				context: { x: x.toString(16), y: y.toString(16), curve: "G1" },
+				docsPath: "/crypto/bn254#serialization",
+			},
+		);
+	}
 
 	if (x === 0n && y === 0n) {
 		return G1.infinity();

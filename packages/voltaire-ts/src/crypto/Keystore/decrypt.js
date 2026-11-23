@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { keccak_256 } from "@noble/hashes/sha3.js";
+import { constantTimeEqual } from "../ConstantTime/constantTimeEqual.js";
 import { decryptAesCtr } from "./aesCtr.js";
 import {
 	DecryptionError,
@@ -9,7 +10,7 @@ import {
 	UnsupportedKdfError,
 	UnsupportedVersionError,
 } from "./errors.js";
-import { derivePbkdf2, deriveScrypt } from "./kdf.js";
+import { derivePbkdf2, deriveScrypt, MAX_DKLEN } from "./kdf.js";
 import { concat, hexToBytes } from "./utils.js";
 
 /**
@@ -23,7 +24,7 @@ import { concat, hexToBytes } from "./utils.js";
  * @throws {UnsupportedVersionError} If keystore version is not 3
  * @throws {UnsupportedKdfError} If KDF is not scrypt or pbkdf2
  * @throws {InvalidMacError} If MAC verification fails (wrong password or corrupted)
- * @throws {DecryptionError} If decryption fails
+ * @throws {DecryptionError} If cipher is not aes-128-ctr, IV is not 16 bytes, MAC is not 32 bytes, dklen is outside [32, 128], or decryption fails
  * @example
  * ```javascript
  * import * as Keystore from './crypto/Keystore/index.js';
@@ -32,6 +33,7 @@ import { concat, hexToBytes } from "./utils.js";
  * const privateKey = Keystore.decrypt(keystore, 'my-password');
  * ```
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: linear validation of every keystore field
 export function decrypt(keystore, password) {
 	try {
 		// Validate version
@@ -40,7 +42,12 @@ export function decrypt(keystore, password) {
 		}
 
 		const { crypto } = keystore;
-		const { kdf, kdfparams, ciphertext, cipherparams, mac } = crypto;
+		const { cipher, kdf, kdfparams, ciphertext, cipherparams, mac } = crypto;
+
+		// Validate cipher
+		if (cipher !== "aes-128-ctr") {
+			throw new DecryptionError(`Unsupported cipher: ${cipher}`);
+		}
 
 		// Validate KDF
 		if (kdf !== "scrypt" && kdf !== "pbkdf2") {
@@ -53,6 +60,25 @@ export function decrypt(keystore, password) {
 		const ciphertextBytes = hexToBytes(ciphertext);
 		const macBytes = hexToBytes(mac);
 
+		if (iv.length !== 16) {
+			throw new DecryptionError(`IV must be 16 bytes, got ${iv.length}`);
+		}
+		if (macBytes.length !== 32) {
+			throw new DecryptionError(`MAC must be 32 bytes, got ${macBytes.length}`);
+		}
+		// dklen < 32 would leave an empty or short MAC key and let a forged
+		// keystore pass MAC verification. A huge dklen makes the KDF do
+		// unbounded work. Reject both before running the KDF.
+		if (
+			!Number.isInteger(kdfparams.dklen) ||
+			kdfparams.dklen < 32 ||
+			kdfparams.dklen > MAX_DKLEN
+		) {
+			throw new DecryptionError(
+				`dklen must be an integer between 32 and ${MAX_DKLEN}, got ${kdfparams.dklen}`,
+			);
+		}
+
 		// Derive key from password
 		let derivedKey;
 		if (kdf === "scrypt") {
@@ -63,6 +89,12 @@ export function decrypt(keystore, password) {
 			const { c, dklen } =
 				/** @type {import('./KeystoreType.js').Pbkdf2Params} */ (kdfparams);
 			derivedKey = derivePbkdf2(password, salt, c, dklen);
+		}
+
+		if (derivedKey.length < 32) {
+			throw new DecryptionError(
+				`Derived key must be at least 32 bytes, got ${derivedKey.length}`,
+			);
 		}
 
 		// Split derived key
@@ -83,6 +115,7 @@ export function decrypt(keystore, password) {
 		);
 	} catch (error) {
 		if (
+			error instanceof DecryptionError ||
 			error instanceof UnsupportedVersionError ||
 			error instanceof UnsupportedKdfError ||
 			error instanceof InvalidMacError ||
@@ -93,24 +126,4 @@ export function decrypt(keystore, password) {
 		}
 		throw new DecryptionError(`Decryption failed: ${error.message}`);
 	}
-}
-
-/**
- * Constant-time comparison to prevent timing attacks
- *
- * @param {Uint8Array} a - First array
- * @param {Uint8Array} b - Second array
- * @returns {boolean} True if equal
- */
-function constantTimeEqual(a, b) {
-	if (a.length !== b.length) {
-		return false;
-	}
-
-	let result = 0;
-	for (let i = 0; i < a.length; i++) {
-		result |= a[i] ^ b[i];
-	}
-
-	return result === 0;
 }

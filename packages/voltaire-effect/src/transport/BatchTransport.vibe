@@ -2,15 +2,8 @@
 // Collects concurrent RPC calls within a time window, deduplicates identical calls,
 // dispatches a single JSON-RPC 2.0 batch, and fans out typed Exits to each fiber.
 
-import {
-  type RpcTransportError,
-  TransportError
-} from "../errors.vibe"
-import {
-  type JsonRpcBatchItemResult,
-  type JsonRpcCall,
-  Transport
-} from "./Transport.vibe"
+import { type RpcTransportError, TransportError } from "../errors.vibe"
+import { type JsonRpcBatchItemResult, type JsonRpcCall, Transport } from "./Transport.vibe"
 
 export interface BatchTransportConfig {
   /** Batch collection window before flushing (default: "10 millis") */
@@ -47,7 +40,7 @@ import { stableParamsKey } from native
 // Wraps an underlying Transport layer with automatic RequestResolver-based batching.
 export function BatchTransport(
   baseLayer: Layer.Layer<Transport, never, never>,
-  config: BatchTransportConfig = {}
+  config: BatchTransportConfig = {},
 ) {
   const delay = config.delay ?? "10 millis"
   const maxBatchSize = config.maxBatchSize ?? 50
@@ -61,7 +54,7 @@ export function BatchTransport(
         let resolver = RequestResolver.make<BatchedRpcRequest>(effect (entries) => {
           const calls: Array<JsonRpcCall> = entries.map((entry) => ({
             method: entry.request.method,
-            params: entry.request.params
+            params: entry.request.params,
           }))
 
           const batchExit = try exit(upstream.requestBatch(calls))
@@ -83,9 +76,9 @@ export function BatchTransport(
                     Exit.fail(
                       new TransportError({
                         message: `Missing batch response at index ${i}`,
-                        reason: { _tag: "InvalidResponse", message: "Batch response too short" }
-                      })
-                    )
+                        reason: { _tag: "InvalidResponse", message: "Batch response too short" },
+                      }),
+                    ),
                   )
                 } else {
                   match (item) {
@@ -100,7 +93,7 @@ export function BatchTransport(
         }).pipe(
           RequestResolver.batchN(maxBatchSize),
           RequestResolver.setDelay(delay),
-          RequestResolver.withSpan("rpc.batch.resolver")
+          RequestResolver.withSpan("rpc.batch.resolver"),
         )
 
         if (config.cacheCapacity !== undefined && config.cacheCapacity > 0) {
@@ -113,17 +106,17 @@ export function BatchTransport(
             const req = new BatchedRpcRequest({
               method,
               paramsKey: stableParamsKey(p),
-              params: p
+              params: p,
             })
             const result = try Effect.request(req, resolver)
             return result as T
           },
           requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
             return upstream.requestBatch(requests)
-          }
+          },
         })
-      }
+      },
     ),
-    baseLayer
+    baseLayer,
   )
 }

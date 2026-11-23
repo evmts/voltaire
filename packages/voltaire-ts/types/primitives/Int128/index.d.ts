@@ -36,7 +36,7 @@ import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
 import { toString } from "./toString.js";
-export { from, fromHex, fromBigInt, fromNumber, fromBytes, isValid, toHex, toBigInt, toNumber, toBytes, toString, plus, minus, times, dividedBy, modulo, abs, negate, bitwiseAnd, bitwiseOr, bitwiseXor, bitwiseNot, shiftLeft, shiftRight, equals, lessThan, greaterThan, isZero, isNegative, isPositive, sign, minimum, maximum, bitLength, leadingZeros, popCount, MAX, MIN, ZERO, ONE, NEG_ONE, SIZE, BITS, MODULO, };
+export { abs, BITS, bitLength, bitwiseAnd, bitwiseNot, bitwiseOr, bitwiseXor, dividedBy, equals, from, fromBigInt, fromBytes, fromHex, fromNumber, greaterThan, isNegative, isPositive, isValid, isZero, leadingZeros, lessThan, MAX, MIN, MODULO, maximum, minimum, minus, modulo, NEG_ONE, negate, ONE, plus, popCount, SIZE, shiftLeft, shiftRight, sign, times, toBigInt, toBytes, toHex, toNumber, toString, ZERO, };
 export declare const Int128: {
     from: typeof from;
     fromHex: typeof fromHex;

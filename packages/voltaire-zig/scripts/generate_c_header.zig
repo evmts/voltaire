@@ -7,7 +7,7 @@ pub fn main() !void {
 
     // Read c_api.zig
     const cwd = std.fs.cwd();
-    const source = try cwd.readFileAlloc(allocator, "src/c_api.zig", 1024 * 1024);
+    const source = try cwd.readFileAlloc(allocator, "packages/voltaire-zig/src/c_api.zig", 1024 * 1024);
     defer allocator.free(source);
 
     // Parse and generate header
@@ -23,11 +23,11 @@ pub fn main() !void {
 
     // Write to file
     try cwd.writeFile(.{
-        .sub_path = "src/primitives.h",
+        .sub_path = "packages/voltaire-zig/src/primitives.h",
         .data = header.items,
     });
 
-    std.debug.print("Generated src/primitives.h with {d} bytes\n", .{header.items.len});
+    std.debug.print("Generated packages/voltaire-zig/src/primitives.h with {d} bytes\n", .{header.items.len});
 }
 
 fn writeHeaderPreamble(writer: anytype) !void {

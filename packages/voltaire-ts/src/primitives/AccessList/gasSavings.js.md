@@ -1,6 +1,6 @@
 ---
-title: "gasSavings.js"
----
+
+## title: "gasSavings.js"
 
 # gasSavings.js
 
@@ -9,7 +9,7 @@ Calculate potential gas savings from using access list.
 ## Signature
 
 ```typescript
-function gasSavings(list: BrandedAccessList): bigint
+function gasSavings(list: BrandedAccessList): bigint;
 ```
 
 ## Parameters
@@ -32,8 +32,8 @@ totalSavings = addressSavings + keySavings
 
 ```typescript
 const list = AccessList.from([
-  { address: addr1, storageKeys: [key1, key2] },
-  { address: addr2, storageKeys: [] }
+	{ address: addr1, storageKeys: [key1, key2] },
+	{ address: addr2, storageKeys: [] },
 ]);
 
 const savings = AccessList.gasSavings(list);

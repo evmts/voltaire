@@ -13,7 +13,7 @@ export declare function getProgress(status: import("./SyncStatusType.js").SyncSt
     currentBlock: bigint;
     highestBlock: bigint;
 }): number;
-export { _isSyncing, _getProgress };
+export { _getProgress, _isSyncing };
 export declare const SyncStatus: {
     from: typeof _from;
     isSyncing: typeof isSyncing;

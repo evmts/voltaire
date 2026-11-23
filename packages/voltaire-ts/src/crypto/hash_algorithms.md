@@ -13,22 +13,22 @@ Standard SHA-2 family hash (256-bit output).
 ### API
 
 ```typescript
-import { Sha256 } from '@tevm/voltaire';
+import { Sha256 } from "@tevm/voltaire";
 
 // Hash data
-const hash = Sha256.hash(new Uint8Array([1, 2, 3]));  // 32 bytes
+const hash = Sha256.hash(new Uint8Array([1, 2, 3])); // 32 bytes
 
 // Hash string (UTF-8 encoded)
-const hash = Sha256.hashString('hello world');
+const hash = Sha256.hashString("hello world");
 
 // Hash hex data
-const hash = Sha256.hashHex('0xdeadbeef');
+const hash = Sha256.hashHex("0xdeadbeef");
 
 // Incremental hashing
 const hasher = Sha256.create();
 hasher.update(chunk1);
 hasher.update(chunk2);
-const hash = hasher.digest();  // 32 bytes
+const hash = hasher.digest(); // 32 bytes
 ```
 
 ### Use Cases
@@ -42,8 +42,8 @@ const hash = hasher.digest();  // 32 bytes
 
 ```typescript
 function doubleSha256(data: Uint8Array): Uint8Array {
-    const firstHash = Sha256.hash(data);
-    return Sha256.hash(firstHash);
+	const firstHash = Sha256.hash(data);
+	return Sha256.hash(firstHash);
 }
 
 // Bitcoin block header hash
@@ -57,16 +57,16 @@ RACE Integrity Primitives Evaluation Message Digest (160-bit output).
 ### API
 
 ```typescript
-import { Ripemd160 } from '@tevm/voltaire';
+import { Ripemd160 } from "@tevm/voltaire";
 
 // Hash data
-const hash = Ripemd160.hash(new Uint8Array([1, 2, 3]));  // 20 bytes
+const hash = Ripemd160.hash(new Uint8Array([1, 2, 3])); // 20 bytes
 
 // Hash string
-const hash = Ripemd160.hashString('hello');
+const hash = Ripemd160.hashString("hello");
 
 // Hash hex data
-const hash = Ripemd160.hashHex('0x1234');
+const hash = Ripemd160.hashHex("0x1234");
 ```
 
 ### Use Cases
@@ -79,14 +79,14 @@ const hash = Ripemd160.hashHex('0x1234');
 
 ```typescript
 function publicKeyToAddress(publicKey: Uint8Array): Uint8Array {
-    // Step 1: SHA-256 of public key
-    const sha256Hash = Sha256.hash(publicKey);
+	// Step 1: SHA-256 of public key
+	const sha256Hash = Sha256.hash(publicKey);
 
-    // Step 2: RIPEMD-160 of result
-    const ripemd160Hash = Ripemd160.hash(sha256Hash);
+	// Step 2: RIPEMD-160 of result
+	const ripemd160Hash = Ripemd160.hash(sha256Hash);
 
-    // Step 3: Add version byte + checksum (not shown)
-    return ripemd160Hash;  // 20 bytes
+	// Step 3: Add version byte + checksum (not shown)
+	return ripemd160Hash; // 20 bytes
 }
 ```
 
@@ -97,21 +97,21 @@ Modern hash function, faster than SHA-2/SHA-3.
 ### API
 
 ```typescript
-import { Blake2b } from '@tevm/voltaire';
+import { Blake2b } from "@tevm/voltaire";
 
 // Hash with default 64-byte output
 const hash = Blake2b.hash(data);
 
 // Variable output length (1-64 bytes)
-const hash20 = Blake2b.hash(data, 20);  // 20 bytes
-const hash32 = Blake2b.hash(data, 32);  // 32 bytes
-const hash64 = Blake2b.hash(data, 64);  // 64 bytes (default)
+const hash20 = Blake2b.hash(data, 20); // 20 bytes
+const hash32 = Blake2b.hash(data, 32); // 32 bytes
+const hash64 = Blake2b.hash(data, 64); // 64 bytes (default)
 
 // Hash string
-const hash = Blake2b.hashString('hello', 32);
+const hash = Blake2b.hashString("hello", 32);
 
 // Incremental hashing
-const hasher = Blake2b.create(32);  // 32-byte output
+const hasher = Blake2b.create(32); // 32-byte output
 hasher.update(chunk1);
 hasher.update(chunk2);
 const hash = hasher.digest();
@@ -129,21 +129,21 @@ const hash = hasher.digest();
 ```typescript
 // Blake2b with personalization (Zcash-style)
 function zcashHash(data: Uint8Array, personalization: string): Uint8Array {
-    // Blake2b with custom parameters
-    const hash = Blake2b.hash(data, 32);
-    // Note: Full Zcash implementation requires personalization parameter
-    return hash;
+	// Blake2b with custom parameters
+	const hash = Blake2b.hash(data, 32);
+	// Note: Full Zcash implementation requires personalization parameter
+	return hash;
 }
 ```
 
 ## Comparison
 
-| Algorithm | Output Size | Speed (MB/s) | Primary Use |
-|-----------|-------------|--------------|-------------|
-| Keccak-256 | 32 bytes | ~500 | Ethereum (everything) |
-| SHA-256 | 32 bytes | ~300 | Bitcoin, legacy systems |
-| RIPEMD-160 | 20 bytes | ~200 | Bitcoin addresses |
-| BLAKE2b | 1-64 bytes | ~800 | Zcash, modern protocols |
+| Algorithm  | Output Size | Speed (MB/s) | Primary Use             |
+| ---------- | ----------- | ------------ | ----------------------- |
+| Keccak-256 | 32 bytes    | ~500         | Ethereum (everything)   |
+| SHA-256    | 32 bytes    | ~300         | Bitcoin, legacy systems |
+| RIPEMD-160 | 20 bytes    | ~200         | Bitcoin addresses       |
+| BLAKE2b    | 1-64 bytes  | ~800         | Zcash, modern protocols |
 
 *Speeds approximate, vary by platform
 
@@ -152,12 +152,14 @@ function zcashHash(data: Uint8Array, personalization: string): Uint8Array {
 ### Audited Libraries
 
 All hash implementations use audited libraries:
+
 - **@noble/hashes** - Pure TypeScript, audited, no dependencies
 - Hardware acceleration when available (SHA-256)
 
 ### No Native Dependencies
 
 Unlike Keccak-256 which has optional Zig/WASM optimization, these hash functions use pure TypeScript:
+
 - Works in all JavaScript environments
 - No build step required
 - Consistent behavior across platforms
@@ -171,7 +173,7 @@ const hasher = Sha256.create();
 
 // Process 1GB file in chunks
 for (const chunk of largeFileChunks) {
-    hasher.update(chunk);
+	hasher.update(chunk);
 }
 
 const finalHash = hasher.digest();
@@ -195,11 +197,13 @@ Use 256-bit hashes for new protocols.
 ## Testing
 
 Test coverage in:
+
 - `sha256.test.ts`, `sha256.bench.ts`
 - `ripemd160.test.ts`, `ripemd160.bench.ts`
 - `blake2.test.ts`, `blake2.bench.ts`
 
 Test vectors from:
+
 - NIST test vectors (SHA-256)
 - Bitcoin reference implementations
 - Zcash test vectors (BLAKE2b)

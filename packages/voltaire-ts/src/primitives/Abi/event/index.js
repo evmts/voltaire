@@ -15,7 +15,7 @@ import { GetSelector } from "./getSelector.js";
 import { getSignature } from "./getSignature.js";
 
 // Factory exports (tree-shakeable)
-export { GetSelector, EncodeTopics };
+export { EncodeTopics, GetSelector };
 
 // Wrapper exports (convenient, backward compat)
 export const getSelector = GetSelector({
@@ -27,8 +27,10 @@ export const encodeTopics = EncodeTopics({
 });
 
 // Export individual functions
-export { getSignature, decodeLog };
-
 // Constructor-style aliases (data-first pattern)
-export { getSignature as Signature };
-export { decodeLog as DecodeLog };
+export {
+	decodeLog,
+	decodeLog as DecodeLog,
+	getSignature,
+	getSignature as Signature,
+};

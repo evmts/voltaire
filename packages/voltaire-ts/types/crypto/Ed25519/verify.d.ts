@@ -8,7 +8,7 @@
  * @param {import('./Signature.js').Signature} signature - 64-byte Ed25519 signature to verify
  * @param {Uint8Array} message - Original message bytes that were signed
  * @param {import('./PublicKey.js').PublicKey} publicKey - 32-byte Ed25519 public key
- * @returns {boolean} True if signature is cryptographically valid, false otherwise
+ * @returns {boolean} True if signature is cryptographically valid, false otherwise (including when the public key is non-canonical, off-curve, or a small-order point)
  * @throws {InvalidPublicKeyError} If public key length is not 32 bytes
  * @throws {InvalidSignatureError} If signature length is not 64 bytes
  * @example

@@ -33,36 +33,32 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 		}
 	});
 
-	it(
-		"should not be initialized before loadTrustedSetup",
-		{ timeout: 60000 },
-		() => {
-			try {
-				Kzg.freeTrustedSetup();
-				expect(Kzg.isInitialized()).toBe(false);
-			} finally {
-				if (!Kzg.isInitialized()) {
-					Kzg.loadTrustedSetup();
-				}
-			}
-		},
-	);
-
-	it(
-		"should initialize with embedded trusted setup",
-		{ timeout: 120000 },
-		() => {
-			try {
-				Kzg.freeTrustedSetup();
+	it("should not be initialized before loadTrustedSetup", {
+		timeout: 60000,
+	}, () => {
+		try {
+			Kzg.freeTrustedSetup();
+			expect(Kzg.isInitialized()).toBe(false);
+		} finally {
+			if (!Kzg.isInitialized()) {
 				Kzg.loadTrustedSetup();
-				expect(Kzg.isInitialized()).toBe(true);
-			} finally {
-				if (!Kzg.isInitialized()) {
-					Kzg.loadTrustedSetup();
-				}
 			}
-		},
-	);
+		}
+	});
+
+	it("should initialize with embedded trusted setup", {
+		timeout: 120000,
+	}, () => {
+		try {
+			Kzg.freeTrustedSetup();
+			Kzg.loadTrustedSetup();
+			expect(Kzg.isInitialized()).toBe(true);
+		} finally {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
+			}
+		}
+	});
 
 	it("should be idempotent when calling loadTrustedSetup multiple times", () => {
 		Kzg.loadTrustedSetup();
@@ -83,21 +79,19 @@ describe.skipIf(!hasNativeKzg)("Kzg Initialization", () => {
 		}
 	});
 
-	it(
-		"should be safe to call freeTrustedSetup when not initialized",
-		{ timeout: 120000 },
-		() => {
-			try {
-				Kzg.freeTrustedSetup();
-				Kzg.freeTrustedSetup();
-				expect(Kzg.isInitialized()).toBe(false);
-			} finally {
-				if (!Kzg.isInitialized()) {
-					Kzg.loadTrustedSetup();
-				}
+	it("should be safe to call freeTrustedSetup when not initialized", {
+		timeout: 120000,
+	}, () => {
+		try {
+			Kzg.freeTrustedSetup();
+			Kzg.freeTrustedSetup();
+			expect(Kzg.isInitialized()).toBe(false);
+		} finally {
+			if (!Kzg.isInitialized()) {
+				Kzg.loadTrustedSetup();
 			}
-		},
-	);
+		}
+	});
 });
 
 describe.skipIf(!hasNativeKzg)("Kzg Blob Validation", () => {

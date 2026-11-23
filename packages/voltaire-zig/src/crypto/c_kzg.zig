@@ -42,8 +42,13 @@
 //! - Uses c-kzg-4844 library (audited)
 //! - BLS12-381 curve operations
 //!
+//! ## EIP-7594 PeerDAS
+//! `computeCells`, `computeCellsAndKzgProofs`, `verifyCellKzgProofBatch` and
+//! `recoverCellsAndKzgProofs` are re-exported from `peerdas.zig`.
+//!
 //! ## References
 //! - [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Proto-Danksharding
+//! - [EIP-7594](https://eips.ethereum.org/EIPS/eip-7594) - PeerDAS
 //! - [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) - Reference implementation
 
 const std = @import("std");
@@ -69,6 +74,20 @@ pub const FIELD_ELEMENTS_PER_BLOB = ckzg.FIELD_ELEMENTS_PER_BLOB;
 // Re-export error type
 pub const KZGError = ckzg.KZGError;
 
+// EIP-7594 PeerDAS: cells and cell KZG proofs (see peerdas.zig)
+pub const peerdas = @import("peerdas.zig");
+pub const Cell = peerdas.Cell;
+pub const PeerDasError = peerdas.PeerDasError;
+pub const BYTES_PER_CELL = peerdas.BYTES_PER_CELL;
+pub const FIELD_ELEMENTS_PER_CELL = peerdas.FIELD_ELEMENTS_PER_CELL;
+pub const CELLS_PER_BLOB = peerdas.CELLS_PER_BLOB;
+pub const CELLS_PER_EXT_BLOB = peerdas.CELLS_PER_EXT_BLOB;
+pub const FIELD_ELEMENTS_PER_EXT_BLOB = peerdas.FIELD_ELEMENTS_PER_EXT_BLOB;
+pub const computeCells = peerdas.computeCells;
+pub const computeCellsAndKzgProofs = peerdas.computeCellsAndKzgProofs;
+pub const verifyCellKzgProofBatch = peerdas.verifyCellKzgProofBatch;
+pub const recoverCellsAndKzgProofs = peerdas.recoverCellsAndKzgProofs;
+
 /// Load trusted setup from file
 pub fn loadTrustedSetupFile(trusted_setup_path: []const u8, precompute: u64) KZGError!void {
     const file = std.fs.cwd().openFile(trusted_setup_path, .{}) catch return KZGError.FileNotFound;
@@ -91,9 +110,8 @@ pub fn blobToKzgCommitment(blob: *const Blob) KZGError!KZGCommitment {
 }
 
 /// Compute KZG proof
-pub fn computeKZGProof(blob: *const Blob, z: *const Bytes32) KZGError!struct { proof: KZGProof, y: Bytes32 } {
-    return try ckzg.computeKZGProof(blob, z);
-}
+/// Re-exported: a wrapper cannot name the binding's anonymous result struct.
+pub const computeKZGProof = ckzg.computeKZGProof;
 
 /// Re-export the verifyKZGProof function from ckzg
 pub const verifyKZGProof = ckzg.verifyKZGProof;
@@ -132,6 +150,14 @@ test "c_kzg constants are defined correctly" {
     try testing.expectEqual(48, BYTES_PER_PROOF);
     try testing.expectEqual(32, BYTES_PER_FIELD_ELEMENT);
     try testing.expectEqual(4096, FIELD_ELEMENTS_PER_BLOB);
+
+    // EIP-7594
+    try testing.expectEqual(2048, BYTES_PER_CELL);
+    try testing.expectEqual(64, FIELD_ELEMENTS_PER_CELL);
+    try testing.expectEqual(64, CELLS_PER_BLOB);
+    try testing.expectEqual(128, CELLS_PER_EXT_BLOB);
+    try testing.expectEqual(8192, FIELD_ELEMENTS_PER_EXT_BLOB);
+    try testing.expectEqual(BYTES_PER_CELL, @sizeOf(Cell));
 }
 
 test "c_kzg type sizes are correct" {
@@ -366,6 +392,7 @@ test "c_kzg integration - full workflow" {
     for (test_points) |point_byte| {
         var z: Bytes32 = undefined;
         @memset(&z, point_byte);
+        z[0] = 0; // keep z below the BLS modulus (a canonical field element)
 
         // Step 3: Generate proof
         const proof_result = try computeKZGProof(&blob, &z);
@@ -471,6 +498,7 @@ test "c_kzg proof consistency across multiple calls" {
 
     var z: Bytes32 = undefined;
     @memset(&z, 0xAA);
+    z[0] = 0; // keep z below the BLS modulus (a canonical field element)
 
     // Generate same proof multiple times
     for (0..5) |_| {

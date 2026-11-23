@@ -25,14 +25,14 @@ import { validateMnemonic } from "./validateMnemonic.js";
 
 // Export individual functions
 export {
-	generateMnemonic,
-	entropyToMnemonic,
-	validateMnemonic,
 	assertValidMnemonic,
+	entropyToMnemonic,
+	generateMnemonic,
+	getEntropyBits,
+	getWordCount,
 	mnemonicToSeed,
 	mnemonicToSeedSync,
-	getWordCount,
-	getEntropyBits,
+	validateMnemonic,
 };
 
 /**

@@ -1,0 +1,1 @@
+{"version":3,"file":"exceedsTxGasLimit.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/exceedsTxGasLimit.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,6BAA6B,CAAC;AAGhE;;;;GAIG;AACH,eAAO,MAAM,gBAAgB,YAAc,CAAC;AAE5C;;;;;;;;;;;;;;;;GAgBG;AACH,wBAAgB,iBAAiB,CAChC,EAAE,EAAE;IAAE,QAAQ,EAAE,MAAM,CAAA;CAAE,EACxB,QAAQ,EAAE,YAAY,GACpB,OAAO,CAET"}

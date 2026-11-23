@@ -107,6 +107,7 @@ const build_options = @import("build_options");
 
 // Import the local secp256k1 implementation
 const secp256k1 = @import("secp256k1.zig");
+const constant_time = @import("constant_time.zig");
 
 // Use the address type from primitives
 pub const Address = primitives.Address.Address;
@@ -362,10 +363,39 @@ pub const bls12_381 = struct {
         return bls12_381_pairing_output_size();
     }
 
-    /// Map field element to G1 curve point
-    /// Implements draft-irtf-cfrg-hash-to-curve for BLS12-381 G1
-    /// Input: 64 bytes (Fp field element, big-endian, padded)
-    /// Output: 128 bytes (G1 point in uncompressed form: x || y)
+    /// BLS12-381 base field modulus p, 48 bytes big-endian.
+    const FP_MODULUS_BE = [48]u8{
+        0x1a, 0x01, 0x11, 0xea, 0x39, 0x7f, 0xe6, 0x9a, 0x4b, 0x1b, 0xa7, 0xb6,
+        0x43, 0x4b, 0xac, 0xd7, 0x64, 0x77, 0x4b, 0x84, 0xf3, 0x85, 0x12, 0xbf,
+        0x67, 0x30, 0xd2, 0xa0, 0xf6, 0xb0, 0xf6, 0x24, 0x1e, 0xab, 0xff, 0xfe,
+        0xb1, 0x53, 0xff, 0xff, 0xb9, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xaa, 0xab,
+    };
+
+    /// Decode one EIP-2537 Fp slot into a blst field element.
+    ///
+    /// A slot is 64 bytes: 16 zero bytes, then the 48-byte big-endian value,
+    /// which must be strictly less than the field modulus. blst reads exactly
+    /// 48 bytes and reduces silently, so both rules are enforced here and
+    /// only `slot[16..64]` is handed to blst.
+    fn fpFromSlot(comptime blst: type, out: *blst.blst_fp, slot: *const [64]u8) Error!void {
+        for (slot[0..16]) |byte| {
+            if (byte != 0) return Error.InvalidInput;
+        }
+        const value = slot[16..64];
+        if (std.mem.order(u8, value, &FP_MODULUS_BE) != .lt) return Error.InvalidInput;
+        blst.blst_fp_from_bendian(out, value);
+    }
+
+    /// Encode a blst field element into one EIP-2537 Fp slot: 16 zero bytes
+    /// followed by the 48-byte big-endian value.
+    fn fpToSlot(comptime blst: type, slot: *[64]u8, value: *const blst.blst_fp) void {
+        @memset(slot[0..16], 0);
+        blst.blst_bendian_from_fp(slot[16..64], value);
+    }
+
+    /// Map field element to G1 curve point (EIP-2537 BLS12_MAP_FP_TO_G1)
+    /// Input: 64 bytes (one Fp slot: 16 zero bytes || 48-byte big-endian value < p)
+    /// Output: 128 bytes (G1 point: x slot || y slot)
     pub fn mapFpToG1(input: []const u8, output: []u8) Error!void {
         if (input.len != 64) return Error.InvalidInput;
         if (output.len != 128) return Error.InvalidInput;
@@ -374,9 +404,8 @@ pub const bls12_381 = struct {
         const c_kzg = @import("c_kzg");
         const blst = c_kzg.blst;
 
-        // Parse input as Fp field element (big-endian, padded to 64 bytes)
         var fp: blst.blst_fp = undefined;
-        blst.blst_fp_from_bendian(&fp, input.ptr);
+        try fpFromSlot(blst, &fp, input[0..64]);
 
         // Map Fp to G1 point (Jacobian coordinates)
         var p1: blst.blst_p1 = undefined;
@@ -386,15 +415,14 @@ pub const bls12_381 = struct {
         var p1_affine: blst.blst_p1_affine = undefined;
         blst.blst_p1_to_affine(&p1_affine, &p1);
 
-        // Serialize affine point to output (x || y, big-endian, 64 bytes each)
-        blst.blst_bendian_from_fp(output.ptr, &p1_affine.x);
-        blst.blst_bendian_from_fp(output.ptr + 64, &p1_affine.y);
+        @memset(output, 0);
+        fpToSlot(blst, output[0..64], &p1_affine.x);
+        fpToSlot(blst, output[64..128], &p1_affine.y);
     }
 
-    /// Map field extension element to G2 curve point
-    /// Implements draft-irtf-cfrg-hash-to-curve for BLS12-381 G2
-    /// Input: 128 bytes (Fp2 element: c0 || c1, each 64 bytes big-endian)
-    /// Output: 256 bytes (G2 point in uncompressed form: x0 || x1 || y0 || y1)
+    /// Map field extension element to G2 curve point (EIP-2537 BLS12_MAP_FP2_TO_G2)
+    /// Input: 128 bytes (Fp2 element: c0 slot || c1 slot)
+    /// Output: 256 bytes (G2 point: x.c0 || x.c1 || y.c0 || y.c1, one slot each)
     pub fn mapFp2ToG2(input: []const u8, output: []u8) Error!void {
         if (input.len != 128) return Error.InvalidInput;
         if (output.len != 256) return Error.InvalidInput;
@@ -403,10 +431,9 @@ pub const bls12_381 = struct {
         const c_kzg = @import("c_kzg");
         const blst = c_kzg.blst;
 
-        // Parse input as Fp2 element (c0 || c1, each 64 bytes big-endian)
         var fp2: blst.blst_fp2 = undefined;
-        blst.blst_fp_from_bendian(&fp2.fp[0], input.ptr); // c0
-        blst.blst_fp_from_bendian(&fp2.fp[1], input.ptr + 64); // c1
+        try fpFromSlot(blst, &fp2.fp[0], input[0..64]); // c0
+        try fpFromSlot(blst, &fp2.fp[1], input[64..128]); // c1
 
         // Map Fp2 to G2 point (Jacobian coordinates)
         var p2: blst.blst_p2 = undefined;
@@ -416,20 +443,24 @@ pub const bls12_381 = struct {
         var p2_affine: blst.blst_p2_affine = undefined;
         blst.blst_p2_to_affine(&p2_affine, &p2);
 
-        // Serialize affine point to output (x.c0 || x.c1 || y.c0 || y.c1)
-        blst.blst_bendian_from_fp(output.ptr, &p2_affine.x.fp[0]);
-        blst.blst_bendian_from_fp(output.ptr + 64, &p2_affine.x.fp[1]);
-        blst.blst_bendian_from_fp(output.ptr + 128, &p2_affine.y.fp[0]);
-        blst.blst_bendian_from_fp(output.ptr + 192, &p2_affine.y.fp[1]);
+        @memset(output, 0);
+        fpToSlot(blst, output[0..64], &p2_affine.x.fp[0]);
+        fpToSlot(blst, output[64..128], &p2_affine.x.fp[1]);
+        fpToSlot(blst, output[128..192], &p2_affine.y.fp[0]);
+        fpToSlot(blst, output[192..256], &p2_affine.y.fp[1]);
     }
 
-    /// Perform BLS12-381 pairing check (returns bool)
+    /// Perform BLS12-381 pairing check (EIP-2537 BLS12_PAIRING_CHECK)
     /// This verifies that the pairing product equals 1
-    /// Input: concatenated pairs of (G1 point || G2 point), each pair is 384 bytes
-    ///        G1 point: 128 bytes (x || y, each 64 bytes)
-    ///        G2 point: 256 bytes (x0 || x1 || y0 || y1, each 64 bytes)
+    /// Input: k >= 1 concatenated pairs of (G1 point || G2 point), 384 bytes each
+    ///        G1 point: 128 bytes (x || y, one Fp slot each)
+    ///        G2 point: 256 bytes (x.c0 || x.c1 || y.c0 || y.c1, one Fp slot each)
+    /// Errors: InvalidInput on empty input, a length that is not a multiple of
+    ///         384, or a non-canonical field element; InvalidPoint on a point
+    ///         that is off its curve or outside the order-r subgroup.
     pub fn pairingCheck(input: []const u8) Error!bool {
-        if (input.len % 384 != 0) return Error.InvalidInput;
+        // EIP-2537: variable-length operations must fail on empty input.
+        if (input.len == 0 or input.len % 384 != 0) return Error.InvalidInput;
 
         // Import blst types from c_kzg module
         const c_kzg = @import("c_kzg");
@@ -437,60 +468,50 @@ pub const bls12_381 = struct {
 
         const num_pairs = input.len / 384;
 
-        // Special case: empty input means pairing of identity elements, which is 1
-        if (num_pairs == 0) {
-            return true;
-        }
+        // Product of Miller loops; a pair with a point at infinity contributes 1.
+        var acc: blst.blst_fp12 = blst.blst_fp12_one().*;
 
-        // Parse and accumulate pairings
         var i: usize = 0;
-        var acc: blst.blst_fp12 = undefined;
-
         while (i < num_pairs) : (i += 1) {
             const offset = i * 384;
             const g1_bytes = input[offset .. offset + 128];
             const g2_bytes = input[offset + 128 .. offset + 384];
 
-            // Parse G1 point (128 bytes: x || y)
+            // Decode every coordinate first: encoding errors are reported
+            // even for a pair that is later skipped as infinity.
             var p1_affine: blst.blst_p1_affine = undefined;
-            blst.blst_fp_from_bendian(&p1_affine.x, g1_bytes.ptr);
-            blst.blst_fp_from_bendian(&p1_affine.y, g1_bytes.ptr + 64);
+            try fpFromSlot(blst, &p1_affine.x, g1_bytes[0..64]);
+            try fpFromSlot(blst, &p1_affine.y, g1_bytes[64..128]);
 
-            // Validate G1 point
-            if (!blst.blst_p1_affine_on_curve(&p1_affine)) {
-                return Error.InvalidPoint;
-            }
-            if (!blst.blst_p1_affine_in_g1(&p1_affine)) {
-                return Error.InvalidPoint;
-            }
-
-            // Parse G2 point (256 bytes: x0 || x1 || y0 || y1)
             var p2_affine: blst.blst_p2_affine = undefined;
-            blst.blst_fp_from_bendian(&p2_affine.x.fp[0], g2_bytes.ptr);
-            blst.blst_fp_from_bendian(&p2_affine.x.fp[1], g2_bytes.ptr + 64);
-            blst.blst_fp_from_bendian(&p2_affine.y.fp[0], g2_bytes.ptr + 128);
-            blst.blst_fp_from_bendian(&p2_affine.y.fp[1], g2_bytes.ptr + 192);
+            try fpFromSlot(blst, &p2_affine.x.fp[0], g2_bytes[0..64]);
+            try fpFromSlot(blst, &p2_affine.x.fp[1], g2_bytes[64..128]);
+            try fpFromSlot(blst, &p2_affine.y.fp[0], g2_bytes[128..192]);
+            try fpFromSlot(blst, &p2_affine.y.fp[1], g2_bytes[192..256]);
 
-            // Validate G2 point
-            if (!blst.blst_p2_affine_on_curve(&p2_affine)) {
-                return Error.InvalidPoint;
+            // (0, 0) is not on either curve; EIP-2537 uses it for infinity.
+            const g1_infinity = std.mem.allEqual(u8, g1_bytes, 0);
+            const g2_infinity = std.mem.allEqual(u8, g2_bytes, 0);
+
+            if (!g1_infinity) {
+                if (!blst.blst_p1_affine_on_curve(&p1_affine)) return Error.InvalidPoint;
+                if (!blst.blst_p1_affine_in_g1(&p1_affine)) return Error.InvalidPoint;
             }
-            if (!blst.blst_p2_affine_in_g2(&p2_affine)) {
-                return Error.InvalidPoint;
+            if (!g2_infinity) {
+                if (!blst.blst_p2_affine_on_curve(&p2_affine)) return Error.InvalidPoint;
+                if (!blst.blst_p2_affine_in_g2(&p2_affine)) return Error.InvalidPoint;
             }
 
-            // Compute Miller loop for this pair
+            // e(O, Q) = e(P, O) = 1, and the raw Miller loop is undefined
+            // for infinity, so the pair is validated and then skipped.
+            if (g1_infinity or g2_infinity) continue;
+
             var loop_result: blst.blst_fp12 = undefined;
             blst.blst_miller_loop(&loop_result, &p2_affine, &p1_affine);
 
-            // Accumulate results by multiplication
-            if (i == 0) {
-                acc = loop_result;
-            } else {
-                var temp: blst.blst_fp12 = undefined;
-                blst.blst_fp12_mul(&temp, &acc, &loop_result);
-                acc = temp;
-            }
+            var product: blst.blst_fp12 = undefined;
+            blst.blst_fp12_mul(&product, &acc, &loop_result);
+            acc = product;
         }
 
         // Apply final exponentiation
@@ -507,6 +528,11 @@ pub const bls12_381 = struct {
     pub const g1Msm = g1_multiexp;
 };
 
+fn isValidSecretScalar(value: u256) bool {
+    return (constant_time.constantTimeIsZeroU256(value) |
+        constant_time.constantTimeGteU256(value, SECP256K1_N)) == 0;
+}
+
 /// Generate a random private key
 /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
 /// This function implements private key generation without security review.
@@ -518,7 +544,7 @@ pub fn unaudited_randomPrivateKey() !PrivateKey {
     // Ensure the private key is valid (non-zero and less than secp256k1 order)
     const key_as_u256 = std.mem.readInt(u256, &private_key, .big);
 
-    if (key_as_u256 == 0 or key_as_u256 >= SECP256K1_N) {
+    if (!isValidSecretScalar(key_as_u256)) {
         return unaudited_randomPrivateKey(); // Recursively generate until valid
     }
 
@@ -574,7 +600,10 @@ pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
     defer secureZeroMemory(&private_key_u256);
 
     // Validate private key
-    if (private_key_u256 == 0 or private_key_u256 >= SECP256K1_N) {
+    // Constant-time range check: no data-dependent branch on the secret scalar
+    if ((constant_time.constantTimeIsZeroU256(private_key_u256) |
+        constant_time.constantTimeGteU256(private_key_u256, SECP256K1_N)) != 0)
+    {
         return CryptoError.InvalidPrivateKey;
     }
 
@@ -602,85 +631,88 @@ pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
 /// would leak the private key.
 ///
 /// Reference: https://datatracker.ietf.org/doc/html/rfc6979
-fn unaudited_rfc6979Nonce(hash: Hash.Hash, private_key: PrivateKey) u256 {
+const Rfc6979NonceResult = struct {
+    k: u256,
+    point_r: secp256k1.AffinePoint,
+};
+
+fn unaudited_rfc6979Nonce(hash: Hash.Hash, private_key: PrivateKey) Rfc6979NonceResult {
     const Hmac = crypto.auth.hmac.sha2.HmacSha256;
     const hlen: usize = 32; // SHA-256 output length
 
-    // Step a: Process the message hash
-    // h1 = H(m) - already provided as hash parameter
-
-    // Step b: Convert private key to bytes (already in bytes)
-    // x = int2octets(private_key)
+    // Step a: h1 = H(m) is the caller's hash.
+    // bits2octets(h1) = int2octets(bits2int(h1) mod n). qlen == hlen == 256, so
+    // bits2int is a plain big-endian read and one conditional subtraction reduces it
+    // (2^256 < 2n).
+    const h_int = std.mem.readInt(u256, &hash, .big);
+    const h_reduced = constant_time.constantTimeSubU256(
+        constant_time.constantTimeGteU256(h_int, SECP256K1_N),
+        h_int,
+        SECP256K1_N,
+    );
+    var h_octets: [32]u8 = undefined;
+    std.mem.writeInt(u256, &h_octets, h_reduced, .big);
 
     // Step c: Initialize V to 0x01 repeated hlen times
     var v: [hlen]u8 = [_]u8{0x01} ** hlen;
+    defer std.crypto.secureZero(u8, &v);
 
     // Step d: Initialize K to 0x00 repeated hlen times
     var k: [hlen]u8 = [_]u8{0x00} ** hlen;
+    defer std.crypto.secureZero(u8, &k);
+
+    // Holds V || tag || int2octets(x) || bits2octets(h1); contains the private key.
+    var data: [hlen + 1 + 32 + 32]u8 = undefined;
+    defer std.crypto.secureZero(u8, &data);
 
     // Step e: K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
-    {
-        var data: [hlen + 1 + 32 + 32]u8 = undefined;
-        @memcpy(data[0..hlen], &v);
-        data[hlen] = 0x00;
-        @memcpy(data[hlen + 1 .. hlen + 1 + 32], &private_key);
-        @memcpy(data[hlen + 1 + 32 .. hlen + 1 + 32 + 32], &hash);
-        Hmac.create(&k, &data, &k);
-    }
+    @memcpy(data[0..hlen], &v);
+    data[hlen] = 0x00;
+    @memcpy(data[hlen + 1 .. hlen + 1 + 32], &private_key);
+    @memcpy(data[hlen + 1 + 32 .. hlen + 1 + 32 + 32], &h_octets);
+    Hmac.create(&k, &data, &k);
 
     // Step f: V = HMAC_K(V)
     Hmac.create(&v, &v, &k);
 
     // Step g: K = HMAC_K(V || 0x01 || int2octets(x) || bits2octets(h1))
-    {
-        var data: [hlen + 1 + 32 + 32]u8 = undefined;
-        @memcpy(data[0..hlen], &v);
-        data[hlen] = 0x01;
-        @memcpy(data[hlen + 1 .. hlen + 1 + 32], &private_key);
-        @memcpy(data[hlen + 1 + 32 .. hlen + 1 + 32 + 32], &hash);
-        Hmac.create(&k, &data, &k);
-    }
+    @memcpy(data[0..hlen], &v);
+    data[hlen] = 0x01;
+    Hmac.create(&k, &data, &k);
 
     // Step h: V = HMAC_K(V)
     Hmac.create(&v, &v, &k);
 
+    var t: [hlen]u8 = undefined;
+    defer std.crypto.secureZero(u8, &t);
+    var candidate_k: u256 = 0;
+    defer secureZeroMemory(&candidate_k);
+
     // Step h: Generate candidate k values until valid
     while (true) {
-        // Step h1: Set T to empty sequence
-        var t: [hlen]u8 = undefined;
-
-        // Step h2: While tlen < qlen (32 bytes for secp256k1)
-        // V = HMAC_K(V)
+        // Step h2: V = HMAC_K(V); T = T || V (qlen == hlen, one block)
         Hmac.create(&v, &v, &k);
-        // T = T || V
         @memcpy(&t, &v);
 
-        // Step h3: Compute k = bits2int(T)
-        const candidate_k = std.mem.readInt(u256, &t, .big);
+        // Step h3: k = bits2int(T)
+        candidate_k = std.mem.readInt(u256, &t, .big);
 
-        // If k is in [1, q-1], return it
-        if (candidate_k > 0 and candidate_k < SECP256K1_N) {
-            // Additional check: verify k * G is not infinity
+        // If k is in [1, q-1], return both k and k * G so callers don't recompute scalarMul (constant-time range check)
+        if (isValidSecretScalar(candidate_k)) {
             const generator = secp256k1.AffinePoint.generator();
             const point_r = generator.scalarMul(candidate_k);
             if (!point_r.infinity) {
                 const r = point_r.x % SECP256K1_N;
                 if (r != 0) {
-                    return candidate_k;
+                    return .{ .k = candidate_k, .point_r = point_r };
                 }
             }
         }
 
-        // k is not suitable, update K and V and try again
-        // K = HMAC_K(V || 0x00)
-        {
-            var data: [hlen + 1]u8 = undefined;
-            @memcpy(data[0..hlen], &v);
-            data[hlen] = 0x00;
-            Hmac.create(&k, &data, &k);
-        }
-
-        // V = HMAC_K(V)
+        // k is not suitable: K = HMAC_K(V || 0x00); V = HMAC_K(V)
+        @memcpy(data[0..hlen], &v);
+        data[hlen] = 0x00;
+        Hmac.create(&k, data[0 .. hlen + 1], &k);
         Hmac.create(&v, &v, &k);
     }
 }
@@ -694,20 +726,19 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     defer secureZeroMemory(&private_key_u256);
 
     // Validate private key
-    if (private_key_u256 == 0 or private_key_u256 >= SECP256K1_N) {
+    // Constant-time range check: no data-dependent branch on the secret scalar
+    if ((constant_time.constantTimeIsZeroU256(private_key_u256) |
+        constant_time.constantTimeGteU256(private_key_u256, SECP256K1_N)) != 0)
+    {
         return CryptoError.InvalidPrivateKey;
     }
 
-    // Get message hash as u256
-    const message_u256 = std.mem.readInt(u256, &hash, .big);
-
-    // Generate deterministic k using RFC 6979
-    var k = unaudited_rfc6979Nonce(hash, private_key);
+    // Generate deterministic k and point_r = k * G in a single scalar multiplication.
+    var nonce_res = unaudited_rfc6979Nonce(hash, private_key);
+    defer secureZeroMemory(&nonce_res.k);
+    var k = nonce_res.k;
     defer secureZeroMemory(&k);
-
-    // Calculate r = (k * G).x mod n
-    const generator = secp256k1.AffinePoint.generator();
-    const point_r = generator.scalarMul(k);
+    const point_r = nonce_res.point_r;
     if (point_r.infinity) {
         return CryptoError.SigningFailed;
     }
@@ -717,11 +748,33 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
         return CryptoError.SigningFailed;
     }
 
-    // Calculate s = k^-1 * (hash + r * private_key) mod n
-    const k_inv = secp256k1.unauditedInvmod(k, SECP256K1_N) orelse return CryptoError.SigningFailed;
-    const r_d = secp256k1.unauditedMulmod(r, private_key_u256, SECP256K1_N);
-    const hash_plus_rd = secp256k1.unauditedAddmod(message_u256, r_d, SECP256K1_N);
-    var s = secp256k1.unauditedMulmod(k_inv, hash_plus_rd, SECP256K1_N);
+    // Calculate s = k^-1 * (hash + r * private_key) mod n with constant-time
+    // field arithmetic: k and the private key are secret.
+    const Scalar = std.crypto.ecc.Secp256k1.scalar.Scalar;
+    var d_scalar = Scalar.fromBytes(private_key, .big) catch return CryptoError.InvalidPrivateKey;
+    defer secureZeroMemory(&d_scalar);
+    var k_bytes: [32]u8 = undefined;
+    defer std.crypto.secureZero(u8, &k_bytes);
+    std.mem.writeInt(u256, &k_bytes, k, .big);
+    var k_scalar = Scalar.fromBytes(k_bytes, .big) catch return CryptoError.SigningFailed;
+    defer secureZeroMemory(&k_scalar);
+    var k_inv = k_scalar.invert();
+    defer secureZeroMemory(&k_inv);
+
+    var r_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &r_bytes, r, .big);
+    const r_scalar = Scalar.fromBytes(r_bytes, .big) catch return CryptoError.SigningFailed;
+
+    // e = hash mod n (the hash may exceed n)
+    var e_wide: [48]u8 = [_]u8{0} ** 48;
+    @memcpy(e_wide[16..], &hash);
+    const e_scalar = Scalar.fromBytes48(e_wide, .big);
+
+    var rd = r_scalar.mul(d_scalar);
+    defer secureZeroMemory(&rd);
+    var e_plus_rd = e_scalar.add(rd);
+    defer secureZeroMemory(&e_plus_rd);
+    var s = std.mem.readInt(u256, &k_inv.mul(e_plus_rd).toBytes(.big), .big);
 
     if (s == 0) {
         return CryptoError.SigningFailed;
@@ -747,7 +800,7 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     };
     const expected_address = expected_public_key.toAddress();
 
-    if (!std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes)) {
+    if (!constant_time.eql(&recovered_address.bytes, &expected_address.bytes)) {
         return CryptoError.SigningFailed;
     }
 
@@ -799,7 +852,7 @@ pub fn unaudited_recoverMessageAddress(message: []const u8, signature: Signature
 /// Use at your own risk in production systems.
 pub fn unaudited_verifySignature(hash: Hash.Hash, signature: Signature, address: Address) !bool {
     const recovered_address = unaudited_recoverAddress(hash, signature) catch return false;
-    return std.mem.eql(u8, &recovered_address.bytes, &address.bytes);
+    return constant_time.eql(&recovered_address.bytes, &address.bytes);
 }
 
 /// Verify a message signature against an address
@@ -808,7 +861,7 @@ pub fn unaudited_verifySignature(hash: Hash.Hash, signature: Signature, address:
 /// Use at your own risk in production systems.
 pub fn unaudited_verifyMessage(message: []const u8, signature: Signature, address: Address) !bool {
     const recovered_address = unaudited_recoverMessageAddress(message, signature) catch return false;
-    return std.mem.eql(u8, &recovered_address.bytes, &address.bytes);
+    return constant_time.eql(&recovered_address.bytes, &address.bytes);
 }
 
 // ============================================================================
@@ -852,7 +905,7 @@ test "address derivation" {
 
     // Verify address is not zero
     const zero_address = [_]u8{0} ** 20;
-    try testing.expect(!std.mem.eql(u8, &address, &zero_address));
+    try testing.expect(!std.mem.eql(u8, &address.bytes, &zero_address));
 }
 
 test "message hashing" {
@@ -885,7 +938,7 @@ test "signature creation and verification" {
     // Verify recovered address matches expected
     const public_key = try unaudited_getPublicKey(private_key);
     const expected_address = public_key.toAddress();
-    try testing.expect(std.mem.eql(u8, &recovered_address, &expected_address));
+    try testing.expect(std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes));
 
     // Verify signature verification
     try testing.expect(try unaudited_verifyMessage(message, signature, expected_address));
@@ -930,7 +983,7 @@ test "invalid signature rejection" {
 
     // Test with wrong address
     const wrong_address = [_]u8{0xFF} ** 20;
-    try testing.expect(!try unaudited_verifyMessage(message, signature, wrong_address));
+    try testing.expect(!try unaudited_verifyMessage(message, signature, .{ .bytes = wrong_address }));
 
     // Test with invalid signature
     var invalid_signature = signature;
@@ -1077,11 +1130,11 @@ test "derive address from private key" {
     const address = publicKeyToAddress(public_key);
 
     // Address should be 20 bytes
-    try testing.expectEqual(@as(usize, 20), address.len);
+    try testing.expectEqual(@as(usize, 20), address.bytes.len);
 
     // Address should be deterministic
     const address2 = publicKeyToAddress(public_key);
-    try testing.expectEqualSlices(u8, &address, &address2);
+    try testing.expectEqualSlices(u8, &address.bytes, &address2.bytes);
 }
 
 test "personal sign message" {
@@ -1120,13 +1173,22 @@ test "validate signature components" {
     };
     try testing.expect(isValidSignature(valid_sig));
 
-    // Invalid v value
-    const invalid_v = Signature{
+    // v is not checked here: callers pass Ethereum v (27/28) or a y-parity
+    // (0/1, EIP-7702 authorizations). recoverAddress rejects a bad v.
+    const parity_v = Signature{
         .r = 0x1234567890123456789012345678901234567890123456789012345678901234,
         .s = 0x3456789012345678901234567890123456789012345678901234567890123456,
-        .v = 26, // Should be 27 or 28
+        .v = 0,
     };
-    try testing.expect(!isValidSignature(invalid_v));
+    try testing.expect(isValidSignature(parity_v));
+
+    // High s (> n/2) is malleable and rejected
+    const high_s = Signature{
+        .r = 0x1234567890123456789012345678901234567890123456789012345678901234,
+        .s = SECP256K1_N - 1,
+        .v = 27,
+    };
+    try testing.expect(!isValidSignature(high_s));
 
     // Zero r value (invalid)
     const zero_r = Signature{
@@ -1182,6 +1244,45 @@ test "RFC 6979 deterministic signature - test vector 1" {
     const public_key = try unaudited_getPublicKey(private_key);
     const expected_address = public_key.toAddress();
     try testing.expect(std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes));
+}
+
+test "RFC 6979 known answer - secp256k1 key 1, SHA-256(\"Satoshi Nakamoto\")" {
+    // Widely published RFC 6979 secp256k1/SHA-256 vector (python-ecdsa, haskoin,
+    // trezor-crypto): k = 8F8A276C19F4149656B280621E358CCE24F5F52542772691EE69063B74F15D15.
+    var private_key: PrivateKey = [_]u8{0} ** 32;
+    private_key[31] = 1;
+    var hash: Hash.Hash = undefined;
+    std.crypto.hash.sha2.Sha256.hash("Satoshi Nakamoto", &hash, .{});
+
+    const sig = try unaudited_signHash(hash, private_key);
+    try testing.expectEqual(@as(u256, 0x934b1ea10a4b3c1757e2b0c017d0b6143ce3c9a7e6a4a49860d7a6ab210ee3d8), sig.r);
+    try testing.expectEqual(@as(u256, 0x2442ce9d2b916064108014783e923ec36b49743e2ffa1c4496f01a512aafd9e5), sig.s);
+
+    const recovered = try unaudited_recoverAddress(hash, sig);
+    const expected = (try unaudited_getPublicKey(private_key)).toAddress();
+    try testing.expectEqualSlices(u8, &expected.bytes, &recovered.bytes);
+}
+
+test "RFC 6979 bits2octets - hash >= n signs like hash mod n" {
+    // bits2octets reduces h1 mod n before HMAC, and ECDSA uses e = h mod n, so
+    // h and h - n must yield the same nonce and the same signature.
+    const private_key = PrivateKey{
+        0xfe, 0xed, 0xbe, 0xef, 0xde, 0xad, 0xc0, 0xde,
+        0xca, 0xfe, 0xba, 0xbe, 0x12, 0x34, 0x56, 0x78,
+        0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78,
+        0x9a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44,
+    };
+    const big: u256 = std.math.maxInt(u256);
+    var h_big: Hash.Hash = undefined;
+    std.mem.writeInt(u256, &h_big, big, .big);
+    var h_red: Hash.Hash = undefined;
+    std.mem.writeInt(u256, &h_red, big - SECP256K1_N, .big);
+
+    const a = try unaudited_signHash(h_big, private_key);
+    const b = try unaudited_signHash(h_red, private_key);
+    try testing.expectEqual(b.r, a.r);
+    try testing.expectEqual(b.s, a.s);
+    try testing.expectEqual(b.v, a.v);
 }
 
 test "RFC 6979 deterministic signature - test vector 2" {

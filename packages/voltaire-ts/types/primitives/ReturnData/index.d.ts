@@ -39,5 +39,5 @@ export declare function isEmpty(data: ReturnDataType): boolean;
 /**
  * Internal exports for advanced usage
  */
-export { _from, _fromHex, _fromBytes, _toHex, _toBytes, _equals, _isEmpty };
+export { _equals, _from, _fromBytes, _fromHex, _isEmpty, _toBytes, _toHex };
 //# sourceMappingURL=index.d.ts.map

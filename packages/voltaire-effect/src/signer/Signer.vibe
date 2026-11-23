@@ -19,7 +19,7 @@ import {
   getTransactionCount,
   sendRawTransaction,
   waitForTransactionReceipt,
-  type WaitForReceiptOptions
+  type WaitForReceiptOptions,
 } from "../provider/Actions.vibe"
 import type { RpcTransactionReceipt } from "../provider/Schemas.vibe"
 import { Transport } from "../transport/Transport.vibe"
@@ -29,7 +29,7 @@ import {
   LocalAccount,
   MnemonicAccount,
   type SignableTransaction,
-  type SignedAuthorization
+  type SignedAuthorization,
 } from "./Account.vibe"
 import { NonceManager, NonceManagerLive } from "./NonceManager.vibe"
 
@@ -76,11 +76,11 @@ module native {
     tx: SignableTransaction,
     yParity: number,
     r: Uint8Array,
-    s: Uint8Array
+    s: Uint8Array,
   ): VoltaireTx.Any {
     const accessList = (tx.accessList ?? []).map((entry) => ({
       address: typeof entry.address === "string" ? VoltaireAddress.fromHex(entry.address) : entry.address,
-      storageKeys: entry.storageKeys.map((k) => VoltaireHash.fromHex(k))
+      storageKeys: entry.storageKeys.map((k) => VoltaireHash.fromHex(k)),
     }))
 
     switch (tx.type) {
@@ -95,7 +95,7 @@ module native {
           data: tx.data,
           v: tx.chainId * 2n + 35n + BigInt(yParity),
           r,
-          s
+          s,
         }
       case 1:
         return {
@@ -110,7 +110,7 @@ module native {
           accessList,
           yParity,
           r,
-          s
+          s,
         }
       case 2:
         return {
@@ -126,7 +126,7 @@ module native {
           accessList,
           yParity,
           r,
-          s
+          s,
         }
       case 3:
         if (!tx.to) throw new Error("EIP-4844 transactions require a 'to' address")
@@ -145,7 +145,7 @@ module native {
           blobVersionedHashes: (tx.blobVersionedHashes ?? []).map((h) => VoltaireHash.fromHex(h)),
           yParity,
           r,
-          s
+          s,
         }
       case 4:
         return {
@@ -165,11 +165,11 @@ module native {
             nonce: a.nonce,
             yParity: a.yParity,
             r: VoltaireHex.toBytes(a.r),
-            s: VoltaireHex.toBytes(a.s)
+            s: VoltaireHex.toBytes(a.s),
           })),
           yParity,
           r,
-          s
+          s,
         }
     }
   }
@@ -196,7 +196,7 @@ function toSignerError(action: string, cause: unknown): SignerError {
     message: `${action} failed: ${errorMessage(cause)}`,
     code,
     userRejected,
-    cause
+    cause,
   })
 }
 
@@ -210,7 +210,7 @@ export service Signer {
   sendTransaction(tx: TransactionRequest): HashType!SignerError
   sendTransactionAndWait(
     tx: TransactionRequest,
-    waitOptions?: WaitForReceiptOptions
+    waitOptions?: WaitForReceiptOptions,
   ): { readonly hash: HashType; readonly receipt: RpcTransactionReceipt }!SignerError
   prepareAuthorization(params: PrepareAuthorizationParams): SignedAuthorization!SignerError
   deployContract(params: DeployContractParams): HashType!SignerError
@@ -234,7 +234,7 @@ export const SignerLive = Layer.effect(
       return Effect.provideService(
         getTransactionCount(fromHex, "pending"),
         Transport,
-        transport
+        transport,
       ) catch effect (e) => {
         throw toSignerError("resolveNonce", e)
       }
@@ -245,18 +245,19 @@ export const SignerLive = Layer.effect(
       const toAddress: AddressType | null = tx.to !== undefined && tx.to !== null
         ? typeof tx.to === "string"
           ? Address.fromHex(tx.to) catch effect (e) => {
-              throw toSignerError("prepareTransaction", e)
-            }
+            throw toSignerError("prepareTransaction", e)
+          }
           : tx.to
         : null
       const toHex = toAddress !== null ? Address.toHex(toAddress) : undefined
       const dataBytes = tx.data !== undefined
         ? Hex.toBytes(tx.data) catch effect (e) => {
-            throw toSignerError("prepareTransaction", e)
-          }
+          throw toSignerError("prepareTransaction", e)
+        }
         : new Uint8Array(0)
 
-      const needFees = tx.gasPrice === undefined && (tx.maxFeePerGas === undefined || tx.maxPriorityFeePerGas === undefined)
+      const needFees = tx.gasPrice === undefined
+        && (tx.maxFeePerGas === undefined || tx.maxPriorityFeePerGas === undefined)
 
       const [nonce, chainId, gasLimit, feeEstimate] = try.all [
         resolveNonce(tx.nonce),
@@ -273,10 +274,10 @@ export const SignerLive = Layer.effect(
               from: fromHex,
               to: toHex,
               data: tx.data,
-              value: tx.value
+              value: tx.value,
             }),
             Transport,
-            transport
+            transport,
           ) catch effect (e) => {
             throw toSignerError("prepareTransaction", e)
           }
@@ -286,7 +287,7 @@ export const SignerLive = Layer.effect(
           return Effect.provideService(estimateFeesPerGas(), Transport, transport) catch effect (e) => {
             throw toSignerError("prepareTransaction", e)
           }
-        }
+        },
       ]
 
       const supportsEip1559 = feeEstimate !== undefined ? feeEstimate.type === "eip1559" : tx.gasPrice === undefined
@@ -319,7 +320,7 @@ export const SignerLive = Layer.effect(
         maxFeePerBlobGas,
         blobVersionedHashes: tx.blobVersionedHashes,
         accessList: tx.accessList,
-        authorizationList: tx.authorizationList
+        authorizationList: tx.authorizationList,
       }
     }
 
@@ -333,7 +334,7 @@ export const SignerLive = Layer.effect(
       }
       const fullTx = try Effect.try({
         try: () => buildSignedTx(prepared, yParity, r, s),
-        catch: (cause) => toSignerError("signTransaction", cause)
+        catch: (cause) => toSignerError("signTransaction", cause),
       })
       return Transaction.serializeHex(fullTx) catch effect (e) => {
         throw toSignerError("signTransaction", e)
@@ -372,13 +373,13 @@ export const SignerLive = Layer.effect(
 
       effect sendTransactionAndWait(
         tx: TransactionRequest,
-        waitOptions?: WaitForReceiptOptions
+        waitOptions?: WaitForReceiptOptions,
       ): { readonly hash: HashType; readonly receipt: RpcTransactionReceipt }!SignerError {
         const hash = try sendTx(tx)
         const receipt = Effect.provideService(
           waitForTransactionReceipt(hash, waitOptions),
           Transport,
-          transport
+          transport,
         ) catch effect (e) => {
           throw toSignerError("sendTransactionAndWait", e)
         }
@@ -396,14 +397,14 @@ export const SignerLive = Layer.effect(
           effect {
             if (params.nonce !== undefined) return params.nonce
             return Effect.provideService(getTransactionCount(fromHex, "pending"), Transport, transport) catch effect (e) => {
-              throw toSignerError("prepareAuthorization", e)
-            }
-          }
+                throw toSignerError("prepareAuthorization", e)
+              }
+          },
         ]
         return account.signAuthorization({
           chainId,
           address: params.contractAddress,
-          nonce
+          nonce,
         }) catch effect (e) => {
           throw toSignerError("prepareAuthorization", e)
         }
@@ -415,7 +416,10 @@ export const SignerLive = Layer.effect(
         }
         let deployData = bytecodeHex
         const ctor = params.abi.find((item) => item.type === "constructor")
-        if (ctor !== undefined && ctor.inputs !== undefined && ctor.inputs.length > 0 && params.args !== undefined && params.args.length > 0) {
+        if (
+          ctor !== undefined && ctor.inputs !== undefined && ctor.inputs.length > 0 && params.args !== undefined
+          && params.args.length > 0
+        ) {
           const encodedArgs = Abi.encodeParameters(ctor.inputs, params.args) catch effect (e) => {
             throw toSignerError("deployContract", e)
           }
@@ -426,28 +430,28 @@ export const SignerLive = Layer.effect(
           data: deployData,
           value: params.value,
           gasLimit: params.gasLimit,
-          nonce: params.nonce
+          nonce: params.nonce,
         })
-      }
+      },
     })
-  }
+  },
 )
 
 // One-line Signer layer from a private key (includes atomic NonceManager!).
 export function SignerFromPrivateKey(privateKey: Uint8Array | HexType | `0x${string}`) {
   return Layer.provide(
     SignerLive,
-    Layer.merge(LocalAccount(privateKey), NonceManagerLive)
+    Layer.merge(LocalAccount(privateKey), NonceManagerLive),
   )
 }
 
 // One-line Signer layer from a BIP-39 mnemonic (includes atomic NonceManager!).
 export function SignerFromMnemonic(
   mnemonic: string,
-  options?: { readonly path?: string; readonly passphrase?: string }
+  options?: { readonly path?: string; readonly passphrase?: string },
 ) {
   return Layer.provide(
     SignerLive,
-    Layer.merge(MnemonicAccount(mnemonic, options), NonceManagerLive)
+    Layer.merge(MnemonicAccount(mnemonic, options), NonceManagerLive),
   )
 }

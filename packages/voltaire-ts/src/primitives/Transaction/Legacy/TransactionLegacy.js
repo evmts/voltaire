@@ -50,18 +50,18 @@ const verifySignature = VerifySignature({
 
 // Re-export types
 export * from "./TransactionLegacyType.js";
-
 // Re-export factories for tree-shaking
-export { Hash, GetSigningHash, VerifySignature };
-
 // Re-export method functions (instantiated with crypto)
 export {
 	deserialize,
+	GetSigningHash,
 	getChainId,
 	getSender,
 	getSigningHash,
+	Hash,
 	hash,
 	serialize,
+	VerifySignature,
 	verifySignature,
 };
 

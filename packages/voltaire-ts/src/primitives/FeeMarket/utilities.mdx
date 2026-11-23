@@ -139,7 +139,7 @@ Validate block fee market state. Returns empty array if valid, array of error me
 - `gasUsed >= 0`
 - `gasLimit > 0`
 - `gasUsed <= gasLimit`
-- `baseFee >= MIN_BASE_FEE` (7 wei)
+- `baseFee >= 0n`
 - `excessBlobGas >= 0`
 - `blobGasUsed >= 0`
 - `blobGasUsed <= MAX_BLOB_GAS_PER_BLOCK` (786432)
@@ -173,17 +173,17 @@ const state2: FeeMarket.State = {
 const errors2 = FeeMarket.validateState(state2);
 // errors2 === ["gasUsed cannot exceed gasLimit"]
 
-// Invalid: base fee below minimum
+// Negative base fee
 const state3: FeeMarket.State = {
   gasUsed: 15_000_000n,
   gasLimit: 30_000_000n,
-  baseFee: 5n,              // Below MIN_BASE_FEE (7)
+  baseFee: -1n,
   excessBlobGas: 0n,
   blobGasUsed: 0n
 };
 
 const errors3 = FeeMarket.validateState(state3);
-// errors3 === ["baseFee must be at least 7"]
+// errors3 === ["baseFee must be non-negative"]
 
 // Invalid: blob gas exceeds maximum
 const state4: FeeMarket.State = {
@@ -329,11 +329,11 @@ const maxFeePerGas = FeeMarket.gweiToWei(2); // 2 gwei
 const maxPriorityFeePerGas = FeeMarket.gweiToWei(1); // 1 gwei
 ```
 
-**Precision:** Floors fractional wei (rounds down).
+**Precision:** Converts the number's decimal representation exactly, including scientific notation, and floors any fractional wei toward negative infinity.
 
 ```typescript
 const wei = FeeMarket.gweiToWei(1.9999999999);
-// wei === 1_999_999_999n (last digit floored)
+// wei === 1_999_999_999n
 ```
 
 **Usage:**

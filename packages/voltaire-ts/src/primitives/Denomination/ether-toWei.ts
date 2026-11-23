@@ -1,4 +1,5 @@
 import type { EtherType as BrandedEther } from "./EtherType.js";
+import { normalizeDecimal } from "./normalizeDecimal.js";
 import type { WeiType as BrandedWei } from "./WeiType.js";
 
 const DECIMALS = 18;
@@ -21,7 +22,7 @@ const DECIMALS = 18;
  * ```
  */
 export function toWei(ether: BrandedEther): BrandedWei {
-	const str = ether.toString();
+	const str = normalizeDecimal(ether.toString());
 	const [intPart, decPart = ""] = str.split(".");
 
 	if (decPart.length > DECIMALS) {

@@ -8,12 +8,15 @@ export * from "./constants.js";
 export * from "./errors.js";
 
 import * as Checksummed from "./ChecksumAddress.js";
+
 export { Checksummed };
 
 import * as Lowercase from "./LowercaseAddress.js";
+
 export { Lowercase };
 
 import * as Uppercase from "./UppercaseAddress.js";
+
 export { Uppercase };
 
 import * as loader from "../../wasm-loader/loader.js";

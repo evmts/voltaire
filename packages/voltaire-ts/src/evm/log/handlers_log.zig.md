@@ -25,6 +25,7 @@ The LOG handlers implementation is **functionally complete** and appears to foll
 ### Status: ✅ COMPLETE
 
 All LOG operations (LOG0-LOG4) are implemented:
+
 - LOG0 (0xa0): 0 topics
 - LOG1 (0xa1): 1 topic
 - LOG2 (0xa2): 2 topics
@@ -32,6 +33,7 @@ All LOG operations (LOG0-LOG4) are implemented:
 - LOG4 (0xa4): 4 topics
 
 **Implementation Coverage:**
+
 - ✅ Static call violation check (EIP-214)
 - ✅ Stack operations (offset, length, topics)
 - ✅ Gas calculation (base + topic + data costs)
@@ -50,6 +52,7 @@ All LOG operations (LOG0-LOG4) are implemented:
 No TODO, FIXME, HACK, or similar markers present in the code.
 
 **Observation:** While clean, the code would benefit from more inline documentation explaining:
+
 - Why topics are stored in a temporary array
 - The relationship between wordAlignedSize and EVM memory alignment
 - The rationale for the memory expansion logic
@@ -79,6 +82,7 @@ if (topics_len > 0) {
 **Issue:** The comment says "(reverse order if needed)" but the code copies in **forward order** (k increments from 0 to topics_len-1). This is confusing.
 
 **Analysis:** After reviewing the Python reference implementation:
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/log.py:52-54
 for _ in range(num_topics):
@@ -87,6 +91,7 @@ for _ in range(num_topics):
 ```
 
 The Python implementation pops topics and appends them to a list, which means:
+
 - First pop → first topic (topics[0])
 - Second pop → second topic (topics[1])
 - etc.
@@ -132,6 +137,7 @@ var topics_tmp: [4]u256 = undefined; // max 4 topics
 **Issue:** The number `4` is hardcoded. While EVM LOG operations are limited to LOG0-LOG4 (max 4 topics), this should be a named constant for clarity.
 
 **Recommendation:**
+
 ```zig
 const MAX_LOG_TOPICS: u8 = 4;
 var topics_tmp: [MAX_LOG_TOPICS]u256 = undefined;
@@ -198,6 +204,7 @@ const topics_len: usize = topic_count;
 **Status:** No `test` blocks found in `handlers_log.zig`.
 
 **What's tested:**
+
 - ✅ **Spec tests exist:** Extensive ethereum/tests coverage in `execution-specs/tests/eest/static/state_tests/stLogTests/`
   - Empty memory logs (LOG0-LOG4)
   - Non-empty memory logs
@@ -209,6 +216,7 @@ const topics_len: usize = topic_count;
   - Out-of-gas scenarios (`stLogTests/logInOOG_CallFiller.json`)
 
 **What's NOT tested (unit level):**
+
 - ❌ Word alignment calculation (`wordAlignedSize()` function)
 - ❌ Gas cost calculation (`logGasCost()` function)
 - ❌ Edge case: LOG with offset=0, length=0
@@ -217,12 +225,14 @@ const topics_len: usize = topic_count;
 - ❌ Mock verification: `evm.logs.append()` called with correct data
 
 **Comparison to other handlers:**
+
 ```bash
 $ grep -r "^test " src/instructions/
 # No results - NO handler files have inline unit tests
 ```
 
 **Verdict:** While spec tests provide integration coverage, inline unit tests would:
+
 1. Document expected behavior for developers
 2. Provide faster feedback during development
 3. Test edge cases not covered by spec tests
@@ -282,21 +292,22 @@ test "wordCount: standard cases" {
 
 **Python reference:** `execution-specs/src/ethereum/forks/cancun/vm/instructions/log.py`
 
-| Step | Python (lines 47-81) | Zig (lines 37-96) | Match? |
-|------|---------------------|-------------------|--------|
-| 1. Pop offset & size | Lines 48-49 | Lines 38-39 | ✅ |
-| 2. Pop topics | Lines 51-54 | Lines 60-62 | ✅ |
-| 3. Calculate gas | Lines 57-66 | Lines 42-52 | ⚠️ ORDER DIFFERS |
-| 4. Extend memory | Line 69 | Lines 50-51 | ✅ |
-| 5. Check static context | Lines 70-71 | Line 35 | ⚠️ ORDER DIFFERS |
-| 6. Read data | Line 75 | Lines 65-74 | ✅ |
-| 7. Create log entry | Lines 72-76 | Lines 89-93 | ✅ |
-| 8. Append to logs | Line 78 | Line 94 | ✅ |
-| 9. Increment PC | Line 81 | Line 96 | ✅ |
+| Step                    | Python (lines 47-81) | Zig (lines 37-96) | Match?           |
+| ----------------------- | -------------------- | ----------------- | ---------------- |
+| 1. Pop offset & size    | Lines 48-49          | Lines 38-39       | ✅               |
+| 2. Pop topics           | Lines 51-54          | Lines 60-62       | ✅               |
+| 3. Calculate gas        | Lines 57-66          | Lines 42-52       | ⚠️ ORDER DIFFERS |
+| 4. Extend memory        | Line 69              | Lines 50-51       | ✅               |
+| 5. Check static context | Lines 70-71          | Line 35           | ⚠️ ORDER DIFFERS |
+| 6. Read data            | Line 75              | Lines 65-74       | ✅               |
+| 7. Create log entry     | Lines 72-76          | Lines 89-93       | ✅               |
+| 8. Append to logs       | Line 78              | Line 94           | ✅               |
+| 9. Increment PC         | Line 81              | Line 96           | ✅               |
 
 ### 5.2 ⚠️ Order Discrepancy: Static Check Timing
 
 **Python:** Checks `is_static` AFTER gas calculation and memory expansion (line 70)
+
 ```python
 # GAS (lines 57-66)
 extend_memory = calculate_gas_extend_memory(...)
@@ -309,6 +320,7 @@ if evm.message.is_static:
 ```
 
 **Zig:** Checks `is_static` BEFORE any operations (line 35)
+
 ```zig
 // EIP-214: LOG opcodes cannot be executed in static call context
 if (frame.is_static) return error.StaticCallViolation;
@@ -319,10 +331,12 @@ const offset = try frame.popStack();
 ```
 
 **Impact Analysis:**
+
 - **Gas Consumption:** In Python, if a LOG operation is called in static context, gas is STILL consumed (for memory expansion, etc.) before the error is raised.
 - **In Zig:** If `is_static` is true, NO gas is consumed - the function returns immediately.
 
 **Which is correct?** According to EIP-214 and execution-specs behavior:
+
 - The **Python version is correct** - gas should be consumed for all operations UP TO the point where the static violation is detected.
 - This matters for out-of-gas behavior: If gas runs out before the static check, it should be OOG, not StaticCallViolation.
 
@@ -331,11 +345,13 @@ const offset = try frame.popStack();
 ### 5.3 Gas Calculation Order
 
 **Python:**
+
 1. Pop all stack items (offset, size, topics)
 2. Calculate memory expansion cost
 3. Charge total gas (base + topics + data + memory expansion)
 
 **Zig:**
+
 1. Pop offset and size
 2. Calculate and charge log cost (base + topics + data)
 3. Calculate and charge memory expansion cost separately
@@ -343,6 +359,7 @@ const offset = try frame.popStack();
 5. Read data and create log
 
 **Issue:** Zig charges gas in two separate calls:
+
 - Line 45: `try frame.consumeGas(log_cost);`
 - Line 49: `try frame.consumeGas(mem_cost);`
 
@@ -362,6 +379,7 @@ const offset = try frame.popStack();
 ### 6.2 ✅ Integer Overflow Protection
 
 **Lines 42-43:**
+
 ```zig
 const off_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
 const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
@@ -370,6 +388,7 @@ const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
 **Analysis:** Correctly handles overflow. If stack values exceed u32 range, returns `OutOfBounds` error.
 
 **Line 47:**
+
 ```zig
 const end_bytes: u64 = @as(u64, off_u32) + @as(u64, length_u32);
 ```
@@ -381,11 +400,13 @@ const end_bytes: u64 = @as(u64, off_u32) + @as(u64, length_u32);
 ### 6.3 ✅ Memory Safety
 
 **Line 71:**
+
 ```zig
 buf[idx] = frame.readMemory(off_u32 + idx);
 ```
 
 **Analysis:**
+
 - `buf` is allocated with exact size `length_u32` (line 68)
 - Loop runs from 0 to `length_u32-1` (lines 69-72)
 - Index is always in bounds
@@ -395,11 +416,13 @@ buf[idx] = frame.readMemory(off_u32 + idx);
 ### 6.4 ℹ️ Undefined Memory Read
 
 **Line 58:**
+
 ```zig
 var topics_tmp: [4]u256 = undefined; // max 4 topics
 ```
 
 **Analysis:** Array is declared `undefined`, which is correct since:
+
 - Elements are initialized in loop (lines 60-62) before use
 - Only `topics_len` elements are read (lines 82-84)
 - If `topics_len < 4`, unused elements remain undefined (safe - they're never read)
@@ -418,10 +441,12 @@ inline fn wordAlignedSize(bytes: u64) u32 {
 ```
 
 **Edge Case 1: Input = 0**
+
 - `wordCount(0)` returns `(0 + 31) / 32 = 31 / 32 = 0` (integer division)
 - `wordAlignedSize(0)` returns `@intCast(0 * 32)` = 0 ✅ Correct
 
 **Edge Case 2: Input = 2^32 - 1**
+
 - `wordCount(4294967295)` returns `(4294967295 + 31) / 32 = 4294967326 / 32 = 134217728`
 - `words * 32` = `134217728 * 32 = 4294967296` = 2^32
 - `@intCast(u32, 4294967296)` will **PANIC** in debug mode or **WRAP** in release mode
@@ -429,6 +454,7 @@ inline fn wordAlignedSize(bytes: u64) u32 {
 **Verdict:** ⚠️ **POTENTIAL BUG** - Can panic or produce incorrect results for inputs near u32 max.
 
 **Recommended fix:**
+
 ```zig
 inline fn wordAlignedSize(bytes: u64) u32 {
     if (bytes == 0) return 0;
@@ -442,6 +468,7 @@ inline fn wordAlignedSize(bytes: u64) u32 {
 ```
 
 Or use saturating cast:
+
 ```zig
 return std.math.cast(u32, words * 32) orelse std.math.maxInt(u32);
 ```
@@ -473,12 +500,14 @@ pub fn Handlers(FrameType: type) type {
 ### 7.3 ⚠️ Moderate: Documentation Completeness
 
 **Current documentation:**
+
 - Function-level docs: ✅ Present for helper functions
 - Type requirements: ✅ Documented (FrameType must have consumeGas, popStack, etc.)
 - Implementation comments: ⚠️ Minimal
 - Edge case documentation: ❌ Missing
 
 **Recommendation:** Add doc comments explaining:
+
 - Why static check happens at the beginning (or fix the order)
 - Memory expansion behavior and word alignment
 - Maximum topic count limitation
@@ -567,6 +596,7 @@ const topics_tmp: [4]u256 = ...     // Clear: temporary topic storage
 **Spec test directory:** `/Users/williamcory/guillotine-mini/execution-specs/tests/eest/static/state_tests/stLogTests/`
 
 **Test categories covered:**
+
 - ✅ Empty memory (LOG0-LOG4)
 - ✅ Non-empty memory (LOG0-LOG4)
 - ✅ Memory size zero (LOG0-LOG4)
@@ -581,6 +611,7 @@ const topics_tmp: [4]u256 = ...     // Clear: temporary topic storage
 - ✅ Recursive bomb scenarios (in `stSystemOperationsTest/CallRecursiveBombLog*`)
 
 **Running the tests:**
+
 ```bash
 # Run all LOG tests
 TEST_FILTER="stLogTests" zig build specs
@@ -594,6 +625,7 @@ TEST_FILTER="static_log" zig build specs
 ## 11. Final Verdict
 
 ### Strengths
+
 - ✅ Functionally complete implementation
 - ✅ Clean code structure
 - ✅ Safe memory and integer handling
@@ -601,6 +633,7 @@ TEST_FILTER="static_log" zig build specs
 - ✅ Extensive spec test coverage
 
 ### Weaknesses
+
 - ⚠️ Static context check happens too early (potential gas consumption bug)
 - ⚠️ Word alignment can overflow for large inputs
 - ❌ No inline unit tests
@@ -610,6 +643,7 @@ TEST_FILTER="static_log" zig build specs
 ### Recommended Actions
 
 **Immediate (before production use):**
+
 1. Fix static context check timing
 2. Fix word alignment overflow potential
 

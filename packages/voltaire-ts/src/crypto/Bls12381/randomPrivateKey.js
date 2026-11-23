@@ -9,7 +9,11 @@
  */
 
 import { bls12_381 } from "@noble/curves/bls12-381.js";
+import { numberToBytesBE } from "@noble/curves/utils.js";
+import { constantTimeIsValidScalar } from "../ConstantTime/constantTimeIsValidScalar.js";
 import { FR_MOD } from "./constants.js";
+
+const ORDER_BYTES = numberToBytesBE(FR_MOD, 32);
 
 /**
  * Generate a random BLS12-381 private key
@@ -60,20 +64,5 @@ export function isValidPrivateKey(privateKey) {
 		return false;
 	}
 
-	// Check if zero
-	const isZero = privateKey.every((byte) => byte === 0);
-	if (isZero) {
-		return false;
-	}
-
-	// Check if less than curve order
-	let scalar = 0n;
-	for (let i = 0; i < 32; i++) {
-		scalar = (scalar << 8n) | BigInt(privateKey[i]);
-	}
-	if (scalar >= FR_MOD) {
-		return false;
-	}
-
-	return true;
+	return constantTimeIsValidScalar(privateKey, ORDER_BYTES);
 }

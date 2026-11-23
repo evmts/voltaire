@@ -7,6 +7,7 @@ The KeystoreV3 and EncryptedKey types cannot be implemented yet because they req
 ## Required Crypto Dependencies
 
 ### 1. Scrypt (KDF)
+
 - **Purpose**: Memory-hard key derivation function (recommended for keystores)
 - **Status**: Available in `lib/libwally-core/src/scrypt/` but not exposed to TypeScript
 - **Needed**: TypeScript/WASM bindings for scrypt
@@ -14,18 +15,21 @@ The KeystoreV3 and EncryptedKey types cannot be implemented yet because they req
 - **Standard values**: n=262144, r=8, p=1, dklen=32
 
 ### 2. PBKDF2 (KDF - Legacy)
+
 - **Purpose**: Password-based key derivation (legacy support)
 - **Status**: Available in Web Crypto API (`crypto.subtle.deriveBits`)
 - **Needed**: None (can use Web Crypto)
 - **Parameters**: iterations, hash (typically SHA-256), salt, dklen
 
 ### 3. AES-128-CTR (Cipher)
+
 - **Purpose**: Encryption cipher for keystore
 - **Status**: NOT available (AES-GCM exists, but need AES-CTR mode)
 - **Needed**: AES-CTR implementation or use existing AES-GCM with adaptation
 - **Note**: Web3 Secret Storage spec requires AES-128-CTR specifically
 
 ### 4. Keccak256 (MAC)
+
 - **Purpose**: Message authentication code for keystore validation
 - **Status**: EXISTS in Voltaire crypto module
 - **Needed**: None (already available)
@@ -34,46 +38,48 @@ The KeystoreV3 and EncryptedKey types cannot be implemented yet because they req
 ## Type Specifications
 
 ### KeystoreV3
+
 ```typescript
 type KeystoreV3 = {
-  readonly version: 3;
-  readonly id: string; // UUID v4
-  readonly address: Address; // Without 0x prefix
-  readonly crypto: {
-    readonly cipher: "aes-128-ctr";
-    readonly ciphertext: string; // Hex-encoded
-    readonly cipherparams: {
-      readonly iv: string; // 16-byte hex IV
-    };
-    readonly kdf: "scrypt" | "pbkdf2";
-    readonly kdfparams: ScryptParams | Pbkdf2Params;
-    readonly mac: string; // keccak256(derivedKey[16:32] || ciphertext)
-  };
+	readonly version: 3;
+	readonly id: string; // UUID v4
+	readonly address: Address; // Without 0x prefix
+	readonly crypto: {
+		readonly cipher: "aes-128-ctr";
+		readonly ciphertext: string; // Hex-encoded
+		readonly cipherparams: {
+			readonly iv: string; // 16-byte hex IV
+		};
+		readonly kdf: "scrypt" | "pbkdf2";
+		readonly kdfparams: ScryptParams | Pbkdf2Params;
+		readonly mac: string; // keccak256(derivedKey[16:32] || ciphertext)
+	};
 };
 
 type ScryptParams = {
-  readonly dklen: number; // 32
-  readonly n: number; // 262144 (standard), 4096 (light)
-  readonly p: number; // 1
-  readonly r: number; // 8
-  readonly salt: string; // 32-byte hex
+	readonly dklen: number; // 32
+	readonly n: number; // 262144 (standard), 4096 (light)
+	readonly p: number; // 1
+	readonly r: number; // 8
+	readonly salt: string; // 32-byte hex
 };
 
 type Pbkdf2Params = {
-  readonly dklen: number; // 32
-  readonly c: number; // Iteration count (600000+)
-  readonly prf: "hmac-sha256";
-  readonly salt: string; // 32-byte hex
+	readonly dklen: number; // 32
+	readonly c: number; // Iteration count (600000+)
+	readonly prf: "hmac-sha256";
+	readonly salt: string; // 32-byte hex
 };
 ```
 
 ### EncryptedKey
+
 ```typescript
 type EncryptedKey = {
-  readonly ciphertext: Uint8Array;
-  readonly iv: Uint8Array; // Initialization vector (16 bytes)
-  readonly salt: Uint8Array; // For KDF (32 bytes)
-  readonly mac: Uint8Array; // Authentication tag (32 bytes)
+	readonly ciphertext: Uint8Array;
+	readonly iv: Uint8Array; // Initialization vector (16 bytes)
+	readonly salt: Uint8Array; // For KDF (32 bytes)
+	readonly mac: Uint8Array; // Authentication tag (32 bytes)
 };
 ```
 

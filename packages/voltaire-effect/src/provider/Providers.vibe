@@ -1,9 +1,6 @@
 // One-line Provider layer constructors (eliminating old multi-layer ceremony).
 
-import {
-  BatchTransport,
-  type BatchTransportConfig
-} from "../transport/BatchTransport.vibe"
+import { BatchTransport, type BatchTransportConfig } from "../transport/BatchTransport.vibe"
 import { CustomTransport, type Eip1193Provider } from "../transport/CustomTransport.vibe"
 import { FallbackTransport, type FallbackTransportConfig } from "../transport/FallbackTransport.vibe"
 import { type HttpTransportConfig, HttpTransportFetch } from "../transport/HttpTransport.vibe"
@@ -31,7 +28,7 @@ export function HttpProvider(options: HttpProviderConfig | string): Layer.Layer<
 
 export function FallbackProvider(
   endpoints: ReadonlyArray<string | Layer.Layer<Transport>>,
-  config?: FallbackTransportConfig
+  config?: FallbackTransportConfig,
 ): Layer.Layer<Transport> {
   const layers = endpoints.map((ep) => (typeof ep === "string" ? HttpTransportFetch(ep) : ep))
   return FallbackTransport(layers, config)
@@ -43,7 +40,7 @@ export function CustomProvider(provider: Eip1193Provider): Layer.Layer<Transport
 
 export function TestProvider(
   handlers: Record<string, MockRpcEntry>,
-  options?: { readonly latency?: Duration.Input }
+  options?: { readonly latency?: Duration.Input },
 ): Layer.Layer<Transport> {
   return TestTransport(handlers, options)
 }

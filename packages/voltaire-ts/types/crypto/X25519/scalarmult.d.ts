@@ -9,7 +9,7 @@
  * @param {import('./PublicKey.js').PublicKey} publicKey - Their 32-byte public key
  * @returns {import('./SharedSecret.js').SharedSecret} 32-byte shared secret
  * @throws {InvalidSecretKeyError} If secret key is invalid
- * @throws {InvalidPublicKeyError} If public key is invalid
+ * @throws {InvalidPublicKeyError} If public key has the wrong length, is a low-order point, or yields an all-zero shared secret (RFC 7748 section 6.1)
  * @throws {X25519Error} If scalar multiplication fails
  * @example
  * ```javascript

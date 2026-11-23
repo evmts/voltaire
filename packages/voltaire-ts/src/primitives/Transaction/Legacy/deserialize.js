@@ -1,10 +1,18 @@
 import { DecodingError } from "../../errors/index.js";
 import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
-import { decodeAddress, decodeBigint } from "../utils.js";
+import {
+	decodeAddress,
+	decodeBytesField,
+	decodeSignatureScalar,
+	decodeUint,
+} from "../utils.js";
 
 /**
  * Deserialize RLP encoded legacy transaction.
+ *
+ * Integers must be canonical RLP (no leading zero bytes). `r` and `s` are
+ * left-padded to 32 bytes.
  *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
@@ -39,7 +47,7 @@ export function deserialize(data) {
 		);
 	}
 
-	// Validate all fields are bytes
+	// Every field is a byte string; integers are canonical (no leading zeros).
 	for (let i = 0; i < fields.length; i++) {
 		if (fields[i]?.type !== "bytes") {
 			throw new DecodingError(
@@ -53,32 +61,15 @@ export function deserialize(data) {
 		}
 	}
 
-	// Extract bytes from Data structures
-	const nonce = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[0]).value,
-	);
-	const gasPrice = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[1]).value,
-	);
-	const gasLimit = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[2]).value,
-	);
-	const to = decodeAddress(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[3]).value,
-	);
-	const value = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[4]).value,
-	);
-	const dataBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[5]
-	).value;
-	const v = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[6]).value,
-	);
-	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[7])
-		.value;
-	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[8])
-		.value;
+	const nonce = decodeUint(fields[0], 8, "nonce");
+	const gasPrice = decodeUint(fields[1], 32, "gasPrice");
+	const gasLimit = decodeUint(fields[2], 8, "gasLimit");
+	const to = decodeAddress(decodeBytesField(fields[3], "to"));
+	const value = decodeUint(fields[4], 32, "value");
+	const dataBytes = decodeBytesField(fields[5], "data");
+	const v = decodeUint(fields[6], 32, "v");
+	const r = decodeSignatureScalar(decodeBytesField(fields[7], "r"));
+	const s = decodeSignatureScalar(decodeBytesField(fields[8], "s"));
 
 	return /** @type {import('./TransactionLegacyType.js').TransactionLegacyType} */ (
 		/** @type {any} */ ({

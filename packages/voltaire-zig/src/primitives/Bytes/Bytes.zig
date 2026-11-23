@@ -8,7 +8,7 @@ const Hex = @import("primitives").Hex;
 
 /// Create bytes from hex string (allocates)
 pub fn fromHex(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
-    return try Hex.decode(allocator, hex);
+    return try Hex.hexToBytes(allocator, hex);
 }
 
 test "fromHex - basic" {
@@ -31,7 +31,7 @@ test "fromHex - empty" {
 
 /// Convert bytes to hex string (allocates)
 pub fn toHex(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
-    return try Hex.encode(allocator, bytes);
+    return try Hex.bytesToHex(allocator, bytes);
 }
 
 test "toHex - basic" {

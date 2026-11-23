@@ -2,7 +2,7 @@
 package hex
 
 import (
-	"github.com/voltaire-labs/voltaire-go/internal/ffi"
+	"github.com/evmts/voltaire/packages/voltaire-go/internal/ffi"
 )
 
 // Decode decodes a hex string to bytes.

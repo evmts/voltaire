@@ -111,7 +111,7 @@ describe("Precompile: ecRecover (0x01)", () => {
 			expect(result.output.length).toBe(32);
 		});
 
-		it("should handle EIP-155 v values (35+)", () => {
+		it("should reject EIP-155 v values (35+) with empty output", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 3;
 
@@ -124,9 +124,10 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const input = buildEcRecoverInput(hash, eip155V, sig.r, sig.s);
 
 			const result = ecrecover(input, gasLimit);
-			// May succeed or fail depending on implementation
+			// The precompile accepts only v = 27 or 28; EIP-155 values are invalid
+			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(3000n);
-			expect(result.output.length).toBe(32);
+			expect(result.output.length).toBe(0);
 		});
 
 		it("should work with known test vectors from Ethereum tests", () => {
@@ -192,7 +193,8 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const result = ecrecover(input, 2999n);
 
 			expect(result.success).toBe(false);
-			expect(result.gasUsed).toBe(3000n);
+			expect(result.gasUsed).toBe(2999n);
+			expect(result.output.length).toBe(0);
 			expect(result.error).toBe("Out of gas");
 		});
 
@@ -215,8 +217,8 @@ describe("Precompile: ecRecover (0x01)", () => {
 
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(3000n);
-			// Should return zero address for invalid signature
-			expect([...result.output].every((b) => b === 0)).toBe(true);
+			// Invalid signature: empty output, not 32 zero bytes
+			expect(result.output.length).toBe(0);
 		});
 
 		it("should truncate long input to 128 bytes", () => {
@@ -236,7 +238,7 @@ describe("Precompile: ecRecover (0x01)", () => {
 			expect(result.gasUsed).toBe(3000n);
 		});
 
-		it("should return zero address for invalid v value (0)", () => {
+		it("should return empty output for invalid v value (0)", () => {
 			const hash = Keccak256.hash(new TextEncoder().encode("invalid v"));
 			const r = new Uint8Array(32);
 			const s = new Uint8Array(32);
@@ -247,11 +249,11 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const result = ecrecover(input, gasLimit);
 
 			expect(result.success).toBe(true);
-			// May or may not be zero depending on whether v=0 is accepted
 			expect(result.gasUsed).toBe(3000n);
+			expect(result.output.length).toBe(0);
 		});
 
-		it("should return zero address for invalid v value (26)", () => {
+		it("should return empty output for invalid v value (26)", () => {
 			const hash = Keccak256.hash(new TextEncoder().encode("v=26"));
 			const r = new Uint8Array(32);
 			const s = new Uint8Array(32);
@@ -262,10 +264,10 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const result = ecrecover(input, gasLimit);
 
 			expect(result.success).toBe(true);
-			expect([...result.output].every((b) => b === 0)).toBe(true);
+			expect(result.output.length).toBe(0);
 		});
 
-		it("should return zero address for zero r", () => {
+		it("should return empty output for zero r", () => {
 			const hash = Keccak256.hash(new TextEncoder().encode("zero r"));
 			const r = new Uint8Array(32); // All zeros
 			const s = new Uint8Array(32);
@@ -275,10 +277,10 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const result = ecrecover(input, gasLimit);
 
 			expect(result.success).toBe(true);
-			expect([...result.output].every((b) => b === 0)).toBe(true);
+			expect(result.output.length).toBe(0);
 		});
 
-		it("should return zero address for zero s", () => {
+		it("should return empty output for zero s", () => {
 			const hash = Keccak256.hash(new TextEncoder().encode("zero s"));
 			const r = new Uint8Array(32);
 			const s = new Uint8Array(32); // All zeros
@@ -288,7 +290,7 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const result = ecrecover(input, gasLimit);
 
 			expect(result.success).toBe(true);
-			expect([...result.output].every((b) => b === 0)).toBe(true);
+			expect(result.output.length).toBe(0);
 		});
 
 		it("should handle all-zeros input", () => {
@@ -297,7 +299,7 @@ describe("Precompile: ecRecover (0x01)", () => {
 
 			expect(result.success).toBe(true);
 			expect(result.gasUsed).toBe(3000n);
-			expect([...result.output].every((b) => b === 0)).toBe(true);
+			expect(result.output.length).toBe(0);
 		});
 
 		it("should handle zero hash with valid signature", () => {
@@ -348,7 +350,7 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const result = ecrecover(input, gasLimit);
 
 			expect(result.success).toBe(true);
-			expect([...result.output].every((b) => b === 0)).toBe(true);
+			expect(result.output.length).toBe(0);
 		});
 	});
 
@@ -496,6 +498,136 @@ describe("Precompile: ecRecover (0x01)", () => {
 			expect(Hex.fromBytes(recoveredAddress)).toBe(
 				Hex.fromBytes(expectedAddress),
 			);
+		});
+	});
+
+	describe("Consensus rules for v, r, s and failure output", () => {
+		const N =
+			0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+
+		const signed = (label: string, key: number) => {
+			const privateKey = new Uint8Array(32);
+			privateKey[31] = key;
+			const hash = Keccak256.hash(new TextEncoder().encode(label));
+			const sig = Secp256k1.sign(hash, privateKey);
+			const publicKey = Secp256k1.derivePublicKey(privateKey);
+			const expected = new Uint8Array(32);
+			expected.set(Keccak256.hash(publicKey).slice(12), 12);
+			return { hash, sig, expected };
+		};
+
+		const expectEmpty = (input: Uint8Array) => {
+			const result = ecrecover(input, 3000n);
+			expect(result.success).toBe(true);
+			expect(result.error).toBeUndefined();
+			expect(result.gasUsed).toBe(3000n);
+			expect(result.output).toEqual(new Uint8Array(0));
+		};
+
+		it("recovers the go-ethereum ValidKey vector", () => {
+			const input = Hex.toBytes(
+				"0x18c547e4f7b0f325ad1e56f57e26c745b09a3e503d86e00e5255ff7f715d3d1c000000000000000000000000000000000000000000000000000000000000001c73b1693892219d736caba55bdb67216e485557ea6b6af75f37096c9aa6a5a75feeb940b1d03b21e36b0e47e79769f095fe2ab855bd91e3a38756b7d75a9c4549",
+			);
+			const result = ecrecover(input, 3000n);
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(3000n);
+			expect(Hex.fromBytes(result.output)).toBe(
+				"0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+			);
+		});
+
+		it("returns the signer for v = 27 or 28", () => {
+			const { hash, sig, expected } = signed("canonical v", 11);
+			const result = ecrecover(
+				buildEcRecoverInput(hash, sig.v, sig.r, sig.s),
+				3000n,
+			);
+			expect(result.output).toEqual(expected);
+		});
+
+		it("rejects recovery ids 0 and 1 even for an otherwise valid signature", () => {
+			const { hash, sig } = signed("raw recovery id", 12);
+			expectEmpty(buildEcRecoverInput(hash, sig.v - 27, sig.r, sig.s));
+			expectEmpty(buildEcRecoverInput(hash, 0, sig.r, sig.s));
+			expectEmpty(buildEcRecoverInput(hash, 1, sig.r, sig.s));
+		});
+
+		it("rejects v values other than 27 and 28", () => {
+			const { hash, sig } = signed("other v", 13);
+			for (const v of [2, 26, 29, 35, 36, 37, 38, 255]) {
+				expectEmpty(buildEcRecoverInput(hash, v, sig.r, sig.s));
+			}
+		});
+
+		it("rejects a v word with any dirty upper byte", () => {
+			const { hash, sig } = signed("dirty v", 14);
+			const clean = buildEcRecoverInput(hash, sig.v, sig.r, sig.s);
+			expect(ecrecover(clean, 3000n).output.length).toBe(32);
+			for (let i = 32; i < 63; i++) {
+				const dirty = new Uint8Array(clean);
+				dirty[i] = 1;
+				expectEmpty(dirty);
+			}
+		});
+
+		it("rejects r and s outside [1, n - 1]", () => {
+			const { hash, sig } = signed("range", 15);
+			const zero = new Uint8Array(32);
+			expectEmpty(buildEcRecoverInput(hash, sig.v, zero, sig.s));
+			expectEmpty(buildEcRecoverInput(hash, sig.v, sig.r, zero));
+			expectEmpty(buildEcRecoverInput(hash, sig.v, beBytes32(N), sig.s));
+			expectEmpty(buildEcRecoverInput(hash, sig.v, sig.r, beBytes32(N)));
+			expectEmpty(buildEcRecoverInput(hash, sig.v, beBytes32(N + 1n), sig.s));
+			expectEmpty(
+				buildEcRecoverInput(hash, sig.v, sig.r, beBytes32((1n << 256n) - 1n)),
+			);
+		});
+
+		it("returns empty output when no public key recovers", () => {
+			// r = n - 1 is in range but is not the x coordinate of a curve point
+			// reachable for this recovery id.
+			const hash = new Uint8Array(32);
+			const one = beBytes32(1n);
+			let failures = 0;
+			for (let r = N - 1n; r > N - 9n; r--) {
+				for (const v of [27, 28]) {
+					const result = ecrecover(
+						buildEcRecoverInput(hash, v, beBytes32(r), one),
+						3000n,
+					);
+					expect(result.success).toBe(true);
+					expect(result.gasUsed).toBe(3000n);
+					expect([0, 32]).toContain(result.output.length);
+					if (result.output.length === 0) failures++;
+				}
+			}
+			expect(failures).toBeGreaterThan(0);
+		});
+
+		it("accepts high-s signatures and recovers the same signer", () => {
+			const { hash, sig, expected } = signed("high s", 16);
+			const s = BigInt(Hex.fromBytes(sig.s));
+			const highS = N - s;
+			expect(highS > N / 2n).toBe(true);
+			// Negating s flips the recovery id.
+			const flippedV = sig.v === 27 ? 28 : 27;
+			const result = ecrecover(
+				buildEcRecoverInput(hash, flippedV, sig.r, beBytes32(highS)),
+				3000n,
+			);
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(3000n);
+			expect(result.output).toEqual(expected);
+		});
+
+		it("halts with all forwarded gas and empty output when out of gas", () => {
+			for (const gas of [0n, 1n, 2999n]) {
+				const result = ecrecover(new Uint8Array(128), gas);
+				expect(result.success).toBe(false);
+				expect(result.error).toBe("Out of gas");
+				expect(result.gasUsed).toBe(gas);
+				expect(result.output).toEqual(new Uint8Array(0));
+			}
 		});
 	});
 });

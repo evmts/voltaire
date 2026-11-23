@@ -1,11 +1,17 @@
 /**
  * Get current blob base fee (takes this)
  *
+ * Without `context`, uses Cancun's update fraction (backwards compatible).
+ * With `context`, uses the update fraction of the resolved schedule
+ * (`schedule` > `timestamp` > `hardfork`).
+ *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
  * @param {import('./FeeMarketType.js').FeeMarketType} state - Current block state
+ * @param {import('./BlobScheduleType.js').BlobForkContext} [context] - Optional fork, timestamp, or schedule context
  * @returns {bigint} Blob base fee in wei per blob gas
- * @throws {never}
+ * @throws {InvalidRangeError} If `context` names an unknown or pre-Cancun fork
+ * @throws {InvalidFormatError} If `context.timestamp` is an invalid number
  * @example
  * ```javascript
  * import * as FeeMarket from './primitives/FeeMarket/index.js';
@@ -13,5 +19,5 @@
  * const blobBaseFee = FeeMarket.getBlobBaseFee(state);
  * ```
  */
-export function getBlobBaseFee(state: import("./FeeMarketType.js").FeeMarketType): bigint;
+export function getBlobBaseFee(state: import("./FeeMarketType.js").FeeMarketType, context?: import("./BlobScheduleType.js").BlobForkContext): bigint;
 //# sourceMappingURL=getBlobBaseFee.d.ts.map

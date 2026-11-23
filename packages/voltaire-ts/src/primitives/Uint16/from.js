@@ -29,12 +29,13 @@ export function from(value) {
 	let numValue;
 
 	if (typeof value === "string") {
-		if (value.startsWith("0x") || value.startsWith("0X")) {
-			numValue = Number.parseInt(value, 16);
-		} else {
+		// Strict grammar: optional "-" then decimal digits, or 0x-prefixed hex.
+		// parseInt alone would accept "12.5" as 12 and "12xyz" as 12.
+		if (/^0[xX][0-9a-fA-F]+$/.test(value)) {
+			numValue = Number.parseInt(value.slice(2), 16);
+		} else if (/^-?[0-9]+$/.test(value)) {
 			numValue = Number.parseInt(value, 10);
-		}
-		if (Number.isNaN(numValue)) {
+		} else {
 			throw new Uint16InvalidHexError(`Invalid Uint16 string: ${value}`, {
 				value,
 			});

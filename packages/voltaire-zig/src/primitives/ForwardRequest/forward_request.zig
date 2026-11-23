@@ -45,9 +45,10 @@ const crypto = @import("crypto");
 pub const FORWARD_REQUEST_TYPEHASH: [32]u8 = computeTypeHash();
 
 fn computeTypeHash() [32]u8 {
+    @setEvalBranchQuota(10000); // comptime Keccak256 permutation exceeds the default 1000 branches
     const type_string = "ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)";
     var result: [32]u8 = undefined;
-    crypto.Keccak256.hash(type_string, &result);
+    crypto.Keccak256.hash(type_string, &result, .{});
     return result;
 }
 
@@ -103,7 +104,7 @@ pub const ForwardRequest = struct {
 
         // keccak256(data)
         var data_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(self.data, &data_hash);
+        crypto.Keccak256.hash(self.data, &data_hash, .{});
         @memcpy(encoded[192..224], &data_hash);
 
         // validUntilTime (uint256, big-endian)
@@ -111,7 +112,7 @@ pub const ForwardRequest = struct {
 
         // Hash the encoded data
         var result: [32]u8 = undefined;
-        crypto.Keccak256.hash(&encoded, &result);
+        crypto.Keccak256.hash(&encoded, &result, .{});
         return result;
     }
 
@@ -133,7 +134,7 @@ pub const ForwardRequest = struct {
 
         // Final hash
         var result: [32]u8 = undefined;
-        crypto.Keccak256.hash(&data, &result);
+        crypto.Keccak256.hash(&data, &result, .{});
         return result;
     }
 
@@ -530,7 +531,7 @@ test "ForwardRequest: getTypeString returns correct string" {
 test "ForwardRequest: FORWARD_REQUEST_TYPEHASH is correct" {
     const type_string = ForwardRequest.getTypeString();
     var expected: [32]u8 = undefined;
-    crypto.Keccak256.hash(type_string, &expected);
+    crypto.Keccak256.hash(type_string, &expected, .{});
     try std.testing.expectEqualSlices(u8, &expected, &FORWARD_REQUEST_TYPEHASH);
 }
 

@@ -40,7 +40,7 @@ export function cappedRefund(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toNumber, _toBigInt, _toHex, _equals, _cappedRefund };
+export { _cappedRefund, _equals, _toBigInt, _toHex, _toNumber };
 
 // Export as namespace (convenience)
 export const GasRefund = {

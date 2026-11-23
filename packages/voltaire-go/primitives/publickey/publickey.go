@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/voltaire-labs/voltaire-go/internal/ffi"
-	"github.com/voltaire-labs/voltaire-go/primitives/address"
+	"github.com/evmts/voltaire/packages/voltaire-go/internal/ffi"
+	"github.com/evmts/voltaire/packages/voltaire-go/primitives/address"
 )
 
 // secp256k1 curve parameters

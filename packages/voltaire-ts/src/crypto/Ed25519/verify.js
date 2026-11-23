@@ -12,7 +12,7 @@ import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
  * @param {import('./Signature.js').Signature} signature - 64-byte Ed25519 signature to verify
  * @param {Uint8Array} message - Original message bytes that were signed
  * @param {import('./PublicKey.js').PublicKey} publicKey - 32-byte Ed25519 public key
- * @returns {boolean} True if signature is cryptographically valid, false otherwise
+ * @returns {boolean} True if signature is cryptographically valid, false otherwise (including when the public key is non-canonical, off-curve, or a small-order point)
  * @throws {InvalidPublicKeyError} If public key length is not 32 bytes
  * @throws {InvalidSignatureError} If signature length is not 64 bytes
  * @example
@@ -46,6 +46,12 @@ export function verify(signature, message, publicKey) {
 	}
 
 	try {
+		// Strict RFC 8032 decoding of the public key (y < p, on curve), then
+		// reject the identity and the other small-order points: under such a
+		// key a signature verifies for messages the "signer" never saw.
+		if (ed25519.Point.fromBytes(publicKey, false).isSmallOrder()) {
+			return false;
+		}
 		return ed25519.verify(signature, message, publicKey);
 	} catch {
 		return false;

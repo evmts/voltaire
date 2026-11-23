@@ -532,7 +532,7 @@ Each parser, categorization check, and disassembly function is independently exp
 ### Comparison & Logic
 - **LT, GT, SLT, SGT, EQ** (0x10-0x14)
 - **ISZERO, AND, OR, XOR, NOT** (0x15-0x19)
-- **BYTE, SHL, SHR, SAR** (0x1A-0x1D)
+- **BYTE, SHL, SHR, SAR, CLZ** (0x1A-0x1E)
 
 ### Memory & Storage
 - **MLOAD, MSTORE, MSTORE8** (0x51-0x53)
@@ -640,6 +640,7 @@ PUSH Data Skipping: When parsing bytecode, PUSH instructions consume 1-32 immedi
 | 0x1B | SHL | 3 | 2 | 1 | Shift left (EIP-145) |
 | 0x1C | SHR | 3 | 2 | 1 | Shift right (EIP-145) |
 | 0x1D | SAR | 3 | 2 | 1 | Arithmetic shift (EIP-145) |
+| 0x1E | CLZ | 5 | 1 | 1 | Count leading zeros (EIP-7939, Osaka) |
 
 </Tab>
 

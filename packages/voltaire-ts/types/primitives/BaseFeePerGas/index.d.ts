@@ -15,7 +15,7 @@ export declare function toNumber(baseFee: bigint | number | string): number;
 export declare function toBigInt(baseFee: bigint | number | string): bigint;
 export declare function equals(baseFee1: bigint | number | string, baseFee2: bigint | number | string): boolean;
 export declare function compare(baseFee1: bigint | number | string, baseFee2: bigint | number | string): number;
-export { _toGwei, _toWei, _toNumber, _toBigInt, _equals, _compare };
+export { _compare, _equals, _toBigInt, _toGwei, _toNumber, _toWei };
 export declare const BaseFeePerGas: {
     from: typeof from;
     fromGwei: typeof fromGwei;

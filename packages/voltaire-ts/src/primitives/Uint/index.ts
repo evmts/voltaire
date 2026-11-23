@@ -33,15 +33,21 @@ export { maximum } from "./maximum.js";
 export { min } from "./min.js";
 export { minimum } from "./minimum.js";
 export { minus } from "./minus.js";
+export { minusChecked } from "./minusChecked.js";
+export { minusWrapping } from "./minusWrapping.js";
 export { modulo } from "./modulo.js";
 export { notEquals } from "./notEquals.js";
 export { plus } from "./plus.js";
+export { plusChecked } from "./plusChecked.js";
+export { plusWrapping } from "./plusWrapping.js";
 export { popCount } from "./popCount.js";
 export { product } from "./product.js";
 export { shiftLeft } from "./shiftLeft.js";
 export { shiftRight } from "./shiftRight.js";
 export { sum } from "./sum.js";
 export { times } from "./times.js";
+export { timesChecked } from "./timesChecked.js";
+export { timesWrapping } from "./timesWrapping.js";
 export { toAbiEncoded } from "./toAbiEncoded.js";
 export { toBigInt } from "./toBigInt.js";
 export { toBytes } from "./toBytes.js";
@@ -83,15 +89,21 @@ import { maximum } from "./maximum.js";
 import { min } from "./min.js";
 import { minimum } from "./minimum.js";
 import { minus } from "./minus.js";
+import { minusChecked } from "./minusChecked.js";
+import { minusWrapping } from "./minusWrapping.js";
 import { modulo } from "./modulo.js";
 import { notEquals } from "./notEquals.js";
 import { plus } from "./plus.js";
+import { plusChecked } from "./plusChecked.js";
+import { plusWrapping } from "./plusWrapping.js";
 import { popCount } from "./popCount.js";
 import { product } from "./product.js";
 import { shiftLeft } from "./shiftLeft.js";
 import { shiftRight } from "./shiftRight.js";
 import { sum } from "./sum.js";
 import { times } from "./times.js";
+import { timesChecked } from "./timesChecked.js";
+import { timesWrapping } from "./timesWrapping.js";
 import { toAbiEncoded } from "./toAbiEncoded.js";
 import { toBigInt } from "./toBigInt.js";
 import { toBytes } from "./toBytes.js";
@@ -122,6 +134,12 @@ const _Uint256Namespace: {
 	plus: (uint: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
 	minus: (uint: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
 	times: (uint: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
+	plusChecked: (a: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
+	minusChecked: (a: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
+	timesChecked: (a: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
+	plusWrapping: (a: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
+	minusWrapping: (a: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
+	timesWrapping: (a: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
 	dividedBy: (uint: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
 	modulo: (uint: Uint256TypeDef, b: Uint256TypeDef) => Uint256TypeDef;
 	toPower: (uint: Uint256TypeDef, exponent: Uint256TypeDef) => Uint256TypeDef;
@@ -174,6 +192,12 @@ const _Uint256Namespace: {
 	plus,
 	minus,
 	times,
+	plusChecked,
+	minusChecked,
+	timesChecked,
+	plusWrapping,
+	minusWrapping,
+	timesWrapping,
 	dividedBy,
 	modulo,
 	toPower,
@@ -209,8 +233,7 @@ const _Uint256Namespace: {
 	SIZE,
 };
 
-export { _Uint256Namespace as Uint256Type, _Uint256Namespace as Uint256 };
-
 // Export type definitions
 export type { UintConstructor } from "./UintConstructor.js";
 export type { Uint256TypeDef as Type };
+export { _Uint256Namespace as Uint256Type, _Uint256Namespace as Uint256 };

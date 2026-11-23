@@ -1,0 +1,99 @@
+---
+title: Blob Schedules (EIP-7691, EIP-7892, EIP-7918)
+description: Per-fork blob target, max, and base fee update fraction from Cancun through BPO2, plus the EIP-7918 reserve price rule
+---
+
+## Overview
+
+A blob schedule is the set of three parameters that drive the EIP-4844 blob fee market for a fork:
+
+- **target**: blobs per block at which the blob base fee holds steady
+- **max**: hard cap on blobs per block
+- **baseFeeUpdateFraction**: controls how fast the blob base fee moves
+
+Cancun defined the first schedule. Prague raised it ([EIP-7691](https://eips.ethereum.org/EIPS/eip-7691)). Osaka introduced blob-parameter-only (BPO) forks ([EIP-7892](https://eips.ethereum.org/EIPS/eip-7892)), which change only the schedule and activate by timestamp.
+
+## Schedules
+
+```typescript
+const GAS_PER_BLOB = 131_072n;    // 2^17
+const MIN_BLOB_BASE_FEE = 1n;     // wei
+const BLOB_BASE_COST = 8_192n;    // 2^13, EIP-7918
+
+const CANCUN = { target: 3,  max: 6,  baseFeeUpdateFraction: 3_338_477n };
+const PRAGUE = { target: 6,  max: 9,  baseFeeUpdateFraction: 5_007_716n };
+const OSAKA  = PRAGUE; // Osaka activates with the Prague schedule
+const BPO1   = { target: 10, max: 15, baseFeeUpdateFraction: 8_346_193n };
+const BPO2   = { target: 14, max: 21, baseFeeUpdateFraction: 11_684_671n };
+```
+
+| Schedule | Activation (mainnet) | Target | Max | Target blob gas | Max blob gas | Update fraction |
+|----------|----------------------|--------|-----|-----------------|--------------|-----------------|
+| Cancun | Mar 13, 2024 | 3 | 6 | 393,216 | 786,432 | `3_338_477n` |
+| Prague | May 7, 2025 | 6 | 9 | 786,432 | 1,179,648 | `5_007_716n` |
+| Osaka | `1764798551` (Dec 3, 2025) | 6 | 9 | 786,432 | 1,179,648 | `5_007_716n` |
+| BPO1 | `1765290071` (Dec 9, 2025) | 10 | 15 | 1,310,720 | 1,966,080 | `8_346_193n` |
+| BPO2 | `1767747671` (Jan 7, 2026) | 14 | 21 | 1,835,008 | 2,752,512 | `11_684_671n` |
+
+Each update fraction keeps the maximum per-block blob base fee change near 12.5% for that schedule's target and max.
+
+## Blob base fee
+
+The blob base fee formula is unchanged from EIP-4844. Only the update fraction comes from the active schedule:
+
+```
+blobBaseFee = fakeExponential(MIN_BLOB_BASE_FEE, excessBlobGas, schedule.baseFeeUpdateFraction)
+```
+
+## Excess blob gas
+
+### Before Osaka (EIP-4844)
+
+```
+targetBlobGas = GAS_PER_BLOB * schedule.target
+if parentExcessBlobGas + parentBlobGasUsed < targetBlobGas: return 0
+return parentExcessBlobGas + parentBlobGasUsed - targetBlobGas
+```
+
+### Osaka and later (EIP-7918)
+
+EIP-7918 adds a reserve price. When execution gas is expensive relative to blob gas, the blob base fee is not allowed to keep falling:
+
+```
+targetBlobGas = GAS_PER_BLOB * schedule.target
+if parentExcessBlobGas + parentBlobGasUsed < targetBlobGas:
+    return 0
+if BLOB_BASE_COST * parentBaseFeePerGas > GAS_PER_BLOB * blobBaseFee(parentExcessBlobGas, schedule.baseFeeUpdateFraction):
+    return parentExcessBlobGas + parentBlobGasUsed * (schedule.max - schedule.target) / schedule.max
+return parentExcessBlobGas + parentBlobGasUsed - targetBlobGas
+```
+
+The second branch makes excess blob gas only increase while the reserve price binds, so the blob base fee tracks `BLOB_BASE_COST * baseFeePerGas / GAS_PER_BLOB` from below.
+
+## Voltaire API
+
+`FeeMarket.calculateExcessBlobGas(parentExcessBlobGas, parentBlobGasUsed)` applies the Cancun schedule (target 3 blobs, 393,216 blob gas):
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire/FeeMarket';
+
+FeeMarket.calculateExcessBlobGas(0n, 131_072n);   // 0n (1 blob, below target)
+FeeMarket.calculateExcessBlobGas(0n, 786_432n);   // 393_216n (6 blobs, 3 above target)
+```
+
+<Warning>
+For Prague, Osaka, and BPO blocks, compute excess blob gas with the schedule for the block's timestamp and, from Osaka on, the EIP-7918 rule above. The two-argument form gives Cancun results only.
+</Warning>
+
+## Related
+
+- [EIP-4844 blob fees](/primitives/feemarket/eip4844)
+- [FeeMarket constants](/primitives/feemarket/constants)
+- [Osaka hardfork](/primitives/hardfork/osaka)
+
+## References
+
+- [EIP-4844: Shard blob transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [EIP-7691: Blob throughput increase](https://eips.ethereum.org/EIPS/eip-7691)
+- [EIP-7892: Blob parameter only hardforks](https://eips.ethereum.org/EIPS/eip-7892)
+- [EIP-7918: Blob base fee bounded by execution cost](https://eips.ethereum.org/EIPS/eip-7918)

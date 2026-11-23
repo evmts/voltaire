@@ -1,6 +1,6 @@
 ---
-title: "parse.js"
----
+
+## title: "parse.js"
 
 # parse.js
 
@@ -9,7 +9,7 @@ Parse bytecode into instructions with offsets and immediate data.
 ## Signature
 
 ```typescript
-function parse(bytecode: Uint8Array): Instruction[]
+function parse(bytecode: Uint8Array): Instruction[];
 ```
 
 ## Parameters
@@ -21,6 +21,7 @@ function parse(bytecode: Uint8Array): Instruction[]
 `Instruction[]` - Array of parsed instructions
 
 ### Instruction Structure
+
 ```typescript
 {
   offset: number;           // Byte offset in code
@@ -41,11 +42,11 @@ const instructions = Opcode.parse(bytecode);
 // ]
 
 for (const inst of instructions) {
-  const info = Opcode.info(inst.opcode);
-  console.log(`${inst.offset}: ${info?.name}`);
-  if (inst.immediate) {
-    console.log(`  Data: ${Array.from(inst.immediate)}`);
-  }
+	const info = Opcode.info(inst.opcode);
+	console.log(`${inst.offset}: ${info?.name}`);
+	if (inst.immediate) {
+		console.log(`  Data: ${Array.from(inst.immediate)}`);
+	}
 }
 ```
 

@@ -14,7 +14,7 @@ import { is } from "./is.js";
 import { isValid } from "./isValid.js";
 import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
-export { from, fromBytes, fromHex, toHex, toBytes, getSelector, hasSelector, equals, is, isValid, encode, decode, MIN_SIZE, SELECTOR_SIZE, };
+export { decode, encode, equals, from, fromBytes, fromHex, getSelector, hasSelector, is, isValid, MIN_SIZE, SELECTOR_SIZE, toBytes, toHex, };
 export declare const BrandedCallData: {
     from: typeof from;
     fromBytes: typeof fromBytes;

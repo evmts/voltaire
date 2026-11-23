@@ -90,15 +90,12 @@ if (gasUsedDelta === 0n) {
 } else if (gasUsedDelta > 0n) {
   // Over target: increase
   const increase = (currentBaseFee * gasUsedDelta) / gasTarget / 8n;
-  nextBaseFee = currentBaseFee + Math.max(increase, 1n);
+  nextBaseFee = currentBaseFee + (increase > 0n ? increase : 1n);
 } else {
   // Under target: decrease
-  const decrease = (currentBaseFee * Math.abs(gasUsedDelta)) / gasTarget / 8n;
+  const decrease = (currentBaseFee * -gasUsedDelta) / gasTarget / 8n;
   nextBaseFee = currentBaseFee - decrease;
 }
-
-// Minimum base fee is 7 wei
-nextBaseFee = Math.max(nextBaseFee, 7n);
 ```
 
 The `/8n` factor gives 12.5% max adjustment per block.

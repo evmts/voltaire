@@ -21,6 +21,7 @@
  * ```
  */
 
+export * from "./BlobScheduleType.js";
 export * from "./BlobTxFee.js";
 export * from "./BlobTxFeeParams.js";
 export * from "./BrandedState.js";
@@ -33,17 +34,36 @@ export * from "./TxFee.js";
 export * from "./TxFeeParams.js";
 
 // Export constants
+import * as BlobScheduleConstants from "./blobSchedule.js";
 import * as Eip1559Constants from "./eip1559Constants.js";
 import * as Eip4844Constants from "./eip4844Constants.js";
+import {
+	blobScheduleForHardfork,
+	blobScheduleForTimestamp,
+	getBlobSchedule,
+} from "./getBlobSchedule.js";
 
 export const Eip1559 = Eip1559Constants;
 export const Eip4844 = Eip4844Constants;
+/**
+ * Blob schedule presets (CANCUN, PRAGUE, OSAKA, BPO1, BPO2), mainnet
+ * activation timestamps, EIP-7918 constants, and lookup helpers.
+ */
+export const BlobSchedule = Object.freeze({
+	...BlobScheduleConstants,
+	forHardfork: blobScheduleForHardfork,
+	forTimestamp: blobScheduleForTimestamp,
+});
 
 // Import methods
 import { BaseFee } from "./BaseFee.js";
 import { BlobBaseFee } from "./BlobBaseFee.js";
+import { calculateBlobBaseFee } from "./calculateBlobBaseFee.js";
 import { calculateBlobTxFee } from "./calculateBlobTxFee.js";
-import { calculateExcessBlobGas } from "./calculateExcessBlobGas.js";
+import {
+	calculateExcessBlobGas,
+	calculateExcessBlobGasEip7918,
+} from "./calculateExcessBlobGas.js";
 import { calculateTxFee } from "./calculateTxFee.js";
 import { canIncludeTx } from "./canIncludeTx.js";
 import { getBlobBaseFee as _getBlobBaseFee } from "./getBlobBaseFee.js";
@@ -52,25 +72,36 @@ import { gweiToWei } from "./gweiToWei.js";
 import { isAboveBlobGasTarget as _isAboveBlobGasTarget } from "./isAboveBlobGasTarget.js";
 import { isAboveGasTarget as _isAboveGasTarget } from "./isAboveGasTarget.js";
 import { nextState as _nextState } from "./nextState.js";
+import {
+	isBlobForkAtLeastOsaka,
+	normalizeBlobHardfork,
+} from "./normalizeBlobHardfork.js";
 import { projectBaseFees } from "./projectBaseFees.js";
+import { resolveBlobContext } from "./resolveBlobContext.js";
 import { validateState } from "./validateState.js";
 import { validateTxFeeParams } from "./validateTxFeeParams.js";
 import { weiToGwei } from "./weiToGwei.js";
 
 // Export individual functions
 export {
+	_nextState as nextState,
 	BaseFee,
 	BlobBaseFee,
-	calculateExcessBlobGas,
-	calculateTxFee,
+	calculateBlobBaseFee,
 	calculateBlobTxFee,
+	calculateExcessBlobGas,
+	calculateExcessBlobGasEip7918,
+	calculateTxFee,
 	canIncludeTx,
-	_nextState as nextState,
-	projectBaseFees,
-	validateTxFeeParams,
-	validateState,
-	weiToGwei,
+	getBlobSchedule,
 	gweiToWei,
+	isBlobForkAtLeastOsaka,
+	normalizeBlobHardfork,
+	projectBaseFees,
+	resolveBlobContext,
+	validateState,
+	validateTxFeeParams,
+	weiToGwei,
 };
 
 /**
@@ -83,18 +114,18 @@ export {
 export const State = {
 	/**
 	 * Calculate next block's fee market state
-	 * @type {(this: State) => State}
+	 * @type {(this: State, context?: import('./BlobScheduleType.js').BlobForkContext) => State}
 	 */
-	next: function () {
-		return _nextState(this);
+	next: function (context) {
+		return _nextState(this, context);
 	},
 
 	/**
 	 * Get current blob base fee
-	 * @type {(this: State) => bigint}
+	 * @type {(this: State, context?: import('./BlobScheduleType.js').BlobForkContext) => bigint}
 	 */
-	getBlobBaseFee: function () {
-		return _getBlobBaseFee(this);
+	getBlobBaseFee: function (context) {
+		return _getBlobBaseFee(this, context);
 	},
 
 	/**
@@ -115,9 +146,9 @@ export const State = {
 
 	/**
 	 * Check if block is above blob gas target
-	 * @type {(this: State) => boolean}
+	 * @type {(this: State, context?: import('./BlobScheduleType.js').BlobForkContext) => boolean}
 	 */
-	isAboveBlobGasTarget: function () {
-		return _isAboveBlobGasTarget(this);
+	isAboveBlobGasTarget: function (context) {
+		return _isAboveBlobGasTarget(this, context);
 	},
 };

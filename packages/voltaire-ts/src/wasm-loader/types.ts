@@ -104,10 +104,16 @@ export interface WasmExports {
 		dataLen: number,
 		outPtr: number,
 	) => number;
+	/**
+	 * BLAKE2b. Modules built after the output-length fix take `outLen`
+	 * (1..64) and write `outLen` bytes; older modules take three parameters
+	 * and always write 64 bytes. Check `.length` to tell them apart.
+	 */
 	primitives_blake2b: (
 		dataPtr: number,
 		dataLen: number,
 		outPtr: number,
+		outLen?: number,
 	) => number;
 	// Individual crypto WASM modules
 	blake2Hash?: (

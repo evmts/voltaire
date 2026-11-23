@@ -65,23 +65,27 @@ import { isValidPrivateKey, randomPrivateKey } from "./randomPrivateKey.js";
 import { sign, signPoint } from "./sign.js";
 import { verify, verifyPoint } from "./verify.js";
 
-export { Fp, Fp2, Fr, G1, G2, Pairing };
-
 // Export high-level functions
 export {
-	sign,
-	signPoint,
-	verify,
-	verifyPoint,
 	aggregate,
 	aggregatePublicKeys,
 	aggregateVerify,
 	batchVerify,
-	fastAggregateVerify,
 	derivePublicKey,
 	derivePublicKeyPoint,
-	randomPrivateKey,
+	Fp,
+	Fp2,
+	Fr,
+	fastAggregateVerify,
+	G1,
+	G2,
 	isValidPrivateKey,
+	Pairing,
+	randomPrivateKey,
+	sign,
+	signPoint,
+	verify,
+	verifyPoint,
 };
 
 /**

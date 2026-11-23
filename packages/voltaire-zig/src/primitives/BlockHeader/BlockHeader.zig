@@ -19,6 +19,12 @@
 //! ### EIP-4844 (Cancun)
 //! - blobGasUsed, excessBlobGas, parentBeaconBlockRoot
 //!
+//! ### EIP-7685 (Prague and Osaka)
+//! - requestsHash
+//!
+//! ### EIP-7928 (Amsterdam)
+//! - blockAccessListHash
+//!
 //! ## Usage
 //! ```zig
 //! const BlockHeader = @import("primitives").BlockHeader;
@@ -112,6 +118,15 @@ pub const BlockHeader = struct {
 
     /// EIP-4788: Parent beacon block root (post-Cancun)
     parent_beacon_block_root: ?Hash.Hash = null,
+
+    /// EIP-7685: SHA-256 commitment to execution requests (Prague and later).
+    /// Encoded as the 21st RLP header field, after parentBeaconBlockRoot.
+    requests_hash: ?Hash.Hash = null,
+
+    /// EIP-7928: `keccak256(rlp(block_access_list))` (Amsterdam and later).
+    /// Encoded as the 22nd RLP header field, after requestsHash.
+    /// Compute it with `BlockAccessList.hash`.
+    block_access_list_hash: ?Hash.Hash = null,
 };
 
 /// Empty ommers hash (keccak256 of empty RLP list)
@@ -213,6 +228,17 @@ fn encodeU64(allocator: std.mem.Allocator, value: u64) ![]u8 {
 
 /// RLP encode the block header
 pub fn rlpEncode(header: *const BlockHeader, allocator: std.mem.Allocator) ![]u8 {
+    const has_cancun_fields = header.blob_gas_used != null;
+    if ((header.withdrawals_root != null and header.base_fee_per_gas == null) or
+        (has_cancun_fields and header.withdrawals_root == null) or
+        (has_cancun_fields != (header.excess_blob_gas != null)) or
+        (has_cancun_fields != (header.parent_beacon_block_root != null)) or
+        (header.requests_hash != null and !has_cancun_fields) or
+        (header.block_access_list_hash != null and header.requests_hash == null))
+    {
+        return error.InvalidBlockHeader;
+    }
+
     var fields = std.ArrayList([]u8){};
     defer {
         for (fields.items) |item| {
@@ -221,88 +247,87 @@ pub fn rlpEncode(header: *const BlockHeader, allocator: std.mem.Allocator) ![]u8
         fields.deinit(allocator);
     }
 
+    try fields.ensureTotalCapacity(allocator, 22);
+
     // 1. parentHash (32 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.parent_hash));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.parent_hash));
 
     // 2. ommersHash (32 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.ommers_hash));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.ommers_hash));
 
     // 3. beneficiary (20 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.beneficiary.bytes));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.beneficiary.bytes));
 
     // 4. stateRoot (32 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.state_root));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.state_root));
 
     // 5. transactionsRoot (32 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.transactions_root));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.transactions_root));
 
     // 6. receiptsRoot (32 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.receipts_root));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.receipts_root));
 
     // 7. logsBloom (256 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.logs_bloom));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.logs_bloom));
 
     // 8. difficulty (u256)
     const difficulty_bytes = try encodeU256(allocator, header.difficulty);
     defer allocator.free(difficulty_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, difficulty_bytes));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, difficulty_bytes));
 
     // 9. number (u64)
     const number_bytes = try encodeU64(allocator, header.number);
     defer allocator.free(number_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, number_bytes));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, number_bytes));
 
     // 10. gasLimit (u64)
     const gas_limit_bytes = try encodeU64(allocator, header.gas_limit);
     defer allocator.free(gas_limit_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, gas_limit_bytes));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, gas_limit_bytes));
 
     // 11. gasUsed (u64)
     const gas_used_bytes = try encodeU64(allocator, header.gas_used);
     defer allocator.free(gas_used_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, gas_used_bytes));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, gas_used_bytes));
 
     // 12. timestamp (u64)
     const timestamp_bytes = try encodeU64(allocator, header.timestamp);
     defer allocator.free(timestamp_bytes);
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, timestamp_bytes));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, timestamp_bytes));
 
     // 13. extraData (variable)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, header.extra_data));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, header.extra_data));
 
     // 14. mixHash (32 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.mix_hash));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.mix_hash));
 
     // 15. nonce (8 bytes)
-    try fields.append(allocator, try Rlp.encodeBytes(allocator, &header.nonce));
+    fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.nonce));
 
-    // Optional fields (EIP-1559+)
+    // Optional fork suffix, validated above.
     if (header.base_fee_per_gas) |base_fee| {
         const base_fee_bytes = try encodeU256(allocator, base_fee);
         defer allocator.free(base_fee_bytes);
-        try fields.append(allocator, try Rlp.encodeBytes(allocator, base_fee_bytes));
+        fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, base_fee_bytes));
+    }
+    if (header.withdrawals_root) |wr| {
+        fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &wr));
+    }
+    if (header.blob_gas_used) |blob_gas| {
+        const blob_gas_bytes = try encodeU64(allocator, blob_gas);
+        defer allocator.free(blob_gas_bytes);
+        fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, blob_gas_bytes));
 
-        // EIP-4895 (Shanghai): withdrawalsRoot
-        if (header.withdrawals_root) |wr| {
-            try fields.append(allocator, try Rlp.encodeBytes(allocator, &wr));
-
-            // EIP-4844 (Cancun): blobGasUsed, excessBlobGas, parentBeaconBlockRoot
-            if (header.blob_gas_used) |blob_gas| {
-                const blob_gas_bytes = try encodeU64(allocator, blob_gas);
-                defer allocator.free(blob_gas_bytes);
-                try fields.append(allocator, try Rlp.encodeBytes(allocator, blob_gas_bytes));
-
-                if (header.excess_blob_gas) |excess| {
-                    const excess_bytes = try encodeU64(allocator, excess);
-                    defer allocator.free(excess_bytes);
-                    try fields.append(allocator, try Rlp.encodeBytes(allocator, excess_bytes));
-
-                    if (header.parent_beacon_block_root) |pbbr| {
-                        try fields.append(allocator, try Rlp.encodeBytes(allocator, &pbbr));
-                    }
-                }
-            }
-        }
+        const excess_bytes = try encodeU64(allocator, header.excess_blob_gas.?);
+        defer allocator.free(excess_bytes);
+        fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, excess_bytes));
+        fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &header.parent_beacon_block_root.?));
+    }
+    if (header.requests_hash) |requests| {
+        fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &requests));
+    }
+    if (header.block_access_list_hash) |bal| {
+        fields.appendAssumeCapacity(try Rlp.encodeBytes(allocator, &bal));
     }
 
     // Calculate total payload length
@@ -619,7 +644,7 @@ fn decodeToU64(bytes: []const u8) !u64 {
     if (bytes.len > 8) return error.InvalidBlockHeader;
 
     // Check for leading zeros (non-canonical)
-    if (bytes.len > 1 and bytes[0] == 0) return error.InvalidBlockHeader;
+    if (bytes[0] == 0) return error.InvalidBlockHeader;
 
     var result: u64 = 0;
     for (bytes) |b| {
@@ -634,7 +659,7 @@ fn decodeToU256(bytes: []const u8) !u256 {
     if (bytes.len > 32) return error.InvalidBlockHeader;
 
     // Check for leading zeros (non-canonical)
-    if (bytes.len > 1 and bytes[0] == 0) return error.InvalidBlockHeader;
+    if (bytes[0] == 0) return error.InvalidBlockHeader;
 
     var result: u256 = 0;
     for (bytes) |b| {
@@ -644,7 +669,8 @@ fn decodeToU256(bytes: []const u8) !u256 {
 }
 
 /// RLP decode a block header from bytes
-/// Supports all hardfork variants (Legacy, EIP-1559, Shanghai, Cancun)
+/// Supports legacy, London, Shanghai, Cancun, Prague/Osaka, and Amsterdam headers.
+/// The caller owns the returned extra_data slice and must free it with allocator.
 pub fn rlpDecode(allocator: std.mem.Allocator, data: []const u8) !BlockHeader {
     const decoded = try Rlp.decode(allocator, data, false);
     defer decoded.data.deinit(allocator);
@@ -655,9 +681,9 @@ pub fn rlpDecode(allocator: std.mem.Allocator, data: []const u8) !BlockHeader {
 
     const items = decoded.data.List;
 
-    // Minimum 15 fields (legacy), max 20 fields (Cancun)
-    if (items.len < 15 or items.len > 20) {
-        return error.InvalidBlockHeader;
+    switch (items.len) {
+        15, 16, 17, 20, 21, 22 => {},
+        else => return error.InvalidBlockHeader,
     }
 
     var header = BlockHeader{};
@@ -726,9 +752,7 @@ pub fn rlpDecode(allocator: std.mem.Allocator, data: []const u8) !BlockHeader {
 
     // 13. extraData (variable)
     if (items[12] != .String) return error.InvalidBlockHeader;
-    // Note: extraData is a slice, we need to be careful about lifetime
-    // For now, use empty slice (caller should handle allocation if needed)
-    header.extra_data = &[_]u8{};
+    // Copy extraData only after all fields validate, before freeing decoded RLP.
 
     // 14. mixHash (32 bytes)
     if (items[13] != .String or items[13].String.len != 32) {
@@ -778,7 +802,54 @@ pub fn rlpDecode(allocator: std.mem.Allocator, data: []const u8) !BlockHeader {
         header.parent_beacon_block_root = parent_beacon_block_root;
     }
 
+    if (items.len > 20) {
+        if (items[20] != .String or items[20].String.len != Hash.SIZE) return error.InvalidBlockHeader;
+        var requests_hash: Hash.Hash = undefined;
+        @memcpy(&requests_hash, items[20].String);
+        header.requests_hash = requests_hash;
+    }
+
+    // Optional Amsterdam field (22): EIP-7928 block access list hash
+    if (items.len > 21) {
+        if (items[21] != .String or items[21].String.len != Hash.SIZE) return error.InvalidBlockHeader;
+        var block_access_list_hash: Hash.Hash = undefined;
+        @memcpy(&block_access_list_hash, items[21].String);
+        header.block_access_list_hash = block_access_list_hash;
+    }
+
+    header.extra_data = try allocator.dupe(u8, items[12].String);
     return header;
+}
+
+test "rlpDecode - rejects zero and leading zeros in integer payloads" {
+    try std.testing.expectEqual(@as(u64, 0), try decodeToU64(""));
+    try std.testing.expectEqual(@as(u256, 0), try decodeToU256(""));
+    for ([_][]const u8{ "\x00", "\x00\x01" }) |payload| {
+        try std.testing.expectError(error.InvalidBlockHeader, decodeToU64(payload));
+        try std.testing.expectError(error.InvalidBlockHeader, decodeToU256(payload));
+    }
+}
+
+test "Cancun header rejects partial fork fields on encode and decode" {
+    const allocator = std.testing.allocator;
+    var header = init();
+    header.base_fee_per_gas = 7;
+    header.withdrawals_root = Hash.ZERO;
+    header.blob_gas_used = 0;
+    try std.testing.expectError(error.InvalidBlockHeader, rlpEncode(&header, allocator));
+    header.excess_blob_gas = 0;
+    try std.testing.expectError(error.InvalidBlockHeader, rlpEncode(&header, allocator));
+    header.parent_beacon_block_root = Hash.ZERO;
+
+    const encoded = try rlpEncode(&header, allocator);
+    defer allocator.free(encoded);
+    try std.testing.expectEqual(@as(u8, 0xf9), encoded[0]);
+    // Remove the 33-byte beacon root, then also the 1-byte excess blob gas.
+    for ([_]usize{ 33, 34 }) |omitted| {
+        const incomplete = encoded[0 .. encoded.len - omitted];
+        std.mem.writeInt(u16, incomplete[1..3], @intCast(incomplete.len - 3), .big);
+        try std.testing.expectError(error.InvalidBlockHeader, rlpDecode(allocator, incomplete));
+    }
 }
 
 test "rlpDecode - round trip legacy header" {
@@ -786,6 +857,7 @@ test "rlpDecode - round trip legacy header" {
 
     var original = init();
     original.number = 12345;
+    original.extra_data = "hardfork regression";
     original.gas_limit = 30000000;
     original.gas_used = 15000000;
     original.timestamp = 1640000000;
@@ -795,6 +867,8 @@ test "rlpDecode - round trip legacy header" {
     defer allocator.free(encoded);
 
     const decoded = try rlpDecode(allocator, encoded);
+    defer allocator.free(decoded.extra_data);
+    try std.testing.expectEqualSlices(u8, original.extra_data, decoded.extra_data);
 
     try std.testing.expectEqual(original.number, decoded.number);
     try std.testing.expectEqual(original.gas_limit, decoded.gas_limit);
@@ -815,6 +889,7 @@ test "rlpDecode - round trip EIP-1559 header" {
     defer allocator.free(encoded);
 
     const decoded = try rlpDecode(allocator, encoded);
+    defer allocator.free(decoded.extra_data);
 
     try std.testing.expectEqual(original.number, decoded.number);
     try std.testing.expectEqual(original.base_fee_per_gas.?, decoded.base_fee_per_gas.?);
@@ -829,7 +904,8 @@ test "rlpDecode - round trip EIP-1559 header" {
 test "real block - mainnet block 1" {
     const allocator = std.testing.allocator;
 
-    // Block 1 header data
+    // Reference: ethereum/execution-specs@9d18733602f7a4ed41001c16525943ca0836af4c
+    // src/ethereum/assets/blocks/block_1.json
     var header = BlockHeader{
         // Parent hash (genesis block hash)
         .parent_hash = .{
@@ -850,8 +926,8 @@ test "real block - mainnet block 1" {
         .state_root = .{
             0xd6, 0x7e, 0x4d, 0x45, 0x03, 0x43, 0x04, 0x64,
             0x25, 0xae, 0x42, 0x71, 0x47, 0x43, 0x53, 0x85,
-            0x7a, 0xb8, 0x60, 0xdb, 0xc0, 0xa1, 0xdc, 0xe6,
-            0x4b, 0x41, 0xa5, 0x13, 0x72, 0x2e, 0xcc, 0x47,
+            0x7a, 0xb8, 0x60, 0xdb, 0xc0, 0xa1, 0xdd, 0xe6,
+            0x4b, 0x41, 0xb5, 0xcd, 0x3a, 0x53, 0x2b, 0xf3,
         },
         // Empty transactions root
         .transactions_root = EMPTY_TRANSACTIONS_ROOT,
@@ -860,7 +936,7 @@ test "real block - mainnet block 1" {
         // Empty logs bloom
         .logs_bloom = [_]u8{0} ** 256,
         // Difficulty
-        .difficulty = 17179869184,
+        .difficulty = 0x3ff800000,
         // Block number
         .number = 1,
         // Gas limit
@@ -869,8 +945,8 @@ test "real block - mainnet block 1" {
         .gas_used = 0,
         // Timestamp (July 30, 2015)
         .timestamp = 1438269988,
-        // Extra data (empty)
-        .extra_data = &[_]u8{},
+        // Client version recorded by the miner
+        .extra_data = "Geth/v1.0.0/linux/go1.4.2",
         // Mix hash
         .mix_hash = .{
             0x96, 0x9b, 0x90, 0x0d, 0xe2, 0x7b, 0x6a, 0xc6,
@@ -1028,4 +1104,139 @@ test "validateTimestampStrictlyGreater - rejects equal" {
     var header_v = init();
     header_v.timestamp = 42;
     try std.testing.expectError(error.InvalidTimestamp, validateTimestampStrictlyGreater(&header_v, &parent));
+}
+
+test "Prague and Osaka requests hash survives canonical RLP" {
+    const allocator = std.testing.allocator;
+    var header = init();
+    header.base_fee_per_gas = 7;
+    header.withdrawals_root = Hash.ZERO;
+    header.blob_gas_used = 0;
+    header.excess_blob_gas = 0;
+    header.parent_beacon_block_root = Hash.ZERO;
+    // EIP-7685 commits to SHA-256 of the empty request list.
+    var empty_requests: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&empty_requests, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    header.requests_hash = empty_requests;
+    const encoded = try rlpEncode(&header, allocator);
+    defer allocator.free(encoded);
+    const decoded = try rlpDecode(allocator, encoded);
+    defer allocator.free(decoded.extra_data);
+    try std.testing.expectEqual(header.requests_hash, decoded.requests_hash);
+    const reencoded = try rlpEncode(&decoded, allocator);
+    defer allocator.free(reencoded);
+    try std.testing.expectEqualSlices(u8, encoded, reencoded);
+    header.requests_hash = null;
+    const cancun = try rlpEncode(&header, allocator);
+    defer allocator.free(cancun);
+    try std.testing.expect(!std.mem.eql(u8, cancun, encoded));
+    const decoded_cancun = try rlpDecode(allocator, cancun);
+    defer allocator.free(decoded_cancun.extra_data);
+    try std.testing.expectEqual(@as(?Hash.Hash, null), decoded_cancun.requests_hash);
+}
+
+test "Amsterdam block access list hash survives canonical RLP" {
+    const allocator = std.testing.allocator;
+    var header = init();
+    header.base_fee_per_gas = 7;
+    header.withdrawals_root = Hash.ZERO;
+    header.blob_gas_used = 0;
+    header.excess_blob_gas = 0;
+    header.parent_beacon_block_root = Hash.ZERO;
+    header.requests_hash = Hash.ZERO;
+    const osaka = try rlpEncode(&header, allocator);
+    defer allocator.free(osaka);
+    const osaka_hash = try hash(&header, allocator);
+
+    // EIP-7928 commits to keccak256(rlp([])) for a block with no accesses.
+    header.block_access_list_hash = EMPTY_OMMERS_HASH;
+    const encoded = try rlpEncode(&header, allocator);
+    defer allocator.free(encoded);
+    // One 32-byte string appended: 0xa0 prefix plus the hash, same list-length width.
+    try std.testing.expectEqual(osaka.len + 33, encoded.len);
+    try std.testing.expectEqual(@as(u8, 0xa0), encoded[encoded.len - 33]);
+    try std.testing.expectEqualSlices(u8, &EMPTY_OMMERS_HASH, encoded[encoded.len - 32 ..]);
+    const amsterdam_hash = try hash(&header, allocator);
+    try std.testing.expect(!std.mem.eql(u8, &osaka_hash, &amsterdam_hash));
+
+    const decoded = try rlpDecode(allocator, encoded);
+    defer allocator.free(decoded.extra_data);
+    try std.testing.expectEqual(header.block_access_list_hash, decoded.block_access_list_hash);
+    try std.testing.expectEqual(header.requests_hash, decoded.requests_hash);
+    const reencoded = try rlpEncode(&decoded, allocator);
+    defer allocator.free(reencoded);
+    try std.testing.expectEqualSlices(u8, encoded, reencoded);
+
+    // Absent field: the Osaka encoding is unchanged and decodes to null.
+    const decoded_osaka = try rlpDecode(allocator, osaka);
+    defer allocator.free(decoded_osaka.extra_data);
+    try std.testing.expectEqual(@as(?Hash.Hash, null), decoded_osaka.block_access_list_hash);
+
+    // A block access list hash requires requests_hash.
+    header.requests_hash = null;
+    try std.testing.expectError(error.InvalidBlockHeader, rlpEncode(&header, allocator));
+    header.block_access_list_hash = null;
+    const cancun = try rlpEncode(&header, allocator);
+    defer allocator.free(cancun);
+    const decoded_cancun = try rlpDecode(allocator, cancun);
+    defer allocator.free(decoded_cancun.extra_data);
+    try std.testing.expectEqual(@as(?Hash.Hash, null), decoded_cancun.block_access_list_hash);
+    try std.testing.expectEqual(@as(?Hash.Hash, null), decoded_cancun.requests_hash);
+}
+
+test "rlpDecode - rejects a block access list hash of the wrong length" {
+    const allocator = std.testing.allocator;
+    var header = init();
+    header.base_fee_per_gas = 7;
+    header.withdrawals_root = Hash.ZERO;
+    header.blob_gas_used = 0;
+    header.excess_blob_gas = 0;
+    header.parent_beacon_block_root = Hash.ZERO;
+    header.requests_hash = Hash.ZERO;
+    header.block_access_list_hash = Hash.ZERO;
+    const encoded = try rlpEncode(&header, allocator);
+    defer allocator.free(encoded);
+    // Shorten the last field from 32 to 31 bytes and fix both length prefixes.
+    const bad = try allocator.dupe(u8, encoded[0 .. encoded.len - 1]);
+    defer allocator.free(bad);
+    bad[bad.len - 32] = 0x9f;
+    // List header is 0xf9 + two length bytes.
+    try std.testing.expectEqual(@as(u8, 0xf9), bad[0]);
+    std.mem.writeInt(u16, bad[1..3], @intCast(bad.len - 3), .big);
+    try std.testing.expectError(error.InvalidBlockHeader, rlpDecode(allocator, bad));
+}
+
+test "hash - Osaka fixture and its Amsterdam extension match TypeScript" {
+    const allocator = std.testing.allocator;
+    // execution-specs tests@v20.0.2, CLZ arbitrary_0 blockchain fixture (Osaka).
+    var header = init();
+    _ = try std.fmt.hexToBytes(&header.parent_hash, "cd0d1a95675cf0973973ee5ed2cd0c67c0b5b89fdc04b5319171ada5b591c509");
+    header.ommers_hash = EMPTY_OMMERS_HASH;
+    _ = try std.fmt.hexToBytes(&header.beneficiary.bytes, "2adc25665018aa1fe0e6bc666dac8fc2697ff9ba");
+    _ = try std.fmt.hexToBytes(&header.state_root, "c26d03e498190f3d6fc5c6a84992c5eb374d14e34f38cfc3bf6d917b3e2dd785");
+    _ = try std.fmt.hexToBytes(&header.transactions_root, "10aa979aa50849b94b5371d3fbdb64def3c0aad20bcc3d68619ebe4d44e01dcf");
+    _ = try std.fmt.hexToBytes(&header.receipts_root, "306584c4749bfa876d5f560e143fc9f7b69069e584c87ad3e834bdcab03e3bcc");
+    header.number = 1;
+    header.gas_limit = 0x07270e00;
+    header.gas_used = 0x659b;
+    header.timestamp = 0x03e8;
+    header.extra_data = &.{0x00};
+    header.base_fee_per_gas = 7;
+    header.withdrawals_root = EMPTY_TRANSACTIONS_ROOT;
+    header.blob_gas_used = 0;
+    header.excess_blob_gas = 0;
+    header.parent_beacon_block_root = Hash.ZERO;
+    var requests_hash: Hash.Hash = undefined;
+    _ = try std.fmt.hexToBytes(&requests_hash, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    header.requests_hash = requests_hash;
+
+    var expected: Hash.Hash = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "4d464423ae9bdc39153f86b762e0ea0d8c5bb136e9be74af1161f8fd9348ffa1");
+    try std.testing.expectEqual(expected, try hash(&header, allocator));
+
+    // Same header with the empty block access list commitment as field 22.
+    // blockAccessListHash.test.ts asserts the same hash from the same fields.
+    header.block_access_list_hash = EMPTY_OMMERS_HASH;
+    _ = try std.fmt.hexToBytes(&expected, "edabd207a28a9f76d77deab4c26c5e85e9f18c6dc8d7a2ed8321e653f6bbac85");
+    try std.testing.expectEqual(expected, try hash(&header, allocator));
 }

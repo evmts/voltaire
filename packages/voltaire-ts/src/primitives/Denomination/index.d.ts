@@ -1,6 +1,5 @@
 import type { Uint256Type } from "../Uint/Uint256Type.js";
 import type { EtherType } from "./EtherType.js";
-import type { GweiType } from "./GweiType.js";
 import type { WeiType } from "./WeiType.js";
 
 // Wei
@@ -26,7 +25,7 @@ export interface GweiConstructor {
 	toEther(gwei: Gwei): Ether;
 	toU256(gwei: Gwei): Uint256Type;
 }
-export type Gwei = GweiType;
+export type Gwei = import("./Gwei.js").Gwei;
 export declare const Gwei: GweiConstructor;
 
 // Ether
@@ -42,12 +41,11 @@ export interface EtherConstructor {
 export type Ether = EtherType;
 export declare const Ether: EtherConstructor;
 
+// Type definitions
+export type { BrandedEther, EtherType } from "./EtherType.js";
+export * as BrandedEtherNamespace from "./ether-index.js";
+export type { BrandedGwei, GweiType } from "./GweiType.js";
+export * as BrandedGweiNamespace from "./gwei-index.js";
+export type { BrandedWei, WeiType } from "./WeiType.js";
 // Branded namespaces
 export * as BrandedWeiNamespace from "./wei-index.js";
-export * as BrandedGweiNamespace from "./gwei-index.js";
-export * as BrandedEtherNamespace from "./ether-index.js";
-
-// Type definitions
-export type { EtherType, BrandedEther } from "./EtherType.js";
-export type { GweiType, BrandedGwei } from "./GweiType.js";
-export type { WeiType, BrandedWei } from "./WeiType.js";

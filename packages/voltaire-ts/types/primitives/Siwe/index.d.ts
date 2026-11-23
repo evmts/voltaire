@@ -58,8 +58,7 @@ export declare function parse(text: string): SiweMessageType;
 export declare function validate(message: SiweMessageType, options?: {
     now?: Date;
 }): ValidationResult;
-export { _create, _format, _generateNonce, getMessageHash as _getMessageHash, _parse, _validate, verify as _verify, verifyMessage as _verifyMessage, };
-export { getMessageHash, verify, verifyMessage };
+export { _create, _format, _generateNonce, _parse, _validate, getMessageHash as _getMessageHash, getMessageHash, verify as _verify, verify, verifyMessage as _verifyMessage, verifyMessage, };
 export declare const BrandedSiwe: {
     create: typeof create;
     format: typeof format;

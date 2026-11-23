@@ -41,7 +41,7 @@ module native {
   export function verifyMessageRaw(
     message: SiweMessageType,
     signature: Uint8Array,
-    nowMillis: number
+    nowMillis: number,
   ): ValidationResult {
     return VoltaireSiwe.verifyMessage(message, signature as any, { now: new Date(nowMillis) })
   }
@@ -83,8 +83,8 @@ export effect function generateNonce(length = 17): string!SiweError {
 export effect function create(params: CreateSiweParams): SiweMessageType!SiweError {
   const addr = typeof params.address === "string"
     ? addressFromHex(params.address) catch effect (e) => {
-        throw new SiweError({ message: e.message, cause: e })
-      }
+      throw new SiweError({ message: e.message, cause: e })
+    }
     : params.address
   const nonce = params.nonce ?? try generateNonce()
   const nowInstant = try DateTime.now
@@ -103,23 +103,23 @@ export effect function create(params: CreateSiweParams): SiweMessageType!SiweErr
         requestId: params.requestId,
         resources: params.resources ? [...params.resources] : undefined,
         nonce,
-        issuedAt
+        issuedAt,
       }),
-    catch: (cause) => new SiweError({ message: `Failed creating SIWE message: ${errorMessage(cause)}`, cause })
+    catch: (cause) => new SiweError({ message: `Failed creating SIWE message: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function format(message: SiweMessageType): string!SiweError {
   return try Effect.try({
     try: () => formatRaw(message),
-    catch: (cause) => new SiweError({ message: `Failed formatting SIWE message: ${errorMessage(cause)}`, cause })
+    catch: (cause) => new SiweError({ message: `Failed formatting SIWE message: ${errorMessage(cause)}`, cause }),
   })
 }
 
 export effect function parse(text: string): SiweMessageType!SiweError {
   return try Effect.try({
     try: () => parseRaw(text),
-    catch: (cause) => new SiweError({ message: `Failed parsing SIWE message: ${errorMessage(cause)}`, cause })
+    catch: (cause) => new SiweError({ message: `Failed parsing SIWE message: ${errorMessage(cause)}`, cause }),
   })
 }
 
@@ -128,7 +128,7 @@ export effect function validate(message: SiweMessageType): SiweMessageType!SiweE
   const nowMillis = try Clock.currentTimeMillis
   const result = try Effect.try({
     try: () => validateRaw(message, nowMillis),
-    catch: (cause) => new SiweError({ message: `SIWE validation failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) => new SiweError({ message: `SIWE validation failed: ${errorMessage(cause)}`, cause }),
   })
   if (!result.valid) {
     const errText = result.error ? result.error.message : "Invalid SIWE message"
@@ -141,7 +141,7 @@ export effect function verify(message: SiweMessageType, signature: Uint8Array): 
   const nowMillis = try Clock.currentTimeMillis
   const result = try Effect.try({
     try: () => verifyMessageRaw(message, signature, nowMillis),
-    catch: (cause) => new SiweError({ message: `SIWE verification failed: ${errorMessage(cause)}`, cause })
+    catch: (cause) => new SiweError({ message: `SIWE verification failed: ${errorMessage(cause)}`, cause }),
   })
   if (!result.valid) {
     const errText = result.error ? result.error.message : "Invalid SIWE signature"

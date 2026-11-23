@@ -99,13 +99,13 @@ pub const UserOperation = struct {
 
         // keccak256(initCode)
         var init_code_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(self.init_code, &init_code_hash);
+        crypto.Keccak256.hash(self.init_code, &init_code_hash, .{});
         @memcpy(result[offset .. offset + 32], &init_code_hash);
         offset += 32;
 
         // keccak256(callData)
         var call_data_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(self.call_data, &call_data_hash);
+        crypto.Keccak256.hash(self.call_data, &call_data_hash, .{});
         @memcpy(result[offset .. offset + 32], &call_data_hash);
         offset += 32;
 
@@ -131,7 +131,7 @@ pub const UserOperation = struct {
 
         // keccak256(paymasterAndData)
         var paymaster_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(self.paymaster_and_data, &paymaster_hash);
+        crypto.Keccak256.hash(self.paymaster_and_data, &paymaster_hash, .{});
         @memcpy(result[offset .. offset + 32], &paymaster_hash);
 
         return result;
@@ -146,7 +146,7 @@ pub const UserOperation = struct {
 
         // Hash the pack_result user operation
         var user_op_hash: [32]u8 = undefined;
-        crypto.Keccak256.hash(pack_result, &user_op_hash);
+        crypto.Keccak256.hash(pack_result, &user_op_hash, .{});
 
         // Pack with entryPoint and chainId: userOpHash || entryPoint || chainId
         // 32 + 20 + 32 = 84 bytes
@@ -157,7 +157,7 @@ pub const UserOperation = struct {
 
         // Final hash
         var result: [32]u8 = undefined;
-        crypto.Keccak256.hash(&final_data, &result);
+        crypto.Keccak256.hash(&final_data, &result, .{});
 
         return result;
     }

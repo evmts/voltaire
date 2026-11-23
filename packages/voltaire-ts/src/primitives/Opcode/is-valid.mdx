@@ -41,8 +41,8 @@ const invalid = isValid(0x0C)  // false
 // 0x00-0x0B: Arithmetic
 0x00 (STOP), 0x01-0x0B (ADD, MUL, SUB, ...)
 
-// 0x10-0x1D: Comparison & Bitwise
-0x10-0x1D (LT, GT, EQ, AND, OR, SHL, ...)
+// 0x10-0x1E: Comparison & Bitwise
+0x10-0x1E (LT, GT, EQ, AND, OR, SHL, ...)
 
 // 0x20: Cryptographic
 0x20 (KECCAK256)
@@ -77,7 +77,7 @@ const invalid = isValid(0x0C)  // false
 ```typescript
 // Gaps in the opcode space (return false)
 0x0C-0x0F  // Between SIGNEXTEND and LT
-0x1E-0x1F  // Between SAR and KECCAK256
+0x1F       // Between CLZ and KECCAK256
 0x21-0x2F  // After KECCAK256
 0x49-0x4F  // After BLOBBASEFEE
 0xA5-0xEF  // Between LOG4 and CREATE

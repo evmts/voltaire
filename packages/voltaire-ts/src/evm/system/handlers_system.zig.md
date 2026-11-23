@@ -14,6 +14,7 @@
 This file implements the core EVM system operations with excellent attention to EIP compliance and hardfork compatibility. The code demonstrates strong alignment with Python execution-specs reference implementation and includes comprehensive comments explaining gas calculations, edge cases, and EIP-specific behavior.
 
 **Key Strengths**:
+
 - Excellent EIP compliance documentation
 - Thorough hardfork compatibility handling
 - Detailed gas calculation logic with Python reference comments
@@ -21,6 +22,7 @@ This file implements the core EVM system operations with excellent attention to 
 - No TODOs or FIXMEs
 
 **Key Concerns**:
+
 - Significant code duplication across call variants (CALL, CALLCODE, DELEGATECALL, STATICCALL)
 - Limited inline test coverage
 - Complex gas calculation logic could benefit from extraction
@@ -42,12 +44,14 @@ const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
 ```
 
 **Missing checks**:
+
 - ✅ Max init code size validation (delegated to `inner_create`)
 - ❌ Stack depth limit check (delegated but not documented)
 - ❌ Sender balance check (delegated but not documented)
 - ❌ Nonce overflow check (delegated but not documented)
 
 **Python reference** (`execution-specs/src/ethereum/forks/cancun/vm/instructions/system.py:94-98`):
+
 ```python
 if (
     sender.balance < endowment
@@ -93,6 +97,7 @@ Excellent! No TODO, FIXME, XXX, or HACK comments found in the file.
 **Location**: CALL (114-285), CALLCODE (288-426), DELEGATECALL (429-558), STATICCALL (561-690)
 
 **Issue**: ~80% code duplication across four call variants. Each function contains nearly identical:
+
 - Gas cost calculation (lines 138-192 vs 309-338 vs 451-477 vs 583-609)
 - Memory expansion logic (identical across all 4)
 - Gas forwarding calculation (identical pattern)
@@ -101,6 +106,7 @@ Excellent! No TODO, FIXME, XXX, or HACK comments found in the file.
 - Gas refund logic (lines 277-282 vs 418-423 vs 550-555 vs 682-687)
 
 **Example duplication** (appears 4 times):
+
 ```zig
 // Read input data from memory
 var input_data: []const u8 = &.{};
@@ -122,6 +128,7 @@ if (in_length > 0 and in_length <= std.math.maxInt(u32)) {
 ```
 
 **Recommendation**: Extract common functionality into private helper functions:
+
 - `calculateCallGasCost()` - Gas calculation logic
 - `readMemoryRegion()` - Input data reading
 - `writeMemoryRegion()` - Output data writing
@@ -150,6 +157,7 @@ const max_gas = if (evm.hardfork.isAtLeast(.TANGERINE_WHISTLE))
 This `64` appears 8 times in the file (lines 75, 207, 350, 490, 621, 742).
 
 **Recommendation**: Define constant at module level:
+
 ```zig
 const EIP150_GAS_DIVISOR = 64; // EIP-150: Retain 1/64th of remaining gas
 ```
@@ -218,6 +226,7 @@ if (end_offset >= in_off) {
 **Concern**: No comment explaining this is intentional behavior per spec
 
 **Recommendation**: Add comment:
+
 ```zig
 // else: offset overflow → empty input per EVM spec (invalid memory region)
 ```
@@ -234,6 +243,7 @@ if (end_offset >= in_off) {
 **Issue**: File contains 918 lines of complex logic but zero inline `test` blocks.
 
 **Missing test coverage**:
+
 - ✅ Helper functions (`wordCount`, `wordAlignedSize`, `add_u32`) - Simple, low risk
 - ❌ Gas calculation edge cases (overflow, underflow)
 - ❌ Memory expansion boundary conditions
@@ -243,6 +253,7 @@ if (end_offset >= in_off) {
 - ❌ Address conversion edge cases (truncation)
 
 **Note**: Extensive spec test coverage exists via `zig build specs`, but inline unit tests would improve:
+
 1. Documentation of expected behavior
 2. Fast feedback during development
 3. Isolation of specific edge cases
@@ -297,6 +308,7 @@ const addr = try add_u32(off, j);  // Also returns error.OutOfBounds
 ```
 
 **Impact**: Difficult to distinguish between:
+
 - Memory region too large
 - Offset overflow
 - Addition overflow
@@ -332,6 +344,7 @@ const gas_used_i64 = std.math.cast(i64, gas_used) orelse {
 **Issue**: Return data handling differs slightly between CREATE and CALL variants:
 
 **CREATE/CREATE2**:
+
 ```zig
 // Clear at start (line 34)
 frame.return_data = &[_]u8{};
@@ -345,6 +358,7 @@ if (result.success) {
 ```
 
 **CALL variants**:
+
 ```zig
 // No initial clear
 frame.return_data = result.output;  // Always set to child output
@@ -420,6 +434,7 @@ This prevents memory leaks and simplifies error handling.
 **Observation**: Gas calculations are complex but well-documented:
 
 **CALL gas cost breakdown** (lines 138-222):
+
 1. Base cost (hardfork-dependent)
 2. Value transfer cost (+9000 if value > 0)
 3. New account cost (+25000 if target doesn't exist and value > 0)
@@ -454,6 +469,7 @@ if (frame.is_static) return error.StaticCallViolation;
 ### 7.2 Reentrancy Safety ✅
 
 **Observation**: No reentrancy guards needed at this level - handled by:
+
 1. Call depth limit (checked in `inner_call`)
 2. EIP-150 gas retention (prevents infinite recursion via gas exhaustion)
 
@@ -610,6 +626,7 @@ test "Handlers - hardfork gates" {
 ### Integration Tests (via specs)
 
 ✅ Already covered by `zig build specs`:
+
 - `stCallDelegateCodesCallCodeHomestead`
 - `stCallDelegateCodesHomestead`
 - `stMemExpandingEIP150Calls`
@@ -629,6 +646,7 @@ test "Handlers - hardfork gates" {
 The file demonstrates strong understanding of EVM semantics, careful attention to edge cases, and good alignment with Python reference implementation. The lack of TODOs and consistent use of memory-safe patterns (arena allocator) are particularly commendable.
 
 **Recommended next steps**:
+
 1. Address high-priority recommendations (duplication, tests)
 2. Add inline documentation for helper functions
 3. Consider extracting gas calculation logic if pattern repeats in other handlers
@@ -637,18 +655,18 @@ The file demonstrates strong understanding of EVM semantics, careful attention t
 
 ## Appendix: Code Metrics
 
-| Metric | Value | Assessment |
-|--------|-------|------------|
-| Total Lines | 918 | Large but reasonable for 8 opcodes |
-| Function Count | 11 (8 opcodes + 3 helpers) | Good granularity |
-| Avg Function Length | ~83 lines | Acceptable (system ops are complex) |
-| Code Duplication | ~40% | High (main issue) |
-| Cyclomatic Complexity | Medium | Manageable with extraction |
-| EIP Coverage | 7 EIPs | Comprehensive (EIP-7, 150, 214, 1014, 2929, 6780) |
-| Hardfork Coverage | 7 forks | Excellent (Frontier → Cancun) |
-| Comment Density | ~15% | Good for complex code |
-| Test Coverage (inline) | 0% | Needs improvement |
-| Test Coverage (spec) | ~100% | Excellent via integration tests |
+| Metric                 | Value                      | Assessment                                        |
+| ---------------------- | -------------------------- | ------------------------------------------------- |
+| Total Lines            | 918                        | Large but reasonable for 8 opcodes                |
+| Function Count         | 11 (8 opcodes + 3 helpers) | Good granularity                                  |
+| Avg Function Length    | ~83 lines                  | Acceptable (system ops are complex)               |
+| Code Duplication       | ~40%                       | High (main issue)                                 |
+| Cyclomatic Complexity  | Medium                     | Manageable with extraction                        |
+| EIP Coverage           | 7 EIPs                     | Comprehensive (EIP-7, 150, 214, 1014, 2929, 6780) |
+| Hardfork Coverage      | 7 forks                    | Excellent (Frontier → Cancun)                     |
+| Comment Density        | ~15%                       | Good for complex code                             |
+| Test Coverage (inline) | 0%                         | Needs improvement                                 |
+| Test Coverage (spec)   | ~100%                      | Excellent via integration tests                   |
 
 ---
 

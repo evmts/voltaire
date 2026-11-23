@@ -49,7 +49,9 @@
  */
 export { assertSigned as assertSigned_internal } from "./assertSigned.js";
 export { deserialize } from "./deserialize.js";
+export { deserializeUnsigned } from "./deserializeUnsigned.js";
 export { detectType } from "./detectType.js";
+export { exceedsTxGasLimit, MAX_TX_GAS_LIMIT } from "./exceedsTxGasLimit.js";
 export { format as format_internal } from "./format.js";
 export { fromRpc } from "./fromRpc.js";
 export { getAccessList as getAccessList_internal } from "./getAccessList.js";
@@ -69,11 +71,13 @@ export { isContractCreation as isContractCreation_internal } from "./isContractC
 export { isSigned as isSigned_internal } from "./isSigned.js";
 export { type ReplaceOptions, replaceWith as replaceWith_internal, } from "./replaceWith.js";
 export { serialize as serialize_internal } from "./serialize.js";
+export { serializeUnsigned } from "./serializeUnsigned.js";
 export { toRpc } from "./toRpc.js";
 export * from "./typeGuards.js";
 export * from "./types.js";
+export type * from "./UnsignedType.js";
 export { validateChainId as validateChainId_internal } from "./validateChainId.js";
-export { validateGasLimit as validateGasLimit_internal } from "./validateGasLimit.js";
+export { type ValidateGasLimitOptions, validateGasLimit as validateGasLimit_internal, } from "./validateGasLimit.js";
 export { validateGasPrice as validateGasPrice_internal } from "./validateGasPrice.js";
 export { validateNonce as validateNonce_internal } from "./validateNonce.js";
 export { validateValue as validateValue_internal } from "./validateValue.js";
@@ -86,6 +90,7 @@ import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/index.js";
 import { type ReplaceOptions } from "./replaceWith.js";
 import type { AccessList, Any, AuthorizationList, EIP4844, EIP7702, VersionedHash } from "./types.js";
+import { type ValidateGasLimitOptions } from "./validateGasLimit.js";
 export type Transaction = Any;
 export * as Authorization from "./Authorization/index.js";
 export * as EIP1559 from "./EIP1559/index.js";
@@ -158,9 +163,10 @@ export declare function isContractCall(tx: Any): boolean;
  */
 export declare function validateGasPrice(tx: Any): void;
 /**
- * Validate gas limit is valid
+ * Validate gas limit: positive, within the EIP-7825 cap (`2^24`) from Osaka
+ * (the default hardfork), and within `blockGasLimit` when given.
  */
-export declare function validateGasLimit(tx: Any): void;
+export declare function validateGasLimit(tx: Any, options?: ValidateGasLimitOptions): void;
 /**
  * Validate nonce format
  */

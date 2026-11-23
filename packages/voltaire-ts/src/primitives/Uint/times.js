@@ -3,6 +3,9 @@ import { MAX } from "./constants.js";
 /**
  * Multiply Uint256 value with wrapping
  *
+ * Overflow mode: wrapping. `timesWrapping` is the explicit name for this behavior
+ * and `timesChecked` throws instead of wrapping. Both exist on every Uint size.
+ *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - First operand

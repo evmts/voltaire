@@ -422,9 +422,19 @@ test "BN254 pairing additivity in second argument" {
 // PRECOMPILE WRAPPER FUNCTIONS (EIP-196/197 Format)
 // ============================================================================
 
+/// EIP-196/197: every coordinate must be a canonical field element, strictly
+/// less than the field modulus. `FpMont.init` reduces modulo p, so without
+/// this check `x + p` would alias the valid coordinate `x`.
+fn requireCanonicalFp(values: []const u256) error{InvalidPoint}!void {
+    for (values) |value| {
+        if (value >= FP_MOD) return error.InvalidPoint;
+    }
+}
+
 /// EIP-196: BN254 Addition
 /// Input: 128 bytes (two G1 points, 64 bytes each: x || y)
 /// Output: 64 bytes (resulting G1 point: x || y)
+/// Errors: InvalidPoint on a coordinate >= p or a point off the curve
 pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
     if (output.len < 64) return error.InvalidOutput;
 
@@ -439,6 +449,8 @@ pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
     const y2_bytes = input[96..128];
     const x2_value = std.mem.readInt(u256, x2_bytes, .big);
     const y2_value = std.mem.readInt(u256, y2_bytes, .big);
+
+    try requireCanonicalFp(&.{ x1_value, y1_value, x2_value, y2_value });
 
     // Handle point at infinity (represented as (0, 0))
     const p1 = if (x1_value == 0 and y1_value == 0)
@@ -494,6 +506,8 @@ pub fn bn254Mul(input: *const [96]u8, output: []u8) !void {
     const scalar_bytes = input[64..96];
     const scalar_value = std.mem.readInt(u256, scalar_bytes, .big);
 
+    try requireCanonicalFp(&.{ x_value, y_value });
+
     // Handle point at infinity (represented as (0, 0))
     const point = if (x_value == 0 and y_value == 0)
         G1.INFINITY
@@ -547,6 +561,7 @@ pub fn bn254Pairing(input: []const u8) !bool {
         const g1_y_bytes = input[pair_start + 32 .. pair_start + 64];
         const g1_x_value = std.mem.readInt(u256, g1_x_bytes[0..32], .big);
         const g1_y_value = std.mem.readInt(u256, g1_y_bytes[0..32], .big);
+        try requireCanonicalFp(&.{ g1_x_value, g1_y_value });
         const g1_point = if (g1_x_value == 0 and g1_y_value == 0)
             G1.INFINITY
         else blk: {
@@ -568,6 +583,7 @@ pub fn bn254Pairing(input: []const u8) !bool {
         const g2_x_re_value = std.mem.readInt(u256, g2_x_re_bytes[0..32], .big);
         const g2_y_im_value = std.mem.readInt(u256, g2_y_im_bytes[0..32], .big);
         const g2_y_re_value = std.mem.readInt(u256, g2_y_re_bytes[0..32], .big);
+        try requireCanonicalFp(&.{ g2_x_im_value, g2_x_re_value, g2_y_im_value, g2_y_re_value });
 
         const g2_point = if (g2_x_im_value == 0 and g2_x_re_value == 0 and
             g2_y_im_value == 0 and g2_y_re_value == 0)
@@ -616,10 +632,10 @@ test "BN254 EIP-196 ECADD - add two points on curve" {
     const result_x = std.mem.readInt(u256, output[0..32], .big);
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
-    // Verify result equals 2*G1
-    const expected = gen.double().toAffine();
-    try std.testing.expectEqual(expected.x.value, result_x);
-    try std.testing.expectEqual(expected.y.value, result_y);
+    // Expected 2*G1 in standard (non-Montgomery) coordinates, computed with
+    // affine alt_bn128 doubling over Fp (y^2 = x^3 + 3)
+    try std.testing.expectEqual(@as(u256, 0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3), result_x);
+    try std.testing.expectEqual(@as(u256, 0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4), result_y);
 }
 
 test "BN254 EIP-196 ECADD - add point to infinity" {
@@ -642,8 +658,9 @@ test "BN254 EIP-196 ECADD - add point to infinity" {
     const result_x = std.mem.readInt(u256, output[0..32], .big);
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
-    try std.testing.expectEqual(gen.x.value, result_x);
-    try std.testing.expectEqual(gen.y.value, result_y);
+    // G1 generator is (1, 2) in standard (non-Montgomery) coordinates
+    try std.testing.expectEqual(@as(u256, 1), result_x);
+    try std.testing.expectEqual(@as(u256, 2), result_y);
 }
 
 test "BN254 EIP-196 ECADD - add two infinities" {
@@ -738,8 +755,9 @@ test "BN254 EIP-196 ECMUL - multiply by one" {
     const result_x = std.mem.readInt(u256, output[0..32], .big);
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
-    try std.testing.expectEqual(gen.x.value, result_x);
-    try std.testing.expectEqual(gen.y.value, result_y);
+    // G1 generator is (1, 2) in standard (non-Montgomery) coordinates
+    try std.testing.expectEqual(@as(u256, 1), result_x);
+    try std.testing.expectEqual(@as(u256, 2), result_y);
 }
 
 test "BN254 EIP-196 ECMUL - multiply by two" {
@@ -762,9 +780,10 @@ test "BN254 EIP-196 ECMUL - multiply by two" {
     const result_x = std.mem.readInt(u256, output[0..32], .big);
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
-    const expected = G1.GENERATOR.double().toAffine();
-    try std.testing.expectEqual(expected.x.value, result_x);
-    try std.testing.expectEqual(expected.y.value, result_y);
+    // Expected 2*G1 in standard (non-Montgomery) coordinates, computed with
+    // affine alt_bn128 doubling over Fp (y^2 = x^3 + 3)
+    try std.testing.expectEqual(@as(u256, 0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3), result_x);
+    try std.testing.expectEqual(@as(u256, 0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4), result_y);
 }
 
 test "BN254 EIP-196 ECMUL - multiply infinity by scalar" {
@@ -823,13 +842,13 @@ test "BN254 EIP-196 ECMUL - multiply by large scalar" {
     var output: [64]u8 = undefined;
     try bn254Mul(&input, &output);
 
-    // Verify result matches expected
-    const expected = G1.GENERATOR.mulByInt(scalar, curve_parameters.G1_SCALAR.window_size).toAffine();
+    // Expected 123456789*G1 in standard (non-Montgomery) coordinates,
+    // computed with affine alt_bn128 double-and-add over Fp (y^2 = x^3 + 3)
     const result_x = std.mem.readInt(u256, output[0..32], .big);
     const result_y = std.mem.readInt(u256, output[32..64], .big);
 
-    try std.testing.expectEqual(expected.x.value, result_x);
-    try std.testing.expectEqual(expected.y.value, result_y);
+    try std.testing.expectEqual(@as(u256, 0x142a7688cf05c29f7593351e1b86eb87e3ad5dcb1b0fc3d853e9852040c57019), result_x);
+    try std.testing.expectEqual(@as(u256, 0x136b5d7e238ae6edc22d1fba5a2dcde8a7b0df53b0c4af7f600e6a0c4610c899), result_y);
 }
 
 test "BN254 EIP-196 ECADD - fixture output uses standard coordinates" {

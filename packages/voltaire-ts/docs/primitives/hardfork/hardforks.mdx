@@ -44,8 +44,9 @@ export const SHANGHAI: BrandedHardfork
 export const CANCUN: BrandedHardfork
 export const PRAGUE: BrandedHardfork
 export const OSAKA: BrandedHardfork
+export const AMSTERDAM: BrandedHardfork
 
-export const DEFAULT: BrandedHardfork  // PRAGUE
+export const DEFAULT: BrandedHardfork  // OSAKA
 ```
 
 ## Complete Timeline
@@ -394,7 +395,7 @@ Introduced blob transactions for L2 scalability.
 
 **Prague-Electra fork**
 
-Current default. BLS cryptography and account abstraction features.
+BLS cryptography and account abstraction features.
 
 **Key Features:**
 - **EIP-2537**: BLS12-381 curve precompiles (10 new precompiles)
@@ -409,30 +410,39 @@ Current default. BLS cryptography and account abstraction features.
 - EIP-7702: Set EOA account code for one transaction
 - EIP-2935: Serve historical block hashes from state
 
-**Status:** Current default hardfork
+**Status:** Active on mainnet since May 7, 2025 (superseded by Osaka)
 
 **Impact:** Enables native account abstraction patterns, BLS signatures
 
 ---
 
-### OSAKA (TBD)
+### OSAKA (December 2025)
 
-**Future fork**
+**Fusaka (Fulu-Osaka) fork.** `DEFAULT = OSAKA`.
 
-Planned improvements to ModExp and transaction limits.
+Activated on mainnet at timestamp `1764798551` (Dec 3, 2025 21:49:11 UTC, epoch `411392`). Adds PeerDAS blob sampling, blob-parameter-only (BPO) forks, a secp256r1 precompile, and execution limits. See [Osaka](/primitives/hardfork/osaka) for the full EIP list and BPO schedule.
 
 **Key Features:**
-- **EIP-7883**: ModExp gas increase for large inputs
-- EIP-7823: ModExp upper bounds
-- Transaction and block limits
+- **EIP-7594**: PeerDAS data availability sampling
+- **EIP-7951**: P256VERIFY precompile at `0x100`
+- **EIP-7892**: Blob parameter only (BPO) forks
+- **EIP-7918**: Blob base fee bounded by execution cost
+- **EIP-7939**: CLZ opcode
 
 **EIPs:**
-- EIP-7883: ModExp gas increase
+- EIP-7594: PeerDAS
 - EIP-7823: ModExp upper bounds
 - EIP-7825: Transaction gas limit cap
-- EIP-7934: Block RLP limit
+- EIP-7883: ModExp gas increase
+- EIP-7892: Blob parameter only hardforks
+- EIP-7918: Blob base fee bounded by execution cost
+- EIP-7934: RLP execution block size limit
+- EIP-7939: CLZ opcode
+- EIP-7951: secp256r1 precompile
 
-**Status:** Planned, not yet deployed
+**Status:** Current default hardfork
+
+**Impact:** Raises blob throughput through BPO forks and adds native P-256 (passkey) signature verification
 
 ---
 

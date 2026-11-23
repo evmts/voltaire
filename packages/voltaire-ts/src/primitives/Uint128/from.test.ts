@@ -58,6 +58,13 @@ describe("Uint128.from", () => {
 	});
 
 	describe("from string", () => {
+		it.each(["", " ", " 1", "1e3", "12.5", "12abc", "0b10", "0x", "+1"])(
+			"rejects invalid integer string %j",
+			(value) => {
+				expect(() => from(value)).toThrow("Invalid Uint128 string");
+			},
+		);
+
 		it("creates from decimal string", () => {
 			const result = from("12345");
 			expect(result).toBe(12345n);

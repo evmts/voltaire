@@ -14,15 +14,15 @@ import { topic } from "./topic.js";
 
 // Export individual functions
 export {
-	from,
-	hash,
-	hashString,
-	hashHex,
-	hashMultiple,
-	selector,
-	topic,
 	contractAddress,
 	create2Address,
+	from,
+	hash,
+	hashHex,
+	hashMultiple,
+	hashString,
+	selector,
+	topic,
 };
 
 /**

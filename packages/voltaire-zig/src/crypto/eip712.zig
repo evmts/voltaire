@@ -245,47 +245,72 @@ fn get_eip712_domain_types(domain: *const Eip712Domain, allocator: Allocator) Ei
     return properties.toOwnedSlice();
 }
 
-// Encode type string for EIP-712
-fn encode_type(allocator: Allocator, primary_type: []const u8, types: *const TypeDefinitions) Eip712Error![]u8 {
-    var visited = std.StringHashMap(void).init(allocator);
-    defer visited.deinit();
-
-    var result = ArrayList(u8, null).init(allocator);
-    defer result.deinit();
-
-    try encode_type_recursive(allocator, primary_type, types, &visited, &result);
-    return result.toOwnedSlice();
+/// Strip every trailing array suffix (`[]`, `[N]`) from a type name.
+/// `Person[][2]` -> `Person`, `uint256[]` -> `uint256`.
+fn base_type(type_name: []const u8) []const u8 {
+    const bracket = std.mem.indexOfScalar(u8, type_name, '[') orelse return type_name;
+    return type_name[0..bracket];
 }
 
-fn encode_type_recursive(
-    allocator: Allocator,
+/// Collect every custom struct type transitively referenced by `type_name`
+/// into `deps` (keys borrowed from `types`). Cycles terminate via the set.
+fn collect_dependencies(
     type_name: []const u8,
     types: *const TypeDefinitions,
-    visited: *std.StringHashMap(void),
-    result: *ArrayList(u8, null),
+    deps: *std.StringHashMap(void),
 ) Eip712Error!void {
-    if (visited.contains(type_name)) return;
-    try visited.put(try allocator.dupe(u8, type_name), {});
+    const props = types.get(type_name) orelse return Eip712Error.TypeNotFound;
+    for (props) |prop| {
+        const base = base_type(prop.type);
+        const entry = types.types.getEntry(base) orelse continue;
+        if (deps.contains(entry.key_ptr.*)) continue;
+        try deps.put(entry.key_ptr.*, {});
+        try collect_dependencies(entry.key_ptr.*, types, deps);
+    }
+}
 
-    const type_properties = types.get(type_name) orelse return Eip712Error.TypeNotFound;
-
-    // Add main type definition
+fn append_type_definition(result: *ArrayList(u8, null), type_name: []const u8, props: []const TypeProperty) Eip712Error!void {
     try result.appendSlice(type_name);
     try result.append('(');
-
-    for (type_properties, 0..) |prop, i| {
+    for (props, 0..) |prop, i| {
         if (i > 0) try result.append(',');
         try result.appendSlice(prop.type);
         try result.append(' ');
         try result.appendSlice(prop.name);
-
-        // If this is a custom type, recursively encode it
-        if (types.get(prop.type) != null) {
-            try encode_type_recursive(allocator, prop.type, types, visited, result);
-        }
     }
-
     try result.append(')');
+}
+
+fn less_than_ascii(_: void, a: []const u8, b: []const u8) bool {
+    return std.mem.lessThan(u8, a, b);
+}
+
+/// Encode type string for EIP-712:
+/// `Primary(...)` followed by every transitively referenced struct
+/// definition, sorted by name (ASCII), each emitted exactly once.
+fn encode_type(allocator: Allocator, primary_type: []const u8, types: *const TypeDefinitions) Eip712Error![]u8 {
+    const primary_props = types.get(primary_type) orelse return Eip712Error.TypeNotFound;
+
+    var deps = std.StringHashMap(void).init(allocator);
+    defer deps.deinit();
+    try collect_dependencies(primary_type, types, &deps);
+    _ = deps.remove(primary_type);
+
+    const names = try allocator.alloc([]const u8, deps.count());
+    defer allocator.free(names);
+    var it = deps.keyIterator();
+    var n: usize = 0;
+    while (it.next()) |key| : (n += 1) names[n] = key.*;
+    std.mem.sort([]const u8, names, {}, less_than_ascii);
+
+    var result = ArrayList(u8, null).init(allocator);
+    defer result.deinit();
+
+    try append_type_definition(&result, primary_type, primary_props);
+    for (names) |name| {
+        try append_type_definition(&result, name, types.get(name).?);
+    }
+    return result.toOwnedSlice();
 }
 
 // Hash struct according to EIP-712
@@ -321,21 +346,82 @@ fn encode_data(allocator: Allocator, primary_type: []const u8, data: *const std.
     return result.toOwnedSlice();
 }
 
+/// Parse the bit width of an `intN`/`uintN` type. Bare `int`/`uint` alias 256.
+/// Returns InvalidTypes unless N is a multiple of 8 in 8..=256.
+fn parse_int_width(suffix: []const u8) Eip712Error!u16 {
+    if (suffix.len == 0) return 256;
+    if (suffix[0] == '0') return Eip712Error.InvalidTypes;
+    const bits = std.fmt.parseInt(u16, suffix, 10) catch return Eip712Error.InvalidTypes;
+    if (bits == 0 or bits > 256 or bits % 8 != 0) return Eip712Error.InvalidTypes;
+    return bits;
+}
+
+fn is_digits(s: []const u8) bool {
+    if (s.len == 0) return false;
+    for (s) |c| if (c < '0' or c > '9') return false;
+    return true;
+}
+
 // Encode individual value
 fn encode_value(allocator: Allocator, type_name: []const u8, value: MessageValue, types: *const TypeDefinitions) Eip712Error![]u8 {
     var result: [32]u8 = [_]u8{0} ** 32;
 
-    if (std.mem.startsWith(u8, type_name, "uint")) {
+    // Arrays: keccak256 of the concatenated encodings of each element.
+    if (type_name.len > 0 and type_name[type_name.len - 1] == ']') {
+        const open = std.mem.lastIndexOfScalar(u8, type_name, '[') orelse return Eip712Error.InvalidTypes;
+        const element_type = type_name[0..open];
+        const len_text = type_name[open + 1 .. type_name.len - 1];
+        if (element_type.len == 0) return Eip712Error.InvalidTypes;
+        const items = switch (value) {
+            .array => |a| a,
+            else => return Eip712Error.InvalidMessage,
+        };
+        if (len_text.len > 0) {
+            if (!is_digits(len_text)) return Eip712Error.InvalidTypes;
+            const fixed = std.fmt.parseInt(usize, len_text, 10) catch return Eip712Error.InvalidTypes;
+            if (items.len != fixed) return Eip712Error.InvalidMessage;
+        }
+        var concat = ArrayList(u8, null).init(allocator);
+        defer concat.deinit();
+        for (items) |item| {
+            const encoded = try encode_value(allocator, element_type, item, types);
+            defer allocator.free(encoded);
+            try concat.appendSlice(encoded);
+        }
+        const hash = Hash.keccak256(concat.items);
+        return allocator.dupe(u8, &hash);
+    }
+
+    if (types.get(type_name) != null) {
+        // Custom type - hash the struct
+        const obj = switch (value) {
+            .object => |o| o,
+            else => return Eip712Error.InvalidMessage,
+        };
+        const hash = try hash_struct(allocator, type_name, &obj, types);
+        @memcpy(&result, &hash);
+    } else if (std.mem.startsWith(u8, type_name, "uint")) {
+        const bits = try parse_int_width(type_name[4..]);
         const num = switch (value) {
             .number => |n| n,
             else => return Eip712Error.InvalidMessage,
         };
+        if (bits < 256 and (num >> @intCast(bits)) != 0) return Eip712Error.InvalidMessage;
         std.mem.writeInt(u256, &result, num, .big);
     } else if (std.mem.startsWith(u8, type_name, "int")) {
+        const bits = try parse_int_width(type_name[3..]);
+        // `number` carries the 256-bit two's complement representation.
         const num = switch (value) {
             .number => |n| n,
             else => return Eip712Error.InvalidMessage,
         };
+        if (bits < 256) {
+            const signed: i256 = @bitCast(num);
+            const shift: u8 = @intCast(bits - 1);
+            const min = -(@as(i256, 1) << shift);
+            const max = (@as(i256, 1) << shift) - 1;
+            if (signed < min or signed > max) return Eip712Error.InvalidMessage;
+        }
         std.mem.writeInt(u256, &result, num, .big);
     } else if (std.mem.eql(u8, type_name, "address")) {
         const addr = switch (value) {
@@ -368,17 +454,11 @@ fn encode_value(allocator: Allocator, type_name: []const u8, value: MessageValue
             .bytes => |b| b,
             else => return Eip712Error.InvalidMessage,
         };
-        const size = std.fmt.parseInt(usize, type_name[5..], 10) catch return Eip712Error.InvalidMessage;
+        if (!is_digits(type_name[5..])) return Eip712Error.InvalidTypes;
+        const size = std.fmt.parseInt(usize, type_name[5..], 10) catch return Eip712Error.InvalidTypes;
+        if (size == 0 or size > 32) return Eip712Error.InvalidTypes;
         if (bytes.len != size) return Eip712Error.InvalidMessage;
         @memcpy(result[0..size], bytes);
-    } else if (types.get(type_name) != null) {
-        // Custom type - hash the struct
-        const obj = switch (value) {
-            .object => |o| o,
-            else => return Eip712Error.InvalidMessage,
-        };
-        const hash = try hash_struct(allocator, type_name, &obj, types);
-        @memcpy(&result, &hash);
     } else {
         return Eip712Error.TypeNotFound;
     }
@@ -566,12 +646,8 @@ test "EIP-712 type encoding" {
 test "EIP-712 signature roundtrip" {
     const allocator = testing.allocator;
 
-    // Create a simple domain
+    // Create a simple domain (owned by typed_data once assigned)
     const domain = try create_domain(allocator, "TestDomain", "1", 1, null);
-    defer {
-        var mut_domain = domain;
-        mut_domain.deinit(allocator);
-    }
 
     // Create typed data structure
     var typed_data = TypedData.init(allocator);
@@ -602,17 +678,13 @@ test "EIP-712 signature roundtrip" {
 
     // Recover address
     const recovered_address = try unaudited_recoverTypedDataAddress(allocator, &typed_data, signature);
-    try testing.expect(std.mem.eql(u8, &recovered_address, &expected_address));
+    try testing.expect(std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes));
 }
 
 test "EIP-712 hash deterministic" {
     const allocator = testing.allocator;
 
     const domain = try create_domain(allocator, "TestDomain", "1", 1, null);
-    defer {
-        var mut_domain = domain;
-        mut_domain.deinit(allocator);
-    }
 
     var typed_data = TypedData.init(allocator);
     defer typed_data.deinit(allocator);
@@ -637,20 +709,14 @@ test "EIP-712 hash deterministic" {
 test "EIP-712 basic functionality" {
     const allocator = testing.allocator;
 
-    // Test basic hash generation
-    const domain = Eip712Domain{
-        .name = "TestDomain",
-        .version = "1",
-        .chain_id = 1,
-        .verifying_contract = null,
-        .salt = null,
-    };
+    // Test basic hash generation (heap-allocated so typed_data.deinit frees cleanly)
+    const domain = try create_domain(allocator, "TestDomain", "1", 1, null);
 
     var typed_data = TypedData.init(allocator);
     defer typed_data.deinit(allocator);
 
     typed_data.domain = domain;
-    typed_data.primary_type = "TestMessage";
+    typed_data.primary_type = try allocator.dupe(u8, "TestMessage");
 
     // Try to hash - this should work even if we don't have complete type definitions
     const hash_result = unaudited_hashTypedData(allocator, &typed_data);
@@ -674,7 +740,7 @@ test "EIP-712 crypto integration" {
 
     // Basic test that addresses work
     const zero_address = [_]u8{0} ** 20;
-    try testing.expect(!std.mem.eql(u8, &address, &zero_address));
+    try testing.expect(!std.mem.eql(u8, &address.bytes, &zero_address));
 }
 
 test "encode_type - simple type" {
@@ -843,8 +909,8 @@ test "encode_data - multiple fields" {
         data.deinit();
     }
 
-    const addr1 = [_]u8{1} ** 20;
-    const addr2 = [_]u8{2} ** 20;
+    const addr1 = Address{ .bytes = [_]u8{1} ** 20 };
+    const addr2 = Address{ .bytes = [_]u8{2} ** 20 };
 
     try data.put(try allocator.dupe(u8, "from"), MessageValue{ .address = addr1 });
     try data.put(try allocator.dupe(u8, "to"), MessageValue{ .address = addr2 });
@@ -881,7 +947,7 @@ test "encode_value - address" {
     var types = TypeDefinitions.init(allocator);
     defer types.deinit(allocator);
 
-    const addr = [_]u8{0xAB} ** 20;
+    const addr = Address{ .bytes = [_]u8{0xAB} ** 20 };
     const value = MessageValue{ .address = addr };
     const encoded = try encode_value(allocator, "address", value, &types);
     defer allocator.free(encoded);
@@ -889,7 +955,7 @@ test "encode_value - address" {
     try testing.expectEqual(@as(usize, 32), encoded.len);
 
     // Address should be in last 20 bytes
-    try testing.expectEqualSlices(u8, &addr, encoded[12..32]);
+    try testing.expectEqualSlices(u8, &addr.bytes, encoded[12..32]);
 }
 
 test "encode_value - bool true" {
@@ -1040,7 +1106,7 @@ test "encode_value - invalid type name" {
 test "hash_domain - all fields" {
     const allocator = testing.allocator;
 
-    const addr = [_]u8{0xFF} ** 20;
+    const addr = Address{ .bytes = [_]u8{0xFF} ** 20 };
     const salt_bytes = [_]u8{0xAB} ** 32;
 
     const domain = Eip712Domain{
@@ -1158,11 +1224,19 @@ test "deeply nested structures" {
     try types.put(allocator, "Level1", &level1_props);
 
     var level3_data = std.StringHashMap(MessageValue).init(allocator);
-    defer level3_data.deinit();
+    defer {
+        var it = level3_data.keyIterator();
+        while (it.next()) |k| allocator.free(k.*);
+        level3_data.deinit();
+    }
     try level3_data.put(try allocator.dupe(u8, "value"), MessageValue{ .number = 42 });
 
     var level2_data = std.StringHashMap(MessageValue).init(allocator);
-    defer level2_data.deinit();
+    defer {
+        var it = level2_data.keyIterator();
+        while (it.next()) |k| allocator.free(k.*);
+        level2_data.deinit();
+    }
     try level2_data.put(try allocator.dupe(u8, "nested"), MessageValue{ .object = level3_data });
 
     var level1_data = std.StringHashMap(MessageValue).init(allocator);
@@ -1236,7 +1310,13 @@ test "maximum field counts" {
     // Create type with many fields (20 fields)
     const num_fields = 20;
     const large_props = try allocator.alloc(TypeProperty, num_fields);
-    defer allocator.free(large_props);
+    defer {
+        for (large_props) |prop| {
+            allocator.free(prop.name);
+            allocator.free(prop.type);
+        }
+        allocator.free(large_props);
+    }
 
     for (large_props, 0..) |*prop, i| {
         const field_name = try std.fmt.allocPrint(allocator, "field{d}", .{i});
@@ -1375,10 +1455,6 @@ test "full typed data with nested types" {
         .verifying_contract = null,
         .salt = null,
     };
-    defer {
-        var mut_domain = domain;
-        mut_domain.deinit(allocator);
-    }
 
     var typed_data = TypedData.init(allocator);
     defer typed_data.deinit(allocator);
@@ -1404,12 +1480,12 @@ test "full typed data with nested types" {
     // Create from person
     var from_person = std.StringHashMap(MessageValue).init(allocator);
     try from_person.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Alice") });
-    try from_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = [_]u8{0xAA} ** 20 });
+    try from_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = Address{ .bytes = [_]u8{0xAA} ** 20 } });
 
     // Create to person
     var to_person = std.StringHashMap(MessageValue).init(allocator);
     try to_person.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Bob") });
-    try to_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = [_]u8{0xBB} ** 20 });
+    try to_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = Address{ .bytes = [_]u8{0xBB} ** 20 } });
 
     // Create mail message
     try typed_data.message.put(try allocator.dupe(u8, "from"), MessageValue{ .object = from_person });
@@ -1432,10 +1508,6 @@ test "typed data determinism across multiple hashes" {
         .verifying_contract = null,
         .salt = null,
     };
-    defer {
-        var mut_domain = domain;
-        mut_domain.deinit(allocator);
-    }
 
     var typed_data = TypedData.init(allocator);
     defer typed_data.deinit(allocator);
@@ -1487,4 +1559,245 @@ test "circular type references handled gracefully" {
     // Should have successfully encoded something
     try testing.expect(encoded.len > 0);
     try testing.expect(std.mem.indexOf(u8, encoded, "TypeA(") != null);
+}
+
+test "encode_type - EIP-712 spec Mail ordering and typeHash" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    try types.put(allocator, "Person", &[_]TypeProperty{
+        .{ .name = "name", .type = "string" },
+        .{ .name = "wallet", .type = "address" },
+    });
+    try types.put(allocator, "Mail", &[_]TypeProperty{
+        .{ .name = "from", .type = "Person" },
+        .{ .name = "to", .type = "Person" },
+        .{ .name = "contents", .type = "string" },
+    });
+
+    const encoded = try encode_type(allocator, "Mail", &types);
+    defer allocator.free(encoded);
+    try testing.expectEqualStrings("Mail(Person from,Person to,string contents)Person(string name,address wallet)", encoded);
+
+    var expected: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "a0cedeb2dc280ba39b857546d74f5549c3a1d7bdc2dd96bf881f76108e23dac2");
+    try testing.expectEqualSlices(u8, &expected, &Hash.keccak256(encoded));
+}
+
+test "encode_type - transitive dependencies sorted after primary" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Primary -> Zeta -> Alpha, Primary -> Mid[] ; Mid -> Alpha (dedup)
+    try types.put(allocator, "Alpha", &[_]TypeProperty{.{ .name = "v", .type = "uint8" }});
+    try types.put(allocator, "Mid", &[_]TypeProperty{.{ .name = "a", .type = "Alpha" }});
+    try types.put(allocator, "Zeta", &[_]TypeProperty{.{ .name = "a", .type = "Alpha[2]" }});
+    try types.put(allocator, "Primary", &[_]TypeProperty{
+        .{ .name = "z", .type = "Zeta" },
+        .{ .name = "m", .type = "Mid[]" },
+        .{ .name = "n", .type = "uint256[]" },
+    });
+    try types.put(allocator, "Unused", &[_]TypeProperty{.{ .name = "x", .type = "bool" }});
+
+    const encoded = try encode_type(allocator, "Primary", &types);
+    defer allocator.free(encoded);
+    try testing.expectEqualStrings(
+        "Primary(Zeta z,Mid[] m,uint256[] n)Alpha(uint8 v)Mid(Alpha a)Zeta(Alpha[2] a)",
+        encoded,
+    );
+}
+
+test "encode_type - self and circular references are not duplicated" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    try types.put(allocator, "B", &[_]TypeProperty{.{ .name = "a", .type = "A" }});
+    try types.put(allocator, "A", &[_]TypeProperty{ .{ .name = "b", .type = "B" }, .{ .name = "self", .type = "A[]" } });
+
+    const encoded = try encode_type(allocator, "A", &types);
+    defer allocator.free(encoded);
+    try testing.expectEqualStrings("A(B b,A[] self)B(A a)", encoded);
+}
+
+test "EIP-712 spec Mail example digest" {
+    const allocator = testing.allocator;
+
+    var contract: Address = undefined;
+    _ = try std.fmt.hexToBytes(&contract.bytes, "CcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC");
+    var cow: Address = undefined;
+    _ = try std.fmt.hexToBytes(&cow.bytes, "CD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826");
+    var bob: Address = undefined;
+    _ = try std.fmt.hexToBytes(&bob.bytes, "bBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB");
+
+    var typed_data = TypedData.init(allocator);
+    defer typed_data.deinit(allocator);
+    typed_data.domain = try create_domain(allocator, "Ether Mail", "1", 1, contract);
+    typed_data.primary_type = try allocator.dupe(u8, "Mail");
+
+    try typed_data.types.put(allocator, "Person", &[_]TypeProperty{
+        .{ .name = "name", .type = "string" },
+        .{ .name = "wallet", .type = "address" },
+    });
+    try typed_data.types.put(allocator, "Mail", &[_]TypeProperty{
+        .{ .name = "from", .type = "Person" },
+        .{ .name = "to", .type = "Person" },
+        .{ .name = "contents", .type = "string" },
+    });
+
+    var from = std.StringHashMap(MessageValue).init(allocator);
+    try from.put(try allocator.dupe(u8, "name"), .{ .string = try allocator.dupe(u8, "Cow") });
+    try from.put(try allocator.dupe(u8, "wallet"), .{ .address = cow });
+    try typed_data.message.put(try allocator.dupe(u8, "from"), .{ .object = from });
+
+    var to = std.StringHashMap(MessageValue).init(allocator);
+    try to.put(try allocator.dupe(u8, "name"), .{ .string = try allocator.dupe(u8, "Bob") });
+    try to.put(try allocator.dupe(u8, "wallet"), .{ .address = bob });
+    try typed_data.message.put(try allocator.dupe(u8, "to"), .{ .object = to });
+
+    try typed_data.message.put(try allocator.dupe(u8, "contents"), .{ .string = try allocator.dupe(u8, "Hello, Bob!") });
+
+    const digest = try unaudited_hashTypedData(allocator, &typed_data);
+    var expected: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "be609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2");
+    try testing.expectEqualSlices(u8, &expected, &digest);
+}
+
+test "encode_value - uint256[] hashes concatenated element encodings" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    var items = [_]MessageValue{ .{ .number = 1 }, .{ .number = 2 }, .{ .number = 3 } };
+    const encoded = try encode_value(allocator, "uint256[]", .{ .array = &items }, &types);
+    defer allocator.free(encoded);
+
+    var concat: [96]u8 = undefined;
+    std.mem.writeInt(u256, concat[0..32], 1, .big);
+    std.mem.writeInt(u256, concat[32..64], 2, .big);
+    std.mem.writeInt(u256, concat[64..96], 3, .big);
+    try testing.expectEqualSlices(u8, &Hash.keccak256(&concat), encoded);
+
+    // A scalar must not satisfy an array type.
+    try testing.expectError(Eip712Error.InvalidMessage, encode_value(allocator, "uint256[]", .{ .number = 1 }, &types));
+}
+
+test "encode_value - empty array is keccak256 of empty input" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    var empty = [_]MessageValue{};
+    const encoded = try encode_value(allocator, "int8[]", .{ .array = &empty }, &types);
+    defer allocator.free(encoded);
+    try testing.expectEqualSlices(u8, &Hash.keccak256(&[_]u8{}), encoded);
+}
+
+test "encode_value - fixed-size and nested numeric arrays" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    var row0 = [_]MessageValue{ .{ .number = 1 }, .{ .number = 2 } };
+    var row1 = [_]MessageValue{ .{ .number = 3 }, .{ .number = 4 } };
+    var rows = [_]MessageValue{ .{ .array = &row0 }, .{ .array = &row1 } };
+
+    const encoded = try encode_value(allocator, "uint8[2][]", .{ .array = &rows }, &types);
+    defer allocator.free(encoded);
+
+    const r0 = try encode_value(allocator, "uint8[2]", .{ .array = &row0 }, &types);
+    defer allocator.free(r0);
+    const r1 = try encode_value(allocator, "uint8[2]", .{ .array = &row1 }, &types);
+    defer allocator.free(r1);
+    var concat: [64]u8 = undefined;
+    @memcpy(concat[0..32], r0);
+    @memcpy(concat[32..64], r1);
+    try testing.expectEqualSlices(u8, &Hash.keccak256(&concat), encoded);
+
+    // Fixed length mismatch is rejected.
+    var three = [_]MessageValue{ .{ .number = 1 }, .{ .number = 2 }, .{ .number = 3 } };
+    try testing.expectError(Eip712Error.InvalidMessage, encode_value(allocator, "uint8[2]", .{ .array = &three }, &types));
+    // Out-of-range element is rejected.
+    var big = [_]MessageValue{ .{ .number = 1 }, .{ .number = 256 } };
+    try testing.expectError(Eip712Error.InvalidMessage, encode_value(allocator, "uint8[2]", .{ .array = &big }, &types));
+}
+
+test "encode_value - array of structs" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+    try types.put(allocator, "Item", &[_]TypeProperty{.{ .name = "id", .type = "uint32" }});
+
+    var obj = std.StringHashMap(MessageValue).init(allocator);
+    try obj.put(try allocator.dupe(u8, "id"), .{ .number = 7 });
+    var value = MessageValue{ .object = obj };
+    defer value.deinit(allocator);
+
+    var items = [_]MessageValue{value};
+    const encoded = try encode_value(allocator, "Item[]", .{ .array = &items }, &types);
+    defer allocator.free(encoded);
+
+    const one = try hash_struct(allocator, "Item", &value.object, &types);
+    try testing.expectEqualSlices(u8, &Hash.keccak256(&one), encoded);
+}
+
+test "encode_value - uint widths are enforced" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const ok = try encode_value(allocator, "uint8", .{ .number = 255 }, &types);
+    allocator.free(ok);
+    try testing.expectError(Eip712Error.InvalidMessage, encode_value(allocator, "uint8", .{ .number = 256 }, &types));
+    const ok64 = try encode_value(allocator, "uint64", .{ .number = std.math.maxInt(u64) }, &types);
+    allocator.free(ok64);
+    try testing.expectError(Eip712Error.InvalidMessage, encode_value(allocator, "uint64", .{ .number = @as(u256, std.math.maxInt(u64)) + 1 }, &types));
+    const max = try encode_value(allocator, "uint", .{ .number = std.math.maxInt(u256) }, &types);
+    allocator.free(max);
+    try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "uint7", .{ .number = 1 }, &types));
+    try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "uint264", .{ .number = 1 }, &types));
+    try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "uint0", .{ .number = 0 }, &types));
+}
+
+test "encode_value - int widths use two's complement range" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const neg_one: u256 = @bitCast(@as(i256, -1));
+    const neg_128: u256 = @bitCast(@as(i256, -128));
+    const neg_129: u256 = @bitCast(@as(i256, -129));
+
+    const a = try encode_value(allocator, "int8", .{ .number = neg_one }, &types);
+    defer allocator.free(a);
+    try testing.expectEqualSlices(u8, &([_]u8{0xFF} ** 32), a);
+    const b = try encode_value(allocator, "int8", .{ .number = neg_128 }, &types);
+    allocator.free(b);
+    const c = try encode_value(allocator, "int8", .{ .number = 127 }, &types);
+    allocator.free(c);
+    try testing.expectError(Eip712Error.InvalidMessage, encode_value(allocator, "int8", .{ .number = 128 }, &types));
+    try testing.expectError(Eip712Error.InvalidMessage, encode_value(allocator, "int8", .{ .number = neg_129 }, &types));
+    try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "int12", .{ .number = 1 }, &types));
+}
+
+test "encode_value - bytesN size bounds" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const b = [_]u8{0} ** 33;
+    try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "bytes33", .{ .bytes = &b }, &types));
+    try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "bytes0", .{ .bytes = b[0..0] }, &types));
 }

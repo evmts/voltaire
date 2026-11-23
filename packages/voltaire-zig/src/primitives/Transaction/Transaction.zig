@@ -105,6 +105,12 @@ const Authorization = authorization.Authorization;
 const VersionedHash = blob.VersionedHash;
 const Allocator = std.mem.Allocator;
 
+fn trimLeadingZeros(bytes: []const u8) []const u8 {
+    var i: usize = 0;
+    while (i < bytes.len and bytes[i] == 0) : (i += 1) {}
+    return bytes[i..];
+}
+
 // Transaction error types
 pub const TransactionError = error{
     InvalidTransactionType,
@@ -190,7 +196,8 @@ pub const Eip7702Transaction = struct {
     max_priority_fee_per_gas: u256,
     max_fee_per_gas: u256,
     gas_limit: u64,
-    to: ?Address,
+    /// EIP-7702 forbids contract creation: `to` is always a 20-byte address.
+    to: Address,
     value: u256,
     data: []const u8,
     access_list: []const AccessListItem,
@@ -205,12 +212,8 @@ pub const AccessListItem = struct {
     storage_keys: []const [32]u8,
 };
 
-// Encode legacy transaction for signing
-pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain_id: u64) ![]u8 {
-    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
-    defer list.deinit();
-
-    // Encode fields for signing (EIP-155)
+// Append the six base legacy fields (nonce, gasPrice, gasLimit, to, value, data) as RLP items.
+fn appendLegacyBaseFields(allocator: Allocator, tx: LegacyTransaction, list: *std.array_list.AlignedManaged(u8, null)) !void {
     {
         const enc = try rlp.encode(allocator, tx.nonce);
         defer allocator.free(enc);
@@ -246,56 +249,88 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
         defer allocator.free(enc_data);
         try list.appendSlice(enc_data);
     }
+}
 
-    // For unsigned transaction (EIP-155)
-    if (tx.v == 0) {
-        {
-            const enc_chain = try rlp.encode(allocator, chain_id);
-            defer allocator.free(enc_chain);
-            try list.appendSlice(enc_chain);
-        }
-        {
-            const enc_zero1 = try rlp.encode(allocator, @as(u64, 0));
-            defer allocator.free(enc_zero1);
-            try list.appendSlice(enc_zero1);
-        }
-        {
-            const enc_zero2 = try rlp.encode(allocator, @as(u64, 0));
-            defer allocator.free(enc_zero2);
-            try list.appendSlice(enc_zero2);
-        }
-    } else {
-        // For signed transaction
-        {
-            const enc_v = try rlp.encode(allocator, tx.v);
-            defer allocator.free(enc_v);
-            try list.appendSlice(enc_v);
-        }
-        {
-            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
-            defer allocator.free(enc_r);
-            try list.appendSlice(enc_r);
-        }
-        {
-            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
-            defer allocator.free(enc_s);
-            try list.appendSlice(enc_s);
-        }
-    }
-
-    // Wrap in RLP list
+// Wrap an RLP payload in a list header. Caller owns the returned slice.
+fn wrapRlpList(allocator: Allocator, payload: []const u8) ![]u8 {
     var result = std.array_list.AlignedManaged(u8, null).init(allocator);
-    if (list.items.len <= 55) {
-        try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
+    errdefer result.deinit();
+    if (payload.len <= 55) {
+        try result.append(@as(u8, @intCast(0xc0 + payload.len)));
     } else {
-        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, payload.len);
         defer allocator.free(len_bytes);
         try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try result.appendSlice(len_bytes);
     }
-    try result.appendSlice(list.items);
+    try result.appendSlice(payload);
 
     return result.toOwnedSlice();
+}
+
+/// Encode the UNSIGNED EIP-155 signing preimage of a legacy transaction:
+/// `rlp([nonce, gasPrice, gasLimit, to, value, data, chainId, 0, 0])`.
+///
+/// The preimage comes from the transaction fields and `chain_id` only. Any
+/// `v`/`r`/`s` already on `tx` is ignored, so re-signing a signed transaction
+/// hashes the same preimage as signing it the first time. For the signed wire
+/// form use `encodeLegacySigned`; for the 6-field pre-EIP-155 preimage use
+/// `encodeLegacyForSigningPreEip155`.
+pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain_id: u64) ![]u8 {
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer list.deinit();
+
+    try appendLegacyBaseFields(allocator, tx, &list);
+
+    {
+        const enc_chain = try rlp.encode(allocator, chain_id);
+        defer allocator.free(enc_chain);
+        try list.appendSlice(enc_chain);
+    }
+    // EIP-155: r and s are the empty string in the preimage
+    try list.append(0x80);
+    try list.append(0x80);
+
+    return wrapRlpList(allocator, list.items);
+}
+
+/// Encode the UNSIGNED pre-EIP-155 signing preimage of a legacy transaction:
+/// `rlp([nonce, gasPrice, gasLimit, to, value, data])`. Ignores `v`/`r`/`s`.
+pub fn encodeLegacyForSigningPreEip155(allocator: Allocator, tx: LegacyTransaction) ![]u8 {
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer list.deinit();
+
+    try appendLegacyBaseFields(allocator, tx, &list);
+
+    return wrapRlpList(allocator, list.items);
+}
+
+/// Encode the SIGNED legacy transaction as it goes on the wire:
+/// `rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])`.
+/// The transaction hash is keccak256 of this encoding.
+pub fn encodeLegacySigned(allocator: Allocator, tx: LegacyTransaction) ![]u8 {
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer list.deinit();
+
+    try appendLegacyBaseFields(allocator, tx, &list);
+
+    {
+        const enc_v = try rlp.encode(allocator, tx.v);
+        defer allocator.free(enc_v);
+        try list.appendSlice(enc_v);
+    }
+    {
+        const enc_r = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.r));
+        defer allocator.free(enc_r);
+        try list.appendSlice(enc_r);
+    }
+    {
+        const enc_s = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.s));
+        defer allocator.free(enc_s);
+        try list.appendSlice(enc_s);
+    }
+
+    return wrapRlpList(allocator, list.items);
 }
 
 // Encode EIP-2930 access-list transaction for signing.
@@ -357,12 +392,12 @@ pub fn encodeEip2930ForSigning(allocator: Allocator, tx: Eip2930Transaction) ![]
             try list.appendSlice(enc_v);
         }
         {
-            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            const enc_r = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.r));
             defer allocator.free(enc_r);
             try list.appendSlice(enc_r);
         }
         {
-            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            const enc_s = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.s));
             defer allocator.free(enc_s);
             try list.appendSlice(enc_s);
         }
@@ -455,12 +490,12 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
             try list.appendSlice(enc_v);
         }
         {
-            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            const enc_r = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.r));
             defer allocator.free(enc_r);
             try list.appendSlice(enc_r);
         }
         {
-            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            const enc_s = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.s));
             defer allocator.free(enc_s);
             try list.appendSlice(enc_s);
         }
@@ -559,8 +594,14 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
 }
 
 // Sign legacy transaction
+// The signing hash covers the unsigned EIP-155 preimage built from the
+// transaction fields and `chain_id`. Existing v/r/s on `tx` are ignored and
+// replaced, so re-signing an already signed transaction is safe.
 pub fn signLegacyTransaction(allocator: Allocator, tx: LegacyTransaction, private_key: crypto.PrivateKey, chain_id: u64) !LegacyTransaction {
-    // Encode transaction for signing
+    // v = chain_id * 2 + 35 + y_parity must fit u64
+    if (chain_id > (std.math.maxInt(u64) - 36) / 2) return TransactionError.InvalidSignature;
+
+    // Encode the unsigned preimage (never the signed serialization)
     const encoded = try encodeLegacyForSigning(allocator, tx, chain_id);
     defer allocator.free(encoded);
 
@@ -572,7 +613,8 @@ pub fn signLegacyTransaction(allocator: Allocator, tx: LegacyTransaction, privat
 
     // Create signed transaction
     var signed_tx = tx;
-    signed_tx.v = @as(u64, signature.v) + (chain_id * 2) + 35; // EIP-155
+    const y_parity: u64 = if (signature.v >= 27) signature.v - 27 else signature.v;
+    signed_tx.v = y_parity + (chain_id * 2) + 35; // EIP-155
     // Convert u256 to [32]u8 using big-endian encoding
     std.mem.writeInt(u256, &signed_tx.r, signature.r, .big);
     std.mem.writeInt(u256, &signed_tx.s, signature.s, .big);
@@ -582,8 +624,8 @@ pub fn signLegacyTransaction(allocator: Allocator, tx: LegacyTransaction, privat
 
 // Compute legacy transaction hash
 pub fn computeLegacyTransactionHash(allocator: Allocator, tx: LegacyTransaction) !Hash {
-    // Encode the full signed transaction
-    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
+    // Encode the full signed transaction (v, r, s as stored on tx)
+    const encoded = try encodeLegacySigned(allocator, tx);
     defer allocator.free(encoded);
 
     // Return keccak256 hash
@@ -681,12 +723,12 @@ pub fn encodeEip4844ForSigning(allocator: Allocator, tx: Eip4844Transaction) ![]
             try list.appendSlice(enc_v);
         }
         {
-            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            const enc_r = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.r));
             defer allocator.free(enc_r);
             try list.appendSlice(enc_r);
         }
         {
-            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            const enc_s = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.s));
             defer allocator.free(enc_s);
             try list.appendSlice(enc_s);
         }
@@ -747,12 +789,10 @@ pub fn encodeEip7702ForSigning(allocator: Allocator, tx: Eip7702Transaction) ![]
     }
 
     // Encode 'to' field
-    if (tx.to) |to_addr| {
-        const enc_to = try rlp.encodeBytes(allocator, &to_addr.bytes);
+    {
+        const enc_to = try rlp.encodeBytes(allocator, &tx.to.bytes);
         defer allocator.free(enc_to);
         try list.appendSlice(enc_to);
-    } else {
-        try list.append(0x80); // Empty RLP string for null
     }
 
     {
@@ -784,12 +824,12 @@ pub fn encodeEip7702ForSigning(allocator: Allocator, tx: Eip7702Transaction) ![]
             try list.appendSlice(enc_v);
         }
         {
-            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            const enc_r = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.r));
             defer allocator.free(enc_r);
             try list.appendSlice(enc_r);
         }
         {
-            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            const enc_s = try rlp.encodeBytes(allocator, trimLeadingZeros(&tx.s));
             defer allocator.free(enc_s);
             try list.appendSlice(enc_s);
         }
@@ -831,9 +871,15 @@ pub fn computeEip7702TransactionHash(allocator: Allocator, tx: Eip7702Transactio
     return hash.keccak256(encoded);
 }
 
-// Detect transaction type from raw data
-pub fn detectTransactionType(data: []const u8) TransactionType {
-    if (data.len == 0) return TransactionType.legacy;
+/// Detect transaction type from raw data.
+///
+/// EIP-2718 reserves first bytes `0x00..0x7f` for typed envelopes; `0x01..0x04`
+/// are the types this library knows. A legacy transaction is an RLP list, so
+/// its first byte is `0xc0..0xff`. Everything else returns
+/// `error.UnknownTransactionType`: empty input, `0x00`, `0x05..0x7f`, and the
+/// RLP string prefixes `0x80..0xbf`.
+pub fn detectTransactionType(data: []const u8) error{UnknownTransactionType}!TransactionType {
+    if (data.len == 0) return error.UnknownTransactionType;
 
     // Check for typed transaction envelope
     return switch (data[0]) {
@@ -841,7 +887,8 @@ pub fn detectTransactionType(data: []const u8) TransactionType {
         0x02 => TransactionType.eip1559,
         0x03 => TransactionType.eip4844,
         0x04 => TransactionType.eip7702,
-        else => TransactionType.legacy,
+        0xc0...0xff => TransactionType.legacy,
+        else => error.UnknownTransactionType,
     };
 }
 
@@ -905,8 +952,8 @@ pub fn getEip4844TransactionRecipient(tx: Eip4844Transaction) Address {
     return tx.to;
 }
 
-// Get recipient address from EIP-7702 transaction
-pub fn getEip7702TransactionRecipient(tx: Eip7702Transaction) ?Address {
+// Get recipient address from EIP-7702 transaction (always present: EIP-7702 forbids creation)
+pub fn getEip7702TransactionRecipient(tx: Eip7702Transaction) Address {
     return tx.to;
 }
 
@@ -925,9 +972,9 @@ pub fn isEip4844TransactionContractCreation(_: Eip4844Transaction) bool {
     return false;
 }
 
-// Check if EIP-7702 transaction is contract creation
-pub fn isEip7702TransactionContractCreation(tx: Eip7702Transaction) bool {
-    return tx.to == null;
+// Check if EIP-7702 transaction is contract creation (always false: EIP-7702 forbids creation)
+pub fn isEip7702TransactionContractCreation(_: Eip7702Transaction) bool {
+    return false;
 }
 
 // Check if legacy transaction is contract call (to != null)
@@ -945,9 +992,9 @@ pub fn isEip4844TransactionContractCall(_: Eip4844Transaction) bool {
     return true;
 }
 
-// Check if EIP-7702 transaction is contract call
-pub fn isEip7702TransactionContractCall(tx: Eip7702Transaction) bool {
-    return tx.to != null;
+// Check if EIP-7702 transaction is contract call (always true: EIP-7702 requires a recipient)
+pub fn isEip7702TransactionContractCall(_: Eip7702Transaction) bool {
+    return true;
 }
 
 // Check if EIP-1559 transaction has access list
@@ -967,11 +1014,11 @@ pub fn eip7702HasAccessList(tx: Eip7702Transaction) bool {
 
 // Get chain ID from legacy transaction with EIP-155 v value
 pub fn getLegacyTransactionChainId(tx: LegacyTransaction) ?u64 {
-    // EIP-155: v = chainId * 2 + 35 + yParity
-    if (tx.v >= 37) {
+    // EIP-155: v = chainId * 2 + 35 + yParity, so v = 35/36 is chain_id 0
+    if (tx.v >= 35) {
         return (tx.v - 35) / 2;
     }
-    // Pre-EIP-155 transactions (v = 27 or 28)
+    // Pre-EIP-155 transactions (v = 27 or 28) and unsigned (v = 0) carry no chain ID
     return null;
 }
 
@@ -1037,13 +1084,11 @@ test "legacy transaction signature" {
     const allocator = testing.allocator;
 
     // Test private key
-    const private_key = crypto.PrivateKey{
-        .bytes = [_]u8{
-            0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3,
-            0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x24,
-            0x4e, 0x21, 0xdb, 0x63, 0x5c, 0x51, 0xcb, 0x29,
-            0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
-        },
+    const private_key: crypto.PrivateKey = [_]u8{
+        0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3,
+        0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x24,
+        0x4e, 0x21, 0xdb, 0x63, 0x5c, 0x51, 0xcb, 0x29,
+        0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
     };
 
     const tx = LegacyTransaction{
@@ -1067,6 +1112,148 @@ test "legacy transaction signature" {
     try testing.expect(!std.mem.eql(u8, &signed_tx.s, &([_]u8{0} ** 32)));
 }
 
+test "legacy signing preimage is the EIP-155 example vector and ignores v/r/s" {
+    const allocator = testing.allocator;
+
+    // EIP-155 example: nonce 9, 20 gwei, 21000 gas, to 0x3535..35, 1 ether, chain 1
+    var tx = LegacyTransaction{
+        .nonce = 9,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x3535353535353535353535353535353535353535"),
+        .value = 1_000_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const want = try hex.hexToBytes(allocator, "0xec098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a764000080018080");
+    defer allocator.free(want);
+
+    const unsigned = try encodeLegacyForSigning(allocator, tx, 1);
+    defer allocator.free(unsigned);
+    try testing.expectEqualSlices(u8, want, unsigned);
+
+    const want_hash = try hex.hexToBytes(allocator, "0xdaf5a779ae972f972197303d7b574746c7ef83eadac0f2791ad23db92e4c8e53");
+    defer allocator.free(want_hash);
+    try testing.expectEqualSlices(u8, want_hash, &hash.keccak256(unsigned));
+
+    // Same preimage when the transaction already carries a signature
+    tx.v = 37;
+    tx.r = [_]u8{0x12} ** 32;
+    tx.s = [_]u8{0x34} ** 32;
+    const from_signed = try encodeLegacyForSigning(allocator, tx, 1);
+    defer allocator.free(from_signed);
+    try testing.expectEqualSlices(u8, want, from_signed);
+
+    // Pre-EIP-155 preimage is the 6-field list
+    const pre = try encodeLegacyForSigningPreEip155(allocator, tx);
+    defer allocator.free(pre);
+    const want_pre = try hex.hexToBytes(allocator, "0xe9098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a764000080");
+    defer allocator.free(want_pre);
+    try testing.expectEqualSlices(u8, want_pre, pre);
+}
+
+test "legacy signed serialization matches the EIP-155 example vector" {
+    const allocator = testing.allocator;
+
+    // EIP-155 example, private key 0x4646...46
+    const private_key: crypto.PrivateKey = [_]u8{0x46} ** 32;
+    const tx = LegacyTransaction{
+        .nonce = 9,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x3535353535353535353535353535353535353535"),
+        .value = 1_000_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const signed = try signLegacyTransaction(allocator, tx, private_key, 1);
+    try testing.expectEqual(@as(u64, 37), signed.v);
+
+    const encoded = try encodeLegacySigned(allocator, signed);
+    defer allocator.free(encoded);
+    const want = try hex.hexToBytes(allocator, "0xf86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83");
+    defer allocator.free(want);
+    try testing.expectEqualSlices(u8, want, encoded);
+
+    // The signature recovers the EIP-155 example sender from the unsigned preimage
+    const pre = try encodeLegacyForSigning(allocator, signed, 1);
+    defer allocator.free(pre);
+    const sender = try crypto.unaudited_recoverAddress(hash.keccak256(pre), .{
+        .v = 0,
+        .r = std.mem.readInt(u256, &signed.r, .big),
+        .s = std.mem.readInt(u256, &signed.s, .big),
+    });
+    try testing.expectEqual(try Address.fromHex("0x9d8A62f656a8d1615C1294fd71e9CFb3E4855A4F"), sender);
+}
+
+test "re-signing a signed legacy transaction hashes the unsigned preimage" {
+    const allocator = testing.allocator;
+
+    const key_a: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const key_b: crypto.PrivateKey = [_]u8{0x99} ** 32;
+    const addr_a = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(key_a));
+    const addr_b = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(key_b));
+
+    const unsigned_tx = LegacyTransaction{
+        .nonce = 7,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{ 0xde, 0xad, 0xbe, 0xef },
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const first = try signLegacyTransaction(allocator, unsigned_tx, key_a, 1);
+
+    // Re-sign the signed transaction with the same key and chain: identical signature
+    const again = try signLegacyTransaction(allocator, first, key_a, 1);
+    try testing.expectEqual(first.v, again.v);
+    try testing.expectEqualSlices(u8, &first.r, &again.r);
+    try testing.expectEqualSlices(u8, &first.s, &again.s);
+
+    // Re-sign for another chain and key: equals a fresh signature of the unsigned tx
+    const resigned = try signLegacyTransaction(allocator, first, key_b, 5);
+    const fresh = try signLegacyTransaction(allocator, unsigned_tx, key_b, 5);
+    try testing.expectEqual(fresh.v, resigned.v);
+    try testing.expectEqualSlices(u8, &fresh.r, &resigned.r);
+    try testing.expectEqualSlices(u8, &fresh.s, &resigned.s);
+    try testing.expect(resigned.v == 45 or resigned.v == 46);
+
+    // Each signature recovers its signer from the unsigned EIP-155 preimage
+    const pre_a = try encodeLegacyForSigning(allocator, unsigned_tx, 1);
+    defer allocator.free(pre_a);
+    const rec_a = try crypto.unaudited_recoverAddress(hash.keccak256(pre_a), .{
+        .v = @intCast(again.v - 37),
+        .r = std.mem.readInt(u256, &again.r, .big),
+        .s = std.mem.readInt(u256, &again.s, .big),
+    });
+    try testing.expectEqual(addr_a, rec_a);
+
+    const pre_b = try encodeLegacyForSigning(allocator, unsigned_tx, 5);
+    defer allocator.free(pre_b);
+    const rec_b = try crypto.unaudited_recoverAddress(hash.keccak256(pre_b), .{
+        .v = @intCast(resigned.v - 45),
+        .r = std.mem.readInt(u256, &resigned.r, .big),
+        .s = std.mem.readInt(u256, &resigned.s, .big),
+    });
+    try testing.expectEqual(addr_b, rec_b);
+
+    // Signed serialization stays separate: it carries v/r/s, the preimage does not
+    const wire = try encodeLegacySigned(allocator, first);
+    defer allocator.free(wire);
+    try testing.expect(!std.mem.eql(u8, wire, pre_a));
+    try testing.expectEqual(hash.keccak256(wire), try computeLegacyTransactionHash(allocator, first));
+}
+
 test "encode eip1559 transaction" {
     const allocator = testing.allocator;
 
@@ -1080,7 +1267,7 @@ test "encode eip1559 transaction" {
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1096,8 +1283,8 @@ test "eip1559 with access list" {
     const allocator = testing.allocator;
 
     const storage_keys = [_][32]u8{
-        hash.fromU256(0).bytes,
-        hash.fromU256(1).bytes,
+        hash.fromU256(0),
+        hash.fromU256(1),
     };
 
     const access_list = [_]AccessListItem{
@@ -1117,7 +1304,7 @@ test "eip1559 with access list" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &access_list,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1146,7 +1333,7 @@ test "compute transaction hash" {
     const h = try computeLegacyTransactionHash(allocator, tx);
 
     // Hash should be 32 bytes
-    try testing.expectEqual(@as(usize, 32), h.bytes.len);
+    try testing.expectEqual(@as(usize, 32), h.len);
 
     // Hash should be deterministic
     const h2 = try computeLegacyTransactionHash(allocator, tx);
@@ -1180,19 +1367,19 @@ test "contract creation transaction" {
 test "detect transaction type" {
     // Legacy transaction (no prefix)
     const legacy_data = [_]u8{0xf8} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.legacy, detectTransactionType(&legacy_data));
+    try testing.expectEqual(TransactionType.legacy, try detectTransactionType(&legacy_data));
 
     // EIP-2930 (0x01 prefix)
     const eip2930_data = [_]u8{0x01} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip2930, detectTransactionType(&eip2930_data));
+    try testing.expectEqual(TransactionType.eip2930, try detectTransactionType(&eip2930_data));
 
     // EIP-1559 (0x02 prefix)
     const eip1559_data = [_]u8{0x02} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip1559, detectTransactionType(&eip1559_data));
+    try testing.expectEqual(TransactionType.eip1559, try detectTransactionType(&eip1559_data));
 
     // EIP-4844 (0x03 prefix)
     const eip4844_data = [_]u8{0x03} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip4844, detectTransactionType(&eip4844_data));
+    try testing.expectEqual(TransactionType.eip4844, try detectTransactionType(&eip4844_data));
 }
 
 test "decode mainnet transaction" {
@@ -1226,9 +1413,7 @@ test "legacy transaction chain ID replay protection" {
         .s = [_]u8{0} ** 32,
     };
 
-    const private_key = crypto.PrivateKey{
-        .bytes = [_]u8{0x42} ** 32,
-    };
+    const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
 
     // Sign for mainnet (chain_id = 1)
     const signed_mainnet = try signLegacyTransaction(allocator, tx, private_key, 1);
@@ -1259,7 +1444,7 @@ test "eip1559 chain ID is part of signature" {
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1353,7 +1538,7 @@ test "eip1559 minimum gas limit" {
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1455,23 +1640,54 @@ test "signature with zero s value is invalid" {
 // Transaction Type Detection Tests
 
 test "detect transaction type with invalid prefix" {
+    // 0x99 is an RLP string prefix: neither a typed envelope nor an RLP list
     const invalid_data = [_]u8{0x99} ++ [_]u8{0} ** 10;
-    const tx_type = detectTransactionType(&invalid_data);
+    try testing.expectError(error.UnknownTransactionType, detectTransactionType(&invalid_data));
+}
 
-    // Unknown types should default to legacy
-    try testing.expectEqual(TransactionType.legacy, tx_type);
+test "detect transaction type rejects 0x00" {
+    try testing.expectError(error.UnknownTransactionType, detectTransactionType(&[_]u8{0x00}));
+    const data = [_]u8{0x00} ++ [_]u8{0} ** 10;
+    try testing.expectError(error.UnknownTransactionType, detectTransactionType(&data));
+}
+
+test "detect transaction type rejects RLP string prefixes 0x80..0xbf" {
+    var prefix: u8 = 0x80;
+    while (prefix <= 0xbf) : (prefix += 1) {
+        const data = [_]u8{prefix} ++ [_]u8{0} ** 10;
+        try testing.expectError(error.UnknownTransactionType, detectTransactionType(&data));
+    }
+}
+
+test "detect transaction type returns legacy for every RLP list prefix 0xc0..0xff" {
+    var prefix: u8 = 0xc0;
+    while (true) : (prefix += 1) {
+        const data = [_]u8{prefix} ++ [_]u8{0} ** 10;
+        try testing.expectEqual(TransactionType.legacy, try detectTransactionType(&data));
+        if (prefix == 0xff) break;
+    }
+}
+
+test "detect transaction type rejects unknown EIP-2718 type bytes" {
+    var prefix: u8 = 0x05;
+    while (prefix <= 0x7f) : (prefix += 1) {
+        const data = [_]u8{prefix} ++ [_]u8{0} ** 10;
+        try testing.expectError(error.UnknownTransactionType, detectTransactionType(&data));
+    }
+    // A legacy transaction is an RLP list, first byte >= 0xc0.
+    try testing.expectEqual(TransactionType.legacy, try detectTransactionType(&[_]u8{ 0xc0, 0x00 }));
 }
 
 test "detect transaction type with empty data" {
     const empty_data: []const u8 = &[_]u8{};
-    const tx_type = detectTransactionType(empty_data);
-    try testing.expectEqual(TransactionType.legacy, tx_type);
+    try testing.expectError(error.UnknownTransactionType, detectTransactionType(empty_data));
 }
 
 test "detect all transaction types" {
     // Test all valid transaction type prefixes
     const type_tests = [_]struct { prefix: u8, expected: TransactionType }{
-        .{ .prefix = 0x00, .expected = TransactionType.legacy },
+        .{ .prefix = 0xc0, .expected = TransactionType.legacy },
+        .{ .prefix = 0xf8, .expected = TransactionType.legacy },
         .{ .prefix = 0x01, .expected = TransactionType.eip2930 },
         .{ .prefix = 0x02, .expected = TransactionType.eip1559 },
         .{ .prefix = 0x03, .expected = TransactionType.eip4844 },
@@ -1480,7 +1696,7 @@ test "detect all transaction types" {
 
     for (type_tests) |test_case| {
         const data = [_]u8{test_case.prefix} ++ [_]u8{0} ** 10;
-        const detected = detectTransactionType(&data);
+        const detected = try detectTransactionType(&data);
         try testing.expectEqual(test_case.expected, detected);
     }
 }
@@ -1519,8 +1735,8 @@ test "encode access list with address but no storage keys" {
 test "encode access list with multiple addresses" {
     const allocator = testing.allocator;
 
-    const keys1 = [_][32]u8{hash.fromU256(1).bytes};
-    const keys2 = [_][32]u8{hash.fromU256(2).bytes};
+    const keys1 = [_][32]u8{hash.fromU256(1)};
+    const keys2 = [_][32]u8{hash.fromU256(2)};
 
     const access_list = [_]AccessListItem{
         .{
@@ -1553,7 +1769,7 @@ test "eip7702 transaction structure" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1620,7 +1836,7 @@ test "different transactions have different hashes" {
     const hash2 = try computeLegacyTransactionHash(allocator, tx2);
 
     // Different transactions should have different hashes
-    try testing.expect(!std.mem.eql(u8, &hash1.bytes, &hash2.bytes));
+    try testing.expect(!std.mem.eql(u8, &hash1, &hash2));
 }
 
 // Transaction with Data Tests
@@ -1642,10 +1858,17 @@ test "transaction with non-empty data" {
         .s = [_]u8{0x34} ** 32,
     };
 
-    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
+    // Signed wire form: 36 bytes of data plus v/r/s
+    const encoded = try encodeLegacySigned(allocator, tx);
     defer allocator.free(encoded);
 
     try testing.expect(encoded.len > 100); // Should be larger with data
+
+    // The unsigned preimage carries the same data but no signature
+    const preimage = try encodeLegacyForSigning(allocator, tx, 1);
+    defer allocator.free(preimage);
+    try testing.expect(preimage.len < encoded.len);
+    try testing.expect(std.mem.indexOf(u8, preimage, &call_data) != null);
 }
 
 test "transaction data affects hash" {
@@ -1681,7 +1904,7 @@ test "transaction data affects hash" {
     const hash1 = try computeLegacyTransactionHash(allocator, tx1);
     const hash2 = try computeLegacyTransactionHash(allocator, tx2);
 
-    try testing.expect(!std.mem.eql(u8, &hash1.bytes, &hash2.bytes));
+    try testing.expect(!std.mem.eql(u8, &hash1, &hash2));
 }
 
 // EIP-4844 Blob Transaction Tests
@@ -1705,7 +1928,7 @@ test "eip4844 basic transaction structure" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1735,7 +1958,7 @@ test "eip4844 transaction serialization" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1777,7 +2000,7 @@ test "eip4844 transaction with multiple blobs" {
             .access_list = &[_]AccessListItem{},
             .max_fee_per_blob_gas = 1_000_000,
             .blob_versioned_hashes = hashes_array,
-            .v = 0,
+            .y_parity = 0,
             .r = [_]u8{0} ** 32,
             .s = [_]u8{0} ** 32,
         };
@@ -1809,7 +2032,7 @@ test "eip4844 transaction hash computation" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1817,7 +2040,7 @@ test "eip4844 transaction hash computation" {
     const h = try computeEip4844TransactionHash(allocator, tx);
 
     // Hash should be 32 bytes
-    try testing.expectEqual(@as(usize, 32), h.bytes.len);
+    try testing.expectEqual(@as(usize, 32), h.len);
 
     // Hash should be deterministic
     const h2 = try computeEip4844TransactionHash(allocator, tx);
@@ -1848,7 +2071,7 @@ test "eip4844 transaction hash changes with different blob hashes" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes1,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1865,7 +2088,7 @@ test "eip4844 transaction hash changes with different blob hashes" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes2,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1874,7 +2097,7 @@ test "eip4844 transaction hash changes with different blob hashes" {
     const h2 = try computeEip4844TransactionHash(allocator, tx2);
 
     // Different blob hashes should produce different transaction hashes
-    try testing.expect(!std.mem.eql(u8, &h1.bytes, &h2.bytes));
+    try testing.expect(!std.mem.eql(u8, &h1, &h2));
 }
 
 test "eip4844 transaction with max blobs" {
@@ -1902,7 +2125,7 @@ test "eip4844 transaction with max blobs" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = hashes_array,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1933,7 +2156,7 @@ test "eip4844 chain ID is part of signature" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1950,7 +2173,7 @@ test "eip4844 chain ID is part of signature" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -1984,7 +2207,7 @@ test "eip4844 max_fee_per_blob_gas field handling" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2001,7 +2224,7 @@ test "eip4844 max_fee_per_blob_gas field handling" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2010,7 +2233,7 @@ test "eip4844 max_fee_per_blob_gas field handling" {
     const hash_high = try computeEip4844TransactionHash(allocator, tx_high);
 
     // Different max_fee_per_blob_gas should produce different hashes
-    try testing.expect(!std.mem.eql(u8, &hash_low.bytes, &hash_high.bytes));
+    try testing.expect(!std.mem.eql(u8, &hash_low, &hash_high));
 }
 
 test "eip4844 transaction with access list" {
@@ -2021,8 +2244,8 @@ test "eip4844 transaction with access list" {
     const hashes = [_]VersionedHash{versioned_hash};
 
     const storage_keys = [_][32]u8{
-        hash.fromU256(0).bytes,
-        hash.fromU256(1).bytes,
+        hash.fromU256(0),
+        hash.fromU256(1),
     };
 
     const access_list = [_]AccessListItem{
@@ -2044,7 +2267,7 @@ test "eip4844 transaction with access list" {
         .access_list = &access_list,
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2071,7 +2294,7 @@ test "eip7702 transaction serialization" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2079,9 +2302,15 @@ test "eip7702 transaction serialization" {
     const encoded = try encodeEip7702ForSigning(allocator, tx);
     defer allocator.free(encoded);
 
-    // Should start with transaction type 0x04
-    try testing.expectEqual(@as(u8, 0x04), encoded[0]);
-    try testing.expect(encoded.len > 50);
+    // 0x04 || rlp([chain_id, nonce, max_priority_fee_per_gas, max_fee_per_gas,
+    // gas_limit, to, value, data, access_list, authorization_list]): 43 bytes
+    const expected = [_]u8{ 0x04, 0xe9, 0x01, 0x80 } ++
+        [_]u8{ 0x84, 0x3b, 0x9a, 0xca, 0x00 } ++
+        [_]u8{ 0x85, 0x04, 0xa8, 0x17, 0xc8, 0x00 } ++
+        [_]u8{ 0x82, 0x52, 0x08 } ++
+        [_]u8{0x94} ++ tx.to.bytes ++
+        [_]u8{ 0x80, 0x80, 0xc0, 0xc0 };
+    try testing.expectEqualSlices(u8, &expected, encoded);
 }
 
 test "eip7702 transaction with single authorization" {
@@ -2110,7 +2339,7 @@ test "eip7702 transaction with single authorization" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &auth_list,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2157,7 +2386,7 @@ test "eip7702 transaction with multiple authorizations" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &auth_list,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2183,7 +2412,7 @@ test "eip7702 transaction hash computation" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2191,7 +2420,7 @@ test "eip7702 transaction hash computation" {
     const h = try computeEip7702TransactionHash(allocator, tx);
 
     // Hash should be 32 bytes
-    try testing.expectEqual(@as(usize, 32), h.bytes.len);
+    try testing.expectEqual(@as(usize, 32), h.len);
 
     // Hash should be deterministic
     const h2 = try computeEip7702TransactionHash(allocator, tx);
@@ -2212,7 +2441,7 @@ test "eip7702 chain ID is part of signature" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2228,7 +2457,7 @@ test "eip7702 chain ID is part of signature" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2278,7 +2507,7 @@ test "eip7702 authorization nonce handling" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &list0,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2294,7 +2523,7 @@ test "eip7702 authorization nonce handling" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &list1,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2303,10 +2532,10 @@ test "eip7702 authorization nonce handling" {
     const hash1 = try computeEip7702TransactionHash(allocator, tx1);
 
     // Different authorization nonces should produce different hashes
-    try testing.expect(!std.mem.eql(u8, &hash0.bytes, &hash1.bytes));
+    try testing.expect(!std.mem.eql(u8, &hash0, &hash1));
 }
 
-test "eip7702 contract creation (null to)" {
+test "eip7702 forbids contract creation: to is always a 20-byte address" {
     const allocator = testing.allocator;
 
     const tx = Eip7702Transaction{
@@ -2315,21 +2544,27 @@ test "eip7702 contract creation (null to)" {
         .max_priority_fee_per_gas = 1_000_000_000,
         .max_fee_per_gas = 20_000_000_000,
         .gas_limit = 100000,
-        .to = null, // Contract creation
+        .to = Address.ZERO_ADDRESS,
         .value = 0,
         .data = &[_]u8{ 0x60, 0x80, 0x60, 0x40 },
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
+
+    try testing.expect(@TypeOf(tx.to) == Address);
+    try testing.expect(!isEip7702TransactionContractCreation(tx));
+    try testing.expect(isEip7702TransactionContractCall(tx));
+    try testing.expectEqual(tx.to, getEip7702TransactionRecipient(tx));
 
     const encoded = try encodeEip7702ForSigning(allocator, tx);
     defer allocator.free(encoded);
 
     try testing.expectEqual(@as(u8, 0x04), encoded[0]);
-    try testing.expect(encoded.len > 50);
+    // `to` is RLP-encoded as a 20-byte string (0x94 prefix), never as empty 0x80
+    try testing.expect(std.mem.indexOf(u8, encoded, &([_]u8{0x94} ++ [_]u8{0} ** 20)) != null);
 }
 
 // Cross-Transaction Type Tests
@@ -2337,23 +2572,23 @@ test "eip7702 contract creation (null to)" {
 test "transaction type detection for all types" {
     // Legacy
     const legacy = [_]u8{0xf8} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.legacy, detectTransactionType(&legacy));
+    try testing.expectEqual(TransactionType.legacy, try detectTransactionType(&legacy));
 
     // EIP-2930
     const eip2930 = [_]u8{0x01} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip2930, detectTransactionType(&eip2930));
+    try testing.expectEqual(TransactionType.eip2930, try detectTransactionType(&eip2930));
 
     // EIP-1559
     const eip1559 = [_]u8{0x02} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip1559, detectTransactionType(&eip1559));
+    try testing.expectEqual(TransactionType.eip1559, try detectTransactionType(&eip1559));
 
     // EIP-4844
     const eip4844 = [_]u8{0x03} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip4844, detectTransactionType(&eip4844));
+    try testing.expectEqual(TransactionType.eip4844, try detectTransactionType(&eip4844));
 
     // EIP-7702
     const eip7702 = [_]u8{0x04} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip7702, detectTransactionType(&eip7702));
+    try testing.expectEqual(TransactionType.eip7702, try detectTransactionType(&eip7702));
 }
 
 test "rlp encoding starts with correct type prefix" {
@@ -2370,7 +2605,7 @@ test "rlp encoding starts with correct type prefix" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2396,7 +2631,7 @@ test "rlp encoding starts with correct type prefix" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2417,7 +2652,7 @@ test "rlp encoding starts with correct type prefix" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2464,7 +2699,7 @@ test "hash calculation determinism across transaction types" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2485,7 +2720,7 @@ test "hash calculation determinism across transaction types" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &[_]Authorization{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2536,7 +2771,7 @@ test "isSigned checks for EIP-1559 transaction" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2552,7 +2787,7 @@ test "isSigned checks for EIP-1559 transaction" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0x01} ** 32,
         .s = [_]u8{0x02} ** 32,
     };
@@ -2643,7 +2878,7 @@ test "EIP-4844 contract checks always correct" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2671,7 +2906,7 @@ test "hasAccessList checks" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{access_list_item},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2687,7 +2922,7 @@ test "hasAccessList checks" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2725,6 +2960,46 @@ test "getChainId from legacy transaction" {
     };
     const pre_chain_id = getLegacyTransactionChainId(pre_eip155_tx);
     try testing.expect(pre_chain_id == null);
+
+    // EIP-155 boundaries: v = 35/36 is chain_id 0, 37/38 chain 1, 28 and 34 are not EIP-155
+    var tx = pre_eip155_tx;
+    const cases = [_]struct { v: u64, want: ?u64 }{
+        .{ .v = 0, .want = null },
+        .{ .v = 27, .want = null },
+        .{ .v = 28, .want = null },
+        .{ .v = 34, .want = null },
+        .{ .v = 35, .want = 0 },
+        .{ .v = 36, .want = 0 },
+        .{ .v = 37, .want = 1 },
+        .{ .v = 38, .want = 1 },
+        .{ .v = 45, .want = 5 },
+        .{ .v = std.math.maxInt(u64), .want = (std.math.maxInt(u64) - 35) / 2 },
+    };
+    for (cases) |case| {
+        tx.v = case.v;
+        try testing.expectEqual(case.want, getLegacyTransactionChainId(tx));
+    }
+}
+
+test "signLegacyTransaction with chain_id 0 round-trips through getLegacyTransactionChainId" {
+    const allocator = testing.allocator;
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+    const signed = try signLegacyTransaction(allocator, tx, [_]u8{0x42} ** 32, 0);
+    try testing.expect(signed.v == 35 or signed.v == 36);
+    try testing.expectEqual(@as(?u64, 0), getLegacyTransactionChainId(signed));
+
+    // chain_id too large for v = chain_id * 2 + 36 to fit u64
+    try testing.expectError(TransactionError.InvalidSignature, signLegacyTransaction(allocator, tx, [_]u8{0x42} ** 32, std.math.maxInt(u64)));
 }
 
 test "getChainId from typed transactions" {
@@ -2738,7 +3013,7 @@ test "getChainId from typed transactions" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2762,7 +3037,7 @@ test "getBlobCount from EIP-4844 transaction" {
         .access_list = &[_]AccessListItem{},
         .max_fee_per_blob_gas = 1_000_000,
         .blob_versioned_hashes = &hashes,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2776,11 +3051,17 @@ test "getAuthorizationCount from EIP-7702 transaction" {
         .chain_id = 1,
         .address = addr,
         .nonce = 0,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
     };
     const auth2 = Authorization{
         .chain_id = 1,
         .address = addr,
         .nonce = 1,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
     };
     const auths = [_]Authorization{ auth1, auth2 };
 
@@ -2795,7 +3076,7 @@ test "getAuthorizationCount from EIP-7702 transaction" {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .authorization_list = &auths,
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
@@ -2816,7 +3097,7 @@ test "computeEip1559TransactionHash" {
         .value = 0,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
-        .v = 0,
+        .y_parity = 0,
         .r = [_]u8{0x12} ** 32,
         .s = [_]u8{0x34} ** 32,
     };

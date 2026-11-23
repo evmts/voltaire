@@ -16,6 +16,7 @@ pub const BYTES_PER_CELL = c.BYTES_PER_CELL;
 pub const BYTES_PER_COMMITMENT = c.BYTES_PER_COMMITMENT;
 pub const BYTES_PER_FIELD_ELEMENT = c.BYTES_PER_FIELD_ELEMENT;
 pub const BYTES_PER_PROOF = c.BYTES_PER_PROOF;
+pub const CELLS_PER_BLOB = c.CELLS_PER_BLOB;
 pub const CELLS_PER_EXT_BLOB = c.CELLS_PER_EXT_BLOB;
 pub const FIELD_ELEMENTS_PER_BLOB = c.FIELD_ELEMENTS_PER_BLOB;
 pub const FIELD_ELEMENTS_PER_CELL = c.FIELD_ELEMENTS_PER_CELL;
@@ -41,8 +42,14 @@ pub const KZGError = error{
 /// Embedded trusted setup data (~807KB). Only included when explicitly referenced.
 pub const embedded_trusted_setup = @embedFile("trusted_setup.txt");
 
+/// Process-wide trusted setup. `lock` guards both `settings` and `loaded`:
+/// load and free take it exclusively; every C call that reads `settings`
+/// holds it shared for the whole call, so a free can never race an in-flight
+/// computation or verification. c-kzg only reads `settings` during those
+/// calls, so concurrent shared holders are safe.
 var settings: KZGSettings = undefined;
 var loaded: bool = false;
+var lock: std.Thread.RwLock = .{};
 
 fn makeErrorFromRet(ret: c.C_KZG_RET) KZGError {
     return switch (ret) {
@@ -60,6 +67,8 @@ pub fn loadTrustedSetup(
     g2_monomial_bytes: []const u8,
     precompute: u64,
 ) KZGError!void {
+    lock.lock();
+    defer lock.unlock();
     if (loaded) {
         return KZGError.TrustedSetupAlreadyLoaded;
     }
@@ -85,6 +94,8 @@ pub fn loadTrustedSetup(
 
 /// Loads trusted setup from text data. Pass `embedded_trusted_setup` or custom text.
 pub fn loadTrustedSetupFromText(trusted_setup_text: []const u8, precompute: u64) KZGError!void {
+    lock.lock();
+    defer lock.unlock();
     if (loaded) {
         return KZGError.TrustedSetupAlreadyLoaded;
     }
@@ -145,11 +156,17 @@ pub fn loadTrustedSetupFromText(trusted_setup_text: []const u8, precompute: u64)
 
 /// Loads trusted setup from file path.
 pub fn loadTrustedSetupFile(file_path: []const u8, precompute: u64) KZGError!void {
+    lock.lock();
+    defer lock.unlock();
     if (loaded) {
         return KZGError.TrustedSetupAlreadyLoaded;
     }
 
+    // fopen needs a NUL-terminated copy. Reject paths that do not fit or that
+    // contain a NUL, which would silently truncate the path C sees.
     var path_buf: [256]u8 = undefined;
+    if (file_path.len >= path_buf.len) return KZGError.BadArgs;
+    if (std.mem.indexOfScalar(u8, file_path, 0) != null) return KZGError.BadArgs;
     @memcpy(path_buf[0..file_path.len], file_path);
     path_buf[file_path.len] = 0;
 
@@ -171,6 +188,8 @@ pub fn loadTrustedSetupFile(file_path: []const u8, precompute: u64) KZGError!voi
 
 /// Frees the loaded trusted setup.
 pub fn freeTrustedSetup() KZGError!void {
+    lock.lock();
+    defer lock.unlock();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -180,6 +199,8 @@ pub fn freeTrustedSetup() KZGError!void {
 
 /// Converts a blob to a KZG commitment.
 pub fn blobToKZGCommitment(blob: *const Blob) KZGError!KZGCommitment {
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -200,6 +221,8 @@ pub fn blobToKZGCommitment(blob: *const Blob) KZGError!KZGCommitment {
 
 /// Computes a KZG proof for a blob at the given evaluation point.
 pub fn computeKZGProof(blob: *const Blob, z_bytes: *const Bytes32) KZGError!struct { proof: KZGProof, y: Bytes32 } {
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -228,8 +251,10 @@ pub fn verifyKZGProof(
     y_bytes: *const Bytes32,
     proof_bytes: *const Bytes48,
 ) KZGError!bool {
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
-        @panic("trusted setup isn't loaded");
+        return KZGError.TrustedSetupNotLoaded;
     }
 
     var result: bool = undefined;
@@ -251,8 +276,10 @@ pub fn verifyKZGProof(
 
 /// Computes a KZG proof for a blob given its commitment.
 pub fn computeBlobKZGProof(blob: *const Blob, commitment_bytes: *const Bytes48) KZGError!KZGProof {
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
-        @panic("trusted setup isn't loaded");
+        return KZGError.TrustedSetupNotLoaded;
     }
 
     var proof: KZGProof = undefined;
@@ -276,8 +303,10 @@ pub fn verifyBlobKZGProof(
     commitment_bytes: *const Bytes48,
     proof_bytes: *const Bytes48,
 ) KZGError!bool {
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
-        @panic("trusted setup isn't loaded");
+        return KZGError.TrustedSetupNotLoaded;
     }
 
     var result: bool = undefined;
@@ -286,6 +315,104 @@ pub fn verifyBlobKZGProof(
         @ptrCast(blob),
         @ptrCast(commitment_bytes),
         @ptrCast(proof_bytes),
+        &settings,
+    );
+
+    if (ret != c.C_KZG_OK) {
+        return makeErrorFromRet(ret);
+    }
+
+    return result;
+}
+
+/// Returns true once a trusted setup is loaded.
+pub fn isTrustedSetupLoaded() bool {
+    lock.lockShared();
+    defer lock.unlockShared();
+    return loaded;
+}
+
+/// EIP-7594: computes the cells of the extended blob and, optionally, their
+/// KZG proofs. Pass null to skip either output; at least one must be non-null.
+pub fn computeCellsAndKZGProofs(
+    cells: ?*[CELLS_PER_EXT_BLOB]Cell,
+    proofs: ?*[CELLS_PER_EXT_BLOB]KZGProof,
+    blob: *const Blob,
+) KZGError!void {
+    lock.lockShared();
+    defer lock.unlockShared();
+    if (!loaded) {
+        return KZGError.TrustedSetupNotLoaded;
+    }
+
+    const ret = c.compute_cells_and_kzg_proofs(
+        @ptrCast(cells),
+        @ptrCast(proofs),
+        @ptrCast(blob),
+        &settings,
+    );
+
+    if (ret != c.C_KZG_OK) {
+        return makeErrorFromRet(ret);
+    }
+}
+
+/// EIP-7594: recovers all cells and proofs of an extended blob from a subset.
+/// `cell_indices` and `cells` must have the same length.
+pub fn recoverCellsAndKZGProofs(
+    recovered_cells: *[CELLS_PER_EXT_BLOB]Cell,
+    recovered_proofs: *[CELLS_PER_EXT_BLOB]KZGProof,
+    cell_indices: []const u64,
+    cells: []const Cell,
+) KZGError!void {
+    lock.lockShared();
+    defer lock.unlockShared();
+    if (!loaded) {
+        return KZGError.TrustedSetupNotLoaded;
+    }
+    if (cell_indices.len != cells.len) {
+        return KZGError.BadArgs;
+    }
+
+    const ret = c.recover_cells_and_kzg_proofs(
+        @ptrCast(recovered_cells),
+        @ptrCast(recovered_proofs),
+        cell_indices.ptr,
+        @ptrCast(cells.ptr),
+        cells.len,
+        &settings,
+    );
+
+    if (ret != c.C_KZG_OK) {
+        return makeErrorFromRet(ret);
+    }
+}
+
+/// EIP-7594: verifies a batch of cell KZG proofs. All four slices must have
+/// the same length.
+pub fn verifyCellKZGProofBatch(
+    commitments_bytes: []const Bytes48,
+    cell_indices: []const u64,
+    cells: []const Cell,
+    proofs_bytes: []const Bytes48,
+) KZGError!bool {
+    lock.lockShared();
+    defer lock.unlockShared();
+    if (!loaded) {
+        return KZGError.TrustedSetupNotLoaded;
+    }
+    if (commitments_bytes.len != cells.len or cell_indices.len != cells.len or proofs_bytes.len != cells.len) {
+        return KZGError.BadArgs;
+    }
+
+    var result: bool = undefined;
+    const ret = c.verify_cell_kzg_proof_batch(
+        &result,
+        @ptrCast(commitments_bytes.ptr),
+        cell_indices.ptr,
+        @ptrCast(cells.ptr),
+        @ptrCast(proofs_bytes.ptr),
+        cells.len,
         &settings,
     );
 

@@ -4,7 +4,7 @@ import { from } from "./from.js";
 import { toBigInt } from "./toBigInt.js";
 import { toNumber } from "./toNumber.js";
 import { toSlot } from "./toSlot.js";
-export { from, toNumber, toBigInt, equals, toSlot };
+export { equals, from, toBigInt, toNumber, toSlot };
 export declare const Epoch: {
     from: typeof from;
     toNumber: typeof toNumber;

@@ -1,13 +1,12 @@
 /**
- * Calculate blob base fee using EIP-4844 formula (constructor form)
+ * Calculate blob base fee using EIP-4844 / EIP-7691 / EIP-7892 formula (constructor form)
  *
- * Formula: fakeExponential(MIN_BLOB_BASE_FEE, excessBlobGas, BLOB_BASE_FEE_UPDATE_FRACTION)
- *
- * Uses Taylor series to approximate: MIN_BLOB_BASE_FEE * e^(excessBlobGas / UPDATE_FRACTION)
+ * Formula: `fakeExponential(MIN_BLOB_BASE_FEE, excessBlobGas, baseFeeUpdateFraction)`
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
  * @param {bigint} excessBlobGas - Excess blob gas from previous blocks
+ * @param {bigint | import('./BlobScheduleType.js').BlobScheduleType} [updateFractionOrSchedule] - Optional update fraction or BlobSchedule (defaults to Cancun 3338477n)
  * @returns {bigint} Blob base fee (wei per blob gas)
  * @throws {never}
  * @example
@@ -18,5 +17,5 @@
  * // fee1 === 1n
  * ```
  */
-export function BlobBaseFee(excessBlobGas: bigint): bigint;
+export function BlobBaseFee(excessBlobGas: bigint, updateFractionOrSchedule?: bigint | import("./BlobScheduleType.js").BlobScheduleType): bigint;
 //# sourceMappingURL=BlobBaseFee.d.ts.map

@@ -1,7 +1,7 @@
 /**
  * Validate a private key
  *
- * Checks if the private key is in the valid range [1, n-1]
+ * Checks in constant time if the private key is in the valid range [1, n-1]
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0

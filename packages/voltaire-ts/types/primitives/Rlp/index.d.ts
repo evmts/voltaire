@@ -30,6 +30,7 @@ export declare namespace Rlp {
     var decodeObject: typeof BrandedRlpNs.decodeObject;
     var decodeValue: typeof BrandedRlpNs.decodeValue;
     var getEncodedLength: typeof BrandedRlpNs.getEncodedLength;
+    var exceedsMaxRlpBlockSize: typeof BrandedRlpNs.exceedsMaxRlpBlockSize;
     var flatten: typeof BrandedRlpNs.flatten;
     var equals: typeof BrandedRlpNs.equals;
     var toJSON: typeof BrandedRlpNs.toJSON;

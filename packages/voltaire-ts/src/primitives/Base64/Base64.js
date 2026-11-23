@@ -23,32 +23,32 @@ import { toStringUrlSafe } from "./toStringUrlSafe.js";
 
 // Export individual functions
 export {
-	// Constructors
-	from,
-	fromUrlSafe,
-	// Encoding
-	encode,
-	encodeString,
-	encodeUrlSafe,
-	encodeStringUrlSafe,
+	calcDecodedSize,
+	// Utils
+	calcEncodedSize,
 	// Decoding
 	decode,
 	decodeToString,
 	decodeUrlSafe,
 	decodeUrlSafeToString,
+	// Encoding
+	encode,
+	encodeString,
+	encodeStringUrlSafe,
+	encodeUrlSafe,
+	// Constructors
+	from,
+	fromUrlSafe,
+	// Validation
+	isValid,
+	isValidUrlSafe,
+	toBase64,
+	toBase64Url,
 	// Conversions
 	toBytes,
 	toBytesUrlSafe,
 	toString,
 	toStringUrlSafe,
-	toBase64,
-	toBase64Url,
-	// Validation
-	isValid,
-	isValidUrlSafe,
-	// Utils
-	calcEncodedSize,
-	calcDecodedSize,
 };
 
 /**

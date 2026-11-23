@@ -20,7 +20,7 @@
 //! use voltaire::crypto::bls12_381::{Bls12381, SecretKey, PublicKey, Signature};
 //!
 //! // Generate keypair
-//! let (secret_key, public_key) = Bls12381::generate_keypair();
+//! let (secret_key, public_key) = Bls12381::generate_keypair()?;
 //!
 //! // Sign message with domain separation tag
 //! let message = b"hello world";
@@ -60,19 +60,12 @@ impl Bls12381 {
     ///
     /// Returns (secret_key, public_key) tuple.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if random number generation fails.
-    pub fn generate_keypair() -> (SecretKey, PublicKey) {
-        // TODO: Implement using arkworks or blst
-        // 1. Generate 32 random bytes
-        // 2. Reduce modulo curve order
-        // 3. Derive public key via scalar multiplication of G1 generator
-
-        // Stub: return zero keypair
-        let secret_key = [0u8; 32];
-        let public_key = [0u8; 48];
-        (secret_key, public_key)
+    /// Always returns [`Error::Unsupported`]: BLS12-381 key generation is not
+    /// implemented in this crate. It never returns a placeholder keypair.
+    pub fn generate_keypair() -> Result<(SecretKey, PublicKey)> {
+        Err(Error::unsupported("BLS12-381 key generation is not implemented"))
     }
 
     /// Derive public key from secret key.
@@ -461,11 +454,9 @@ mod tests {
     // ============ Key Generation Tests ============
 
     #[test]
-    fn test_generate_keypair_returns_values() {
-        let (secret_key, public_key) = Bls12381::generate_keypair();
-        // Stub returns zeros, but function should not panic
-        assert_eq!(secret_key.len(), 32);
-        assert_eq!(public_key.len(), 48);
+    fn test_generate_keypair_is_unsupported() {
+        let result = Bls12381::generate_keypair();
+        assert!(matches!(result, Err(Error::Unsupported(_))));
     }
 
     #[test]

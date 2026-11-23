@@ -148,6 +148,11 @@ describe("Block.fromRpc", () => {
 		expect(block.header.difficulty).toBe(0x2000000000000n);
 		expect(block.totalDifficulty).toBe(0x36e1945c08bf2ab5n);
 	});
+
+	it("treats a null RPC totalDifficulty as missing", () => {
+		const block = Block._fromRpc({ ...minimalRpcBlock, totalDifficulty: null });
+		expect(block.totalDifficulty).toBeUndefined();
+	});
 });
 
 describe("BlockHeader.fromRpc", () => {

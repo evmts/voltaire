@@ -15,7 +15,7 @@ export declare function equals(value1: number | bigint | string, value2: number 
 export declare function compare(value1: number | bigint | string, value2: number | bigint | string): number;
 export declare function withBuffer(estimate: number | bigint | string, percentageBuffer: number): import("./GasEstimateType.js").GasEstimateType;
 export declare function toGasLimit(estimate: number | bigint | string): bigint;
-export { _toNumber, _toBigInt, _toHex, _equals, _compare, _withBuffer, _toGasLimit, };
+export { _compare, _equals, _toBigInt, _toGasLimit, _toHex, _toNumber, _withBuffer, };
 export declare const GasEstimate: {
     from: typeof from;
     toNumber: typeof toNumber;

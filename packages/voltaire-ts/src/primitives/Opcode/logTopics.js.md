@@ -1,6 +1,6 @@
 ---
-title: "logTopics.js"
----
+
+## title: "logTopics.js"
 
 # logTopics.js
 
@@ -9,7 +9,7 @@ Get topic count for LOG instruction.
 ## Signature
 
 ```typescript
-function logTopics(opcode: BrandedOpcode): number | undefined
+function logTopics(opcode: BrandedOpcode): number | undefined;
 ```
 
 ## Parameters
@@ -23,9 +23,9 @@ function logTopics(opcode: BrandedOpcode): number | undefined
 ## Example
 
 ```typescript
-Opcode.logTopics(Opcode.LOG0);  // 0
-Opcode.logTopics(Opcode.LOG1);  // 1
-Opcode.logTopics(Opcode.LOG4);  // 4
+Opcode.logTopics(Opcode.LOG0); // 0
+Opcode.logTopics(Opcode.LOG1); // 1
+Opcode.logTopics(Opcode.LOG4); // 4
 Opcode.logTopics(Opcode.SSTORE); // undefined
 ```
 

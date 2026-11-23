@@ -33,6 +33,7 @@
 		"src",
 		"!src/**/*.test.*",
 		"!src/testing",
+		"LICENSE",
 		"README.md",
 		"CHANGELOG.md"
 	],
@@ -42,58 +43,58 @@
 	"exports": {
 		"./package.json": "./package.json",
 		".": {
-			"vibelang-source": "./src/index.vibe",
 			"types": "./dist/index.d.ts",
+			"vibelang-source": "./src/index.vibe",
 			"import": "./dist/index.js"
 		},
 		"./errors": {
-			"vibelang-source": "./src/errors.vibe",
 			"types": "./dist/errors.d.ts",
+			"vibelang-source": "./src/errors.vibe",
 			"import": "./dist/errors.js"
 		},
 		"./primitives": {
-			"vibelang-source": "./src/primitives/index.vibe",
 			"types": "./dist/primitives/index.d.ts",
+			"vibelang-source": "./src/primitives/index.vibe",
 			"import": "./dist/primitives/index.js"
 		},
 		"./crypto": {
-			"vibelang-source": "./src/crypto/index.vibe",
 			"types": "./dist/crypto/index.d.ts",
+			"vibelang-source": "./src/crypto/index.vibe",
 			"import": "./dist/crypto/index.js"
 		},
 		"./transport": {
-			"vibelang-source": "./src/transport/index.vibe",
 			"types": "./dist/transport/index.d.ts",
+			"vibelang-source": "./src/transport/index.vibe",
 			"import": "./dist/transport/index.js"
 		},
 		"./provider": {
-			"vibelang-source": "./src/provider/index.vibe",
 			"types": "./dist/provider/index.d.ts",
+			"vibelang-source": "./src/provider/index.vibe",
 			"import": "./dist/provider/index.js"
 		},
 		"./contract": {
-			"vibelang-source": "./src/contract/index.vibe",
 			"types": "./dist/contract/index.d.ts",
+			"vibelang-source": "./src/contract/index.vibe",
 			"import": "./dist/contract/index.js"
 		},
 		"./signer": {
-			"vibelang-source": "./src/signer/index.vibe",
 			"types": "./dist/signer/index.d.ts",
+			"vibelang-source": "./src/signer/index.vibe",
 			"import": "./dist/signer/index.js"
 		},
 		"./streams": {
-			"vibelang-source": "./src/streams/index.vibe",
 			"types": "./dist/streams/index.d.ts",
+			"vibelang-source": "./src/streams/index.vibe",
 			"import": "./dist/streams/index.js"
 		},
 		"./standards": {
-			"vibelang-source": "./src/standards/index.vibe",
 			"types": "./dist/standards/index.d.ts",
+			"vibelang-source": "./src/standards/index.vibe",
 			"import": "./dist/standards/index.js"
 		},
 		"./services": {
-			"vibelang-source": "./src/services/index.vibe",
 			"types": "./dist/services/index.d.ts",
+			"vibelang-source": "./src/services/index.vibe",
 			"import": "./dist/services/index.js"
 		}
 	},
@@ -102,7 +103,7 @@
 		"vibelang-runtime": "0.0.13"
 	},
 	"peerDependencies": {
-		"@tevm/voltaire": "workspace:*",
+		"@tevm/voltaire": "workspace:^",
 		"effect": "4.1.1"
 	},
 	"devDependencies": {
@@ -117,7 +118,7 @@
 		"vitest": "5.0.5"
 	},
 	"scripts": {
-		"build": "vibelang -p tsconfig.build.json",
+		"build": "rm -rf dist && vibelang -p tsconfig.build.json",
 		"clean": "rm -rf dist .vibe",
 		"format": "vibelang format --write 'src/**/*.vibe'",
 		"format:check": "vibelang format --check 'src/**/*.vibe'",

@@ -42,6 +42,8 @@ const crypto = std.crypto;
 const Sha256 = crypto.hash.sha2.Sha256;
 const HmacSha512 = crypto.auth.hmac.sha2.HmacSha512;
 const pbkdf2 = crypto.pwhash.pbkdf2;
+const constant_time = @import("constant_time.zig");
+const nfkd = @import("nfkd.zig");
 
 /// BIP-39 English wordlist (2048 words)
 pub const wordlist = [_][]const u8{
@@ -324,6 +326,7 @@ pub const Bip39Error = error{
     InvalidChecksum,
     WeakParameters,
     OutputTooLong,
+    BufferTooSmall,
 };
 
 /// Get word count from entropy bits
@@ -358,15 +361,53 @@ fn getEntropyBytes(word_count: u8) Bip39Error!u8 {
     return @intCast(bits / 8);
 }
 
-/// Find word index in wordlist (binary search)
+/// Longest BIP-39 English word ("abstract", "acoustic", ...).
+const max_word_len = 8;
+
+/// Fixed-size comparison form of a word: the length byte followed by the word
+/// zero-padded to `max_word_len`. The length byte keeps "abc" distinct from
+/// "abc\x00".
+fn padWord(word: []const u8) [max_word_len + 1]u8 {
+    var out = [_]u8{0} ** (max_word_len + 1);
+    out[0] = @intCast(word.len);
+    @memcpy(out[1..][0..word.len], word);
+    return out;
+}
+
+/// Find word index in wordlist
+///
+/// Mnemonic words are secret. The candidate and every dictionary word are
+/// padded to the same fixed buffer and the whole list is scanned with a
+/// constant-time comparison and no early exit, so timing reveals neither the
+/// position of the word, how many leading bytes matched, nor the length of
+/// the dictionary word compared. Input longer than any word is rejected
+/// up front; that reveals only that the input is invalid.
 fn findWordIndex(word: []const u8) ?u11 {
-    // Linear search since words aren't sorted alphabetically in BIP-39
+    if (word.len > max_word_len) return null;
+    var candidate = padWord(word);
+    defer std.crypto.secureZero(u8, &candidate);
+    var found: u16 = 0;
+    var index: u16 = 0;
     for (wordlist, 0..) |w, i| {
-        if (std.mem.eql(u8, w, word)) {
-            return @intCast(i);
-        }
+        const entry = padWord(w);
+        const match: u16 = @intFromBool(constant_time.eql(&entry, &candidate));
+        index |= @as(u16, @intCast(i)) & (0 -% match);
+        found |= match;
     }
-    return null;
+    if (found == 0) return null;
+    return @intCast(index);
+}
+
+test "findWordIndex finds every word and rejects near misses" {
+    for (wordlist, 0..) |w, i| {
+        try std.testing.expectEqual(@as(?u11, @intCast(i)), findWordIndex(w));
+    }
+    try std.testing.expectEqual(@as(?u11, null), findWordIndex(""));
+    try std.testing.expectEqual(@as(?u11, null), findWordIndex("abando"));
+    try std.testing.expectEqual(@as(?u11, null), findWordIndex("abandonx"));
+    try std.testing.expectEqual(@as(?u11, null), findWordIndex("act\x00"));
+    try std.testing.expectEqual(@as(?u11, null), findWordIndex("abstracts"));
+    try std.testing.expectEqual(@as(?u11, 2047), findWordIndex("zoo"));
 }
 
 /// Convert entropy bytes to mnemonic words
@@ -438,7 +479,12 @@ pub fn mnemonicToEntropy(
 ) Bip39Error![]u8 {
     const word_count = words.len;
 
-    // Validate word count
+    // Validate the full-width count before narrowing: 268 words must not
+    // wrap to 12 (or panic in safe builds).
+    switch (word_count) {
+        12, 15, 18, 21, 24 => {},
+        else => return Bip39Error.InvalidWordCount,
+    }
     const entropy_bytes = try getEntropyBytes(@intCast(word_count));
     if (out_entropy.len < entropy_bytes) {
         return Bip39Error.InvalidEntropySize;
@@ -510,36 +556,81 @@ pub fn validateMnemonic(words: []const []const u8) bool {
 
 /// Convert mnemonic to 64-byte seed using PBKDF2-HMAC-SHA512
 /// Passphrase is optional (use empty string for no passphrase)
+///
+/// Per BIP-39, the mnemonic and passphrase are UTF-8 NFKD-normalized before
+/// key derivation, so composed and decomposed forms (U+00E9 vs e + U+0301)
+/// produce the same seed. Pure ASCII skips normalization; nothing allocates.
+/// Bytes that are not well-formed UTF-8 are used verbatim.
+///
+/// Words and passphrase may be any length: the mnemonic and salt are streamed
+/// into the HMAC instead of being joined into fixed stack buffers. All secret
+/// intermediate state is wiped before returning.
 pub fn mnemonicToSeed(
     words: []const []const u8,
     passphrase: []const u8,
     out_seed: *[64]u8,
 ) void {
-    // Reconstruct mnemonic string (space-separated words)
-    var mnemonic_buf: [256]u8 = undefined;
-    var mnemonic_len: usize = 0;
+    const Sha512 = crypto.hash.sha2.Sha512;
+    const block_length = Sha512.block_length;
 
-    for (words, 0..) |word, i| {
-        if (i > 0) {
-            mnemonic_buf[mnemonic_len] = ' ';
-            mnemonic_len += 1;
+    var mnemonic_len: usize = 0;
+    for (words, 0..) |word, i| mnemonic_len += nfkd.normalizedLength(word) + @intFromBool(i > 0);
+
+    // HMAC key = space-joined NFKD mnemonic, or its SHA-512 digest when longer
+    // than one block (RFC 2104). Both forms fit in one block.
+    var mnemonic_buf: [block_length]u8 = undefined;
+    defer std.crypto.secureZero(u8, &mnemonic_buf);
+    var key_len: usize = 0;
+    if (mnemonic_len <= block_length) {
+        var w = BufSink{ .buf = &mnemonic_buf };
+        for (words, 0..) |word, i| {
+            if (i > 0) w.update(" ");
+            nfkd.normalize(word, &w);
         }
-        @memcpy(mnemonic_buf[mnemonic_len..][0..word.len], word);
-        mnemonic_len += word.len;
+        key_len = w.len;
+    } else {
+        var h = Sha512.init(.{});
+        for (words, 0..) |word, i| {
+            if (i > 0) h.update(" ");
+            nfkd.normalize(word, &h);
+        }
+        h.final(mnemonic_buf[0..Sha512.digest_length]);
+        std.crypto.secureZero(u8, std.mem.asBytes(&h));
+        key_len = Sha512.digest_length;
     }
 
-    const mnemonic = mnemonic_buf[0..mnemonic_len];
+    var base = HmacSha512.init(mnemonic_buf[0..key_len]);
+    defer std.crypto.secureZero(u8, std.mem.asBytes(&base));
 
-    // Salt = "mnemonic" + passphrase
-    var salt_buf: [256]u8 = undefined;
-    const prefix = "mnemonic";
-    @memcpy(salt_buf[0..prefix.len], prefix);
-    @memcpy(salt_buf[prefix.len..][0..passphrase.len], passphrase);
-    const salt = salt_buf[0 .. prefix.len + passphrase.len];
+    // U1 = HMAC(P, "mnemonic" || NFKD(passphrase) || INT(1)); salt is streamed.
+    var salt_buf: [HmacSha512.mac_length]u8 = undefined;
+    defer std.crypto.secureZero(u8, &salt_buf);
+    var ctx = base;
+    defer std.crypto.secureZero(u8, std.mem.asBytes(&ctx));
+    ctx.update("mnemonic");
+    nfkd.normalize(passphrase, &ctx);
+    ctx.update(&[_]u8{ 0, 0, 0, 1 });
+    ctx.final(&salt_buf);
+    out_seed.* = salt_buf;
 
-    // PBKDF2-HMAC-SHA512 with 2048 iterations
-    pbkdf2(out_seed, mnemonic, salt, PBKDF2_ITERATIONS, HmacSha512) catch unreachable;
+    var i: usize = 1;
+    while (i < PBKDF2_ITERATIONS) : (i += 1) {
+        ctx = base;
+        ctx.update(&salt_buf);
+        ctx.final(&salt_buf);
+        for (out_seed, salt_buf) |*t, u| t.* ^= u;
+    }
 }
+
+/// Fixed-buffer byte sink; capacity is pre-checked by the caller.
+const BufSink = struct {
+    buf: []u8,
+    len: usize = 0,
+    pub fn update(self: *BufSink, b: []const u8) void {
+        @memcpy(self.buf[self.len..][0..b.len], b);
+        self.len += b.len;
+    }
+};
 
 /// Convert mnemonic string to seed
 /// Mnemonic should be space-separated words
@@ -599,15 +690,22 @@ pub fn getWord(index: u11) []const u8 {
 }
 
 /// Convert word indices to mnemonic string
-/// Writes space-separated words to output buffer
-pub fn indicesToString(indices: []const u11, out: []u8) usize {
+/// Writes space-separated words to output buffer and returns the length.
+/// Returns BufferTooSmall if `out` cannot hold the result; `out` is then
+/// wiped so no partial mnemonic is left behind.
+pub fn indicesToString(indices: []const u11, out: []u8) Bip39Error!usize {
     var pos: usize = 0;
     for (indices, 0..) |idx, i| {
-        if (i > 0) {
+        const word = wordlist[idx];
+        const sep: usize = @intFromBool(i > 0);
+        if (out.len - pos < sep + word.len) {
+            std.crypto.secureZero(u8, out[0..pos]);
+            return Bip39Error.BufferTooSmall;
+        }
+        if (sep == 1) {
             out[pos] = ' ';
             pos += 1;
         }
-        const word = wordlist[idx];
         @memcpy(out[pos..][0..word.len], word);
         pos += word.len;
     }
@@ -813,6 +911,30 @@ test "mnemonicToSeed - letter advice test vector" {
     try std.testing.expectEqualSlices(u8, &expected, &seed);
 }
 
+test "mnemonicToSeed - long passphrase and long words match std pbkdf2" {
+    const allocator = std.testing.allocator;
+    const long_word = "x" ** 300;
+    const cases = [_]struct { words: []const []const u8, passphrase: []const u8 }{
+        .{ .words = &.{ "abandon", "about" }, .passphrase = "" },
+        .{ .words = &.{ "abandon", "about" }, .passphrase = "p" ** 1000 },
+        .{ .words = &.{ long_word, "abandon", long_word }, .passphrase = "TREZOR" },
+        .{ .words = &.{"a" ** 128}, .passphrase = "q" ** 249 },
+        .{ .words = &.{"a" ** 129}, .passphrase = "" },
+    };
+    for (cases) |c| {
+        const joined = try std.mem.join(allocator, " ", c.words);
+        defer allocator.free(joined);
+        const salt = try std.mem.concat(allocator, u8, &.{ "mnemonic", c.passphrase });
+        defer allocator.free(salt);
+        var expected: [64]u8 = undefined;
+        try pbkdf2(&expected, joined, salt, PBKDF2_ITERATIONS, HmacSha512);
+
+        var seed: [64]u8 = undefined;
+        mnemonicToSeed(c.words, c.passphrase, &seed);
+        try std.testing.expectEqualSlices(u8, &expected, &seed);
+    }
+}
+
 test "mnemonicStringToSeed - valid" {
     const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
@@ -880,7 +1002,7 @@ test "indicesToString" {
     var indices = [_]u11{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3 };
     var buf: [256]u8 = undefined;
 
-    const len = indicesToString(&indices, &buf);
+    const len = try indicesToString(&indices, &buf);
     const expected = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
     try std.testing.expectEqualSlices(u8, expected, buf[0..len]);
@@ -979,4 +1101,73 @@ test "wordlist has 2048 words" {
 test "wordlist first and last words" {
     try std.testing.expectEqualSlices(u8, "abandon", wordlist[0]);
     try std.testing.expectEqualSlices(u8, "zoo", wordlist[2047]);
+}
+
+test "mnemonicToEntropy - rejects word counts that wrap when narrowed to u8" {
+    var words: [268][]const u8 = undefined;
+    for (&words) |*w| w.* = "abandon";
+    var entropy: [32]u8 = undefined;
+    // 268 truncates to 12 as u8; must be rejected, not reinterpreted.
+    try std.testing.expectError(Bip39Error.InvalidWordCount, mnemonicToEntropy(&words, &entropy));
+    try std.testing.expectError(Bip39Error.InvalidWordCount, mnemonicToEntropy(words[0..25], &entropy));
+    try std.testing.expectError(Bip39Error.InvalidWordCount, mnemonicToEntropy(words[0..0], &entropy));
+    try std.testing.expect(!validateMnemonic(&words));
+}
+
+test "indicesToString - returns BufferTooSmall for every short buffer" {
+    const indices = [_]u11{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3 };
+    const expected = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+    var buf = [_]u8{0} ** expected.len;
+    var n: usize = 0;
+    while (n < expected.len) : (n += 1) {
+        try std.testing.expectError(Bip39Error.BufferTooSmall, indicesToString(&indices, buf[0..n]));
+        for (buf[0..n]) |b| try std.testing.expectEqual(@as(u8, 0), b);
+    }
+    const len = try indicesToString(&indices, &buf);
+    try std.testing.expectEqualStrings(expected, buf[0..len]);
+    try std.testing.expectEqual(@as(usize, 0), try indicesToString(&[_]u11{}, buf[0..0]));
+}
+
+test "mnemonicToSeed - composed and decomposed passphrase give identical seeds" {
+    const words = [_][]const u8{ "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "about" };
+    var composed: [64]u8 = undefined;
+    var decomposed: [64]u8 = undefined;
+    mnemonicToSeed(&words, "caf\u{e9}", &composed);
+    mnemonicToSeed(&words, "cafe\u{301}", &decomposed);
+    try std.testing.expectEqualSlices(u8, &composed, &decomposed);
+
+    // Python: hashlib.pbkdf2_hmac("sha512", m, b"mnemonic" + NFKD("café"), 2048)
+    var expected: [64]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "af8bbd2566df7b69d926f2b09dfdbd75db6c994a3399b2cc65f928d63e3fd4e61218ee0d15f8c810be4d45e66d47b43c15a5cc753976b1666912377ff7ae9818");
+    try std.testing.expectEqualSlices(u8, &expected, &composed);
+}
+
+test "mnemonicToSeed - short non-ASCII mnemonic is normalized" {
+    var composed: [64]u8 = undefined;
+    var decomposed: [64]u8 = undefined;
+    mnemonicToSeed(&[_][]const u8{ "caf\u{e9}", "\u{fb01}" }, "", &composed);
+    mnemonicToSeed(&[_][]const u8{ "cafe\u{301}", "fi" }, "", &decomposed);
+    try std.testing.expectEqualSlices(u8, &composed, &decomposed);
+}
+
+test "mnemonicToSeed - Japanese BIP-39 vector (bip32JP test_JP_BIP39 #1)" {
+    const a = "\u{3042}\u{3044}\u{3053}\u{304f}\u{3057}\u{3093}"; // あいこくしん
+    const words = [_][]const u8{ a, a, a, a, a, a, a, a, a, a, a, "\u{3042}\u{304a}\u{305e}\u{3089}" }; // あおぞら
+    var seed: [64]u8 = undefined;
+    mnemonicToSeed(&words, "\u{334d}\u{30ac}\u{30d0}\u{30f4}\u{30a1}\u{3071}\u{3070}\u{3050}\u{309e}\u{3061}\u{3062}\u{5341}\u{4eba}\u{5341}\u{8272}", &seed);
+    var expected: [64]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "a262d6fb6122ecf45be09c50492b31f92e9beb7d9a845987a02cefda57a15f9c467a17872029a9e92299b5cbdf306e3a0ee620245cbd508959b6cb7ca637bd55");
+    try std.testing.expectEqualSlices(u8, &expected, &seed);
+}
+
+test "mnemonicToSeed - long non-ASCII mnemonic hashes the NFKD key" {
+    const a = "\u{3042}\u{3044}\u{3053}\u{304f}\u{3057}\u{3093}";
+    var words: [24][]const u8 = undefined;
+    for (words[0..23]) |*w| w.* = a;
+    words[23] = "\u{3042}\u{304a}\u{305e}\u{3089}";
+    var seed: [64]u8 = undefined;
+    mnemonicToSeed(&words, "\u{ff21}", &seed); // FULLWIDTH A -> "A"
+    var expected: [64]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "26410a91eb6bfee814653533327a5dc5ecbf7bb9a2a2d1749b4b947a40c55447be5c24e8b76a51442807c5f9e5532045f19e4d2be2c68c230ee3ede20cdac6ed");
+    try std.testing.expectEqualSlices(u8, &expected, &seed);
 }

@@ -154,12 +154,11 @@ pub fn toJson(head: ChainHead, allocator: Allocator) ![]u8 {
 
     try buf.appendSlice(allocator, "{\"number\":\"0x");
     var num_buf: [16]u8 = undefined;
-    const num_len = std.fmt.formatIntBuf(&num_buf, head.number, 16, .lower, .{});
+    const num_len = std.fmt.printInt(&num_buf, head.number, 16, .lower, .{});
     try buf.appendSlice(allocator, num_buf[0..num_len]);
 
     try buf.appendSlice(allocator, "\",\"hash\":\"0x");
-    var hash_hex: [64]u8 = undefined;
-    _ = std.fmt.bufPrint(&hash_hex, "{s}", .{std.fmt.fmtSliceHexLower(&head.hash)}) catch unreachable;
+    const hash_hex = std.fmt.bytesToHex(head.hash, .lower);
     try buf.appendSlice(allocator, &hash_hex);
 
     try buf.appendSlice(allocator, "\",\"timestamp\":\"0x");
@@ -168,14 +167,14 @@ pub fn toJson(head: ChainHead, allocator: Allocator) ![]u8 {
     const ts_high: u128 = @truncate(head.timestamp >> 128);
     if (ts_high > 0) {
         var ts_buf: [64]u8 = undefined;
-        const ts_len = std.fmt.formatIntBuf(&ts_buf, ts_high, 16, .lower, .{});
+        const ts_len = std.fmt.printInt(&ts_buf, ts_high, 16, .lower, .{});
         try buf.appendSlice(allocator, ts_buf[0..ts_len]);
         var ts_low_buf: [32]u8 = undefined;
-        const ts_low_len = std.fmt.formatIntBuf(&ts_low_buf, ts_low, 16, .lower, .{ .fill = '0', .width = 32 });
+        const ts_low_len = std.fmt.printInt(&ts_low_buf, ts_low, 16, .lower, .{ .fill = '0', .width = 32 });
         try buf.appendSlice(allocator, ts_low_buf[0..ts_low_len]);
     } else {
         var ts_buf: [32]u8 = undefined;
-        const ts_len = std.fmt.formatIntBuf(&ts_buf, ts_low, 16, .lower, .{});
+        const ts_len = std.fmt.printInt(&ts_buf, ts_low, 16, .lower, .{});
         try buf.appendSlice(allocator, ts_buf[0..ts_len]);
     }
     try buf.append(allocator, '"');
@@ -186,14 +185,14 @@ pub fn toJson(head: ChainHead, allocator: Allocator) ![]u8 {
         const diff_high: u128 = @truncate(diff >> 128);
         if (diff_high > 0) {
             var diff_buf: [64]u8 = undefined;
-            const diff_len = std.fmt.formatIntBuf(&diff_buf, diff_high, 16, .lower, .{});
+            const diff_len = std.fmt.printInt(&diff_buf, diff_high, 16, .lower, .{});
             try buf.appendSlice(allocator, diff_buf[0..diff_len]);
             var diff_low_buf: [32]u8 = undefined;
-            const diff_low_len = std.fmt.formatIntBuf(&diff_low_buf, diff_low, 16, .lower, .{ .fill = '0', .width = 32 });
+            const diff_low_len = std.fmt.printInt(&diff_low_buf, diff_low, 16, .lower, .{ .fill = '0', .width = 32 });
             try buf.appendSlice(allocator, diff_low_buf[0..diff_low_len]);
         } else {
             var diff_buf: [32]u8 = undefined;
-            const diff_len = std.fmt.formatIntBuf(&diff_buf, diff_low, 16, .lower, .{});
+            const diff_len = std.fmt.printInt(&diff_buf, diff_low, 16, .lower, .{});
             try buf.appendSlice(allocator, diff_buf[0..diff_len]);
         }
         try buf.append(allocator, '"');
@@ -205,14 +204,14 @@ pub fn toJson(head: ChainHead, allocator: Allocator) ![]u8 {
         const td_high: u128 = @truncate(td >> 128);
         if (td_high > 0) {
             var td_buf: [64]u8 = undefined;
-            const td_len = std.fmt.formatIntBuf(&td_buf, td_high, 16, .lower, .{});
+            const td_len = std.fmt.printInt(&td_buf, td_high, 16, .lower, .{});
             try buf.appendSlice(allocator, td_buf[0..td_len]);
             var td_low_buf: [32]u8 = undefined;
-            const td_low_len = std.fmt.formatIntBuf(&td_low_buf, td_low, 16, .lower, .{ .fill = '0', .width = 32 });
+            const td_low_len = std.fmt.printInt(&td_low_buf, td_low, 16, .lower, .{ .fill = '0', .width = 32 });
             try buf.appendSlice(allocator, td_low_buf[0..td_low_len]);
         } else {
             var td_buf: [32]u8 = undefined;
-            const td_len = std.fmt.formatIntBuf(&td_buf, td_low, 16, .lower, .{});
+            const td_len = std.fmt.printInt(&td_buf, td_low, 16, .lower, .{});
             try buf.appendSlice(allocator, td_buf[0..td_len]);
         }
         try buf.append(allocator, '"');
@@ -334,17 +333,15 @@ pub fn beaconToJson(head: BeaconChainHead, allocator: Allocator) ![]u8 {
 
     try buf.appendSlice(allocator, "{\"slot\":\"");
     var slot_buf: [20]u8 = undefined;
-    const slot_len = std.fmt.formatIntBuf(&slot_buf, head.slot, 10, .lower, .{});
+    const slot_len = std.fmt.printInt(&slot_buf, head.slot, 10, .lower, .{});
     try buf.appendSlice(allocator, slot_buf[0..slot_len]);
 
     try buf.appendSlice(allocator, "\",\"block\":\"0x");
-    var block_hex: [64]u8 = undefined;
-    _ = std.fmt.bufPrint(&block_hex, "{s}", .{std.fmt.fmtSliceHexLower(&head.block)}) catch unreachable;
+    const block_hex = std.fmt.bytesToHex(head.block, .lower);
     try buf.appendSlice(allocator, &block_hex);
 
     try buf.appendSlice(allocator, "\",\"state\":\"0x");
-    var state_hex: [64]u8 = undefined;
-    _ = std.fmt.bufPrint(&state_hex, "{s}", .{std.fmt.fmtSliceHexLower(&head.state)}) catch unreachable;
+    const state_hex = std.fmt.bytesToHex(head.state, .lower);
     try buf.appendSlice(allocator, &state_hex);
 
     try buf.appendSlice(allocator, "\"}");
@@ -514,7 +511,7 @@ test "ChainHead.toJson encodes correctly" {
 test "ChainHead.fromJson decodes correctly" {
     const allocator = std.testing.allocator;
     const json_str =
-        \\{"number":"0x112a880","hash":"0xabababababababababababababababababababababababababababababababab","timestamp":"0x654d4740"}
+        \\{"number":"0x112a880","hash":"0xabababababababababababababababababababababababababababababababab","timestamp":"0x6544aec0"}
     ;
 
     const head = try fromJson(allocator, json_str);

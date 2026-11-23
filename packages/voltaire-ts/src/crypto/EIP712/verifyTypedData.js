@@ -1,3 +1,5 @@
+import { constantTimeEqual } from "../ConstantTime/constantTimeEqual.js";
+
 /**
  * Factory: Verify EIP-712 typed data signature against expected signer address.
  *
@@ -26,17 +28,7 @@ export function VerifyTypedData({ recoverAddress }) {
 			const recoveredAddress = recoverAddress(signature, typedData);
 
 			// Constant-time comparison
-			if (recoveredAddress.length !== address.length) {
-				return false;
-			}
-			let result = 0;
-			for (let i = 0; i < recoveredAddress.length; i++) {
-				// Safe: i is within bounds for both arrays (length equality checked above)
-				result |=
-					/** @type {number} */ (recoveredAddress[i]) ^
-					/** @type {number} */ (address[i]);
-			}
-			return result === 0;
+			return constantTimeEqual(recoveredAddress, address);
 		} catch {
 			return false;
 		}

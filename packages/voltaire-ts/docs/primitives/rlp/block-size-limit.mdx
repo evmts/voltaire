@@ -1,0 +1,65 @@
+---
+title: RLP Block Size Limit (EIP-7934)
+description: Osaka caps the RLP-encoded execution block at 8 MiB; constants and exceedsMaxRlpBlockSize
+---
+
+## Overview
+
+[EIP-7934](https://eips.ethereum.org/EIPS/eip-7934), active from [Osaka](/primitives/hardfork/osaka), rejects any execution block whose RLP encoding is larger than 8 MiB. The limit keeps blocks under the 10 MiB gossip cap on the consensus layer, with 2 MiB left for the beacon block wrapper.
+
+## Constants
+
+```typescript
+MAX_BLOCK_SIZE = 10_485_760      // 10 MiB, consensus-layer gossip limit
+SAFETY_MARGIN = 2_097_152        // 2 MiB reserved for the beacon block
+MAX_RLP_BLOCK_SIZE = 8_388_608   // MAX_BLOCK_SIZE - SAFETY_MARGIN
+```
+
+```typescript
+import { MAX_BLOCK_SIZE, SAFETY_MARGIN, MAX_RLP_BLOCK_SIZE } from '@tevm/voltaire/Rlp';
+
+MAX_RLP_BLOCK_SIZE === MAX_BLOCK_SIZE - SAFETY_MARGIN; // true
+```
+
+## exceedsMaxRlpBlockSize
+
+```typescript
+exceedsMaxRlpBlockSize(encodedRlp: Uint8Array): boolean
+```
+
+Returns `true` when `encodedRlp.length > MAX_RLP_BLOCK_SIZE`. A block of exactly 8,388,608 bytes is valid.
+
+```typescript
+import { Rlp } from '@tevm/voltaire/Rlp';
+
+const encoded = Rlp.encode([header, transactions, uncles, withdrawals]);
+
+if (Rlp.exceedsMaxRlpBlockSize(encoded)) {
+  throw new Error(`block is ${encoded.length} bytes; Osaka limit is 8,388,608`);
+}
+```
+
+The check measures the full encoded block: header, transactions, ommers, and withdrawals. Block builders should stop adding transactions before the encoded size crosses the limit.
+
+## Hardfork gating
+
+The limit applies to blocks at or after Osaka only. Gate the check on the block's fork:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+const enforce = Hardfork.isAtLeast(fork, Hardfork.OSAKA);
+if (enforce && Rlp.exceedsMaxRlpBlockSize(encoded)) {
+  // reject block
+}
+```
+
+## Related
+
+- [RLP overview](/primitives/rlp)
+- [RLP encoding](/primitives/rlp/encoding)
+- [Osaka hardfork](/primitives/hardfork/osaka)
+
+## References
+
+- [EIP-7934: RLP execution block size limit](https://eips.ethereum.org/EIPS/eip-7934)

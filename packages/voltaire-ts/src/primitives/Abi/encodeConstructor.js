@@ -5,7 +5,7 @@ import { AbiItemNotFoundError } from "./Errors.js";
 /**
  * Encode constructor deployment data from ABI
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {readonly unknown[]} args - Constructor arguments
  * @returns {import("../Hex/index.js").HexType} Encoded constructor parameters (hex string)
  * @throws {AbiItemNotFoundError} If constructor not found in ABI

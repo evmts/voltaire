@@ -5,6 +5,8 @@ import {
 	InvalidPrivateKeyError,
 } from "../../primitives/errors/index.js";
 import { Hash } from "../../primitives/Hash/index.js";
+import { constantTimeEqual } from "../ConstantTime/constantTimeEqual.js";
+import { constantTimeIsZero } from "../ConstantTime/constantTimeIsZero.js";
 
 /**
  * Sign a pre-hashed message with a private key
@@ -49,7 +51,7 @@ export function signHash(hash, privateKey) {
 	}
 
 	// Validate private key is not zero
-	const isZero = privateKey.every((byte) => byte === 0);
+	const isZero = constantTimeIsZero(privateKey);
 	if (isZero) {
 		throw new InvalidPrivateKeyError("Private key cannot be zero", {
 			code: "PRIVATE_KEY_ZERO",
@@ -79,7 +81,7 @@ export function signHash(hash, privateKey) {
 				const recovered = sigWithRecovery.recoverPublicKey(hash);
 				const uncompressed = recovered.toBytes(false);
 
-				if (uncompressed.every((byte, idx) => byte === publicKey[idx])) {
+				if (constantTimeEqual(uncompressed, publicKey)) {
 					recoveryBit = i;
 					break;
 				}

@@ -3,6 +3,8 @@
  *
  * Gas cost constants and calculation functions for all EVM precompiled contracts
  */
+import * as Hardfork from "../Hardfork/index.js";
+import { isHardforkAtLeast } from "./isHardforkAtLeast.js";
 
 /**
  * ECRECOVER (address 0x01) - Fixed cost
@@ -98,47 +100,48 @@ export const ModExpQuadraticThreshold = 64n;
 export const ModExpLinearThreshold = 1024n;
 
 /**
- * Calculate adjusted exponent length for MODEXP
- *
- * @param {bigint} expLength - Length of exponent in bytes
- * @param {bigint} expHead - First 32 bytes of exponent
- * @returns {bigint} Adjusted exponent length
- */
-function calculateAdjustedExponentLength(expLength, expHead) {
-	if (expLength <= 32n) {
-		if (expHead === 0n) return 0n;
-		return BigInt(Math.floor(Math.log2(Number(expHead))));
-	}
-	const headBits =
-		expHead === 0n ? 0n : BigInt(Math.floor(Math.log2(Number(expHead))));
-	return 8n * (expLength - 32n) + headBits;
-}
-
-/**
- * Calculate MODEXP precompile cost
+ * Calculate MODEXP gas using EIP-198 before Berlin, EIP-2565 from Berlin,
+ * and EIP-7883 from Osaka. Declared lengths are nonnegative byte counts.
+ * The precompile enforces operand bounds separately from this pricing helper.
  *
  * @param {bigint} baseLength - Length of base in bytes
  * @param {bigint} expLength - Length of exponent in bytes
  * @param {bigint} modLength - Length of modulus in bytes
  * @param {bigint} expHead - First 32 bytes of exponent
+ * @param {import('../Hardfork/HardforkType.js').HardforkType} [hardfork=Hardfork.BERLIN] - Active fork; defaults to Berlin pricing
  * @returns {bigint} Gas cost
  */
-export function calculateModExpCost(baseLength, expLength, modLength, expHead) {
-	// Complexity calculation per EIP-2565
+export function calculateModExpCost(
+	baseLength,
+	expLength,
+	modLength,
+	expHead,
+	hardfork = Hardfork.BERLIN,
+) {
 	const maxLength = baseLength > modLength ? baseLength : modLength;
-	const adjExpLen = calculateAdjustedExponentLength(expLength, expHead);
-
-	let complexity;
-	if (maxLength <= ModExpQuadraticThreshold) {
-		complexity = (maxLength * maxLength) / 4n;
-	} else if (maxLength <= ModExpLinearThreshold) {
-		complexity = (maxLength * maxLength) / 16n + 96n * maxLength - 3072n;
-	} else {
-		complexity = (maxLength * maxLength) / 64n + 480n * maxLength - 199680n;
+	const headBits = expHead === 0n ? 0n : BigInt(expHead.toString(2).length - 1);
+	const osaka = Hardfork.isAtLeast(hardfork, Hardfork.OSAKA);
+	const longByteCost = osaka ? 16n : 8n;
+	const adjusted =
+		expLength > 32n ? longByteCost * (expLength - 32n) + headBits : headBits;
+	const iterations = adjusted > 0n ? adjusted : 1n;
+	const words = (maxLength + 7n) / 8n;
+	if (osaka) {
+		const complexity = maxLength <= 32n ? 16n : 2n * words * words;
+		const gas = complexity * iterations;
+		return gas > 500n ? gas : 500n;
 	}
-
-	const gas = (complexity * adjExpLen) / 20n;
-	return gas > ModExpMin ? gas : ModExpMin;
+	if (Hardfork.isAtLeast(hardfork, Hardfork.BERLIN)) {
+		const gas = (words * words * iterations) / 3n;
+		return gas > 200n ? gas : 200n;
+	}
+	let complexity = maxLength * maxLength;
+	if (maxLength > 1024n) {
+		complexity = complexity / 16n + 480n * maxLength - 199680n;
+	} else if (maxLength > 64n) {
+		complexity = complexity / 4n + 96n * maxLength - 3072n;
+	}
+	return (complexity * iterations) / 20n;
 }
 
 /**
@@ -148,7 +151,7 @@ export function calculateModExpCost(baseLength, expLength, modLength, expHead) {
 export const EcAddIstanbul = 150n;
 
 /**
- * BN254 ECADD - Byzantium to Berlin
+ * BN254 ECADD - Byzantium until Istanbul (EIP-196)
  * @type {500n}
  */
 export const EcAddByzantium = 500n;
@@ -160,7 +163,7 @@ export const EcAddByzantium = 500n;
 export const EcMulIstanbul = 6000n;
 
 /**
- * BN254 ECMUL - Byzantium to Berlin
+ * BN254 ECMUL - Byzantium until Istanbul (EIP-196)
  * @type {40000n}
  */
 export const EcMulByzantium = 40000n;
@@ -178,13 +181,13 @@ export const EcPairingBaseIstanbul = 45000n;
 export const EcPairingPerPairIstanbul = 34000n;
 
 /**
- * BN254 ECPAIRING - Base cost (Byzantium to Berlin)
+ * BN254 ECPAIRING - Base cost (Byzantium until Istanbul, EIP-197)
  * @type {100000n}
  */
 export const EcPairingBaseByzantium = 100000n;
 
 /**
- * BN254 ECPAIRING - Per-pair cost (Byzantium to Berlin)
+ * BN254 ECPAIRING - Per-pair cost (Byzantium until Istanbul, EIP-197)
  * @type {80000n}
  */
 export const EcPairingPerPairByzantium = 80000n;
@@ -203,13 +206,7 @@ export const EcPairingPerPairByzantium = 80000n;
  * ```
  */
 export function calculateEcPairingCost(pairCount, hardfork) {
-	const isIstanbulOrLater =
-		hardfork === "istanbul" ||
-		hardfork === "berlin" ||
-		hardfork === "london" ||
-		hardfork === "paris" ||
-		hardfork === "shanghai" ||
-		hardfork === "cancun";
+	const isIstanbulOrLater = isHardforkAtLeast(hardfork, Hardfork.ISTANBUL);
 
 	if (isIstanbulOrLater) {
 		return EcPairingBaseIstanbul + pairCount * EcPairingPerPairIstanbul;
@@ -224,13 +221,7 @@ export function calculateEcPairingCost(pairCount, hardfork) {
  * @returns {bigint} Gas cost
  */
 export function getEcAddCost(hardfork) {
-	const isIstanbulOrLater =
-		hardfork === "istanbul" ||
-		hardfork === "berlin" ||
-		hardfork === "london" ||
-		hardfork === "paris" ||
-		hardfork === "shanghai" ||
-		hardfork === "cancun";
+	const isIstanbulOrLater = isHardforkAtLeast(hardfork, Hardfork.ISTANBUL);
 	return isIstanbulOrLater ? EcAddIstanbul : EcAddByzantium;
 }
 
@@ -241,13 +232,7 @@ export function getEcAddCost(hardfork) {
  * @returns {bigint} Gas cost
  */
 export function getEcMulCost(hardfork) {
-	const isIstanbulOrLater =
-		hardfork === "istanbul" ||
-		hardfork === "berlin" ||
-		hardfork === "london" ||
-		hardfork === "paris" ||
-		hardfork === "shanghai" ||
-		hardfork === "cancun";
+	const isIstanbulOrLater = isHardforkAtLeast(hardfork, Hardfork.ISTANBUL);
 	return isIstanbulOrLater ? EcMulIstanbul : EcMulByzantium;
 }
 
@@ -305,93 +290,344 @@ export function calculatePointEvaluationCost() {
 
 /**
  * BLS12_G1ADD (address 0x0b) - Fixed cost
- * @type {500n}
+ * @type {375n}
  */
-export const Bls12G1Add = 500n;
+export const Bls12G1Add = 375n;
 
 /**
- * BLS12_G1MUL (address 0x0c) - Fixed cost
- * @type {12000n}
- */
-export const Bls12G1Mul = 12000n;
-
-/**
- * BLS12_G1MSM (address 0x0d) - Base cost per point
+ * BLS12_G1MSM (address 0x0c) - G1 multiplication cost per pair, before discount
  * @type {12000n}
  */
 export const Bls12G1MsmBase = 12000n;
 
 /**
- * BLS12_G2ADD (address 0x0e) - Fixed cost
- * @type {800n}
+ * BLS12_G2ADD (address 0x0d) - Fixed cost
+ * @type {600n}
  */
-export const Bls12G2Add = 800n;
+export const Bls12G2Add = 600n;
 
 /**
- * BLS12_G2MUL (address 0x0f) - Fixed cost
- * @type {45000n}
+ * BLS12_G2MSM (address 0x0e) - G2 multiplication cost per pair, before discount
+ * @type {22500n}
  */
-export const Bls12G2Mul = 45000n;
+export const Bls12G2MsmBase = 22500n;
 
 /**
- * BLS12_G2MSM (address 0x10) - Base cost per point
- * @type {45000n}
+ * BLS12_PAIRING_CHECK (address 0x0f) - Base cost
+ * @type {37700n}
  */
-export const Bls12G2MsmBase = 45000n;
+export const Bls12PairingBase = 37700n;
 
 /**
- * BLS12_PAIRING (address 0x11) - Base cost
- * @type {65000n}
+ * BLS12_PAIRING_CHECK - Per-pair cost
+ * @type {32600n}
  */
-export const Bls12PairingBase = 65000n;
+export const Bls12PairingPerPair = 32600n;
 
 /**
- * BLS12_PAIRING - Per-pair cost
- * @type {43000n}
- */
-export const Bls12PairingPerPair = 43000n;
-
-/**
- * BLS12_MAP_FP_TO_G1 (address 0x12) - Fixed cost
+ * BLS12_MAP_FP_TO_G1 (address 0x10) - Fixed cost
  * @type {5500n}
  */
 export const Bls12MapFpToG1 = 5500n;
 
 /**
- * BLS12_MAP_FP2_TO_G2 (address 0x13) - Fixed cost
- * @type {75000n}
+ * BLS12_MAP_FP2_TO_G2 (address 0x11) - Fixed cost
+ * @type {23800n}
  */
-export const Bls12MapFp2ToG2 = 75000n;
+export const Bls12MapFp2ToG2 = 23800n;
 
 /**
- * MSM discount multipliers (EIP-2537)
- * Index k maps to multiplier for k points
+ * MSM discount divisor (EIP-2537 `multiplier`)
+ * @type {1000n}
  */
-const MSM_DISCOUNT_TABLE = [
-	0, 1000, 949, 848, 797, 764, 750, 738, 728, 719, 712, 705, 698, 692, 687, 682,
-	677, 673, 669, 665, 661, 658, 654, 651, 648, 645, 642, 640, 637, 635, 632,
-	630, 627, 625, 623, 621, 619, 617, 615, 613, 611, 609, 608, 606, 604, 603,
-	601, 599, 598, 596, 595, 593, 592, 591, 589, 588, 586, 585, 584, 582, 581,
-	580, 579, 577, 576, 575, 574, 573, 572, 570, 569, 568, 567, 566, 565, 564,
-	563, 562, 561, 560, 559, 558, 557, 556, 555, 554, 553, 552, 551, 550, 549,
-	548, 547, 547, 546, 545, 544, 543, 542, 542, 541, 540, 539, 538, 538, 537,
-	536, 535, 535, 534, 533, 532, 532, 531, 530, 530, 529, 528, 528, 527, 526,
-	526, 525, 524, 524, 523, 522, 522,
-];
+export const Bls12MsmMultiplier = 1000n;
 
 /**
- * Get MSM discount multiplier for k points
+ * G1 MSM discounts (EIP-2537). Entry `k - 1` is the discount for `k` pairs;
+ * the last entry (519) is `max_discount` for every `k > 128`.
+ * @type {readonly bigint[]}
+ */
+export const Bls12G1MsmDiscountTable = Object.freeze([
+	1000n,
+	949n,
+	848n,
+	797n,
+	764n,
+	750n,
+	738n,
+	728n,
+	719n,
+	712n,
+	705n,
+	698n,
+	692n,
+	687n,
+	682n,
+	677n,
+	673n,
+	669n,
+	665n,
+	661n,
+	658n,
+	654n,
+	651n,
+	648n,
+	645n,
+	642n,
+	640n,
+	637n,
+	635n,
+	632n,
+	630n,
+	627n,
+	625n,
+	623n,
+	621n,
+	619n,
+	617n,
+	615n,
+	613n,
+	611n,
+	609n,
+	608n,
+	606n,
+	604n,
+	603n,
+	601n,
+	599n,
+	598n,
+	596n,
+	595n,
+	593n,
+	592n,
+	591n,
+	589n,
+	588n,
+	586n,
+	585n,
+	584n,
+	582n,
+	581n,
+	580n,
+	579n,
+	577n,
+	576n,
+	575n,
+	574n,
+	573n,
+	572n,
+	570n,
+	569n,
+	568n,
+	567n,
+	566n,
+	565n,
+	564n,
+	563n,
+	562n,
+	561n,
+	560n,
+	559n,
+	558n,
+	557n,
+	556n,
+	555n,
+	554n,
+	553n,
+	552n,
+	551n,
+	550n,
+	549n,
+	548n,
+	547n,
+	547n,
+	546n,
+	545n,
+	544n,
+	543n,
+	542n,
+	541n,
+	540n,
+	540n,
+	539n,
+	538n,
+	537n,
+	536n,
+	536n,
+	535n,
+	534n,
+	533n,
+	532n,
+	532n,
+	531n,
+	530n,
+	529n,
+	528n,
+	528n,
+	527n,
+	526n,
+	525n,
+	525n,
+	524n,
+	523n,
+	522n,
+	522n,
+	521n,
+	520n,
+	520n,
+	519n,
+]);
+
+/**
+ * G2 MSM discounts (EIP-2537). Entry `k - 1` is the discount for `k` pairs;
+ * the last entry (524) is `max_discount` for every `k > 128`.
+ * @type {readonly bigint[]}
+ */
+export const Bls12G2MsmDiscountTable = Object.freeze([
+	1000n,
+	1000n,
+	923n,
+	884n,
+	855n,
+	832n,
+	812n,
+	796n,
+	782n,
+	770n,
+	759n,
+	749n,
+	740n,
+	732n,
+	724n,
+	717n,
+	711n,
+	704n,
+	699n,
+	693n,
+	688n,
+	683n,
+	679n,
+	674n,
+	670n,
+	666n,
+	663n,
+	659n,
+	655n,
+	652n,
+	649n,
+	646n,
+	643n,
+	640n,
+	637n,
+	634n,
+	632n,
+	629n,
+	627n,
+	624n,
+	622n,
+	620n,
+	618n,
+	615n,
+	613n,
+	611n,
+	609n,
+	607n,
+	606n,
+	604n,
+	602n,
+	600n,
+	598n,
+	597n,
+	595n,
+	593n,
+	592n,
+	590n,
+	589n,
+	587n,
+	586n,
+	584n,
+	583n,
+	582n,
+	580n,
+	579n,
+	578n,
+	576n,
+	575n,
+	574n,
+	573n,
+	571n,
+	570n,
+	569n,
+	568n,
+	567n,
+	566n,
+	565n,
+	563n,
+	562n,
+	561n,
+	560n,
+	559n,
+	558n,
+	557n,
+	556n,
+	555n,
+	554n,
+	553n,
+	552n,
+	552n,
+	551n,
+	550n,
+	549n,
+	548n,
+	547n,
+	546n,
+	545n,
+	545n,
+	544n,
+	543n,
+	542n,
+	541n,
+	541n,
+	540n,
+	539n,
+	538n,
+	537n,
+	537n,
+	536n,
+	535n,
+	535n,
+	534n,
+	533n,
+	532n,
+	532n,
+	531n,
+	530n,
+	530n,
+	529n,
+	528n,
+	528n,
+	527n,
+	526n,
+	526n,
+	525n,
+	524n,
+	524n,
+]);
+
+/**
+ * Calculate MSM cost: `(k * multiplication_cost * discount) // multiplier`.
  *
- * @param {number} k - Number of point-scalar pairs
- * @returns {number} Discount multiplier (divide by 1000)
+ * @param {bigint} pairCount - Number of point-scalar pairs (k)
+ * @param {bigint} multiplicationCost - Per-pair multiplication cost
+ * @param {readonly bigint[]} table - Discount table for the group
+ * @returns {bigint} Gas cost (0 for `k = 0`)
  */
-function getMsmDiscount(k) {
-	if (k === 0) return 0;
-	if (k >= MSM_DISCOUNT_TABLE.length)
-		return /** @type {number} */ (
-			MSM_DISCOUNT_TABLE[MSM_DISCOUNT_TABLE.length - 1]
-		);
-	return /** @type {number} */ (MSM_DISCOUNT_TABLE[k]);
+function calculateMsmCost(pairCount, multiplicationCost, table) {
+	if (pairCount <= 0n) return 0n;
+	const index =
+		pairCount > BigInt(table.length) ? table.length - 1 : Number(pairCount) - 1;
+	const discount = /** @type {bigint} */ (table[index]);
+	return (pairCount * multiplicationCost * discount) / Bls12MsmMultiplier;
 }
 
 /**
@@ -401,10 +637,7 @@ function getMsmDiscount(k) {
  * @returns {bigint} Gas cost
  */
 export function calculateBls12G1MsmCost(pairCount) {
-	const k = Number(pairCount);
-	if (k === 0) return 0n;
-	const discount = BigInt(getMsmDiscount(k));
-	return (Bls12G1MsmBase * pairCount * discount) / 1000n;
+	return calculateMsmCost(pairCount, Bls12G1MsmBase, Bls12G1MsmDiscountTable);
 }
 
 /**
@@ -414,18 +647,40 @@ export function calculateBls12G1MsmCost(pairCount) {
  * @returns {bigint} Gas cost
  */
 export function calculateBls12G2MsmCost(pairCount) {
-	const k = Number(pairCount);
-	if (k === 0) return 0n;
-	const discount = BigInt(getMsmDiscount(k));
-	return (Bls12G2MsmBase * pairCount * discount) / 1000n;
+	return calculateMsmCost(pairCount, Bls12G2MsmBase, Bls12G2MsmDiscountTable);
 }
 
 /**
- * Calculate BLS12_PAIRING precompile cost
+ * Calculate BLS12_PAIRING_CHECK precompile cost: `32600 * k + 37700`
  *
  * @param {bigint} pairCount - Number of G1-G2 pairs
  * @returns {bigint} Gas cost
  */
 export function calculateBls12PairingCost(pairCount) {
 	return Bls12PairingBase + pairCount * Bls12PairingPerPair;
+}
+
+// ============================================
+// secp256r1 Precompile (EIP-7951) - Osaka
+// ============================================
+
+/**
+ * P256VERIFY (address 0x0100) - Fixed cost (EIP-7951, Osaka)
+ * @type {6900n}
+ */
+export const P256Verify = 6900n;
+
+/**
+ * P256VERIFY (address 0x0100) - Fixed cost, EIP-7951 spec spelling
+ * @type {6900n}
+ */
+export const P256VERIFY_GAS = P256Verify;
+
+/**
+ * Calculate P256VERIFY precompile cost (EIP-7951, Osaka)
+ *
+ * @returns {bigint} Gas cost (fixed at 6900, charged for every call)
+ */
+export function calculateP256VerifyCost() {
+	return P256Verify;
 }

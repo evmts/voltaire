@@ -7,9 +7,10 @@ import * as Eip1559 from "./eip1559Constants.js";
  * Formula:
  * - gasTarget = gasLimit / 2
  * - If gasUsed > gasTarget: baseFee increases (up to 12.5%)
- * - If gasUsed < gasTarget: baseFee decreases (up to 12.5%)
+ * - If gasUsed < gasTarget: baseFee decreases (up to 12.5%), including an
+ *   empty parent block (gasUsed = 0 -> -12.5%)
+ * - Upward changes are at least 1 wei; downward changes have no minimum
  * - If gasUsed == gasTarget: baseFee stays same
- * - Always: baseFee >= MIN_BASE_FEE (7 wei)
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
@@ -30,40 +31,27 @@ export function BaseFee(parentGasUsed, parentGasLimit, parentBaseFee) {
 	// Target is 50% of gas limit (elasticity multiplier = 2)
 	const parentGasTarget = parentGasLimit / Eip1559.ELASTICITY_MULTIPLIER;
 
-	// Empty block: base fee stays same
-	if (parentGasUsed === 0n) {
-		return parentBaseFee;
-	}
-
 	// At target: base fee stays same
 	if (parentGasUsed === parentGasTarget) {
 		return parentBaseFee;
 	}
 
-	let newBaseFee = parentBaseFee;
-
 	if (parentGasUsed > parentGasTarget) {
 		// Block used more than target: increase base fee
 		const gasUsedDelta = parentGasUsed - parentGasTarget;
-		// baseFee * delta / target / 8 (max 12.5% increase)
+		// baseFee * delta / target / 8 (max 12.5% increase), at least 1 wei
 		const baseFeeDelta =
 			(parentBaseFee * gasUsedDelta) /
 			parentGasTarget /
 			Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
-		newBaseFee = parentBaseFee + (baseFeeDelta > 0n ? baseFeeDelta : 1n);
-	} else {
-		// Block used less than target: decrease base fee
-		const gasUsedDelta = parentGasTarget - parentGasUsed;
-		// baseFee * delta / target / 8 (max 12.5% decrease)
-		const baseFeeDelta =
-			(parentBaseFee * gasUsedDelta) /
-			parentGasTarget /
-			Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
-		const delta = baseFeeDelta > 0n ? baseFeeDelta : 1n;
-		newBaseFee =
-			parentBaseFee > delta ? parentBaseFee - delta : Eip1559.MIN_BASE_FEE;
+		return parentBaseFee + (baseFeeDelta > 0n ? baseFeeDelta : 1n);
 	}
 
-	// Enforce minimum base fee
-	return newBaseFee < Eip1559.MIN_BASE_FEE ? Eip1559.MIN_BASE_FEE : newBaseFee;
+	// Below target, the decrease can round down to zero.
+	const gasUsedDelta = parentGasTarget - parentGasUsed;
+	const baseFeeDelta =
+		(parentBaseFee * gasUsedDelta) /
+		parentGasTarget /
+		Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+	return parentBaseFee - baseFeeDelta;
 }

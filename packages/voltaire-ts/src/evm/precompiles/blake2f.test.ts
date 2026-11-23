@@ -8,6 +8,9 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const res = evmBlake2f(input, 100n);
 			expect(res.success).toBe(false);
 			expect(res.error).toBe("Invalid input length");
+			// Exceptional halt: all forwarded gas is consumed, no output
+			expect(res.gasUsed).toBe(100n);
+			expect(res.output.length).toBe(0);
 		});
 
 		it("rejects input shorter than 213 bytes", () => {
@@ -15,6 +18,9 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const res = evmBlake2f(input, 100n);
 			expect(res.success).toBe(false);
 			expect(res.error).toBe("Invalid input length");
+			// Exceptional halt: all forwarded gas is consumed, no output
+			expect(res.gasUsed).toBe(100n);
+			expect(res.output.length).toBe(0);
 		});
 
 		it("rejects input longer than 213 bytes", () => {
@@ -22,6 +28,9 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const res = evmBlake2f(input, 100n);
 			expect(res.success).toBe(false);
 			expect(res.error).toBe("Invalid input length");
+			// Exceptional halt: all forwarded gas is consumed, no output
+			expect(res.gasUsed).toBe(100n);
+			expect(res.output.length).toBe(0);
 		});
 
 		it("rejects exactly 213 bytes input", () => {
@@ -39,6 +48,8 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const res = evmBlake2f(input, 100n);
 			expect(res.success).toBe(false);
 			expect(res.error).toBe("Invalid final flag");
+			expect(res.gasUsed).toBe(100n);
+			expect(res.output.length).toBe(0);
 		});
 
 		it("accepts final flag value 0 (false)", () => {
@@ -96,12 +107,14 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const input = hexToBytes(
 				"ffffffff48c9bdf267e6096a3ba7ca8485ae67bb2bf894fe72f36e3cf1361d5f3af54fa5d182e6ad7f520e511f6c3e2b8c68059b6bbd41fbabd9831f79217e1319cde05b61626300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000001",
 			);
-			// Request with insufficient gas - should fail but report correct gas needed
-			const res = evmBlake2f(input, 100n);
+			// One gas short of 0xFFFFFFFF rounds: rounds parse as unsigned 32-bit
+			// (a signed parse gives -1 and would succeed). Out of gas consumes
+			// all forwarded gas.
+			const res = evmBlake2f(input, 4294967294n);
 			expect(res.success).toBe(false);
 			expect(res.error).toBe("Out of gas");
-			// Verify gas is calculated correctly as unsigned 32-bit (not -1n)
-			expect(res.gasUsed).toBe(4294967295n);
+			expect(res.gasUsed).toBe(4294967294n);
+			expect(res.output.length).toBe(0);
 		});
 
 		it("returns out of gas when gasLimit is insufficient", () => {
@@ -112,7 +125,8 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const res = evmBlake2f(input, 11n);
 			expect(res.success).toBe(false);
 			expect(res.error).toBe("Out of gas");
-			expect(res.gasUsed).toBe(12n);
+			expect(res.gasUsed).toBe(11n);
+			expect(res.output.length).toBe(0);
 		});
 
 		it("succeeds when gasLimit exactly matches required gas", () => {
@@ -316,7 +330,7 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const insufficientGas = evmBlake2f(input, 7999999n);
 			expect(insufficientGas.success).toBe(false);
 			expect(insufficientGas.error).toBe("Out of gas");
-			expect(insufficientGas.gasUsed).toBe(8000000n);
+			expect(insufficientGas.gasUsed).toBe(7999999n);
 		});
 	});
 
@@ -350,7 +364,7 @@ describe("Blake2f precompile (0x09) - EIP-152", () => {
 			const insufficientGas = evmBlake2f(input, 4294967294n);
 			expect(insufficientGas.success).toBe(false);
 			expect(insufficientGas.error).toBe("Out of gas");
-			expect(insufficientGas.gasUsed).toBe(4294967295n);
+			expect(insufficientGas.gasUsed).toBe(4294967294n);
 		});
 	});
 });

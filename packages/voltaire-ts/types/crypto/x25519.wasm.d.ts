@@ -31,5 +31,7 @@ export declare namespace X25519Wasm {
     };
     function validateSecretKey(secretKey: SecretKey): boolean;
     function validatePublicKey(publicKey: PublicKey): boolean;
+    function isValidPublicKey(publicKey: PublicKey): boolean;
+    function isWeakPublicKey(publicKey: PublicKey): boolean;
 }
 //# sourceMappingURL=x25519.wasm.d.ts.map

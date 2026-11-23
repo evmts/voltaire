@@ -1,4 +1,5 @@
-import { Bn254Error } from "./errors.js";
+import { FP_MOD } from "./constants.js";
+import { Bn254Error, Bn254InvalidPointError } from "./errors.js";
 import * as Fp2 from "./Fp2/index.js";
 import * as G2 from "./G2/index.js";
 
@@ -7,9 +8,11 @@ import * as G2 from "./G2/index.js";
  *
  * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
  * @since 0.0.0
- * @param {Uint8Array} bytes - 128-byte serialization
+ * @param {Uint8Array} bytes - 128-byte serialization (x.c0 || x.c1 || y.c0 || y.c1; EIP-197 wire order is c1 || c0)
  * @returns {import('./G2PointType.js').G2PointType} G2 point
  * @throws {Bn254Error} If bytes length is invalid (must be 128 bytes)
+ * @throws {Bn254InvalidPointError} If a coordinate is >= the field modulus or the point is not on the curve
+ * @throws {import('./errors.js').Bn254SubgroupCheckError} If the point is outside the G2 subgroup
  * @example
  * ```javascript
  * import { deserializeG2 } from './crypto/bn254/deserializeG2.js';
@@ -29,6 +32,21 @@ export function deserializeG2(bytes) {
 	const xc1 = BigInt(`0x${bytesToHex(bytes.slice(32, 64))}`);
 	const yc0 = BigInt(`0x${bytesToHex(bytes.slice(64, 96))}`);
 	const yc1 = BigInt(`0x${bytesToHex(bytes.slice(96, 128))}`);
+
+	if (xc0 >= FP_MOD || xc1 >= FP_MOD || yc0 >= FP_MOD || yc1 >= FP_MOD) {
+		throw new Bn254InvalidPointError(
+			"G2 coordinate is not a canonical field element (>= field modulus)",
+			{
+				code: -32602,
+				context: {
+					x: { c0: xc0.toString(16), c1: xc1.toString(16) },
+					y: { c0: yc0.toString(16), c1: yc1.toString(16) },
+					curve: "G2",
+				},
+				docsPath: "/crypto/bn254#serialization",
+			},
+		);
+	}
 
 	if (xc0 === 0n && xc1 === 0n && yc0 === 0n && yc1 === 0n) {
 		return G2.infinity();

@@ -6,7 +6,7 @@ import { toNumber as _toNumber } from "./toNumber.js";
 export { from };
 export declare function toNumber(networkId: number): number;
 export declare function equals(networkId1: number, networkId2: number): boolean;
-export { _toNumber, _equals };
+export { _equals, _toNumber };
 export declare const NetworkId: {
     from: typeof from;
     toNumber: typeof toNumber;

@@ -138,19 +138,20 @@ export function validate(
 }
 
 // Export internal functions (tree-shakeable)
+// Re-export configured functions
 export {
 	_create,
 	_format,
 	_generateNonce,
-	getMessageHash as _getMessageHash,
 	_parse,
 	_validate,
+	getMessageHash as _getMessageHash,
+	getMessageHash,
 	verify as _verify,
+	verify,
 	verifyMessage as _verifyMessage,
+	verifyMessage,
 };
-
-// Re-export configured functions
-export { getMessageHash, verify, verifyMessage };
 
 // Namespace export
 export const BrandedSiwe = {

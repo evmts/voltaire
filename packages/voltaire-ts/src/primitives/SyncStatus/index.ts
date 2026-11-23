@@ -38,7 +38,7 @@ export function getProgress(
 }
 
 // Export internal functions (tree-shakeable)
-export { _isSyncing, _getProgress };
+export { _getProgress, _isSyncing };
 
 // Namespace export
 export const SyncStatus = {

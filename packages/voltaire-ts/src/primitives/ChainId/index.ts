@@ -47,7 +47,7 @@ export function getChainName(chainId: number): string | undefined {
 }
 
 // Export internal functions (tree-shakeable)
-export { _toNumber, _equals, _isMainnet, _isKnownChain, _getChainName };
+export { _equals, _getChainName, _isKnownChain, _isMainnet, _toNumber };
 
 // Export as namespace (convenience)
 export const ChainId = {

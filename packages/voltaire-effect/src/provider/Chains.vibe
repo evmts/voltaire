@@ -44,8 +44,8 @@ export const mainnetConfig: ChainConfig = {
   contracts: {
     multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 14353601 },
     ensRegistry: { address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e", blockCreated: 9380380 },
-    ensUniversalResolver: { address: "0xce01f8eee7E479C928F8919abD53E553a36CeF67", blockCreated: 19258213 }
-  }
+    ensUniversalResolver: { address: "0xce01f8eee7E479C928F8919abD53E553a36CeF67", blockCreated: 19258213 },
+  },
 }
 
 export const sepoliaConfig: ChainConfig = {
@@ -55,9 +55,9 @@ export const sepoliaConfig: ChainConfig = {
   rpcUrls: { default: { http: ["https://rpc.sepolia.org"] } },
   blockExplorers: { default: { name: "Etherscan", url: "https://sepolia.etherscan.io" } },
   contracts: {
-    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 751532 }
+    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 751532 },
   },
-  testnet: true
+  testnet: true,
 }
 
 export const hoodiConfig: ChainConfig = {
@@ -66,9 +66,9 @@ export const hoodiConfig: ChainConfig = {
   nativeCurrency: { name: "Hoodi Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: ["https://rpc.hoodi.ethpandaops.io"] } },
   contracts: {
-    multicall3: { address: MULTICALL3_CANONICAL }
+    multicall3: { address: MULTICALL3_CANONICAL },
   },
-  testnet: true
+  testnet: true,
 }
 
 export const optimismConfig: ChainConfig = {
@@ -78,8 +78,8 @@ export const optimismConfig: ChainConfig = {
   rpcUrls: { default: { http: ["https://mainnet.optimism.io"] } },
   blockExplorers: { default: { name: "Optimistic Etherscan", url: "https://optimistic.etherscan.io" } },
   contracts: {
-    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 4286263 }
-  }
+    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 4286263 },
+  },
 }
 
 export const arbitrumConfig: ChainConfig = {
@@ -89,8 +89,8 @@ export const arbitrumConfig: ChainConfig = {
   rpcUrls: { default: { http: ["https://arb1.arbitrum.io/rpc"] } },
   blockExplorers: { default: { name: "Arbiscan", url: "https://arbiscan.io" } },
   contracts: {
-    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 7654707 }
-  }
+    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 7654707 },
+  },
 }
 
 export const baseConfig: ChainConfig = {
@@ -100,8 +100,8 @@ export const baseConfig: ChainConfig = {
   rpcUrls: { default: { http: ["https://mainnet.base.org"] } },
   blockExplorers: { default: { name: "Basescan", url: "https://basescan.org" } },
   contracts: {
-    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 5022 }
-  }
+    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 5022 },
+  },
 }
 
 export const polygonConfig: ChainConfig = {
@@ -111,8 +111,8 @@ export const polygonConfig: ChainConfig = {
   rpcUrls: { default: { http: ["https://polygon-rpc.com"] } },
   blockExplorers: { default: { name: "PolygonScan", url: "https://polygonscan.com" } },
   contracts: {
-    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 25770160 }
-  }
+    multicall3: { address: MULTICALL3_CANONICAL, blockCreated: 25770160 },
+  },
 }
 
 export function ChainLayer(config: ChainConfig) {

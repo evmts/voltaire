@@ -101,12 +101,15 @@
 //! 4. **Performance**: Optimized implementations for critical paths
 //! 5. **Testability**: Comprehensive test coverage for all operations
 
+const std = @import("std");
+
 // Core types
 pub const AccountState = @import("AccountState/AccountState.zig");
 pub const Address = @import("Address/address.zig");
 pub const BeaconBlockRoot = @import("BeaconBlockRoot/BeaconBlockRoot.zig");
 pub const BeaconBlockHeader = @import("BeaconBlockHeader/BeaconBlockHeader.zig");
 pub const Block = @import("Block/Block.zig");
+pub const BlockAccessList = @import("BlockAccessList/BlockAccessList.zig");
 pub const BlockBody = @import("BlockBody/BlockBody.zig");
 pub const BlockHash = @import("BlockHash/BlockHash.zig");
 pub const BlockHeader = @import("BlockHeader/BlockHeader.zig");
@@ -347,3 +350,26 @@ pub const SyncAggregate = @import("SyncAggregate/SyncAggregate.zig");
 pub const consensus = @import("consensus/consensus.zig");
 pub const ConsensusSpec = @import("ConsensusSpec/ConsensusSpec.zig");
 pub const ForkConfig = @import("ForkConfig/ForkConfig.zig");
+
+// Public declarations are lazy: `pub const X = @import(...)` alone never
+// analyzes a file, so its inline tests would not run. `refAllDecls` resolves
+// every declaration above, which pulls each imported file into the test
+// build. Files with no declaration here are imported by name below.
+test {
+    std.testing.refAllDecls(@This());
+
+    _ = @import("Opcode/opcode.zig");
+    _ = @import("Opcode/opcode_info.zig");
+    _ = @import("Opcode/opcode_synthetic.zig");
+    _ = @import("Hardfork/hardfork.zig");
+    _ = @import("Hardfork/Eips.zig");
+    _ = @import("FeeMarket/fee_market.zig");
+    _ = @import("BlockHeader/BlockHeader.zig");
+    _ = @import("Blob/blob.zig");
+    _ = @import("BlockAccessList/BlockAccessList.zig");
+    _ = @import("EventLog/log.zig");
+    _ = @import("Ssz/basicTypes.zig");
+    _ = @import("Ssz/container.zig");
+    _ = @import("Ssz/merkle.zig");
+    _ = @import("Ssz/variableTypes.zig");
+}

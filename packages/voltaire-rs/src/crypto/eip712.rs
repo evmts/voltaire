@@ -32,7 +32,8 @@
 //!     .with_string("content", "Hello, EIP-712!");
 //!
 //! // Hash for signing
-//! let hash = typed_data.hash();
+//! let hash = typed_data.hash()?;
+//! # Ok::<(), voltaire::Error>(())
 //! ```
 
 use crate::crypto::keccak256;
@@ -345,7 +346,11 @@ impl TypedData {
     /// Compute the EIP-712 hash for signing.
     ///
     /// Returns `keccak256("\x19\x01" || domainSeparator || hashStruct(message))`.
-    pub fn hash(&self) -> Hash {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the message does not match its type definitions.
+    pub fn hash(&self) -> Result<Hash> {
         sign_typed_data(self)
     }
 
@@ -380,7 +385,8 @@ impl TypedData {
 /// Produces type encoding like:
 /// `"Mail(Person from,Person to,string contents)Person(string name,address wallet)"`
 ///
-/// The primary type comes first, followed by referenced types in alphabetical order.
+/// The primary type comes first, followed by every transitively referenced
+/// struct type, deduplicated and sorted in ASCII order.
 ///
 /// # Arguments
 ///
@@ -395,62 +401,56 @@ impl TypedData {
 ///
 /// Returns error if the primary type or any referenced type is not found.
 pub fn encode_type(primary_type: &str, types: &TypeDefinitions) -> Result<String> {
-    let mut visited = Vec::new();
-    let mut result = Vec::new();
+    // Collect every custom type reachable from the primary type.
+    let mut deps: Vec<&str> = Vec::new();
+    collect_dependencies(primary_type, types, &mut deps)?;
 
-    encode_type_recursive(primary_type, types, &mut visited, &mut result)?;
+    // Primary type first, then all other dependencies in global ASCII order.
+    let mut rest: Vec<&str> = deps.into_iter().filter(|t| *t != primary_type).collect();
+    rest.sort_unstable();
 
-    Ok(result.join(""))
+    let mut result = String::new();
+    for name in core::iter::once(primary_type).chain(rest) {
+        let props = types
+            .get(name)
+            .ok_or_else(|| Error::invalid_input(format!("Type '{}' not found", name)))?;
+        let fields: Vec<String> = props
+            .iter()
+            .map(|p| format!("{} {}", p.type_name, p.name))
+            .collect();
+        result.push_str(name);
+        result.push('(');
+        result.push_str(&fields.join(","));
+        result.push(')');
+    }
+    Ok(result)
 }
 
-fn encode_type_recursive(
-    type_name: &str,
-    types: &TypeDefinitions,
-    visited: &mut Vec<String>,
-    result: &mut Vec<String>,
+/// Collect `type_name` and every custom struct type it references, transitively.
+fn collect_dependencies<'a>(
+    type_name: &'a str,
+    types: &'a TypeDefinitions,
+    deps: &mut Vec<&'a str>,
 ) -> Result<()> {
-    if visited.contains(&type_name.to_string()) {
+    if deps.contains(&type_name) {
         return Ok(());
     }
-
-    let props = types
-        .get(type_name)
+    let (name, props) = types
+        .get_key_value(type_name)
         .ok_or_else(|| Error::invalid_input(format!("Type '{}' not found", type_name)))?;
+    deps.push(name.as_str());
 
-    visited.push(type_name.to_string());
-
-    // Build type definition
-    let fields: Vec<String> = props
-        .iter()
-        .map(|p| format!("{} {}", p.type_name, p.name))
-        .collect();
-    result.push(format!("{}({})", type_name, fields.join(",")));
-
-    // Recursively encode referenced custom types (in alphabetical order)
-    let mut referenced: Vec<&str> = props
-        .iter()
-        .filter_map(|p| {
-            let base_type = extract_base_type(&p.type_name);
-            if types.contains_key(base_type) && !visited.contains(&base_type.to_string()) {
-                Some(base_type)
-            } else {
-                None
-            }
-        })
-        .collect();
-    referenced.sort();
-    referenced.dedup();
-
-    for ref_type in referenced {
-        encode_type_recursive(ref_type, types, visited, result)?;
+    for prop in props {
+        let base_type = extract_base_type(&prop.type_name);
+        if types.contains_key(base_type) {
+            collect_dependencies(base_type, types, deps)?;
+        }
     }
-
     Ok(())
 }
 
-/// Extract base type from array type (e.g., "uint256[]" -> "uint256").
+/// Extract base type from array type (e.g., "uint256[2][]" -> "uint256").
 fn extract_base_type(type_name: &str) -> &str {
-    // Handle fixed-size arrays like "uint256[3]"
     if let Some(idx) = type_name.find('[') {
         &type_name[..idx]
     } else {
@@ -666,27 +666,61 @@ pub fn encode_value(
     Ok(result)
 }
 
+/// Split the outermost (last) array dimension off a type.
+///
+/// `"uint256[2][3]"` gives `("uint256[2]", Some(3))`; `"Person[]"` gives
+/// `("Person", None)`.
+fn split_array_type(type_name: &str) -> Result<(&str, Option<usize>)> {
+    let invalid = || Error::invalid_input(format!("Invalid array type: {}", type_name));
+    if !type_name.ends_with(']') {
+        return Err(invalid());
+    }
+    let open = type_name.rfind('[').ok_or_else(invalid)?;
+    let inner = &type_name[..open];
+    let dim = &type_name[open + 1..type_name.len() - 1];
+    if inner.is_empty() || dim.contains(']') {
+        return Err(invalid());
+    }
+    if dim.is_empty() {
+        return Ok((inner, None));
+    }
+    if !dim.bytes().all(|b| b.is_ascii_digit()) {
+        return Err(invalid());
+    }
+    let len: usize = dim.parse().map_err(|_| invalid())?;
+    Ok((inner, Some(len)))
+}
+
 /// Encode array value.
+///
+/// Encodes one dimension at a time: each element is encoded as the inner
+/// type (which may itself be an array), and the concatenation is hashed.
 fn encode_array_value(
     type_name: &str,
     value: &MessageValue,
     types: &TypeDefinitions,
 ) -> Result<[u8; 32]> {
-    let base_type = extract_base_type(type_name);
+    let (inner, fixed_len) = split_array_type(type_name)?;
 
-    if let MessageValue::Array(arr) = value {
-        // Encode each element and concatenate
-        let mut concat = Vec::new();
-        for item in arr {
-            let encoded = encode_value(base_type, item, types)?;
-            concat.extend_from_slice(&encoded);
+    let MessageValue::Array(arr) = value else {
+        return Err(Error::invalid_input("Expected array value"));
+    };
+    if let Some(n) = fixed_len {
+        if arr.len() != n {
+            return Err(Error::invalid_input(format!(
+                "Expected {} elements for {}, got {}",
+                n,
+                type_name,
+                arr.len()
+            )));
         }
-        // Hash the concatenation
-        let hash = keccak256(&concat);
-        Ok(*hash.as_bytes())
-    } else {
-        Err(Error::invalid_input("Expected array value"))
     }
+
+    let mut concat = Vec::with_capacity(arr.len() * 32);
+    for item in arr {
+        concat.extend_from_slice(&encode_value(inner, item, types)?);
+    }
+    Ok(*keccak256(&concat).as_bytes())
 }
 
 /// Encode struct value (custom type).
@@ -745,11 +779,13 @@ pub fn hash_domain(domain: &Domain) -> Hash {
 /// Computes `keccak256("\x19\x01" || domainSeparator || hashStruct(message))`.
 ///
 /// This is the hash that should be signed.
-pub fn sign_typed_data(typed_data: &TypedData) -> Hash {
+/// # Errors
+///
+/// Returns an error if the message does not match its type definitions.
+pub fn sign_typed_data(typed_data: &TypedData) -> Result<Hash> {
     let domain_separator = hash_domain(&typed_data.domain);
     let message_hash =
-        hash_struct(&typed_data.primary_type, &typed_data.message, &typed_data.types)
-            .expect("Message hashing should not fail");
+        hash_struct(&typed_data.primary_type, &typed_data.message, &typed_data.types)?;
 
     // Concatenate: 0x19 0x01 || domainSeparator || messageHash
     let mut data = [0u8; 66];
@@ -758,7 +794,7 @@ pub fn sign_typed_data(typed_data: &TypedData) -> Hash {
     data[2..34].copy_from_slice(domain_separator.as_bytes());
     data[34..66].copy_from_slice(message_hash.as_bytes());
 
-    keccak256(&data)
+    Ok(keccak256(&data))
 }
 
 #[cfg(test)]
@@ -879,7 +915,7 @@ mod tests {
         let typed_data = TypedData::new(domain, types, "Message")
             .with_string("content", "Hello, EIP-712!");
 
-        let hash = typed_data.hash();
+        let hash = typed_data.hash().unwrap();
         assert!(!hash.is_zero());
         assert_eq!(hash.as_bytes().len(), 32);
     }
@@ -896,12 +932,12 @@ mod tests {
         let typed_data = TypedData::new(domain.clone(), types.clone(), "Message")
             .with_string("text", "test");
 
-        let hash1 = typed_data.hash();
+        let hash1 = typed_data.hash().unwrap();
 
         let typed_data2 =
             TypedData::new(domain, types, "Message").with_string("text", "test");
 
-        let hash2 = typed_data2.hash();
+        let hash2 = typed_data2.hash().unwrap();
 
         assert_eq!(hash1, hash2);
     }
@@ -921,7 +957,7 @@ mod tests {
         let typed_data2 =
             TypedData::new(domain, types, "Message").with_string("text", "message2");
 
-        assert_ne!(typed_data1.hash(), typed_data2.hash());
+        assert_ne!(typed_data1.hash().unwrap(), typed_data2.hash().unwrap());
     }
 
     #[test]
@@ -940,7 +976,7 @@ mod tests {
         let typed_data2 =
             TypedData::new(domain2, types, "Message").with_string("text", "test");
 
-        assert_ne!(typed_data1.hash(), typed_data2.hash());
+        assert_ne!(typed_data1.hash().unwrap(), typed_data2.hash().unwrap());
     }
 
     #[test]
@@ -991,7 +1027,7 @@ mod tests {
             .with_uint("nonce", 0)
             .with_uint("deadline", 1735689600);
 
-        let hash = typed_data.hash();
+        let hash = typed_data.hash().unwrap();
         assert!(!hash.is_zero());
     }
 
@@ -1046,7 +1082,7 @@ mod tests {
             },
         };
 
-        let hash = typed_data.hash();
+        let hash = typed_data.hash().unwrap();
         assert!(!hash.is_zero());
     }
 
@@ -1084,5 +1120,201 @@ mod tests {
 
         // -1 in two's complement is all 0xff
         assert!(encoded.iter().all(|&b| b == 0xff));
+    }
+
+    fn props(fields: &[(&str, &str)]) -> Vec<TypeProperty> {
+        fields.iter().map(|(n, t)| TypeProperty::new(*n, *t)).collect()
+    }
+
+    fn uint(n: u128) -> MessageValue {
+        MessageValue::Uint(n)
+    }
+
+    fn obj(fields: &[(&str, MessageValue)]) -> MessageValue {
+        MessageValue::Struct(fields.iter().map(|(k, v)| (k.to_string(), v.clone())).collect())
+    }
+
+    fn arr(items: Vec<MessageValue>) -> MessageValue {
+        MessageValue::Array(items)
+    }
+
+    // Reference values from viem `encodeType`/`hashStruct`/`hashTypedData`.
+    fn transitive_types() -> TypeDefinitions {
+        let mut types = TypeDefinitions::new();
+        types.insert(
+            "Top".to_string(),
+            props(&[("z", "Zed"), ("a", "Alpha"), ("grid", "uint256[2][3]"), ("zs", "Zed[]")]),
+        );
+        types.insert("Zed".to_string(), props(&[("b", "Beta")]));
+        types.insert("Alpha".to_string(), props(&[("x", "uint256")]));
+        types.insert("Beta".to_string(), props(&[("y", "uint256")]));
+        types
+    }
+
+    fn transitive_message() -> BTreeMap<String, MessageValue> {
+        let MessageValue::Struct(m) = obj(&[
+            ("z", obj(&[("b", obj(&[("y", uint(2))]))])),
+            ("a", obj(&[("x", uint(1))])),
+            (
+                "grid",
+                arr(vec![
+                    arr(vec![uint(1), uint(2)]),
+                    arr(vec![uint(3), uint(4)]),
+                    arr(vec![uint(5), uint(6)]),
+                ]),
+            ),
+            (
+                "zs",
+                arr(vec![
+                    obj(&[("b", obj(&[("y", uint(7))]))]),
+                    obj(&[("b", obj(&[("y", uint(8))]))]),
+                ]),
+            ),
+        ]) else {
+            unreachable!()
+        };
+        m
+    }
+
+    #[test]
+    fn test_encode_type_transitive_global_sort() {
+        // Depth-first order would give Top,Alpha,Zed,Beta; EIP-712 sorts globally.
+        let encoded = encode_type("Top", &transitive_types()).unwrap();
+        assert_eq!(
+            encoded,
+            "Top(Zed z,Alpha a,uint256[2][3] grid,Zed[] zs)Alpha(uint256 x)Beta(uint256 y)Zed(Beta b)"
+        );
+    }
+
+    #[test]
+    fn test_encode_type_dependency_cycle() {
+        let mut types = TypeDefinitions::new();
+        types.insert("A".to_string(), props(&[("b", "B")]));
+        types.insert("B".to_string(), props(&[("a", "A[]")]));
+        assert_eq!(encode_type("B", &types).unwrap(), "B(A[] a)A(B b)");
+    }
+
+    #[test]
+    fn test_hash_struct_nested_arrays_vector() {
+        let hash = hash_struct("Top", &transitive_message(), &transitive_types()).unwrap();
+        assert_eq!(
+            hex::encode(hash.as_bytes()),
+            "5ee302de7b3938787c381cb87d90a0d06b19303cb128137a57cccc8e7b7f3336"
+        );
+    }
+
+    #[test]
+    fn test_typed_data_nested_arrays_vector() {
+        let typed_data = TypedData {
+            domain: Domain::new().name("Test").version("1").chain_id(1),
+            types: transitive_types(),
+            primary_type: "Top".to_string(),
+            message: transitive_message(),
+        };
+        assert_eq!(
+            hex::encode(typed_data.hash().unwrap().as_bytes()),
+            "23ccb433ba23cf1efb98693df8402da706ed14f1811cb7ad2c13d0888657a2e0"
+        );
+    }
+
+    #[test]
+    fn test_dynamic_outer_fixed_inner_array_vector() {
+        // uint256[][2]: two dynamic inner arrays.
+        let mut types = TypeDefinitions::new();
+        types.insert("Grid".to_string(), props(&[("g", "uint256[][2]")]));
+        let mut data = BTreeMap::new();
+        data.insert(
+            "g".to_string(),
+            arr(vec![arr(vec![uint(1)]), arr(vec![uint(2), uint(3)])]),
+        );
+        let hash = hash_struct("Grid", &data, &types).unwrap();
+        assert_eq!(
+            hex::encode(hash.as_bytes()),
+            "becab9bb9a95f655a669d92211bce555118090ca11603748304d3388d3d3a56c"
+        );
+    }
+
+    #[test]
+    fn test_fixed_array_length_enforced() {
+        let types = TypeDefinitions::new();
+        let two = arr(vec![uint(1), uint(2)]);
+        assert!(encode_value("uint256[2]", &two, &types).is_ok());
+        assert!(encode_value("uint256[3]", &two, &types).is_err());
+        assert!(encode_value("uint256[1]", &two, &types).is_err());
+        // Outer dimension checked separately from inner dimension.
+        let grid = arr(vec![two.clone(), two.clone(), two.clone()]);
+        assert!(encode_value("uint256[2][3]", &grid, &types).is_ok());
+        assert!(encode_value("uint256[3][2]", &grid, &types).is_err());
+        let ragged = arr(vec![two.clone(), arr(vec![uint(1)]), two]);
+        assert!(encode_value("uint256[2][3]", &ragged, &types).is_err());
+    }
+
+    #[test]
+    fn test_malformed_array_types_error() {
+        let types = TypeDefinitions::new();
+        let v = arr(vec![uint(1)]);
+        for t in ["uint256[x]", "[1]", "uint256[1]]", "uint256[-1]", "uint256[+1]"] {
+            assert!(encode_value(t, &v, &types).is_err(), "{}", t);
+        }
+        // Scalar where an array is expected.
+        assert!(encode_value("uint256[][1]", &arr(vec![uint(1)]), &types).is_err());
+    }
+
+    #[test]
+    fn test_typed_data_hash_errors_instead_of_panicking() {
+        let mut types = TypeDefinitions::new();
+        types.insert("M".to_string(), props(&[("xs", "uint256[2]")]));
+        let typed_data = TypedData {
+            domain: Domain::new().name("Test"),
+            types,
+            primary_type: "M".to_string(),
+            message: [("xs".to_string(), arr(vec![uint(1)]))].into_iter().collect(),
+        };
+        assert!(typed_data.hash().is_err());
+        assert!(sign_typed_data(&typed_data).is_err());
+    }
+
+    #[test]
+    fn test_eip712_spec_mail_vector() {
+        let mut types = TypeDefinitions::new();
+        types.insert("Person".to_string(), props(&[("name", "string"), ("wallet", "address")]));
+        types.insert(
+            "Mail".to_string(),
+            props(&[("from", "Person"), ("to", "Person"), ("contents", "string")]),
+        );
+        let addr = |h: &str| MessageValue::Address(h.parse().unwrap());
+        let MessageValue::Struct(message) = obj(&[
+            (
+                "from",
+                obj(&[
+                    ("name", MessageValue::String("Cow".into())),
+                    ("wallet", addr("0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")),
+                ]),
+            ),
+            (
+                "to",
+                obj(&[
+                    ("name", MessageValue::String("Bob".into())),
+                    ("wallet", addr("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB")),
+                ]),
+            ),
+            ("contents", MessageValue::String("Hello, Bob!".into())),
+        ]) else {
+            unreachable!()
+        };
+        let typed_data = TypedData {
+            domain: Domain::new()
+                .name("Ether Mail")
+                .version("1")
+                .chain_id(1)
+                .verifying_contract("0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC".parse().unwrap()),
+            types,
+            primary_type: "Mail".to_string(),
+            message,
+        };
+        assert_eq!(
+            hex::encode(typed_data.hash().unwrap().as_bytes()),
+            "be609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2"
+        );
     }
 }

@@ -1,5 +1,8 @@
+import { bn254 } from "@noble/curves/bn254.js";
 import { describe, expect, test } from "vitest";
 import {
+	B_G2_C0,
+	B_G2_C1,
 	FP_MOD,
 	G2_GENERATOR_X_C0,
 	G2_GENERATOR_X_C1,
@@ -7,7 +10,11 @@ import {
 	G2_GENERATOR_Y_C1,
 } from "./constants.js";
 import { deserializeG2 } from "./deserializeG2.js";
-import { Bn254Error } from "./errors.js";
+import {
+	Bn254Error,
+	Bn254InvalidPointError,
+	Bn254SubgroupCheckError,
+} from "./errors.js";
 import * as G2 from "./G2/index.js";
 import { serializeG2 } from "./serializeG2.js";
 
@@ -216,17 +223,72 @@ describe("deserializeG2", () => {
 			for (let i = 0; i < 32; i++) {
 				bytes[i] = Number.parseInt(modBytes.slice(i * 2, i * 2 + 2), 16);
 			}
-			// This should be handled by fromAffine validation
-			try {
-				const point = deserializeG2(bytes);
-				// If accepted, should be reduced or infinity
-				if (!G2.isZero(point)) {
-					expect(G2.isOnCurve(point)).toBe(true);
-				}
-			} catch (err) {
-				// Expected: invalid Fp2 coordinate >= field modulus
-				expect(err).toBeDefined();
+			// (p, 0, 0, 0) must not reduce to the point at infinity
+			expect(() => deserializeG2(bytes)).toThrow(Bn254InvalidPointError);
+			expect(() => deserializeG2(bytes)).toThrow("canonical field element");
+		});
+
+		test("rejects the generator with any one coordinate lifted by p", () => {
+			const coords = [
+				G2_GENERATOR_X_C0,
+				G2_GENERATOR_X_C1,
+				G2_GENERATOR_Y_C0,
+				G2_GENERATOR_Y_C1,
+			];
+			const encode = (values: bigint[]) => {
+				const bytes = new Uint8Array(128);
+				values.forEach((value, i) => {
+					const hex = value.toString(16).padStart(64, "0");
+					expect(hex.length).toBe(64);
+					for (let j = 0; j < 32; j++) {
+						bytes[i * 32 + j] = Number.parseInt(
+							hex.slice(j * 2, j * 2 + 2),
+							16,
+						);
+					}
+				});
+				return bytes;
+			};
+			expect(G2.equal(deserializeG2(encode(coords)), G2.generator())).toBe(
+				true,
+			);
+			for (let i = 0; i < coords.length; i++) {
+				const lifted = coords.map((c, j) => (i === j ? c + FP_MOD : c));
+				expect(() => deserializeG2(encode(lifted))).toThrow(
+					"canonical field element",
+				);
 			}
+		});
+
+		test("rejects an on-curve point outside the subgroup", () => {
+			// x = (n, 0), y = sqrt(x^3 + b) on the twist; cofactor makes it off-subgroup.
+			const F = bn254.fields.Fp2;
+			const b = F.create({ c0: B_G2_C0, c1: B_G2_C1 });
+			let rejected = 0;
+			for (let n = 1n; n < 40n; n++) {
+				const x = F.create({ c0: n, c1: 0n });
+				const rhs = F.add(F.mul(F.sqr(x), x), b);
+				let y: { c0: bigint; c1: bigint };
+				try {
+					y = F.sqrt(rhs);
+				} catch {
+					continue;
+				}
+				if (!F.eql(F.sqr(y), rhs)) continue;
+				const bytes = new Uint8Array(128);
+				[x.c0, x.c1, y.c0, y.c1].forEach((value, i) => {
+					const hex = value.toString(16).padStart(64, "0");
+					for (let j = 0; j < 32; j++) {
+						bytes[i * 32 + j] = Number.parseInt(
+							hex.slice(j * 2, j * 2 + 2),
+							16,
+						);
+					}
+				});
+				expect(() => deserializeG2(bytes)).toThrow(Bn254SubgroupCheckError);
+				rejected++;
+			}
+			expect(rejected).toBeGreaterThan(3);
 		});
 
 		test("handles x.c1 coordinate > field modulus", () => {
@@ -236,13 +298,8 @@ describe("deserializeG2", () => {
 			for (let i = 0; i < 32; i++) {
 				bytes[32 + i] = Number.parseInt(overMod.slice(i * 2, i * 2 + 2), 16);
 			}
-			try {
-				const point = deserializeG2(bytes);
-				expect(G2.isOnCurve(point)).toBe(true);
-			} catch (err) {
-				// Expected: invalid coordinate
-				expect(err).toBeDefined();
-			}
+			expect(() => deserializeG2(bytes)).toThrow(Bn254InvalidPointError);
+			expect(() => deserializeG2(bytes)).toThrow("canonical field element");
 		});
 
 		test("handles point with valid x but y not satisfying twisted curve equation", () => {

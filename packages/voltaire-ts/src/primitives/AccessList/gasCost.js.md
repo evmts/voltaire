@@ -1,6 +1,6 @@
 ---
-title: "gasCost.js"
----
+
+## title: "gasCost.js"
 
 # gasCost.js
 
@@ -9,7 +9,7 @@ Calculate total gas cost for including access list in transaction.
 ## Signature
 
 ```typescript
-function gasCost(list: BrandedAccessList): bigint
+function gasCost(list: BrandedAccessList): bigint;
 ```
 
 ## Parameters
@@ -30,8 +30,8 @@ cost = (addresses × 2400) + (storageKeys × 1900)
 
 ```typescript
 const list = AccessList.from([
-  { address: addr1, storageKeys: [key1, key2] },
-  { address: addr2, storageKeys: [key3] }
+	{ address: addr1, storageKeys: [key1, key2] },
+	{ address: addr2, storageKeys: [key3] },
 ]);
 
 const cost = AccessList.gasCost(list);

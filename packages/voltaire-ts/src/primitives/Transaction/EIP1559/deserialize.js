@@ -1,7 +1,15 @@
 import { DecodingError } from "../../errors/index.js";
 import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
-import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
+import {
+	decodeAccessList,
+	decodeAddress,
+	decodeBytesField,
+	decodeListField,
+	decodeSignatureScalar,
+	decodeUint,
+	decodeYParity,
+} from "../utils.js";
 
 /**
  * Deserialize RLP encoded EIP-1559 transaction.
@@ -52,50 +60,22 @@ export function deserialize(data) {
 		);
 	}
 
-	const chainId = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[0]).value,
+	const chainId = decodeUint(fields[0], 32, "chainId");
+	const nonce = decodeUint(fields[1], 8, "nonce");
+	const maxPriorityFeePerGas = decodeUint(
+		fields[2],
+		32,
+		"maxPriorityFeePerGas",
 	);
-	const nonce = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[1]).value,
-	);
-	const maxPriorityFeePerGas = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[2]).value,
-	);
-	const maxFeePerGas = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[3]).value,
-	);
-	const gasLimit = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[4]).value,
-	);
-	const to = decodeAddress(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[5]).value,
-	);
-	const value = decodeBigint(
-		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[6]).value,
-	);
-	const dataBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[7]
-	).value;
-	const accessList = decodeAccessList(/** @type {any} */ (fields[8]).value);
-	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
-		fields[9]
-	).value;
-	const yParity =
-		yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
-	if (yParity !== 0 && yParity !== 1) {
-		throw new DecodingError(
-			`Invalid yParity: expected 0 or 1, got ${yParity}`,
-			{
-				code: -32602,
-				context: { yParity },
-				docsPath: "/primitives/transaction/eip1559/deserialize#error-handling",
-			},
-		);
-	}
-	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[10])
-		.value;
-	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[11])
-		.value;
+	const maxFeePerGas = decodeUint(fields[3], 32, "maxFeePerGas");
+	const gasLimit = decodeUint(fields[4], 8, "gasLimit");
+	const to = decodeAddress(decodeBytesField(fields[5], "to"));
+	const value = decodeUint(fields[6], 32, "value");
+	const dataBytes = decodeBytesField(fields[7], "data");
+	const accessList = decodeAccessList(decodeListField(fields[8], "accessList"));
+	const yParity = decodeYParity(fields[9]);
+	const r = decodeSignatureScalar(decodeBytesField(fields[10], "r"));
+	const s = decodeSignatureScalar(decodeBytesField(fields[11], "s"));
 
 	return /** @type {import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559} */ (
 		/** @type {any} */ ({

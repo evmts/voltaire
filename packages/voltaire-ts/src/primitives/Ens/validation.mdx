@@ -1,25 +1,148 @@
 ---
-title: "validation"
-description: "ENS validation documentation"
+title: "ENS Validation"
+description: "Check ENS names with isValid(), validate(), and the is() type guard"
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/ens.ts">
   Run ENS examples in the interactive playground
 </Card>
 
-# validation
+# ENS Validation
 
-Documentation for ENS validation.
+The Ens module has three checks. They answer different questions:
+
+| Function | Question | Returns | Throws |
+|----------|----------|---------|--------|
+| `isValid(name)` | Can this string be ENSIP-15 normalized? | `boolean` | Never |
+| `validate(name)` | Same as `isValid` | `void` | `DisallowedCharacterError` |
+| `is(value)` | Is this a non-empty string? | `value is Ens` | Never |
+
+`isValid()` and `validate()` run full ENSIP-15 normalization. `is()` does not; it is a cheap type guard.
+
+## isValid(name)
+
+```typescript
+isValid(name: string): boolean
+```
+
+Returns `true` if `name` is a non-empty string that normalizes without error. Returns `false` for empty strings, non-strings, and names that fail normalization.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+Ens.isValid("vitalik.eth");      // true
+Ens.isValid("sub.domain.eth");   // true
+Ens.isValid("VITALIK.eth");      // true (normalizable, not normalized)
+
+Ens.isValid("");                 // false
+Ens.isValid("invalid\x00.eth");  // false
+Ens.isValid("a..eth");           // false (empty label)
+Ens.isValid("аpple.eth");   // false (Cyrillic + Latin mixture)
+Ens.isValid(123 as any);         // false
+Ens.isValid(null as any);        // false
+```
 
 <Note>
-This page is under construction. See [ENS Overview](/primitives/ens) for core functionality.
+`isValid()` returns `true` for names that are valid but not yet normalized, such as `"VITALIK.eth"`. It does not tell you the name is canonical. Use `normalize()` to get the canonical form.
 </Note>
 
-## Overview
+## validate(name)
 
-ENS operations for validation.
+```typescript
+validate(name: string): void
+```
+
+Same rules as `isValid()`, but throws instead of returning `false`.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+Ens.validate("vitalik.eth");     // ok
+Ens.validate("test.eth");        // ok
+
+Ens.validate("");                // throws DisallowedCharacterError
+Ens.validate("invalid\x00.eth"); // throws DisallowedCharacterError
+Ens.validate(undefined as any);  // throws DisallowedCharacterError
+```
+
+Every failure throws `DisallowedCharacterError` with `docsPath` set to `/primitives/ens/validate`:
+
+- Empty or non-string input: no `cause`; `value` is `String(name)`.
+- Normalization failure: `cause` is the `@adraffy/ens-normalize` error, whose message names the rule that failed.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+try {
+  Ens.validate("ab--cd.eth");
+} catch (error) {
+  if (error instanceof Ens.DisallowedCharacterError) {
+    error.value;          // "ab--cd.eth"
+    error.cause?.message; // contains 'invalid label extension: "ab--"'
+  }
+}
+```
+
+See [Errors](/primitives/ens/errors) for all error fields.
+
+## is(value)
+
+```typescript
+is(value: unknown): value is Ens
+```
+
+Returns `true` when `value` is a string with length greater than zero. It does not check characters, labels, or normalization.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+Ens.is("vitalik.eth");  // true
+Ens.is("VITALIK.ETH");  // true (not normalized)
+Ens.is(" ");            // true (not a valid ENS name)
+Ens.is("");             // false
+Ens.is(123);            // false
+Ens.is(null);           // false
+```
+
+Use `is()` to narrow `unknown` input to the `Ens` type. Do not use it as a security check. See [Branded Ens](/primitives/ens/branded-ens).
+
+## Validate or normalize?
+
+`validate()` and `normalize()` run the same ENSIP-15 algorithm. If you need the canonical name anyway, call `normalize()` once and handle its error instead of calling both:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+function parseEnsInput(input: string): Ens.Ens {
+  if (input.length === 0) {
+    throw new Error("ENS name is empty");
+  }
+  return Ens.normalize(input); // throws DisallowedCharacterError
+}
+```
+
+The explicit empty check is needed because `normalize("")` returns `""` without throwing.
+
+## Rules enforced
+
+All rules come from ENSIP-15 as implemented by `@adraffy/ens-normalize`. Observed failure reasons include:
+
+| Rule | Example input |
+|------|---------------|
+| Disallowed character | `"a b.eth"`, `"invalid\x00.eth"`, `"nick․eth"` |
+| Empty label | `"a..eth"`, `".eth"`, `"eth."` |
+| Invalid label extension (`--` at the 3rd and 4th characters) | `"ab--cd.eth"`, `"xn--abc.eth"` |
+| Underscore not at label start | `"a_b.eth"` (`"_ab.eth"` is valid) |
+| Leading combining mark | `"́a.eth"` |
+| Illegal script mixture | `"аpple.eth"`, `"1١.eth"` |
+| Whole-script confusable | `"арре.eth"` |
+
+The module does not enforce a maximum label or name length.
 
 ## See Also
 
 - [ENS Overview](/primitives/ens)
-- [ENS Normalization](/primitives/ens/normalization)
+- [Normalization](/primitives/ens/normalization)
+- [Errors](/primitives/ens/errors)
+- [Security](/primitives/ens/security)
+- [Usage Patterns](/primitives/ens/usage-patterns)

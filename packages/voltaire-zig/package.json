@@ -16,6 +16,10 @@
     "url": "git+https://github.com/evmts/voltaire.git",
     "directory": "packages/voltaire-zig"
   },
+  "homepage": "https://voltaire.tevm.sh/",
+  "bugs": {
+    "url": "https://github.com/evmts/voltaire/issues"
+  },
   "license": "MIT",
   "type": "module",
   "main": "wasm/primitives.wasm",
@@ -23,15 +27,20 @@
     "wasm",
     "src",
     "lib",
-    "build.zig",
-    "build.zig.zon"
+    "README.md",
+    "LICENSE",
+    "!src/**/*.bench.zig",
+    "!lib/**/*.test.ts"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "zig build",
-    "build:wasm": "zig build build-ts-wasm && zig build build-ts-wasm-fast",
+    "build:wasm": "cd ../.. && zig build build-ts-wasm build-ts-wasm-fast crypto-wasm && mkdir -p packages/voltaire-zig/wasm/crypto && cp wasm/*.wasm packages/voltaire-zig/wasm/ && cp wasm/crypto/*.wasm packages/voltaire-zig/wasm/crypto/",
+    "prepack": "pnpm run build:wasm",
+    "prepublishOnly": "pnpm run build:wasm",
     "test": "zig build test",
     "format": "zig build format",
     "format:check": "echo 'Zig formatting checked in lint job'",

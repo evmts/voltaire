@@ -66,7 +66,7 @@ function bundleContainsFFI(bundlePath: string): {
 }
 
 /**
- * Checks if a bundle file contains HDWallet code
+ * Checks if a bundle contains HDWallet's native bindings.
  */
 function bundleContainsHDWallet(bundlePath: string): boolean {
 	if (!existsSync(bundlePath)) {
@@ -75,9 +75,8 @@ function bundleContainsHDWallet(bundlePath: string): boolean {
 
 	const content = readFileSync(bundlePath, "utf-8");
 
-	// Check for HDWallet-specific patterns
+	// The pure-JS implementation also exports the HDWallet namespace.
 	return (
-		content.includes("HDWallet") ||
 		content.includes("hdwallet_generate_mnemonic") ||
 		content.includes("hdwallet_mnemonic_to_seed") ||
 		content.includes("hdwallet_validate_mnemonic")

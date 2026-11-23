@@ -563,7 +563,7 @@ test "equals - different code_hash not equal" {
 test "EMPTY_CODE_HASH is keccak256 of empty bytes" {
     const crypto = @import("crypto");
     var computed: [32]u8 = undefined;
-    crypto.Keccak256.hash(&.{}, &computed);
+    crypto.Keccak256.hash(&.{}, &computed, .{});
 
     try std.testing.expectEqualSlices(u8, &EMPTY_CODE_HASH, &computed);
 }
@@ -571,7 +571,7 @@ test "EMPTY_CODE_HASH is keccak256 of empty bytes" {
 test "EMPTY_TRIE_ROOT is keccak256 of RLP null" {
     const crypto = @import("crypto");
     var computed: [32]u8 = undefined;
-    crypto.Keccak256.hash(&[_]u8{0x80}, &computed);
+    crypto.Keccak256.hash(&[_]u8{0x80}, &computed, .{});
 
     try std.testing.expectEqualSlices(u8, &EMPTY_TRIE_ROOT, &computed);
 }

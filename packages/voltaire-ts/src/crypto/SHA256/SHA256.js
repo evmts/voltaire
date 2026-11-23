@@ -10,7 +10,7 @@ import { hashString } from "./hashString.js";
 import { toHex } from "./toHex.js";
 
 // Export individual functions
-export { from, hash, hashString, hashHex, toHex, create };
+export { create, from, hash, hashHex, hashString, toHex };
 
 /**
  * SHA256Hash - Type-safe SHA256 hash namespace

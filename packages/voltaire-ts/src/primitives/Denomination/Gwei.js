@@ -1,7 +1,12 @@
 import * as Uint from "../Uint/index.js";
+import { from as etherFrom, toGwei } from "./Ether.js";
 
 /**
- * @typedef {import('./GweiType.js').GweiType} Gwei
+ * Whole-gwei amount stored as a bigint. The decimal-string `GweiType`
+ * belongs to the `BrandedGwei` namespace (`gwei-index.js`), which supports
+ * fractional gwei.
+ *
+ * @typedef {import('./Gwei.js').Gwei} Gwei
  * @typedef {import('./Wei.js').Wei} Wei
  * @typedef {import('./Ether.js').Ether} Ether
  */
@@ -25,10 +30,11 @@ const GWEI_PER_ETHER = 1_000_000_000n;
 const GWEI_DECIMALS = 9;
 
 /**
- * Creates a Gwei value from bigint, number, or string
+ * Creates a whole Gwei value from bigint, number, or string
  *
- * @param {bigint | number | string} value
+ * @param {bigint | number | string} value - Non-negative whole gwei amount
  * @returns {Gwei}
+ * @throws {Error} If value is negative, fractional, or not a Uint256
  */
 export function from(value) {
 	return /** @type {Gwei} */ (/** @type {unknown} */ (Uint.from(value)));
@@ -37,10 +43,19 @@ export function from(value) {
 /**
  * Creates Gwei from Wei value
  *
+ * Gwei here is a whole number, so the Wei amount must be a multiple of
+ * 10^9. Use `BrandedGwei.fromWei` for fractional gwei.
+ *
  * @param {Wei} wei
  * @returns {Gwei}
+ * @throws {Error} If wei is not a whole number of gwei
  */
 export function fromWei(wei) {
+	if (BigInt(wei) % WEI_PER_GWEI !== 0n) {
+		throw new Error(
+			`Wei value is not a whole number of Gwei (would lose precision): ${wei}`,
+		);
+	}
 	const gwei = Uint.dividedBy(
 		/** @type {Uint.Type} */ (/** @type {unknown} */ (wei)),
 		Uint.from(WEI_PER_GWEI),
@@ -56,25 +71,7 @@ export function fromWei(wei) {
  * @returns {Gwei}
  */
 export function fromEther(ether) {
-	const str = String(ether);
-	const [intPart, decPart = ""] = str.split(".");
-
-	if (decPart.length > GWEI_DECIMALS) {
-		throw new Error(
-			`Ether value has too many decimal places for Gwei conversion (max ${GWEI_DECIMALS}): ${ether}`,
-		);
-	}
-
-	// Pad decimal part to 9 digits (gwei has 9 decimal places relative to ether)
-	const paddedDec = decPart.padEnd(GWEI_DECIMALS, "0");
-
-	// Combine integer and decimal parts
-	const combined = intPart + paddedDec;
-
-	// Remove leading zeros and convert to bigint
-	const gwei = BigInt(combined.replace(/^0+/, "") || "0");
-
-	return /** @type {Gwei} */ (/** @type {unknown} */ (gwei));
+	return toGwei(etherFrom(ether));
 }
 
 /**
@@ -82,12 +79,16 @@ export function fromEther(ether) {
  *
  * @param {Gwei} gwei
  * @returns {Wei}
+ * @throws {Error} If gwei is not a non-negative whole bigint or the result exceeds the Uint256 maximum
  */
 export function toWei(gwei) {
-	const wei = Uint.times(
-		/** @type {Uint.Type} */ (/** @type {unknown} */ (gwei)),
-		Uint.from(WEI_PER_GWEI),
-	);
+	if (typeof gwei !== "bigint" || gwei < 0n) {
+		throw new Error(`Gwei value must be a non-negative whole bigint: ${gwei}`);
+	}
+	const wei = gwei * WEI_PER_GWEI;
+	if (wei > Uint.MAX) {
+		throw new Error(`Gwei value exceeds Uint256 maximum in Wei: ${gwei}`);
+	}
 	return /** @type {Wei} */ (/** @type {unknown} */ (wei));
 }
 

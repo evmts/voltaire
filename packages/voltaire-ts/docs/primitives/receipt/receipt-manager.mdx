@@ -1,0 +1,99 @@
+---
+title: ReceiptManager
+description: In-memory receipt store indexed by block hash and transaction hash, with eth_getLogs-style filtering and reorg-safe deletion
+---
+
+## Overview
+
+`ReceiptManager()` creates an in-memory store for transaction receipts. Dev nodes such as Tevm and ZEVM use it to answer `eth_getTransactionReceipt`, `eth_getBlockReceipts`, and `eth_getLogs` without re-executing blocks.
+
+The store keeps two indexes:
+
+- **block hash → receipts**, in transaction order
+- **transaction hash → (block hash, tx index)**
+
+Logs are derived from stored receipts, so deleting a block removes its receipts, logs, and transaction index entries together.
+
+```typescript
+import { Receipt } from '@tevm/voltaire';
+
+const manager = Receipt.ReceiptManager();
+
+manager.saveReceipts(blockHash, receipts);
+
+manager.getReceipts(blockHash);          // readonly ReceiptType[] | undefined
+manager.getReceiptByTxHash(txHash);      // { receipt, blockHash, txIndex } | undefined
+manager.getLogs({ address: token });     // EventLogType[]
+```
+
+## API
+
+```typescript
+type ReceiptManagerType = {
+  saveReceipts(blockHash: BlockHashType, receipts: readonly ReceiptType[]): void;
+  getReceipts(blockHash: BlockHashType): readonly ReceiptType[] | undefined;
+  getReceiptByTxHash(txHash: TransactionHashType): ReceiptLookup | undefined;
+  getLogs(filter?: ReceiptLogFilter): EventLogType[];
+  deleteReceipts(blockHash: BlockHashType): boolean;
+  hasReceipts(blockHash: BlockHashType): boolean;
+  clear(): void;
+};
+
+type ReceiptLookup = {
+  readonly receipt: ReceiptType;
+  readonly blockHash: BlockHashType;
+  readonly txIndex: number;
+};
+```
+
+| Method | Behavior |
+|--------|----------|
+| `saveReceipts` | Stores a block's receipts. Replaces any receipts already stored for that block hash and rebuilds its tx index entries. |
+| `getReceipts` | Returns the block's receipts, or `undefined` if the block is unknown. The returned array is frozen. |
+| `getReceiptByTxHash` | Returns the receipt with its block hash and index in the block. |
+| `getLogs` | Returns logs matching the filter, in block insertion order, then log order. |
+| `deleteReceipts` | Removes a block's receipts, logs, and tx index entries. Returns `true` if the block existed. |
+| `hasReceipts` | `true` if receipts are stored for the block. |
+| `clear` | Removes everything. |
+
+Block and transaction hashes must be 32 bytes. Any other length throws `InvalidReceiptLengthError`.
+
+## Log filters
+
+```typescript
+type ReceiptLogFilter = {
+  readonly blockHashes?: readonly BlockHashType[];
+  readonly address?: AddressType | readonly AddressType[];
+  readonly topics?: readonly (HashType | readonly HashType[] | null)[];
+};
+```
+
+Filters follow `eth_getLogs` semantics:
+
+- `blockHashes`: search only these blocks. Omitted means every stored block.
+- `address`: one address, or a list matched as OR. An empty list matches any address.
+- `topics`: positional. `null` is a wildcard; an array is an OR list; an empty array is a wildcard.
+
+```typescript
+// Transfer(address,address,uint256) events from one token, to one recipient
+const logs = manager.getLogs({
+  address: token,
+  topics: [transferTopic, null, recipientTopic],
+});
+```
+
+## Reorgs
+
+When a block leaves the canonical chain, delete its receipts:
+
+```typescript
+manager.deleteReceipts(orphanedBlockHash);
+```
+
+If a transaction was re-included in another block, its tx index keeps pointing to that block. Deleting the orphaned block does not remove the newer entry.
+
+## Related
+
+- [Receipt](/primitives/receipt)
+- [EventLog](/primitives/eventlog)
+- [Log filter](/primitives/log-filter)

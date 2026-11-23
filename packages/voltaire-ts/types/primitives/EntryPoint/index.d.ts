@@ -7,7 +7,7 @@ import { toHex as _toHex } from "./toHex.js";
 export { from };
 export declare function toHex(entryPoint: number | bigint | string | Uint8Array | AddressType): string;
 export declare function equals(entryPoint1: number | bigint | string | Uint8Array | AddressType, entryPoint2: number | bigint | string | Uint8Array | AddressType): boolean;
-export { _toHex, _equals };
+export { _equals, _toHex };
 export declare const EntryPoint: {
     from: typeof from;
     toHex: typeof toHex;

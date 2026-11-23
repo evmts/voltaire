@@ -6,7 +6,7 @@
  * @typedef {RpcBlockHeader & RpcBlockBody & {
  *   hash: string,
  *   size: string,
- *   totalDifficulty?: string
+ *   totalDifficulty?: string | null
  * }} RpcBlock
  */
 /**
@@ -30,9 +30,9 @@
  * const rpcBlock = await provider.send('eth_getBlockByNumber', ['latest', true]);
  * const block = Block.fromRpc(rpcBlock);
  *
- * console.log(block.header.number); // bigint
- * console.log(block.header.gasUsed); // bigint
- * console.log(block.body.transactions.length);
+ * block.header.number; // bigint
+ * block.header.gasUsed; // bigint
+ * block.body.transactions.length;
  * ```
  */
 export function fromRpc(rpc: RpcBlock): import("./BlockType.js").BlockType;
@@ -41,6 +41,6 @@ export type RpcBlockBody = import("../BlockBody/fromRpc.js").RpcBlockBody;
 export type RpcBlock = RpcBlockHeader & RpcBlockBody & {
     hash: string;
     size: string;
-    totalDifficulty?: string;
+    totalDifficulty?: string | null;
 };
 //# sourceMappingURL=fromRpc.d.ts.map

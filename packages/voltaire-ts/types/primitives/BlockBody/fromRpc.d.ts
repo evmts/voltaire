@@ -12,12 +12,16 @@
  * Convert RPC block body format to BlockBody
  *
  * Handles conversion of transactions and withdrawals from JSON-RPC format.
+ * Requires full transaction objects (`eth_getBlockByNumber(block, true)`).
+ * A hash-only body (`transactions` is an array of hash strings) is rejected:
+ * a hash carries no transaction fields to decode.
  * Note: Uncle (ommer) parsing is not yet implemented - they are passed through as-is.
  *
  * @see https://voltaire.tevm.sh/primitives/block-body for BlockBody documentation
  * @since 0.1.42
  * @param {RpcBlockBody} rpc - RPC block body object
  * @returns {import('./BlockBodyType.js').BlockBodyType} BlockBody
+ * @throws {InvalidFormatError} If `transactions` holds transaction hashes instead of objects
  * @throws {import('../errors/index.js').InvalidTransactionTypeError} If transaction type is unknown
  * @throws {import('../errors/index.js').InvalidLengthError} If field length is incorrect
  * @example

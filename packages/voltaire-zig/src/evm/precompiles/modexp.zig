@@ -6,8 +6,14 @@ const Hardfork = primitives.Hardfork;
 const PrecompileError = @import("common.zig").PrecompileError;
 const PrecompileResult = @import("common.zig").PrecompileResult;
 
-/// Minimum gas for MODEXP precompile
+/// Minimum MODEXP gas from Berlin through Prague (EIP-2565).
 pub const MIN_GAS: u64 = 200;
+
+/// Minimum MODEXP gas from Osaka (EIP-7883).
+pub const MIN_GAS_OSAKA: u64 = 500;
+
+/// Maximum declared byte length of each operand from Osaka (EIP-7823).
+pub const MAX_INPUT_LENGTH_OSAKA: u64 = 1024;
 
 fn readPaddedU256(input: []const u8, start: usize) u256 {
     var word: [32]u8 = [_]u8{0} ** 32;
@@ -38,6 +44,12 @@ fn isZero(bytes: []const u8) bool {
 }
 
 /// 0x05: MODEXP - Modular exponentiation
+/// Right-pads missing input bytes with zero and returns an owned modulus-sized
+/// output. The caller must deinit the result with the supplied allocator.
+/// Osaka enforces each declared operand length before any empty-output shortcut
+/// and applies EIP-7883 pricing; earlier forks retain EIP-198/EIP-2565 pricing.
+/// InvalidInput and OutOfGas are exceptional halts: the EVM consumes all gas
+/// forwarded to the precompile and reports call failure.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -49,7 +61,13 @@ pub fn execute(
     const exp_len = readPaddedU256(input, 32);
     const mod_len = readPaddedU256(input, 64);
 
-    if (base_len == 0 and mod_len == 0) {
+    if (hardfork.isAtLeast(.OSAKA) and (base_len > MAX_INPUT_LENGTH_OSAKA or
+        exp_len > MAX_INPUT_LENGTH_OSAKA or mod_len > MAX_INPUT_LENGTH_OSAKA))
+    {
+        return error.InvalidInput;
+    }
+
+    if (hardfork.isBefore(.OSAKA) and base_len == 0 and mod_len == 0) {
         const gas_cost: u64 = if (hardfork.isAtLeast(.BERLIN)) MIN_GAS else 0;
         if (gas_limit < gas_cost) return error.OutOfGas;
         const output = try allocator.alloc(u8, 0);
@@ -71,8 +89,8 @@ pub fn execute(
     const mod_len_usize = @as(usize, @intCast(mod_len));
     const data_start = 96;
     const base_start = data_start;
-    const exp_start = data_start + base_len_usize;
-    const mod_start = exp_start + exp_len_usize;
+    const exp_start = std.math.add(usize, data_start, base_len_usize) catch return error.OutOfGas;
+    const mod_start = std.math.add(usize, exp_start, exp_len_usize) catch return error.OutOfGas;
     const exp_head_len = @min(exp_len_usize, 32);
     var exp_head_buf: [32]u8 = [_]u8{0} ** 32;
     if (exp_start < input.len) {
@@ -152,6 +170,32 @@ pub fn execute(
     };
 }
 
+test "modexp - Osaka bounds precede empty output and minimum gas shortcuts" {
+    const allocator = std.testing.allocator;
+    for ([_]usize{ 0, 32, 64 }) |offset| {
+        var input = [_]u8{0} ** 96;
+        std.mem.writeInt(u256, input[offset..][0..32], 1025, .big);
+        try std.testing.expectError(error.InvalidInput, execute(allocator, &input, 1_000_000, .OSAKA));
+        const historical = try execute(allocator, &input, 1_000_000, .PRAGUE);
+        defer historical.deinit(allocator);
+        std.mem.writeInt(u256, input[offset..][0..32], 1024, .big);
+        const boundary = try execute(allocator, &input, 1_000_000, .OSAKA);
+        defer boundary.deinit(allocator);
+        try std.testing.expectEqual(if (offset == 64) @as(usize, 1024) else 0, boundary.output.len);
+    }
+    try std.testing.expectError(error.OutOfGas, execute(allocator, &.{}, 499, .OSAKA));
+    const empty = try execute(allocator, &.{}, 500, .OSAKA);
+    defer empty.deinit(allocator);
+    try std.testing.expectEqual(@as(u64, 500), empty.gas_used);
+    var exponent_only = [_]u8{0} ** 96;
+    std.mem.writeInt(u256, exponent_only[32..64], 1024, .big);
+    const result = try execute(allocator, &exponent_only, 253952, .OSAKA);
+    defer result.deinit(allocator);
+    try std.testing.expectEqual(@as(u64, 253952), result.gas_used);
+    try std.testing.expectEqual(@as(usize, 0), result.output.len);
+    try std.testing.expectError(error.OutOfGas, execute(allocator, &exponent_only, 253951, .OSAKA));
+}
+
 test "modexp - simple case" {
     const testing = std.testing;
     const allocator = testing.allocator;
@@ -173,20 +217,22 @@ test "modexp - simple case" {
     // mod = 5
     input[98] = 5;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
     try testing.expectEqual(@as(u8, 3), result.output[0]);
 }
 
-test "modexp - invalid input too short" {
+test "modexp - short zero input is right padded" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const input = [_]u8{0} ** 95;
-    const result = execute(allocator, &input, 1000000, .Cancun);
-    try testing.expectError(error.InvalidInput, result);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
+    defer result.deinit(allocator);
+    try testing.expectEqual(@as(usize, 0), result.output.len);
+    try testing.expectEqual(@as(u64, 200), result.gas_used);
 }
 
 test "modexp - minimum gas" {
@@ -194,7 +240,7 @@ test "modexp - minimum gas" {
     const allocator = testing.allocator;
 
     var input: [96]u8 = [_]u8{0} ** 96;
-    const result = try execute(allocator, &input, MIN_GAS, .Cancun);
+    const result = try execute(allocator, &input, MIN_GAS, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expect(result.gas_used >= MIN_GAS);
@@ -212,7 +258,7 @@ test "modexp - out of gas" {
     input[97] = 3;
     input[98] = 5;
 
-    const result = execute(allocator, &input, 0);
+    const result = execute(allocator, &input, 0, .CANCUN);
     try testing.expectError(error.OutOfGas, result);
 }
 
@@ -229,7 +275,7 @@ test "modexp - zero modulus" {
     // mod = 0
     input[98] = 0;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -269,7 +315,7 @@ test "modexp - geth eip_example1" {
     // mod = 5
     input[98] = 5;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -298,7 +344,7 @@ test "modexp - geth eip_example2 zero base" {
     // mod = 5
     input[98] = 5;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -324,14 +370,10 @@ test "modexp - geth nagydani-1-square small" {
     // exp = 2 (square)
     input[97] = 2;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
-    if (result) |res| {
-        defer res.deinit(allocator);
-        try testing.expect(res.output.len > 0);
-    } else |err| {
-        // Zero modulus should fail
-        try testing.expectEqual(error.InvalidInput, err);
-    }
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
+    defer result.deinit(allocator);
+    // The missing modulus byte is right-padded with zero (EIP-198).
+    try testing.expectEqualSlices(u8, &.{0}, result.output);
 }
 
 test "modexp - large exponent DoS resistance" {
@@ -343,12 +385,12 @@ test "modexp - large exponent DoS resistance" {
 
     // base_len = 1
     input[31] = 1;
-    // exp_len = 32 (large)
-    input[63] = 32;
+    // Even a zero-padded long exponent charges for bytes beyond its head.
+    std.mem.writeInt(u256, input[32..64], 1024, .big);
     // mod_len = 1
     input[95] = 1;
 
-    const result = execute(allocator, &input, 1000, .Cancun);
+    const result = execute(allocator, &input, 1000, .CANCUN);
     // Should fail due to insufficient gas
     try testing.expectError(error.OutOfGas, result);
 }
@@ -375,7 +417,7 @@ test "modexp - maximum modulus size" {
     // mod = 1...1 (256 bytes, set last byte to non-zero)
     input_data[671] = 255;
 
-    const result = try execute(allocator, &input_data, 1000000, .Cancun);
+    const result = try execute(allocator, &input_data, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 256), result.output.len);
@@ -403,7 +445,7 @@ test "modexp - zero exponent" {
     // mod = 7
     input[98] = 7;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -432,7 +474,7 @@ test "modexp - modulus equals 1" {
     // mod = 1
     input[98] = 1;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -451,7 +493,7 @@ test "modexp - zero exponent output is reduced modulo one" {
     input[97] = 0;
     input[98] = 1;
 
-    const result = try execute(allocator, &input, 1000000, .Berlin);
+    const result = try execute(allocator, &input, 1000000, .BERLIN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -480,7 +522,7 @@ test "modexp - base larger than modulus" {
     // mod = 7
     input[98] = 7;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -517,7 +559,7 @@ test "modexp - RSA 2048-bit simulation" {
     // Set modulus to non-zero value
     input_data[total_len - 1] = 255;
 
-    const result = try execute(allocator, input_data, 10000000, .Cancun);
+    const result = try execute(allocator, input_data, 10000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(mod_len, result.output.len);
@@ -532,20 +574,23 @@ test "modexp - gas cost increases with size" {
     var prev_gas: u64 = 0;
 
     for (sizes) |size| {
-        const total_len = 96 + size * 3;
+        // Keep every vector above the 200-gas floor, so strict growth in
+        // multiplication complexity is observable even for a one-byte base.
+        const exponent_len = 1024;
+        const total_len = 96 + size * 2 + exponent_len;
         var input_data = try allocator.alloc(u8, total_len);
         defer allocator.free(input_data);
         @memset(input_data, 0);
 
         // Set lengths
         input_data[31] = @intCast(size);
-        input_data[63] = @intCast(size);
+        std.mem.writeInt(u256, input_data[32..64], exponent_len, .big);
         input_data[95] = @intCast(size);
 
         // Set non-zero modulus
         input_data[total_len - 1] = 255;
 
-        const result = try execute(allocator, input_data, 10000000, .Cancun);
+        const result = try execute(allocator, input_data, 10000000, .CANCUN);
         defer result.deinit(allocator);
 
         if (prev_gas > 0) {
@@ -569,7 +614,7 @@ test "modexp - truncated input handling" {
 
     input[96] = 2;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     // Should handle gracefully with zero padding
@@ -598,12 +643,12 @@ test "modexp - exponent larger than modulus" {
     // mod = 13
     input[98] = 13;
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
-    // 2^100 mod 13 = 9 (verified mathematically)
-    try testing.expectEqual(@as(u8, 9), result.output[0]);
+    // 100 mod 12 = 4, so Fermat reduction gives 2^4 mod 13 = 3.
+    try testing.expectEqual(@as(u8, 3), result.output[0]);
 }
 
 test "modexp - berlin vs cancun hardfork gas" {
@@ -621,10 +666,10 @@ test "modexp - berlin vs cancun hardfork gas" {
     input[97] = 3;
     input[98] = 5;
 
-    const result_berlin = try execute(allocator, &input, 1000000, .Berlin);
+    const result_berlin = try execute(allocator, &input, 1000000, .BERLIN);
     defer result_berlin.deinit(allocator);
 
-    const result_cancun = try execute(allocator, &input, 1000000, .Cancun);
+    const result_cancun = try execute(allocator, &input, 1000000, .CANCUN);
     defer result_cancun.deinit(allocator);
 
     // Gas costs may differ between hardforks
@@ -646,7 +691,7 @@ test "modexp - all zero input" {
 
     // All data bytes are 0
 
-    const result = try execute(allocator, &input, 1000000, .Cancun);
+    const result = try execute(allocator, &input, 1000000, .CANCUN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 1), result.output.len);
@@ -660,7 +705,7 @@ test "modexp - right pads short length header" {
     var input: [64]u8 = [_]u8{0} ** 64;
     input[60] = 0x04;
 
-    const result = try execute(allocator, &input, 1000000, .Berlin);
+    const result = try execute(allocator, &input, 1000000, .BERLIN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 0), result.output.len);
@@ -680,7 +725,7 @@ test "modexp - right pads partially supplied modulus bytes" {
     input[97] = 0;
     input[98] = 0x80;
 
-    const result = try execute(allocator, &input, 1000000, .Berlin);
+    const result = try execute(allocator, &input, 1000000, .BERLIN);
     defer result.deinit(allocator);
 
     try testing.expectEqual(@as(usize, 32), result.output.len);

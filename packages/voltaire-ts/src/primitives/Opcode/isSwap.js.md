@@ -1,6 +1,6 @@
 ---
-title: "isSwap.js"
----
+
+## title: "isSwap.js"
 
 # isSwap.js
 
@@ -9,7 +9,7 @@ Check if opcode is SWAP instruction (SWAP1-SWAP16).
 ## Signature
 
 ```typescript
-function isSwap(opcode: BrandedOpcode): boolean
+function isSwap(opcode: BrandedOpcode): boolean;
 ```
 
 ## Parameters
@@ -23,10 +23,10 @@ function isSwap(opcode: BrandedOpcode): boolean
 ## Example
 
 ```typescript
-Opcode.isSwap(Opcode.SWAP1);   // true
-Opcode.isSwap(Opcode.SWAP16);  // true
-Opcode.isSwap(Opcode.DUP1);    // false
-Opcode.isSwap(Opcode.PUSH1);   // false
+Opcode.isSwap(Opcode.SWAP1); // true
+Opcode.isSwap(Opcode.SWAP16); // true
+Opcode.isSwap(Opcode.DUP1); // false
+Opcode.isSwap(Opcode.PUSH1); // false
 ```
 
 ## Notes

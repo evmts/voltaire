@@ -3,10 +3,14 @@ const crypto = @import("crypto");
 const PrecompileError = @import("common.zig").PrecompileError;
 const PrecompileResult = @import("common.zig").PrecompileResult;
 
-/// Gas cost for BLS12-381 G2 addition
-pub const GAS: u64 = 800;
+/// Gas cost for BLS12-381 G2 addition (EIP-2537)
+pub const GAS: u64 = 600;
 
-/// 0x0E: BLS12_G2ADD - BLS12-381 G2 addition
+/// 0x0D: BLS12_G2ADD - BLS12-381 G2 addition (EIP-2537)
+///
+/// Input: 512 bytes, two G2 points of 256 bytes each. Output: 256 bytes.
+/// A non-canonical coordinate or a point off the curve is an error. EIP-2537
+/// specifies no subgroup check for this operation.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -21,6 +25,8 @@ pub fn execute(
     }
 
     const output = try allocator.alloc(u8, 256);
+    errdefer allocator.free(output);
+    @memset(output, 0);
     crypto.Crypto.bls12_381.g2Add(input, output) catch {
         return error.InvalidPoint;
     };
@@ -93,4 +99,16 @@ test "bls12_g2_add - output length" {
             return err;
         }
     }
+}
+
+test "bls12_g2_add - official EIP-2537 vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_g2_add.txt"), 9);
+}
+
+test "bls12_g2_add - official EIP-2537 failure vectors" {
+    try @import("utils.zig").expectVectors(execute, @embedFile("vectors/eip2537_g2_add_fail.txt"), 7);
+}
+
+test "bls12_g2_add - gas is 600 (EIP-2537)" {
+    try std.testing.expectEqual(@as(u64, 600), GAS);
 }

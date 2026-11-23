@@ -1,6 +1,6 @@
 ---
-title: "swapPosition.js"
----
+
+## title: "swapPosition.js"
 
 # swapPosition.js
 
@@ -9,7 +9,7 @@ Get stack position for SWAP instruction.
 ## Signature
 
 ```typescript
-function swapPosition(opcode: BrandedOpcode): number | undefined
+function swapPosition(opcode: BrandedOpcode): number | undefined;
 ```
 
 ## Parameters
@@ -23,11 +23,11 @@ function swapPosition(opcode: BrandedOpcode): number | undefined
 ## Example
 
 ```typescript
-Opcode.swapPosition(Opcode.SWAP1);   // 1
-Opcode.swapPosition(Opcode.SWAP2);   // 2
-Opcode.swapPosition(Opcode.SWAP16);  // 16
-Opcode.swapPosition(Opcode.DUP1);    // undefined
-Opcode.swapPosition(Opcode.ADD);     // undefined
+Opcode.swapPosition(Opcode.SWAP1); // 1
+Opcode.swapPosition(Opcode.SWAP2); // 2
+Opcode.swapPosition(Opcode.SWAP16); // 16
+Opcode.swapPosition(Opcode.DUP1); // undefined
+Opcode.swapPosition(Opcode.ADD); // undefined
 ```
 
 ## Notes

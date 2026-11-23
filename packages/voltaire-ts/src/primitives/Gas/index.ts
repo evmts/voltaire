@@ -33,10 +33,8 @@ export function gasLimitToNumber(value: number | bigint | string): number {
 }
 
 // Export GasLimit internal functions (tree-shakeable)
-export { _gasLimitToBigInt, _gasLimitToNumber };
-
 // Export GasPrice constructors
-export { gasPriceFrom, gasPriceFromGwei };
+export { _gasLimitToBigInt, _gasLimitToNumber, gasPriceFrom, gasPriceFromGwei };
 
 // Export GasPrice public wrapper functions
 export function gasPriceToBigInt(value: number | bigint | string): bigint {

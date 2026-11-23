@@ -24,7 +24,7 @@ export effect function parseUnits(value: string, decimals: number): bigint!Inval
     if (/[1-9]/.test(overflow)) {
       throw new InvalidUnitError({
         input: value,
-        message: `Value "${value}" has more than ${decimals} fractional digits`
+        message: `Value "${value}" has more than ${decimals} fractional digits`,
       })
     }
   }
@@ -33,7 +33,7 @@ export effect function parseUnits(value: string, decimals: number): bigint!Inval
   const combined = `${whole}${fraction}`
   const parsed = try Effect.try({
     try: () => BigInt(combined),
-    catch: (cause) => new InvalidUnitError({ input: value, message: `Failed parsing units: "${value}"`, cause })
+    catch: (cause) => new InvalidUnitError({ input: value, message: `Failed parsing units: "${value}"`, cause }),
   })
   return negative ? -parsed : parsed
 }

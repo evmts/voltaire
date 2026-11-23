@@ -43,3 +43,23 @@ export const SIGNATURE_COMPONENT_SIZE = 32;
  * @type {number}
  */
 export const SHARED_SECRET_SIZE = 32;
+
+/**
+ * P256 field prime p = 2^256 - 2^224 + 2^192 + 2^96 - 1
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @type {bigint}
+ */
+export const FIELD_PRIME =
+	0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;
+
+/**
+ * P256 curve coefficient b in y^2 = x^3 - 3x + b (mod p)
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @type {bigint}
+ */
+export const CURVE_B =
+	0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604bn;

@@ -20,17 +20,17 @@ pub const GasLimit = struct {
     /// Convert GasLimit to u64
     /// Returns error if value exceeds u64 range
     pub fn to_u64(self: GasLimit) error{Overflow}!u64 {
-        return self.value.to_u64();
+        return self.value.to_u64() orelse error.Overflow;
     }
 
     /// Convert GasLimit to bytes (big-endian)
     pub fn to_bytes(self: GasLimit) [32]u8 {
-        return self.value.to_bytes();
+        return self.value.to_be_bytes_exact();
     }
 
     /// Create GasLimit from bytes (big-endian)
     pub fn from_bytes(bytes: [32]u8) GasLimit {
-        return .{ .value = Uint(256, 4).from_bytes(bytes) };
+        return .{ .value = Uint(256, 4).from_be_bytes(&bytes) };
     }
 };
 
@@ -55,24 +55,24 @@ pub const GasPrice = struct {
     /// Convert GasPrice to u64 (wei)
     /// Returns error if value exceeds u64 range
     pub fn to_u64(self: GasPrice) error{Overflow}!u64 {
-        return self.value.to_u64();
+        return self.value.to_u64() orelse error.Overflow;
     }
 
     /// Convert GasPrice to gwei
     /// Returns error if value exceeds u64 range after division
     pub fn to_gwei(self: GasPrice) error{Overflow}!u64 {
-        const gwei_value = self.value.div(Uint(256, 4).from_u64(GWEI)).quotient;
-        return gwei_value.to_u64();
+        const gwei_value = self.value.div_rem(Uint(256, 4).from_u64(GWEI)).quotient;
+        return gwei_value.to_u64() orelse error.Overflow;
     }
 
     /// Convert GasPrice to bytes (big-endian)
     pub fn to_bytes(self: GasPrice) [32]u8 {
-        return self.value.to_bytes();
+        return self.value.to_be_bytes_exact();
     }
 
     /// Create GasPrice from bytes (big-endian)
     pub fn from_bytes(bytes: [32]u8) GasPrice {
-        return .{ .value = Uint(256, 4).from_bytes(bytes) };
+        return .{ .value = Uint(256, 4).from_be_bytes(&bytes) };
     }
 };
 

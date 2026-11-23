@@ -249,9 +249,13 @@ func RIPEMD160(data []byte) [20]byte {
 	return hash
 }
 
-// Blake2b computes the Blake2b hash of data.
-func Blake2b(data []byte) [HashSize]byte {
-	var hash [HashSize]byte
+// Blake2bSize is the output size of primitives_blake2b (BLAKE2b-512).
+const Blake2bSize = 64
+
+// Blake2b computes the BLAKE2b-512 hash of data. primitives_blake2b always
+// writes 64 bytes, so the output buffer must be Blake2bSize, not HashSize.
+func Blake2b(data []byte) [Blake2bSize]byte {
+	var hash [Blake2bSize]byte
 	if len(data) == 0 {
 		C.primitives_blake2b(nil, 0, (*C.uint8_t)(unsafe.Pointer(&hash[0])))
 	} else {

@@ -4,7 +4,7 @@ import { modexp } from "./compute.js";
 import { modexpBytes } from "./modexpBytes.js";
 
 // Export individual functions
-export { modexp, modexpBytes, calculateGas };
+export { calculateGas, modexp, modexpBytes };
 
 /**
  * ModExp - Modular Exponentiation

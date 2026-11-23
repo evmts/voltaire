@@ -12,7 +12,7 @@ export declare function equals(chainId1: number, chainId2: number): boolean;
 export declare function isMainnet(chainId: number): boolean;
 export declare function isKnownChain(chainId: number): boolean;
 export declare function getChainName(chainId: number): string | undefined;
-export { _toNumber, _equals, _isMainnet, _isKnownChain, _getChainName };
+export { _equals, _getChainName, _isKnownChain, _isMainnet, _toNumber };
 export declare const ChainId: {
     from: typeof from;
     toNumber: typeof toNumber;

@@ -45,4 +45,4 @@ export const fromBytes: typeof Hex.fromBytes;
 export const toBytes: typeof Hex.toBytes;
 
 export * from "./errors.js";
-export type { HexType, Sized, Bytes } from "./HexType.js";
+export type { Bytes, HexType, Sized } from "./HexType.js";

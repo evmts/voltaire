@@ -1,8 +1,8 @@
 /**
  * Validate private key
  *
- * Checks that the private key is within valid range [1, n-1] where n
- * is the curve order.
+ * Checks in constant time that the private key is within valid range [1, n-1]
+ * where n is the curve order.
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0

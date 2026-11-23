@@ -27,6 +27,7 @@ The control flow handlers implementation is **generally well-structured** and co
 **Issue:** The GAS opcode (0x5a) is implemented in `handlers_context.zig` but logically belongs with control flow operations.
 
 **Evidence from Python Reference:**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/instructions/control_flow.py
 def gas_left(evm: Evm) -> None:
@@ -45,6 +46,7 @@ def gas_left(evm: Evm) -> None:
 ```
 
 **Current Implementation Location:**
+
 ```zig
 // File: src/instructions/handlers_context.zig:360
 pub fn gas(frame: *FrameType) FrameType.EvmError!void {
@@ -55,6 +57,7 @@ pub fn gas(frame: *FrameType) FrameType.EvmError!void {
 ```
 
 **Recommendation:**
+
 - Move the `gas()` function from `handlers_context.zig` to `handlers_control_flow.zig`
 - Update imports in `frame.zig` accordingly
 - This improves module cohesion and matches the Python reference architecture
@@ -76,6 +79,7 @@ The file contains no TODO comments, which is positive. However, some sections co
 **Issue:** Gas constants used don't match Python reference values.
 
 **Python Reference:**
+
 ```python
 # execution-specs/src/ethereum/forks/cancun/vm/gas.py
 GAS_BASE = Uint(2)      # Used for PC, GAS opcodes
@@ -86,6 +90,7 @@ GAS_ZERO = Uint(0)      # Used for RETURN (base cost, before memory expansion)
 ```
 
 **Current Implementation:**
+
 ```zig
 // Line 20: JUMP opcode
 try frame.consumeGas(GasConstants.GasMidStep);  // Should be 8
@@ -104,6 +109,7 @@ try frame.consumeGas(GasConstants.GasQuickStep);  // Should be 2
 Confirm that `GasConstants.GasMidStep = 8`, `GasConstants.GasSlowStep = 10`, `GasConstants.GasQuickStep = 2`, and `GasConstants.JumpdestGas = 1`. If these don't match, this is a **CRITICAL BUG**.
 
 **Action Required:**
+
 ```bash
 grep -E "(GasMidStep|GasSlowStep|GasQuickStep|JumpdestGas)" primitives/src/gas_constants.zig
 ```
@@ -115,6 +121,7 @@ grep -E "(GasMidStep|GasSlowStep|GasQuickStep|JumpdestGas)" primitives/src/gas_c
 **Issue:** The implementation charges gas BEFORE popping from stack, but Python reference pops first.
 
 **Python Reference (JUMP):**
+
 ```python
 def jump(evm: Evm) -> None:
     # STACK (operation 1)
@@ -132,6 +139,7 @@ def jump(evm: Evm) -> None:
 ```
 
 **Current Implementation (JUMP):**
+
 ```zig
 // Line 19-28: INCORRECT ORDER
 pub fn jump(frame: *FrameType) FrameType.EvmError!void {
@@ -147,6 +155,7 @@ pub fn jump(frame: *FrameType) FrameType.EvmError!void {
 ```
 
 **Correct Order Should Be:**
+
 ```zig
 pub fn jump(frame: *FrameType) FrameType.EvmError!void {
     // STACK
@@ -165,11 +174,13 @@ pub fn jump(frame: *FrameType) FrameType.EvmError!void {
 ```
 
 **Why This Matters:**
+
 - If stack underflow occurs, it should happen BEFORE gas is charged
 - This affects gas refunds in case of errors
 - This is a **spec compliance issue** that could cause test failures
 
 **Same Issue in JUMPI (lines 31-46):**
+
 ```zig
 // INCORRECT ORDER
 pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
@@ -189,6 +200,7 @@ pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
 **Issue:** When condition is false, PC is manually incremented, but this should be handled by the main execution loop.
 
 **Python Reference:**
+
 ```python
 def jumpi(evm: Evm) -> None:
     # STACK
@@ -211,6 +223,7 @@ def jumpi(evm: Evm) -> None:
 ```
 
 **Current Implementation:**
+
 ```zig
 // Lines 31-46: INCONSISTENT PC HANDLING
 pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
@@ -234,6 +247,7 @@ pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
 **Problem:** The else branch manually increments PC, but other opcodes rely on the caller to increment. This creates inconsistency.
 
 **Review Other Opcodes:**
+
 - `stop()`: Sets `stopped = true`, no PC change (line 14)
 - `jump()`: Sets `pc = dest_pc`, no increment (line 27)
 - `jumpdest()`: Increments `pc += 1` (line 51)
@@ -242,16 +256,19 @@ pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
 - `revert()`: Sets `reverted = true`, no PC change (line 124)
 
 **Pattern Analysis:**
+
 - Instructions that halt execution (STOP, RETURN, REVERT): Don't touch PC
 - Instructions that jump (JUMP): Set PC directly
 - Normal instructions (JUMPDEST, PC): Increment PC
 
 **For JUMPI:**
 The Python reference calculates the destination and then sets PC once. The Zig implementation should either:
+
 1. Always set PC (jump or no-jump) like Python
 2. OR only set PC on jump and let caller handle no-jump case
 
 **Recommendation:** Follow Python pattern - calculate destination first, set PC once:
+
 ```zig
 pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
     // STACK
@@ -279,6 +296,7 @@ pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
 **Issue:** Lines 62-94 (ret) and 97-126 (revert) contain ~80% identical code.
 
 **Duplicated Logic:**
+
 1. Pop offset and length from stack (lines 63-64 vs 102-103)
 2. Cast to u32 (lines 67-68 vs 106-107)
 3. Overflow check (lines 70-75 vs not present in revert ❌)
@@ -286,12 +304,14 @@ pub fn jumpi(frame: *FrameType) FrameType.EvmError!void {
 5. Output buffer allocation and copy (lines 84-89 vs 116-121)
 
 **Differences:**
+
 - `ret()` has overflow check for `off + len` (lines 70-75), `revert()` doesn't ❌
 - `ret()` charges `GAS_ZERO + mem_cost`, `revert()` charges only `mem_cost` (actually this is wrong - see next section)
 - `ret()` sets `stopped = true`, `revert()` sets `reverted = true`
 
 **Recommendation:**
 Create a helper function:
+
 ```zig
 /// Helper for RETURN and REVERT - reads memory range into output buffer
 fn prepareOutput(
@@ -327,6 +347,7 @@ fn prepareOutput(
 ```
 
 **Benefits:**
+
 - Reduces code duplication
 - Ensures consistent behavior (overflow check missing in revert!)
 - Easier to maintain and test
@@ -338,6 +359,7 @@ fn prepareOutput(
 **Issue:** The `ret()` function doesn't charge base gas before memory expansion.
 
 **Python Reference:**
+
 ```python
 def return_(evm: Evm) -> None:
     # STACK
@@ -353,6 +375,7 @@ def return_(evm: Evm) -> None:
 ```
 
 **Current Implementation:**
+
 ```zig
 // Lines 62-94: Missing base gas charge
 pub fn ret(frame: *FrameType) FrameType.EvmError!void {
@@ -375,6 +398,7 @@ pub fn ret(frame: *FrameType) FrameType.EvmError!void {
 While `GAS_ZERO = 0` means no base cost, the Python implementation explicitly adds it for clarity. However, the real issue is: **what if length == 0?**
 
 **When length == 0:**
+
 - Python: Charges `GAS_ZERO + 0 = 0` gas
 - Zig: Charges nothing (skips the `if (length > 0)` block)
 
@@ -382,6 +406,7 @@ While `GAS_ZERO = 0` means no base cost, the Python implementation explicitly ad
 
 **Recommendation:**
 Add explicit base gas charge outside the length check for clarity:
+
 ```zig
 pub fn ret(frame: *FrameType) FrameType.EvmError!void {
     const offset = try frame.popStack();
@@ -406,11 +431,13 @@ pub fn ret(frame: *FrameType) FrameType.EvmError!void {
 **Issue:** Some functions return errors directly, others use early returns.
 
 **Example 1 (line 25):**
+
 ```zig
 if (!frame.bytecode.isValidJumpDest(dest_pc)) return error.InvalidJump;
 ```
 
 **Example 2 (lines 72-75):**
+
 ```zig
 if (end_offset < off) {
     // Overflow occurred, return out of bounds error
@@ -420,6 +447,7 @@ if (end_offset < off) {
 
 **Recommendation:**
 Standardize on one style (prefer concise single-line returns without comments for obvious cases):
+
 ```zig
 if (!frame.bytecode.isValidJumpDest(dest_pc)) return error.InvalidJump;
 if (end_offset < off) return error.OutOfBounds;  // Overflow check
@@ -432,6 +460,7 @@ if (end_offset < off) return error.OutOfBounds;  // Overflow check
 **Issue:** `ret()` has overflow check for `off + len`, but `revert()` doesn't.
 
 **ret() implementation (lines 70-75):**
+
 ```zig
 // Check if off + len would overflow
 const end_offset = off +% len;
@@ -442,6 +471,7 @@ if (end_offset < off) {
 ```
 
 **revert() implementation (line 110):**
+
 ```zig
 // Charge memory expansion for the revert slice
 const end_bytes: u64 = @as(u64, off) + @as(u64, len);
@@ -449,11 +479,13 @@ const end_bytes: u64 = @as(u64, off) + @as(u64, len);
 ```
 
 **Analysis:**
+
 - `ret()` uses `+%` (wrapping add) on u32 values to detect overflow
 - `revert()` casts to u64 before adding, so overflow is impossible at u64 level
 - However, if `off` or `len` are close to u32 max, the u64 result could exceed memory bounds
 
 **Both approaches should be consistent:**
+
 ```zig
 // Option 1: Cast to u64 (current revert() style)
 const end_bytes: u64 = @as(u64, off) + @as(u64, len);
@@ -473,6 +505,7 @@ const end_bytes: u64 = @as(u64, off) + @as(u64, len);
 **Issue:** Line 78 and 110 compute `end_bytes` without checking maximum memory bounds.
 
 **Current Implementation:**
+
 ```zig
 const end_bytes = @as(u64, off) + @as(u64, len);
 ```
@@ -482,6 +515,7 @@ The EVM has practical memory limits (16MB as mentioned in frame.zig:221). Should
 
 **Analysis:**
 Looking at `frame.zig:211-243`, the `memoryExpansionCost()` function already handles excessive memory:
+
 ```zig
 const max_memory: u64 = 0x1000000;  // 16MB
 if (end_bytes > max_memory) return std.math.maxInt(u64);
@@ -498,22 +532,26 @@ if (end_bytes > max_memory) return std.math.maxInt(u64);
 **Inconsistent Usage:**
 
 **Safe (lines 87, 119):**
+
 ```zig
 const addr = try add_u32(off, idx);
 ```
 
 **Potentially Unsafe (line 71):**
+
 ```zig
 const end_offset = off +% len;  // Uses wrapping add, then checks
 ```
 
 **Analysis:**
+
 - Line 71 uses `+%` (wrapping addition) intentionally to detect overflow
 - Lines 87 and 119 use `add_u32` to safely add index to base offset
 - The usage is actually correct, but inconsistent in style
 
 **Recommendation:**
 Document the pattern more clearly:
+
 ```zig
 // For overflow detection: use +% and check if result < operand
 const end_offset = off +% len;
@@ -532,6 +570,7 @@ const addr = try add_u32(off, idx);
 **Status:** ❌ NO UNIT TESTS FOUND
 
 **Evidence:**
+
 ```bash
 $ find /Users/williamcory/guillotine-mini/test -name "*control_flow*"
 # No results
@@ -603,11 +642,13 @@ test "REVERT only available from Byzantium+" {
 **Status:** ⚠️ PARTIAL COVERAGE
 
 **Evidence:** Spec tests exist but are scattered across multiple test suites:
+
 - `test/specs/generated/*/tstore_reentrancy/` (tests JUMP/JUMPI in context)
 - `test/specs/generated/*/create_returndata/` (tests RETURN)
 - General state tests likely cover control flow opcodes
 
 **Gap Analysis:**
+
 - ✅ JUMP/JUMPI tested via reentrancy tests
 - ✅ RETURN tested via create tests
 - ❓ REVERT coverage unknown (grep found references but need verification)
@@ -616,6 +657,7 @@ test "REVERT only available from Byzantium+" {
 - ❌ STOP likely undertested (no dedicated tests found)
 
 **Recommendation:**
+
 ```bash
 # Run targeted spec tests
 TEST_FILTER="jump" zig build specs
@@ -661,6 +703,7 @@ Then analyze results and add missing coverage.
 
 **Recommendation:**
 Add fuzzing tests for control flow operations:
+
 ```zig
 test "fuzz JUMP destinations" {
     var prng = std.rand.DefaultPrng.init(12345);
@@ -681,6 +724,7 @@ test "fuzz JUMP destinations" {
 **Issue:** Only `revert()` has a hardfork check, but it's done AFTER popping from stack.
 
 **Current Implementation (lines 98-103):**
+
 ```zig
 pub fn revert(frame: *FrameType) FrameType.EvmError!void {
     // EIP-140: REVERT was introduced in Byzantium hardfork
@@ -694,6 +738,7 @@ pub fn revert(frame: *FrameType) FrameType.EvmError!void {
 ```
 
 **Python Reference:**
+
 ```python
 def revert(evm: Evm) -> None:
     """Stop execution and revert..."""
@@ -709,17 +754,20 @@ The hardfork check is actually done at a higher level in Python (during opcode d
 **Question:** Should the hardfork check happen BEFORE or AFTER stack operations?
 
 **Answer from Yellow Paper:** Checks should happen in order:
+
 1. Stack size validation (before popping)
 2. Gas validation
 3. Opcode validity (hardfork check)
 4. Operation execution
 
 **Current Order in revert():**
+
 1. Hardfork check ✓
 2. Stack pop
 3. Gas charge
 
 **Correct Order Should Be:**
+
 1. Stack size validation (implicit via `try frame.popStack()`)
 2. Hardfork check (before consuming gas)
 3. Stack pop
@@ -728,6 +776,7 @@ The hardfork check is actually done at a higher level in Python (during opcode d
 **However**, if hardfork check is done before stack operations, we waste a check. The Python reference does stack ops first because hardfork checking happens earlier (during opcode lookup).
 
 **Recommendation:** Current placement is acceptable, but add a comment explaining why:
+
 ```zig
 pub fn revert(frame: *FrameType) FrameType.EvmError!void {
     // EIP-140: REVERT was introduced in Byzantium hardfork
@@ -749,6 +798,7 @@ pub fn revert(frame: *FrameType) FrameType.EvmError!void {
 **Issue:** Helper functions (lines 130-144) lack doc comments.
 
 **Current Implementation:**
+
 ```zig
 // Helper functions (inline for performance)
 
@@ -773,6 +823,7 @@ inline fn add_u32(a: u32, b: u32) FrameType.EvmError!u32 {
 
 **Recommendation:**
 Add examples and edge case documentation:
+
 ```zig
 /// Word count calculation for memory sizing
 /// Calculates the number of 32-byte words needed to store `bytes` bytes.
@@ -816,6 +867,7 @@ inline fn add_u32(a: u32, b: u32) FrameType.EvmError!u32 {
 
 **Recommendation:**
 Create benchmarks in `test/bench/control_flow_bench.zig`:
+
 ```zig
 test "benchmark JUMP performance" {
     // Measure average time for 10000 jumps
@@ -833,6 +885,7 @@ test "benchmark memory copy in RETURN" {
 **Issue:** Helper functions `wordCount`, `wordAlignedSize`, and `add_u32` are duplicated in multiple handler files.
 
 **Evidence:**
+
 ```bash
 $ grep -r "wordCount" src/instructions/
 src/instructions/handlers_control_flow.zig:131:inline fn wordCount(bytes: u64) u64 {
@@ -842,6 +895,7 @@ src/instructions/handlers_memory.zig:??? (likely present)
 
 **Recommendation:**
 Create a shared utilities module:
+
 ```zig
 // src/instructions/utils.zig
 pub inline fn wordCount(bytes: u64) u64 {
@@ -859,6 +913,7 @@ pub inline fn add_u32(a: u32, b: u32) error{OutOfBounds}!u32 {
 ```
 
 Then import in each handler:
+
 ```zig
 const utils = @import("utils.zig");
 const wordCount = utils.wordCount;
@@ -873,6 +928,7 @@ const add_u32 = utils.add_u32;
 **Issue:** Some functions could take `const` pointers but don't.
 
 **Example (line 56):**
+
 ```zig
 pub fn pc(frame: *FrameType) FrameType.EvmError!void {
     try frame.consumeGas(GasConstants.GasQuickStep);
@@ -892,9 +948,11 @@ pub fn pc(frame: *FrameType) FrameType.EvmError!void {
 **Issue:** The codebase has a documented anti-pattern of using `catch {}` to suppress errors.
 
 **From CLAUDE.md:**
+
 > ❌ **CRITICAL: Silently ignore errors with `catch {}`** - ALL errors MUST be handled and/or propagated properly. Never use `catch {}` to suppress errors.
 
 **Current File Check:**
+
 ```bash
 $ grep "catch {}" /Users/williamcory/guillotine-mini/src/instructions/handlers_control_flow.zig
 # No matches - GOOD! ✅
@@ -911,12 +969,14 @@ $ grep "catch {}" /Users/williamcory/guillotine-mini/src/instructions/handlers_c
 **Issue:** File has minimal module documentation.
 
 **Current (line 1):**
+
 ```zig
 /// Control flow opcode handlers for the EVM
 ```
 
 **Recommendation:**
 Add comprehensive module documentation:
+
 ```zig
 /// Control flow opcode handlers for the EVM
 ///
@@ -951,6 +1011,7 @@ Add comprehensive module documentation:
 
 **Recommendation:**
 Add examples to public functions:
+
 ```zig
 /// JUMP opcode (0x56) - Unconditional jump
 ///
@@ -983,6 +1044,7 @@ pub fn jump(frame: *FrameType) FrameType.EvmError!void {
 
 **Recommendation:**
 Add cross-references:
+
 ```zig
 /// REVERT opcode (0xfd) - Halt execution and revert state changes
 ///
@@ -1064,12 +1126,14 @@ pub fn revert(frame: *FrameType) FrameType.EvmError!void {
 The control flow handlers are **functionally sound** but need **critical bug fixes** before being production-ready:
 
 **Strengths:**
+
 - ✅ Clean, readable code structure
 - ✅ Proper error handling (no silent suppression)
 - ✅ Hardfork awareness (REVERT check)
 - ✅ Memory safety (overflow checks, bounds checking)
 
 **Weaknesses:**
+
 - ❌ Incorrect operation ordering vs spec
 - ❌ Potential gas cost mismatches
 - ❌ Code duplication
@@ -1077,6 +1141,7 @@ The control flow handlers are **functionally sound** but need **critical bug fix
 - ❌ Incomplete documentation
 
 **Risk Assessment:**
+
 - **High Risk:** Operation ordering bugs could cause spec test failures
 - **Medium Risk:** Gas cost mismatches could cause incorrect gas accounting
 - **Low Risk:** Code duplication makes maintenance harder but doesn't affect correctness

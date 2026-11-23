@@ -6,7 +6,7 @@ import { fromWei } from "./ether-fromWei.js";
 import { toGwei } from "./ether-toGwei.js";
 import { toU256 } from "./ether-toU256.js";
 import { toWei } from "./ether-toWei.js";
-export { from, fromWei, fromGwei, toWei, toGwei, toU256 };
+export { from, fromGwei, fromWei, toGwei, toU256, toWei };
 export declare const Ether: {
     from: typeof from;
     fromWei: typeof fromWei;

@@ -4,7 +4,7 @@ import * as Event from "./event/index.js";
 
 /**
  * Count indexed parameters in an event
- * @param {import('./event/index.js').Event} event
+ * @param {import('./event/index.js').EventType} event
  * @returns {number}
  */
 function countIndexedParams(event) {
@@ -28,12 +28,12 @@ function selectorMatches(topic0, eventSelector) {
 /**
  * @param {import('./AbiType.js').Item[]} abiItems
  * @param {Uint8Array} topic0
- * @returns {import('./event/index.js').Event | null}
+ * @returns {import('./event/index.js').EventType | null}
  */
 function findNonAnonymousEvent(abiItems, topic0) {
 	for (const item of abiItems) {
 		if (item.type !== "event") continue;
-		const evt = /** @type {import('./event/index.js').Event} */ (item);
+		const evt = /** @type {import('./event/index.js').EventType} */ (item);
 		if (evt.anonymous) continue;
 		const eventSelector = Event.getSelector(evt);
 		if (selectorMatches(topic0, eventSelector)) {
@@ -46,13 +46,13 @@ function findNonAnonymousEvent(abiItems, topic0) {
 /**
  * @param {import('./AbiType.js').Item[]} abiItems
  * @param {number} indexedCount
- * @returns {import('./event/index.js').Event | null}
+ * @returns {import('./event/index.js').EventType | null}
  */
 function findAnonymousEvent(abiItems, indexedCount) {
 	const matches = [];
 	for (const item of abiItems) {
 		if (item.type !== "event") continue;
-		const evt = /** @type {import('./event/index.js').Event} */ (item);
+		const evt = /** @type {import('./event/index.js').EventType} */ (item);
 		if (!evt.anonymous) continue;
 		if (countIndexedParams(evt) !== indexedCount) continue;
 		matches.push(evt);
@@ -84,7 +84,7 @@ function findAnonymousEvent(abiItems, indexedCount) {
  * Looks up event by topic0 (event signature hash) for non-anonymous events,
  * or by indexed parameter count for anonymous events.
  *
- * @param {import('./Abi.js').Abi} abi - Full ABI array
+ * @param {import('./AbiType.js').AbiType} abi - Full ABI array
  * @param {Object} log - Log object with data and topics
  * @param {import("../Hex/index.js").HexType | Uint8Array} log.data - Log data bytes
  * @param {readonly (import("../Hex/index.js").HexType | Uint8Array)[]} log.topics - Log topics (topic0 is event selector for non-anonymous)

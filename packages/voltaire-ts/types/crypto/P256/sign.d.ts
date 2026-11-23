@@ -10,6 +10,8 @@
 /**
  * Sign a message hash with a private key
  *
+ * Signs `messageHash` as-is (no second SHA-256). The result verifies under
+ * EIP-7951 P256VERIFY, WebAuthn, and the Zig implementation.
  * Uses deterministic ECDSA (RFC 6979) for signature generation by default.
  * Set `extraEntropy: false` to explicitly ensure deterministic signatures
  * matching ox/viem behavior.
@@ -20,7 +22,7 @@
  * @param {import('./P256PrivateKeyType.js').P256PrivateKeyType} privateKey - 32-byte private key
  * @param {P256SignOptions} [options] - Signing options
  * @returns {import('./P256SignatureType.js').P256SignatureType} ECDSA signature with r, s components
- * @throws {InvalidPrivateKeyError} If private key is invalid
+ * @throws {InvalidPrivateKeyError} If private key is not 32 bytes or not in [1, n-1]
  * @throws {P256Error} If signing fails
  * @example
  * ```javascript

@@ -165,8 +165,9 @@ describe("Authorization.process - delegation address", () => {
 			nonce: 0n,
 		};
 		const auth = sign(unsigned, privateKey);
-		// Should throw during validation
-		expect(() => process(auth)).toThrow("Address cannot be zero address");
+		// EIP-7702: the zero address clears the authority's delegation.
+		const result = process(auth);
+		expect(addressToHex(result.delegatedAddress)).toBe(addressToHex(zeroAddr));
 	});
 
 	it("handles max delegated address (0xff...ff)", () => {

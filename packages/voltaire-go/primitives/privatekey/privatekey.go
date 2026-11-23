@@ -10,7 +10,7 @@ import (
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
-	"github.com/voltaire-labs/voltaire-go/internal/ffi"
+	"github.com/evmts/voltaire/packages/voltaire-go/internal/ffi"
 )
 
 // Size is the size of a private key in bytes.

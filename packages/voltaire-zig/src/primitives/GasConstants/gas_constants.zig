@@ -5,6 +5,7 @@
 /// preventing denial-of-service attacks and fairly pricing computational resources.
 const std = @import("std");
 const @"u256" = @import("../Uint/Uint.zig").Uint(256);
+const Hardfork = @import("../Hardfork/hardfork.zig").Hardfork;
 ///
 /// ## Gas Cost Categories
 ///
@@ -220,6 +221,100 @@ pub const CallBaseCost: u64 = 40;
 /// Minimum cost for any transaction regardless of data or computation
 pub const TxGas: u64 = 21000;
 
+/// EIP-7825 maximum declared transaction gas limit from Osaka (not a block limit).
+pub const TxGasLimitOsaka: u64 = 16_777_216;
+
+// ============================================================================
+// Amsterdam (Glamsterdam) State Gas Repricing: EIP-8037 and EIP-8038
+// ============================================================================
+//
+// Amsterdam splits gas into two dimensions. State gas pays for bytes added to
+// the state trie, priced at `AmsterdamCostPerStateByte` per byte (EIP-8037).
+// Regular gas pays for execution and state access, repriced by EIP-8038.
+//
+// Both EIPs were in Last Call when these values were recorded (2026-11).
+// EIP-8037 marks COLD_ACCOUNT_ACCESS, ACCOUNT_WRITE, and CREATE_ACCESS as not
+// yet final. Pre-Amsterdam constants are unchanged; select the Amsterdam
+// values by hardfork at the call site.
+
+/// EIP-8037 `CPSB`: state gas per byte of new state.
+/// Targets 120 GiB of state growth per year at a 150M gas limit and 50% usage.
+pub const AmsterdamCostPerStateByte: u64 = 1530;
+
+/// EIP-8037 `STATE_BYTES_PER_STORAGE_SET`: 32-byte key + 32-byte value.
+pub const AmsterdamStateBytesPerStorageSet: u64 = 64;
+
+/// EIP-8037 `STATE_BYTES_PER_NEW_ACCOUNT`:
+/// 32 key + 8 nonce + 16 balance + 32 code hash + 32 storage root.
+pub const AmsterdamStateBytesPerNewAccount: u64 = 120;
+
+/// EIP-8037 `STATE_BYTES_PER_AUTH_BASE`: 3-byte `0xef0100` prefix + 20-byte address.
+pub const AmsterdamStateBytesPerAuthBase: u64 = 23;
+
+/// EIP-8037 state gas for a new storage slot (97920), replacing the 20000 gas
+/// `GAS_STORAGE_SET`.
+pub const AmsterdamStateGasStorageSet: u64 = AmsterdamStateBytesPerStorageSet * AmsterdamCostPerStateByte;
+
+/// EIP-8037 state gas for a new account (183600), replacing the 25000 gas
+/// `GAS_NEW_ACCOUNT` and `PER_EMPTY_ACCOUNT_COST` and the state share of the
+/// 32000 gas `GAS_CREATE`.
+pub const AmsterdamStateGasNewAccount: u64 = AmsterdamStateBytesPerNewAccount * AmsterdamCostPerStateByte;
+
+/// EIP-8037 state gas per byte of deployed code, replacing the 200 gas per
+/// byte `GAS_CODE_DEPOSIT`. Code deposit also pays `Keccak256WordGas` regular
+/// gas per 32-byte word.
+pub const AmsterdamStateGasCodeDepositByte: u64 = AmsterdamCostPerStateByte;
+
+/// EIP-8037 state gas per EIP-7702 authorization (35190), replacing the state
+/// share of the 12500 gas `PER_AUTH_BASE_COST`.
+pub const AmsterdamStateGasAuthBase: u64 = AmsterdamStateBytesPerAuthBase * AmsterdamCostPerStateByte;
+
+/// EIP-8037 `SYSTEM_MAX_SSTORES_PER_CALL`: new slots a system call may set.
+pub const AmsterdamSystemMaxSstoresPerCall: u64 = 16;
+
+/// EIP-8037 `SYSTEM_CALL_GAS_LIMIT` (31566720).
+pub const AmsterdamSystemCallGasLimit: u64 = 30_000_000 + AmsterdamStateGasStorageSet * AmsterdamSystemMaxSstoresPerCall;
+
+/// EIP-8037 `TX_MAX_TOTAL_GAS_LIMIT`: maximum total (regular + state) gas a
+/// transaction may declare, 2^32 - 1.
+pub const AmsterdamTxMaxTotalGasLimit: u64 = 4_294_967_295;
+
+/// EIP-8038 `COLD_ACCOUNT_ACCESS`: cold account access (was 2600).
+pub const AmsterdamColdAccountAccess: u64 = 3000;
+
+/// EIP-8038 `COLD_STORAGE_ACCESS`: cold storage slot access (unchanged).
+pub const AmsterdamColdStorageAccess: u64 = 2100;
+
+/// EIP-8038 `WARM_ACCESS`: warm account or slot access (unchanged).
+pub const AmsterdamWarmAccess: u64 = 100;
+
+/// EIP-8038 `ACCOUNT_WRITE`: writing an account (was 6700).
+pub const AmsterdamAccountWrite: u64 = 9000;
+
+/// EIP-8038 `STORAGE_WRITE`: moving a slot away from its transaction-start
+/// value (was 2800).
+pub const AmsterdamStorageWrite: u64 = 10000;
+
+/// EIP-8038 `CREATE_ACCESS`: regular gas for CREATE and CREATE2 (12000, was 7000).
+pub const AmsterdamCreateAccess: u64 = AmsterdamAccountWrite + AmsterdamColdAccountAccess;
+
+/// EIP-8038 `CALL_VALUE`: `ACCOUNT_WRITE + CALL_STIPEND` (11300, was 9000).
+pub const AmsterdamCallValue: u64 = AmsterdamAccountWrite + CallStipend;
+
+/// EIP-8038 `STORAGE_CLEAR_REFUND` (11616, was 4800).
+pub const AmsterdamStorageClearRefund: u64 = (AmsterdamStorageWrite + AmsterdamColdStorageAccess) * 4800 / 5000;
+
+/// EIP-8038 `ACCESS_LIST_ADDRESS_COST` (2900, was 2400).
+pub const AmsterdamAccessListAddress: u64 = AmsterdamColdAccountAccess - AmsterdamWarmAccess;
+
+/// EIP-8038 `ACCESS_LIST_STORAGE_KEY_COST` (2000, was 1900).
+pub const AmsterdamAccessListStorageKey: u64 = AmsterdamColdStorageAccess - AmsterdamWarmAccess;
+
+/// EIP-8037 `EXECUTION_PER_AUTH_BASE_COST` (7816): regular gas per EIP-7702
+/// authorization. Calldata (101 bytes * 16), ECRECOVER (3000),
+/// `COLD_ACCOUNT_ACCESS`, and two `WARM_ACCESS`.
+pub const AmsterdamExecutionPerAuthBase: u64 = 101 * 16 + 3000 + AmsterdamColdAccountAccess + 2 * AmsterdamWarmAccess;
+
 /// Base gas cost for contract creation transaction
 /// Higher than standard tx due to contract deployment overhead
 pub const TxGasContractCreation: u64 = 53000;
@@ -404,11 +499,18 @@ pub fn memoryGasCost(current_size: u64, new_size: u64) u64 {
     const current_words = wordCount(current_size);
     const new_words = wordCount(new_size);
 
-    // Calculate cost for each size
-    const current_cost = MemoryGas * current_words + (current_words * current_words) / QuadCoeffDiv;
-    const new_cost = MemoryGas * new_words + (new_words * new_words) / QuadCoeffDiv;
+    // `words * words` overflows u64 from 2^32 words (128 GiB). Compute in u128
+    // and saturate: such an expansion costs more gas than any block holds.
+    const current_cost = memoryWordsCost(current_words);
+    const new_cost = memoryWordsCost(new_words);
 
-    return new_cost - current_cost;
+    return std.math.cast(u64, new_cost - current_cost) orelse std.math.maxInt(u64);
+}
+
+/// Total memory cost for `words` 32-byte words: `3 * words + words² / 512`.
+fn memoryWordsCost(words: u64) u128 {
+    const w: u128 = words;
+    return MemoryGas * w + (w * w) / QuadCoeffDiv;
 }
 
 /// Calculate the number of 32-byte words required for a given byte size
@@ -728,6 +830,23 @@ test "keccak256GasCost function" {
     // Test 33 bytes (2 words due to rounding up)
     const partial_word_hash = keccak256GasCost(33);
     try testing.expectEqual(Keccak256Gas + 2 * Keccak256WordGas, partial_word_hash);
+}
+
+test "memoryGasCost saturates instead of overflowing u64" {
+    // 2^40 bytes = 2^35 words. words² = 2^70 overflows u64; the true cost is
+    // 3 * 2^35 + 2^70 / 512 = 2^61 + 3 * 2^35, which still fits.
+    const words: u64 = 1 << 35;
+    try testing.expectEqual((@as(u64, 1) << 61) + 3 * words, memoryGasCost(0, 1 << 40));
+
+    // 2^44 bytes = 2^39 words: cost 2^69 + 3 * 2^39 exceeds u64 and saturates.
+    try testing.expectEqual(@as(u64, std.math.maxInt(u64)), memoryGasCost(0, 1 << 44));
+    try testing.expectEqual(@as(u64, std.math.maxInt(u64)), memoryGasCost(0, std.math.maxInt(u64)));
+
+    // Expanding between two huge sizes charges only the difference.
+    try testing.expectEqual(
+        memoryGasCost(0, 1 << 40) - memoryGasCost(0, 1 << 39),
+        memoryGasCost(1 << 39, 1 << 40),
+    );
 }
 
 test "memoryGasCost edge cases" {
@@ -1298,19 +1417,42 @@ test "hardfork - EIP-4844 Cancun blob transactions" {
 // Hardfork Gas Calculation Functions
 // ============================================================================
 
+/// SLOAD gas cost by hardfork.
+///
+/// - Frontier, Homestead: 50
+/// - Tangerine Whistle (EIP-150) through Petersburg: 200
+/// - Istanbul (EIP-1884), Muir Glacier: 800
+/// - Berlin (EIP-2929) onwards: 2100 cold, 100 warm
+///
+/// `is_cold` only matters from Berlin; earlier forks have no access sets.
+pub fn sloadGasCostWithHardfork(is_cold: bool, hardfork: Hardfork) u64 {
+    if (hardfork.isAtLeast(.BERLIN)) return if (is_cold) ColdSloadCost else WarmStorageReadCost;
+    if (hardfork.isAtLeast(.ISTANBUL)) return 800;
+    if (hardfork.isAtLeast(.TANGERINE_WHISTLE)) return 200;
+    return 50;
+}
+
 /// Calculate CALL gas cost based on hardfork rules
+///
+/// Account access portion:
+/// - Frontier, Homestead: 40
+/// - Tangerine Whistle (EIP-150) through Muir Glacier: 700
+/// - Berlin (EIP-2929) onwards: 2600 cold, 100 warm
+///
+/// The value transfer (9000) and new account (25000) surcharges apply on
+/// every hardfork. `cold_access` only matters from Berlin.
 pub fn callGasCostWithHardfork(
     value_transfer: bool,
     new_account: bool,
     cold_access: bool,
-    is_berlin_or_later: bool,
+    hardfork: Hardfork,
 ) u64 {
-    var gas = CALL_BASE_COST;
-
-    // EIP-2929 (Berlin): Cold access costs
-    if (is_berlin_or_later and cold_access) {
-        gas += CALL_COLD_ACCOUNT_COST;
-    }
+    var gas: u64 = if (hardfork.isAtLeast(.BERLIN))
+        (if (cold_access) ColdAccountAccessCost else WarmStorageReadCost)
+    else if (hardfork.isAtLeast(.TANGERINE_WHISTLE))
+        700
+    else
+        CallGas;
 
     // Value transfer cost (all hardforks)
     if (value_transfer) {
@@ -1391,13 +1533,42 @@ pub fn ecpairingGasCostWithHardfork(pair_count: usize, is_istanbul_or_later: boo
 test "hardfork gas calculation functions" {
     // Test CALL gas with hardfork differences
 
-    // Pre-Berlin: no cold access penalty
-    const pre_berlin_call = callGasCostWithHardfork(true, false, true, false);
-    try testing.expectEqual(@as(u64, 9100), pre_berlin_call); // 100 + 9000
+    // Frontier, Homestead: flat 40
+    for ([_]Hardfork{ .FRONTIER, .HOMESTEAD }) |fork| {
+        try testing.expectEqual(@as(u64, 40), callGasCostWithHardfork(false, false, true, fork));
+        try testing.expectEqual(@as(u64, 9040), callGasCostWithHardfork(true, false, true, fork)); // 40 + 9000
+    }
 
-    // Post-Berlin: cold access penalty
-    const post_berlin_call = callGasCostWithHardfork(true, false, true, true);
-    try testing.expectEqual(@as(u64, 11700), post_berlin_call); // 100 + 2600 + 9000
+    // Tangerine Whistle..Muir Glacier: flat 700 (EIP-150), no cold/warm split
+    for ([_]Hardfork{ .TANGERINE_WHISTLE, .SPURIOUS_DRAGON, .BYZANTIUM, .CONSTANTINOPLE, .PETERSBURG, .ISTANBUL, .MUIR_GLACIER }) |fork| {
+        try testing.expectEqual(@as(u64, 700), callGasCostWithHardfork(false, false, true, fork));
+        try testing.expectEqual(@as(u64, 700), callGasCostWithHardfork(false, false, false, fork));
+        try testing.expectEqual(@as(u64, 9700), callGasCostWithHardfork(true, false, true, fork)); // 700 + 9000
+    }
+
+    // Berlin onwards: 2600 cold, 100 warm (EIP-2929)
+    for ([_]Hardfork{ .BERLIN, .LONDON, .CANCUN }) |fork| {
+        try testing.expectEqual(@as(u64, 2600), callGasCostWithHardfork(false, false, true, fork));
+        try testing.expectEqual(@as(u64, 100), callGasCostWithHardfork(false, false, false, fork));
+        try testing.expectEqual(@as(u64, 11600), callGasCostWithHardfork(true, false, true, fork)); // 2600 + 9000
+        try testing.expectEqual(@as(u64, 34100), callGasCostWithHardfork(true, true, false, fork)); // 100 + 9000 + 25000
+    }
+
+    // SLOAD by hardfork
+    for ([_]Hardfork{ .FRONTIER, .HOMESTEAD }) |fork| {
+        try testing.expectEqual(@as(u64, 50), sloadGasCostWithHardfork(true, fork));
+    }
+    for ([_]Hardfork{ .TANGERINE_WHISTLE, .SPURIOUS_DRAGON, .BYZANTIUM, .CONSTANTINOPLE, .PETERSBURG }) |fork| {
+        try testing.expectEqual(@as(u64, 200), sloadGasCostWithHardfork(true, fork));
+    }
+    for ([_]Hardfork{ .ISTANBUL, .MUIR_GLACIER }) |fork| {
+        try testing.expectEqual(@as(u64, 800), sloadGasCostWithHardfork(true, fork));
+        try testing.expectEqual(@as(u64, 800), sloadGasCostWithHardfork(false, fork));
+    }
+    for ([_]Hardfork{ .BERLIN, .LONDON, .PRAGUE }) |fork| {
+        try testing.expectEqual(@as(u64, 2100), sloadGasCostWithHardfork(true, fork));
+        try testing.expectEqual(@as(u64, 100), sloadGasCostWithHardfork(false, fork));
+    }
 
     // Test storage gas with hardfork differences
 
@@ -1846,4 +2017,34 @@ test "parity - precompile costs match TS" {
     try testing.expectEqual(@as(u64, 40000), ECMUL_GAS_COST_BYZANTIUM);
     try testing.expectEqual(@as(u64, 100000), ECPAIRING_BASE_GAS_COST_BYZANTIUM);
     try testing.expectEqual(@as(u64, 80000), ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM);
+}
+
+test "Amsterdam EIP-8037 state gas constants" {
+    try testing.expectEqual(@as(u64, 1530), AmsterdamCostPerStateByte);
+    try testing.expectEqual(@as(u64, 64), AmsterdamStateBytesPerStorageSet);
+    try testing.expectEqual(@as(u64, 120), AmsterdamStateBytesPerNewAccount);
+    try testing.expectEqual(@as(u64, 23), AmsterdamStateBytesPerAuthBase);
+    try testing.expectEqual(@as(u64, 97_920), AmsterdamStateGasStorageSet);
+    try testing.expectEqual(@as(u64, 183_600), AmsterdamStateGasNewAccount);
+    try testing.expectEqual(@as(u64, 1530), AmsterdamStateGasCodeDepositByte);
+    try testing.expectEqual(@as(u64, 35_190), AmsterdamStateGasAuthBase);
+    try testing.expectEqual(@as(u64, 16), AmsterdamSystemMaxSstoresPerCall);
+    try testing.expectEqual(@as(u64, 31_566_720), AmsterdamSystemCallGasLimit);
+    try testing.expectEqual(@as(u64, std.math.maxInt(u32)), AmsterdamTxMaxTotalGasLimit);
+    try testing.expectEqual(@as(u64, 7816), AmsterdamExecutionPerAuthBase);
+}
+
+test "Amsterdam EIP-8038 state access gas constants" {
+    try testing.expectEqual(@as(u64, 3000), AmsterdamColdAccountAccess);
+    try testing.expectEqual(@as(u64, 2100), AmsterdamColdStorageAccess);
+    try testing.expectEqual(@as(u64, 100), AmsterdamWarmAccess);
+    try testing.expectEqual(@as(u64, 9000), AmsterdamAccountWrite);
+    try testing.expectEqual(@as(u64, 10_000), AmsterdamStorageWrite);
+    try testing.expectEqual(@as(u64, 12_000), AmsterdamCreateAccess);
+    try testing.expectEqual(@as(u64, 11_300), AmsterdamCallValue);
+    try testing.expectEqual(@as(u64, 11_616), AmsterdamStorageClearRefund);
+    try testing.expectEqual(@as(u64, 2900), AmsterdamAccessListAddress);
+    try testing.expectEqual(@as(u64, 2000), AmsterdamAccessListStorageKey);
+    // Pre-Amsterdam constants stay in place for earlier forks.
+    try testing.expectEqual(@as(u64, 2600), ColdAccountAccessCost);
 }

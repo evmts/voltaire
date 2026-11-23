@@ -17,8 +17,8 @@
  * const isZero = Address.isZero(addr);
  * ```
  */
-export { Abi } from "./Abi/Abi.js";
 export * as BrandedAbi from "./Abi/index.js";
+export { Abi } from "./Abi/index.js";
 export * as BrandedAccessList from "./AccessList/index.js";
 export { AccessList } from "./AccessList/index.js";
 export { Address } from "./Address/index.js";
@@ -34,6 +34,7 @@ export * as BrandedBinaryTree from "./BinaryTree/index.js";
 export * as BrandedBlob from "./Blob/index.js";
 export { Blob } from "./Blob/index.js";
 export * as Block from "./Block/index.js";
+export * as BlockAccessList from "./BlockAccessList/index.js";
 export * as BlockBody from "./BlockBody/index.js";
 export * as BlockFilter from "./BlockFilter/index.js";
 export * as BlockHash from "./BlockHash/index.js";
@@ -90,6 +91,7 @@ export * as ErrorSignature from "./ErrorSignature/index.js";
 export * as EventLog from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/index.js";
 export * as EventSignature from "./EventSignature/index.js";
+export * as ExecutionPayloadBid from "./ExecutionPayloadBid/index.js";
 export * from "./errors/index.js";
 export * as BrandedFeeMarket from "./FeeMarket/FeeMarket.js";
 export * as FeeMarket from "./FeeMarket/index.js";

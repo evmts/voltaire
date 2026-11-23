@@ -204,6 +204,12 @@ export const MaxInitcodeSize: 49152n;
  */
 export const Tx: 21000n;
 /**
+ * EIP-7825 maximum declared transaction gas limit from Osaka.
+ * Applies to transaction admission and block validation, independently of the block gas limit.
+ * @type {16777216n}
+ */
+export const TxGasLimitOsaka: 16777216n;
+/**
  * Contract creation transaction base cost (53000 gas)
  * @type {53000n}
  */
@@ -248,4 +254,134 @@ export const TLoad: 100n;
  * @type {100n}
  */
 export const TStore: 100n;
+/**
+ * EIP-8037 `CPSB`: state gas per byte of new state (1530 gas).
+ * Targets 120 GiB of state growth per year at a 150M gas limit and 50% usage.
+ * @type {1530n}
+ */
+export const AmsterdamCostPerStateByte: 1530n;
+/**
+ * EIP-8037 `STATE_BYTES_PER_STORAGE_SET`: bytes charged for a new storage slot
+ * (32-byte key + 32-byte value).
+ * @type {64n}
+ */
+export const AmsterdamStateBytesPerStorageSet: 64n;
+/**
+ * EIP-8037 `STATE_BYTES_PER_NEW_ACCOUNT`: bytes charged for a new account
+ * (32 key + 8 nonce + 16 balance + 32 code hash + 32 storage root).
+ * @type {120n}
+ */
+export const AmsterdamStateBytesPerNewAccount: 120n;
+/**
+ * EIP-8037 `STATE_BYTES_PER_AUTH_BASE`: bytes charged per EIP-7702
+ * authorization (3-byte `0xef0100` prefix + 20-byte address).
+ * @type {23n}
+ */
+export const AmsterdamStateBytesPerAuthBase: 23n;
+/**
+ * EIP-8037 state gas for a new storage slot, replacing the 20000 gas
+ * `GAS_STORAGE_SET`: `STATE_BYTES_PER_STORAGE_SET * CPSB` (97920 gas).
+ * @type {97920n}
+ */
+export const AmsterdamStateGasStorageSet: 97920n;
+/**
+ * EIP-8037 state gas for a new account, replacing the 25000 gas
+ * `GAS_NEW_ACCOUNT` and `PER_EMPTY_ACCOUNT_COST` and the state share of the
+ * 32000 gas `GAS_CREATE`: `STATE_BYTES_PER_NEW_ACCOUNT * CPSB` (183600 gas).
+ * @type {183600n}
+ */
+export const AmsterdamStateGasNewAccount: 183600n;
+/**
+ * EIP-8037 state gas per byte of deployed code, replacing the 200 gas per
+ * byte `GAS_CODE_DEPOSIT`. Equals `CPSB`. Code deposit also pays
+ * `Keccak256Word` regular gas per 32-byte word.
+ * @type {1530n}
+ */
+export const AmsterdamStateGasCodeDepositByte: 1530n;
+/**
+ * EIP-8037 state gas per EIP-7702 authorization, replacing the state share of
+ * the 12500 gas `PER_AUTH_BASE_COST`: `STATE_BYTES_PER_AUTH_BASE * CPSB` (35190 gas).
+ * @type {35190n}
+ */
+export const AmsterdamStateGasAuthBase: 35190n;
+/**
+ * EIP-8037 `SYSTEM_MAX_SSTORES_PER_CALL`: new slots a system call may set.
+ * @type {16n}
+ */
+export const AmsterdamSystemMaxSstoresPerCall: 16n;
+/**
+ * EIP-8037 `SYSTEM_CALL_GAS_LIMIT`:
+ * `30_000_000 + STATE_BYTES_PER_STORAGE_SET * CPSB * SYSTEM_MAX_SSTORES_PER_CALL`.
+ * @type {31566720n}
+ */
+export const AmsterdamSystemCallGasLimit: 31566720n;
+/**
+ * EIP-8037 `TX_MAX_TOTAL_GAS_LIMIT`: maximum total (regular + state) gas a
+ * transaction may declare, `2^32 - 1`.
+ * @type {4294967295n}
+ */
+export const AmsterdamTxMaxTotalGasLimit: 4294967295n;
+/**
+ * EIP-8038 `COLD_ACCOUNT_ACCESS`: cold account access (3000 gas, was 2600).
+ * @type {3000n}
+ */
+export const AmsterdamColdAccountAccess: 3000n;
+/**
+ * EIP-8038 `COLD_STORAGE_ACCESS`: cold storage slot access (2100 gas, unchanged).
+ * @type {2100n}
+ */
+export const AmsterdamColdStorageAccess: 2100n;
+/**
+ * EIP-8038 `WARM_ACCESS`: warm account or slot access (100 gas, unchanged).
+ * @type {100n}
+ */
+export const AmsterdamWarmAccess: 100n;
+/**
+ * EIP-8038 `ACCOUNT_WRITE`: writing an account (9000 gas, was 6700).
+ * `CALL_VALUE` becomes `ACCOUNT_WRITE + CALL_STIPEND`.
+ * @type {9000n}
+ */
+export const AmsterdamAccountWrite: 9000n;
+/**
+ * EIP-8038 `STORAGE_WRITE`: moving a slot away from its transaction-start
+ * value (10000 gas, was 2800).
+ * @type {10000n}
+ */
+export const AmsterdamStorageWrite: 10000n;
+/**
+ * EIP-8038 `CREATE_ACCESS`: regular gas for CREATE and CREATE2,
+ * `ACCOUNT_WRITE + COLD_ACCOUNT_ACCESS` (12000 gas, was 7000).
+ * @type {12000n}
+ */
+export const AmsterdamCreateAccess: 12000n;
+/**
+ * EIP-8038 `CALL_VALUE`: `ACCOUNT_WRITE + CALL_STIPEND` (11300 gas, was 9000).
+ * @type {11300n}
+ */
+export const AmsterdamCallValue: 11300n;
+/**
+ * EIP-8038 `STORAGE_CLEAR_REFUND`:
+ * `(STORAGE_WRITE + COLD_STORAGE_ACCESS) * 4800 / 5000` (11616 gas, was 4800).
+ * @type {11616n}
+ */
+export const AmsterdamStorageClearRefund: 11616n;
+/**
+ * EIP-8038 `ACCESS_LIST_ADDRESS_COST`:
+ * `COLD_ACCOUNT_ACCESS - WARM_ACCESS` (2900 gas, was 2400).
+ * @type {2900n}
+ */
+export const AmsterdamAccessListAddress: 2900n;
+/**
+ * EIP-8038 `ACCESS_LIST_STORAGE_KEY_COST`:
+ * `COLD_STORAGE_ACCESS - WARM_ACCESS` (2000 gas, was 1900).
+ * @type {2000n}
+ */
+export const AmsterdamAccessListStorageKey: 2000n;
+/**
+ * EIP-8037 `EXECUTION_PER_AUTH_BASE_COST`: regular gas per EIP-7702
+ * authorization. Sum of calldata (101 bytes * 16 = 1616), ECRECOVER (3000),
+ * `COLD_ACCOUNT_ACCESS` (3000), and two `WARM_ACCESS` (200).
+ * @type {7816n}
+ */
+export const AmsterdamExecutionPerAuthBase: 7816n;
 //# sourceMappingURL=constants.d.ts.map

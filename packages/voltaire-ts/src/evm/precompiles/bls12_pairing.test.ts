@@ -1,32 +1,19 @@
+import { bls12_381 } from "@noble/curves/bls12-381.js";
 import { describe, expect, it } from "vitest";
+import * as Gas from "../../primitives/GasConstants/index.js";
 import * as Hardfork from "../../primitives/Hardfork/index.js";
-import { bls12Pairing, execute, PrecompileAddress } from "./precompiles.js";
-
-/**
- * Helper: Convert hex string to Uint8Array
- */
-function _hexToBytes(hex: string): Uint8Array {
-	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-	const bytes = new Uint8Array(clean.length / 2);
-	for (let i = 0; i < clean.length; i += 2) {
-		bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
-	}
-	return bytes;
-}
-
-/**
- * Helper: Convert Uint8Array to hex string
- */
-function bytesToHex(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
-}
+import {
+	bls12Pairing,
+	execute,
+	isPrecompile,
+	PrecompileAddress,
+	type PrecompileResult,
+} from "./precompiles.js";
 
 /**
  * Helper: Create big-endian bytes from bigint
  */
-function _bigintToBytes(n: bigint, size: number): Uint8Array {
+function bigintToBytes(n: bigint, size: number): Uint8Array {
 	const bytes = new Uint8Array(size);
 	let val = n;
 	for (let i = size - 1; i >= 0; i--) {
@@ -36,503 +23,364 @@ function _bigintToBytes(n: bigint, size: number): Uint8Array {
 	return bytes;
 }
 
-describe("Precompile: BLS12_PAIRING (0x11)", () => {
+function concat(...parts: Uint8Array[]): Uint8Array {
+	const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+	let offset = 0;
+	for (const part of parts) {
+		out.set(part, offset);
+		offset += part.length;
+	}
+	return out;
+}
+
+type G1Point = ReturnType<typeof bls12_381.G1.Point.fromAffine>;
+type G2Point = ReturnType<typeof bls12_381.G2.Point.fromAffine>;
+
+function encodeG1(point: G1Point): Uint8Array {
+	if (point.is0()) return new Uint8Array(128);
+	const { x, y } = point.toAffine();
+	return concat(bigintToBytes(x, 64), bigintToBytes(y, 64));
+}
+
+function encodeG2(point: G2Point): Uint8Array {
+	if (point.is0()) return new Uint8Array(256);
+	const { x, y } = point.toAffine();
+	return concat(
+		bigintToBytes(x.c0, 64),
+		bigintToBytes(x.c1, 64),
+		bigintToBytes(y.c0, 64),
+		bigintToBytes(y.c1, 64),
+	);
+}
+
+const G1 = bls12_381.G1.Point.BASE;
+const G2 = bls12_381.G2.Point.BASE;
+const TRUE = bigintToBytes(1n, 32);
+const FALSE = new Uint8Array(32);
+/** e(G1, G2) * e(-G1, G2) = 1 */
+const validTwoPairs = concat(
+	encodeG1(G1),
+	encodeG2(G2),
+	encodeG1(G1.negate()),
+	encodeG2(G2),
+);
+const identityPairs = (k: number) => new Uint8Array(384 * k);
+const gasFor = (k: number) => 37700n + 32600n * BigInt(k);
+
+function expectHalt(result: PrecompileResult, gasLimit: bigint): void {
+	expect(result.success).toBe(false);
+	expect(result.error).toBeDefined();
+	expect(result.gasUsed).toBe(gasLimit);
+	expect(result.output).toEqual(new Uint8Array(0));
+}
+
+describe("Precompile: BLS12_PAIRING_CHECK (0x0f)", () => {
 	describe("Gas calculation", () => {
-		// EIP-2537: BASE_GAS = 65000, PER_PAIR_GAS = 43000
-		it("should use 65000 gas for empty input (0 pairs)", () => {
-			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 200000n);
-
+		// EIP-2537: gas = 32600 * k + 37700
+		it("should use 70300 gas for 1 pair (384 bytes)", () => {
+			const result = bls12Pairing(identityPairs(1), 200000n);
 			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(65000n); // 65000 + 0 * 43000
+			expect(result.gasUsed).toBe(70300n);
 		});
 
-		it("should use 108000 gas for 1 pair (384 bytes)", () => {
-			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 200000n);
-
-			// Gas = 65000 + 1 * 43000 = 108000
-			expect(result.gasUsed).toBe(108000n);
+		it("should use 102900 gas for 2 pairs (768 bytes)", () => {
+			const result = bls12Pairing(identityPairs(2), 200000n);
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(102900n);
 		});
 
-		it("should use 151000 gas for 2 pairs (768 bytes)", () => {
-			const input = new Uint8Array(768).fill(0);
-			const result = bls12Pairing(input, 200000n);
-
-			// Gas = 65000 + 2 * 43000 = 151000
-			expect(result.gasUsed).toBe(151000n);
-		});
-
-		it("should verify gas formula: 65000 + k * 43000", () => {
+		it("should verify gas formula: 37700 + k * 32600", () => {
 			const testCases = [
-				{ pairs: 0, expected: 65000n },
-				{ pairs: 1, expected: 108000n },
-				{ pairs: 2, expected: 151000n },
-				{ pairs: 3, expected: 194000n },
-				{ pairs: 5, expected: 280000n },
-				{ pairs: 10, expected: 495000n },
+				{ pairs: 1, expected: 70300n },
+				{ pairs: 2, expected: 102900n },
+				{ pairs: 3, expected: 135500n },
+				{ pairs: 5, expected: 200700n },
+				{ pairs: 10, expected: 363700n },
 			];
-
 			for (const { pairs, expected } of testCases) {
-				const input = new Uint8Array(pairs * 384);
-				const result = bls12Pairing(input, expected + 10000n);
-
+				const result = bls12Pairing(identityPairs(pairs), 1000000n);
+				expect(result.success).toBe(true);
 				expect(result.gasUsed).toBe(expected);
+				expect(Gas.Precompile.calculateBls12PairingCost(BigInt(pairs))).toBe(
+					expected,
+				);
 			}
 		});
 	});
 
 	describe("Out of gas handling", () => {
-		it("should fail with insufficient gas for empty input", () => {
-			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 64999n);
-
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Out of gas");
-			expect(result.gasUsed).toBe(65000n);
-		});
-
-		it("should succeed with exact gas for empty input", () => {
-			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 65000n);
-
-			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(65000n);
-		});
-
 		it("should fail with insufficient gas for 1 pair", () => {
-			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 107999n);
-
-			expect(result.success).toBe(false);
+			const result = bls12Pairing(identityPairs(1), 70299n);
 			expect(result.error).toBe("Out of gas");
+			expectHalt(result, 70299n);
 		});
 
 		it("should succeed with exact gas for 1 pair", () => {
-			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 108000n);
+			const result = bls12Pairing(identityPairs(1), 70300n);
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(70300n);
+		});
 
-			expect(result.gasUsed).toBe(108000n);
+		it("should fail with insufficient gas for 2 pairs", () => {
+			const result = bls12Pairing(validTwoPairs, 102899n);
+			expect(result.error).toBe("Out of gas");
+			expectHalt(result, 102899n);
+		});
+
+		it("should never report more gas than was forwarded", () => {
+			for (const gasLimit of [0n, 1n, 37700n, 70299n]) {
+				expectHalt(bls12Pairing(identityPairs(1), gasLimit), gasLimit);
+			}
 		});
 	});
 
 	describe("Input validation", () => {
-		it("should accept empty input (0 pairs)", () => {
-			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 200000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(32);
-			// Empty pairing should return true (1)
-			expect(result.output[31]).toBe(1);
+		it("should reject empty input (k must be positive)", () => {
+			expectHalt(bls12Pairing(new Uint8Array(0), 200000n), 200000n);
 		});
 
 		it("should accept exactly 384 bytes (1 pair)", () => {
-			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 200000n);
-
-			expect(result.success || result.error).toBeDefined();
+			expect(bls12Pairing(identityPairs(1), 200000n).success).toBe(true);
 		});
 
 		it("should accept exactly 768 bytes (2 pairs)", () => {
-			const input = new Uint8Array(768).fill(0);
-			const result = bls12Pairing(input, 300000n);
-
-			expect(result.success || result.error).toBeDefined();
+			expect(bls12Pairing(identityPairs(2), 300000n).success).toBe(true);
 		});
 
 		it("should reject input not multiple of 384", () => {
-			// NOTE: Implementation bug - computes gas before validating alignment
-			// Non-384-aligned sizes cause BigInt(float) error before validation
-			// So we can only test that aligned sizes succeed and note the bug
-
-			// Test that valid sizes work
-			const validSizes = [0, 384, 768, 1152];
-			for (const size of validSizes) {
-				const input = new Uint8Array(size);
-				const result = bls12Pairing(input, 500000n);
-				// These should not throw BigInt conversion errors
-				expect(result.success !== undefined).toBe(true);
+			for (const size of [1, 128, 383, 385, 767, 769, 1151]) {
+				expectHalt(bls12Pairing(new Uint8Array(size), 500000n), 500000n);
+			}
+			for (const size of [384, 768, 1152]) {
+				expect(bls12Pairing(new Uint8Array(size), 500000n).success).toBe(true);
 			}
 		});
 	});
 
 	describe("Output validation", () => {
 		it("should always return 32 bytes", () => {
-			const testInputs = [
-				new Uint8Array(0), // 0 pairs
-				new Uint8Array(384), // 1 pair
-				new Uint8Array(768), // 2 pairs
-			];
-
-			for (const input of testInputs) {
+			for (const input of [
+				identityPairs(1),
+				identityPairs(3),
+				validTwoPairs,
+				concat(encodeG1(G1), encodeG2(G2)),
+			]) {
 				const result = bls12Pairing(input, 500000n);
-
-				if (result.success) {
-					expect(result.output.length).toBe(32);
-				}
-			}
-		});
-
-		it("should return 1 (true) for empty input", () => {
-			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 200000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(32);
-
-			// Should be uint256(1) in big-endian
-			const value = new Uint8Array(32);
-			value[31] = 1;
-
-			expect(bytesToHex(result.output)).toBe(bytesToHex(value));
-		});
-
-		it("should return 0 or 1 (boolean result)", () => {
-			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 200000n);
-
-			if (result.success) {
+				expect(result.success).toBe(true);
 				expect(result.output.length).toBe(32);
-
-				// First 31 bytes should be zero
-				for (let i = 0; i < 31; i++) {
-					expect(result.output[i]).toBe(0);
-				}
-
-				// Last byte should be 0 or 1
-				expect([0, 1]).toContain(result.output[31]);
 			}
 		});
-	});
 
-	describe("Empty input (special case)", () => {
-		it("should return true for empty pairing", () => {
-			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 200000n);
-
-			expect(result.success).toBe(true);
-			expect(result.output[31]).toBe(1);
+		it("should return 1 (true) when the product is one", () => {
+			expect(bls12Pairing(validTwoPairs, 500000n).output).toEqual(TRUE);
 		});
 
-		it("should use base gas for empty input", () => {
-			const input = new Uint8Array(0);
-			const result = bls12Pairing(input, 200000n);
+		it("should return 0 (false) when the product is not one", () => {
+			const input = concat(encodeG1(G1), encodeG2(G2));
+			expect(bls12Pairing(input, 500000n).output).toEqual(FALSE);
+		});
 
-			expect(result.success).toBe(true);
-			expect(result.gasUsed).toBe(65000n);
+		it("should keep the first 31 output bytes zero", () => {
+			for (const input of [validTwoPairs, concat(encodeG1(G1), encodeG2(G2))]) {
+				const { output } = bls12Pairing(input, 500000n);
+				expect(output.subarray(0, 31)).toEqual(new Uint8Array(31));
+			}
 		});
 	});
 
 	describe("Single pair", () => {
-		it("should handle identity points (all zeros)", () => {
-			// G1 identity: 128 bytes zeros
-			// G2 identity: 256 bytes zeros
-			const input = new Uint8Array(384).fill(0);
-			const result = bls12Pairing(input, 200000n);
-
-			// Identity pairing should succeed (implementation-dependent)
-			expect(result.success || result.error).toBeDefined();
+		it("should return true for identity points (all zeros)", () => {
+			const result = bls12Pairing(identityPairs(1), 200000n);
+			expect(result.success).toBe(true);
+			expect(result.output).toEqual(TRUE);
 		});
 
-		it("should handle valid G1 and G2 points", () => {
-			// Note: Need actual valid BLS12-381 points for realistic test
-			// Using zeros as placeholder (may or may not be valid)
+		it("should return true when either point is the identity", () => {
+			expect(
+				bls12Pairing(concat(encodeG1(G1), new Uint8Array(256)), 200000n).output,
+			).toEqual(TRUE);
+			expect(
+				bls12Pairing(concat(new Uint8Array(128), encodeG2(G2)), 200000n).output,
+			).toEqual(TRUE);
+		});
+
+		it("should reject points that are not on the curve", () => {
 			const input = new Uint8Array(384);
+			input[127] = 1; // G1 = (0, 1)
+			expectHalt(bls12Pairing(input, 200000n), 200000n);
 
-			// Set small values (likely invalid, but tests handling)
-			input[127] = 1; // G1 point
-			input[383] = 1; // G2 point
-
-			const result = bls12Pairing(input, 200000n);
-
-			// Should either succeed or fail gracefully
-			expect(result.success !== undefined).toBe(true);
+			const g2Bad = new Uint8Array(384);
+			g2Bad[383] = 1; // G2 y.c1 = 1
+			expectHalt(bls12Pairing(g2Bad, 200000n), 200000n);
 		});
 	});
 
 	describe("Multiple pairs", () => {
 		it("should handle 2 pairs", () => {
-			const input = new Uint8Array(768).fill(0);
-			const result = bls12Pairing(input, 300000n);
-
-			expect(result.gasUsed).toBe(151000n); // 65000 + 2 * 43000
+			const result = bls12Pairing(identityPairs(2), 300000n);
+			expect(result.gasUsed).toBe(102900n); // 37700 + 2 * 32600
+			expect(result.output).toEqual(TRUE);
 		});
 
 		it("should handle 3 pairs", () => {
-			const input = new Uint8Array(1152).fill(0);
-			const result = bls12Pairing(input, 300000n);
-
-			expect(result.gasUsed).toBe(194000n); // 65000 + 3 * 43000
+			const result = bls12Pairing(identityPairs(3), 300000n);
+			expect(result.gasUsed).toBe(135500n); // 37700 + 3 * 32600
 		});
 
 		it("should handle 5 pairs", () => {
-			const input = new Uint8Array(1920).fill(0);
-			const result = bls12Pairing(input, 400000n);
-
-			expect(result.gasUsed).toBe(280000n); // 65000 + 5 * 43000
+			const result = bls12Pairing(identityPairs(5), 400000n);
+			expect(result.gasUsed).toBe(200700n); // 37700 + 5 * 32600
 		});
 
 		it("should verify pairing equation: e(G1[0], G2[0]) * ... = 1", () => {
-			// Conceptual test: pairing check verifies the product equals 1
-			// With valid points, should return 1 or 0 based on equation
-			const input = new Uint8Array(768).fill(0);
-			const result = bls12Pairing(input, 300000n);
+			// e(2 G1, 3 G2) * e(-6 G1, G2) = 1
+			const holds = concat(
+				encodeG1(G1.multiply(2n)),
+				encodeG2(G2.multiply(3n)),
+				encodeG1(G1.multiply(6n).negate()),
+				encodeG2(G2),
+			);
+			expect(bls12Pairing(holds, 300000n).output).toEqual(TRUE);
 
-			if (result.success) {
-				expect(result.output.length).toBe(32);
-				// Result is boolean: 0 or 1
-				expect([0, 1]).toContain(result.output[31]);
-			}
+			// e(2 G1, 3 G2) * e(-5 G1, G2) != 1
+			const fails = concat(
+				encodeG1(G1.multiply(2n)),
+				encodeG2(G2.multiply(3n)),
+				encodeG1(G1.multiply(5n).negate()),
+				encodeG2(G2),
+			);
+			const result = bls12Pairing(fails, 300000n);
+			expect(result.success).toBe(true);
+			expect(result.output).toEqual(FALSE);
 		});
 	});
 
 	describe("Invalid inputs", () => {
-		it("should handle invalid G1 points gracefully", () => {
+		it("should halt on invalid G1 points", () => {
 			const input = new Uint8Array(384);
-			// Fill with invalid data (all 0xff)
 			input.fill(0xff, 0, 128);
-			// G2 zeros
-			input.fill(0, 128, 384);
-
-			const result = bls12Pairing(input, 200000n);
-
-			// Should fail with error or succeed with 0
-			if (!result.success) {
-				expect(result.error).toBeDefined();
-			}
+			expectHalt(bls12Pairing(input, 200000n), 200000n);
 		});
 
-		it("should handle invalid G2 points gracefully", () => {
+		it("should halt on invalid G2 points", () => {
 			const input = new Uint8Array(384);
-			// G1 zeros
-			input.fill(0, 0, 128);
-			// Fill with invalid data (all 0xff)
 			input.fill(0xff, 128, 384);
-
-			const result = bls12Pairing(input, 200000n);
-
-			if (!result.success) {
-				expect(result.error).toBeDefined();
-			}
+			expectHalt(bls12Pairing(input, 200000n), 200000n);
 		});
 
-		it("should handle all 0xff input", () => {
-			const input = new Uint8Array(384).fill(0xff);
-			const result = bls12Pairing(input, 200000n);
+		it("should halt on all 0xff input", () => {
+			expectHalt(
+				bls12Pairing(new Uint8Array(384).fill(0xff), 200000n),
+				200000n,
+			);
+		});
 
-			// Should fail with invalid points
-			if (!result.success) {
-				expect(result.error).toBeDefined();
-			}
+		it("should halt when a later pair is invalid", () => {
+			const input = concat(validTwoPairs, new Uint8Array(384).fill(0xff));
+			expectHalt(bls12Pairing(input, 500000n), 500000n);
+		});
+
+		it("should halt on a coordinate that is not below the field modulus", () => {
+			const { x, y } = G1.toAffine();
+			const p = bls12_381.fields.Fp.ORDER;
+			const input = concat(
+				bigintToBytes(x + p, 64),
+				bigintToBytes(y, 64),
+				encodeG2(G2),
+			);
+			expectHalt(bls12Pairing(input, 200000n), 200000n);
 		});
 	});
 
 	describe("Edge cases", () => {
 		it("should be deterministic (same input produces same output)", () => {
-			const input = new Uint8Array(384).fill(0);
-
-			const result1 = bls12Pairing(input, 200000n);
-			const result2 = bls12Pairing(input, 200000n);
-			const result3 = bls12Pairing(input, 200000n);
-
-			expect(result1.success).toBe(result2.success);
-			expect(result2.success).toBe(result3.success);
-
-			if (result1.success && result2.success && result3.success) {
-				expect(bytesToHex(result1.output)).toBe(bytesToHex(result2.output));
-				expect(bytesToHex(result2.output)).toBe(bytesToHex(result3.output));
-			}
+			const a = bls12Pairing(validTwoPairs, 300000n);
+			const b = bls12Pairing(validTwoPairs, 300000n);
+			expect(a).toEqual(b);
 		});
 
-		it("should handle maximum reasonable number of pairs", () => {
-			// Test with 10 pairs
-			const input = new Uint8Array(3840).fill(0);
-			const expectedGas = 65000n + 10n * 43000n; // 495000
-			const result = bls12Pairing(input, expectedGas + 10000n);
-
-			expect(result.gasUsed).toBe(expectedGas);
+		it("should not modify its input", () => {
+			const input = new Uint8Array(validTwoPairs);
+			bls12Pairing(input, 300000n);
+			expect(input).toEqual(validTwoPairs);
 		});
 
 		it("should handle large number of pairs (gas scaling)", () => {
-			const pairCounts = [1, 2, 5, 10, 20];
-
-			for (const count of pairCounts) {
-				const input = new Uint8Array(count * 384);
-				const expectedGas = 65000n + BigInt(count) * 43000n;
-				const result = bls12Pairing(input, expectedGas + 100000n);
-
-				expect(result.gasUsed).toBe(expectedGas);
-			}
-		});
-	});
-
-	describe("Pairing equation verification", () => {
-		it("should verify bilinear pairing property (conceptual)", () => {
-			// e(P1, Q1) * e(P2, Q2) = 1
-			// This is the core property being checked
-			// Actual valid points needed for real verification
-
-			const input = new Uint8Array(768).fill(0);
-			const result = bls12Pairing(input, 300000n);
-
-			// Result should be deterministic for same input
-			if (result.success) {
-				expect(result.output.length).toBe(32);
-			}
-		});
-
-		it("should handle trivial pairing (identity elements)", () => {
-			// e(O, Q) where O is identity of G1
-			const input = new Uint8Array(384).fill(0);
-
-			const result = bls12Pairing(input, 200000n);
-
-			// Pairing with identity may have special behavior
-			expect(result.gasUsed).toBe(108000n); // 65000 + 1 * 43000
+			const pairs = 20;
+			const result = bls12Pairing(identityPairs(pairs), gasFor(pairs));
+			expect(result.success).toBe(true);
+			expect(result.gasUsed).toBe(689700n);
+			expectHalt(
+				bls12Pairing(identityPairs(pairs), gasFor(pairs) - 1n),
+				gasFor(pairs) - 1n,
+			);
 		});
 	});
 
 	describe("Integration", () => {
 		it("should work via execute function", () => {
-			const input = new Uint8Array(0);
 			const result = execute(
 				PrecompileAddress.BLS12_PAIRING,
-				input,
-				200000n,
+				validTwoPairs,
+				300000n,
 				Hardfork.PRAGUE,
 			);
-
 			expect(result.success).toBe(true);
-			expect(result.output.length).toBe(32);
-			expect(result.output[31]).toBe(1);
-			expect(result.gasUsed).toBe(65000n);
+			expect(result.gasUsed).toBe(102900n);
+			expect(result.output).toEqual(TRUE);
+		});
+
+		it("should live at address 0x0f", () => {
+			expect(PrecompileAddress.BLS12_PAIRING).toBe(
+				"0x000000000000000000000000000000000000000f",
+			);
 		});
 
 		it("should be available from Prague hardfork", () => {
-			const input = new Uint8Array(0);
-			const result = execute(
-				PrecompileAddress.BLS12_PAIRING,
-				input,
-				200000n,
-				Hardfork.PRAGUE,
-			);
+			const address = PrecompileAddress.BLS12_PAIRING;
+			expect(isPrecompile(address, Hardfork.CANCUN)).toBe(false);
+			expect(isPrecompile(address, Hardfork.PRAGUE)).toBe(true);
+			expect(isPrecompile(address, Hardfork.OSAKA)).toBe(true);
 
-			expect(result.success).toBe(true);
+			const before = execute(address, validTwoPairs, 300000n, Hardfork.CANCUN);
+			expect(before.success).toBe(false);
+			expect(before.gasUsed).toBe(0n);
+			expect(before.error).toContain("Unknown precompile");
+		});
+
+		it("should halt with gasLimit through execute on malformed input", () => {
+			for (const size of [0, 383, 385]) {
+				expectHalt(
+					execute(
+						PrecompileAddress.BLS12_PAIRING,
+						new Uint8Array(size),
+						300000n,
+						Hardfork.PRAGUE,
+					),
+					300000n,
+				);
+			}
 		});
 	});
 
 	describe("Gas cost comparison", () => {
 		it("should scale linearly with number of pairs", () => {
-			const baseCost = 65000n;
-			const perPairCost = 43000n;
-
-			for (let pairs = 0; pairs <= 5; pairs++) {
-				const input = new Uint8Array(pairs * 384);
-				const expectedGas = baseCost + BigInt(pairs) * perPairCost;
-				const result = bls12Pairing(input, expectedGas + 10000n);
-
-				expect(result.gasUsed).toBe(expectedGas);
-			}
+			const gas1 = bls12Pairing(identityPairs(1), 1000000n).gasUsed;
+			const gas2 = bls12Pairing(identityPairs(2), 1000000n).gasUsed;
+			const gas3 = bls12Pairing(identityPairs(3), 1000000n).gasUsed;
+			expect(gas2 - gas1).toBe(32600n);
+			expect(gas3 - gas2).toBe(32600n);
 		});
 
-		it("should be expensive compared to other precompiles", () => {
-			// BLS12 pairing is one of the most expensive precompiles
-			const emptyPairingGas = 65000n;
-
-			// Compare to other precompiles:
-			// SHA256: 60 + words * 12
-			// RIPEMD160: 600 + words * 120
-			// Identity: 15 + words * 3
-			// ModExp: minimum 200
-
-			expect(emptyPairingGas).toBeGreaterThan(600n); // More than RIPEMD160 base
-			expect(emptyPairingGas).toBeGreaterThan(60n); // More than SHA256 base
-		});
-
-		it("should verify per-pair gas cost is significant", () => {
-			const perPairCost = 43000n;
-
-			// Each additional pair costs 43000 gas
-			// This is more than most simple precompile operations
-			expect(perPairCost).toBeGreaterThan(5500n); // More than BLS12 map_fp_to_g1
-			expect(perPairCost).toBeGreaterThan(600n); // Much more than RIPEMD160 base
-		});
-	});
-
-	describe("Format validation", () => {
-		it("should enforce 384-byte alignment", () => {
-			// Each pair is exactly 384 bytes:
-			// G1 point: 128 bytes (x, y coordinates, each 64 bytes)
-			// G2 point: 256 bytes (x, y coordinates in Fp2, each 128 bytes)
-
-			const validSizes = [0, 384, 768, 1152, 1920];
-
-			for (const size of validSizes) {
-				const input = new Uint8Array(size);
-				const result = bls12Pairing(input, 500000n);
-
-				// Should not fail due to length
-				if (!result.success) {
-					expect(result.error).not.toBe("Invalid input length");
-				}
-			}
-		});
-
-		it("should enforce 384-byte alignment for valid sizes", () => {
-			// NOTE: Implementation bug - computes gas before validating length
-			// Non-384-aligned sizes throw BigInt(float) error before proper validation
-			// Test only that properly aligned sizes work
-
-			const alignedSizes = [0, 384, 768, 1152, 1920, 3840];
-			for (const size of alignedSizes) {
-				const input = new Uint8Array(size);
-				const result = bls12Pairing(input, 500000n);
-
-				// Should not throw errors (may succeed or fail for other reasons)
-				expect(result.success !== undefined).toBe(true);
-			}
-		});
-	});
-
-	describe("Security properties", () => {
-		it("should not leak information via gas usage for valid vs invalid", () => {
-			// Gas should be deterministic based only on input length
-			const input1 = new Uint8Array(384).fill(0);
-			const input2 = new Uint8Array(384).fill(0xff);
-
-			const result1 = bls12Pairing(input1, 200000n);
-			const result2 = bls12Pairing(input2, 200000n);
-
-			// Gas should be the same regardless of validity
-			if (result1.success && result2.success) {
-				expect(result1.gasUsed).toBe(result2.gasUsed);
-			} else if (!result1.success && !result2.success) {
-				expect(result1.gasUsed).toBe(result2.gasUsed);
-			}
-		});
-
-		it("should handle malicious inputs safely", () => {
-			// Attempt various malicious patterns
-			const maliciousInputs = [
-				new Uint8Array(384).fill(0xff), // All ones
-				new Uint8Array(384).fill(0xaa), // Alternating pattern
-				(() => {
-					const buf = new Uint8Array(384);
-					for (let i = 0; i < buf.length; i++) buf[i] = i % 256;
-					return buf;
-				})(), // Sequential
-			];
-
-			for (const input of maliciousInputs) {
-				const result = bls12Pairing(input, 200000n);
-
-				// Should handle gracefully (success or known error)
-				expect(result.success !== undefined).toBe(true);
-				if (!result.success) {
-					expect(result.error).toBeDefined();
-				}
-			}
+		it("should charge the same gas for valid pairs whatever the result", () => {
+			const holds = bls12Pairing(validTwoPairs, 300000n);
+			const fails = bls12Pairing(
+				concat(encodeG1(G1), encodeG2(G2), encodeG1(G1), encodeG2(G2)),
+				300000n,
+			);
+			expect(holds.output).toEqual(TRUE);
+			expect(fails.output).toEqual(FALSE);
+			expect(holds.gasUsed).toBe(fails.gasUsed);
 		});
 	});
 });

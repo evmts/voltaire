@@ -8,11 +8,11 @@
  * Currently native implementations:
  * - Keccak256 (via Zig FFI)
  */
-export { Address, BrandedAddress, Hash, BrandedHash, HashType, Hex, BrandedHex, Uint, BrandedUint, Uint8, BrandedUint8, Uint16, BrandedUint16, Uint32, BrandedUint32, Uint64, BrandedUint64, Uint128, BrandedUint128, Uint256, Int8, BrandedInt8, Int16, BrandedInt16, Int32, BrandedInt32, Int64, BrandedInt64, Int128, BrandedInt128, Int256, BrandedInt256, Wei, Gwei, Ether, BrandedWei, BrandedGwei, BrandedEther, Rlp, BrandedRlp, Ssz, Abi, BrandedAbi, Transaction, AccessList, BrandedAccessList, Authorization, BrandedAuthorization, Bytecode, BrandedBytecode, ContractCode, InitCode, RuntimeCode, Metadata, SourceMap, Opcode, BrandedOpcode, Gas, GasConstants, GasCosts, GasUsed, GasEstimate, GasRefund, StorageKey, BrandedStorageKey, State, Storage, Proxy, Blob, BrandedBlob, Chain, BrandedChain, FeeMarket, BrandedFeeMarket, Hardfork, ForkId, NetworkId, ProtocolVersion, PeerId, NodeInfo, PeerInfo, Slot, Epoch, ValidatorIndex, WithdrawalIndex, BeaconBlockRoot, Withdrawal, Block, BlockBody, BlockHeader, Uncle, EventLog, BrandedEventLog, FilterId, TopicFilter, LogFilter, BlockFilter, PendingTransactionFilter, ReturnData, RevertReason, ContractResult, EncodedData, DecodedData, CompilerVersion, License, TraceConfig, OpStep, StructLog, CallTrace, TraceResult, MemoryDump, StorageDiff, StateDiff, SyncStatus, ChainHead, Selector, FunctionSignature, EventSignature, ErrorSignature, TransactionHash, TransactionIndex, LogIndex, TransactionStatus, BlockHash, BlockNumber, Receipt, Siwe, BrandedSiwe, Ens, Permit, TransactionUrl, DomainSeparator, Domain, TypedData, SignedData, ContractSignature, StealthAddress, BinaryTree, BrandedBinaryTree, BloomFilter, BrandedBloomFilter, Base64, BrandedBase64, Bytes, BrandedBytes, Bytes1, BrandedBytes1, Bytes2, BrandedBytes2, Bytes3, BrandedBytes3, Bytes4, BrandedBytes4, Bytes5, BrandedBytes5, Bytes6, BrandedBytes6, Bytes7, BrandedBytes7, Bytes8, BrandedBytes8, Bytes16, BrandedBytes16, Bytes32, BrandedBytes32, Bytes64, BrandedBytes64, } from "../primitives/index.js";
+export { Address, BrandedAddress, Hash, BrandedHash, HashType, Hex, BrandedHex, Uint, BrandedUint, Uint8, BrandedUint8, Uint16, BrandedUint16, Uint32, BrandedUint32, Uint64, BrandedUint64, Uint128, BrandedUint128, Uint256, Int8, BrandedInt8, Int16, BrandedInt16, Int32, BrandedInt32, Int64, BrandedInt64, Int128, BrandedInt128, Int256, BrandedInt256, Wei, Gwei, Ether, BrandedWei, BrandedGwei, BrandedEther, Rlp, BrandedRlp, Ssz, Abi, BrandedAbi, Transaction, AccessList, BrandedAccessList, BlockAccessList, ExecutionPayloadBid, Authorization, BrandedAuthorization, Bytecode, BrandedBytecode, ContractCode, InitCode, RuntimeCode, Metadata, SourceMap, Opcode, BrandedOpcode, Gas, GasConstants, GasCosts, GasUsed, GasEstimate, GasRefund, StorageKey, BrandedStorageKey, State, Storage, Proxy, Blob, BrandedBlob, Chain, BrandedChain, FeeMarket, BrandedFeeMarket, Hardfork, ForkId, NetworkId, ProtocolVersion, PeerId, NodeInfo, PeerInfo, Slot, Epoch, ValidatorIndex, WithdrawalIndex, BeaconBlockRoot, Withdrawal, Block, BlockBody, BlockHeader, Uncle, EventLog, BrandedEventLog, FilterId, TopicFilter, LogFilter, BlockFilter, PendingTransactionFilter, ReturnData, RevertReason, ContractResult, EncodedData, DecodedData, CompilerVersion, License, TraceConfig, OpStep, StructLog, CallTrace, TraceResult, MemoryDump, StorageDiff, StateDiff, SyncStatus, ChainHead, Selector, FunctionSignature, EventSignature, ErrorSignature, TransactionHash, TransactionIndex, LogIndex, TransactionStatus, BlockHash, BlockNumber, Receipt, Siwe, BrandedSiwe, Ens, Permit, TransactionUrl, DomainSeparator, Domain, TypedData, SignedData, ContractSignature, StealthAddress, BinaryTree, BrandedBinaryTree, BloomFilter, BrandedBloomFilter, Base64, BrandedBase64, Bytes, BrandedBytes, Bytes1, BrandedBytes1, Bytes2, BrandedBytes2, Bytes3, BrandedBytes3, Bytes4, BrandedBytes4, Bytes5, BrandedBytes5, Bytes6, BrandedBytes6, Bytes7, BrandedBytes7, Bytes8, BrandedBytes8, Bytes16, BrandedBytes16, Bytes32, BrandedBytes32, Bytes64, BrandedBytes64, } from "../primitives/index.js";
 export * from "../primitives/errors/index.js";
 export { Keccak256 } from "../crypto/Keccak256/Keccak256.native.js";
-export { Secp256k1, EIP712, KZG, BN254, Bls12381, Ripemd160, SHA256, Blake2, Ed25519, AesGcm, ChaCha20Poly1305, Bip39, Keystore, P256, X25519, ModExp, } from "../crypto/index.js";
-export * as HDWallet from "../crypto/HDWallet/index.js";
+export { Secp256k1, EIP712, KZG, BN254, Bls12381, Ripemd160, SHA256, Blake2, Ed25519, AesGcm, ChaCha20Poly1305, ConstantTime, Bip39, Keystore, P256, X25519, ModExp, } from "../crypto/index.js";
+export * as HDWallet from "../crypto/HDWallet/native.js";
 export type { Keccak256Hash } from "../crypto/Keccak256/Keccak256HashType.js";
 export type { Keccak256HashType, KzgBlobType, KzgCommitmentType, KzgProofType, Bls12381G1PointType, Bls12381G2PointType, Bls12381Fp2Type, Ripemd160Hash, Ripemd160HashType, SHA256Hash, SHA256HashType, Blake2Hash, Blake2HashType, } from "../crypto/index.js";
 export * from "../standards/index.js";
@@ -174,6 +174,7 @@ declare const _nativeAPI: {
         derivePublicKey: typeof import("../crypto/Ed25519/derivePublicKey.js").derivePublicKey;
         validateSecretKey: typeof import("../crypto/Ed25519/validateSecretKey.js").validateSecretKey;
         validatePublicKey: typeof import("../crypto/Ed25519/validatePublicKey.js").validatePublicKey;
+        isValidPublicKey: typeof import("../crypto/Ed25519/isValidPublicKey.js").isValidPublicKey;
         validateSeed: typeof import("../crypto/Ed25519/validateSeed.js").validateSeed;
         SECRET_KEY_SIZE: 32;
         PUBLIC_KEY_SIZE: 32;
@@ -189,6 +190,8 @@ declare const _nativeAPI: {
         generateKeypair: typeof import("../crypto/X25519/generateKeypair.js").generateKeypair;
         validateSecretKey: typeof import("../crypto/X25519/validateSecretKey.js").validateSecretKey;
         validatePublicKey: typeof import("../crypto/X25519/validatePublicKey.js").validatePublicKey;
+        isValidPublicKey: typeof import("../crypto/X25519/isValidPublicKey.js").isValidPublicKey;
+        isWeakPublicKey: typeof import("../crypto/X25519/isWeakPublicKey.js").isWeakPublicKey;
         SECRET_KEY_SIZE: 32;
         PUBLIC_KEY_SIZE: 32;
         SHARED_SECRET_SIZE: 32;

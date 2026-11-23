@@ -7,7 +7,7 @@ import { from as _from } from "./from.js";
 import { fromRpc as _fromRpc } from "./fromRpc.js";
 
 // Export internal functions (tree-shakeable)
-export { _from, _fromRpc, _calculateHash };
+export { _calculateHash, _from, _fromRpc };
 
 // Export public functions
 export function from(params: {
@@ -31,6 +31,10 @@ export function from(params: {
 	blobGasUsed?: bigint | number | string;
 	excessBlobGas?: bigint | number | string;
 	parentBeaconBlockRoot?: import("../Hash/HashType.js").HashType | string;
+	/** EIP-7685 execution-requests commitment (Prague+). */
+	requestsHash?: import("../Hash/HashType.js").HashType | string;
+	/** EIP-7928 block access list commitment (Amsterdam+). */
+	blockAccessListHash?: import("../Hash/HashType.js").HashType | string;
 }) {
 	return _from(params as Parameters<typeof _from>[0]);
 }
@@ -59,6 +63,10 @@ export type RpcBlockHeader = {
 	blobGasUsed?: string;
 	excessBlobGas?: string;
 	parentBeaconBlockRoot?: string;
+	/** EIP-7685 execution-requests commitment as 32-byte hex (Prague+). */
+	requestsHash?: string;
+	/** EIP-7928 block access list commitment as 32-byte hex (Amsterdam+). */
+	blockAccessListHash?: string;
 };
 
 /**

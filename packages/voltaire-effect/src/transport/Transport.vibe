@@ -1,10 +1,6 @@
 // Core JSON-RPC Transport service and Effect 4 Context.Reference configuration services.
 
-import {
-  RpcError,
-  type RpcTransportError,
-  TransportError
-} from "../errors.vibe"
+import { RpcError, type RpcTransportError, TransportError } from "../errors.vibe"
 
 export interface JsonRpcCall {
   readonly method: string
@@ -57,7 +53,7 @@ export service RpcRetry: RpcRetryConfig | undefined {
   static readonly defaultValue = (): RpcRetryConfig | undefined => ({
     times: 3,
     baseDelay: "250 millis",
-    jittered: true
+    jittered: true,
   })
 }
 
@@ -78,7 +74,7 @@ export function isRetryableRpcTransportError(error: RpcTransportError): boolean 
 // Runs a raw JSON-RPC method through the current Transport service with optional span & hooks.
 export effect function request<T = unknown>(
   method: string,
-  params?: ReadonlyArray<unknown>
+  params?: ReadonlyArray<unknown>,
 ): T!RpcTransportError!Transport {
   const transport = try Transport
   const tracing = try RpcTracing
@@ -97,7 +93,7 @@ export effect function request<T = unknown>(
         method: req.method,
         params: req.params,
         result: value,
-        durationMs: endMs - startMs
+        durationMs: endMs - startMs,
       })
       return transformed as T
     }
@@ -106,7 +102,7 @@ export effect function request<T = unknown>(
 
   if (tracing) {
     return try withSpan(runCore, `rpc.${method}`, {
-      attributes: { "rpc.system": "ethereum-jsonrpc", "rpc.method": method }
+      attributes: { "rpc.system": "ethereum-jsonrpc", "rpc.method": method },
     })
   }
   return try runCore
@@ -114,7 +110,7 @@ export effect function request<T = unknown>(
 
 // Runs an explicit JSON-RPC 2.0 batch through the current Transport service.
 export effect function requestBatch(
-  requests: ReadonlyArray<JsonRpcCall>
+  requests: ReadonlyArray<JsonRpcCall>,
 ): ReadonlyArray<JsonRpcBatchItemResult>!TransportError!Transport {
   if (requests.length === 0) return []
   const transport = try Transport
@@ -122,7 +118,7 @@ export effect function requestBatch(
   const runCore = transport.requestBatch(requests)
   if (tracing) {
     return try withSpan(runCore, "rpc.batch", {
-      attributes: { "rpc.system": "ethereum-jsonrpc", "rpc.batch.size": requests.length }
+      attributes: { "rpc.system": "ethereum-jsonrpc", "rpc.batch.size": requests.length },
     })
   }
   return try runCore

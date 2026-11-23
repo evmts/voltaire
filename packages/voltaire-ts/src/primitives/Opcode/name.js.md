@@ -1,6 +1,6 @@
 ---
-title: "name.js"
----
+
+## title: "name.js"
 
 # name.js
 
@@ -9,7 +9,7 @@ Get opcode name string.
 ## Signature
 
 ```typescript
-function name(opcode: BrandedOpcode): string
+function name(opcode: BrandedOpcode): string;
 ```
 
 ## Parameters
@@ -23,9 +23,9 @@ function name(opcode: BrandedOpcode): string
 ## Example
 
 ```typescript
-Opcode.name(Opcode.ADD);        // "ADD"
-Opcode.name(Opcode.PUSH1);      // "PUSH1"
-Opcode.name(0x0c);              // "UNKNOWN" (undefined opcode)
+Opcode.name(Opcode.ADD); // "ADD"
+Opcode.name(Opcode.PUSH1); // "PUSH1"
+Opcode.name(0x0c); // "UNKNOWN" (undefined opcode)
 ```
 
 ## Notes

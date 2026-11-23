@@ -68,6 +68,19 @@ export class AbiItemNotFoundError extends InvalidFormatError {
  */
 export class AbiInvalidSelectorError extends InvalidFormatError {
 }
+/**
+ * Human-readable ABI signature parse error
+ *
+ * @example
+ * ```typescript
+ * throw new AbiParseError('Unknown type: foo', {
+ *   value: 'function f(foo x)',
+ *   expected: 'Solidity type or declared struct',
+ * })
+ * ```
+ */
+export class AbiParseError extends InvalidFormatError {
+}
 import { EncodingError } from "../errors/index.js";
 import { DecodingError } from "../errors/index.js";
 import { InvalidLengthError } from "../errors/index.js";

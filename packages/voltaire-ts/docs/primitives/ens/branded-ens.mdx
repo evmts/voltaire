@@ -1,25 +1,142 @@
 ---
-title: "uranded ens"
-description: "ENS branded-ens documentation"
+title: "Branded Ens Type"
+description: "The Ens branded string type, its constructors, and what the brand does and does not guarantee"
 ---
 
 <Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/ens.ts">
   Run ENS examples in the interactive playground
 </Card>
 
-# uranded ens
+# Branded Ens Type
 
-Documentation for ENS branded-ens.
+## Definition
 
-<Note>
-This page is under construction. See [ENS Overview](/primitives/ens) for core functionality.
-</Note>
+```typescript
+import type { brand } from '@tevm/voltaire';
 
-## Overview
+type Ens = string & { readonly [brand]: "Ens" };
+```
 
-ENS operations for branded-ens.
+`Ens` is a plain JavaScript string at runtime. The brand exists only in the type system, so TypeScript rejects an arbitrary `string` where an `Ens` is required. The source type is `EnsType` in `src/primitives/Ens/EnsType.ts`; the module exports it as `Ens`.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+const name: Ens.Ens = Ens.normalize("Vitalik.eth");
+typeof name; // "string"
+```
+
+## What the brand guarantees
+
+The brand records how a value was produced, not that it is valid. Each producer gives a different guarantee:
+
+| Producer | Validates | Normalizes | Guarantee |
+|----------|-----------|------------|-----------|
+| `normalize(name)` | Yes | Yes | Canonical ENSIP-15 name (or `""` for `""`) |
+| `beautify(name)` | Yes | Display form | Valid, but not canonical. Do not hash. |
+| `from(name)` | No | No | None. A typed cast. |
+| `is(value)` narrowing | No | No | Non-empty string |
+
+<Warning>
+An `Ens` value from `from()` or `is()` can contain uppercase letters, invisible characters, or confusables. Only `normalize()` output is safe to hash or compare.
+</Warning>
+
+## Constructors and conversion
+
+### from(name)
+
+```typescript
+from(name: string): Ens
+```
+
+Brands a string without validation or normalization. It returns the same string.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+const branded = Ens.from("vitalik.eth"); // "vitalik.eth"
+Ens.from("ABC");                         // "ABC" (unchanged)
+```
+
+Use `from()` for names you already normalized, for example names read from your own database, or to call the internal `_normalize`, `_beautify`, `_namehash`, and `_labelhash` functions.
+
+### normalize(name)
+
+```typescript
+normalize(name: string | Ens): Ens
+```
+
+The constructor to use for untrusted input. Throws `DisallowedCharacterError` on invalid names. See [Normalization](/primitives/ens/normalization).
+
+### toString(name)
+
+```typescript
+toString(name: Ens): string
+```
+
+Returns the same string typed as `string`, dropping the brand.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+const branded = Ens.from("vitalik.eth");
+const plain: string = Ens.toString(branded); // "vitalik.eth"
+```
+
+Because `Ens` extends `string`, you can also pass it anywhere a `string` is accepted without calling `toString()`.
+
+### is(value)
+
+```typescript
+is(value: unknown): value is Ens
+```
+
+Narrows `unknown` to `Ens` when `value` is a non-empty string. See [Validation](/primitives/ens/validation#isvalue).
+
+## Public wrappers and internal functions
+
+Each operation has a public wrapper that accepts `string | Ens` and an internal function that takes `Ens` only:
+
+| Public | Internal | Returns |
+|--------|----------|---------|
+| `normalize(name: string \| Ens)` | `_normalize(name: Ens)` | `Ens` |
+| `beautify(name: string \| Ens)` | `_beautify(name: Ens)` | `Ens` |
+| `namehash(name: string \| Ens)` | `_namehash(name: Ens)` | `Uint8Array` (32 bytes) |
+| `labelhash(label: string \| Ens)` | `_labelhash(label: Ens)` | `Uint8Array` (32 bytes) |
+
+The wrappers call `from(String(name))` and then the internal function. The results are identical.
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+const a = Ens.namehash("vitalik.eth");
+const b = Ens._namehash(Ens.from("vitalik.eth"));
+// a and b contain the same 32 bytes
+```
+
+## Factory functions
+
+`Namehash` and `Labelhash` build hash functions from an injected keccak256 implementation:
+
+```typescript
+Namehash(deps: { keccak256: (data: Uint8Array) => Uint8Array }): (name: Ens) => Uint8Array
+Labelhash(deps: { keccak256: (data: Uint8Array) => Uint8Array }): (label: Ens) => Uint8Array
+```
+
+```typescript
+import { Namehash, from } from '@tevm/voltaire/Ens';
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256';
+
+const namehash = Namehash({ keccak256 });
+namehash(from("vitalik.eth")); // Uint8Array(32)
+```
+
+The returned functions take `Ens`, not `string`. See [Encoding](/primitives/ens/encoding).
 
 ## See Also
 
 - [ENS Overview](/primitives/ens)
-- [ENS Normalization](/primitives/ens/normalization)
+- [Branded Types](/getting-started/branded-types) - Voltaire's branding pattern
+- [Normalization](/primitives/ens/normalization)
+- [Validation](/primitives/ens/validation)
+- [Encoding](/primitives/ens/encoding)

@@ -1,6 +1,8 @@
 /**
  * Serialize legacy transaction to RLP encoded bytes.
  *
+ * `r` and `s` are RLP integers: leading zero bytes are stripped.
+ *
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @this {import('./TransactionLegacyType.js').TransactionLegacyType}

@@ -24,7 +24,7 @@ export function increment(nonce: number | bigint | string) {
 }
 
 // Export internal functions (tree-shakeable)
-export { _toNumber, _toBigInt, _increment };
+export { _increment, _toBigInt, _toNumber };
 
 // Export as callable constructor and namespace
 export const Nonce = Object.assign(from, {

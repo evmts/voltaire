@@ -35,13 +35,13 @@ pub const GasPrice = struct {
 
     /// Create GasPrice from bytes (big-endian, 32 bytes)
     pub fn fromBytes(bytes: [32]u8) Self {
-        return .{ .value = U256.from_bytes(bytes) };
+        return .{ .value = U256.from_be_bytes(&bytes) };
     }
 
     /// Convert to u64 (wei)
     /// Returns error if value exceeds u64 range
     pub fn toU64(self: Self) error{Overflow}!u64 {
-        return self.value.to_u64();
+        return self.value.to_u64() orelse error.Overflow;
     }
 
     /// Get value in wei as U256
@@ -58,12 +58,12 @@ pub const GasPrice = struct {
     /// Convert to gwei as u64
     /// Returns error if result exceeds u64 range
     pub fn toGweiU64(self: Self) error{Overflow}!u64 {
-        return self.toGwei().to_u64();
+        return self.toGwei().to_u64() orelse error.Overflow;
     }
 
     /// Convert to bytes (big-endian, 32 bytes)
     pub fn toBytes(self: Self) [32]u8 {
-        return self.value.to_bytes();
+        return self.value.to_be_bytes_exact();
     }
 
     /// Compare two GasPrice values
@@ -250,7 +250,7 @@ test "GasPrice: typical legacy tx cost" {
     const price = GasPrice.fromGwei(100);
     const cost = price.calculateCost(21000).?;
     // 100 * 1e9 * 21000 = 2.1e15 wei = 0.0021 ETH
-    const cost_u64 = cost.to_u64() catch 0;
+    const cost_u64 = cost.to_u64().?;
     try testing.expectEqual(@as(u64, 2_100_000_000_000_000), cost_u64);
 }
 
@@ -259,6 +259,6 @@ test "GasPrice: contract deployment cost" {
     const price = GasPrice.fromGwei(50);
     const cost = price.calculateCost(500_000).?;
     // 50 * 1e9 * 500000 = 2.5e16 wei
-    const cost_u64 = cost.to_u64() catch 0;
+    const cost_u64 = cost.to_u64().?;
     try testing.expectEqual(@as(u64, 25_000_000_000_000_000), cost_u64);
 }

@@ -9,6 +9,11 @@ const PrecompileResult = @import("common.zig").PrecompileResult;
 pub const GAS: u64 = 50000;
 
 /// 0x0A: POINT_EVALUATION - KZG point evaluation (EIP-4844)
+///
+/// On a valid proof, returns 64 bytes: FIELD_ELEMENTS_PER_BLOB || BLS_MODULUS.
+/// Every other outcome is an exceptional halt, never a successful call: a
+/// wrong input length, a versioned hash that does not match the commitment,
+/// a malformed commitment, proof, z or y, and a proof that does not verify.
 pub fn execute(
     allocator: std.mem.Allocator,
     input: []const u8,
@@ -58,28 +63,34 @@ pub fn execute(
         z_ptr,
         y_ptr,
         proof_ptr,
-    ) catch {
-        return error.InvalidInput;
+    ) catch |err| switch (err) {
+        error.TrustedSetupNotLoaded => return error.TrustedSetupNotLoaded,
+        // BadArgs and friends: malformed commitment, proof, z or y
+        else => return error.InvalidInput,
     };
+
+    // EIP-4844: `assert verify_kzg_proof(...)`. A proof that does not verify
+    // halts the call; it must not return 64 zero bytes with success.
+    if (!valid) {
+        return error.InvalidInput;
+    }
 
     const output = try allocator.alloc(u8, 64);
     @memset(output, 0);
 
-    if (valid) {
-        // Return the precompile return value: FIELD_ELEMENTS_PER_BLOB, BLS_MODULUS
-        // FIELD_ELEMENTS_PER_BLOB = 4096
-        output[30] = 0x10;
-        output[31] = 0x00;
+    // Return the precompile return value: FIELD_ELEMENTS_PER_BLOB, BLS_MODULUS
+    // FIELD_ELEMENTS_PER_BLOB = 4096
+    output[30] = 0x10;
+    output[31] = 0x00;
 
-        // BLS_MODULUS (last 32 bytes) = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-        const bls_modulus = [_]u8{
-            0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48,
-            0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
-            0x53, 0xbd, 0xa4, 0x02, 0xff, 0xfe, 0x5b, 0xfe,
-            0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
-        };
-        @memcpy(output[32..64], &bls_modulus);
-    }
+    // BLS_MODULUS (last 32 bytes) = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+    const bls_modulus = [_]u8{
+        0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48,
+        0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
+        0x53, 0xbd, 0xa4, 0x02, 0xff, 0xfe, 0x5b, 0xfe,
+        0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
+    };
+    @memcpy(output[32..64], &bls_modulus);
 
     return PrecompileResult{
         .output = output,
@@ -285,7 +296,7 @@ test "point_evaluation - correct proof case 1" {
     try testing.expectEqual(0x00, result.output[31]);
 }
 
-test "point_evaluation - incorrect proof returns zero output" {
+test "point_evaluation - incorrect proof is an exceptional halt" {
     const testing = std.testing;
 
     // Initialize KZG trusted setup
@@ -340,16 +351,10 @@ test "point_evaluation - incorrect proof returns zero output" {
     // Set versioned hash
     @memcpy(input[0..32], &computed_hash);
 
-    const result = try execute(testing.allocator, &input, GAS);
-    defer result.deinit(testing.allocator);
-
-    try testing.expectEqual(GAS, result.gas_used);
-    try testing.expectEqual(64, result.output.len);
-
-    // Verify all zeros output (invalid proof)
-    for (result.output) |byte| {
-        try testing.expectEqual(0, byte);
-    }
+    // EIP-4844 asserts the proof: a well-formed proof that does not verify
+    // halts the call. It must not succeed with 64 zero bytes.
+    try testing.expectError(error.InvalidInput, execute(testing.allocator, &input, GAS));
+    try testing.expectError(error.InvalidInput, execute(testing.allocator, &input, std.math.maxInt(u64)));
 }
 
 test "point_evaluation - invalid commitment malformed" {
@@ -516,7 +521,7 @@ test "point_evaluation - output format validation" {
     try testing.expectEqualSlices(u8, &expected_bls_modulus, result.output[32..64]);
 }
 
-test "point_evaluation - gas usage always constant" {
+test "point_evaluation - valid proof charges GAS and invalid proof halts" {
     const testing = std.testing;
 
     // Initialize KZG trusted setup
@@ -562,12 +567,10 @@ test "point_evaluation - gas usage always constant" {
     hash2[0] = 0x01;
     @memcpy(input2[0..32], &hash2);
 
-    const result2 = try execute(testing.allocator, &input2, GAS);
-    defer result2.deinit(testing.allocator);
-
-    // Gas usage should be the same for both valid and invalid proofs
-    try testing.expectEqual(GAS, result2.gas_used);
-    try testing.expectEqual(result1.gas_used, result2.gas_used);
+    // An invalid proof is an exceptional halt at any gas limit; the caller
+    // burns all supplied gas, so there is no gas_used to compare.
+    try testing.expectError(error.InvalidInput, execute(testing.allocator, &input2, GAS));
+    try testing.expectError(error.OutOfGas, execute(testing.allocator, &input2, GAS - 1));
 }
 
 test "point_evaluation - exact gas limit allowed" {
@@ -659,4 +662,26 @@ test "point_evaluation - input components boundaries" {
     // This should fail due to invalid hash, but shouldn't crash
     const result = execute(testing.allocator, &input, GAS);
     try testing.expectError(error.InvalidInput, result);
+}
+
+test "point evaluation without a trusted setup returns TrustedSetupNotLoaded" {
+    const testing = std.testing;
+    kzg_setup.deinit(testing.allocator);
+    try testing.expect(!kzg_setup.isInitialized());
+
+    // Well-formed input: commitment at infinity, matching versioned hash.
+    var input = [_]u8{0} ** 192;
+    input[96] = 0xc0;
+    input[144] = 0xc0;
+    std.crypto.hash.sha2.Sha256.hash(input[96..144], input[0..32], .{});
+    input[0] = 0x01;
+
+    try testing.expectError(error.TrustedSetupNotLoaded, execute(testing.allocator, &input, GAS));
+
+    // With the setup loaded the same input is a valid proof.
+    try kzg_setup.init();
+    defer kzg_setup.deinit(testing.allocator);
+    const result = try execute(testing.allocator, &input, GAS);
+    defer result.deinit(testing.allocator);
+    try testing.expectEqual(@as(usize, 64), result.output.len);
 }

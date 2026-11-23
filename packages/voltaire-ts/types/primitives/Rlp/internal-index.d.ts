@@ -14,6 +14,7 @@ import { encodeList } from "./encodeList.js";
 import { encodeObject } from "./encodeObject.js";
 import { encodeVariadic } from "./encodeVariadic.js";
 import { equals } from "./equals.js";
+import { exceedsMaxRlpBlockSize } from "./exceedsMaxRlpBlockSize.js";
 import { flatten } from "./flatten.js";
 import { from } from "./from.js";
 import { fromJSON } from "./fromJSON.js";
@@ -28,7 +29,7 @@ import { isString } from "./isString.js";
 import { toJSON } from "./toJSON.js";
 import { toRaw } from "./toRaw.js";
 import { validate } from "./validate.js";
-export { from, isData, isBytesData, isListData, encode, encodeBytes, encodeList, encodeArray, encodeObject, encodeVariadic, decode, decodeArray, decodeObject, decodeValue, getEncodedLength, flatten, equals, toJSON, toRaw, fromJSON, validate, isCanonical, getLength, isList, isString, encodeBatch, decodeBatch, };
+export { decode, decodeArray, decodeBatch, decodeObject, decodeValue, encode, encodeArray, encodeBatch, encodeBytes, encodeList, encodeObject, encodeVariadic, equals, exceedsMaxRlpBlockSize, flatten, from, fromJSON, getEncodedLength, getLength, isBytesData, isCanonical, isData, isList, isListData, isString, toJSON, toRaw, validate, };
 export declare const BrandedRlp: {
     from: typeof from;
     isData: typeof isData;
@@ -45,6 +46,7 @@ export declare const BrandedRlp: {
     decodeObject: typeof decodeObject;
     decodeValue: typeof decodeValue;
     getEncodedLength: typeof getEncodedLength;
+    exceedsMaxRlpBlockSize: typeof exceedsMaxRlpBlockSize;
     flatten: typeof flatten;
     equals: typeof equals;
     toJSON: typeof toJSON;

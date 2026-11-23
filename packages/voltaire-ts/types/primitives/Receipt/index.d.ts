@@ -36,9 +36,10 @@ export declare const poll: (txHash: string, provider: {
     timeout?: number;
     confirmations?: number;
 }) => Promise<ReceiptType>;
-export { _assertValid, _isPreByzantium, _poll };
+export { type ReceiptLogFilter, type ReceiptLookup, ReceiptManager, type ReceiptManagerType, } from "./ReceiptManager/index.js";
 /**
  * TransactionReceipt - alias for Receipt
  */
 export type { ReceiptType as TransactionReceiptType } from "./ReceiptType.js";
+export { _assertValid, _isPreByzantium, _poll };
 //# sourceMappingURL=index.d.ts.map

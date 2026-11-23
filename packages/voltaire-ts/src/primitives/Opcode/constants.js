@@ -42,6 +42,12 @@ export const BYTE = /** @type {import('./OpcodeType.js').OpcodeType} */ (0x1a);
 export const SHL = /** @type {import('./OpcodeType.js').OpcodeType} */ (0x1b);
 export const SHR = /** @type {import('./OpcodeType.js').OpcodeType} */ (0x1c);
 export const SAR = /** @type {import('./OpcodeType.js').OpcodeType} */ (0x1d);
+/**
+ * Count leading zero bits in a 256-bit word (EIP-7939, Osaka).
+ * Consumes one stack word and produces one word; zero produces 256.
+ * Costs five gas. Execution before Osaka must reject this opcode.
+ */
+export const CLZ = /** @type {import('./OpcodeType.js').OpcodeType} */ (0x1e);
 
 // 0x20s: Crypto
 export const KECCAK256 = /** @type {import('./OpcodeType.js').OpcodeType} */ (

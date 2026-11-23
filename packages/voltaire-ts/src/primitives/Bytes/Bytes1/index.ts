@@ -15,16 +15,16 @@ import { toNumber } from "./toNumber.js";
 
 // Export individual functions
 export {
+	clone,
+	compare,
+	equals,
 	from,
 	fromHex,
 	fromNumber,
+	size,
+	toBytes,
 	toHex,
 	toNumber,
-	toBytes,
-	equals,
-	compare,
-	size,
-	clone,
 };
 
 // Callable constructor

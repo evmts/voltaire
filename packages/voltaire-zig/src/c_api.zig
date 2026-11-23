@@ -205,9 +205,14 @@ export fn primitives_bytes_to_hex(
     buf_len: usize,
 ) c_int {
     const input = data[0..data_len];
-    const required_len = 2 + (data_len * 2); // "0x" + 2 chars per byte
+    // "0x" + 2 chars per byte; the result must also fit the c_int return value
+    const required_len = std.math.add(usize, 2, std.math.mul(usize, data_len, 2) catch return PRIMITIVES_ERROR_INVALID_LENGTH) catch return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (required_len > std.math.maxInt(c_int)) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
 
-    if (buf_len < required_len) {
+    // Room for the hex digits plus the trailing NUL terminator
+    if (buf_len < required_len + 1) {
         return PRIMITIVES_ERROR_INVALID_LENGTH;
     }
 
@@ -732,8 +737,12 @@ export fn primitives_tx_detect_type(
     data: [*]const u8,
     data_len: usize,
 ) c_int {
+    // An empty buffer is not a transaction; never report it as legacy.
+    if (data_len == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
     const input = data[0..data_len];
-    const tx_type = primitives.Transaction.detectTransactionType(input);
+    const tx_type = primitives.Transaction.detectTransactionType(input) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
 
     return switch (tx_type) {
         .legacy => 0,
@@ -1035,6 +1044,23 @@ export fn primitives_blake2b(
 ) c_int {
     const input = data[0..data_len];
     std.crypto.hash.blake2.Blake2b512.hash(input, out_hash, .{});
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Compute BLAKE2b with a variable digest length (1..=64 bytes).
+/// The length is encoded in the BLAKE2b parameter block (RFC 7693), so the
+/// result is NOT a truncated BLAKE2b-512 digest.
+/// Returns PRIMITIVES_ERROR_INVALID_INPUT when out_len is 0 or > 64.
+/// Same symbol and signature as crypto/blake2_c.zig so the WASM loader's
+/// `exports.blake2Hash` path works against the full primitives build.
+export fn blake2Hash(
+    data: [*]const u8,
+    data_len: usize,
+    out_hash: [*]u8,
+    out_len: usize,
+) c_int {
+    if (out_len == 0 or out_len > 64) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Blake2.hashVariable(data[0..data_len], out_hash[0..out_len]) catch return PRIMITIVES_ERROR_INVALID_INPUT;
     return PRIMITIVES_SUCCESS;
 }
 
@@ -2008,7 +2034,11 @@ export fn primitives_abi_estimate_gas(
 // Blob Operations (EIP-4844)
 // ============================================================================
 
-/// Encode data as blob (with length prefix)
+/// Encode data as a field-element-safe blob (same layout as
+/// `Blob.encodeBlobData` and voltaire-ts `Blob.fromData`): byte 0 of every
+/// 32-byte field element is 0x00, the usable stream starts with a 4-byte
+/// big-endian length prefix, and at most `MAX_DATA_PER_BLOB` (126972) bytes fit.
+/// out_blob must hold BYTES_PER_BLOB (131072) bytes.
 /// Returns PRIMITIVES_SUCCESS on success
 export fn primitives_blob_from_data(
     data: [*]const u8,
@@ -2017,26 +2047,21 @@ export fn primitives_blob_from_data(
 ) c_int {
     const blob_module = @import("primitives").Blob;
 
-    if (data_len > blob_module.BYTES_PER_BLOB - 8) {
+    if (data_len > blob_module.MAX_DATA_PER_BLOB) {
         return PRIMITIVES_ERROR_INVALID_LENGTH;
     }
 
-    var blob: blob_module.Blob = [_]u8{0x00} ** blob_module.BYTES_PER_BLOB;
-
-    // Length prefix (8 bytes, little-endian u64)
-    const len_u64: u64 = @intCast(data_len);
-    const len_bytes = std.mem.toBytes(len_u64);
-    @memcpy(blob[0..8], &len_bytes);
-
-    // Copy data
-    @memcpy(blob[8 .. 8 + data_len], data[0..data_len]);
-
+    const blob = blob_module.encodeBlobData(std.heap.page_allocator, data[0..data_len]) catch {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    };
     @memcpy(out_blob[0..blob_module.BYTES_PER_BLOB], &blob);
     return PRIMITIVES_SUCCESS;
 }
 
-/// Decode blob to extract original data
-/// Returns length of data or negative error code
+/// Decode a blob written by `primitives_blob_from_data` / `Blob.encodeBlobData`.
+/// blob must hold BYTES_PER_BLOB bytes; out_data must hold MAX_DATA_PER_BLOB
+/// (126972) bytes. Writes the data length to out_len.
+/// Returns PRIMITIVES_SUCCESS or a negative error code
 export fn primitives_blob_to_data(
     blob: [*]const u8,
     out_data: [*]u8,
@@ -2044,17 +2069,16 @@ export fn primitives_blob_to_data(
 ) c_int {
     const blob_module = @import("primitives").Blob;
 
-    // Read length prefix (u64, little-endian)
-    const len_u64 = std.mem.bytesToValue(u64, blob[0..8]);
-    const len: usize = @intCast(len_u64);
-
-    if (len > blob_module.BYTES_PER_BLOB - 8) {
+    // decodeBlobData allocates exactly the declared length (<= MAX_DATA_PER_BLOB);
+    // a fixed buffer over out_data keeps the result in caller memory, no heap use.
+    var fba = std.heap.FixedBufferAllocator.init(out_data[0..blob_module.MAX_DATA_PER_BLOB]);
+    const decoded = blob_module.decodeBlobData(fba.allocator(), blob[0..blob_module.BYTES_PER_BLOB].*) catch {
         return PRIMITIVES_ERROR_INVALID_LENGTH;
-    }
-
-    // Copy data
-    @memcpy(out_data[0..len], blob[8 .. 8 + len]);
-    out_len.* = len;
+    };
+    // FixedBufferAllocator places it at offset 0; the copy is a no-op then, and
+    // keeps the contract independent of allocator layout (e.g. zero-length).
+    std.mem.copyForwards(u8, out_data[0..decoded.len], decoded);
+    out_len.* = decoded.len;
 
     return PRIMITIVES_SUCCESS;
 }
@@ -2083,9 +2107,11 @@ export fn primitives_blob_estimate_count(
     data_size: usize,
 ) u32 {
     const blob_module = @import("primitives").Blob;
-    const max_data_per_blob = blob_module.BYTES_PER_BLOB - 8;
-    const count = (data_size + max_data_per_blob - 1) / max_data_per_blob;
-    return @intCast(count);
+    if (data_size == 0) return 0;
+    // Overflow-free ceiling division; saturate only after dividing so large
+    // sizes on 32-bit targets (e.g. 4_294_967_295 -> 33_827) stay exact.
+    const count = (data_size - 1) / blob_module.MAX_DATA_PER_BLOB + 1;
+    return std.math.cast(u32, count) orelse std.math.maxInt(u32);
 }
 
 /// Calculate blob gas price from excess blob gas
@@ -3210,6 +3236,12 @@ export fn kzg_free_trusted_setup() c_int {
     return PRIMITIVES_SUCCESS;
 }
 
+/// Map a KZG binding error to a C error code. A missing trusted setup is
+/// reported as PRIMITIVES_ERROR_KZG_NOT_LOADED, never as an invalid blob or proof.
+fn kzgErrorCode(err: crypto.c_kzg.KZGError, otherwise: c_int) c_int {
+    return if (err == error.TrustedSetupNotLoaded) PRIMITIVES_ERROR_KZG_NOT_LOADED else otherwise;
+}
+
 /// Convert blob to KZG commitment
 /// blob: pointer to 131072-byte blob
 /// out_commitment: pointer to 48-byte output buffer
@@ -3218,8 +3250,8 @@ export fn kzg_blob_to_commitment(
     out_commitment: [*]u8,
 ) c_int {
     const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
-    const commitment = crypto.c_kzg.blobToKZGCommitment(blob_ptr) catch {
-        return PRIMITIVES_ERROR_KZG_INVALID_BLOB;
+    const commitment = crypto.c_kzg.blobToKZGCommitment(blob_ptr) catch |err| {
+        return kzgErrorCode(err, PRIMITIVES_ERROR_KZG_INVALID_BLOB);
     };
     @memcpy(out_commitment[0..KZG_COMMITMENT_SIZE], &commitment);
     return PRIMITIVES_SUCCESS;
@@ -3238,8 +3270,8 @@ export fn kzg_compute_proof(
 ) c_int {
     const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
     const z_ptr: *const [32]u8 = @ptrCast(z);
-    const result = crypto.c_kzg.computeKZGProof(blob_ptr, z_ptr) catch {
-        return PRIMITIVES_ERROR_KZG_INVALID_BLOB;
+    const result = crypto.c_kzg.computeKZGProof(blob_ptr, z_ptr) catch |err| {
+        return kzgErrorCode(err, PRIMITIVES_ERROR_KZG_INVALID_BLOB);
     };
     @memcpy(out_proof[0..KZG_PROOF_SIZE], &result.proof);
     @memcpy(out_y[0..32], &result.y);
@@ -3257,8 +3289,8 @@ export fn kzg_compute_blob_proof(
 ) c_int {
     const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
     const commitment_ptr: *const [KZG_COMMITMENT_SIZE]u8 = @ptrCast(commitment);
-    const proof = crypto.c_kzg.computeBlobKZGProof(blob_ptr, commitment_ptr) catch {
-        return PRIMITIVES_ERROR_KZG_INVALID_BLOB;
+    const proof = crypto.c_kzg.computeBlobKZGProof(blob_ptr, commitment_ptr) catch |err| {
+        return kzgErrorCode(err, PRIMITIVES_ERROR_KZG_INVALID_BLOB);
     };
     @memcpy(out_proof[0..KZG_PROOF_SIZE], &proof);
     return PRIMITIVES_SUCCESS;
@@ -3280,8 +3312,8 @@ export fn kzg_verify_proof(
     const z_ptr: *const [32]u8 = @ptrCast(z);
     const y_ptr: *const [32]u8 = @ptrCast(y);
     const proof_ptr: *const [KZG_PROOF_SIZE]u8 = @ptrCast(proof);
-    const valid = crypto.c_kzg.verifyKZGProof(commitment_ptr, z_ptr, y_ptr, proof_ptr) catch {
-        return PRIMITIVES_ERROR_KZG_INVALID_PROOF;
+    const valid = crypto.c_kzg.verifyKZGProof(commitment_ptr, z_ptr, y_ptr, proof_ptr) catch |err| {
+        return kzgErrorCode(err, PRIMITIVES_ERROR_KZG_INVALID_PROOF);
     };
     return if (valid) 1 else 0;
 }
@@ -3299,10 +3331,133 @@ export fn kzg_verify_blob_proof(
     const blob_ptr: *const [KZG_BLOB_SIZE]u8 = @ptrCast(blob);
     const commitment_ptr: *const [KZG_COMMITMENT_SIZE]u8 = @ptrCast(commitment);
     const proof_ptr: *const [KZG_PROOF_SIZE]u8 = @ptrCast(proof);
-    const valid = crypto.c_kzg.verifyBlobKZGProof(blob_ptr, commitment_ptr, proof_ptr) catch {
-        return PRIMITIVES_ERROR_KZG_INVALID_PROOF;
+    const valid = crypto.c_kzg.verifyBlobKZGProof(blob_ptr, commitment_ptr, proof_ptr) catch |err| {
+        return kzgErrorCode(err, PRIMITIVES_ERROR_KZG_INVALID_PROOF);
     };
     return if (valid) 1 else 0;
+}
+
+// ============================================================================
+// C API tests
+// ============================================================================
+
+test "primitives_bytes_to_hex requires room for the NUL terminator" {
+    const data = [_]u8{ 0xde, 0xad };
+    var buf: [7]u8 = [_]u8{0xaa} ** 7;
+    // "0xdead" is 6 chars; 6 bytes leaves no room for the NUL
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_LENGTH, primitives_bytes_to_hex(&data, data.len, &buf, 6));
+    try std.testing.expectEqual(@as(u8, 0xaa), buf[6]);
+    try std.testing.expectEqual(@as(c_int, 6), primitives_bytes_to_hex(&data, data.len, &buf, 7));
+    try std.testing.expectEqualStrings("0xdead\x00", &buf);
+}
+
+test "primitives_blob_from_data writes the field-element-safe layout of Blob.encodeBlobData" {
+    const blob_module = primitives.Blob;
+    const allocator = std.testing.allocator;
+    const lens = [_]usize{ 0, 1, 27, 28, 1000, blob_module.MAX_DATA_PER_BLOB };
+    const data = try allocator.alloc(u8, blob_module.MAX_DATA_PER_BLOB);
+    defer allocator.free(data);
+    @memset(data, 0xff);
+
+    const out = try allocator.alloc(u8, blob_module.BYTES_PER_BLOB);
+    defer allocator.free(out);
+    const decoded = try allocator.alloc(u8, blob_module.MAX_DATA_PER_BLOB);
+    defer allocator.free(decoded);
+
+    for (lens) |len| {
+        try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_blob_from_data(data.ptr, len, out.ptr));
+
+        // Top byte of every field element is 0x00
+        var i: usize = 0;
+        while (i < blob_module.BYTES_PER_BLOB) : (i += blob_module.BYTES_PER_FIELD_ELEMENT) {
+            try std.testing.expectEqual(@as(u8, 0), out[i]);
+        }
+
+        const expected = try blob_module.encodeBlobData(allocator, data[0..len]);
+        try std.testing.expectEqualSlices(u8, &expected, out);
+
+        var out_len: usize = std.math.maxInt(usize);
+        try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_blob_to_data(out.ptr, decoded.ptr, &out_len));
+        try std.testing.expectEqual(len, out_len);
+        try std.testing.expectEqualSlices(u8, data[0..len], decoded[0..out_len]);
+    }
+
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_LENGTH, primitives_blob_from_data(data.ptr, blob_module.MAX_DATA_PER_BLOB + 1, out.ptr));
+}
+
+test "primitives_blob_to_data rejects a declared length above MAX_DATA_PER_BLOB" {
+    const blob_module = primitives.Blob;
+    const allocator = std.testing.allocator;
+    const blob = try allocator.alloc(u8, blob_module.BYTES_PER_BLOB);
+    defer allocator.free(blob);
+    @memset(blob, 0);
+    std.mem.writeInt(u32, blob[1..5], blob_module.MAX_DATA_PER_BLOB + 1, .big);
+    const out = try allocator.alloc(u8, blob_module.MAX_DATA_PER_BLOB);
+    defer allocator.free(out);
+    var out_len: usize = 0;
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_LENGTH, primitives_blob_to_data(blob.ptr, out.ptr, &out_len));
+}
+
+test "primitives_blob_estimate_count matches Blob.estimateBlobCount" {
+    const blob_module = primitives.Blob;
+    const sizes = [_]usize{ 0, 1, blob_module.MAX_DATA_PER_BLOB, blob_module.MAX_DATA_PER_BLOB + 1, blob_module.MAX_DATA_PER_BLOB * 6 };
+    for (sizes) |n| {
+        try std.testing.expectEqual(@as(u32, @intCast(blob_module.estimateBlobCount(n))), primitives_blob_estimate_count(n));
+    }
+    try std.testing.expectEqual(@as(u32, 1), primitives_blob_estimate_count(126_972));
+    try std.testing.expectEqual(@as(u32, 2), primitives_blob_estimate_count(126_973));
+    try std.testing.expectEqual(std.math.maxInt(u32), primitives_blob_estimate_count(std.math.maxInt(usize)));
+    // Near maxInt(u32): must divide first, not saturate.
+    try std.testing.expectEqual(@as(u32, 33_827), primitives_blob_estimate_count(4_294_967_295));
+    try std.testing.expectEqual(@as(u32, 33_827), primitives_blob_estimate_count(@as(usize, std.math.maxInt(u32)) - 1));
+}
+
+test "primitives_tx_detect_type rejects empty input" {
+    const empty = [_]u8{};
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_INPUT, primitives_tx_detect_type(&empty, 0));
+    const typed = [_]u8{0x02};
+    try std.testing.expectEqual(@as(c_int, 2), primitives_tx_detect_type(&typed, 1));
+    const legacy = [_]u8{0xf8};
+    try std.testing.expectEqual(@as(c_int, 0), primitives_tx_detect_type(&legacy, 1));
+    const unknown = [_]u8{0x05};
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_INPUT, primitives_tx_detect_type(&unknown, 1));
+}
+
+test "blake2Hash uses the BLAKE2b parameter block digest length" {
+    const empty = [_]u8{};
+    var out32: [32]u8 = undefined;
+    try std.testing.expectEqual(@as(c_int, PRIMITIVES_SUCCESS), blake2Hash(&empty, 0, &out32, 32));
+    var expected: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8");
+    try std.testing.expectEqualSlices(u8, &expected, &out32);
+
+    var out64: [64]u8 = undefined;
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_INPUT, blake2Hash(&empty, 0, &out64, 0));
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_INPUT, blake2Hash(&empty, 0, &out64, 65));
+}
+
+test "KZG C API reports a missing trusted setup as KZG_NOT_LOADED" {
+    crypto.c_kzg.freeTrustedSetup() catch {};
+    const zero32 = [_]u8{0} ** 32;
+    var infinity = [_]u8{0} ** 48;
+    infinity[0] = 0xc0;
+    try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_NOT_LOADED, kzg_verify_proof(&infinity, &zero32, &zero32, &infinity));
+    const blob = try std.testing.allocator.alloc(u8, KZG_BLOB_SIZE);
+    defer std.testing.allocator.free(blob);
+    @memset(blob, 0);
+    var out48: [48]u8 = undefined;
+    var out32: [32]u8 = undefined;
+    try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_NOT_LOADED, kzg_blob_to_commitment(blob.ptr, &out48));
+    try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_NOT_LOADED, kzg_compute_proof(blob.ptr, &zero32, &out48, &out32));
+    try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_NOT_LOADED, kzg_compute_blob_proof(blob.ptr, &infinity, &out48));
+    try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_NOT_LOADED, kzg_verify_blob_proof(blob.ptr, &infinity, &infinity));
+
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, kzg_load_trusted_setup());
+    defer _ = kzg_free_trusted_setup();
+    try std.testing.expectEqual(@as(c_int, 1), kzg_verify_proof(&infinity, &zero32, &zero32, &infinity));
+    // A malformed proof is still an invalid proof, not "not loaded"
+    var bad = [_]u8{0xff} ** 48;
+    try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_INVALID_PROOF, kzg_verify_proof(&infinity, &zero32, &zero32, &bad));
 }
 
 // WASM reactor pattern - main() is required for executable builds but not called

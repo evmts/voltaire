@@ -1,6 +1,6 @@
 ---
-title: "includesStorageKey.js"
----
+
+## title: "includesStorageKey.js"
 
 # includesStorageKey.js
 
@@ -10,10 +10,10 @@ Check if storage key exists for address in access list.
 
 ```typescript
 function includesStorageKey(
-  list: BrandedAccessList,
-  address: AddressType,
-  key: HashType
-): boolean
+	list: BrandedAccessList,
+	address: AddressType,
+	key: HashType,
+): boolean;
 ```
 
 ## Parameters
@@ -30,13 +30,13 @@ function includesStorageKey(
 
 ```typescript
 const hasBalance = AccessList.includesStorageKey(
-  list,
-  tokenAddress,
-  balanceSlot
+	list,
+	tokenAddress,
+	balanceSlot,
 );
 
 if (!hasBalance) {
-  list = list.withStorageKey(tokenAddress, balanceSlot);
+	list = list.withStorageKey(tokenAddress, balanceSlot);
 }
 ```
 

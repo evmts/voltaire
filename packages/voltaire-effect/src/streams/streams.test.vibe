@@ -6,7 +6,7 @@ import {
   TestProvider,
   type TransactionStreamEvent,
   watchBlocks,
-  watchTransactionStatus
+  watchTransactionStatus,
 } from "../index.vibe"
 
 const HASH_1 = "0x1111111111111111111111111111111111111111111111111111111111111111" as const
@@ -24,7 +24,7 @@ function makeBlock(numHex: string, hash: string, parentHash: string) {
     gasLimit: "0x1c9c380",
     gasUsed: "0x5208",
     timestamp: "0x67000000",
-    transactions: []
+    transactions: [],
   }
 }
 
@@ -39,7 +39,9 @@ describe("streams", () => {
       },
       eth_getBlockByNumber: (params) => {
         const tag = String(params[0])
-        if (tag === "0x1") return makeBlock("0x1", HASH_1, "0x0000000000000000000000000000000000000000000000000000000000000000")
+        if (tag === "0x1") {
+          return makeBlock("0x1", HASH_1, "0x0000000000000000000000000000000000000000000000000000000000000000")
+        }
         if (tag === "0x2") return makeBlock("0x2", HASH_2A, HASH_1)
         return makeBlock("0x3", HASH_3B, HASH_2B)
       },
@@ -47,7 +49,7 @@ describe("streams", () => {
         const h = String(params[0])
         if (h === HASH_2B) return makeBlock("0x2", HASH_2B, HASH_1)
         return makeBlock("0x1", HASH_1, "0x0000000000000000000000000000000000000000000000000000000000000000")
-      }
+      },
     })
 
     provide provider {
@@ -102,10 +104,10 @@ describe("streams", () => {
             transactionIndex: "0x0",
             blockHash: HASH_1,
             logIndex: "0x0",
-            removed: false
-          }
+            removed: false,
+          },
         ]
-      }
+      },
     })
 
     provide provider {
@@ -138,10 +140,10 @@ describe("streams", () => {
           contractAddress: null,
           logs: [],
           status: "0x1",
-          type: "0x2"
+          type: "0x2",
         }
       },
-      eth_blockNumber: () => (step === 2 ? "0xa" : "0xb") // 10 (1 conf) then 11 (2 confs -> Confirmed!)
+      eth_blockNumber: () => (step === 2 ? "0xa" : "0xb"), // 10 (1 conf) then 11 (2 confs -> Confirmed!)
     })
 
     provide provider {

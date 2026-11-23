@@ -27,7 +27,6 @@ import { toBigint } from "./toBigint.js";
 import { toHex } from "./toHex.js";
 import { toNumber } from "./toNumber.js";
 import { zero } from "./zero.js";
-export { from, fromBytes, fromHex, fromNumber, fromBigint, toHex, toNumber, toBigint, equals, compare, isZero, clone, zero, bitwiseAnd, bitwiseOr, bitwiseXor, min, max, };
 export { bitwiseAnd as _bitwiseAnd } from "./bitwiseAnd.js";
 export { bitwiseOr as _bitwiseOr } from "./bitwiseOr.js";
 export { bitwiseXor as _bitwiseXor } from "./bitwiseXor.js";
@@ -46,6 +45,7 @@ export { toBigint as _toBigint } from "./toBigint.js";
 export { toHex as _toHex } from "./toHex.js";
 export { toNumber as _toNumber } from "./toNumber.js";
 export { zero as _zero } from "./zero.js";
+export { bitwiseAnd, bitwiseOr, bitwiseXor, clone, compare, equals, from, fromBigint, fromBytes, fromHex, fromNumber, isZero, max, min, toBigint, toHex, toNumber, zero, };
 export declare const Bytes32: {
     from: typeof from;
     fromBytes: typeof fromBytes;

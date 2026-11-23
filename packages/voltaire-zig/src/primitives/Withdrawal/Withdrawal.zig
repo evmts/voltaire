@@ -125,28 +125,37 @@ pub const Withdrawal = struct {
 
     /// RLP decode withdrawal
     pub fn rlpDecode(allocator: std.mem.Allocator, data: []const u8) !Withdrawal {
-        var decoded = try Rlp.decode(allocator, data);
-        defer decoded.deinit(allocator);
+        const decoded = try Rlp.decode(allocator, data, false);
+        defer decoded.data.deinit(allocator);
 
-        if (decoded.items.len != 4) {
+        if (decoded.data != .List) {
             return error.InvalidWithdrawalEncoding;
         }
+        const items = decoded.data.List;
+        if (items.len != 4) {
+            return error.InvalidWithdrawalEncoding;
+        }
+        var fields: [4][]const u8 = undefined;
+        for (items, 0..) |item, i| {
+            if (item != .String) return error.InvalidWithdrawalEncoding;
+            fields[i] = item.String;
+        }
 
-        // Decode index
-        const index = bytesToU64(decoded.items[0].bytes);
-
-        // Decode validator_index
-        const validator_index = bytesToU64(decoded.items[1].bytes);
+        // index, validator_index and amount are uint64
+        if (fields[0].len > 8 or fields[1].len > 8 or fields[3].len > 8) {
+            return error.InvalidWithdrawalEncoding;
+        }
+        const index = bytesToU64(fields[0]);
+        const validator_index = bytesToU64(fields[1]);
 
         // Decode address
-        if (decoded.items[2].bytes.len != 20) {
+        if (fields[2].len != 20) {
             return error.InvalidAddressLength;
         }
         var address: Address = undefined;
-        @memcpy(&address.bytes, decoded.items[2].bytes);
+        @memcpy(&address.bytes, fields[2]);
 
-        // Decode amount
-        const amount = bytesToU64(decoded.items[3].bytes);
+        const amount = bytesToU64(fields[3]);
 
         return .{
             .index = index,

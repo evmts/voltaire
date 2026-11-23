@@ -1,6 +1,4 @@
-import * as Fr from "../Fr/index.js";
-import { finalExponentiation } from "./finalExponentiation.js";
-import { millerLoop } from "./millerLoop.js";
+import { multiPairing } from "./multiPairing.js";
 import { pairingResultEqual, pairingResultOne } from "./pairingResult.js";
 
 /**
@@ -12,7 +10,8 @@ import { pairingResultEqual, pairingResultOne } from "./pairingResult.js";
  * @since 0.0.0
  * @param {Array<[import('../G1PointType.js').G1PointType, import('../G2PointType.js').G2PointType]>} pairs - Array of G1/G2 point pairs
  * @returns {boolean} True if pairing product equals 1
- * @throws {never}
+ * @throws {import('../errors.js').Bn254InvalidPointError} If a point is not on its curve
+ * @throws {import('../errors.js').Bn254SubgroupCheckError} If a G2 point is outside the subgroup
  * @example
  * ```javascript
  * import * as Pairing from './crypto/bn254/Pairing/index.js';
@@ -26,15 +25,5 @@ import { pairingResultEqual, pairingResultOne } from "./pairingResult.js";
  * ```
  */
 export function pairingCheck(pairs) {
-	if (pairs.length === 0) return true;
-
-	const accumulator = pairingResultOne();
-
-	for (const [p, q] of pairs) {
-		const result = millerLoop(p, q);
-		accumulator.value = Fr.mul(accumulator.value, result.value);
-	}
-
-	const final = finalExponentiation(accumulator);
-	return pairingResultEqual(final, pairingResultOne());
+	return pairingResultEqual(multiPairing(pairs), pairingResultOne());
 }

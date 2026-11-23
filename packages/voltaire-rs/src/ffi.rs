@@ -25,37 +25,13 @@ struct PrimitivesHash {
     bytes: [u8; 32],
 }
 
-#[repr(C)]
-struct PrimitivesU256 {
-    bytes: [u8; 32],
-}
-
 // FFI function declarations
 extern "C" {
     // Address API
-    fn primitives_address_from_hex(hex: *const c_uchar, out: *mut PrimitivesAddress) -> c_int;
-    fn primitives_address_to_hex(addr: *const PrimitivesAddress, buf: *mut c_uchar) -> c_int;
     fn primitives_address_to_checksum_hex(addr: *const PrimitivesAddress, buf: *mut c_uchar) -> c_int;
-    fn primitives_address_is_zero(addr: *const PrimitivesAddress) -> bool;
-    fn primitives_address_equals(a: *const PrimitivesAddress, b: *const PrimitivesAddress) -> bool;
-    fn primitives_address_validate_checksum(hex: *const c_uchar) -> bool;
 
     // Keccak-256 API
     fn primitives_keccak256(data: *const c_uchar, len: usize, out: *mut PrimitivesHash) -> c_int;
-    fn primitives_hash_to_hex(hash: *const PrimitivesHash, buf: *mut c_uchar) -> c_int;
-    fn primitives_hash_from_hex(hex: *const c_uchar, out: *mut PrimitivesHash) -> c_int;
-    fn primitives_hash_equals(a: *const PrimitivesHash, b: *const PrimitivesHash) -> bool;
-
-    // Hex utilities
-    fn primitives_hex_to_bytes(hex: *const c_uchar, out: *mut c_uchar, len: usize) -> c_int;
-    fn primitives_bytes_to_hex(data: *const c_uchar, len: usize, out: *mut c_uchar, out_len: usize) -> c_int;
-
-    // U256 API
-    fn primitives_u256_from_hex(hex: *const c_uchar, out: *mut PrimitivesU256) -> c_int;
-    fn primitives_u256_to_hex(value: *const PrimitivesU256, buf: *mut c_uchar, len: usize) -> c_int;
-
-    // EIP-191
-    fn primitives_eip191_hash_message(msg: *const c_uchar, len: usize, out: *mut PrimitivesHash) -> c_int;
 
     // Address derivation
     fn primitives_calculate_create_address(sender: *const PrimitivesAddress, nonce: u64, out: *mut PrimitivesAddress) -> c_int;
@@ -81,11 +57,6 @@ extern "C" {
         private_key: *const [u8; 32],
         out: *mut [u8; 64],
     ) -> c_int;
-
-    fn primitives_secp256k1_validate_signature(
-        r: *const [u8; 32],
-        s: *const [u8; 32],
-    ) -> bool;
 
     // Hash algorithms
     fn primitives_sha256(data: *const c_uchar, len: usize, out: *mut [u8; 32]) -> c_int;
@@ -178,10 +149,6 @@ pub fn pubkey_from_private(private_key: &[u8; 32]) -> Result<[u8; 64]> {
     Ok(out)
 }
 
-pub fn validate_signature(r: &[u8; 32], s: &[u8; 32]) -> bool {
-    unsafe { primitives_secp256k1_validate_signature(r, s) }
-}
-
 pub fn sha256(data: &[u8]) -> [u8; 32] {
     let mut out = [0u8; 32];
     unsafe {
@@ -196,18 +163,4 @@ pub fn ripemd160(data: &[u8]) -> [u8; 20] {
         primitives_ripemd160(data.as_ptr(), data.len(), &mut out);
     }
     out
-}
-
-pub fn eip191_hash_message(message: &[u8]) -> Result<Hash> {
-    let mut out = PrimitivesHash { bytes: [0u8; 32] };
-
-    let result = unsafe {
-        primitives_eip191_hash_message(message.as_ptr(), message.len(), &mut out)
-    };
-
-    if result != PRIMITIVES_SUCCESS {
-        return Err(Error::from_ffi_code(result));
-    }
-
-    Ok(Hash::new(out.bytes))
 }

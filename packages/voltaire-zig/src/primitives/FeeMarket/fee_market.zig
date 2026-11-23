@@ -2,55 +2,50 @@ const std = @import("std");
 
 /// EIP-1559 fee market mechanism
 /// Base fee adjusts based on block fullness; burned, not paid to miners
-/// Calculate fee delta safely (avoids overflow and division by zero)
+/// Calculate `fee * gas_delta / gas_target / denominator` without overflow.
+///
+/// Returns the raw rounded-down delta (may be 0). EIP-1559 forces a minimum
+/// delta of 1 only on upward adjustments; callers apply that rule.
 fn calculateFeeDelta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
     // Using u128 for intermediate calculation to avoid overflow
     const intermediate: u128 = @as(u128, fee) * @as(u128, gas_delta);
     // Avoid division by zero
     const divisor: u128 = @max(1, @as(u128, gas_target) * @as(u128, denominator));
-    const result: u64 = @intCast(@min(@as(u128, std.math.maxInt(u64)), intermediate / divisor));
-
-    // Always return at least 1 to ensure some movement
-    return @max(1, result);
+    return @intCast(@min(@as(u128, std.math.maxInt(u64)), intermediate / divisor));
 }
-/// Minimum base fee (wei)
-pub const MIN_BASE_FEE: u64 = 7;
-
 /// Base fee change denominator (12.5% max change per block)
 pub const BASE_FEE_CHANGE_DENOMINATOR: u64 = 8;
 
 /// Elasticity multiplier (gas limit = target * elasticity)
 pub const ELASTICITY_MULTIPLIER: u64 = 2;
 
-/// Initialize base fee for first EIP-1559 block based on parent gas usage
+/// Base fee of the London fork block (EIP-1559 `INITIAL_BASE_FEE`, 1 gwei)
+pub const INITIAL_BASE_FEE: u64 = 1_000_000_000;
+
+/// Base fee of the first EIP-1559 (London fork) block.
+///
+/// EIP-1559: the fork block's base fee is `INITIAL_BASE_FEE`; parent
+/// utilization does not adjust it. The parameters are kept for API
+/// compatibility and do not affect the result.
 pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
-    const parent_gas_target = parent_gas_limit / 2;
-    var base_fee: u64 = 1_000_000_000; // 1 gwei
-    if (parent_gas_used > 0) {
-        const gas_used_delta = if (parent_gas_used > parent_gas_target)
-            parent_gas_used - parent_gas_target
-        else
-            parent_gas_target - parent_gas_used;
-
-        const base_fee_delta = calculateFeeDelta(base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
-
-        if (parent_gas_used > parent_gas_target) {
-            base_fee = base_fee + base_fee_delta;
-        } else if (base_fee > base_fee_delta) {
-            base_fee = base_fee - base_fee_delta;
-        }
-    }
-
-    return @max(base_fee, MIN_BASE_FEE);
+    _ = parent_gas_used;
+    _ = parent_gas_limit;
+    return INITIAL_BASE_FEE;
 }
 
 /// Calculate the next block's base fee based on the current block
 ///
 /// This implements the EIP-1559 base fee adjustment algorithm:
 /// - If the block used exactly the target gas, the base fee remains the same
-/// - If the block used more than the target, the base fee increases
-/// - If the block used less than the target, the base fee decreases
+/// - If the block used more than the target, the base fee increases by
+///   `max(1, fee * delta / target / 8)`
+/// - If the block used less than the target (including an empty block), the
+///   base fee decreases by `fee * delta / target / 8` (no minimum delta)
 /// - The maximum change per block is 12.5% (1/8)
+/// - No floor applies: EIP-1559 defines none. A 1 wei base fee at target
+///   stays 1 wei and a 0 base fee stays 0.
+/// - An upward adjustment that does not fit in u64 saturates at
+///   `maxInt(u64)`; it never silently stays at `parent_base_fee`.
 ///
 /// Parameters:
 /// - parent_base_fee: Base fee of the parent block
@@ -59,58 +54,25 @@ pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
 ///
 /// Returns: The next block's base fee (in wei)
 pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target: u64) u64 {
-    // Calculating next block's base fee
-    // Using parent block base fee and gas usage
-
-    // If parent block is empty, keep the base fee the same
-    // Skip the delta calculations and just return the parent fee directly
-    if (parent_gas_used == 0) {
-        // Parent block was empty, keeping base fee the same
-        return parent_base_fee;
-    }
-
-    // Calculate base fee delta
     var new_base_fee = parent_base_fee;
 
     if (parent_gas_used == parent_gas_target) {
-        // If parent block used exactly the target gas, keep the base fee the same
-        // Parent block used exactly the target gas, keeping base fee the same
+        // At target: base fee unchanged
     } else if (parent_gas_used > parent_gas_target) {
-        // If parent block used more than the target gas, increase the base fee
-
-        // Calculate gas used delta as a fraction of target
         const gas_used_delta = parent_gas_used - parent_gas_target;
-
-        // Calculate the base fee delta (max 12.5% increase)
-        const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
-
-        // Increase the base fee
-        // The overflow check is probably unnecessary given gas limits, but it's a good safety measure
-        new_base_fee = std.math.add(u64, parent_base_fee, base_fee_delta) catch parent_base_fee;
-
-        // Parent block used more than target gas, increasing base fee
+        // Upward adjustment is at least 1 wei (EIP-1559)
+        const base_fee_delta = @max(1, calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR));
+        // Sum in u128 and saturate at maxInt(u64): a fee that cannot be
+        // represented still rises to the ceiling instead of freezing at parent.
+        const raised: u128 = @as(u128, parent_base_fee) + @as(u128, base_fee_delta);
+        new_base_fee = @intCast(@min(raised, @as(u128, std.math.maxInt(u64))));
     } else {
-        // If parent block used less than the target gas, decrease the base fee
-
-        // Calculate gas used delta as a fraction of target
+        // Below target (an empty parent block included): no minimum delta
         const gas_used_delta = parent_gas_target - parent_gas_used;
-
-        // Calculate the base fee delta (max 12.5% decrease)
         const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
-
-        // Decrease the base fee, but don't go below the minimum
-        new_base_fee = if (parent_base_fee > base_fee_delta)
-            parent_base_fee - base_fee_delta
-        else
-            MIN_BASE_FEE;
-
-        // Parent block used less than target gas, decreasing base fee
+        new_base_fee = parent_base_fee -| base_fee_delta;
     }
 
-    // Ensure base fee is at least the minimum
-    new_base_fee = @max(new_base_fee, MIN_BASE_FEE);
-
-    // Next block base fee calculated
     return new_base_fee;
 }
 
@@ -171,9 +133,18 @@ pub fn getGasTarget(gas_limit: u64) u64 {
 /// - gwei: Amount in gwei (as floating point)
 ///
 /// Returns: Amount in wei
-pub fn gweiToWei(gwei: f64) u64 {
-    const wei_f64 = gwei * 1_000_000_000.0;
-    return @intFromFloat(@floor(wei_f64));
+///
+/// Errors:
+/// - `error.NotFinite`: `gwei` is NaN or infinite
+/// - `error.Negative`: `gwei` is below zero
+/// - `error.Overflow`: the wei amount does not fit in u64
+pub fn gweiToWei(gwei: f64) error{ NotFinite, Negative, Overflow }!u64 {
+    if (!std.math.isFinite(gwei)) return error.NotFinite;
+    if (gwei < 0) return error.Negative;
+    const wei_f64 = @floor(gwei * 1_000_000_000.0);
+    // 2^64 is exactly representable; every f64 below it converts safely.
+    if (wei_f64 >= 18446744073709551616.0) return error.Overflow;
+    return @intFromFloat(wei_f64);
 }
 
 /// Convert wei (u64) to gwei string representation
@@ -242,15 +213,14 @@ test "calculateFeeDelta basic functionality" {
     try std.testing.expectEqual(@as(u64, 12), result);
 }
 
-test "calculateFeeDelta returns at least 1" {
-    // Test that result is always at least 1
+test "calculateFeeDelta rounds down to zero (no forced minimum)" {
     const fee = 1;
     const gas_delta = 1;
     const gas_target = 1000000;
     const denominator = 1000000;
 
     const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
-    try std.testing.expectEqual(@as(u64, 1), result);
+    try std.testing.expectEqual(@as(u64, 0), result);
 }
 
 test "calculateFeeDelta handles large values without overflow" {
@@ -277,8 +247,17 @@ test "calculateFeeDelta handles division by zero protection" {
     try std.testing.expectEqual(@as(u64, 100000), result);
 }
 
-test "MIN_BASE_FEE constant value" {
-    try std.testing.expectEqual(@as(u64, 7), MIN_BASE_FEE);
+test "nextBaseFee applies no minimum base fee clamp" {
+    // EIP-1559 has no base fee floor. At target the fee is unchanged.
+    try std.testing.expectEqual(@as(u64, 1), nextBaseFee(1, 15_000_000, 15_000_000));
+    try std.testing.expectEqual(@as(u64, 0), nextBaseFee(0, 15_000_000, 15_000_000));
+    // Below target: 1 * delta / target / 8 rounds to 0, so 1 wei stays 1 wei.
+    try std.testing.expectEqual(@as(u64, 1), nextBaseFee(1, 0, 15_000_000));
+    try std.testing.expectEqual(@as(u64, 0), nextBaseFee(0, 0, 15_000_000));
+    // Fees below the old 7 wei clamp are preserved, not raised.
+    try std.testing.expectEqual(@as(u64, 6), nextBaseFee(6, 15_000_000, 15_000_000));
+    // Above target: the forced 1 wei upward delta lifts 0 to 1.
+    try std.testing.expectEqual(@as(u64, 1), nextBaseFee(0, 30_000_000, 15_000_000));
 }
 
 test "BASE_FEE_CHANGE_DENOMINATOR constant value" {
@@ -286,40 +265,18 @@ test "BASE_FEE_CHANGE_DENOMINATOR constant value" {
 }
 
 test "initial_base_fee with exactly target gas usage" {
-    const parent_gas_limit = 30_000_000;
-    const parent_gas_used = 15_000_000; // Exactly half (target)
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // When exactly at target, there's still a minimal adjustment due to calculateFeeDelta returning at least 1
-    // gas_used_delta = 0, but calculate_fee_delta returns 1, so base_fee = 1_000_000_000 - 1
-    try std.testing.expectEqual(@as(u64, 999_999_999), base_fee);
+    // London fork block: INITIAL_BASE_FEE, no parent utilization adjustment
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(15_000_000, 30_000_000));
 }
 
 test "initial_base_fee with above target gas usage" {
-    const parent_gas_limit = 30_000_000;
-    const parent_gas_used = 20_000_000; // Above target (15M)
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Should be higher than 1 gwei
-    try std.testing.expect(base_fee > 1_000_000_000);
-
-    // Calculate expected: 1 gwei + (1 gwei * 5M / 15M / 8)
-    // = 1_000_000_000 + (1_000_000_000 * 5_000_000 / 15_000_000 / 8)
-    // = 1_000_000_000 + 41_666_666
-    try std.testing.expectEqual(@as(u64, 1_041_666_666), base_fee);
+    // Parent utilization above target does not adjust the fork block base fee
+    try std.testing.expectEqual(@as(u64, 1_000_000_000), initialBaseFee(20_000_000, 30_000_000));
 }
 
 test "initial_base_fee with below target gas usage" {
-    const parent_gas_limit = 30_000_000;
-    const parent_gas_used = 10_000_000; // Below target (15M)
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Should be lower than 1 gwei
-    try std.testing.expect(base_fee < 1_000_000_000);
-
-    // Calculate expected: 1 gwei - (1 gwei * 5M / 15M / 8)
-    // = 1_000_000_000 - 41_666_666
-    try std.testing.expectEqual(@as(u64, 958_333_334), base_fee);
+    // Parent utilization below target does not adjust the fork block base fee
+    try std.testing.expectEqual(@as(u64, 1_000_000_000), initialBaseFee(10_000_000, 30_000_000));
 }
 
 test "initial_base_fee with zero gas usage" {
@@ -331,13 +288,9 @@ test "initial_base_fee with zero gas usage" {
     try std.testing.expectEqual(@as(u64, 1_000_000_000), base_fee);
 }
 
-test "initial_base_fee respects minimum base fee" {
-    const parent_gas_limit = 100;
-    const parent_gas_used = 0;
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Even with extreme values, should respect MIN_BASE_FEE
-    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+test "initial_base_fee is INITIAL_BASE_FEE at tiny gas limits" {
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(0, 100));
+    try std.testing.expectEqual(@as(u64, 1_000_000_000), INITIAL_BASE_FEE);
 }
 
 test "next_base_fee with exactly target gas usage" {
@@ -395,28 +348,27 @@ test "next_base_fee with empty parent block" {
     const parent_gas_used = 0; // Empty block
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should remain the same for empty blocks
-    try std.testing.expectEqual(parent_base_fee, next_fee);
+    // Empty block uses the standard downward formula: -12.5%
+    try std.testing.expectEqual(@as(u64, 875_000_000), next_fee);
 }
 
 test "next_base_fee respects minimum base fee on decrease" {
     const parent_base_fee = 10; // Very low base fee
     const parent_gas_target = 15_000_000;
-    const parent_gas_used = 0; // Would normally decrease
+    const parent_gas_used = 0; // Empty block decreases by 10 / 8 = 1
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should not go below MIN_BASE_FEE
-    try std.testing.expectEqual(@as(u64, 10), next_fee); // Stays at parent fee since it's above MIN_BASE_FEE
+    try std.testing.expectEqual(@as(u64, 9), next_fee);
 }
 
-test "next_base_fee respects minimum when decrease would go below" {
-    const parent_base_fee = 8; // Just above MIN_BASE_FEE
+test "next_base_fee is unchanged when the downward delta rounds to zero" {
+    const parent_base_fee = 8;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 1; // Very low usage
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should not go below MIN_BASE_FEE
-    try std.testing.expect(next_fee >= MIN_BASE_FEE);
+    // 8 * (15M - 1) / 15M / 8 rounds to 0
+    try std.testing.expectEqual(@as(u64, 8), next_fee);
 }
 
 test "next_base_fee handles overflow protection" {
@@ -425,8 +377,9 @@ test "next_base_fee handles overflow protection" {
     const parent_gas_used = 30_000_000; // Would increase
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should handle overflow gracefully
-    try std.testing.expectEqual(parent_base_fee, next_fee);
+    // +12.5% does not fit in u64: saturate at the ceiling, never freeze at parent
+    try std.testing.expectEqual(@as(u64, std.math.maxInt(u64)), next_fee);
+    try std.testing.expect(next_fee > parent_base_fee);
 }
 
 test "get_effective_gas_price with sufficient max fee" {
@@ -512,59 +465,28 @@ test "get_gas_target with small gas limit" {
 // Additional comprehensive tests for initialBaseFee
 
 test "initialBaseFee with maximum gas limit" {
-    const parent_gas_limit = std.math.maxInt(u64);
-    const parent_gas_used = std.math.maxInt(u64) / 2; // At target
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Should handle large values without overflow
-    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(std.math.maxInt(u64) / 2, std.math.maxInt(u64)));
 }
 
 test "initialBaseFee with full parent block" {
-    const parent_gas_limit = 30_000_000;
-    const parent_gas_used = 30_000_000; // Completely full
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Should be at maximum increase (12.5%)
-    // 1 gwei + (1 gwei * 15M / 15M / 8) = 1 gwei + 125M wei
-    try std.testing.expectEqual(@as(u64, 1_125_000_000), base_fee);
+    // Full parent block does not raise the fork block base fee
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(30_000_000, 30_000_000));
 }
 
 test "initialBaseFee with very small gas limit" {
-    const parent_gas_limit = 100;
-    const parent_gas_used = 50; // At target
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Should still work with small values and respect minimum
-    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(50, 100));
 }
 
 test "initialBaseFee with near-zero parent gas used" {
-    const parent_gas_limit = 30_000_000;
-    const parent_gas_used = 1; // Nearly empty
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Should decrease from 1 gwei but respect minimum
-    try std.testing.expect(base_fee < 1_000_000_000);
-    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(1, 30_000_000));
 }
 
 test "initialBaseFee with extreme below-target usage" {
-    const parent_gas_limit = 30_000_000;
-    const parent_gas_used = 100; // Way below target
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Should decrease significantly but respect minimum
-    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(100, 30_000_000));
 }
 
-test "initialBaseFee minimum enforcement at boundary" {
-    const parent_gas_limit = 1000;
-    const parent_gas_used = 1; // Very low usage to force decrease
-
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // Even with extreme decrease, should not go below MIN_BASE_FEE
-    try std.testing.expectEqual(MIN_BASE_FEE, base_fee);
+test "initialBaseFee ignores parent utilization at small limits" {
+    try std.testing.expectEqual(INITIAL_BASE_FEE, initialBaseFee(1, 1000));
 }
 
 // Additional comprehensive tests for nextBaseFee
@@ -581,14 +503,13 @@ test "nextBaseFee with minimal above-target usage" {
 }
 
 test "nextBaseFee with minimal below-target usage" {
-    const parent_base_fee = 1_000_000_000;
+    const parent_base_fee = 100;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 14_999_999; // Just 1 under target
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should decrease minimally (at least by 1)
-    try std.testing.expect(next_fee < parent_base_fee);
-    try std.testing.expect(parent_base_fee - next_fee >= 1);
+    // 100 * 1 / 15M / 8 rounds to 0: no forced 1-wei decrease (EIP-1559)
+    try std.testing.expectEqual(parent_base_fee, next_fee);
 }
 
 test "nextBaseFee precision with small base fee" {
@@ -620,43 +541,44 @@ test "nextBaseFee precision with large base fee" {
 test "nextBaseFee with very high gas usage" {
     const parent_base_fee = 1_000_000_000;
     const parent_gas_target = 15_000_000;
-    const parent_gas_used = 100_000_000; // Way above target
+    const parent_gas_used = 100_000_000; // Way above target (beyond 2x elasticity)
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should cap at 12.5% increase
-    const max_increase = parent_base_fee + (parent_base_fee / 8);
-    try std.testing.expectEqual(max_increase, next_fee);
+    // EIP-1559 has no cap in the formula; 12.5% is the max only because
+    // gas_used <= gas_limit = 2 * target. 1e9 * 85M / 15M / 8 = 708_333_333
+    try std.testing.expectEqual(@as(u64, 1_708_333_333), next_fee);
 }
 
-test "nextBaseFee decrease to minimum boundary" {
-    const parent_base_fee = 8; // Just above MIN_BASE_FEE
+test "nextBaseFee decrease at single-digit base fee" {
+    const parent_base_fee = 8;
     const parent_gas_target = 1_000;
-    const parent_gas_used = 1; // Very low to force decrease
+    const parent_gas_used = 1;
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should not go below MIN_BASE_FEE
-    try std.testing.expect(next_fee >= MIN_BASE_FEE);
-    try std.testing.expectEqual(MIN_BASE_FEE, next_fee);
+    // 8 * 999 / 1000 / 8 rounds to 0: base fee unchanged
+    try std.testing.expectEqual(@as(u64, 8), next_fee);
+    // An empty block decreases it: 8 * 1000 / 1000 / 8 = 1
+    try std.testing.expectEqual(@as(u64, 7), nextBaseFee(8, 0, 1_000));
 }
 
-test "nextBaseFee at minimum with empty block" {
-    const parent_base_fee = MIN_BASE_FEE;
+test "nextBaseFee at 7 wei with empty block" {
+    const parent_base_fee = 7;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 0; // Empty block
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should stay at minimum for empty blocks
-    try std.testing.expectEqual(MIN_BASE_FEE, next_fee);
+    // 7 * target / target / 8 rounds to 0: the fee stops falling by rounding, not by a clamp
+    try std.testing.expectEqual(@as(u64, 7), next_fee);
 }
 
-test "nextBaseFee at minimum with below-target usage" {
-    const parent_base_fee = MIN_BASE_FEE;
+test "nextBaseFee at 7 wei with below-target usage" {
+    const parent_base_fee = 7;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 1_000_000; // Below target
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should stay at minimum (cannot decrease further)
-    try std.testing.expectEqual(MIN_BASE_FEE, next_fee);
+    // Delta rounds to 0
+    try std.testing.expectEqual(@as(u64, 7), next_fee);
 }
 
 test "nextBaseFee with gas used exceeding realistic limits" {
@@ -665,9 +587,8 @@ test "nextBaseFee with gas used exceeding realistic limits" {
     const parent_gas_used = 1_000_000_000; // Unrealistically high
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should still cap at 12.5% increase
-    const max_increase = parent_base_fee + (parent_base_fee / 8);
-    try std.testing.expectEqual(max_increase, next_fee);
+    // Uncapped formula: 1e9 * 985M / 15M / 8 = 8_208_333_333
+    try std.testing.expectEqual(@as(u64, 9_208_333_333), next_fee);
 }
 
 test "nextBaseFee precision loss with integer division" {
@@ -742,25 +663,13 @@ test "calculateFeeDelta with maximum fee and small delta" {
 }
 
 test "calculateFeeDelta with zero fee" {
-    const fee = 0;
-    const gas_delta = 1_000_000;
-    const gas_target = 15_000_000;
-    const denominator = 8;
-
-    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
-    // 0 * anything = 0, but minimum is 1
-    try std.testing.expectEqual(@as(u64, 1), result);
+    const result = calculateFeeDelta(0, 1_000_000, 15_000_000, 8);
+    try std.testing.expectEqual(@as(u64, 0), result);
 }
 
 test "calculateFeeDelta with zero gas delta" {
-    const fee = 1_000_000_000;
-    const gas_delta = 0;
-    const gas_target = 15_000_000;
-    const denominator = 8;
-
-    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
-    // 0 delta should result in minimum return of 1
-    try std.testing.expectEqual(@as(u64, 1), result);
+    const result = calculateFeeDelta(1_000_000_000, 0, 15_000_000, 8);
+    try std.testing.expectEqual(@as(u64, 0), result);
 }
 
 test "calculateFeeDelta with all maximum values" {
@@ -810,56 +719,63 @@ test "nextBaseFee sequence of full blocks" {
 test "nextBaseFee sequence of empty blocks" {
     var current_fee: u64 = 1_000_000_000;
     const gas_target: u64 = 15_000_000;
-    const gas_used: u64 = 0; // Empty block
 
-    // After 10 empty blocks, fee should stay the same
+    // Each empty block decreases the base fee by exactly 12.5%
     var i: usize = 0;
     while (i < 10) : (i += 1) {
-        const next = nextBaseFee(current_fee, gas_used, gas_target);
-        try std.testing.expectEqual(current_fee, next);
+        const next = nextBaseFee(current_fee, 0, gas_target);
+        try std.testing.expectEqual(current_fee - current_fee / 8, next);
         current_fee = next;
     }
 
-    try std.testing.expectEqual(@as(u64, 1_000_000_000), current_fee);
+    try std.testing.expectEqual(@as(u64, 263_075_578), current_fee);
 }
 
 test "nextBaseFee sequence alternating full and empty" {
     var current_fee: u64 = 1_000_000_000;
     const gas_target: u64 = 15_000_000;
 
-    // Alternate between full and empty blocks
     var i: usize = 0;
     while (i < 10) : (i += 1) {
         if (i % 2 == 0) {
-            // Full block
             current_fee = nextBaseFee(current_fee, 30_000_000, gas_target);
         } else {
-            // Empty block
             current_fee = nextBaseFee(current_fee, 0, gas_target);
         }
     }
 
-    // Fee should be higher than start (more full than empty)
-    try std.testing.expect(current_fee > 1_000_000_000);
+    // 1.125 * 0.875 < 1: five full/empty pairs lower the fee
+    try std.testing.expectEqual(@as(u64, 924_278_556), current_fee);
 }
 
-test "nextBaseFee sequence descending to minimum" {
+test "nextBaseFee sequence descending to fixed point" {
     var current_fee: u64 = 1_000_000_000;
     const gas_target: u64 = 15_000_000;
     const gas_used: u64 = 100; // Very low usage
 
-    // Keep decreasing until we hit minimum
+    // Decrease until the rounded-down delta reaches 0
     var i: usize = 0;
-    while (i < 100) : (i += 1) {
+    while (i < 1000) : (i += 1) {
         const next = nextBaseFee(current_fee, gas_used, gas_target);
-        if (next == MIN_BASE_FEE and current_fee == MIN_BASE_FEE) {
-            break; // Reached minimum
-        }
+        if (next == current_fee) break;
         current_fee = next;
     }
 
-    // Should eventually reach minimum
-    try std.testing.expectEqual(MIN_BASE_FEE, current_fee);
+    // 8 * 14_999_900 / 15M / 8 rounds to 0, so the fee settles at 8 wei
+    try std.testing.expectEqual(@as(u64, 145), i);
+    try std.testing.expectEqual(@as(u64, 8), current_fee);
+}
+
+test "nextBaseFee empty parent block follows EIP-1559 downward formula" {
+    // 1 gwei -> 875M wei, not unchanged
+    try std.testing.expectEqual(@as(u64, 875_000_000), nextBaseFee(1_000_000_000, 0, 15_000_000));
+}
+
+test "nextBaseFee forces a 1 wei minimum delta only upward" {
+    // Upward: 1000 * 1 / 15M / 8 rounds to 0, forced to 1
+    try std.testing.expectEqual(@as(u64, 1_001), nextBaseFee(1_000, 15_000_001, 15_000_000));
+    // Downward: same magnitude rounds to 0 and stays 0
+    try std.testing.expectEqual(@as(u64, 1_000), nextBaseFee(1_000, 14_999_999, 15_000_000));
 }
 
 // Tests for new APIs
@@ -869,28 +785,43 @@ test "ELASTICITY_MULTIPLIER constant value" {
 }
 
 test "gweiToWei converts 1 gwei" {
-    const wei = gweiToWei(1.0);
+    const wei = try gweiToWei(1.0);
     try std.testing.expectEqual(@as(u64, 1_000_000_000), wei);
 }
 
 test "gweiToWei converts fractional gwei" {
-    const wei = gweiToWei(1.5);
+    const wei = try gweiToWei(1.5);
     try std.testing.expectEqual(@as(u64, 1_500_000_000), wei);
 }
 
 test "gweiToWei converts zero" {
-    const wei = gweiToWei(0.0);
+    const wei = try gweiToWei(0.0);
     try std.testing.expectEqual(@as(u64, 0), wei);
 }
 
 test "gweiToWei converts large values" {
-    const wei = gweiToWei(100.0);
+    const wei = try gweiToWei(100.0);
     try std.testing.expectEqual(@as(u64, 100_000_000_000), wei);
 }
 
 test "gweiToWei truncates sub-wei precision" {
-    const wei = gweiToWei(1.0000000001);
+    const wei = try gweiToWei(1.0000000001);
     try std.testing.expectEqual(@as(u64, 1_000_000_000), wei);
+}
+
+test "gweiToWei rejects NaN, infinity, negative, and out-of-range input" {
+    try std.testing.expectError(error.NotFinite, gweiToWei(std.math.nan(f64)));
+    try std.testing.expectError(error.NotFinite, gweiToWei(std.math.inf(f64)));
+    try std.testing.expectError(error.NotFinite, gweiToWei(-std.math.inf(f64)));
+    try std.testing.expectError(error.Negative, gweiToWei(-1.0));
+    try std.testing.expectError(error.Negative, gweiToWei(-0.000000001));
+    // 2^64 wei = 18446744073.709551616 gwei
+    try std.testing.expectError(error.Overflow, gweiToWei(18446744073.709551616));
+    try std.testing.expectError(error.Overflow, gweiToWei(1e300));
+    // 2^32 gwei = 2^41 * 5^9 wei is exactly representable and in range
+    try std.testing.expectEqual(@as(u64, 4_294_967_296_000_000_000), try gweiToWei(4294967296.0));
+    // Negative zero is zero
+    try std.testing.expectEqual(@as(u64, 0), try gweiToWei(-0.0));
 }
 
 test "weiToGwei converts 1 gwei" {
@@ -963,4 +894,30 @@ test "getGasTarget uses ELASTICITY_MULTIPLIER" {
     const target = getGasTarget(gas_limit);
     try std.testing.expectEqual(@as(u64, 15_000_000), target);
     try std.testing.expectEqual(gas_limit / ELASTICITY_MULTIPLIER, target);
+}
+
+test "nextBaseFee saturates at maxInt(u64) when the upward delta overflows" {
+    const max = std.math.maxInt(u64);
+    const target: u64 = 15_000_000;
+
+    // Full block at the ceiling: +12.5% does not fit, so saturate (never freeze)
+    try std.testing.expectEqual(@as(u64, max), nextBaseFee(max, 2 * target, target));
+    try std.testing.expectEqual(@as(u64, max), nextBaseFee(max - 1, 2 * target, target));
+
+    // Just below the ceiling with the minimum 1 wei bump: exact, no saturation
+    try std.testing.expectEqual(@as(u64, max), nextBaseFee(max - 1, (1 << 62) + 1, 1 << 62));
+
+    // Parent whose +12.5% overflows rises to the ceiling, above the parent
+    const parent: u64 = max - max / 16;
+    const next = nextBaseFee(parent, 2 * target, target);
+    try std.testing.expectEqual(@as(u64, max), next);
+    try std.testing.expect(next > parent);
+
+    // Largest parent whose +12.5% still fits is exact: p + p / 8
+    const fits: u64 = max / 9 * 8;
+    try std.testing.expectEqual(fits + fits / 8, nextBaseFee(fits, 2 * target, target));
+
+    // At target and below target are unaffected at the ceiling
+    try std.testing.expectEqual(@as(u64, max), nextBaseFee(max, target, target));
+    try std.testing.expectEqual(max - max / 8, nextBaseFee(max, 0, target));
 }

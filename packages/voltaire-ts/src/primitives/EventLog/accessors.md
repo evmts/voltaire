@@ -1,6 +1,6 @@
 ---
-title: "EventLog Accessors"
----
+
+## title: "EventLog Accessors"
 
 # EventLog Accessors
 
@@ -15,24 +15,29 @@ getTopic0(log: BrandedEventLog): HashType | undefined
 ```
 
 **Parameters:**
+
 - `log`: Event log instance
 
 **Returns:** Topic0 hash, or undefined if topics array is empty
 
 **Details:**
+
 - Topic0 is first element of topics array
 - Typically contains Keccak-256 hash of event signature
 - For anonymous events, topic0 may be first indexed parameter
 
 **Example:**
+
 ```javascript
 const log = EventLog({
-  address: contractAddress,
-  topics: [
-    Hash.fromHex('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'),
-    Hash.fromHex('0x000000000000000000000000a1b2c3d4e5f6...'),
-  ],
-  data: new Uint8Array([]),
+	address: contractAddress,
+	topics: [
+		Hash.fromHex(
+			"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+		),
+		Hash.fromHex("0x000000000000000000000000a1b2c3d4e5f6..."),
+	],
+	data: new Uint8Array([]),
 });
 
 const topic0 = EventLog.getTopic0(log);
@@ -52,13 +57,17 @@ getSignature(log: BrandedEventLog): HashType | undefined
 ```
 
 **Parameters:**
+
 - `log`: Event log instance
 
 **Returns:** Event signature hash, or undefined if no topics
 
 **Example:**
+
 ```javascript
-const log = EventLog({ /* ... */ });
+const log = EventLog({
+	/* ... */
+});
 
 const signature = EventLog.getSignature(log);
 // or
@@ -76,26 +85,29 @@ getIndexedTopics(log: BrandedEventLog): readonly HashType[]
 ```
 
 **Parameters:**
+
 - `log`: Event log instance
 
 **Returns:** Read-only array of indexed topic hashes
 
 **Details:**
+
 - Returns topics.slice(1)
 - Maximum 3 indexed parameters in Solidity
 - Empty array if log has 0-1 topics
 
 **Example:**
+
 ```javascript
 // Transfer(address indexed from, address indexed to, uint256 value)
 const log = EventLog({
-  address: tokenAddress,
-  topics: [
-    Hash.fromHex('0xddf252ad...'), // event signature
-    Hash.fromHex('0x000...a1b'),   // from address
-    Hash.fromHex('0x000...f6e'),   // to address
-  ],
-  data: Hex.toBytes('0x0000...0001'), // value (not indexed)
+	address: tokenAddress,
+	topics: [
+		Hash.fromHex("0xddf252ad..."), // event signature
+		Hash.fromHex("0x000...a1b"), // from address
+		Hash.fromHex("0x000...f6e"), // to address
+	],
+	data: Hex.toBytes("0x0000...0001"), // value (not indexed)
 });
 
 const indexed = EventLog.getIndexedTopics(log);
@@ -116,13 +128,17 @@ getIndexed(log: BrandedEventLog): readonly HashType[]
 ```
 
 **Parameters:**
+
 - `log`: Event log instance
 
 **Returns:** Read-only array of indexed topic hashes
 
 **Example:**
+
 ```javascript
-const log = EventLog({ /* ... */ });
+const log = EventLog({
+	/* ... */
+});
 
 const indexed = EventLog.getIndexed(log);
 // or
@@ -138,25 +154,25 @@ const indexed = log.getIndexed();
 ```javascript
 // Transfer(address indexed from, address indexed to, uint256 value)
 const TRANSFER_SIG = Hash.fromHex(
-  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 );
 
 function decodeTransfer(log) {
-  const signature = log.getSignature();
-  if (!Hash.equals(signature, TRANSFER_SIG)) {
-    throw new Error('Not a Transfer event');
-  }
+	const signature = log.getSignature();
+	if (!Hash.equals(signature, TRANSFER_SIG)) {
+		throw new Error("Not a Transfer event");
+	}
 
-  const [fromHash, toHash] = log.getIndexedTopics();
+	const [fromHash, toHash] = log.getIndexedTopics();
 
-  // Extract addresses from topic hashes (last 20 bytes)
-  const from = Address.fromBytes(fromHash.slice(12));
-  const to = Address.fromBytes(toHash.slice(12));
+	// Extract addresses from topic hashes (last 20 bytes)
+	const from = Address.fromBytes(fromHash.slice(12));
+	const to = Address.fromBytes(toHash.slice(12));
 
-  // Decode value from data
-  const value = new DataView(log.data.buffer).getBigUint64(0, false);
+	// Decode value from data
+	const value = new DataView(log.data.buffer).getBigUint64(0, false);
 
-  return { from, to, value };
+	return { from, to, value };
 }
 ```
 
@@ -164,29 +180,31 @@ function decodeTransfer(log) {
 
 ```javascript
 // Approval(address indexed owner, address indexed spender, uint256 value)
-const log = EventLog({ /* approval event */ });
+const log = EventLog({
+	/* approval event */
+});
 
 const signature = log.getTopic0();
 const [ownerHash, spenderHash] = log.getIndexed();
 
-console.log('Event:', Hash.toHex(signature));
-console.log('Owner:', Hash.toHex(ownerHash));
-console.log('Spender:', Hash.toHex(spenderHash));
+console.log("Event:", Hash.toHex(signature));
+console.log("Owner:", Hash.toHex(ownerHash));
+console.log("Spender:", Hash.toHex(spenderHash));
 ```
 
 ### Checking Topic Count
 
 ```javascript
 function validateEventStructure(log, expectedTopicCount) {
-  const indexed = log.getIndexedTopics();
+	const indexed = log.getIndexedTopics();
 
-  if (indexed.length !== expectedTopicCount) {
-    throw new Error(
-      `Expected ${expectedTopicCount} indexed params, got ${indexed.length}`
-    );
-  }
+	if (indexed.length !== expectedTopicCount) {
+		throw new Error(
+			`Expected ${expectedTopicCount} indexed params, got ${indexed.length}`,
+		);
+	}
 
-  return true;
+	return true;
 }
 
 // Transfer has 2 indexed parameters (from, to)
@@ -198,12 +216,12 @@ validateEventStructure(transferLog, 2);
 ```javascript
 // Anonymous events don't have topic0 signature
 const anonymousLog = EventLog({
-  address: contractAddress,
-  topics: [
-    Hash.fromHex('0x000...abc'), // indexed param 1
-    Hash.fromHex('0x000...def'), // indexed param 2
-  ],
-  data: eventData,
+	address: contractAddress,
+	topics: [
+		Hash.fromHex("0x000...abc"), // indexed param 1
+		Hash.fromHex("0x000...def"), // indexed param 2
+	],
+	data: eventData,
 });
 
 const signature = anonymousLog.getTopic0();
@@ -219,16 +237,18 @@ console.log(indexed.length); // 1 (remaining indexed params)
 const logs = [log1, log2, log3];
 
 // Find all Transfer events
-const transferLogs = logs.filter(log => {
-  const sig = log.getSignature();
-  return sig && Hash.equals(sig, TRANSFER_SIG);
+const transferLogs = logs.filter((log) => {
+	const sig = log.getSignature();
+	return sig && Hash.equals(sig, TRANSFER_SIG);
 });
 ```
 
 ### Accessing Topics Directly
 
 ```javascript
-const log = EventLog({ /* ... */ });
+const log = EventLog({
+	/* ... */
+});
 
 // Direct access to topics array
 console.log(log.topics.length); // All topics including topic0

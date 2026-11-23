@@ -30,12 +30,7 @@ module native {
   }
 }
 
-import {
-  derivePrivateKeyRaw,
-  generateMnemonicRaw,
-  mnemonicToSeedSyncRaw,
-  validateMnemonicRaw
-} from native
+import { derivePrivateKeyRaw, generateMnemonicRaw, mnemonicToSeedSyncRaw, validateMnemonicRaw } from native
 
 export service Bip39 {
   static readonly key = "voltaire-effect/crypto/Bip39"
@@ -54,7 +49,12 @@ export const Bip39Live = Layer.succeed(Bip39, {
   effect generateMnemonic(strength?: 128 | 160 | 192 | 224 | 256) {
     return try Effect.try({
       try: () => generateMnemonicRaw(strength),
-      catch: (cause) => new CryptoError({ operation: "bip39.generateMnemonic", message: `Mnemonic generation failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "bip39.generateMnemonic",
+          message: `Mnemonic generation failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect validateMnemonic(mnemonic: string) {
@@ -63,9 +63,14 @@ export const Bip39Live = Layer.succeed(Bip39, {
   effect mnemonicToSeed(mnemonic: string, passphrase?: string) {
     return try Effect.try({
       try: () => mnemonicToSeedSyncRaw(mnemonic, passphrase),
-      catch: (cause) => new CryptoError({ operation: "bip39.mnemonicToSeed", message: `Mnemonic seed derivation failed: ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "bip39.mnemonicToSeed",
+          message: `Mnemonic seed derivation failed: ${errorMessage(cause)}`,
+          cause,
+        }),
     })
-  }
+  },
 })
 
 export const HdWalletLive = Layer.succeed(HdWallet, {
@@ -73,7 +78,12 @@ export const HdWalletLive = Layer.succeed(HdWallet, {
     const targetPath = path ?? DEFAULT_ETH_DERIVATION_PATH
     return try Effect.try({
       try: () => derivePrivateKeyRaw(seed, targetPath),
-      catch: (cause) => new CryptoError({ operation: "hdWallet.deriveFromSeed", message: `HD key derivation failed for "${targetPath}": ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "hdWallet.deriveFromSeed",
+          message: `HD key derivation failed for "${targetPath}": ${errorMessage(cause)}`,
+          cause,
+        }),
     })
   },
   effect deriveFromMnemonic(mnemonic: string, path?: string, passphrase?: string) {
@@ -83,7 +93,12 @@ export const HdWalletLive = Layer.succeed(HdWallet, {
         const seed = mnemonicToSeedSyncRaw(mnemonic, passphrase)
         return derivePrivateKeyRaw(seed, targetPath)
       },
-      catch: (cause) => new CryptoError({ operation: "hdWallet.deriveFromMnemonic", message: `Mnemonic key derivation failed for "${targetPath}": ${errorMessage(cause)}`, cause })
+      catch: (cause) =>
+        new CryptoError({
+          operation: "hdWallet.deriveFromMnemonic",
+          message: `Mnemonic key derivation failed for "${targetPath}": ${errorMessage(cause)}`,
+          cause,
+        }),
     })
-  }
+  },
 })

@@ -15,23 +15,6 @@ Protocol constants for EIP-1559 and EIP-4844 fee markets.
 
 Base fee mechanism constants.
 
-### MIN_BASE_FEE
-
-```typescript
-FeeMarket.Eip1559.MIN_BASE_FEE: bigint = 7n
-```
-
-Minimum base fee per gas (wei). Base fee cannot go below this value.
-
-**Usage:**
-```typescript
-const baseFee = FeeMarket.BaseFee(0n, 30_000_000n, 5n);
-// baseFee >= FeeMarket.Eip1559.MIN_BASE_FEE
-// baseFee === 7n (enforced minimum)
-```
-
-**Rationale:** Prevents base fee from reaching zero, ensuring minimum transaction cost and spam prevention.
-
 ### BASE_FEE_CHANGE_DENOMINATOR
 
 ```typescript
@@ -279,14 +262,12 @@ blobSize = BLOB_GAS_PER_BLOB * 32 bytes/field element = 4 MiB
 ### Fee Boundaries
 
 ```typescript
-// Minimum fees
-const minBaseFee = FeeMarket.Eip1559.MIN_BASE_FEE; // 7 wei
 const minBlobFee = FeeMarket.Eip4844.MIN_BLOB_BASE_FEE; // 1 wei
 
 // Maximum single-block change
 const baseFee = 1_000_000_000n;
 const maxIncrease = baseFee + (baseFee / 8n); // 1.125 gwei
-const maxDecrease = baseFee - (baseFee / 8n); // 0.875 gwei (if above min)
+const maxDecrease = baseFee - (baseFee / 8n); // 0.875 gwei
 ```
 
 ### Target Calculations
@@ -311,9 +292,8 @@ const blobMax = FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK;
 function validateFeeMarketState(state: FeeMarket.State) {
   const errors: string[] = [];
 
-  // Base fee minimum
-  if (state.baseFee < FeeMarket.Eip1559.MIN_BASE_FEE) {
-    errors.push('Base fee below minimum');
+  if (state.baseFee < 0n) {
+    errors.push('baseFee must be non-negative');
   }
 
   // Gas usage
@@ -340,7 +320,7 @@ Both re-exported from `FeeMarket.js`:
 ```typescript
 import * as FeeMarket from './FeeMarket.js';
 
-const minBase = FeeMarket.Eip1559.MIN_BASE_FEE;
+const changeDenominator = FeeMarket.Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
 const targetBlobs = FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
 ```
 

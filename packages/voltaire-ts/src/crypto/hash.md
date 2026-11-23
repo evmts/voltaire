@@ -17,25 +17,25 @@ type Hash = Uint8Array & { __brand: typeof hashSymbol };
 ### Creation
 
 ```typescript
-import { Hash, Keccak256 } from '@tevm/voltaire';
+import { Hash, Keccak256 } from "@tevm/voltaire";
 
 // From hex string (66 chars: "0x" + 64 hex)
-const hash = Hash.fromHex('0x1234567890abcdef...');
+const hash = Hash.fromHex("0x1234567890abcdef...");
 
 // From bytes (32-byte Uint8Array)
 const hash = Hash.fromBytes(bytes);
 
 // Compute Keccak-256 hash
-const hash = Keccak256.hash(data);  // data: Uint8Array
-const hash = Keccak256.hashString('hello');  // UTF-8 encoded
-const hash = Keccak256.hashHex('0x1234');  // Hex-decoded
+const hash = Keccak256.hash(data); // data: Uint8Array
+const hash = Keccak256.hashString("hello"); // UTF-8 encoded
+const hash = Keccak256.hashHex("0x1234"); // Hex-decoded
 ```
 
 ### Conversion
 
 ```typescript
 // To hex string (66 chars with "0x" prefix)
-const hex = Hash.toHex.call(hash);  // "0x1234...def"
+const hex = Hash.toHex.call(hash); // "0x1234...def"
 
 // To bytes (returns same Uint8Array)
 const bytes = Hash.toBytes.call(hash);
@@ -51,10 +51,10 @@ const str = Hash.toString.call(hash);
 const equal = Hash.equals.call(hash1, hash2);
 
 // Check if zero hash
-const isZero = Hash.isZero.call(hash);  // All 32 bytes are 0x00
+const isZero = Hash.isZero.call(hash); // All 32 bytes are 0x00
 
 // Non-constant time comparison for sorting
-const cmp = Hash.compare(hash1, hash2);  // -1, 0, or 1
+const cmp = Hash.compare(hash1, hash2); // -1, 0, or 1
 ```
 
 ### Utilities
@@ -70,7 +70,7 @@ const copy = Hash.clone.call(hash);
 const slice = Hash.slice.call(hash, 0, 32);
 
 // Format for display
-const formatted = Hash.format.call(hash);  // "0x1234...cdef" (shortened)
+const formatted = Hash.format.call(hash); // "0x1234...cdef" (shortened)
 ```
 
 ## Keccak-256 Hash Function
@@ -78,20 +78,20 @@ const formatted = Hash.format.call(hash);  // "0x1234...cdef" (shortened)
 Ethereum uses Keccak-256 (not SHA3-256, despite common confusion):
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from "@tevm/voltaire";
 
 // Hash raw bytes
 const data = new Uint8Array([1, 2, 3]);
 const hash = Keccak256.hash(data);
 
 // Hash UTF-8 string
-const messageHash = Keccak256.hashString('hello world');
+const messageHash = Keccak256.hashString("hello world");
 
 // Hash hex-encoded data
-const hexHash = Keccak256.hashHex('0xdeadbeef');
+const hexHash = Keccak256.hashHex("0xdeadbeef");
 
 // Empty hash constant
-const emptyHash = Keccak256.EMPTY_HASH;  // keccak256('')
+const emptyHash = Keccak256.EMPTY_HASH; // keccak256('')
 ```
 
 ## Constant-Time Comparison
@@ -115,9 +115,9 @@ The constant-time implementation prevents attackers from learning information th
 First 4 bytes of function signature hash:
 
 ```typescript
-const signature = 'transfer(address,uint256)';
+const signature = "transfer(address,uint256)";
 const hash = Keccak256.hashString(signature);
-const selector = hash.slice(0, 4);  // 0xa9059cbb
+const selector = hash.slice(0, 4); // 0xa9059cbb
 ```
 
 ### Event Topics
@@ -125,7 +125,7 @@ const selector = hash.slice(0, 4);  // 0xa9059cbb
 Event signatures as topic0:
 
 ```typescript
-const signature = 'Transfer(address,address,uint256)';
+const signature = "Transfer(address,address,uint256)";
 const topic0 = Keccak256.hashString(signature);
 // topic0 = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
 ```
@@ -136,10 +136,10 @@ Hash pairs to build Merkle trees:
 
 ```typescript
 function hashPair(left: Hash, right: Hash): Hash {
-    const combined = new Uint8Array(64);
-    combined.set(left, 0);
-    combined.set(right, 32);
-    return Keccak256.hash(combined);
+	const combined = new Uint8Array(64);
+	combined.set(left, 0);
+	combined.set(right, 32);
+	return Keccak256.hash(combined);
 }
 
 const root = hashPair(leaf1Hash, leaf2Hash);
@@ -151,10 +151,10 @@ EVM storage slot hashing:
 
 ```typescript
 function computeStorageKey(address: Address, slot: bigint): Hash {
-    const data = new Uint8Array(52);
-    data.set(address, 0);              // 20 bytes
-    data.set(uint256ToBytes(slot), 20); // 32 bytes
-    return Keccak256.hash(data);
+	const data = new Uint8Array(52);
+	data.set(address, 0); // 20 bytes
+	data.set(uint256ToBytes(slot), 20); // 32 bytes
+	return Keccak256.hash(data);
 }
 ```
 
@@ -163,11 +163,11 @@ function computeStorageKey(address: Address, slot: bigint): Hash {
 ### Verify Data Integrity
 
 ```typescript
-import { Hash, Keccak256 } from '@tevm/voltaire';
+import { Hash, Keccak256 } from "@tevm/voltaire";
 
 function verifyDataIntegrity(data: Uint8Array, expectedHash: Hash): boolean {
-    const actualHash = Keccak256.hash(data);
-    return Hash.equals.call(expectedHash, actualHash);
+	const actualHash = Keccak256.hash(data);
+	return Hash.equals.call(expectedHash, actualHash);
 }
 
 // Usage
@@ -176,9 +176,9 @@ const hash = Keccak256.hash(data);
 
 // Later, verify data wasn't tampered with
 if (verifyDataIntegrity(data, hash)) {
-    console.log('Data integrity verified');
+	console.log("Data integrity verified");
 } else {
-    console.error('Data was modified!');
+	console.error("Data was modified!");
 }
 ```
 
@@ -186,89 +186,89 @@ if (verifyDataIntegrity(data, hash)) {
 
 ```typescript
 function buildMerkleProof(leaves: Hash[], index: number): Hash[] {
-    const proof: Hash[] = [];
-    let currentIndex = index;
+	const proof: Hash[] = [];
+	let currentIndex = index;
 
-    while (leaves.length > 1) {
-        const nextLevel: Hash[] = [];
+	while (leaves.length > 1) {
+		const nextLevel: Hash[] = [];
 
-        for (let i = 0; i < leaves.length; i += 2) {
-            if (i + 1 < leaves.length) {
-                // Pair exists
-                if (i === currentIndex || i + 1 === currentIndex) {
-                    // Save sibling for proof
-                    proof.push(i === currentIndex ? leaves[i + 1] : leaves[i]);
-                }
-                nextLevel.push(hashPair(leaves[i], leaves[i + 1]));
-            } else {
-                // Odd leaf, promote to next level
-                nextLevel.push(leaves[i]);
-            }
-        }
+		for (let i = 0; i < leaves.length; i += 2) {
+			if (i + 1 < leaves.length) {
+				// Pair exists
+				if (i === currentIndex || i + 1 === currentIndex) {
+					// Save sibling for proof
+					proof.push(i === currentIndex ? leaves[i + 1] : leaves[i]);
+				}
+				nextLevel.push(hashPair(leaves[i], leaves[i + 1]));
+			} else {
+				// Odd leaf, promote to next level
+				nextLevel.push(leaves[i]);
+			}
+		}
 
-        currentIndex = Math.floor(currentIndex / 2);
-        leaves = nextLevel;
-    }
+		currentIndex = Math.floor(currentIndex / 2);
+		leaves = nextLevel;
+	}
 
-    return proof;
+	return proof;
 }
 ```
 
 ### EIP-191 Message Hashing
 
 ```typescript
-import { Keccak256 } from '@tevm/voltaire';
+import { Keccak256 } from "@tevm/voltaire";
 
 function hashEIP191Message(message: string): Hash {
-    const prefix = '\x19Ethereum Signed Message:\n';
-    const messageBytes = new TextEncoder().encode(message);
-    const lengthBytes = new TextEncoder().encode(messageBytes.length.toString());
+	const prefix = "\x19Ethereum Signed Message:\n";
+	const messageBytes = new TextEncoder().encode(message);
+	const lengthBytes = new TextEncoder().encode(messageBytes.length.toString());
 
-    const combined = new Uint8Array(
-        prefix.length + lengthBytes.length + messageBytes.length
-    );
+	const combined = new Uint8Array(
+		prefix.length + lengthBytes.length + messageBytes.length,
+	);
 
-    let offset = 0;
-    combined.set(new TextEncoder().encode(prefix), offset);
-    offset += prefix.length;
-    combined.set(lengthBytes, offset);
-    offset += lengthBytes.length;
-    combined.set(messageBytes, offset);
+	let offset = 0;
+	combined.set(new TextEncoder().encode(prefix), offset);
+	offset += prefix.length;
+	combined.set(lengthBytes, offset);
+	offset += lengthBytes.length;
+	combined.set(messageBytes, offset);
 
-    return Keccak256.hash(combined);
+	return Keccak256.hash(combined);
 }
 
 // Usage
-const msgHash = hashEIP191Message('Sign this message');
+const msgHash = hashEIP191Message("Sign this message");
 ```
 
 ### Content-Addressable Storage
 
 ```typescript
 class ContentStore {
-    private store = new Map<string, Uint8Array>();
+	private store = new Map<string, Uint8Array>();
 
-    put(data: Uint8Array): Hash {
-        const hash = Keccak256.hash(data);
-        const key = Hash.toHex.call(hash);
-        this.store.set(key, data);
-        return hash;
-    }
+	put(data: Uint8Array): Hash {
+		const hash = Keccak256.hash(data);
+		const key = Hash.toHex.call(hash);
+		this.store.set(key, data);
+		return hash;
+	}
 
-    get(hash: Hash): Uint8Array | undefined {
-        const key = Hash.toHex.call(hash);
-        return this.store.get(key);
-    }
+	get(hash: Hash): Uint8Array | undefined {
+		const key = Hash.toHex.call(hash);
+		return this.store.get(key);
+	}
 
-    has(hash: Hash): boolean {
-        const key = Hash.toHex.call(hash);
-        return this.store.has(key);
-    }
+	has(hash: Hash): boolean {
+		const key = Hash.toHex.call(hash);
+		return this.store.has(key);
+	}
 }
 
 // Usage
 const store = new ContentStore();
-const content = new TextEncoder().encode('Hello, world!');
+const content = new TextEncoder().encode("Hello, world!");
 const hash = store.put(content);
 
 // Later retrieve by hash
@@ -287,8 +287,8 @@ const hash: Hash = Keccak256.hash(data);
 const hex = Hash.toHex.call(hash);
 
 // ❌ Not available - no classes
-const hash = new Hash(bytes);  // Doesn't exist
-hash.toHex();  // Doesn't exist
+const hash = new Hash(bytes); // Doesn't exist
+hash.toHex(); // Doesn't exist
 ```
 
 ### Performance
@@ -303,11 +303,12 @@ hash.toHex();  // Doesn't exist
 Special value with all bytes set to 0x00:
 
 ```typescript
-const zero = Hash.zero();  // 0x0000...0000 (32 bytes)
+const zero = Hash.zero(); // 0x0000...0000 (32 bytes)
 const isZero = Hash.isZero.call(someHash);
 ```
 
 Used for:
+
 - Empty trie nodes
 - Uninitialized storage
 - Default/placeholder values
@@ -372,10 +373,12 @@ defer allocator.free(cloned);
 ## Testing
 
 Comprehensive test coverage in:
+
 - `hash.test.ts` - TypeScript unit tests
 - `hash.zig` - Zig unit tests (20+ test blocks)
 
 Test vectors include:
+
 - Empty input
 - Known test vectors (NIST, Ethereum)
 - Long inputs (1MB+)

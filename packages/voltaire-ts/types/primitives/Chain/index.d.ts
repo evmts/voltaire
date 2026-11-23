@@ -4,8 +4,8 @@ export namespace BrandedChain {
     export { fromId };
     export { byId };
 }
+import { byId } from "./byId.js";
 import { from } from "./from.js";
 import { fromId } from "./fromId.js";
-import { byId } from "./byId.js";
-export { from, fromId, byId, from as _from, fromId as _fromId, byId as _byId };
+export { byId, byId as _byId, from, from as _from, fromId, fromId as _fromId };
 //# sourceMappingURL=index.d.ts.map

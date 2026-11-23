@@ -18,7 +18,7 @@ pub fn createBlstLibrary(
         }),
     });
 
-    lib.linkLibC();
+    lib.root_module.link_libc = true;
 
     // For native targets, build assembly and link it
     // For WASM, use portable C-only implementation
@@ -32,7 +32,7 @@ pub fn createBlstLibrary(
         lib.step.dependOn(&blst_build_cmd.step);
 
         // Add assembly file for native platforms
-        lib.addAssemblyFile(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/build/assembly.S"));
+        lib.root_module.addAssemblyFile(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/build/assembly.S"));
     }
 
     // Add blst source files with portable flag
@@ -44,14 +44,14 @@ pub fn createBlstLibrary(
     else
         &[_][]const u8{ "-std=c99", "-fPIC", "-D__BLST_PORTABLE__", "-fno-sanitize=undefined" };
 
-    lib.addCSourceFiles(.{
+    lib.root_module.addCSourceFiles(.{
         .files = &.{
             "packages/voltaire-zig/lib/c-kzg-4844/blst/src/server.c",
         },
         .flags = c_flags,
     });
 
-    lib.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+    lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
 
     return lib;
 }

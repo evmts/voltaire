@@ -28,9 +28,7 @@ export function from(value) {
 	let bigintValue;
 
 	if (typeof value === "string") {
-		try {
-			bigintValue = BigInt(value);
-		} catch {
+		if (!/^0[xX][0-9a-fA-F]+$/.test(value) && !/^-?[0-9]+$/.test(value)) {
 			throw new InvalidFormatError(`Invalid Uint256 string: ${value}`, {
 				code: "UINT256_INVALID_STRING",
 				value,
@@ -38,6 +36,7 @@ export function from(value) {
 				docsPath: "/primitives/uint#error-handling",
 			});
 		}
+		bigintValue = BigInt(value);
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
 			throw new InvalidFormatError(

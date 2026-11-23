@@ -1,6 +1,6 @@
 ---
-title: "isValid.js"
----
+
+## title: "isValid.js"
 
 # isValid.js
 
@@ -9,7 +9,7 @@ Type guard checking if opcode is defined.
 ## Signature
 
 ```typescript
-function isValid(opcode: number): opcode is BrandedOpcode
+function isValid(opcode: number): opcode is BrandedOpcode;
 ```
 
 ## Parameters
@@ -23,10 +23,10 @@ function isValid(opcode: number): opcode is BrandedOpcode
 ## Example
 
 ```typescript
-Opcode.isValid(0x01);  // true (ADD)
-Opcode.isValid(0x60);  // true (PUSH1)
-Opcode.isValid(0x0c);  // false (undefined)
-Opcode.isValid(0x21);  // false (undefined)
+Opcode.isValid(0x01); // true (ADD)
+Opcode.isValid(0x60); // true (PUSH1)
+Opcode.isValid(0x0c); // false (undefined)
+Opcode.isValid(0x21); // false (undefined)
 ```
 
 ## Notes

@@ -183,3 +183,39 @@ export class AbiInvalidSelectorError extends InvalidFormatError {
 		this.name = "AbiInvalidSelectorError";
 	}
 }
+
+/**
+ * Human-readable ABI signature parse error
+ *
+ * @example
+ * ```typescript
+ * throw new AbiParseError('Unknown type: foo', {
+ *   value: 'function f(foo x)',
+ *   expected: 'Solidity type or declared struct',
+ * })
+ * ```
+ */
+export class AbiParseError extends InvalidFormatError {
+	/**
+	 * @param {string} message
+	 * @param {{
+	 *   code?: number | string;
+	 *   value: unknown;
+	 *   expected: string;
+	 *   context?: Record<string, unknown>;
+	 *   docsPath?: string;
+	 *   cause?: Error;
+	 * }} options
+	 */
+	constructor(message, options) {
+		super(message, {
+			code: options.code ?? -32602,
+			value: options.value,
+			expected: options.expected,
+			context: options.context,
+			docsPath: options.docsPath || "/primitives/abi/parse-human-readable",
+			cause: options.cause,
+		});
+		this.name = "AbiParseError";
+	}
+}

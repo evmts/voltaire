@@ -57,7 +57,7 @@ export function unwrap<TResult>(
 }
 
 // Export internal functions (tree-shakeable)
-export { _success, _error, _isSuccess, _isError, _unwrap };
+export { _error, _isError, _isSuccess, _success, _unwrap };
 
 // Export as namespace (convenience)
 export const JsonRpcResponse = {

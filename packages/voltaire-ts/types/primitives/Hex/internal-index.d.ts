@@ -26,7 +26,7 @@ import { trim } from "./trim.js";
 import { validate } from "./validate.js";
 import { xor } from "./xor.js";
 import { zero } from "./zero.js";
-export { from, fromBytes, fromNumber, fromBigInt, fromString, fromBoolean, toBytes, toNumber, toBigInt, toString, toBoolean, isHex, concat, random, zero, validate, size, isSized, assertSize, slice, pad, padRight, trim, equals, xor, clone, };
+export { assertSize, clone, concat, equals, from, fromBigInt, fromBoolean, fromBytes, fromNumber, fromString, isHex, isSized, pad, padRight, random, size, slice, toBigInt, toBoolean, toBytes, toNumber, toString, trim, validate, xor, zero, };
 export declare const BrandedHex: {
     from: typeof from;
     fromBytes: typeof fromBytes;

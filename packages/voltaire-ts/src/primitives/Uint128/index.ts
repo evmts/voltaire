@@ -31,15 +31,21 @@ import { maximum as _maximum } from "./maximum.js";
 import { min as _min } from "./min.js";
 import { minimum as _minimum } from "./minimum.js";
 import { minus as _minus } from "./minus.js";
+import { minusChecked as _minusChecked } from "./minusChecked.js";
+import { minusWrapping as _minusWrapping } from "./minusWrapping.js";
 import { modulo as _modulo } from "./modulo.js";
 import { notEquals as _notEquals } from "./notEquals.js";
 import { plus as _plus } from "./plus.js";
+import { plusChecked as _plusChecked } from "./plusChecked.js";
+import { plusWrapping as _plusWrapping } from "./plusWrapping.js";
 import { popCount as _popCount } from "./popCount.js";
 import { product as _product } from "./product.js";
 import { shiftLeft as _shiftLeft } from "./shiftLeft.js";
 import { shiftRight as _shiftRight } from "./shiftRight.js";
 import { sum as _sum } from "./sum.js";
 import { times as _times } from "./times.js";
+import { timesChecked as _timesChecked } from "./timesChecked.js";
+import { timesWrapping as _timesWrapping } from "./timesWrapping.js";
 import { toAbiEncoded as _toAbiEncoded } from "./toAbiEncoded.js";
 import { toBigInt as _toBigInt } from "./toBigInt.js";
 import { toBytes as _toBytes } from "./toBytes.js";
@@ -76,6 +82,18 @@ export const clone: (uint: Uint128Type) => Uint128Type = _clone;
 export const plus: (uint: Uint128Type, b: Uint128Type) => Uint128Type = _plus;
 export const minus: (uint: Uint128Type, b: Uint128Type) => Uint128Type = _minus;
 export const times: (uint: Uint128Type, b: Uint128Type) => Uint128Type = _times;
+export const plusChecked: (a: Uint128Type, b: Uint128Type) => Uint128Type =
+	_plusChecked;
+export const minusChecked: (a: Uint128Type, b: Uint128Type) => Uint128Type =
+	_minusChecked;
+export const timesChecked: (a: Uint128Type, b: Uint128Type) => Uint128Type =
+	_timesChecked;
+export const plusWrapping: (a: Uint128Type, b: Uint128Type) => Uint128Type =
+	_plusWrapping;
+export const minusWrapping: (a: Uint128Type, b: Uint128Type) => Uint128Type =
+	_minusWrapping;
+export const timesWrapping: (a: Uint128Type, b: Uint128Type) => Uint128Type =
+	_timesWrapping;
 export const dividedBy: (uint: Uint128Type, b: Uint128Type) => Uint128Type =
 	_dividedBy;
 export const modulo: (uint: Uint128Type, b: Uint128Type) => Uint128Type =
@@ -150,6 +168,12 @@ export const BrandedUint128 = {
 	plus,
 	minus,
 	times,
+	plusChecked,
+	minusChecked,
+	timesChecked,
+	plusWrapping,
+	minusWrapping,
+	timesWrapping,
 	dividedBy,
 	modulo,
 	toPower,

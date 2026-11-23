@@ -107,6 +107,7 @@ pub const AffinePoint = struct {
 
         // Convert scalar to bytes (big-endian)
         var scalar_bytes: [32]u8 = undefined;
+        defer std.crypto.secureZero(u8, &scalar_bytes);
         std.mem.writeInt(u256, &scalar_bytes, scalar, .big);
 
         // Use std lib for scalar multiplication
@@ -128,18 +129,10 @@ pub const AffinePoint = struct {
 
     /// Create from std lib point
     fn fromStdPoint(pt: Secp256k1) !Self {
+        // std encodes the identity as 0x04 || 0 || 0, never with a 0x00 tag,
+        // so ask the point itself. (0, 0) is not on the curve.
+        pt.rejectIdentity() catch return Self.zero();
         const sec1 = pt.toUncompressedSec1();
-        if (sec1[0] == 0) {
-            // Point at infinity - check if all zeros
-            var all_zero = true;
-            for (sec1[1..]) |b| {
-                if (b != 0) {
-                    all_zero = false;
-                    break;
-                }
-            }
-            if (all_zero) return Self.zero();
-        }
 
         const x = std.mem.readInt(u256, sec1[1..33], .big);
         const y = std.mem.readInt(u256, sec1[33..65], .big);
@@ -540,7 +533,7 @@ test "recover address from signature" {
     };
 
     const zero_address = [_]u8{0} ** 20;
-    try std.testing.expect(!std.mem.eql(u8, &recovered_address, &zero_address));
+    try std.testing.expect(!std.mem.eql(u8, &recovered_address.bytes, &zero_address));
 }
 
 test "signature malleability check" {

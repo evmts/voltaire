@@ -4,10 +4,10 @@
  * Ethereum primitives and cryptography exported from Zig.
  *
  * Build:
- *   zig build build-ts-native
+ *   zig build build-ts-native -Dwith-c-api=true
  *
  * Link:
- *   gcc your_program.c -L./zig-out/lib -lprimitives -o your_program
+ *   gcc your_program.c -L./zig-out/native -lprimitives_ts_native -o your_program
  */
 
 #ifndef VOLTAIRE_H

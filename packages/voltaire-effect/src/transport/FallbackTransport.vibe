@@ -1,16 +1,7 @@
 // Resilient multi-endpoint FallbackTransport supporting sequential failover and hedged racing.
 
-import {
-  RpcError,
-  type RpcTransportError,
-  TransportError,
-  TransportFailureReason
-} from "../errors.vibe"
-import {
-  type JsonRpcBatchItemResult,
-  type JsonRpcCall,
-  Transport
-} from "./Transport.vibe"
+import { RpcError, type RpcTransportError, TransportError, TransportFailureReason } from "../errors.vibe"
+import { type JsonRpcBatchItemResult, type JsonRpcCall, Transport } from "./Transport.vibe"
 
 export interface FallbackTransportConfig {
   /** "sequential" tries endpoints in order; "race" runs all concurrently and takes first success */
@@ -21,7 +12,7 @@ export interface FallbackTransportConfig {
 
 export function FallbackTransport(
   layers: ReadonlyArray<Layer.Layer<Transport, never, never>>,
-  config: FallbackTransportConfig = {}
+  config: FallbackTransportConfig = {},
 ) {
   const strategy = config.strategy ?? "sequential"
   const failoverOnRevert = config.failoverOnRevert ?? false
@@ -34,15 +25,17 @@ export function FallbackTransport(
           effect request<T = unknown>(_method: string, _params?: ReadonlyArray<unknown>): T!RpcTransportError {
             throw new TransportError({
               message: "FallbackTransport configured with zero endpoints",
-              reason: TransportFailureReason.Unsupported({ message: "No transport layers provided" })
+              reason: TransportFailureReason.Unsupported({ message: "No transport layers provided" }),
             })
           },
-          effect requestBatch(_requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
+          effect requestBatch(
+            _requests: ReadonlyArray<JsonRpcCall>,
+          ): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
             throw new TransportError({
               message: "FallbackTransport configured with zero endpoints",
-              reason: TransportFailureReason.Unsupported({ message: "No transport layers provided" })
+              reason: TransportFailureReason.Unsupported({ message: "No transport layers provided" }),
             })
-          }
+          },
         })
       }
 
@@ -76,7 +69,7 @@ export function FallbackTransport(
               throw new TransportError({
                 message: `Transport defect on ${method}`,
                 reason: TransportFailureReason.Network({ cause: res.cause }),
-                method
+                method,
               })
             }
           }
@@ -87,13 +80,15 @@ export function FallbackTransport(
           throw new TransportError({
             message: `All ${transports.length} transports failed for ${method}`,
             reason: TransportFailureReason.Network({ cause: "all transports failed" }),
-            method
+            method,
           })
         },
 
         effect requestBatch(requests: ReadonlyArray<JsonRpcCall>): ReadonlyArray<JsonRpcBatchItemResult>!TransportError {
           if (strategy === "race") {
-            const attempts = transports.map<ReadonlyArray<JsonRpcBatchItemResult>!TransportError>((t) => t.requestBatch(requests))
+            const attempts = transports.map<ReadonlyArray<JsonRpcBatchItemResult>!TransportError>((t) =>
+              t.requestBatch(requests)
+            )
             return try.any attempts
           }
 
@@ -114,10 +109,10 @@ export function FallbackTransport(
           throw new TransportError({
             message: `All ${transports.length} transports failed batch`,
             reason: TransportFailureReason.Network({ cause: "all transports failed" }),
-            method: "batch"
+            method: "batch",
           })
-        }
+        },
       })
-    }
+    },
   )
 }

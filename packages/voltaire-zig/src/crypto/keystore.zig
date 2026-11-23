@@ -58,6 +58,7 @@ const ctr = crypto.core.modes.ctr;
 const scrypt = crypto.pwhash.scrypt;
 const pbkdf2 = crypto.pwhash.pbkdf2;
 const HmacSha256 = crypto.auth.hmac.sha2.HmacSha256;
+const constant_time = @import("constant_time.zig");
 
 /// Key derivation function type
 pub const Kdf = enum {
@@ -97,8 +98,16 @@ pub const CipherParams = struct {
     iv: [16]u8,
 };
 
-/// KDF parameters union type
-pub const KdfParamsUnion = union {
+/// Upper bounds on KDF work factors accepted by encrypt, decrypt and fromJson.
+/// An untrusted keystore with larger values would pin the CPU or exhaust memory
+/// (scrypt allocates 128 * n * r bytes) before the MAC is ever checked.
+pub const MAX_SCRYPT_N: u32 = 1 << 20;
+pub const MAX_SCRYPT_R: u32 = 16;
+pub const MAX_SCRYPT_P: u32 = 16;
+pub const MAX_PBKDF2_C: u32 = 10_000_000;
+
+/// KDF parameters, tagged by the KDF they belong to
+pub const KdfParamsUnion = union(Kdf) {
     scrypt: ScryptParams,
     pbkdf2: Pbkdf2Params,
 };
@@ -135,9 +144,9 @@ pub const KeystoreV3 = struct {
         // Clear sensitive data
         @memset(&self.crypto_section.ciphertext, 0);
         @memset(&self.crypto_section.mac, 0);
-        switch (self.crypto_section.kdf) {
-            .scrypt => @memset(&self.crypto_section.kdfparams.scrypt.salt, 0),
-            .pbkdf2 => @memset(&self.crypto_section.kdfparams.pbkdf2.salt, 0),
+        switch (self.crypto_section.kdfparams) {
+            .scrypt => |*params| @memset(&params.salt, 0),
+            .pbkdf2 => |*params| @memset(&params.salt, 0),
         }
         @memset(&self.crypto_section.cipherparams.iv, 0);
     }
@@ -167,14 +176,59 @@ pub const EncryptOptions = struct {
 pub const KeystoreError = error{
     InvalidVersion,
     UnsupportedKdf,
+    /// `crypto.cipher` is not "aes-128-ctr"
+    UnsupportedCipher,
     InvalidMac,
     InvalidParams,
     OutOfMemory,
     WeakParameters,
+    /// KDF work factor above MAX_SCRYPT_N / MAX_SCRYPT_R / MAX_SCRYPT_P / MAX_PBKDF2_C
+    ExcessiveParams,
     OutputTooLong,
     ThreadQuotaExceeded,
     SpawnFailed,
 };
+
+/// Reject KDF parameters above the safe upper bounds.
+fn checkScryptBounds(n: u32, r: u32, p: u32) KeystoreError!void {
+    if (n > MAX_SCRYPT_N or r > MAX_SCRYPT_R or p > MAX_SCRYPT_P) return KeystoreError.ExcessiveParams;
+}
+
+fn checkPbkdf2Bounds(c: u32) KeystoreError!void {
+    if (c > MAX_PBKDF2_C) return KeystoreError.ExcessiveParams;
+}
+
+/// Typed accessors for untrusted `std.json.Value` input: a missing key or a
+/// value of the wrong JSON type is InvalidParams, never a panic.
+fn jsonObject(value: std.json.Value) KeystoreError!std.json.ObjectMap {
+    return switch (value) {
+        .object => |o| o,
+        else => KeystoreError.InvalidParams,
+    };
+}
+
+fn jsonString(obj: std.json.ObjectMap, key: []const u8) KeystoreError![]const u8 {
+    const value = obj.get(key) orelse return KeystoreError.InvalidParams;
+    return switch (value) {
+        .string => |s| s,
+        else => KeystoreError.InvalidParams,
+    };
+}
+
+fn jsonInteger(obj: std.json.ObjectMap, key: []const u8) KeystoreError!i64 {
+    const value = obj.get(key) orelse return KeystoreError.InvalidParams;
+    return switch (value) {
+        .integer => |i| i,
+        else => KeystoreError.InvalidParams,
+    };
+}
+
+/// Only a 32-byte derived key is supported: bytes 0..16 are the AES-128 key
+/// and bytes 16..32 feed the MAC.
+fn checkDklen(dklen: i64) KeystoreError!u8 {
+    if (dklen != 32) return KeystoreError.InvalidParams;
+    return 32;
+}
 
 /// Encrypt a private key to Web3 Secret Storage v3 keystore
 ///
@@ -211,10 +265,11 @@ pub fn encrypt(
 
     // Derive key from password using selected KDF
     var derived_key: [32]u8 = undefined;
-    defer @memset(&derived_key, 0);
+    defer constant_time.secureZero(32, &derived_key);
 
     switch (options.kdf) {
         .scrypt => {
+            try checkScryptBounds(options.scrypt_n, options.scrypt_r, options.scrypt_p);
             const ln = computeLogN(options.scrypt_n) orelse return KeystoreError.InvalidParams;
             const params = scrypt.Params{
                 .ln = ln,
@@ -232,6 +287,7 @@ pub fn encrypt(
             };
         },
         .pbkdf2 => {
+            try checkPbkdf2Bounds(options.pbkdf2_c);
             pbkdf2(&derived_key, password, &salt, options.pbkdf2_c, HmacSha256) catch |err| {
                 return switch (err) {
                     error.WeakParameters => KeystoreError.WeakParameters,
@@ -242,14 +298,12 @@ pub fn encrypt(
     }
 
     // Split derived key: first 16 bytes for encryption, next 16 for MAC
-    const encryption_key: [16]u8 = derived_key[0..16].*;
-    const mac_key: [16]u8 = derived_key[16..32].*;
+    var encryption_key: [16]u8 = derived_key[0..16].*;
+    var mac_key: [16]u8 = derived_key[16..32].*;
     defer {
-        // Clear sensitive keys
-        var enc_clear: [16]u8 = encryption_key;
-        var mac_clear: [16]u8 = mac_key;
-        @memset(&enc_clear, 0);
-        @memset(&mac_clear, 0);
+        // Clear sensitive keys in-place using volatile secure zeroing
+        constant_time.secureZero(16, &encryption_key);
+        constant_time.secureZero(16, &mac_key);
     }
 
     // Encrypt private key with AES-128-CTR
@@ -258,6 +312,7 @@ pub fn encrypt(
 
     // Compute MAC = keccak256(macKey || ciphertext)
     var mac_input: [48]u8 = undefined;
+    defer constant_time.secureZero(48, &mac_input);
     @memcpy(mac_input[0..16], &mac_key);
     @memcpy(mac_input[16..48], &ciphertext);
     var mac: [32]u8 = undefined;
@@ -309,19 +364,24 @@ pub fn decrypt(
 
     const crypto_section = keystore.crypto_section;
 
+    // The kdf field and the kdfparams tag must agree.
+    if (crypto_section.kdf != std.meta.activeTag(crypto_section.kdfparams)) {
+        return KeystoreError.InvalidParams;
+    }
+
     // Get salt from KDF params
-    const salt: [32]u8 = switch (crypto_section.kdf) {
-        .scrypt => crypto_section.kdfparams.scrypt.salt,
-        .pbkdf2 => crypto_section.kdfparams.pbkdf2.salt,
+    const salt: [32]u8 = switch (crypto_section.kdfparams) {
+        .scrypt => |params| params.salt,
+        .pbkdf2 => |params| params.salt,
     };
 
     // Derive key from password
     var derived_key: [32]u8 = undefined;
-    defer @memset(&derived_key, 0);
+    defer constant_time.secureZero(32, &derived_key);
 
-    switch (crypto_section.kdf) {
-        .scrypt => {
-            const params_scrypt = crypto_section.kdfparams.scrypt;
+    switch (crypto_section.kdfparams) {
+        .scrypt => |params_scrypt| {
+            try checkScryptBounds(params_scrypt.n, params_scrypt.r, params_scrypt.p);
             const ln = computeLogN(params_scrypt.n) orelse return KeystoreError.InvalidParams;
             const params = scrypt.Params{
                 .ln = ln,
@@ -338,8 +398,8 @@ pub fn decrypt(
                 };
             };
         },
-        .pbkdf2 => {
-            const params_pbkdf2 = crypto_section.kdfparams.pbkdf2;
+        .pbkdf2 => |params_pbkdf2| {
+            try checkPbkdf2Bounds(params_pbkdf2.c);
             pbkdf2(&derived_key, password, &salt, params_pbkdf2.c, HmacSha256) catch |err| {
                 return switch (err) {
                     error.WeakParameters => KeystoreError.WeakParameters,
@@ -350,17 +410,22 @@ pub fn decrypt(
     }
 
     // Split derived key
-    const encryption_key: [16]u8 = derived_key[0..16].*;
-    const mac_key: [16]u8 = derived_key[16..32].*;
+    var encryption_key: [16]u8 = derived_key[0..16].*;
+    var mac_key: [16]u8 = derived_key[16..32].*;
+    defer {
+        constant_time.secureZero(16, &encryption_key);
+        constant_time.secureZero(16, &mac_key);
+    }
 
     // Verify MAC
     var mac_input: [48]u8 = undefined;
+    defer constant_time.secureZero(48, &mac_input);
     @memcpy(mac_input[0..16], &mac_key);
     @memcpy(mac_input[16..48], &crypto_section.ciphertext);
     var computed_mac: [32]u8 = undefined;
     Keccak256.hash(&mac_input, &computed_mac, .{});
 
-    if (!constantTimeEqual(&computed_mac, &crypto_section.mac)) {
+    if (!constant_time.eql(&computed_mac, &crypto_section.mac)) {
         return KeystoreError.InvalidMac;
     }
 
@@ -376,15 +441,6 @@ pub fn decrypt(
 fn aes128CtrEncrypt(dst: *[32]u8, src: *const [32]u8, key: *const [16]u8, iv: *const [16]u8) void {
     const ctx = Aes128.initEnc(key.*);
     ctr(AesEncryptCtx(Aes128), ctx, dst, src, iv.*, .big);
-}
-
-/// Constant-time comparison to prevent timing attacks
-fn constantTimeEqual(a: *const [32]u8, b: *const [32]u8) bool {
-    var result: u8 = 0;
-    for (a, b) |x, y| {
-        result |= x ^ y;
-    }
-    return result == 0;
 }
 
 /// Compute log2(n) for scrypt N parameter
@@ -493,13 +549,12 @@ pub fn toJson(allocator: Allocator, keystore: KeystoreV3) ![]u8 {
     try writer.writeAll(&iv_hex);
     try writer.writeAll("\"}");
     try writer.writeAll(",\"kdf\":\"");
-    try writer.writeAll(if (keystore.crypto_section.kdf == .scrypt) "scrypt" else "pbkdf2");
+    try writer.writeAll(@tagName(keystore.crypto_section.kdfparams));
     try writer.writeAll("\"");
     try writer.writeAll(",\"kdfparams\":{");
 
-    switch (keystore.crypto_section.kdf) {
-        .scrypt => {
-            const p = keystore.crypto_section.kdfparams.scrypt;
+    switch (keystore.crypto_section.kdfparams) {
+        .scrypt => |p| {
             try writer.print("\"dklen\":{d},\"n\":{d},\"p\":{d},\"r\":{d},\"salt\":\"", .{
                 p.dklen, p.n, p.p, p.r,
             });
@@ -507,8 +562,7 @@ pub fn toJson(allocator: Allocator, keystore: KeystoreV3) ![]u8 {
             try writer.writeAll(&salt_hex);
             try writer.writeAll("\"");
         },
-        .pbkdf2 => {
-            const p = keystore.crypto_section.kdfparams.pbkdf2;
+        .pbkdf2 => |p| {
             try writer.print("\"c\":{d},\"dklen\":{d},\"prf\":\"hmac-sha256\",\"salt\":\"", .{
                 p.c, p.dklen,
             });
@@ -541,6 +595,11 @@ pub fn fromJson(allocator: Allocator, json_str: []const u8) !KeystoreV3 {
     // Validate version
     if (json.version != 3) {
         return KeystoreError.InvalidVersion;
+    }
+
+    // Only AES-128-CTR is implemented; never decrypt under a substituted cipher.
+    if (!mem.eql(u8, json.crypto.cipher, "aes-128-ctr")) {
+        return KeystoreError.UnsupportedCipher;
     }
 
     // Parse UUID (must be 36 chars)
@@ -577,17 +636,18 @@ pub fn fromJson(allocator: Allocator, json_str: []const u8) !KeystoreV3 {
         return KeystoreError.UnsupportedKdf;
 
     // Parse KDF params
+    const obj = try jsonObject(json.crypto.kdfparams);
     const kdfparams = switch (kdf) {
         .scrypt => blk: {
-            const obj = json.crypto.kdfparams.object;
-            const salt_str = obj.get("salt").?.string;
+            const salt_str = try jsonString(obj, "salt");
             if (salt_str.len != 64) return error.InvalidSalt;
             const salt = hexToBytes(32, salt_str[0..64]) catch return error.InvalidSalt;
 
-            const n = @as(u32, @intCast(obj.get("n").?.integer));
-            const r = @as(u8, @intCast(obj.get("r").?.integer));
-            const p = @as(u8, @intCast(obj.get("p").?.integer));
-            const dklen = @as(u8, @intCast(obj.get("dklen").?.integer));
+            const n = std.math.cast(u32, try jsonInteger(obj, "n")) orelse return KeystoreError.InvalidParams;
+            const r = std.math.cast(u8, try jsonInteger(obj, "r")) orelse return KeystoreError.InvalidParams;
+            const p = std.math.cast(u8, try jsonInteger(obj, "p")) orelse return KeystoreError.InvalidParams;
+            const dklen = try checkDklen(try jsonInteger(obj, "dklen"));
+            try checkScryptBounds(n, r, p);
 
             break :blk KdfParamsUnion{ .scrypt = ScryptParams{
                 .dklen = dklen,
@@ -598,13 +658,16 @@ pub fn fromJson(allocator: Allocator, json_str: []const u8) !KeystoreV3 {
             } };
         },
         .pbkdf2 => blk: {
-            const obj = json.crypto.kdfparams.object;
-            const salt_str = obj.get("salt").?.string;
+            // Only HMAC-SHA256 is implemented; never substitute another PRF.
+            if (!mem.eql(u8, try jsonString(obj, "prf"), "hmac-sha256")) return KeystoreError.UnsupportedKdf;
+
+            const salt_str = try jsonString(obj, "salt");
             if (salt_str.len != 64) return error.InvalidSalt;
             const salt = hexToBytes(32, salt_str[0..64]) catch return error.InvalidSalt;
 
-            const c = @as(u32, @intCast(obj.get("c").?.integer));
-            const dklen = @as(u8, @intCast(obj.get("dklen").?.integer));
+            const c = std.math.cast(u32, try jsonInteger(obj, "c")) orelse return KeystoreError.InvalidParams;
+            const dklen = try checkDklen(try jsonInteger(obj, "dklen"));
+            try checkPbkdf2Bounds(c);
 
             break :blk KdfParamsUnion{ .pbkdf2 = Pbkdf2Params{
                 .c = c,
@@ -933,18 +996,18 @@ test "constant time comparison" {
     const b = [_]u8{0x01} ** 32;
     const c = [_]u8{0x02} ** 32;
 
-    try std.testing.expect(constantTimeEqual(&a, &b));
-    try std.testing.expect(!constantTimeEqual(&a, &c));
+    try std.testing.expect(constant_time.eql(&a, &b));
+    try std.testing.expect(!constant_time.eql(&a, &c));
 
     // Test first byte differs
     var d = a;
     d[0] = 0xff;
-    try std.testing.expect(!constantTimeEqual(&a, &d));
+    try std.testing.expect(!constant_time.eql(&a, &d));
 
     // Test last byte differs
     var e = a;
     e[31] = 0xff;
-    try std.testing.expect(!constantTimeEqual(&a, &e));
+    try std.testing.expect(!constant_time.eql(&a, &e));
 }
 
 test "computeLogN" {
@@ -1232,4 +1295,123 @@ test "fromJson unsupported kdf" {
 
     const result = fromJson(allocator, json);
     try std.testing.expectError(KeystoreError.UnsupportedKdf, result);
+}
+
+test "kdfparams is tagged by its kdf" {
+    const allocator = std.testing.allocator;
+    var keystore = try encrypt(allocator, [_]u8{1} ** 32, "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = 1000 });
+    defer keystore.deinit(allocator);
+    try std.testing.expectEqual(Kdf.pbkdf2, std.meta.activeTag(keystore.crypto_section.kdfparams));
+
+    // kdf field disagreeing with the kdfparams tag is rejected
+    var mismatched = keystore;
+    mismatched.crypto_section.kdf = .scrypt;
+    try std.testing.expectError(KeystoreError.InvalidParams, decrypt(allocator, mismatched, "pw"));
+}
+
+test "encrypt rejects excessive KDF parameters" {
+    const allocator = std.testing.allocator;
+    const key = [_]u8{2} ** 32;
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .scrypt_n = MAX_SCRYPT_N << 1 }));
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .scrypt_n = 1024, .scrypt_r = MAX_SCRYPT_R + 1 }));
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .scrypt_n = 1024, .scrypt_r = 1, .scrypt_p = MAX_SCRYPT_P + 1 }));
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = MAX_PBKDF2_C + 1 }));
+}
+
+test "decrypt rejects excessive KDF parameters before running the KDF" {
+    const allocator = std.testing.allocator;
+    var keystore = try encrypt(allocator, [_]u8{3} ** 32, "pw", .{ .scrypt_n = 1024, .scrypt_r = 1, .scrypt_p = 1 });
+    defer keystore.deinit(allocator);
+
+    var big_n = keystore;
+    big_n.crypto_section.kdfparams.scrypt.n = 1 << 31;
+    try std.testing.expectError(KeystoreError.ExcessiveParams, decrypt(allocator, big_n, "pw"));
+
+    var big_r = keystore;
+    big_r.crypto_section.kdfparams.scrypt.r = 255;
+    try std.testing.expectError(KeystoreError.ExcessiveParams, decrypt(allocator, big_r, "pw"));
+
+    var big_p = keystore;
+    big_p.crypto_section.kdfparams.scrypt.p = 255;
+    try std.testing.expectError(KeystoreError.ExcessiveParams, decrypt(allocator, big_p, "pw"));
+
+    var pbkdf = try encrypt(allocator, [_]u8{3} ** 32, "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = 1000 });
+    defer pbkdf.deinit(allocator);
+    pbkdf.crypto_section.kdfparams.pbkdf2.c = std.math.maxInt(u32);
+    try std.testing.expectError(KeystoreError.ExcessiveParams, decrypt(allocator, pbkdf, "pw"));
+}
+
+test "fromJson rejects excessive or out-of-range KDF parameters" {
+    const allocator = std.testing.allocator;
+    const salt = "ab" ** 32;
+    const head = "{\"version\":3,\"id\":\"3198bc9c-6672-5ab3-d995-4942343ae5b6\",\"crypto\":{\"cipher\":\"aes-128-ctr\",\"ciphertext\":\"" ++ ("00" ** 32) ++ "\",\"cipherparams\":{\"iv\":\"" ++ ("00" ** 16) ++ "\"},\"mac\":\"" ++ ("00" ** 32) ++ "\",";
+    const cases = [_]struct { json: []const u8, err: anyerror }{
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":2097152,\"p\":1,\"r\":8,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.ExcessiveParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"r\":17,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.ExcessiveParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"r\":300,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":10000001,\"dklen\":32,\"prf\":\"hmac-sha256\",\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.ExcessiveParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":-1,\"dklen\":32,\"prf\":\"hmac-sha256\",\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+    };
+    for (cases) |c| {
+        try std.testing.expectError(c.err, fromJson(allocator, c.json));
+    }
+}
+
+test "fromJson rejects malformed kdfparams and unsupported algorithms without panicking" {
+    const allocator = std.testing.allocator;
+    const salt = "ab" ** 32;
+    const iv = "00" ** 16;
+    const ct = "00" ** 32;
+    const pre = "{\"version\":3,\"id\":\"3198bc9c-6672-5ab3-d995-4942343ae5b6\",\"crypto\":{\"cipher\":";
+    const mid = ",\"ciphertext\":\"" ++ ct ++ "\",\"cipherparams\":{\"iv\":\"" ++ iv ++ "\"},\"mac\":\"" ++ ct ++ "\",";
+    const head = pre ++ "\"aes-128-ctr\"" ++ mid;
+    const scrypt_ok = "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}";
+    const cases = [_]struct { json: []const u8, err: anyerror }{
+        // kdfparams not an object
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":[1,2]}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":\"x\"}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":null}}", .err = KeystoreError.InvalidParams },
+        // scrypt: missing keys
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"r\":1}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"n\":1024,\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        // scrypt: mistyped values
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"r\":1,\"salt\":7}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":\"1024\",\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024.5,\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":true,\"n\":1024,\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":null,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"r\":{},\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        // scrypt: dklen other than 32
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":16,\"n\":1024,\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":64,\"n\":1024,\"p\":1,\"r\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        // pbkdf2: missing/mistyped keys
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":5000,\"dklen\":32,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":5000,\"dklen\":32,\"prf\":1,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"dklen\":32,\"prf\":\"hmac-sha256\",\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":\"5000\",\"dklen\":32,\"prf\":\"hmac-sha256\",\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":5000,\"prf\":\"hmac-sha256\",\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":5000,\"dklen\":32,\"prf\":\"hmac-sha256\"}}}", .err = KeystoreError.InvalidParams },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":5000,\"dklen\":32,\"prf\":\"hmac-sha256\",\"salt\":[]}}}", .err = KeystoreError.InvalidParams },
+        // pbkdf2: unsupported PRF and dklen
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":5000,\"dklen\":32,\"prf\":\"hmac-sha512\",\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.UnsupportedKdf },
+        .{ .json = head ++ "\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":5000,\"dklen\":31,\"prf\":\"hmac-sha256\",\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.InvalidParams },
+        // unsupported cipher
+        .{ .json = pre ++ "\"aes-256-ctr\"" ++ mid ++ scrypt_ok, .err = KeystoreError.UnsupportedCipher },
+        .{ .json = pre ++ "\"aes-128-cbc\"" ++ mid ++ scrypt_ok, .err = KeystoreError.UnsupportedCipher },
+        .{ .json = pre ++ "\"\"" ++ mid ++ scrypt_ok, .err = KeystoreError.UnsupportedCipher },
+        // malformed JSON / wrong top-level shape
+        .{ .json = "[]", .err = error.InvalidJson },
+        .{ .json = "{", .err = error.InvalidJson },
+        .{ .json = pre ++ "7" ++ mid ++ scrypt_ok, .err = error.InvalidJson },
+    };
+    for (cases) |c| {
+        try std.testing.expectError(c.err, fromJson(allocator, c.json));
+    }
+
+    // Control: the well-formed document parses.
+    const ks = try fromJson(allocator, head ++ scrypt_ok);
+    try std.testing.expectEqual(Kdf.scrypt, ks.crypto_section.kdf);
 }

@@ -1,6 +1,6 @@
 ---
-title: "Opcode.wasm.ts"
----
+
+## title: "Opcode.wasm.ts"
 
 # Opcode.wasm.ts
 
@@ -13,6 +13,7 @@ WASM-accelerated opcode operations.
 ## Why No WASM?
 
 Opcode provides:
+
 - Opcode enum (byte constants)
 - Metadata lookups (getInfo, getName)
 - Category checks (isPush, isDup, isSwap, isLog)
@@ -20,6 +21,7 @@ Opcode provides:
 - Bytecode parsing
 
 These operations are:
+
 - Already optimal in TypeScript
 - Pure O(1) lookups, range checks, table access
 - No heavy computation or data processing
@@ -30,6 +32,7 @@ These operations are:
 ## Performance
 
 Pure TypeScript benchmarks:
+
 - isPush/isDup/isSwap/isLog: ~15-30ns (range check)
 - getInfo: ~30-50ns (Map lookup)
 - getName: ~40-60ns (Map lookup + property access)
@@ -41,6 +44,7 @@ Pure TypeScript benchmarks:
 **WASM would be 10-50x slower** for individual operations.
 
 For bytecode parsing:
+
 - Small (<100 bytes): TS faster (WASM overhead dominates)
 - Large (>10KB): WASM might be 2-3x faster
 - But large bytecode rare, 2-3x doesn't justify complexity
@@ -70,6 +74,7 @@ Returns implementation status and performance analysis.
 ## When to Use WASM
 
 WASM is beneficial for:
+
 - Heavy computation (>10μs)
 - Cryptographic operations (hashing, signatures)
 - Large data processing (RLP encoding, ABI encoding)
@@ -80,21 +85,21 @@ Opcode does not fit these criteria.
 ## Usage
 
 ```typescript
-import * as Opcode from './Opcode.wasm.ts';
+import * as Opcode from "./Opcode.wasm.ts";
 
 // Uses pure TypeScript implementation
 const info = Opcode.info(Opcode.ADD);
 
 // Check availability
 if (Opcode.isWasmOpcodeAvailable()) {
-  // Never reaches here
+	// Never reaches here
 } else {
-  // Always uses pure TypeScript
+	// Always uses pure TypeScript
 }
 
 // Get status
 const status = Opcode.getOpcodeImplementationStatus();
-console.log(status.reason);  // "Pure TS optimal - WASM overhead exceeds benefit"
+console.log(status.reason); // "Pure TS optimal - WASM overhead exceeds benefit"
 ```
 
 ## See Also

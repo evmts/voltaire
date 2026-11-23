@@ -79,11 +79,11 @@ export function unwrapOr(
  * Internal exports for advanced usage
  */
 export {
-	_from,
-	_success,
 	_failure,
-	_isSuccess,
+	_from,
 	_isFailure,
+	_isSuccess,
+	_success,
 	_unwrap,
 	_unwrapOr,
 };

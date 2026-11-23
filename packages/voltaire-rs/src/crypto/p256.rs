@@ -42,14 +42,6 @@ pub type CompressedPublicKey = [u8; 33];
 pub type Signature = [u8; 64];
 
 // P-256 curve parameters
-// p = 2^256 - 2^224 + 2^192 + 2^96 - 1
-const P256_P: [u8; 32] = [
-    0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-];
-
 // n (curve order)
 const P256_N: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
@@ -106,7 +98,7 @@ impl P256 {
         let verifying_key = signing_key.verifying_key();
 
         let mut secret = [0u8; 32];
-        secret.copy_from_slice(signing_key.to_bytes().as_slice());
+        secret.copy_from_slice(&signing_key.to_bytes()[..]);
 
         let pubkey_point = verifying_key.to_encoded_point(false);
         let mut public = [0u8; 64];
@@ -138,18 +130,21 @@ impl P256 {
     ///
     /// Returns 64-byte signature (r || s) in low-s normalized form.
     pub fn sign(message_hash: &[u8; 32], secret_key: &SecretKey) -> Result<Signature> {
-        use p256::ecdsa::{SigningKey, signature::Signer};
+        use p256::ecdsa::{SigningKey, signature::hazmat::PrehashSigner};
 
         let signing_key = SigningKey::from_bytes(secret_key.into())
             .map_err(|_| Error::invalid_input("invalid P-256 secret key"))?;
 
-        let sig: p256::ecdsa::Signature = signing_key.sign(message_hash);
+        // The input is already a digest: sign it directly instead of hashing it again.
+        let sig: p256::ecdsa::Signature = signing_key
+            .sign_prehash(message_hash)
+            .map_err(|_| Error::invalid_input("P-256 signing failed"))?;
 
         // Normalize to low-s
         let normalized = sig.normalize_s().unwrap_or(sig);
 
         let mut signature = [0u8; 64];
-        signature.copy_from_slice(normalized.to_bytes().as_slice());
+        signature.copy_from_slice(&normalized.to_bytes()[..]);
 
         Ok(signature)
     }
@@ -162,7 +157,7 @@ impl P256 {
         signature: &Signature,
         public_key: &PublicKey,
     ) -> Result<bool> {
-        use p256::ecdsa::{VerifyingKey, Signature as P256Sig, signature::Verifier};
+        use p256::ecdsa::{VerifyingKey, Signature as P256Sig, signature::hazmat::PrehashVerifier};
         use p256::EncodedPoint;
 
         // Construct uncompressed point with 0x04 prefix
@@ -179,7 +174,8 @@ impl P256 {
         let sig = P256Sig::from_bytes(signature.into())
             .map_err(|_| Error::invalid_signature("invalid P-256 signature format"))?;
 
-        Ok(verifying_key.verify(message_hash, &sig).is_ok())
+        // The input is already a digest: verify it directly instead of hashing it again.
+        Ok(verifying_key.verify_prehash(message_hash, &sig).is_ok())
     }
 
     /// Perform ECDH key exchange.
@@ -187,7 +183,6 @@ impl P256 {
     /// Computes shared secret from our secret key and their public key.
     /// Returns 32-byte shared secret (x-coordinate of shared point).
     pub fn ecdh(secret_key: &SecretKey, their_public: &PublicKey) -> Result<[u8; 32]> {
-        use p256::ecdh::EphemeralSecret;
         use p256::{PublicKey as P256PublicKey, EncodedPoint};
         use p256::elliptic_curve::sec1::FromEncodedPoint;
 
@@ -215,7 +210,7 @@ impl P256 {
         let shared = p256::ecdh::diffie_hellman(scalar, their_pk.as_affine());
 
         let mut result = [0u8; 32];
-        result.copy_from_slice(shared.raw_secret_bytes().as_slice());
+        result.copy_from_slice(&shared.raw_secret_bytes()[..]);
 
         Ok(result)
     }
@@ -246,6 +241,11 @@ impl P256 {
     pub fn decompress_public_key(compressed: &CompressedPublicKey) -> Result<PublicKey> {
         use p256::{AffinePoint, EncodedPoint};
         use p256::elliptic_curve::sec1::FromEncodedPoint;
+
+        // sec1 also parses tag 0x05 (compact point); only SEC1 compressed tags are valid here.
+        if compressed[0] != 0x02 && compressed[0] != 0x03 {
+            return Err(Error::invalid_input("invalid compressed P-256 public key prefix"));
+        }
 
         let point = EncodedPoint::from_bytes(compressed)
             .map_err(|_| Error::invalid_input("invalid compressed P-256 public key"))?;
@@ -314,7 +314,7 @@ impl P256 {
         let normalized = sig.normalize_s().unwrap_or(sig);
 
         let mut result = [0u8; 64];
-        result.copy_from_slice(normalized.to_bytes().as_slice());
+        result.copy_from_slice(&normalized.to_bytes()[..]);
 
         Ok(result)
     }
@@ -650,23 +650,23 @@ mod tests {
 
     #[test]
     fn test_wycheproof_vector() {
-        // Wycheproof test vector
-        // https://github.com/google/wycheproof
-        // tcId: 1 from ecdsa_secp256r1_sha256_test.json
+        // C2SP Wycheproof testvectors_v1/ecdsa_secp256r1_sha256_test.json,
+        // testGroups[0], tcId 3: msg "313233343030" ("123400"), result valid.
 
         let public: PublicKey = [
             // x
-            0x29, 0x27, 0xb1, 0x05, 0x12, 0xba, 0xe3, 0xed,
-            0xdc, 0xfe, 0x46, 0x78, 0x28, 0x12, 0x8b, 0xad,
-            0x29, 0x03, 0x26, 0x99, 0x19, 0xf7, 0x08, 0x60,
-            0x69, 0xc8, 0xc4, 0xdf, 0x6c, 0x73, 0x28, 0x38,
+            0x04, 0xaa, 0xec, 0x73, 0x63, 0x57, 0x26, 0xf2,
+            0x13, 0xfb, 0x8a, 0x9e, 0x64, 0xda, 0x3b, 0x86,
+            0x32, 0xe4, 0x14, 0x95, 0xa9, 0x44, 0xd0, 0x04,
+            0x5b, 0x52, 0x2e, 0xba, 0x72, 0x40, 0xfa, 0xd5,
             // y
-            0xc7, 0x78, 0x79, 0x64, 0xea, 0xac, 0x00, 0xe5,
-            0x92, 0x1f, 0xb1, 0x49, 0x8a, 0x60, 0xf4, 0x60,
-            0x67, 0x66, 0xb3, 0xd9, 0x68, 0x50, 0x01, 0x55,
-            0x8d, 0x1a, 0x97, 0x4e, 0x73, 0x41, 0x51, 0x3e,
+            0x87, 0xd9, 0x31, 0x57, 0x98, 0xaa, 0xa3, 0xa5,
+            0xba, 0x01, 0x77, 0x57, 0x87, 0xce, 0xd0, 0x5e,
+            0xaa, 0xf7, 0xb4, 0xe0, 0x9f, 0xc8, 0x1d, 0x6d,
+            0x1a, 0xa5, 0x46, 0xe8, 0x36, 0x5d, 0x52, 0x5d,
         ];
 
+        // sha256("123400")
         let message_hash: [u8; 32] = [
             0xbb, 0x5a, 0x52, 0xf4, 0x2f, 0x9c, 0x92, 0x61,
             0xed, 0x43, 0x61, 0xf5, 0x94, 0x22, 0xa1, 0xe3,
@@ -676,18 +676,23 @@ mod tests {
 
         let signature: Signature = [
             // r
-            0x2b, 0xa3, 0xa8, 0xbe, 0x6b, 0x94, 0xd5, 0xec,
-            0x80, 0xa6, 0xd9, 0xd1, 0x19, 0x0a, 0x43, 0x6e,
-            0xff, 0xe5, 0x0d, 0x85, 0xa1, 0xee, 0xe8, 0x59,
-            0xb8, 0xcc, 0x6a, 0xf9, 0xbd, 0x5c, 0x2e, 0x18,
+            0xa8, 0xea, 0x15, 0x0c, 0xb8, 0x01, 0x25, 0xd7,
+            0x38, 0x1c, 0x4c, 0x1f, 0x1d, 0xa8, 0xe9, 0xde,
+            0x27, 0x11, 0xf9, 0x91, 0x70, 0x60, 0x40, 0x6a,
+            0x73, 0xd7, 0x90, 0x45, 0x19, 0xe5, 0x13, 0x88,
             // s
-            0x4c, 0xd6, 0x0b, 0x85, 0x5d, 0x44, 0x2f, 0x5a,
-            0x3c, 0x7b, 0x11, 0xeb, 0x6c, 0x4e, 0x0a, 0xe7,
-            0x52, 0x5f, 0xe7, 0x10, 0xfa, 0xb9, 0xaa, 0x7c,
-            0x77, 0xa6, 0x7f, 0x79, 0xe6, 0xfa, 0xdd, 0x76,
+            0xf3, 0xab, 0x9f, 0xa6, 0x8b, 0xd4, 0x79, 0x73,
+            0xa7, 0x3b, 0x2d, 0x40, 0x48, 0x0c, 0x2b, 0xa5,
+            0x0c, 0x22, 0xc9, 0xd7, 0x6e, 0xc2, 0x17, 0x25,
+            0x72, 0x88, 0x29, 0x32, 0x85, 0x44, 0x9b, 0x86,
         ];
 
+        // verify takes the digest itself; it must not hash it again.
         let valid = P256::verify(&message_hash, &signature, &public).unwrap();
         assert!(valid);
+
+        let mut tampered = message_hash;
+        tampered[0] ^= 1;
+        assert!(!P256::verify(&tampered, &signature, &public).unwrap());
     }
 }

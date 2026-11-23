@@ -115,6 +115,14 @@ describe("P256 WASM Implementation", () => {
 	});
 
 	describe("sign", () => {
+		it("rejects message hashes that are not 32 bytes before touching WASM memory", () => {
+			for (const len of [0, 31, 33, 64]) {
+				expect(() =>
+					P256Wasm.sign(new Uint8Array(len) as HashType, TEST_PRIVATE_KEY),
+				).toThrow(new RegExp(`Message hash must be 32 bytes, got ${len}`));
+			}
+		});
+
 		it("signs valid message hash", () => {
 			const signature = P256Wasm.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
@@ -203,6 +211,24 @@ describe("P256 WASM Implementation", () => {
 	});
 
 	describe("verify", () => {
+		it("rejects message hashes that are not 32 bytes before touching WASM memory", () => {
+			const signature = P256Wasm.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+			const publicKey = P256Wasm.derivePublicKey(TEST_PRIVATE_KEY);
+			for (const len of [0, 31, 33, 64]) {
+				expect(() =>
+					P256Wasm.verify(
+						signature,
+						new Uint8Array(len) as HashType,
+						publicKey,
+					),
+				).toThrow(new RegExp(`Message hash must be 32 bytes, got ${len}`));
+			}
+			// The valid path still works after the rejected calls.
+			expect(P256Wasm.verify(signature, TEST_MESSAGE_HASH, publicKey)).toBe(
+				true,
+			);
+		});
+
 		it("verifies valid signature", () => {
 			const signature = P256Wasm.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 			const publicKey = P256Wasm.derivePublicKey(TEST_PRIVATE_KEY);

@@ -16,7 +16,7 @@ export declare const equals: (a: StorageKeyLike, b: StorageKeyLike) => boolean;
 export declare const toString: (key: StorageKeyLike) => string;
 export declare const fromString: (str: string) => StorageKeyType | undefined;
 export declare const hashCode: (key: StorageKeyLike) => number;
-export { _createImpl as _create, _fromImpl as _from, _isImpl as _is, _equalsImpl as _equals, _toStringImpl as _toString, _fromStringImpl as _fromString, _hashCodeImpl as _hashCode, };
+export { _createImpl as _create, _equalsImpl as _equals, _fromImpl as _from, _fromStringImpl as _fromString, _hashCodeImpl as _hashCode, _isImpl as _is, _toStringImpl as _toString, };
 export declare const StorageKey: {
     from: (value: StorageKeyLike) => StorageKeyType;
     create: (address: AddressType, slot: bigint) => StorageKeyType;

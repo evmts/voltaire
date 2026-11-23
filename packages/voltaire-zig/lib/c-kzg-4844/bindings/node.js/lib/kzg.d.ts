@@ -12,10 +12,10 @@ export type Cell = Uint8Array; // 64 * 32 bytes
 export type ProofResult = [KZGProof, Bytes32];
 
 export interface TrustedSetupJson {
-	setup_G1: string[];
-	setup_G2: string[];
-	setup_G1_lagrange: string[];
-	roots_of_unity: string[];
+  setup_G1: string[];
+  setup_G2: string[];
+  setup_G1_lagrange: string[];
+  roots_of_unity: string[];
 }
 
 export const BYTES_PER_BLOB: number;
@@ -83,10 +83,7 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeBlobKzgProof(
-	blob: Blob,
-	commitmentBytes: Bytes48,
-): KZGProof;
+export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGProof;
 
 /**
  * Verify a KZG poof claiming that `p(z) == y`.
@@ -101,10 +98,10 @@ export function computeBlobKzgProof(
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
 export function verifyKzgProof(
-	commitmentBytes: Bytes48,
-	zBytes: Bytes32,
-	yBytes: Bytes32,
-	proofBytes: Bytes48,
+  commitmentBytes: Bytes48,
+  zBytes: Bytes32,
+  yBytes: Bytes32,
+  proofBytes: Bytes48
 ): boolean;
 
 /**
@@ -119,11 +116,7 @@ export function verifyKzgProof(
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProof(
-	blob: Blob,
-	commitmentBytes: Bytes48,
-	proofBytes: Bytes48,
-): boolean;
+export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48): boolean;
 
 /**
  * Given an array of blobs and their proofs, verify that they correspond to their
@@ -139,11 +132,7 @@ export function verifyBlobKzgProof(
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProofBatch(
-	blobs: Blob[],
-	commitmentsBytes: Bytes48[],
-	proofsBytes: Bytes48[],
-): boolean;
+export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
 
 /**
  * Get the cells for a given blob.
@@ -178,10 +167,7 @@ export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
  * @throws {Error} - Invalid input, failure to allocate or error recovering
  * cells and proofs
  */
-export function recoverCellsAndKzgProofs(
-	cellIndices: number[],
-	cells: Cell[],
-): [Cell[], KZGProof[]];
+export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): [Cell[], KZGProof[]];
 
 /**
  * Verify that multiple cells' proofs are valid.
@@ -196,8 +182,8 @@ export function recoverCellsAndKzgProofs(
  * @throws {Error} - Invalid input, failure to allocate memory, or errors verifying batch
  */
 export function verifyCellKzgProofBatch(
-	commitmentsBytes: Bytes48[],
-	cellIndices: number[],
-	cells: Cell[],
-	proofsBytes: Bytes48[],
+  commitmentsBytes: Bytes48[],
+  cellIndices: number[],
+  cells: Cell[],
+  proofsBytes: Bytes48[]
 ): boolean;

@@ -722,6 +722,7 @@ try frame.stack.append(value);  // Skip pushStack() overhead
 **Attack Vector:**
 
 1. Attacker deploys contract with bytecode:
+
    ```
    PUSH1 0x01
    PUSH1 0x01
@@ -759,13 +760,13 @@ GasFastestStep = 3    // Used by PUSH1-32, DUP, SWAP (line 32, 45, 58)
 
 **Verification:**
 
-| Operation | Python | Zig | Match |
-|-----------|--------|-----|-------|
-| POP | `GAS_BASE` (2) | `GasQuickStep` (2) | ✅ |
-| PUSH0 | `GAS_BASE` (2) | `GasQuickStep` (2) | ✅ |
-| PUSH1-32 | `GAS_VERY_LOW` (3) | `GasFastestStep` (3) | ✅ |
-| DUP1-16 | `GAS_VERY_LOW` (3) | `GasFastestStep` (3) | ✅ |
-| SWAP1-16 | `GAS_VERY_LOW` (3) | `GasFastestStep` (3) | ✅ |
+| Operation | Python             | Zig                  | Match |
+| --------- | ------------------ | -------------------- | ----- |
+| POP       | `GAS_BASE` (2)     | `GasQuickStep` (2)   | ✅    |
+| PUSH0     | `GAS_BASE` (2)     | `GasQuickStep` (2)   | ✅    |
+| PUSH1-32  | `GAS_VERY_LOW` (3) | `GasFastestStep` (3) | ✅    |
+| DUP1-16   | `GAS_VERY_LOW` (3) | `GasFastestStep` (3) | ✅    |
+| SWAP1-16  | `GAS_VERY_LOW` (3) | `GasFastestStep` (3) | ✅    |
 
 **Result:** ✅ All gas costs match
 
@@ -775,43 +776,43 @@ GasFastestStep = 3    // Used by PUSH1-32, DUP, SWAP (line 32, 45, 58)
 
 #### POP
 
-| Aspect | Python | Zig | Match |
-|--------|--------|-----|-------|
-| Stack pop | `stack.pop(evm.stack)` | `frame.popStack()` | ✅ |
-| Gas charge | After pop | ❌ Before pop | ❌ BUG |
-| PC increment | `+1` | `+1` | ✅ |
+| Aspect       | Python                 | Zig                | Match  |
+| ------------ | ---------------------- | ------------------ | ------ |
+| Stack pop    | `stack.pop(evm.stack)` | `frame.popStack()` | ✅     |
+| Gas charge   | After pop              | ❌ Before pop      | ❌ BUG |
+| PC increment | `+1`                   | `+1`               | ✅     |
 
 #### PUSH
 
-| Aspect | Python | Zig | Match |
-|--------|--------|-----|-------|
-| PUSH0 gas | `GAS_BASE` (2) | `GasQuickStep` (2) | ✅ |
-| PUSH1-32 gas | `GAS_VERY_LOW` (3) | `GasFastestStep` (3) | ✅ |
-| Read immediate | `buffer_read(evm.code, ...)` | `readImmediate()` | ✅ |
-| PC increment | `+1 + num_bytes` | `+1 + push_size` | ✅ |
-| Hardfork check (PUSH0) | Implicit (fork-specific file) | Explicit | ✅ |
+| Aspect                 | Python                        | Zig                  | Match |
+| ---------------------- | ----------------------------- | -------------------- | ----- |
+| PUSH0 gas              | `GAS_BASE` (2)                | `GasQuickStep` (2)   | ✅    |
+| PUSH1-32 gas           | `GAS_VERY_LOW` (3)            | `GasFastestStep` (3) | ✅    |
+| Read immediate         | `buffer_read(evm.code, ...)`  | `readImmediate()`    | ✅    |
+| PC increment           | `+1 + num_bytes`              | `+1 + push_size`     | ✅    |
+| Hardfork check (PUSH0) | Implicit (fork-specific file) | Explicit             | ✅    |
 
 **Note:** Python uses `buffer_read()` which zero-pads if truncated. Zig's `readImmediate()` returns `null`. Functionally equivalent (both handle truncation).
 
 #### DUP
 
-| Aspect | Python | Zig | Match |
-|--------|--------|-----|-------|
-| Gas charge | Before check | ❌ Before check | ⚠️ Match (but questionable) |
-| Underflow check | `item_number >= len(stack)` | `len < n` | ✅ Equivalent |
-| Index calculation | `stack[len - 1 - item_number]` | `stack[len - n]` | ✅ Equivalent |
-| PC increment | `+1` | `+1` | ✅ |
+| Aspect            | Python                         | Zig              | Match                       |
+| ----------------- | ------------------------------ | ---------------- | --------------------------- |
+| Gas charge        | Before check                   | ❌ Before check  | ⚠️ Match (but questionable) |
+| Underflow check   | `item_number >= len(stack)`    | `len < n`        | ✅ Equivalent               |
+| Index calculation | `stack[len - 1 - item_number]` | `stack[len - n]` | ✅ Equivalent               |
+| PC increment      | `+1`                           | `+1`             | ✅                          |
 
 **Note:** Python also charges gas before underflow check in DUP/SWAP. If spec tests pass with this order, it's correct (even if counterintuitive).
 
 #### SWAP
 
-| Aspect | Python | Zig | Match |
-|--------|--------|-----|-------|
-| Gas charge | Before check | ❌ Before check | ⚠️ Match |
-| Underflow check | `item_number >= len(stack)` | `len <= n` | ✅ Equivalent |
-| Swap logic | Tuple swap | Three-step temp swap | ✅ Equivalent |
-| PC increment | `+1` | `+1` | ✅ |
+| Aspect          | Python                      | Zig                  | Match         |
+| --------------- | --------------------------- | -------------------- | ------------- |
+| Gas charge      | Before check                | ❌ Before check      | ⚠️ Match      |
+| Underflow check | `item_number >= len(stack)` | `len <= n`           | ✅ Equivalent |
+| Swap logic      | Tuple swap                  | Three-step temp swap | ✅ Equivalent |
+| PC increment    | `+1`                        | `+1`                 | ✅            |
 
 ---
 
@@ -846,12 +847,12 @@ swap16 = partial(swap_n, item_number=16) # 0x9f
 
 **Verification:**
 
-| Opcode | Instruction | Python item_number | Zig Calculation | Match |
-|--------|-------------|-------------------|----------------|-------|
-| 0x80 | DUP1 | 0 | `0x80 - 0x7f = 1` | ⚠️ Off-by-one? |
-| 0x8f | DUP16 | 15 | `0x8f - 0x7f = 16` | ⚠️ Off-by-one? |
-| 0x90 | SWAP1 | 1 | `0x90 - 0x8f = 1` | ✅ |
-| 0x9f | SWAP16 | 16 | `0x9f - 0x8f = 16` | ✅ |
+| Opcode | Instruction | Python item_number | Zig Calculation    | Match          |
+| ------ | ----------- | ------------------ | ------------------ | -------------- |
+| 0x80   | DUP1        | 0                  | `0x80 - 0x7f = 1`  | ⚠️ Off-by-one? |
+| 0x8f   | DUP16       | 15                 | `0x8f - 0x7f = 16` | ⚠️ Off-by-one? |
+| 0x90   | SWAP1       | 1                  | `0x90 - 0x8f = 1`  | ✅             |
+| 0x9f   | SWAP16      | 16                 | `0x9f - 0x8f = 16` | ✅             |
 
 **⚠️ POTENTIAL BUG: DUP Indexing**
 

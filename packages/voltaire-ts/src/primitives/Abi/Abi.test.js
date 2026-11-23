@@ -82,7 +82,7 @@ describe("Abi", () => {
 			];
 			const abi = Abi.from(items);
 			expect(abi.length).toBe(1);
-			expect(abi[0].type).toBe("function");
+			expect(abi[0]?.type).toBe("function");
 		});
 
 		it("creates new array instance", () => {

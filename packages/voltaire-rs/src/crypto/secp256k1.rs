@@ -32,16 +32,16 @@
 use crate::error::{Error, Result};
 use crate::primitives::Address;
 
-// secp256k1 curve order N
-const SECP256K1_N: [u8; 32] = [
+/// secp256k1 curve order N (big-endian).
+pub const SECP256K1_N: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
     0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
     0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
 ];
 
-// N/2 for low-s check
-const SECP256K1_HALF_N: [u8; 32] = [
+/// floor(N / 2), the largest low-s value allowed by EIP-2 (big-endian).
+pub const SECP256K1_HALF_N: [u8; 32] = [
     0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
@@ -130,19 +130,13 @@ impl Signature {
         bytes
     }
 
-    /// Check if signature is valid (non-zero r, s within curve order).
-    #[cfg(feature = "native")]
+    /// Check if signature is valid for Ethereum.
+    ///
+    /// Requires `1 <= r < N` and `1 <= s <= N / 2` (EIP-2 low-s), compared as
+    /// full 256-bit big-endian integers. Both default and `native` builds use
+    /// this same check.
     pub fn is_valid(&self) -> bool {
-        crate::ffi::validate_signature(&self.r, &self.s)
-    }
-
-    /// Check if signature is valid (basic check without FFI).
-    #[cfg(not(feature = "native"))]
-    pub fn is_valid(&self) -> bool {
-        // Simple check: r and s must be non-zero and less than curve order
-        let r_zero = self.r.iter().all(|&b| b == 0);
-        let s_zero = self.s.iter().all(|&b| b == 0);
-        !r_zero && !s_zero
+        is_valid_signature_scalars(&self.r, &self.s)
     }
 
     /// Normalize signature to low-s form (EIP-2).
@@ -197,24 +191,12 @@ impl Signature {
 
     /// Check if r component is within valid range (1 <= r < N).
     fn is_r_valid(&self) -> bool {
-        // r must be non-zero
-        let r_zero = self.r.iter().all(|&b| b == 0);
-        if r_zero {
-            return false;
-        }
-        // r must be less than N
-        self.r < SECP256K1_N
+        is_scalar_in_range(&self.r)
     }
 
     /// Check if s component is within valid range (1 <= s < N).
     fn is_s_valid(&self) -> bool {
-        // s must be non-zero
-        let s_zero = self.s.iter().all(|&b| b == 0);
-        if s_zero {
-            return false;
-        }
-        // s must be less than N
-        self.s < SECP256K1_N
+        is_scalar_in_range(&self.s)
     }
 
     /// Check if signature components are within valid curve range.
@@ -456,19 +438,25 @@ impl Secp256k1 {
     }
 
     /// Validate signature components.
-    #[cfg(feature = "native")]
+    ///
+    /// Requires `1 <= r < N` and `1 <= s <= N / 2` (EIP-2 low-s), compared as
+    /// full 256-bit big-endian integers. Both default and `native` builds use
+    /// this same check, which matches the native library's rules.
     pub fn validate_signature(r: &[u8; 32], s: &[u8; 32]) -> bool {
-        crate::ffi::validate_signature(r, s)
+        is_valid_signature_scalars(r, s)
     }
+}
 
-    /// Validate signature components (basic check without FFI).
-    #[cfg(not(feature = "native"))]
-    pub fn validate_signature(r: &[u8; 32], s: &[u8; 32]) -> bool {
-        // Basic validation: non-zero
-        let r_zero = r.iter().all(|&b| b == 0);
-        let s_zero = s.iter().all(|&b| b == 0);
-        !r_zero && !s_zero
-    }
+/// Check `1 <= x < N` for a big-endian 256-bit scalar.
+///
+/// `[u8; 32]` compares lexicographically, which equals big-endian numeric order.
+pub(crate) fn is_scalar_in_range(x: &[u8; 32]) -> bool {
+    *x != [0u8; 32] && *x < SECP256K1_N
+}
+
+/// Check `1 <= r < N` and `1 <= s <= N / 2` for big-endian 256-bit scalars.
+pub(crate) fn is_valid_signature_scalars(r: &[u8; 32], s: &[u8; 32]) -> bool {
+    is_scalar_in_range(r) && *s != [0u8; 32] && *s <= SECP256K1_HALF_N
 }
 
 #[cfg(test)]
@@ -649,6 +637,86 @@ mod tests {
         }
         let sig = Signature::new([1u8; 32], s_high);
         assert!(!sig.is_normalized());
+    }
+
+    fn add_one(mut x: [u8; 32]) -> [u8; 32] {
+        for i in (0..32).rev() {
+            let (sum, overflow) = x[i].overflowing_add(1);
+            x[i] = sum;
+            if !overflow {
+                break;
+            }
+        }
+        x
+    }
+
+    fn sub_one(mut x: [u8; 32]) -> [u8; 32] {
+        for i in (0..32).rev() {
+            let (diff, underflow) = x[i].overflowing_sub(1);
+            x[i] = diff;
+            if !underflow {
+                break;
+            }
+        }
+        x
+    }
+
+    #[test]
+    fn test_validate_signature_full_width_boundaries() {
+        let one = add_one([0u8; 32]);
+        let n = SECP256K1_N;
+        let n_minus_1 = sub_one(n);
+        let half = SECP256K1_HALF_N;
+        let half_plus_1 = add_one(half);
+
+        // r range: 1 <= r < N
+        assert!(Secp256k1::validate_signature(&one, &one));
+        assert!(Secp256k1::validate_signature(&n_minus_1, &one));
+        assert!(!Secp256k1::validate_signature(&n, &one));
+        assert!(!Secp256k1::validate_signature(&[0xff; 32], &one));
+        assert!(!Secp256k1::validate_signature(&[0u8; 32], &one));
+
+        // s range: 1 <= s <= N/2
+        assert!(Secp256k1::validate_signature(&one, &half));
+        assert!(!Secp256k1::validate_signature(&one, &half_plus_1));
+        assert!(!Secp256k1::validate_signature(&one, &n_minus_1));
+        assert!(!Secp256k1::validate_signature(&one, &n));
+        assert!(!Secp256k1::validate_signature(&one, &[0u8; 32]));
+
+        // A value whose top bit is clear but which exceeds N/2 in low bytes.
+        let mut s = half;
+        s[31] = 0xff;
+        assert!(!Secp256k1::validate_signature(&one, &s));
+    }
+
+    #[test]
+    fn test_signature_is_valid_matches_validate_signature() {
+        let one = add_one([0u8; 32]);
+        let cases = [
+            (one, one),
+            (SECP256K1_N, one),
+            (one, SECP256K1_N),
+            (one, SECP256K1_HALF_N),
+            (one, add_one(SECP256K1_HALF_N)),
+            (sub_one(SECP256K1_N), SECP256K1_HALF_N),
+            ([0u8; 32], one),
+            (one, [0u8; 32]),
+        ];
+        for (r, s) in cases {
+            assert_eq!(
+                Signature::new(r, s).is_valid(),
+                Secp256k1::validate_signature(&r, &s)
+            );
+        }
+        assert!(!Signature::new(SECP256K1_N, one).is_valid());
+        assert!(!Signature::new(one, SECP256K1_N).is_valid());
+        assert!(!Signature::new(one, add_one(SECP256K1_HALF_N)).is_valid());
+    }
+
+    #[test]
+    fn test_signature_is_canonical_rejects_r_equal_n() {
+        let sig = Signature::new(SECP256K1_N, SECP256K1_HALF_N);
+        assert!(!sig.is_canonical());
     }
 
     #[test]

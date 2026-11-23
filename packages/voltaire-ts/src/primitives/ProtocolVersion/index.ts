@@ -34,7 +34,7 @@ export function compare(
 }
 
 // Export internal functions (tree-shakeable)
-export { _toString, _equals, _compare };
+export { _compare, _equals, _toString };
 
 // Export as namespace (convenience)
 export const ProtocolVersion = {

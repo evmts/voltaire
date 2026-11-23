@@ -9,7 +9,7 @@ export {
   type MockRpcHandler,
   type RecordedRpcCall,
   TestTransport,
-  type TestTransportController
+  type TestTransportController,
 } from "./TestTransport.vibe"
 export {
   isRetryableRpcTransportError,
@@ -30,5 +30,5 @@ export {
   withRpcHooks,
   withRpcRetry,
   withRpcTimeout,
-  withRpcTracing
+  withRpcTracing,
 } from "./Transport.vibe"

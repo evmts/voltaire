@@ -11,7 +11,7 @@ const erc20Abi = [
     name: "balanceOf",
     stateMutability: "view",
     inputs: [{ name: "account", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }]
+    outputs: [{ name: "", type: "uint256" }],
   },
   {
     type: "function",
@@ -19,9 +19,9 @@ const erc20Abi = [
     stateMutability: "nonpayable",
     inputs: [
       { name: "to", type: "address" },
-      { name: "amount", type: "uint256" }
+      { name: "amount", type: "uint256" },
     ],
-    outputs: [{ name: "", type: "bool" }]
+    outputs: [{ name: "", type: "bool" }],
   },
   {
     type: "event",
@@ -29,17 +29,17 @@ const erc20Abi = [
     inputs: [
       { name: "from", type: "address", indexed: true },
       { name: "to", type: "address", indexed: true },
-      { name: "value", type: "uint256", indexed: false }
-    ]
+      { name: "value", type: "uint256", indexed: false },
+    ],
   },
   {
     type: "error",
     name: "InsufficientBalance",
     inputs: [
       { name: "available", type: "uint256" },
-      { name: "required", type: "uint256" }
-    ]
-  }
+      { name: "required", type: "uint256" },
+    ],
+  },
 ] as const
 
 describe("primitives", () => {
@@ -124,12 +124,16 @@ describe("primitives", () => {
     const errPayload = try Abi.encodeParameters([{ type: "string" }], ["ERC20: transfer exceeds balance"])
     const revertHex = `0x08c379a0${errPayload.slice(2)}`
     const reason = try Abi.decodeRevertReason(revertHex, erc20Abi)
-    try Effect.try(() => assert.strictEqual(Abi.formatRevertReason(reason), "Reverted: ERC20: transfer exceeds balance"))
+    try Effect.try(() =>
+      assert.strictEqual(Abi.formatRevertReason(reason), "Reverted: ERC20: transfer exceeds balance")
+    )
 
     // Decode Panic(0x11) = arithmetic overflow
     const panicPayload = try Abi.encodeParameters([{ type: "uint256" }], [0x11n])
     const panicReason = try Abi.decodeRevertReason(`0x4e487b71${panicPayload.slice(2)}`)
-    try Effect.try(() => assert.strictEqual(Abi.formatRevertReason(panicReason), "Panic(0x11): Arithmetic overflow or underflow"))
+    try Effect.try(() =>
+      assert.strictEqual(Abi.formatRevertReason(panicReason), "Panic(0x11): Arithmetic overflow or underflow")
+    )
   })
 
   it.effect("SIWE creates, formats, parses, and validates against TestClock", effect () => {
@@ -138,7 +142,7 @@ describe("primitives", () => {
       address: VITALIK_LOWER,
       uri: "https://voltaire.tevm.sh/login",
       chainId: 1,
-      statement: "Sign in to Voltaire"
+      statement: "Sign in to Voltaire",
     })
     const formatted = try Siwe.format(msg)
     const parsed = try Siwe.parse(formatted)
