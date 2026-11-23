@@ -1,293 +1,189 @@
 ---
 title: Getting Started
-description: Install and make your first JSON-RPC requests with type-safe providers
+description: Instantiate HttpProvider, WebSocketProvider, InMemoryProvider, or ForkProvider and execute Ethereum JSON-RPC requests.
 ---
 
-# Getting Started
-
-Install Voltaire and start making type-safe JSON-RPC requests to Ethereum nodes.
+Install `@tevm/voltaire` and instantiate a provider from `@tevm/voltaire/provider`. Pair it with request builders from `@tevm/voltaire/jsonrpc` or pass plain `{ method, params }` objects.
 
 ## Installation
 
+<Tabs>
+  <Tab title="npm">
 ```bash
 npm install @tevm/voltaire
 ```
+  </Tab>
+  <Tab title="pnpm">
+```bash
+pnpm add @tevm/voltaire
+```
+  </Tab>
+  <Tab title="bun">
+```bash
+bun add @tevm/voltaire
+```
+  </Tab>
+</Tabs>
 
-## Creating a Provider
+## Choosing a Provider
 
-Use a standard EIP-1193 provider (like window.ethereum, viem, or ethers):
+<Tabs>
+  <Tab title="HttpProvider">
+```typescript
+import { HttpProvider } from '@tevm/voltaire/provider';
+
+const provider = new HttpProvider({
+  url: 'https://eth.llamarpc.com',
+  headers: { Authorization: 'Bearer token' },
+  timeout: 30_000,   // default: 30000 ms
+  retry: 3,          // default: 3 attempts on network errors
+  retryDelay: 1000,  // default: 1000 ms
+});
+
+// Shorthand with defaults
+const simple = new HttpProvider('https://eth.llamarpc.com');
+```
+  </Tab>
+  <Tab title="WebSocketProvider">
+```typescript
+import { WebSocketProvider } from '@tevm/voltaire/provider';
+
+const provider = new WebSocketProvider({
+  url: 'wss://eth.llamarpc.com',
+  reconnect: true,          // default: true
+  reconnectDelay: 5000,     // default: 5000 ms
+  maxReconnectAttempts: 0,  // default: 0 (unlimited)
+});
+
+await provider.connect();
+```
+  </Tab>
+  <Tab title="InMemoryProvider">
+```typescript
+import { InMemoryProvider } from '@tevm/voltaire/provider';
+
+const provider = new InMemoryProvider({
+  chainId: 1,
+  mining: 'auto', // 'auto' | 'interval' | 'manual'
+  accounts: [
+    {
+      address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+      balance: '0x56bc75e2d63100000', // 100 ETH
+    },
+  ],
+});
+```
+  </Tab>
+  <Tab title="ForkProvider">
+```typescript
+import { ForkProvider } from '@tevm/voltaire/provider';
+
+const provider = new ForkProvider({
+  chainId: 1,
+  fork: {
+    forkUrl: 'https://eth.llamarpc.com',
+    forkBlockNumber: 19_000_000n,
+    maxCacheSize: 10_000,
+  },
+});
+```
+  </Tab>
+</Tabs>
+
+Browser wallets (`window.ethereum` or providers discovered via `EIP6963`) implement the same `request(args)` contract and work directly with Voltaire request builders.
+
+## Making Requests
+
+### Block Number
 
 ```typescript
-// From window.ethereum (MetaMask, etc.)
-const provider = window.ethereum;
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { HttpProvider } from '@tevm/voltaire/provider';
 
-// From viem
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
-const provider = createJsonRpcProvider('https://eth.llamarpc.com');
+const provider = new HttpProvider('https://eth.llamarpc.com');
 
-// From ethers
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc';
-const provider = createJsonRpcProvider('https://eth.llamarpc.com');
+const blockHex = (await provider.request(Rpc.Eth.BlockNumberRequest())) as string;
+console.log('Current block:', BigInt(blockHex));
 ```
 
-All EIP-1193 providers work with Voltaire's request builders.
-
-## Your First Request
-
-### Get Block Number
-
-Simplest request - no parameters:
+### Account Balance and Nonce
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-
-try {
-  const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
-  console.log('Current block:', blockNumber);
-} catch (error) {
-  console.error('Error:', error.message);
-}
-```
-
-### Get Account Balance
-
-Request with branded Address parameter:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
 import { Address } from '@tevm/voltaire/Address';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
 
-const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const account = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-try {
-  const balance = await provider.request(
-    Rpc.Eth.GetBalanceRequest(address, 'latest')
-  );
-  const balanceEth = Number(BigInt(balance)) / 1e18;
-  console.log(`Balance: ${balanceEth} ETH`);
-} catch (error) {
-  console.error('Failed to get balance:', error);
-}
+const [balanceHex, nonceHex, code] = (await Promise.all([
+  provider.request(Rpc.Eth.GetBalanceRequest(account, 'latest')),
+  provider.request(Rpc.Eth.GetTransactionCountRequest(account, 'latest')),
+  provider.request(Rpc.Eth.GetCodeRequest(account, 'latest')),
+])) as [string, string, string];
+
+console.log('Wei:', BigInt(balanceHex));
+console.log('Nonce:', Number(BigInt(nonceHex)));
+console.log('Is contract:', code !== '0x');
 ```
 
-### Call Contract Method
-
-Execute read-only contract call:
+### Read-Only Contract Call (`eth_call`)
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
+import { Abi } from '@tevm/voltaire/Abi';
 import { Hex } from '@tevm/voltaire/Hex';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
 
-const contractAddress = Address('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'); // USDC
-const methodSignature = Hex('0x18160ddd'); // totalSupply()
+const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const;
+const erc20 = Abi([
+  {
+    type: 'function',
+    name: 'totalSupply',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+]);
 
-try {
-  const result = await provider.request(
-    Rpc.Eth.CallRequest({
-      to: contractAddress,
-      data: methodSignature
-    }, 'latest')
-  );
-  const totalSupply = BigInt(result);
-  console.log('Total supply:', totalSupply);
-} catch (error) {
-  console.error('Call failed:', error);
-}
+const calldata = Hex.fromBytes(erc20.encode('totalSupply', []));
+const raw = (await provider.request(
+  Rpc.Eth.CallRequest({ to: usdc, data: calldata }, 'latest'),
+)) as `0x${string}`;
+
+const [supply] = erc20.decode('totalSupply', Hex.toBytes(raw));
+console.log('USDC totalSupply:', supply);
+```
+
+### Historical State
+
+Pass a hex-encoded block number instead of `'latest'` (requires an archive node for older blocks):
+
+```typescript
+const balanceAt1M = (await provider.request(
+  Rpc.Eth.GetBalanceRequest('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', '0xf4240'),
+)) as string;
 ```
 
 ## Error Handling
 
-Requests throw errors on failure:
+`provider.request()` rejects with an `RpcError` (`{ code: number, message: string, data?: unknown }`) on JSON-RPC errors, HTTP non-2xx responses, or timeouts:
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-
-const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
-
 try {
-  const balance = await provider.request(
-    Rpc.Eth.GetBalanceRequest(address, 'latest')
-  );
-  console.log('Balance:', balance);
-} catch (error) {
-  // Error object contains code and message
-  console.error('RPC error:', error.code, error.message);
+  await provider.request(Rpc.Eth.CallRequest({ to: usdc, data: '0xdeadbeef' }, 'latest'));
+} catch (err) {
+  const rpcErr = err as { code?: number; message?: string; data?: unknown };
+  console.error('RPC failed:', rpcErr.code, rpcErr.message, rpcErr.data);
 }
 ```
 
-## Subscribing to Events
+## Common Pitfalls
 
-Subscribe to blockchain events using EventEmitter pattern:
-
-```typescript
-// Subscribe to new blocks
-provider.on('accountsChanged', (accounts) => {
-  console.log('Accounts changed:', accounts);
-});
-
-provider.on('chainChanged', (chainId) => {
-  console.log('Chain changed:', chainId);
-});
-
-provider.on('connect', (connectInfo) => {
-  console.log('Connected to chain:', connectInfo.chainId);
-});
-
-provider.on('disconnect', (error) => {
-  console.log('Disconnected:', error);
-});
-```
-
-### Unsubscribe
-
-Remove event listeners:
-
-```typescript
-const handler = (accounts) => {
-  console.log('Accounts:', accounts);
-};
-
-provider.on('accountsChanged', handler);
-
-// Later, remove listener
-provider.removeListener('accountsChanged', handler);
-```
-
-## Common Patterns
-
-### Check Account State
-
-Get balance, nonce, and code in parallel:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-
-const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
-
-try {
-  const [balance, nonce, code] = await Promise.all([
-    provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest')),
-    provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest')),
-    provider.request(Rpc.Eth.GetCodeRequest(address, 'latest'))
-  ]);
-
-  console.log('Balance:', balance);
-  console.log('Nonce:', nonce);
-  console.log('Is contract:', code !== '0x');
-} catch (error) {
-  console.error('Failed to fetch account state:', error);
-}
-```
-
-### Estimate Gas for Transaction
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-import { Hex } from '@tevm/voltaire/Hex';
-
-try {
-  const gasEstimate = await provider.request(
-    Rpc.Eth.EstimateGasRequest({
-      from: Address('0x...'),
-      to: Address('0x...'),
-      value: '0x0',
-      data: Hex('0xa9059cbb...') // transfer(address,uint256)
-    })
-  );
-
-  const gas = BigInt(gasEstimate);
-  console.log('Estimated gas:', gas);
-
-  // Add 20% buffer
-  const gasLimit = gas * 120n / 100n;
-  console.log('Recommended gas limit:', gasLimit);
-} catch (error) {
-  console.error('Gas estimation failed:', error);
-}
-```
-
-### Query Historical State
-
-Use block numbers to query historical data:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-
-const address = Address('0x...');
-const blockNumber = '0xF4240'; // Block 1,000,000
-
-try {
-  const balance = await provider.request(
-    Rpc.Eth.GetBalanceRequest(address, blockNumber)
-  );
-  console.log('Balance at block 1M:', balance);
-} catch (error) {
-  console.error('Failed to query historical state:', error);
-}
-```
+1. **Request builders do not perform I/O.** `Rpc.Eth.BlockNumberRequest()` returns `{ method: 'eth_blockNumber', params: [] }`. Pass that object to `provider.request(...)`.
+2. **`HttpProvider` is stateless.** Registering `.on('connect', ...)` on `HttpProvider` never fires; use `WebSocketProvider` for connection lifecycle events and pub/sub streams.
+3. **Node.js WebSockets.** `WebSocketProvider` uses `globalThis.WebSocket`. Node 22+ and Bun provide it natively; older Node versions require assigning a polyfill such as `ws` to `globalThis.WebSocket`.
 
 ## Next Steps
 
-<CardGroup cols={2}>
-  <Card title="Method API" icon="code" href="/jsonrpc-provider/method-api">
-    Learn about method calls, parameters, and response handling.
-  </Card>
-
-  <Card title="Type System" icon="shield" href="/jsonrpc-provider/type-system">
-    Understand auto-generated types and branded primitives.
-  </Card>
-
-  <Card title="Events" icon="rss" href="/jsonrpc-provider/events">
-    Master async generator subscriptions for real-time updates.
-  </Card>
-
-  <Card title="Usage Patterns" icon="book" href="/jsonrpc-provider/usage-patterns">
-    Explore recipes for common blockchain interaction patterns.
-  </Card>
-</CardGroup>
-
-## Troubleshooting
-
-### "Type 'string' is not assignable to type 'Address'"
-
-Use branded primitive constructors:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-
-// ❌ Error: string not assignable to Address
-const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
-
-// ✅ Correct: use Address constructor
-const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
-```
-
-### Request returns RequestArguments not result
-
-Request builders return `{method, params}` objects, not results. Always use with `provider.request()`:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-
-// ❌ Wrong: request builder doesn't execute anything
-const request = Rpc.Eth.BlockNumberRequest();
-console.log(request); // { method: 'eth_blockNumber', params: [] }
-
-// ✅ Correct: send through provider
-const result = await provider.request(request);
-console.log(result); // '0x112a880'
-```
-
-## Related
-
-- [Method API](/jsonrpc-provider/method-api) - Detailed method documentation
-- [eth Methods](/jsonrpc-provider/eth-methods) - All 40 eth namespace methods
-- [Events](/jsonrpc-provider/events) - Event handling patterns
-- [Address](/primitives/address) - Address primitive documentation
-- [Hex](/primitives/hex) - Hex primitive documentation
+- [Method API](/jsonrpc-provider/method-api) — All request builder namespaces
+- [Type System](/jsonrpc-provider/type-system) — `TypedProvider` and `VoltaireRpcSchema`
+- [Events](/jsonrpc-provider/events) — EIP-1193 events and WebSocket subscriptions
+- [Error Handling](/jsonrpc-provider/error-handling) — Error codes and retry strategies

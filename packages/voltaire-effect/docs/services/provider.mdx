@@ -1,11 +1,16 @@
 ---
 title: Provider Service
-description: JSON-RPC provider operations with Effect.ts
+description: JSON-RPC transports, Provider layer composition, free functions, multicall, simulation, and XOR type contracts.
 ---
 
-The Provider service wraps [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) methods with typed error unions and Effect composition.
+`ProviderService` is a thin request layer wrapping Ethereum JSON-RPC. Every provider operation (`getBlockNumber`, `getBalance`, `readContract`, `multicall`, `simulateContract`, `getLogs`, etc.) is exported as a **free function** that requires `ProviderService` in its `R` channel and returns a typed error union.
 
-voltaire-effect exposes all provider operations as **free functions** (idiomatic Effect.ts pattern). Import and use them directly without yielding a service:
+```mermaid
+flowchart LR
+  Free["Free Functions\n(getBalance, getBlock, readContract, multicall)"] --> Prov["Provider\n(provides ProviderService)"]
+  Prov --> Trans["TransportService\n(HttpTransport | WebSocketTransport | BrowserTransport | TestTransport)"]
+  Trans -->|JSON-RPC| Node["Ethereum Node / Mock Map"]
+```
 
 ## Quick Start
 
@@ -13,261 +18,155 @@ voltaire-effect exposes all provider operations as **free functions** (idiomatic
 import { Effect, Schedule, Layer } from 'effect'
 import {
   getBlockNumber, getBalance, getBlock,
-  Provider, HttpTransport, withTimeout, withRetrySchedule
+  Provider, HttpTransport,
+  withTimeout, withRetrySchedule
 } from 'voltaire-effect'
 
-// Compose layers first
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport({
-    url: 'https://eth.llamarpc.com',
-    timeout: '30 seconds',
-    retrySchedule: Schedule.exponential('1 second').pipe(
-      Schedule.jittered,
-      Schedule.compose(Schedule.recurs(3))
-    )
-  }))
+  Layer.provide(
+    HttpTransport({
+      url: 'https://eth.llamarpc.com',
+      timeout: '30 seconds',
+      retrySchedule: Schedule.exponential('1 second').pipe(
+        Schedule.jittered,
+        Schedule.compose(Schedule.recurs(3))
+      )
+    })
+  )
 )
 
 const program = Effect.gen(function* () {
   const blockNum = yield* getBlockNumber()
-
-  // Per-request timeout override
-  const balance = yield* getBalance('0x1234...').pipe(
+  const balance = yield* getBalance('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045').pipe(
     withTimeout('5 seconds')
   )
-
-  // Custom retry schedule for critical calls
   const block = yield* getBlock({ blockTag: 'latest' }).pipe(
-    withRetrySchedule(Schedule.exponential('500 millis').pipe(
-      Schedule.jittered,
-      Schedule.compose(Schedule.recurs(5))
-    ))
+    withRetrySchedule(
+      Schedule.exponential('500 millis').pipe(
+        Schedule.jittered,
+        Schedule.compose(Schedule.recurs(5))
+      )
+    )
   )
-
   return { blockNum, balance, block }
 }).pipe(Effect.provide(ProviderLayer))
 ```
 
-## Transport Layer
+## Transports
 
-Provider requires a transport layer for network communication. Three transports are available:
+`Provider` has type `Layer.Layer<ProviderService, never, TransportService>`. Supply one of four transports:
 
-### HttpTransport
+| Transport | Underlying Mechanism | Typical Use |
+| --- | --- | --- |
+| `HttpTransport(url \| options)` | HTTP POST JSON-RPC with optional batching, timeout, retry schedule | Backend services, indexers, scripts |
+| `WebSocketTransport(url)` | Persistent WebSocket connection | Real-time `eth_subscribe` / `watchBlocks` |
+| `BrowserTransport` | `window.ethereum` (EIP-1193) | Browser dApps |
+| `TestTransport(map \| handlers)` | In-memory method-to-response or `TransportError` map | Deterministic unit tests |
+
+### `HttpTransport` & Automatic Batching
 
 ```typescript
 import { Schedule } from 'effect'
-
-// Simple
-HttpTransport('https://eth.llamarpc.com')
-
-// With Effect Duration and Schedule
-HttpTransport({
-  url: 'https://eth.llamarpc.com',
-  headers: { 'X-Api-Key': 'secret' },
-  timeout: '60 seconds',  // Effect Duration (default: "30 seconds")
-  retrySchedule: Schedule.exponential('500 millis').pipe(
-    Schedule.jittered,
-    Schedule.compose(Schedule.recurs(5))
-  )
-})
-```
-
-<Note>
-`timeout` accepts any Effect `DurationInput` (strings, numbers in ms, or `Duration`). Use strings for readability.
-</Note>
-
-### WebSocketTransport
-
-```typescript
-import { WebSocketTransport } from 'voltaire-effect'
-
-program.pipe(
-  Effect.provide(WebSocketTransport('wss://eth.llamarpc.com'))
-)
-```
-
-### BrowserTransport
-
-Uses `window.ethereum` ([EIP-1193](https://eips.ethereum.org/EIPS/eip-1193)).
-
-```typescript
-import { BrowserTransport } from 'voltaire-effect'
-
-const program = Effect.gen(function* () {
-  const transport = yield* TransportService
-  const accounts = yield* transport.request<string[]>('eth_accounts', [])
-  return accounts[0]
-}).pipe(
-  Effect.provide(BrowserTransport)
-)
-```
-
-### Request Batching
-
-Combine multiple JSON-RPC requests into a single HTTP call for better performance.
-
-```typescript
-import { HttpTransport, TransportService } from 'voltaire-effect'
-import { Effect } from 'effect'
+import { HttpTransport } from 'voltaire-effect'
 
 const transport = HttpTransport({
   url: 'https://eth.llamarpc.com',
+  headers: { 'X-Api-Key': 'secret' },
+  timeout: '60 seconds', // Effect DurationInput (default: "30 seconds")
+  retrySchedule: Schedule.exponential('500 millis').pipe(
+    Schedule.jittered,
+    Schedule.compose(Schedule.recurs(5))
+  ),
   batch: {
-    batchSize: 50,    // Max requests per batch (default: 100)
-    wait: 10          // Wait time in ms before flushing (default: 0)
+    batchSize: 50, // Flush when 50 requests queue (default: 100)
+    wait: 10       // Flush after 10 ms (default: 0)
   }
 })
-
-// Requests made concurrently are automatically batched
-const program = Effect.gen(function* () {
-  const t = yield* TransportService
-  const { blockNumber, chainId, gasPrice } = yield* Effect.all({
-    blockNumber: t.request<string>('eth_blockNumber'),
-    chainId: t.request<string>('eth_chainId'),
-    gasPrice: t.request<string>('eth_gasPrice')
-  })
-  return { blockNumber, chainId, gasPrice }
-}).pipe(Effect.provide(transport))
 ```
 
-- Requests are queued and sent together when `batchSize` is reached or after `wait` ms
-- Each request in the batch is matched to its response by ID
-- If one request fails, only that request fails (others still succeed)
+Concurrent requests under a batched `HttpTransport` are coalesced into a single JSON-RPC batch array and matched back by request ID. A failure in one item fails only that Effect; sibling items still resolve.
 
-### TestTransport
-
-```typescript
-import { TestTransport, TransportError } from 'voltaire-effect'
-
-const mockResponses = new Map([
-  ['eth_blockNumber', '0x1234'],
-  ['eth_chainId', '0x1'],
-])
-
-program.pipe(Effect.provide(TestTransport(mockResponses)))
-
-// Mock errors
-const errorResponses = new Map([
-  ['eth_call', new TransportError({ code: -32000, message: 'execution reverted' })],
-])
-```
-
-### Per-Request Overrides
-
-Use FiberRef-based helpers for scoped overrides:
-
-```typescript
-import { getBalance, getBlockNumber, withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
-import { Schedule } from 'effect'
-
-// Override timeout for a single call
-const balance = yield* getBalance(addr).pipe(
-  withTimeout('5 seconds')
-)
-
-// Custom retry schedule
-const block = yield* getBlockNumber().pipe(
-  withRetrySchedule(Schedule.recurs(1))
-)
-
-// Disable caching
-const fresh = yield* getBlockNumber().pipe(withoutCache)
-
-// Enable tracing
-const traced = yield* getBalance(addr).pipe(withTracing())
-```
-```
-
-## Layer Composition
-
-`Provider` is a Layer that requires `TransportService`:
-
-```typescript
-import * as Layer from 'effect/Layer'
-
-// Provider depends on Transport
-const Provider: Layer.Layer<ProviderService, never, TransportService>
-
-// Compose layers
-const FullProvider = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
-// Use in program
-const program = myEffect.pipe(Effect.provide(FullProvider))
-```
-
-## Block Queries
+### `WebSocketTransport`, `BrowserTransport`, and `TestTransport`
 
 ```typescript
 import {
-  getBlockNumber, getBlock, getBlockReceipts, getUncleCount
+  WebSocketTransport,
+  BrowserTransport,
+  TestTransport,
+  TransportError
 } from 'voltaire-effect'
 
-const blockNum = yield* getBlockNumber()
+const wsLayer = WebSocketTransport('wss://eth.llamarpc.com')
+const browserLayer = BrowserTransport
+
+const testLayer = TestTransport(
+  new Map<string, unknown>([
+    ['eth_blockNumber', '0x1234'],
+    ['eth_chainId', '0x1'],
+    ['eth_call', new TransportError({ code: -32000, message: 'execution reverted' })]
+  ])
+)
+```
+
+### Per-Request Overrides (`FiberRef`)
+
+```typescript
+import { Schedule } from 'effect'
+import {
+  getBalance, getBlockNumber,
+  withTimeout, withRetrySchedule, withoutCache, withTracing
+} from 'voltaire-effect'
+
+const balance = yield* getBalance(addr).pipe(withTimeout('5 seconds'))
+const blockNum = yield* getBlockNumber().pipe(withRetrySchedule(Schedule.recurs(1)))
+const freshHead = yield* getBlockNumber().pipe(withoutCache)
+const tracedBalance = yield* getBalance(addr).pipe(withTracing())
+```
+
+## Core RPC Queries
+
+```typescript
+import {
+  getBlockNumber, getBlock, getBlockReceipts, getUncleCount,
+  getBalance, getTransactionCount, getCode, getStorageAt,
+  getTransaction, getTransactionReceipt, waitForTransactionReceipt,
+  call, estimateGas, getLogs, getGasPrice, getMaxPriorityFeePerGas, getFeeHistory
+} from 'voltaire-effect'
+
+// Blocks
+const head = yield* getBlockNumber()
 const block = yield* getBlock({ blockTag: 'latest', includeTransactions: true })
 const blockByHash = yield* getBlock({ blockHash: '0x...' })
 const receipts = yield* getBlockReceipts({ blockTag: 'latest' })
-const uncleCount = yield* getUncleCount({ blockTag: 'latest' })
-```
+const uncles = yield* getUncleCount({ blockTag: 'latest' })
 
-## Account State
+// Account state
+const wei = yield* getBalance('0x...', 'latest')
+const nonce = yield* getTransactionCount('0x...')
+const code = yield* getCode('0x...')
+const slot = yield* getStorageAt('0x...', '0x0')
 
-```typescript
-import { getBalance, getTransactionCount, getCode, getStorageAt } from 'voltaire-effect'
-
-const balance = yield* getBalance('0x1234...', 'latest')
-const nonce = yield* getTransactionCount('0x1234...')
-const code = yield* getCode('0x1234...')
-const slot = yield* getStorageAt('0x1234...', '0x0')
-```
-
-## Transactions
-
-```typescript
-import {
-  getTransaction, getTransactionByBlockHashAndIndex,
-  getTransactionByBlockNumberAndIndex, getTransactionReceipt,
-  waitForTransactionReceipt, withTimeout
-} from 'voltaire-effect'
-
+// Transactions & confirmation
 const tx = yield* getTransaction('0x...')
-const txByIndex = yield* getTransactionByBlockHashAndIndex('0x...', 0)
-const txByNumber = yield* getTransactionByBlockNumberAndIndex('latest', 0)
 const receipt = yield* getTransactionReceipt('0x...')
+const confirmed = yield* waitForTransactionReceipt('0x...', { confirmations: 3 }).pipe(
+  withTimeout('60 seconds')
+)
 
-// waitForTransactionReceipt with per-request timeout
-const confirmed = yield* waitForTransactionReceipt('0x...', {
-  confirmations: 3
-}).pipe(withTimeout('60 seconds'))
+// Low-level call, gas, logs, fees
+const rawReturn = yield* call({ to: '0x...', data: '0x...' })
+const gas = yield* estimateGas({ to: '0x...', data: '0x...', value: 10n ** 18n })
+const logs = yield* getLogs({ address: '0x...', topics: ['0xddf252ad...'], fromBlock: '0x100000', toBlock: 'latest' })
+const gasPrice = yield* getGasPrice()
+const tip = yield* getMaxPriorityFeePerGas()
+const feeHistory = yield* getFeeHistory(10, 'latest', [25, 50, 75])
 ```
 
-## RPC Account Operations (node-dependent)
+## Contract Helpers (`readContract`, `multicall`, `simulateContract`)
 
-Some nodes expose account signing/sending methods. These are optional and may be disabled:
+### `readContract`
 
-```typescript
-import { sendTransaction, sign, signTransaction } from 'voltaire-effect'
-
-const txHash = yield* sendTransaction({
-  from: '0x1234...',
-  to: '0xabcd...',
-  value: 1_000_000_000_000_000_000n
-})
-
-const sig = yield* sign('0x1234...', '0x...')
-const signed = yield* signTransaction({
-  from: '0x1234...',
-  to: '0xabcd...',
-  value: 1_000_000_000_000_000_000n
-})
-```
-
-For local signing, use [AccountService](/services/account) or [SignerService](/services/signer).
-
-## Read Contract
-
-Type-safe contract reads without creating a Contract instance:
+Executes a typed view/pure call without instantiating a `Contract`:
 
 ```typescript
 import { readContract } from 'voltaire-effect'
@@ -286,157 +185,41 @@ const balance = yield* readContract({
   address: '0x6B175474E89094C44Da98b954EecdEfaE6E286AB',
   abi: erc20Abi,
   functionName: 'balanceOf',
-  args: ['0x1234567890123456789012345678901234567890']
-})
-// balance is bigint
-```
-
-### Multi-Return Functions
-
-```typescript
-const pairAbi = [
-  {
-    type: 'function',
-    name: 'getReserves',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [
-      { name: 'reserve0', type: 'uint112' },
-      { name: 'reserve1', type: 'uint112' },
-      { name: 'blockTimestampLast', type: 'uint32' }
-    ]
-  }
-] as const
-
-const [reserve0, reserve1, timestamp] = yield* readContract({
-  address: pairAddress,
-  abi: pairAbi,
-  functionName: 'getReserves'
-})
-```
-
-### Block Tag
-
-```typescript
-const balance = yield* readContract({
-  address: tokenAddress,
-  abi: erc20Abi,
-  functionName: 'balanceOf',
-  args: [account],
+  args: ['0x1234567890123456789012345678901234567890'],
   blockTag: 'finalized'
 })
 ```
 
-## Call & Estimate
+### `multicall`
 
-```typescript
-import { call, estimateGas } from 'voltaire-effect'
-
-const result = yield* call({
-  to: '0x1234567890123456789012345678901234567890',
-  data: '0x...'
-})
-
-const gas = yield* estimateGas({
-  to: '0x1234567890123456789012345678901234567890',
-  data: '0x...',
-  value: 1000000000000000000n
-})
-```
-
-## Simulation APIs
-
-Free functions for simulation RPCs when supported by your node:
-
-```typescript
-import { simulateV1, simulateV2 } from 'voltaire-effect'
-
-const simV1 = yield* simulateV1({
-  blockStateCalls: [
-    { calls: [{ to: tokenAddress, data: '0x...' }] }
-  ]
-})
-
-const simV2 = yield* simulateV2({ calls: [{ to: tokenAddress }] })
-```
-
-## multicall
-
-Batches multiple contract reads into a single RPC call using the Multicall3 contract at `0xcA11bde05977b3631167028862bE2a173976CA11`. Reduces network overhead by 10-100x.
+Batches multiple reads through Multicall3 (`0xcA11bde05977b3631167028862bE2a173976CA11`) in a single `eth_call`:
 
 ```typescript
 import { multicall } from 'voltaire-effect'
 
-const erc20Abi = [
-  {
-    type: 'function',
-    name: 'balanceOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ type: 'uint256' }]
-  }
-] as const
-
+// allowFailure defaults to true -> [{ status: 'success', result } | { status: 'failure', error }]
 const results = yield* multicall({
   contracts: [
-    {
-      address: '0x6B175474E89094C44Da98b954EecdEfaE6E286AB',
-      abi: erc20Abi,
-      functionName: 'balanceOf',
-      args: ['0x1234567890123456789012345678901234567890']
-    },
-    {
-      address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      abi: erc20Abi,
-      functionName: 'balanceOf',
-      args: ['0x1234567890123456789012345678901234567890']
-    }
-  ]
-})
-// results: [{ status: 'success', result: 1000n }, { status: 'success', result: 500n }]
-```
-
-### allowFailure Mode
-
-By default, `allowFailure` is `true` and results include status:
-
-```typescript
-const results = yield* multicall({
-  contracts: [...],
-  allowFailure: true  // default
-})
-
-for (const r of results) {
-  if (r.status === 'success') {
-    console.log(r.result)
-  } else {
-    console.log('Call failed:', r.error)
-  }
-}
-```
-
-Set `allowFailure: false` to throw on any failure and get unwrapped results:
-
-```typescript
-const results = yield* multicall({
-  contracts: [...],
-  allowFailure: false
-})
-// results: [1000n, 500n] - throws if any call fails
-```
-
-### Block Tag
-
-```typescript
-const results = yield* multicall({
-  contracts: [...],
+    { address: daiAddress, abi: erc20Abi, functionName: 'balanceOf', args: [user] },
+    { address: usdcAddress, abi: erc20Abi, functionName: 'balanceOf', args: [user] }
+  ],
+  allowFailure: true,
   blockTag: 'finalized'
 })
+
+// Set allowFailure: false to unwrap results directly and fail the Effect if any subcall reverts
+const balances = yield* multicall({
+  contracts: [
+    { address: daiAddress, abi: erc20Abi, functionName: 'balanceOf', args: [user] },
+    { address: usdcAddress, abi: erc20Abi, functionName: 'balanceOf', args: [user] }
+  ],
+  allowFailure: false
+})
 ```
 
-## simulateContract
+### `simulateContract`
 
-Simulates a contract write function before sending. Returns both the decoded result and a prepared transaction request.
+Dry-runs a state-changing call under a specific `account` (`msg.sender`) and returns `{ result, request }` ready for signing:
 
 ```typescript
 import { simulateContract } from 'voltaire-effect'
@@ -449,255 +232,106 @@ const { result, request } = yield* simulateContract({
   account: senderAddress
 })
 
-// Check if transfer would succeed
-if (result === false) {
-  throw new Error('Transfer would fail')
+if (result) {
+  const hash = yield* signer.sendTransaction({
+    to: request.to,
+    data: request.data,
+    value: request.value
+  })
 }
-
-// Send the transaction using the prepared request
-const hash = yield* signer.sendTransaction({
-  to: request.to,
-  data: request.data,
-  value: request.value
-})
 ```
 
-### Account Simulation
-
-Pass `account` to simulate from a specific sender address (affects `msg.sender` in the call):
-
-```typescript
-const { result } = yield* simulateContract({
-  address: contractAddress,
-  abi,
-  functionName: 'restrictedFunction',
-  account: ownerAddress  // Simulate as owner
-})
-```
-
-### Use Case: Validate Before Sending
-
-simulateContract is essential for validating writes before spending gas:
-
-```typescript
-import { Effect } from 'effect'
-import { simulateContract, ProviderValidationError, TransportError } from 'voltaire-effect'
-
-const safeTransfer = Effect.gen(function* () {
-  const { result, request } = yield* simulateContract({
-    address: tokenAddress,
-    abi: erc20Abi,
-    functionName: 'transfer',
-    args: [recipient, amount],
-    account: sender
-  })
-  
-  if (!result) {
-    return yield* Effect.fail(new Error('Transfer would fail'))
-  }
-  
-  return request
-}).pipe(
-  Effect.catchTags({
-    ProviderValidationError: (e) =>
-      Effect.fail(new Error(`Invalid ABI or function: ${e.message}`)),
-    TransportError: (e) =>
-      Effect.fail(new Error(`Simulation failed: ${e.message}`))
-  })
-)
-```
-
-## Event Logs
-
-```typescript
-import { getLogs } from 'voltaire-effect'
-
-const logs = yield* getLogs({
-  address: '0x1234567890123456789012345678901234567890',
-  topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
-  fromBlock: '0x100000',
-  toBlock: 'latest'
-})
-```
-
-## Streaming & Subscriptions
-
-```typescript
-import { watchBlocks, subscribe, unsubscribe } from 'voltaire-effect'
-
-const stream = watchBlocks()
-const subId = yield* subscribe('newHeads')
-const unsub = yield* unsubscribe(subId as `0x${string}`)
-```
-
-Subscriptions require a WebSocket transport and a node with pubsub enabled.
-
-## Gas Pricing
-
-```typescript
-import { getGasPrice, getMaxPriorityFeePerGas, getFeeHistory } from 'voltaire-effect'
-
-const gasPrice = yield* getGasPrice()
-const priorityFee = yield* getMaxPriorityFeePerGas()
-const feeHistory = yield* getFeeHistory(10, 'latest', [25, 50, 75])
-```
-
-## Optional Network RPCs
-
-```typescript
-import { getSyncing, getAccounts, getCoinbase, netVersion } from 'voltaire-effect'
-
-const syncing = yield* getSyncing()
-const accounts = yield* getAccounts()
-const coinbase = yield* getCoinbase()
-const version = yield* netVersion()
-```
-
-## Mining & Protocol (optional)
+## Simulation, Subscriptions & Node-Dependent RPCs
 
 ```typescript
 import {
-  getProtocolVersion, getMining, getHashrate,
-  getWork, submitWork, submitHashrate
+  simulateV1, simulateV2,
+  watchBlocks, subscribe, unsubscribe,
+  sendTransaction, sign, signTransaction,
+  getSyncing, getAccounts, getCoinbase, netVersion
 } from 'voltaire-effect'
 
-const protocol = yield* getProtocolVersion()
-const mining = yield* getMining()
-const hashrate = yield* getHashrate()
-const work = yield* getWork()
+// Node simulation RPCs
+const sim1 = yield* simulateV1({ blockStateCalls: [{ calls: [{ to: tokenAddress, data: '0x...' }] }] })
+const sim2 = yield* simulateV2({ calls: [{ to: tokenAddress }] })
 
-const submitted = yield* submitWork(
-  '0x0000000000000001',
-  '0xpowHash',
-  '0xmixDigest'
-)
-const submitHashrateResult = yield* submitHashrate('0xhashrate', '0xid')
+// Pub/sub (requires WebSocketTransport)
+const blockStream = watchBlocks()
+const subId = yield* subscribe('newHeads')
+yield* unsubscribe(subId as `0x${string}`)
 ```
 
-## Error Handling
-
-```typescript
-import { ProviderNotFoundError, ProviderResponseError, TransportError } from 'voltaire-effect'
-
-program.pipe(
-  Effect.catchTags({
-    TransportError: (e) => {
-      console.error('RPC failed:', e.message)
-      return Effect.succeed(0n)
-    },
-    ProviderResponseError: (e) => {
-      console.error('Unexpected response:', e.message)
-      return Effect.succeed(0n)
-    },
-    ProviderNotFoundError: (e) => {
-      console.error('Missing resource:', e.message)
-      return Effect.succeed(0n)
-    }
-  })
-)
-```
+For local signing rather than node-managed accounts, use [AccountService](/services/account) and [SignerService](/services/signer).
 
 ## Free Functions Reference
 
-All provider operations are available as free functions that internally use `ProviderService`:
+| Category | Functions |
+| --- | --- |
+| **Blocks** | `getBlockNumber`, `getBlock`, `getBlockTransactionCount`, `getBlockReceipts`, `getUncle`, `getUncleCount` |
+| **Accounts** | `getBalance`, `getTransactionCount`, `getCode`, `getStorageAt`, `getProof` |
+| **Transactions** | `getTransaction`, `getTransactionReceipt`, `getTransactionByBlockHashAndIndex`, `getTransactionByBlockNumberAndIndex`, `sendRawTransaction`, `waitForTransactionReceipt`, `getTransactionConfirmations` |
+| **Calls & Contracts** | `call`, `estimateGas`, `createAccessList`, `readContract`, `multicall`, `simulateContract`, `simulateV1`, `simulateV2` |
+| **Logs & Filters** | `getLogs`, `createEventFilter`, `createBlockFilter`, `createPendingTransactionFilter`, `getFilterChanges`, `getFilterLogs`, `uninstallFilter` |
+| **Network & Fees** | `getChainId`, `getGasPrice`, `getMaxPriorityFeePerGas`, `getFeeHistory`, `getBlobBaseFee`, `getSyncing`, `getAccounts`, `getCoinbase`, `netVersion`, `getProtocolVersion`, `getMining`, `getHashrate`, `getWork`, `submitWork`, `submitHashrate` |
+| **Streaming** | `watchBlocks`, `backfillBlocks`, `subscribe`, `unsubscribe` |
+| **Node Account** | `sendTransaction`, `sign`, `signTransaction` |
 
-**Block operations:** `getBlockNumber`, `getBlock`, `getBlockTransactionCount`, `getBlockReceipts`, `getUncle`, `getUncleCount`
+## XOR Type Contracts & Error Handling
 
-**Account operations:** `getBalance`, `getTransactionCount`, `getCode`, `getStorageAt`, `getProof`
-
-**Transaction operations:** `getTransaction`, `getTransactionReceipt`, `getTransactionByBlockHashAndIndex`, `getTransactionByBlockNumberAndIndex`, `sendRawTransaction`, `waitForTransactionReceipt`, `getTransactionConfirmations`
-
-**Call/Simulation:** `call`, `estimateGas`, `createAccessList`, `simulateV1`, `simulateV2`
-
-**Events/Logs:** `getLogs`, `createEventFilter`, `createBlockFilter`, `createPendingTransactionFilter`, `getFilterChanges`, `getFilterLogs`, `uninstallFilter`
-
-**Network:** `getChainId`, `getGasPrice`, `getMaxPriorityFeePerGas`, `getFeeHistory`, `getBlobBaseFee`, `getSyncing`, `getAccounts`, `getCoinbase`, `netVersion`, `getProtocolVersion`, `getMining`, `getHashrate`
-
-**Streaming:** `watchBlocks`, `backfillBlocks`, `subscribe`, `unsubscribe`
-
-**Node-dependent:** `sendTransaction`, `sign`, `signTransaction`
-
-## Type Reference
+Arguments that are mutually exclusive in Ethereum JSON-RPC are enforced via XOR unions:
 
 ```typescript
 type AddressInput = AddressType | `0x${string}`
 type HashInput = HashType | `0x${string}`
-
-// Block identifier - named tag or hex block number
 type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | `0x${string}`
 
-// Block args - XOR: use blockTag OR blockHash, never both
 type GetBlockArgs =
   | { blockTag?: BlockTag; includeTransactions?: boolean; blockHash?: never }
   | { blockHash: HashInput; includeTransactions?: boolean; blockTag?: never }
 
-// Block tx count args - XOR: use blockTag OR blockHash, never both
-type GetBlockTransactionCountArgs =
-  | { blockTag?: BlockTag; blockHash?: never }
-  | { blockHash: HashInput; blockTag?: never }
-
-// Log filter - XOR: use blockHash OR fromBlock/toBlock, never both
 type LogFilter =
-  | { blockHash: HashInput; fromBlock?: never; toBlock?: never; address?: ...; topics?: ... }
-  | { blockHash?: never; fromBlock?: BlockTag; toBlock?: BlockTag; address?: ...; topics?: ... }
-
-// Block type with nullable fields for pending blocks
-interface BlockType {
-  number: string | null               // null for pending blocks
-  hash: string | null                 // null for pending blocks
-  parentHash: string
-  // ... other header fields
-  baseFeePerGas?: string              // EIP-1559 (optional)
-  withdrawals?: WithdrawalType[]      // EIP-4895 (optional)
-  withdrawalsRoot?: string            // EIP-4895 (optional)
-  blobGasUsed?: string                // EIP-4844 (optional)
-  excessBlobGas?: string              // EIP-4844 (optional)
-  parentBeaconBlockRoot?: string      // EIP-4788 (optional)
-}
-
-// Transaction type with nullable fields for pending txs
-interface TransactionType {
-  hash: string
-  blockHash: string | null            // null if pending
-  blockNumber: string | null          // null if pending
-  transactionIndex: string | null     // null if pending
-  to: string | null                   // null for contract creation
-  // ... other fields
-  maxFeePerBlobGas?: string           // EIP-4844 (optional)
-  blobVersionedHashes?: string[]      // EIP-4844 (optional)
-  yParity?: string                    // EIP-2930+ (optional)
-}
+  | { blockHash: HashInput; fromBlock?: never; toBlock?: never; address?: AddressInput | AddressInput[]; topics?: unknown[] }
+  | { blockHash?: never; fromBlock?: BlockTag; toBlock?: BlockTag; address?: AddressInput | AddressInput[]; topics?: unknown[] }
 ```
 
-## Chain-Specific Providers
-
-Use Layer composition for L2-specific features:
+Handle provider failures with `Effect.catchTags`:
 
 ```typescript
-import { Effect } from 'effect'
-import { getBlockNumber, OpStackActionsService, OpStackActions, Provider, HttpTransport } from 'voltaire-effect'
+program.pipe(
+  Effect.catchTags({
+    TransportError: (e) => Effect.succeed(0n),
+    ProviderResponseError: (e) => Effect.succeed(0n),
+    ProviderNotFoundError: (e) => Effect.succeed(0n)
+  })
+)
+```
 
-// Compose OP Stack extension with base Provider
-const OpStackProvider = Layer.merge(Provider, OpStackActions)
+## Chain-Specific Extensions (OP Stack)
 
-// Compose layers first
-const OpStackLayer = OpStackProvider.pipe(
+Merge chain extension layers with `Provider` before providing the transport:
+
+```typescript
+import { Effect, Layer } from 'effect'
+import {
+  getBlockNumber, OpStackActionsService, OpStackActions,
+  Provider, HttpTransport
+} from 'voltaire-effect'
+
+const OpStackLayer = Layer.merge(Provider, OpStackActions).pipe(
   Layer.provide(HttpTransport('https://mainnet.optimism.io'))
 )
 
 const program = Effect.gen(function* () {
   const opStack = yield* OpStackActionsService
-
   const block = yield* getBlockNumber()
   const l1BaseFee = yield* opStack.getL1BaseFee()
-
   return { block, l1BaseFee }
 }).pipe(Effect.provide(OpStackLayer))
 ```
 
 ## See Also
 
-- [Signer Service](/services/signer) — Transaction signing and sending
-- [Debug Service](/services/debug) — debug_* RPC calls (tracing, raw blocks)
-- [Read Blockchain Example](/examples/read-blockchain) — Common read patterns
-- [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) — JSON-RPC specification
+- [Signer Service](/services/signer) — Transaction signing and broadcast
+- [Provider Fallback Strategies](/guides/provider-fallback) — Multi-RPC failover with `ExecutionPlan`
+- [RateLimiter Service](/services/rate-limiter) — Per-method RPC throttling
+- [Debug Service](/services/debug) — `debug_*` tracing RPCs

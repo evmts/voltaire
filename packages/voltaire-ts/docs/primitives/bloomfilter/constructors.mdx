@@ -22,7 +22,7 @@ Methods for creating BloomFilter instances with custom parameters or from serial
 Creates a new empty bloom filter with specified bit count and hash functions.
 
 ```typescript
-import { BloomFilter, BITS, DEFAULT_HASH_COUNT } from 'tevm'
+import { BloomFilter, BITS, DEFAULT_HASH_COUNT } from '@tevm/voltaire'
 
 // Standard Ethereum bloom filter (2048 bits, 3 hash functions)
 const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT)
@@ -55,7 +55,7 @@ console.log(filter.m)       // 2048 bits
 console.log(filter.k)       // 3 hash functions
 ```
 
-Defined in: [BrandedBloomFilter/create.js:3-42](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/create.js#L3-L42)
+Defined in: [BrandedBloomFilter/create.js:3-42](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/BloomFilter/BrandedBloomFilter/create.js#L3-L42)
 
 </Tab>
 
@@ -91,7 +91,7 @@ See [Algorithm](/primitives/bloomfilter/algorithm) for detailed false positive r
 Creates bloom filter from hex string representation with specified parameters.
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 // From block header logsBloom field
 const logsBloom = "0x000000000000000000000000..."  // 512 hex chars (256 bytes)
@@ -137,14 +137,14 @@ BloomFilter("0x1234", 2048, 3)
 // InvalidBloomFilterLengthError: Expected 512 hex chars, got 4
 ```
 
-Defined in: [BrandedBloomFilter/fromHex.js:3-52](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/fromHex.js#L3-L52)
+Defined in: [BrandedBloomFilter/fromHex.js:3-52](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/BloomFilter/BrandedBloomFilter/fromHex.js#L3-L52)
 
 ## Usage Examples
 
 ### Standard Ethereum Bloom Filter
 
 ```typescript
-import { BloomFilter, BITS, DEFAULT_HASH_COUNT, SIZE } from 'tevm'
+import { BloomFilter, BITS, DEFAULT_HASH_COUNT, SIZE } from '@tevm/voltaire'
 
 // Create standard Ethereum bloom filter
 const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT)
@@ -158,7 +158,7 @@ console.log(filter.length)  // 256 bytes (SIZE constant)
 ### Loading Block Bloom Filters
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 // From Ethereum block header
 interface BlockHeader {
@@ -199,7 +199,7 @@ const tinyFilter = BloomFilter.create(256, 2)
 ### Round-Trip Serialization
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 function saveAndRestore() {
   // Create and populate filter

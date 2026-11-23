@@ -3,8 +3,6 @@ title: GasEstimate
 description: Estimated gas for transaction execution
 ---
 
-# GasEstimate
-
 `GasEstimate` represents the estimated gas required for a transaction, typically returned by `eth_estimateGas` RPC method. Always add buffer (20-30%) before using as `gasLimit`.
 
 ## Type Definition
@@ -34,7 +32,7 @@ Branded bigint representing estimated gas (always non-negative).
 Create GasEstimate from number, bigint, or string.
 
 ```zig
-import { GasEstimate } from '@tevm/primitives';
+import { GasEstimate } from '@tevm/voltaire';
 
 // From eth_estimateGas response
 const estimate = GasEstimate.from(rpcEstimate);
@@ -140,7 +138,7 @@ const gasLimit = GasEstimate.toGasLimit(withBuffer);
 ### Basic Estimation
 
 ```zig
-import { GasEstimate } from '@tevm/primitives';
+import { GasEstimate } from '@tevm/voltaire';
 
 // Get estimate from RPC
 const estimate = await provider.estimateGas({
@@ -155,7 +153,7 @@ console.log(`Estimated gas: ${GasEstimate.toNumber(gasEstimate)}`);
 ### Add Buffer and Send Transaction
 
 ```zig
-import { GasEstimate } from '@tevm/primitives';
+import { GasEstimate } from '@tevm/voltaire';
 
 // Estimate gas
 const rawEstimate = await provider.estimateGas(tx);
@@ -177,7 +175,7 @@ await provider.sendTransaction(signedTx);
 ### Compare Estimation Strategies
 
 ```zig
-import { GasEstimate } from '@tevm/primitives';
+import { GasEstimate } from '@tevm/voltaire';
 
 const estimate = GasEstimate.from(100_000n);
 
@@ -200,7 +198,7 @@ for (const { name, buffer } of strategies) {
 ### Handle Network Congestion
 
 ```zig
-import { GasEstimate } from '@tevm/primitives';
+import { GasEstimate } from '@tevm/voltaire';
 
 async function estimateWithCongestion(tx) {
   const baseEstimate = await provider.estimateGas(tx);

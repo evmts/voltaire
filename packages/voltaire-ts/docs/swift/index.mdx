@@ -1,77 +1,109 @@
 ---
 title: Swift
-description: Swift wrappers for Voltaire Ethereum primitives
+description: Native Swift 5.9 bindings for Voltaire Ethereum primitives and cryptography on macOS 12+ and iOS 15+.
 ---
 
-# Voltaire Swift
+`Voltaire` (`packages/voltaire-swift`) provides native Swift 5.9 value types over Voltaire's Zig C ABI (`CVoltaire` linking `libprimitives_ts_native`), targeting macOS 12+ and iOS 15+.
 
-Native Swift wrappers over Voltaire's C FFI, enabling iOS and macOS apps to use the same primitives used across Zig and TypeScript.
+```mermaid
+flowchart LR
+  App["iOS / macOS App\n(import Voltaire)"] --> Swift["Swift Wrappers\n(Address, Hash, U256, Keccak256, Secp256k1)"]
+  Swift --> CMod["CVoltaire SPM Target\n(primitives.h)"]
+  CMod --> Dylib["libprimitives_ts_native.dylib\n(zig-out/native/)"]
+  Dylib --> Zig["Voltaire Zig Core + Rust/C Crypto"]
+```
 
-<Tip>
-New to the project? Start with <a href="/swift/getting-started">Getting Started</a>.
-</Tip>
+## Requirements
 
-## What’s Included
+- macOS 12+ or iOS 15+
+- Swift 5.9+
+- Zig 0.15+ (to compile `libprimitives_ts_native`)
 
-- Core primitives: Address, Hash, Hex, Bytes32, U256
-- Cryptography: Keccak-256, secp256k1 (PrivateKey, PublicKey, Signature)
-- Zero-copy C interop for performance and safety
+## Build and Test
 
-## Quick Start
+Build the Zig native library from the repository root first, then build and test the Swift package:
 
 ```bash
-zig build build-ts-native
-cd swift
-swift build && swift test
+# 1. Build the native C ABI dynamic library into zig-out/native/
+zig build build-ts-native -Dwith-c-api=true
+
+# 2. Build and test the Swift package
+cd packages/voltaire-swift
+swift build
+swift test
 ```
+
+## Quick Example
 
 ```swift
 import Voltaire
 
-// Address
+// 20-byte Ethereum address with EIP-55 checksum
 let addr = try Address(hex: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
-print(addr.checksumHex)
+print(addr.checksumHex)  // 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+print(addr.isZero)       // false
 
-// Keccak-256
-let h = Keccak256.hash("hello")
-print(h.hex)
+// Keccak-256 hashing
+let digest = Keccak256.hash("hello world")
+print(digest.hex)
 
-// U256
-let v = try U256(hex: "0x01")
-print(v.hex)
+// 256-bit unsigned integer and fixed 32-byte value
+let amount = try U256(hex: "0x01")
+let slot = try Bytes32(hex: "0x" + String(repeating: "00", count: 32))
+
+// secp256k1 key generation and address derivation
+let privateKey = try PrivateKey.generate()
+let publicKey = try privateKey.publicKey()
+let compressed = try publicKey.compressed()  // 33 bytes (SEC1)
+let derivedAddress = try publicKey.address()
+print(compressed.count, derivedAddress.checksumHex)
+
+// Signature canonicalization and recovery
+let msgHash = Keccak256.hash("hello")
+let sig = try Signature(compact: rBytes + sBytes)
+let canonical = sig.normalized()
+let recovered = try canonical.recoverAddress(messageHash: msgHash)
 ```
 
-## API Reference
+## Type Surface
+
+| Type | Representation | Key Operations |
+| --- | --- | --- |
+| `Address` | 20 bytes | `init(hex:)`, `init(bytes:)`, `.zero`, `.hex`, `.checksumHex`, `.bytes`, `.isZero`, `isValidChecksum(_:)` |
+| `Hash` | 32 bytes | `init(hex:)`, `init(bytes:)`, `.zero`, `.hex`, `.bytes` |
+| `Bytes32` | 32 bytes | `init(hex:)`, `init(bytes:)`, `.zero`, `.hex`, `.bytes` |
+| `U256` | 32 bytes (big-endian) | `init(hex:)`, `init(bytes:)`, `.zero`, `.hex`, `.bytes` |
+| `Hex` | Namespace | `Hex.encode(_:)`, `Hex.decode(_:)` |
+| `Keccak256` | Namespace | `Keccak256.hash(_:)` (`String`, `[UInt8]`, `Data`) |
+| `PrivateKey` | 32 bytes | `generate()`, `init(bytes:)`, `.publicKey()`, `.bytes` |
+| `PublicKey` | 64 bytes (`x \|\| y`) | `init(uncompressed:)`, `.compressed()`, `.address()` |
+| `Signature` | `r` (32) + `s` (32) + `v` (1) | `init(compact:)`, `init(r:s:v:)`, `.serialize(includeV:)`, `.isCanonical`, `.normalized()`, `.recoverPublicKey(messageHash:)`, `.recoverAddress(messageHash:)` |
+
+## Documentation
 
 <CardGroup cols={2}>
   <Card title="Getting Started" icon="rocket" href="/swift/getting-started">
-    Install and build the Swift package
+    Build the native Zig dylib and link `Voltaire` with SwiftPM.
   </Card>
   <Card title="Xcode Integration" icon="apple" href="/swift/getting-started-xcode">
-    Add the package to Xcode apps
+    Add the package and dynamic library search paths in Xcode.
   </Card>
   <Card title="Address" icon="location-dot" href="/swift/primitives/address">
-    20-byte EVM addresses with EIP-55
+    20-byte addresses and EIP-55 checksum validation.
   </Card>
-  <Card title="Hash" icon="hashtag" href="/swift/primitives/hash">
-    32-byte Keccak-256 hashes
+  <Card title="Keccak256" icon="shield-halved" href="/swift/crypto/keccak256">
+    Keccak-256 hashing over strings, byte arrays, and `Data`.
   </Card>
-  <Card title="Hex" icon="hexagon" href="/swift/primitives/hex">
-    Encode and decode hex strings
+  <Card title="Hash & Bytes32" icon="hashtag" href="/swift/primitives/hash">
+    32-byte hashes and fixed-width byte containers.
   </Card>
-  <Card title="Bytes32" icon="code" href="/swift/primitives/bytes32">
-    Generic 32-byte values
+  <Card title="U256 & Hex" icon="binary" href="/swift/primitives/u256">
+    256-bit unsigned integers and hex encoding.
   </Card>
-  <Card title="U256" icon="binary" href="/swift/primitives/u256">
-    256-bit unsigned integers
+  <Card title="Keys & Signatures" icon="key" href="/swift/primitives/signature">
+    `PrivateKey`, `PublicKey`, low-s canonicalization, and `ecrecover`.
   </Card>
-  <Card title="PrivateKey" icon="key" href="/swift/primitives/private-key">
-    secp256k1 private keys
-  </Card>
-  <Card title="PublicKey" icon="user" href="/swift/primitives/public-key">
-    secp256k1 public keys
-  </Card>
-  <Card title="Signature" icon="pen-nib" href="/swift/primitives/signature">
-    ECDSA signatures (r, s, v)
+  <Card title="Errors & Troubleshooting" icon="triangle-exclamation" href="/swift/support/errors">
+    `VoltaireError` cases and dylib rpath diagnostics.
   </Card>
 </CardGroup>

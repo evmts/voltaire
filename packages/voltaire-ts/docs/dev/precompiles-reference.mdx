@@ -3,14 +3,12 @@ title: Precompiles Reference
 description: All 20 EVM precompile implementations
 ---
 
-# Precompiles Reference
-
 EVM precompiled contracts in `src/evm/precompiles/`. Each has a fixed address and provides optimized operations.
 
 ## Overview
 
 ```typescript
-import { execute, isPrecompile } from "@voltaire/evm/precompiles";
+import { execute, isPrecompile } from "@tevm/voltaire/precompiles";
 
 // Check if address is precompile
 isPrecompile(address, hardfork);

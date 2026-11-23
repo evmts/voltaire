@@ -8,7 +8,7 @@ description: "EIP-155 chain identifier for replay protection"
 ChainId is a branded number type representing an EIP-155 chain identifier. Used for replay protection and identifying which network a transaction targets.
 
 ```typescript
-import * as ChainId from '@voltaire/primitives/ChainId'
+import { ChainId } from '@tevm/voltaire'
 
 const mainnet = ChainId.from(1)
 const sepolia = ChainId.from(11155111)
@@ -50,7 +50,7 @@ ChainId.from(1.5)   // Error: must be integer
 Pre-defined chain IDs for common networks:
 
 ```typescript
-import { MAINNET, SEPOLIA, HOLESKY, OPTIMISM, ARBITRUM, BASE, POLYGON } from '@voltaire/primitives/ChainId'
+import { MAINNET, SEPOLIA, HOLESKY, OPTIMISM, ARBITRUM, BASE, POLYGON } from '@tevm/voltaire'
 
 // Ethereum
 const mainnet = MAINNET      // 1
@@ -116,7 +116,7 @@ ChainId.isMainnet(42161) // false (Arbitrum)
 Chain ID is embedded in transaction signatures to prevent replay attacks across chains:
 
 ```typescript
-import * as ChainId from '@voltaire/primitives/ChainId'
+import { ChainId } from '@tevm/voltaire'
 
 const tx = {
   chainId: ChainId.from(1),  // Mainnet only
@@ -132,7 +132,7 @@ const tx = {
 ## Namespace Usage
 
 ```typescript
-import { ChainId } from '@voltaire/primitives/ChainId'
+import { ChainId } from '@tevm/voltaire'
 
 // Using namespace object
 const id = ChainId.from(1)

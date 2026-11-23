@@ -30,7 +30,7 @@ description: Convert address to lowercase hex string
 **Functionally identical** - Both return lowercase hex strings:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
@@ -61,7 +61,7 @@ console.log(lower === hex)  // true
 **Different output formats:**
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742d35cc6634c0532925a3b844bc9e7595f251e3")
 
@@ -90,7 +90,7 @@ console.log(addr.toChecksummed())
 **Case difference only:**
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0xAbCdEf1234567890")
 
@@ -110,7 +110,7 @@ Both are valid hex representations of the same address. Lowercase is more common
 Lowercase addresses for consistent storage and indexing:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface AccountRecord {
   address: string
@@ -142,7 +142,7 @@ function getAccount(address: Address): AccountRecord {
 Normalize addresses before comparison:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function isSameAddress(a: Address, b: Address): boolean {
   // Normalize to lowercase for comparison
@@ -167,7 +167,7 @@ console.log(addr1.equals(addr2))  // true - better performance
 Use lowercase for consistent Map/Set keys:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const balances = new Map<string, bigint>()
 
@@ -193,7 +193,7 @@ console.log(getBalance(addr2))  // 1000n - same key
 Lowercase for consistent JSON output:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface Transaction {
   from: string
@@ -224,7 +224,7 @@ const json = serializeTransaction(
 Return lowercase addresses in API responses:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 interface AccountResponse {
   address: string
@@ -254,7 +254,7 @@ async function getAccountInfo(address: Address): Promise<AccountResponse> {
 For repeated conversions, cache the result:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 class CachedAddress {
   private _lowercaseCache?: string
@@ -275,8 +275,8 @@ class CachedAddress {
 The `Lowercase` branded type provides compile-time guarantees:
 
 ```typescript
-import { Address } from 'tevm'
-import type { Lowercase } from 'tevm/Address'
+import { Address } from '@tevm/voltaire'
+import type { Lowercase } from '@tevm/voltaire/Address'
 
 // Function accepts only lowercase addresses
 function processLowercase(addr: Lowercase) {
@@ -299,7 +299,7 @@ processLowercase(addr.toLowercase())  // ✅ Type safe
 Calling `toLowercase()` multiple times produces same result:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0x742D35CC6634C0532925A3B844BC9E7595F251E3")
 
@@ -316,7 +316,7 @@ console.log(lower1 === lower2)  // true
 Output always matches lowercase hex pattern:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 const lower = addr.toLowercase()

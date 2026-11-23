@@ -1,189 +1,105 @@
 # RLP (Recursive Length Prefix)
 
-Ethereum's serialization format for encoding arbitrary data.
+Canonical RLP encoding, decoding, and stream parsing in `voltaire::rlp` (re-exported from `voltaire::primitives::rlp`).
 
-## Overview
+## Wire Format
 
-RLP encodes arbitrarily nested arrays of binary data. It's used throughout Ethereum for:
-- Transaction serialization
-- Block encoding
-- State storage
-- Network messages
+| Item | Leading Byte | Layout |
+|------|--------------|--------|
+| Single byte `0x00`..`0x7f` | `byte` | `[byte]` |
+| Short bytes (`0`..`55` B) | `0x80 + len` | `[prefix, data...]` (`0x80` = empty / integer `0`) |
+| Long bytes (`>= 56` B) | `0xb7 + k` | `[prefix, be_len(k B), data...]` |
+| Short list (`0`..`55` B payload) | `0xc0 + len` | `[prefix, items...]` (`0xc0` = empty list) |
+| Long list (`>= 56` B payload) | `0xf7 + k` | `[prefix, be_len(k B), items...]` |
 
-## Encoding Rules
-
-### Strings (bytes)
-- Single byte [0x00, 0x7f]: Encoded as itself
-- String 0-55 bytes: 0x80 + length prefix, then data
-- String >55 bytes: 0xb7 + length-of-length, then length, then data
-
-### Lists
-- List 0-55 bytes total: 0xc0 + length prefix, then items
-- List >55 bytes total: 0xf7 + length-of-length, then length, then items
-
-## Basic Usage
+## Free Functions
 
 ```rust
-use voltaire::rlp::{encode, decode, RlpEncodable, RlpDecodable};
+use voltaire::rlp::{
+    encode_bytes, encode_uint, encode_list, encode_item,
+    decode_bytes, decode_uint, decode_list, decode_item,
+    RlpItem,
+};
 
-// Encode bytes
-let encoded = encode(&b"dog"[..]);
-assert_eq!(encoded, vec![0x83, b'd', b'o', b'g']);
+// Bytes
+let enc = encode_bytes(b"dog");
+assert_eq!(enc, vec![0x83, b'd', b'o', b'g']);
+let (bytes, remainder) = decode_bytes(&enc)?;
+assert_eq!(bytes, b"dog");
+assert!(remainder.is_empty());
 
-// Decode bytes
-let decoded: Vec<u8> = decode(&encoded)?;
-assert_eq!(decoded, b"dog");
+// Unsigned integers (big-endian, minimal bytes, zero -> 0x80)
+assert_eq!(encode_uint(0u64), vec![0x80]);
+assert_eq!(encode_uint(15u64), vec![0x0f]);
+let enc_1024 = encode_uint(1024u64);
+assert_eq!(enc_1024, vec![0x82, 0x04, 0x00]);
+let (val, _): (u64, _) = decode_uint(&enc_1024)?;
+assert_eq!(val, 1024);
 
-// Encode empty string
-let encoded = encode(&[][..]);
-assert_eq!(encoded, vec![0x80]);
-
-// Encode single byte < 0x80
-let encoded = encode(&[0x7f][..]);
-assert_eq!(encoded, vec![0x7f]);
-```
-
-## Integer Encoding
-
-Integers are encoded as big-endian bytes with no leading zeros.
-
-```rust
-use voltaire::rlp::encode_uint;
-
-// Zero encodes as empty string
-let encoded = encode_uint(0u64);
-assert_eq!(encoded, vec![0x80]);
-
-// Single byte < 0x80
-let encoded = encode_uint(15u64);
-assert_eq!(encoded, vec![0x0f]);
-
-// Multi-byte integer
-let encoded = encode_uint(1024u64);
-assert_eq!(encoded, vec![0x82, 0x04, 0x00]);
-
-// Large integer
-let encoded = encode_uint(0xFFFFFFFF_FFFFFFFFu64);
-assert_eq!(encoded.len(), 9); // prefix + 8 bytes
-```
-
-## List Encoding
-
-```rust
-use voltaire::rlp::{encode_list, RlpItem};
-
-// Encode list of strings
+// Lists and arbitrary RlpItem trees
 let items = vec![
     RlpItem::Bytes(b"cat".to_vec()),
     RlpItem::Bytes(b"dog".to_vec()),
 ];
-let encoded = encode_list(&items);
+let list_enc = encode_list(&items);
+let (decoded_items, _) = decode_list(&list_enc)?;
+assert_eq!(decoded_items, items);
 
-// Empty list
-let encoded = encode_list(&[]);
-assert_eq!(encoded, vec![0xc0]);
-
-// Nested lists
-let inner = RlpItem::List(vec![
-    RlpItem::Bytes(vec![1]),
-    RlpItem::Bytes(vec![2]),
-]);
-let outer = encode_list(&[inner]);
+// Decode a single item (stream = false rejects trailing bytes)
+let (item, _) = decode_item(&list_enc, false)?;
+assert_eq!(encode_item(&item), list_enc);
+# Ok::<(), voltaire::rlp::RlpError>(())
 ```
 
-## Decoding
+## Traits: `RlpEncodable` and `RlpDecodable`
 
-```rust
-use voltaire::rlp::{decode_bytes, decode_list, decode_uint, RlpItem};
-
-// Decode bytes
-let data = vec![0x83, b'd', b'o', b'g'];
-let (bytes, remainder) = decode_bytes(&data)?;
-assert_eq!(bytes, b"dog");
-
-// Decode list
-let data = vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g'];
-let (items, _) = decode_list(&data)?;
-
-// Decode integer
-let data = vec![0x82, 0x04, 0x00];
-let (value, _): (u64, _) = decode_uint(&data)?;
-assert_eq!(value, 1024);
-```
-
-## Primitives Integration
-
-Address, Hash, and U256 implement RlpEncodable and RlpDecodable.
+`[u8]`, `Vec<u8>`, unsigned integers (`u8`..`u128`), `Address`, `Hash`, and `U256` implement `RlpEncodable` and `RlpDecodable`:
 
 ```rust
 use voltaire::{Address, Hash, U256};
-use voltaire::rlp::{encode, decode};
+use voltaire::rlp::{RlpEncodable, RlpDecodable};
 
-// Encode address (20 bytes with length prefix)
 let addr: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
 let encoded = addr.rlp_encode();
+assert_eq!(Address::rlp_decode(&encoded)?, addr);
 
-// Decode address
-let decoded: Address = Address::rlp_decode(&encoded)?;
-
-// Encode U256 (minimal bytes, no leading zeros)
 let value = U256::from(1000u64);
-let encoded = value.rlp_encode();
+let enc_u256 = value.rlp_encode();
+assert_eq!(U256::rlp_decode(&enc_u256)?, value);
 
-// Hash encodes as 32 bytes
-let hash = Hash::ZERO;
-let encoded = hash.rlp_encode();
-assert_eq!(encoded.len(), 33); // 0xa0 + 32 bytes
+let hash_enc = Hash::ZERO.rlp_encode();
+assert_eq!(hash_enc.len(), 33); // 0xa0 + 32 zero bytes
+# Ok::<(), voltaire::rlp::RlpError>(())
 ```
 
-## Stream Decoding
-
-Process multiple consecutive RLP items.
+## Streaming Decoder (`RlpDecoder`)
 
 ```rust
-use voltaire::rlp::RlpDecoder;
+use voltaire::rlp::{RlpDecoder, encode_bytes, encode_uint};
 
-let stream = concatenated_rlp_data;
+let mut stream = encode_bytes(b"alpha");
+stream.extend(encode_uint(42u64));
+
 let mut decoder = RlpDecoder::new(&stream);
-
-while !decoder.is_empty() {
-    let item = decoder.decode_item()?;
-    // Process item...
-}
+let first = decoder.decode_bytes()?;
+let second: u64 = decoder.decode_uint()?;
+assert_eq!(first, b"alpha");
+assert_eq!(second, 42);
+assert!(decoder.is_empty());
+# Ok::<(), voltaire::rlp::RlpError>(())
 ```
 
-## Validation
+## Validation and Errors
 
-```rust
-use voltaire::rlp::{validate, is_canonical};
+`validate(&[u8]) -> bool` and `is_canonical(&[u8]) -> bool` check structural and canonical RLP compliance (single bytes `< 0x80` unprefixed, minimal length encodings, short form for `< 56` bytes, nesting depth `<= MAX_RLP_DEPTH` (`32`)).
 
-// Check if data is valid RLP
-let is_valid = validate(&data);
-
-// Check canonical encoding (EIP-compliant)
-let is_canonical = is_canonical(&data);
-```
-
-## Error Handling
-
-```rust
-use voltaire::rlp::RlpError;
-
-match decode::<Vec<u8>>(&data) {
-    Ok(bytes) => println!("Decoded: {:?}", bytes),
-    Err(RlpError::InputTooShort) => println!("Truncated input"),
-    Err(RlpError::NonCanonicalSize) => println!("Non-canonical encoding"),
-    Err(RlpError::LeadingZeros) => println!("Invalid leading zeros"),
-    Err(e) => println!("Error: {}", e),
-}
-```
-
-## Canonical Encoding
-
-Voltaire enforces canonical RLP encoding:
-- Single bytes < 0x80 must not have 0x81 prefix
-- Lengths must use minimum bytes (no leading zeros)
-- Strings < 56 bytes must use short form
-- Lists < 56 bytes must use short form
-
-Non-canonical data will be rejected during decoding.
+| `RlpError` Variant | Condition |
+|--------------------|-----------|
+| `InputTooShort` | Truncated prefix or payload |
+| `InputTooLong` | Value exceeds target integer width |
+| `LeadingZeros` | Non-minimal length or integer leading zero |
+| `NonCanonicalSize` | Long-form prefix used for `< 56` bytes or `0x81` used for `< 0x80` |
+| `InvalidLength` | Decoded length mismatches expected fixed type |
+| `UnexpectedInput` | Expected bytes but found list (or vice versa) |
+| `InvalidRemainder` | Trailing bytes left when `stream = false` |
+| `RecursionDepthExceeded` | Nested list depth exceeds `MAX_RLP_DEPTH` (`32`) |

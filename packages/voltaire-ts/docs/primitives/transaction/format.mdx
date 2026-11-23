@@ -62,7 +62,7 @@ Example: `"EIP-1559 tx to 0x..., value: 0.1 ETH, data: 68 bytes, nonce: 2"`
 ### Logging
 
 ```typescript
-import { format } from 'tevm/Transaction'
+import { format } from '@tevm/voltaire/Transaction'
 
 function logTransaction(tx: Transaction.Any) {
   console.log(`Processing: ${format(tx)}`)
@@ -76,7 +76,7 @@ logTransaction(tx)
 ### User Notifications
 
 ```typescript
-import { format } from 'tevm/Transaction'
+import { format } from '@tevm/voltaire/Transaction'
 
 function notifyUser(tx: Transaction.Any) {
   const description = format(tx)
@@ -87,7 +87,7 @@ function notifyUser(tx: Transaction.Any) {
 ### Debug Output
 
 ```typescript
-import { format, hash } from 'tevm/Transaction'
+import { format, hash } from '@tevm/voltaire/Transaction'
 
 function debugTransaction(tx: Transaction.Any) {
   const txHash = hash(tx)
@@ -105,7 +105,7 @@ function debugTransaction(tx: Transaction.Any) {
 ### Transaction History
 
 ```typescript
-import { format, hash } from 'tevm/Transaction'
+import { format, hash } from '@tevm/voltaire/Transaction'
 
 interface TransactionRecord {
   hash: string
@@ -134,8 +134,8 @@ records.forEach(record => {
 ### Error Messages
 
 ```typescript
-import { format } from 'tevm/Transaction'
-import { TransactionError } from 'tevm/errors'
+import { format } from '@tevm/voltaire/Transaction'
+import { TransactionError } from '@tevm/voltaire/errors'
 
 // Use built-in TransactionError with context
 throw new TransactionError('Insufficient balance', {
@@ -148,7 +148,7 @@ throw new TransactionError('Insufficient balance', {
 ### Batch Processing
 
 ```typescript
-import { format } from 'tevm/Transaction'
+import { format } from '@tevm/voltaire/Transaction'
 
 function processBatch(transactions: Transaction.Any[]) {
   console.log(`Processing ${transactions.length} transactions:`)
@@ -170,8 +170,8 @@ function processBatch(transactions: Transaction.Any[]) {
 For more control, access fields directly:
 
 ```typescript
-import * as Address from 'tevm/Address'
-import * as Hex from 'tevm/Hex'
+import * as Address from '@tevm/voltaire/Address'
+import * as Hex from '@tevm/voltaire/Hex'
 
 function customFormat(tx: Transaction.Any): string {
   const type = tx.type === Transaction.Type.Legacy ? 'Legacy' :
@@ -199,7 +199,7 @@ console.log(customFormat(tx))
 Unlike `JSON.stringify`, `format()` provides human-readable output:
 
 ```typescript
-import { format } from 'tevm/Transaction'
+import { format } from '@tevm/voltaire/Transaction'
 
 // format() - human readable
 console.log(format(tx))

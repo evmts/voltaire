@@ -100,7 +100,7 @@ resources?: string[];         // Resource URIs
 ### Basic Usage
 
 ```typescript
-import type { BrandedMessage } from 'tevm';
+import type { BrandedMessage } from '@tevm/voltaire';
 
 const message: BrandedMessage = {
   domain: "example.com",
@@ -179,7 +179,7 @@ export const BrandedSiwe = {
 ### Usage
 
 ```typescript
-import { BrandedSiwe } from 'tevm';
+import { BrandedSiwe } from '@tevm/voltaire';
 
 // Namespace access
 const message = BrandedSiwe.create({ ... });
@@ -187,7 +187,7 @@ const text = BrandedSiwe.format(message);
 const valid = BrandedSiwe.verify(message, signature);
 
 // Individual imports (tree-shakeable)
-import { create, format, verify } from 'tevm/BrandedSiwe';
+import { create, format, verify } from '@tevm/voltaire/Siwe';
 
 const message = create({ ... });
 const text = format(message);
@@ -354,7 +354,7 @@ const valid = BrandedSiwe.verify(message, signature);
 
 Individual functions can be imported:
 ```typescript
-import { create, format } from 'tevm/BrandedSiwe';
+import { create, format } from '@tevm/voltaire/Siwe';
 // Only create and format code included in bundle
 ```
 

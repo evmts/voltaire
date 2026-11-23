@@ -1,168 +1,61 @@
 ---
 title: PublicKey
-description: secp256k1 public key with compressed/uncompressed support
+description: secp256k1 PublicKey supporting 33-byte compressed, 64-byte raw, and 65-byte prefixed formats plus Ethereum address derivation.
 ---
 
-# PublicKey
+Package `github.com/voltaire-labs/voltaire-go/primitives/publickey` stores a secp256k1 point internally as 65 uncompressed bytes (`0x04 || X || Y`) and accepts 33-byte compressed, 64-byte raw, or 65-byte prefixed inputs.
 
-The `publickey` package provides secp256k1 public key operations with support for
-both compressed and uncompressed formats.
+## Supported Encodings
 
-## Type Definition
+| Format | Byte Length | Prefix | Hex Length (`0x` + digits) |
+|--------|-------------|--------|----------------------------|
+| Prefixed uncompressed | `65` | `0x04` | `132` chars (`pk.Hex()`) |
+| Raw uncompressed | `64` | None (`X \|\| Y`) | `130` chars |
+| Compressed (SEC1) | `33` | `0x02` (even `Y`) / `0x03` (odd `Y`) | `68` chars (`pk.HexCompressed()`) |
 
-```go
-type PublicKey struct {
-    bytes [65]byte // 04 || X || Y (uncompressed form internally)
-}
-```
+## API Reference
 
-Internally stores the 65-byte uncompressed format (04 prefix + 32-byte X + 32-byte Y).
+| Symbol | Signature | Behavior |
+|--------|-----------|----------|
+| `FromBytes` | `(b []byte) (PublicKey, error)` | Parses 33-, 64-, or 65-byte key and verifies point is on secp256k1 |
+| `FromHex` | `(s string) (PublicKey, error)` | Decodes hex (optional `0x`) and calls `FromBytes` |
+| `MustFromHex` | `(s string) PublicKey` | Calls `FromHex`, panics on error |
+| `Bytes` | `() []byte` | Returns 65-byte `04 \|\| X \|\| Y` |
+| `BytesUncompressed` | `() []byte` | Returns 64-byte `X \|\| Y` |
+| `BytesCompressed` | `() []byte` | Returns 33-byte `02/03 \|\| X` |
+| `Hex` | `() string` | Returns `0x`-prefixed 65-byte uncompressed hex (`132` chars) |
+| `HexCompressed` | `() string` | Returns `0x`-prefixed 33-byte compressed hex (`68` chars) |
+| `String` | `() string` | Alias for `HexCompressed()` |
+| `Address` | `() address.Address` | Computes `keccak256(X \|\| Y)[12:]` via CGO FFI |
+| `IsValid` | `() bool` | Verifies `(X, Y)` lies on `y^2 = x^3 + 7 (mod p)` |
+| `Equal` | `(other PublicKey) bool` | Constant-time equality |
+| `MarshalText` / `MarshalJSON` | — | Encodes as `HexCompressed()`; unmarshaling accepts 33-, 64-, or 65-byte hex |
+| `ToECDSA` | `() *ecdsa.PublicKey` | Converts coordinates to `*ecdsa.PublicKey` (note: uses P-256 curve placeholder for stdlib struct compatibility) |
 
-## Formats
-
-| Format | Length | Description |
-|--------|--------|-------------|
-| Uncompressed (prefixed) | 65 bytes | `04 \|\| X \|\| Y` |
-| Uncompressed (raw) | 64 bytes | `X \|\| Y` |
-| Compressed | 33 bytes | `02/03 \|\| X` (02 if Y is even, 03 if Y is odd) |
-
-## Creating Public Keys
-
-### FromBytes
-
-Parse from bytes (accepts 33, 64, or 65 byte inputs):
-
-```go
-// From compressed (33 bytes)
-compressed := []byte{0x02, ...} // 33 bytes
-pk, err := publickey.FromBytes(compressed)
-
-// From uncompressed without prefix (64 bytes)
-raw := []byte{...} // 64 bytes X || Y
-pk, err := publickey.FromBytes(raw)
-
-// From uncompressed with prefix (65 bytes)
-prefixed := []byte{0x04, ...} // 65 bytes
-pk, err := publickey.FromBytes(prefixed)
-```
-
-### FromHex
-
-Parse from hex string:
-
-```go
-// Compressed hex (66 chars with 0x prefix)
-pk, err := publickey.FromHex("0x02...")
-
-// Uncompressed hex (130 chars with 0x prefix)
-pk, err := publickey.FromHex("0x04...")
-```
-
-### MustFromHex
-
-Parse from hex, panic on error:
-
-```go
-pk := publickey.MustFromHex("0x02...")
-```
-
-## Methods
-
-### Bytes / BytesUncompressed / BytesCompressed
-
-```go
-pk.Bytes()             // 65 bytes: 04 || X || Y
-pk.BytesUncompressed() // 64 bytes: X || Y (no prefix)
-pk.BytesCompressed()   // 33 bytes: 02/03 || X
-```
-
-### Hex / HexCompressed
-
-```go
-pk.Hex()           // "0x04..." (130 chars)
-pk.HexCompressed() // "0x02..." or "0x03..." (68 chars)
-```
-
-### Address
-
-Derive Ethereum address (keccak256 of uncompressed key, last 20 bytes):
-
-```go
-addr := pk.Address()
-// Returns address.Address
-```
-
-### IsValid
-
-Check if the public key point is on the secp256k1 curve:
-
-```go
-if pk.IsValid() {
-    // Valid point on curve
-}
-```
-
-### Equal
-
-Compare two public keys:
-
-```go
-if pk1.Equal(pk2) {
-    // Keys are equal
-}
-```
-
-## JSON/Text Marshaling
-
-Public keys marshal to compressed hex (68 chars with 0x prefix):
-
-```go
-type Wallet struct {
-    PubKey publickey.PublicKey `json:"pubKey"`
-}
-
-w := Wallet{PubKey: pk}
-data, _ := json.Marshal(w)
-// {"pubKey":"0x02..."}
-```
-
-Unmarshaling accepts both compressed and uncompressed formats.
-
-## Example: Full Workflow
+## Example
 
 ```go
 package main
 
 import (
     "fmt"
+    "log"
+
     "github.com/voltaire-labs/voltaire-go/primitives/publickey"
 )
 
 func main() {
-    // Parse compressed public key
-    pk, err := publickey.FromHex("0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+    // secp256k1 generator point G (compressed)
+    pk, err := publickey.FromHex(
+        "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    )
     if err != nil {
-        panic(err)
+        log.Fatal(err)
     }
 
-    // Get different representations
-    fmt.Printf("Compressed: %s\n", pk.HexCompressed())
-    fmt.Printf("Uncompressed: %s\n", pk.Hex())
-
-    // Derive address
-    addr := pk.Address()
-    fmt.Printf("Address: %s\n", addr.ChecksumHex())
-
-    // Check validity
-    if pk.IsValid() {
-        fmt.Println("Valid public key")
-    }
+    fmt.Println("Compressed:  ", pk.HexCompressed())
+    fmt.Println("Uncompressed:", pk.Hex())
+    fmt.Println("Address:     ", pk.Address().ChecksumHex())
+    fmt.Println("Valid:       ", pk.IsValid())
 }
 ```
-
-## Errors
-
-- `ErrInvalidLength` - Input not 33, 64, or 65 bytes
-- `ErrInvalidPrefix` - Compressed key prefix not 0x02 or 0x03
-- `ErrInvalidPoint` - Point not on secp256k1 curve
-- `ErrInvalidHex` - Invalid hex characters

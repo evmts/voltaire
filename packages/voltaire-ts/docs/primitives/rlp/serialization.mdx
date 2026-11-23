@@ -36,11 +36,11 @@ function toJSON(data: BrandedRlp): unknown
 **Returns:**
 - `unknown` - JSON-serializable representation (object with type and value)
 
-Source: [toJSON.js:14-26](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/toJSON.js#L14-L26)
+Source: [toJSON.js:14-26](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/toJSON.js#L14-L26)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Convert bytes data
 const bytes = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
@@ -128,11 +128,11 @@ function fromJSON(json: unknown): BrandedRlp
 - `Error('UnexpectedInput')` - List value not array
 - `Error('UnexpectedInput')` - Invalid type field
 
-Source: [fromJSON.js:16-47](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/fromJSON.js#L16-L47)
+Source: [fromJSON.js:16-47](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/fromJSON.js#L16-L47)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Restore bytes data
 const json = { type: 'bytes', value: [1, 2, 3] }
@@ -169,7 +169,7 @@ try {
 `fromJSON` validates structure:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Missing fields
 try {
@@ -205,7 +205,7 @@ try {
 Convert to JSON and back produces equal structures:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const original = {
   type: 'list',
@@ -235,7 +235,7 @@ console.log(Rlp.equals(original, restored))  // true
 Store RLP structures in JSON databases:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Save transaction
 async function saveTransaction(tx: BrandedRlp) {
@@ -259,7 +259,7 @@ async function loadTransaction(id: string): Promise<BrandedRlp> {
 Send RLP data over HTTP APIs:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Client: send RLP data
 async function submitData(data: BrandedRlp) {
@@ -290,7 +290,7 @@ app.post('/api/rlp', (req, res) => {
 Pretty-print RLP structures:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function debugRlp(data: BrandedRlp) {
   const json = Rlp.toJSON(data)
@@ -319,7 +319,7 @@ function debugRlp(data: BrandedRlp) {
 Compare RLP structures in tests:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 test('encodes transaction correctly', () => {
   const tx = buildTransaction(/* ... */)
@@ -339,7 +339,7 @@ test('encodes transaction correctly', () => {
 Cache RLP structures as JSON:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 class RlpCache {
   private cache = new Map<string, string>()
@@ -366,7 +366,7 @@ class RlpCache {
 Convert between RLP versions:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Old format migration
 function migrateOldFormat(oldData: any): BrandedRlp {
@@ -396,7 +396,7 @@ function upgradeV1ToV2(v1Data: BrandedRlp): BrandedRlp {
 JSON serialization is less efficient than binary RLP:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const data = {
   type: 'bytes',
@@ -429,13 +429,13 @@ Import only needed functions:
 
 ```typescript
 // Import both
-import { toJSON, fromJSON } from 'tevm/BrandedRlp'
+import { toJSON, fromJSON } from '@tevm/voltaire/Rlp'
 
 const json = toJSON(data)
 const restored = fromJSON(json)
 
 // Or use namespace
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 const json = Rlp.toJSON(data)
 ```
 

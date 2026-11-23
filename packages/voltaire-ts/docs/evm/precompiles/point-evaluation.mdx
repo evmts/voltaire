@@ -67,7 +67,7 @@ Total output length: 64 bytes
 
 ```typescript
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import { Hardfork } from '@tevm/voltaire/Hardfork';
 
 // Verify KZG proof for blob data
 const versionedHash = Bytes32('0x01...'); // From blob transaction (version 0x01 + SHA256(commitment))

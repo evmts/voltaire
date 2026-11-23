@@ -1,23 +1,33 @@
 ---
 title: Signer Service
-description: Transaction signing and sending with Effect.ts
+description: Transaction signing, automatic nonce/gas/fee population, EIP-1559/4844/7702 support, and broadcast with Effect.
 ---
+
+`SignerService` signs messages, typed data, and transactions, automatically populating missing `nonce`, `gasLimit`, `chainId`, and EIP-1559 fees via `ProviderService` before broadcasting through `TransportService`.
+
+```mermaid
+flowchart BT
+  T["TransportService\n(HttpTransport / BrowserTransport)"] --> P["ProviderService\n(nonce, gas, chainId, fees)"]
+  C["Crypto Services\n(Secp256k1Live, KeccakLive)"] --> A["AccountService\n(LocalAccount | JsonRpcAccount | MnemonicAccount)"]
+  P --> S["SignerService\n(Signer.Live)"]
+  A --> S
+  T --> S
+```
 
 ## Quick Start
 
 ```typescript
 import { Effect, Schedule, Layer } from 'effect'
 import {
-  SignerService, Signer, Provider, LocalAccount,
-  HttpTransport, Secp256k1Live, KeccakLive,
-  withTimeout, withRetrySchedule
+  SignerService, Signer, Provider,
+  HttpTransport, withTimeout
 } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
 
-// Compose layers first
-const DepsLayer = Layer.mergeAll(
+const BaseDeps = Layer.mergeAll(
   Secp256k1Live,
   KeccakLive,
   HttpTransport({
@@ -29,255 +39,48 @@ const DepsLayer = Layer.mergeAll(
     )
   })
 )
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
+
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(BaseDeps)
+)
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
-
-  // Per-request timeout for transaction broadcast
   return yield* signer.sendTransaction({
     to: recipientAddress,
-    value: 1000000000000000000n
+    value: 1_000_000_000_000_000_000n
   }).pipe(withTimeout('30 seconds'))
 }).pipe(Effect.provide(SignerLayer))
 ```
 
 ## Constructors
 
-### Signer.fromPrivateKey
+| Constructor | Dependencies Required After Construction | Use Case |
+| --- | --- | --- |
+| `Signer.fromPrivateKey(privateKey, Provider)` | `TransportService`, `Secp256k1Service`, `KeccakService` | Local key signing (backend, scripts) |
+| `Signer.fromProvider(Provider, accountLayer)` | `TransportService` (+ account's dependencies) | Custom `LocalAccount`, `JsonRpcAccount`, or `MnemonicAccount` |
+| `Signer.Live` | `ProviderService \| AccountService \| TransportService` | Explicit full-graph layer wiring |
 
-Convenience constructor for local signing:
-
-```typescript
-const signer = Signer.fromPrivateKey(privateKey, Provider)
-
-// Equivalent to:
-const signer = Signer.fromProvider(Provider, LocalAccount(privateKey))
-```
-
-### Signer.fromProvider
-
-Compose a Signer from existing Provider and Account layers:
+### Browser Wallet Signer (`JsonRpcAccount` + `BrowserTransport`)
 
 ```typescript
-import { Signer, Provider, LocalAccount, JsonRpcAccount } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { SignerService, Signer, Provider, JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
 
-// With local account (private key signing)
-const localSigner = Signer.fromProvider(Provider, LocalAccount(privateKey))
-
-// With JSON-RPC account (browser wallet)
-const browserSigner = Signer.fromProvider(Provider, JsonRpcAccount(userAddress))
-```
-
-### Signer.Live
-
-Base layer requiring all dependencies explicitly:
-
-```typescript
-const DepsLayer = Layer.mergeAll(Provider, LocalAccount(privateKey))
-const signer = Signer.Live.pipe(Layer.provide(DepsLayer))
-
-// Type: Layer.Layer<SignerService, never, TransportService>
-```
-
-## Layer Pattern
-
-```typescript
-import * as Layer from 'effect/Layer'
-
-// Signer.Live depends on Provider + Account + Transport
-const Signer = {
-  Live: Layer.effect(SignerService, Effect.gen(function* () {
-    const provider = yield* ProviderService
-    const account = yield* AccountService
-    const transport = yield* TransportService
-    // ... implementation
-  })) as Layer.Layer<SignerService, never, ProviderService | AccountService | TransportService>,
-
-  // Compose Provider + Account into ready-to-use Signer
-  fromProvider: (
-    providerLayer: Layer.Layer<ProviderService, any, TransportService>,
-    accountLayer: Layer.Layer<AccountService>
-  ): Layer.Layer<SignerService, any, TransportService> =>
-    Signer.Live.pipe(
-      Layer.provide(Layer.mergeAll(providerLayer, accountLayer))
-    ),
-
-  // Convenience: local private key signer
-  fromPrivateKey: (
-    privateKey: Hex,
-    providerLayer: Layer.Layer<ProviderService, any, TransportService>
-  ): Layer.Layer<SignerService, any, TransportService> =>
-    Signer.fromProvider(providerLayer, LocalAccount(privateKey)),
-}
-```
-
-## Browser Wallet
-
-```typescript
-import { JsonRpcAccount, BrowserTransport } from 'voltaire-effect'
-import { Layer } from 'effect'
-
-// Compose layers first
-const BrowserSignerLayer = Signer.fromProvider(Provider, JsonRpcAccount(userAddress)).pipe(
-  Layer.provide(BrowserTransport)
-)
+const BrowserSignerLayer = Signer.fromProvider(
+  Provider,
+  JsonRpcAccount(userAddress)
+).pipe(Layer.provide(BrowserTransport))
 
 const program = Effect.gen(function* () {
   const signer = yield* SignerService
-  const accounts = yield* signer.requestAddresses() // triggers popup
+  const accounts = yield* signer.requestAddresses()
   const txHash = yield* signer.sendTransaction({ to, value })
-  return txHash
+  return { accounts, txHash }
 }).pipe(Effect.provide(BrowserSignerLayer))
 ```
 
-## Methods
-
-**signMessage** — [EIP-191](https://eips.ethereum.org/EIPS/eip-191) personal_sign
-```typescript
-const signature = yield* signer.signMessage(Hex.fromString('Hello!'))
-```
-
-**signTransaction** — Sign without broadcast (auto-fills nonce, gas, chainId)
-```typescript
-const signedTx = yield* signer.signTransaction({ to, value })
-```
-
-**signTypedData** — [EIP-712](https://eips.ethereum.org/EIPS/eip-712) structured data
-```typescript
-const sig = yield* signer.signTypedData({
-  domain: { name: 'App', version: '1', chainId: 1n },
-  primaryType: 'Order',
-  types: { Order: [{ name: 'amount', type: 'uint256' }] },
-  message: { amount: 1000n }
-})
-```
-
-**sendTransaction** — Sign and broadcast
-```typescript
-const txHash = yield* signer.sendTransaction({ to, value: 1000000000000000000n })
-```
-
-**sendRawTransaction** — Broadcast pre-signed tx
-```typescript
-const txHash = yield* signer.sendRawTransaction(signedTxHex)
-```
-
-**requestAddresses** — Get connected accounts (browser popup)
-```typescript
-const accounts = yield* signer.requestAddresses()
-```
-
-**switchChain** — Change network
-```typescript
-yield* signer.switchChain(137) // Polygon
-```
-
-## TransactionRequest
-
-```typescript
-// AddressInput accepts both branded AddressType and hex strings (matches Provider API)
-type AddressInput = AddressType | `0x${string}`
-
-type TransactionRequest = {
-  readonly to?: AddressInput | null    // null = contract deploy
-  readonly value?: bigint
-  readonly data?: HexType
-  readonly nonce?: bigint              // auto-filled from getTransactionCount('pending')
-  readonly gasLimit?: bigint           // auto-estimated via estimateGas
-  readonly gasPrice?: bigint           // legacy (type 0/1)
-  readonly maxFeePerGas?: bigint       // EIP-1559+ (type 2/3/4)
-  readonly maxPriorityFeePerGas?: bigint
-  readonly chainId?: bigint            // auto-detected from eth_chainId
-  readonly accessList?: Array<{        // EIP-2930+ access list
-    address: AddressInput
-    storageKeys: Array<`0x${string}`>
-  }>
-  
-  // Explicit transaction type (auto-detected if not provided)
-  readonly type?: 0 | 1 | 2 | 3 | 4
-  
-  // EIP-4844 blob transaction fields
-  readonly blobVersionedHashes?: readonly `0x${string}`[]
-  readonly maxFeePerBlobGas?: bigint
-  
-  // EIP-7702 set code authorization
-  readonly authorizationList?: readonly {
-    chainId: bigint
-    address: `0x${string}`
-    nonce: bigint
-    yParity: number
-    r: `0x${string}`
-    s: `0x${string}`
-  }[]
-}
-```
-
-### Transaction Types
-
-| Type | EIP | Description | Key Fields |
-|------|-----|-------------|------------|
-| 0 | Legacy | Original Ethereum tx | `gasPrice` |
-| 1 | [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) | Access list tx | `gasPrice` + `accessList` |
-| 2 | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) | Priority fee tx | `maxFeePerGas` + `maxPriorityFeePerGas` |
-| 3 | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) | Blob tx (L2 data) | `blobVersionedHashes` + `maxFeePerBlobGas` |
-| 4 | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) | Set code tx | `authorizationList` |
-
-### Transaction Type Detection
-
-The signer automatically detects which transaction type to use based on provided fields:
-
-1. **If `type` is explicitly provided** → Use that type
-2. **If `authorizationList` provided** → EIP-7702 (type 4)
-3. **If `blobVersionedHashes` provided** → EIP-4844 (type 3)
-4. **If `maxFeePerGas` or `maxPriorityFeePerGas` provided** → EIP-1559 (type 2)
-5. **If `accessList` provided with `gasPrice`** → EIP-2930 (type 1)
-6. **If `gasPrice` provided (no accessList)** → Legacy (type 0)
-7. **If neither provided AND network supports EIP-1559** → EIP-1559 (type 2)
-8. **If neither provided AND network doesn't support EIP-1559** → Legacy (type 0)
-
-On EIP-1559 networks (post-London), if you don't specify any gas fields, the signer defaults to EIP-1559 transactions.
-
-### Fee Calculation
-
-When using EIP-1559 and `maxFeePerGas` is not provided, it's calculated as:
-
-```
-maxFeePerGas = baseFeePerGas * 1.2 + maxPriorityFeePerGas
-```
-
-The 1.2x multiplier (20% buffer) on base fee provides headroom for fee volatility across 1-2 blocks, matching the viem/ethers standard.
-
-**Example:** With baseFee=30 gwei and priorityFee=2 gwei:
-- `maxFeePerGas = 30 * 1.2 + 2 = 38 gwei`
-
-Since bigint doesn't support decimals, the implementation uses: `(baseFee * 12n) / 10n + maxPriorityFeePerGas`
-
-
-
-### Nonce Management
-
-Nonces are fetched using `getTransactionCount('pending')` to correctly account for pending transactions. This makes sequential sends safe.
-
-**⚠️ Concurrent sends still require care.** If you send multiple transactions concurrently without waiting, they may race to fetch the same pending nonce. For concurrent sends:
-- Manage nonces manually via `nonce` field
-- Send transactions sequentially
-
-## Error Handling
-
-```typescript
-import { SignerError } from 'voltaire-effect'
-
-program.pipe(
-  Effect.catchTag('SignerError', (e) => {
-    if (e.message.includes('insufficient funds')) return Effect.fail(e)
-    if (e.message.includes('rejected')) return Effect.fail(e)
-    return Effect.fail(e)
-  })
-)
-```
-
-## Service Interface
+## Service Interface (`SignerShape`)
 
 ```typescript
 type SignerShape = {
@@ -289,30 +92,98 @@ type SignerShape = {
   readonly requestAddresses: () => Effect.Effect<AddressType[], SignerError>
   readonly switchChain: (chainId: number) => Effect.Effect<void, SignerError>
 }
-
-// HexType is a branded `0x${string}` for signed transaction bytes
-// HashType is a branded Uint8Array for 32-byte hashes (tx hash)
-// SignatureType is a branded Uint8Array with signature metadata
 ```
 
-## Dependencies
+| Method | Standard / RPC | Behavior |
+| --- | --- | --- |
+| `signMessage(hex)` | EIP-191 `personal_sign` | Signs raw message bytes with Ethereum prefix |
+| `signTransaction(tx)` | Local or JSON-RPC | Auto-fills nonce, gas, chainId, fees; returns signed RLP `HexType` without broadcasting |
+| `signTypedData(data)` | EIP-712 | Signs structured typed data |
+| `sendTransaction(tx)` | `eth_sendRawTransaction` / `eth_sendTransaction` | Signs and broadcasts; returns 32-byte `HashType` |
+| `sendRawTransaction(hex)` | `eth_sendRawTransaction` | Broadcasts pre-signed transaction bytes |
+| `requestAddresses()` | `eth_requestAccounts` | Requests connected wallet accounts |
+| `switchChain(chainId)` | `wallet_switchEthereumChain` | Switches active network on EIP-1193 wallets |
 
-`Signer.Live` requires these services:
+## `TransactionRequest` & Auto-Detection
 
-| Service | Purpose |
-|---------|---------|
-| `ProviderService` | Request-only layer used by free functions for gas/nonce/chainId lookups |
-| `AccountService` | Sign messages and transactions |
-| `TransportService` | Send raw transactions via RPC |
+```typescript
+type AddressInput = AddressType | `0x${string}`
 
-The `fromProvider` and `fromPrivateKey` constructors compose these for you.
+type TransactionRequest = {
+  readonly to?: AddressInput | null        // null = contract deployment
+  readonly value?: bigint
+  readonly data?: HexType
+  readonly nonce?: bigint                  // auto-filled via getTransactionCount('pending')
+  readonly gasLimit?: bigint               // auto-estimated via estimateGas
+  readonly gasPrice?: bigint               // type 0 / 1
+  readonly maxFeePerGas?: bigint           // type 2 / 3 / 4
+  readonly maxPriorityFeePerGas?: bigint
+  readonly chainId?: bigint                // auto-detected via eth_chainId
+  readonly accessList?: Array<{ address: AddressInput; storageKeys: Array<`0x${string}`> }>
+  readonly type?: 0 | 1 | 2 | 3 | 4
+  readonly blobVersionedHashes?: readonly `0x${string}`[]  // EIP-4844 (type 3)
+  readonly maxFeePerBlobGas?: bigint
+  readonly authorizationList?: readonly {                  // EIP-7702 (type 4)
+    chainId: bigint
+    address: `0x${string}`
+    nonce: bigint
+    yParity: number
+    r: `0x${string}`
+    s: `0x${string}`
+  }[]
+}
+```
+
+### Supported Transaction Types
+
+| Type | EIP | Distinguishing Fields |
+| --- | --- | --- |
+| `0` | Legacy | `gasPrice` |
+| `1` | EIP-2930 | `gasPrice` + `accessList` |
+| `2` | EIP-1559 | `maxFeePerGas` + `maxPriorityFeePerGas` |
+| `3` | EIP-4844 | `blobVersionedHashes` + `maxFeePerBlobGas` |
+| `4` | EIP-7702 | `authorizationList` |
+
+When `type` is omitted, detection resolves in strict precedence order:
+1. `authorizationList` present -> type `4` (EIP-7702)
+2. `blobVersionedHashes` present -> type `3` (EIP-4844)
+3. `maxFeePerGas` or `maxPriorityFeePerGas` present -> type `2` (EIP-1559)
+4. `accessList` + `gasPrice` present -> type `1` (EIP-2930)
+5. `gasPrice` only -> type `0` (Legacy)
+6. No fee fields: type `2` if the latest block includes `baseFeePerGas`, otherwise type `0`.
+
+### Default EIP-1559 Fee Formula
+
+When `maxFeePerGas` is omitted on an EIP-1559 network, it is computed in integer arithmetic with a 20% base-fee buffer:
+
+```typescript
+maxFeePerGas = (baseFeePerGas * 12n) / 10n + maxPriorityFeePerGas
+```
+
+Example: `baseFeePerGas = 30 gwei`, `maxPriorityFeePerGas = 2 gwei` -> `maxFeePerGas = 38 gwei`.
+
+### Nonce Concurrency
+
+`sendTransaction` fetches the `pending` nonce via `getTransactionCount(address, 'pending')`. Sequential calls are safe, but firing multiple `sendTransaction` calls concurrently can fetch the same pending nonce and collide. For parallel broadcasts, serialize submissions or pass explicit `nonce` values (see [NonceManager](/services/nonce-manager)).
+
+## Error Handling
+
+All signer methods fail with `SignerError`:
+
+```typescript
+import { Effect } from 'effect'
+
+program.pipe(
+  Effect.catchTag('SignerError', (e) => {
+    if (e.message.includes('insufficient funds')) return Effect.fail(e)
+    return Effect.fail(e)
+  })
+)
+```
 
 ## See Also
 
-- [Send Transactions Example](/examples/send-transactions) — Complete transaction examples
-- [Provider Service](/services/provider) — JSON-RPC provider operations
-- [Transport Service](/services/transport) — HTTP/WebSocket transport layer
-- [HD Wallet Guide](/guides/hd-wallet) — Create signers from mnemonic
-- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) — Fee market change
-- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) — Blob transactions
-- [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) — Set code transactions
+- [Account Service](/services/account) — Low-level `LocalAccount`, `JsonRpcAccount`, and `MnemonicAccount`
+- [Provider Service](/services/provider) — Transports and JSON-RPC queries
+- [NonceManager Service](/services/nonce-manager) — Coordinated nonces for concurrent sends
+- [HD Wallet Guide](/guides/hd-wallet) — Deriving signers from BIP-39 mnemonics

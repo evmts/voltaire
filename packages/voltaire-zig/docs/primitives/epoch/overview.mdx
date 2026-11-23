@@ -23,7 +23,7 @@ Epoch represents a consensus layer epoch in Ethereum's proof-of-stake system. Ea
 Create Epoch from number, bigint, or string.
 
 ```zig
-import { Epoch } from '@tevm/primitives';
+import { Epoch } from '@tevm/voltaire';
 
 const epoch1 = Epoch.from(100000n);
 const epoch2 = Epoch.from(100000);
@@ -72,7 +72,7 @@ const slot = Epoch.toSlot(epoch); // Slot 96
 ### Calculate epoch timing
 
 ```zig
-import { Epoch } from '@tevm/primitives';
+import { Epoch } from '@tevm/voltaire';
 
 const genesisTime = 1606824023; // Beacon chain genesis
 const epoch = Epoch.from(100000n);
@@ -85,7 +85,7 @@ console.log(`Epoch ${epoch} started at: ${new Date(epochTime * 1000)}`);
 ### Work with finality
 
 ```zig
-import { Epoch } from '@tevm/primitives';
+import { Epoch } from '@tevm/voltaire';
 
 const justifiedEpoch = Epoch.from(100n);
 const finalizedEpoch = Epoch.from(98n);
@@ -98,7 +98,7 @@ console.log(`Can finalize: ${canFinalize}`);
 ### Convert between slots and epochs
 
 ```zig
-import { Epoch, Slot } from '@tevm/primitives';
+import { Epoch, Slot } from '@tevm/voltaire';
 
 const epoch = Epoch.from(5n);
 const firstSlot = Epoch.toSlot(epoch); // 160

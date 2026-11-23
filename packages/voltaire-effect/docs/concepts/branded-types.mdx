@@ -1,97 +1,77 @@
 ---
 title: Branded Types
-description: Type-safe Ethereum primitives with zero runtime overhead
+description: Compile-time nominal types backed by zero-overhead Uint8Array instances via Effect Schema.
 ---
 
-Voltaire uses branded types to prevent bugs like passing a Hash where an Address is expected. Effect has [its own Brand module](https://effect.website/docs/style/branded-types/) - voltaire-effect bridges both.
+A Voltaire primitive is a plain `Uint8Array` at runtime intersected with a phantom brand tag at compile time. `voltaire-effect` schemas decode external input directly into these branded types so distinct byte arrays cannot be swapped accidentally.
 
-## What is a Branded Type?
-
-A branded type adds a compile-time tag to a base type:
-
-```typescript
-type AddressType = Uint8Array & { readonly __tag: "Address" }
-type HashType = Uint8Array & { readonly __tag: "Hash" }
+```mermaid
+flowchart LR
+  Hex["'0x742d35Cc...' (string)"] -->|"S.decode(Address.Hex)"| Addr["AddressType\n(Uint8Array(20) & __tag: 'Address')"]
+  HashHex["'0xabc123...' (string)"] -->|"S.decode(Hash.Hex)"| Hash["HashType\n(Uint8Array(32) & __tag: 'Hash')"]
+  Addr -.->|"Compile Error if swapped"| Fn["transfer(to: AddressType, txHash: HashType)"]
+  Hash -.->|"Compile Error if swapped"| Fn
 ```
 
-At runtime, both are `Uint8Array`. TypeScript prevents mixing them:
+## Compile-Time Brand, Runtime `Uint8Array`
 
 ```typescript
-function transfer(to: AddressType, txHash: HashType) { }
+type AddressType = Uint8Array & { readonly __tag: 'Address' }
+type HashType = Uint8Array & { readonly __tag: 'Hash' }
 
-transfer(addr, hash)  // OK
-transfer(hash, addr)  // Type error
+function recordTransfer(to: AddressType, txHash: HashType): void { /* ... */ }
+
+recordTransfer(addr, hash) // Compiles
+recordTransfer(hash, addr) // Compile error: HashType is not assignable to AddressType
 ```
 
-## Schemas Return Branded Types
+| Type | Runtime Representation | Byte Length | Compile-Time Tag |
+| --- | --- | --- | --- |
+| `AddressType` | `Uint8Array` | 20 | `Address` |
+| `HashType` | `Uint8Array` | 32 | `Hash` |
+| `Bytes32Type` | `Uint8Array` | 32 | `Bytes32` |
+| `BytecodeType` | `Uint8Array` | Variable | `Bytecode` |
 
-voltaire-effect schemas decode directly to Voltaire's branded types:
+Brands are erased completely during TypeScript compilation. No wrapper object is allocated.
+
+## Boundary Validation via Schema
+
+Decode untrusted strings or byte buffers once at application boundaries. Every downstream function receives a validated branded type:
 
 ```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as A from '@tevm/voltaire/Address'
 
 const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
-// addr is AddressType, not string
-addr instanceof Uint8Array  // true
-addr.length                 // 20
+addr instanceof Uint8Array // true
+addr.length                // 20
+
+// Interoperates directly with @tevm/voltaire functions
+A.toHex(addr)              // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+A.isZero(addr)             // false
+A.equals(addr, addr)       // true
 ```
 
-The schema validates the input and returns the actual Voltaire type. Use it directly with Voltaire functions:
+## Interoperability with Platform APIs
+
+Because a branded primitive is a standard `Uint8Array`, it passes directly to Web Crypto, Node `Buffer`, and typed array views with zero copying:
 
 ```typescript
-import * as Address from '@tevm/voltaire/Address'
-
-Address.toHex(addr)     // works
-Address.isZero(addr)    // works
-Address.equals(a, b)    // works
+const digest = await crypto.subtle.digest('SHA-256', addr)
+const nodeBuf = Buffer.from(addr)
+const view = new DataView(addr.buffer, addr.byteOffset, addr.byteLength)
+const prefix = addr.subarray(0, 4)
 ```
 
-## Effect Brand vs Voltaire Brand
+## Relation to `effect/Brand`
 
-Effect's `Brand` module creates nominal types from primitives:
-
-```typescript
-import * as Brand from 'effect/Brand'
-
-type UserId = string & Brand.Brand<"UserId">
-const UserId = Brand.nominal<UserId>()
-
-const id = UserId("user-123")  // UserId, not string
-```
-
-Voltaire brands `Uint8Array` instead of primitives. The voltaire-effect schemas handle the conversion - you get Voltaire types that work with both libraries.
-
-## Zero Overhead
-
-Brands exist only at compile time. At runtime:
-
-```typescript
-const addr = S.decodeSync(Address.Hex)('0x742d35Cc...')
-
-// Standard Uint8Array operations work
-addr.slice(0, 4)
-new DataView(addr.buffer)
-Buffer.from(addr)
-```
-
-## Validation Happens Once
-
-Schema decode validates input. If decoding succeeds, the value is valid:
-
-```typescript
-// This throws ParseError on invalid input
-const addr = S.decodeSync(Address.Hex)(userInput)
-
-// If we get here, addr is guaranteed valid
-// No further validation needed
-```
+Effect's `Brand` module brands primitive values (`string & Brand.Brand<'UserId'>`). Voltaire brands `Uint8Array` instances so cryptographic and ABI operations work on raw bytes without repeated hex parsing. `voltaire-effect` schemas bridge both: they execute inside Effect's `Schema` pipeline and emit Voltaire's branded `Uint8Array` types.
 
 ## See Also
 
-- [Voltaire Branded Types](https://voltaire.tevm.sh/concepts/branded-types) — Core branded type documentation
-- [Effect Brand Module](https://effect.website/docs/style/branded-types/) — Effect's Brand utilities
-- [Data-First API](/concepts/data-first-api) — Why data comes first
-- [Address Primitive](/primitives/address) — Address schema and functions
-- [Error Handling](/concepts/error-handling) — Typed errors with Effect
+- [Data-First API](/concepts/data-first-api) — Composing branded values with `pipe`
+- [Error Handling](/concepts/error-handling) — Handling `ParseError` from schema decoding
+- [Address Primitive](/primitives/address) — Address schemas and conversions
+- [Voltaire Branded Types](https://voltaire.tevm.sh/concepts/branded-types) — Core primitive branding specification

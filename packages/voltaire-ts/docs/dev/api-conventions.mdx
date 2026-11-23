@@ -3,8 +3,6 @@ title: API Conventions
 description: Naming conventions, error handling, and API design patterns
 ---
 
-# API Conventions
-
 Consistent API design across all modules.
 
 ## Naming Conventions
@@ -260,7 +258,7 @@ export function toHex(address) {
  *
  * @example
  * ```ts
- * import * as Address from "@voltaire/primitives/Address";
+ * import * as Address from "@tevm/voltaire/Address";
  *
  * const hex = Address.toHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
  * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
@@ -328,7 +326,7 @@ export { ZERO_ADDRESS } from "./constants.js";
 
 ```typescript
 // User imports as namespace
-import * as Address from "@voltaire/primitives/Address";
+import * as Address from "@tevm/voltaire/Address";
 
 // All functions available
 Address.fromHex("0x...");

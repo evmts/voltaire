@@ -1,207 +1,99 @@
-# ABI Encoding/Decoding
+# ABI Encoding and Decoding
 
-Ethereum Contract ABI specification implementation for encoding function calls, decoding return data, and computing selectors.
+Pure-Rust implementation of the Ethereum Contract ABI specification in `voltaire::abi` (re-exported from `voltaire::primitives::abi`).
 
-## Function Selectors
+## Calldata Layout
 
-Compute 4-byte function selectors from signatures:
-
-```rust
-use voltaire::abi::function_selector;
-
-let selector = function_selector("transfer(address,uint256)");
-assert_eq!(selector, [0xa9, 0x05, 0x9c, 0xbb]);
-
-let selector = function_selector("balanceOf(address)");
-assert_eq!(selector, [0x70, 0xa0, 0x82, 0x31]);
-
-let selector = function_selector("approve(address,uint256)");
-assert_eq!(selector, [0x09, 0x5e, 0xa7, 0xb3]);
+```mermaid
+flowchart LR
+    Sig["Signature string\n\"transfer(address,uint256)\""] -->|"function_selector"| Sel["Selector (4 bytes)\n0xa9059cbb"]
+    Vals["types + AbiValue[]"] -->|"encode_parameters"| HeadTail["32-byte Head Words\n+ Dynamic Tail Data"]
+    Sel --> Call["Calldata\n(encode_function)"]
+    HeadTail --> Call
+    Call -->|"decode_function_input"| Out["(Selector, Vec<AbiValue>)"]
 ```
 
-## Event Topics
-
-Compute 32-byte event topics:
+## Selectors, Topics, and Signature Parsing
 
 ```rust
-use voltaire::abi::event_topic;
+use voltaire::abi::{function_selector, event_topic, parse_signature, AbiType};
 
+// 4-byte function selector
+let sel = function_selector("transfer(address,uint256)");
+assert_eq!(sel, [0xa9, 0x05, 0x9c, 0xbb]);
+
+// 32-byte event topic0
 let topic = event_topic("Transfer(address,address,uint256)");
 assert_eq!(
     topic.to_hex(),
     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 );
-```
 
-## Type Parsing
-
-Parse ABI types from canonical strings:
-
-```rust
-use voltaire::abi::AbiType;
-
-let t = AbiType::parse("uint256")?;
-let t = AbiType::parse("address")?;
-let t = AbiType::parse("bool")?;
-let t = AbiType::parse("bytes32")?;
-let t = AbiType::parse("string")?;
-
-// Arrays
-let t = AbiType::parse("uint256[]")?;        // Dynamic array
-let t = AbiType::parse("address[5]")?;       // Fixed array
-
-// Tuples
-let t = AbiType::parse("(address,uint256)")?;
-```
-
-## Encoding Parameters
-
-Encode values for contract calls:
-
-```rust
-use voltaire::abi::{AbiType, AbiValue, encode_parameters};
-use voltaire::Address;
-
-let types = &[AbiType::Address, AbiType::Uint256];
-let values = &[
-    AbiValue::Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?),
-    AbiValue::from_u64(1000),
-];
-
-let encoded = encode_parameters(types, values)?;
-assert_eq!(encoded.len(), 64); // 2 * 32 bytes
-```
-
-## Encoding Function Calls
-
-Encode complete calldata (selector + parameters):
-
-```rust
-use voltaire::abi::{AbiType, AbiValue, encode_function};
-use voltaire::Address;
-
-let types = &[AbiType::Address, AbiType::Uint256];
-let values = &[
-    AbiValue::Address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?),
-    AbiValue::from_u64(1000),
-];
-
-let calldata = encode_function("transfer(address,uint256)", types, values)?;
-assert_eq!(&calldata[..4], &[0xa9, 0x05, 0x9c, 0xbb]); // selector
-assert_eq!(calldata.len(), 68); // 4 + 64
-```
-
-## Decoding Parameters
-
-Decode ABI-encoded data:
-
-```rust
-use voltaire::abi::{AbiType, decode_parameters};
-
-let types = &[AbiType::Address, AbiType::Uint256];
-let data = hex::decode(
-    "000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045\
-     0000000000000000000000000000000000000000000000000000000000000001"
-)?;
-
-let values = decode_parameters(types, &data)?;
-let addr = values[0].as_address().unwrap();
-let amount = values[1].as_u256().unwrap();
-```
-
-## Decoding Function Input
-
-Decode calldata with selector:
-
-```rust
-use voltaire::abi::{AbiType, decode_function_input};
-
-let calldata = hex::decode(
-    "a9059cbb\
-     000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045\
-     00000000000000000000000000000000000000000000000000000000000003e8"
-)?;
-
-let types = &[AbiType::Address, AbiType::Uint256];
-let (selector, values) = decode_function_input(types, &calldata)?;
-
-assert_eq!(selector, [0xa9, 0x05, 0x9c, 0xbb]); // transfer
-assert_eq!(values[1].as_u256().unwrap().to_u64(), Some(1000));
-```
-
-## Supported Types
-
-| Type | Rust Type | Description |
-|------|-----------|-------------|
-| `uint8`-`uint256` | `u8`-`u128`, `[u8; 32]` | Unsigned integers |
-| `int8`-`int256` | `i8`-`i128`, `[u8; 32]` | Signed integers |
-| `address` | `Address` | 20-byte address |
-| `bool` | `bool` | Boolean |
-| `bytes1`-`bytes32` | `[u8; N]` | Fixed bytes |
-| `bytes` | `Vec<u8>` | Dynamic bytes |
-| `string` | `String` | UTF-8 string |
-| `T[]` | `Vec<AbiValue>` | Dynamic array |
-| `T[N]` | `Vec<AbiValue>` | Fixed array |
-| `(T1,T2,...)` | `Vec<AbiValue>` | Tuple |
-
-## AbiValue Helpers
-
-```rust
-use voltaire::abi::AbiValue;
-use voltaire::{Address, U256};
-
-// Create values
-let uint = AbiValue::from_u64(1000);
-let uint = AbiValue::from_u256(U256::from(1000u64));
-let addr = AbiValue::Address("0x...".parse()?);
-let flag = AbiValue::Bool(true);
-let text = AbiValue::String("hello".to_string());
-let data = AbiValue::Bytes(vec![1, 2, 3]);
-
-// Extract values
-let n: Option<U256> = uint.as_u256();
-let a: Option<&Address> = addr.as_address();
-let b: Option<bool> = flag.as_bool();
-let s: Option<&str> = text.as_string();
-let d: Option<&[u8]> = data.as_bytes();
-```
-
-## Security Limits
-
-- Maximum encoding size: 10 MB
-- Maximum recursion depth: 64 levels
-
-These limits prevent DoS attacks from malicious input.
-
-## Parse Signature
-
-Extract function name and types from signature:
-
-```rust
-use voltaire::abi::{parse_signature, AbiType};
-
+// Parse function name and parameter types (supports nested tuples and arrays)
 let (name, types) = parse_signature("transfer(address,uint256)")?;
 assert_eq!(name, "transfer");
 assert_eq!(types, vec![AbiType::Address, AbiType::Uint256]);
-
-let (name, types) = parse_signature("complexFn(uint256,(address,bool),bytes)")?;
-// Handles nested tuples
+# Ok::<(), voltaire::Error>(())
 ```
 
-## Canonical Type Names
-
-Get canonical string representation:
+## Encoding and Decoding Parameters and Calldata
 
 ```rust
-use voltaire::abi::AbiType;
+use voltaire::abi::{
+    AbiType, AbiValue,
+    encode_parameters, encode_function,
+    decode_parameters, decode_function_input, decode_function_output,
+};
+use voltaire::Address;
 
-assert_eq!(AbiType::Uint256.canonical_name(), "uint256");
-assert_eq!(
-    AbiType::Array(Box::new(AbiType::Address)).canonical_name(),
-    "address[]"
-);
-assert_eq!(
-    AbiType::Tuple(vec![AbiType::Address, AbiType::Uint256]).canonical_name(),
-    "(address,uint256)"
-);
+let types = &[AbiType::Address, AbiType::Uint256];
+let recipient: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
+let values = &[
+    AbiValue::Address(recipient),
+    AbiValue::from_u64(1000),
+];
+
+// Parameters only (64 bytes)
+let params = encode_parameters(types, values)?;
+assert_eq!(params.len(), 64);
+
+// Selector + parameters (68 bytes)
+let calldata = encode_function("transfer(address,uint256)", types, values)?;
+assert_eq!(&calldata[..4], &[0xa9, 0x05, 0x9c, 0xbb]);
+
+// Decode parameters / return data
+let decoded = decode_parameters(types, &params)?;
+let output = decode_function_output(types, &params)?;
+assert_eq!(decoded, output);
+
+// Decode calldata (extracts 4-byte selector + decoded arguments)
+let (selector, args) = decode_function_input(types, &calldata)?;
+assert_eq!(selector, [0xa9, 0x05, 0x9c, 0xbb]);
+assert_eq!(args[0].as_address(), Some(&recipient));
+assert_eq!(args[1].as_u256().and_then(|v| v.to_u64()), Some(1000));
+# Ok::<(), voltaire::Error>(())
 ```
+
+## Type System and `AbiValue` Accessors
+
+| Solidity Type | `AbiType` | Dynamic | `AbiValue` accessor |
+|---------------|-----------|---------|---------------------|
+| `uint8`..`uint256` | `AbiType::Uint8`..`Uint256` / `Uint(usize)` | No | `as_u256() -> Option<U256>` |
+| `int8`..`int256` | `AbiType::Int8`..`Int256` / `Int(usize)` | No | — |
+| `address` | `AbiType::Address` | No | `as_address() -> Option<&Address>` |
+| `bool` | `AbiType::Bool` | No | `as_bool() -> Option<bool>` |
+| `bytes1`..`bytes32` | `AbiType::FixedBytes(N)` | No | `as_bytes() -> Option<&[u8]>` |
+| `bytes` | `AbiType::Bytes` | Yes | `as_bytes() -> Option<&[u8]>` |
+| `string` | `AbiType::String` | Yes | `as_string() -> Option<&str>` |
+| `T[]` | `AbiType::Array(Box<AbiType>)` | Yes | `as_array() -> Option<&[AbiValue]>` |
+| `T[N]` | `AbiType::FixedArray(Box<AbiType>, N)` | If `T` is dynamic | `as_array() -> Option<&[AbiValue]>` |
+| `(T1,T2,...)` | `AbiType::Tuple(Vec<AbiType>)` | If any field is dynamic | `as_tuple() -> Option<&[AbiValue]>` |
+
+`AbiType::parse(&str) -> Result<AbiType>` parses canonical type strings; `AbiType::canonical_name(&self) -> String` formats them; `AbiType::is_dynamic(&self) -> bool` checks head/tail placement.
+
+## DoS Protection Limits
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `MAX_ABI_LENGTH` | `10 * 1024 * 1024` (10 MiB) | Bounds encoded/decoded payload allocation |
+| `MAX_RECURSION_DEPTH` | `64` | Bounds nested tuple and array recursion |

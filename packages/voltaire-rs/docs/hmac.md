@@ -1,70 +1,36 @@
 # HMAC
 
-Hash-based Message Authentication Code for verifying data integrity and authenticity.
+RFC 2104 Hash-based Message Authentication Codes (`HMAC-SHA256` and `HMAC-SHA512`) in `voltaire::crypto`.
 
-## Overview
+## API Summary
 
-HMAC combines a cryptographic hash with a secret key to produce a message authentication code (MAC). This module provides:
+| Algorithm | Output | Block Size | One-shot Function | Streaming Type |
+|-----------|--------|------------|-------------------|----------------|
+| HMAC-SHA256 | `[u8; 32]` | 64 bytes | `hmac_sha256(key: &[u8], data: &[u8]) -> [u8; 32]` | `HmacSha256` |
+| HMAC-SHA512 | `[u8; 64]` | 128 bytes | `hmac_sha512(key: &[u8], data: &[u8]) -> [u8; 64]` | `HmacSha512` |
 
-- **HMAC-SHA256** - 32-byte MAC using SHA-256
-- **HMAC-SHA512** - 64-byte MAC using SHA-512
-
-## HMAC-SHA256
-
-```rust
-use voltaire::crypto::{hmac_sha256, HmacSha256};
-
-// One-shot
-let mac = hmac_sha256(b"secret-key", b"message");
-
-// Streaming
-let mut hmac = HmacSha256::new(b"secret-key");
-hmac.update(b"hello");
-hmac.update(b" world");
-let mac = hmac.finalize();
-```
-
-## HMAC-SHA512
+## Usage
 
 ```rust
-use voltaire::crypto::{hmac_sha512, HmacSha512};
+use voltaire::crypto::{hmac_sha256, hmac_sha512, HmacSha256, HmacSha512};
 
-// One-shot
-let mac = hmac_sha512(b"secret-key", b"message");
+// One-shot HMAC-SHA256
+let mac256: [u8; 32] = hmac_sha256(b"secret-key", b"hello world");
 
-// Streaming
-let mut hmac = HmacSha512::new(b"secret-key");
-hmac.update(b"hello");
-hmac.update(b" world");
-let mac = hmac.finalize();
+// Streaming HMAC-SHA256
+let mut h256 = HmacSha256::new(b"secret-key");
+h256.update(b"hello ");
+h256.update(b"world");
+assert_eq!(h256.finalize(), mac256);
+
+// One-shot and streaming HMAC-SHA512 (used by BIP-32/39)
+let mac512: [u8; 64] = hmac_sha512(b"Bitcoin seed", b"seed-bytes");
+let mut h512 = HmacSha512::new(b"Bitcoin seed");
+h512.update(b"seed-bytes");
+assert_eq!(h512.finalize(), mac512);
 ```
 
-## Key Handling
+## Key Handling and Verification
 
-Keys are processed according to RFC 2104:
-- Keys longer than block size are hashed first
-- Keys shorter than block size are zero-padded
-
-```rust
-use voltaire::crypto::hmac_sha256;
-
-// Short key (padded internally)
-let mac = hmac_sha256(b"key", b"data");
-
-// Long key (hashed internally) - same security
-let long_key = [0xaa; 200];
-let mac = hmac_sha256(&long_key, b"data");
-```
-
-## Use Cases
-
-- **API authentication** - Signing requests with shared secrets
-- **Token verification** - Validating JWT signatures
-- **Key derivation** - Used in HKDF and PBKDF2
-- **Data integrity** - Detecting tampering with authenticated data
-
-## Security Notes
-
-- Use constant-time comparison when verifying MACs
-- Keys should be at least 256 bits for SHA-256, 512 bits for SHA-512
-- Never reuse keys across different security domains
+- Keys longer than the underlying hash block size (64 bytes for SHA-256, 128 bytes for SHA-512) are hashed before padding; shorter keys are right-padded with zero bytes per RFC 2104.
+- Compare MACs in constant time when authenticating untrusted input to avoid timing side channels.

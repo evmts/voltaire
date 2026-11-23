@@ -1,202 +1,181 @@
 ---
 title: Why voltaire-effect?
-description: The type system should track your RPC errors, not hide them
+description: Track Ethereum RPC, signing, and validation failures in the TypeScript type system instead of catching unknown exceptions.
 ---
 
-## The Problem
+Standard Ethereum libraries represent every asynchronous call as `Promise<T>`. That signature hides every failure mode and every implicit dependency behind runtime exceptions and module-level globals.
 
-Every Ethereum library throws. Call `getBalance()` and it might return a bigint, or throw a rate limit error, or throw a connection timeout, or throw a revert. TypeScript shows none of this:
+## The Failure Channel Problem
+
+Consider a typical balance lookup:
 
 ```typescript
-// What the type signature says
+// Declared type
 function getBalance(address: string): Promise<bigint>
 
-// What actually happens at runtime
-// - RateLimitError
-// - ConnectionTimeoutError
+// Actual runtime failure modes (invisible to TypeScript):
 // - InvalidAddressError
-// - JsonRpcError
-// - NetworkError
-// - ...who knows what else
+// - TransportError (timeout, DNS, HTTP 429)
+// - JsonRpcError (-32000, -32603)
+// - ProviderResponseError (malformed payload)
 ```
 
-You're forced to write defensive code:
+Callers are forced into string-matching inside `catch (e: unknown)`:
 
 ```typescript
 try {
   const balance = await provider.getBalance(addr)
-  // do something with balance
+  return balance
 } catch (e) {
-  // What is e? Could be anything.
   if (e instanceof Error && e.message.includes('rate limit')) {
-    // retry?
-  } else if (e.message?.includes('timeout')) {
-    // fallback provider?
-  } else {
-    throw e // give up
+    // retry with backoff?
+  } else if (e instanceof Error && e.message.includes('timeout')) {
+    // fail over to backup RPC?
   }
+  throw e
 }
 ```
 
-This gets worse. RPC providers fail. Nodes go down. Rate limits hit. Transactions reorg. Each failure mode needs different handling, but the type system gives you no help tracking them.
+When a function adds a new failure mode, TypeScript reports zero errors at call sites.
 
-## The Insight
+## Promise vs `Effect<A, E, R>`
 
-Use the type system to track errors explicitly.
+`voltaire-effect` models every fallible or effectful operation with three explicit type parameters:
 
-Instead of functions that throw, functions return values that describe what can go wrong. The compiler becomes your first line of defense.
-
-```typescript
-// Effect makes the error type visible
-function getBalance(address: AddressType): Effect<bigint, TransportError | ProviderResponseError>
+```mermaid
+flowchart LR
+  subgraph Promise["Promise (A)"]
+    P1["Return channel: A"]
+    P2["Exception channel: unknown (untracked)"]
+    P3["Dependencies: implicit globals"]
+  end
+  subgraph EffectType["Effect (A, E, R)"]
+    E1["Success: A (bigint)"]
+    E2["Error: E (ParseError | TransportError | ProviderResponseError)"]
+    E3["Requirements: R (ProviderService)"]
+  end
 ```
-
-Now TypeScript tells you: this can fail with `TransportError` or `ProviderResponseError`. Handle them or propagate them—the compiler tracks it.
-
-## The Solution
-
-voltaire-effect combines [Voltaire's](https://voltaire.tevm.sh) branded primitives with [Effect's](https://effect.website) typed errors:
 
 ```typescript
 import * as Effect from 'effect/Effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-import { getBalance, MainnetLayer } from 'voltaire-effect'
+import { getBalance } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
-  // Decode with typed ParseError
   const addr = yield* S.decode(Address.Hex)(input)
-
-  // RPC with typed TransportError | ProviderResponseError
   const balance = yield* getBalance(addr)
-
   return { addr, balance }
 })
-// Effect<{addr, balance}, ParseError | TransportError | ProviderResponseError, Provider>
+// Inferred type:
+// Effect<{ addr: AddressType; balance: bigint }, ParseError | GetBalanceError, ProviderService>
 ```
 
-Every error is tracked. Every dependency is explicit. The signature tells you exactly what can go wrong and what the function needs to run.
+The compiler tracks both what can fail (`ParseError | GetBalanceError`) and what must be provided (`ProviderService`).
 
-## What You Get
+## Four Concrete Gains
 
-### Typed Errors
+### 1. Exhaustive Error Dispatch
 
-Errors have a `_tag` discriminant. Pattern match exhaustively:
+Every error carries a `_tag` literal. `Effect.catchTags` narrows each branch and shrinks the remaining error union:
 
 ```typescript
 program.pipe(
   Effect.catchTags({
-    ParseError: (e) => Effect.succeed(defaultAddress),
-    TransportError: (e) => retryWithBackoff(program),
-    ProviderResponseError: (e) => useFallbackProvider(program),
+    ParseError: () => Effect.succeed(defaultResult),
+    TransportError: () => retryWithBackoff(program),
+    ProviderResponseError: () => program.pipe(Effect.provide(FallbackProviderLayer))
   })
 )
 ```
 
-The compiler ensures you handle every case. Add a new error type and TypeScript tells you everywhere that needs updating.
+### 2. Composable Retries, Timeouts, and Fallbacks
 
-### Built-in Resilience
-
-Retry, timeout, fallback—no external libraries:
+Resilience policies are ordinary Effect combinators, not hidden transport flags:
 
 ```typescript
-import { Schedule, Duration } from 'effect'
+import { Effect, Schedule, Duration } from 'effect'
 import { getBlockNumber } from 'voltaire-effect'
 
-getBlockNumber().pipe(
-  // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
+const resilientBlockNumber = getBlockNumber().pipe(
   Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
-  // Fail after 10 seconds total
   Effect.timeout(Duration.seconds(10)),
-  // Try backup provider (same call, different layer)
   Effect.orElse(() =>
     getBlockNumber().pipe(Effect.provide(FallbackProviderLayer))
   )
 )
 ```
 
-### Testable by Design
+### 3. Dependency Injection Without Mocking Frameworks
 
-Services are injected, not imported. Swap a live provider layer for a test layer without touching business logic:
+Functions declare service requirements in `R` instead of importing singleton clients. Production and test runs wire different layers into the same program:
 
 ```typescript
-// Production: real RPC calls
+// Production
 await Effect.runPromise(program.pipe(Effect.provide(MainnetLayer)))
 
-// Test: deterministic responses, no network
+// Unit test: zero network, deterministic responses
 await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 ```
 
-No mocking frameworks. No module interception. Different wiring, same code.
+### 4. Validate Once at the Boundary
 
-### Schema Validation
-
-Decode at boundaries, trust internally. Schema decodes directly to Voltaire's branded types:
+Schemas decode untrusted input directly into Voltaire's branded `Uint8Array` types:
 
 ```typescript
+import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
 import * as Uint from 'voltaire-effect/primitives/Uint'
 
 const TransferRequest = S.Struct({
   to: Address.Hex,
-  value: Uint.Uint256,
+  value: Uint.Uint256
 })
 
-// One decode: validates format AND returns branded types
 const req = S.decodeSync(TransferRequest)(userInput)
-// req.to is AddressType, req.value is Uint256Type
+// req.to: AddressType (20-byte Uint8Array), req.value: Uint256Type
 ```
 
-## Before/After
+## Before and After
 
 ```typescript
-// Before: exceptions, untyped errors, hard to test
+// Imperative: untyped exceptions, implicit signer dependency
 async function transfer(to: string, amount: string) {
   try {
-    const addr = parseAddress(to)     // throws?
-    const value = parseBigInt(amount) // throws?
-    const tx = await signer.sendTransaction({ to: addr, value }) // throws?
-    const receipt = await tx.wait()   // throws?
-    return receipt
+    const addr = parseAddress(to)
+    const value = parseBigInt(amount)
+    const tx = await signer.sendTransaction({ to: addr, value })
+    return await tx.wait()
   } catch (e) {
-    // What failed? How do we retry?
     console.error('Transfer failed:', e)
     throw e
   }
 }
 
-// After: typed errors, composable, testable
+// voltaire-effect: tracked errors, explicit SignerService + ProviderService
 const transfer = (to: string, amount: string) =>
   Effect.gen(function* () {
     const addr = yield* S.decode(Address.Hex)(to)
     const value = yield* S.decode(Uint.Uint256)(amount)
-    const signer = yield* Signer
-    const tx = yield* signer.sendTransaction({ to: addr, value })
-    const receipt = yield* tx.wait()
-    return receipt
+    const signer = yield* SignerService
+    const hash = yield* signer.sendTransaction({ to: addr, value })
+    return yield* waitForTransactionReceipt(hash)
   })
-// Effect<Receipt, ParseError | SignerError | WaitForTransactionReceiptError, Signer>
 ```
 
-## Trade-offs
+## Trade-Offs
 
-**voltaire-effect adds:**
-- ~15KB for Effect runtime
-- New mental model (Effect, services, layers, generators)
-- More verbose for simple one-off scripts
+| Cost | Benefit |
+| --- | --- |
+| ~15 KB gzipped Effect runtime overhead | Compiler-verified error handling via `_tag` unions |
+| Learning curve for `Effect.gen`, `Layer`, and `Schedule` | Built-in retries, timeouts, concurrency, and cancellation |
+| Extra boilerplate for one-off CLI scripts | Deterministic testing by swapping layers instead of patching modules |
 
-**You get:**
-- Typed errors everywhere
-- Zero-cost retries, timeouts, concurrency
-- Swappable dependencies without mocking
-- Composable operations that short-circuit on failure
-- The compiler tracks what can go wrong
-
-Use [base Voltaire](https://voltaire.tevm.sh) for quick scripts. Use voltaire-effect when you want the type system working for you.
+Use [base Voltaire](https://voltaire.tevm.sh) for minimal scripts where throwing exceptions is acceptable. Use `voltaire-effect` for services, indexers, signers, and dApps where failure modes must be explicit.
 
 ## See Also
 
-- [Effect Primer](/concepts/effect-primer) — 5-minute Effect.ts crash course
-- [Comparisons](/comparisons) — How voltaire-effect compares to viem and ethers
-- [Error Handling](/concepts/error-handling) — Deep dive on typed errors
-- [Why Effect](https://effect.website/docs/getting-started/why-effect/) — Effect's own explanation
+- [Effect Primer](/concepts/effect-primer) — Core Effect types and operators
+- [Tutorial: Escaping try/catch Roulette](/tutorials/typed-errors-and-layers) — Hands-on walkthrough
+- [Comparisons](/comparisons) — Side-by-side matrix against base Voltaire, viem, and ethers.js
+- [Error Handling](/concepts/error-handling) — Complete error tag reference

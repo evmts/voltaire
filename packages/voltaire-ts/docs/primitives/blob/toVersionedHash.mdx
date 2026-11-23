@@ -13,7 +13,7 @@ description: Compute versioned hash (0x01 + SHA256 of commitment)
 <Tab title="Standard API">
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 const commitment = new Uint8Array(48); // From toCommitment()
 const versionedHash = Blob.toVersionedHash(commitment);
@@ -36,8 +36,8 @@ Tree-shakeable factory pattern with explicit SHA256 dependency.
 **Example:**
 
 ```typescript
-import { ToVersionedHash } from 'tevm/Blob'
-import { hash as sha256 } from 'tevm/crypto/SHA256'
+import { ToVersionedHash } from '@tevm/voltaire/Blob'
+import { hash as sha256 } from '@tevm/voltaire/SHA256'
 
 const toVersionedHash = ToVersionedHash({ sha256 })
 const versionedHash = toVersionedHash(commitment)
@@ -66,7 +66,7 @@ Total: 32 bytes
 ### Manual Computation
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 import { sha256 } from '@noble/hashes/sha256';
 
 const blob = Blob.fromData(data);
@@ -90,7 +90,7 @@ console.log(Blob.equals(versionedHash, auto)); // true
 Compute versioned hash directly from commitment:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 const commitment = blob.toCommitment();
 
@@ -104,7 +104,7 @@ console.log(versionedHash.length); // 32
 ## Version Validation
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 const versionedHash = blob.toVersionedHash();
 
@@ -124,7 +124,7 @@ if (versionedHash[0] !== 0x01) {
 ## Transaction Usage
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // Create blobs
 const blobs = [blob1, blob2, blob3];

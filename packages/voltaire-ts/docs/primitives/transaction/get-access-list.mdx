@@ -38,7 +38,7 @@ type Item = {
 ### Pre-warming Storage
 
 ```typescript
-import { getAccessList } from 'tevm/Transaction'
+import { getAccessList } from '@tevm/voltaire/Transaction'
 
 async function prewarmStorage(tx: Transaction.Any) {
   const accessList = getAccessList(tx)
@@ -58,7 +58,7 @@ async function prewarmStorage(tx: Transaction.Any) {
 ### Gas Cost Calculation
 
 ```typescript
-import { getAccessList } from 'tevm/Transaction'
+import { getAccessList } from '@tevm/voltaire/Transaction'
 
 function calculateAccessListGasCost(tx: Transaction.Any): bigint {
   const accessList = getAccessList(tx)
@@ -84,7 +84,7 @@ console.log(`Access list adds ${accessListCost} gas`)
 ### Access List Analysis
 
 ```typescript
-import { getAccessList } from 'tevm/Transaction'
+import { getAccessList } from '@tevm/voltaire/Transaction'
 
 function analyzeAccessList(tx: Transaction.Any) {
   const accessList = getAccessList(tx)
@@ -110,8 +110,8 @@ function analyzeAccessList(tx: Transaction.Any) {
 ### Merging Access Lists
 
 ```typescript
-import { getAccessList } from 'tevm/Transaction'
-import * as AccessList from 'tevm/AccessList'
+import { getAccessList } from '@tevm/voltaire/Transaction'
+import * as AccessList from '@tevm/voltaire/AccessList'
 
 function mergeTransactionAccessLists(
   transactions: Transaction.Any[]
@@ -127,7 +127,7 @@ const merged = mergeTransactionAccessLists([tx1, tx2, tx3])
 ### Validation
 
 ```typescript
-import { getAccessList } from 'tevm/Transaction'
+import { getAccessList } from '@tevm/voltaire/Transaction'
 
 function validateAccessList(tx: Transaction.Any): boolean {
   const accessList = getAccessList(tx)
@@ -159,8 +159,8 @@ function validateAccessList(tx: Transaction.Any): boolean {
 ### Building Access Lists
 
 ```typescript
-import { getAccessList } from 'tevm/Transaction'
-import * as AccessList from 'tevm/AccessList'
+import { getAccessList } from '@tevm/voltaire/Transaction'
+import * as AccessList from '@tevm/voltaire/AccessList'
 
 function buildOptimalAccessList(
   existingTx: Transaction.Any,

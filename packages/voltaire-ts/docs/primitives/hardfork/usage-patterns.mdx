@@ -21,7 +21,7 @@ Practical patterns for using Hardfork in production code, covering configuration
 ### Network Configuration
 
 ```typescript
-import { Hardfork, BrandedHardfork, DEFAULT } from 'tevm';
+import { Hardfork, BrandedHardfork, DEFAULT } from '@tevm/voltaire';
 
 interface NetworkConfig {
   chainId: number;
@@ -123,7 +123,7 @@ function validateConfig(config: Config): {
 ### Transaction Type Selection
 
 ```typescript
-import { Hardfork, BrandedHardfork } from 'tevm';
+import { Hardfork, BrandedHardfork } from '@tevm/voltaire';
 
 function selectTransactionType(fork: BrandedHardfork): {
   type: number;
@@ -237,7 +237,7 @@ console.log(`Total gas: ${gas.total}`);
 ### Upgrade Path Planning
 
 ```typescript
-import { Hardfork, BrandedHardfork, range } from 'tevm';
+import { Hardfork, BrandedHardfork, range } from '@tevm/voltaire';
 
 interface UpgradePlan {
   current: string;

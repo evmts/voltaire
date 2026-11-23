@@ -37,9 +37,9 @@ console.log(unknown)         // undefined
 
 **Returns:** `Chain | undefined` for any chain ID
 
-Defined in: [primitives/Chain/Chain.js:36](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js)
+Defined in: [primitives/Chain/Chain.js:36](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/Chain.js)
 
-Delegates to: [primitives/Chain/BrandedChain/byId.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/BrandedChain/byId.js)
+Delegates to: [primitives/Chain/BrandedChain/byId.js:14](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/BrandedChain/byId.js)
 
 ### Comparison: byId vs fromId
 
@@ -74,7 +74,7 @@ const unknown2 = Chain.fromId(999999999)  // undefined
 ### Basic Lookup
 
 ```typescript
-import { Chain } from 'tevm'
+import { Chain } from '@tevm/voltaire'
 
 // Look up Quai by ID
 const quai = Chain.byId[9]

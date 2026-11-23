@@ -1,167 +1,127 @@
 ---
 title: Comparisons
-description: voltaire-effect vs viem, ethers, and base Voltaire
+description: Technical comparison of voltaire-effect against base Voltaire, viem, and ethers.js.
 ---
 
-## voltaire-effect vs Base Voltaire
+This page compares representation, error handling, dependency injection, and bundle trade-offs across `voltaire-effect`, `@tevm/voltaire`, `viem`, and `ethers`.
 
-Both use the same branded types and crypto from [Voltaire](https://voltaire.tevm.sh). The difference is error handling and composition.
+## Feature Matrix
 
-| Aspect | Base Voltaire | voltaire-effect |
-|--------|---------------|-----------------|
-| Errors | Exceptions | Typed `ParseError` |
-| Dependencies | Explicit passing | Service injection |
-| Composition | Manual | `pipe`, `Effect.gen` |
-| Testing | Mock imports | Swap layers |
-| Bundle size | Smaller | Effect runtime (~15KB) |
+| Dimension | `voltaire-effect` | Base Voltaire (`@tevm/voltaire`) | `viem` | `ethers` v6 |
+| --- | --- | --- | --- | --- |
+| Primitive representation | Branded `Uint8Array` via Effect Schema | Branded `Uint8Array` | Branded `` `0x${string}` `` | `string` / class instances |
+| Error model | Typed `Effect<A, E, R>` tagged unions | Thrown exceptions | Thrown exceptions | Thrown exceptions |
+| Dependency injection | `Context.Tag` + `Layer` | Explicit function parameters | Client objects | Provider/Signer class instances |
+| Retries & timeouts | Explicit `Schedule` / `Duration` / FiberRef | Manual | Implicit transport defaults | Manual |
+| Testing | Swap `TestTransport` / `CryptoTest` layers | Direct calls / mock functions | Mock transport or module mocks | Custom providers / mocks |
+| Runtime overhead | Voltaire + Effect (~15 KB gzipped) | Minimal (tree-shaken) | ~50 KB | ~130 KB+ |
 
-**Use base Voltaire when:**
-- Bundle size is critical
-- Simple validation without chaining
-- You prefer exceptions
+## Side-by-Side Code
 
-**Use voltaire-effect when:**
-- You want typed errors
-- Building complex workflows
-- Need testable service dependencies
-- Already using Effect
+### 1. Address Validation
 
-## voltaire-effect vs viem
-
-viem uses branded strings. voltaire-effect uses branded `Uint8Array` with Effect schemas.
-
+<Tabs>
+  <Tab title="voltaire-effect">
 ```typescript
-// viem
-import { getAddress, isAddress } from 'viem'
-
-const addr = getAddress('0x742d...')  // string
-isAddress(addr)                        // boolean
-
-// voltaire-effect
-import * as Address from 'voltaire-effect/primitives/Address'
-import * as S from 'effect/Schema'
-
-const addr = S.decodeSync(Address.Hex)('0x742d...')  // Uint8Array
-```
-
-| Aspect | viem | voltaire-effect |
-|--------|------|-----------------|
-| Type | Branded string | Branded Uint8Array |
-| Error handling | Throws | Effect `ParseError` |
-| Validation | Runtime functions | Schema decode |
-| Bundle | ~50KB | Voltaire + Effect |
-
-## voltaire-effect vs ethers
-
-ethers v6 uses classes. voltaire-effect uses data + functions.
-
-```typescript
-// ethers
-import { getAddress } from 'ethers'
-
-const addr = getAddress('0x742d...')  // string
-
-// voltaire-effect
-const addr = S.decodeSync(Address.Hex)('0x742d...')
-```
-
-| Aspect | ethers | voltaire-effect |
-|--------|--------|-----------------|
-| Style | OOP | Functional |
-| Type | string | Branded Uint8Array |
-| Error handling | Throws | Effect `ParseError` |
-| Provider | Class instance | Service layer |
-
-## Code Comparison
-
-### Validate Address
-
-```typescript
-// viem
-import { isAddress, getAddress } from 'viem'
-
-if (isAddress(input)) {
-  const addr = getAddress(input)
-}
-
-// ethers
-import { isAddress, getAddress } from 'ethers'
-
-if (isAddress(input)) {
-  const addr = getAddress(input)
-}
-
-// voltaire-effect
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
 
 const result = S.decodeEither(Address.Hex)(input)
 // Either<AddressType, ParseError>
 ```
-
-### Provider Call
-
+  </Tab>
+  <Tab title="viem">
 ```typescript
-// viem
+import { isAddress, getAddress } from 'viem'
+
+if (isAddress(input)) {
+  const addr = getAddress(input) // `0x${string}`
+}
+```
+  </Tab>
+  <Tab title="ethers">
+```typescript
+import { isAddress, getAddress } from 'ethers'
+
+if (isAddress(input)) {
+  const addr = getAddress(input) // string
+}
+```
+  </Tab>
+</Tabs>
+
+### 2. JSON-RPC Balance Query
+
+<Tabs>
+  <Tab title="voltaire-effect">
+```typescript
+import { Effect, Layer } from 'effect'
+import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
+
+const MainLayer = Provider.pipe(Layer.provide(HttpTransport(url)))
+const balance = await Effect.runPromise(
+  getBalance(addr).pipe(Effect.provide(MainLayer))
+)
+```
+  </Tab>
+  <Tab title="viem">
+```typescript
 import { createPublicClient, http } from 'viem'
 
 const client = createPublicClient({ transport: http(url) })
 const balance = await client.getBalance({ address })
-
-// ethers
+```
+  </Tab>
+  <Tab title="ethers">
+```typescript
 import { JsonRpcProvider } from 'ethers'
 
 const provider = new JsonRpcProvider(url)
 const balance = await provider.getBalance(address)
-
-// voltaire-effect
-import * as Effect from 'effect/Effect'
-import * as Layer from 'effect/Layer'
-import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
-
-const program = Effect.gen(function* () {
-  return yield* getBalance(addr)
-})
-
-const MainLayer = Provider.pipe(Layer.provide(HttpTransport(url)))
-const balance = await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
 ```
+  </Tab>
+</Tabs>
 
-### Error Handling
+### 3. Error Recovery
 
+<Tabs>
+  <Tab title="voltaire-effect">
 ```typescript
-// viem/ethers - unknown error type
-try {
-  const addr = getAddress(input)
-} catch (e) {
-  // e is unknown
-}
+import { Effect } from 'effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
 
-// voltaire-effect - typed error
-S.decode(Address.Hex)(input).pipe(
-  Effect.catchTag("ParseError", (e) => {
-    // e is ParseError with message, issue tree
+const parsed = S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag('ParseError', (e) => {
+    // e is narrowed to ParseError with structured issue tree
     return Effect.succeed(fallback)
   })
 )
 ```
+  </Tab>
+  <Tab title="viem / ethers">
+```typescript
+try {
+  const addr = getAddress(input)
+} catch (e) {
+  // e is unknown; callers narrow manually with instanceof or string checks
+}
+```
+  </Tab>
+</Tabs>
 
-## When to Use What
+## Selection Guide
 
-| Use Case | Recommendation |
-|----------|----------------|
-| Small script, simple validation | [Base Voltaire](https://voltaire.tevm.sh) or [viem](https://viem.sh) |
-| Complex dApp with typed errors | voltaire-effect |
-| Existing [Effect](https://effect.website) codebase | voltaire-effect |
-| Bundle size critical | [Base Voltaire](https://voltaire.tevm.sh) |
-| Need testable services | voltaire-effect |
+| Scenario | Recommended Choice |
+| --- | --- |
+| Small CLI script or strict bundle budget | [Base Voltaire](https://voltaire.tevm.sh) |
+| Long-running backend indexer, relayer, or signer | `voltaire-effect` |
+| Existing Effect codebase | `voltaire-effect` |
+| Multi-provider failover and deterministic offline unit tests | `voltaire-effect` |
+| Existing Wagmi/viem frontend without Effect | `viem` (migrate incrementally via `Effect.tryPromise`) |
 
 ## See Also
 
-- [Why voltaire-effect?](/why) — Trade-offs and benefits
-- [Migrating from viem](/guides/migrating-from-viem) — Step-by-step migration guide
-- [Migrating from ethers](/guides/migrating-from-ethers) — Step-by-step migration guide
-- [Effect Documentation](https://effect.website/docs/getting-started/introduction/) — Learn Effect.ts
-- [viem Documentation](https://viem.sh) — viem reference
-- [ethers.js Documentation](https://docs.ethers.org) — ethers.js reference
-- [Voltaire Docs](https://voltaire.tevm.sh) — Core Voltaire documentation
+- [Why voltaire-effect?](/why) — Design rationale and trade-offs
+- [Migrating from viem](/guides/migrating-from-viem) — Incremental migration patterns
+- [Migrating from ethers.js](/guides/migrating-from-ethers) — Class-to-service migration guide

@@ -1,215 +1,117 @@
 ---
 title: Gas Estimation
-description: Estimate gas for contract write operations
+description: Estimate contract execution gas via eth_estimateGas, detect reverts, and compute EIP-1559 fee budgets.
 ---
 
-# Gas Estimation
+`contract.estimateGas.<fn>(...args, options?)` simulates a `nonpayable` or `payable` function via `eth_estimateGas` and returns the estimated gas units as a `bigint`. If the simulated execution reverts, the call rejects before any transaction is broadcast.
 
-The `estimateGas` interface estimates gas for write operations via `eth_estimateGas`. Use this to predict costs and detect reverts before sending transactions.
-
-<Note>
-This uses the [Contract pattern](/contract) - a copyable implementation you add to your codebase.
-</Note>
+```mermaid
+flowchart LR
+  A["estimateGas.transfer(to, amt, opts?)"] --> B["abi.encode + eth_estimateGas"]
+  B -->|Reverts| R["Throw RpcError (abort before signing)"]
+  B -->|Succeeds| G["estimated: bigint"]
+  G --> BUF["gasLimit = estimated * 120n / 100n"]
+  BUF --> W["write.transfer(to, amt, { gas: gasLimit })"]
+```
 
 ## Basic Usage
 
 ```typescript
-import { Contract } from './Contract.js';  // Your local copy
+import { Contract } from './Contract.js';
 
 const usdc = Contract({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
   abi: erc20Abi,
-  provider
+  provider,
 });
 
-// Estimate gas for transfer
-const gas = await usdc.estimateGas.transfer('0x742d35...', 1000n);
-console.log(`Estimated gas: ${gas}`);
+const estimated = await usdc.estimateGas.transfer(
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  1_000_000n,
+  { from: '0xSenderAddress0000000000000000000000000000' },
+);
+
+console.log('Estimated gas:', estimated);
 ```
 
-## How It Works
+<Note>
+Always pass `{ from }` when estimating functions that check `msg.sender`, token balances, or allowances. Without `from`, nodes simulate from the zero address (`0x0000...0000`), causing balance checks to revert.
+</Note>
 
-Gas estimation simulates the transaction and returns the gas that would be used:
+## Buffers and Revert Detection
 
-```typescript
-// What happens under the hood:
-const gas = await usdc.estimateGas.transfer('0x...', 1000n);
+Estimates reflect state at the latest block. Storage transitions, cold-to-warm slot differences, or concurrent mempool activity can increase actual execution gas. Apply an integer safety multiplier before sending:
 
-// Equivalent to:
-const calldata = usdc.abi.encode('transfer', ['0x...', 1000n]);
-const gas = await provider.request({
-  method: 'eth_estimateGas',
-  params: [{
-    to: usdc.address,
-    data: calldata
-  }]
-});
-```
-
-## Revert Detection
-
-If a transaction would revert, `estimateGas` throws:
+| Workload | Multiplier | Expression |
+| --- | --- | --- |
+| Simple ERC-20 transfer | +10–20% | `(estimated * 120n) / 100n` |
+| DEX swap / multi-hop router | +25–35% | `(estimated * 130n) / 100n` |
+| Complex proxy / oracle write | +40–50% | `(estimated * 150n) / 100n` |
 
 ```typescript
-try {
-  // This throws if transfer would fail
-  const gas = await usdc.estimateGas.transfer('0x...', 1000000000n);
-} catch (error) {
-  // Transaction would revert
-  console.error('Transfer would fail:', error.message);
+async function safeTransfer(from: `0x${string}`, to: `0x${string}`, amount: bigint) {
+  const estimated = await usdc.estimateGas.transfer(to, amount, { from });
+  const gas = (estimated * 120n) / 100n;
+  return usdc.write.transfer(to, amount, { from, gas });
 }
 ```
 
-Use this to validate transactions before sending:
+## Payable Calls
+
+Pass `{ from, value }` for functions that require `msg.value`:
 
 ```typescript
-async function safeTransfer(to: string, amount: bigint) {
-  try {
-    const gas = await usdc.estimateGas.transfer(to, amount);
-
-    // Add buffer and send
-    return usdc.write.transfer(to, amount, {
-      gas: gas * 120n / 100n
-    });
-  } catch (error) {
-    throw new Error(`Transfer would fail: ${error.message}`);
-  }
-}
-```
-
-## Gas Buffers
-
-Estimates are approximate. Add a buffer for safety:
-
-```typescript
-const estimated = await usdc.estimateGas.transfer('0x...', 1000n);
-
-// 20% buffer (recommended)
-const gasLimit = estimated * 120n / 100n;
-
-// 10% buffer (aggressive)
-const gasLimit = estimated * 110n / 100n;
-
-// 50% buffer (conservative)
-const gasLimit = estimated * 150n / 100n;
-
-const txHash = await usdc.write.transfer('0x...', 1000n, {
-  gas: gasLimit
+const depositGas = await weth.estimateGas.deposit({
+  from: sender,
+  value: 1_000_000_000_000_000_000n, // 1 ETH
 });
 ```
 
-<Tip>
-20% buffer is a good default. Some complex transactions (DEX swaps, flash loans) may need higher buffers due to state changes between estimation and execution.
-</Tip>
+## Computing EIP-1559 Cost Budgets
 
-## Estimation Options
-
-Override sender or value:
+Combine `eth_estimateGas` with `eth_getBlockByNumber('latest', false)` and `eth_maxPriorityFeePerGas` to compute an upper bound on transaction cost in wei:
 
 ```typescript
-// Estimate as specific sender
-const gas = await usdc.estimateGas.transfer('0x...', 1000n, {
-  from: '0xsender...'
-});
-
-// Estimate payable function with value
-const gas = await weth.estimateGas.deposit({
-  value: 1000000000000000000n
-});
-```
-
-## Cost Calculation
-
-Calculate transaction cost in ETH:
-
-```typescript
-// Get current gas price
-const gasPrice = await provider.request({
-  method: 'eth_gasPrice'
-});
-
-// Estimate gas
-const gasLimit = await usdc.estimateGas.transfer('0x...', 1000n);
-
-// Calculate cost
-const costWei = gasLimit * BigInt(gasPrice);
-const costEth = Number(costWei) / 1e18;
-
-console.log(`Estimated cost: ${costEth.toFixed(6)} ETH`);
-```
-
-For EIP-1559:
-
-```typescript
-// Get fee data
-const [baseFee, maxPriorityFee] = await Promise.all([
-  provider.request({ method: 'eth_gasPrice' }),
-  provider.request({ method: 'eth_maxPriorityFeePerGas' })
+const [latestBlock, priorityFeeHex, gasLimit] = await Promise.all([
+  provider.request({ method: 'eth_getBlockByNumber', params: ['latest', false] }) as Promise<{
+    baseFeePerGas?: `0x${string}`;
+  }>,
+  provider.request({ method: 'eth_maxPriorityFeePerGas', params: [] }) as Promise<`0x${string}`>,
+  usdc.estimateGas.transfer(recipient, amount, { from: sender }),
 ]);
 
-const gasLimit = await usdc.estimateGas.transfer('0x...', 1000n);
+const baseFee = BigInt(latestBlock.baseFeePerGas ?? '0x0');
+const maxPriorityFeePerGas = BigInt(priorityFeeHex);
+// 2x baseFee headroom covers up to ~6 consecutive full blocks
+const maxFeePerGas = baseFee * 2n + maxPriorityFeePerGas;
 
-// Max cost (actual may be lower)
-const maxCostWei = gasLimit * (BigInt(baseFee) + BigInt(maxPriorityFee));
+const bufferedGas = (gasLimit * 120n) / 100n;
+const maxCostWei = bufferedGas * maxFeePerGas;
 ```
 
-## Batch Estimation
+## Retrying Transient Estimation Failures
 
-Estimate multiple operations:
-
-```typescript
-const [transferGas, approveGas, swapGas] = await Promise.all([
-  usdc.estimateGas.transfer('0x...', 1000n),
-  usdc.estimateGas.approve('0xrouter...', 1000000n),
-  router.estimateGas.swap(tokenIn, tokenOut, amount)
-]);
-
-const totalGas = transferGas + approveGas + swapGas;
-console.log(`Total gas for all operations: ${totalGas}`);
-```
-
-## Common Patterns
-
-### Estimate Before Approval
+Wrap estimation in `retryWithBackoff` from `@tevm/voltaire/utils`, skipping retries on execution reverts (`code === 3` or `execution reverted`):
 
 ```typescript
-async function estimateSwapWithApproval(amount: bigint) {
-  // Check if approval needed
-  const allowance = await token.read.allowance(myAddress, routerAddress);
+import { retryWithBackoff } from '@tevm/voltaire/utils';
 
-  let totalGas = 0n;
-
-  if (allowance < amount) {
-    totalGas += await token.estimateGas.approve(routerAddress, amount);
-  }
-
-  totalGas += await router.estimateGas.swap(token, amount);
-
-  return totalGas;
-}
-```
-
-### Retry on Failure
-
-```typescript
-async function estimateWithRetry(fn: () => Promise<bigint>, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (i === retries - 1) throw error;
-      await new Promise(r => setTimeout(r, 1000));
-    }
-  }
-}
-
-const gas = await estimateWithRetry(() =>
-  usdc.estimateGas.transfer('0x...', 1000n)
+const gas = await retryWithBackoff(
+  () => usdc.estimateGas.transfer(recipient, amount, { from: sender }),
+  {
+    maxRetries: 3,
+    initialDelay: 500,
+    shouldRetry: (err) => {
+      const rpcErr = err as { code?: number; message?: string };
+      return rpcErr.code !== 3 && !rpcErr.message?.includes('revert');
+    },
+  },
 );
 ```
 
 ## Related
 
-- [Contract Overview](/contract) - Contract module introduction
-- [Write Methods](/contract/write) - Sending transactions
-- [Read Methods](/contract/read) - Calling view functions
+- [Contract Pattern](/contract) — Full copyable implementation
+- [Write Methods](/contract/write) — Applying gas limits to transactions
+- [Retry Utilities](/utils/retry) — `retryWithBackoff` reference
+- [Gas Estimation Skill](/skills/gas-estimation) — Complete EIP-1559 fee oracle pattern

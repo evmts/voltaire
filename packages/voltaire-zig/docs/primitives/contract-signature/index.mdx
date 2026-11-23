@@ -3,8 +3,6 @@ title: ContractSignature
 description: EIP-1271 contract signature verification for smart contract wallets
 ---
 
-# ContractSignature
-
 EIP-1271 contract signature verification primitive. Enables verification of signatures from smart contract wallets using the `isValidSignature` standard interface.
 
 ## Overview
@@ -18,7 +16,7 @@ EIP-1271 allows smart contracts to validate signatures, enabling:
 ## Installation
 
 ```bash
-npm install @tevm/primitives
+npm install @tevm/voltaire
 ```
 
 ## Basic Usage
@@ -26,7 +24,7 @@ npm install @tevm/primitives
 ### Verify Contract Signature
 
 ```zig
-import * as ContractSignature from '@tevm/primitives/ContractSignature';
+import * as ContractSignature from '@tevm/voltaire/ContractSignature';
 
 // Check if a contract signature is valid
 const isValid = await ContractSignature.isValidSignature(
@@ -40,10 +38,10 @@ const isValid = await ContractSignature.isValidSignature(
 ### Unified EOA + Contract Verification
 
 ```zig
-import * as ContractSignature from '@tevm/primitives/ContractSignature';
+import * as ContractSignature from '@tevm/voltaire/ContractSignature';
 import { hash as keccak256 } from '@tevm/crypto/keccak256';
 import { recoverPublicKey } from '@tevm/crypto/Secp256k1';
-import { fromPublicKey } from '@tevm/primitives/Address';
+import { fromPublicKey } from '@tevm/voltaire/Address';
 
 // Create unified verifier
 const verifySignature = ContractSignature.VerifySignature({
@@ -161,7 +159,7 @@ Valid signatures return `0x1626ba7e`, invalid signatures return anything else.
 ### With Gnosis Safe
 
 ```zig
-import * as ContractSignature from '@tevm/primitives/ContractSignature';
+import * as ContractSignature from '@tevm/voltaire/ContractSignature';
 
 const safeAddress = '0x...'; // Gnosis Safe contract
 const messageHash = new Uint8Array(32); // Message hash
@@ -178,8 +176,8 @@ const isValid = await ContractSignature.isValidSignature(
 ### With Personal Message
 
 ```zig
-import * as SignedData from '@tevm/primitives/SignedData';
-import * as ContractSignature from '@tevm/primitives/ContractSignature';
+import * as SignedData from '@tevm/voltaire/SignedData';
+import * as ContractSignature from '@tevm/voltaire/ContractSignature';
 
 // Hash personal message (EIP-191)
 const hash = SignedData.Hash({ keccak256 });
@@ -228,7 +226,7 @@ const isValid = await ContractSignature.isValidSignature(
 import {
   ContractSignatureError,
   ContractCallError
-} from '@tevm/primitives/ContractSignature';
+} from '@tevm/voltaire/ContractSignature';
 
 try {
   const isValid = await ContractSignature.isValidSignature(

@@ -103,7 +103,7 @@ const errors5 = FeeMarket.validateTxFeeParams(params5);
 **Usage Pattern:**
 
 ```typescript
-import { ValidationError } from 'tevm/errors'
+import { ValidationError } from '@tevm/voltaire/errors'
 
 function buildAndValidateTx(params: FeeMarket.TxFeeParams) {
   const errors = FeeMarket.validateTxFeeParams(params);
@@ -216,7 +216,7 @@ const errors5 = FeeMarket.validateState(state5);
 **Usage Pattern:**
 
 ```typescript
-import { ValidationError } from 'tevm/errors'
+import { ValidationError } from '@tevm/voltaire/errors'
 
 function processBlock(state: FeeMarket.State) {
   const errors = FeeMarket.validateState(state);

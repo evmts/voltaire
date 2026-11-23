@@ -1,9 +1,9 @@
 ---
 title: Getting Started
-description: Install and start using voltaire-effect
+description: Install voltaire-effect, wire a Provider layer, validate branded primitives, and read a contract.
 ---
 
-## Install
+Install `voltaire-effect` alongside `@tevm/voltaire` and `effect`:
 
 <CodeGroup>
 ```bash pnpm
@@ -23,25 +23,23 @@ bun add voltaire-effect @tevm/voltaire effect
 ```
 </CodeGroup>
 
-<Info>
-voltaire-effect requires **Effect** 3.x and **Voltaire** 0.x. TypeScript 5.4+ recommended.
-</Info>
+## Runtime Support
 
-<Note>
-Runtime support:
-- **Browser/WASM:** `BrowserTransport` (EIP-1193) or HTTP; native HD wallet is unavailable.
-- **Node/Bun:** Full transport support + HD wallet (native FFI).
-</Note>
+| Runtime | Transports | Crypto & HD Wallet |
+| --- | --- | --- |
+| Node.js 20+ / Bun 1.1+ | `HttpTransport`, `WebSocketTransport`, `TestTransport` | Full WASM + native FFI (including `MnemonicAccount`) |
+| Browser / Edge | `HttpTransport`, `WebSocketTransport`, `BrowserTransport` (EIP-1193) | WASM crypto; native FFI HD wallet unavailable |
 
-## First Program
+Requires TypeScript 5.4+ with `strict: true`.
 
-Fetch the latest block number:
+## 1. Fetch the Latest Block Number
+
+Compose `HttpTransport` into `Provider` once, then provide the composed layer at the entry point:
 
 ```typescript
 import { Effect, Layer } from 'effect'
 import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
 
-// Compose layers once
 const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
@@ -50,112 +48,106 @@ const program = Effect.gen(function* () {
   return yield* getBlockNumber()
 })
 
-const blockNumber = await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
+const blockNumber = await Effect.runPromise(
+  program.pipe(Effect.provide(ProviderLayer))
+)
 console.log(`Block: ${blockNumber}`)
 ```
 
-## Schema Validation
+## 2. Decode Branded Primitives
 
-Validate and parse input:
+Schemas validate raw input and return Voltaire's branded `Uint8Array` types directly:
 
 ```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
 import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as A from '@tevm/voltaire/Address'
 
-// Decode from hex string
 const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
-// Returns actual Voltaire branded type - use directly
-Address.equals(addr, addr) // true
-Address.isZero(addr) // false
-Address.toHex(addr)  // "0x742d35cc..."
+A.equals(addr, addr) // true
+A.isZero(addr)       // false
+A.toHex(addr)        // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 ```
 
-<Note>
-Most APIs accept `AddressInput` (either a branded `AddressType` or a `0x` hex string). Decode user input at boundaries, then pass branded types internally. See [Branded Types](/concepts/branded-types).
-</Note>
-
-## Effect-Based Validation
-
-Handle parse errors gracefully:
+For fallible decoding without throwing, use `S.decode` and handle `ParseError`:
 
 ```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
+import { Effect } from 'effect'
 import * as S from 'effect/Schema'
-import * as Effect from 'effect/Effect'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as A from '@tevm/voltaire/Address'
 
 const parseAddress = (input: string) =>
   S.decode(Address.Hex)(input).pipe(
-    Effect.catchTag('ParseError', () => 
-      Effect.succeed(Address.zero())  // Fallback to zero address
-    )
+    Effect.catchTag('ParseError', () => Effect.succeed(A.zero()))
   )
 ```
 
-## Checksummed Addresses
+<Note>
+Most provider and contract APIs accept `AddressInput` (either a branded `AddressType` or a `0x${string}` literal). Decode untrusted strings at application boundaries and pass `AddressType` internally.
+</Note>
 
-EIP-55 checksumming requires the Keccak hash service:
+## 3. EIP-55 Checksummed Addresses
+
+EIP-55 checksumming hashes the lowercase hex with Keccak-256, so encoding `Address.Checksummed` declares `KeccakService` in its requirements channel:
 
 ```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
+import { Effect } from 'effect'
 import * as S from 'effect/Schema'
-import * as Effect from 'effect/Effect'
+import * as Address from 'voltaire-effect/primitives/Address'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
-const addr = S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
+const addr = S.decodeSync(Address.Hex)('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
 
-// Encode to checksummed (requires KeccakService)
 const checksummed = await Effect.runPromise(
   S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
 )
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
 ```
 
-## Read Contract
+## 4. Read a Smart Contract
+
+Pass a `const` ABI to `Contract()` to infer method names, parameter types, and return types:
 
 ```typescript
 import { Effect, Layer } from 'effect'
 import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
-// Compose provider layer once
 const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
-const erc20 = [
-  { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], 
-    outputs: [{ type: 'uint256' }], stateMutability: 'view' }
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ type: 'uint256' }]
+  }
 ] as const
 
-const getBalance = Effect.gen(function* () {
-  const usdc = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20)
+const readUsdcBalance = Effect.gen(function* () {
+  const usdc = yield* Contract('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', erc20Abi)
   return yield* usdc.read.balanceOf('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')
 })
 
-const balance = await Effect.runPromise(getBalance.pipe(Effect.provide(ProviderLayer)))
+const balance = await Effect.runPromise(
+  readUsdcBalance.pipe(Effect.provide(ProviderLayer))
+)
 ```
 
-## Timeout & Retry
+## 5. Per-Request Timeouts and Retries
 
-Per-request overrides and transport configuration use Effect-native Duration and Schedule:
+Configure transport-wide defaults on `HttpTransport`, and override individual calls with FiberRef helpers (`withTimeout`, `withRetrySchedule`):
 
 ```typescript
-import { Effect, Schedule } from 'effect'
-import { getBalance, Provider, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
-
-// Per-request timeout
-getBalance(addr).pipe(withTimeout("5 seconds"))
-
-// Per-request retry schedule
-getBalance(addr).pipe(
-  withRetrySchedule(Schedule.exponential("500 millis").pipe(
-    Schedule.jittered,
-    Schedule.compose(Schedule.recurs(3))
-  ))
-)
+import { Schedule } from 'effect'
+import { getBalance, HttpTransport, withTimeout, withRetrySchedule } from 'voltaire-effect'
 
 // Transport-level defaults
-HttpTransport({
+const TransportLayer = HttpTransport({
   url: 'https://eth.llamarpc.com',
   timeout: '30 seconds',
   retrySchedule: Schedule.exponential('500 millis').pipe(
@@ -163,30 +155,32 @@ HttpTransport({
     Schedule.compose(Schedule.recurs(5))
   )
 })
+
+// Scoped per-request override
+const fastBalance = getBalance(addr).pipe(
+  withTimeout('5 seconds'),
+  withRetrySchedule(
+    Schedule.exponential('250 millis').pipe(
+      Schedule.jittered,
+      Schedule.compose(Schedule.recurs(3))
+    )
+  )
+)
 ```
 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Effect Primer" icon="graduation-cap" href="/concepts/effect-primer">
-    5-minute Effect.ts intro for Ethereum devs
+  <Card title="Tutorial: Typed Errors & Layers" icon="graduation-cap" href="/tutorials/typed-errors-and-layers">
+    Build and unit-test a multi-contract treasury monitor.
   </Card>
-  <Card title="Layers" icon="layer-group" href="/layers">
-    Schema, Effect, and Service layers explained
+  <Card title="Effect Primer" icon="book-open" href="/concepts/effect-primer">
+    Learn `Effect.gen`, `Schema`, `Context.Tag`, and `Schedule`.
+  </Card>
+  <Card title="Architecture & Layers" icon="layer-group" href="/layers">
+    Understand Schema, Effect, and Service layers.
   </Card>
   <Card title="Cheatsheet" icon="bolt" href="/cheatsheet">
-    Quick reference for all patterns
-  </Card>
-  <Card title="Examples" icon="code" href="/examples/index">
-    Copy-paste solutions for common tasks
+    Quick reference for common operations.
   </Card>
 </CardGroup>
-
-## Related
-
-- [Effect Getting Started](https://effect.website/docs/getting-started/introduction/) — Official Effect documentation
-- [Voltaire Docs](https://voltaire.tevm.sh) — Core primitives and crypto
-- [Why voltaire-effect?](/why) — Trade-offs and comparisons
-- [Troubleshooting](/troubleshooting) — Common issues and solutions
-- [Migrating from viem](/guides/migrating-from-viem) — Step-by-step migration guide
-- [Migrating from ethers](/guides/migrating-from-ethers) — Step-by-step migration guide

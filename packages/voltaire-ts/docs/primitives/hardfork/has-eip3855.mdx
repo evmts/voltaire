@@ -49,7 +49,7 @@ description: Check if PUSH0 opcode is available
 Select optimal zero-push implementation:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function getPushZeroOpcode(fork: BrandedHardfork) {
   if (fork.hasEIP3855()) {
@@ -73,7 +73,7 @@ function getPushZeroOpcode(fork: BrandedHardfork) {
 Enable PUSH0 in compiler:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function getCompilerTarget(fork: BrandedHardfork) {
   return {
@@ -88,7 +88,7 @@ function getCompilerTarget(fork: BrandedHardfork) {
 Generate optimal bytecode:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function emitPushZero(fork: BrandedHardfork): Uint8Array {
   if (fork.hasEIP3855()) {
@@ -104,7 +104,7 @@ function emitPushZero(fork: BrandedHardfork): Uint8Array {
 Calculate gas costs:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function estimatePushZeroGas(
   fork: BrandedHardfork,
@@ -127,7 +127,7 @@ console.log(`Gas savings: ${savings}`)  // 100 gas
 Validate PUSH0 support:
 
 ```typescript
-import { Hardfork, SHANGHAI } from 'tevm'
+import { Hardfork, SHANGHAI } from '@tevm/voltaire'
 
 function validatePUSH0Support(config: NetworkConfig) {
   const fork = Hardfork(config.hardfork)
@@ -145,7 +145,7 @@ function validatePUSH0Support(config: NetworkConfig) {
 Solidity compiler support:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function getSoliditySettings(fork: BrandedHardfork) {
   return {

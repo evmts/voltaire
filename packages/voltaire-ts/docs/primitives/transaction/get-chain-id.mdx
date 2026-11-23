@@ -68,8 +68,8 @@ getChainId(preEip155) // undefined
 ### Replay Protection
 
 ```typescript
-import { getChainId } from 'tevm/Transaction'
-import { TransactionError } from 'tevm/errors'
+import { getChainId } from '@tevm/voltaire/Transaction'
+import { TransactionError } from '@tevm/voltaire/errors'
 
 function validateChainId(tx: Transaction.Any, expectedChainId: bigint) {
   const txChainId = getChainId(tx)
@@ -92,7 +92,7 @@ validateChainId(tx, 1n) // Mainnet
 ### Cross-Chain Detection
 
 ```typescript
-import { getChainId } from 'tevm/Transaction'
+import { getChainId } from '@tevm/voltaire/Transaction'
 
 function detectChain(tx: Transaction.Any): string {
   const chainId = getChainId(tx)
@@ -110,7 +110,7 @@ function detectChain(tx: Transaction.Any): string {
 ### Transaction Filtering
 
 ```typescript
-import { getChainId } from 'tevm/Transaction'
+import { getChainId } from '@tevm/voltaire/Transaction'
 
 function filterByChain(
   transactions: Transaction.Any[],

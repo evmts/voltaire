@@ -8,12 +8,10 @@ description: Pairing-friendly curve for Ethereum 2.0 consensus signatures and EI
 </Card>
 
 <Info>
-Source: [bls12_381.zig](https://github.com/evmts/voltaire/blob/main/src/crypto/bls12_381.zig)
+Source: [bls12_381.zig](https://github.com/evmts/voltaire/blob/main/packages/voltaire-zig/src/crypto/bls12_381.zig)
 
-Tests: [bls12_g2_operations.test.ts](https://github.com/evmts/voltaire/blob/main/src/precompiles/bls12_g2_operations.test.ts)
+Tests: [bls12_g2_operations.test.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/precompiles/bls12_g2_operations.test.ts)
 </Info>
-
-# BLS12-381
 
 Pairing-friendly elliptic curve implementation for Ethereum 2.0 consensus layer signatures and EIP-2537 precompiled contracts.
 
@@ -33,7 +31,7 @@ BLS12-381 is a Barreto-Lynn-Scott pairing-friendly curve designed for optimal se
 ## Quick Start
 
 ```typescript
-import * as BLS12381 from '@tevm/voltaire/crypto';
+import * as BLS12381 from '@tevm/voltaire';
 
 // G1 operations (signatures)
 const g1Point1 = new Uint8Array(128); // G1 point input
@@ -83,7 +81,7 @@ G1 points are in the base field Fp (381-bit prime).
 #### G1 Addition
 
 ```typescript
-import { bls12_381 } from '@tevm/voltaire/crypto';
+import { bls12_381 } from '@tevm/voltaire';
 
 // Add two G1 points
 const input = new Uint8Array(256); // p1 (128 bytes) || p2 (128 bytes)
@@ -244,7 +242,7 @@ async function verifyBLSSignature(
 #### Map Field Element to G1
 
 ```typescript
-import { bls12_381 } from '@tevm/voltaire/crypto';
+import { bls12_381 } from '@tevm/voltaire';
 
 // Hash to curve: map Fp element to G1 point
 const fpElement = Bytes64(); // Padded field element
@@ -384,7 +382,7 @@ pub const bls12_381 = struct {
 
 ```typescript
 // WASM builds may not support BLS12-381
-import { bls12_381 } from '@tevm/voltaire/crypto';
+import { bls12_381 } from '@tevm/voltaire';
 
 try {
   await bls12_381.g1Add(input, output);
@@ -398,14 +396,14 @@ try {
 BLS12-381 operations throw typed errors that extend `CryptoError`:
 
 ```typescript
-import { Bls12381 } from '@tevm/voltaire/crypto';
+import { Bls12381 } from '@tevm/voltaire';
 import {
   InvalidScalarError,
   SignatureError,
   InvalidFieldElementError,
   InvalidPointError,
   PairingError
-} from '@tevm/voltaire/crypto/Bls12381/errors';
+} from '@tevm/voltaire/Bls12381';
 
 // Private key validation
 try {

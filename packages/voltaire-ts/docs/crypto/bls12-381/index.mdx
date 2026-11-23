@@ -1,248 +1,109 @@
 ---
 title: BLS12-381
-description: Consensus-layer-only pairing-friendly elliptic curve for Beacon Chain validator signatures (NOT for application development)
+description: BLS12-381 signatures, signature aggregation, G1/G2 curve arithmetic, and optimal ate pairings.
 ---
 
-<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=crypto/bls12381.ts">
-  Run BLS12-381 examples in the interactive playground
-</Card>
+`Bls12381` implements BLS12-381 pairing-friendly elliptic curve operations (`Fp`, `Fp2`, `Fr`, `G1`, `G2`, `Pairing`) and high-level BLS signatures with aggregation backed by `@noble/curves/bls12-381.js`.
 
-# BLS12-381
+## Short-Signature Scheme and Aggregation Flow
 
-BLS12-381 is a **pairing-friendly elliptic curve** at the 128-bit security level, designed for BLS (Boneh-Lynn-Shacham) signature aggregation in proof-of-stake consensus systems.
+The high-level `Bls12381` signature API uses `@noble/curves`'s **short signatures** layout: 48-byte compressed **G1** signatures and 96-byte compressed **G2** public keys. Multiple G1 signatures combine via point addition into a single 48-byte aggregate signature.
 
-## Overview
-
-**Consensus layer only** - Used exclusively in Ethereum's Beacon Chain for validator signatures. NOT available in execution layer (no EVM precompiles on mainnet, only L2s). Signature aggregation reduces bandwidth from ~100MB to ~1MB per epoch.
-
-BLS12-381 is a Barreto-Lynn-Scott pairing-friendly curve specifically designed for blockchain use cases requiring signature aggregation and zero-knowledge proofs. Named after its designers and 381-bit prime field, it has become the standard for Ethereum's proof-of-stake consensus.
-
-### Who Should Use This?
-
-**Consensus Client Developers**: Building Ethereum consensus clients (Prysm, Lighthouse, Teku, Nimbus)
-
-**NOT for**:
-- Smart contract developers (use [BN254](/crypto/bn254) for zkSNARKs)
-- DApp developers (use execution layer primitives: secp256k1, keccak256)
-- Most application developers (consensus layer is abstracted away)
-
-### Why BLS12-381?
-
-**Security**: 128-bit security level (comparable to 3072-bit RSA or 256-bit ECDSA)
-
-**Efficiency**: Fastest pairing computation among comparable security curves
-
-**Adoption**: Standard across major blockchains (Ethereum 2.0, Zcash, Filecoin, Chia)
-
-**Signature Aggregation**: Unique property enabling compact validator signatures
-
-### Ethereum Use Cases
-
-- **Validator Signatures**: Aggregate thousands of validator signatures into 96 bytes (Beacon Chain only)
-- **Sync Committees**: Light client proofs with compact signature aggregation (consensus layer)
-- **Attestation Aggregation**: Reduce consensus message bandwidth by 99%
-- **NOT for Smart Contracts**: Use BN254 instead for application-layer zkSNARKs and DeFi
-- **NOT for DApp Development**: Consensus client development only
-
-## Mathematical Foundation
-
-### Curve Equation
-
-**G1 (base field Fp)**:
-```
-y² = x³ + 4
+```mermaid
+flowchart LR
+    PK1["Private Key 1\n32 B scalar"] -->|"derivePublicKey"| Pub1["Public Key 1\n96 B (G2)"]
+    PK2["Private Key 2\n32 B scalar"] -->|"derivePublicKey"| Pub2["Public Key 2\n96 B (G2)"]
+    Msg["Message bytes"] -->|"sign -> sk * H_G1(m)"| Sig1["Sig 1 (48 B G1)"]
+    Msg -->|"sign -> sk * H_G1(m)"| Sig2["Sig 2 (48 B G1)"]
+    Sig1 -->|"aggregate (G1 add)"| Agg["Aggregate Sig\n48 B (G1)"]
+    Sig2 --> Agg
+    Pub1 -->|"aggregateVerify\nPairing check"| Ok["boolean"]
+    Pub2 --> Ok
+    Agg --> Ok
 ```
 
-**G2 (extension field Fp2)**:
-```
-y² = x³ + 4(1 + i)
-```
+## Quick Start
 
-### Field Parameters
+```typescript
+import { Bls12381 } from '@tevm/voltaire/Bls12381';
 
-**Base Field Modulus (p)**: 381-bit prime
-```
-p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
-```
+const msg = new TextEncoder().encode('block-root-0x1234');
 
-**Scalar Field Modulus (r)**: 255-bit prime (curve order)
-```
-r = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-```
+const sk1 = Bls12381.randomPrivateKey();
+const sk2 = Bls12381.randomPrivateKey();
+const pk1 = Bls12381.derivePublicKey(sk1); // Uint8Array(96) compressed G2
+const pk2 = Bls12381.derivePublicKey(sk2);
 
-**Embedding Degree**: k = 12
+const sig1 = Bls12381.sign(msg, sk1); // Uint8Array(48) compressed G1
+const sig2 = Bls12381.sign(msg, sk2);
 
-**Extension Tower**: Fp → Fp2 → Fp6 → Fp12
+const validSingle = Bls12381.verify(sig1, msg, pk1); // true
 
-### Pairing Function
+// Aggregate signatures for the same message
+const aggSig = Bls12381.aggregate([sig1, sig2]);
+const validAgg = Bls12381.aggregateVerify(aggSig, msg, [pk1, pk2]); // true
 
-**Optimal Ate Pairing**: `e: G1 × G2 → GT`
-
-**Properties**:
-- **Bilinearity**: `e(aP, bQ) = e(P, Q)^(ab)`
-- **Non-degeneracy**: `e(G1, G2) ≠ 1` (identity in GT)
-- **Efficiency**: ~1-2ms computation on modern CPUs
-
-**Pairing Check**:
-```
-e(P1, Q1) · e(P2, Q2) · ... · e(Pn, Qn) = 1
+// Or pre-aggregate public keys for fastAggregateVerify
+const aggPk = Bls12381.aggregatePublicKeys([pk1, pk2]);
+const validFast = Bls12381.fastAggregateVerify(aggSig, msg, aggPk); // true
 ```
 
-## Implementation Details
+## API Reference
+
+### High-Level Signature Operations
+
+| Method | Signature | Returns | Notes |
+|--------|-----------|---------|-------|
+| `randomPrivateKey` | `()` | `Uint8Array` (32 bytes) | Uniform non-zero scalar `< FR_MOD` |
+| `isValidPrivateKey` | `(key: Uint8Array)` | `boolean` | Checks length 32 and `0 < sk < FR_MOD` |
+| `derivePublicKey` | `(privateKey: Uint8Array)` | `Uint8Array` (96 bytes) | Compressed G2 public key |
+| `sign` | `(message: Uint8Array, privateKey: Uint8Array)` | `Uint8Array` (48 bytes) | Compressed G1 signature (`shortSignatures`) |
+| `verify` | `(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array)` | `boolean` | Pairing verification; returns `false` on invalid curve points |
+| `aggregate` | `(signatures: Uint8Array[])` | `Uint8Array` (48 bytes) | Sums compressed G1 signatures |
+| `aggregatePublicKeys` | `(publicKeys: Uint8Array[])` | `Uint8Array` (96 bytes) | Sums compressed G2 public keys |
+| `aggregateVerify` | `(aggSig: Uint8Array, message: Uint8Array, publicKeys: Uint8Array[])` | `boolean` | Verifies aggregate sig where all signers signed one message |
+| `fastAggregateVerify` | `(aggSig: Uint8Array, message: Uint8Array, aggPublicKey: Uint8Array)` | `boolean` | Verifies against a pre-aggregated G2 public key |
+| `batchVerify` | `(aggSig: Uint8Array, messages: Uint8Array[], publicKeys: Uint8Array[])` | `boolean` | Multi-pairing check when each signer signed a distinct message |
+| `derivePublicKeyPoint` | `(privateKey: Uint8Array)` | `G1PointType` | Low-level G1 point public key (for `signPoint`/`verifyPoint`) |
+| `signPoint` | `(messagePoint: G2PointType, privateKey: Uint8Array)` | `G2PointType` | Multiplies pre-hashed G2 point by scalar |
+| `verifyPoint` | `(sigPoint: G2PointType, msgPoint: G2PointType, pkPoint: G1PointType)` | `boolean` | Verifies `e(pk, msg) == e(G1, sig)` |
+
+### Curve & Field Namespaces
+
+| Namespace | Operations |
+|-----------|------------|
+| `Bls12381.Fp` | Base field `GF(p)` arithmetic (381-bit prime) |
+| `Bls12381.Fp2` | Quadratic extension `Fp[u] / (u^2 + 1)` |
+| `Bls12381.Fr` | Scalar field `GF(r)` (255-bit subgroup order) |
+| `Bls12381.G1` | `generator`, `infinity`, `add`, `double`, `negate`, `mul`, `isOnCurve`, `isInSubgroup`, `toAffine`, `equal` |
+| `Bls12381.G2` | Same point operations over the twisted curve in `Fp2` |
+| `Bls12381.Pairing` | Optimal ate pairing and pairing checks |
+
+```typescript
+import { Bls12381 } from '@tevm/voltaire/Bls12381';
+
+const g1 = Bls12381.G1.generator();
+const p = Bls12381.G1.mul(g1, 5n);
+const sum = Bls12381.G1.add(g1, p);
+console.log(Bls12381.G1.isOnCurve(sum)); // true
+```
+
+## Security Considerations
 
 <Warning>
-**NOT for Application Development** - BLS12-381 is consensus-layer-only infrastructure. Most developers will never directly use this. For smart contract zkSNARKs and privacy-preserving DeFi, use [BN254](/crypto/bn254) instead.
+Aggregate signatures on the same message (`aggregateVerify` / `fastAggregateVerify`) are vulnerable to rogue-key attacks unless every participant proves possession of their private key (Proof of Possession, PoP) before their public key is accepted, or messages are guaranteed distinct via `batchVerify`.
 </Warning>
 
-### Access & Availability
-
-**Native C ONLY**: Via libblst library (production-grade, audited by Trail of Bits and NCC Group)
-
-**NO JavaScript/TypeScript interface**: Consensus layer operations, not exposed to application tier
-
-**NO WASM**: Not needed for application development - used exclusively by consensus client implementations
-
-**Accessible via**: Native Zig bindings only, for consensus client development (Prysm, Lighthouse, etc.)
-
-### Key Operations
-
-When building consensus clients:
-
-- **G1 point operations**: Validator public keys (48 bytes compressed)
-- **G2 point operations**: BLS signatures (96 bytes compressed)
-- **Pairing check**: Signature verification using bilinear pairing
-- **Multi-signature aggregation**: Combine thousands of signatures into one
-
-## Documentation
-
-### Core Concepts
-
-- [**Signatures**](./signatures) - BLS signature scheme, aggregation, batch verification
-- [**Pairing**](./pairing) - Bilinear pairing operation, optimal ate pairing algorithm
-- [**G1 Operations**](./g1-operations) - Point addition, scalar multiplication, MSM
-- [**G2 Operations**](./g2-operations) - Extension field operations, public key handling
-
-### Advanced Topics
-
-- [**Aggregation**](./aggregation) - Signature and key aggregation strategies
-- [**Test Vectors**](./test-vectors) - Official test vectors, edge cases, validation
-- [**Precompiles**](./precompiles) - EIP-2537 precompiled contracts
-- [**Performance**](./performance) - Benchmarks, optimizations, comparison
-
-### Implementation
-
-- [**Usage Patterns**](./usage-patterns) - Ethereum validators, sync committees, zkSNARKs
-- [**Security**](./security) - Side-channel resistance, rogue key attacks, best practices
-
-## Point Formats
-
-### G1 Points (48 bytes compressed, 96 bytes uncompressed)
-
-**Uncompressed Format** (128 bytes padded for precompiles):
-```
-| x-coordinate | y-coordinate |
-|   64 bytes   |   64 bytes   |
-```
-
-**Compressed Format** (48 bytes):
-- MSB indicates compression + sign of y-coordinate
-- Remaining 381 bits encode x-coordinate
-
-### G2 Points (96 bytes compressed, 192 bytes uncompressed)
-
-**Uncompressed Format** (256 bytes padded for precompiles):
-```
-| x.c0 | x.c1 | y.c0 | y.c1 |
-|  64  |  64  |  64  |  64  |
-```
-
-**Compressed Format** (96 bytes):
-- First 48 bytes: x.c1 (with compression flags)
-- Second 48 bytes: x.c0
-
-## Implementation Status
-
-### Native (Production - Consensus Clients Only)
-
-**Library**: BLST (Supranational)
-- Audited by Trail of Bits, NCC Group
-- Assembly-optimized for x86_64, ARM64
-- Constant-time, side-channel resistant
-- Used in all major Ethereum consensus clients (Prysm, Lighthouse, Teku, Nimbus)
-
-**Location**: `lib/blst/`
-
-**Access**: Native Zig bindings only - NO JavaScript/TypeScript API
-
-### WASM
-
-**Status**: Not available (not needed for application development)
-
-**Rationale**: BLS12-381 is consensus-layer infrastructure. Application developers use execution layer primitives (secp256k1, keccak256) or BN254 for zkSNARKs.
-
-## Security Level
-
-**Target Security**: 128 bits (classical), 64 bits (quantum)
-
-**Attack Complexity**:
-- Discrete log on G1/G2: ~2^128 operations
-- Pairing inversion: Computationally infeasible
-- MOV attack: Prevented by embedding degree 12
-
-**Recommended Until**: 2030+ (NIST guidelines)
-
-## EIP-2537 Precompiles
-
-<Note>
-**NOT on Mainnet** - Proposed BLS12-381 precompiles for EVM, but NOT activated on mainnet yet. Some L2s may implement them for zkRollup verification.
-</Note>
-
-**Status**: Proposed (pending mainnet activation)
-
-**Precompile Addresses** (0x0b - 0x13, if activated):
-- G1 operations: ADD, MUL, MSM
-- G2 operations: ADD, MUL, MSM
-- Pairing check
-- Hash-to-curve mappings
-
-**Gas Costs** (proposed):
-- G1 addition: 500 gas
-- Pairing base: 115,000 gas
-- Pairing per pair: 23,000 gas
-
-**Current Reality**: Only available on consensus layer (Beacon Chain). For execution layer zkSNARKs, use [BN254 precompiles](/evm/precompiles) (0x06-0x08) which ARE on mainnet.
-
-[See full precompile documentation →](./precompiles)
-
-## Performance
-
-**Native (BLST on x86_64)**:
-- G1 addition: ~15 μs
-- G1 multiplication: ~80 μs
-- G2 multiplication: ~200 μs
-- Pairing (single): ~1.2 ms
-- Pairing check (2 pairs): ~2 ms
-- MSM (100 G1 points): ~8 ms
-
-**Comparison to BN254**:
-- Pairing: ~2x slower
-- Security: 128-bit vs 100-bit
-- Future-proof: Better long-term security
-
-[See detailed benchmarks →](./performance)
+- **Subgroup checks:** Deserialized points must be checked for both curve membership and prime-order subgroup membership to prevent small-subgroup attacks.
+- **Scheme note:** `sign`/`verify`/`derivePublicKey` use G1 signatures (48 B) + G2 public keys (96 B) (`shortSignatures`), whereas `signPoint`/`verifyPoint`/`derivePublicKeyPoint` use G2 signatures + G1 public keys (matching the Ethereum Beacon Chain minimal-pubkey-size layout). Do not mix the two encodings.
+- **Errors:** Invalid scalars throw `InvalidScalarError`; invalid input types or empty arrays throw `SignatureError`.
 
 ## Related
 
-- [KZG Commitments](/crypto/kzg) - Polynomial commitments using BLS12-381 (consensus layer, EIP-4844)
-- [BN254](/crypto/bn254) - **USE THIS** for execution layer zkSNARKs and smart contracts
-- [secp256k1](/crypto/secp256k1) - Execution layer transaction signatures
-- [Precompiles: BLS12-381](/evm/precompiles) - EIP-2537 implementation (NOT on mainnet)
-- [BLS12-381 (Effect)](https://voltaire-effect.tevm.sh/crypto/bls12381) - Effect.ts integration with Schema validation
-
-## References
-
-- [EIP-2537: BLS12-381 Precompiles](https://eips.ethereum.org/EIPS/eip-2537)
-- [BLST Library](https://github.com/supranational/blst)
-- [BLS Signatures Spec](https://github.com/ethereum/consensus-specs)
-- [Pairing-Friendly Curves (IETF Draft)](https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/)
-- [Hash to Curve (RFC 9380)](https://datatracker.ietf.org/doc/rfc9380/)
+- [G1 Operations](/crypto/bls12-381/g1-operations)
+- [G2 Operations](/crypto/bls12-381/g2-operations)
+- [Pairing](/crypto/bls12-381/pairing)
+- [Signatures](/crypto/bls12-381/signatures)
+- [Aggregation](/crypto/bls12-381/aggregation)
+- [Precompiles (EIP-2537)](/crypto/bls12-381/precompiles)
+- [KZG Commitments](/crypto/kzg)

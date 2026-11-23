@@ -1,67 +1,64 @@
 ---
 title: voltaire-go
-description: Go bindings for Voltaire Ethereum primitives
+description: Go bindings for Voltaire Ethereum primitives and cryptography via CGO and pure Go packages.
 ---
 
-# voltaire-go
+`voltaire-go` (`module github.com/voltaire-labs/voltaire-go`, Go `1.22+`) wraps Voltaire's Zig-compiled native library (`libprimitives_ts_native`) through CGO while implementing RLP, signatures, byte utilities, BLAKE2b, and RIPEMD-160 in pure Go.
 
-Idiomatic Go bindings for the Voltaire Ethereum primitives library.
+## Architecture
 
-## Overview
+```mermaid
+flowchart LR
+    Caller["Go Code"] --> Prim["primitives/*\naddress, bytes, bytes32, hash, hex,\nprivatekey, publickey, rlp, signature, u256"]
+    Caller --> Crypto["crypto/*\nkeccak256, sha256, blake2, ripemd160"]
+    Prim -->|"CGO-backed packages"| FFI["internal/ffi\n(primitives.h)"]
+    Crypto -->|"keccak256, sha256"| FFI
+    FFI --> Native["libprimitives_ts_native\n(zig-out/native)"]
+```
 
-voltaire-go provides type-safe, performant Go wrappers around Voltaire's core
-primitives. The library uses CGO to call into the native Zig/C library for
-maximum performance.
+## Setup
 
-## Features
-
-- **Type-safe primitives**: Address, Hash, U256 with proper Go idioms
-- **Efficient hashing**: Keccak-256, SHA-256, RIPEMD-160, Blake2b
-- **JSON/Text marshaling**: All types implement standard Go interfaces
-- **Zero dependencies**: Only requires the native voltaire library
-
-## Installation
+Build the native Zig library from the Voltaire repository root (`https://github.com/evmts/voltaire`):
 
 ```bash
-go get github.com/voltaire-labs/voltaire-go
+zig build build-ts-native
+```
+
+Ensure `CGO_ENABLED=1` and that `zig-out/native` is on `DYLD_LIBRARY_PATH` (macOS) or `LD_LIBRARY_PATH` (Linux):
+
+```bash
+cd packages/voltaire-go
+make test
 ```
 
 ## Quick Start
 
 ```go
+package main
+
 import (
-    "github.com/voltaire-labs/voltaire-go/primitives/address"
+    "fmt"
+    "log"
+
     "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
+    "github.com/voltaire-labs/voltaire-go/primitives/address"
 )
 
 func main() {
-    // Parse and validate address
     addr, err := address.FromHex("0xd8da6bf26964af9d7eed9e03e53415d37aa96045")
     if err != nil {
-        panic(err)
+        log.Fatal(err)
     }
 
-    // Get checksummed representation
-    fmt.Println(addr.ChecksumHex())
+    fmt.Println(addr.ChecksumHex()) // 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 
-    // Hash data
-    hash := keccak256.Hash([]byte("hello world"))
-    fmt.Println(hash.Hex())
+    digest := keccak256.Hash([]byte("hello world"))
+    fmt.Println(digest.Hex())
 }
 ```
 
-## Package Structure
+## Module Map
 
-```
-voltaire-go/
-├── primitives/
-│   ├── address/    # Ethereum addresses
-│   ├── hash/       # 32-byte hashes
-│   ├── hex/        # Hex encoding
-│   └── u256/       # 256-bit integers
-├── crypto/
-│   ├── keccak256/  # Keccak-256
-│   └── sha256/     # SHA-256
-└── internal/
-    └── ffi/        # CGO bindings
-```
+- **Primitives**: [Address](primitives/address.md) · [Bytes](primitives/bytes.md) · [Bytes32](primitives/bytes32.md) · [PrivateKey](primitives/privatekey.md) · [PublicKey](primitives/publickey.md) · `primitives/hash` · `primitives/hex` · `primitives/rlp` · `primitives/signature` · `primitives/u256`
+- **Cryptography**: [Keccak-256](crypto/keccak256.md) · [BLAKE2b](crypto/blake2.md) · [RIPEMD-160](crypto/ripemd160.md) · `crypto/sha256`
+- **Dependencies** (`go.mod`): `github.com/decred/dcrd/dcrec/secp256k1/v4`, `golang.org/x/crypto`

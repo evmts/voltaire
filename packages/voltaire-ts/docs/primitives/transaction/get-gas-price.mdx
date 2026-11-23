@@ -74,7 +74,7 @@ effectiveGasPrice = min(50, 20 + 15) = 35 gwei
 ### Transaction Cost Estimation
 
 ```typescript
-import { getGasPrice } from 'tevm/Transaction'
+import { getGasPrice } from '@tevm/voltaire/Transaction'
 
 async function estimateTransactionCost(
   tx: Transaction.Any,
@@ -94,7 +94,7 @@ console.log(`Estimated cost: ${cost} wei`)
 ### Gas Price Comparison
 
 ```typescript
-import { getGasPrice } from 'tevm/Transaction'
+import { getGasPrice } from '@tevm/voltaire/Transaction'
 
 function compareGasPrices(
   tx1: Transaction.Any,
@@ -118,7 +118,7 @@ const sorted = transactions.sort((a, b) =>
 ### Balance Validation
 
 ```typescript
-import { getGasPrice } from 'tevm/Transaction'
+import { getGasPrice } from '@tevm/voltaire/Transaction'
 
 async function validateBalance(
   tx: Transaction.Any,
@@ -136,7 +136,7 @@ async function validateBalance(
 ### Transaction Pool Sorting
 
 ```typescript
-import { getGasPrice } from 'tevm/Transaction'
+import { getGasPrice } from '@tevm/voltaire/Transaction'
 
 class TransactionPool {
   sortByGasPrice(baseFee: bigint): Transaction.Any[] {
@@ -152,7 +152,7 @@ class TransactionPool {
 ## EIP-1559 Gas Price Components
 
 ```typescript
-import { getGasPrice } from 'tevm/Transaction'
+import { getGasPrice } from '@tevm/voltaire/Transaction'
 
 function getGasPriceBreakdown(
   tx: Transaction.EIP1559,

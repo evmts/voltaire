@@ -17,7 +17,7 @@ description: Check if hardfork is less than or equal to target
 `lte` mimics the &le; operator for clearer code:
 
 ```typescript
-import { LONDON, CANCUN } from 'tevm'
+import { LONDON, CANCUN } from '@tevm/voltaire'
 
 // Operator-style (reads like <= operator)
 if (LONDON.lte(CANCUN)) {
@@ -35,7 +35,7 @@ if (Hardfork.isBefore(LONDON, CANCUN) || Hardfork.equals(LONDON, CANCUN)) {
 ### Maximum Version Checks
 
 ```typescript
-import { Hardfork, CANCUN } from 'tevm'
+import { Hardfork, CANCUN } from '@tevm/voltaire'
 
 function validateMaxVersion(fork: BrandedHardfork) {
   if (!fork.lte(CANCUN)) {
@@ -47,7 +47,7 @@ function validateMaxVersion(fork: BrandedHardfork) {
 ### Range Validation
 
 ```typescript
-import { Hardfork, BERLIN, SHANGHAI } from 'tevm'
+import { Hardfork, BERLIN, SHANGHAI } from '@tevm/voltaire'
 
 function isInSupportedRange(fork: BrandedHardfork): boolean {
   return fork.gte(BERLIN) && fork.lte(SHANGHAI)
@@ -60,7 +60,7 @@ isInSupportedRange(LONDON)  // true
 ### Network Configuration
 
 ```typescript
-import { Hardfork, PRAGUE } from 'tevm'
+import { Hardfork, PRAGUE } from '@tevm/voltaire'
 
 function checkTestnetSupport(fork: BrandedHardfork) {
   if (fork.lte(PRAGUE)) {
@@ -83,7 +83,7 @@ BERLIN (10) < LONDON (11) < MERGE (14) < SHANGHAI (15) < CANCUN (16)
 Unlike `isBefore`, `lte` returns true for equal versions:
 
 ```typescript
-import { LONDON } from 'tevm'
+import { LONDON } from '@tevm/voltaire'
 
 LONDON.lte(LONDON)       // true - equal counts
 LONDON.isBefore(LONDON)  // false - strictly less than

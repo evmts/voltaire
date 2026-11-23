@@ -1,112 +1,54 @@
 ---
-title: "Block"
-description: "Complete Ethereum block representation"
+title: Block
+description: Branded Ethereum block primitive combining BlockHeader, BlockBody (transactions, uncles, withdrawals), block hash, and size with JSON-RPC parsing.
 ---
 
-## Overview
+`Block` (`BlockType`) pairs an execution-layer `BlockHeader` and `BlockBody` (transactions, uncles/ommers, and EIP-4895 beacon withdrawals) with its `hash`, `size`, and optional `totalDifficulty`.
 
-Block represents a complete Ethereum block with header, body, hash, and metadata. Used for block validation, storage, and propagation.
-
-```typescript
-import * as Block from '@voltaire/primitives/Block'
-
-const block = Block.from({
-  header: blockHeader,
-  body: blockBody,
-  hash: "0x1234567890abcdef...",
-  size: 1024n,
-  totalDifficulty: 12345678n, // Optional, pre-merge only
-})
+```mermaid
+flowchart TD
+  RPC["JSON-RPC eth_getBlockByNumber / Hash"] -->|"Block.fromRpc()"| Blk["BlockType"]
+  Parts["{ header, body, hash, size }"] -->|"Block.from()"| Blk
+  Blk --> Hdr["header: BlockHeaderType"]
+  Blk --> Bdy["body: BlockBodyType (txs, ommers, withdrawals)"]
+  Blk --> Hash["Block.calculateHash(blk) -> BlockHashType"]
 ```
 
-## Type Definition
+## Quick Start
 
 ```typescript
-type BlockType = {
-  readonly header: BlockHeaderType
-  readonly body: BlockBodyType
-  readonly hash: BlockHashType
-  readonly size: Uint256Type
-  readonly totalDifficulty?: Uint256Type
-}
+import { Block } from '@tevm/voltaire';
+
+// Parse directly from an EIP-1193 / JSON-RPC block response
+const block = Block.fromRpc(rpcBlockResponse);
+
+// Recompute canonical header hash: keccak256(RLP(header))
+const computedHash = Block.calculateHash(block);
 ```
 
-**Fields:**
-- `header` - Block metadata and Merkle roots
-- `body` - Transactions, uncles/ommers, withdrawals
-- `hash` - Keccak256(RLP(header))
-- `size` - Block size in bytes (RLP-encoded)
-- `totalDifficulty` - Cumulative difficulty (pre-merge only)
+Import `Block` from `@tevm/voltaire`.
 
-## Creating Blocks
+## Structure
 
-### from
+| Field | Type | Description |
+| --- | --- | --- |
+| `header` | `BlockHeaderType` | Parent hash, roots (`stateRoot`, `transactionsRoot`, `receiptsRoot`), `number`, `gasLimit`, `gasUsed`, `timestamp`, `baseFeePerGas`, `withdrawalsRoot`, `blobGasUsed`, `excessBlobGas`, `parentBeaconBlockRoot` |
+| `body` | `BlockBodyType` | Transactions array, ommer headers (empty post-Merge), and withdrawals (post-Shanghai) |
+| `hash` | `BlockHashType` | 32-byte Keccak-256 hash of the RLP-encoded header |
+| `size` | `Uint256Type` | Encoded block byte size |
+| `totalDifficulty` | `Uint256Type \| undefined` | Cumulative PoW difficulty (fixed post-Merge) |
 
-Universal constructor from block components.
+## API Reference
 
-```typescript
-import * as Block from '@voltaire/primitives/Block'
-import * as BlockHeader from '@voltaire/primitives/BlockHeader'
-import * as BlockBody from '@voltaire/primitives/BlockBody'
+| Method | Signature | Description |
+| --- | --- | --- |
+| `Block.from` | `(params: { header, body, hash, size, totalDifficulty? }) => BlockType` | Construct a branded `BlockType` from validated components |
+| `Block.fromRpc` | `(rpc: RpcBlock) => BlockType` | Parse hex-encoded JSON-RPC block object (`eth_getBlockByNumber`, `eth_getBlockByHash`) |
+| `Block.calculateHash` | `(block: BlockType) => BlockHashType` | RLP-encode `block.header` according to active fork fields and hash with Keccak-256 |
 
-const header = BlockHeader.from({
-  parentHash: "0x...",
-  // ... other header fields
-})
+## Related
 
-const body = BlockBody.from({
-  transactions: [tx1, tx2],
-  ommers: [],
-  withdrawals: [w1, w2],
-})
-
-const block = Block.from({
-  header,
-  body,
-  hash: "0xabc123...",
-  size: 2048n,
-})
-```
-
-## Block Components
-
-A complete block consists of:
-
-1. **Header** - Metadata and Merkle roots for verification
-2. **Body** - Actual content (transactions, uncles, withdrawals)
-3. **Hash** - Unique block identifier computed from header
-4. **Size** - Total RLP-encoded size in bytes
-
-## Post-Merge Changes
-
-After The Merge (September 2022):
-- `totalDifficulty` is no longer relevant
-- Proof-of-Work fields in header are zeroed
-- Beacon chain handles consensus
-
-```typescript
-// Pre-merge block
-const premerge = Block.from({
-  header,
-  body,
-  hash: "0x...",
-  size: 1024n,
-  totalDifficulty: 58750003716598352816469n,
-})
-
-// Post-merge block (no totalDifficulty)
-const postmerge = Block.from({
-  header,
-  body,
-  hash: "0x...",
-  size: 1024n,
-})
-```
-
-## See Also
-
-- [Block (Effect)](https://voltaire-effect.tevm.sh/primitives/block) - Effect.ts integration with Schema validation
-- [BlockHeader](/primitives/block-header) - Block header details
-- [BlockBody](/primitives/block-body) - Block body details
-- [BlockHash](/primitives/block-hash) - Block identifier
-- [BlockNumber](/primitives/block-number) - Block height
+- [BlockHeader](/primitives/block-header) — Execution header fields and RLP hashing
+- [BlockBody](/primitives/block-body) — Transactions, uncles, and withdrawals
+- [Transaction](/primitives/transaction) — Transactions carried in `body`
+- [Receipt](/primitives/receipt) — Post-execution transaction receipts

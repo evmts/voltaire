@@ -16,8 +16,8 @@ Transaction simulation lets you execute contract calls and estimate gas without 
 `eth_call` executes a transaction locally against the current blockchain state without creating an on-chain transaction.
 
 ```typescript
-import { HttpProvider } from '@voltaire/provider';
-import * as Abi from '@voltaire/primitives/Abi';
+import { HttpProvider } from '@tevm/voltaire/provider';
+import * as Abi from '@tevm/voltaire/Abi';
 import * as S from 'effect/Schema';
 import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
@@ -86,8 +86,8 @@ const pendingResult = await provider.request({
 `eth_estimateGas` returns the gas needed for a transaction to succeed. Always add a buffer for production.
 
 ```typescript
-import { HttpProvider } from '@voltaire/provider';
-import * as Abi from '@voltaire/primitives/Abi';
+import { HttpProvider } from '@tevm/voltaire/provider';
+import * as Abi from '@tevm/voltaire/Abi';
 
 const provider = new HttpProvider('https://eth.llamarpc.com');
 
@@ -148,8 +148,8 @@ const deployGas = await provider.request({
 When a call reverts, the RPC returns an error with the revert data. Voltaire provides `RevertReason` to decode it.
 
 ```typescript
-import { HttpProvider } from '@voltaire/provider';
-import * as RevertReason from '@voltaire/primitives/RevertReason';
+import { HttpProvider } from '@tevm/voltaire/provider';
+import * as RevertReason from '@tevm/voltaire';
 
 const provider = new HttpProvider('https://eth.llamarpc.com');
 
@@ -240,8 +240,8 @@ if (!result.success) {
 ### Decoding Custom Errors
 
 ```typescript
-import * as Abi from '@voltaire/primitives/Abi';
-import * as RevertReason from '@voltaire/primitives/RevertReason';
+import * as Abi from '@tevm/voltaire/Abi';
+import * as RevertReason from '@tevm/voltaire';
 
 // Define custom errors from contract ABI
 const customErrors = [
@@ -288,7 +288,7 @@ Combine `eth_call` with state overrides to simulate how a transaction would affe
 ### Check Balance After Transfer
 
 ```typescript
-import * as Abi from '@voltaire/primitives/Abi';
+import * as Abi from '@tevm/voltaire/Abi';
 
 const balanceOfAbi = [{
   type: 'function',
@@ -369,9 +369,9 @@ const txWithAccessList = {
 ## Complete Simulation Example
 
 ```typescript
-import { HttpProvider } from '@voltaire/provider';
-import * as Abi from '@voltaire/primitives/Abi';
-import * as RevertReason from '@voltaire/primitives/RevertReason';
+import { HttpProvider } from '@tevm/voltaire/provider';
+import * as Abi from '@tevm/voltaire/Abi';
+import * as RevertReason from '@tevm/voltaire';
 
 const provider = new HttpProvider('https://eth.llamarpc.com');
 

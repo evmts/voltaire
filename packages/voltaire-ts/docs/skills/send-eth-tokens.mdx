@@ -7,8 +7,6 @@ description: Transfer ETH and ERC20 tokens programmatically
 **Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
 </Info>
 
-# Send ETH & Tokens
-
 This guide covers sending ETH to addresses, building and signing transactions, sending ERC20 tokens, and checking transaction status.
 
 ## Prerequisites
@@ -24,7 +22,7 @@ This guide covers sending ETH to addresses, building and signing transactions, s
 If you're using a wallet provider (MetaMask, WalletConnect), the wallet handles signing:
 
 ```typescript
-import { HttpProvider } from '@voltaire/provider';
+import { HttpProvider } from '@tevm/voltaire/provider';
 
 const provider = new HttpProvider('https://eth.llamarpc.com');
 
@@ -46,10 +44,10 @@ console.log('Transaction hash:', txHash);
 For programmatic signing without a wallet:
 
 ```typescript
-import { PrivateKeySignerImpl } from '@voltaire/crypto/signers/private-key-signer';
-import * as Transaction from '@voltaire/primitives/Transaction';
-import { Address } from '@voltaire/primitives/Address';
-import { HttpProvider } from '@voltaire/provider';
+import { PrivateKeySignerImpl } from '@tevm/voltaire/signers';
+import * as Transaction from '@tevm/voltaire/Transaction';
+import { Address } from '@tevm/voltaire/Address';
+import { HttpProvider } from '@tevm/voltaire/provider';
 
 const provider = new HttpProvider('https://eth.llamarpc.com');
 
@@ -109,8 +107,8 @@ console.log('Transaction submitted:', txHash);
 Convert between ETH, Gwei, and Wei:
 
 ```typescript
-import * as Ether from '@voltaire/primitives/Denomination/Ether';
-import * as Gwei from '@voltaire/primitives/Denomination/Gwei';
+import * as Ether from '@tevm/voltaire/Denomination';
+import * as Gwei from '@tevm/voltaire/Denomination';
 
 // Create values in user-friendly units
 const valueEther = Ether.from(1n);              // 1 ETH
@@ -133,7 +131,7 @@ const tx = {
 The Contract module provides type-safe token transfers:
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from '@tevm/voltaire/contract';
 import * as S from 'effect/Schema';
 import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
@@ -216,7 +214,7 @@ const txHash = await usdc.write.transfer(recipient, amount, {
 Build the transaction manually for more control:
 
 ```typescript
-import * as Abi from '@voltaire/primitives/Abi';
+import * as Abi from '@tevm/voltaire/Abi';
 
 // Encode transfer calldata
 const transferSelector = '0xa9059cbb'; // transfer(address,uint256)

@@ -19,7 +19,7 @@ description: Get hardforks between two versions (inclusive)
 Returns hardforks in chronological order:
 
 ```typescript
-import { Hardfork, BERLIN, CANCUN } from 'tevm'
+import { Hardfork, BERLIN, CANCUN } from '@tevm/voltaire'
 
 const forks = Hardfork.range(BERLIN, CANCUN)
 // [BERLIN, LONDON, ARROW_GLACIER, GRAY_GLACIER, MERGE, SHANGHAI, CANCUN]
@@ -30,7 +30,7 @@ const forks = Hardfork.range(BERLIN, CANCUN)
 Returns hardforks in reverse chronological order:
 
 ```typescript
-import { Hardfork, CANCUN, BERLIN } from 'tevm'
+import { Hardfork, CANCUN, BERLIN } from '@tevm/voltaire'
 
 const forks = Hardfork.range(CANCUN, BERLIN)
 // [CANCUN, SHANGHAI, MERGE, GRAY_GLACIER, ARROW_GLACIER, LONDON, BERLIN]
@@ -41,7 +41,7 @@ const forks = Hardfork.range(CANCUN, BERLIN)
 Returns array with single element:
 
 ```typescript
-import { Hardfork, LONDON } from 'tevm'
+import { Hardfork, LONDON } from '@tevm/voltaire'
 
 const forks = Hardfork.range(LONDON, LONDON)
 // [LONDON]
@@ -54,7 +54,7 @@ const forks = Hardfork.range(LONDON, LONDON)
 Get hardforks to upgrade through:
 
 ```typescript
-import { Hardfork, BERLIN, CANCUN } from 'tevm'
+import { Hardfork, BERLIN, CANCUN } from '@tevm/voltaire'
 
 function getUpgradePath(from: BrandedHardfork, to: BrandedHardfork) {
   const path = Hardfork.range(from, to)
@@ -72,7 +72,7 @@ console.log(`Need to upgrade through ${upgrades.length} hardforks`)
 List features introduced in range:
 
 ```typescript
-import { Hardfork, LONDON, CANCUN } from 'tevm'
+import { Hardfork, LONDON, CANCUN } from '@tevm/voltaire'
 
 function listFeatureChanges(start: BrandedHardfork, end: BrandedHardfork) {
   const forks = Hardfork.range(start, end)
@@ -114,7 +114,7 @@ const changes = listFeatureChanges(LONDON, CANCUN)
 Plan network upgrade:
 
 ```typescript
-import { Hardfork, BERLIN, PRAGUE } from 'tevm'
+import { Hardfork, BERLIN, PRAGUE } from '@tevm/voltaire'
 
 function planMigration(current: BrandedHardfork, target: BrandedHardfork) {
   if (current.isAtLeast(target)) {
@@ -147,7 +147,7 @@ console.log(`Upgrade requires ${plan.steps} steps`)
 Check if fork is in supported range:
 
 ```typescript
-import { Hardfork, BERLIN, SHANGHAI } from 'tevm'
+import { Hardfork, BERLIN, SHANGHAI } from '@tevm/voltaire'
 
 function isSupportedVersion(fork: BrandedHardfork): boolean {
   const MIN_VERSION = BERLIN
@@ -166,7 +166,7 @@ isSupportedVersion(CANCUN)   // false
 Find breaking changes in range:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function findBreakingChanges(start: BrandedHardfork, end: BrandedHardfork) {
   const forks = Hardfork.range(start, end)
@@ -190,7 +190,7 @@ function findBreakingChanges(start: BrandedHardfork, end: BrandedHardfork) {
 Generate network upgrade timeline:
 
 ```typescript
-import { Hardfork, LONDON, OSAKA } from 'tevm'
+import { Hardfork, LONDON, OSAKA } from '@tevm/voltaire'
 
 function generateUpgradeTimeline(from: BrandedHardfork, to: BrandedHardfork) {
   const forks = Hardfork.range(from, to)
@@ -214,7 +214,7 @@ function generateUpgradeTimeline(from: BrandedHardfork, to: BrandedHardfork) {
 When start > end but reverse=false not supported, returns empty or throws:
 
 ```typescript
-import { Hardfork, BERLIN, LONDON } from 'tevm'
+import { Hardfork, BERLIN, LONDON } from '@tevm/voltaire'
 
 // Forward range works
 const forward = Hardfork.range(BERLIN, LONDON)  // [BERLIN, LONDON]
@@ -228,8 +228,8 @@ const reverse = Hardfork.range(LONDON, BERLIN)  // [LONDON, BERLIN]
 If hardforks don't exist in order, an `InvalidFormatError` is thrown:
 
 ```typescript
-import { Hardfork, LONDON } from 'tevm'
-import { InvalidFormatError } from 'tevm/errors'
+import { Hardfork, LONDON } from '@tevm/voltaire'
+import { InvalidFormatError } from '@tevm/voltaire/errors'
 
 const invalidFork = "notahardfork" as any
 
@@ -253,8 +253,8 @@ The `range` function throws `InvalidFormatError` when given invalid hardfork val
 | `InvalidFormatError` | `HARDFORK_INVALID_RANGE` | Start or end hardfork is not a valid hardfork ID |
 
 ```typescript
-import { Hardfork, BERLIN } from 'tevm'
-import { InvalidFormatError } from 'tevm/errors'
+import { Hardfork, BERLIN } from '@tevm/voltaire'
+import { InvalidFormatError } from '@tevm/voltaire/errors'
 
 function safeRange(start: string, end: string) {
   try {

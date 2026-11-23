@@ -1,280 +1,128 @@
 ---
-title: Rate Limiting with Effect.ts
-description: Use Effect's built-in RateLimiter for RPC rate limiting in voltaire-effect
+title: Rate Limiting
+description: Enforce client-side RPC rate limits using @tevm/voltaire/utils RateLimiter or voltaire-effect RateLimitedTransport.
 ---
 
-Effect.ts includes a built-in [RateLimiter](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/RateLimiter.ts) that provides token-bucket and fixed-window algorithms. This guide shows how to use it directly and through voltaire-effect's `RateLimiterService`.
+Public and managed Ethereum RPC endpoints enforce strict request-per-second (RPS) and compute-unit (CU) quotas, returning HTTP `429` or JSON-RPC `-32005` (`Limit exceeded`) when exceeded. Voltaire supports client-side throttling via `@tevm/voltaire/utils` (`RateLimiter`) and `voltaire-effect/transport` (`RateLimitedTransport`).
 
-## Effect's Built-in RateLimiter
-
-Create rate limiters directly using `RateLimiter.make`:
-
-```typescript
-import { Effect, RateLimiter, Function } from "effect"
-
-const program = Effect.gen(function* () {
-  // Create a rate limiter: 10 requests per second
-  const limiter = yield* RateLimiter.make({
-    limit: 10,
-    interval: "1 second",
-    algorithm: "token-bucket"  // or "fixed-window"
-  })
-  
-  // Apply to any Effect
-  const result = yield* limiter(
-    Effect.succeed("rate limited operation")
-  )
-  
-  return result
-})
+```mermaid
+flowchart LR
+  App["Concurrent App Calls"] --> Gate{"Rate Limiter"}
+  Gate -->|"@tevm/voltaire/utils"| TB["RateLimiter\n(Token Bucket: maxRequests / interval)"]
+  Gate -->|"voltaire-effect/transport"| SEM["RateLimitedTransport\n(Semaphore maxConcurrent + minIntervalMs)"]
+  TB --> RPC["Upstream RPC Endpoint"]
+  SEM --> RPC
 ```
 
-### Algorithms
+## Choosing an Approach
 
-| Algorithm | Behavior | Best For |
-|-----------|----------|----------|
-| `token-bucket` | Smooth, evenly distributed requests (default) | Sustained traffic |
-| `fixed-window` | Allows bursts at start of each interval | Bursty workloads |
+| Approach | Package | Mechanism | Best For |
+| --- | --- | --- | --- |
+| `RateLimiter` | `@tevm/voltaire/utils` | Token bucket (`queue`, `reject`, or `drop`) | Plain TypeScript / Promise codebases |
+| `RateLimitedTransport` | `voltaire-effect/transport` | Effect `Semaphore` (`maxConcurrent`) + `Clock` (`minIntervalMs`) | Effect.ts services and layers |
+| `Effect.RateLimiter` | `effect` | Token bucket / fixed window with per-call `withCost` | Compute-unit (CU) weighted budgets |
 
-### Compose Multiple Limits
+## TypeScript (`@tevm/voltaire/utils`)
 
-Chain rate limiters for tiered limits (common with RPC providers):
-
-```typescript
-import { Effect, RateLimiter, Function } from "effect"
-
-const program = Effect.gen(function* () {
-  // Per-second limit
-  const perSecond = yield* RateLimiter.make({ 
-    limit: 10, 
-    interval: "1 second" 
-  })
-  
-  // Per-day limit (many providers have daily quotas)
-  const perDay = yield* RateLimiter.make({ 
-    limit: 10_000, 
-    interval: "1 day" 
-  })
-  
-  // Compose: request must pass BOTH limits
-  const composed = Function.compose(perSecond, perDay)
-  
-  // Apply to operations
-  const result = yield* composed(
-    Effect.succeed("passes both rate limits")
-  )
-  
-  return result
-})
-```
-
-### Weighted Costs
-
-Some operations cost more than others (e.g., `eth_getLogs` vs `eth_blockNumber`):
+Wrap an `HttpProvider` request path with a shared `RateLimiter` and optional `retryWithBackoff` for residual `429`/`-32005` spikes:
 
 ```typescript
-import { Effect, RateLimiter } from "effect"
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { HttpProvider, type RequestArguments } from '@tevm/voltaire/provider';
+import { RateLimiter, retryWithBackoff } from '@tevm/voltaire/utils';
 
-const program = Effect.gen(function* () {
-  const limiter = yield* RateLimiter.make({ 
-    limit: 100, 
-    interval: "1 second" 
-  })
-  
-  // Standard operation: costs 1 token
-  yield* limiter(simpleCall)
-  
-  // Expensive operation: costs 5 tokens
-  yield* limiter(expensiveCall).pipe(
-    RateLimiter.withCost(5)
-  )
-})
-```
+const provider = new HttpProvider('https://mainnet.infura.io/v3/YOUR_KEY');
 
-## voltaire-effect RateLimiterService
+// Stay below a 10 req/s quota with a 20% headroom margin
+const limiter = new RateLimiter({
+  maxRequests: 8,
+  interval: 1000,
+  strategy: 'queue',
+});
 
-The `voltaire-effect` package wraps Effect's RateLimiter with Ethereum-specific features:
-
-```typescript
-import { Effect } from "effect"
-import {
-  RateLimiterService,
-  DefaultRateLimiter,
-  HttpTransport,
-  getBalance
-} from "voltaire-effect"
-
-const program = Effect.gen(function* () {
-  const rateLimiter = yield* RateLimiterService
-  const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-  
-  // Wrap any RPC call with rate limiting
-  const balance = yield* rateLimiter.withRateLimit(
-    "eth_getBalance",
-    getBalance(address)
-  )
-  
-  return balance
-}).pipe(
-  Effect.scoped,
-  Effect.provide(DefaultRateLimiter({ 
-    global: { limit: 10, interval: "1 seconds" } 
-  })),
-  Effect.provide(HttpTransport("https://eth.llamarpc.com"))
-)
-```
-
-### Global + Per-Method Limits
-
-Configure different limits for different RPC methods:
-
-```typescript
-import { DefaultRateLimiter } from "voltaire-effect"
-
-const RateLimited = DefaultRateLimiter({
-  // Global limit applies to all methods
-  global: { 
-    limit: 50, 
-    interval: "1 seconds",
-    algorithm: "token-bucket"
-  },
-  // Per-method overrides (stacks with global)
-  methods: {
-    "eth_getLogs": { limit: 5, interval: "1 seconds" },
-    "eth_call": { limit: 30, interval: "1 seconds" },
-    "debug_traceTransaction": { limit: 1, interval: "5 seconds" }
-  }
-})
-```
-
-### Fail-Fast vs Delay
-
-Control behavior when limits are exceeded:
-
-```typescript
-// Delay (default): Queue requests until capacity available
-const DelayLayer = DefaultRateLimiter({
-  global: { limit: 10, interval: "1 seconds" },
-  behavior: "delay"
-})
-
-// Fail: Immediately fail with RateLimitError
-const FailFastLayer = DefaultRateLimiter({
-  global: { limit: 10, interval: "1 seconds" },
-  behavior: "fail"
-})
-```
-
-Handle failures:
-
-```typescript
-import { Effect } from "effect"
-import { RateLimiterService, RateLimitError } from "voltaire-effect"
-
-const program = Effect.gen(function* () {
-  const rateLimiter = yield* RateLimiterService
-  return yield* rateLimiter.withRateLimit("eth_call", someEffect)
-}).pipe(
-  Effect.catchTag("RateLimitError", (e) => {
-    console.log(`Rate limited: ${e.method}`)
-    return Effect.succeed(fallbackValue)
-  })
-)
-```
-
-## Real-World: RPC Provider Limits
-
-Common provider rate limits:
-
-| Provider | Free Tier | Paid Tier |
-|----------|-----------|-----------|
-| Infura | 10 req/sec | 100+ req/sec |
-| Alchemy | 25 CU/sec | 300+ CU/sec |
-| QuickNode | Varies | Varies |
-| Public RPCs | 1-5 req/sec | N/A |
-
-Configure for your provider:
-
-```typescript
-import { Effect, Layer } from "effect"
-import {
-  Provider,
-  DefaultRateLimiter,
-  HttpTransport,
-  getBlock
-} from "voltaire-effect"
-
-// Infura configuration with safety margin
-const InfuraRateLimiter = DefaultRateLimiter({
-  global: { limit: 8, interval: "1 seconds" },  // Under 10/sec limit
-  methods: {
-    "eth_getLogs": { limit: 2, interval: "1 seconds" },
-    "debug_traceTransaction": { limit: 1, interval: "5 seconds" }
-  },
-  behavior: "delay"
-})
-
-const InfuraProvider = Layer.mergeAll(Provider, InfuraRateLimiter).pipe(
-  Layer.provide(HttpTransport("https://mainnet.infura.io/v3/YOUR_KEY"))
-)
-
-// Batch operations respect limits automatically
-const fetchBlocks = Effect.gen(function* () {
-  const blockNumbers = Array.from({ length: 100 }, (_, i) => i + 1000000)
-  
-  return yield* Effect.all(
-    blockNumbers.map((n) =>
-      getBlock({ blockTag: `0x${n.toString(16)}` })
+export function rateLimitedRequest<T>(args: RequestArguments): Promise<T> {
+  return limiter.execute(() =>
+    retryWithBackoff(
+      () => provider.request(args) as Promise<T>,
+      {
+        maxRetries: 3,
+        initialDelay: 500,
+        shouldRetry: (err) => {
+          const code = (err as { code?: number })?.code;
+          return code === -32005 || code === -32603 || code === undefined;
+        },
+      },
     ),
-    { concurrency: "unbounded" }  // Rate limiter handles throttling
-  )
-}).pipe(
-  Effect.scoped,
-  Effect.provide(InfuraProvider)
-)
+  );
+}
+
+// Fan out 50 calls safely; RateLimiter paces them at 8/sec
+const blocks = await Promise.all(
+  Array.from({ length: 50 }, (_, i) =>
+    rateLimitedRequest(Rpc.Eth.GetBlockByNumberRequest(`0x${(19_000_000 + i).toString(16)}`, false)),
+  ),
+);
 ```
 
-## API Reference
+### Per-Method Quotas
 
-### RateLimiter.make
+Heavy methods (`eth_getLogs`, `debug_traceTransaction`) consume far more node compute units than `eth_blockNumber`. Route them through a dedicated stricter limiter while keeping a global cap:
 
 ```typescript
-declare const make: (options: {
-  readonly limit: number
-  readonly interval: DurationInput  // "1 second", "500 millis", Duration.seconds(1)
-  readonly algorithm?: "token-bucket" | "fixed-window"
-}) => Effect.Effect<RateLimiter, never, Scope>
+import { RateLimiter } from '@tevm/voltaire/utils';
+
+const globalLimiter = new RateLimiter({ maxRequests: 25, interval: 1000, strategy: 'queue' });
+const heavyLimiter = new RateLimiter({ maxRequests: 2, interval: 1000, strategy: 'queue' });
+
+const HEAVY_METHODS = new Set(['eth_getLogs', 'debug_traceTransaction', 'debug_traceBlockByNumber']);
+
+export function throttledRequest<T>(args: RequestArguments): Promise<T> {
+  const exec = () => globalLimiter.execute(() => provider.request(args) as Promise<T>);
+  return HEAVY_METHODS.has(args.method) ? heavyLimiter.execute(exec) : exec();
+}
 ```
 
-### RateLimiter.withCost
+## Effect (`voltaire-effect/transport`)
+
+`RateLimitedTransport` wraps any `Transport` layer with a concurrency semaphore (`maxConcurrent`, default `10`) and minimum inter-request spacing (`minIntervalMs`, default `0`):
 
 ```typescript
-declare const withCost: (cost: number) => <A, E, R>(
-  effect: Effect.Effect<A, E, R>
-) => Effect.Effect<A, E, R>
+import { Effect } from 'effect';
+import {
+  HttpTransport,
+  RateLimitedTransport,
+  request,
+} from 'voltaire-effect/transport';
+
+const LimitedTransport = RateLimitedTransport(
+  HttpTransport({ url: 'https://eth.llamarpc.com' }),
+  {
+    maxConcurrent: 5,
+    minIntervalMs: 125, // <= 8 requests/sec
+  },
+);
+
+const program = Effect.all(
+  Array.from({ length: 20 }, (_, i) =>
+    request('eth_getBlockByNumber', [`0x${(19_000_000 + i).toString(16)}`, false]),
+  ),
+  { concurrency: 'unbounded' },
+).pipe(Effect.provide(LimitedTransport));
+
+await Effect.runPromise(program);
 ```
 
-### DefaultRateLimiter
+## Compute-Unit Budgeting Reference
 
-```typescript
-declare const DefaultRateLimiter: (config: {
-  readonly global?: {
-    readonly limit: number
-    readonly interval: DurationInput
-    readonly algorithm?: "token-bucket" | "fixed-window"
-  }
-  readonly methods?: Record<string, {
-    readonly limit: number
-    readonly interval: DurationInput
-    readonly algorithm?: "token-bucket" | "fixed-window"
-  }>
-  readonly behavior?: "delay" | "fail"
-}) => Layer.Layer<RateLimiterService>
-```
+| Method | Typical Cost Weight | Recommended Strategy |
+| --- | --- | --- |
+| `eth_blockNumber`, `eth_chainId` | Low (1x) | Global limiter + short cache |
+| `eth_getBalance`, `eth_call` | Low–Medium (1–3x) | Batch with `BatchQueue` or Multicall3 |
+| `eth_getLogs` | High (5–10x) | Dedicated limiter + adaptive chunking (`EventStream`) |
+| `debug_traceTransaction` | Very High (20–50x) | Low concurrency (`maxConcurrent: 1–2`) |
 
-## See Also
+## Related
 
-- [Effect RateLimiter source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/RateLimiter.ts)
-- [voltaire-effect RateLimiter Service](/voltaire-effect/docs/services/rate-limiter)
-- [Rate Limiting utilities](/utils/rate-limit) - Non-Effect rate limiting
-- [Retry utilities](/utils/retry) - Combine with rate limiting
+- [Rate Limiting Utilities](/utils/rate-limit) — Full `RateLimiter`, `throttle`, and `debounce` API
+- [Batching Utilities](/utils/batch) — Reducing total RPC requests with `BatchQueue` and `AsyncQueue`
+- [Provider Fallback](/guides/provider-fallback) — Distributing load and failing over across endpoints

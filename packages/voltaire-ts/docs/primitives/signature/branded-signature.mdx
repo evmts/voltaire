@@ -15,7 +15,7 @@ Branded Uint8Array type for cryptographic signatures with algorithm metadata.
 ## Type Definition
 
 ```typescript
-import type { brand } from 'tevm/brand';
+import type { brand } from '@tevm/voltaire';
 
 type SignatureAlgorithm = "secp256k1" | "p256" | "ed25519";
 
@@ -104,7 +104,7 @@ Metadata: algorithm = 'ed25519'
 Properties are defined using `Object.defineProperties()`:
 
 ```typescript
-import { brand } from 'tevm/brand';
+import { brand } from '@tevm/voltaire';
 
 Object.defineProperties(bytes, {
   [brand]: {

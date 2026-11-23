@@ -17,7 +17,7 @@ description: Check if hardfork is greater than or equal to target (alias for isA
 `gte` mimics the `>=` operator for clearer code:
 
 ```typescript
-import { CANCUN, LONDON } from 'tevm'
+import { CANCUN, LONDON } from '@tevm/voltaire'
 
 // Operator-style (reads like >= operator)
 if (CANCUN.gte(LONDON)) {
@@ -35,7 +35,7 @@ if (CANCUN.isAtLeast(LONDON)) {
 ### Feature Gating
 
 ```typescript
-import { Hardfork, LONDON } from 'tevm'
+import { Hardfork, LONDON } from '@tevm/voltaire'
 
 const fork = Hardfork(config.hardfork)
 
@@ -47,7 +47,7 @@ if (fork.gte(LONDON)) {
 ### Network Configuration
 
 ```typescript
-import { Hardfork, SHANGHAI } from 'tevm'
+import { Hardfork, SHANGHAI } from '@tevm/voltaire'
 
 function validateVersion(fork: BrandedHardfork) {
   if (!fork.gte(SHANGHAI)) {

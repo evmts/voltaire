@@ -17,7 +17,7 @@ Traditional wallet injection (`window.ethereum`) creates conflicts when multiple
 ### Subscribe to Announcements
 
 ```typescript
-import * as EIP6963 from '@voltaire/provider/eip6963';
+import { EIP6963 } from '@tevm/voltaire/provider';
 
 const unsubscribe = EIP6963.subscribe((providers) => {
   console.log(`Found ${providers.length} wallets`);
@@ -36,7 +36,7 @@ The listener is called immediately with current providers, then again whenever n
 ### Find Specific Provider
 
 ```typescript
-import * as EIP6963 from '@voltaire/provider/eip6963';
+import { EIP6963 } from '@tevm/voltaire/provider';
 
 // Start discovery
 const unsubscribe = EIP6963.subscribe(() => {});
@@ -57,7 +57,7 @@ unsubscribe();
 ### Get Current Providers
 
 ```typescript
-import * as EIP6963 from '@voltaire/provider/eip6963';
+import { EIP6963 } from '@tevm/voltaire/provider';
 
 // Start discovery
 const unsubscribe = EIP6963.subscribe(() => {});
@@ -74,7 +74,7 @@ unsubscribe();
 For wallet developers: announce your provider to dapps.
 
 ```typescript
-import * as EIP6963 from '@voltaire/provider/eip6963';
+import { EIP6963 } from '@tevm/voltaire/provider';
 
 const unsubscribe = EIP6963.announce({
   info: {
@@ -123,7 +123,7 @@ type ProviderDetail = Readonly<{
 Create validated, frozen objects:
 
 ```typescript
-import * as EIP6963 from '@voltaire/provider/eip6963';
+import { EIP6963 } from '@tevm/voltaire/provider';
 
 const info = EIP6963.ProviderInfo({
   uuid: "350670db-19fa-4704-a166-e52e178b59d2",
@@ -140,7 +140,7 @@ console.log(Object.isFrozen(info)); // true
 EIP-6963 only works in browsers. Use `getPlatform()` to check:
 
 ```typescript
-import * as EIP6963 from '@voltaire/provider/eip6963';
+import { EIP6963 } from '@tevm/voltaire/provider';
 
 const platform = EIP6963.getPlatform();
 // 'browser' | 'node' | 'bun' | 'worker' | 'unknown'
@@ -155,7 +155,7 @@ if (platform === 'browser') {
 All errors extend `EIP6963Error`:
 
 ```typescript
-import * as EIP6963 from '@voltaire/provider/eip6963';
+import { EIP6963 } from '@tevm/voltaire/provider';
 
 try {
   EIP6963.subscribe(() => {});

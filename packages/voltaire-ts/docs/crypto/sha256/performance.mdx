@@ -11,8 +11,6 @@ description: Benchmarks, optimization techniques, and performance characteristic
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
 
-# SHA256 Performance
-
 Performance analysis, benchmarks, and optimization guide for SHA-256.
 
 ## Hardware Acceleration
@@ -281,7 +279,7 @@ JavaScript (noble)     200 MB/s         6%
 
 ```typescript
 // Import WASM-optimized version
-import { SHA256Wasm } from '@tevm/voltaire/SHA256.wasm';
+import { SHA256Wasm } from '@tevm/voltaire/wasm';
 
 // Pre-initialize WASM module
 await SHA256Wasm.init(); // Do once at startup

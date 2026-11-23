@@ -8,7 +8,7 @@ description: "Ethereum block body with transactions and withdrawals"
 BlockBody contains the executable content of a block: transactions, uncle/ommer blocks, and (post-Shanghai) withdrawals.
 
 ```typescript
-import * as BlockBody from '@voltaire/primitives/BlockBody'
+import { BlockBody } from '@tevm/voltaire'
 
 const body = BlockBody.from({
   transactions: [tx1, tx2, tx3],
@@ -39,7 +39,7 @@ type BlockBodyType = {
 Universal constructor from components.
 
 ```typescript
-import * as BlockBody from '@voltaire/primitives/BlockBody'
+import { BlockBody } from '@tevm/voltaire'
 
 // Basic block with just transactions
 const body = BlockBody.from({

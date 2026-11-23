@@ -40,7 +40,7 @@ Serializes `BrandedStorageKey` to string format for use as JavaScript Map keys o
 ### Various Slot Numbers
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 const addr = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 
@@ -64,7 +64,7 @@ console.log(State.StorageKey.toString(keyLarge));
 ### Map Keys
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Use string keys in Map
 const storage = new Map<string, bigint>();
@@ -84,7 +84,7 @@ const value2 = storage.get(State.StorageKey.toString(key2)); // 2000000000n
 ### Persistent Storage
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 import * as fs from 'fs/promises';
 
 // Serialize storage to JSON
@@ -123,7 +123,7 @@ await saveStorage(storage, './storage.json');
 ### Database Keys
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 class StorageDatabase {
   async set(key: BrandedStorageKey, value: bigint): Promise<void> {
@@ -147,7 +147,7 @@ class StorageDatabase {
 ### Logging and Debugging
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 function logStorageChange(
   key: BrandedStorageKey,
@@ -170,7 +170,7 @@ logStorageChange(key, 1000n, 2000n);
 ## Round-Trip Conversion
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Serialize
 const originalKey = State.StorageKey(contractAddr, 42n);
@@ -188,7 +188,7 @@ console.log(State.StorageKey.equals(originalKey, parsedKey)); // true
 String serialization is fast but creates new string objects:
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Cache serialized keys if used frequently
 const keyCache = new Map<BrandedStorageKey, string>();

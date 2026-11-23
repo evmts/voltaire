@@ -1,54 +1,43 @@
 ---
 title: Transaction
-description: Transaction type detection and operations
+description: EIP-2718 transaction envelope type detection for Legacy, EIP-2930, EIP-1559, EIP-4844, and EIP-7702 transactions.
 ---
 
-Detect and work with different Ethereum transaction types.
+Transaction type detection inspects the leading byte of a raw serialized Ethereum transaction according to EIP-2718.
 
-## Functions
+## Function
 
-### primitives_tx_detect_type
-
-Detect transaction type from serialized data.
+### `primitives_tx_detect_type`
 
 ```c
-int primitives_tx_detect_type(
-    const unsigned char* data,
-    size_t data_len
-);
+int primitives_tx_detect_type(const unsigned char* data, size_t data_len);
 ```
 
-**Returns:** Transaction type (0-4) or negative error code.
+Inspects `data[0..data_len]` and returns the transaction type integer (`0`–`4`).
 
-| Return | Type |
-|--------|------|
-| 0 | Legacy |
-| 1 | EIP-2930 (Access List) |
-| 2 | EIP-1559 (Fee Market) |
-| 3 | EIP-4844 (Blob) |
-| 4 | EIP-7702 (Authorization) |
-
-```c
-unsigned char tx_data[] = {0x02, ...};  // EIP-1559 prefix
-int type = primitives_tx_detect_type(tx_data, sizeof(tx_data));
-// type = 2
-```
+| Return value | Leading byte | Standard | Description |
+|--------------|--------------|----------|-------------|
+| `0` | `>= 0xc0` (RLP list) | Legacy | Pre-EIP-2718 and EIP-155 transactions |
+| `1` | `0x01` | EIP-2930 | Optional access list transaction |
+| `2` | `0x02` | EIP-1559 | Dynamic fee market transaction |
+| `3` | `0x03` | EIP-4844 | Blob-carrying transaction |
+| `4` | `0x04` | EIP-7702 | Set-code EOA authorization transaction |
 
 ## Example
 
 ```c
+#include "voltaire.h"
+
 #include <stdio.h>
 
-int main() {
-    // Legacy transaction (RLP list, first byte >= 0xc0)
-    unsigned char legacy[] = {0xf8, ...};
-    int type1 = primitives_tx_detect_type(legacy, sizeof(legacy));
-    printf("Legacy: %d\n", type1);  // 0
+int main(void) {
+    static const unsigned char legacy_tx[]  = {0xf8, 0x6c, 0x00};
+    static const unsigned char eip1559_tx[] = {0x02, 0xc0};
+    static const unsigned char eip7702_tx[] = {0x04, 0xc0};
 
-    // EIP-1559 transaction (prefix 0x02)
-    unsigned char eip1559[] = {0x02, ...};
-    int type2 = primitives_tx_detect_type(eip1559, sizeof(eip1559));
-    printf("EIP-1559: %d\n", type2);  // 2
+    printf("Legacy:   type %d\n", primitives_tx_detect_type(legacy_tx, sizeof(legacy_tx)));
+    printf("EIP-1559: type %d\n", primitives_tx_detect_type(eip1559_tx, sizeof(eip1559_tx)));
+    printf("EIP-7702: type %d\n", primitives_tx_detect_type(eip7702_tx, sizeof(eip7702_tx)));
 
     return 0;
 }

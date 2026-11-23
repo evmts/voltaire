@@ -1,67 +1,43 @@
 ---
 title: Bytecode Analysis
-description: EVM bytecode analysis and validation
+description: EVM bytecode JUMPDEST analysis, PUSH-immediate boundary detection, validation, instruction scanning, and fusion pattern detection.
 ---
 
-Analyze and validate EVM bytecode.
+Bytecode functions parse raw EVM opcodes while skipping immediate payloads of `PUSH1` (`0x60`) through `PUSH32` (`0x7f`) so `0x5b` bytes inside push data are never mistaken for `JUMPDEST` instructions.
 
 ## Functions
 
-### primitives_bytecode_analyze_jumpdests
+### `primitives_bytecode_validate`
 
-Find all valid JUMPDEST locations.
+```c
+int primitives_bytecode_validate(const unsigned char* code, size_t code_len);
+```
+
+Verifies that every `PUSH1`–`PUSH32` instruction has all of its immediate bytes present before `code_len`. Returns `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_INVALID_INPUT` (`-5`) if a `PUSH` immediate is truncated.
+
+### `primitives_bytecode_analyze_jumpdests`
 
 ```c
 int primitives_bytecode_analyze_jumpdests(
     const unsigned char* code,
     size_t code_len,
-    uint32_t* out_jumpdests,       // output array
-    size_t max_jumpdests           // array capacity
+    uint32_t* out_jumpdests,
+    size_t max_jumpdests
 );
 ```
 
-**Returns:** Number of JUMPDESTs found.
+Writes up to `max_jumpdests` byte offsets of valid `JUMPDEST` (`0x5b`) opcodes into `out_jumpdests`. Returns the number of offsets written.
 
-### primitives_bytecode_is_boundary
-
-Check if position is at instruction boundary (not inside PUSH data).
+### `primitives_bytecode_is_boundary` and `primitives_bytecode_is_valid_jumpdest`
 
 ```c
-bool primitives_bytecode_is_boundary(
-    const unsigned char* code,
-    size_t code_len,
-    uint32_t position
-);
+bool primitives_bytecode_is_boundary(const unsigned char* code, size_t code_len, uint32_t position);
+bool primitives_bytecode_is_valid_jumpdest(const unsigned char* code, size_t code_len, uint32_t position);
 ```
 
-### primitives_bytecode_is_valid_jumpdest
+`is_boundary` returns `true` when `position` lands on an opcode boundary rather than inside `PUSH` immediate data. `is_valid_jumpdest` returns `true` when `position` is a boundary and `code[position] == 0x5b`.
 
-Check if position is a valid JUMPDEST.
-
-```c
-bool primitives_bytecode_is_valid_jumpdest(
-    const unsigned char* code,
-    size_t code_len,
-    uint32_t position
-);
-```
-
-### primitives_bytecode_validate
-
-Validate bytecode for basic correctness.
-
-```c
-int primitives_bytecode_validate(
-    const unsigned char* code,
-    size_t code_len
-);
-```
-
-**Returns:** `PRIMITIVES_SUCCESS` if valid, error code otherwise.
-
-### primitives_bytecode_get_next_pc
-
-Get next program counter after current instruction.
+### `primitives_bytecode_get_next_pc`
 
 ```c
 int64_t primitives_bytecode_get_next_pc(
@@ -71,11 +47,9 @@ int64_t primitives_bytecode_get_next_pc(
 );
 ```
 
-**Returns:** Next PC or -1 if at end.
+Returns the byte offset of the instruction following `current_pc` (`current_pc + 1 + push_size`), or `-1` if `current_pc >= code_len` or the instruction overflows `code_len`.
 
-### primitives_bytecode_scan
-
-Scan bytecode and collect instructions in range.
+### `primitives_bytecode_scan`
 
 ```c
 int primitives_bytecode_scan(
@@ -84,70 +58,58 @@ int primitives_bytecode_scan(
     uint32_t start_pc,
     uint32_t end_pc,
     unsigned char* out_instructions,
-    size_t* out_len
+    size_t* out_len /* IN: capacity in bytes; OUT: bytes written */
 );
 ```
 
-### primitives_bytecode_detect_fusions
+Scans `[start_pc, end_pc)` and writes packed 8-byte instruction records into `out_instructions`. Sets `*out_len` to `count * 8` and returns `count`.
 
-Detect optimizable instruction patterns.
+| Offset | Size | Field | Meaning |
+|--------|------|-------|---------|
+| `0` | `4` | `pc` (`uint32_t`, LE) | Instruction byte offset |
+| `4` | `1` | `opcode` (`uint8_t`) | Opcode byte |
+| `5` | `1` | `push_size` (`uint8_t`) | Immediate length (`1`–`32` for `PUSH`, else `0`) |
+| `6` | `2` | `_padding` (`uint16_t`) | Zero padding |
+
+### `primitives_bytecode_detect_fusions`
 
 ```c
 int primitives_bytecode_detect_fusions(
     const unsigned char* code,
     size_t code_len,
     unsigned char* out_fusions,
-    size_t* out_len
+    size_t* out_len /* IN: capacity in bytes; OUT: bytes written */
 );
 ```
 
-## Opcodes
-
-| Opcode | Name | Description |
-|--------|------|-------------|
-| 0x00 | STOP | Halt execution |
-| 0x5b | JUMPDEST | Valid jump destination |
-| 0x56 | JUMP | Unconditional jump |
-| 0x57 | JUMPI | Conditional jump |
-| 0x60-0x7f | PUSH1-PUSH32 | Push 1-32 bytes |
-| 0x80-0x8f | DUP1-DUP16 | Duplicate stack item |
-| 0x90-0x9f | SWAP1-SWAP16 | Swap stack items |
+Detects `PUSH`+op (type `1`) and `DUP`+op (type `2`) pairs where the second opcode is arithmetic (`0x01`–`0x0c`) or comparison/bitwise (`0x10`–`0x1a`). Writes packed 7-byte records (`uint32_t pc`, `uint8_t pattern_type`, `uint8_t first_opcode`, `uint8_t second_opcode`), sets `*out_len` to `count * 7`, and returns `count`.
 
 ## Example
 
 ```c
+#include "voltaire.h"
+
 #include <stdio.h>
 
-int main() {
-    // Simple bytecode: PUSH1 0x00 PUSH1 0x00 JUMPDEST ADD STOP
-    unsigned char code[] = {
-        0x60, 0x00,  // PUSH1 0x00
-        0x60, 0x00,  // PUSH1 0x00
-        0x5b,        // JUMPDEST (valid at position 4)
-        0x01,        // ADD
-        0x00         // STOP
-    };
+int main(void) {
+    /* PUSH1 0x5b (not a jumpdest!), JUMPDEST (offset 2), ADD, STOP */
+    static const unsigned char code[] = {0x60, 0x5b, 0x5b, 0x01, 0x00};
 
-    // Validate
-    int result = primitives_bytecode_validate(code, sizeof(code));
-    printf("Valid: %d\n", result == 0);
-
-    // Find JUMPDESTs
-    uint32_t jumpdests[10];
-    int count = primitives_bytecode_analyze_jumpdests(code, sizeof(code), jumpdests, 10);
-    printf("JUMPDESTs: %d\n", count);  // 1
-
-    for (int i = 0; i < count; i++) {
-        printf("  Position %u\n", jumpdests[i]);  // 4
+    if (primitives_bytecode_validate(code, sizeof(code)) != PRIMITIVES_SUCCESS) {
+        return 1;
     }
 
-    // Check boundary
-    bool is_boundary = primitives_bytecode_is_boundary(code, sizeof(code), 4);
-    printf("Position 4 is boundary: %d\n", is_boundary);  // true
+    uint32_t jumpdests[8];
+    int count = primitives_bytecode_analyze_jumpdests(code, sizeof(code), jumpdests, 8);
+    printf("Valid JUMPDEST count: %d (first at pc=%u)\n", count, jumpdests[0]); /* 1, pc=2 */
 
-    // Position 1 is inside PUSH1 data
-    is_boundary = primitives_bytecode_is_boundary(code, sizeof(code), 1);
-    printf("Position 1 is boundary: %d\n", is_boundary);  // false
+    printf("pc=1 boundary? %d\n", primitives_bytecode_is_boundary(code, sizeof(code), 1)); /* 0 */
+    printf("pc=2 jumpdest? %d\n", primitives_bytecode_is_valid_jumpdest(code, sizeof(code), 2)); /* 1 */
+
+    unsigned char scan_buf[64];
+    size_t scan_len = sizeof(scan_buf);
+    int n_inst = primitives_bytecode_scan(code, sizeof(code), 0, (uint32_t)sizeof(code), scan_buf, &scan_len);
+    printf("Scanned %d instructions (%zu bytes)\n", n_inst, scan_len);
 
     return 0;
 }

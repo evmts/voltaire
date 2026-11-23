@@ -1,293 +1,163 @@
 ---
 title: Type System
-description: Auto-generated JSON-RPC types from the official OpenRPC specification
+description: Compile-time JSON-RPC validation with RpcSchema, VoltaireRpcSchema, TypedProvider, and OpenRPC types.
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
+`@tevm/voltaire/provider` types JSON-RPC calls at compile time through `RpcSchema` and `TypedProvider<TRpcSchema, TEventMap>`. Every method name, parameter tuple, and return type is resolved from a declarative schema tuple without runtime overhead.
 
-# Type System
+Source: [RpcSchema.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/provider/RpcSchema.ts), [TypedProvider.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/provider/TypedProvider.ts), [VoltaireRpcSchema.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/provider/schemas/VoltaireRpcSchema.ts).
 
-All JSON-RPC types are auto-generated from the [ethereum/execution-apis](https://github.com/ethereum/execution-apis) OpenRPC specification, ensuring they stay in sync with the official Ethereum JSON-RPC API.
-
-## Auto-Generation from OpenRPC
-
-Types are auto-generated from the official OpenRPC spec.
-
-**Source**: [ethereum/execution-apis](https://github.com/ethereum/execution-apis) OpenRPC specification
-
-**Format**: [OpenRPC](https://open-rpc.org/) JSON-RPC API description
-
-**Total methods**: 65 across 3 namespaces (eth, debug, engine)
-
-## Type Hierarchy
-
-### Namespace Organization
-
-```
-jsonrpc/
-├── types/              # Hand-written base types
-│   ├── Address.ts/zig
-│   ├── Keccak256.ts/zig
-│   ├── Quantity.ts/zig
-│   ├── BlockTag.ts/zig
-│   └── BlockSpec.ts/zig
-├── eth/                # Generated: 40 eth_* methods
-├── debug/              # Generated: 5 debug_* methods
-├── engine/             # Generated: 20 engine_* methods
-├── JsonRpc.ts/zig      # Root union of all methods
-└── index.ts/root.zig   # Module entry
+```mermaid
+flowchart LR
+  S["RpcSchema\nreadonly { Method, Parameters?, ReturnType }[]"]
+  S --> V["VoltaireRpcSchema\n(eth, debug, engine, web3, net, txpool, anvil)"]
+  S --> O["RpcSchemaOverride\n(custom or narrowed methods)"]
+  V --> D["DerivedRpcSchema<Base, Override>"]
+  O --> D
+  D --> TP["TypedProvider<TSchema, TEventMap>"]
+  TP --> REQ["provider.request({ method, params })\n→ Promise<ReturnType>"]
 ```
 
-**Important**: All files except `types/` are auto-generated and should **not** be edited manually.
+## Core Schema Types
 
-### Base Types
-
-Core types used throughout the JSON-RPC API:
+`RpcSchema` is a readonly array of `{ Method, Parameters?, ReturnType }` entries:
 
 ```typescript
-import type { brand } from '@tevm/voltaire/brand';
+export type RpcSchema = readonly {
+  Method: string;
+  Parameters?: unknown;
+  ReturnType: unknown;
+}[];
 
-// Address - 20-byte Ethereum address
-type Address = Uint8Array & { readonly [brand]: "Address" };
+export type RpcMethodNames<TSchema extends RpcSchema> = TSchema[number]['Method'];
 
-// Hash - 32-byte hash
-type Hash = Uint8Array & { readonly [brand]: "Hash" };
+export type RpcMethodParameters<
+  TSchema extends RpcSchema,
+  TMethod extends RpcMethodNames<TSchema>,
+> = Extract<TSchema[number], { Method: TMethod }>['Parameters'];
 
-// Hex - Hex-encoded byte string
-type Hex = string & { readonly [brand]: "Hex" };
-
-// Quantity - Hex-encoded unsigned integer
-type Quantity = string & { readonly [brand]: "Quantity" };
-
-// BlockTag - Block identifier
-type BlockTag = 'latest' | 'earliest' | 'pending' | 'safe' | 'finalized' | Quantity;
+export type RpcMethodReturnType<
+  TSchema extends RpcSchema,
+  TMethod extends RpcMethodNames<TSchema>,
+> = Extract<TSchema[number], { Method: TMethod }>['ReturnType'];
 ```
 
-These types are hand-written in `jsonrpc/types/` and used by generated method definitions.
+## Using `TypedProvider` with `VoltaireRpcSchema`
 
-## Branded Primitives Integration
-
-Generated types use Voltaire's branded primitive system:
+`VoltaireRpcSchema` bundles method definitions across `eth`, `debug`, `engine`, `web3`, `net`, `txpool`, and `anvil`. Typing a provider against `VoltaireRpcSchema` infers exact parameter tuples and return types for `provider.request(...)`:
 
 ```typescript
-// Generated eth_getBalance params
-interface EthGetBalanceParams {
-  address: Address;    // Branded Address from primitives
-  block: BlockTag;     // BlockTag type
-}
+import {
+  HttpProvider,
+  type EIP1193EventMap,
+  type TypedProvider,
+  type VoltaireRpcSchema,
+} from '@tevm/voltaire/provider';
 
-// Generated eth_call params
-interface EthCallParams {
-  from?: Address;
-  to: Address;
-  gas?: Quantity;
-  gasPrice?: Quantity;
-  value?: Quantity;
-  data?: Hex;          // Branded Hex from primitives
-}
+type VoltaireProvider = TypedProvider<VoltaireRpcSchema, EIP1193EventMap>;
+
+const provider = new HttpProvider('https://eth.llamarpc.com') as unknown as VoltaireProvider;
+
+// Return type inferred as Promise<string>
+const blockNumber = await provider.request({
+  method: 'eth_blockNumber',
+  params: [],
+});
+
+// Return type inferred as Promise<string>
+const balance = await provider.request({
+  method: 'eth_getBalance',
+  params: ['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', 'latest'],
+});
+
+// Compile error: wrong parameter tuple for eth_getBalance
+// await provider.request({ method: 'eth_getBalance', params: [123] });
 ```
 
-**Benefits**:
-- Type-safe at compile time
-- Zero runtime overhead (just Uint8Array/string)
-- Can't mix Address and Hash accidentally
-- IDE autocomplete and refactoring
+## Extending or Overriding a Schema
 
-## Method Type Structure
-
-Each generated method includes:
+Use `DerivedRpcSchema<TBase, TOverride>` to add vendor-specific RPC methods (such as Alchemy, Flashbots, or L2 sequencers) while retaining all methods in `VoltaireRpcSchema`:
 
 ```typescript
-// Example: eth_getBalance
-export namespace eth_getBalance {
-  // Request parameters
-  export interface Params {
-    address: Address;
-    block: BlockTag;
-  }
+import type {
+  DerivedRpcSchema,
+  RpcSchema,
+  TypedProvider,
+  VoltaireRpcSchema,
+} from '@tevm/voltaire/provider';
 
-  // Response result type
-  export type Result = Quantity;
+type CustomMethods = readonly [
+  {
+    Method: 'eth_sendBundle';
+    Parameters: [
+      {
+        txs: string[];
+        blockNumber: string;
+        minTimestamp?: number;
+        maxTimestamp?: number;
+      },
+    ];
+    ReturnType: { bundleHash: string };
+  },
+];
 
-  // Full method type
-  export type Method = (
-    address: Address,
-    block: BlockTag
-  ) => Promise<Response<Quantity>>;
+type FlashbotsSchema = DerivedRpcSchema<VoltaireRpcSchema, CustomMethods>;
+type FlashbotsProvider = TypedProvider<FlashbotsSchema>;
+
+async function submitBundle(provider: FlashbotsProvider, txs: string[], blockNumber: string) {
+  // Typed as Promise<{ bundleHash: string }>
+  return provider.request({
+    method: 'eth_sendBundle',
+    params: [{ txs, blockNumber }],
+  });
 }
 ```
 
-## Response Type
+## State and Block Overrides
 
-All methods return the same `Response<T>` structure:
-
-```typescript
-type Response<T> =
-  | { result: T; error?: never }
-  | { result?: never; error: RpcError };
-
-interface RpcError {
-  code: number;
-  message: string;
-  data?: unknown;
-}
-```
-
-This enforces error checking before accessing results.
-
-## Type Safety Examples
-
-### Compile-Time Validation
+`@tevm/voltaire/provider` exports `StateOverride` and `BlockOverrides` for typed `eth_call` and `eth_estimateGas` simulations:
 
 ```typescript
-import { Address } from '@tevm/voltaire/Address';
-import { Keccak256 } from '@tevm/voltaire/Keccak256';
+import type { BlockOverrides, StateOverride } from '@tevm/voltaire/provider';
 
-// ✅ Correct: Address type
-await provider.eth_getBalance(Address('0x...'), 'latest');
+const stateOverride: StateOverride = {
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0': {
+    balance: '0x56bc75e2d63100000', // Override account balance to 100 ETH
+  },
+};
 
-// ❌ Error: string not assignable to Address
-await provider.eth_getBalance('0x...', 'latest');
-
-// ❌ Error: Keccak256Hash not assignable to Address
-await provider.eth_getBalance(Keccak256.hash(data), 'latest');
-```
-
-### Type Inference
-
-TypeScript infers return types automatically:
-
-```typescript
-// Inferred: Promise<Response<Quantity>>
-const balanceResponse = await provider.eth_getBalance(address, 'latest');
-
-// Inferred: Promise<Response<Block>>
-const blockResponse = await provider.eth_getBlockByNumber('latest', true);
-
-// Inferred: Promise<Response<Hex>>
-const callResponse = await provider.eth_call(params, 'latest');
-```
-
-### Discriminated Unions
-
-After checking for errors, TypeScript narrows types:
-
-```typescript
-const response = await provider.eth_getBalance(address, 'latest');
-
-if (response.error) {
-  // response.error: RpcError
-  // response.result: undefined
-  console.error(response.error.message);
-} else {
-  // response.result: Quantity
-  // response.error: undefined
-  const balance = BigInt(response.result);
-}
-```
-
-## TypeScript and Zig Interop
-
-Types are generated for both TypeScript and Zig:
-
-<Tabs>
-<Tab title="TypeScript">
-
-```typescript
-// TypeScript types
-import * as eth from '@tevm/voltaire/jsonrpc/eth';
-
-type BalanceParams = typeof eth.eth_getBalance.Params;
-type BalanceResult = typeof eth.eth_getBalance.Result;
-
-const params: BalanceParams = {
-  address: Address('0x...'),
-  block: 'latest'
+const blockOverrides: BlockOverrides = {
+  baseFee: '0x3b9aca00', // 1 gwei
 };
 ```
 
-</Tab>
-<Tab title="Zig">
+## OpenRPC Base Types (`@tevm/voltaire/jsonrpc`)
 
-```zig
-// Zig types
-const jsonrpc = @import("jsonrpc");
-const eth = jsonrpc.eth;
+`@tevm/voltaire/jsonrpc` re-exports the base JSON-RPC wire types used by request builders:
 
-// eth_getBalance params
-const params = eth.EthGetBalance.Params{
-    .address = "0x...",
-    .block = "latest",
-};
+| Type | Representation | Purpose |
+| --- | --- | --- |
+| `Quantity` | Hex-encoded unsigned integer (`0x0`, `0x10`) | Balances, block numbers, gas, nonces |
+| `Data` | Even-length hex byte string | Calldata, bytecode, storage values |
+| `Hash` | 32-byte hex hash | Block hashes, transaction hashes, topic hashes |
+| `BlockTag` | `'latest' \| 'earliest' \| 'pending' \| 'safe' \| 'finalized'` | Named block references |
+| `BlockSpec` | `BlockTag \| Quantity \| { blockHash }` | Block argument to state queries |
+| `Block` | JSON-RPC block header/body object | Return type of `eth_getBlockBy*` |
 
-// eth_getBalance result
-const result: eth.EthGetBalance.Result = try call(params);
-```
+## Exported Types Summary
 
-</Tab>
-</Tabs>
-
-## Version Compatibility
-
-Generated types match the version of ethereum/execution-apis used during generation.
-
-**Current version**: Based on latest execution-apis main branch
-
-**Update frequency**: Regenerate types when new RPC methods or parameters are added to the spec
-
-**Breaking changes**: Rare, but follow Ethereum's JSON-RPC versioning (e.g., engine_newPayloadV1 → V2 → V3)
-
-## Custom Types
-
-While most types are generated, you can extend them for application-specific needs:
-
-```typescript
-import type { Provider } from '@tevm/voltaire/provider';
-import * as Address from '@tevm/voltaire/Address';
-
-// Custom wrapper type
-interface AccountInfo {
-  address: Address.AddressType;
-  balance: bigint;
-  nonce: number;
-  isContract: boolean;
-}
-
-// Helper function using generated types
-async function getAccountInfo(
-  provider: Provider,
-  address: Address.AddressType
-): Promise<AccountInfo | null> {
-  const [balanceRes, nonceRes, codeRes] = await Promise.all([
-    provider.eth_getBalance(address, 'latest'),
-    provider.eth_getTransactionCount(address, 'latest'),
-    provider.eth_getCode(address, 'latest')
-  ]);
-
-  if (balanceRes.error || nonceRes.error || codeRes.error) {
-    return null;
-  }
-
-  return {
-    address,
-    balance: BigInt(balanceRes.result),
-    nonce: Number(nonceRes.result),
-    isContract: codeRes.result !== '0x'
-  };
-}
-```
+| Symbol | Module | Role |
+| --- | --- | --- |
+| `Provider` | `@tevm/voltaire/provider` | Minimal EIP-1193 interface (`request`, `on`, `removeListener`) |
+| `TypedProvider<TSchema, TEventMap>` | `@tevm/voltaire/provider` | Schema-parameterized EIP-1193 interface |
+| `EIP1193Provider` | `@tevm/voltaire/provider` | Alias for `TypedProvider<RpcSchema, EIP1193EventMap>` |
+| `VoltaireRpcSchema` | `@tevm/voltaire/provider` | Built-in OpenRPC schema across all standard namespaces |
+| `DerivedRpcSchema` | `@tevm/voltaire/provider` | Merges base schema with custom method overrides |
+| `RequestArguments` | `@tevm/voltaire/provider` | `{ readonly method: string; readonly params?: readonly unknown[] \| object }` |
+| `RpcError` | `@tevm/voltaire/provider` | `{ code: number; message: string; data?: unknown }` |
 
 ## Related
 
-- [Method API](/jsonrpc-provider/method-api) - Using typed methods
-- [eth Methods](/jsonrpc-provider/eth-methods) - All 40 eth namespace methods
-- [debug Methods](/jsonrpc-provider/debug-methods) - All 5 debug namespace methods
-- [engine Methods](/jsonrpc-provider/engine-methods) - All 20 engine namespace methods
-
-## Specifications
-
-- [ethereum/execution-apis](https://github.com/ethereum/execution-apis) - Official JSON-RPC specification
-- [OpenRPC](https://open-rpc.org/) - JSON-RPC API description format
-- [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) - Ethereum Provider JavaScript API
+- [Method API](/jsonrpc-provider/method-api) — Request builder functions
+- [Error Handling](/jsonrpc-provider/error-handling) — `ProviderRpcError` and code tables
+- [Branded Types](/concepts/branded-types) — Zero-overhead nominal typing in Voltaire

@@ -1,189 +1,124 @@
 ---
 title: Error Handling
-description: Typed errors with Effect Schema and services
+description: Typed error channels, tagged error taxonomy, Schedule retries, and Either for partial batch failures.
 ---
 
-voltaire-effect uses [Effect's error model](https://effect.website/docs/error-management/two-error-types/): errors are values in the type signature, not invisible exceptions.
+In `voltaire-effect`, expected failures occupy the `E` channel of `Effect<A, E, R>`. Every error carries a readonly `_tag` discriminant so TypeScript tracks recovery and enforces exhaustive handling.
 
-## Schema Errors
+```mermaid
+flowchart LR
+  Op["Effect (A, E1 | E2, R)"] -->|"Effect.catchTag('E1', ...)"| Narrow["Effect (A, E2, R)"]
+  Narrow -->|"Effect.catchTag('E2', ...)"| Safe["Effect (A, never, R)"]
+  Op -.->|"Unhandled E1/E2"| Caller["Propagates in caller E union"]
+```
 
-Schema decode produces `ParseError` on invalid input:
+## Schema Validation Errors
+
+Decoding invalid input fails with `ParseError`, containing a human-readable `message` and structured `issue` tree:
 
 ```typescript
+import * as Effect from 'effect/Effect'
 import * as S from 'effect/Schema'
 import * as Address from 'voltaire-effect/primitives/Address'
-
-// Sync - throws ParseError
-try {
-  S.decodeSync(Address.Hex)('invalid')
-} catch (e) {
-  // e is ParseError
-}
-
-// Effect - returns Effect<AddressType, ParseError>
-const result = S.decode(Address.Hex)('invalid')
-```
-
-The error type is in the signature. Handle it with `catchTag`:
-
-```typescript
-import * as Effect from 'effect/Effect'
-
 import * as A from '@tevm/voltaire/Address'
 
-S.decode(Address.Hex)(input).pipe(
-  Effect.catchTag("ParseError", (e) => 
-    Effect.succeed(A.zero())
+const parseWithFallback = (input: string) =>
+  S.decode(Address.Hex)(input).pipe(
+    Effect.catchTag('ParseError', (e) => {
+      console.error(e.message, e.issue)
+      return Effect.succeed(A.zero())
+    })
   )
-)
 ```
 
-## Error Details
-
-`ParseError` contains structured information:
-
-```typescript
-import * as Effect from 'effect/Effect'
-import * as S from 'effect/Schema'
-
-S.decode(Address.Hex)('0x123').pipe(
-  Effect.catchTag("ParseError", (e) => {
-    console.log(e.message)  // Human-readable error
-    console.log(e.issue)    // Structured issue tree
-    return Effect.fail(e)
-  })
-)
-```
-
-## Either for Branching
-
-Use `decodeEither` when you want to branch on success/failure:
+For synchronous branching without an Effect runtime, use `S.decodeEither`:
 
 ```typescript
 import * as S from 'effect/Schema'
 import * as Either from 'effect/Either'
+import * as Address from 'voltaire-effect/primitives/Address'
 
 const result = S.decodeEither(Address.Hex)(input)
-
 if (Either.isRight(result)) {
-  const addr = result.right
-  // use addr
+  // result.right is AddressType
 } else {
-  const error = result.left
-  // handle error
+  // result.left is ParseError
 }
 ```
 
-## Service Errors
+## Error Accumulation in `Effect.gen`
 
-Services can define their own error types:
+Yielding multiple fallible operations produces the union of their error channels automatically:
 
 ```typescript
 import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import { getBalance } from 'voltaire-effect'
+
+// Inferred: Effect<bigint, ParseError | GetBalanceError, ProviderService>
+const fetchBalance = (rawAddress: string) =>
+  Effect.gen(function* () {
+    const addr = yield* S.decode(Address.Hex)(rawAddress)
+    return yield* getBalance(addr)
+  })
+```
+
+Handle specific tags with `Effect.catchTag` or `Effect.catchTags`:
+
+```typescript
 import { getBlock, withTimeout } from 'voltaire-effect'
 
-const program = Effect.gen(function* () {
-  // Per-request timeout override
-  const block = yield* getBlock({ blockTag: "latest" })
-    .pipe(withTimeout("5 seconds"))
-  return block
-}).pipe(
-  Effect.catchTag("ProviderNotFoundError", (e) =>
-    Effect.succeed(null)
-  ),
-  Effect.catchTag("ProviderTimeoutError", (e) =>
-    Effect.succeed(null)
-  )
+const latestOrNull = getBlock({ blockTag: 'latest' }).pipe(
+  withTimeout('5 seconds'),
+  Effect.catchTags({
+    ProviderNotFoundError: () => Effect.succeed(null),
+    ProviderTimeoutError: () => Effect.succeed(null)
+  })
 )
 ```
 
-## Error Composition
+## Retry with `Schedule`
 
-Errors accumulate in the type signature:
-
-```typescript
-import { getBalance } from 'voltaire-effect'
-
-// Effect<Address, ParseError, never>
-const addr = S.decode(Address.Hex)(input)
-
-// Effect<bigint, ParseError | GetBalanceError, ProviderService>
-const program = Effect.gen(function* () {
-  const a = yield* S.decode(Address.Hex)(input)
-  return yield* getBalance(a)
-})
-```
-
-Handle each error type explicitly or let them propagate.
-
-## Retry with Schedule
-
-Use Effect Schedule for retry behavior:
+Attach exponential backoff with jitter per request via `withRetrySchedule` or around any Effect via `Effect.retry`:
 
 ```typescript
 import * as Schedule from 'effect/Schedule'
 import { getBalance, withRetrySchedule } from 'voltaire-effect'
 
-// Exponential backoff with jitter
-const retrySchedule = Schedule.exponential("500 millis").pipe(
+const retrySchedule = Schedule.exponential('500 millis').pipe(
   Schedule.jittered,
-  Schedule.recurs(5)
+  Schedule.compose(Schedule.recurs(5))
 )
 
-getBalance(addr).pipe(
-  withRetrySchedule(retrySchedule)
-)
+const balance = getBalance(addr).pipe(withRetrySchedule(retrySchedule))
 ```
 
-## Compared to Base Voltaire
+## Error Taxonomy
 
-Base Voltaire throws exceptions:
+| Error Class | `_tag` | Source |
+| --- | --- | --- |
+| `ParseError` | `ParseError` | Effect Schema decoding/encoding failures |
+| `TransportError` | `TransportError` | HTTP/WebSocket network errors, timeouts, JSON-RPC errors |
+| `ProviderResponseError` | `ProviderResponseError` | Malformed or unexpected RPC payload |
+| `ProviderNotFoundError` | `ProviderNotFoundError` | Missing block, transaction, or receipt |
+| `ProviderValidationError` | `ProviderValidationError` | Invalid argument passed to provider method |
+| `ProviderTimeoutError` | `ProviderTimeoutError` | Provider operation exceeded deadline |
+| `ProviderStreamError` | `ProviderStreamError` | Subscription or watch stream failure |
+| `ProviderReceiptPendingError` | `ProviderReceiptPendingError` | Transaction receipt not yet mined |
+| `ProviderConfirmationsPendingError` | `ProviderConfirmationsPendingError` | Required block confirmations not yet reached |
+| `SignerError` | `SignerError` | Signing, nonce, fee, or broadcast failure |
+| `ContractCallError` | `ContractCallError` | Read/simulate call revert or ABI decode error |
+| `ContractWriteError` | `ContractWriteError` | Write preparation or transaction submission error |
+| `BlockStreamError` | `BlockStreamError` | Block stream backfill or watch failure |
+| `EventStreamError` | `EventStreamError` | Event stream backfill or watch failure |
+| `CryptoError` | `CryptoError` | Cryptographic primitive failure |
 
-```typescript
-// Base Voltaire - throws
-import { Address } from '@tevm/voltaire'
+Provider functions also export method-specific unions (such as `GetBalanceError`, `GetBlockError`, and `WaitForTransactionReceiptError`) that combine `TransportError` with the exact provider errors that method can emit.
 
-try {
-  Address('invalid')
-} catch (e) {
-  // e is unknown
-}
-```
+## `Either` for Partial Batch Failures
 
-voltaire-effect makes errors typed and composable:
-
-```typescript
-// voltaire-effect - typed errors
-S.decode(Address.Hex)('invalid').pipe(
-  Effect.catchTag("ParseError", handleParseError),
-  Effect.catchTag("TransportError", handleTransportError)
-)
-```
-
-## Error Types
-
-voltaire-effect defines these error types:
-
-| Error | Tag | Source |
-|-------|-----|--------|
-| ParseError | ParseError | Schema decode failures |
-| SignerError | SignerError | Transaction signing failures |
-| TransportError | TransportError | Network/HTTP failures |
-| ProviderResponseError | ProviderResponseError | Invalid provider response |
-| ProviderNotFoundError | ProviderNotFoundError | Missing block/tx/receipt |
-| ProviderValidationError | ProviderValidationError | Invalid input to provider method |
-| ProviderTimeoutError | ProviderTimeoutError | Provider operation timed out |
-| ProviderStreamError | ProviderStreamError | Provider stream failures |
-| ProviderReceiptPendingError | ProviderReceiptPendingError | Receipt not available yet |
-| ProviderConfirmationsPendingError | ProviderConfirmationsPendingError | Confirmations not met |
-| BlockStreamError | BlockStreamError | Block streaming failures |
-| CryptoError | CryptoError | Cryptographic operation failures |
-
-Provider methods expose method-specific error unions (e.g. `GetBalanceError`, `GetBlockError`) that combine `TransportError` with relevant provider errors.
-
-## Either for Partial Failures
-
-Use `Either` when operations can partially succeed (e.g., multicall batches):
+`Effect` short-circuits on the first error. When a batch (such as `aggregate3` multicall) can partially succeed, represent per-item outcomes with `Either`:
 
 ```typescript
 import { Effect, Either, Array } from 'effect'
@@ -191,76 +126,35 @@ import { aggregate3 } from 'voltaire-effect'
 
 const program = Effect.gen(function* () {
   const rawResults = yield* aggregate3(calls)
-  
-  // Transform to Either for ergonomic handling
-  const results = rawResults.map((r, i) =>
+
+  const results = rawResults.map((r, index) =>
     r.success
-      ? Either.right({ index: i, data: r.returnData })
-      : Either.left({ index: i, message: 'Call failed' })
+      ? Either.right({ index, data: r.returnData })
+      : Either.left({ index, message: 'Call reverted' })
   )
-  
-  // Exhaustive pattern matching
-  const processed = results.map(r =>
-    Either.match(r, {
+
+  const [failures, successes] = Array.partition(results, Either.isLeft)
+
+  const summary = results.map((entry) =>
+    Either.match(entry, {
       onLeft: (err) => ({ balance: null, error: err.message }),
       onRight: (ok) => ({ balance: BigInt(ok.data), error: null })
     })
   )
-  
-  // Type-safe filtering
-  const successes = results.filter(Either.isRight).map(r => r.right)
-  const failures = results.filter(Either.isLeft).map(r => r.left)
-  
-  // Or partition in one pass
-  const [fails, wins] = Array.partition(results, Either.isLeft)
-  
-  return { processed, successes, failures }
+
+  return { summary, successes, failures }
 })
 ```
 
-### Either vs Effect
-
-| Use Case | Use `Either` | Use `Effect` |
-|----------|--------------|--------------|
-| Partial failures (some succeed, some fail) | ✅ | ❌ |
-| Batch results with mixed outcomes | ✅ | ❌ |
-| Operations that can retry/recover | ❌ | ✅ |
-| Async operations with dependencies | ❌ | ✅ |
-| Schema validation (sync) | ✅ `decodeEither` | ✅ `decode` |
-
-### Either API Quick Reference
-
-```typescript
-import { Either } from 'effect'
-
-// Create
-const success = Either.right(42)
-const failure = Either.left(new Error('oops'))
-
-// Check type
-Either.isRight(success) // true
-Either.isLeft(failure)  // true
-
-// Pattern match (exhaustive)
-Either.match(result, {
-  onLeft: (error) => `Error: ${error.message}`,
-  onRight: (value) => `Value: ${value}`
-})
-
-// Transform
-Either.map(success, n => n * 2)           // Either.right(84)
-Either.mapLeft(failure, e => e.message)   // Either.left('oops')
-
-// Extract with fallback
-Either.getOrElse(failure, () => 0)        // 0
-Either.getOrElse(success, () => 0)        // 42
-```
+| Pattern | Use `Either` | Use `Effect` |
+| --- | --- | --- |
+| Mixed-outcome batches (multicall) | Yes | No (short-circuits) |
+| Sync schema decode without runtime | `S.decodeEither` | `S.decode` |
+| Async I/O, retries, timeouts, DI | No | Yes |
 
 ## See Also
 
-- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/) — Official Effect docs
-- [Effect Either](https://effect.website/docs/data-types/either/) — Either type for error handling
-- [Multicall Example](/examples/multicall) — Either pattern for batch results
-- [Provider Service](/services/provider) — Provider error handling
-- [Signer Service](/services/signer) — Signer error handling
-- [Debugging Guide](/guides/debugging) — Inspect errors and trace execution
+- [Stream Errors](/stream) — `BlockRangeTooLargeError` and `UnrecoverableReorgError`
+- [Provider Service](/services/provider) — Method-specific error unions
+- [Debugging Guide](/guides/debugging) — Inspecting `Cause` and fiber traces
+- [Effect Error Management](https://effect.website/docs/error-management/two-error-types/)

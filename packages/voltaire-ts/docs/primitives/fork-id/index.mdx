@@ -8,7 +8,7 @@ description: "EIP-2124 fork identifier for network compatibility"
 ForkId implements EIP-2124 fork identification for DevP2P network validation. It helps peers determine if they're on compatible forks before exchanging data.
 
 ```typescript
-import * as ForkId from '@voltaire/primitives/ForkId'
+import { ForkId } from '@tevm/voltaire'
 
 const forkId = ForkId.from({
   hash: new Uint8Array([0xfc, 0x64, 0xec, 0x04]),

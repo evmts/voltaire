@@ -1,86 +1,37 @@
 ---
 title: What is Voltaire?
-description: Modern general-purpose Ethereum library for Zig
+description: Systems-level Ethereum primitives, cryptography, and EVM precompiles written in Zig 0.15.
 ---
 
-Voltaire is a modern general-purpose Ethereum library. Type-safe primitives, high performance, and designed for systems programming.
+Voltaire is an Ethereum primitives, cryptography, and execution library written in Zig 0.15. Each type maps directly to its canonical Ethereum byte representation, exposes explicit allocator boundaries, and compiles to native binaries, C shared libraries, and WebAssembly modules from a single codebase.
 
-## Simple, Intuitive API
+## Design Properties
 
-Voltaire's API mirrors Ethereum specifications. Each primitive is a simple type:
+- **Exact value representations**: `Address` is `struct { bytes: [20]u8 }`; `Hash` is `[32]u8`; `Selector` is `[4]u8`. Fixed-size operations execute on the stack without heap allocation.
+- **Explicit memory ownership**: Every function that allocates takes `std.mem.Allocator` and returns an owned slice or struct with a `deinit(allocator)` method. No global allocator or hidden heap traffic exists.
+- **Compile-time validation**: Static literals can be validated at compile time with `Address.addressFromHex` and `crypto.Hash.fromHexComptime`, failing compilation on malformed hex.
+- **Multi-target core**: The same Zig modules compile natively (`x86_64`, `aarch64`), to `wasm32-wasi` reactor binaries, and behind a C ABI (`src/c_api.zig` -> `primitives.h`) consumed by TypeScript, Rust, Go, Python, and Swift.
 
-```zig
-const primitives = @import("primitives");
-const crypto = @import("crypto");
+## Module Graph
 
-// Addresses
-const address = try primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const hex = address.toHex();           // "0x742d35cc..."
-const checksummed = address.toChecksummed(); // "0x742d35Cc..."
+```mermaid
+flowchart TD
+    Primitives["primitives\n(Address, Hash, Hex, Rlp, AbiEncoding,\nTransaction, Bytecode, Hardfork, Trie)"]
+    Crypto["crypto\n(Keccak256, HashUtils, secp256k1,\nCrypto, bls12_381, bn254, c_kzg)"]
+    Precompiles["precompiles\n(0x01..0x13 + 0x0100 P256VERIFY)"]
+    StateMgr["state-manager\n(Accounts, Storage, Snapshots)"]
+    Chain["blockchain\n(Blocks, Reorgs)"]
+    Rpc["jsonrpc\n(Self-contained RPC Types)"]
 
-// Hashes
-const hash = crypto.keccak256.hash("hello");
-const bytes32 = primitives.Bytes32.zero();
-
-// Numbers (use u256 for wei amounts)
-const value: u256 = 1_000_000_000_000_000_000; // 1 ETH in wei
-
-// Bytecode analysis
-const code = try primitives.Bytecode.fromHex("0x6080604052");
-const analysis = code.analyze();
-
-// RLP encoding
-const encoded = try primitives.rlp.encode(allocator, data);
-defer allocator.free(encoded);
-
-// Secp256k1 signing
-const signature = try crypto.secp256k1.sign(message_hash, private_key);
-const recovered = try crypto.secp256k1.recoverPublicKey(message_hash, signature);
+    Primitives <--> Crypto
+    Primitives --> Precompiles
+    Crypto --> Precompiles
+    Primitives --> StateMgr
+    Crypto --> StateMgr
+    Primitives --> Chain
 ```
 
-## Why Zig for Ethereum?
-
-### Performance
-- No garbage collection overhead
-- Direct memory control
-- SIMD optimizations for crypto
-- Compiles to efficient native code or WASM
-
-### Safety
-- Compile-time checks prevent bugs
-- No hidden allocations
-- Explicit error handling
-- Memory safety without runtime cost
-
-### Interop
-- C ABI compatible
-- Easy WASM compilation
-- FFI with any language
-- Embeddable in other runtimes
-
-## Module Structure
-
-```zig
-// Primitives - Ethereum data types
-const primitives = @import("primitives");
-primitives.Address      // 20-byte addresses
-primitives.Bytes32      // 32-byte words
-primitives.rlp          // RLP encoding/decoding
-primitives.Bytecode     // EVM bytecode analysis
-
-// Crypto - Cryptographic operations
-const crypto = @import("crypto");
-crypto.keccak256        // Ethereum hashing
-crypto.secp256k1        // ECDSA signatures
-crypto.bls12_381        // BLS signatures
-crypto.bn254            // Pairing operations
-
-// Precompiles - EVM precompiled contracts
-const precompiles = @import("precompiles");
-precompiles.ecrecover   // Signature recovery
-precompiles.sha256      // SHA-256 hashing
-precompiles.modexp      // Modular exponentiation
-```
+`primitives` and `crypto` cross-import through Zig's lazy module resolution in `build.zig`. `jsonrpc` is self-contained and has no dependency on `primitives` or `crypto`.
 
 ## Quick Example
 
@@ -89,44 +40,54 @@ const std = @import("std");
 const primitives = @import("primitives");
 const crypto = @import("crypto");
 
+const Address = primitives.Address;
+const Hash = primitives.Hash;
+const Rlp = primitives.Rlp;
+
 pub fn main() !void {
-    // Parse an address
-    const addr = try primitives.Address.fromHex(
-        "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-    );
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-    // Hash some data
-    const data = "hello world";
-    const hash = crypto.keccak256.hash(data);
+    // Parse and EIP-55 checksum an address (stack-only, returns [42]u8)
+    const addr = try Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+    const checksum = Address.toChecksummed(addr);
 
-    // Print results
-    std.debug.print("Address: {s}\n", .{addr.toHex()});
-    std.debug.print("Hash: {s}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+    // Keccak-256 hash (stack-only, returns [32]u8)
+    const digest = Hash.keccak256("hello");
+    const digest_hex = crypto.Hash.toHex(digest); // [66]u8 on stack
+
+    // RLP encode a list (heap-allocated, caller frees)
+    const list = [_][]const u8{ "cat", "dog" };
+    const encoded = try Rlp.encode(allocator, list[0..]);
+    defer allocator.free(encoded);
+
+    // Analyze EVM bytecode jump destinations
+    const raw_code = [_]u8{ 0x60, 0x04, 0x56, 0x00, 0x5b, 0x00 };
+    var bytecode = try primitives.Bytecode.init(allocator, &raw_code);
+    defer bytecode.deinit();
+
+    std.debug.print("Address:   {s}\n", .{&checksum});
+    std.debug.print("Keccak256: {s}\n", .{&digest_hex});
+    std.debug.print("RLP bytes: {d}\n", .{encoded.len});
+    std.debug.print("PC 4 valid JUMPDEST: {}\n", .{bytecode.isValidJumpDest(4)});
 }
 ```
 
-## Installation
+## Exported Modules
 
-Add Voltaire to your `build.zig.zon`:
-
-```zig
-.dependencies = .{
-    .voltaire = .{
-        .url = "https://github.com/evmts/voltaire/archive/main.tar.gz",
-    },
-},
-```
-
-Then in `build.zig`:
-
-```zig
-const voltaire = b.dependency("voltaire", .{});
-exe.root_module.addImport("primitives", voltaire.module("primitives"));
-exe.root_module.addImport("crypto", voltaire.module("crypto"));
-```
+| Import Name | Primary Types & Namespaces |
+| :--- | :--- |
+| `@import("primitives")` | `Address`, `Hash`, `Bytes32`, `Hex`, `Rlp`, `AbiEncoding`, `Transaction`, `Bytecode`, `Opcode`, `Hardfork`, `GasConstants`, `FeeMarket`, `Denomination`, `Trie`, `Ssz` |
+| `@import("crypto")` | `Keccak256`, `Hash`, `HashUtils`, `Keccak256_Accel`, `keccak_asm`, `Crypto`, `secp256k1`, `bls12_381`, `bn254`, `bn254_arkworks`, `c_kzg`, `ModExp`, `Blake2`, `Ripemd160`, `Eip712`, `bip39` |
+| `@import("precompiles")` | `execute`, `isPrecompile`, `ecrecover`, `sha256`, `ripemd160`, `identity`, `modexp`, `bn254_*`, `blake2f`, `point_evaluation`, `bls12_*`, `p256verify` |
+| `@import("state-manager")` | `StateManager`, `ForkBackend`, snapshot/revert journals |
+| `@import("blockchain")` | `Blockchain`, block headers/bodies, canonical head management |
+| `@import("jsonrpc")` | Hand-written Ethereum JSON-RPC types and method definitions |
 
 ## Next Steps
 
-- [Primitives](/primitives) - Core Ethereum types
-- [Cryptography](/crypto) - Hashing and signatures
-- [Precompiles](/evm/precompiles) - EVM precompiled contracts
+- [Getting Started](/getting-started) — Add Voltaire to `build.zig.zon` and run your first build.
+- [Tutorial: First Ethereum CLI Tool](/tutorials/first-ethereum-tool) — Build a zero-allocation address, Keccak-256, and RLP utility in Zig.
+- [Architecture](/dev/architecture) — Inspect the build graph, vendored native crypto, and FFI boundary.
+- [Library Comparisons](/comparisons) — Compare Voltaire Zig against Alloy (Rust), go-ethereum, and TypeScript libraries.

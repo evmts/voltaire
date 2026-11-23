@@ -3,8 +3,6 @@ title: GasUsed
 description: Gas consumed by transaction execution
 ---
 
-# GasUsed
-
 `GasUsed` represents the actual amount of gas consumed by a transaction during execution. Found in transaction receipts as `receipt.gasUsed`.
 
 ## Type Definition
@@ -40,7 +38,7 @@ Gas mechanics defined in Yellow Paper Section 6 (Transaction Execution):
 Create GasUsed from number, bigint, or string.
 
 ```zig
-import { GasUsed } from '@tevm/primitives';
+import { GasUsed } from '@tevm/voltaire';
 
 // From transaction receipt
 const gasUsed = GasUsed.from(receipt.gasUsed);
@@ -151,7 +149,7 @@ See [GasCosts](/primitives/gas-costs) for complete list.
 ### Calculate Transaction Cost
 
 ```zig
-import { GasUsed } from '@tevm/primitives';
+import { GasUsed } from '@tevm/voltaire';
 
 // Get from receipt
 const receipt = await provider.getTransactionReceipt(txHash);
@@ -168,7 +166,7 @@ console.log(`Cost: ${cost} Wei`);
 ### Compare Gas Usage
 
 ```zig
-import { GasUsed } from '@tevm/primitives';
+import { GasUsed } from '@tevm/voltaire';
 
 const tx1Gas = GasUsed.from(receipt1.gasUsed);
 const tx2Gas = GasUsed.from(receipt2.gasUsed);
@@ -181,7 +179,7 @@ if (GasUsed.compare(tx1Gas, tx2Gas) > 0) {
 ### Analyze Block Gas Usage
 
 ```zig
-import { GasUsed } from '@tevm/primitives';
+import { GasUsed } from '@tevm/voltaire';
 
 const block = await provider.getBlock(blockNumber, true);
 let totalGas = 0n;

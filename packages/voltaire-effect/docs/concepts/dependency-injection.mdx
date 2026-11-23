@@ -1,153 +1,126 @@
 ---
 title: Dependency Injection
-description: Services for crypto, providers, and wallets
+description: Context.Tag services, Layer wiring, tree-shaking, test substitution, and FiberRef scoped overrides.
 ---
 
-Base Voltaire requires explicit dependency passing:
+Base Voltaire passes cryptographic primitives explicitly as options (`Address.from(hex, { keccak256 })`). `voltaire-effect` replaces manual parameter threading with Effect services (`Context.Tag`) and `Layer` graphs. Programs declare dependencies in their `R` type parameter and receive implementations once at the entry point.
 
-```typescript
-import * as Address from '@tevm/voltaire/Address'
-import { keccak256 } from '@tevm/voltaire/Keccak256'
-
-const addr = Address.from('0x742d...', { keccak256 })
-Address.toChecksummed(addr)  // needs keccak256
+```mermaid
+flowchart BT
+  T["HttpTransport(url)\nprovides TransportService"] --> P["Provider\nprovides ProviderService"]
+  K["KeccakLive\nprovides KeccakService"] --> A["LocalAccount(key)\nprovides AccountService"]
+  S["Secp256k1Live\nprovides Secp256k1Service"] --> A
+  P --> SG["Signer.Live\nprovides SignerService"]
+  A --> SG
+  T --> SG
+  SG --> Prog["Application Program"]
 ```
 
-voltaire-effect uses Effect services instead. Dependencies are declared in the type, provided at the edge.
-
-## Services
-
-A service is a typed interface with an implementation:
+## Declaring and Providing a Service
 
 ```typescript
+import * as Effect from 'effect/Effect'
 import { KeccakService, KeccakLive } from 'voltaire-effect/crypto/Keccak256'
-import * as Effect from 'effect/Effect'
 
-// Program declares it needs KeccakService
-const program = Effect.gen(function* () {
-  const keccak = yield* KeccakService
-  return yield* keccak.hash(data)
-})
-// Effect<Uint8Array, never, KeccakService>
+// Declares requirement: Effect<Uint8Array, never, KeccakService>
+const hashBytes = (data: Uint8Array) =>
+  Effect.gen(function* () {
+    const keccak = yield* KeccakService
+    return yield* keccak.hash(data)
+  })
 
-// Provide at the edge
-Effect.runPromise(program.pipe(Effect.provide(KeccakLive)))
-```
-
-The type signature shows what's needed. The implementation is injected.
-
-## Schema with Services
-
-Some schemas require services. `Address.Checksummed` needs `KeccakService`:
-
-```typescript
-import * as Address from 'voltaire-effect/primitives/Address'
-import * as S from 'effect/Schema'
-import * as Effect from 'effect/Effect'
-import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
-
-const addr = S.decodeSync(Address.Hex)('0x742d35Cc...')
-
-// Encode to checksummed - needs KeccakService
-const checksummed = await Effect.runPromise(
-  S.encode(Address.Checksummed)(addr).pipe(
-    Effect.provide(KeccakLive)
-  )
+// Satisfy requirement at the boundary
+const digest = await Effect.runPromise(
+  hashBytes(new Uint8Array([1, 2, 3])).pipe(Effect.provide(KeccakLive))
 )
 ```
 
-## Available Services
+## Schemas That Require Services
 
-| Service | Live Implementation | Purpose |
-|---------|---------------------|---------|
-| `KeccakService` | `KeccakLive` | Keccak256 hashing |
-| `Secp256k1Service` | `Secp256k1Live` | ECDSA signing |
-| `ProviderService` | `Provider` | JSON-RPC calls |
-| `SignerService` | `Signer` | Transaction signing |
-| `TransportService` | `HttpTransport` | HTTP/WS transport |
-
-## Composing Layers
-
-Stack multiple services with `Layer.merge`:
+Schemas can declare service requirements directly in their `R` channel. `Address.Checksummed` requires `KeccakService` to compute EIP-55 casing:
 
 ```typescript
-import * as Layer from 'effect/Layer'
+import * as Effect from 'effect/Effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
 import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
-import { Secp256k1Live } from 'voltaire-effect/crypto/Secp256k1'
 
-const CryptoLive = Layer.merge(KeccakLive, Secp256k1Live)
+const addr = S.decodeSync(Address.Hex)('0x742d35cc6634c0532925a3b844bc9e7595f251e3')
 
-Effect.runPromise(program.pipe(Effect.provide(CryptoLive)))
+const checksummed = await Effect.runPromise(
+  S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
+)
 ```
 
-## Testing
+## Core Services
 
-Swap implementations for tests:
+| Service Tag | Live Layer | Purpose |
+| --- | --- | --- |
+| `TransportService` | `HttpTransport`, `WebSocketTransport`, `BrowserTransport` | JSON-RPC transport |
+| `ProviderService` | `Provider` | Request layer for provider free functions |
+| `AccountService` | `LocalAccount`, `JsonRpcAccount`, `MnemonicAccount` | Message, typed-data, and tx signing |
+| `SignerService` | `Signer.Live`, `Signer.fromProvider`, `Signer.fromPrivateKey` | Nonce/gas/chainId auto-fill + broadcast |
+| `KeccakService` | `KeccakLive` | Keccak-256 hashing |
+| `Secp256k1Service` | `Secp256k1Live` | ECDSA signing and recovery |
+
+## Composing and Swapping Layers
+
+Merge independent layers with `Layer.merge` / `Layer.mergeAll`, and wire dependencies with `Layer.provide`:
 
 ```typescript
-import { getBlock, getBalance, ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import { getBlock, getBalance, ProviderService, Provider, HttpTransport } from 'voltaire-effect'
 
-// Production - use real provider
-const program = Effect.gen(function* () {
-  const balance = yield* getBalance(addr)
-  const block = yield* getBlock({ blockTag: "latest" })
-  return { balance, block }
-})
+const fetchAccountSummary = (addr: `0x${string}`) =>
+  Effect.gen(function* () {
+    const balance = yield* getBalance(addr)
+    const block = yield* getBlock({ blockTag: 'latest' })
+    return { balance, block }
+  })
 
+// Production layer
 const ProviderLive = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
-Effect.provide(program, ProviderLive)
-
-// Test - mock provider
+// Test layer: same program, zero network calls
 const ProviderTest = Layer.succeed(ProviderService, {
   request: (_method, _params) => Effect.succeed(mockResponse)
 })
 
-Effect.provide(program, ProviderTest)
+await Effect.runPromise(fetchAccountSummary(addr).pipe(Effect.provide(ProviderLive)))
+await Effect.runPromise(fetchAccountSummary(addr).pipe(Effect.provide(ProviderTest)))
 ```
 
-Business logic unchanged. Only the provided layer differs.
+## Scoped Per-Request Overrides (`FiberRef`)
 
-## Per-Request Configuration
-
-FiberRef-based helpers provide scoped overrides without changing services:
+To vary timeout, retry schedule, cache behavior, or tracing for a single call without rebuilding layers, apply FiberRef helpers:
 
 ```typescript
-import { getBalance, getBlockNumber, getBlock, withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
 import * as Schedule from 'effect/Schedule'
+import {
+  getBalance, getBlockNumber, getBlock,
+  withTimeout, withRetrySchedule, withoutCache, withTracing
+} from 'voltaire-effect'
 
-// Default config from service
-const balance = yield* getBalance(addr)
-
-// Per-request overrides (scoped to this fiber only)
 const fastBalance = yield* getBalance(addr).pipe(
-  withTimeout("5 seconds"),
+  withTimeout('5 seconds'),
   withRetrySchedule(Schedule.recurs(1))
 )
 
-// Disable cache for fresh data
-const fresh = yield* getBlockNumber().pipe(withoutCache)
-
-// Enable tracing for debugging
-const traced = yield* getBlock(123).pipe(withTracing(true))
+const freshHead = yield* getBlockNumber().pipe(withoutCache)
+const tracedBlock = yield* getBlock({ blockTag: 'latest' }).pipe(withTracing(true))
 ```
 
-## Why Services?
+## Design Consequences
 
-**Tree-shaking** - Crypto not imported until provided. If you never use checksums, `KeccakLive` is not in your bundle.
-
-**Testability** - Swap `ProviderLive` for `ProviderTest` without changing code.
-
-**Explicit dependencies** - Type signature shows exactly what a program needs.
-
-**No globals** - No hidden singletons or ambient imports.
+- **Tree-shaking:** Crypto implementations (`KeccakLive`, `Secp256k1Live`) are bundled only when provided.
+- **No ambient singletons:** Programs never read global RPC clients or hidden environment state.
+- **Compile-time wiring verification:** Missing a dependency produces a TypeScript error on `Effect.runPromise`.
 
 ## See Also
 
-- [Effect Services](https://effect.website/docs/requirements-management/services/)
-- [Layers](/layers)
-- [Provider Service](/services/provider)
+- [Architecture & Layers](/layers) — Schema, Effect, and Service tiers
+- [Layer Composition Guide](/guides/layers) — Reusable layer modules
+- [Testing](/testing) — `TestTransport` and `CryptoTest`

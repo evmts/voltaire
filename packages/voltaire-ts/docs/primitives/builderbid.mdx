@@ -8,7 +8,7 @@ description: "Block builder bids for Proposer-Builder Separation (PBS) and MEV-B
 BuilderBid represents a block builder's bid in Proposer-Builder Separation (PBS). Block builders compete through MEV-Boost relays to provide the most valuable block to validators, offering payment in exchange for block inclusion rights.
 
 ```typescript
-import * as BuilderBid from '@voltaire/primitives/BuilderBid'
+import { BuilderBid } from '@tevm/voltaire'
 
 const bid = BuilderBid.from({
   slot: 123456n,
@@ -98,7 +98,7 @@ function verify(
 **Example:**
 
 ```typescript
-import { blsVerify } from '@voltaire/crypto/bls'
+import { blsVerify } from '@tevm/voltaire/Bls12381'
 
 const isValid = BuilderBid.verify(bid, { blsVerify })
 if (!isValid) {

@@ -27,7 +27,7 @@ While Bytes32 is a generic 32-byte value, Keccak256Hash explicitly communicates 
 
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import * as Bytes32 from '@tevm/voltaire/Bytes32';
+import * as Bytes32 from '@tevm/voltaire';
 
 // Keccak256Hash output
 const hash = Keccak256.hash(data);
@@ -45,7 +45,7 @@ console.log(bytes.length); // 32
 Keccak256Hash extends Bytes32 with a keccak256 semantic symbol:
 
 ```typescript
-import type { brand } from '@tevm/voltaire/brand';
+import type { brand } from '@tevm/voltaire';
 import type { BrandedBytes } from '@tevm/voltaire/Bytes';
 
 type Keccak256Hash = BrandedBytes<32> & {
@@ -70,7 +70,7 @@ Keccak256Hash and Bytes32 are the same size (32 bytes) but convey different sema
 
 ```typescript
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
-import * as Bytes32 from '@tevm/voltaire/Bytes32';
+import * as Bytes32 from '@tevm/voltaire';
 
 // Keccak256Hash = semantic "this is a keccak256 hash"
 const txHash: Keccak256Hash = Keccak256.hash(txData);
@@ -138,7 +138,7 @@ const digest = Keccak256.hash(message);
 ### Use Bytes32 when:
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/Bytes32';
+import * as Bytes32 from '@tevm/voltaire';
 
 // Storage slots
 const slot = Bytes32.from(0);
@@ -211,7 +211,7 @@ Keccak256Hash can be converted using Bytes32 operations:
 Convert to hex string:
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/Bytes32';
+import * as Bytes32 from '@tevm/voltaire';
 
 const hash = Keccak256.hash(data);
 const hex = Bytes32.toHex(hash);
@@ -255,7 +255,7 @@ const address = Bytes32.toAddress(pubKeyHash);
 Check equality:
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/primitives/Bytes/Bytes32';
+import * as Bytes32 from '@tevm/voltaire';
 
 const hash1 = Keccak256.hash(data1);
 const hash2 = Keccak256.hash(data2);
@@ -348,7 +348,7 @@ const logs = await provider.getLogs({
 ### Address Derivation
 
 ```typescript
-import * as Bytes32 from '@tevm/voltaire/Bytes32';
+import * as Bytes32 from '@tevm/voltaire';
 
 // Ethereum address = last 20 bytes of keccak256(publicKey)
 const pubKeyHash: Keccak256Hash = Keccak256.hash(publicKey);

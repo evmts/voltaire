@@ -1,138 +1,138 @@
 ---
-title: Provider Fallback with ExecutionPlan
-description: Declarative provider fallback strategies using Effect.ts ExecutionPlan
+title: Provider Fallback
+description: Fail over across multiple Ethereum RPC endpoints using voltaire-effect FallbackTransport or a custom EIP-1193 wrapper.
 ---
 
-Effect 3.16+ introduces `ExecutionPlan` for declarative retry/fallback strategies across different providers. This is ideal for production systems needing high availability.
+Production indexers, wallets, and relayers cannot depend on a single RPC endpoint. Voltaire supports multi-endpoint failover through `FallbackTransport` in `voltaire-effect/transport` and through a lightweight EIP-1193 wrapper over `HttpProvider` in plain TypeScript.
 
-<Note>
-Requires Effect 3.16.0 or later. Check your version with `pnpm list effect`.
-</Note>
+```mermaid
+flowchart LR
+  Req["provider.request(args)"] --> P1["Primary RPC\n(e.g. Alchemy)"]
+  P1 -->|Success| Res["Return Result"]
+  P1 -->|"Deterministic Revert\n(code === 3)"| Rev["Fail Fast\n(do not waste backup)"]
+  P1 -->|"Network / 429 / Timeout"| P2["Secondary RPC\n(e.g. Infura)"]
+  P2 -->|Success| Res
+  P2 -->|Failure| P3["Fallback RPC\n(e.g. Public Node)"]
+  P3 -->|Success| Res
+  P3 -->|Failure| Err["Throw Last Error"]
+```
 
-## Basic Setup
+## Failover Rules
+
+Do not fail over blindly on every error:
+
+| Error Category | Fail Over? | Rationale |
+| --- | --- | --- |
+| Network error, timeout, HTTP `5xx`, `429` / `-32005` | Yes | Endpoint-specific outage or throttling |
+| Node syncing (`-32002`) or missing recent block (`-32001`) | Yes | Lagging replica; another endpoint may be synced |
+| Execution revert (`code === 3` or revert message) | No (default) | Deterministic EVM revert; backups will revert identically |
+| Invalid params (`-32602`), invalid request (`-32600`) | No | Caller bug; retrying wastes quota across every backup |
+
+## Effect (`voltaire-effect/transport`)
+
+`FallbackTransport` accepts an ordered array of `Transport` layers and supports two strategies:
+
+- `strategy: "sequential"` (default): tries each endpoint in order until one succeeds. Deterministic reverts (`err instanceof RpcError && err.isRevert`) short-circuit unless `failoverOnRevert: true`.
+- `strategy: "race"`: sends the request to all endpoints concurrently and returns the first successful response (`Effect.raceAll` / `try.any`).
 
 ```typescript
-import { ExecutionPlan, Schedule, Layer, Effect } from "effect"
-import { 
-  Provider, 
-  HttpTransport, 
-  getBalance 
-} from "voltaire-effect"
+import { Effect } from 'effect';
+import {
+  FallbackTransport,
+  HttpTransport,
+  request,
+} from 'voltaire-effect/transport';
 
-// Define fallback chain with different providers
-const ProviderPlan = ExecutionPlan.make(
+const ResilientTransport = FallbackTransport(
+  [
+    HttpTransport({ url: process.env.PRIMARY_RPC_URL!, timeout: '4 seconds' }),
+    HttpTransport({ url: process.env.SECONDARY_RPC_URL!, timeout: '6 seconds' }),
+    HttpTransport({ url: 'https://eth.llamarpc.com', timeout: '8 seconds' }),
+  ],
   {
-    // Primary: Infura with 2 retries, 1 second apart
-    provide: Layer.provide(Provider, HttpTransport(process.env.INFURA_URL!)),
-    attempts: 2,
-    schedule: Schedule.spaced("1 second")
+    strategy: 'sequential',
+    failoverOnRevert: false,
   },
-  {
-    // Secondary: Alchemy with 3 retries, exponential backoff
-    provide: Layer.provide(Provider, HttpTransport(process.env.ALCHEMY_URL!)),
-    attempts: 3,
-    schedule: Schedule.exponential("500 millis")
-  },
-  {
-    // Fallback: Public RPC (single attempt)
-    provide: Layer.provide(Provider, HttpTransport("https://eth.llamarpc.com"))
-  }
-)
+);
 
-// Apply to any effect requiring ProviderService
-const robust = getBalance("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045").pipe(
-  Effect.withExecutionPlan(ProviderPlan)
-)
+const program = Effect.all({
+  blockNumber: request<string>('eth_blockNumber', []),
+  chainId: request<string>('eth_chainId', []),
+}).pipe(Effect.provide(ResilientTransport));
 
-await Effect.runPromise(robust)
+const result = await Effect.runPromise(program);
 ```
 
-## How It Works
+### Hedged Latency Racing
 
-1. **First provider fails** → Retries according to its schedule (up to `attempts` times)
-2. **All retries exhausted** → Moves to next provider in the chain
-3. **Success at any point** → Returns result, skips remaining providers
-4. **All providers fail** → Returns error from final provider
-
-## Advanced Schedules
-
-Combine Effect Schedule primitives for sophisticated retry logic:
+For latency-sensitive reads (quotes, mempool checks), set `strategy: "race"` across two or more providers:
 
 ```typescript
-import { Schedule } from "effect"
-
-const ProviderPlan = ExecutionPlan.make(
-  {
-    provide: Layer.provide(Provider, HttpTransport(process.env.PRIMARY_RPC!)),
-    attempts: 5,
-    schedule: Schedule.exponential("200 millis").pipe(
-      Schedule.jittered,                    // Add randomness to prevent thundering herd
-      Schedule.either(Schedule.spaced("5 seconds"))  // Cap at 5s max
-    )
-  },
-  {
-    provide: Layer.provide(Provider, HttpTransport(process.env.BACKUP_RPC!)),
-    // No attempts = single try, but schedule allows retries
-    schedule: Schedule.recurs(2)  // 2 retries
-  }
-)
+const HedgedTransport = FallbackTransport(
+  [
+    HttpTransport({ url: process.env.RPC_US_EAST! }),
+    HttpTransport({ url: process.env.RPC_EU_WEST! }),
+  ],
+  { strategy: 'race' },
+);
 ```
 
-## Multiple Operations
+## Plain TypeScript (`@tevm/voltaire/provider`)
 
-Apply the same plan to multiple operations:
+Compose multiple `HttpProvider` instances behind a standard EIP-1193 `Provider` interface with per-endpoint timeouts from `@tevm/voltaire/utils`:
 
 ```typescript
-import { Effect } from "effect"
-import { getBalance, getBlockNumber, getTransactionCount } from "voltaire-effect"
+import {
+  HttpProvider,
+  JsonRpcErrorCode,
+  type Provider,
+  type RequestArguments,
+} from '@tevm/voltaire/provider';
+import { withTimeout } from '@tevm/voltaire/utils';
 
-const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+const NON_FAILOVER_CODES = new Set<number>([
+  JsonRpcErrorCode.InvalidRequest,
+  JsonRpcErrorCode.InvalidParams,
+  3, // Execution reverted
+]);
 
-const robustOperations = Effect.all({
-  balance: getBalance(address),
-  blockNumber: getBlockNumber(),
-  nonce: getTransactionCount(address)
-}).pipe(
-  Effect.withExecutionPlan(ProviderPlan)
-)
+export function createFallbackProvider(urls: string[], timeoutMs = 5000): Provider {
+  const providers = urls.map((url) => new HttpProvider({ url, retry: 1, timeout: timeoutMs }));
+
+  return {
+    async request(args: RequestArguments): Promise<unknown> {
+      let lastError: unknown;
+
+      for (const provider of providers) {
+        try {
+          return await withTimeout(provider.request(args), { ms: timeoutMs });
+        } catch (err) {
+          const code = (err as { code?: number })?.code;
+          const msg = (err as { message?: string })?.message?.toLowerCase() ?? '';
+          if ((code !== undefined && NON_FAILOVER_CODES.has(code)) || msg.includes('revert')) {
+            throw err;
+          }
+          lastError = err;
+        }
+      }
+
+      throw lastError ?? new Error('No fallback providers configured');
+    },
+    on() {
+      return this;
+    },
+    removeListener() {
+      return this;
+    },
+  };
+}
 ```
 
-## Benefits
+For circuit-breaking, health scoring, and quorum verification, copy and customize the [Fallback Provider Skill](/skills/fallback-provider).
 
-| Feature | Description |
-|---------|-------------|
-| **Declarative** | Define retry/fallback logic once, apply anywhere |
-| **Composable** | Combine with Effect schedules for complex patterns |
-| **Type-safe** | Full TypeScript inference for layers and errors |
-| **Observable** | Works with Effect tracing and logging |
+## Related
 
-## Comparison with FallbackTransport
-
-`FallbackTransport` is transport-level, `ExecutionPlan` is effect-level:
-
-```typescript
-// Transport-level: switches on any transport error
-import { FallbackTransport } from "voltaire-effect"
-
-const transport = FallbackTransport([
-  HttpTransport(process.env.PRIMARY_RPC!),
-  HttpTransport(process.env.BACKUP_RPC!)
-])
-
-// Effect-level: more control, works with any layer
-const plan = ExecutionPlan.make(
-  { provide: Layer.provide(Provider, HttpTransport(url1)), attempts: 3 },
-  { provide: Layer.provide(Provider, HttpTransport(url2)) }
-)
-```
-
-Use `ExecutionPlan` when you need:
-- Different retry strategies per provider
-- Fine-grained schedule control
-- Fallback for non-transport layers (signers, formatters, etc.)
-
-## Next Steps
-
-- [HttpTransport](/integrations/effect-ts) - Transport configuration
-- [Effect Schedule](https://effect.website/docs/scheduling) - Schedule combinators
-- [Effect 3.16 Release](https://effect.website/blog/releases/effect/316/) - ExecutionPlan announcement
+- [Fallback Provider Skill](/skills/fallback-provider) — Copyable circuit-breaking multi-RPC provider
+- [Rate Limiting Guide](/guides/rate-limiting) — Pairing rate limits with multi-endpoint pools
+- [Error Handling](/jsonrpc-provider/error-handling) — JSON-RPC and EIP-1193 error codes
+- [Timeout Utilities](/utils/timeout) — Per-attempt deadlines with `withTimeout`

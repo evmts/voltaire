@@ -1,303 +1,120 @@
 ---
-title: "Frame"
-description: "EVM execution frame representing stack, memory, gas, and call context for smart contract execution"
+title: Frame
+description: EVM execution frame managing the 1024-word stack, sparse byte-addressable memory, gas accounting, and call context.
 ---
 
-## Overview
+`Frame` constructs and mutates a `BrandedFrame`—the complete state of a single EVM call context (stack, memory, program counter, remaining gas, bytecode, calldata, output, return data, EIP-2929 warm sets, and emitted logs).
 
-A Frame represents a single EVM execution context. When a smart contract executes, it runs within a frame that maintains:
-- **Stack** - 1024-element LIFO stack of 256-bit values
-- **Memory** - Sparse byte-addressable scratch space
-- **Gas** - Remaining gas for execution
-- **Call context** - Caller, address, value, calldata
+## Internal Layout
 
-Each CALL, DELEGATECALL, STATICCALL, CREATE, or CREATE2 creates a new nested frame. The EVM supports up to 1024 call depth.
-
-## Type Definition
-
-```typescript
-import type { BrandedFrame } from 'voltaire/evm/Frame';
-
-// BrandedFrame structure
-type BrandedFrame = {
-  // Stack (max 1024 items)
-  stack: bigint[];
-
-  // Memory (sparse map)
-  memory: Map<number, number>;
-  memorySize: number; // Word-aligned size
-
-  // Execution state
-  pc: number;           // Program counter
-  gasRemaining: bigint;
-  bytecode: Uint8Array;
-
-  // Call context
-  caller: Address;
-  address: Address;
-  value: bigint;
-  calldata: Uint8Array;
-  output: Uint8Array;
-  returnData: Uint8Array;
-
-  // Flags
-  stopped: boolean;
-  reverted: boolean;
-  isStatic: boolean;
-
-  // Other
-  authorized: bigint | null;
-  callDepth: number;
-
-  // Optional: hardfork, access lists, block context, logs...
-};
+```mermaid
+flowchart TD
+    F["BrandedFrame"] --> Stack["Stack\nbigint[] (max 1024 x 256-bit)"]
+    F --> Mem["Memory\nMap<offset, byte> + word-aligned memorySize"]
+    F --> Exec["Execution State\npc, gasRemaining, bytecode, stopped, reverted, isStatic"]
+    F --> Ctx["Call Context\ncaller, address, value, calldata, output, returnData, callDepth"]
+    F --> Warm["Access & Refunds\naccessedAddresses, accessedStorageKeys, storageOriginalValues, gasRefunds"]
+    F --> Block["Optional Block Context & Logs\nblockNumber, chainId, blockBaseFee, blobBaseFee, logs"]
 ```
 
 ## Creating a Frame
 
+Import `Frame` and helpers from `@tevm/voltaire/evm` or `@tevm/voltaire/evm/Frame`.
+
 ```typescript
-import { Frame } from 'voltaire/evm/Frame';
+import { Address } from '@tevm/voltaire';
+import { Frame } from '@tevm/voltaire/evm';
 
-// Create with defaults
-const frame = Frame();
-
-// Create with parameters
 const frame = Frame({
-  bytecode: new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]), // PUSH1 1, PUSH1 2, ADD
-  gas: 100000n,
-  caller: callerAddress,
-  address: contractAddress,
+  bytecode: new Uint8Array([0x60, 0x0a, 0x60, 0x14, 0x01]), // PUSH1 10, PUSH1 20, ADD
+  gas: 100_000n,
+  caller: Address('0x1111111111111111111111111111111111111111'),
+  address: Address('0x2222222222222222222222222222222222222222'),
   value: 0n,
-  calldata: new Uint8Array([]),
+  calldata: new Uint8Array(0),
   isStatic: false,
 });
 ```
 
-### Frame Parameters
+### `FrameParams`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `bytecode` | `Uint8Array` | `[]` | Contract bytecode to execute |
-| `gas` | `bigint` | `1000000n` | Initial gas allocation |
-| `caller` | `Address` | zero address | Message sender (msg.sender) |
-| `address` | `Address` | zero address | Current contract address |
-| `value` | `bigint` | `0n` | Wei transferred (msg.value) |
-| `calldata` | `Uint8Array` | `[]` | Input data (msg.data) |
-| `isStatic` | `boolean` | `false` | Static call (no state modifications) |
-| `stack` | `bigint[]` | `[]` | Initial stack state |
-| `gasRemaining` | `bigint` | `gas` | Override gas (for resuming) |
+| Parameter | Type | Default | Meaning |
+|-----------|------|---------|---------|
+| `bytecode` | `Uint8Array` | `new Uint8Array(0)` | Contract code to execute |
+| `gas` | `bigint` | `1_000_000n` | Initial gas budget |
+| `gasRemaining` | `bigint` | `gas` | Explicit starting `gasRemaining` override |
+| `caller` | `Uint8Array` | Zero address | `CALLER` (`msg.sender`) |
+| `address` | `Uint8Array` | Zero address | Executing account (`ADDRESS`) |
+| `value` | `bigint` | `0n` | Wei transferred (`CALLVALUE`) |
+| `calldata` | `Uint8Array` | `new Uint8Array(0)` | Call input bytes |
+| `isStatic` | `boolean` | `false` | Disallows state mutations (`STATICCALL`) |
+| `stack` | `bigint[]` | `[]` | Initial stack values |
 
-## Stack Operations
+## Frame Operations
 
-### pushStack
+All helper functions are attached to `Frame` (`Frame.pushStack`, etc.) and exported directly from `@tevm/voltaire/evm/Frame`.
 
-Push a 256-bit value onto the stack.
+| Function | Signature | Returns | Behavior |
+|----------|-----------|---------|----------|
+| `Frame` / `Frame.from` | `(params?: FrameParams)` | `BrandedFrame` | Creates a new frame with bound arithmetic methods |
+| `pushStack` | `(frame, value: bigint)` | `EvmError \| null` | Pushes 256-bit word; returns `{ type: "StackOverflow" }` at depth `1024` |
+| `popStack` | `(frame)` | `{ value: bigint; error: null } \| { value: null; error: EvmError }` | Pops top word; returns `{ type: "StackUnderflow" }` when empty |
+| `peekStack` | `(frame, index: number)` | `{ value: bigint; error: null } \| { value: null; error: EvmError }` | Reads `index` from top (`0` = top) without removing |
+| `consumeGas` | `(frame, amount: bigint)` | `EvmError \| null` | Deducts `amount`; sets `gasRemaining = 0n` and returns `{ type: "OutOfGas" }` if insufficient |
+| `readMemory` | `(frame, offset: number)` | `number` | Reads single byte (`0` for unwritten offsets) |
+| `writeMemory` | `(frame, offset: number, value: number)` | `void` | Writes byte and updates `memorySize` to next 32-byte word boundary |
+| `memoryExpansionCost` | `(frame, endBytes: number)` | `bigint` | Incremental quadratic expansion gas from current `memorySize` to `ceil(endBytes / 32) * 32` |
 
-```typescript
-import { Frame, pushStack } from 'voltaire/evm/Frame';
+### Memory Expansion Gas Formula
 
-const frame = Frame();
-const error = pushStack(frame, 42n);
+For `words = ceil(sizeBytes / 32)`:
 
-if (error) {
-  // error.type === "StackOverflow" when stack has 1024 items
-  console.error(error.type);
-}
+```text
+totalCost(words) = 3 * words + floor(words^2 / 512)
+expansionGas     = totalCost(newWords) - totalCost(oldWords)
 ```
 
-### popStack
+`memoryExpansionCost` returns `0n` whenever `endBytes <= frame.memorySize`.
 
-Pop the top value from the stack.
+## Bound Arithmetic Methods
 
-```typescript
-import { Frame, popStack, pushStack } from 'voltaire/evm/Frame';
+Every `BrandedFrame` exposes bound instance methods for opcodes `0x01`-`0x0b` that deduct gas, mutate `stack`, advance `pc`, and return `EvmError | null`:
 
-const frame = Frame();
-pushStack(frame, 100n);
-pushStack(frame, 200n);
-
-const result = popStack(frame);
-if (result.error) {
-  // result.error.type === "StackUnderflow" when stack is empty
-  console.error(result.error.type);
-} else {
-  console.log(result.value); // 200n (LIFO)
-}
-```
-
-### peekStack
-
-Read a stack value without removing it.
+`add`, `mul`, `sub`, `div`, `sdiv`, `mod`, `smod`, `addmod`, `mulmod`, `exp`, `signextend`.
 
 ```typescript
-import { Frame, peekStack, pushStack } from 'voltaire/evm/Frame';
-
-const frame = Frame();
-pushStack(frame, 10n);
-pushStack(frame, 20n);
-pushStack(frame, 30n);
-
-const top = peekStack(frame, 0);     // 30n (top)
-const second = peekStack(frame, 1);  // 20n
-const third = peekStack(frame, 2);   // 10n
-```
-
-## Gas Operations
-
-### consumeGas
-
-Deduct gas from the frame. Returns `OutOfGas` error if insufficient.
-
-```typescript
-import { Frame, consumeGas } from 'voltaire/evm/Frame';
-
-const frame = Frame({ gas: 100n });
-
-consumeGas(frame, 30n);  // gasRemaining: 70n
-consumeGas(frame, 50n);  // gasRemaining: 20n
-
-const error = consumeGas(frame, 50n);
-if (error) {
-  console.log(error.type);       // "OutOfGas"
-  console.log(frame.gasRemaining); // 0n
-}
-```
-
-## Memory Operations
-
-### writeMemory
-
-Write a byte to memory. Memory expands in 32-byte words.
-
-```typescript
-import { Frame, writeMemory } from 'voltaire/evm/Frame';
-
-const frame = Frame();
-writeMemory(frame, 0, 0xde);
-writeMemory(frame, 1, 0xad);
-writeMemory(frame, 2, 0xbe);
-writeMemory(frame, 3, 0xef);
-
-console.log(frame.memorySize); // 32 (word-aligned)
-```
-
-### readMemory
-
-Read a byte from memory. Uninitialized memory returns 0.
-
-```typescript
-import { Frame, readMemory, writeMemory } from 'voltaire/evm/Frame';
-
-const frame = Frame();
-writeMemory(frame, 100, 0xff);
-
-console.log(readMemory(frame, 100)); // 255 (0xff)
-console.log(readMemory(frame, 0));   // 0 (uninitialized)
-```
-
-### memoryExpansionCost
-
-Calculate gas cost for memory expansion.
-
-```typescript
-import { Frame, memoryExpansionCost, consumeGas, writeMemory } from 'voltaire/evm/Frame';
+import { Frame } from '@tevm/voltaire/evm';
 
 const frame = Frame({ gas: 1000n });
+Frame.pushStack(frame, 10n);
+Frame.pushStack(frame, 20n);
 
-// Calculate cost before expanding
-const cost = memoryExpansionCost(frame, 64);
-consumeGas(frame, cost);
-
-// Now safe to write
-writeMemory(frame, 63, 0xff);
+const err = frame.add(); // null; deducts 3 gas, pushes 30n, increments pc
+const top = Frame.popStack(frame);
+console.log(err, top.value, frame.gasRemaining); // null, 30n, 997n
 ```
 
-Memory cost formula: `3n + n²/512` where n is word count. This quadratic growth prevents memory DoS attacks.
-
-## Error Types
+## Example: Manual Gas, Memory, and Stack Handling
 
 ```typescript
-type EvmError =
-  | { type: "StackOverflow" }      // Stack exceeds 1024 items
-  | { type: "StackUnderflow" }     // Pop/peek from empty stack
-  | { type: "OutOfGas" }           // Insufficient gas
-  | { type: "OutOfBounds" }        // Invalid memory access
-  | { type: "InvalidJump" }        // Jump to non-JUMPDEST
-  | { type: "InvalidOpcode" }      // Unknown opcode
-  | { type: "RevertExecuted" }     // REVERT opcode executed
-  | { type: "CallDepthExceeded" }  // Call depth > 1024
-  | { type: "WriteProtection" }    // State modification in STATICCALL
-  | { type: "InsufficientBalance" }
-  | { type: "NotImplemented"; message: string };
+import { Frame } from '@tevm/voltaire/evm';
+
+const frame = Frame({ gas: 500n });
+
+// Charge memory expansion before writing at byte offset 63
+const expansion = Frame.memoryExpansionCost(frame, 64); // 6n (2 words)
+const gasErr = Frame.consumeGas(frame, expansion);
+if (gasErr) throw new Error(gasErr.type);
+
+Frame.writeMemory(frame, 63, 0xab);
+console.log(frame.memorySize);            // 64
+console.log(Frame.readMemory(frame, 63)); // 0xab (171)
+console.log(Frame.readMemory(frame, 0));  // 0
 ```
-
-## Arithmetic Methods
-
-Frames include bound arithmetic methods for opcodes 0x01-0x0b:
-
-```typescript
-const frame = Frame();
-pushStack(frame, 10n);
-pushStack(frame, 20n);
-
-const error = frame.add();  // Stack: [30n]
-
-// Available methods:
-// frame.add(), frame.mul(), frame.sub(), frame.div(), frame.sdiv()
-// frame.mod(), frame.smod(), frame.addmod(), frame.mulmod()
-// frame.exp(), frame.signextend()
-```
-
-## Complete Example
-
-```typescript
-import { Frame, pushStack, popStack, consumeGas, writeMemory, readMemory } from 'voltaire/evm/Frame';
-import { Address } from 'voltaire/primitives/Address';
-
-// Simulate ADD opcode execution
-const frame = Frame({
-  bytecode: new Uint8Array([0x60, 0x0a, 0x60, 0x14, 0x01]), // PUSH1 10, PUSH1 20, ADD
-  gas: 21000n,
-  caller: Address("0x1111111111111111111111111111111111111111"),
-  address: Address("0x2222222222222222222222222222222222222222"),
-});
-
-// PUSH1 10 (gas: 3)
-consumeGas(frame, 3n);
-pushStack(frame, 10n);
-frame.pc += 2;
-
-// PUSH1 20 (gas: 3)
-consumeGas(frame, 3n);
-pushStack(frame, 20n);
-frame.pc += 2;
-
-// ADD (gas: 3)
-consumeGas(frame, 3n);
-const error = frame.add();
-frame.pc += 1;
-
-// Result
-const result = popStack(frame);
-console.log(result.value);        // 30n
-console.log(frame.gasRemaining);  // 20991n
-```
-
-## API Reference
-
-| Function | Description |
-|----------|-------------|
-| `Frame(params?)` | Create new execution frame |
-| `pushStack(frame, value)` | Push bigint onto stack |
-| `popStack(frame)` | Pop and return top value |
-| `peekStack(frame, index)` | Read value at depth index |
-| `consumeGas(frame, amount)` | Deduct gas from frame |
-| `readMemory(frame, offset)` | Read byte from memory |
-| `writeMemory(frame, offset, value)` | Write byte to memory |
-| `memoryExpansionCost(frame, endBytes)` | Calculate expansion gas |
 
 ## Related
 
-- [EVM Types](/evm/types) - Complete type reference
-- [Instructions](/evm/instructions) - Opcode implementations
-- [Gas Constants](/primitives/gas-constants) - Gas cost definitions
+- [Host](/evm/host)
+- [EVM Types](/evm/types)
+- [EVM Instructions](/evm/instructions)
+- [Gas Constants](/primitives/gas-constants)

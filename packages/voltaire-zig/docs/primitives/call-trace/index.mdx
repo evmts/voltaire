@@ -3,8 +3,6 @@ title: CallTrace
 description: Call tree structure from Geth's callTracer
 ---
 
-# CallTrace
-
 Hierarchical call tree structure returned by Geth's `callTracer`. Represents the complete call graph of a transaction execution.
 
 ## Overview
@@ -34,8 +32,8 @@ type CallTraceType = {
 ### Creating CallTraces
 
 ```zig
-import * as CallTrace from '@tevm/primitives/CallTrace';
-import * as Address from '@tevm/primitives/Address';
+import * as CallTrace from '@tevm/voltaire/CallTrace';
+import * as Address from '@tevm/voltaire/Address';
 
 const from = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
 const to = Address.from("0xdAC17F958D2ee523a2206206994597C13D831ec7");
@@ -145,7 +143,7 @@ const rootCall = CallTrace.from({
 Get immediate child calls:
 
 ```zig
-import * as CallTrace from '@tevm/primitives/CallTrace';
+import * as CallTrace from '@tevm/voltaire/CallTrace';
 
 const calls = CallTrace.getCalls(trace);
 console.log(`${calls.length} direct subcalls`);
@@ -160,7 +158,7 @@ for (const call of calls) {
 Convert tree to flat list:
 
 ```zig
-import * as CallTrace from '@tevm/primitives/CallTrace';
+import * as CallTrace from '@tevm/voltaire/CallTrace';
 
 const allCalls = CallTrace.flatten(rootTrace);
 console.log(`${allCalls.length} total calls`);
@@ -177,7 +175,7 @@ for (const fail of failures) {
 Check if call failed:
 
 ```zig
-import * as CallTrace from '@tevm/primitives/CallTrace';
+import * as CallTrace from '@tevm/voltaire/CallTrace';
 
 if (CallTrace.hasError(trace)) {
   console.error(`Call failed: ${trace.error}`);

@@ -1,234 +1,100 @@
 ---
 title: Architecture
-description: Voltaire codebase structure, module organization, and design principles
+description: Layered architecture, Zig module dependency graph, FFI/WASM boundaries, and core design invariants.
 ---
 
-# Architecture
+Voltaire separates high-level language ergonomics from low-level execution. Ethereum primitives, EVM precompiles, and cryptographic kernels live in Zig, Rust, and C, while TypeScript and language bindings expose typed, idiomatic APIs over the same underlying semantics.
 
-Voltaire is a multi-language Ethereum primitives and cryptography library. This guide covers the codebase structure and key architectural decisions.
+```mermaid
+flowchart TD
+  subgraph Surface["Language Surfaces"]
+    TS["@tevm/voltaire\n(TypeScript / JS)"]
+    EFF["voltaire-effect\n(Effect 4)"]
+    BIND["Swift / Go / Python / Rust / C"]
+  end
 
-## Directory Structure
+  subgraph Bridge["Runtime Bridges"]
+    JS["Pure JS/TS\n(@noble / @scure)"]
+    WASM["WASM Loader\n(wasm/primitives.wasm)"]
+    FFI["Bun FFI & C ABI\n(c_api.zig / primitives.h)"]
+  end
 
+  subgraph Core["Zig Core (packages/voltaire-zig)"]
+    PREC["precompiles + evm + state-manager"]
+    PRIM["primitives"]
+    CRYP["crypto"]
+  end
+
+  subgraph Native["Native Backends"]
+    RUST["Rust crypto_wrappers\n(ark-bn254, ark-bls12-381, keccak)"]
+    CLIB["Vendored C Libraries\n(blst, c-kzg-4844, libwally-core)"]
+  end
+
+  TS --> JS
+  TS --> WASM
+  TS --> FFI
+  EFF --> TS
+  BIND --> FFI
+  WASM --> Core
+  FFI --> Core
+  PREC --> PRIM
+  PREC --> CRYP
+  CRYP --> PRIM
+  CRYP --> RUST
+  CRYP --> CLIB
 ```
-voltaire/
-├── src/
-│   ├── primitives/          # Ethereum types (TS + Zig)
-│   │   ├── Address/
-│   │   ├── Hash/
-│   │   ├── Uint/
-│   │   ├── Rlp/
-│   │   ├── Abi/
-│   │   ├── Transaction/
-│   │   └── root.zig         # Module entry point
-│   ├── crypto/              # Cryptographic functions (TS + Zig + Rust)
-│   │   ├── Keccak256/
-│   │   ├── Secp256k1/
-│   │   ├── Bls12381/
-│   │   ├── Bn254/
-│   │   ├── Kzg/
-│   │   └── root.zig
-│   ├── evm/
-│   │   └── precompiles/     # EVM precompile implementations
-│   │       └── root.zig
-│   └── wasm-loader/         # WASM instantiation infrastructure
-├── lib/                     # C libraries (vendored)
-│   ├── blst/                # BLS12-381 signatures
-│   ├── c-kzg-4844/          # KZG commitments (EIP-4844)
-│   └── libwally-core/       # Wallet utilities (git submodule)
-├── docs/                    # Mintlify documentation
-├── examples/                # Usage examples
-├── wasm/                    # WASM output
-├── native/                  # Native FFI bindings
-├── build.zig                # Zig build system
-├── build.zig.zon            # Zig dependencies
-├── Cargo.toml               # Rust dependencies
-└── package.json             # Node dependencies
-```
 
-## Module System
+## Zig Module Graph
 
-### Zig Modules
+`build.zig` registers explicit Zig modules so every cross-module import is checked by the build graph:
 
-Each major area has a `root.zig` entry point:
+| Module Name | Entry Point | Imports |
+| --- | --- | --- |
+| `primitives` | `packages/voltaire-zig/src/primitives/root.zig` | `crypto`, `z_ens_normalize` |
+| `crypto` | `packages/voltaire-zig/src/crypto/root.zig` | `primitives`, `c_kzg`, `blst`, `crypto_wrappers` |
+| `jsonrpc` | `packages/voltaire-zig/src/jsonrpc/root.zig` | self-contained base types |
+| `precompiles` | `packages/voltaire-zig/src/precompiles/root.zig` | `primitives`, `crypto` |
+| `evm` | `packages/voltaire-zig/src/evm/root.zig` | `primitives`, `crypto`, `precompiles` |
+| `state-manager` | `packages/voltaire-zig/src/state-manager/root.zig` | `primitives`, `crypto` |
+| `blockchain` | `packages/voltaire-zig/src/blockchain/root.zig` | `primitives`, `crypto` |
+
+Always import via registered module names, never relative paths across package boundaries:
 
 ```zig
-// src/primitives/root.zig
-pub const Address = @import("Address/address.zig").Address;
-pub const Hash = @import("Hash/hash.zig").Hash;
-pub const Uint256 = @import("Uint/uint256.zig").Uint256;
-// ...
-```
-
-### Import Convention
-
-<Warning>
-Never use relative imports across module boundaries.
-</Warning>
-
-```zig
-// ✅ Module imports (correct)
 const primitives = @import("primitives");
-const Address = primitives.Address;
-
 const crypto = @import("crypto");
-const Keccak256 = crypto.Keccak256;
-
-// ❌ Relative imports (wrong)
-const Address = @import("../primitives/Address/address.zig").Address;
+const Address = primitives.Address;
 ```
 
-This enables:
-- Clean dependency tracking
-- Easy refactoring
-- Consistent import style across codebase
+## Runtime Execution Paths in `@tevm/voltaire`
 
-## File Colocation Pattern
+`@tevm/voltaire` ships three entrypoints conforming to the same `VoltaireAPI` interface:
 
-Each primitive type has colocated implementations:
+| Entrypoint | Runtime Target | Crypto Implementation | Notes |
+| --- | --- | --- | --- |
+| `@tevm/voltaire` | Node 18+, Bun, Deno, Browser, Edge | Pure JS/TS (`@noble/*`, `@scure/*`) | Zero WASM startup cost, full tree-shaking |
+| `@tevm/voltaire/wasm` | Browser, Node, Bun, Edge | Zig/Rust compiled to `wasm32-wasi` / `wasm32-freestanding` | Explicit WASM acceleration; KZG stays JS/native |
+| `@tevm/voltaire/native` | Bun (`bun:ffi`) | Native shared library (`libprimitives_ts_native`) | Lowest latency, assembly-accelerated Keccak & curves |
 
-```
-src/primitives/Address/
-├── AddressType.ts         # Branded type definition
-├── Address.js             # Implementation (JSDoc types)
-├── Address.test.ts        # Vitest tests
-├── Address.wasm.ts        # WASM variant
-├── Address.wasm.test.ts   # WASM tests
-├── ChecksumAddress.js     # Branded variant
-├── LowercaseAddress.js    # Branded variant
-├── index.ts               # Dual exports + public API
-├── address.zig            # Zig implementation
-├── address.bench.zig      # zbench benchmarks
-├── address.fuzz.zig       # Fuzz tests
-└── address.mdx            # Documentation
-```
+## Platform Matrix
 
-### Why Colocation?
+| Platform | Pure TS (`@tevm/voltaire`) | WASM (`@tevm/voltaire/wasm`) | Native FFI (`@tevm/voltaire/native`) |
+| --- | --- | --- | --- |
+| macOS (`arm64` / `x64`) | Supported | Supported | Supported (Bun) |
+| Linux (`arm64` / `x64`) | Supported | Supported | Supported (Bun) |
+| Windows (`x64`) | Supported | Supported | Supported (Bun) |
+| Browsers / Workers | Supported | Supported | Not supported |
+| Node.js (`>= 18`) | Supported | Supported | Use pure TS or WASM |
 
-1. **Discoverability**: Find all related code in one place
-2. **Consistency**: TS and Zig implementations stay synchronized
-3. **Testing**: Tests live next to implementation
-4. **Documentation**: Docs update with code changes
+## Design Invariants
 
-## Layered Architecture
+1. **Zero-cost nominal types.** In TypeScript, `AddressType`, `HashType`, `HexType`, and `Uint256Type` are branded `Uint8Array` or `string` types enforced strictly at compile time.
+2. **Validate on construction.** Constructors (`Address.from`, `Hash.fromHex`, `Hex.from`) reject malformed lengths, invalid hex digits, or out-of-range values immediately with typed error classes from `@tevm/voltaire/errors`.
+3. **Explicit Zig allocators.** No global hidden heap allocations. Functions needing dynamic buffers accept `allocator: std.mem.Allocator` and transfer ownership to the caller.
+4. **Single C ABI surface.** `packages/voltaire-zig/src/c_api.zig` defines the exported C symbols and generates `primitives.h`, which feeds Bun FFI, Swift (`CVoltaire`), Go (CGo), Python, and C consumers from one source of truth.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    TypeScript API                    │
-│         (Branded types, namespace exports)           │
-├─────────────────────────────────────────────────────┤
-│                   FFI / WASM Layer                   │
-│         (Bun FFI, WASM instantiation)               │
-├─────────────────────────────────────────────────────┤
-│                      Zig Core                        │
-│      (primitives, crypto, precompiles)              │
-├─────────────────────────────────────────────────────┤
-│                   Native Libraries                   │
-│    (Rust crypto_wrappers, C libs: blst, c-kzg)      │
-└─────────────────────────────────────────────────────┘
-```
+## Related
 
-### TypeScript Layer
-- Branded `Uint8Array` types for type safety
-- Namespace pattern for tree-shaking
-- Dual exports (internal `_method` + wrapper)
-
-### FFI/WASM Layer
-- Bun FFI for native performance
-- WASM fallback for browser/non-Bun environments
-- Automatic memory management
-
-### Zig Core
-- Performance-critical implementations
-- Direct memory control
-- Cross-compilation support
-
-### Native Libraries
-- Rust via Cargo: arkworks curves, keccak-asm
-- C libs: blst (BLS12-381), c-kzg-4844 (KZG)
-
-## Dependency Graph
-
-```
-┌─────────────┐
-│ precompiles │ ───depends on───┐
-└─────────────┘                 │
-                                ▼
-┌─────────────┐          ┌──────────┐
-│ primitives  │◄─────────│  crypto  │
-└─────────────┘          └──────────┘
-      │                        │
-      │                        ▼
-      │                 ┌────────────┐
-      └────────────────►│  C / Rust  │
-                        │  Libraries │
-                        └────────────┘
-```
-
-- `precompiles` depends on both `primitives` and `crypto`
-- `crypto` depends on `primitives` (for types like Hash)
-- Both depend on C/Rust libraries for performance-critical ops
-
-## Build Outputs
-
-```
-zig-out/
-├── lib/                    # Static libraries
-│   ├── libblst.a
-│   ├── libc_kzg.a
-│   └── libcrypto_wrappers.a
-├── native/                 # Native FFI
-│   └── libprimitives_ts_native.dylib
-└── wasm/                   # WASM artifacts
-    ├── primitives.wasm        # ReleaseSmall
-    └── primitives-fast.wasm   # ReleaseFast
-
-dist/                       # JS distribution
-├── index.js
-├── index.cjs
-└── index.d.ts
-
-wasm/                       # WASM loader + modules
-├── loader.ts
-├── primitives.wasm
-└── crypto/                 # Individual modules
-    ├── keccak256.wasm
-    ├── secp256k1.wasm
-    └── ...
-```
-
-## Platform Support
-
-| Platform | Native FFI | WASM |
-|----------|------------|------|
-| darwin-arm64 | ✅ | ✅ |
-| darwin-x64 | ✅ | ✅ |
-| linux-arm64 | ✅ | ✅ |
-| linux-x64 | ✅ | ✅ |
-| win32-x64 | ✅ | ✅ |
-| Browser | ❌ | ✅ |
-
-## Design Principles
-
-### 1. Zero-Cost Abstractions
-Branded types have no runtime cost. They're purely compile-time TypeScript constructs.
-
-### 2. Memory Ownership
-Zig code returns memory to caller. Caller is responsible for deallocation.
-
-```zig
-// Returns owned memory
-pub fn toHex(allocator: Allocator, address: Address) ![]u8 {
-    const result = try allocator.alloc(u8, 42);
-    // ... fill result ...
-    return result;  // Caller must free
-}
-```
-
-### 3. No Hidden Allocations
-Functions that allocate take an explicit allocator parameter.
-
-### 4. Fail Fast
-Invalid inputs cause immediate errors. No silent failures or defaults.
-
-### 5. Cross-Validate
-Implementations are tested against reference libraries (noble, ethers, viem).
+- [Codebase Map](/dev/codebase-map) — Exact directory and file layout
+- [Build System](/dev/build-system) — How `build.zig`, Cargo, and pnpm fit together
+- [Multi-Language Integration](/dev/multi-language) — C ABI, Rust FFI, and vendored C libraries

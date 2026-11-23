@@ -32,7 +32,7 @@ Each denomination type provides conversion methods to other units. All conversio
 <Tabs>
 <Tab title="Wei → Gwei">
 ```typescript
-import * as Wei from 'tevm/Wei'
+import { Wei } from '@tevm/voltaire/Denomination'
 
 const wei = Wei(50_000_000_000n)
 const gwei = Wei.toGwei(wei)  // 50n
@@ -46,7 +46,7 @@ const gwei2 = Wei.toGwei(wei2)  // 50n (not 50.000000001)
 </Tab>
 <Tab title="Wei → Ether">
 ```typescript
-import * as Wei from 'tevm/Wei'
+import { Wei } from '@tevm/voltaire/Denomination'
 
 const wei = Wei(1_000_000_000_000_000_000n)
 const ether = Wei.toEther(wei)  // 1n
@@ -60,9 +60,9 @@ const ether2 = Wei.toEther(wei2)  // 0n
 </Tab>
 <Tab title="Wei ← Other Units">
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
-import * as Ether from 'tevm/Ether'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Ether } from '@tevm/voltaire/Denomination'
 
 // From Gwei
 const gwei = Gwei(50n)
@@ -80,7 +80,7 @@ const wei2 = Wei.fromEther(ether)  // 1_000_000_000_000_000_000n
 <Tabs>
 <Tab title="Gwei → Wei">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
+import { Gwei } from '@tevm/voltaire/Denomination'
 
 const gwei = Gwei(50n)
 const wei = Gwei.toWei(gwei)  // 50_000_000_000n
@@ -94,7 +94,7 @@ const wei2 = Gwei.toWei(gwei2)  // 1_000_000_000n
 </Tab>
 <Tab title="Gwei → Ether">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
+import { Gwei } from '@tevm/voltaire/Denomination'
 
 const gwei = Gwei(1_000_000_000n)
 const ether = Gwei.toEther(gwei)  // 1n
@@ -108,9 +108,9 @@ const ether2 = Gwei.toEther(gwei2)  // 0n
 </Tab>
 <Tab title="Gwei ← Other Units">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Ether from 'tevm/Ether'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Ether } from '@tevm/voltaire/Denomination'
 
 // From Wei (division)
 const wei = Wei(50_000_000_000n)
@@ -128,7 +128,7 @@ const gwei2 = Gwei.fromEther(ether)  // 1_000_000_000n
 <Tabs>
 <Tab title="Ether → Wei">
 ```typescript
-import * as Ether from 'tevm/Ether'
+import { Ether } from '@tevm/voltaire/Denomination'
 
 const ether = Ether(1n)
 const wei = Ether.toWei(ether)  // 1_000_000_000_000_000_000n
@@ -142,7 +142,7 @@ const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n
 </Tab>
 <Tab title="Ether → Gwei">
 ```typescript
-import * as Ether from 'tevm/Ether'
+import { Ether } from '@tevm/voltaire/Denomination'
 
 const ether = Ether(1n)
 const gwei = Ether.toGwei(ether)  // 1_000_000_000n
@@ -156,9 +156,9 @@ const gwei2 = Ether.toGwei(ether2)  // 2_000_000_000n
 </Tab>
 <Tab title="Ether ← Other Units">
 ```typescript
-import * as Ether from 'tevm/Ether'
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
+import { Ether } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
 
 // From Wei (division, truncates)
 const wei = Wei(1_000_000_000_000_000_000n)
@@ -176,9 +176,9 @@ const ether2 = Ether.fromGwei(gwei)  // 1n
 ### Gas Price Calculation
 
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 // Gas price in Gwei (user-friendly)
 const gasPriceGwei = Gwei(50n)
@@ -197,8 +197,8 @@ const txCostEther = Wei.toEther(Wei(txCostWei))
 ### Balance Display
 
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 // Balance from RPC (Wei)
 const balanceWei = Wei(1_234_567_890_123_456_789n)
@@ -217,9 +217,9 @@ console.log(display)  // "1.234567890123456789 ETH"
 ### Multi-Step Conversion
 
 ```typescript
-import * as Ether from 'tevm/Ether'
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
+import { Ether } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
 
 // Start with Ether
 const ether = Ether(1n)
@@ -235,9 +235,9 @@ const weiDirect = Ether.toWei(ether)   // Same result
 ### Comparing Different Units
 
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
-import * as Uint from 'tevm/Uint'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 const balance = Wei(100_000_000_000n)  // 100 Gwei in Wei
 const threshold = Gwei(50n)             // 50 Gwei
@@ -261,8 +261,8 @@ Division operations truncate fractional results. Always convert to smaller units
 ### Truncation Examples
 
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
 
 // Example 1: Wei → Gwei truncation
 const wei1 = Wei(1_500_000_000n)  // 1.5 Gwei
@@ -282,9 +282,9 @@ const ether2 = Gwei.toEther(gwei4)      // 0n (truncates to 0)
 ### Avoiding Truncation
 
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
-import * as Uint from 'tevm/Uint'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 // ✗ Loses precision
 const gwei = Gwei(50n)
@@ -307,9 +307,9 @@ const result = Wei.toGwei(Wei(doubled))  // 100n
 ### Safe Round Trips (No Loss)
 
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
-import * as Ether from 'tevm/Ether'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Ether } from '@tevm/voltaire/Denomination'
 
 // Gwei → Wei → Gwei
 const gwei1 = Gwei(50n)
@@ -325,8 +325,8 @@ const ether1Back = Wei.toEther(wei2)  // 1n ✓
 ### Unsafe Round Trips (Loss)
 
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
 
 // Wei → Gwei → Wei (loses fractional Gwei)
 const wei1 = Wei(1_500_000_000n)  // 1.5 Gwei
@@ -344,9 +344,9 @@ const gwei2Back = Ether.toGwei(ether1)  // 0n ✗ (lost all)
 ### 1. Convert to Smallest Unit Early
 
 ```typescript
-import * as Ether from 'tevm/Ether'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Ether } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 // ✓ Good - convert to Wei first
 const value = Ether(1n)
@@ -364,8 +364,8 @@ const fee = Wei(21_000_000_000_000_000n)
 ### 2. Use Type System for Safety
 
 ```typescript
-import * as Wei from 'tevm/Wei'
-import * as Gwei from 'tevm/Gwei'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { Gwei } from '@tevm/voltaire/Denomination'
 
 // Function signatures enforce correct units
 function calculateGasCost(
@@ -388,7 +388,7 @@ const wei = Wei(50_000_000_000n)
 ### 3. Display in Appropriate Unit
 
 ```typescript
-import * as Wei from 'tevm/Wei'
+import { Wei } from '@tevm/voltaire/Denomination'
 
 // Gas prices in Gwei (more readable)
 const gasPrice = Wei(50_000_000_000n)
@@ -416,9 +416,9 @@ const WEI_PER_ETHER = 1_000_000_000_000_000_000n // 10^18
 All conversions available in WebAssembly:
 
 ```typescript
-import * as WeiWasm from 'tevm/Wei.wasm'
-import * as GweiWasm from 'tevm/Gwei.wasm'
-import * as EtherWasm from 'tevm/Ether.wasm'
+import * as WeiWasm from '@tevm/voltaire/wasm'
+import * as GweiWasm from '@tevm/voltaire/wasm'
+import * as EtherWasm from '@tevm/voltaire/wasm'
 
 const gwei = GweiWasm(50n)
 const wei = GweiWasm.toWei(gwei)

@@ -14,10 +14,10 @@ Generate Ethereum wallets using BIP-39 mnemonics and BIP-32/BIP-44 hierarchical 
 ## Quick Start
 
 ```typescript
-import * as Bip39 from '@voltaire/crypto/Bip39';
-import * as HDWallet from '@voltaire/crypto/HDWallet';
-import * as Secp256k1 from '@voltaire/crypto/Secp256k1';
-import { Address } from '@voltaire/primitives/Address';
+import * as Bip39 from '@tevm/voltaire/Bip39';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import { Address } from '@tevm/voltaire/Address';
 
 // 1. Generate a 24-word mnemonic
 const mnemonic = Bip39.generateMnemonic(256);
@@ -49,7 +49,7 @@ BIP-39 mnemonics provide human-readable backup for wallet seeds.
 ### 12-Word Mnemonic (128 bits)
 
 ```typescript
-import * as Bip39 from '@voltaire/crypto/Bip39';
+import * as Bip39 from '@tevm/voltaire/Bip39';
 
 // 128 bits = 12 words
 const mnemonic12 = Bip39.generateMnemonic(128);
@@ -83,7 +83,7 @@ Convert mnemonic to 64-byte seed using PBKDF2-HMAC-SHA512.
 ### Async Derivation
 
 ```typescript
-import * as Bip39 from '@voltaire/crypto/Bip39';
+import * as Bip39 from '@tevm/voltaire/Bip39';
 
 const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
@@ -109,8 +109,8 @@ console.log(seed.length); // 64
 Create hierarchical deterministic wallet from seed.
 
 ```typescript
-import * as Bip39 from '@voltaire/crypto/Bip39';
-import * as HDWallet from '@voltaire/crypto/HDWallet';
+import * as Bip39 from '@tevm/voltaire/Bip39';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
 
 const mnemonic = Bip39.generateMnemonic(256);
 const seed = await Bip39.mnemonicToSeed(mnemonic);
@@ -133,7 +133,7 @@ Use BIP-44 path `m/44'/60'/account'/0/index` for Ethereum.
 ### Single Account
 
 ```typescript
-import * as HDWallet from '@voltaire/crypto/HDWallet';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
 
 // Derive first Ethereum address (account 0, index 0)
 const eth0 = HDWallet.deriveEthereum(root, 0, 0);
@@ -179,8 +179,8 @@ const account2 = HDWallet.deriveEthereum(root, 2, 0); // m/44'/60'/2'/0/0
 Convert private key to Ethereum address.
 
 ```typescript
-import * as Secp256k1 from '@voltaire/crypto/Secp256k1';
-import { Address } from '@voltaire/primitives/Address';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import { Address } from '@tevm/voltaire/Address';
 
 // Get private key from HD derivation
 const privateKey = HDWallet.getPrivateKey(eth0);
@@ -199,10 +199,10 @@ console.log(address.toHex()); // "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
 Restore wallet from backed-up mnemonic.
 
 ```typescript
-import * as Bip39 from '@voltaire/crypto/Bip39';
-import * as HDWallet from '@voltaire/crypto/HDWallet';
-import * as Secp256k1 from '@voltaire/crypto/Secp256k1';
-import { Address } from '@voltaire/primitives/Address';
+import * as Bip39 from '@tevm/voltaire/Bip39';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import { Address } from '@tevm/voltaire/Address';
 
 // User provides backed-up mnemonic
 const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
@@ -230,7 +230,7 @@ console.log('Restored address:', address.toHex());
 Restore from xprv/xpub string.
 
 ```typescript
-import * as HDWallet from '@voltaire/crypto/HDWallet';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
 
 // From extended private key (full access)
 const xprv = 'xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi';
@@ -254,7 +254,7 @@ console.log(HDWallet.getPublicKey(watchAddress));  // Uint8Array(33)
 Derive keys using any BIP-32 path.
 
 ```typescript
-import * as HDWallet from '@voltaire/crypto/HDWallet';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
 
 // Standard Ethereum path
 const eth = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
@@ -277,10 +277,10 @@ console.log(HDWallet.isHardenedPath("m/44/60/0"));    // false
 ## Complete Wallet Class Example
 
 ```typescript
-import * as Bip39 from '@voltaire/crypto/Bip39';
-import * as HDWallet from '@voltaire/crypto/HDWallet';
-import * as Secp256k1 from '@voltaire/crypto/Secp256k1';
-import { Address } from '@voltaire/primitives/Address';
+import * as Bip39 from '@tevm/voltaire/Bip39';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+import { Address } from '@tevm/voltaire/Address';
 
 class Wallet {
   private root: ReturnType<typeof HDWallet.fromSeed>;

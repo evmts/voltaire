@@ -64,7 +64,7 @@ const encoded = Rlp.encode(nested)
 Ethereum transactions use RLP encoding for signing and broadcasting:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Legacy transaction: [nonce, gasPrice, gas, to, value, data, v, r, s]
 const txData = [
@@ -88,7 +88,7 @@ const encoded = Rlp.encode(txData)
 Block headers are RLP-encoded lists:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Simplified block header
 const header = [
@@ -117,7 +117,7 @@ const blockHash = keccak256(encoded)
 Define typed structures with RLP encoding:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface StorageProof {
   key: Uint8Array
@@ -257,7 +257,7 @@ Use `encode` for general-purpose encoding. Use `encodeBytes` or `encodeList` whe
 Calculate size before encoding for better performance:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const items = [
   new Uint8Array([1, 2, 3]),
@@ -277,7 +277,7 @@ const encoded = Rlp.encode(items)
 Use specific encoders when type is known:
 
 ```typescript
-import { encodeBytes, encodeList } from 'tevm/BrandedRlp'
+import { encodeBytes, encodeList } from '@tevm/voltaire/Rlp'
 
 // More efficient than generic encode()
 const bytesEncoded = encodeBytes(new Uint8Array([1, 2, 3]))

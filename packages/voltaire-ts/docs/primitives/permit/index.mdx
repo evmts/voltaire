@@ -1,191 +1,88 @@
 ---
 title: Permit
-description: EIP-2612 Permit signatures for gasless token approvals
+description: EIP-2612 gasless ERC-20 token approval typed data definitions, EIP-712 signing, verification, and known token domain metadata.
 ---
 
-# Permit
+`Permit` implements EIP-2612 off-chain ERC-20 `permit(owner, spender, value, deadline, v, r, s)` signatures over EIP-712 typed data, enabling single-transaction approvals and meta-transaction relays without a prior `approve` call.
 
-EIP-2612 Permit signatures enable gasless token approvals through meta-transactions. Users sign an off-chain message granting approval, which can be submitted by a relayer paying the gas.
-
-## Overview
-
-EIP-2612 extends ERC-20 tokens with a `permit` function that accepts EIP-712 signed messages. This enables:
-
-- **Gasless approvals**: Users don't need ETH to approve tokens
-- **Single-transaction flows**: Approve + transfer in one transaction
-- **Meta-transactions**: Relayers can pay gas on behalf of users
-- **Better UX**: No separate approval transaction needed
-
-## Types
-
-### PermitType
-
-```typescript
-interface PermitType {
-  readonly owner: AddressType;
-  readonly spender: AddressType;
-  readonly value: Uint256Type;
-  readonly nonce: Uint256Type;
-  readonly deadline: Uint256Type;
-}
+```mermaid
+sequenceDiagram
+  participant Owner as Token Owner
+  participant Relayer as Spender / Relayer
+  participant Token as ERC-20 Contract
+  Owner->>Owner: Permit.createPermitSignature(permit, domain, privKey)
+  Owner->>Relayer: Send { permit, signature } off-chain
+  Relayer->>Relayer: Permit.verifyPermit(permit, signature, domain)
+  Relayer->>Token: permit(owner, spender, value, deadline, v, r, s) + transferFrom(...)
 ```
 
-### PermitDomainType
+## Quick Start
 
 ```typescript
-interface PermitDomainType {
-  readonly name: string;
-  readonly version: string;
-  readonly chainId: ChainIdType;
-  readonly verifyingContract: AddressType;
-}
-```
+import { Address, Permit, Uint256 } from '@tevm/voltaire';
+import { PrivateKey } from '@tevm/voltaire/PrivateKey';
 
-## Methods
-
-### createPermitSignature
-
-Creates an EIP-712 signature for a permit message.
-
-```typescript
-import * as Permit from '@tevm/primitives/Permit';
-import * as Address from '@tevm/primitives/Address';
-import * as Uint256 from '@tevm/primitives/Uint256';
+const privateKey = PrivateKey.from('0x' + '11'.repeat(32));
+const owner = Address.fromPrivateKey(privateKey);
 
 const permit: Permit.PermitType = {
-  owner: Address.fromHex('0x...'),
-  spender: Address.fromHex('0x...'),
-  value: Uint256.fromBigInt(1000000n),
-  nonce: Uint256.fromBigInt(0n),
-  deadline: Uint256.fromBigInt(BigInt(Math.floor(Date.now() / 1000) + 3600)),
+  owner,
+  spender: Address('0x742d35cc6634c0532925a3b844bc9e7595f0beb0'),
+  value: Uint256.from(1_000_000n),
+  nonce: Uint256.from(0n),
+  deadline: Uint256.from(1_900_000_000n),
 };
 
 const domain: Permit.PermitDomainType = {
   name: 'USD Coin',
   version: '2',
-  chainId: 1,
-  verifyingContract: Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+  chainId: 1 as any,
+  verifyingContract: Address('0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'),
 };
 
 const signature = Permit.createPermitSignature(permit, domain, privateKey);
+const isValid = Permit.verifyPermit(permit, signature, domain); // true
 ```
 
-### verifyPermit
+Import `Permit` from `@tevm/voltaire`.
 
-Verifies a permit signature matches the permit data and domain.
+## Types & EIP-712 Schema
 
-```typescript
-const isValid = Permit.verifyPermit(permit, signature, domain);
-```
+### `PermitType`
 
-## Known Tokens
+| Field | Solidity Type | TypeScript Type |
+| --- | --- | --- |
+| `owner` | `address` | `AddressType` |
+| `spender` | `address` | `AddressType` |
+| `value` | `uint256` | `Uint256Type` |
+| `nonce` | `uint256` | `Uint256Type` |
+| `deadline` | `uint256` | `Uint256Type` |
 
-Pre-configured domain data for popular ERC-2612 tokens:
+### `PermitDomainType`
 
-```typescript
-import * as Permit from '@tevm/primitives/Permit';
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Token `name()` used in contract's `DOMAIN_SEPARATOR` |
+| `version` | `string` | Contract EIP-712 version (commonly `"1"` or `"2"`) |
+| `chainId` | `ChainIdType` | Target chain ID (prevents cross-chain replay) |
+| `verifyingContract` | `AddressType` | ERC-20 token contract address |
 
-// USDC Mainnet
-const domain = Permit.KnownTokens.USDC_MAINNET;
+## API Reference
 
-// DAI Mainnet
-const domain = Permit.KnownTokens.DAI_MAINNET;
+| Export | Signature | Description |
+| --- | --- | --- |
+| `Permit.PERMIT_TYPES` | `readonly` EIP-712 `Permit` type definition | Primary type schema for `EIP712.signTypedData` |
+| `Permit.createPermitSignature` | `(permit: PermitType, domain: PermitDomainType, privateKey: Uint8Array) => Uint8Array` | Sign EIP-2612 permit with EIP-712 |
+| `Permit.verifyPermit` | `(permit: PermitType, signature: Uint8Array, domain: PermitDomainType) => boolean` | Recover EIP-712 signer and verify equality with `permit.owner` |
+| `Permit.KnownTokens` | Pre-configured EIP-712 domains for major mainnet tokens (e.g., USDC, DAI) |
 
-// Other tokens
-Permit.KnownTokens.USDC_POLYGON
-Permit.KnownTokens.USDC_ARBITRUM
-Permit.KnownTokens.USDT_MAINNET
-Permit.KnownTokens.UNI_MAINNET
-Permit.KnownTokens.WETH_MAINNET
-```
+## Security Notes
 
-## Complete Example
+- Always verify `block.timestamp <= deadline` on-chain and query `token.nonces(owner)` live before signing; stale nonces invalidate permits silently.
+- Tokens like DAI implement a non-standard `bool allowed` permit layout rather than EIP-2612's `uint256 value`. Verify contract ABI before submitting.
 
-```typescript
-import * as Permit from '@tevm/primitives/Permit';
-import * as Address from '@tevm/primitives/Address';
-import * as Uint256 from '@tevm/primitives/Uint256';
+## Related
 
-// Setup
-const owner = Address.fromHex('0x...');
-const spender = Address.fromHex('0x...');
-const amount = Uint256.fromBigInt(1000000n); // 1 USDC
-
-// Create permit
-const permit: Permit.PermitType = {
-  owner,
-  spender,
-  value: amount,
-  nonce: Uint256.fromBigInt(0n),
-  deadline: Uint256.fromBigInt(BigInt(Math.floor(Date.now() / 1000) + 3600)),
-};
-
-// Sign with known token domain
-const domain = Permit.KnownTokens.USDC_MAINNET;
-const signature = Permit.createPermitSignature(permit, domain, privateKey);
-
-// Verify
-const isValid = Permit.verifyPermit(permit, signature, domain);
-
-// Submit to contract
-const { r, s, v } = parseSignature(signature);
-await contract.permit(
-  permit.owner,
-  permit.spender,
-  permit.value,
-  permit.deadline,
-  v,
-  r,
-  s
-);
-```
-
-## Security Considerations
-
-### Deadline
-
-Always set a reasonable deadline. Expired permits can't be used:
-
-```typescript
-// 1 hour from now
-const deadline = Uint256.fromBigInt(BigInt(Math.floor(Date.now() / 1000) + 3600));
-```
-
-### Nonce Management
-
-Each permit must use the owner's current nonce. Replay protection:
-
-```typescript
-// Query on-chain nonce
-const nonce = await contract.nonces(owner);
-```
-
-### Domain Verification
-
-Ensure the domain matches the token contract:
-
-```typescript
-// Verify domain separator
-const onChainSeparator = await contract.DOMAIN_SEPARATOR();
-```
-
-### Amount Limits
-
-Be careful with unlimited approvals:
-
-```typescript
-// Limited approval
-const amount = Uint256.fromBigInt(1000000n);
-
-// Unlimited (use with caution)
-const unlimited = Uint256.MAX;
-```
-
-## See Also
-
-- [Permit (Effect)](https://voltaire-effect.tevm.sh/primitives/permit) - Effect.ts integration with Schema validation
-
-## References
-
-- [EIP-2612: Permit Extension for EIP-20](https://eips.ethereum.org/EIPS/eip-2612)
-- [EIP-712: Typed Structured Data Hashing and Signing](/crypto/eip712)
+- [EIP-712](/crypto/eip712) — Generic structured typed-data hashing and recovery
+- [Signature](/primitives/signature) — Splitting `(v, r, s)` for Solidity `permit()` calls
+- [Address](/primitives/address) — Account and verifying contract addresses

@@ -44,8 +44,8 @@ Cryptographic operations provided by crypto module:
 ## Usage Pattern
 
 ```typescript
-import { Signature } from '@voltaire/primitives';
-import { secp256k1 } from '@voltaire/crypto'; // WASM available here
+import { Signature } from '@tevm/voltaire';
+import { secp256k1 } from '@tevm/voltaire'; // WASM available here
 
 // Signature operations (pure TypeScript)
 const sig = Signature.fromSecp256k1(r, s, 27);
@@ -118,8 +118,8 @@ const pubKey = secp256k1.recover(message, sig, v);
 ### Signing (WASM)
 
 ```typescript
-import { Signature } from '@voltaire/primitives';
-import { secp256k1 } from '@voltaire/crypto';
+import { Signature } from '@tevm/voltaire';
+import { secp256k1 } from '@tevm/voltaire';
 
 // Sign message (uses WASM)
 const { r, s, v } = await secp256k1.sign(message, privateKey);
@@ -134,8 +134,8 @@ const canonical = Signature.normalize(sig);
 ### Verification (WASM)
 
 ```typescript
-import { Signature } from '@voltaire/primitives';
-import { secp256k1 } from '@voltaire/crypto';
+import { Signature } from '@tevm/voltaire';
+import { secp256k1 } from '@tevm/voltaire';
 
 // Extract components (TypeScript)
 const r = Signature.getR(sig);
@@ -148,8 +148,8 @@ const valid = await secp256k1.verify(message, r, s, publicKey);
 ### Recovery (WASM)
 
 ```typescript
-import { Signature } from '@voltaire/primitives';
-import { secp256k1 } from '@voltaire/crypto';
+import { Signature } from '@tevm/voltaire';
+import { secp256k1 } from '@tevm/voltaire';
 
 // Get recovery parameters (TypeScript)
 const r = Signature.getR(sig);
@@ -165,8 +165,8 @@ const publicKey = await secp256k1.recover(message, r, s, v);
 ### End-to-End Signature Flow
 
 ```typescript
-import { Signature, Hash } from '@voltaire/primitives';
-import { secp256k1 } from '@voltaire/crypto';
+import { Signature, Hash } from '@tevm/voltaire';
+import { secp256k1 } from '@tevm/voltaire';
 
 async function signAndVerify(
   message: Uint8Array,
@@ -208,7 +208,7 @@ async function signAndVerify(
 
 ```typescript
 // Available via @voltaire/crypto
-import { secp256k1 } from '@voltaire/crypto';
+import { secp256k1 } from '@tevm/voltaire';
 
 // Sign (WASM)
 const sig = await secp256k1.sign(
@@ -236,7 +236,7 @@ const publicKey = await secp256k1.recover(
 ### P-256 WASM
 
 ```typescript
-import { p256 } from '@voltaire/crypto';
+import { p256 } from '@tevm/voltaire';
 
 // Sign (WASM)
 const sig = await p256.sign(
@@ -256,7 +256,7 @@ const valid = await p256.verify(
 ### Ed25519 WASM
 
 ```typescript
-import { ed25519 } from '@voltaire/crypto';
+import { ed25519 } from '@tevm/voltaire';
 
 // Sign (WASM)
 const signature = await ed25519.sign(
@@ -290,11 +290,11 @@ zig build crypto-wasm
 
 ```typescript
 // Import only what you need
-import { secp256k1 } from '@voltaire/crypto/secp256k1';
+import { secp256k1 } from '@tevm/voltaire/Secp256k1';
 // Only loads secp256k1.wasm (~50KB)
 
 // Import multiple algorithms
-import { secp256k1, ed25519 } from '@voltaire/crypto';
+import { secp256k1, ed25519 } from '@tevm/voltaire';
 // Loads secp256k1.wasm + ed25519.wasm (~90KB)
 ```
 

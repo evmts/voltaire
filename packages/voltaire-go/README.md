@@ -1,20 +1,48 @@
 # voltaire-go
 
-Go bindings for the [Voltaire](https://github.com/voltaire-labs/voltaire) Ethereum primitives library.
+Go bindings for [Voltaire](https://github.com/evmts/voltaire/tree/main/packages/voltaire-go) Ethereum primitives and cryptography.
+
+Module path (`go.mod`): `github.com/voltaire-labs/voltaire-go` (Go `1.22+`). Core primitives and Keccak/SHA-256 hashing call Voltaire's Zig-compiled native library (`libprimitives_ts_native`) through CGO (`internal/ffi`); RLP, Signatures, Bytes/Bytes32, BLAKE2b, and RIPEMD-160 are pure Go.
+
+## CGO Architecture
+
+```mermaid
+flowchart LR
+    GoApp["Go Application\n(github.com/voltaire-labs/voltaire-go)"] --> CGO["CGO-Backed Packages\naddress, hash, hex, u256,\nprivatekey, publickey,\nkeccak256, sha256"]
+    GoApp --> Pure["Pure-Go Packages\nbytes, bytes32, rlp,\nsignature, blake2, ripemd160"]
+    CGO --> FFI["internal/ffi\n(CGO + primitives.h)"]
+    FFI --> Zig["libprimitives_ts_native\n(zig-out/native)"]
+```
 
 ## Requirements
 
-- Go 1.21+
-- Zig 0.15+ (to build native library)
+- Go `1.22+` with `CGO_ENABLED=1` for CGO-backed packages
+- Zig `0.15+` to build `libprimitives_ts_native`
 
-## Installation
+## Building and Installing
+
+Build the native library from the Voltaire repository root (`https://github.com/evmts/voltaire`):
 
 ```bash
-# Build the native library first
-cd ../.. && zig build build-ts-native
+zig build build-ts-native
+```
 
-# Then use the Go package
-go get github.com/voltaire-labs/voltaire-go
+Then build or test `packages/voltaire-go`:
+
+```bash
+cd packages/voltaire-go
+make build       # builds native library + CGO_ENABLED=1 go build ./...
+make test        # builds native library + runs go test with library path set
+make test-quick  # runs go test without rebuilding native library
+```
+
+Import packages via the module path declared in `go.mod`:
+
+```go
+import (
+    "github.com/voltaire-labs/voltaire-go/primitives/address"
+    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
+)
 ```
 
 ## Quick Start
@@ -24,48 +52,46 @@ package main
 
 import (
     "fmt"
+    "log"
 
-    "github.com/voltaire-labs/voltaire-go/primitives/address"
     "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
+    "github.com/voltaire-labs/voltaire-go/primitives/address"
 )
 
 func main() {
-    // Parse address
-    addr, _ := address.FromHex("0xd8da6bf26964af9d7eed9e03e53415d37aa96045")
-    fmt.Println(addr.ChecksumHex()) // 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+    addr, err := address.FromHex("0xd8da6bf26964af9d7eed9e03e53415d37aa96045")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("Checksum:", addr.ChecksumHex()) // 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 
-    // Hash data
-    hash := keccak256.HashString("hello")
-    fmt.Println(hash.Hex())
+    digest := keccak256.HashString("hello")
+    fmt.Println("Keccak256:", digest.Hex())
 }
 ```
 
 ## Packages
 
-### Primitives
+| Package | Backend | Summary |
+|---------|---------|---------|
+| `primitives/address` | CGO | 20-byte `Address`, EIP-55 checksum, JSON/Text marshaling |
+| `primitives/bytes` | Pure Go | Safe `Slice`, `Concat`, `PadLeft`/`PadRight`, `TrimLeft`/`TrimRight`, constant-time `Equal` |
+| `primitives/bytes32` | Pure Go | Fixed `[32]byte` with hex/JSON/Text codecs and constant-time equality |
+| `primitives/hash` | CGO | 32-byte `Hash` with constant-time equality and JSON/Text marshaling |
+| `primitives/hex` | CGO | `Encode`, `Decode`, `MustDecode`, `HasPrefix`, `TrimPrefix`, `AddPrefix` |
+| `primitives/privatekey` | CGO + `dcrd/secp256k1` | 32-byte secp256k1 private key, key generation, `Sign`, `SignMessage`, `Address` |
+| `primitives/publickey` | CGO | 65-byte internal secp256k1 public key, compressed/uncompressed codecs, `Address` |
+| `primitives/rlp` | Pure Go | Canonical RLP `Encode`, `EncodeUint64`, `EncodeBigInt`, `EncodeList`, `DecodeBytes`, `IsCanonical` |
+| `primitives/signature` | Pure Go | 65-byte ECDSA `Signature`, EIP-2 `IsLowS`/`ToLowS`, `RecoveryID`/`YParity` |
+| `primitives/u256` | CGO | 32-byte big-endian `U256`, `big.Int`/`uint64` conversion, JSON/Text marshaling |
+| `crypto/keccak256` | CGO | `Hash`, `HashString`, `Sum` returning `hash.Hash` |
+| `crypto/sha256` | CGO | `Hash`, `HashString`, `Sum`, `DoubleHash` |
+| `crypto/blake2` | Pure Go (`x/crypto`) | BLAKE2b-256 and BLAKE2b-512 one-shot and `hash.Hash` |
+| `crypto/ripemd160` | Pure Go (`x/crypto`) | RIPEMD-160 and Bitcoin `Hash160` (`RIPEMD160(SHA256(x))`) |
 
-- `primitives/address` - Ethereum addresses with EIP-55 checksum
-- `primitives/hash` - 32-byte hash values
-- `primitives/hex` - Hex encoding utilities
-- `primitives/u256` - 256-bit unsigned integers
+## Documentation
 
-### Cryptography
-
-- `crypto/keccak256` - Keccak-256 hashing
-- `crypto/sha256` - SHA-256 hashing
-
-## Development
-
-```bash
-# Build
-make build
-
-# Test
-make test
-
-# Quick test (skip native rebuild)
-make test-quick
-```
+See [`docs/index.md`](docs/index.md) and module guides in `docs/primitives/` and `docs/crypto/`.
 
 ## License
 

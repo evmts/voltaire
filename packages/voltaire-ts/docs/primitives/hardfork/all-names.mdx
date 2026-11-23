@@ -30,7 +30,7 @@ SHANGHAI → CANCUN → PRAGUE → OSAKA
 Build hardfork selector dropdown:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function buildHardforkSelector(): string {
   const names = Hardfork.allNames()
@@ -51,7 +51,7 @@ function buildHardforkSelector(): string {
 Validate user input:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function validateHardfork(input: string): void {
   const validNames = Hardfork.allNames()
@@ -70,7 +70,7 @@ function validateHardfork(input: string): void {
 Generate hardfork timeline:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function generateTimeline() {
   const names = Hardfork.allNames()
@@ -94,7 +94,7 @@ function generateTimeline() {
 Build feature availability table:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function generateFeatureMatrix() {
   const names = Hardfork.allNames()
@@ -118,7 +118,7 @@ function generateFeatureMatrix() {
 Display available hardforks:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function listHardforks() {
   const names = Hardfork.allNames()
@@ -135,7 +135,7 @@ function listHardforks() {
 Get supported versions:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function getSupportedVersions(minVersion: string, maxVersion: string) {
   const allNames = Hardfork.allNames()

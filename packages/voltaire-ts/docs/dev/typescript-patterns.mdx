@@ -3,8 +3,6 @@ title: TypeScript Patterns
 description: Branded types, namespace exports, dual APIs, and file organization
 ---
 
-# TypeScript Patterns
-
 Voltaire uses specific TypeScript patterns for type safety, tree-shaking, and API consistency.
 
 ## Branded Types
@@ -40,7 +38,7 @@ transfer(hash, amount);  // ❌ Type error: Hash is not Address
 
 Each primitive follows this structure:
 
-```
+```text
 Address/
 ├── AddressType.ts         # Type definition only
 ├── from.js                # Constructor (no wrapper needed)
@@ -96,7 +94,7 @@ export function equals(a: AddressInput, b: AddressInput): boolean {
 ### Usage
 
 ```typescript
-import * as Address from "@voltaire/primitives/Address";
+import * as Address from "@tevm/voltaire/Address";
 
 // Public API - accepts various inputs
 const hex = Address.toHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");

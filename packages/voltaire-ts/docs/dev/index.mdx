@@ -1,136 +1,103 @@
 ---
 title: Developer Documentation
-description: Complete guide for contributing to Voltaire - architecture, patterns, testing, and APIs
+description: Monorepo setup, build commands, module boundaries, and contribution standards for Voltaire.
 ---
 
-# Developer Documentation
+Voltaire is a polyglot Ethereum primitives, cryptography, and EVM monorepo with a Zig core, Rust/C cryptographic backends, a TypeScript SDK (`@tevm/voltaire`), an Effect 4 layer (`voltaire-effect`), and native bindings for Go, Python, Rust, Swift, and C.
 
-Everything you need to understand and contribute to Voltaire.
+```mermaid
+flowchart TD
+  Root["voltaire/ Monorepo"]
+  Root --> Zig["packages/voltaire-zig\n(Zig core + C ABI + vendored C libs)"]
+  Root --> TS["packages/voltaire-ts\n(@tevm/voltaire + Mintlify docs)"]
+  Root --> Eff["packages/voltaire-effect\n(Effect 4 transports & services)"]
+  Root --> Bind["Language Bindings\nvoltaire-rs / voltaire-go / voltaire-py / voltaire-swift / voltaire-c"]
+  Zig -->|"Bun FFI / WASM / C ABI"| TS
+  Zig -->|"Static/Dynamic C ABI"| Bind
+  TS --> Eff
+```
 
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/evmts/voltaire
-cd tevm
-bun install
-git submodule update --init
+# Clone with submodules (blst, c-kzg-4844, libwally-core)
+git clone --recurse-submodules https://github.com/evmts/voltaire
+cd voltaire
 
-# Build everything
+# Install JS workspace dependencies (pnpm 10)
+pnpm install
+
+# Build Zig core + Rust crypto_wrappers + C libraries
 zig build
 
-# Run all tests
-zig build test && bun run test:run
+# Run Zig tests and TypeScript tests
+zig build test
+pnpm test:run
 
-# Start docs dev server
-bun run docs:dev
+# Run docs locally (Mintlify)
+cd packages/voltaire-ts/docs && pnpm dlx mintlify dev
 ```
 
-## Documentation Structure
+## Workspace Packages
 
-<CardGroup cols={2}>
-  <Card title="Architecture" icon="sitemap" href="/dev/architecture">
-    Module structure, import rules, colocated files
-  </Card>
-  <Card title="TypeScript Patterns" icon="js" href="/dev/typescript-patterns">
-    Branded types, namespace exports, dual APIs
-  </Card>
-  <Card title="Zig Patterns" icon="code" href="/dev/zig-patterns">
-    Style guide, memory management, inline tests
-  </Card>
-  <Card title="Build System" icon="hammer" href="/dev/build-system">
-    zig build commands, bun scripts, outputs
-  </Card>
-  <Card title="Testing" icon="flask-vial" href="/dev/testing">
-    Test organization, commands, TDD workflow
-  </Card>
-  <Card title="Adding Primitives" icon="cube" href="/dev/adding-primitives">
-    Step-by-step guide to add new primitive types
-  </Card>
-  <Card title="Adding Crypto" icon="shield-halved" href="/dev/adding-crypto">
-    How to add cryptographic functions
-  </Card>
-  <Card title="WASM" icon="microchip" href="/dev/wasm">
-    WASM compilation, modes, and integration
-  </Card>
-  <Card title="Multi-Language" icon="language" href="/dev/multi-language">
-    TypeScript, Zig, Rust, C integration
-  </Card>
-</CardGroup>
+| Directory | Package | Stack | Role |
+| --- | --- | --- | --- |
+| `packages/voltaire-zig` | Zig modules (`primitives`, `crypto`, `precompiles`, `evm`, `jsonrpc`, `state-manager`, `blockchain`) | Zig 0.15 + C + Rust | Core implementations, WASM, C ABI (`c_api.zig`) |
+| `packages/voltaire-ts` | `@tevm/voltaire` | TypeScript + Vitest + tsup | Public JS/TS SDK, WASM/Bun FFI bindings, Mintlify docs |
+| `packages/voltaire-effect` | `voltaire-effect` | Effect 4 / VibeLang | Composable transports, typed errors, Effect services |
+| `packages/voltaire-rs` | Rust crate | Rust | Safe Rust wrappers over Voltaire primitives & crypto |
+| `packages/voltaire-go` | Go module | Go (CGo) | Go bindings linking Voltaire's C ABI |
+| `packages/voltaire-py` | Python package | Python | Python bindings over Voltaire's shared library |
+| `packages/voltaire-swift` | `Voltaire` (SPM) | Swift 5.9 (`CVoltaire`) | macOS 12+ / iOS 15+ Swift bindings |
+| `packages/voltaire-c` | C library & headers | C (`primitives.h`) | Direct C API consumption |
 
-## Key Principles
+## Core Engineering Rules
 
-### Every Line Correct
-No stubs, no commented tests, no placeholders. Code is complete or it doesn't exist.
-
-### WIP Status
-Library not yet released. No breaking changes concept - refactor freely.
-
-### TDD Workflow
-Run `zig build && zig build test` constantly. Know immediately when something breaks.
-
-### Data-First Design
-Primitives are branded `Uint8Array`s with namespace methods. Zero runtime overhead, full type safety.
-
-## Module Overview
-
-| Module | Purpose | Languages |
-|--------|---------|-----------|
-| `primitives/` | Ethereum types (Address, Hash, Uint, RLP, ABI, Transaction) | TS + Zig |
-| `crypto/` | Cryptography (Keccak, secp256k1, BLS12-381, BN254, KZG) | TS + Zig + Rust + C |
-| `evm/precompiles/` | EVM precompile implementations (21 total) | Zig |
-| `wasm-loader/` | WASM instantiation and memory management | TS |
-| `lib/` | C libraries (blst, c-kzg-4844, libwally-core) | C |
-
-## Import Rules
-
-<Tip>
-Always use module imports, never relative paths.
-</Tip>
-
-```zig
-// ✅ Correct
-const primitives = @import("primitives");
-const crypto = @import("crypto");
-const precompiles = @import("precompiles");
-
-// ❌ Wrong
-const address = @import("../primitives/address.zig");
-```
-
-## File Colocation
-
-Each primitive lives in a single folder with paired implementations:
-
-```
-src/primitives/Address/
-├── AddressType.ts     # Type definition
-├── Address.js         # Implementation (.js, not .ts!)
-├── Address.test.ts    # Tests (separate file)
-├── index.ts           # Dual exports
-├── address.zig        # Zig implementation
-├── address.bench.zig  # Benchmarks
-└── address.mdx        # Documentation
-```
+1. **No stubs or skipped tests.** Every committed test passes; broken or unimplemented tests are fixed or removed.
+2. **Module imports in Zig.** Import `@import("primitives")`, `@import("crypto")`, or `@import("precompiles")` — never relative cross-module paths like `../primitives/...`.
+3. **Explicit memory ownership in Zig.** Functions that allocate take an explicit `std.mem.Allocator`; callers free returned slices.
+4. **Zero-overhead branded types in TypeScript.** Primitives are branded `Uint8Array` or `string` types with `sideEffects: false` subpath exports.
+5. **Cross-language parity.** Zig, TypeScript, WASM, and native FFI outputs must match byte-for-byte on shared test vectors.
 
 ## Essential Commands
 
-```bash
-# Core workflow
-zig build                    # Full build
-zig build test               # All Zig tests
-bun run test:run             # All TS tests
-zig build check              # Quick validation
+| Task | Command |
+| --- | --- |
+| Full Zig + C + Rust build | `zig build` |
+| Run all Zig unit tests | `zig build test` |
+| Filter Zig tests | `zig build test -Dtest-filter=Address` |
+| Build TS package (`dist/` + `types/`) | `pnpm --filter @tevm/voltaire build` |
+| Run TS test suite | `pnpm --filter @tevm/voltaire test:run` |
+| Build native FFI dylib (Bun / Swift) | `zig build build-ts-native` |
+| Build WASM (`ReleaseSmall` / `ReleaseFast`) | `zig build build-ts-wasm` / `zig build build-ts-wasm-fast` |
+| Format and lint workspace | `pnpm format && pnpm lint` |
+| Typecheck workspace | `pnpm typecheck` |
 
-# Development
-zig build -Dtest-filter=addr # Filter tests
-bun run test -- address      # Filter TS tests
-bun run docs:dev             # Docs at localhost:3000
-```
+## Developer Guides
 
-## Getting Help
-
-- Check inline comments in source files
-- Read test files for usage examples
-- Reference the Yellow Paper and EIPs for spec details
-- Zig docs: https://ziglang.org/documentation/0.15.1/
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/dev/architecture">
+    Layered runtime architecture, Zig module graph, and memory ownership.
+  </Card>
+  <Card title="Codebase Map" icon="map" href="/dev/codebase-map">
+    Directory-by-directory layout of every package and build output.
+  </Card>
+  <Card title="Build System" icon="hammer" href="/dev/build-system">
+    `build.zig` steps, Cargo features, pnpm scripts, and cross-compilation.
+  </Card>
+  <Card title="WASM" icon="microchip" href="/dev/wasm">
+    WASM build modes, linear memory protocol, bundler config, and limitations.
+  </Card>
+  <Card title="Multi-Language" icon="language" href="/dev/multi-language">
+    C ABI, Bun FFI, Rust `crypto_wrappers`, C libraries, and Swift/Go/Python bindings.
+  </Card>
+  <Card title="Testing" icon="flask-vial" href="/dev/testing">
+    Zig inline tests, Vitest suites, cross-validation, fuzzing, and benchmarks.
+  </Card>
+  <Card title="TypeScript Patterns" icon="js" href="/dev/typescript-patterns">
+    Branded types, dual APIs, JSDoc typing, and tree-shaking rules.
+  </Card>
+  <Card title="Zig Patterns" icon="code" href="/dev/zig-patterns">
+    Allocator conventions, error sets, comptime patterns, and inline tests.
+  </Card>
+</CardGroup>

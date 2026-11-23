@@ -8,7 +8,7 @@ description: "Transaction execution status"
 TransactionStatus is a discriminated union type representing the execution status of a transaction: pending, success, or failed.
 
 ```zig
-import * as TransactionStatus from '@tevm/primitives/TransactionStatus'
+import * as TransactionStatus from '@tevm/voltaire/TransactionStatus'
 
 const status = TransactionStatus.success(21000n as Uint256Type)
 ```
@@ -37,7 +37,7 @@ const status = TransactionStatus.pending()
 Transaction executed successfully.
 
 ```zig
-import type { Uint256Type } from '@tevm/primitives/Uint'
+import type { Uint256Type } from '@tevm/voltaire/Uint'
 
 const gasUsed = 21000n as Uint256Type
 const status = TransactionStatus.success(gasUsed)
@@ -92,8 +92,8 @@ if (TransactionStatus.isFailed(status)) {
 TransactionStatus appears in receipts to indicate execution outcome:
 
 ```zig
-import * as Receipt from '@tevm/primitives/Receipt'
-import * as TransactionStatus from '@tevm/primitives/TransactionStatus'
+import * as Receipt from '@tevm/voltaire/Receipt'
+import * as TransactionStatus from '@tevm/voltaire/TransactionStatus'
 
 const receipt = Receipt.from({
   status: TransactionStatus.success(gasUsed),

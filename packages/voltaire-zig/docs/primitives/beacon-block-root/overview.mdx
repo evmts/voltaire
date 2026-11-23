@@ -23,7 +23,7 @@ BeaconBlockRoot represents a 32-byte beacon chain block root hash. Introduced in
 Create BeaconBlockRoot from hex string or bytes.
 
 ```zig
-import { BeaconBlockRoot } from '@tevm/primitives';
+import { BeaconBlockRoot } from '@tevm/voltaire';
 
 const root1 = BeaconBlockRoot.from('0x1234...');
 const root2 = BeaconBlockRoot.from(new Uint8Array(32));
@@ -90,7 +90,7 @@ contract BeaconRootConsumer {
 ### Verify beacon chain data
 
 ```zig
-import { BeaconBlockRoot, Slot } from '@tevm/primitives';
+import { BeaconBlockRoot, Slot } from '@tevm/voltaire';
 
 interface BeaconBlock {
   slot: Slot;
@@ -110,7 +110,7 @@ const block: BeaconBlock = {
 ### Build Merkle proofs
 
 ```zig
-import { BeaconBlockRoot } from '@tevm/primitives';
+import { BeaconBlockRoot } from '@tevm/voltaire';
 
 interface MerkleProof {
   leaf: BeaconBlockRoot;

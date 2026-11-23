@@ -8,7 +8,7 @@ description: "EIP-1559 and EIP-4844 fee market calculations for Ethereum transac
 FeeMarket implements Ethereum's dynamic fee mechanisms: EIP-1559 for base fees and EIP-4844 for blob fees. Use it to calculate next block fees, validate transactions, project fee trends, and estimate costs.
 
 ```typescript
-import * as FeeMarket from '@voltaire/FeeMarket';
+import * as FeeMarket from '@tevm/voltaire/FeeMarket';
 
 // Calculate next base fee
 const nextBaseFee = FeeMarket.BaseFee(
@@ -344,7 +344,7 @@ FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK     // 786432n (6 * 131072)
 ### Estimate Transaction Cost
 
 ```typescript
-import * as FeeMarket from '@voltaire/FeeMarket';
+import * as FeeMarket from '@tevm/voltaire/FeeMarket';
 
 async function estimateTransactionCost(
   gasEstimate: bigint,
@@ -370,7 +370,7 @@ async function estimateTransactionCost(
 ### Monitor Fee Trends
 
 ```typescript
-import * as FeeMarket from '@voltaire/FeeMarket';
+import * as FeeMarket from '@tevm/voltaire/FeeMarket';
 
 function analyzeFeeTrends(state: FeeMarket.FeeMarketType) {
   // Project fees for next 10 blocks at current usage
@@ -389,7 +389,7 @@ function analyzeFeeTrends(state: FeeMarket.FeeMarketType) {
 ### Validate Before Submission
 
 ```typescript
-import * as FeeMarket from '@voltaire/FeeMarket';
+import * as FeeMarket from '@tevm/voltaire/FeeMarket';
 
 function validateTransaction(
   params: FeeMarket.TxFeeParams | FeeMarket.BlobTxFeeParams

@@ -1,380 +1,169 @@
 ---
 title: TanStack Query
-description: Using Tevm with TanStack Query for React data fetching
+description: Cache, deduplicate, and poll Ethereum RPC state in React using @tevm/voltaire and TanStack Query.
 ---
 
-TanStack Query (React Query) integrates seamlessly with Tevm for fetching and caching Ethereum data in React applications.
+TanStack Query pairs directly with `@tevm/voltaire/provider` and `@tevm/voltaire/jsonrpc` to provide request deduplication, caching, polling, and mutations in React without a framework-specific Web3 wrapper.
+
+```mermaid
+flowchart LR
+  UI["React Component"] --> Hook["useQuery / useMutation"]
+  Hook --> QC["QueryClient Cache\n(staleTime / deduplication)"]
+  QC -->|Cache Miss| Prov["HttpProvider\n(@tevm/voltaire/provider)"]
+  Prov --> RPC["Ethereum JSON-RPC"]
+```
 
 ## Installation
 
 ```bash
-bun add @tanstack/react-query @tevm/voltaire
+npm install @tanstack/react-query @tevm/voltaire
 ```
 
-## Setup
+## Shared Provider & Query Keys
 
-Wrap your app with `QueryClientProvider`:
+Create a single `HttpProvider` instance and deterministic query keys:
 
-```tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+```typescript
+// lib/ethereum.ts
+import { HttpProvider } from '@tevm/voltaire/provider';
 
-const queryClient = new QueryClient()
+export const provider = new HttpProvider({
+  url: import.meta.env.VITE_RPC_URL ?? 'https://eth.llamarpc.com',
+  timeout: 15_000,
+});
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <YourApp />
-    </QueryClientProvider>
-  )
-}
+export const ethKeys = {
+  blockNumber: () => ['eth', 'blockNumber'] as const,
+  balance: (address: string) => ['eth', 'balance', address.toLowerCase()] as const,
+  nonce: (address: string) => ['eth', 'nonce', address.toLowerCase()] as const,
+  block: (tag: string) => ['eth', 'block', tag] as const,
+  receipt: (hash: string) => ['eth', 'receipt', hash.toLowerCase()] as const,
+};
 ```
 
-## Basic Usage
+## Reading Chain State
 
-### Fetching Address Balance
+### Account Balance
 
-```tsx
-import { useQuery } from '@tanstack/react-query'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function useBalance(address: string) {
-  return useQuery({
-    queryKey: ['balance', address],
-    queryFn: async () => {
-      const addr = Address.from(address)
-      const balance = await provider.eth.getBalance({ address: addr })
-      return Wei.toEther(balance)
-    },
-    staleTime: 10_000, // 10 seconds
-  })
-}
-
-function BalanceDisplay({ address }: { address: string }) {
-  const { data: balance, isLoading, error } = useBalance(address)
-
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error: {error.message}</div>
-
-  return <div>Balance: {balance} ETH</div>
-}
-```
-
-### Fetching Block Data
+Validate the address with `Address.from`, call `Rpc.Eth.GetBalanceRequest`, and format wei with `Wei.toEther`:
 
 ```tsx
-import { useQuery } from '@tanstack/react-query'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function useBlock(blockNumber?: bigint | 'latest') {
-  return useQuery({
-    queryKey: ['block', blockNumber?.toString() ?? 'latest'],
-    queryFn: () => provider.eth.getBlockByNumber({
-      blockNumber: blockNumber ?? 'latest',
-      includeTransactions: false,
-    }),
-    staleTime: blockNumber === 'latest' ? 12_000 : Infinity,
-  })
-}
-```
-
-### Transaction History
-
-```tsx
-import { useQuery } from '@tanstack/react-query'
-import { Address } from '@tevm/voltaire/Address'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function useTransactionCount(address: string) {
-  return useQuery({
-    queryKey: ['txCount', address],
-    queryFn: async () => {
-      const addr = Address.from(address)
-      return provider.eth.getTransactionCount({ address: addr })
-    },
-  })
-}
-```
-
-## Advanced Patterns
-
-### Parallel Queries
-
-Fetch multiple addresses simultaneously:
-
-```tsx
-import { useQueries } from '@tanstack/react-query'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function useMultipleBalances(addresses: string[]) {
-  return useQueries({
-    queries: addresses.map(address => ({
-      queryKey: ['balance', address],
-      queryFn: async () => {
-        const addr = Address.from(address)
-        const balance = await provider.eth.getBalance({ address: addr })
-        return { address, balance: Wei.toEther(balance) }
-      },
-    })),
-  })
-}
-```
-
-### Dependent Queries
-
-Chain queries when one depends on another:
-
-```tsx
-import { useQuery } from '@tanstack/react-query'
-import { Address } from '@tevm/voltaire/Address'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function useContractCode(address: string) {
-  const { data: code } = useQuery({
-    queryKey: ['code', address],
-    queryFn: async () => {
-      const addr = Address.from(address)
-      return provider.eth.getCode({ address: addr })
-    },
-  })
-
-  return useQuery({
-    queryKey: ['isContract', address],
-    queryFn: () => code && code.length > 2,
-    enabled: !!code,
-  })
-}
-```
-
-### Polling for Updates
-
-Poll for block updates:
-
-```tsx
-import { useQuery } from '@tanstack/react-query'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function useLatestBlock() {
-  return useQuery({
-    queryKey: ['latestBlock'],
-    queryFn: () => provider.eth.getBlockNumber(),
-    refetchInterval: 12_000, // Poll every 12 seconds (block time)
-  })
-}
-```
-
-### Optimistic Updates
-
-Update cache optimistically when sending transactions:
-
-```tsx
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-
-function useSendTransaction() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (tx: { to: string; value: bigint }) => {
-      // Your transaction sending logic
-    },
-    onMutate: async ({ to, value }) => {
-      await queryClient.cancelQueries({ queryKey: ['balance', to] })
-
-      const previousBalance = queryClient.getQueryData(['balance', to])
-
-      queryClient.setQueryData(['balance', to], (old?: string) => {
-        const oldEther = old ? BigInt(old) : 0n
-        const oldWei = Wei.fromEther(oldEther)
-        const newWei = oldWei + value
-        return Wei.toEther(newWei)
-      })
-
-      return { previousBalance }
-    },
-    onError: (err, variables, context) => {
-      queryClient.setQueryData(['balance', variables.to], context?.previousBalance)
-    },
-    onSettled: (data, error, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['balance', variables.to] })
-    },
-  })
-}
-```
-
-## Query Key Patterns
-
-Structure query keys for efficient cache management:
-
-```tsx
-const queryKeys = {
-  // Address-specific
-  balance: (address: string) => ['balance', address] as const,
-  nonce: (address: string) => ['nonce', address] as const,
-  code: (address: string) => ['code', address] as const,
-
-  // Block-specific
-  block: (number: bigint | 'latest') => ['block', number.toString()] as const,
-  blockByHash: (hash: string) => ['block', 'hash', hash] as const,
-
-  // Transaction-specific
-  tx: (hash: string) => ['tx', hash] as const,
-  txReceipt: (hash: string) => ['txReceipt', hash] as const,
-
-  // Contract state
-  storage: (address: string, slot: string) => ['storage', address, slot] as const,
-}
-```
-
-## Custom Hooks Library
-
-Create a reusable hooks library:
-
-```tsx
-// hooks/useEthereum.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL!)
+import { useQuery } from '@tanstack/react-query';
+import { Address } from '@tevm/voltaire/Address';
+import { Wei } from '@tevm/voltaire/Denomination';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { ethKeys, provider } from './lib/ethereum';
 
 export function useBalance(address: string | undefined) {
   return useQuery({
-    queryKey: ['balance', address],
-    queryFn: async () => {
-      if (!address) throw new Error('No address')
-      const addr = Address.from(address)
-      const balance = await provider.eth.getBalance({ address: addr })
-      return Wei.toEther(balance)
-    },
-    enabled: !!address,
+    queryKey: ethKeys.balance(address ?? ''),
+    enabled: Boolean(address && Address.isValid(address)),
     staleTime: 10_000,
-  })
+    queryFn: async () => {
+      const addr = Address.from(address!);
+      const hex = (await provider.request(Rpc.Eth.GetBalanceRequest(addr, 'latest'))) as string;
+      const wei = Wei.from(BigInt(hex));
+      return { wei, ether: Wei.toEther(wei) };
+    },
+  });
 }
+
+export function BalanceDisplay({ address }: { address: string }) {
+  const { data, isLoading, error } = useBalance(address);
+  if (isLoading) return <span>Loading...</span>;
+  if (error) return <span>Error: {error.message}</span>;
+  return <span>{data?.ether} ETH</span>;
+}
+```
+
+### Block Number Polling and Immutable Historical Blocks
+
+Set `staleTime: Infinity` for finalized or numbered blocks and `refetchInterval: 12_000` for chain head polling:
+
+```tsx
+import { useQuery } from '@tanstack/react-query';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { ethKeys, provider } from './lib/ethereum';
 
 export function useBlockNumber() {
   return useQuery({
-    queryKey: ['blockNumber'],
-    queryFn: () => provider.eth.getBlockNumber(),
+    queryKey: ethKeys.blockNumber(),
     refetchInterval: 12_000,
-  })
-}
-
-export function useGasPrice() {
-  return useQuery({
-    queryKey: ['gasPrice'],
-    queryFn: () => provider.eth.getGasPrice(),
-    staleTime: 5_000,
-  })
-}
-```
-
-## Error Handling
-
-Handle RPC errors gracefully:
-
-```tsx
-import { useQuery } from '@tanstack/react-query'
-
-function useBalanceWithRetry(address: string) {
-  return useQuery({
-    queryKey: ['balance', address],
     queryFn: async () => {
-      // Your fetch logic
+      const hex = (await provider.request(Rpc.Eth.BlockNumberRequest())) as string;
+      return BigInt(hex);
     },
-    retry: (failureCount, error) => {
-      // Retry on network errors, not on validation errors
-      if (error.message.includes('invalid address')) return false
-      return failureCount < 3
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  })
+  });
+}
+
+export function useBlock(blockTag: string) {
+  const isImmutable = blockTag.startsWith('0x');
+  return useQuery({
+    queryKey: ethKeys.block(blockTag),
+    staleTime: isImmutable ? Number.POSITIVE_INFINITY : 12_000,
+    queryFn: () => provider.request(Rpc.Eth.GetBlockByNumberRequest(blockTag, false)),
+  });
 }
 ```
 
-## React Suspense Integration
-
-Use with React Suspense:
+### Parallel Queries
 
 ```tsx
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { Suspense } from 'react'
+import { useQueries } from '@tanstack/react-query';
+import { Address } from '@tevm/voltaire/Address';
+import { Wei } from '@tevm/voltaire/Denomination';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { ethKeys, provider } from './lib/ethereum';
 
-function Balance({ address }: { address: string }) {
-  const { data } = useSuspenseQuery({
-    queryKey: ['balance', address],
-    queryFn: async () => {
-      // Your fetch logic
-    },
-  })
-
-  return <div>{data} ETH</div>
-}
-
-function App() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Balance address="0x..." />
-    </Suspense>
-  )
+export function useBalances(addresses: string[]) {
+  return useQueries({
+    queries: addresses.map((address) => ({
+      queryKey: ethKeys.balance(address),
+      staleTime: 10_000,
+      queryFn: async () => {
+        const hex = (await provider.request(
+          Rpc.Eth.GetBalanceRequest(Address.from(address), 'latest'),
+        )) as string;
+        return { address, ether: Wei.toEther(Wei.from(BigInt(hex))) };
+      },
+    })),
+  });
 }
 ```
 
-## DevTools
+## Cache Invalidation After Writes
 
-Enable React Query DevTools for debugging:
+Invalidate affected account queries after a transaction confirms:
 
 ```tsx
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ethKeys } from './lib/ethereum';
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <YourApp />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  )
+export function useTransferMutation(sendTx: (to: string, amount: bigint) => Promise<string>) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ to, amount }: { from: string; to: string; amount: bigint }) =>
+      sendTx(to, amount),
+    onSuccess: (_txHash, { from, to }) => {
+      void queryClient.invalidateQueries({ queryKey: ethKeys.balance(from) });
+      void queryClient.invalidateQueries({ queryKey: ethKeys.balance(to) });
+      void queryClient.invalidateQueries({ queryKey: ethKeys.nonce(from) });
+    },
+  });
 }
 ```
 
-## Best Practices
+## Caching Guidelines
 
-<Tip>
-**Cache Configuration**
+| Data | Recommended `staleTime` | Notes |
+| --- | --- | --- |
+| Confirmed receipt / numbered block | `Infinity` | Immutable after finalization |
+| Account balance / nonce / allowance | `5_000`–`15_000` ms | Invalidate explicitly after user writes |
+| Chain head (`eth_blockNumber`) | `0` + `refetchInterval: 12_000` | Matches 12s Ethereum slot cadence |
 
-- Use `staleTime: Infinity` for immutable data (confirmed transactions, historical blocks)
-- Use short `staleTime` (5-15s) for frequently changing data (balances, pending state)
-- Use `refetchInterval` for data that changes on a known schedule (block numbers)
-</Tip>
+## Related
 
-<Warning>
-**Rate Limiting**
-
-Public RPC endpoints have rate limits. Consider:
-- Batching requests where possible
-- Using `staleTime` to reduce refetches
-- Implementing request deduplication with query keys
-</Warning>
-
-## Next Steps
-
-- [JSONRPCProvider](/jsonrpc-provider) - Full provider documentation
-- [Address](/primitives/address) - Address primitive reference
-- [Uint](/primitives/uint) - Number handling utilities
+- [React Query Skill](/skills/react-query) — Copyable hooks suite with wallet connection
+- [JSON-RPC Provider](/jsonrpc-provider) — `HttpProvider` and `WebSocketProvider`
+- [Rate Limiting Guide](/guides/rate-limiting) — Protecting RPC quotas under concurrent queries

@@ -36,12 +36,12 @@ type EIP1559 = {
 }
 ```
 
-Source: [types.ts:92-109](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L92-L109)
+Source: [types.ts:92-109](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Transaction/types.ts#L92-L109)
 
 ## Creating EIP-1559 Transactions
 
 ```typescript
-import * as Transaction from 'tevm/Transaction'
+import * as Transaction from '@tevm/voltaire/Transaction'
 
 const tx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -110,7 +110,7 @@ function getEffectiveGasPrice(
 ### Usage
 
 ```typescript
-import { EIP1559 } from 'tevm/Transaction'
+import { EIP1559 } from '@tevm/voltaire/Transaction'
 
 const tx: Transaction.EIP1559 = {
   maxPriorityFeePerGas: 2000000000n,
@@ -126,7 +126,7 @@ console.log(effectivePrice)  // 17000000000n (17 gwei)
 const totalCost = effectivePrice * gasUsed + tx.value
 ```
 
-Source: [EIP1559/getEffectiveGasPrice.js:13-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/EIP1559/getEffectiveGasPrice.js#L13-L18)
+Source: [EIP1559/getEffectiveGasPrice.js:13-18](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Transaction/EIP1559/getEffectiveGasPrice.js#L13-L18)
 
 ## Fee Estimation
 
@@ -184,7 +184,7 @@ const refund = (tx.maxFeePerGas - effectiveGasPrice) * gasUsed
 ## Methods
 
 ```typescript
-import { EIP1559 } from 'tevm/Transaction'
+import { EIP1559 } from '@tevm/voltaire/Transaction'
 
 // Serialization
 const bytes = EIP1559.serialize(eip1559Tx)

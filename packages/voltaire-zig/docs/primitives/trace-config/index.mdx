@@ -3,8 +3,6 @@ title: TraceConfig
 description: Configuration options for debug_traceTransaction and debug_traceCall
 ---
 
-# TraceConfig
-
 Configuration options for Ethereum execution tracing via `debug_traceTransaction` and `debug_traceCall` RPC methods.
 
 ## Overview
@@ -31,7 +29,7 @@ type TraceConfigType = {
 ### Basic Configuration
 
 ```zig
-import * as TraceConfig from '@tevm/primitives/TraceConfig';
+import * as TraceConfig from '@tevm/voltaire/TraceConfig';
 
 // Minimal config for maximum performance
 const minimalConfig = TraceConfig.from({
@@ -161,7 +159,7 @@ const callTreeConfig = TraceConfig.withTracer(
 ### Debugging Transaction Reverts
 
 ```zig
-import * as TraceConfig from '@tevm/primitives/TraceConfig';
+import * as TraceConfig from '@tevm/voltaire/TraceConfig';
 
 // Get revert reason from failed transaction
 const config = TraceConfig.from({

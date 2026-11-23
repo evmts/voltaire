@@ -1,74 +1,47 @@
 ---
 title: Keccak-256
-description: Ethereum's primary hash function
+description: CGO-backed Keccak-256 hashing returning typed 32-byte hash.Hash digests.
 ---
 
-# Keccak-256
+Package `github.com/voltaire-labs/voltaire-go/crypto/keccak256` computes Ethereum's pre-NIST Keccak-256 (`0x01` domain padding, distinct from SHA3-256) via Voltaire's native Zig C ABI (`internal/ffi`) and returns `hash.Hash`.
 
-The `keccak256` package provides Keccak-256 hashing, the primary hash function
-used in Ethereum for addresses, signatures, and state roots.
+## Functions
 
-## Basic Usage
+| Function | Signature | Behavior |
+|----------|-----------|----------|
+| `Hash` | `(data []byte) hash.Hash` | Hashes a single byte slice |
+| `HashString` | `(s string) hash.Hash` | Hashes UTF-8 bytes of `s` |
+| `Sum` | `(data ...[]byte) hash.Hash` | Concatenates variadic byte slices and hashes the result |
 
-### Hash Bytes
-
-```go
-import "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
-
-data := []byte("hello world")
-hash := keccak256.Hash(data)
-fmt.Println(hash.Hex())
-```
-
-### Hash String
+## Example
 
 ```go
-hash := keccak256.HashString("hello")
-// 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
-```
+package main
 
-### Hash Multiple Slices
+import (
+    "fmt"
 
-```go
-hash := keccak256.Sum(
-    []byte("hello"),
-    []byte(" "),
-    []byte("world"),
+    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
 )
-// Same as Hash([]byte("hello world"))
+
+func main() {
+    // 4-byte ERC-20 function selector
+    selHash := keccak256.HashString("transfer(address,uint256)")
+    fmt.Printf("selector: 0x%x\n", selHash.Bytes()[:4]) // 0xa9059cbb
+
+    // 32-byte ERC-20 event topic0
+    topic := keccak256.HashString("Transfer(address,address,uint256)")
+    fmt.Println("topic0:", topic.Hex())
+
+    // Multi-slice concatenation
+    combined := keccak256.Sum([]byte("hello"), []byte(" "), []byte("world"))
+    fmt.Println("combined:", combined.Hex())
+}
 ```
 
-## Common Use Cases
-
-### Function Selector
-
-```go
-// Get first 4 bytes of keccak256("transfer(address,uint256)")
-hash := keccak256.HashString("transfer(address,uint256)")
-selector := hash.Bytes()[:4]
-// [0xa9, 0x05, 0x9c, 0xbb]
-```
-
-### Event Topic
-
-```go
-hash := keccak256.HashString("Transfer(address,address,uint256)")
-topic := hash.Hex()
-// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
-```
-
-### Address from Public Key
-
-```go
-// Hash public key, take last 20 bytes
-pubKey := []byte{...} // 64 bytes (uncompressed, no prefix)
-hash := keccak256.Hash(pubKey)
-address := hash.Bytes()[12:32]
-```
-
-## Test Vectors
+## Reference Test Vectors
 
 | Input | Keccak-256 |
 |-------|------------|
-| "" (empty) | 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470 |
-| "hello" | 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8 |
+| `""` | `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470` |
+| `"hello"` | `0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8` |

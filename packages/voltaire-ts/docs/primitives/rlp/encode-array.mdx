@@ -17,7 +17,7 @@ description: Encode array of values to RLP format
 `encodeArray` is functionally identical to `encodeList` - it's provided as an alias for semantic clarity:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const items = [new Uint8Array([1]), new Uint8Array([2])]
 
@@ -38,7 +38,7 @@ Use `encodeList` when thinking of the input as a **list structure** (e.g., neste
 Encode transaction fields as array:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface LegacyTx {
   nonce: bigint
@@ -88,7 +88,7 @@ const encoded = encodeLegacyTx(tx)
 Encode block header fields:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface BlockHeader {
   parentHash: Uint8Array
@@ -132,7 +132,7 @@ function encodeBlockHeader(header: BlockHeader): Uint8Array {
 Encode event log entries:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface Log {
   address: Uint8Array
@@ -167,7 +167,7 @@ const encoded = encodeLog(log)
 Encode transaction receipts:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface Receipt {
   status: bigint
@@ -195,7 +195,7 @@ function encodeReceipt(receipt: Receipt): Uint8Array {
 Encode trie nodes:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 type TrieNode =
   | { type: 'branch'; children: Uint8Array[]; value: Uint8Array }
@@ -223,7 +223,7 @@ function encodeTrieNode(node: TrieNode): Uint8Array {
 Define typed schemas for RLP encoding:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Define schema
 interface AccountState {
@@ -262,7 +262,7 @@ function decodeAccountState(bytes: Uint8Array): AccountState {
 Calculate total size before encoding:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const items = [
   new Uint8Array([1, 2, 3]),
@@ -282,7 +282,7 @@ const encoded = Rlp.encodeArray(items)
 Encode multiple arrays efficiently:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const transactions = [
   [nonce1, gasPrice1, ...],
@@ -302,7 +302,7 @@ const block = Rlp.encodeArray(encodedTxs)
 For high-frequency encoding, consider pre-allocating buffers:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 class TxEncoder {
   private buffer = new Uint8Array(1024)  // Reusable buffer

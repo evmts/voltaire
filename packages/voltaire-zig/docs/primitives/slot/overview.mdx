@@ -23,7 +23,7 @@ Slot represents a consensus layer slot number in Ethereum's proof-of-stake syste
 Create Slot from number, bigint, or string.
 
 ```zig
-import { Slot } from '@tevm/primitives';
+import { Slot } from '@tevm/voltaire';
 
 const slot1 = Slot.from(1000000n);
 const slot2 = Slot.from(1000000);
@@ -72,7 +72,7 @@ const epoch = Slot.toEpoch(slot); // Epoch 3
 ### Calculate slot timing
 
 ```zig
-import { Slot } from '@tevm/primitives';
+import { Slot } from '@tevm/voltaire';
 
 const genesisTime = 1606824023; // Beacon chain genesis
 const slot = Slot.from(1000000n);
@@ -85,7 +85,7 @@ console.log(`Slot ${slot} occurred at: ${new Date(slotTime * 1000)}`);
 ### Work with epochs
 
 ```zig
-import { Slot, Epoch } from '@tevm/primitives';
+import { Slot, Epoch } from '@tevm/voltaire';
 
 const slot = Slot.from(100n);
 const epoch = Slot.toEpoch(slot); // Epoch 3

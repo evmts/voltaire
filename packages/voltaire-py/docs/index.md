@@ -1,37 +1,30 @@
 # voltaire-py Documentation
 
-Python bindings for Voltaire's high-performance Ethereum primitives and cryptography.
+Python 3.10+ `ctypes` bindings for Voltaire's Zig/C Ethereum primitives and cryptography library (`libprimitives_ts_native`). Zero third-party runtime dependencies.
 
-## Overview
+## FFI Architecture
 
-voltaire-py provides type-safe Python access to Voltaire's native Zig/C implementation of Ethereum primitives. This delivers significant performance improvements over pure Python implementations while maintaining a Pythonic API.
-
-Key features:
-- **High Performance**: Native FFI bindings to optimized Zig/C code
-- **Type Safety**: Full type hints and runtime validation
-- **Comprehensive**: Complete coverage of Ethereum primitives and cryptography
-- **Standards Compliant**: Implements EIP-55, EIP-191, EIP-712, EIP-2, EIP-2930, EIP-4844, EIP-7702
-
-## Installation
-
-```bash
-pip install voltaire
+```mermaid
+flowchart LR
+    App["Python Application"] --> Mod["voltaire.*\n(Address, Hash, Abi, Rlp,\nSecp256k1, Blob, Bytecode, ...)"]
+    Mod --> FFI["voltaire._ffi\n(ctypes CDLL & structs)"]
+    FFI --> Lib["libprimitives_ts_native\n(Zig C ABI)"]
+    FFI -->|"code < 0"| Err["voltaire.errors.check_error\n-> VoltaireError subclass"]
 ```
 
-### Building from Source
-
-Requires the Voltaire native library:
+## Installation from Source
 
 ```bash
-# From repo root
+# 1. Build the native library from the Voltaire repo root
 zig build build-ts-native
 
-# Set library path
-export VOLTAIRE_LIB_PATH=/path/to/libprimitives.dylib
+# 2. Point ctypes at the library (optional if built in-tree)
+export VOLTAIRE_LIB_PATH="$PWD/zig-out/native/libprimitives_ts_native.dylib" # .so on Linux
 
-# Install Python package
+# 3. Install in editable mode and run tests
 cd packages/voltaire-py
 pip install -e ".[dev]"
+pytest
 ```
 
 ## Quick Start
@@ -39,141 +32,70 @@ pip install -e ".[dev]"
 ```python
 from voltaire import Address, keccak256, Secp256k1, Signature
 
-# Parse and validate Ethereum addresses
 addr = Address.from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f2bD20")
-print(addr.to_checksum())  # EIP-55 checksummed
+print(addr.to_checksum())
 
-# Hash data with Keccak-256
-hash = keccak256(b"hello world")
-print(hash.to_hex())
+digest = keccak256(b"hello world")
+print(digest.to_hex())
 
-# Sign and recover addresses
-message_hash = keccak256(b"sign me")
-# signature = Secp256k1.sign(message_hash, private_key)
-# recovered = Secp256k1.recover_address(message_hash, signature)
+# Recover signer address (pass raw 32-byte digest.to_bytes())
+sig = Signature(r=r_bytes, s=s_bytes, v=27)
+signer = Secp256k1.recover_address(digest.to_bytes(), sig)
 ```
 
 ## Module Reference
 
 ### Primitives
 
-Core Ethereum data types and utilities.
-
-| Module | Description | Documentation |
-|--------|-------------|---------------|
-| [Address](primitives/address.md) | 20-byte Ethereum address with EIP-55 checksum | Parsing, validation, checksumming |
-| [Hash](primitives/hash.md) | 32-byte hash values | Keccak-256, SHA-256, BLAKE2b, RIPEMD-160, EIP-191 |
-| [Hex](primitives/hex.md) | Hex encoding/decoding | Encode, decode, validate hex strings |
-| [Uint256](primitives/uint256.md) | 256-bit unsigned integers | Big-endian, comparison, conversion |
-| [RLP](primitives/rlp.md) | Recursive Length Prefix encoding | Encode/decode bytes, integers, lists |
-| [ABI](primitives/abi.md) | Application Binary Interface | Encode/decode parameters, function selectors |
-| [Transaction](primitives/transaction.md) | Transaction utilities | Type detection, CREATE/CREATE2 addresses |
-| [AccessList](primitives/access_list.md) | EIP-2930 access lists | Gas optimization, storage key management |
-| [Authorization](primitives/authorization.md) | EIP-7702 authorization tuples | Account abstraction, signing hash |
-| [EventLog](primitives/eventlog.md) | Event log representation | Filtering, topic matching |
-| [Blob](primitives/blob.md) | EIP-4844 blob handling | Data availability, gas calculation |
-| [Bytecode](primitives/bytecode.md) | EVM bytecode analysis | JUMPDEST analysis, validation |
+| Module | Summary |
+|--------|---------|
+| [Address](primitives/address.md) | 20-byte Ethereum address, EIP-55 checksum, CREATE/CREATE2 |
+| [Hash](primitives/hash.md) | `Hash`, `keccak256`, `sha256`, `blake2b`, `ripemd160`, `eip191_hash_message`, `solidity_*` |
+| [Hex](primitives/hex.md) | `Hex.encode`, `Hex.decode`, `Hex.is_valid`, `hex_encode`, `hex_decode` |
+| [Uint256](primitives/uint256.md) | Big-endian 256-bit unsigned integer with comparison and conversions |
+| [RLP](primitives/rlp.md) | Recursive Length Prefix encoding (`Rlp`, `rlp_encode`) |
+| [ABI](primitives/abi.md) | Selectors, parameter/calldata encoding & decoding, packed encoding, gas estimation |
+| [Transaction](primitives/transaction.md) | Type detection, CREATE/CREATE2, typed transaction dataclasses |
+| [AccessList](primitives/access_list.md) | EIP-2930 `AccessList` and `AccessListEntry` gas calculation |
+| [Authorization](primitives/authorization.md) | EIP-7702 delegation tuple hashing, validation, signer recovery |
+| [EventLog](primitives/eventlog.md) | `EventLog`, `LogFilter`, `filter_logs`, `sort_logs` |
+| [Blob](primitives/blob.md) | EIP-4844 128 KiB blob encoding and blob fee market math |
+| [Bytecode](primitives/bytecode.md) | EVM `JUMPDEST` analysis, boundary checks, `PUSH` validation |
 
 ### Cryptography
 
-Cryptographic operations for Ethereum.
+| Module | Summary |
+|--------|---------|
+| [Secp256k1](crypto/secp256k1.md) | `Signature`, public key/address recovery, key derivation, validation |
+| [Keys](crypto/keys.md) | CSPRNG private key generation and SEC1 public key compression |
+| [Signature](crypto/signature.md) | `SignatureComponents`, `SignatureUtils` (EIP-2 low-`s`, parse, serialize) |
 
-| Module | Description | Documentation |
-|--------|-------------|---------------|
-| [Secp256k1](crypto/secp256k1.md) | ECDSA operations | Key derivation, signature recovery |
-| [Keys](crypto/keys.md) | Key generation | Private key generation, public key compression |
-| [Signature](crypto/signature.md) | Signature utilities | EIP-2 normalization, parsing, serialization |
+## Error Hierarchy (`voltaire.errors`)
 
-## Error Handling
-
-All voltaire-py functions raise typed exceptions on error:
-
-```python
-from voltaire import Address, InvalidHexError, InvalidLengthError
-
-try:
-    addr = Address.from_hex("invalid")
-except InvalidHexError as e:
-    print(f"Invalid hex: {e}")
-except InvalidLengthError as e:
-    print(f"Wrong length: {e}")
-```
-
-### Exception Hierarchy
-
-```
-VoltaireError (base)
-├── InvalidHexError       # Invalid hex characters
-├── InvalidLengthError    # Wrong byte length
-├── InvalidChecksumError  # EIP-55 checksum mismatch
-├── InvalidSignatureError # Invalid ECDSA signature
-├── InvalidInputError     # General invalid input
-└── InvalidAuthorizationError  # EIP-7702 authorization invalid
-```
+| C Code | Exception Class | Exported at top level |
+|--------|-----------------|-----------------------|
+| Base | `VoltaireError` | Yes |
+| `-1` | `InvalidHexError` | Yes |
+| `-2` | `InvalidLengthError` | Yes |
+| `-3` | `InvalidChecksumError` | Yes |
+| `-4` | `OutOfMemoryError` | `voltaire.errors` |
+| `-5` | `InvalidInputError` | Yes |
+| `-6` | `InvalidSignatureError` | Yes |
+| `-7` | `InvalidSelectorError` | `voltaire.errors` |
+| `-8` | `UnsupportedTypeError` | `voltaire.errors` |
+| `-9` | `MaxLengthExceededError` | `voltaire.errors` |
+| `-10` | `InvalidAccessListError` | `voltaire.errors` |
+| `-11` | `InvalidAuthorizationError` | Yes |
+| Python | `InvalidValueError` | `voltaire.errors` |
 
 ## Constants
 
-voltaire-py exports commonly used constants:
+Top-level constants re-exported from `voltaire`:
+- **EIP-2930**: `ADDRESS_COST` (`2400`), `STORAGE_KEY_COST` (`1900`), `COLD_ACCOUNT_ACCESS_COST` (`2600`), `COLD_STORAGE_ACCESS_COST` (`2100`), `WARM_STORAGE_ACCESS_COST` (`100`)
+- **EIP-4844**: `BLOB_SIZE` (`131072`), `FIELD_ELEMENTS_PER_BLOB` (`4096`), `BYTES_PER_FIELD_ELEMENT` (`32`), `MAX_DATA_PER_BLOB` (`126972`), `GAS_PER_BLOB` (`131072`), `TARGET_BLOBS_PER_BLOCK` (`3`)
+- **EIP-7702**: `MAGIC_BYTE` (`0x05`), `PER_AUTH_BASE_COST` (`12500`), `PER_EMPTY_ACCOUNT_COST` (`25000`), `SECP256K1_N`, `SECP256K1_HALF_N`
 
-```python
-from voltaire import (
-    # Access list gas costs (EIP-2930)
-    ADDRESS_COST,           # 2400 gas
-    STORAGE_KEY_COST,       # 1900 gas
-    COLD_ACCOUNT_ACCESS_COST,  # 2600 gas
-    COLD_STORAGE_ACCESS_COST,  # 2100 gas
-    WARM_STORAGE_ACCESS_COST,  # 100 gas
+## Links
 
-    # Blob constants (EIP-4844)
-    BLOB_SIZE,              # 131072 bytes
-    FIELD_ELEMENTS_PER_BLOB,  # 4096
-    BYTES_PER_FIELD_ELEMENT,  # 32
-    MAX_DATA_PER_BLOB,      # 126972 bytes
-    GAS_PER_BLOB,           # 131072 gas
-    TARGET_BLOBS_PER_BLOCK, # 3
-
-    # Authorization constants (EIP-7702)
-    MAGIC_BYTE,             # 0x05
-    PER_AUTH_BASE_COST,     # 12500 gas
-    PER_EMPTY_ACCOUNT_COST, # 25000 gas
-    SECP256K1_N,            # Curve order
-    SECP256K1_HALF_N,       # N/2 for low-s check
-)
-```
-
-## Testing
-
-```bash
-# Run tests
-pytest
-
-# Run with coverage
-pytest --cov=voltaire
-
-# Run specific test file
-pytest tests/test_address.py
-```
-
-## Performance
-
-voltaire-py uses native FFI bindings for performance-critical operations:
-
-| Operation | voltaire-py | Pure Python |
-|-----------|-------------|-------------|
-| keccak256 | ~0.5us | ~10us |
-| Address checksum | ~0.3us | ~5us |
-| Signature recovery | ~50us | ~500us |
-
-## See Also
-
-- [Voltaire Main Repository](https://github.com/voltaire-project/voltaire)
-- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
-- [EIP-55: Mixed-case checksum address encoding](https://eips.ethereum.org/EIPS/eip-55)
-- [EIP-191: Signed data standard](https://eips.ethereum.org/EIPS/eip-191)
-- [EIP-2930: Access list transactions](https://eips.ethereum.org/EIPS/eip-2930)
-- [EIP-4844: Blob transactions](https://eips.ethereum.org/EIPS/eip-4844)
-- [EIP-7702: Set code transactions](https://eips.ethereum.org/EIPS/eip-7702)
-
-## License
-
-MIT
+- Source: [github.com/evmts/voltaire](https://github.com/evmts/voltaire/tree/main/packages/voltaire-py)
+- Docs site: [voltaire.tevm.sh](https://voltaire.tevm.sh)

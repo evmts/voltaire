@@ -11,7 +11,7 @@ description: Learn Base64 encoding algorithm, use cases, and implementation patt
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Base64 API](/primitives/base64/index).
 </Info>
-Base64 is a binary-to-text encoding scheme that converts binary data into ASCII text. This guide teaches Base64 fundamentals using Tevm.
+Base64 is a binary-to-text encoding scheme that converts binary data into ASCII text. This guide teaches Base64 fundamentals using Voltaire.
 
 ## What is Base64?
 
@@ -95,7 +95,7 @@ Examples:
 ### Encode Bytes to Base64
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 // Raw bytes
 const data = new Uint8Array([72, 101, 108, 108, 111]);
@@ -121,7 +121,7 @@ console.log(encoded);
 ### Encode Hex to Base64
 
 ```typescript
-import { Base64, Hex } from 'tevm';
+import { Base64, Hex } from '@tevm/voltaire';
 
 // Start with hex
 const hexData = "0x48656c6c6f";
@@ -140,7 +140,7 @@ console.log(encoded2); // "SGVsbG8="
 ### Decode Base64 to Bytes
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 // Decode Base64 to bytes
 const encoded = "SGVsbG8=";
@@ -160,7 +160,7 @@ console.log(text2); // "Hello"
 ### Round-trip: Bytes → Base64 → Bytes
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 // Original data
 const original = new Uint8Array([255, 254, 253, 252, 251]);
@@ -184,7 +184,7 @@ console.log(original.every((byte, i) => byte === decoded[i]));
 Uses `+` and `/` characters, includes `=` padding:
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 const data = new Uint8Array([255, 254, 253]);
 const encoded = Base64.encode(data);
@@ -199,7 +199,7 @@ console.log(encoded);
 Uses `-` and `_` instead of `+` and `/`, omits padding:
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 const data = new Uint8Array([255, 254, 253]);
 const encoded = Base64.encodeUrlSafe(data);
@@ -217,7 +217,7 @@ const url = `https://api.example.com/data/${encoded}`;
 Ethereum JSON-RPC often requires Base64 for binary data:
 
 ```typescript
-import { Base64, Hex } from 'tevm';
+import { Base64, Hex } from '@tevm/voltaire';
 
 // Encode transaction data for JSON-RPC
 const calldata = Hex.toBytes("0xa9059cbb...");
@@ -237,7 +237,7 @@ const request = {
 Embed binary data in HTML/CSS/JSON:
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 // Image data (example: 1x1 red pixel PNG)
 const pngData = new Uint8Array([
@@ -256,7 +256,7 @@ const dataUri = `data:image/png;base64,${base64}`;
 Ethereum keystore files use Base64 for encrypted keys:
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 // Encrypted private key (example)
 const encryptedKey = new Uint8Array([/* AES-GCM ciphertext */]);
@@ -276,7 +276,7 @@ const keystore = {
 JSON Web Tokens use URL-safe Base64:
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 // JWT parts (header.payload.signature)
 const header = Base64.encodeStringUrlSafe('{"alg":"ES256K"}');
@@ -292,7 +292,7 @@ const jwt = `${header}.${payload}.${signature}`;
 Always validate Base64 before decoding:
 
 ```typescript
-import { Base64 } from 'tevm';
+import { Base64 } from '@tevm/voltaire';
 
 function safeDecodeBase64(input: string): Uint8Array | null {
   // Validate format

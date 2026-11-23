@@ -1,179 +1,138 @@
 ---
 title: Write Methods
-description: Send state-changing transactions to smart contracts
+description: Submit state-changing contract transactions via eth_sendTransaction and poll for receipts.
 ---
 
-# Write Methods
+`contract.write.<fn>(...args, options?)` encodes calldata for `nonpayable` and `payable` functions, submits the transaction via `eth_sendTransaction`, and returns a 32-byte `HashType` transaction hash immediately upon submission.
 
-The `write` interface sends state-changing transactions via `eth_sendTransaction`. These calls modify blockchain state and require gas.
-
-<Note>
-This uses the [Contract pattern](/contract) - a copyable implementation you add to your codebase.
-</Note>
+```mermaid
+sequenceDiagram
+  participant App
+  participant Contract
+  participant Provider
+  App->>Contract: write.transfer(to, amount, opts?)
+  Contract->>Contract: abi.encode("transfer", [to, amount])
+  Contract->>Provider: eth_sendTransaction([{ to, data, gas?, value?, ... }])
+  Provider-->>Contract: txHash hex
+  Contract-->>App: Hash.fromHex(txHash)
+  App->>Provider: pollForReceipt(txHash)
+  Provider-->>App: TransactionReceipt (status: 0x1 | 0x0)
+```
 
 ## Basic Usage
 
 ```typescript
-import { Contract } from './Contract.js';  // Your local copy
+import { Hex } from '@tevm/voltaire/Hex';
+import { Contract } from './Contract.js';
 
 const usdc = Contract({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
   abi: erc20Abi,
-  provider
+  provider,
 });
 
-// Transfer tokens
-const txHash = await usdc.write.transfer('0x742d35...', 1000n);
-console.log(`Transaction: ${txHash}`);
+const txHash = await usdc.write.transfer(
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+  1_000_000n, // 1 USDC (6 decimals)
+);
 
-// Approve spender
-const txHash = await usdc.write.approve('0xrouter...', 1000000n);
-```
-
-## How It Works
-
-When you call a write method:
-
-1. **Encode** - Arguments are ABI-encoded with the function selector
-2. **Send** - `eth_sendTransaction` is sent to the provider
-3. **Return** - Transaction hash is returned immediately
-
-```typescript
-// What happens under the hood:
-const txHash = await usdc.write.transfer('0x...', 1000n);
-
-// Equivalent to:
-const calldata = usdc.abi.encode('transfer', ['0x...', 1000n]);
-const txHash = await provider.request({
-  method: 'eth_sendTransaction',
-  params: [{
-    to: usdc.address,
-    data: calldata
-  }]
-});
+console.log('Submitted:', Hex.fromBytes(txHash));
 ```
 
 <Warning>
-Write methods return immediately after the transaction is submitted. The transaction may still be pending or could fail during execution.
+`eth_sendTransaction` resolves once the node accepts the transaction into its mempool. Execution happens asynchronously and may revert on-chain. Always wait for a receipt before treating state changes as final.
 </Warning>
 
 ## Transaction Options
 
-Override transaction parameters:
+Pass a trailing `WriteCallOptions` object after the ABI arguments to set sender, fees, gas limit, ETH value, or nonce:
+
+| Option | Type | RPC Field | Use |
+| --- | --- | --- | --- |
+| `from` | `` `0x${string}` `` | `from` | Sender account (required by nodes with multiple accounts) |
+| `gas` | `bigint` | `gas` | Gas limit override |
+| `maxFeePerGas` | `bigint` | `maxFeePerGas` | EIP-1559 max total fee per gas (wei) |
+| `maxPriorityFeePerGas` | `bigint` | `maxPriorityFeePerGas` | EIP-1559 priority tip per gas (wei) |
+| `gasPrice` | `bigint` | `gasPrice` | Legacy transaction gas price (wei) |
+| `value` | `bigint` | `value` | ETH attached to `payable` calls (wei) |
+| `nonce` | `bigint` | `nonce` | Explicit sender nonce |
 
 ```typescript
-// With gas limit
-const txHash = await usdc.write.transfer('0x...', 1000n, {
-  gas: 100000n
+// EIP-1559 transfer with explicit gas limit and fee caps
+const txHash = await usdc.write.transfer(recipient, 1_000_000n, {
+  from: sender,
+  gas: 65_000n,
+  maxFeePerGas: 30_000_000_000n,
+  maxPriorityFeePerGas: 2_000_000_000n,
 });
 
-// With gas price (legacy)
-const txHash = await usdc.write.transfer('0x...', 1000n, {
-  gasPrice: 20000000000n
-});
-
-// With EIP-1559 fees
-const txHash = await usdc.write.transfer('0x...', 1000n, {
-  maxFeePerGas: 30000000000n,
-  maxPriorityFeePerGas: 2000000000n
-});
-
-// With value (for payable functions)
-const txHash = await weth.write.deposit({
-  value: 1000000000000000000n // 1 ETH
-});
-
-// With nonce
-const txHash = await usdc.write.transfer('0x...', 1000n, {
-  nonce: 42n
+// Payable call (zero ABI inputs, options as sole argument)
+const depositHash = await weth.write.deposit({
+  from: sender,
+  value: 1_000_000_000_000_000_000n, // 1 ETH
 });
 ```
 
-## Payable Functions
+## Simulate Before Sending
 
-For functions that accept ETH, pass `value` in options:
+Call `estimateGas` first to catch reverts before broadcasting and add a 20% headroom buffer:
 
 ```typescript
-// Deposit ETH to WETH
-const txHash = await weth.write.deposit({
-  value: 1000000000000000000n // 1 ETH in wei
-});
+const estimated = await usdc.estimateGas.transfer(recipient, amount, { from: sender });
+const gasLimit = (estimated * 120n) / 100n;
 
-// Swap with ETH
-const txHash = await router.write.swapExactETHForTokens(
-  minOut,
-  path,
-  recipient,
-  deadline,
-  { value: 1000000000000000000n }
+const txHash = await usdc.write.transfer(recipient, amount, {
+  from: sender,
+  gas: gasLimit,
+});
+```
+
+## Waiting for Confirmation
+
+Use `pollForReceipt` from `@tevm/voltaire/utils` to wait until the transaction is mined:
+
+```typescript
+import { Hex } from '@tevm/voltaire/Hex';
+import { pollForReceipt } from '@tevm/voltaire/utils';
+
+const txHash = await usdc.write.transfer(recipient, amount, { from: sender });
+const txHashHex = Hex.fromBytes(txHash);
+
+const receipt = await pollForReceipt(
+  txHashHex,
+  (hash) => provider.request({ method: 'eth_getTransactionReceipt', params: [hash] }),
+  { interval: 2000, timeout: 120_000 },
 );
+
+if (receipt.status !== '0x1') {
+  throw new Error(`Transaction reverted: ${txHashHex}`);
+}
 ```
 
 ## Error Handling
 
-Write calls can fail at submission or execution:
+`write` throws `ContractFunctionNotFoundError` if the function is absent or is `view`/`pure`. Wallet rejections, insufficient funds, invalid nonces, and simulation reverts are wrapped in `ContractWriteError` with `error.cause` holding the underlying `RpcError`.
 
 ```typescript
-import { ContractWriteError } from './errors.js';  // Your local copy
+import { ContractWriteError } from './Contract.js';
 
 try {
-  const txHash = await usdc.write.transfer('0x...', 1000n);
+  await usdc.write.transfer(recipient, amount, { from: sender });
 } catch (error) {
   if (error instanceof ContractWriteError) {
-    console.error('Write failed:', error.message);
-    console.error('Cause:', error.cause);
+    const rpcCause = error.cause as { code?: number; message?: string };
+    if (rpcCause?.code === 4001) {
+      console.error('User rejected transaction');
+    } else {
+      console.error('Submission failed:', rpcCause?.message ?? error.message);
+    }
   }
-}
-```
-
-Common failures:
-- **Insufficient funds** - Not enough ETH for gas
-- **User rejected** - User rejected in wallet
-- **Nonce too low** - Transaction already mined
-- **Gas estimation failed** - Transaction would revert
-
-## Waiting for Confirmation
-
-The write method returns immediately. To wait for confirmation:
-
-```typescript
-const txHash = await usdc.write.transfer('0x...', 1000n);
-
-// Wait for transaction receipt
-const receipt = await provider.request({
-  method: 'eth_getTransactionReceipt',
-  params: [txHash]
-});
-
-// Check status
-if (receipt.status === '0x1') {
-  console.log('Transaction succeeded');
-} else {
-  console.log('Transaction reverted');
-}
-```
-
-## Simulating Before Sending
-
-Use `estimateGas` to simulate the transaction first:
-
-```typescript
-try {
-  // This will throw if the transaction would revert
-  const gas = await usdc.estimateGas.transfer('0x...', 1000n);
-
-  // Safe to send
-  const txHash = await usdc.write.transfer('0x...', 1000n, {
-    gas: gas * 120n / 100n // Add 20% buffer
-  });
-} catch (error) {
-  console.error('Transaction would fail:', error);
 }
 ```
 
 ## Related
 
-- [Contract Overview](/contract) - Contract module introduction
-- [Read Methods](/contract/read) - Calling view functions
-- [Gas Estimation](/contract/gas-estimation) - Estimating gas before sending
-- [Events](/contract/events) - Watching for transaction events
+- [Contract Pattern](/contract) — Full copyable implementation
+- [Gas Estimation](/contract/gas-estimation) — Simulating transactions and computing costs
+- [Polling Utilities](/utils/polling) — `pollForReceipt` reference
+- [Send ETH & Tokens Skill](/skills/send-eth-tokens) — Local signing and `eth_sendRawTransaction`

@@ -76,7 +76,7 @@ To add item to filter:
 3. Set all `k` bits to 1
 
 ```typescript
-import { BloomFilter } from 'tevm';
+import { BloomFilter } from '@tevm/voltaire';
 
 const filter = BloomFilter.create(2048, 3); // m=2048 bits, k=3 hashes
 
@@ -112,7 +112,7 @@ To test if item might be in filter:
 3. Return true only if ALL bits are set
 
 ```typescript
-import { BloomFilter } from 'tevm';
+import { BloomFilter } from '@tevm/voltaire';
 
 const filter = BloomFilter.create(2048, 3);
 const topic = new TextEncoder().encode("Transfer(address,address,uint256)");
@@ -201,7 +201,7 @@ This is acceptable because:
 Here's how Ethereum uses bloom filters for efficient log queries:
 
 ```typescript
-import { BloomFilter, Address, Hex, Keccak256 } from 'tevm';
+import { BloomFilter, Address, Hex, Keccak256 } from '@tevm/voltaire';
 
 // Block header contains bloom filter
 const blockBloom = BloomFilter.create(2048, 3);
@@ -279,7 +279,7 @@ type Log = {
 ### What Gets Added to Bloom Filter
 
 ```typescript
-import { BloomFilter } from 'tevm';
+import { BloomFilter } from '@tevm/voltaire';
 
 const bloom = BloomFilter.create(2048, 3);
 
@@ -347,7 +347,7 @@ function transfersToAddress(
 
 ## Hash Function Implementation
 
-Tevm's bloom filter uses three hash functions based on keccak256:
+Voltaire's bloom filter uses three hash functions based on keccak256:
 
 ```typescript
 class BloomFilter extends Uint8Array {
@@ -395,7 +395,7 @@ console.log(pos1a !== pos2 && pos2 !== pos3); // true - different results
 Bloom filters can be merged using bitwise OR to represent the union of two sets:
 
 ```typescript
-import { BloomFilter } from 'tevm';
+import { BloomFilter } from '@tevm/voltaire';
 
 // Block 1 logs
 const bloom1 = BloomFilter.create(2048, 3);
@@ -466,7 +466,7 @@ console.log(`Found ${matches.length} blocks with potential Transfer events`);
 Check if filter has any items:
 
 ```typescript
-import { BloomFilter } from 'tevm';
+import { BloomFilter } from '@tevm/voltaire';
 
 const filter = BloomFilter.create(2048, 3);
 
@@ -615,7 +615,7 @@ Ethereum parameters (m=2048, k=3):
 Complete example of building an event index using bloom filters:
 
 ```typescript
-import { BloomFilter, Address, Keccak256, Hex } from 'tevm';
+import { BloomFilter, Address, Keccak256, Hex } from '@tevm/voltaire';
 
 // Index of Transfer events across multiple blocks
 class TransferIndex {

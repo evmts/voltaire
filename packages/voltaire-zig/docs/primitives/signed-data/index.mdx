@@ -3,8 +3,6 @@ title: SignedData
 description: EIP-191 signed data primitive for Ethereum message signing
 ---
 
-# SignedData
-
 EIP-191 signed data primitive implementing the Ethereum Signed Message standard. Provides type-safe message signing and verification following the EIP-191 specification.
 
 ## Overview
@@ -17,7 +15,7 @@ EIP-191 defines a standard format for signed data with three versions:
 ## Installation
 
 ```bash
-npm install @tevm/primitives
+npm install @tevm/voltaire
 ```
 
 ## Basic Usage
@@ -25,10 +23,10 @@ npm install @tevm/primitives
 ### Personal Message Signing
 
 ```zig
-import * as SignedData from '@tevm/primitives/SignedData';
+import * as SignedData from '@tevm/voltaire/SignedData';
 import { hash as keccak256 } from '@tevm/crypto/keccak256';
 import { recoverPublicKey } from '@tevm/crypto/Secp256k1';
-import { fromPublicKey } from '@tevm/primitives/Address';
+import { fromPublicKey } from '@tevm/voltaire/Address';
 
 // Create hash factory
 const hash = SignedData.Hash({ keccak256 });
@@ -50,7 +48,7 @@ const isValid = verify(message, signature, signerAddress);
 ### Create Signed Data
 
 ```zig
-import * as SignedData from '@tevm/primitives/SignedData';
+import * as SignedData from '@tevm/voltaire/SignedData';
 
 // Personal message (0x45)
 const signedData = SignedData.from(
@@ -197,7 +195,7 @@ import {
   InvalidSignedDataVersionError,
   InvalidSignedDataFormatError,
   SignatureVerificationError
-} from '@tevm/primitives/SignedData';
+} from '@tevm/voltaire/SignedData';
 
 try {
   const signedData = SignedData.from(0x99, data, message);

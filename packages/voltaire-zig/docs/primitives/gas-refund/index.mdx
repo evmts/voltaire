@@ -3,8 +3,6 @@ title: GasRefund
 description: Gas refunds after transaction execution
 ---
 
-# GasRefund
-
 `GasRefund` represents gas refunded after transaction execution. Post-London (EIP-3529), refunds are capped at `gasUsed / 5`.
 
 ## Type Definition (Zig)
@@ -162,7 +160,7 @@ Where:
 ### Check if Refund is Capped
 
 ```zig
-import { GasRefund } from '@tevm/primitives';
+import { GasRefund } from '@tevm/voltaire';
 
 function isRefundCapped(refund: bigint, gasUsed: bigint): boolean {
   const refundObj = GasRefund.from(refund);
@@ -178,7 +176,7 @@ console.log(isRefundCapped(refund, gasUsed)); // true
 ### Calculate Maximum Possible Refund
 
 ```zig
-import { GasRefund } from '@tevm/primitives';
+import { GasRefund } from '@tevm/voltaire';
 
 function maxRefund(gasUsed: bigint): bigint {
   return gasUsed / 5n;

@@ -7,8 +7,6 @@ description: "Resolve ENS names to addresses and vice versa"
 **Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
 </Info>
 
-# ENS Resolution
-
 Resolve Ethereum Name Service (ENS) names to addresses and retrieve ENS records using Voltaire primitives and Contract modules.
 
 ## Overview
@@ -28,7 +26,7 @@ ENS resolution requires two components:
 ## Resolving ENS Name to Address
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from '@tevm/voltaire/contract';
 import * as Ens from '@tevm/voltaire/Ens';
 import * as Hex from '@tevm/voltaire/Hex';
 
@@ -115,7 +113,7 @@ console.log(address); // 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 Reverse resolution looks up the primary ENS name for an address.
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from '@tevm/voltaire/contract';
 import * as Ens from '@tevm/voltaire/Ens';
 import * as Hex from '@tevm/voltaire/Hex';
 import * as Address from '@tevm/voltaire/Address';
@@ -305,7 +303,7 @@ console.log(Hex.fromBytes(emptyNode));
 A complete helper function combining all functionality:
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from '@tevm/voltaire/contract';
 import * as Ens from '@tevm/voltaire/Ens';
 import * as Hex from '@tevm/voltaire/Hex';
 

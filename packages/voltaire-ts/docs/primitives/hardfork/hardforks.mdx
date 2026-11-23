@@ -17,7 +17,7 @@ Complete list of Ethereum hardforks with dates, features, and EIP changes.
 Each hardfork represents a protocol upgrade that changes EVM behavior, gas costs, or adds new features. Hardforks build upon previous ones chronologically.
 
 ```typescript
-import { FRONTIER, CANCUN, PRAGUE } from 'tevm';
+import { FRONTIER, CANCUN, PRAGUE } from '@tevm/voltaire';
 ```
 
 ## Hardfork Constants
@@ -482,17 +482,17 @@ import {
   FRONTIER, HOMESTEAD, BYZANTIUM, CONSTANTINOPLE,
   ISTANBUL, BERLIN, LONDON, MERGE, SHANGHAI, CANCUN,
   PRAGUE, OSAKA, DEFAULT
-} from 'tevm';
+} from '@tevm/voltaire';
 
 // Use constants directly
 console.log(CANCUN);  // "cancun"
 
 // Compare versions
-import { isAtLeast } from 'tevm';
+import { isAtLeast } from '@tevm/voltaire';
 isAtLeast(CANCUN, LONDON);  // true
 
 // Check features
-import { hasEIP4844 } from 'tevm';
+import { hasEIP4844 } from '@tevm/voltaire';
 hasEIP4844(CANCUN);  // true
 hasEIP4844(SHANGHAI);  // false
 ```

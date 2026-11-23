@@ -7,8 +7,6 @@ description: "Use Voltaire with Hardhat for testing and deployment"
 **Looking for Contributors** — This Skill needs implementation. If you're interested in building Hardhat integration for Voltaire, [open an issue](https://github.com/evmts/voltaire/issues) or submit a PR.
 </Warning>
 
-# Hardhat Integration
-
 This Skill will provide seamless integration between Voltaire and Hardhat for Solidity development.
 
 ## Planned Features
@@ -23,8 +21,8 @@ This Skill will provide seamless integration between Voltaire and Hardhat for So
 
 ```typescript
 import { hardhat } from "./skills/hardhat/index.js";
-import * as Address from "@voltaire/primitives/Address";
-import * as Hex from "@voltaire/primitives/Hex";
+import * as Address from "@tevm/voltaire/Address";
+import * as Hex from "@tevm/voltaire/Hex";
 
 // Connect to Hardhat Network
 const hre = await hardhat.connect();

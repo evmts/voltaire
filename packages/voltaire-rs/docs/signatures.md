@@ -1,187 +1,83 @@
 # Signatures
 
-ECDSA signature types and utilities for Ethereum.
+ECDSA secp256k1 signature representations, EIP-2 low-`s` normalization, and public-key recovery in `voltaire::crypto`.
 
-## Overview
+## Signature Representations
 
-Voltaire provides three signature representations:
-
-- `Signature` - Core type with r, s components
-- `CompactSignature` - 64-byte packed format (r || s)
-- `RsvSignature` - 65-byte Ethereum format (r || s || v)
-
-## Signature Types
-
-### Signature
-
-Core signature with r and s components as 32-byte arrays.
-
-```rust
-use voltaire::crypto::Signature;
-
-// Create from components
-let sig = Signature::new(r, s);
-
-// Parse from 64 bytes
-let sig = Signature::from_bytes(&bytes_64);
-
-// Parse from 65 bytes (extracts v separately)
-let (sig, v) = Signature::from_bytes_with_recovery(&bytes_65);
-
-// Serialize
-let bytes_64 = sig.to_bytes();
-let bytes_65 = sig.to_bytes_with_recovery(v);
+```mermaid
+flowchart LR
+    Sig["Signature\n{ r: [u8; 32], s: [u8; 32] }"] <-->|"Into / From"| Compact["CompactSignature\n([u8; 64]: r || s)"]
+    Sig -->|"RsvSignature::new(sig, recid)"| Rsv["RsvSignature\n{ signature, recovery_id }\n([u8; 65]: r || s || v)"]
+    Rec["RecoveryId(0 | 1)\nto_v() -> 27 | 28"] --> Rsv
 ```
 
-### CompactSignature
+| Type | Size | Fields / Layout | Recovery ID |
+|------|------|-----------------|-------------|
+| `Signature` | 64 bytes | `pub r: [u8; 32]`, `pub s: [u8; 32]` | External (`RecoveryId`) |
+| `CompactSignature` | 64 bytes | `pub [u8; 64]` (`r \|\| s`) | External |
+| `RsvSignature` | 65 bytes | `pub signature: Signature`, `pub recovery_id: RecoveryId` (`r \|\| s \|\| v`) | Embedded (`v` = `27` or `28`) |
+| `RecoveryId` | 1 byte | `pub u8` (`0` or `1`) | `from_v(0\|1\|27\|28)`, `to_v() -> 27\|28` |
 
-64-byte packed format, used when recovery ID is stored separately.
-
-```rust
-use voltaire::crypto::CompactSignature;
-
-// Create from bytes
-let compact = CompactSignature::new(bytes_64);
-
-// Create from r, s components
-let compact = CompactSignature::from_rs(r, s);
-
-// Access components
-let r: &[u8; 32] = compact.r();
-let s: &[u8; 32] = compact.s();
-
-// Convert to Signature
-let sig: Signature = compact.into();
-```
-
-### RsvSignature
-
-65-byte Ethereum signature format with embedded recovery ID.
-
-```rust
-use voltaire::crypto::{RsvSignature, RecoveryId};
-
-// Create from components
-let rsv = RsvSignature::from_rsv(r, s, 27)?;
-
-// Parse from 65 bytes
-let rsv = RsvSignature::from_bytes(&bytes)?;
-
-// Access components
-let r: &[u8; 32] = rsv.r();
-let s: &[u8; 32] = rsv.s();
-let v: u8 = rsv.v();  // 27 or 28
-
-// Serialize
-let bytes: [u8; 65] = rsv.into();
-```
-
-## Recovery ID
-
-The recovery ID indicates which of two possible public keys corresponds to the signature.
-
-```rust
-use voltaire::crypto::RecoveryId;
-
-// Create from raw value (0 or 1)
-let id = RecoveryId::new(0)?;
-
-// Create from Ethereum v value (27 or 28, or 0 or 1)
-let id = RecoveryId::from_v(27)?;
-
-// Convert to Ethereum v
-assert_eq!(id.to_v(), 27);
-```
-
-## Normalization (EIP-2)
-
-Ethereum requires signatures to have s in the lower half of the curve order to prevent signature malleability.
-
-```rust
-use voltaire::crypto::Signature;
-
-let mut sig = Signature::new(r, s);
-
-// Check if already normalized
-if !sig.is_normalized() {
-    // Normalize in-place, returns true if changed
-    sig.normalize();
-}
-
-// For RsvSignature, normalization also flips v
-let mut rsv = RsvSignature::from_rsv(r, s, 27)?;
-rsv.normalize();
-// If s was high, v is now 28
-```
-
-## Canonical Signatures
-
-A canonical signature has:
-- r in range [1, N-1]
-- s in range [1, N-1]
-- s <= N/2 (normalized)
-
-```rust
-let sig = Signature::new(r, s);
-
-// Check all conditions
-if sig.is_canonical() {
-    // Safe to use
-}
-
-// For RsvSignature
-if rsv.is_canonical() {
-    // Signature is valid and normalized
-}
-```
-
-## Key Recovery
-
-Recover public key or address from signature (requires `native` feature).
-
-```rust
-use voltaire::crypto::{Secp256k1, Signature, RecoveryId};
-
-let sig = Signature::new(r, s);
-let v = RecoveryId::from_v(27)?;
-
-// Recover public key (64 bytes, uncompressed without 0x04 prefix)
-#[cfg(feature = "native")]
-let pubkey = Secp256k1::recover_pubkey(&msg_hash, &sig, v)?;
-
-// Recover Ethereum address directly
-#[cfg(feature = "native")]
-let addr = Secp256k1::recover_address(&msg_hash, &sig, v)?;
-```
-
-## Conversions
-
-All signature types implement conversion traits:
+## Constructing and Converting Signatures
 
 ```rust
 use voltaire::crypto::{Signature, CompactSignature, RsvSignature, RecoveryId};
 
+let r = [0x11u8; 32];
+let s = [0x22u8; 32];
+
+// Signature <-> CompactSignature (64 bytes)
 let sig = Signature::new(r, s);
-
-// Signature -> CompactSignature
 let compact: CompactSignature = sig.into();
+assert_eq!(compact.r(), &r);
+assert_eq!(compact.s(), &s);
+let back: Signature = compact.into();
+assert_eq!(back, sig);
 
-// CompactSignature -> Signature
-let sig: Signature = compact.into();
-
-// Signature + RecoveryId -> RsvSignature
-let rsv = RsvSignature::new(sig, RecoveryId::new(0)?);
-
-// RsvSignature -> [u8; 65]
-let bytes: [u8; 65] = rsv.into();
-
-// [u8; 65] -> RsvSignature (fallible)
-let rsv: RsvSignature = bytes.try_into()?;
+// RsvSignature (65 bytes, fallible v validation)
+let rsv = RsvSignature::from_rsv(r, s, 27)?;
+assert_eq!(rsv.v(), 27);
+let raw_65: [u8; 65] = rsv.into();
+let parsed = RsvSignature::try_from(raw_65)?;
+assert_eq!(parsed, rsv);
+# Ok::<(), voltaire::Error>(())
 ```
 
-## Security Notes
+`Signature::from_bytes_with_recovery(&[u8; 65]) -> (Signature, RecoveryId)` defaults an unrecognized `v` byte to `RecoveryId(0)`; use `RsvSignature::from_bytes(&[u8; 65]) -> Result<RsvSignature>` when strict validation of `v` is required.
 
-1. **Always normalize signatures** before broadcasting transactions
-2. **Validate canonical form** when accepting signatures from untrusted sources
-3. **Use constant-time comparisons** (already implemented in the library)
-4. **Clear sensitive data** after use when possible
+## EIP-2 Normalization and Canonical Checks
+
+Ethereum (EIP-2) rejects malleable signatures with `s > secp256k1_n / 2`.
+
+```rust
+use voltaire::crypto::{Signature, RsvSignature};
+
+let mut sig = Signature::new(r, s);
+if !sig.is_normalized() {
+    let changed: bool = sig.normalize(); // sets s = N - s
+    let _ = changed;
+}
+assert!(sig.is_canonical()); // 1 <= r < N and 1 <= s <= N/2
+
+// RsvSignature::normalize() also flips recovery_id (0 <-> 1, so v flips 27 <-> 28)
+let mut rsv = RsvSignature::from_rsv(r, s, 27)?;
+rsv.normalize();
+assert!(rsv.is_canonical());
+# Ok::<(), voltaire::Error>(())
+```
+
+## Public Key and Address Recovery (`native` feature)
+
+```rust
+use voltaire::crypto::{Secp256k1, Signature, RecoveryId};
+
+#[cfg(feature = "native")]
+{
+    let sig = Signature::new(r, s);
+    let recid = RecoveryId::from_v(27)?;
+    let pubkey: [u8; 64] = Secp256k1::recover_pubkey(&msg_hash, &sig, recid)?;
+    let addr = Secp256k1::recover_address(&msg_hash, &sig, recid)?;
+    let _ = (pubkey, addr);
+}
+# Ok::<(), voltaire::Error>(())
+```

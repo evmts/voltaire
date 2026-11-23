@@ -7,8 +7,6 @@ description: "Use Voltaire with Foundry for testing and deployment"
 **Looking for Contributors** — This Skill needs implementation. If you're interested in building Foundry integration for Voltaire, [open an issue](https://github.com/evmts/voltaire/issues) or submit a PR.
 </Warning>
 
-# Foundry Integration
-
 This Skill will provide seamless integration between Voltaire and Foundry for Solidity development.
 
 ## Planned Features
@@ -23,8 +21,8 @@ This Skill will provide seamless integration between Voltaire and Foundry for So
 
 ```typescript
 import { foundry } from "./skills/foundry/index.js";
-import * as Address from "@voltaire/primitives/Address";
-import * as Transaction from "@voltaire/primitives/Transaction";
+import * as Address from "@tevm/voltaire/Address";
+import * as Transaction from "@tevm/voltaire/Transaction";
 
 // Connect to local Anvil
 const anvil = foundry.anvil({ port: 8545 });

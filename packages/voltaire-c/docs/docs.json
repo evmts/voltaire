@@ -8,7 +8,10 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["index"]
+            "pages": [
+              "index",
+              "tutorial"
+            ]
           },
           {
             "group": "Primitives",

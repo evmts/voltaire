@@ -1,15 +1,13 @@
 ---
 title: Event Logs
-description: Event log filtering operations
+description: Ethereum event log address and indexed topic filter matching.
 ---
 
-Filter and match event logs.
+Event log filter functions test an emitted EVM log's 20-byte contract address and 32-byte indexed topics against `eth_getLogs`-style filter criteria. Every function returns `1` on match and `0` on mismatch.
 
 ## Functions
 
-### primitives_eventlog_matches_address
-
-Check if log matches address filter.
+### `primitives_eventlog_matches_address`
 
 ```c
 int primitives_eventlog_matches_address(
@@ -19,84 +17,79 @@ int primitives_eventlog_matches_address(
 );
 ```
 
-**Returns:** 1 if matches, 0 if not.
+Returns `1` if `filter_count == 0` (wildcard filter) or if `log_address` matches any entry in `filter_addresses[0..filter_count]`; otherwise returns `0`.
 
-If `filter_count` is 0, matches all addresses.
-
-### primitives_eventlog_matches_topic
-
-Check if log matches single topic filter.
+### `primitives_eventlog_matches_topic`
 
 ```c
 int primitives_eventlog_matches_topic(
     const unsigned char log_topic[32],
     const unsigned char filter_topic[32],
-    int null_topic                         // 1 if filter is null (match any)
+    int null_topic
 );
 ```
 
-### primitives_eventlog_matches_topics
+Returns `1` if `null_topic != 0` (wildcard) or if `log_topic` equals `filter_topic` byte-for-byte; otherwise `0`.
 
-Check if log matches topic array filter.
+### `primitives_eventlog_matches_topics`
 
 ```c
 int primitives_eventlog_matches_topics(
     const unsigned char (*log_topics)[32],
     size_t log_topic_count,
     const unsigned char (*filter_topics)[32],
-    const int* filter_nulls,              // 1 for null (match any), 0 for exact
+    const int* filter_nulls,
     size_t filter_count
 );
 ```
 
+Evaluates positional topic filters `0..filter_count-1`. For each index `i`:
+- If `filter_nulls[i] != 0`, position `i` matches any topic (even if `i >= log_topic_count`).
+- Otherwise, requires `i < log_topic_count` and `memcmp(log_topics[i], filter_topics[i], 32) == 0`.
+
+Returns `1` if every filter position matches, `0` otherwise.
+
 ## Example
 
 ```c
+#include "voltaire.h"
+
 #include <stdio.h>
 #include <string.h>
 
-int main() {
-    // Log data
-    unsigned char log_addr[20];
-    primitives_address_from_hex("0x...", (PrimitivesAddress*)log_addr);
+int main(void) {
+    PrimitivesAddress token;
+    if (primitives_address_from_hex(
+            "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", &token) != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
 
-    unsigned char log_topics[4][32];
-    // topic0 = Transfer event signature
-    // topic1 = from address (padded)
-    // topic2 = to address (padded)
+    /* Compute ERC-20 Transfer(address,address,uint256) topic0 (33 bytes, excluding NUL) */
+    static const unsigned char sig[] = "Transfer(address,address,uint256)";
+    PrimitivesHash transfer_topic;
+    primitives_keccak256(sig, sizeof(sig) - 1, &transfer_topic);
 
-    // Filter: match specific contract
-    unsigned char filter_addr[1][20];
-    memcpy(filter_addr[0], log_addr, 20);
+    /* Sample log: topic0 = Transfer, topic1 = from, topic2 = to */
+    unsigned char log_topics[3][32] = {0};
+    memcpy(log_topics[0], transfer_topic.bytes, 32);
+    memcpy(log_topics[2] + 12, token.bytes, 20);
 
-    int matches = primitives_eventlog_matches_address(
-        log_addr,
-        filter_addr,
-        1
+    /* Address filter */
+    unsigned char filter_addrs[1][20];
+    memcpy(filter_addrs[0], token.bytes, 20);
+    int addr_ok = primitives_eventlog_matches_address(token.bytes, filter_addrs, 1);
+
+    /* Topic filter: [Transfer, null (any from), to == token] */
+    unsigned char filter_topics[3][32] = {0};
+    int filter_nulls[3] = {0, 1, 0};
+    memcpy(filter_topics[0], transfer_topic.bytes, 32);
+    memcpy(filter_topics[2] + 12, token.bytes, 20);
+
+    int topics_ok = primitives_eventlog_matches_topics(
+        log_topics, 3, filter_topics, filter_nulls, 3
     );
-    printf("Address matches: %d\n", matches);
 
-    // Filter: match Transfer event (topic0), any from (topic1 null), specific to (topic2)
-    unsigned char filter_topics[3][32];
-    int filter_nulls[3] = {0, 1, 0};  // exact, any, exact
-
-    // Set topic0 to Transfer signature
-    primitives_keccak256((unsigned char*)"Transfer(address,address,uint256)", 34, (PrimitivesHash*)filter_topics[0]);
-
-    // topic1 = null (match any)
-    // topic2 = specific address
-    memset(filter_topics[2], 0, 12);  // pad with zeros
-    memcpy(filter_topics[2] + 12, log_addr, 20);
-
-    matches = primitives_eventlog_matches_topics(
-        log_topics,
-        3,
-        filter_topics,
-        filter_nulls,
-        3
-    );
-    printf("Topics match: %d\n", matches);
-
+    printf("Address match: %d, Topics match: %d\n", addr_ok, topics_ok);
     return 0;
 }
 ```

@@ -1,68 +1,90 @@
 ---
 title: Vue
-description: Using Tevm with Vue 3 and Nuxt
+description: Use @tevm/voltaire with Vue 3 Composition API, Nuxt server routes, and provide/inject.
 ---
 
-Tevm integrates with Vue using the Composition API and Nuxt for server-side rendering.
+`@tevm/voltaire/provider` and `@tevm/voltaire/jsonrpc` integrate directly with Vue 3 `ref`/`watch` composables and Nuxt server routes with zero runtime adapters.
 
 ## Installation
 
 ```bash
-bun add @tevm/voltaire
+npm install @tevm/voltaire
 ```
 
-## Basic Composable
+## Provider Injection
 
-Create reusable composables for Ethereum data:
+Provide a single `HttpProvider` at app startup and inject it into composables:
 
-```ts
+```typescript
+// plugins/ethereum.ts
+import { HttpProvider } from '@tevm/voltaire/provider';
+import { inject, type App, type InjectionKey } from 'vue';
+
+export const providerKey: InjectionKey<HttpProvider> = Symbol('voltaire-provider');
+
+export function installEthereum(app: App, rpcUrl = 'https://eth.llamarpc.com') {
+  app.provide(providerKey, new HttpProvider(rpcUrl));
+}
+
+export function useProvider(): HttpProvider {
+  const provider = inject(providerKey);
+  if (!provider) throw new Error('Voltaire HttpProvider not provided');
+  return provider;
+}
+```
+
+## Reactive Balance Composable
+
+```typescript
 // composables/useBalance.ts
-import { ref, watch, type Ref } from 'vue'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+import { Address } from '@tevm/voltaire/Address';
+import { Wei } from '@tevm/voltaire/Denomination';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { ref, toValue, watchEffect, type MaybeRefOrGetter } from 'vue';
+import { useProvider } from '../plugins/ethereum';
 
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+export function useBalance(address: MaybeRefOrGetter<string | undefined>) {
+  const provider = useProvider();
+  const balance = ref<string | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
 
-export function useBalance(address: Ref<string> | string) {
-  const balance = ref<string | null>(null)
-  const loading = ref(true)
-  const error = ref<Error | null>(null)
+  async function refresh() {
+    const raw = toValue(address);
+    if (!raw || !Address.isValid(raw)) {
+      balance.value = null;
+      return;
+    }
 
-  async function fetch() {
-    const addr = typeof address === 'string' ? address : address.value
-    if (!addr) return
-
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const parsedAddr = Address.from(addr)
-      const result = await provider.eth.getBalance({ address: parsedAddr })
-      balance.value = Wei.toEther(result)
+      const hex = (await provider.request(
+        Rpc.Eth.GetBalanceRequest(Address.from(raw), 'latest'),
+      )) as string;
+      balance.value = Wei.toEther(Wei.from(BigInt(hex)));
     } catch (e) {
-      error.value = e as Error
+      error.value = e instanceof Error ? e : new Error(String(e));
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
-  if (typeof address !== 'string') {
-    watch(address, fetch, { immediate: true })
-  } else {
-    fetch()
-  }
+  watchEffect(() => {
+    void refresh();
+  });
 
-  return { balance, loading, error, refresh: fetch }
+  return { balance, loading, error, refresh };
 }
 ```
 
 ```vue
-<!-- BalanceDisplay.vue -->
+<!-- components/BalanceDisplay.vue -->
 <script setup lang="ts">
-import { useBalance } from '@/composables/useBalance'
+import { useBalance } from '@/composables/useBalance';
 
-const props = defineProps<{ address: string }>()
-const { balance, loading, error, refresh } = useBalance(() => props.address)
+const props = defineProps<{ address: string }>();
+const { balance, loading, error, refresh } = useBalance(() => props.address);
 </script>
 
 <template>
@@ -75,290 +97,43 @@ const { balance, loading, error, refresh } = useBalance(() => props.address)
 </template>
 ```
 
-## Nuxt Server Routes
+## Nuxt Server Route
 
-Fetch data server-side with Nuxt:
+Fetch account state server-side without exposing private RPC API keys to browsers:
 
-```ts
+```typescript
 // server/api/address/[address].ts
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+import { Address } from '@tevm/voltaire/Address';
+import { Wei } from '@tevm/voltaire/Denomination';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { HttpProvider } from '@tevm/voltaire/provider';
 
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+const provider = new HttpProvider(process.env.RPC_URL ?? 'https://eth.llamarpc.com');
 
 export default defineEventHandler(async (event) => {
-  const address = getRouterParam(event, 'address')
-  if (!address) throw createError({ statusCode: 400, message: 'Address required' })
+  const address = getRouterParam(event, 'address');
+  if (!address || !Address.isValid(address)) {
+    throw createError({ statusCode: 400, message: 'Invalid Ethereum address' });
+  }
 
-  const addr = Address.from(address)
-
-  const [balance, nonce, code] = await Promise.all([
-    provider.eth.getBalance({ address: addr }),
-    provider.eth.getTransactionCount({ address: addr }),
-    provider.eth.getCode({ address: addr }),
-  ])
+  const addr = Address.from(address);
+  const [balanceHex, nonceHex, code] = (await Promise.all([
+    provider.request(Rpc.Eth.GetBalanceRequest(addr, 'latest')),
+    provider.request(Rpc.Eth.GetTransactionCountRequest(addr, 'latest')),
+    provider.request(Rpc.Eth.GetCodeRequest(addr, 'latest')),
+  ])) as [string, string, string];
 
   return {
     address,
-    balance: Wei.toEther(balance),
-    nonce: Number(nonce),
-    isContract: code.length > 2,
-  }
-})
+    balance: Wei.toEther(Wei.from(BigInt(balanceHex))),
+    nonce: Number(BigInt(nonceHex)),
+    isContract: code !== '0x',
+  };
+});
 ```
 
-```vue
-<!-- pages/address/[address].vue -->
-<script setup lang="ts">
-const route = useRoute()
-const { data, pending, error } = await useFetch(`/api/address/${route.params.address}`)
-</script>
+## Related
 
-<template>
-  <div v-if="pending">Loading...</div>
-  <div v-else-if="error">Error loading address</div>
-  <div v-else>
-    <h1>{{ data.address }}</h1>
-    <p>Balance: {{ data.balance }} ETH</p>
-    <p>Nonce: {{ data.nonce }}</p>
-    <p>Type: {{ data.isContract ? 'Contract' : 'EOA' }}</p>
-  </div>
-</template>
-```
-
-## Polling with useIntervalFn
-
-Poll for block updates using VueUse:
-
-```ts
-// composables/useLatestBlock.ts
-import { ref } from 'vue'
-import { useIntervalFn } from '@vueuse/core'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-export function useLatestBlock() {
-  const blockNumber = ref<bigint | null>(null)
-  const loading = ref(true)
-
-  async function fetch() {
-    try {
-      blockNumber.value = await provider.eth.getBlockNumber()
-    } finally {
-      loading.value = false
-    }
-  }
-
-  fetch()
-  useIntervalFn(fetch, 12000)
-
-  return { blockNumber, loading }
-}
-```
-
-## Provide/Inject Pattern
-
-Share provider across components:
-
-```ts
-// plugins/ethereum.ts
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-import type { InjectionKey } from 'vue'
-
-export const providerKey: InjectionKey<ReturnType<typeof createJsonRpcProvider>> = Symbol('provider')
-
-export default defineNuxtPlugin((nuxtApp) => {
-  const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-  nuxtApp.vueApp.provide(providerKey, provider)
-})
-```
-
-```ts
-// composables/useProvider.ts
-import { inject } from 'vue'
-import { providerKey } from '@/plugins/ethereum'
-
-export function useProvider() {
-  const provider = inject(providerKey)
-  if (!provider) throw new Error('Provider not found')
-  return provider
-}
-```
-
-## Multiple Addresses
-
-Fetch multiple addresses in parallel:
-
-```ts
-// composables/useMultipleBalances.ts
-import { ref, computed, type Ref } from 'vue'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-export function useMultipleBalances(addresses: Ref<string[]>) {
-  const balances = ref<Map<string, string>>(new Map())
-  const loading = ref(true)
-
-  async function fetchAll() {
-    loading.value = true
-    const results = await Promise.all(
-      addresses.value.map(async (addr) => {
-        const parsedAddr = Address.from(addr)
-        const balance = await provider.eth.getBalance({ address: parsedAddr })
-        return [addr, Wei.toEther(balance)] as const
-      })
-    )
-    balances.value = new Map(results)
-    loading.value = false
-  }
-
-  watch(addresses, fetchAll, { immediate: true, deep: true })
-
-  return { balances, loading, refresh: fetchAll }
-}
-```
-
-## Async Component Pattern
-
-Load data on component mount:
-
-```vue
-<script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { Address } from '@tevm/voltaire/Address'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-const props = defineProps<{ address: string }>()
-
-const code = ref<string | null>(null)
-const isContract = ref(false)
-
-onMounted(async () => {
-  const addr = Address.from(props.address)
-  code.value = await provider.eth.getCode({ address: addr })
-  isContract.value = code.value.length > 2
-})
-</script>
-
-<template>
-  <div>
-    <span v-if="isContract">📄 Contract</span>
-    <span v-else>👤 EOA</span>
-  </div>
-</template>
-```
-
-## Pinia Store
-
-Use Pinia for global state:
-
-```ts
-// stores/ethereum.ts
-import { defineStore } from 'pinia'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-export const useEthereumStore = defineStore('ethereum', {
-  state: () => ({
-    balances: {} as Record<string, string>,
-    blockNumber: null as bigint | null,
-    loading: false,
-  }),
-
-  actions: {
-    async fetchBalance(address: string) {
-      this.loading = true
-      try {
-        const addr = Address.from(address)
-        const balance = await provider.eth.getBalance({ address: addr })
-        this.balances[address] = Wei.toEther(balance)
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async fetchBlockNumber() {
-      this.blockNumber = await provider.eth.getBlockNumber()
-    },
-  },
-
-  getters: {
-    getBalance: (state) => (address: string) => state.balances[address],
-  },
-})
-```
-
-```vue
-<script setup lang="ts">
-import { useEthereumStore } from '@/stores/ethereum'
-
-const store = useEthereumStore()
-const address = '0x...'
-
-store.fetchBalance(address)
-</script>
-
-<template>
-  <p v-if="store.loading">Loading...</p>
-  <p v-else>{{ store.getBalance(address) }} ETH</p>
-</template>
-```
-
-## Error Handling
-
-Handle errors gracefully:
-
-```ts
-// composables/useEthereumQuery.ts
-import { ref, type Ref } from 'vue'
-
-interface QueryOptions<T> {
-  onError?: (error: Error) => void
-  retry?: number
-}
-
-export function useEthereumQuery<T>(
-  fetcher: () => Promise<T>,
-  options: QueryOptions<T> = {}
-) {
-  const data = ref<T | null>(null) as Ref<T | null>
-  const loading = ref(true)
-  const error = ref<Error | null>(null)
-
-  async function execute(retries = options.retry ?? 0) {
-    loading.value = true
-    error.value = null
-    try {
-      data.value = await fetcher()
-    } catch (e) {
-      if (retries > 0) {
-        await new Promise(r => setTimeout(r, 1000))
-        return execute(retries - 1)
-      }
-      error.value = e as Error
-      options.onError?.(e as Error)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  execute()
-
-  return { data, loading, error, refresh: () => execute(options.retry) }
-}
-```
-
-## Next Steps
-
-- [JSONRPCProvider](/jsonrpc-provider) - Full provider documentation
-- [Address](/primitives/address) - Address primitive reference
+- [Vue Skill](/skills/vue) — Copyable Vue 3 composables for balances, contracts, and wallets
+- [JSON-RPC Provider](/jsonrpc-provider) — Provider configuration and timeouts
+- [Address](/primitives/address) — Validation and EIP-55 checksumming

@@ -1,369 +1,144 @@
 ---
 title: Method API
-description: Request builders for type-safe JSON-RPC calls with branded primitives
+description: Type-safe JSON-RPC request builders across eth, wallet, debug, engine, anvil, hardhat, web3, net, and txpool namespaces.
 ---
 
-<Info>
-Source: [jsonrpc](https://github.com/evmts/voltaire/blob/main/src/jsonrpc)
+`@tevm/voltaire/jsonrpc` exports pure request builder functions that construct EIP-1193 `RequestArguments` objects (`{ method, params }`) without performing I/O. Pass the returned object to any EIP-1193 `provider.request()`.
 
-Tests: [Rpc.test.ts](https://github.com/evmts/voltaire/blob/main/src/jsonrpc/Rpc.test.ts) • [anvil.test.ts](https://github.com/evmts/voltaire/blob/main/src/jsonrpc/anvil.test.ts) • [hardhat.test.ts](https://github.com/evmts/voltaire/blob/main/src/jsonrpc/hardhat.test.ts)
-</Info>
+Source: [packages/voltaire-ts/src/jsonrpc/index.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/jsonrpc/index.ts).
 
-# Method API
+```mermaid
+flowchart LR
+  B["Rpc.Eth.GetBalanceRequest(addr, 'latest')"] --> OBJ["{ method: 'eth_getBalance',\n  params: [addr, 'latest'] }"]
+  OBJ --> P["provider.request(req)"]
+  P --> RES["Hex result string / object\n(or throws RpcError)"]
+```
 
-Request builders create type-safe JSON-RPC requests with branded primitive parameters.
+## Namespaces
 
-## Request Builders
+Import either the grouped `Rpc` namespace or individual tree-shakeable namespace modules from `@tevm/voltaire/jsonrpc`:
 
-Request builders return `RequestArguments` objects compatible with EIP-1193 providers:
+| Namespace | Grouped Access | Direct Import | Scope |
+| --- | --- | --- | --- |
+| `eth` | `Rpc.Eth.*` | `import { eth } from '@tevm/voltaire/jsonrpc'` | Standard Ethereum execution methods |
+| `wallet` | `Rpc.Wallet.*` | `import { wallet } from '@tevm/voltaire/jsonrpc'` | EIP-3326, EIP-747, EIP-2255 wallet methods |
+| `anvil` | `Rpc.Anvil.*` | `import { anvil } from '@tevm/voltaire/jsonrpc'` | Foundry Anvil test node RPCs |
+| `hardhat` | `Rpc.Hardhat.*` | `import { hardhat } from '@tevm/voltaire/jsonrpc'` | Hardhat Network test node RPCs |
+| `web3` | `Rpc.Web3.*` | `import { web3 } from '@tevm/voltaire/jsonrpc'` | `web3_clientVersion`, `web3_sha3` |
+| `net` | `Rpc.Net.*` | `import { net } from '@tevm/voltaire/jsonrpc'` | `net_version`, `net_listening`, `net_peerCount` |
+| `txpool` | `Rpc.Txpool.*` | `import { txpool } from '@tevm/voltaire/jsonrpc'` | `txpool_status`, `txpool_content`, `txpool_inspect` |
+| `debug` | — | `import { debug } from '@tevm/voltaire/jsonrpc'` | Tracing and raw RLP block/header RPCs |
+| `engine` | — | `import { engine } from '@tevm/voltaire/jsonrpc'` | Consensus-layer Engine API |
+
+## State and Account Reads
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
 import { Address } from '@tevm/voltaire/Address';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
 
-const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-// Build requests
-const blockRequest = Rpc.Eth.BlockNumberRequest();
-const balanceRequest = Rpc.Eth.GetBalanceRequest(address, 'latest');
-const callRequest = Rpc.Eth.CallRequest(params, 'latest');
-
-// Send through provider (throws on error)
-try {
-  const blockNumber = await provider.request(blockRequest);
-  const balance = await provider.request(balanceRequest);
-  const callResult = await provider.request(callRequest);
-} catch (error) {
-  console.error('RPC error:', error.code, error.message);
-}
+const [blockNum, balance, nonce, code, slot0] = await Promise.all([
+  provider.request(Rpc.Eth.BlockNumberRequest()),
+  provider.request(Rpc.Eth.GetBalanceRequest(addr, 'latest')),
+  provider.request(Rpc.Eth.GetTransactionCountRequest(addr, 'latest')),
+  provider.request(Rpc.Eth.GetCodeRequest(addr, 'latest')),
+  provider.request(Rpc.Eth.GetStorageAtRequest(addr, '0x0', 'latest')),
+]);
 ```
 
-### Request Pattern
-
-All request builders follow this signature:
+## Calls, Gas, and Transactions
 
 ```typescript
-Rpc.Eth.MethodNameRequest(params) → RequestArguments
-```
+import { Rpc } from '@tevm/voltaire/jsonrpc';
 
-- **`Rpc.Eth.MethodName`** - Request builder (e.g., `CallRequest`, `GetBalanceRequest`)
-- **`params`** - Branded primitive types (Address, Hash, Hex, etc.)
-- **Returns** - `{method: string, params?: unknown[]}` object
-
-## Branded Primitive Parameters
-
-All parameters use Voltaire's branded primitive types for compile-time safety:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-import { Hash } from '@tevm/voltaire/Hash';
-import { Hex } from '@tevm/voltaire/Hex';
-
-// Construct branded types
-const address = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
-const blockHash = Hash('0x...');
-const data = Hex('0x70a08231...');
-
-// Build requests - type-checked at compile time
-const balanceReq = Rpc.Eth.GetBalanceRequest(address, 'latest');
-const blockReq = Rpc.Eth.GetBlockByHashRequest(blockHash, true);
-
-// Send requests (throws on error)
-try {
-  const balance = await provider.request(balanceReq);
-  const block = await provider.request(blockReq);
-} catch (error) {
-  console.error('Request failed:', error);
-}
-```
-
-### Type Safety Benefits
-
-TypeScript catches errors at compile time:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-
-// ❌ Compile error: string not assignable to Address
-const badReq = Rpc.Eth.GetBalanceRequest('0x...', 'latest');
-
-// ✅ Correct: use branded Address
-const goodReq = Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest');
-
-// ❌ Compile error: can't mix Hash and Address
-const mixedReq = Rpc.Eth.GetBlockByHashRequest(address, true);
-
-// ✅ Correct: use proper type
-const hashReq = Rpc.Eth.GetBlockByHashRequest(hash, true);
-```
-
-## Error Handling
-
-### Throwing Errors
-
-Requests throw errors on failure:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-
-try {
-  const result = await provider.request(Rpc.Eth.CallRequest(params));
-  console.log('Call result:', result);
-} catch (error) {
-  console.error('RPC error:', error.code, error.message);
-  if (error.data) {
-    console.error('Error data:', error.data);
-  }
-}
-```
-
-### Type Inference
-
-Return types are automatically inferred:
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-
-// TypeScript knows blockNumber is string (Quantity)
-const blockNumber = await provider.request(Rpc.Eth.BlockNumberRequest());
-
-// TypeScript knows balance is string (Quantity)
-const balance = await provider.request(
-  Rpc.Eth.GetBalanceRequest(address, 'latest')
+// Read-only execution
+const callResult = await provider.request(
+  Rpc.Eth.CallRequest(
+    {
+      to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      data: '0x18160ddd',
+    },
+    'latest',
+  ),
 );
 
-// TypeScript knows callResult is string (Hex)
-const callResult = await provider.request(Rpc.Eth.CallRequest(params));
+// Gas estimation
+const gasHex = await provider.request(
+  Rpc.Eth.EstimateGasRequest({
+    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+    to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    data: '0xa9059cbb...',
+  }),
+);
+
+// Broadcast RLP-encoded signed transaction
+const txHash = await provider.request(
+  Rpc.Eth.SendRawTransactionRequest('0x02f8...'),
+);
+
+// Fetch transaction and receipt
+const tx = await provider.request(Rpc.Eth.GetTransactionByHashRequest(txHash as string));
+const receipt = await provider.request(Rpc.Eth.GetTransactionReceiptRequest(txHash as string));
 ```
 
-## BlockTag Parameter
-
-Many requests accept `BlockTag` to specify block context:
+## Blocks and Logs
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
 
-type BlockTag =
-  | 'latest'      // Most recent block
-  | 'earliest'    // Genesis block
-  | 'pending'     // Pending block
-  | 'safe'        // Safe head block
-  | 'finalized'   // Finalized block
-  | string;       // Specific block number (hex)
+// Full block with transaction objects (second arg: hydrated boolean)
+const latestBlock = await provider.request(
+  Rpc.Eth.GetBlockByNumberRequest('latest', true),
+);
 
-const address = Address('0x...');
+// Block receipts in one call (EIP-1474 / Geth / Reth / Nethermind)
+const receipts = await provider.request(Rpc.Eth.GetBlockReceiptsRequest('latest'));
 
-// Usage with different block tags
-try {
-  const latest = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
-  const finalized = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'finalized'));
-  const historical = await provider.request(Rpc.Eth.GetBalanceRequest(address, '0x112A880'));
-} catch (error) {
-  console.error('Failed to get balance:', error);
-}
+// Filter logs by address and topic0
+const logs = await provider.request(
+  Rpc.Eth.GetLogsRequest({
+    fromBlock: '0x121eac0',
+    toBlock: '0x121eb24',
+    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
+  }),
+);
 ```
 
-## Method Categories
+## Block Tags
 
-### Read Operations
+Methods accepting a block specifier take any EIP-1898 `BlockTag` or hex-encoded block number:
+
+| Tag | Meaning |
+| --- | --- |
+| `'latest'` | Most recent canonical block |
+| `'safe'` | Latest justified PoS checkpoint block |
+| `'finalized'` | Latest finalized PoS checkpoint block (irreversible without slashing) |
+| `'pending'` | Pending block including mempool transactions |
+| `'earliest'` | Genesis block (`0x0`) |
+| `` `0x${string}` `` | Explicit hex block height (for example `'0x121eac0'`) |
+
+## Wallet, Debug, and Testing Namespaces
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
+import { debug, Rpc } from '@tevm/voltaire/jsonrpc';
 
-const address = Address('0x...');
+// EIP-3326 chain switch (browser wallets)
+await walletProvider.request(Rpc.Wallet.SwitchEthereumChainRequest('0x1'));
 
-try {
-  // Get block number
-  const blockNum = await provider.request(Rpc.Eth.BlockNumberRequest());
+// Anvil local node manipulation
+await anvilProvider.request(Rpc.Anvil.AnvilImpersonateAccountRequest('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'));
+await anvilProvider.request(Rpc.Anvil.AnvilMineRequest('0x1'));
 
-  // Get balance
-  const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
-
-  // Get transaction count (nonce)
-  const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
-
-  // Get contract code
-  const code = await provider.request(Rpc.Eth.GetCodeRequest(address, 'latest'));
-
-  // Get storage slot
-  const storage = await provider.request(Rpc.Eth.GetStorageAtRequest(address, slot, 'latest'));
-} catch (error) {
-  console.error('Read operation failed:', error);
-}
+// Debug raw block retrieval
+const rawBlockRlp = await nodeProvider.request(debug.GetRawBlockRequest('latest'));
 ```
-
-### Contract Calls
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-import { Hex } from '@tevm/voltaire/Hex';
-
-try {
-  // Execute read-only contract call
-  const result = await provider.request(
-    Rpc.Eth.CallRequest({
-      to: Address('0x...'),
-      data: Hex('0x70a08231...')  // Function selector + encoded params
-    }, 'latest')
-  );
-
-  // Estimate gas for transaction
-  const gasEstimate = await provider.request(
-    Rpc.Eth.EstimateGasRequest({
-      from: Address('0x...'),
-      to: Address('0x...'),
-      value: '0xDE0B6B3A7640000',  // 1 ETH in wei
-      data: Hex('0x...')
-    })
-  );
-} catch (error) {
-  console.error('Contract call failed:', error);
-}
-```
-
-### Transaction Operations
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Hash } from '@tevm/voltaire/Hash';
-import { Hex } from '@tevm/voltaire/Hex';
-
-try {
-  // Submit signed transaction
-  const txHash = await provider.request(
-    Rpc.Eth.SendRawTransactionRequest(Hex('0x...'))
-  );
-
-  // Get transaction by hash
-  const tx = await provider.request(
-    Rpc.Eth.GetTransactionByHashRequest(Hash('0x...'))
-  );
-
-  // Get transaction receipt
-  const receipt = await provider.request(
-    Rpc.Eth.GetTransactionReceiptRequest(Hash('0x...'))
-  );
-} catch (error) {
-  console.error('Transaction operation failed:', error);
-}
-```
-
-### Block Operations
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-
-try {
-  // Get block by number
-  const block = await provider.request(
-    Rpc.Eth.GetBlockByNumberRequest('latest', true)
-  );
-
-  // Get block by hash
-  const blockByHash = await provider.request(
-    Rpc.Eth.GetBlockByHashRequest(blockHash, false)
-  );
-
-  // Get uncle count
-  const uncleCount = await provider.request(
-    Rpc.Eth.GetUncleCountByBlockNumberRequest('latest')
-  );
-} catch (error) {
-  console.error('Block operation failed:', error);
-}
-```
-
-### Log Queries
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-import { Hash } from '@tevm/voltaire/Hash';
-
-try {
-  // Query logs
-  const logs = await provider.request(
-    Rpc.Eth.GetLogsRequest({
-      fromBlock: 'earliest',
-      toBlock: 'latest',
-      address: Address('0x...'),
-      topics: [Hash('0x...')]
-    })
-  );
-} catch (error) {
-  console.error('Log query failed:', error);
-}
-```
-
-## Error Codes
-
-Common JSON-RPC error codes:
-
-| Code | Message | Description |
-|------|---------|-------------|
-| `-32700` | Parse error | Invalid JSON |
-| `-32600` | Invalid request | Missing required fields |
-| `-32601` | Method not found | Method doesn't exist |
-| `-32602` | Invalid params | Wrong parameter types |
-| `-32603` | Internal error | Server-side error |
-| `3` | Execution reverted | Contract execution failed |
-
-See [Error Handling](/jsonrpc-provider/error-handling) for detailed error patterns.
-
-## Best Practices
-
-1. **Use try/catch** for error handling
-2. **Use branded types** for all parameters
-3. **Reuse type instances** - don't reconstruct on every call
-4. **Batch independent requests** with Promise.all
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { Address } from '@tevm/voltaire/Address';
-
-const address = Address('0x...');
-
-// ✅ Good: batch independent requests
-try {
-  const [block, balance, nonce] = await Promise.all([
-    provider.request(Rpc.Eth.BlockNumberRequest()),
-    provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest')),
-    provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'))
-  ]);
-} catch (error) {
-  console.error('Batch request failed:', error);
-}
-
-// ❌ Bad: sequential requests (slower)
-const block = await provider.request(Rpc.Eth.BlockNumberRequest());
-const balance = await provider.request(Rpc.Eth.GetBalanceRequest(address, 'latest'));
-const nonce = await provider.request(Rpc.Eth.GetTransactionCountRequest(address, 'latest'));
-```
-
-## Method Reference
-
-<CardGroup cols={3}>
-  <Card title="eth Methods" icon="ethereum" href="/jsonrpc-provider/eth-methods">
-    40 standard Ethereum methods for blocks, transactions, state, and logs.
-  </Card>
-
-  <Card title="debug Methods" icon="bug" href="/jsonrpc-provider/debug-methods">
-    5 debugging methods for transaction tracing and analysis.
-  </Card>
-
-  <Card title="engine Methods" icon="gears" href="/jsonrpc-provider/engine-methods">
-    20 consensus layer methods for Engine API integration.
-  </Card>
-</CardGroup>
 
 ## Related
 
-- [Getting Started](/jsonrpc-provider/getting-started) - Installation and first requests
-- [Events](/jsonrpc-provider/events) - Event handling with EventEmitter
-- [Error Handling](/jsonrpc-provider/error-handling) - Error codes and patterns
-- [eth Methods](/jsonrpc-provider/eth-methods) - Complete method reference
+- [eth Methods](/jsonrpc-provider/eth-methods) — Full `eth_*` reference
+- [wallet Methods](/jsonrpc-provider/wallet-methods) — Browser wallet RPCs
+- [debug Methods](/jsonrpc-provider/debug-methods) — Debug namespace
+- [engine Methods](/jsonrpc-provider/engine-methods) — Consensus Engine API
+- [Type System](/jsonrpc-provider/type-system) — Compile-time request/return typing with `TypedProvider`

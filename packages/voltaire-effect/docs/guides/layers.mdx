@@ -1,159 +1,54 @@
 ---
 title: Layer Composition Guide
-description: Best practices for composing Effect layers in voltaire-effect
+description: Compose Effect Layer graphs once and provide them once at application boundaries.
 ---
 
-## The Golden Rule
+Compose all service layers into a single dependency graph before calling `Effect.provide`. Chaining multiple `Effect.provide` calls constructs independent layer scopes and defeats Effect's automatic layer memoization.
 
-**Compose layers first, then provide once.** Don't chain multiple `Effect.provide` calls.
+```mermaid
+flowchart BT
+  subgraph SharedGraph["Composed Once (Shared Memoized Instances)"]
+    T["HttpTransport(rpcUrl)"] --> P["Provider"]
+    C["CryptoLayer (Secp256k1Live + KeccakLive)"] --> A["LocalAccount(privateKey)"]
+    P --> S["Signer.Live"]
+    A --> S
+    T --> S
+  end
+  S -->|Single Effect.provide| App["Application Program"]
+```
+
+## The Core Rule
 
 ```typescript
-// ❌ Anti-pattern: multiple provides
+// Wrong: separate Effect.provide calls bypass shared memoization
 program.pipe(
   Effect.provide(Signer.Live),
   Effect.provide(Provider),
   Effect.provide(HttpTransport(rpcUrl))
 )
 
-// ✅ Correct: compose layers once, then provide
-const AppLayer = Layer.mergeAll(
-  Signer.Live,
-  Provider
-).pipe(Layer.provide(HttpTransport(rpcUrl)))
+// Right: compose the graph, then provide once at the entry point
+const AppLayer = Layer.mergeAll(Signer.Live, Provider).pipe(
+  Layer.provide(HttpTransport(rpcUrl))
+)
 
 program.pipe(Effect.provide(AppLayer))
 ```
 
-## Why Layer Composition Matters
+## Three Composition Operators
 
-1. **Efficiency** - Layers built together share resources
-2. **Correctness** - Dependencies resolved properly
-3. **Testability** - Swap entire layer graphs for testing
-4. **Reusability** - Define layers once, use everywhere
+| Operator | Semantics | Example |
+| --- | --- | --- |
+| `Layer.mergeAll(A, B, C)` | Combine independent layers | `Layer.mergeAll(Secp256k1Live, KeccakLive, AesGcmLive)` |
+| `A.pipe(Layer.provide(B))` | Satisfy `A`'s input from `B`; output only `A` | `Provider.pipe(Layer.provide(HttpTransport(url)))` |
+| `A.pipe(Layer.provideMerge(B))` | Satisfy `A`'s input from `B`; output both `A` and `B` | Expose `LocalAccount` alongside `Signer.Live` |
 
-## Composition Patterns
+## Shared Layer Module Pattern
 
-### Pattern 1: `Layer.mergeAll` for Independent Layers
-
-When layers don't depend on each other:
-
-```typescript
-import { Layer } from 'effect'
-import { Secp256k1Live, KeccakLive, AesGcmLive } from 'voltaire-effect/crypto'
-
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive, AesGcmLive)
-```
-
-### Pattern 2: `Layer.provide` for Dependencies
-
-When one layer depends on another:
+Centralize layer builders in a single module (`src/layers.ts`) so CLI commands, HTTP handlers, and tests share identical wiring:
 
 ```typescript
-import { Layer } from 'effect'
-import { Provider, HttpTransport } from 'voltaire-effect'
-
-// Provider needs HttpTransport
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-```
-
-### Pattern 3: `Layer.provideMerge` for Incremental Building
-
-Add services while providing dependencies:
-
-```typescript
-import { Layer } from 'effect'
-import { Signer, Provider, HttpTransport, LocalAccount } from 'voltaire-effect'
-import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
-
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-const TransportLayer = HttpTransport('https://eth.llamarpc.com')
-const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
-
-const SignerLayer = Layer.mergeAll(
-  Signer.Live,
-  CryptoLayer,
-  ProviderLayer
-).pipe(
-  Layer.provideMerge(LocalAccount(privateKey))
-)
-```
-
-## Complete Examples
-
-### Read-Only Provider
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
-
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
-)
-
-const program = Effect.gen(function* () {
-  return yield* getBlockNumber()
-})
-
-await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
-```
-
-### Full Wallet with Signing
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { Signer, Provider, HttpTransport, LocalAccount } from 'voltaire-effect'
-import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
-
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-const TransportLayer = HttpTransport('https://eth.llamarpc.com')
-const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
-
-const WalletLayer = Layer.mergeAll(
-  Signer.Live,
-  CryptoLayer,
-  ProviderLayer
-).pipe(
-  Layer.provideMerge(LocalAccount(privateKey))
-)
-
-const program = Effect.gen(function* () {
-  const signer = yield* SignerService
-  return yield* signer.sendTransaction({ to, value })
-})
-
-await Effect.runPromise(program.pipe(Effect.provide(WalletLayer)))
-```
-
-### Test Layer Substitution
-
-```typescript
-import { Effect, Layer } from 'effect'
-import { ProviderService } from 'voltaire-effect'
-import { CryptoTest } from 'voltaire-effect/crypto'
-
-// Mock provider
-const MockProvider = Layer.succeed(ProviderService, {
-  request: (method: string) => {
-    if (method === 'eth_blockNumber') return Effect.succeed('0x3039')
-    return Effect.succeed(null)
-  }
-})
-
-// Compose test layer
-const TestLayer = Layer.mergeAll(MockProvider, CryptoTest)
-
-// Same program, different layer
-await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
-```
-
-## Layer Reuse Across Files
-
-Define layers in a shared module:
-
-```typescript
-// layers.ts
+// src/layers.ts
 import { Layer } from 'effect'
 import { Provider, HttpTransport, Signer, LocalAccount } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
@@ -166,61 +61,51 @@ export const makeProviderLayer = (rpcUrl: string) =>
 export const makeSignerLayer = (privateKey: Uint8Array, rpcUrl: string) => {
   const transportLayer = HttpTransport(rpcUrl)
   const providerLayer = Provider.pipe(Layer.provide(transportLayer))
-  
-  return Layer.mergeAll(
-    Signer.Live,
-    CryptoLayer,
-    providerLayer
-  ).pipe(Layer.provideMerge(LocalAccount(privateKey)))
+
+  return Layer.mergeAll(Signer.Live, CryptoLayer, providerLayer).pipe(
+    Layer.provideMerge(LocalAccount(privateKey))
+  )
 }
 ```
 
+Consume the composed layer at the entry point:
+
 ```typescript
-// usage.ts
+// src/main.ts
+import { Effect } from 'effect'
 import { makeSignerLayer } from './layers'
 
 const layer = makeSignerLayer(myPrivateKey, 'https://eth.llamarpc.com')
 await Effect.runPromise(program.pipe(Effect.provide(layer)))
 ```
 
-## Common Mistakes
+## Test Layer Substitution
 
-### Mistake 1: Providing Same Dependency Multiple Times
-
-```typescript
-// ❌ KeccakLive provided twice
-program.pipe(
-  Effect.provide(Secp256k1Live),
-  Effect.provide(KeccakLive),
-  Effect.provide(MnemonicAccount(mnemonic)),
-  Effect.provide(KeccakLive)  // Duplicate!
-)
-
-// ✅ Compose once
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-const AccountLayer = MnemonicAccount(mnemonic).pipe(Layer.provide(CryptoLayer))
-program.pipe(Effect.provide(AccountLayer))
-```
-
-### Mistake 2: Order-Dependent Provides
+Replace the entire production graph with deterministic stubs without touching application code:
 
 ```typescript
-// ❌ Fragile - order matters
-program.pipe(
-  Effect.provide(A),
-  Effect.provide(B),  // B depends on A?
-  Effect.provide(C)   // C depends on A and B?
-)
+import { Effect, Layer } from 'effect'
+import { ProviderService } from 'voltaire-effect'
+import { CryptoTest } from 'voltaire-effect/crypto'
 
-// ✅ Explicit dependencies
-const BLayer = B.pipe(Layer.provide(A))
-const CLayer = C.pipe(Layer.provide(Layer.mergeAll(A, BLayer)))
-program.pipe(Effect.provide(CLayer))
+const MockProvider = Layer.succeed(ProviderService, {
+  request: (method: string) => {
+    if (method === 'eth_blockNumber') return Effect.succeed('0x3039')
+    return Effect.succeed(null)
+  }
+})
+
+const TestLayer = Layer.mergeAll(MockProvider, CryptoTest)
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 ```
+
+## Anti-Patterns to Avoid
+
+1. **Duplicate sibling provides:** Passing `KeccakLive` twice in chained `Effect.provide` calls instantiates two separate services. Build `CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)` once and feed it with `Layer.provide`.
+2. **Order-sensitive chains:** Stacking `Effect.provide(A)`, `Effect.provide(B)`, `Effect.provide(C)` breaks silently when dependencies shift. Express edges explicitly (`BLayer = B.pipe(Layer.provide(A))`).
 
 ## See Also
 
-- [Layers Overview](/layers) — Schema, Effect, and Service layers
-- [Effect Primer](/concepts/effect-primer) — 5-minute Effect.ts intro
-- [Dependency Injection](/concepts/dependency-injection) — How services work
-- [Testing](/testing) — Using test layers
+- [Architecture & Layers](/layers) — Schema, Effect, and Service overview
+- [Dependency Injection](/concepts/dependency-injection) — Service tags and FiberRef overrides
+- [Testing](/testing) — `TestTransport` and `CryptoTest`

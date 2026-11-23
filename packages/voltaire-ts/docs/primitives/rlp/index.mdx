@@ -1,140 +1,105 @@
 ---
-title: Rlp
-description: Recursive Length Prefix encoding for Ethereum data structures
+title: RLP
+description: Recursive Length Prefix (RLP) binary encoder and strict canonical decoder for Ethereum transactions, headers, accounts, and Merkle Patricia Trie nodes.
 ---
 
-<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/rlp.ts">
-  Run RLP examples in the interactive playground
-</Card>
+`Rlp` implements Ethereum's Recursive Length Prefix (RLP) serialization over two recursive primitives: byte strings (`Uint8Array`) and nested lists (`BrandedRlp[]`). Decoding enforces Ethereum Yellow Paper canonicality rules, rejecting non-minimal lengths and leading zero length bytes.
 
-<Tip>
-New to RLP? Start with [Fundamentals](/primitives/rlp/fundamentals) for guided examples and encoding rules.
-</Tip>
-
-## Type Definition
-
-[Branded](/getting-started/branded-types) data structure for RLP-encoded data with type-safe encoding and decoding.
-
-```typescript
-export type BrandedRlp =
-  | { type: "bytes"; value: Uint8Array }
-  | { type: "list"; value: BrandedRlp[] };
+```mermaid
+flowchart LR
+  Data["Uint8Array | BrandedRlp | Nested Array"] -->|"Rlp.encode()"| Wire["RLP Byte Stream (Uint8Array)"]
+  Wire -->|"Rlp.decode()"| Result["{ data: BrandedRlp, remainder: Uint8Array }"]
+  Wire -->|"Rlp.validate() / isCanonical()"| Check["boolean"]
 ```
 
-RLP provides deterministic serialization for transactions, blocks, state tries, and network protocols. It encodes only structure (not types), making it space-efficient and fast.
+## Quick Start
 
-## Quick Reference
+```typescript
+import { Rlp } from '@tevm/voltaire';
 
-## API Methods
+// Encode a byte string
+const bytes = Rlp.encode(new Uint8Array([0x01, 0x02, 0x03]));
+// Uint8Array([0x83, 0x01, 0x02, 0x03])
 
-### Constructors
+// Encode nested lists (e.g., [sender, nonce])
+const list = Rlp.encode([
+  new Uint8Array([0xde, 0xad]),
+  new Uint8Array([]), // empty bytes -> 0x80 (integer 0 in RLP)
+]);
 
-- [from](./from) - Create RLP data structures from bytes or nested arrays
+// Decode back to structured BrandedRlp
+const { data, remainder } = Rlp.decode(list);
+// data = { type: 'list', value: [{ type: 'bytes', value: ... }, ...] }
+// remainder.length === 0
+```
+
+Import from `@tevm/voltaire` or `@tevm/voltaire/Rlp`.
+
+## Prefix Byte Ranges
+
+| First Byte | Kind | Payload Length |
+| --- | --- | --- |
+| `0x00`–`0x7f` | Single byte | `1` byte (the byte itself) |
+| `0x80`–`0xb7` | Short string | `byte - 0x80` (`0`–`55` bytes; `0x80` is empty bytes) |
+| `0xb8`–`0xbf` | Long string | Next `byte - 0xb7` bytes (`1`–`8` bytes) give big-endian length (`>= 56`) |
+| `0xc0`–`0xf7` | Short list | `byte - 0xc0` (`0`–`55` payload bytes; `0xc0` is empty list) |
+| `0xf8`–`0xff` | Long list | Next `byte - 0xf7` bytes (`1`–`8` bytes) give big-endian payload length (`>= 56`) |
+
+## Representation
+
+```typescript
+type BrandedRlp =
+  | { type: 'bytes'; value: Uint8Array }
+  | { type: 'list'; value: BrandedRlp[] };
+
+type Encodable = Uint8Array | BrandedRlp | Encodable[];
+```
+
+## API Reference
 
 ### Encoding
 
-- [encode](./encode) - Encode bytes, lists, and nested structures
-- [encodeBytes](./encode-bytes) - Encode raw bytes to RLP format
-- [encodeList](./encode-list) - Encode array of items to RLP list
-- [encodeArray](./encode-array) - Encode array with variadic arguments
-- [encodeObject](./encode) - Encode object to RLP structure
-- [encodeVariadic](./encode) - Encode multiple arguments
-- [encodeBatch](./encode) - Batch encode multiple items
+| Method | Signature | Description |
+| --- | --- | --- |
+| `Rlp` / `Rlp.from` | `(value: Uint8Array \| BrandedRlp \| BrandedRlp[]) => BrandedRlp` | Construct tagged `BrandedRlp` tree |
+| `Rlp.encode` | `(input: Encodable) => Uint8Array` | Encode bytes, lists, or `BrandedRlp` recursively |
+| `Rlp.encodeBytes` | `(bytes: Uint8Array) => Uint8Array` | Encode a single byte string |
+| `Rlp.encodeList` | `(items: readonly Encodable[]) => Uint8Array` | Encode a list of encodable items |
+| `Rlp.encodeArray` | `(items: readonly Encodable[]) => Uint8Array` | Encode array as RLP list |
+| `Rlp.encodeObject` | `(obj: Record<string, Encodable>) => Uint8Array` | Encode object key-value entries |
+| `Rlp.encodeVariadic` | `(...items: Encodable[]) => Uint8Array` | Encode variadic arguments as a list |
+| `Rlp.encodeBatch` | `(items: readonly Encodable[]) => Uint8Array[]` | Batch encode multiple top-level items |
+| `Rlp.getEncodedLength` | `(input: Encodable) => number` | Compute exact output byte size without allocating payload |
 
-### Decoding
+### Decoding & Inspection
 
-- [decode](./decode) - Decode RLP bytes to data structures
-- [decodeArray](./decode-array) - Decode RLP list to array
-- [decodeObject](./decode) - Decode RLP to object
-- [decodeBatch](./decode) - Batch decode multiple RLP items
+| Method | Signature | Description |
+| --- | --- | --- |
+| `Rlp.decode` | `(bytes: Uint8Array, stream?: boolean) => { data: BrandedRlp; remainder: Uint8Array }` | Decode RLP stream; rejects trailing bytes unless `stream = true` |
+| `Rlp.decodeValue` | `(bytes: Uint8Array) => BrandedRlp` | Decode single complete RLP value |
+| `Rlp.decodeArray` | `(bytes: Uint8Array) => BrandedRlp[]` | Decode top-level RLP list |
+| `Rlp.decodeObject` | `(bytes: Uint8Array) => Record<string, Uint8Array>` | Decode RLP-encoded key-value map |
+| `Rlp.decodeBatch` | `(items: readonly Uint8Array[]) => BrandedRlp[]` | Batch decode byte arrays |
+| `Rlp.validate` | `(bytes: Uint8Array) => boolean` | Check whether bytes are valid canonical RLP |
+| `Rlp.isCanonical` | `(bytes: Uint8Array) => boolean` | Verify minimal length prefixing and zero-free lengths |
+| `Rlp.getLength` | `(bytes: Uint8Array) => number` | Read total encoded byte length from prefix |
+| `Rlp.isList` / `Rlp.isString` | `(bytes: Uint8Array) => boolean` | Inspect prefix byte category |
+| `Rlp.isData` / `Rlp.isBytesData` / `Rlp.isListData` | `(value: unknown) => boolean` | Type guards for `BrandedRlp` |
+| `Rlp.flatten` | `(data: BrandedRlp) => BrandedRlp[]` | Flatten nested list into leaf byte nodes |
+| `Rlp.equals` | `(a: BrandedRlp, b: BrandedRlp) => boolean` | Deep structural equality |
+| `Rlp.toRaw` / `Rlp.toJSON` / `Rlp.fromJSON` | Convert between `BrandedRlp`, raw nested arrays, and JSON |
 
-### Validation
+## Errors & Canonicality Checks
 
-- [validate](./validate) - Validate RLP encoding structure and format
-
-### Utilities
-
-- [getEncodedLength](./get-encoded-length) - Calculate encoded length without encoding
-- [getLength](./get-encoded-length) - Get length of RLP item
-- [flatten](./flatten) - Flatten nested RLP structure
-- [equals](./equals) - Compare RLP data equality
-- [toRaw](./utilities) - Convert to raw array
-
-### Type Guards
-
-- [isData](./utilities) - Check if value is RLP data
-- [isBytesData](./utilities) - Check if value is bytes data
-- [isListData](./utilities) - Check if value is list data
-- [isList](./utilities) - Check if value is RLP list
-- [isString](./utilities) - Check if value is RLP string
-
-### Serialization
-
-- [toJSON](./serialization) - Convert to JSON-serializable format
-- [fromJSON](./serialization) - Convert from JSON format
-
-## Types
-
-<Tabs>
-<Tab title="BrandedRlp">
-
-```typescript
-export type BrandedRlp =
-  | { type: "bytes"; value: Uint8Array }
-  | { type: "list"; value: BrandedRlp[] };
-```
-
-Main branded type. Union of bytes data (leaf nodes) and list data (nested arrays).
-
-**BytesData:** Leaf node containing raw bytes
-```typescript
-{ type: "bytes", value: Uint8Array }
-```
-
-**ListData:** Nested array of RLP data
-```typescript
-{ type: "list", value: BrandedRlp[] }
-```
-
-</Tab>
-<Tab title="Encodable">
-
-```typescript
-type Encodable =
-  | Uint8Array
-  | BrandedRlp
-  | Array<Uint8Array | BrandedRlp | any>;
-```
-
-Input type for encoding methods. Accepts raw bytes, RLP data structures, or nested arrays.
-
-See [encode](./encode) for details.
-
-</Tab>
-<Tab title="Decoded">
-
-```typescript
-type Decoded = {
-  data: BrandedRlp;
-  remainder: Uint8Array;
-};
-```
-
-Return type for decode operations. Contains decoded RLP data and any remaining bytes (for stream decoding).
-
-</Tab>
-</Tabs>
+Encoding throws `RlpEncodingError`; decoding throws `RlpDecodingError` on:
+- Truncated input (`InputTooShort`) or unexpected trailing bytes (`InvalidRemainder`)
+- Single byte `< 0x80` wrapped with `0x81` prefix (`NonCanonicalSize`)
+- Long prefix used for length `< 56` (`NonCanonicalSize`)
+- Leading `0x00` byte in multi-byte length field (`LeadingZeros`)
+- Nesting exceeding maximum recursion depth (`RecursionDepthExceeded`)
 
 ## Related
 
-- [Rlp (Effect)](https://voltaire-effect.tevm.sh/primitives/rlp) - Effect.ts integration with Schema validation
-- [Fundamentals](/primitives/rlp/fundamentals) - Learn RLP encoding and decoding
-- [Transaction](/primitives/transaction) - Uses RLP for serialization
-- [Keccak256](/crypto/keccak256) - Keccak256 hashing for RLP data
-- [Hex](/primitives/hex) - Hex string encoding
-
-## Specification
-
-- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal RLP specification (Appendix B)
-- [Ethereum Wiki - RLP](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/) - RLP encoding guide
-- [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) - Typed transaction envelope using RLP
+- [RLP Fundamentals](/primitives/rlp/fundamentals) — Yellow Paper specification and integer encoding rules
+- [Transaction](/primitives/transaction) — EIP-2718 typed transactions wrapping RLP payloads
+- [Trie](/primitives/trie) — Merkle Patricia Trie nodes encoded in RLP

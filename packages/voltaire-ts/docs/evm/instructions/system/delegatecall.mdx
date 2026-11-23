@@ -75,7 +75,7 @@ DELEGATECALL executes foreign code as if it were part of the caller:
 
 ```typescript
 import { DELEGATECALL } from '@tevm/voltaire/evm/system';
-import { Address } from '@tevm/voltaire/primitives';
+import { Address } from '@tevm/voltaire';
 
 const frame = createFrame({
   gasRemaining: 1000000n,

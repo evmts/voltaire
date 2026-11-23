@@ -3,8 +3,6 @@ title: OpStep
 description: Single opcode execution step with typed EVM state
 ---
 
-# OpStep
-
 Represents a single opcode execution step with strongly-typed EVM state (stack, memory, storage, gas).
 
 ## Overview
@@ -32,7 +30,7 @@ type OpStepType = {
 ### Creating OpSteps
 
 ```zig
-import * as OpStep from '@tevm/primitives/OpStep';
+import * as OpStep from '@tevm/voltaire/OpStep';
 
 // Basic OpStep
 const step = OpStep.from({
@@ -87,7 +85,7 @@ const revertStep = OpStep.from({
 ### Checking for Errors
 
 ```zig
-import * as OpStep from '@tevm/primitives/OpStep';
+import * as OpStep from '@tevm/voltaire/OpStep';
 
 if (OpStep.hasError(step)) {
   console.error(`Error at PC ${step.pc}: ${step.error}`);
@@ -242,7 +240,7 @@ function analyzeOpcodes(steps: OpStepType[]): Map<string, number> {
 ## Converting from StructLog
 
 ```zig
-import * as StructLog from '@tevm/primitives/StructLog';
+import * as StructLog from '@tevm/voltaire/StructLog';
 
 // StructLog.toOpStep converts hex strings to typed values
 const structLog = /* ... from RPC ... */;

@@ -17,7 +17,7 @@ description: Flatten nested RLP list into array of byte values
 `flatten` uses depth-first traversal:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const nested = {
   type: 'list',
@@ -50,7 +50,7 @@ const flat = Rlp.flatten(nested)
 Extract all byte values from transaction:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const txBytes = new Uint8Array([...])
 const decoded = Rlp.decode(txBytes)
@@ -71,7 +71,7 @@ console.log('Signature r:', r)
 Extract all nodes from Merkle proof:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const proofBytes = new Uint8Array([...])
 const decoded = Rlp.decode(proofBytes)
@@ -92,7 +92,7 @@ for (const node of nodes) {
 Extract all data from event logs:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const logBytes = new Uint8Array([...])
 const decoded = Rlp.decode(logBytes)
@@ -119,7 +119,7 @@ console.log('Data:', data)
 Count total byte values in nested structure:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function countByteValues(rlpData: BrandedRlp): number {
   return Rlp.flatten(rlpData).length
@@ -148,7 +148,7 @@ console.log(`Contains ${count} byte values`)  // 3
 Extract all hash values from trie:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function extractHashes(trieNode: BrandedRlp): Uint8Array[] {
   return Rlp.flatten(trieNode)
@@ -168,7 +168,7 @@ console.log(`Found ${hashes.length} hashes`)
 Search for specific byte value in nested structure:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function findValue(
   rlpData: BrandedRlp,
@@ -200,7 +200,7 @@ if (findValue(nested, target)) {
 Calculate total bytes in nested structure:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function calculateTotalBytes(rlpData: BrandedRlp): number {
   return Rlp.flatten(rlpData).reduce(
@@ -290,7 +290,7 @@ Output:
 `flatten` is more convenient than manual extraction:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const decoded = Rlp.decode(bytes)
 
@@ -316,7 +316,7 @@ extract(decoded.data)
 Cache flattened results for repeated access:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 class FlatCache {
   private cache = new Map<string, BytesData[]>()

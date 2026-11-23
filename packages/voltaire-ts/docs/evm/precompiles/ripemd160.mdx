@@ -51,7 +51,7 @@ The hash is right-aligned in a 32-byte word with 12 leading zero bytes.
 
 ```typescript
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import { Hardfork } from '@tevm/voltaire/Hardfork';
 
 // Hash some data
 const input = new TextEncoder().encode("Hello, Bitcoin!");
@@ -127,7 +127,7 @@ Use SHA-256 or Keccak256 for general-purpose hashing when RIPEMD-160 compatibili
 
 ```typescript
 import * as Hex from '@tevm/voltaire/Hex';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytes32 } from '@tevm/voltaire';
 
 // Test 1: Empty input
 const input1 = new Uint8Array(0);

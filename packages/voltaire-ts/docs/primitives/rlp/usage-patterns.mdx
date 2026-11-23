@@ -23,7 +23,7 @@ Legacy Ethereum transactions use RLP encoding with 9 fields.
 ### Basic Transaction
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Transaction structure
 interface Transaction {
@@ -92,8 +92,8 @@ console.log('Encoded transaction:', encoded)
 Calculate transaction hash for signing:
 
 ```typescript
-import { Rlp } from 'tevm'
-import { keccak256 } from 'tevm/crypto'
+import { Rlp } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire'
 
 function getSigningHash(tx: Omit<Transaction, 'v' | 'r' | 's'>): Uint8Array {
   // For signing, use chainId in place of v, r, s
@@ -121,7 +121,7 @@ function getSigningHash(tx: Omit<Transaction, 'v' | 'r' | 's'>): Uint8Array {
 Extract transaction fields from RLP:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function decodeTransaction(bytes: Uint8Array): Transaction {
   const result = Rlp.decode(bytes)
@@ -174,7 +174,7 @@ Block headers are RLP-encoded lists of fields.
 ### Block Header
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface BlockHeader {
   parentHash: Uint8Array      // 32 bytes
@@ -226,7 +226,7 @@ function getBlockHash(header: BlockHeader): Uint8Array {
 ### Complete Block
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface Block {
   header: BlockHeader
@@ -271,7 +271,7 @@ Transaction receipts use RLP encoding.
 ### Receipt Structure
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface Log {
   address: Uint8Array  // 20 bytes
@@ -311,8 +311,8 @@ function encodeReceipt(receipt: Receipt): Uint8Array {
 Calculate receipts Merkle root:
 
 ```typescript
-import { Rlp } from 'tevm'
-import { keccak256 } from 'tevm/crypto'
+import { Rlp } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire'
 
 function getReceiptsRoot(receipts: Receipt[]): Uint8Array {
   // Encode each receipt
@@ -334,7 +334,7 @@ State trie nodes use RLP encoding.
 ### Leaf Node
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Leaf node: [encodedPath, value]
 function encodeLeafNode(path: Uint8Array, value: Uint8Array): Uint8Array {
@@ -356,7 +356,7 @@ const leafNode = encodeLeafNode(accountPath, accountValue)
 ### Branch Node
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Branch node: [v0, v1, ..., v15, value]
 function encodeBranchNode(branches: Uint8Array[], value?: Uint8Array): Uint8Array {
@@ -376,7 +376,7 @@ DevP2P protocol uses RLP for message encoding.
 ### Status Message
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface StatusMessage {
   protocolVersion: bigint
@@ -408,7 +408,7 @@ function encodeStatus(msg: StatusMessage): Uint8Array {
 ### GetBlockHeaders
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface GetBlockHeaders {
   requestId: bigint
@@ -440,7 +440,7 @@ function encodeGetBlockHeaders(msg: GetBlockHeaders): Uint8Array {
 ### Pre-allocate Buffers
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Calculate size first
 const fields = [field1, field2, field3]
@@ -464,7 +464,7 @@ for (const field of fields) {
 ### Batch Encoding
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Encode many transactions efficiently
 function encodeBatch(transactions: Transaction[]): Uint8Array[] {
@@ -488,7 +488,7 @@ function encodeAsBlock(transactions: Transaction[]): Uint8Array {
 ### Caching
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Cache encoded transactions
 const cache = new Map<string, Uint8Array>()
@@ -511,7 +511,7 @@ function getEncodedTransaction(tx: Transaction): Uint8Array {
 ### Validation
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function validateAndDecodeTransaction(bytes: Uint8Array): Transaction {
   let result
@@ -548,7 +548,7 @@ function validateAndDecodeTransaction(bytes: Uint8Array): Transaction {
 ### Safe Decoding
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function safeDecodeTransaction(bytes: Uint8Array): Transaction | null {
   try {
@@ -573,7 +573,7 @@ if (tx) {
 ### Round-trip Testing
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 test('transaction round-trip encoding', () => {
   const original: Transaction = {
@@ -604,7 +604,7 @@ test('transaction round-trip encoding', () => {
 ### Known Vectors
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 test('decodes known transaction', () => {
   // Known valid transaction from Ethereum

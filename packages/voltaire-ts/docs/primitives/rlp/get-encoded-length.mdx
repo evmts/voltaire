@@ -17,7 +17,7 @@ description: Calculate RLP-encoded size without encoding
 ### Single Byte < 0x80
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const byte = new Uint8Array([0x7f])
 Rlp.getEncodedLength(byte)
@@ -31,7 +31,7 @@ Rlp.getEncodedLength(high)
 ### Short String (0-55 bytes)
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Empty bytes: [0x80]
 const empty = Bytes()
@@ -52,7 +52,7 @@ Rlp.getEncodedLength(max)
 ### Long String (56+ bytes)
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // 56 bytes: [0xb8, 56, ...56 bytes]
 const min = new Uint8Array(56)
@@ -73,7 +73,7 @@ Rlp.getEncodedLength(huge)
 ### Short List (< 56 bytes total)
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Empty list: [0xc0]
 const empty = []
@@ -97,7 +97,7 @@ Rlp.getEncodedLength(strings)
 ### Long List (56+ bytes total)
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // List with 60 bytes total: [0xf8, 60, ...]
 const items = Array({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
@@ -117,7 +117,7 @@ Rlp.getEncodedLength(large)
 Allocate exact buffer size before encoding:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const data = [
   new Uint8Array([1, 2, 3]),
@@ -141,7 +141,7 @@ const encoded = Rlp.encode(data)
 Estimate total size for batches:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface Transaction {
   nonce: bigint
@@ -181,7 +181,7 @@ console.log(`Batch will be ${size} bytes`)
 Calculate block size before encoding:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface Block {
   header: BlockHeader
@@ -209,7 +209,7 @@ function calculateBlockSize(block: Block): number {
 Check message sizes before sending:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const MAX_MESSAGE_SIZE = 10 * 1024 * 1024  // 10 MB
 
@@ -232,7 +232,7 @@ if (canSendMessage(messages)) {
 Calculate merkle tree proof sizes:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function calculateProofSize(proof: Uint8Array[]): number {
   return Rlp.getEncodedLength(proof)
@@ -253,7 +253,7 @@ console.log(`Proof is ${size} bytes`)
 Estimate storage requirements:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 interface StorageEntry {
   key: Uint8Array
@@ -327,7 +327,7 @@ function getEncodedLength(data: Encodable): number {
 `getEncodedLength` doesn't allocate memory:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const data = new Uint8Array(1000000)
 
@@ -343,7 +343,7 @@ const encoded = Rlp.encode(data)
 Much faster than encoding + measuring:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const data = [...]
 
@@ -360,7 +360,7 @@ const size = encoded.length
 Handles nested structures recursively:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const nested = [
   new Uint8Array([1]),

@@ -1,176 +1,81 @@
-# PrivateKey
+---
+title: PrivateKey
+description: 32-byte secp256k1 private key generation, public key and Ethereum address derivation, and ECDSA signing.
+---
 
-32-byte secp256k1 private key for signing Ethereum transactions and messages.
+Package `github.com/voltaire-labs/voltaire-go/primitives/privatekey` defines `PrivateKey` (`[32]byte`), using `github.com/decred/dcrd/dcrec/secp256k1/v4` for secp256k1 point arithmetic/signing and Voltaire's CGO FFI (`internal/ffi`) for Keccak-256 address derivation and hex formatting.
 
-## Overview
+## Derivation Pipeline
 
-PrivateKey represents a 32-byte secp256k1 private key used for signing Ethereum transactions, messages, and deriving public keys and addresses. Uses decred/secp256k1 for elliptic curve operations.
-
-## Type Definition
-
-```go
-type PrivateKey [32]byte
+```mermaid
+flowchart LR
+    Priv["PrivateKey\n([32]byte in [1, n-1])"] -->|"PublicKey()"| Pub["Uncompressed PublicKey\n(64 bytes: X || Y)"]
+    Priv -->|"PublicKeyCompressed()"| Comp["Compressed PublicKey\n(33 bytes: 02/03 || X)"]
+    Pub -->|"ffi.Keccak256(...)[12:]"| Addr["privatekey.Address\n([20]byte)"]
+    Priv -->|"Sign(hash) / SignMessage(msg)"| Sig["privatekey.Signature\n(65 bytes: r || s || v)"]
 ```
 
-## Usage
-
-### Create PrivateKey
+## Types and Constants
 
 ```go
-import "github.com/voltaire-labs/voltaire-go/primitives/privatekey"
+const Size = 32
 
-// Generate random key
-pk, err := privatekey.Generate()
-
-// From hex string
-pk, err := privatekey.FromHex("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
-
-// Panic on error (for tests/known values)
-pk := privatekey.MustFromHex("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
-
-// From byte slice
-pk, err := privatekey.FromBytes(bytes)
-```
-
-### Derive Public Key
-
-```go
-pubKey := pk.PublicKey()
-// Returns 64-byte uncompressed public key (without 0x04 prefix)
-```
-
-### Derive Address
-
-```go
-addr := pk.Address()
-// Returns 20-byte Ethereum address
-```
-
-### Sign Message Hash
-
-```go
-sig, err := pk.Sign(hash)
-// Returns 65-byte signature (r + s + v)
-```
-
-### Convert to Hex
-
-```go
-hex := pk.Hex()
-// "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-```
-
-**WARNING**: Converting private keys to hex exposes sensitive data. Only use for debugging or secure storage.
-
-### Validation
-
-```go
-if pk.IsValid() {
-    // Key is in valid range [1, n-1]
-}
+type PrivateKey [Size]byte
+type Signature []byte   // 65 bytes (r || s || v)
+type Address [20]byte   // 20-byte Ethereum address
 ```
 
 ## API Reference
 
-### Constructors
+| Symbol | Signature | Behavior |
+|--------|-----------|----------|
+| `Generate` | `() (PrivateKey, error)` | Generates a valid random key in `[1, n-1]` via `crypto/rand` |
+| `FromHex` | `(s string) (PrivateKey, error)` | Parses 64 hex chars (optional `0x`) and validates range `[1, n-1]` |
+| `FromBytes` | `(b []byte) (PrivateKey, error)` | Copies 32 bytes and validates range `[1, n-1]` |
+| `MustFromHex` | `(s string) PrivateKey` | Calls `FromHex`, panics on error |
+| `(PrivateKey).Hex` | `() string` | Lowercase `"0x"`-prefixed hex (sensitive secret material) |
+| `(PrivateKey).Bytes` | `() []byte` | Returns 32-byte slice |
+| `(PrivateKey).IsValid` | `() bool` | True iff scalar is in `[1, secp256k1_n - 1]` |
+| `(PrivateKey).PublicKey` | `() []byte` | Derives 64-byte uncompressed `X \|\| Y` (no `0x04` prefix) |
+| `(PrivateKey).PublicKeyCompressed` | `() []byte` | Derives 33-byte SEC1 compressed `02/03 \|\| X` |
+| `(PrivateKey).Address` | `() Address` | Returns `keccak256(PublicKey())[12:]` as `privatekey.Address` |
+| `(PrivateKey).Sign` | `(hash [32]byte) (Signature, error)` | Signs a 32-byte digest; returns 65-byte `r \|\| s \|\| v` |
+| `(PrivateKey).SignMessage` | `(msg []byte) (Signature, error)` | Hashes `msg` with Keccak-256 and signs the digest |
 
-| Function | Description |
-|----------|-------------|
-| `Generate()` | Create from crypto/rand |
-| `FromHex(s)` | Create from hex string |
-| `FromBytes(b)` | Create from byte slice |
-| `MustFromHex(s)` | Create from hex, panic on error |
-
-### Methods
-
-| Method | Description |
-|--------|-------------|
-| `Hex()` | Convert to 0x-prefixed hex string |
-| `Bytes()` | Return as byte slice |
-| `PublicKey()` | Derive uncompressed 64-byte public key |
-| `Address()` | Derive 20-byte Ethereum address |
-| `IsValid()` | Check if key is in valid range |
-| `Sign(hash)` | Create ECDSA signature from 32-byte hash |
-| `SignMessage(msg)` | Hash message with keccak256 then sign |
-
-## Key Derivation
-
-```
-PrivateKey (32 bytes)
-    |
-    v
-secp256k1.PubkeyFromSeckey()
-    |
-    v
-PublicKey (64 bytes, uncompressed)
-    |
-    v
-keccak256(publicKey)
-    |
-    v
-last 20 bytes
-    |
-    v
-Address (20 bytes)
-```
-
-## Validation Rules
-
-Private keys must satisfy:
-- Length: exactly 32 bytes
-- Value > 0 (not all zeros)
-- Value < curve order (0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141)
-
-## Security
-
-**WARNING**: Private keys are sensitive cryptographic secrets.
-
-### Best Practices
-
-1. **Never log private keys** - Use secure logging that redacts keys
-2. **Store encrypted** - Use keystore files or hardware wallets
-3. **Clear from memory** - Zero out key material after use
-4. **Use HD derivation** - Derive keys from mnemonic seeds
-
-### Secure Key Handling
+## Example
 
 ```go
-// Generate random key
-pk, err := privatekey.Generate()
-if err != nil {
-    return err
-}
+package main
 
-// Use the key
-sig, err := pk.Sign(hash)
+import (
+    "fmt"
+    "log"
 
-// Clear key from memory when done
-for i := range pk {
-    pk[i] = 0
-}
-```
-
-## Test Vectors
-
-```go
-// Hardhat/Anvil default account #0
-pk := privatekey.MustFromHex(
-    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
+    "github.com/voltaire-labs/voltaire-go/primitives/privatekey"
 )
 
-addr := pk.Address()
-// 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+func main() {
+    // Hardhat/Anvil test account #0 (never use in production)
+    pk, err := privatekey.FromHex(
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    digest := keccak256.HashString("hello")
+    sig, err := pk.Sign([32]byte(digest))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf("Address: 0x%x\n", pk.Address())
+    fmt.Printf("Sig len: %d bytes\n", len(sig))
+
+    // Zero sensitive key bytes after use
+    for i := range pk {
+        pk[i] = 0
+    }
+}
 ```
-
-## Dependencies
-
-Uses `github.com/decred/dcrd/dcrec/secp256k1/v4` for:
-- secp256k1 public key derivation
-- ECDSA signing with recovery
-- Curve operations
-
-## See Also
-
-- [PublicKey](./publickey.md) - Public key primitive
-- [Address](./address.md) - Ethereum address
-- [Signature](./signature.md) - ECDSA signatures

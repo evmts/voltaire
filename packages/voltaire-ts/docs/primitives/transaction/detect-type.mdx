@@ -55,8 +55,8 @@ RLP list markers:
 ### Router Pattern
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
-import { InvalidTransactionTypeError } from 'tevm/errors'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+import { InvalidTransactionTypeError } from '@tevm/voltaire/errors'
 
 function routeTransaction(data: Uint8Array) {
   const type = detectType(data)
@@ -84,7 +84,7 @@ function routeTransaction(data: Uint8Array) {
 ### Conditional Deserialization
 
 ```typescript
-import { detectType, deserialize, Type } from 'tevm/Transaction'
+import { detectType, deserialize, Type } from '@tevm/voltaire/Transaction'
 
 function parseTransaction(data: Uint8Array) {
   const type = detectType(data)
@@ -101,7 +101,7 @@ function parseTransaction(data: Uint8Array) {
 ### Transaction Classification
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 function classifyTransactions(
   transactions: Uint8Array[]
@@ -128,7 +128,7 @@ console.log(`EIP-4844: ${counts.get(Type.EIP4844) || 0}`)
 ### Block Analysis
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 interface BlockStats {
   totalTransactions: number
@@ -165,7 +165,7 @@ function getTypeName(type: Transaction.Type): string {
 ### Network Statistics
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 class NetworkMonitor {
   private stats = new Map<Transaction.Type, number>()
@@ -191,7 +191,7 @@ class NetworkMonitor {
 ### Pre-validation
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 function validateTransactionType(
   data: Uint8Array,
@@ -206,7 +206,7 @@ function validateTransactionType(
 }
 
 // Usage: Only allow EIP-1559 and EIP-4844
-import { InvalidTransactionTypeError } from 'tevm/errors'
+import { InvalidTransactionTypeError } from '@tevm/voltaire/errors'
 
 const allowed = [Type.EIP1559, Type.EIP4844]
 if (!validateTransactionType(txData, allowed)) {
@@ -220,7 +220,7 @@ if (!validateTransactionType(txData, allowed)) {
 ### Efficient Filtering
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 function filterByType(
   transactions: Uint8Array[],
@@ -242,7 +242,7 @@ const blobTxs = filterByType(allTransactions, Type.EIP4844)
 ## Error Handling
 
 ```typescript
-import { detectType } from 'tevm/Transaction'
+import { detectType } from '@tevm/voltaire/Transaction'
 
 function safeDetectType(data: Uint8Array): Transaction.Type | null {
   try {
@@ -263,7 +263,7 @@ if (type === null) {
 ## Type Guard Pattern
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 function isLegacyTransaction(data: Uint8Array): boolean {
   return detectType(data) === Type.Legacy

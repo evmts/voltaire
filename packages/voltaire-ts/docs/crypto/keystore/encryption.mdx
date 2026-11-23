@@ -59,7 +59,7 @@ Password + Salt
 ## Basic Encryption
 
 ```typescript
-import * as Keystore from '@tevm/voltaire/crypto/Keystore';
+import * as Keystore from '@tevm/voltaire/Keystore';
 import * as PrivateKey from '@tevm/voltaire/PrivateKey';
 
 const privateKey = PrivateKey.from(
@@ -243,7 +243,7 @@ const keystore = await Keystore.encrypt(privateKey, password, {
 ## Error Handling
 
 ```typescript
-import * as Keystore from '@tevm/voltaire/crypto/Keystore';
+import * as Keystore from '@tevm/voltaire/Keystore';
 
 try {
   const keystore = await Keystore.encrypt(privateKey, password);

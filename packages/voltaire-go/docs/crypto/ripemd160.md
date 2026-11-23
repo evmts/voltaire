@@ -1,96 +1,56 @@
 ---
 title: RIPEMD-160
-description: 160-bit cryptographic hash function used in Bitcoin
+description: Pure-Go RIPEMD-160 hashing and Bitcoin Hash160 (RIPEMD160(SHA256(x))).
 ---
 
-# RIPEMD-160
+Package `github.com/voltaire-labs/voltaire-go/crypto/ripemd160` provides pure-Go 20-byte RIPEMD-160 hashing (Ethereum precompile `0x03`) and Bitcoin `Hash160` (`RIPEMD160(SHA256(data))`), backed by `golang.org/x/crypto/ripemd160` and `crypto/sha256`.
 
-The `ripemd160` package provides RIPEMD-160 hashing, a 160-bit (20-byte)
-cryptographic hash function used in Bitcoin for address derivation.
-
-## Basic Usage
-
-### Hash Bytes
+## Constants and Functions
 
 ```go
-import "github.com/voltaire-labs/voltaire-go/crypto/ripemd160"
-
-data := []byte("hello")
-hash := ripemd160.Hash(data)
-fmt.Printf("%x\n", hash) // 108f07b8382511...
+const Size = 20
+const BlockSize = 64
 ```
 
-### Hash String
+| Function | Signature | Notes |
+|----------|-----------|-------|
+| `Hash` / `Sum` | `(data []byte) [20]byte` | One-shot RIPEMD-160 |
+| `HashString` | `(s string) [20]byte` | RIPEMD-160 of UTF-8 string bytes |
+| `HashToHex` | `(data []byte) string` | `0x`-prefixed lowercase 42-char hex string |
+| `Hash160` | `(data []byte) [20]byte` | Computes `RIPEMD160(SHA256(data))` |
+| `New` | `() hash.Hash` | Streaming `hash.Hash` instance |
+
+## Example
 
 ```go
-hash := ripemd160.HashString("abc")
-// 8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
-```
+package main
 
-### Hash to Hex
-
-```go
-hex := ripemd160.HashToHex([]byte("abc"))
-// "0x8eb208f7e05d987a9b044a8e98c6b087f15a0bfc"
-```
-
-### Hash160 (Bitcoin Style)
-
-```go
-// RIPEMD160(SHA256(data)) - commonly used in Bitcoin
-hash160 := ripemd160.Hash160(publicKey)
-```
-
-### Incremental Hashing
-
-```go
-h := ripemd160.New()
-h.Write([]byte("hello"))
-h.Write([]byte(" world"))
-hash := h.Sum(nil)
-```
-
-## Bitcoin Use Cases
-
-### P2PKH Address Generation
-
-```go
 import (
+    "fmt"
+
     "github.com/voltaire-labs/voltaire-go/crypto/ripemd160"
-    "github.com/voltaire-labs/voltaire-go/crypto/sha256"
 )
 
-// Public key hash = RIPEMD160(SHA256(pubkey))
-pubKeyHash := ripemd160.Hash160(compressedPubKey)
+func main() {
+    fmt.Println("RIPEMD-160(\"abc\"):", ripemd160.HashToHex([]byte("abc")))
+    // 0x8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
 
-// Add version byte and checksum for final address
+    h := ripemd160.New()
+    h.Write([]byte("message "))
+    h.Write([]byte("digest"))
+    fmt.Printf("Streamed: %x\n", h.Sum(nil))
+
+    // Bitcoin P2PKH / P2SH Hash160
+    hash160 := ripemd160.Hash160([]byte("public-key-or-script"))
+    fmt.Printf("Hash160:  0x%x\n", hash160)
+}
 ```
 
-### P2SH Script Hash
-
-```go
-// Script hash = RIPEMD160(SHA256(redeemScript))
-scriptHash := ripemd160.Hash160(redeemScript)
-```
-
-## Test Vectors
-
-Official RIPEMD-160 test vectors:
+## Reference Test Vectors
 
 | Input | RIPEMD-160 |
 |-------|------------|
-| "" (empty) | 9c1185a5c5e9fc54612808977ee8f548b2258d31 |
-| "a" | 0bdc9d2d256b3ee9daae347be6f4dc835a467ffe |
-| "abc" | 8eb208f7e05d987a9b044a8e98c6b087f15a0bfc |
-| "message digest" | 5d0689ef49d2fae572b881b123a85ffa21595f36 |
-
-## API Reference
-
-### Functions
-
-- `Hash(data []byte) [20]byte` - Compute RIPEMD-160 hash
-- `HashString(s string) [20]byte` - Hash a UTF-8 string
-- `HashToHex(data []byte) string` - Hash and return hex string with 0x prefix
-- `Hash160(data []byte) [20]byte` - Compute RIPEMD160(SHA256(data))
-- `Sum(data []byte) [20]byte` - Alias for Hash
-- `New() hash.Hash` - Create incremental hasher
+| `""` | `9c1185a5c5e9fc54612808977ee8f548b2258d31` |
+| `"a"` | `0bdc9d2d256b3ee9daae347be6f4dc835a467ffe` |
+| `"abc"` | `8eb208f7e05d987a9b044a8e98c6b087f15a0bfc` |
+| `"message digest"` | `5d0689ef49d2fae572b881b123a85ffa21595f36` |

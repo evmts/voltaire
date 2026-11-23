@@ -3,8 +3,6 @@ title: Adding Primitives
 description: Step-by-step guide to add a new primitive type to Voltaire
 ---
 
-# Adding Primitives
-
 This guide walks through adding a new primitive type to Voltaire. We'll use a hypothetical `Frame` type as an example.
 
 ## Prerequisites
@@ -21,7 +19,7 @@ mkdir -p src/primitives/Frame
 
 Create these files:
 
-```
+```text
 src/primitives/Frame/
 ├── FrameType.ts          # Type definition
 ├── from.js               # Main constructor
@@ -428,7 +426,7 @@ A `Frame` is a branded 64-byte `Uint8Array` used for [specific purpose].
 ## Quick Start
 
 ```typescript
-import * as Frame from "@voltaire/primitives/Frame";
+import * as Frame from "@tevm/voltaire/Frame";
 
 // Create from hex
 const frame = Frame.from("0x" + "ab".repeat(64));
@@ -438,7 +436,7 @@ const hex = Frame.toHex(frame);
 
 // Check equality
 const equal = Frame.equals(frame1, frame2);
-```
+```text
 
 ## API Reference
 

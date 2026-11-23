@@ -37,7 +37,7 @@ Authorization.hash(unsigned: Authorization.Unsigned): Hash
 **Example:**
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,
@@ -66,9 +66,9 @@ Tree-shakeable factory with explicit crypto dependencies.
 **Example:**
 
 ```typescript
-import { Authorization } from 'tevm';
-import { hash as keccak256 } from 'tevm/crypto/Keccak256';
-import { encode as rlpEncode } from 'tevm/Rlp';
+import { Authorization } from '@tevm/voltaire';
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256';
+import { encode as rlpEncode } from '@tevm/voltaire/Rlp';
 
 const hash = Authorization.Hash({ keccak256, rlpEncode });
 
@@ -145,7 +145,7 @@ Authorization.sign(
 **Example:**
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,
@@ -190,12 +190,12 @@ Tree-shakeable factory with explicit crypto dependencies.
 **Example:**
 
 ```typescript
-import { Authorization } from 'tevm';
-import { hash as keccak256 } from 'tevm/crypto/Keccak256';
-import { encode as rlpEncode } from 'tevm/Rlp';
-import { sign as secp256k1Sign } from 'tevm/crypto/Secp256k1';
-import { recoverPublicKey } from 'tevm/crypto/Secp256k1';
-import { fromPublicKey as addressFromPublicKey } from 'tevm/Address';
+import { Authorization } from '@tevm/voltaire';
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256';
+import { encode as rlpEncode } from '@tevm/voltaire/Rlp';
+import { sign as secp256k1Sign } from '@tevm/voltaire/Secp256k1';
+import { recoverPublicKey } from '@tevm/voltaire/Secp256k1';
+import { fromPublicKey as addressFromPublicKey } from '@tevm/voltaire/Address';
 
 const sign = Authorization.Sign({
   keccak256,
@@ -304,7 +304,7 @@ Authorization.verify(auth: Authorization.Item): Address
 **Example:**
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const auth: Authorization.Item = {
   chainId: 1n,
@@ -352,11 +352,11 @@ Tree-shakeable factory with explicit crypto dependencies.
 **Example:**
 
 ```typescript
-import { Authorization } from 'tevm';
-import { hash as keccak256 } from 'tevm/crypto/Keccak256';
-import { encode as rlpEncode } from 'tevm/Rlp';
-import { recoverPublicKey } from 'tevm/crypto/Secp256k1';
-import { fromPublicKey as addressFromPublicKey } from 'tevm/Address';
+import { Authorization } from '@tevm/voltaire';
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256';
+import { encode as rlpEncode } from '@tevm/voltaire/Rlp';
+import { recoverPublicKey } from '@tevm/voltaire/Secp256k1';
+import { fromPublicKey as addressFromPublicKey } from '@tevm/voltaire/Address';
 
 const verify = Authorization.Verify({
   keccak256,
@@ -444,7 +444,7 @@ The yParity (v) indicates which of two possible points to use.
 ### Create, Sign, Verify
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 // 1. Create unsigned authorization
 const unsigned: Authorization.Unsigned = {
@@ -498,7 +498,7 @@ const privateKey = new Uint8Array([1, 2, 3, ...]); // NEVER DO THIS
 Use correct nonce to prevent signature reuse:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function createAuthorization(
   chainId: bigint,
@@ -519,7 +519,7 @@ async function createAuthorization(
 Always use correct chain ID:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const MAINNET = 1n;
 const POLYGON = 137n;
@@ -540,7 +540,7 @@ const unsigned = {
 `sign()` automatically creates non-malleable signatures (s ≤ N/2):
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const auth = Authorization.sign.call(unsigned, privateKey);
 
@@ -558,7 +558,7 @@ Authorization.validate.call(auth);
 Sign multiple authorizations:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function signAuthBatch(
   unsignedList: Authorization.Unsigned[],
@@ -581,7 +581,7 @@ const batch = signAuthBatch([
 Verify all signatures and collect authorities:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function verifyAuthBatch(authList: Authorization.Item[]): {
   authorities: Address[];
@@ -617,7 +617,7 @@ console.log(`Valid: ${valid.length}, Invalid: ${invalid.length}`);
 Pre-compute signing hash for UI display:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function requestSignature(
   unsigned: Authorization.Unsigned
@@ -649,7 +649,7 @@ async function requestSignature(
 Verify signature is from expected account:
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 function verifyExpectedSigner(
   auth: Authorization.Item,
@@ -703,7 +703,7 @@ verify:   ~8,000 ops/sec   (includes public key recovery)
 ### Test Signing & Verification
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 // Create test private key
 const privateKey = Bytes32();
@@ -732,7 +732,7 @@ expect(Address.equals(authority, myAddress)).toBe(true);
 ### Test Hash Determinism
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,

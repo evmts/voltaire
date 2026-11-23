@@ -7,7 +7,6 @@ description: Submit, query, and track Ethereum transactions via JSON-RPC
 TypeScript-first: In Zig, build JSON-RPC payloads with `std.json` and POST via `std.http.Client`. For sending transactions, sign separately and use `eth_sendRawTransaction`.
 </Warning>
 
-# Transaction Methods
 
 9 methods for submitting signed transactions, querying transaction data, and managing account nonces.
 
@@ -307,7 +306,7 @@ if (!signedTx.error) {
 ```
 
 <Warning>
-Most public nodes do not support this method. Use client-side signing libraries like `@noble/secp256k1` or Tevm's crypto primitives instead.
+Most public nodes do not support this method. Use client-side signing libraries like `@noble/secp256k1` or Voltaire's crypto primitives instead.
 </Warning>
 
 </Accordion>

@@ -1,419 +1,123 @@
 ---
 title: Testing
-description: Test organization, patterns, TDD workflow, and commands
+description: Test suites, commands, cross-validation, fuzzing, and benchmarks across Zig, TypeScript, WASM, and bindings.
 ---
 
-# Testing
+Voltaire enforces a zero-stub policy: every committed test must pass, and every bug fix starts with a regression test. Tests span Zig inline tests, Vitest unit and type-level tests, WASM/native parity tests, and language-binding suites.
 
-Voltaire uses a strict TDD approach. Tests are first-class citizens, never stubs or placeholders.
-
-## Core Principle
-
-<Warning>
-**Every line correct. No stubs, no commented tests.**
-
-If a test exists, it passes. If it doesn't pass, fix it or delete it.
-</Warning>
-
-## Test Organization
-
-### Zig Tests
-
-Inline in source files:
-
-```
-src/primitives/Address/address.zig     # Implementation + tests
-src/crypto/Keccak256/keccak256.zig     # Implementation + tests
+```mermaid
+flowchart LR
+  Zig["zig build test\n(primitives, crypto, precompiles,\nstate-manager, blockchain)"] --> Parity["Cross-Backend Parity\n(JS == WASM == Native)"]
+  TS["pnpm test:run\n(Vitest unit + *.test-d.ts)"] --> Parity
+  Wasm["zig build test-ts-wasm"] --> Parity
+  Nat["zig build test-ts-native"] --> Parity
+  Bind["Go / Swift / Python / Rust\nBinding Tests"] --> Parity
 ```
 
-### TypeScript Tests
+## Test Commands
 
-Separate test files:
+| Suite | Command | Scope |
+| --- | --- | --- |
+| All Zig tests | `zig build test` | `primitives`, `crypto`, `precompiles`, `state-manager`, `blockchain` |
+| Filtered Zig tests | `zig build test -Dtest-filter=Address` | Matching inline `test "..."` blocks |
+| State-manager tests | `zig build test-state-manager` | StateManager unit suite |
+| C API tests | `zig build test-c-api -Dwith-c-api=true` | C ABI wrapper tests |
+| All TS unit tests | `pnpm --filter @tevm/voltaire test:run` | Vitest single run |
+| Filtered TS tests | `pnpm --filter @tevm/voltaire test:run -- Address` | Matching `.test.ts` files |
+| TS coverage | `pnpm --filter @tevm/voltaire test:coverage` | V8 coverage report |
+| TS watch mode | `pnpm --filter @tevm/voltaire test` | Interactive Vitest watch |
+| Native FFI tests | `zig build test-ts-native` | Bun FFI parity suite |
+| WASM tests | `zig build test-ts-wasm` | WebAssembly loader & crypto tests |
+| Effect package tests | `pnpm --filter voltaire-effect test:run` | Effect 4 transports & primitives |
+| Go binding tests | `zig build test-go` | CGo suite (run `zig build` first) |
+| Swift binding tests | `cd packages/voltaire-swift && swift test` | XCTest suite (run `zig build build-ts-native` first) |
+| Everything | `zig build test-all` | Zig + TypeScript + Go |
 
-```
-src/primitives/Address/Address.test.ts
-src/primitives/Address/Address.wasm.test.ts
-src/crypto/Keccak256/Keccak256.test.ts
-```
+## Test File Organization
 
-### Benchmarks
-
-```
-src/primitives/Address/address.bench.zig   # Zig benchmarks (zbench)
-src/primitives/Address/Address.bench.ts    # TS benchmarks (mitata)
-```
-
-## Running Tests
-
-### Zig Tests
-
-```bash
-# All Zig tests
-zig build test
-
-# Filter by name
-zig build -Dtest-filter=Address
-zig build -Dtest-filter=keccak
-zig build -Dtest-filter="fromHex"
-
-# With debug output
-zig build test 2>&1 | head -100
-```
-
-### TypeScript Tests
-
-```bash
-# Watch mode (development)
-bun run test
-
-# Single run
-bun run test:run
-
-# Filter tests
-bun run test -- address
-bun run test -- "Address.fromHex"
-
-# Coverage report
-bun run test:coverage
-
-# Specific test suites
-bun run test:native      # Native FFI
-bun run test:wasm        # WASM
-```
-
-## TDD Workflow
-
-### The Loop
-
-1. Write failing test
-2. Implement minimal code to pass
-3. Refactor
-4. Run `zig build && zig build test`
-5. Repeat
-
-```bash
-# Keep this running in a terminal
-while true; do zig build && zig build test && bun run test:run; sleep 2; done
-```
-
-### Bug Fixing
-
-**Always produce a failing test first:**
-
-```zig
-test "regression: fromHex handles mixed case" {
-    // This was failing before the fix
-    const addr = try Address.fromHex("0x742D35Cc6634c0532925A3b844Bc9e7595f251E3");
-    try testing.expectEqual(@as(u8, 0x74), addr.bytes[0]);
-}
-```
-
-Then fix the implementation. The test stays forever.
+- **Zig**: Inline `test "..."` blocks colocated inside `.zig` implementation files under `packages/voltaire-zig/src/`. Memory leaks are caught automatically via `std.testing.allocator`.
+- **TypeScript**: Colocated `*.test.ts` runtime tests and `*.test-d.ts` compile-time type tests under `packages/voltaire-ts/src/`.
+- **WASM / Native**: Dedicated `*.wasm.test.ts` and native test suites asserting byte-for-byte equality with pure JS implementations.
 
 ## Zig Test Patterns
 
-### Basic Assertion
+Use `std.testing.allocator` in every test that allocates so leaks fail the test immediately:
 
 ```zig
+const std = @import("std");
 const testing = std.testing;
+const primitives = @import("primitives");
 
-test "Address.fromHex valid input" {
-    const addr = try Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+test "Address.fromHex parses checksummed input and rejects invalid length" {
+    const addr = try primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
     try testing.expectEqual(@as(u8, 0x74), addr.bytes[0]);
-    try testing.expectEqual(@as(u8, 0x2d), addr.bytes[1]);
-}
-```
 
-### Error Testing
-
-```zig
-test "Address.fromHex rejects invalid length" {
-    const result = Address.fromHex("0x123");
-    try testing.expectError(error.InvalidLength, result);
+    try testing.expectError(error.InvalidHexLength, primitives.Address.fromHex("0x1234"));
 }
 
-test "Address.fromHex rejects invalid characters" {
-    const result = Address.fromHex("0xgggggggggggggggggggggggggggggggggggggggg");
-    try testing.expectError(error.InvalidHexDigit, result);
-}
-```
-
-### Slice Comparison
-
-```zig
-test "Address.toHex output" {
-    const addr = Address{ .bytes = [_]u8{0x74} ++ [_]u8{0} ** 19 };
-    const hex = addr.toHex();
-    try testing.expectEqualSlices(u8, "0x7400000000000000000000000000000000000000", &hex);
-}
-```
-
-### Debug Output
-
-```zig
-test "complex operation" {
-    testing.log_level = .debug;
-
-    const result = try complexOperation();
-    std.log.debug("result: {x}", .{result});
-
-    try testing.expect(result.len > 0);
-}
-```
-
-### Memory Testing
-
-```zig
-test "no memory leaks" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    const result = try encode(allocator, data);
-    defer allocator.free(result);
-
-    // If we get here without leak detection, test passes
+test "allocating function does not leak" {
+    const allocator = testing.allocator;
+    const out = try someAllocatingFn(allocator, "input");
+    defer allocator.free(out);
+    try testing.expect(out.len > 0);
 }
 ```
 
 ## TypeScript Test Patterns
 
-### Basic Test
+Use table-driven `it.each` tests for deterministic spec vectors and explicit error assertions:
 
 ```typescript
-import { describe, it, expect } from "vitest";
-import * as Address from "./index.js";
+import { describe, expect, it } from 'vitest';
+import { Address } from '@tevm/voltaire/Address';
 
-describe("Address", () => {
-  describe("fromHex", () => {
-    it("converts valid lowercase hex", () => {
-      const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-      expect(addr).toBeInstanceOf(Uint8Array);
-      expect(addr.length).toBe(20);
-    });
+describe('Address.toChecksummed', () => {
+  const vectors = [
+    [
+      '0x742d35cc6634c0532925a3b844bc9e7595f0beb0',
+      '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
+    ],
+    [
+      '0x0000000000000000000000000000000000000000',
+      '0x0000000000000000000000000000000000000000',
+    ],
+    [
+      '0xffffffffffffffffffffffffffffffffffffffff',
+      '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF',
+    ],
+  ] as const;
 
-    it("converts valid checksummed hex", () => {
-      const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
-      expect(addr[0]).toBe(0x74);
-    });
-  });
-});
-```
-
-### Error Testing
-
-```typescript
-describe("fromHex", () => {
-  it("throws on invalid hex", () => {
-    expect(() => Address.fromHex("0xinvalid")).toThrow();
-  });
-
-  it("throws InvalidAddressError", () => {
-    expect(() => Address.fromHex("0x123")).toThrow(InvalidAddressError);
-  });
-
-  it("throws with descriptive message", () => {
-    expect(() => Address.fromHex("bad")).toThrow(/invalid.*address/i);
-  });
-});
-```
-
-### Async Testing
-
-```typescript
-describe("async operations", () => {
-  it("resolves with valid data", async () => {
-    const result = await fetchAddress(id);
-    expect(result).toBeDefined();
-  });
-
-  it("rejects on network error", async () => {
-    await expect(fetchAddress("invalid")).rejects.toThrow();
-  });
-});
-```
-
-### Table-Driven Tests
-
-```typescript
-describe("toChecksummed", () => {
-  const cases = [
-    { input: "0x742d35cc6634c0532925a3b844bc9e7595f251e3", expected: "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3" },
-    { input: "0x0000000000000000000000000000000000000000", expected: "0x0000000000000000000000000000000000000000" },
-    { input: "0xffffffffffffffffffffffffffffffffffffffff", expected: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF" },
-  ];
-
-  it.each(cases)("checksums $input", ({ input, expected }) => {
+  it.each(vectors)('checksums %s', (input, expected) => {
     const addr = Address.fromHex(input);
     expect(Address.toChecksummed(addr)).toBe(expected);
   });
-});
-```
 
-## Cross-Validation
-
-Validate against known-good vectors (no external libs):
-
-```typescript
-import * as Address from "./index.js";
-
-describe("checksum test vectors", () => {
-  const cases = [
-    ["0x742d35cc6634c0532925a3b844bc9e7595f251e3", "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"],
-    ["0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"],
-    ["0xffffffffffffffffffffffffffffffffffffffff", "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF"],
-  ] as const;
-
-  it.each(cases)("checksums %s", (input, expected) => {
-    const ours = Address.toChecksummed(Address.fromHex(input));
-    expect(ours).toBe(expected);
+  it('rejects malformed hex', () => {
+    expect(() => Address.fromHex('0x123')).toThrow();
   });
 });
 ```
 
-## Test Coverage
-
-### Generating Coverage
-
-```bash
-# TypeScript coverage
-bun run test:coverage
-
-# View report
-open coverage/index.html
-```
-
-### Coverage Goals
-
-- Core primitives: 100%
-- Crypto functions: 100%
-- Edge cases: exhaustive
-- Error paths: covered
-
-## Fuzz Testing
-
-### Zig Fuzz Tests
-
-```zig
-// address.fuzz.zig
-const std = @import("std");
-const Address = @import("address.zig").Address;
-
-test "fuzz: fromHex roundtrip" {
-    var input: [40]u8 = undefined;
-
-    // Generate random hex
-    var rng = std.Random.DefaultPrng.init(0);
-    for (&input) |*c| {
-        const idx = rng.random().int(u4);
-        c.* = "0123456789abcdef"[idx];
-    }
-
-    const hex = "0x" ++ input;
-    const addr = try Address.fromHex(hex);
-    const output = addr.toHex();
-
-    try std.testing.expectEqualSlices(u8, &hex, &output);
-}
-```
-
-### Running Fuzz Tests
-
-```bash
-# Enable fuzzing
-zig build test -Dfuzz=true
-```
-
-## Security Testing
-
-```bash
-# Run security-focused tests
-zig build test-security
-
-# Constant-time verification
-zig build test -Dtest-filter=secure
-```
-
-### What Security Tests Cover
-
-- Constant-time comparisons
-- No timing leaks
-- Input validation
-- Memory clearing after sensitive ops
-- Edge case handling
-
 ## Benchmarks
 
-### Zig Benchmarks
-
-```zig
-// address.bench.zig
-const zbench = @import("zbench");
-
-pub fn benchFromHex(b: *zbench.Benchmark) void {
-    const hex = "0x742d35cc6634c0532925a3b844bc9e7595f251e3";
-
-    b.run(struct {
-        fn f() void {
-            _ = Address.fromHex(hex) catch unreachable;
-        }
-    }.f);
-}
-```
-
-### TypeScript Benchmarks
-
-```typescript
-// Address.bench.ts
-import { bench, run } from "mitata";
-import * as Address from "./index.js";
-
-bench("Address.fromHex", () => {
-  Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-});
-
-bench("Address.toChecksummed", () => {
-  Address.toChecksummed(addr);
-});
-
-await run();
-```
-
-### Running Benchmarks
+Voltaire tracks performance with `zbench` in Zig and `mitata` in TypeScript:
 
 ```bash
 # Zig benchmarks
 zig build bench -Dwith-benches=true
 
 # TypeScript benchmarks
-bun run bench
+zig build bench-ts
 ```
 
-## Common Mistakes
+## Anti-Patterns Rejected in Review
 
-<Warning>
-Avoid these testing anti-patterns:
-</Warning>
+- Commented-out or `.skip`ped tests without an explicit tracked issue.
+- Empty test bodies or tautological assertions (`expect(true).toBe(true)`).
+- Catching and swallowing errors inside tests instead of `expect(() => ...).toThrow(...)` or `testing.expectError(...)`.
 
-```typescript
-// ❌ Commented out test (remove or implement)
-// it("handles edge case", () => {
-//   // implement here when ready
-// });
+## Related
 
-// ❌ Empty test
-it("does something", () => {});
-
-// ❌ Test with placeholder
-it("validates input", () => {
-  // add real assertions here
-  expect(true).toBe(true);
-});
-
-// ❌ Skipped test
-it.skip("broken test", () => { ... });
-```
-
-All of these should either be:
-1. Implemented properly
-2. Deleted entirely
+- [Build System](/dev/build-system) — All `zig build` and `pnpm` scripts
+- [WASM](/dev/wasm) — Running WASM parity tests
+- [Architecture](/dev/architecture) — Cross-language verification invariants

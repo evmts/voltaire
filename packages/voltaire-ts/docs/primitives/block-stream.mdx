@@ -8,7 +8,7 @@ description: "Stream blocks over JSON-RPC with reorg support"
 BlockStream provides robust block streaming with reorg detection. Inspired by Reth's ExEx pattern, it tracks the chain state and emits events when blocks are added or removed due to reorganizations.
 
 ```typescript
-import { BlockStream } from '@voltaire/block'
+import { BlockStream } from '@tevm/voltaire/block'
 
 const stream = BlockStream({ provider })
 
@@ -209,7 +209,7 @@ for await (const event of stream.watch()) {
 import {
   BlockStreamAbortedError,
   UnrecoverableReorgError
-} from '@voltaire/block'
+} from '@tevm/voltaire/block'
 
 try {
   for await (const event of stream.watch({ signal })) {

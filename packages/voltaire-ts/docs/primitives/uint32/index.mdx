@@ -3,8 +3,6 @@ title: "Uint32"
 description: "Type-safe 32-bit unsigned integer for block numbers, gas limits, and timestamps"
 ---
 
-# Uint32
-
 A branded type for 32-bit unsigned integers (0 to 4,294,967,295). Represented as JavaScript `number` with compile-time type safety.
 
 ## Overview
@@ -32,7 +30,7 @@ export type Uint32Type = number & { readonly [brand]: "Uint32" };
 ## Constants
 
 ```typescript
-import * as Uint32 from '@voltaire/primitives/Uint32';
+import { Uint32 } from '@tevm/voltaire';
 
 Uint32.MIN;   // 0
 Uint32.MAX;   // 4294967295
@@ -48,7 +46,7 @@ Uint32.SIZE;  // 4 (bytes)
 Create from number, bigint, or string:
 
 ```typescript
-import * as Uint32 from '@voltaire/primitives/Uint32';
+import { Uint32 } from '@tevm/voltaire';
 
 const a = Uint32.from(100);
 const b = Uint32.from("255");
@@ -282,7 +280,7 @@ Uint32.isValid(1.5);         // false
 ## Example: Block Number Operations
 
 ```typescript
-import * as Uint32 from '@voltaire/primitives/Uint32';
+import { Uint32 } from '@tevm/voltaire';
 
 // Current block and confirmations
 const currentBlock = Uint32.from(18500000);
@@ -300,7 +298,7 @@ const isFinalized = Uint32.greaterThan(confirmations, minConfirmations);
 ## Example: Timestamp Handling
 
 ```typescript
-import * as Uint32 from '@voltaire/primitives/Uint32';
+import { Uint32 } from '@tevm/voltaire';
 
 // Current Unix timestamp
 const now = Uint32.from(Math.floor(Date.now() / 1000));

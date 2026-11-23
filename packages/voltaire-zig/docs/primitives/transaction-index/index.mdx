@@ -8,7 +8,7 @@ description: "Transaction position in block (0-based)"
 TransactionIndex is a branded `number` type representing a transaction's position within a block. Indices start at 0 for the first transaction in a block.
 
 ```zig
-import * as TransactionIndex from '@tevm/primitives/TransactionIndex'
+import * as TransactionIndex from '@tevm/voltaire/TransactionIndex'
 
 const index = TransactionIndex.from(5)
 ```
@@ -71,7 +71,7 @@ if (TransactionIndex.equals(a, b)) {
 TransactionIndex appears in transaction receipts to indicate position within a block:
 
 ```zig
-import * as Receipt from '@tevm/primitives/Receipt'
+import * as Receipt from '@tevm/voltaire/Receipt'
 
 const receipt = Receipt.from({
   transactionIndex: TransactionIndex.from(3),

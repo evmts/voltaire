@@ -3,8 +3,6 @@ title: Primitives Reference
 description: Complete inventory of all 100+ primitive types currently implemented
 ---
 
-# Primitives Reference
-
 All primitives in `src/primitives/`. Each is a branded type with colocated TypeScript and Zig implementations.
 
 ## Core Types
@@ -13,7 +11,7 @@ All primitives in `src/primitives/`. Each is a branded type with colocated TypeS
 20-byte Ethereum address with EIP-55 checksumming.
 
 ```typescript
-import * as Address from "@voltaire/primitives/Address";
+import * as Address from "@tevm/voltaire/Address";
 
 const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
 Address.toChecksummed(addr);  // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
@@ -26,7 +24,7 @@ Address.isZero(addr);         // false
 32-byte hash type used for block hashes, transaction hashes, storage roots.
 
 ```typescript
-import * as Hash from "@voltaire/primitives/Hash";
+import * as Hash from "@tevm/voltaire/Hash";
 
 const hash = Hash.fromHex("0xabc...");
 Hash.toHex(hash);
@@ -37,7 +35,7 @@ Hash.equals(hash1, hash2);
 Hexadecimal string encoding/decoding utilities.
 
 ```typescript
-import * as Hex from "@voltaire/primitives/Hex";
+import * as Hex from "@tevm/voltaire/Hex";
 
 Hex.fromBytes(bytes);      // "0x..."
 Hex.toBytes("0xabcd");     // Uint8Array
@@ -49,7 +47,7 @@ Hex.slice(hex, 0, 10);     // Substring
 Fixed-size byte arrays. `Bytes32` is 32 bytes, commonly used for storage keys.
 
 ```typescript
-import * as Bytes32 from "@voltaire/primitives/Bytes32";
+import * as Bytes32 from "@tevm/voltaire";
 
 const key = Bytes32.fromHex("0x...");
 Bytes32.toHex(key);
@@ -65,7 +63,7 @@ Also: `Bytes1` through `Bytes8`, `Bytes16`, `Bytes20`, `Bytes32`
 256-bit unsigned integer as branded `bigint`.
 
 ```typescript
-import * as Uint256 from "@voltaire/primitives/Uint256";
+import * as Uint256 from "@tevm/voltaire/Uint";
 
 const value = Uint256.from(1000n);
 Uint256.plus(a, b);
@@ -101,7 +99,7 @@ Uint256.toHex(value);
 Recursive Length Prefix encoding for Ethereum serialization.
 
 ```typescript
-import * as Rlp from "@voltaire/primitives/Rlp";
+import * as Rlp from "@tevm/voltaire/Rlp";
 
 const encoded = Rlp.encode([address, nonce, value]);
 const decoded = Rlp.decode(encoded);
@@ -112,7 +110,7 @@ Rlp.encodeLength(data);
 Application Binary Interface encoding/decoding for contract calls.
 
 ```typescript
-import * as Abi from "@voltaire/primitives/Abi";
+import * as Abi from "@tevm/voltaire/Abi";
 
 // Encode function call
 const calldata = Abi.encodeFunctionData({
@@ -136,7 +134,7 @@ Abi.getFunctionSelector("transfer(address,uint256)");  // "0xa9059cbb"
 Base64 encoding/decoding.
 
 ```typescript
-import * as Base64 from "@voltaire/primitives/Base64";
+import * as Base64 from "@tevm/voltaire/Base64";
 
 Base64.encode(bytes);
 Base64.decode(base64String);
@@ -159,7 +157,7 @@ Located in `src/primitives/Ssz/` with:
 All Ethereum transaction types with full serialization support.
 
 ```typescript
-import * as Transaction from "@voltaire/primitives/Transaction";
+import * as Transaction from "@tevm/voltaire/Transaction";
 
 // Create EIP-1559 transaction
 const tx = Transaction.from({
@@ -194,7 +192,7 @@ const signed = Transaction.sign(tx, privateKey);
 EIP-2930 access list for gas optimization.
 
 ```typescript
-import * as AccessList from "@voltaire/primitives/AccessList";
+import * as AccessList from "@tevm/voltaire/AccessList";
 
 const accessList = AccessList.from([
   { address: "0x...", storageKeys: ["0x..."] }
@@ -205,7 +203,7 @@ const accessList = AccessList.from([
 EIP-7702 authorization for account abstraction.
 
 ```typescript
-import * as Authorization from "@voltaire/primitives/Authorization";
+import * as Authorization from "@tevm/voltaire/Authorization";
 
 const auth = Authorization.from({
   chainId: 1n,
@@ -219,7 +217,7 @@ const signed = Authorization.sign(auth, privateKey);
 EIP-4844 blob data (128KB).
 
 ```typescript
-import * as Blob from "@voltaire/primitives/Blob";
+import * as Blob from "@tevm/voltaire/Blob";
 
 const blob = Blob.from(data);
 Blob.toCommitment(blob);  // KZG commitment
@@ -233,7 +231,7 @@ Blob.toCommitment(blob);  // KZG commitment
 Complete block structure.
 
 ```typescript
-import * as Block from "@voltaire/primitives/Block";
+import * as Block from "@tevm/voltaire";
 
 Block.hash(block);
 Block.number(block);
@@ -244,7 +242,7 @@ Block.transactions(block);
 Block header fields.
 
 ```typescript
-import * as BlockHeader from "@voltaire/primitives/BlockHeader";
+import * as BlockHeader from "@tevm/voltaire";
 
 BlockHeader.parentHash(header);
 BlockHeader.stateRoot(header);
@@ -258,8 +256,8 @@ Block body (transactions and uncles).
 Block identifiers.
 
 ```typescript
-import * as BlockHash from "@voltaire/primitives/BlockHash";
-import * as BlockNumber from "@voltaire/primitives/BlockNumber";
+import * as BlockHash from "@tevm/voltaire";
+import * as BlockNumber from "@tevm/voltaire";
 
 const hash = BlockHash.fromHex("0x...");
 const num = BlockNumber.from(12345678n);
@@ -273,7 +271,7 @@ const num = BlockNumber.from(12345678n);
 Transaction receipt with status, logs, gas used.
 
 ```typescript
-import * as Receipt from "@voltaire/primitives/Receipt";
+import * as Receipt from "@tevm/voltaire";
 
 Receipt.status(receipt);     // 1 = success, 0 = failure
 Receipt.gasUsed(receipt);
@@ -284,7 +282,7 @@ Receipt.logs(receipt);
 Contract event log entry.
 
 ```typescript
-import * as EventLog from "@voltaire/primitives/EventLog";
+import * as EventLog from "@tevm/voltaire/EventLog";
 
 EventLog.address(log);
 EventLog.topics(log);
@@ -296,7 +294,7 @@ EventLog.decode(log, eventAbi);
 Event filtering.
 
 ```typescript
-import * as LogFilter from "@voltaire/primitives/LogFilter";
+import * as LogFilter from "@tevm/voltaire/LogFilter";
 
 const filter = LogFilter.from({
   address: "0x...",
@@ -314,7 +312,7 @@ const filter = LogFilter.from({
 EVM bytecode with analysis capabilities.
 
 ```typescript
-import * as Bytecode from "@voltaire/primitives/Bytecode";
+import * as Bytecode from "@tevm/voltaire/Bytecode";
 
 const code = Bytecode.fromHex("0x6080604052...");
 Bytecode.jumpDestinations(code);
@@ -326,7 +324,7 @@ Bytecode.getOpcode(code, pc);
 EVM opcode enum and metadata.
 
 ```typescript
-import * as Opcode from "@voltaire/primitives/Opcode";
+import * as Opcode from "@tevm/voltaire/Opcode";
 
 Opcode.name(0x60);           // "PUSH1"
 Opcode.gas(0x60);            // 3
@@ -353,7 +351,7 @@ Opcode.stackOutputs(0x60);   // 1
 EVM gas cost constants.
 
 ```typescript
-import * as GasConstants from "@voltaire/primitives/GasConstants";
+import * as GasConstants from "@tevm/voltaire/GasConstants";
 
 GasConstants.G_ZERO;          // 0
 GasConstants.G_BASE;          // 2
@@ -366,8 +364,8 @@ GasConstants.G_SSTORE_SET;    // 20000
 Contract storage types.
 
 ```typescript
-import * as StorageKey from "@voltaire/primitives/StorageKey";
-import * as StorageValue from "@voltaire/primitives/StorageValue";
+import * as StorageKey from "@tevm/voltaire";
+import * as StorageValue from "@tevm/voltaire";
 
 const key = StorageKey.from(0n);
 const value = StorageValue.from(bytes32);
@@ -381,7 +379,7 @@ const value = StorageValue.from(bytes32);
 Chain metadata and configuration.
 
 ```typescript
-import * as Chain from "@voltaire/primitives/Chain";
+import * as Chain from "@tevm/voltaire/Chain";
 
 Chain.mainnet;
 Chain.sepolia;
@@ -394,7 +392,7 @@ Chain.rpcUrls(chain);
 Network identifiers.
 
 ```typescript
-import * as ChainId from "@voltaire/primitives/ChainId";
+import * as ChainId from "@tevm/voltaire";
 
 const chainId = ChainId.from(1n);  // Mainnet
 ChainId.isMainnet(chainId);        // true
@@ -404,7 +402,7 @@ ChainId.isMainnet(chainId);        // true
 Ethereum hardfork enum and feature detection.
 
 ```typescript
-import * as Hardfork from "@voltaire/primitives/Hardfork";
+import * as Hardfork from "@tevm/voltaire/Hardfork";
 
 Hardfork.LONDON;
 Hardfork.SHANGHAI;
@@ -420,7 +418,7 @@ EIP-2124 fork identifier.
 EIP-1559 fee market calculations.
 
 ```typescript
-import * as FeeMarket from "@voltaire/primitives/FeeMarket";
+import * as FeeMarket from "@tevm/voltaire/FeeMarket";
 
 FeeMarket.calculateBaseFee(parentGasUsed, parentGasLimit, parentBaseFee);
 FeeMarket.estimateMaxFee(baseFee, priorityFee);
@@ -430,7 +428,7 @@ FeeMarket.estimateMaxFee(baseFee, priorityFee);
 Wei/Gwei/Ether conversions.
 
 ```typescript
-import * as Denomination from "@voltaire/primitives/Denomination";
+import * as Denomination from "@tevm/voltaire/Denomination";
 
 Denomination.toWei("1.5", "ether");   // 1500000000000000000n
 Denomination.fromWei(wei, "gwei");    // "1500000000"
@@ -446,7 +444,7 @@ Denomination.formatEther(wei);        // "1.5"
 ECDSA signature with r, s, v components.
 
 ```typescript
-import * as Signature from "@voltaire/primitives/Signature";
+import * as Signature from "@tevm/voltaire/Signature";
 
 const sig = Signature.from({ r, s, v });
 Signature.toHex(sig);
@@ -458,8 +456,8 @@ Signature.recover(sig, hash); // Recover public key
 Key types.
 
 ```typescript
-import * as PrivateKey from "@voltaire/primitives/PrivateKey";
-import * as PublicKey from "@voltaire/primitives/PublicKey";
+import * as PrivateKey from "@tevm/voltaire/PrivateKey";
+import * as PublicKey from "@tevm/voltaire/PublicKey";
 
 const pk = PrivateKey.generate();
 const pubkey = PublicKey.fromPrivateKey(pk);
@@ -474,7 +472,7 @@ PublicKey.toAddress(pubkey);
 Sign-In with Ethereum (EIP-4361).
 
 ```typescript
-import * as Siwe from "@voltaire/primitives/Siwe";
+import * as Siwe from "@tevm/voltaire/Siwe";
 
 const message = Siwe.createMessage({
   domain: "example.com",
@@ -493,7 +491,7 @@ Siwe.verify(message, signature);
 ENS name normalization (ENSIP-15).
 
 ```typescript
-import * as Ens from "@voltaire/primitives/Ens";
+import * as Ens from "@tevm/voltaire/Ens";
 
 Ens.normalize("Vitalik.eth");  // "vitalik.eth"
 Ens.namehash("vitalik.eth");   // 0x...
@@ -504,7 +502,7 @@ Ens.isValidName(name);
 EIP-712 typed data domain.
 
 ```typescript
-import * as Domain from "@voltaire/primitives/Domain";
+import * as Domain from "@tevm/voltaire";
 
 const domain = Domain.from({
   name: "MyContract",
@@ -529,7 +527,7 @@ ERC-5564 stealth address support.
 User operation for ERC-4337.
 
 ```typescript
-import * as UserOperation from "@voltaire/primitives/UserOperation";
+import * as UserOperation from "@tevm/voltaire";
 
 const userOp = UserOperation.from({
   sender: "0x...",
@@ -562,8 +560,8 @@ Account abstraction infrastructure types.
 Beacon chain timing.
 
 ```typescript
-import * as Slot from "@voltaire/primitives/Slot";
-import * as Epoch from "@voltaire/primitives/Epoch";
+import * as Slot from "@tevm/voltaire";
+import * as Epoch from "@tevm/voltaire";
 
 const slot = Slot.from(1000000n);
 Slot.toEpoch(slot);  // Epoch containing this slot
@@ -605,7 +603,7 @@ State inspection types.
 4-byte function selector.
 
 ```typescript
-import * as Selector from "@voltaire/primitives/Selector";
+import * as Selector from "@tevm/voltaire";
 
 Selector.fromSignature("transfer(address,uint256)");  // "0xa9059cbb"
 ```
@@ -621,7 +619,7 @@ Full signatures for ABI items.
 ERC-1167 minimal proxy utilities.
 
 ```typescript
-import * as Proxy from "@voltaire/primitives/Proxy";
+import * as Proxy from "@tevm/voltaire";
 
 Proxy.isMinimalProxy(bytecode);
 Proxy.getImplementation(bytecode);  // Extract implementation address
@@ -636,7 +634,7 @@ Proxy.create(implementationAddress); // Generate proxy bytecode
 2048-bit bloom filter for log filtering.
 
 ```typescript
-import * as BloomFilter from "@voltaire/primitives/BloomFilter";
+import * as BloomFilter from "@tevm/voltaire/BloomFilter";
 
 BloomFilter.add(bloom, topic);
 BloomFilter.contains(bloom, topic);
@@ -647,7 +645,7 @@ BloomFilter.merge(bloom1, bloom2);
 Binary tree utilities for Merkle proofs.
 
 ```typescript
-import * as BinaryTree from "@voltaire/primitives/BinaryTree";
+import * as BinaryTree from "@tevm/voltaire/BinaryTree";
 
 BinaryTree.root(leaves);
 BinaryTree.proof(leaves, index);

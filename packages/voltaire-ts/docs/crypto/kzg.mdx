@@ -4,12 +4,10 @@ description: Polynomial commitments for EIP-4844 blob transactions and Proto-Dan
 ---
 
 <Info>
-Source: [kzg_trusted_setup.zig](https://github.com/evmts/voltaire/blob/main/src/crypto/kzg_trusted_setup.zig) • [c_kzg.zig](https://github.com/evmts/voltaire/blob/main/src/crypto/c_kzg.zig)
+Source: [kzg_trusted_setup.zig](https://github.com/evmts/voltaire/blob/main/packages/voltaire-zig/src/crypto/kzg_trusted_setup.zig) • [c_kzg.zig](https://github.com/evmts/voltaire/blob/main/packages/voltaire-zig/src/crypto/c_kzg.zig)
 
-Tests: [kzg.test.ts](https://github.com/evmts/voltaire/blob/main/src/crypto/kzg.test.ts)
+Tests: [kzg.test.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/crypto/kzg.test.ts)
 </Info>
-
-# KZG Commitments
 
 Polynomial commitment scheme implementation for EIP-4844 blob transactions enabling Proto-Danksharding data availability.
 
@@ -312,7 +310,7 @@ interface BlobTransaction {
 ### Computing Versioned Hash
 
 ```typescript
-import { keccak256 } from '@tevm/voltaire/crypto';
+import { keccak256 } from '@tevm/voltaire';
 
 function computeVersionedHash(commitment: Uint8Array): Uint8Array {
   // SHA256 hash of commitment with version prefix

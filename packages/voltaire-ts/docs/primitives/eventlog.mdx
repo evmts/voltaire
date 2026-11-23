@@ -8,9 +8,9 @@ description: "Ethereum event log primitive for contract events with filtering an
 EventLog represents Ethereum event logs emitted by smart contracts. Events are indexed by topic0 (event signature hash) and up to 3 additional indexed parameters. The EventLog primitive provides type-safe construction, filtering, sorting, and RPC conversion.
 
 ```typescript
-import * as EventLog from '@voltaire/primitives/EventLog';
-import * as Address from '@voltaire/primitives/Address';
-import * as Hash from '@voltaire/primitives/Hash';
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
 
 // Create an event log
 const log = EventLog.create({
@@ -259,8 +259,8 @@ type Filter<
 ### Decoding Transfer Events
 
 ```typescript
-import * as EventLog from '@voltaire/primitives/EventLog';
-import * as Keccak256 from '@voltaire/crypto/Keccak256';
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Keccak256 from '@tevm/voltaire/Keccak256';
 
 // Transfer(address indexed from, address indexed to, uint256 value)
 const transferSig = Keccak256.hashString("Transfer(address,address,uint256)");

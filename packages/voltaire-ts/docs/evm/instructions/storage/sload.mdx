@@ -83,9 +83,9 @@ SLOAD(0xFFFFFFFF)  // Returns 0 (never written)
 ### Basic Storage Read
 
 ```typescript
-import { sload } from '@voltaire/evm/storage';
-import { createFrame } from '@voltaire/evm/Frame';
-import { createMemoryHost } from '@voltaire/evm/Host';
+import { sload } from '@tevm/voltaire/evm';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { createMemoryHost } from '@tevm/voltaire/evm/Host';
 
 const host = createMemoryHost();
 const frame = createFrame({

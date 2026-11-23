@@ -3,8 +3,6 @@ title: Adding Crypto Functions
 description: Guide to adding new cryptographic functions to Voltaire
 ---
 
-# Adding Crypto Functions
-
 This guide covers adding new cryptographic functions. Crypto code requires extra care for security and cross-language implementation.
 
 ## Prerequisites
@@ -31,7 +29,7 @@ We'll add a hypothetical `Whirlpool` hash function.
 mkdir -p src/crypto/Whirlpool
 ```
 
-```
+```text
 src/crypto/Whirlpool/
 ├── whirlpool.zig           # Core implementation
 ├── Whirlpool.js            # TypeScript wrapper
@@ -436,14 +434,14 @@ Whirlpool is not commonly used in Ethereum. Consider using [Keccak256](/crypto/k
 ## Usage
 
 ```typescript
-import * as Whirlpool from "@voltaire/crypto/Whirlpool";
+import * as Whirlpool from "@tevm/voltaire/Whirlpool";
 
 // Hash a string
 const hash = Whirlpool.hash("hello world");
 
 // Hash as hex
 const hex = Whirlpool.hashHex("hello world");
-```
+```text
 
 ## Security
 

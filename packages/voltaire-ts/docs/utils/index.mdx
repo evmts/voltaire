@@ -1,230 +1,71 @@
 ---
-title: "Utils"
-description: "Generic utilities for building robust Ethereum applications"
+title: Utilities
+description: Zero-dependency async utilities for retries, token-bucket rate limiting, polling, timeouts, and request batching.
 ---
 
-<Warning>
-**This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
-</Warning>
+`@tevm/voltaire/utils` exports async control-flow primitives for RPC transport reliability: exponential backoff retries, token-bucket rate limiting, polling, deadlines, and request batching.
 
-# Utils
+Source: [packages/voltaire-ts/src/utils/index.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/utils/index.ts).
 
-Voltaire provides a collection of generic utilities essential for building robust Ethereum applications. These utilities handle common patterns like retry logic, rate limiting, polling, timeouts, and batch processing.
-
-## Why Utils?
-
-Ethereum applications face unique challenges:
-
-- **Transient failures**: RPC nodes may be temporarily unavailable or rate-limited
-- **Async operations**: Transactions and state changes require polling for confirmation
-- **Rate limits**: Public RPC endpoints enforce strict rate limits
-- **Long operations**: Block production and transaction confirmation take time
-- **Batch optimization**: Multiple similar requests can be batched for efficiency
-
-These utilities provide battle-tested solutions to these challenges.
-
-## Available Utilities
-
-### Retry with Exponential Backoff
-
-Automatically retry failed operations with exponential backoff and jitter.
-
-```typescript
-import { retryWithBackoff } from '@tevm/voltaire/utils';
-
-const blockNumber = await retryWithBackoff(
-  () => provider.eth_blockNumber(),
-  {
-    maxRetries: 5,
-    initialDelay: 1000,
-    factor: 2,
-    jitter: true
-  }
-);
+```mermaid
+flowchart LR
+  Call["Application Call"] --> Batch["BatchQueue / AsyncQueue\n(coalesce & bound concurrency)"]
+  Batch --> Rate["RateLimiter\n(token bucket)"]
+  Rate --> Retry["retryWithBackoff\n(exponential + jitter)"]
+  Retry --> TO["withTimeout\n(deadline + AbortSignal)"]
+  TO --> RPC["provider.request(...)"]
 ```
 
-[Learn more →](/utils/retry)
+## Exports
 
-### Rate Limiting
+| Module | Exports | Primary Use |
+| --- | --- | --- |
+| [Retry](/utils/retry) | `retryWithBackoff`, `withRetry`, `RetryOptions` | Recover from transient RPC / network failures |
+| [Rate Limit](/utils/rate-limit) | `RateLimiter`, `throttle`, `debounce`, `RateLimiterOptions` | Respect provider RPS/CU quotas and UI event bursts |
+| [Polling](/utils/polling) | `poll`, `pollUntil`, `pollForReceipt`, `pollWithBackoff`, `PollOptions` | Wait for transaction receipts, block heights, or state changes |
+| [Timeout](/utils/timeout) | `TimeoutError`, `withTimeout`, `wrapWithTimeout`, `executeWithTimeout`, `sleep`, `createDeferred`, `TimeoutOptions` | Enforce per-call deadlines and `AbortSignal` cancellation |
+| [Batch](/utils/batch) | `BatchQueue`, `createBatchedFunction`, `AsyncQueue`, `BatchQueueOptions` | Coalesce concurrent requests and cap parallel fan-out |
 
-Throttle, debounce, and rate-limit function calls.
+## Composing Utilities
 
-```typescript
-import { RateLimiter } from '@tevm/voltaire/utils';
-
-const limiter = new RateLimiter({
-  maxRequests: 10,
-  interval: 1000,
-  strategy: 'queue'
-});
-
-const balance = await limiter.execute(
-  () => provider.eth_getBalance(address)
-);
-```
-
-[Learn more →](/utils/rate-limit)
-
-### Polling
-
-Poll operations until they succeed or timeout, with optional backoff.
+Combine utilities around an EIP-1193 `provider.request` call to build a resilient RPC pipeline:
 
 ```typescript
-import { pollForReceipt } from '@tevm/voltaire/utils';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { HttpProvider } from '@tevm/voltaire/provider';
+import { RateLimiter, retryWithBackoff, withTimeout } from '@tevm/voltaire/utils';
 
-const receipt = await pollForReceipt(
-  txHash,
-  (hash) => provider.eth_getTransactionReceipt(hash),
-  { timeout: 120000 }
-);
-```
+const provider = new HttpProvider('https://eth.llamarpc.com');
+const limiter = new RateLimiter({ maxRequests: 20, interval: 1000, strategy: 'queue' });
 
-[Learn more →](/utils/polling)
-
-### Timeout
-
-Add timeouts to promises and async operations.
-
-```typescript
-import { withTimeout } from '@tevm/voltaire/utils';
-
-const result = await withTimeout(
-  provider.eth_call({ to, data }),
-  { ms: 5000, message: 'Call timeout' }
-);
-```
-
-[Learn more →](/utils/timeout)
-
-### Batch Processing
-
-Automatically batch similar operations for efficiency.
-
-```typescript
-import { BatchQueue } from '@tevm/voltaire/utils';
-
-const queue = new BatchQueue({
-  maxBatchSize: 50,
-  maxWaitTime: 100,
-  processBatch: async (addresses) => {
-    return Promise.all(
-      addresses.map(addr => provider.eth_getBalance(addr))
-    );
-  }
-});
-
-const balance = await queue.add(address);
-```
-
-[Learn more →](/utils/batch)
-
-## Installation
-
-Utils are included with Voltaire. No additional dependencies required.
-
-```bash
-npm install @tevm/voltaire
-# or
-bun add @tevm/voltaire
-```
-
-## Design Principles
-
-### Vanilla TypeScript
-
-All utilities use standard Promise-based APIs. No framework dependencies.
-
-### Type Safe
-
-Full TypeScript support with generic types for maximum type safety.
-
-### Tree Shakeable
-
-Import only what you need. Each utility is independently importable.
-
-### Zero Runtime Overhead
-
-Minimal abstractions. Direct, efficient implementations.
-
-## Common Patterns
-
-### Resilient RPC Calls
-
-Combine retry and timeout for robust RPC calls:
-
-```typescript
-import { retryWithBackoff, withTimeout } from '@tevm/voltaire/utils';
-
-const resilientCall = async <T>(fn: () => Promise<T>): Promise<T> => {
-  return retryWithBackoff(
-    () => withTimeout(fn(), { ms: 10000 }),
-    {
-      maxRetries: 3,
-      shouldRetry: (error) => {
-        // Don't retry on timeout
-        return error.name !== 'TimeoutError';
-      }
-    }
-  );
-};
-
-const blockNumber = await resilientCall(
-  () => provider.eth_blockNumber()
-);
-```
-
-### Rate-Limited Batch Processing
-
-Combine rate limiting and batching:
-
-```typescript
-import { RateLimiter, BatchQueue } from '@tevm/voltaire/utils';
-
-const limiter = new RateLimiter({
-  maxRequests: 10,
-  interval: 1000
-});
-
-const queue = new BatchQueue({
-  maxBatchSize: 50,
-  maxWaitTime: 100,
-  processBatch: async (addresses) => {
-    return limiter.execute(() =>
-      Promise.all(
-        addresses.map(addr => provider.eth_getBalance(addr))
-      )
-    );
-  }
-});
-```
-
-### Poll with Timeout and Retry
-
-Combine polling, timeout, and retry:
-
-```typescript
-import { poll, withTimeout, retryWithBackoff } from '@tevm/voltaire/utils';
-
-const waitForBlock = async (blockNumber: bigint): Promise<Block> => {
-  return withTimeout(
-    poll(
-      () => retryWithBackoff(
-        () => provider.eth_getBlockByNumber(blockNumber)
-      ),
-      {
-        interval: 1000,
-        validate: (block) => block !== null
-      }
+async function safeRequest<T>(req: { method: string; params?: readonly unknown[] }): Promise<T> {
+  return limiter.execute(() =>
+    retryWithBackoff(
+      () => withTimeout(provider.request(req) as Promise<T>, { ms: 5000 }),
+      { maxRetries: 3, initialDelay: 500, jitter: true },
     ),
-    { ms: 60000 }
   );
-};
+}
+
+const blockNumber = await safeRequest<string>(Rpc.Eth.BlockNumberRequest());
 ```
 
-## Next Steps
+## Documentation
 
-- [Retry with Backoff →](/utils/retry)
-- [Rate Limiting →](/utils/rate-limit)
-- [Polling →](/utils/polling)
-- [Timeout →](/utils/timeout)
-- [Batch Processing →](/utils/batch)
+<CardGroup cols={2}>
+  <Card title="Retry" icon="rotate-right" href="/utils/retry">
+    `retryWithBackoff` and `withRetry` with exponential backoff and jitter.
+  </Card>
+  <Card title="Rate Limiting" icon="gauge" href="/utils/rate-limit">
+    Token-bucket `RateLimiter`, `throttle`, and `debounce`.
+  </Card>
+  <Card title="Polling" icon="clock-rotate-left" href="/utils/polling">
+    `poll`, `pollUntil`, `pollForReceipt`, and `pollWithBackoff`.
+  </Card>
+  <Card title="Timeout" icon="stopwatch" href="/utils/timeout">
+    `withTimeout`, `executeWithTimeout`, `sleep`, `createDeferred`, and `TimeoutError`.
+  </Card>
+  <Card title="Batching" icon="layer-group" href="/utils/batch">
+    `BatchQueue`, `createBatchedFunction`, and concurrency-limited `AsyncQueue`.
+  </Card>
+</CardGroup>

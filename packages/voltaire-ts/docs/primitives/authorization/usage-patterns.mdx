@@ -19,7 +19,7 @@ Allow relayer to pay gas for user transactions.
 ### Basic Sponsored Transaction
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 // User creates authorization
 async function createSponsoredAuth(
@@ -62,7 +62,7 @@ async function submitSponsoredTx(
 Sponsor multiple users in one transaction:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function sponsorMultipleUsers(
   userAuths: Array<{
@@ -103,7 +103,7 @@ Execute multiple operations atomically.
 ### Token Batch Operations
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface TokenOp {
   type: 'approve' | 'transfer';
@@ -151,7 +151,7 @@ await executeBatchOps([
 ### DEX Swap Batch
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface Swap {
   dex: Address;
@@ -210,7 +210,7 @@ Guardian-based account recovery.
 ### Guardian Setup
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 interface Guardian {
   address: Address;
@@ -269,7 +269,7 @@ class RecoveryModule {
 ### Time-Locked Recovery
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class TimeLockRecovery {
   async initiateRecovery(
@@ -324,7 +324,7 @@ Implement custom transaction validation.
 ### Spending Limits
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function transferWithLimit(
   recipient: Address,
@@ -359,7 +359,7 @@ async function transferWithLimit(
 ### Multi-Sig Validation
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function multiSigTransfer(
   signers: Uint8Array[],
@@ -401,7 +401,7 @@ Temporary permission delegation.
 ### Create Session Key
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class SessionKeyManager {
   async createSession(
@@ -454,7 +454,7 @@ class SessionKeyManager {
 ### Gaming Session Keys
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 // Create session for gaming
 const { sessionKey, auth } = await createSession(
@@ -489,7 +489,7 @@ Manage authorization collections.
 ### Authorization Pool
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class AuthorizationPool {
   private auths = new Map<string, Authorization.Item>();
@@ -553,7 +553,7 @@ Handle authorization failures gracefully.
 ### Retry Logic
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function signWithRetry(
   unsigned: Authorization.Unsigned,
@@ -591,7 +591,7 @@ async function signWithRetry(
 ### Fallback Strategy
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class AuthorizationStrategy {
   async execute(

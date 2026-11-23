@@ -8,14 +8,14 @@ description: WASM acceleration and limitations for blob operations
 </Card>
 
 
-Tevm provides WASM builds for blob operations with some limitations. This page covers WASM support, performance, and workarounds.
+Voltaire provides WASM builds for blob operations with some limitations. This page covers WASM support, performance, and workarounds.
 
 ## Current Status
 
 ### Supported Operations
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // ✅ Data encoding/decoding
 const blob = Blob.fromData(data);
@@ -39,7 +39,7 @@ const gas = Blob.calculateGas(blobCount);
 KZG operations require c-kzg-4844 native library (not available in WASM):
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // ❌ KZG commitment (requires native library)
 try {
@@ -70,7 +70,7 @@ try {
 Use WASM for data encoding/decoding, compute KZG operations server-side:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 class BrowserL2Client {
   async prepareBlob(data: Uint8Array): Promise<PreparedBlob> {
@@ -104,7 +104,7 @@ class BrowserL2Client {
 ### Backend KZG Service
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 import express from 'express';
 
 const app = express();
@@ -132,7 +132,7 @@ app.listen(3000);
 
 ### WASM Builds
 
-Tevm provides optimized WASM builds:
+Voltaire provides optimized WASM builds:
 
 ```bash
 # ReleaseSmall (production - size optimized)
@@ -153,7 +153,7 @@ wasm/primitives-fast.wasm  # ReleaseFast
 
 ```typescript
 // Automatic WASM loading
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // WASM is loaded automatically when needed
 const blob = Blob.fromData(data);
@@ -166,7 +166,7 @@ const blob = Blob.fromData(data);
 WASM performs well for data encoding/decoding:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // Benchmark: fromData (WASM)
 console.time('fromData');
@@ -210,7 +210,7 @@ console.timeEnd('verify'); // ~5ms
 Use WASM for data operations, native for KZG:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 class HybridBlobProcessor {
   async process(data: Uint8Array): Promise<BlobTransaction> {
@@ -258,7 +258,7 @@ class HybridBlobProcessor {
 For known data, pre-compute commitments:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // Generate commitments ahead of time (native)
 const precomputed = new Map<string, KZGData>();
@@ -293,7 +293,7 @@ function getKZGData(data: Uint8Array): KZGData {
 ### WASM-Specific Tests
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 import { describe, it, expect } from 'vitest';
 
 describe('Blob WASM', () => {
@@ -368,7 +368,7 @@ Follow progress on WASM KZG support:
 WASM has stricter memory limits:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // Large data may fail in WASM
 try {

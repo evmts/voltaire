@@ -18,7 +18,7 @@ Complete implementations for SIWE authentication in modern dApps.
 
 ```typescript
 // POST /auth/nonce
-import { Siwe } from 'tevm';
+import { Siwe } from '@tevm/voltaire';
 
 app.post('/auth/nonce', async (req, res) => {
   try {
@@ -60,8 +60,8 @@ async function connectWallet() {
 ### 3. Frontend: Create and Sign Message
 
 ```typescript
-import * as Siwe from 'tevm/primitives/Siwe';
-import * as Address from 'tevm/primitives/Address';
+import * as Siwe from '@tevm/voltaire/Siwe';
+import * as Address from '@tevm/voltaire/Address';
 
 async function signMessage(address: string, nonce: string) {
   // Get chain ID

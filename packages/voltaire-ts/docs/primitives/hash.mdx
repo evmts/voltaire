@@ -1,134 +1,96 @@
 ---
-title: "Hash (Moved to Keccak256)"
-description: "Hash has moved to crypto/keccak256 as Keccak256Hash"
+title: Hash
+description: Branded 32-byte Uint8Array representing a 256-bit cryptographic digest with Keccak-256 helpers and Merkle root aggregation.
 ---
 
-## Overview
+A `Hash` (`HashType`) is a branded 32-byte `Uint8Array` representing a 256-bit cryptographic digest: block hashes, transaction hashes, state roots, storage keys, event topic hashes, and Keccak-256 outputs.
 
-The `Hash` primitive has been moved to `crypto/keccak256` as `Keccak256Hash`. This change reflects that Hash was specifically for Keccak256 hashing and belongs semantically under cryptographic operations rather than general primitives.
-
-## Why the Change
-
-**Better Organization**
-- Hash was Keccak256-specific, not a general hash primitive
-- Cryptographic operations belong in the crypto module
-- Clearer semantic organization of the codebase
-
-**Semantic Clarity**
-- `Keccak256Hash` explicitly names what it is
-- Separates hash algorithm (Keccak256) from hash type (Keccak256Hash)
-- Aligns with other crypto primitives (Secp256k1Signature, BlsSignature, etc.)
-
-## Migration Guide
-
-### Import Changes
-
-```typescript
-// Old
-import { Hash } from '@tevm/voltaire'
-import * as Hash from '@tevm/voltaire/primitives/Hash'
-
-// New
-import { Keccak256 } from '@tevm/voltaire/Keccak256'
-import * as Keccak256 from '@tevm/voltaire/Keccak256'
+```mermaid
+flowchart LR
+  Data["Uint8Array | string | Hex"] --> K["Hash.keccak256*"]
+  Raw["32-byte Uint8Array | 64-char Hex"] --> F["Hash(value) / Hash.from*"]
+  K --> H["HashType (32-byte Uint8Array)"]
+  F --> H
+  H --> Out["toHex / toBytes / format / merkleRoot"]
 ```
 
-### Hashing Methods
+## Quick Start
 
 ```typescript
-// Old - Hash.keccak256()
-const hash = Hash.keccak256(data)
-const hashFromHex = Hash.keccak256Hex('0x1234...')
-const hashFromString = Hash.keccak256String('hello')
+import { Hash } from '@tevm/voltaire';
 
-// New - Keccak256.hash()
-const hash = Keccak256.hash(data)
-const hashFromHex = Keccak256.hashHex('0x1234...')
-const hashFromString = Keccak256.hashString('hello')
+const h = Hash('0x' + 'ab'.repeat(32));
+Hash.toHex(h);        // "0xabab...abab" (66 chars)
+Hash.format(h);       // "0xabab...abab" (shortened display)
+Hash.isZero(h);       // false
+
+const digest = Hash.keccak256String('Transfer(address,address,uint256)');
+const root = Hash.merkleRoot([h, digest]);
 ```
 
-### Type Changes
+Import from `@tevm/voltaire` or `@tevm/voltaire/Hash`.
 
-```typescript
-// Old - HashType
-import type { HashType } from '@tevm/voltaire'
+## Layout & Constants
 
-function processHash(hash: HashType): void {
-  // ...
-}
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `Hash.SIZE` | `32` | Fixed byte length (256 bits, 64 hex nibbles) |
+| `Hash.ZERO` | `0x00...00` (32 zero bytes) | Zero hash sentinel |
 
-// New - Keccak256Hash (extends Bytes32)
-import type { Keccak256Hash } from '@tevm/voltaire/Keccak256'
+Every `Hash` instance inherits from `Uint8Array.prototype` and carries `length === 32`.
 
-function processHash(hash: Keccak256Hash): void {
-  // ...
-}
-```
+## API Reference
 
-### Constructor Changes
+### Constructors & Hashing
 
-```typescript
-// Old
-const hash = Hash.from('0x1234...')
-const hash = Hash.fromHex('0x1234...')
-const hash = Hash.fromBytes(bytes)
+| Method | Signature | Description |
+| --- | --- | --- |
+| `Hash` | `(value: string \| Uint8Array) => HashType` | Construct from 32-byte `Uint8Array` or 64-char `0x` hex |
+| `Hash.from` | `(value: string \| Uint8Array) => HashType` | Alias for `Hash(value)` |
+| `Hash.fromHex` | `(hex: string) => HashType` | Parse `0x`-prefixed 64-nibble hex string |
+| `Hash.fromBytes` | `(bytes: Uint8Array) => HashType` | Wrap a 32-byte `Uint8Array` |
+| `Hash.keccak256` | `(data: Uint8Array) => HashType` | Compute Keccak-256 of raw bytes |
+| `Hash.keccak256String` | `(str: string) => HashType` | Compute Keccak-256 of UTF-8 encoded string |
+| `Hash.keccak256Hex` | `(hex: string) => HashType` | Compute Keccak-256 of decoded hex bytes |
+| `Hash.random` | `() => HashType` | Generate 32 cryptographically random bytes |
 
-// New - Use Keccak256Hash namespace
-import * as Keccak256Hash from '@tevm/voltaire/Keccak256/Keccak256Hash'
+### Conversions & Inspection
 
-const hash = Keccak256Hash.from('0x1234...')
-const hash = Keccak256Hash.fromHex('0x1234...')
-const hash = Keccak256Hash.fromBytes(bytes)
-```
+| Method | Signature | Description |
+| --- | --- | --- |
+| `Hash.toHex` | `(hash: HashType) => string` | Lowercase `0x`-prefixed 66-char hex string |
+| `Hash.toBytes` | `(hash: HashType) => Uint8Array` | Raw 32-byte `Uint8Array` |
+| `Hash.toString` | `(hash: HashType) => string` | Same as `toHex` (also available as `hash.toString()`) |
+| `Hash.format` | `(hash: HashType, prefixLen?: number, suffixLen?: number) => string` | Abbreviated hex string for logs/UI |
+| `Hash.isHash` | `(value: unknown) => value is HashType` | Type guard verifying 32-byte `Uint8Array` |
+| `Hash.isValidHex` | `(hex: string) => boolean` | Check whether string is valid 32-byte hex |
+| `Hash.assert` | `(value: unknown) => void` | Throw if `value` is not a valid 32-byte hash |
+| `Hash.equals` | `(a: HashType, b: HashType) => boolean` | Constant-length 32-byte equality check |
+| `Hash.isZero` | `(hash: HashType) => boolean` | True if all 32 bytes are `0x00` |
+| `Hash.clone` | `(hash: HashType) => HashType` | Copy into a new 32-byte `HashType` |
+| `Hash.slice` | `(hash: HashType, start?: number, end?: number) => Uint8Array` | Sub-byte slice |
 
-### Complete Example
+### Combining & Merkle Trees
 
-```typescript
-// Old approach
-import * as Hash from '@tevm/voltaire/primitives/Hash'
+| Method | Signature | Description |
+| --- | --- | --- |
+| `Hash.concat` | `(...hashes: HashType[]) => HashType` | Concatenate input hashes and return `keccak256(concatenated)` |
+| `Hash.merkleRoot` | `(leaves: HashType[]) => HashType` | Compute binary Keccak-256 Merkle root over `leaves` |
 
-const data = new Uint8Array([1, 2, 3, 4])
-const hash = Hash.keccak256(data)
-const hex = hash.toHex()
-const isValid = Hash.isHash(hash)
+Instance methods on `Hash.prototype`: `toBytes()`, `toString()`, `equals(other)`, `isZero()`, `clone()`, `slice(start, end)`, `format()`.
 
-// New approach
-import * as Keccak256 from '@tevm/voltaire/Keccak256'
-import * as Keccak256Hash from '@tevm/voltaire/Keccak256/Keccak256Hash'
+### Tree-Shakeable Crypto Factories
 
-const data = new Uint8Array([1, 2, 3, 4])
-const hash = Keccak256.hash(data)
-const hex = Keccak256Hash.toHex(hash)
-const isValid = Keccak256Hash.isKeccak256Hash(hash)
-```
+Importing from `@tevm/voltaire/Hash` exposes dependency-injected factories (`_Keccak256Factory`, `_Keccak256HexFactory`, `_Keccak256StringFactory`, `_MerkleRootFactory`, `_ConcatFactory`) that accept `{ keccak256 }` for custom WASM or native backends.
 
-## Type Hierarchy
+## Errors & Edge Cases
 
-`Keccak256Hash` extends `Bytes32`, inheriting all Bytes32 methods while adding Keccak256-specific semantics:
-
-```typescript
-type Keccak256Hash = Bytes32 & { readonly __tag: "Keccak256Hash" }
-```
-
-This means all `Bytes32` operations work on `Keccak256Hash`:
-- Construction: `Bytes32.from()`, `Bytes32.fromHex()`
-- Conversion: `Bytes32.toHex()`, `Bytes32.toBytes()`
-- Validation: `Bytes32.equals()`, `Bytes32.isZero()`
-- Utilities: `Bytes32.slice()`, `Bytes32.concat()`
-
-## Where to Find
-
-### Keccak256Hash Type
-**[/crypto/keccak256/hash](/crypto/keccak256/hash)** - Type definition, branded type system, constructor methods
-
-### Hashing Methods
-**[/crypto/keccak256/index](/crypto/keccak256/index)** - Main hashing functions: `hash()`, `hashHex()`, `hashString()`
-
-### Implementations
-**[/crypto/keccak256/implementations](/crypto/keccak256/implementations)** - Native (keccak-asm), WASM (ReleaseSmall/ReleaseFast), JavaScript fallback
+- `Hash.fromBytes` and `Hash.fromHex` throw `InvalidLengthError` when byte length is not `32`.
+- `Hash.fromHex` throws `InvalidFormatError` on missing `0x` prefix or non-hex characters.
+- `Hash.merkleRoot([])` returns `Hash.ZERO`; odd-length tree levels duplicate the final node before hashing.
 
 ## Related
 
-- [Bytes32](/primitives/bytes/bytes32) - Base type for 32-byte values
-- [Keccak256](/crypto/keccak256/index) - Keccak256 hashing functions
-- [Keccak256Hash](/crypto/keccak256/hash) - Keccak256Hash type documentation
+- [Bytes32](/primitives/bytes32) — Unhashed fixed 32-byte values (storage words, salts)
+- [Keccak256](/crypto/keccak256) — Standalone Keccak-256 hashing (TS, WASM, Native)
+- [Address](/primitives/address) — 20-byte addresses derived from Keccak-256 digests

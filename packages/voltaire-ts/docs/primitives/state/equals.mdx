@@ -32,7 +32,7 @@ Compares two `BrandedStorageKey` instances for structural equality.
 ### Different Addresses
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 const addr1 = Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"); // USDC
 const addr2 = Address("0x6B175474E89094C44Da98b954EedeAC495271d0F"); // DAI
@@ -46,7 +46,7 @@ console.log(State.StorageKey.equals(key1, key2)); // false (different addresses)
 ### Round-Trip Equality
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 const originalKey = State.StorageKey(contractAddr, 42n);
 
@@ -61,7 +61,7 @@ console.log(State.StorageKey.equals(originalKey, parsedKey)); // true
 ### Deduplication
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Remove duplicate storage keys
 function deduplicate(keys: BrandedStorageKey[]): BrandedStorageKey[] {
@@ -95,7 +95,7 @@ console.log(uniqueKeys.length); // 3 (0, 1, 2)
 ### Storage Validation
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Verify storage key matches expected
 function validateStorageKey(
@@ -120,7 +120,7 @@ const isValid = validateStorageKey(key, {
 ### Cache Lookup
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Cache storage values by key
 class StorageCache {
@@ -163,7 +163,7 @@ console.log(cache.has(key)); // true
 ### Set Operations
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Check if key exists in set
 function hasKey(keys: BrandedStorageKey[], target: BrandedStorageKey): boolean {
@@ -208,7 +208,7 @@ console.log(onlyInA.length); // 1 (slot 0)
 ### Testing
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 import { expect } from 'vitest';
 
 test('storage key equality', () => {

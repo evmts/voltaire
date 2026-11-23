@@ -1,262 +1,90 @@
 ---
-title: Overview
-description: 256-bit unsigned integer with overflow handling
+title: Uint256
+description: Branded 256-bit unsigned integer matching EVM word semantics, modular arithmetic, bitwise operations, and 32-byte ABI encoding.
 ---
 
-<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/uint.ts">
-  Run Uint examples in the interactive playground
-</Card>
+`Uint256` (`Uint256Type`) is a branded `bigint` constrained to $[0, 2^{256} - 1]$ — the native unsigned word type of the Ethereum Virtual Machine.
 
-
-<Tip>
-New to unsigned integers? Start with [Fundamentals](/primitives/uint256/fundamentals) for guided examples and concepts.
-</Tip>
-
-## Type Definition
-
-[Branded](/getting-started/branded-types) [`bigint`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) representing unsigned 256-bit integer (0 to 2^256-1). Supports tree-shakeable namespace methods and class instances with automatic wrapping on overflow.
-
-```typescript
-export type BrandedUint256 = bigint & {
-  readonly __tag: "Uint256"
-}
+```mermaid
+flowchart LR
+  In["bigint | number | hex | bytes(<=32B)"] --> U["Uint256Type (0 .. 2^256 - 1)"]
+  U --> Math["plus / minus / times / dividedBy / modulo / toPower"]
+  U --> Bits["bitwiseAnd / Or / Xor / Not / shiftLeft / shiftRight"]
+  U --> Wire["toAbiEncoded (32B BE) / toBytes / toHex"]
 ```
 
-## Quick Reference
-
-### Effect Schema
+## Quick Start
 
 ```typescript
-import { UintSchema } from '@tevm/voltaire/Uint/effect'
-import * as Effect from 'effect/Effect'
+import { Uint256 } from '@tevm/voltaire';
 
-// Schema-validated construction
-const u = new UintSchema({ value: 123n })
+const price = Uint256.from(1_000_000_000_000_000_000n); // 1e18
+const qty = Uint256.fromNumber(3);
+const total = Uint256.times(price, qty);
 
-// Effect composition
-const program = Effect.gen(function* () {
-  const x = yield* Effect.sync(() => UintSchema.from(123n))
-  return x.toHex()
-})
-
-await Effect.runPromise(program)
+Uint256.toHex(total);          // "0x29a2241af62c0000"
+Uint256.toHex(total, true);    // 64-nibble zero-padded hex
+Uint256.toAbiEncoded(total);   // 32-byte big-endian Uint8Array
+Uint256.bitLength(total);      // 62
 ```
 
-## API Methods
+Import `Uint256` (namespace) or `Uint` (callable constructor) from `@tevm/voltaire` or `@tevm/voltaire/Uint`.
 
-### Constructors
+## Bounds & Constants
 
-- [`from(value)`](./from) - Universal constructor from bigint, number, or string
-- [`fromHex(hex)`](./from-hex) - Parse hex string (with or without 0x prefix)
-- [`fromBigInt(value)`](./from-bigint) - Create from bigint with validation
-- [`fromNumber(value)`](./from-number) - Create from number (throws if out of range)
-- [`fromBytes(bytes)`](./from-bytes) - Parse from Uint8Array (big-endian)
-- [`fromAbiEncoded(bytes)`](./from-abi-encoded) - Parse ABI-encoded uint256
-- [`tryFrom(value)`](./try-from) - Safe constructor returning undefined on error
+| Constant | Value |
+| --- | --- |
+| `Uint256.SIZE` | `32` (bytes) |
+| `Uint256.MIN` / `Uint256.ZERO` | `0n` |
+| `Uint256.ONE` | `1n` |
+| `Uint256.MAX` | `115792089237316195423570985008687907853269984665640564039457584007913129639935n` ($2^{256} - 1$) |
+
+## API Reference
+
+### Constructors & Validation
+
+| Method | Signature | Notes |
+| --- | --- | --- |
+| `Uint256.from` | `(value: bigint \| number \| string) => Uint256Type` | Accepts decimal string, `0x` hex string, `number`, or `bigint` |
+| `Uint256.fromHex` | `(hex: string) => Uint256Type` | Parse unsigned `0x` hex (`<= 32` bytes) |
+| `Uint256.fromBigInt` | `(value: bigint) => Uint256Type` | Validates `0n <= value <= MAX` |
+| `Uint256.fromNumber` | `(value: number) => Uint256Type` | Validates non-negative safe integer |
+| `Uint256.fromBytes` | `(bytes: Uint8Array) => Uint256Type` | Big-endian unsigned bytes (`<= 32` bytes) |
+| `Uint256.fromAbiEncoded` | `(data: Uint8Array) => Uint256Type` | Requires exact 32-byte big-endian word |
+| `Uint256.tryFrom` | `(value: bigint \| number \| string) => Uint256Type \| undefined` | Non-throwing parser |
+| `Uint256.isValid` | `(value: unknown) => value is Uint256Type` | Runtime range check |
 
 ### Conversions
 
-- [`toHex(uint, padded?)`](./to-hex) - Convert to hex string with optional padding
-- [`toBigInt(uint)`](./to-bigint) - Convert to bigint
-- [`toNumber(uint)`](./to-number) - Convert to number (throws if > MAX_SAFE_INTEGER)
-- [`toBytes(uint)`](./to-bytes) - Convert to Uint8Array (32 bytes, big-endian)
-- [`toAbiEncoded(uint)`](./to-abi-encoded) - Convert to ABI-encoded bytes
-- [`toString(uint, radix?)`](./to-string) - Convert to string with optional radix (2-36)
+| Method | Signature | Output |
+| --- | --- | --- |
+| `Uint256.toHex` | `(u: Uint256Type, padded?: boolean) => string` | `0x` hex; `padded = true` yields 64 hex chars |
+| `Uint256.toBytes` | `(u: Uint256Type, size?: number) => Uint8Array` | Big-endian bytes (default minimal or `size`) |
+| `Uint256.toAbiEncoded` | `(u: Uint256Type) => Uint8Array` | Exact 32-byte big-endian word |
+| `Uint256.toBigInt` | `(u: Uint256Type) => bigint` | Unbranded `bigint` |
+| `Uint256.toNumber` | `(u: Uint256Type) => number` | Throws if `> Number.MAX_SAFE_INTEGER` |
+| `Uint256.toString` | `(u: Uint256Type, radix?: number) => string` | String in base `radix` (default `10`) |
 
-### Arithmetic
+### Arithmetic, Bitwise & Number Theory
 
-- [`plus(a, b)`](./plus) - Addition with wrapping on overflow
-- [`minus(a, b)`](./minus) - Subtraction with wrapping on underflow
-- [`times(a, b)`](./times) - Multiplication with wrapping on overflow
-- [`dividedBy(a, b)`](./divided-by) - Division (throws on divide by zero)
-- [`modulo(a, b)`](./modulo) - Modulo operation
-- [`toPower(base, exponent)`](./to-power) - Exponentiation with wrapping on overflow
+| Group | Methods | Semantics |
+| --- | --- | --- |
+| Arithmetic | `plus`, `minus`, `times`, `toPower` | Wrapping modulo $2^{256}$ |
+| Division | `dividedBy`, `modulo` | Truncating unsigned division; throws on zero divisor |
+| Bitwise | `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`, `shiftLeft`, `shiftRight` | Masked to 256 bits (`bitwiseNot(0n) === MAX`) |
+| Comparison | `equals`, `notEquals`, `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual`, `isZero`, `minimum`, `maximum` | Standard unsigned order |
+| Bit metrics | `bitLength`, `leadingZeros`, `popCount`, `isPowerOf2` | 256-bit width (`leadingZeros(0n) === 256`) |
+| Aggregates | `sum(...xs)`, `product(...xs)`, `min(...xs)`, `max(...xs)`, `gcd(a, b)`, `lcm(a, b)`, `clone(u)` | Variadic reductions and Euclidean GCD/LCM |
 
-### Bitwise
+## Edge Cases
 
-- [`bitwiseAnd(a, b)`](./bitwise-and) - Bitwise AND operation
-- [`bitwiseOr(a, b)`](./bitwise-or) - Bitwise OR operation
-- [`bitwiseXor(a, b)`](./bitwise-xor) - Bitwise XOR operation
-- [`bitwiseNot(value)`](./bitwise-not) - Bitwise NOT (one's complement)
-- [`shiftLeft(value, bits)`](./shift-left) - Left shift with wrapping
-- [`shiftRight(value, bits)`](./shift-right) - Right shift (logical)
-
-### Comparisons
-
-- [`equals(a, b)`](./equals) - Check equality
-- [`lessThan(a, b)`](./less-than) - Check if a < b
-- [`greaterThan(a, b)`](./greater-than) - Check if a > b
-
-### Validation
-
-- [`isValid(value)`](./is-valid) - Check if value is valid uint256
-
-### Utilities
-
-- [`isZero(value)`](./is-zero) - Check if value is zero
-- [`minimum(a, b)`](./minimum) - Return smaller of two values
-- [`maximum(a, b)`](./maximum) - Return larger of two values
-- [`bitLength(value)`](./bit-length) - Count significant bits (1-256)
-- [`leadingZeros(value)`](./leading-zeros) - Count leading zero bits
-- [`popCount(value)`](./pop-count) - Count number of 1 bits
-
-## Types
-
-<Tabs>
-<Tab title="class Uint">
-```typescript
-class Uint {
-  // Constructors
-  constructor(value: bigint | number | string): BrandedUint256
-  static from(value: bigint | number | string): BrandedUint256
-  static fromHex(hex: string): BrandedUint256
-  static fromBigInt(value: bigint): BrandedUint256
-  static fromNumber(value: number | bigint): BrandedUint256
-  static fromBytes(bytes: Uint8Array): BrandedUint256
-  static fromAbiEncoded(bytes: Uint8Array): BrandedUint256
-  static tryFrom(value: bigint | number | string): BrandedUint256 | undefined
-
-  // Conversions
-  toHex(padded?: boolean): string
-  toBigInt(): bigint
-  toNumber(): number
-  toBytes(): Uint8Array
-  toAbiEncoded(): Uint8Array
-  toString(radix?: number): string
-
-  // Arithmetic
-  plus(other: BrandedUint256): BrandedUint256
-  minus(other: BrandedUint256): BrandedUint256
-  times(other: BrandedUint256): BrandedUint256
-  dividedBy(other: BrandedUint256): BrandedUint256
-  modulo(other: BrandedUint256): BrandedUint256
-  toPower(exponent: BrandedUint256): BrandedUint256
-
-  // Bitwise
-  bitwiseAnd(other: BrandedUint256): BrandedUint256
-  bitwiseOr(other: BrandedUint256): BrandedUint256
-  bitwiseXor(other: BrandedUint256): BrandedUint256
-  bitwiseNot(): BrandedUint256
-  shiftLeft(bits: number): BrandedUint256
-  shiftRight(bits: number): BrandedUint256
-
-  // Comparisons
-  equals(other: BrandedUint256): boolean
-  notEquals(other: BrandedUint256): boolean
-  lessThan(other: BrandedUint256): boolean
-  lessThanOrEqual(other: BrandedUint256): boolean
-  greaterThan(other: BrandedUint256): boolean
-  greaterThanOrEqual(other: BrandedUint256): boolean
-
-  // Utilities
-  isZero(): boolean
-  minimum(other: BrandedUint256): BrandedUint256
-  maximum(other: BrandedUint256): BrandedUint256
-  bitLength(): number
-  leadingZeros(): number
-  popCount(): number
-
-  // Constants
-  static MAX: BrandedUint256
-  static MIN: BrandedUint256
-  static ZERO: BrandedUint256
-  static ONE: BrandedUint256
-  static SIZE: number
-}
-```
-
-Source: [UintConstructor.ts:68-114](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/UintConstructor.ts#L68-L114)
-</Tab>
-<Tab title="type BrandedUint256">
-```typescript
-export type BrandedUint256 = bigint & {
-  readonly __tag: "Uint256"
-}
-```
-
-[Branded type](/getting-started/branded-types) wrapping `bigint`, runtime validated to `0 <= value <= 2^256-1`. Used as underlying type for Uint class and tree-shakeable functions.
-
-Source: [BrandedUint256.ts:1-4](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint256.ts#L1-L4)
-</Tab>
-</Tabs>
-
-## Constants
-
-Uint module exports constants for validation and arithmetic:
-
-```typescript
-import { Uint } from 'tevm'
-
-// Boundary values
-Uint.MAX   // 2^256 - 1 (largest Uint256)
-Uint.MIN   // 0 (smallest Uint256)
-Uint.ZERO  // 0
-Uint.ONE   // 1
-
-// Size constant
-Uint.SIZE  // 32 (bytes)
-
-// Usage examples
-const maxValue = Uint.MAX
-const isMax = value.equals(Uint.MAX)
-const isZero = value.equals(Uint.ZERO)
-const increment = value.plus(Uint.ONE)
-const buffer = new Uint8Array(Uint.SIZE)  // 32-byte buffer
-```
-
-**Available constants:**
-- `Uint.MAX = 2^256 - 1` - Maximum Uint256 value (115792089237316195423570985008687907853269984665640564039457584007913129639935n)
-- `Uint.MIN = 0` - Minimum Uint256 value
-- `Uint.ZERO = 0` - Zero constant
-- `Uint.ONE = 1` - One constant
-- `Uint.SIZE = 32` - Size in bytes
-
-Source: [constants.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/constants.ts)
-
-## Wrapping Arithmetic
-
-All arithmetic wraps on overflow (mod 2^256), matching EVM behavior:
-
-```typescript
-import { Uint } from 'tevm';
-
-// Overflow wraps to 0
-const max = Uint.MAX;
-const overflow = max.plus(Uint.ONE);
-console.log(overflow.equals(Uint.ZERO));  // true
-
-// Underflow wraps to MAX
-const underflow = Uint.ZERO.minus(Uint.ONE);
-console.log(underflow.equals(Uint.MAX));  // true
-```
-
-See [Fundamentals](/primitives/uint256/fundamentals) for overflow examples and [Arithmetic](/primitives/uint256/arithmetic) for detailed operations.
-
-## Tree-Shaking
-
-Import only what you need for optimal bundle size:
-
-```typescript
-// Import specific functions (tree-shakeable)
-import { fromHex, plus, toHex } from 'tevm/Uint';
-
-const a = fromHex("0x64");
-const b = fromHex("0x32");
-const sum = plus(a, b);
-const hex = toHex(sum);
-
-// Only these 3 functions included in bundle
-```
+- `Uint256.minus(0n, 1n)` wraps to `Uint256.MAX`.
+- `Uint256.plus(Uint256.MAX, 1n)` wraps to `0n`.
+- `Uint256.shiftLeft(x, 256n)` and `Uint256.shiftRight(x, 256n)` yield `0n`.
+- `Uint256.fromAbiEncoded` throws `InvalidLengthError` if input length is not `32`.
 
 ## Related
 
-- [Fundamentals](/primitives/uint256/fundamentals) - Learn unsigned integers and EVM types
-- [Hex](/primitives/hex) - Hex string encoding and decoding
-- [Keccak256](/crypto/keccak256) - Keccak256 hashing
-- [Branded Types](/getting-started/branded-types) - Zero-overhead type branding pattern
-
-## Specification
-
-- [Solidity Types](https://docs.soliditylang.org/en/latest/types.html#integers) - Unsigned integer documentation
-- [EVM Opcodes](https://www.evm.codes/#add) - ADD, MUL, DIV, MOD, EXP operations
-- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal arithmetic specification (Section 9.1)
+- [Uint Overview](/primitives/uint) — Full `Uint8`–`Uint256` family
+- [Int256](/primitives/int256) — Signed 256-bit two's complement arithmetic
+- [Denomination](/primitives/denomination) — `Wei`, `Gwei`, and `Ether` conversions

@@ -42,7 +42,7 @@ type StorageKeyLike =
 ### From Existing StorageKey
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 const originalKey = State.StorageKey(contractAddr, 42n);
 
@@ -55,7 +55,7 @@ console.log(State.StorageKey.equals(originalKey, key)); // true
 ### Validation
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 try {
   // Invalid: missing slot
@@ -83,8 +83,8 @@ try {
 `from()` provides compile-time type checking:
 
 ```typescript
-import * as State from 'tevm/State';
-import * as Address from 'tevm/Address';
+import * as State from '@tevm/voltaire/State';
+import * as Address from '@tevm/voltaire/Address';
 
 // ✅ Valid inputs
 State({ address: contractAddr, slot: 0n });
@@ -104,7 +104,7 @@ State(123);                             // not StorageKeyLike
 ### Generic Storage Operations
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Function accepting various input types
 function getStorageValue(
@@ -130,7 +130,7 @@ const value2 = getStorageValue(storageKey, storage);
 ### API Wrapper
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 class StateManager {
   private storage = new Map<string, bigint>();

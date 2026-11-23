@@ -3,8 +3,6 @@ title: "Milestone 1 Implementation Plan"
 description: "Complete TEVM Parity Milestone 1 - TypeScript Integration Layer"
 ---
 
-# Milestone 1: Forked Read Node - Implementation Plan
-
 ## Status
 
 **Zig Core**: ✅ Complete (3,891 lines, 65+ tests passing)
@@ -16,7 +14,7 @@ Milestone 1 delivers a forked read node that proxies state reads to remote Ether
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ Integration Test (TypeScript)                                   │
 │  - Creates StateManager with forkUrl                            │
@@ -190,7 +188,7 @@ ALCHEMY_RPC=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY \
 ```
 
 **Expected Output**:
-```
+```text
 ============================================================
 Milestone 1 Verification: Forked Read Node
 ============================================================

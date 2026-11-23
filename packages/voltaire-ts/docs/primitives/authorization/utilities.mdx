@@ -31,7 +31,7 @@ Authorization.format.call(
 
 **Signed Authorization:**
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const auth: Authorization.Item = {
   chainId: 1n,
@@ -48,7 +48,7 @@ console.log(Authorization.format.call(auth));
 
 **Unsigned Authorization:**
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,
@@ -77,7 +77,7 @@ Authorization(chain={chainId}, to={address}, nonce={nonce})
 ### Examples
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
 
@@ -148,7 +148,7 @@ Authorization.equals.call(
 ### Usage
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const auth1: Authorization.Item = {
   chainId: 1n,
@@ -246,7 +246,7 @@ Authorization.equals.call(auth1, auth2); // false
 Remove duplicate authorizations:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function deduplicateAuths(
   authList: Authorization.Item[]
@@ -276,7 +276,7 @@ const deduplicated = deduplicateAuths([auth1, auth2, auth1, auth3]);
 Track unique authorizations:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class AuthorizationSet {
   private auths: Authorization.Item[] = [];
@@ -326,7 +326,7 @@ set.has(auth1); // true
 Create logging helper:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class AuthLogger {
   log(auth: Authorization.Item | Authorization.Unsigned): void {
@@ -355,7 +355,7 @@ logger.debug(auth, 'Processing authorization');
 Compare and report differences:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface AuthDifference {
   field: string;
@@ -434,7 +434,7 @@ if (diffs.length > 0) {
 Create display-friendly format:
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 interface DisplayAuth {
   chain: string;
@@ -473,7 +473,7 @@ console.log(`Signature: ${display.signature}`);
 Format multiple authorizations:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function formatAuthBatch(
   authList: Authorization.Item[]
@@ -497,7 +497,7 @@ console.log(formatAuthBatch([auth1, auth2, auth3]));
 Find all duplicates in list:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function findDuplicates(
   authList: Authorization.Item[]
@@ -565,7 +565,7 @@ O(1) - Constant time comparison
 ### Test format
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const auth: Authorization.Item = {
   chainId: 1n,
@@ -587,7 +587,7 @@ expect(formatted).toContain('v=0');
 ### Test equals
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 // Same authorizations
 const auth1 = { chainId: 1n, address: addr, nonce: 0n, yParity: 0, r: 0x123n, s: 0x456n };

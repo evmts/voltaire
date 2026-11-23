@@ -1,63 +1,82 @@
 ---
 title: ENS Service
-description: Resolve Ethereum Name Service addresses, reverse names, avatars, text records, and resolvers with Effect
+description: Resolve Ethereum Name Service addresses, reverse names, text records, avatars, and resolvers with Effect.
 ---
 
-`EnsService` exposes ENS resolution through an injectable service. `DefaultEns`
-implements it using `ProviderService`; provide `Provider` and an Ethereum mainnet
-transport for the default ENS contracts. `HttpTransport` also needs an HTTP client;
-the examples supply `FetchHttpClient.layer` from `@effect/platform`.
+`EnsService` resolves Ethereum Name Service records through an injectable service backed by `DefaultEns` and `ProviderService`. Every operation is also exported as a standalone free function requiring `ProviderService` directly.
 
-## Resolve a name
+```mermaid
+flowchart BT
+  HTTP["FetchHttpClient.layer"] --> T["HttpTransport('https://eth.llamarpc.com')"]
+  T --> P["Provider (Mainnet ProviderService)"]
+  P --> E["DefaultEns (EnsService)"]
+  E --> Prog["getEnsAddress / getEnsName / getEnsText / getEnsAvatar / getEnsResolver"]
+```
+
+## Service Usage (`EnsService` + `DefaultEns`)
+
+Compose the transport, provider, and `DefaultEns` into one layer before providing it. The default ENS registry contracts live on Ethereum mainnet:
 
 ```typescript
 import { FetchHttpClient } from '@effect/platform'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { DefaultEns, EnsService, HttpTransport, Provider } from 'voltaire-effect'
+
+const TransportLayer = HttpTransport('https://eth.llamarpc.com').pipe(
+  Layer.provide(FetchHttpClient.layer)
+)
+const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
+const EnsLayer = DefaultEns.pipe(Layer.provide(ProviderLayer))
 
 const program = Effect.gen(function* () {
   const ens = yield* EnsService
   return yield* ens.getEnsAddress({ name: 'vitalik.eth' })
-}).pipe(
-  Effect.provide(DefaultEns),
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com')),
-  Effect.provide(FetchHttpClient.layer)
-)
+}).pipe(Effect.provide(EnsLayer))
 
 const address = await Effect.runPromise(program)
-console.log(address) // Address as a hex string, or null when no record exists
+// `0x${string}` | null
 ```
 
-## Available operations
+## Operations
 
-All operations return an Effect that can fail with `EnsError`. Missing records
-return `null`.
+All operations fail with `EnsError` on resolution failure and return `null` when no record is set.
 
-| Operation | Required parameters | Result |
+| Operation | Parameters | Return Value |
 | --- | --- | --- |
-| `getEnsAddress` | `{ name: string }` | Ethereum address or `null` |
+| `getEnsAddress` | `{ name: string }` | Address hex string or `null` |
 | `getEnsName` | `{ address: \`0x${string}\` }` | Reverse ENS name or `null` |
-| `getEnsText` | `{ name: string, key: string }` | Text record or `null` |
+| `getEnsText` | `{ name: string; key: string }` | Text record string or `null` |
 | `getEnsAvatar` | `{ name: string }` | Avatar URL/URI or `null` |
 | `getEnsResolver` | `{ name: string }` | Resolver address or `null` |
 
-Each operation is also a free function exported from `voltaire-effect`, requiring
-`ProviderService` directly:
+## Free Functions
+
+When you do not need `EnsService` indirection, call the free functions directly with `ProviderLayer`:
 
 ```typescript
 import { FetchHttpClient } from '@effect/platform'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { getEnsText, HttpTransport, Provider } from 'voltaire-effect'
 
-const program = getEnsText({ name: 'vitalik.eth', key: 'url' }).pipe(
-  Effect.provide(Provider),
-  Effect.provide(HttpTransport('https://eth.llamarpc.com')),
-  Effect.provide(FetchHttpClient.layer)
+const ProviderLayer = Provider.pipe(
+  Layer.provide(
+    HttpTransport('https://eth.llamarpc.com').pipe(
+      Layer.provide(FetchHttpClient.layer)
+    )
+  )
 )
 
-console.log(await Effect.runPromise(program))
+const url = await Effect.runPromise(
+  getEnsText({ name: 'vitalik.eth', key: 'url' }).pipe(
+    Effect.provide(ProviderLayer)
+  )
+)
 ```
 
-For local name validation, ENSIP-15 normalization, namehash, and labelhash, use
-the [Ens primitive](/primitives/ens). Those operations do not need an RPC provider.
+For offline ENSIP-15 normalization, validation, `namehash`, and `labelhash` without an RPC provider, use the [ENS primitive](/primitives/ens).
+
+## See Also
+
+- [ENS Primitive](/primitives/ens) — Offline normalization and hashing
+- [Provider Service](/services/provider) — Mainnet transport and provider setup
+- [Layer Composition Guide](/guides/layers) — Composing service dependency graphs

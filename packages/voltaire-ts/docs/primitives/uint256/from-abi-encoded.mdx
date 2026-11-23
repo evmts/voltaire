@@ -20,7 +20,7 @@ Create Uint256 from ABI-encoded bytes. Requires exactly 32 bytes.
 **Example:**
 
 ```typescript
-import { Uint } from 'tevm'
+import { Uint } from '@tevm/voltaire'
 
 // ABI-encoded uint256 (always 32 bytes)
 const encoded = Bytes32()
@@ -36,7 +36,7 @@ const tooLarge = new Uint8Array(33)
 Uint(tooLarge)  // Error: must be exactly 32 bytes
 ```
 
-**Defined in:** [primitives/Uint/fromAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/fromAbiEncoded.ts)
+**Defined in:** [primitives/Uint/fromAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Uint/fromAbiEncoded.ts)
 
 ## ABI Encoding Format
 
@@ -115,7 +115,7 @@ const value = Uint(bytes)  // 123
 
 ```typescript
 // Decode uint256 from event log
-import { EventLog } from 'tevm'
+import { EventLog } from '@tevm/voltaire'
 
 const log = EventLog({
   topics: [...],

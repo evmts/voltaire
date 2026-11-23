@@ -11,8 +11,6 @@ description: Common patterns and best practices for Keccak256
 **Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
-# Usage Patterns
-
 Best practices and common patterns for using Keccak256 in Ethereum applications.
 
 ## Implementation Selection
@@ -36,7 +34,7 @@ await Keccak256Standalone.init();
 const hash = Keccak256Standalone.hash(data);
 
 // 3b. Node.js/Bun - use native (fastest)
-import { Keccak256 } from '@tevm/voltaire/native/crypto/keccak256';
+import { Keccak256 } from '@tevm/voltaire/Keccak256/native';
 const hash = Keccak256.hash(data);
 ```
 

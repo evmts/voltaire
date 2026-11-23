@@ -3,9 +3,6 @@ title: BinaryTree Usage Patterns
 description: Common patterns for EIP-7864 Binary State Tree implementation
 ---
 
-
-# Usage Patterns
-
 Common patterns and best practices for implementing Ethereum state with Binary State Tree (EIP-7864).
 
 ## Overview
@@ -53,7 +50,7 @@ Root hash = BLAKE3(hash(left) || hash(right))
 AccountData stored at subindex 0 of account stem:
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 interface AccountData {
   version: number    // 1 byte
@@ -108,7 +105,7 @@ function unpackAccountData(packed: Uint8Array): AccountData {
 ### Create Account
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 function createAccount(
   tree: BinaryTree,
@@ -145,7 +142,7 @@ tree = createAccount(tree, address, 1000000000000000000n) // 1 ETH
 ### Update Account Balance
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 function updateBalance(
   tree: BinaryTree,
@@ -209,7 +206,7 @@ tree = incrementNonce(tree, address)
 Storage slots stored at subindices 1-255 (slot 0 at subindex 1, etc.):
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 function writeStorage(
   tree: BinaryTree,
@@ -293,7 +290,7 @@ tree = batchWriteStorage(tree, address, updates)
 ### Capture State Root
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 interface StateSnapshot {
   root: string
@@ -711,7 +708,7 @@ assertAccountBalance(tree, address, 1000n) // Passes
 Full state management implementation:
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 class EthereumState {
   private tree: BinaryTree

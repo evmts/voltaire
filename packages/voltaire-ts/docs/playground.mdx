@@ -1,10 +1,23 @@
 ---
 title: Playground
-description: Try Voltaire primitives live in your browser
+description: Run interactive Voltaire TypeScript examples directly in your browser.
 ---
 
-Experiment with Voltaire primitives and examples directly in your browser.
+Experiment with Voltaire primitives, cryptography, and encoding directly in the browser — no local installation required.
 
-<Card title="Open Playground" icon="play" href="https://playground.tevm.sh">
-  Interactive environment with live code examples
+<Card title="Open Voltaire Playground" icon="flask" href="https://playground.tevm.sh">
+  Launch the full interactive editor with preloaded examples for addresses, ABI, RLP, transactions, Keccak-256, and secp256k1.
 </Card>
+
+## Preloaded Examples
+
+| Category | Example | What it demonstrates |
+| --- | --- | --- |
+| **Primitives** | `primitives/address.ts` | Parsing, EIP-55 checksumming, CREATE/CREATE2 derivation |
+| **Encoding** | `primitives/abi.ts` | Function selectors, calldata encoding, log decoding |
+| **Encoding** | `primitives/rlp.ts` | Recursive Length Prefix encoding and decoding |
+| **Transactions** | `primitives/transaction.ts` | EIP-1559 serialization, signing hashes, sender recovery |
+| **Cryptography** | `crypto/keccak256.ts` | Byte hashing, selectors, topics, and address derivation |
+| **Cryptography** | `crypto/secp256k1.ts` | ECDSA signing, verification, and public key recovery |
+
+You can also run live code inline on the [Voltaire homepage](/).

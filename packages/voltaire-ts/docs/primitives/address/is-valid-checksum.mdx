@@ -26,8 +26,8 @@ Factory function that creates a checksum validator with explicit crypto dependen
 **Example:**
 
 ```typescript
-import { IsValidChecksum } from 'tevm/Address/AddressType'
-import { hash as keccak256 } from 'tevm/crypto/Keccak256'
+import { IsValidChecksum } from '@tevm/voltaire/Address'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
 
 // Create factory with explicit crypto dependency
 const isValidChecksum = IsValidChecksum({ keccak256 })
@@ -101,7 +101,7 @@ int parse_strict_address(const char* input, PrimitivesAddress* out) {
 
 **Memory:** No allocation - pure validation function.
 
-**Defined in:** [primitives.h:130](https://github.com/evmts/voltaire/blob/main/src/primitives.h#L130)
+**Defined in:** [primitives.h:130](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives.h#L130)
 
 </Tab>
 </Tabs>
@@ -134,7 +134,7 @@ Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3E") // false
 Require checksummed addresses:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function parseStrictAddress(input: string): Address {
   if (!Address.isValid(input)) {
@@ -154,7 +154,7 @@ function parseStrictAddress(input: string): Address {
 Accept but warn about invalid checksums:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function parseAddressWithWarning(input: string): Address {
   if (!Address.isValid(input)) {
@@ -174,7 +174,7 @@ function parseAddressWithWarning(input: string): Address {
 Provide checksum feedback in forms:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function validateAddressInput(value: string) {
   if (!value) {
@@ -201,7 +201,7 @@ function validateAddressInput(value: string) {
 Accept any valid format, return checksummed:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 function normalizeAddress(input: string): string {
   if (!Address.isValid(input)) {
@@ -229,7 +229,7 @@ The checksum is computed as follows:
 
 **Example:**
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const lowercase = "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"
 const addr = Address(lowercase)
@@ -270,7 +270,7 @@ console.log(Address.isValidChecksum(userInput)) // false (mixed case wrong)
 Checksums help detect typos:
 
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 // Original (correct)
 const correct = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
@@ -302,7 +302,7 @@ console.log(Address.isValidChecksum(typo))    // false (checksum mismatch)
 
 **Validate before parsing:**
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 if (!Address.isValid(input)) {
   throw new Error('Invalid format')
@@ -317,7 +317,7 @@ const addr = Address(input)
 
 **Parse then validate:**
 ```typescript
-import { Address } from 'tevm'
+import { Address } from '@tevm/voltaire'
 
 const addr = Address(input)
 

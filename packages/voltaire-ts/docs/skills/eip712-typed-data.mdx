@@ -14,8 +14,8 @@ EIP-712 enables human-readable message signing with domain separation. Instead o
 The domain separator cryptographically binds signatures to specific contract + chain combinations, preventing replay attacks.
 
 ```typescript
-import * as EIP712 from '@voltaire/crypto/eip712';
-import * as Address from '@voltaire/primitives/address';
+import * as EIP712 from '@tevm/voltaire/EIP712';
+import * as Address from '@tevm/voltaire/Address';
 
 const domain = {
   name: 'MyDApp',           // Application name
@@ -78,8 +78,8 @@ Supported types:
 Complete typed data combines domain, types, primary type, and message:
 
 ```typescript
-import * as EIP712 from '@voltaire/crypto/eip712';
-import * as Address from '@voltaire/primitives/address';
+import * as EIP712 from '@tevm/voltaire/EIP712';
+import * as Address from '@tevm/voltaire/Address';
 
 const typedData = {
   domain: {
@@ -123,8 +123,8 @@ const hash = EIP712.hashTypedData(typedData);
 Sign with a private key to produce ECDSA signature:
 
 ```typescript
-import * as EIP712 from '@voltaire/crypto/eip712';
-import * as PrivateKey from '@voltaire/primitives/private-key';
+import * as EIP712 from '@tevm/voltaire/EIP712';
+import * as PrivateKey from '@tevm/voltaire/PrivateKey';
 
 // Your private key (32 bytes)
 const privateKey = PrivateKey.from('0x...');
@@ -147,8 +147,8 @@ The signature can be submitted to:
 Recover the signer's address and verify it matches expected:
 
 ```typescript
-import * as EIP712 from '@voltaire/crypto/eip712';
-import * as Address from '@voltaire/primitives/address';
+import * as EIP712 from '@tevm/voltaire/EIP712';
+import * as Address from '@tevm/voltaire/Address';
 
 // Recover signer address from signature
 const recoveredAddress = EIP712.recoverAddress(signature, typedData);
@@ -171,9 +171,9 @@ Verification uses constant-time comparison to prevent timing attacks.
 Gasless token approvals using EIP-712:
 
 ```typescript
-import * as EIP712 from '@voltaire/crypto/eip712';
-import * as Address from '@voltaire/primitives/address';
-import * as PrivateKey from '@voltaire/primitives/private-key';
+import * as EIP712 from '@tevm/voltaire/EIP712';
+import * as Address from '@tevm/voltaire/Address';
+import * as PrivateKey from '@tevm/voltaire/PrivateKey';
 
 // Token holder's private key
 const ownerKey = PrivateKey.from('0x...');
@@ -217,7 +217,7 @@ const signature = EIP712.signTypedData(permitData, ownerKey);
 Validate typed data structure before signing:
 
 ```typescript
-import * as EIP712 from '@voltaire/crypto/eip712';
+import * as EIP712 from '@tevm/voltaire/EIP712';
 
 try {
   EIP712.validate(typedData);
@@ -236,13 +236,13 @@ Validation checks:
 ## Error Handling
 
 ```typescript
-import * as EIP712 from '@voltaire/crypto/eip712';
+import * as EIP712 from '@tevm/voltaire/EIP712';
 import {
   Eip712Error,
   Eip712TypeNotFoundError,
   Eip712InvalidMessageError,
   Eip712EncodingError
-} from '@voltaire/crypto/eip712';
+} from '@tevm/voltaire/EIP712';
 
 try {
   const hash = EIP712.hashTypedData(typedData);

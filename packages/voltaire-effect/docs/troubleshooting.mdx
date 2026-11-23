@@ -1,24 +1,31 @@
 ---
 title: Troubleshooting
-description: Common issues and solutions
+description: Diagnostic lookup table and exact fixes for common voltaire-effect compile-time and runtime errors.
 ---
+
+## Quick Lookup
+
+| Symptom / Error | Cause | Fix |
+| --- | --- | --- |
+| `Service not found: ProviderService` | Missing `Provider` or transport layer | Compose `Provider.pipe(Layer.provide(HttpTransport(url)))` and provide once |
+| `Service not found: KeccakService` | Encoding `Address.Checksummed` without crypto layer | Provide `KeccakLive` or `CryptoLive` |
+| Effect returns without running | Missing `yield*` inside `Effect.gen` | Prefix every Effect call with `yield*` |
+| `yield*` rejected on `Promise` | Used `await` inside `Effect.gen` | Wrap with `Effect.promise` or `Effect.tryPromise` |
+| `ParseError` on valid hex address | Missing `0x` prefix or wrong byte length | Prefix with `0x`; 40 hex chars for Address, 64 for Hash |
+| `TransportError: 429 Too Many Requests` | Unbounded RPC concurrency | Cap `{ concurrency: 3 }` or add `DefaultRateLimiter` |
+| `FFI not available` | Running `MnemonicAccount` in browser/WASM | Use Node.js/Bun with FFI, or `LocalAccount` / `JsonRpcAccount` |
+| `SignerError: nonce too low` | Concurrent sends racing on `pending` nonce | Serialize sends or assign explicit `nonce` values |
 
 ## Missing Service Error
 
 **Error:** `Service not found: ProviderService`
 
-**Cause:** A required layer wasn't provided.
-
-**Fix:** Compose and provide all required layers:
+Inspect the program's third type parameter `R` (`Effect<A, E, ProviderService>`) to see every unsatisfied requirement, then compose and provide the layer graph once:
 
 ```typescript
-import { Layer } from 'effect'
+import { Effect, Layer } from 'effect'
 import { Provider, HttpTransport } from 'voltaire-effect'
 
-// ❌ Missing layer
-await Effect.runPromise(program)
-
-// ✅ Compose layers first, then provide once
 const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
@@ -26,258 +33,137 @@ const ProviderLayer = Provider.pipe(
 await Effect.runPromise(program.pipe(Effect.provide(ProviderLayer)))
 ```
 
-Check the type signature—it shows what's needed:
+## Wrong Layer Composition Order
 
-```typescript
-// Effect<bigint, GetBalanceError, ProviderService>
-//                              ↑ needs this
-```
+**Symptom:** Type errors when wiring `Signer.Live` or duplicate service instances at runtime.
 
-## Wrong Layer Order
-
-**Symptom:** Type errors or runtime failures when composing layers.
-
-**Cause:** Layers that depend on other layers must be provided in correct order.
-
-**Fix:** Compose layers properly with dependencies:
+Compose dependencies bottom-up into one layer instead of chaining `Effect.provide`:
 
 ```typescript
 import { Layer } from 'effect'
+import { Signer, Provider, LocalAccount, HttpTransport } from 'voltaire-effect'
+import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 
-// ✅ Compose layers with their dependencies
 const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
 const TransportLayer = HttpTransport(rpcUrl)
 const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
-
 const DepsLayer = Layer.mergeAll(LocalAccount(privateKey), ProviderLayer, CryptoLayer)
+
 const SignerLayer = Signer.Live.pipe(Layer.provide(DepsLayer))
 ```
 
-## Forgot to Yield
+## Forgot `yield*` or Mixed `await`
 
-**Error:** Program doesn't execute as expected.
-
-**Cause:** Missing `yield*` on Effect operations.
+Effects are lazy values. Omitting `yield*` constructs an Effect and discards it. Using `await` inside `Effect.gen` bypasses typed error tracking and interruption.
 
 ```typescript
-import { getBlockNumber } from 'voltaire-effect'
-
-// ❌ Returns Effect, doesn't execute
+// Wrong: getBlockNumber() is never executed
 Effect.gen(function* () {
-  getBlockNumber()  // Missing yield*!
+  getBlockNumber()
 })
 
-// ✅ Yield all Effects
+// Right: yield* every Effect; wrap external Promises with Effect.tryPromise
 Effect.gen(function* () {
-  return yield* getBlockNumber()
+  const block = yield* getBlockNumber()
+  const external = yield* Effect.tryPromise(() => fetchExternalPrice())
+  return { block, external }
 })
 ```
 
-## Mixed Async Styles
+## `ParseError` on Hex Inputs
 
-**Error:** `yield* cannot be used with Promise`
+Schemas validate exact wire format:
 
-**Cause:** Using `await` inside `Effect.gen`.
-
-```typescript
-// ❌ Don't use await
-Effect.gen(function* () {
-  const result = await somePromise()  // Wrong!
-})
-
-// ✅ Wrap promises with Effect.promise
-Effect.gen(function* () {
-  const result = yield* Effect.promise(() => somePromise())
-})
-```
-
-## ParseError on Valid Input
-
-**Cause:** Input format doesn't match schema expectations.
+| Schema | Expected Input |
+| --- | --- |
+| `Address.Hex` | `0x` + 40 hex characters (20 bytes) |
+| `Hash.Hex` | `0x` + 64 hex characters (32 bytes) |
+| `Uint.Uint256Hex` | `0x` + 1 to 64 hex characters |
 
 ```typescript
-// ❌ Missing 0x prefix
+// Fails: missing 0x prefix
 S.decodeSync(Address.Hex)('742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 
-// ✅ Include 0x prefix
+// Succeeds
 S.decodeSync(Address.Hex)('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3')
 ```
 
-**Fix:** Check schema requirements:
-- `Address.Hex` expects `0x` + 40 hex chars
-- `Hash.Hex` expects `0x` + 64 hex chars
-- `Uint.Uint256Hex` expects `0x` + hex (any length up to 64)
+## `Address.Checksummed` Requires `KeccakService`
 
-## Checksummed Address Requires KeccakService
-
-**Error:** `Service not found: KeccakService` when encoding Address.Checksummed.
-
-**Cause:** EIP-55 checksumming requires Keccak256 hashing.
+EIP-55 encoding hashes the address with Keccak-256 and therefore requires `KeccakLive`:
 
 ```typescript
-// ❌ Missing KeccakLive
-const checksummed = await Effect.runPromise(
-  S.encode(Address.Checksummed)(addr)
-)
+import { Effect } from 'effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import { KeccakLive } from 'voltaire-effect/crypto/Keccak256'
 
-// ✅ Provide KeccakLive
 const checksummed = await Effect.runPromise(
-  S.encode(Address.Checksummed)(addr).pipe(
-    Effect.provide(KeccakLive)
-  )
+  S.encode(Address.Checksummed)(addr).pipe(Effect.provide(KeccakLive))
 )
 ```
 
-## RPC Timeout
+## RPC Timeouts and 429 Rate Limits
 
-**Error:** `TransportError: Request timed out`
-
-**Fix:** Increase timeout or add retry:
+Set a transport-level timeout and retry schedule, bound concurrency on batch queries, or add `DefaultRateLimiter`:
 
 ```typescript
-// Increase timeout
-HttpTransport({
+import { Effect, Schedule, Duration } from 'effect'
+import { HttpTransport, DefaultRateLimiter } from 'voltaire-effect'
+
+const transport = HttpTransport({
   url: 'https://eth.llamarpc.com',
-  timeout: 60_000  // 60 seconds (ms)
+  timeout: '60 seconds'
 })
 
-// Add retry
-program.pipe(
+// Bound concurrency
+const results = Effect.all(operations, { concurrency: 3 })
+
+// Or retry with exponential backoff + timeout
+const resilient = program.pipe(
   Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
   Effect.timeout(Duration.seconds(30))
 )
-```
 
-## Rate Limited
-
-**Error:** `TransportError: 429 Too Many Requests`
-
-**Fix:** Use rate limiter or reduce concurrency:
-
-```typescript
-// Limit concurrency
-Effect.all(operations, { concurrency: 3 })
-
-// Or use RateLimiter service
-Effect.provide(RateLimiter({ requestsPerSecond: 10 }))
-```
-
-## HD Wallet Not Working
-
-**Error:** `FFI not available` or similar.
-
-**Cause:** HD Wallet requires native FFI, not available in WASM.
-
-**Fix:** Run in Node.js/Bun with FFI support, not browser or WASM environment.
-
-## Transaction Underpriced
-
-**Error:** `SignerError: transaction underpriced`
-
-**Fix:** Increase gas price or use EIP-1559 with higher priority fee:
-
-```typescript
-yield* signer.sendTransaction({
-  to,
-  value,
-  maxPriorityFeePerGas: 2_000_000_000n,  // 2 gwei tip
-  maxFeePerGas: 100_000_000_000n          // 100 gwei max
-})
-```
-
-## Nonce Too Low
-
-**Error:** `SignerError: nonce too low`
-
-**Cause:** Transaction with this nonce already confirmed, or pending transaction uses same nonce.
-
-**Fix:** Let the signer auto-fetch nonce (default), or manage manually:
-
-```typescript
-import { sendTransaction, getTransactionCount } from 'voltaire-effect'
-
-// Auto nonce (recommended)
-yield* sendTransaction({ to, value })
-
-// Manual nonce
-const nonce = yield* getTransactionCount(address, 'pending')
-yield* sendTransaction({ to, value, nonce })
-```
-
-## Contract Reverted
-
-**Error:** `ContractCallError: execution reverted`
-
-**Fix:** Check revert reason and contract state:
-
-```typescript
-program.pipe(
-  Effect.catchTag('ContractCallError', (e) => {
-    console.error('Revert reason:', e.message)
-    // Check: sufficient balance, approvals, contract state
-    return Effect.fail(e)
-  })
+// Or apply token-bucket rate limiting
+const limited = program.pipe(
+  Effect.scoped,
+  Effect.provide(DefaultRateLimiter({ global: { limit: 10, interval: '1 seconds' } }))
 )
-
-// Simulate first to catch reverts
-const success = yield* contract.simulate.transfer(to, amount)
-if (!success) {
-  // Handle failure before sending
-}
 ```
 
-## Type Mismatch: String vs AddressType
+## Transaction Errors: Underpriced, Nonce Too Low, or Reverted
 
-**Error:** `Type 'string' is not assignable to type 'AddressType'`
+- **Underpriced:** Raise `maxPriorityFeePerGas` and `maxFeePerGas` explicitly:
+  ```typescript
+  yield* signer.sendTransaction({
+    to,
+    value,
+    maxPriorityFeePerGas: 2_000_000_000n,
+    maxFeePerGas: 100_000_000_000n
+  })
+  ```
+- **Nonce too low:** Sequential sends auto-fetch `pending` nonces. For parallel broadcasts, track and pass `nonce` explicitly via `getTransactionCount(address, 'pending')`.
+- **Contract reverted (`ContractCallError`):** Simulate before broadcasting to surface revert reasons without spending gas:
+  ```typescript
+  const ok = yield* contract.simulate.transfer(to, amount)
+  ```
 
-**Cause:** voltaire-effect uses branded `Uint8Array`, not strings.
+## Inspecting Full Failure Causes
 
-```typescript
-import { getBalance } from 'voltaire-effect'
-
-// ❌ String address
-const balance = yield* getBalance('0x...')
-
-// ✅ Decode first (or use string directly - API accepts both)
-const addr = S.decodeSync(Address.Hex)('0x...')
-const balance = yield* getBalance(addr)
-
-// ✅ Or use hex string directly (getBalance accepts AddressInput)
-const balance = yield* getBalance('0x...', 'latest')
-```
-
-## Debug Effect Execution
-
-Add logging to trace execution:
-
-```typescript
-import { getBlockNumber } from 'voltaire-effect'
-
-const program = Effect.gen(function* () {
-  yield* Effect.log('Starting...')
-
-  const block = yield* getBlockNumber()
-  yield* Effect.log(`Block: ${block}`)
-
-  return block
-})
-```
-
-## Inspect Full Error
+Use `Effect.runPromiseExit` with `Cause.pretty` to inspect typed errors, defects, and fiber stacks:
 
 ```typescript
 import { Effect, Cause, Exit } from 'effect'
 
 const exit = await Effect.runPromiseExit(program)
-
 if (Exit.isFailure(exit)) {
-  console.log(Cause.pretty(exit.cause))
+  console.error(Cause.pretty(exit.cause))
 }
 ```
 
 ## See Also
 
-- [Debugging Guide](/guides/debugging) — Full debugging techniques
-- [Error Handling](/concepts/error-handling) — Typed error patterns
-- [Testing](/testing) — Mock services for tests
-- [Effect Debugging](https://effect.website/docs/guides/observability/) — Official Effect debugging
+- [Debugging Guide](/guides/debugging) — Logging, tracing, and span inspection
+- [Error Handling](/concepts/error-handling) — Complete error taxonomy
+- [Layer Composition Guide](/guides/layers) — Avoiding layer wiring mistakes

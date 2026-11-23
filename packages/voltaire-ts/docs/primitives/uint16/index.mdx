@@ -37,7 +37,7 @@ export type Uint16 = number & { readonly [brand]: "Uint16" };
 ## Constants
 
 ```typescript
-import * as Uint16 from '@voltaire/primitives/Uint16';
+import { Uint16 } from '@tevm/voltaire';
 
 Uint16.MIN;    // 0
 Uint16.MAX;    // 65535
@@ -282,7 +282,7 @@ All operations throw on invalid inputs:
 ## Example
 
 ```typescript
-import * as Uint16 from '@voltaire/primitives/Uint16';
+import { Uint16 } from '@tevm/voltaire';
 
 // Network port manipulation
 const httpPort = Uint16(80);

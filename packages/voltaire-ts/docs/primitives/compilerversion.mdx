@@ -8,7 +8,7 @@ description: "Parse and compare Solidity/Vyper compiler version strings"
 CompilerVersion provides utilities for parsing, comparing, and validating Solidity and Vyper compiler version strings. It handles full version formats including commit hashes and prereleases.
 
 ```typescript
-import * as CompilerVersion from '@voltaire/primitives/CompilerVersion'
+import { CompilerVersion } from '@tevm/voltaire'
 
 const version = CompilerVersion.from("v0.8.20+commit.a1b2c3d4")
 
@@ -247,7 +247,7 @@ import {
   _getMinor,
   _getPatch,
   _isCompatible
-} from '@voltaire/primitives/CompilerVersion'
+} from '@tevm/voltaire'
 
 // Skip validation when you know input is valid
 const version = CompilerVersion.from("0.8.20")

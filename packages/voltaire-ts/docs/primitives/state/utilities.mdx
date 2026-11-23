@@ -35,7 +35,7 @@ Computes a hash code for a storage key, useful for hash-based data structures.
 #### HashMap Keys
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Custom hash map implementation
 class StorageHashMap {
@@ -84,7 +84,7 @@ console.log(map.get(key)); // 1000n
 #### Partitioning
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Partition storage keys into buckets for parallel processing
 function partitionKeys(
@@ -132,7 +132,7 @@ await Promise.all(
 #### Caching
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // LRU cache with hash-based bucketing
 class StorageLRUCache {
@@ -178,7 +178,7 @@ class StorageLRUCache {
 #### Sharding
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Distribute storage keys across shards
 function getShardForKey(key: BrandedStorageKey, shardCount: number): number {

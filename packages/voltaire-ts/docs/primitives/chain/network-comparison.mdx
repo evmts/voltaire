@@ -51,10 +51,10 @@ Comprehensive comparison of gas fees, transaction costs, and network characteris
 <Tabs>
 <Tab title="Ethereum Mainnet">
 ```typescript
-import { Chain } from 'tevm'
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Chain } from '@tevm/voltaire'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 const mainnet = Chain.fromId(1)!
 
@@ -90,10 +90,10 @@ console.log('- Priority fee for miners')
 
 <Tab title="Arbitrum One (L2)">
 ```typescript
-import { Chain } from 'tevm'
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Chain } from '@tevm/voltaire'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 const arbitrum = Chain.fromId(42161)!
 
@@ -127,10 +127,10 @@ console.log('- Native ETH (same as mainnet)')
 
 <Tab title="Polygon (Sidechain)">
 ```typescript
-import { Chain } from 'tevm'
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Chain } from '@tevm/voltaire'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 const polygon = Chain.fromId(137)!
 
@@ -165,7 +165,7 @@ console.log('- Bridge required for mainnet')
 
 <Tab title="Testnet (Sepolia)">
 ```typescript
-import { Chain } from 'tevm'
+import { Chain } from '@tevm/voltaire'
 
 const sepolia = Chain.fromId(11155111)!
 
@@ -193,10 +193,10 @@ console.log('- For development only')
 ### Transfer (21,000 gas)
 
 ```typescript
-import { Chain } from 'tevm'
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Chain } from '@tevm/voltaire'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 function calculateTransferCost(
   chainId: number,
@@ -252,10 +252,10 @@ Sepolia (testnet)        0.000021   ETH = Free!
 ### Complex Swap (150,000 gas)
 
 ```typescript
-import { Chain } from 'tevm'
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Chain } from '@tevm/voltaire'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 function calculateSwapCost(
   chainId: number,
@@ -385,7 +385,7 @@ Polygon                  0.0045     ETH = $9.00
 <Tabs>
 <Tab title="Code Example">
 ```typescript
-import { Chain } from 'tevm'
+import { Chain } from '@tevm/voltaire'
 
 // Lookup network by chain ID
 const networks = [1, 10, 42161, 8453, 137, 11155111]
@@ -458,10 +458,10 @@ Validators: Own set
 ## Fee Estimation Across Networks
 
 ```typescript
-import { Chain } from 'tevm'
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Chain } from '@tevm/voltaire'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 interface FeeEstimate {
   network: string
@@ -522,7 +522,7 @@ networks.forEach(({ id, price }) => {
 When moving funds between Ethereum and L2s:
 
 ```typescript
-import { Chain } from 'tevm'
+import { Chain } from '@tevm/voltaire'
 
 const mainnet = Chain.fromId(1)!
 const arbitrum = Chain.fromId(42161)!

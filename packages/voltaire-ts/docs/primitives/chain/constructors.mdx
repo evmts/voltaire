@@ -19,7 +19,7 @@ Methods for creating Chain instances from chain configuration objects and chain 
 Universal constructor creates Chain instance from chain object. Identity function that sets proper prototype.
 
 ```typescript
-import { mainnet, optimism } from 'tevm/chains'
+import { mainnet, optimism } from '@tevm/chains'
 
 const chain1 = Chain(mainnet)
 const chain2 = Chain(optimism)
@@ -33,7 +33,7 @@ console.log(chain2.chainId)  // 10
 
 **Returns:** `Chain`
 
-Defined in: [primitives/Chain/Chain.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js)
+Defined in: [primitives/Chain/Chain.js:14](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/Chain.js)
 
 ## Static Constructors
 
@@ -42,7 +42,7 @@ Defined in: [primitives/Chain/Chain.js:14](https://github.com/evmts/voltaire/blo
 Creates Chain instance from chain configuration object. Identity function that sets proper prototype.
 
 ```typescript
-import { mainnet, optimism, arbitrum, base } from 'tevm/chains'
+import { mainnet, optimism, arbitrum, base } from '@tevm/chains'
 
 const chain = Chain(mainnet)
 console.log(chain.name)      // "Ethereum Mainnet"
@@ -63,7 +63,7 @@ console.log(op.chainId)      // 10
 - Adding prototype methods to plain chain objects
 - Type conversion for libraries expecting Chain instances
 
-Defined in: [primitives/Chain/Chain.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js)
+Defined in: [primitives/Chain/Chain.js:21](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/Chain.js)
 
 ### `Chain.fromId(id)`
 
@@ -103,17 +103,17 @@ console.log(unknown)         // undefined
 - Validating chain IDs before operations
 - Network switching in dApps
 
-Defined in: [primitives/Chain/Chain.js:28](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js)
+Defined in: [primitives/Chain/Chain.js:28](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/Chain.js)
 
-Delegates to: [primitives/Chain/BrandedChain/fromId.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/BrandedChain/fromId.js)
+Delegates to: [primitives/Chain/BrandedChain/fromId.js:15](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/BrandedChain/fromId.js)
 
 ## Usage Examples
 
 ### Basic Usage
 
 ```typescript
-import { Chain } from 'tevm'
-import { mainnet, optimism } from 'tevm/chains'
+import { Chain } from '@tevm/voltaire'
+import { mainnet, optimism } from '@tevm/chains'
 
 // From chain object
 const eth = Chain(mainnet)
@@ -127,7 +127,7 @@ console.log(op?.shortName) // "oeth"
 ### Dynamic Chain Loading
 
 ```typescript
-import { ValidationError } from 'tevm/errors'
+import { ValidationError } from '@tevm/voltaire/errors'
 
 function getChainConfig(chainIdFromUser: number): Chain {
   const chain = Chain.fromId(chainIdFromUser)
@@ -193,7 +193,7 @@ if (chain) {
 ### Multi-Chain Application
 
 ```typescript
-import { Chain } from 'tevm'
+import { Chain } from '@tevm/voltaire'
 
 const SUPPORTED_CHAINS = [1, 10, 42161, 8453] as const
 
@@ -223,7 +223,7 @@ if (isChainSupported(9)) {
 ### Type-Safe Chain Handling
 
 ```typescript
-import { ValidationError } from 'tevm/errors'
+import { ValidationError } from '@tevm/voltaire/errors'
 
 function processChain(chainOrId: Chain | number): Chain {
   if (typeof chainOrId === 'number') {
@@ -242,7 +242,7 @@ function processChain(chainOrId: Chain | number): Chain {
 }
 
 // Works with chain objects
-import { mainnet } from 'tevm/chains'
+import { mainnet } from '@tevm/chains'
 const eth = processChain(mainnet)
 
 // Works with chain IDs

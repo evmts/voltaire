@@ -3,8 +3,6 @@ title: Crypto Reference
 description: Complete inventory of all cryptographic modules currently implemented
 ---
 
-# Crypto Reference
-
 All crypto modules in `src/crypto/`. Implementations use Zig core with Rust/C for complex curves.
 
 ## Hash Functions
@@ -13,7 +11,7 @@ All crypto modules in `src/crypto/`. Implementations use Zig core with Rust/C fo
 Primary Ethereum hash function. Used for addresses, transaction hashes, storage keys.
 
 ```typescript
-import * as Keccak256 from "@voltaire/crypto/Keccak256";
+import * as Keccak256 from "@tevm/voltaire/Keccak256";
 
 // For string input, use hashString
 const hash = Keccak256.hashString("hello");
@@ -36,7 +34,7 @@ Keccak256.hashHex("0x1234");
 SHA-256 for EVM precompile and general use.
 
 ```typescript
-import * as SHA256 from "@voltaire/crypto/SHA256";
+import * as SHA256 from "@tevm/voltaire/SHA256";
 
 const hash = SHA256.hash(data);
 SHA256.hashHex(data);
@@ -51,7 +49,7 @@ SHA256.hashHex(data);
 Blake2b hashing (EVM precompile 0x09).
 
 ```typescript
-import * as Blake2 from "@voltaire/crypto/Blake2";
+import * as Blake2 from "@tevm/voltaire/Blake2";
 
 Blake2.hash(data, { digestLength: 32 });
 Blake2.f(rounds, h, m, t, f);  // Blake2f compression function
@@ -67,7 +65,7 @@ Blake2.f(rounds, h, m, t, f);  // Blake2f compression function
 RIPEMD-160 for Bitcoin compatibility (EVM precompile 0x03).
 
 ```typescript
-import * as Ripemd160 from "@voltaire/crypto/Ripemd160";
+import * as Ripemd160 from "@tevm/voltaire/Ripemd160";
 
 const hash = Ripemd160.hash(data);
 ```
@@ -85,7 +83,7 @@ const hash = Ripemd160.hash(data);
 Bitcoin/Ethereum ECDSA curve. Core signing primitive.
 
 ```typescript
-import * as Secp256k1 from "@voltaire/crypto/Secp256k1";
+import * as Secp256k1 from "@tevm/voltaire/Secp256k1";
 
 // Sign message hash
 const signature = Secp256k1.sign(messageHash, privateKey);
@@ -123,7 +121,7 @@ const uncompressed = Secp256k1.decompressPublicKey(compressed);
 EdDSA signatures. Used by some L2s and alt chains.
 
 ```typescript
-import * as Ed25519 from "@voltaire/crypto/Ed25519";
+import * as Ed25519 from "@tevm/voltaire/Ed25519";
 
 const signature = Ed25519.sign(message, privateKey);
 const valid = Ed25519.verify(signature, message, publicKey);
@@ -139,7 +137,7 @@ const pubkey = Ed25519.getPublicKey(privateKey);
 NIST P-256 (secp256r1). Used by hardware wallets and WebAuthn.
 
 ```typescript
-import * as P256 from "@voltaire/crypto/P256";
+import * as P256 from "@tevm/voltaire/P256";
 
 const signature = P256.sign(hash, privateKey);
 const valid = P256.verify(signature, hash, publicKey);
@@ -158,7 +156,7 @@ const valid = P256.verify(signature, hash, publicKey);
 BN254 (alt_bn128) curve for zkSNARKs. Used by EVM precompiles 0x06-0x08.
 
 ```typescript
-import * as BN254 from "@voltaire/crypto/BN254";
+import * as BN254 from "@tevm/voltaire/BN254";
 
 // G1 operations
 const sum = BN254.g1Add(p1, p2);
@@ -190,7 +188,7 @@ Uses `blst` C library for production performance.
 
 ```typescript
 // Via precompiles (no direct TS API yet)
-import { execute } from "@voltaire/evm/precompiles";
+import { execute } from "@tevm/voltaire/precompiles";
 
 // G1 operations via precompile
 const result = execute(0x0B, g1AddInput);  // BLS12_G1_ADD
@@ -223,7 +221,7 @@ const result = execute(0x0B, g1AddInput);  // BLS12_G1_ADD
 Kate-Zaverucha-Goldberg polynomial commitments for EIP-4844 blob transactions.
 
 ```typescript
-import * as KZG from "@voltaire/crypto/KZG";
+import * as KZG from "@tevm/voltaire/KZG";
 
 // Blob to commitment
 const commitment = KZG.blobToCommitment(blob);
@@ -258,7 +256,7 @@ const valid = KZG.verifyBlobProof(blob, commitment, proof);
 Typed structured data hashing and signing.
 
 ```typescript
-import * as EIP712 from "@voltaire/crypto/EIP712";
+import * as EIP712 from "@tevm/voltaire/EIP712";
 
 const domain = {
   name: "MyContract",
@@ -299,7 +297,7 @@ const signature = EIP712.signTypedData({ domain, types, primaryType: "Person", m
 AES-256-GCM authenticated encryption.
 
 ```typescript
-import * as AesGcm from "@voltaire/crypto/AesGcm";
+import * as AesGcm from "@tevm/voltaire/AesGcm";
 
 // Encrypt
 const { ciphertext, tag } = AesGcm.encrypt(plaintext, key, nonce);
@@ -316,7 +314,7 @@ const plaintext = AesGcm.decrypt(ciphertext, key, nonce, tag);
 Elliptic curve Diffie-Hellman key exchange.
 
 ```typescript
-import * as X25519 from "@voltaire/crypto/X25519";
+import * as X25519 from "@tevm/voltaire/X25519";
 
 // Generate key pair
 const { publicKey, privateKey } = X25519.generateKeyPair();
@@ -338,7 +336,7 @@ const sharedSecret = X25519.sharedSecret(myPrivateKey, theirPublicKey);
 Mnemonic seed phrase generation and validation.
 
 ```typescript
-import * as Bip39 from "@voltaire/crypto/Bip39";
+import * as Bip39 from "@tevm/voltaire/Bip39";
 
 // Generate mnemonic
 const mnemonic = Bip39.generateMnemonic(128);  // 12 words
@@ -358,7 +356,7 @@ const seed = Bip39.mnemonicToSeed(mnemonic, passphrase);
 Hierarchical Deterministic wallet derivation (BIP-32).
 
 ```typescript
-import * as HDWallet from "@voltaire/crypto/HDWallet";
+import * as HDWallet from "@tevm/voltaire/HDWallet";
 
 // From seed
 const master = HDWallet.fromSeed(seed);

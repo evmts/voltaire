@@ -22,7 +22,7 @@ Methods for modifying bloom filters by adding items and merging multiple filters
 Adds an item to the bloom filter by setting `k` bits based on hash functions.
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 const filter = BloomFilter.create(2048, 3)
 
@@ -69,7 +69,7 @@ filter.add(item)
 filter.add(item)
 ```
 
-Defined in: [BrandedBloomFilter/add.js:3-27](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/add.js#L3-L27)
+Defined in: [BrandedBloomFilter/add.js:3-27](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/BloomFilter/BrandedBloomFilter/add.js#L3-L27)
 
 </Tab>
 
@@ -78,7 +78,7 @@ Defined in: [BrandedBloomFilter/add.js:3-27](https://github.com/evmts/voltaire/b
 ### Adding Multiple Items
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 const filter = BloomFilter.create(2048, 3)
 
@@ -126,7 +126,7 @@ Merges two bloom filters using bitwise OR. Returns new filter containing union o
 <Tabs>
 <Tab title="Instance Method">
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 // Create filters for different blocks
 const block1Filter = BloomFilter.create(2048, 3)
@@ -149,7 +149,7 @@ console.log(rangeFilter.contains(topic2))    // true
 </Tab>
 <Tab title="Static Method">
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 const filter1 = BloomFilter.create(2048, 3)
 const filter2 = BloomFilter.create(2048, 3)
@@ -190,7 +190,7 @@ try {
 }
 ```
 
-Defined in: [BrandedBloomFilter/merge.js:3-60](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/merge.js#L3-L60)
+Defined in: [BrandedBloomFilter/merge.js:3-60](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/BloomFilter/BrandedBloomFilter/merge.js#L3-L60)
 
 ### Merge Algorithm
 
@@ -221,7 +221,7 @@ console.log(merged.contains(new TextEncoder().encode("item2")))  // true
 ### Merging Multiple Filters
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 // Merge block range filters
 function mergeBlockRange(startBlock: number, endBlock: number): BloomFilter {
@@ -248,7 +248,7 @@ if (rangeFilter.contains(address)) {
 ### Functional Reduce Pattern
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 // Merge array of filters using reduce
 const filters: BloomFilter[] = [
@@ -307,7 +307,7 @@ const merged = f1.merge(f2)  // ~O(256) operations
 ### Batch Operations
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 // Efficient: Single filter for batch
 const filter = BloomFilter.create(2048, 3)

@@ -8,7 +8,7 @@ description: "Log position in receipt (0-based)"
 LogIndex is a branded `number` type representing a log's position within a transaction receipt. Indices start at 0 for the first log emitted.
 
 ```zig
-import * as LogIndex from '@tevm/primitives/LogIndex'
+import * as LogIndex from '@tevm/voltaire/LogIndex'
 
 const index = LogIndex.from(2)
 ```
@@ -71,7 +71,7 @@ if (LogIndex.equals(a, b)) {
 LogIndex appears in event logs to indicate position within a receipt:
 
 ```zig
-import * as EventLog from '@tevm/primitives/EventLog'
+import * as EventLog from '@tevm/voltaire/EventLog'
 
 const log = {
   logIndex: LogIndex.from(2),

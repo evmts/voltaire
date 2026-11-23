@@ -1,146 +1,114 @@
 ---
-title: Hex (Deprecated)
-description: The Hex primitive has been replaced by typed hex variants
+title: Hex
+description: Ethereum 0x-prefixed hexadecimal encoding, decoding, fixed-size stack conversions, padding, and trimming.
 ---
 
-<Warning>
-**Deprecated** - The `Hex` primitive has been replaced by typed variants for better type safety and clarity.
-</Warning>
+`primitives.Hex` provides `0x`-prefixed hexadecimal validation, bidirectional byte conversion, numeric parsing (`u64`, `u256`), zero-padding, and zero-trimming.
 
-## Migration Guide
+## Memory & Allocator Model
 
-The legacy `Hex` type provided a generic hex string representation. It has been replaced with **typed hex variants** that provide compile-time size checking and clearer semantics.
+```mermaid
+flowchart LR
+    subgraph Stack["Zero-Allocation Stack / Slice Views"]
+        FixedHex["hexToBytesFixed(N, hex) -> ![N]u8"]
+        FixedBytes["bytesToHexFixed(N, bytes) -> [2 + 2*N]u8"]
+        Nums["hexToU256 / hexToU64 / toBoolean"]
+        Views["trimLeftZeros / trimRightZeros / slice"]
+        Checks["isHex / isSized / equals / validate"]
+    end
 
-### Old API (Deprecated)
-
-```zig
-const Hex = @import("primitives").Hex;
-
-// Generic untyped hex
-const bytes = try Hex.fromHex(allocator, "0x1234");
-defer allocator.free(bytes);
+    subgraph Heap["Explicit Allocator (Caller Frees []u8)"]
+        DynDecode["hexToBytes / fromHex / hexToString"]
+        DynEncode["bytesToHex / toHex / stringToHex"]
+        DynNum["u256ToHex / u64ToHex / fromBoolean"]
+        DynOps["concat / padLeft / padRight / xor / random / zero"]
+    end
 ```
 
-### New API (Recommended)
+## Format Rules
 
-Use typed variants based on your data's semantic meaning:
+- Every hex string accepted or produced by `primitives.Hex` starts with lowercase `"0x"`.
+- Byte-decoding functions (`hexToBytes`, `hexToBytesFixed`) require an even number of hex digits after `"0x"`.
+- `isHex("0x")` returns `false` (requires at least one hex digit); `hexToBytes(allocator, "0x")` returns an empty 0-byte slice.
+- `trimLeftZeros` preserves one `0x00` byte for an all-zero non-empty input so zero values remain representable.
 
-<Tabs>
-<Tab title="Fixed-Size Bytes">
+## Zero-Allocation API
 
-For fixed-size hex values, use `Bytes<N>` variants:
+| Function | Signature | Notes |
+| :--- | :--- | :--- |
+| `hexToBytesFixed` | `fn (comptime N: usize, hex: []const u8) ![N]u8` | Requires `"0x"` and exact length `2 + 2*N` |
+| `bytesToHexFixed` | `fn (comptime N: usize, bytes: [N]u8) [2 + N * 2]u8` | Lowercase `"0x..."` returned by value |
+| `isHex` | `fn (input: []const u8) bool` | True iff `"0x"` followed by 1+ `[0-9a-fA-F]` |
+| `validate` | `fn (hex: []const u8) ![]const u8` | Returns input slice on success or `HexError` |
+| `isSized` | `fn (hex: []const u8, size_bytes: usize) bool` | Checks valid hex of exact byte count |
+| `assertSize` | `fn (hex: []const u8, expected_size: usize) ![]const u8` | Returns input or `HexError.InvalidLength` |
+| `hexToU256` | `fn (hex: []const u8) !u256` | Parses `"0x..."` into big-endian `u256` |
+| `hexToU64` | `fn (hex: []const u8) !u64` | Parses `"0x..."` into `u64` (`ValueTooLarge` on overflow) |
+| `toBoolean` | `fn (hex: []const u8) !bool` | `"0x0"` / `"0x00"` -> `false`; `"0x1"` / `"0x01"` -> `true` |
+| `equals` | `fn (hex1: []const u8, hex2: []const u8) bool` | Case-insensitive hex string equality |
+| `size` | `fn (bytes: []const u8) usize` | Returns `bytes.len` |
+| `slice` | `fn (bytes: []const u8, start: usize, end: usize) []const u8` | Bounds-clamped sub-slice view |
+| `trimLeftZeros` / `trim` | `fn (bytes: []const u8) []const u8` | Strips leading `0x00`, keeping 1 byte for all-zero input |
+| `trimRightZeros` | `fn (bytes: []const u8) []const u8` | Strips trailing `0x00` |
+
+## Allocating API (Caller Owns Returned `[]u8`)
+
+| Function | Signature | Notes |
+| :--- | :--- | :--- |
+| `hexToBytes` / `fromHex` | `fn (Allocator, []const u8) ![]u8` | Decodes `"0x..."` to raw bytes |
+| `bytesToHex` / `toHex` | `fn (Allocator, []const u8) ![]u8` | Encodes raw bytes to lowercase `"0x..."` |
+| `stringToHex` / `hexToString` | `fn (Allocator, []const u8) ![]u8` | UTF-8 text <-> `"0x..."` |
+| `u256ToHex` / `u64ToHex` | `fn (Allocator, u256\|u64) ![]u8` | Minimal hex quantity (`0` -> `"0x0"`) |
+| `fromBoolean` | `fn (Allocator, bool) ![]u8` | `true` -> `"0x01"`, `false` -> `"0x00"` |
+| `padLeft` / `pad` | `fn (Allocator, []const u8, usize) ![]u8` | Left-pads with `0x00` to `target_length` |
+| `padRight` | `fn (Allocator, []const u8, usize) ![]u8` | Right-pads with `0x00` to `target_length` |
+| `concat` | `fn (Allocator, []const []const u8) ![]u8` | Joins byte slices |
+| `xor` | `fn (Allocator, []const u8, []const u8) ![]u8` | Bitwise XOR of two equal-length hex strings |
+| `clone` | `fn (Allocator, []const u8) ![]u8` | Allocates copy |
+| `zero` / `random` | `fn (Allocator, usize) ![]u8` | Generates `size_bytes` zero or CSPRNG hex string |
+
+## Example
 
 ```zig
+const std = @import("std");
 const primitives = @import("primitives");
+const Hex = primitives.Hex;
 
-// 32-byte values (hashes, storage slots)
-var hash: [32]u8 = try primitives.Hex.hexToBytesFixed(32, "0x0000000000000000000000000000000000000000000000000000000000000000");
-const hex_hash = primitives.Hex.bytesToHexFixed(32, hash);
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-// 16-byte values
-var uuid: [16]u8 = try primitives.Hex.hexToBytesFixed(16, "0x00000000000000000000000000000000");
+    // Zero-allocation fixed-size round-trip (4-byte selector)
+    const selector = try Hex.hexToBytesFixed(4, "0xa9059cbb");
+    const selector_hex: [10]u8 = Hex.bytesToHexFixed(4, selector);
+
+    // Zero-allocation numeric parse and zero-trimming
+    const gas_limit = try Hex.hexToU64("0x5208"); // 21000
+    const raw = [_]u8{ 0x00, 0x00, 0xde, 0xad };
+    const trimmed = Hex.trimLeftZeros(&raw); // [0xde, 0xad]
+
+    // Allocated variable-length conversion (caller frees)
+    const padded = try Hex.padLeft(allocator, trimmed, 32);
+    defer allocator.free(padded);
+
+    const padded_hex = try Hex.bytesToHex(allocator, padded);
+    defer allocator.free(padded_hex);
+
+    std.debug.print("Selector: {s}, Gas: {d}\n", .{ &selector_hex, gas_limit });
+    std.debug.print("Slot:     {s}\n", .{padded_hex});
+}
 ```
 
-Available sizes: `Bytes1`, `Bytes2`, `Bytes3`, `Bytes4`, `Bytes5`, `Bytes6`, `Bytes7`, `Bytes8`, `Bytes16`, `Bytes32`, `Bytes64`
+## Error Set (`Hex.HexError`)
 
-</Tab>
-<Tab title="Addresses">
+| Error | Condition |
+| :--- | :--- |
+| `InvalidHexFormat` | Missing `"0x"` prefix |
+| `OddLengthHex` | Odd number of hex digits in `hexToBytes` |
+| `InvalidHexLength` | Fixed-length mismatch in `hexToBytesFixed` |
+| `InvalidHexCharacter` | Character outside `[0-9a-fA-F]` |
+| `ValueTooLarge` | Value exceeds target integer width (`u64` / `u256`) |
+| `InvalidLength` | Byte length mismatch in `assertSize` or `xor` |
 
-For Ethereum addresses (20 bytes), use the `Address` type:
-
-```zig
-const primitives = @import("primitives");
-
-// 20-byte address with EIP-55 checksumming
-const addr = try primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const checksummed = addr.toChecksummed();
-```
-
-</Tab>
-<Tab title="Hashes">
-
-For cryptographic hashes (32 bytes), use the `Keccak256` module:
-
-```zig
-const crypto = @import("crypto");
-
-// Keccak256 hash (32 bytes)
-const hash = crypto.keccak256.hash("hello");
-const hex = @import("primitives").Hex.bytesToHexFixed(32, hash);
-```
-
-</Tab>
-</Tabs>
-
-## Why Typed Variants?
-
-The typed variants provide several advantages over the generic `Hex` type:
-
-1. **Compile-time size checking** - Catch size mismatches during development
-2. **Semantic clarity** - Type names reflect data meaning (Address vs Hash vs Bytes32)
-3. **Better IDE support** - Type-specific methods and documentation
-4. **Prevents mixing types** - Can't accidentally use an Address where a Hash is expected
-
-## Migration Examples
-
-### Generic Hex → Bytes32
-
-```zig
-// Before (deprecated)
-const Hex = @import("primitives").Hex;
-const value_bytes = try Hex.fromHex(allocator, "0x0000000000000000000000000000000000000000000000000000000000000000");
-defer allocator.free(value_bytes);
-
-// After: prefer fixed-size types where applicable
-var value: [32]u8 = try Hex.hexToBytesFixed(32, "0x0000000000000000000000000000000000000000000000000000000000000000");
-```
-
-### Hex with Size → Fixed Bytes
-
-```zig
-// Before (deprecated)
-const Hex = @import("primitives").Hex;
-var selector4 = try Hex.hexToBytesFixed(4, "0x12345678");
-
-// After: use typed encoding helpers for selectors
-const Abi = @import("primitives").AbiEncoding;
-const sel = Abi.computeSelector("transfer(address,uint256)"); // [4]u8
-```
-
-### Hex Address → Address
-
-```zig
-// Before (deprecated): raw hex
-const Hex = @import("primitives").Hex;
-var addr_bytes = try Hex.hexToBytesFixed(20, "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-
-// After: semantic Address type
-const primitives = @import("primitives");
-const addr = try primitives.Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const checksummed = addr.toChecksummed();
-```
-
-## Where to Find Replacements
-
-### Fixed-Size Types
-
-All fixed-size hex types are now under bytes:
-
-- [Bytes1 - Bytes8](/primitives/bytes/bytes1) - Small fixed sizes (selectors, flags)
-- [Bytes16](/primitives/bytes/bytes16) - 128-bit values (UUIDs)
-- [Bytes32](/primitives/bytes/bytes32) - 256-bit values (hashes, storage slots, merkle nodes)
-- [Bytes64](/primitives/bytes/bytes64) - 512-bit values (public keys, signatures)
-
-### Semantic Types
-
-Domain-specific types with specialized methods:
-
-- [Address](/primitives/address/index) - 20-byte Ethereum addresses with EIP-55 checksumming
-- [Keccak256](/crypto/keccak256) - 32-byte cryptographic hash values
-- [Signature](/crypto/secp256k1) - ECDSA signatures (r, s, v)
-
-## Related
-
-- [Bytes Types](/primitives/bytes/index) - All fixed-size byte variants
-- [Address](/primitives/address/index) - Ethereum addresses
-- [Keccak256](/crypto/keccak256) - Cryptographic hashes
+Source: `packages/voltaire-zig/src/primitives/Hex/Hex.zig`

@@ -8,7 +8,7 @@ description: "Ethereum account state representation per Yellow Paper"
 AccountState represents the four fields of an Ethereum account as defined in the Yellow Paper (section 4.1). Every account has a nonce, balance, storage root, and code hash.
 
 ```typescript
-import * as AccountState from '@voltaire/primitives/AccountState'
+import { AccountState } from '@tevm/voltaire'
 
 const state = AccountState.from({
   nonce: Nonce.from(5n),
@@ -42,11 +42,11 @@ type AccountStateType = {
 Universal constructor from object with required fields.
 
 ```typescript
-import * as AccountState from '@voltaire/primitives/AccountState'
-import * as Nonce from '@voltaire/primitives/Nonce'
-import * as Wei from '@voltaire/primitives/Denomination/Wei'
-import * as StateRoot from '@voltaire/primitives/StateRoot'
-import * as Hash from '@voltaire/primitives/Hash'
+import { AccountState } from '@tevm/voltaire'
+import { Nonce } from '@tevm/voltaire'
+import { Wei } from '@tevm/voltaire/Denomination'
+import { StateRoot } from '@tevm/voltaire'
+import * as Hash from '@tevm/voltaire/Hash'
 
 const state = AccountState.from({
   nonce: Nonce.from(0n),

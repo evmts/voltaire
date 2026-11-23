@@ -8,7 +8,7 @@ description: "32-byte transaction identifier"
 TransactionHash is a branded `Uint8Array` type representing a 32-byte transaction identifier in Ethereum. Every transaction has a unique hash computed from its contents.
 
 ```zig
-import * as TransactionHash from '@tevm/primitives/TransactionHash'
+import * as TransactionHash from '@tevm/voltaire/TransactionHash'
 
 const hash = TransactionHash.fromHex(
   '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'

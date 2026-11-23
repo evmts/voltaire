@@ -32,7 +32,7 @@ Returns hardforks in deployment order:
 Generate complete feature matrix:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function generateFeatureMatrix() {
   const forks = Hardfork.allIds()
@@ -60,7 +60,7 @@ function generateFeatureMatrix() {
 Process each hardfork:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function analyzeAllHardforks() {
   const forks = Hardfork.allIds()
@@ -81,7 +81,7 @@ function analyzeAllHardforks() {
 Find when feature was introduced:
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 function findFeatureIntroduction(
   featureCheck: (fork: BrandedHardfork) => boolean
@@ -111,7 +111,7 @@ console.log(Hardfork.toString(blobsFork))  // "cancun"
 Get supported hardfork range:
 
 ```typescript
-import { Hardfork, BERLIN, PRAGUE } from 'tevm'
+import { Hardfork, BERLIN, PRAGUE } from '@tevm/voltaire'
 
 function getSupportedRange(min: BrandedHardfork, max: BrandedHardfork) {
   const allForks = Hardfork.allIds()
@@ -131,7 +131,7 @@ const supported = getSupportedRange(BERLIN, PRAGUE)
 Sort hardforks chronologically:
 
 ```typescript
-import { Hardfork, CANCUN, BERLIN, SHANGHAI } from 'tevm'
+import { Hardfork, CANCUN, BERLIN, SHANGHAI } from '@tevm/voltaire'
 
 const unsorted = [CANCUN, BERLIN, SHANGHAI]
 
@@ -158,7 +158,7 @@ console.log(sorted === expectedOrder)  // true (same order)
 - Requires parsing back to hardfork
 
 ```typescript
-import { Hardfork } from 'tevm'
+import { Hardfork } from '@tevm/voltaire'
 
 // allIds - type-safe, direct method calls
 const ids = Hardfork.allIds()

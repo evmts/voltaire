@@ -23,7 +23,7 @@ ValidatorIndex represents a validator's unique index in the beacon chain state r
 Create ValidatorIndex from number, bigint, or string.
 
 ```zig
-import { ValidatorIndex } from '@tevm/primitives';
+import { ValidatorIndex } from '@tevm/voltaire';
 
 const idx1 = ValidatorIndex.from(123456);
 const idx2 = ValidatorIndex.from(123456n);
@@ -54,7 +54,7 @@ ValidatorIndex.equals(a, b); // true
 ### Work with validator data
 
 ```zig
-import { ValidatorIndex } from '@tevm/primitives';
+import { ValidatorIndex } from '@tevm/voltaire';
 
 interface ValidatorInfo {
   index: ValidatorIndex;
@@ -74,7 +74,7 @@ const validator: ValidatorInfo = {
 ### Track validator committees
 
 ```zig
-import { ValidatorIndex, Epoch } from '@tevm/primitives';
+import { ValidatorIndex, Epoch } from '@tevm/voltaire';
 
 interface Committee {
   epoch: Epoch;

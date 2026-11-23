@@ -1,188 +1,119 @@
 ---
 title: HD Wallet
-description: BIP-32/39 hierarchical deterministic wallets
+description: BIP-39 mnemonic generation/validation and BIP-32/BIP-44 hierarchical deterministic key derivation backed by libwally-core.
 ---
 
-Generate and derive Ethereum wallets from mnemonic phrases.
+HD wallet functions generate BIP-39 mnemonics, stretch them to 64-byte PBKDF2 seeds, and derive BIP-32 child keys via opaque `size_t` handles. Backed by `libwally-core`; **available in native builds only** (stubbed out in WASM).
+
+## Derivation Lifecycle
+
+```mermaid
+flowchart LR
+    Ent["entropy (16B or 32B)"] -->|"hdwallet_generate_mnemonic"| Mn["BIP-39 mnemonic\n(NUL-terminated)"]
+    Mn -->|"hdwallet_mnemonic_to_seed"| Seed["seed[64]"]
+    Seed -->|"hdwallet_from_seed"| Root["size_t root handle\n(must hdwallet_free)"]
+    Root -->|"hdwallet_derive(path)"| Child["size_t child handle\n(must hdwallet_free)"]
+    Child -->|"hdwallet_get_address"| Addr["PrimitivesAddress"]
+    Child -->|"hdwallet_get_private_key"| Priv["privkey[32]"]
+```
+
+Every non-zero handle returned by `hdwallet_from_seed` or `hdwallet_derive` owns a heap-allocated `libwally` key structure and must be released with `hdwallet_free`.
 
 ## Functions
 
-### hdwallet_generate_mnemonic
-
-Generate BIP-39 mnemonic from entropy.
+### BIP-39 Mnemonics
 
 ```c
 int hdwallet_generate_mnemonic(
     const unsigned char* entropy,
-    size_t entropy_len,            // 16 (12 words) or 32 (24 words)
-    unsigned char* out_mnemonic,
-    size_t out_len                 // at least 256 bytes
+    size_t entropy_len,          /* 16 (12 words) or 32 (24 words) */
+    unsigned char* out_mnemonic, /* NUL-terminated; allocate >= 256 bytes */
+    size_t out_len
 );
-```
 
-**Returns:** Length of mnemonic string, or negative error code.
-
-### hdwallet_validate_mnemonic
-
-Validate mnemonic checksum.
-
-```c
 int hdwallet_validate_mnemonic(const char* mnemonic);
-```
 
-**Returns:** 1 if valid, 0 if invalid.
-
-### hdwallet_mnemonic_to_seed
-
-Convert mnemonic to 64-byte seed.
-
-```c
 int hdwallet_mnemonic_to_seed(
     const char* mnemonic,
-    const char* passphrase,        // optional, NULL if not used
+    const char* passphrase,      /* optional; pass NULL for empty passphrase */
     unsigned char out_seed[64]
 );
 ```
 
-### hdwallet_from_seed
+- `hdwallet_generate_mnemonic` writes a NUL-terminated mnemonic into `out_mnemonic` and returns its character length (`>= 0`), `PRIMITIVES_ERROR_INVALID_LENGTH` (`-2`), or `PRIMITIVES_ERROR_INVALID_INPUT` (`-5`).
+- `hdwallet_validate_mnemonic` returns `1` if valid, `0` if invalid.
+- `hdwallet_mnemonic_to_seed` returns `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_INVALID_INPUT` (`-5`).
 
-Create HD root key from seed.
-
-```c
-size_t hdwallet_from_seed(
-    const unsigned char* seed,
-    size_t seed_len                // must be 64
-);
-```
-
-**Returns:** Opaque handle (0 on error).
-
-### hdwallet_derive
-
-Derive child key from path.
+### BIP-32 Key Derivation and Extraction
 
 ```c
+size_t hdwallet_from_seed(const unsigned char* seed, size_t seed_len); /* seed_len must be 64 */
+
 size_t hdwallet_derive(
     size_t hdkey_handle,
-    const uint32_t* path,
+    const uint32_t* path, /* OR with 0x80000000U for hardened indices */
     size_t path_len
 );
-```
 
-Use `0x80000000 | index` for hardened derivation.
-
-**Returns:** New handle to derived key.
-
-### hdwallet_get_private_key
-
-Extract 32-byte private key.
-
-```c
-int hdwallet_get_private_key(
-    size_t hdkey_handle,
-    unsigned char out_private_key[32]
-);
-```
-
-### hdwallet_get_public_key
-
-Extract 33-byte compressed public key.
-
-```c
-int hdwallet_get_public_key(
-    size_t hdkey_handle,
-    unsigned char out_public_key[33]
-);
-```
-
-### hdwallet_get_address
-
-Get Ethereum address from HD key.
-
-```c
-int hdwallet_get_address(
-    size_t hdkey_handle,
-    PrimitivesAddress* out_address
-);
-```
-
-### hdwallet_free
-
-Free HD key handle.
-
-```c
+int hdwallet_get_private_key(size_t hdkey_handle, unsigned char out_private_key[32]);
+int hdwallet_get_public_key(size_t hdkey_handle, unsigned char out_public_key[33]);
+int hdwallet_get_address(size_t hdkey_handle, PrimitivesAddress* out_address);
 int hdwallet_free(size_t hdkey_handle);
 ```
 
-## Derivation Paths
+- `hdwallet_from_seed` and `hdwallet_derive` return a non-zero opaque handle on success, or `0` on failure.
+- `hdwallet_get_public_key` writes the 33-byte SEC1 compressed public key.
+- `hdwallet_free(0)` is a safe no-op returning `PRIMITIVES_SUCCESS`.
 
-| Path | Description |
-|------|-------------|
-| `m/44'/60'/0'/0/0` | First Ethereum account (BIP-44) |
-| `m/44'/60'/0'/0/1` | Second account |
-| `m/44'/60'/1'/0/0` | Second account (different account index) |
+## Standard Ethereum BIP-44 Paths
 
-Hardened indices use `0x80000000` offset.
+| Path | `uint32_t` array (`H = 0x80000000U`) | Account |
+|------|--------------------------------------|---------|
+| `m/44'/60'/0'/0/0` | `{H\|44, H\|60, H\|0, 0, 0}` | Default first Ethereum account |
+| `m/44'/60'/0'/0/1` | `{H\|44, H\|60, H\|0, 0, 1}` | Second address of account 0 |
+| `m/44'/60'/1'/0/0` | `{H\|44, H\|60, H\|1, 0, 0}` | First address of account 1 |
 
 ## Example
 
 ```c
+#include "voltaire.h"
+
 #include <stdio.h>
-#include <string.h>
 
-int main() {
-    // Generate entropy (use proper RNG in production!)
-    unsigned char entropy[16];
-    primitives_generate_private_key(entropy);  // 32 bytes, use first 16
+#define HARDENED(i) (0x80000000U | (uint32_t)(i))
 
-    // Generate mnemonic
+int main(void) {
+    /* Generate 32 bytes of CSPRNG output and slice 16 bytes for a 12-word mnemonic */
+    unsigned char rand32[32];
+    if (primitives_generate_private_key(rand32) != PRIMITIVES_SUCCESS) return 1;
+
     char mnemonic[256];
-    hdwallet_generate_mnemonic(entropy, 16, (unsigned char*)mnemonic, sizeof(mnemonic));
+    int mlen = hdwallet_generate_mnemonic(rand32, 16, (unsigned char*)mnemonic, sizeof(mnemonic));
+    if (mlen < 0 || hdwallet_validate_mnemonic(mnemonic) != 1) return 1;
     printf("Mnemonic: %s\n", mnemonic);
 
-    // Validate
-    if (!hdwallet_validate_mnemonic(mnemonic)) {
-        printf("Invalid mnemonic!\n");
-        return 1;
-    }
-
-    // Convert to seed
     unsigned char seed[64];
-    hdwallet_mnemonic_to_seed(mnemonic, NULL, seed);
+    if (hdwallet_mnemonic_to_seed(mnemonic, NULL, seed) != PRIMITIVES_SUCCESS) return 1;
 
-    // Create root key
-    size_t root = hdwallet_from_seed(seed, 64);
-    if (root == 0) {
-        printf("Failed to create root key\n");
+    size_t root = hdwallet_from_seed(seed, sizeof(seed));
+    if (root == 0) return 1;
+
+    const uint32_t path[5] = {HARDENED(44), HARDENED(60), HARDENED(0), 0, 0};
+    size_t account = hdwallet_derive(root, path, 5);
+    if (account == 0) {
+        hdwallet_free(root);
         return 1;
     }
 
-    // Derive m/44'/60'/0'/0/0 (first Ethereum account)
-    uint32_t path[] = {
-        0x80000000 | 44,   // 44' (purpose)
-        0x80000000 | 60,   // 60' (Ethereum)
-        0x80000000 | 0,    // 0'  (account)
-        0,                 // 0   (change)
-        0                  // 0   (address index)
-    };
-    size_t account = hdwallet_derive(root, path, 5);
-
-    // Get address
     PrimitivesAddress addr;
-    hdwallet_get_address(account, &addr);
+    if (hdwallet_get_address(account, &addr) == PRIMITIVES_SUCCESS) {
+        unsigned char hex[42];
+        primitives_address_to_checksum_hex(&addr, hex);
+        printf("m/44'/60'/0'/0/0: %.42s\n", (const char*)hex);
+    }
 
-    unsigned char hex[42];
-    primitives_address_to_checksum_hex(&addr, hex);
-    printf("Address: %s\n", hex);
-
-    // Cleanup
     hdwallet_free(account);
     hdwallet_free(root);
-
     return 0;
 }
 ```
-
-## Note
-
-HD wallet operations use libwally-core and are not available in WASM builds.

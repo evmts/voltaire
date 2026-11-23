@@ -1,134 +1,112 @@
 ---
-title: "Hash (Moved to Keccak256)"
-description: "Hash has moved to crypto/keccak256 as Keccak256Hash"
+title: Hash
+description: 32-byte cryptographic hash type and Keccak-256 / Merkle utilities in primitives.Hash and crypto.Hash.
 ---
 
-## Overview
+`primitives.Hash.Hash` is a fixed 32-byte array (`[32]u8`) representing Ethereum digests: Keccak-256 hashes, transaction hashes, block hashes, state roots, and storage keys.
 
-The `Hash` primitive has been moved to `crypto/keccak256` as `Keccak256Hash`. This change reflects that Hash was specifically for Keccak256 hashing and belongs semantically under cryptographic operations rather than general primitives.
+Voltaire exposes two complementary hash namespaces:
+- `primitives.Hash` (`src/primitives/Hash/Hash.zig`) — 32-byte `Hash`, `keccak256`, `concat`, `merkleRoot`, and generic `from(anytype)`.
+- `crypto.Hash` / `crypto.HashUtils` (`src/crypto/hash_utils.zig`) — stack-allocated `toHex` (`[66]u8`), `fromHexComptime`, bitwise operations (`xor`, `bitAnd`, `bitOr`, `bitNot`), `selectorFromSignature`, `eip191HashMessage`, and `toU256`/`fromU256`.
 
-## Why the Change
+## Memory & Allocator Model
 
-**Better Organization**
-- Hash was Keccak256-specific, not a general hash primitive
-- Cryptographic operations belong in the crypto module
-- Clearer semantic organization of the codebase
+```mermaid
+flowchart LR
+    subgraph Stack["Stack / Zero Allocation"]
+        Input["[]const u8"] --> K["Hash.keccak256\n([32]u8)"]
+        HexIn["64 or 66 char hex"] --> FH["Hash.fromHex\n(![32]u8)"]
+        K --> CHex["crypto.Hash.toHex\n([66]u8)"]
+        K --> Eq["Hash.equals / isZero\n(bool)"]
+    end
 
-**Semantic Clarity**
-- `Keccak256Hash` explicitly names what it is
-- Separates hash algorithm (Keccak256) from hash type (Keccak256Hash)
-- Aligns with other crypto primitives (Secp256k1Signature, BlsSignature, etc.)
-
-## Migration Guide
-
-### Import Changes
-
-```zig
-// Old
-import { Hash } from '@tevm/voltaire'
-import * as Hash from '@tevm/voltaire/primitives/Hash'
-
-// New
-import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256'
-import * as Keccak256 from '@tevm/voltaire/crypto/Keccak256'
+    subgraph Heap["Explicit std.mem.Allocator"]
+        K --> PHex["primitives.Hash.toHex\n(![]const u8, caller frees)"]
+        Arr["[]const Hash"] --> Cat["Hash.concat\n(temp buffer, freed internally)"]
+        Arr --> Merkle["Hash.merkleRoot\n(level buffer, freed internally)"]
+    end
 ```
 
-### Hashing Methods
+## Constants
+
+| Constant | Module | Value |
+| :--- | :--- | :--- |
+| `Hash.SIZE` | `primitives.Hash` | `32` |
+| `Hash.ZERO` | `primitives.Hash` | `[_]u8{0} ** 32` |
+| `crypto.Hash.EMPTY_KECCAK256` | `crypto.Hash` | `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470` |
+
+## `primitives.Hash` API
+
+| Function | Signature | Allocates | Notes |
+| :--- | :--- | :--- | :--- |
+| `fromBytes` | `fn fromBytes(bytes: []const u8) Hash` | No | Asserts `bytes.len == 32`; copies into `[32]u8` |
+| `fromHex` | `fn fromHex(hex: []const u8) !Hash` | No | Accepts 64 chars or `"0x"` + 64 chars |
+| `from` | `fn from(value: anytype) !Hash` | No | Accepts `Hash`, 32-byte slice/array, or 64/66-char hex |
+| `toBytes` | `fn toBytes(hash: *const Hash) []const u8` | No | Returns 32-byte slice view |
+| `toHex` / `toString` / `format` | `fn toHex(hash: *const Hash, allocator: Allocator) ![]const u8` | Yes | Returns owned `"0x..."` (66 bytes); caller frees |
+| `equals` | `fn equals(a: *const Hash, b: *const Hash) bool` | No | Byte-for-byte equality |
+| `isZero` | `fn isZero(hash: *const Hash) bool` | No | True iff all 32 bytes are `0x00` |
+| `isValidHex` | `fn isValidHex(hex: []const u8) bool` | No | Validates 64 or `"0x"` + 64 hex chars |
+| `isHash` | `fn isHash(value: anytype) bool` | No | Comptime type guard for `Hash`, `*Hash`, `*const Hash` |
+| `clone` | `fn clone(hash: *const Hash) Hash` | No | Returns independent value copy |
+| `slice` | `fn slice(hash: *const Hash, start: usize, end: usize) []const u8` | No | Sub-slice view of `hash` |
+| `random` | `fn random() Hash` | No | Fills 32 bytes via `std.crypto.random.bytes` |
+| `keccak256` / `keccak256String` | `fn keccak256(data: []const u8) Hash` | No | Computes Keccak-256 via `std.crypto.hash.sha3.Keccak256` |
+| `concat` | `fn concat(allocator: Allocator, hashes: []const Hash) !Hash` | Temporary | Concatenates all 32-byte hashes and returns Keccak-256 |
+| `merkleRoot` | `fn merkleRoot(allocator: Allocator, hashes: []const Hash) !Hash` | Temporary | Binary Keccak-256 Merkle root; odd leaf duplicates itself; empty returns `ZERO` |
+
+<Warning>
+Avoid `primitives.Hash.keccak256Hex` outside tests: its current implementation allocates via `std.testing.allocator`. To hash a hex string in production code, decode with `Hex.hexToBytes` (or `Hex.hexToBytesFixed`) and call `Hash.keccak256` on the decoded bytes.
+</Warning>
+
+## Zero-Allocation Formatting & Comptime Parsing (`crypto.Hash`)
+
+For hot paths where heap allocation is undesirable, use `crypto.Hash` (`crypto.HashUtils`):
 
 ```zig
-// Old - Hash.keccak256()
-const hash = Hash.keccak256(data)
-const hashFromHex = Hash.keccak256Hex('0x1234...')
-const hashFromString = Hash.keccak256String('hello')
+const std = @import("std");
+const primitives = @import("primitives");
+const crypto = @import("crypto");
 
-// New - Keccak256.hash()
-const hash = Keccak256.hash(data)
-const hashFromHex = Keccak256.hashHex('0x1234...')
-const hashFromString = Keccak256.hashString('hello')
-```
+const Hash = primitives.Hash;
+const CryptoHash = crypto.Hash;
 
-### Type Changes
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-```zig
-// Old - HashType
-import type { HashType } from '@tevm/voltaire'
+    // Comptime-checked 32-byte literal (requires "0x" + 64 hex chars)
+    const empty_expected = comptime CryptoHash.fromHexComptime(
+        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+    );
 
-function processHash(hash: HashType): void {
-  // ...
+    // Stack-only Keccak-256 and stack-only [66]u8 hex formatting
+    const empty_digest = Hash.keccak256("");
+    std.debug.assert(Hash.equals(&empty_digest, &empty_expected));
+    const hex_buf: [66]u8 = CryptoHash.toHex(empty_digest);
+
+    // Binary Merkle root over leaf hashes
+    const leaves = [_]Hash.Hash{
+        Hash.keccak256("leaf-0"),
+        Hash.keccak256("leaf-1"),
+        Hash.keccak256("leaf-2"),
+    };
+    const root = try Hash.merkleRoot(allocator, &leaves);
+
+    std.debug.print("Empty: {s}\n", .{&hex_buf});
+    std.debug.print("Root:  {s}\n", .{&CryptoHash.toHex(root)});
 }
-
-// New - Keccak256Hash (extends Bytes32)
-import type { Keccak256Hash } from '@tevm/voltaire/crypto/Keccak256'
-
-function processHash(hash: Keccak256Hash): void {
-  // ...
-}
 ```
 
-### Constructor Changes
+## Error Set
 
-```zig
-// Old
-const hash = Hash.from('0x1234...')
-const hash = Hash.fromHex('0x1234...')
-const hash = Hash.fromBytes(bytes)
+| Error | Returned By | Condition |
+| :--- | :--- | :--- |
+| `error.InvalidHashLength` | `primitives.Hash.fromHex` | Hex digit count != 64 |
+| `error.InvalidHexCharacter` | `primitives.Hash.fromHex` | Non-hex character in input |
+| `error.InvalidHashInput` | `primitives.Hash.from` | Slice length is neither 32 raw bytes nor 64/66 hex chars |
+| `error.InvalidLength` | `crypto.Hash.fromSlice` | Slice length != 32 |
+| `error.OutOfMemory` | `toHex`, `concat`, `merkleRoot` | Allocator failed |
 
-// New - Use Keccak256Hash namespace
-import * as Keccak256Hash from '@tevm/voltaire/crypto/Keccak256/Keccak256Hash'
-
-const hash = Keccak256Hash.from('0x1234...')
-const hash = Keccak256Hash.fromHex('0x1234...')
-const hash = Keccak256Hash.fromBytes(bytes)
-```
-
-### Complete Example
-
-```zig
-// Old approach
-import * as Hash from '@tevm/voltaire/primitives/Hash'
-
-const data = new Uint8Array([1, 2, 3, 4])
-const hash = Hash.keccak256(data)
-const hex = hash.toHex()
-const isValid = Hash.isHash(hash)
-
-// New approach
-import * as Keccak256 from '@tevm/voltaire/crypto/Keccak256'
-import * as Keccak256Hash from '@tevm/voltaire/crypto/Keccak256/Keccak256Hash'
-
-const data = new Uint8Array([1, 2, 3, 4])
-const hash = Keccak256.hash(data)
-const hex = Keccak256Hash.toHex(hash)
-const isValid = Keccak256Hash.isKeccak256Hash(hash)
-```
-
-## Type Hierarchy
-
-`Keccak256Hash` extends `Bytes32`, inheriting all Bytes32 methods while adding Keccak256-specific semantics:
-
-```zig
-type Keccak256Hash = Bytes32 & { readonly __tag: "Keccak256Hash" }
-```
-
-This means all `Bytes32` operations work on `Keccak256Hash`:
-- Construction: `Bytes32.from()`, `Bytes32.fromHex()`
-- Conversion: `Bytes32.toHex()`, `Bytes32.toBytes()`
-- Validation: `Bytes32.equals()`, `Bytes32.isZero()`
-- Utilities: `Bytes32.slice()`, `Bytes32.concat()`
-
-## Where to Find
-
-### Keccak256Hash Type
-**[/crypto/keccak256/hash](/crypto/keccak256/hash)** - Type definition, branded type system, constructor methods
-
-### Hashing Methods
-**[/crypto/keccak256/index](/crypto/keccak256/index)** - Main hashing functions: `hash()`, `hashHex()`, `hashString()`
-
-### Implementations
-**[/crypto/keccak256/implementations](/crypto/keccak256/implementations)** - Native (keccak-asm), WASM (ReleaseSmall/ReleaseFast), JavaScript fallback
-
-## Related
-
-- [Bytes32](/primitives/bytes/bytes32) - Base type for 32-byte values
-- [Keccak256](/crypto/keccak256/index) - Keccak256 hashing functions
-- [Keccak256Hash](/crypto/keccak256/hash) - Keccak256Hash type documentation
+Sources: `packages/voltaire-zig/src/primitives/Hash/Hash.zig`, `packages/voltaire-zig/src/crypto/hash_utils.zig`

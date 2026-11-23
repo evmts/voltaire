@@ -1,484 +1,163 @@
 ---
 title: Library Comparisons
-description: Side-by-side comparison of common tasks in Voltaire, Viem, and Ethers.js
-icon: scale-balanced
+description: Architectural and code-level comparison of Voltaire, Viem, and Ethers.js.
 ---
 
-Voltaire, Viem, and Ethers.js are all popular Ethereum libraries. This page compares how to perform common operations across all three libraries.
+Voltaire, Viem, and Ethers.js solve different layers of the Ethereum stack. Voltaire focuses on validated byte primitives, multi-runtime cryptography, and EVM execution; higher-level workflows live in copyable [Skills](/concepts/skills) or [voltaire-effect](https://github.com/evmts/voltaire/tree/main/packages/voltaire-effect).
+
+## Architectural Comparison
+
+| Dimension | Voltaire | Viem | Ethers.js v6 |
+| --- | --- | --- | --- |
+| **Internal representation** | Branded `Uint8Array` / `bigint` | `0x${string}` hex strings | Mixed strings and classes |
+| **Type safety** | Distinct brands (`AddressType` ≠ `HashType` ≠ `BytecodeType`) | Shared `0x${string}` alias across hex values | String addresses (`string`) |
+| **Validation** | Enforced at construction | Function-by-function | Function-by-function |
+| **Crypto backends** | Pure TS, Zig WASM, Bun Native FFI | Pure JS (`@noble/*`) | Pure JS (`@noble/*`) |
+| **EVM & bytecode** | Built-in frame, opcodes, precompiles, analysis | Not included | Not included |
+| **Providers & contracts** | Low-level EIP-1193 + copyable Skills / `voltaire-effect` | Built-in `PublicClient` / `WalletClient` | Built-in `Provider` / `Signer` / `Contract` |
+| **Multi-language** | TS, Zig, C, Rust, Go, Python, Swift | TypeScript only | TypeScript only |
 
 ## Address Operations
 
-### Creating and Checksumming Addresses
+Because Voltaire stores addresses as 20-byte `Uint8Array` instances, casing differences disappear at the boundary.
 
 <Tabs>
-<Tab title="Voltaire">
+  <Tab title="Voltaire">
+    ```typescript
+    import { Address } from '@tevm/voltaire';
 
-```typescript
-import { Address } from '@tevm/voltaire';
+    // Validate and construct once at the boundary
+    const a = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+    const b = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 
-// Create and checksum
-const address = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-const checksummed = address.toChecksummed();
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+    Address.toChecksummed(a); // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+    a.equals(b);        // true (byte-level comparison)
+    Address.isValid('0x742d35cc6634c0532925a3b844bc9e7595f51e3e'); // true
+    ```
+  </Tab>
+  <Tab title="Viem">
+    ```typescript
+    import { getAddress, isAddress, isAddressEqual } from 'viem';
 
-// Validate address
-const isValid = address.validate();
-// true
+    const a = '0x742d35cc6634c0532925a3b844bc9e7595f51e3e';
+    const b = '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e';
 
-// Compare addresses
-const addr1 = Address('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-const addr2 = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-const areEqual = addr1.equals(addr2);
-// true (case-insensitive comparison)
-```
+    getAddress(a);          // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+    isAddressEqual(a, b);   // true
+    isAddress(a);           // true
+    ```
+  </Tab>
+  <Tab title="Ethers.js">
+    ```typescript
+    import { ethers } from 'ethers';
 
-</Tab>
-<Tab title="Viem">
+    const a = ethers.getAddress('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
+    const b = ethers.getAddress('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
 
-```typescript
-import {
-  getAddress,
-  isAddress,
-  isAddressEqual
-} from 'viem';
-
-// Create and checksum
-const checksummed = getAddress('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-
-// Validate address
-const isValid = isAddress('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-// true
-
-// Compare addresses
-const areEqual = isAddressEqual(
-  '0x742d35cc6634c0532925a3b844bc9e7595f51e3e',
-  '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e'
-);
-// true
-```
-
-</Tab>
-<Tab title="Ethers.js">
-
-```typescript
-import { ethers } from 'ethers';
-
-// Create and checksum
-const checksummed = ethers.getAddress('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-
-// Validate address
-const isValid = ethers.isAddress('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-// true
-
-// Compare addresses (manual)
-const addr1 = ethers.getAddress('0x742d35cc6634c0532925a3b844bc9e7595f51e3e');
-const addr2 = ethers.getAddress('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-const areEqual = addr1 === addr2;
-// true
-```
-
-</Tab>
+    a === b;                // true (after normalizing both)
+    ethers.isAddress(a);    // true
+    ```
+  </Tab>
 </Tabs>
 
-## Keccak256 Hashing
-
-### Hashing Strings and Bytes
+## Keccak-256 Hashing & Selectors
 
 <Tabs>
-<Tab title="Voltaire">
+  <Tab title="Voltaire">
+    ```typescript
+    import { Hex } from '@tevm/voltaire/Hex';
+    import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
-```typescript
-import { Keccak256, Hex } from '@tevm/voltaire';
+    const digest = Keccak256.hashString('hello world');
+    Hex.fromBytes(digest);
+    // "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"
 
-// Hash a string
-const stringHash = Keccak256(new TextEncoder().encode('hello world'));
-const hashHex = Hex(stringHash);
-// "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"
+    const selector = Keccak256.selector('transfer(address,uint256)');
+    Hex.fromBytes(selector);
+    // "0xa9059cbb"
+    ```
+  </Tab>
+  <Tab title="Viem">
+    ```typescript
+    import { keccak256, toFunctionSelector, toHex } from 'viem';
 
-// Hash hex-encoded data
-const hexData = Hex('0x1234');
-const dataHash = Keccak256(hexData);
+    const digest = keccak256(toHex('hello world'));
+    // "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"
 
-// Hash for Ethereum signatures (with prefix)
-const message = 'hello world';
-const ethMessageHash = Keccak256.hashEthereumMessage(
-  new TextEncoder().encode(message)
-);
-```
+    const selector = toFunctionSelector('transfer(address,uint256)');
+    // "0xa9059cbb"
+    ```
+  </Tab>
+  <Tab title="Ethers.js">
+    ```typescript
+    import { ethers } from 'ethers';
 
-</Tab>
-<Tab title="Viem">
+    const digest = ethers.keccak256(ethers.toUtf8Bytes('hello world'));
+    // "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"
 
-```typescript
-import { keccak256, toHex, toBytes } from 'viem';
-
-// Hash a string
-const stringHash = keccak256(toHex('hello world'));
-// "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"
-
-// Hash hex-encoded data
-const dataHash = keccak256('0x1234');
-
-// Hash for Ethereum signatures (with prefix)
-import { hashMessage } from 'viem';
-const ethMessageHash = hashMessage('hello world');
-// Automatically adds "\x19Ethereum Signed Message:\n" prefix
-```
-
-</Tab>
-<Tab title="Ethers.js">
-
-```typescript
-import { ethers } from 'ethers';
-
-// Hash a string (UTF-8 encoded)
-const stringHash = ethers.keccak256(ethers.toUtf8Bytes('hello world'));
-// "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"
-
-// Hash hex-encoded data
-const dataHash = ethers.keccak256('0x1234');
-
-// Hash for Ethereum signatures (with prefix)
-const ethMessageHash = ethers.hashMessage('hello world');
-// Automatically adds "\x19Ethereum Signed Message:\n" prefix
-```
-
-</Tab>
+    const selector = ethers.id('transfer(address,uint256)').slice(0, 10);
+    // "0xa9059cbb"
+    ```
+  </Tab>
 </Tabs>
 
-## ABI Encoding & Decoding
-
-### Function Calls
+## ABI Encoding
 
 <Tabs>
-<Tab title="Voltaire">
+  <Tab title="Voltaire">
+    ```typescript
+    import { Abi } from '@tevm/voltaire/Abi';
 
-```typescript
-import { Abi } from '@tevm/voltaire';
+    const erc20 = Abi([
+      {
+        type: 'function',
+        name: 'transfer',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { type: 'address', name: 'to' },
+          { type: 'uint256', name: 'amount' },
+        ],
+        outputs: [{ type: 'bool' }],
+      },
+    ] as const);
 
-// Define ABI
-const transferAbi = {
-  type: 'function',
-  name: 'transfer',
-  inputs: [
-    { name: 'to', type: 'address' },
-    { name: 'amount', type: 'uint256' }
-  ],
-  outputs: [{ type: 'bool' }]
-} as const;
+    const calldata = erc20.encode('transfer', [
+      '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+      1_000_000_000_000_000_000n,
+    ]);
+    ```
+  </Tab>
+  <Tab title="Viem">
+    ```typescript
+    import { encodeFunctionData } from 'viem';
 
-// Encode function call
-const fn = Abi.Function(transferAbi);
-const encoded = fn.encodeParams([
-  '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
-  1000000000000000000n
-]);
-// Returns Uint8Array with encoded parameters
+    const calldata = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [
+        '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+        1_000_000_000_000_000_000n,
+      ],
+    });
+    ```
+  </Tab>
+  <Tab title="Ethers.js">
+    ```typescript
+    import { ethers } from 'ethers';
 
-// Get function selector
-const selector = fn.getSelector();
-// "0xa9059cbb"
-
-// Decode function result
-const resultData = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-const decoded = fn.decodeResult(resultData);
-// [true]
-```
-
-</Tab>
-<Tab title="Viem">
-
-```typescript
-import {
-  encodeFunctionData,
-  decodeFunctionResult,
-  parseAbi
-} from 'viem';
-
-// Define ABI
-const abi = parseAbi([
-  'function transfer(address to, uint256 amount) returns (bool)'
-]);
-
-// Encode function call
-const encoded = encodeFunctionData({
-  abi,
-  functionName: 'transfer',
-  args: [
-    '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
-    1000000000000000000n
-  ]
-});
-// "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e0000000000000000000000000000000000000000000000000de0b6b3a7640000"
-
-// Decode function result
-const decoded = decodeFunctionResult({
-  abi,
-  functionName: 'transfer',
-  data: '0x0000000000000000000000000000000000000000000000000000000000000001'
-});
-// true
-```
-
-</Tab>
-<Tab title="Ethers.js">
-
-```typescript
-import { ethers } from 'ethers';
-
-// Define ABI
-const abi = [
-  'function transfer(address to, uint256 amount) returns (bool)'
-];
-const iface = new ethers.Interface(abi);
-
-// Encode function call
-const encoded = iface.encodeFunctionData('transfer', [
-  '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
-  ethers.parseEther('1')
-]);
-// "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e0000000000000000000000000000000000000000000000000de0b6b3a7640000"
-
-// Decode function result
-const decoded = iface.decodeFunctionResult(
-  'transfer',
-  '0x0000000000000000000000000000000000000000000000000000000000000001'
-);
-// [true]
-```
-
-</Tab>
+    const iface = new ethers.Interface([
+      'function transfer(address to, uint256 amount) returns (bool)',
+    ]);
+    const calldata = iface.encodeFunctionData('transfer', [
+      '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+      1_000_000_000_000_000_000n,
+    ]);
+    ```
+  </Tab>
 </Tabs>
 
-### Event Logs
+## When to Pick What
 
-<Tabs>
-<Tab title="Voltaire">
-
-```typescript
-import { Abi } from '@tevm/voltaire';
-
-// Define event ABI
-const transferEvent = {
-  type: 'event',
-  name: 'Transfer',
-  inputs: [
-    { name: 'from', type: 'address', indexed: true },
-    { name: 'to', type: 'address', indexed: true },
-    { name: 'value', type: 'uint256', indexed: false }
-  ]
-} as const;
-
-// Get event selector (topic0)
-const event = Abi.Event(transferEvent);
-const topic0 = event.getSelector();
-// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-
-// Encode event topics
-const topics = event.encodeTopics({
-  from: '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
-  to: '0x1234567890123456789012345678901234567890'
-});
-
-// Decode event log
-const log = {
-  topics: [
-    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e',
-    '0x0000000000000000000000001234567890123456789012345678901234567890'
-  ],
-  data: new Uint8Array(32) // uint256 value
-};
-const decoded = event.decodeLog(log);
-```
-
-</Tab>
-<Tab title="Viem">
-
-```typescript
-import {
-  encodeEventTopics,
-  decodeEventLog,
-  parseAbi
-} from 'viem';
-
-// Define event ABI
-const abi = parseAbi([
-  'event Transfer(address indexed from, address indexed to, uint256 value)'
-]);
-
-// Encode event topics (for filtering)
-const topics = encodeEventTopics({
-  abi,
-  eventName: 'Transfer',
-  args: {
-    from: '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
-    to: '0x1234567890123456789012345678901234567890'
-  }
-});
-
-// Decode event log
-const decoded = decodeEventLog({
-  abi,
-  data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000',
-  topics: [
-    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e',
-    '0x0000000000000000000000001234567890123456789012345678901234567890'
-  ]
-});
-// { eventName: 'Transfer', args: { from: '0x...', to: '0x...', value: 1000000000000000000n } }
-```
-
-</Tab>
-<Tab title="Ethers.js">
-
-```typescript
-import { ethers } from 'ethers';
-
-// Define event ABI
-const abi = [
-  'event Transfer(address indexed from, address indexed to, uint256 value)'
-];
-const iface = new ethers.Interface(abi);
-
-// Get event topic (for filtering)
-const topic0 = iface.getEvent('Transfer').topicHash;
-// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-
-// Encode event topics (manual)
-const topics = [
-  topic0,
-  ethers.zeroPadValue('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e', 32),
-  ethers.zeroPadValue('0x1234567890123456789012345678901234567890', 32)
-];
-
-// Decode event log
-const decoded = iface.parseLog({
-  data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000',
-  topics: [
-    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    '0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e',
-    '0x0000000000000000000000001234567890123456789012345678901234567890'
-  ]
-});
-// { name: 'Transfer', args: ['0x...', '0x...', 1000000000000000000n] }
-```
-
-</Tab>
-</Tabs>
-
-## Key Differences
-
-### Skills vs Library Abstractions
-
-The biggest philosophical difference between Voltaire and other libraries is how higher-level abstractions are delivered.
-
-**Ethers.js** and **Viem** provide monolithic abstractions as library exports:
-
-```typescript
-// Ethers - rigid provider abstraction
-import { JsonRpcProvider } from 'ethers';
-const provider = new JsonRpcProvider('https://...');
-
-// Viem - rigid client abstraction
-import { createPublicClient, http } from 'viem';
-const client = createPublicClient({ transport: http('https://...') });
-```
-
-These abstractions are excellent "off-the-rack" solutions, but they come with trade-offs:
-- **Rigidity** — Can't easily modify internals (caching, retry logic, error handling)
-- **Bundle bloat** — Include features you don't use
-- **Security surface** — More code means more potential vulnerabilities
-
-**Voltaire** takes the [shadcn/ui](https://ui.shadcn.com/) approach with [Skills](/concepts/skills):
-
-```typescript
-// Copy the ethers-provider Skill into your project
-// Then customize it however you need
-import { EthersProvider } from './EthersProvider.js';  // Your local copy
-const provider = new EthersProvider('https://...');
-```
-
-Skills are copyable reference implementations you own. We provide [ethers-style](/skills/ethers-provider), [viem-style](/skills/viem-publicclient), and [React](/skills/react-query) Skills—use them as-is or customize for your contracts.
-
-<Tip>
-Use the [Voltaire MCP Server](/model-context-protocol) to have AI generate custom Skills tailored to your specific contracts and requirements.
-</Tip>
-
-### Type System
-
-**Voltaire** uses [branded types](/getting-started/branded-types) for compile-time type safety with zero runtime overhead:
-
-```typescript
-type AddressType = Uint8Array & { readonly __tag: "Address" };
-type HashType = Uint8Array & { readonly __tag: "Hash" };
-```
-
-**Viem** uses template literal types for compile-time format checking:
-
-```typescript
-type Address = `0x${string}`;
-type Hash = `0x${string}`;
-// Catches format errors at compile time, but doesn't guarantee validity
-```
-
-**Ethers.js** uses plain strings with runtime-only validation:
-
-```typescript
-// No compile-time safety - validation happens at runtime
-const address: string = ethers.getAddress('0x...');
-const hash: string = ethers.keccak256('0x...');
-```
-
-In **Voltaire**, the branded type signature proves the value was already runtime validated - if you have an `Address`, it's guaranteed valid.
-
-### Tree-Shaking
-
-**Voltaire** provides granular tree-shakeable imports but primarily documents a simpler class-based API:
-
-```typescript
-// Simple class-based API (recommended)
-import { Address, Hex } from '@tevm/voltaire';
-const addr = Address('0x...');
-
-// Granular imports available for advanced use cases
-import { from, toChecksummed } from '@tevm/voltaire/Address';
-```
-
-**Viem** has tree-shakeable functions by default:
-
-```typescript
-import { getAddress, keccak256 } from 'viem';
-```
-
-Both **Voltaire** and **Viem** use [ox](https://github.com/wevm/ox) under the hood, amortizing bundle cost if you use both libraries.
-
-**Ethers.js** v6 improved tree-shaking but still bundles more:
-
-```typescript
-// Top-level imports bundle more code
-import { ethers } from 'ethers';
-```
-
-### WASM Acceleration
-
-**Voltaire** provides optional WASM acceleration for performance-critical operations. In some cases like Keccak256, the WASM version is both faster and smaller than the JavaScript implementation:
-
-```typescript
-import { Keccak256Wasm } from '@tevm/voltaire/Keccak256/wasm';
-
-await Keccak256Wasm.init();
-const hash = Keccak256Wasm.hash(data); // 10-100x faster, smaller bundle
-```
-
-**Viem** and **Ethers.js** use JavaScript implementations only.
-
-## See Also
-
-- [Address API](/primitives/address) - Complete Address documentation
-- [Keccak256 API](/crypto/keccak256) - Complete Keccak256 documentation
-- [ABI API](/primitives/abi) - Complete ABI encoding/decoding documentation
-- [Branded Types](/getting-started/branded-types) - Understanding Voltaire's type system
+- **Choose Voltaire** when you want strict branded types, raw `Uint8Array` performance, WASM/native crypto acceleration, local EVM/bytecode tooling, cross-language parity with Zig/Rust/Go/C/Python/Swift, or custom-fitted abstractions via Skills.
+- **Choose `voltaire-effect`** when you want Voltaire primitives paired with typed-error Effect.ts services, retries, timeouts, contract registries, and reorg-aware streams.
+- **Mix freely:** Voltaire primitives expose `.toHex()` and `Uint8Array` directly, so you can adopt Voltaire incrementally inside an existing Viem or Ethers codebase.

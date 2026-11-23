@@ -7,7 +7,6 @@ description: Auto-generated JSON-RPC types from the official OpenRPC specificati
 This page is a high-level overview. The concrete client and examples are TypeScript-first today; in Zig, treat these as reference for constructing `std.json` JSON-RPC payloads.
 </Warning>
 
-# Type System
 
 All JSON-RPC types are auto-generated from the [ethereum/execution-apis](https://github.com/ethereum/execution-apis) OpenRPC specification, ensuring they stay in sync with the official Ethereum JSON-RPC API.
 
@@ -69,7 +68,7 @@ These types are hand-written in `jsonrpc/types/` and used by generated method de
 
 ## Branded Primitives Integration
 
-Generated types use Tevm's branded primitive system:
+Generated types use Voltaire's branded primitive system:
 
 ```zig
 // Generated eth_getBalance params

@@ -38,7 +38,7 @@ function getSender(tx: Any): AddressType
 ### Usage
 
 ```typescript
-import { getSender } from 'tevm/Transaction'
+import { getSender } from '@tevm/voltaire/Transaction'
 
 const signedTx: Transaction.EIP1559 = {
   type: Transaction.Type.EIP1559,
@@ -62,7 +62,7 @@ console.log('From:', Address.toChecksummed(sender))
 // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 ```
 
-Source: [getSender.ts:12-27](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getSender.ts#L12-L27)
+Source: [getSender.ts:12-27](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Transaction/getSender.ts#L12-L27)
 
 ## verifySignature
 
@@ -83,7 +83,7 @@ function verifySignature(tx: Any): boolean
 ### Usage
 
 ```typescript
-import { verifySignature } from 'tevm/Transaction'
+import { verifySignature } from '@tevm/voltaire/Transaction'
 
 const tx: Transaction.EIP1559 = { /* signed transaction */ }
 
@@ -96,7 +96,7 @@ if (verifySignature(tx)) {
 }
 ```
 
-Source: [verifySignature.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/verifySignature.ts)
+Source: [verifySignature.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Transaction/verifySignature.ts)
 
 ## isSigned
 
@@ -117,7 +117,7 @@ function isSigned(tx: Any): boolean
 ### Usage
 
 ```typescript
-import { isSigned, getSender } from 'tevm/Transaction'
+import { isSigned, getSender } from '@tevm/voltaire/Transaction'
 
 const tx: Transaction.EIP1559 = { /* ... */ }
 
@@ -129,7 +129,7 @@ if (isSigned(tx)) {
 }
 ```
 
-Source: [isSigned.ts:7-14](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/isSigned.ts#L7-L14)
+Source: [isSigned.ts:7-14](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Transaction/isSigned.ts#L7-L14)
 
 ## assertSigned
 
@@ -150,7 +150,7 @@ function assertSigned(tx: Any): void
 ### Usage
 
 ```typescript
-import { assertSigned, getSender } from 'tevm/Transaction'
+import { assertSigned, getSender } from '@tevm/voltaire/Transaction'
 
 try {
   assertSigned(tx)
@@ -162,7 +162,7 @@ try {
 }
 ```
 
-Source: [assertSigned.ts:6-13](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/assertSigned.ts#L6-L13)
+Source: [assertSigned.ts:6-13](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Transaction/assertSigned.ts#L6-L13)
 
 ## Signature Components
 
@@ -242,7 +242,7 @@ function getSender(tx: Transaction) {
 Each transaction type has specialized methods:
 
 ```typescript
-import { Legacy, EIP1559 } from 'tevm/Transaction'
+import { Legacy, EIP1559 } from '@tevm/voltaire/Transaction'
 
 // Legacy
 const legacySender = Legacy.getSender.call(legacyTx)
@@ -258,8 +258,8 @@ const eip1559Valid = EIP1559.verifySignature(eip1559Tx)
 ### Transaction Pool Validation
 
 ```typescript
-import { verifySignature, getSender } from 'tevm/Transaction'
-import { InvalidSignatureError, TransactionError } from 'tevm/errors'
+import { verifySignature, getSender } from '@tevm/voltaire/Transaction'
+import { InvalidSignatureError, TransactionError } from '@tevm/voltaire/errors'
 
 class TransactionPool {
   async add(tx: Transaction.Any): Promise<void> {
@@ -292,8 +292,8 @@ class TransactionPool {
 ### Authorization Check
 
 ```typescript
-import { getSender } from 'tevm/Transaction'
-import { InvalidSignerError } from 'tevm/errors'
+import { getSender } from '@tevm/voltaire/Transaction'
+import { InvalidSignerError } from '@tevm/voltaire/errors'
 
 function requireSender(tx: Transaction.Any, expectedSender: AddressType) {
   const actualSender = getSender(tx)
@@ -314,8 +314,8 @@ function requireSender(tx: Transaction.Any, expectedSender: AddressType) {
 ### Replay Protection
 
 ```typescript
-import { getSender, getChainId, verifySignature } from 'tevm/Transaction'
-import { InvalidSignatureError, TransactionError } from 'tevm/errors'
+import { getSender, getChainId, verifySignature } from '@tevm/voltaire/Transaction'
+import { InvalidSignatureError, TransactionError } from '@tevm/voltaire/errors'
 
 function validateTransaction(tx: Transaction.Any, currentChainId: bigint) {
   // Verify signature
@@ -343,7 +343,7 @@ function validateTransaction(tx: Transaction.Any, currentChainId: bigint) {
 ### Batch Verification
 
 ```typescript
-import { verifySignature } from 'tevm/Transaction'
+import { verifySignature } from '@tevm/voltaire/Transaction'
 
 async function verifyBatch(transactions: Transaction.Any[]): Promise<boolean[]> {
   // Parallelize signature verification
@@ -366,7 +366,7 @@ txs.forEach((tx, i) => {
 ### Safe Sender Recovery
 
 ```typescript
-import { isSigned, getSender } from 'tevm/Transaction'
+import { isSigned, getSender } from '@tevm/voltaire/Transaction'
 
 function safGetSender(tx: Transaction.Any): AddressType | null {
   try {
@@ -388,7 +388,7 @@ ECDSA signatures have malleability issue - for every valid signature `(r, s)`, t
 Ethereum requires `s` value to be in lower half of curve order:
 
 ```typescript
-import { InvalidSignatureError } from 'tevm/errors'
+import { InvalidSignatureError } from '@tevm/voltaire/errors'
 
 const SECP256K1_N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n
 const SECP256K1_N_DIV_2 = SECP256K1_N / 2n

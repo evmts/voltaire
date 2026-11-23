@@ -113,9 +113,9 @@ if (newValue == 0 && currentValue != 0) {
 ### Basic Storage Write
 
 ```typescript
-import { sstore } from '@voltaire/evm/storage';
-import { createFrame } from '@voltaire/evm/Frame';
-import { createMemoryHost } from '@voltaire/evm/Host';
+import { sstore } from '@tevm/voltaire/evm';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import { createMemoryHost } from '@tevm/voltaire/evm/Host';
 
 const host = createMemoryHost();
 const frame = createFrame({

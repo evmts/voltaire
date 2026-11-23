@@ -8,7 +8,7 @@ description: "Gas limit and gas price types for transaction fees"
 Gas provides branded types for gas limits and gas prices, preventing common bugs like mixing these values. Includes GasLimit for transaction gas limits and GasPrice for gas prices in wei.
 
 ```typescript
-import { GasLimit, GasPrice } from '@voltaire/primitives/Gas'
+import { GasLimit, GasPrice } from '@tevm/voltaire'
 
 const limit = GasLimit.from(21000)
 const price = GasPrice.fromGwei(20) // 20 gwei
@@ -44,7 +44,7 @@ const limit3 = GasLimit.from("0x5208") // 21000 in hex
 Pre-defined gas limits for common operations:
 
 ```typescript
-import { SIMPLE_TRANSFER, ERC20_TRANSFER, DEFAULT_LIMIT } from '@voltaire/primitives/Gas'
+import { SIMPLE_TRANSFER, ERC20_TRANSFER, DEFAULT_LIMIT } from '@tevm/voltaire'
 
 SIMPLE_TRANSFER  // 21000 - ETH transfer
 ERC20_TRANSFER   // 65000 - ERC-20 token transfer
@@ -115,7 +115,7 @@ const gwei = GasPrice.toGwei(price) // 20n
 Calculate transaction fees with type safety:
 
 ```typescript
-import { GasLimit, GasPrice } from '@voltaire/primitives/Gas'
+import { GasLimit, GasPrice } from '@tevm/voltaire'
 
 // Simple transfer
 const gasLimit = GasLimit.from(21000)
@@ -170,7 +170,7 @@ Actual gas price in EIP-1559 is: `min(maxFeePerGas, baseFee + maxPriorityFeePerG
 ## Namespace Usage
 
 ```typescript
-import { GasLimit, GasPrice } from '@voltaire/primitives/Gas'
+import { GasLimit, GasPrice } from '@tevm/voltaire'
 
 // Using namespace objects
 const limit = GasLimit.from(21000)

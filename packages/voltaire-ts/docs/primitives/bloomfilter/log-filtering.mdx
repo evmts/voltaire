@@ -35,7 +35,7 @@ interface BlockHeader {
 ### Loading Block Bloom Filters
 
 ```typescript
-import { BloomFilter } from 'tevm'
+import { BloomFilter } from '@tevm/voltaire'
 
 // From JSON-RPC response
 const block = await provider.getBlock(12345678)
@@ -81,7 +81,7 @@ interface Log {
 ### Building Block Bloom Filters
 
 ```typescript
-import { BloomFilter, Address, Hex } from 'tevm'
+import { BloomFilter, Address, Hex } from '@tevm/voltaire'
 
 function buildBlockBloom(logs: Log[]): BloomFilter {
   const filter = BloomFilter.create(2048, 3)
@@ -116,7 +116,7 @@ console.log(bloom.toHex())  // "0x000..."
 Event signatures are keccak256 hashed to produce topics:
 
 ```typescript
-import { keccak256 } from 'tevm'
+import { keccak256 } from '@tevm/voltaire'
 
 // ERC-20 Transfer event: Transfer(address indexed from, address indexed to, uint256 value)
 const transferSig = "Transfer(address,address,uint256)"
@@ -156,7 +156,7 @@ const BURN = keccak256(new TextEncoder().encode("Burn(address,uint256,uint256,ad
 ### Filter by Address
 
 ```typescript
-import { BloomFilter, Address } from 'tevm'
+import { BloomFilter, Address } from '@tevm/voltaire'
 
 async function findBlocksWithAddress(
   startBlock: number,

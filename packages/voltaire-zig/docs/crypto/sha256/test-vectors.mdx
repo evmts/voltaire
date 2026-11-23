@@ -3,9 +3,6 @@ title: SHA256 Test Vectors
 description: NIST and official SHA-256 test vectors for validation
 ---
 
-
-# SHA256 Test Vectors
-
 Official NIST FIPS 180-4 test vectors and additional validation cases for SHA-256.
 
 ## NIST FIPS 180-4 Test Vectors
@@ -424,7 +421,7 @@ import crypto from 'crypto';
 
 const testData = new Uint8Array([1, 2, 3, 4, 5]);
 
-// Tevm
+// Voltaire
 const tevmHash = SHA256.hash(testData);
 
 // @noble/hashes

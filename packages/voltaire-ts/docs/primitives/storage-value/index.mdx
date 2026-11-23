@@ -33,7 +33,7 @@ export type StorageValueType = Uint8Array & {
 ## Constants
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
+import { StorageValue } from '@tevm/voltaire';
 
 StorageValue.SIZE;  // 32
 ```
@@ -45,7 +45,7 @@ StorageValue.SIZE;  // 32
 Create from bigint, hex string, or Uint8Array:
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
+import { StorageValue } from '@tevm/voltaire';
 
 // From bigint
 const val1 = StorageValue.from(123n);
@@ -62,7 +62,7 @@ const val3 = StorageValue.from(new Uint8Array(32));
 Create from hex string (with or without `0x` prefix):
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
+import { StorageValue } from '@tevm/voltaire';
 
 const val = StorageValue.fromHex("0x0000000000000000000000000000000000000000000000000000000000000064");
 ```
@@ -74,7 +74,7 @@ const val = StorageValue.fromHex("0x00000000000000000000000000000000000000000000
 Convert to 0x-prefixed hex string:
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
+import { StorageValue } from '@tevm/voltaire';
 
 const val = StorageValue.from(123n);
 const hex = StorageValue.toHex(val);
@@ -86,7 +86,7 @@ const hex = StorageValue.toHex(val);
 Convert to bigint:
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
+import { StorageValue } from '@tevm/voltaire';
 
 const val = StorageValue.from(123n);
 const num = StorageValue.toUint256(val);
@@ -100,7 +100,7 @@ const num = StorageValue.toUint256(val);
 Compare two StorageValues using constant-time comparison (timing-attack safe):
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
+import { StorageValue } from '@tevm/voltaire';
 
 const a = StorageValue.from(100n);
 const b = StorageValue.from(100n);
@@ -120,7 +120,7 @@ Storage in the EVM is a key-value store where:
 - Writing zero can trigger gas refunds
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
+import { StorageValue } from '@tevm/voltaire';
 
 // Slot 0 typically stores first state variable
 const slot0 = StorageValue.from(0n);
@@ -142,9 +142,9 @@ const balanceSlot = StorageValue.from(
 ## Example: Storage Access
 
 ```typescript
-import * as StorageValue from '@voltaire/primitives/StorageValue';
-import * as Keccak256 from '@voltaire/crypto/Keccak256';
-import * as Address from '@voltaire/primitives/Address';
+import { StorageValue } from '@tevm/voltaire';
+import * as Keccak256 from '@tevm/voltaire/Keccak256';
+import * as Address from '@tevm/voltaire/Address';
 
 // Calculate ERC-20 balance storage slot
 // balanceOf[address] uses: keccak256(address . slot)

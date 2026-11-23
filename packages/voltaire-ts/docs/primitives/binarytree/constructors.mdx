@@ -3,9 +3,6 @@ title: BinaryTree Constructors
 description: Creating BinaryTree instances
 ---
 
-
-# Constructors
-
 Methods for creating BinaryTree instances.
 
 ## Factory Constructor
@@ -18,7 +15,7 @@ Methods for creating BinaryTree instances.
 Factory function creates empty binary tree with empty root node.
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 const tree = BinaryTree()
 console.log(tree.root.type) // 'empty'
@@ -42,7 +39,7 @@ const tree2 = BinaryTree.insert(tree, key, value)
 console.log(tree2.root.type) // 'stem' (no longer empty)
 ```
 
-Defined in: [primitives/BinaryTree/index.js:30-32](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/index.js#L30-L32)
+Defined in: [primitives/BinaryTree/index.js:30-32](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/BinaryTree/index.js#L30-L32)
 
 </Tab>
 
@@ -55,7 +52,7 @@ Defined in: [primitives/BinaryTree/index.js:30-32](https://github.com/evmts/volt
 Static method creates empty binary tree. Equivalent to factory function.
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 const tree = BinaryTree.init()
 console.log(tree.root.type) // 'empty'
@@ -66,7 +63,7 @@ console.log(tree.root.type) // 'empty'
 **Namespace Usage:**
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 // Both are equivalent
 const tree1 = BinaryTree()
@@ -76,13 +73,13 @@ const tree2 = BinaryTree.init()
 **Tree-shakeable Usage:**
 
 ```typescript
-import { init } from 'tevm/BrandedBinaryTree'
-import type { BinaryTree } from 'tevm/BrandedBinaryTree'
+import { init } from '@tevm/voltaire/BinaryTree'
+import type { BinaryTree } from '@tevm/voltaire/BinaryTree'
 
 const tree: BinaryTree = init()
 ```
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/init.js:12-14](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/init.js#L12-L14)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/init.js:12-14](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/BinaryTree/BrandedBinaryTree/init.js#L12-L14)
 
 ## Empty Tree Structure
 
@@ -105,7 +102,7 @@ Empty tree properties:
 Trees built through successive insert operations:
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 // Start with empty tree
 let tree = BinaryTree.init()
@@ -166,7 +163,7 @@ Immutability benefits:
 AccountData stored at subindex 0 in account stem:
 
 ```typescript
-import { BinaryTree } from 'tevm'
+import { BinaryTree } from '@tevm/voltaire'
 
 // Create empty tree
 let tree = BinaryTree.init()

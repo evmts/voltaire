@@ -1,22 +1,30 @@
 ---
 title: React Integration
-description: Use voltaire-effect with React via effect-atom
+description: Bind voltaire-effect services, queries, and mutations to React components with @effect-atom/atom-react.
 ---
 
-## Installation
+`@effect-atom/atom-react` connects `voltaire-effect` Layers to React state through `Atom.runtime`, observable atoms, and the `Result` state machine (`Initial` | `Success` | `Failure`).
+
+```mermaid
+flowchart LR
+  Layer["ProviderLayer / WalletLayer\n(composed once at module scope)"] --> RT["Atom.runtime(Layer)"]
+  RT --> Atom["runtime.atom(effect)\nor runtime.fn(...)"]
+  Atom --> Hook["useAtomValue / useAtomSet"]
+  Hook --> UI["Result.builder(result)\nInitial | Success | Failure"]
+```
+
+## Install & Provider Setup
 
 ```bash
 npm install @effect-atom/atom-react voltaire-effect effect
 ```
 
-## Setup
-
-Wrap your app with `RegistryProvider`:
+Wrap the root tree in `RegistryProvider`:
 
 ```tsx
-import { RegistryProvider } from "@effect-atom/atom-react"
+import { RegistryProvider } from '@effect-atom/atom-react'
 
-function App() {
+export function App() {
   return (
     <RegistryProvider>
       <YourApp />
@@ -25,155 +33,99 @@ function App() {
 }
 ```
 
-## Core Concepts
+## Reading Chain State
 
-**effect-atom** provides React integration for Effect.ts:
-
-- **Atoms** - Observable state containers that can wrap Effects
-- **Result** - Loading/Success/Failure monad for async state
-- **Hooks** - `useAtomValue`, `useAtomSet`, `useAtom` for React
-- **Layer integration** - `Atom.runtime()` to use Effect services
-
-## Basic Example: Display Balance
+Create the composed `Layer` and `Atom.runtime` once at module scope (never inside a component render):
 
 ```tsx
-import { Atom, useAtomValue, Result } from "@effect-atom/atom-react"
-import { Layer } from "effect"
-import { getBalance, Provider, HttpTransport } from "voltaire-effect"
+import { Atom, useAtomValue, Result } from '@effect-atom/atom-react'
+import { Layer } from 'effect'
+import { getBalance, Provider, HttpTransport } from 'voltaire-effect'
 
-// 1. Compose layers first, then create runtime
 const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport("https://eth.llamarpc.com"))
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 const runtime = Atom.runtime(ProviderLayer)
 
-// 2. Create an atom that fetches balance
-const balanceAtom = (address: `0x${string}`) =>
-  runtime.atom(getBalance(address, "latest"))
+const balanceAtom = Atom.family((address: `0x${string}`) =>
+  runtime.atom(getBalance(address, 'latest'))
+)
 
-// 3. Use in React component
-function Balance({ address }: { address: `0x${string}` }) {
+export function Balance({ address }: { address: `0x${string}` }) {
   const result = useAtomValue(balanceAtom(address))
 
   return Result.builder(result)
     .onInitial(() => <div>Loading...</div>)
-    .onSuccess((balance) => (
-      <div>{(Number(balance) / 1e18).toFixed(4)} ETH</div>
-    ))
-    .onFailure((cause) => (
-      <div>Error: {String(cause)}</div>
-    ))
+    .onSuccess((balance) => <div>{(Number(balance) / 1e18).toFixed(4)} ETH</div>)
+    .onSuccessWaiting((balance) => <div>{(Number(balance) / 1e18).toFixed(4)} ETH (refreshing)</div>)
+    .onFailure((cause) => <div>Error: {String(cause)}</div>)
     .render()
 }
 ```
 
-## Result Monad
+### `Result` States
 
-`Result` has three states for handling async data:
+| State | Meaning |
+| --- | --- |
+| `Initial` | Fiber has not produced a value yet |
+| `Success<A>` | Resolved value; `waiting: true` during background refresh |
+| `Failure<E>` | Failed with typed `Cause<E>` |
 
-| State | Description |
-|-------|-------------|
-| `Initial` | Effect hasn't started or is loading |
-| `Success<A>` | Has value, optional `waiting` flag for refresh |
-| `Failure<E>` | Has error cause |
-
-```tsx
-import { Result } from "@effect-atom/atom-react"
-
-Result.builder(result)
-  .onInitial(() => <Skeleton />)
-  .onSuccess((data) => <DataView data={data} />)
-  .onSuccessWaiting((data) => <DataView data={data} refreshing />)
-  .onFailure((cause) => <ErrorView error={cause} />)
-  .render()
-```
-
-## Wallet Connection Example
+## Derived Atoms & Wallet Connection
 
 ```tsx
-import { Atom, useAtom, useAtomValue, Result } from "@effect-atom/atom-react"
-import { Effect, Layer } from "effect"
-import { getBalance, getBlockNumber, Provider, HttpTransport } from "voltaire-effect"
+import { Atom, useAtom, useAtomValue, Result } from '@effect-atom/atom-react'
+import { Effect, Layer } from 'effect'
+import { getBalance, getBlockNumber, Provider, HttpTransport } from 'voltaire-effect'
 
-// Compose layers once, create runtime at module level
 const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport(process.env.NEXT_PUBLIC_RPC_URL!))
 )
 const runtime = Atom.runtime(ProviderLayer)
 
-// Connected address (writable atom)
 const addressAtom = Atom.make<`0x${string}` | null>(null)
 
-// Balance (derived, refetches when address changes)
-const balanceAtom = Atom.make((get) => {
+const connectedBalanceAtom = Atom.make((get) => {
   const address = get(addressAtom)
   if (!address) return Effect.succeed(null)
-  return get.result(runtime.atom(getBalance(address, "latest")))
+  return get.result(runtime.atom(getBalance(address, 'latest')))
 })
 
-// Block number (auto-refreshes on window focus)
 const blockNumberAtom = runtime.atom(getBlockNumber()).pipe(
   Atom.refreshOnWindowFocus,
   Atom.keepAlive
 )
-
-function ConnectButton() {
-  const [address, setAddress] = useAtom(addressAtom)
-
-  const connect = async () => {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts"
-    })
-    setAddress(accounts[0])
-  }
-
-  if (address) {
-    return <div>Connected: {address.slice(0, 6)}...</div>
-  }
-
-  return <button onClick={connect}>Connect Wallet</button>
-}
-
-function WalletBalance() {
-  const result = useAtomValue(balanceAtom)
-
-  return Result.builder(result)
-    .onInitial(() => <span>--</span>)
-    .onSuccess((balance) =>
-      balance ? <span>{formatEther(balance)} ETH</span> : <span>Not connected</span>
-    )
-    .render()
-}
 ```
 
-## Mutations with useAtomSet
+## Mutations (`runtime.fn` + `useAtomSet`)
+
+Wrap transactions in `runtime.fn` and invoke with `{ mode: 'promiseExit' }` to inspect `Exit.Success` / `Exit.Failure` without throwing:
 
 ```tsx
-import { Atom, useAtomSet } from "@effect-atom/atom-react"
-import { Effect, Exit } from "effect"
-import { SignerService } from "voltaire-effect"
+import { Atom, useAtomSet } from '@effect-atom/atom-react'
+import { Effect, Exit } from 'effect'
+import { SignerService } from 'voltaire-effect'
 
-// Create mutation atom using runtime.fn
-const sendTxAtom = runtime.fn(
+const sendTxAtom = walletRuntime.fn(
   Effect.fnUntraced(function* (params: { to: `0x${string}`; value: bigint }) {
     const signer = yield* SignerService
     return yield* signer.sendTransaction(params)
   })
 )
 
-function SendButton() {
-  const sendTx = useAtomSet(sendTxAtom, { mode: "promiseExit" })
+export function SendButton() {
+  const sendTx = useAtomSet(sendTxAtom, { mode: 'promiseExit' })
 
   const handleSend = async () => {
     const exit = await sendTx({
-      to: "0x742d35Cc6634C0532925a3b844Bc9e7595f1E5B3",
-      value: 100000000000000000n
+      to: '0x742d35Cc6634C0532925a3b844Bc9e7595f1E5B3',
+      value: 100_000_000_000_000_000n
     })
 
     if (Exit.isSuccess(exit)) {
-      console.log("TX Hash:", exit.value)
+      console.log('TX Hash:', exit.value)
     } else {
-      console.error("Failed:", exit.cause)
+      console.error('Failed:', exit.cause)
     }
   }
 
@@ -181,144 +133,30 @@ function SendButton() {
 }
 ```
 
-## Atom Families for Dynamic Data
-
-Use `Atom.family` to create atoms dynamically by key:
-
-```tsx
-import { Atom, useAtomValue } from "@effect-atom/atom-react"
-import { Effect } from "effect"
-import { call } from "voltaire-effect"
-
-// ERC20 ABI fragment
-const erc20BalanceOf = {
-  name: "balanceOf",
-  type: "function",
-  inputs: [{ name: "account", type: "address" }],
-  outputs: [{ name: "balance", type: "uint256" }]
-} as const
-
-// Create atoms dynamically by token address
-const tokenBalanceAtom = Atom.family(
-  (params: { token: `0x${string}`; account: `0x${string}` }) =>
-    runtime.atom(
-      call({
-        to: params.token,
-        abi: [erc20BalanceOf],
-        functionName: "balanceOf",
-        args: [params.account]
-      })
-    )
-)
-
-function TokenBalance({
-  token,
-  account
-}: {
-  token: `0x${string}`
-  account: `0x${string}`
-}) {
-  // Each token/account pair gets its own cached atom
-  const result = useAtomValue(tokenBalanceAtom({ token, account }))
-
-  return Result.builder(result)
-    .onInitial(() => <span>Loading...</span>)
-    .onSuccess((balance) => <span>{balance.toString()}</span>)
-    .onFailure(() => <span>Error</span>)
-    .render()
-}
-```
-
 ## Hooks Reference
 
-| Hook | Purpose |
-|------|---------|
-| `useAtomValue(atom)` | Read atom value (returns Result for async atoms) |
-| `useAtomSet(atom)` | Get setter function for mutations |
-| `useAtom(atom)` | Get `[value, setter]` tuple |
-| `useAtomRefresh(atom)` | Get function to refresh/refetch |
-| `useAtomSuspense(atom)` | Suspense-enabled reading (throws promise) |
+| Hook | Behavior |
+| --- | --- |
+| `useAtomValue(atom)` | Subscribes to atom; returns `Result<A, E>` for async atoms |
+| `useAtomSet(atom, opts?)` | Returns setter or mutation invoker (`mode: 'promiseExit'`) |
+| `useAtom(atom)` | Returns `[value, setter]` tuple |
+| `useAtomRefresh(atom)` | Returns a callback that forces re-execution |
+| `useAtomSuspense(atom)` | Integrates with React `<Suspense>` |
 
-## Best Practices
+## Next.js App Router Setup
 
-1. **Create runtime once** at module level, not in components
-2. **Compose layers before creating runtime** - don't chain multiple `Effect.provide`
-3. **Use `Atom.keepAlive`** for data that should persist across unmounts
-4. **Use `Atom.family`** for dynamic/parameterized atoms
-5. **Use `Atom.refreshOnWindowFocus`** for data that should refresh when user returns
+1. Create `lib/atoms.ts` exporting the module-level `Atom.runtime(ProviderLayer)` (or `Atom.runtime(WalletLayer)`).
+2. Create a `'use client'` `app/providers.tsx` wrapping `{children}` in `<RegistryProvider>`.
+3. Mount `<Providers>` in `app/layout.tsx`.
 
-## Next.js Integration
+## Operational Rules
 
-```tsx
-// lib/atoms.ts
-import { Atom } from "@effect-atom/atom-react"
-import { Layer } from "effect"
-import { Provider, HttpTransport } from "voltaire-effect"
-
-const ProviderLayer = Provider.pipe(
-  Layer.provide(HttpTransport(process.env.NEXT_PUBLIC_RPC_URL!))
-)
-
-export const runtime = Atom.runtime(ProviderLayer)
-```
-
-```tsx
-// app/providers.tsx
-"use client"
-import { RegistryProvider } from "@effect-atom/atom-react"
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return <RegistryProvider>{children}</RegistryProvider>
-}
-```
-
-```tsx
-// app/layout.tsx
-import { Providers } from "./providers"
-
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <html>
-      <body>
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  )
-}
-```
-
-## With Full Wallet Layer
-
-For signing transactions, compose all required layers:
-
-```tsx
-// lib/atoms.ts
-import { Atom } from "@effect-atom/atom-react"
-import { Layer } from "effect"
-import { Provider, HttpTransport, Signer, LocalAccount } from "voltaire-effect"
-import { Secp256k1Live, KeccakLive } from "voltaire-effect/crypto"
-
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-const TransportLayer = HttpTransport(process.env.NEXT_PUBLIC_RPC_URL!)
-const ProviderLayer = Provider.pipe(Layer.provide(TransportLayer))
-
-// Full wallet layer with signing capability
-export const WalletLayer = Layer.mergeAll(
-  Signer.Live,
-  CryptoLayer,
-  ProviderLayer
-).pipe(Layer.provideMerge(LocalAccount(privateKey)))
-
-export const walletRuntime = Atom.runtime(WalletLayer)
-```
+- Instantiate `Atom.runtime(...)` once at module level; recreating runtimes on render leaks scopes and cancels in-flight RPCs.
+- Use `Atom.family` for parameterized queries (address, token pair) so each key caches independently.
+- Add `Atom.keepAlive` for global subscriptions (`blockNumberAtom`) that should survive component unmounts.
 
 ## See Also
 
-- [effect-atom GitHub](https://github.com/tim-smart/effect-atom)
-- [Layer Composition Guide](/guides/layers)
-- [Provider Setup](/services/provider)
-- [Signer Setup](/services/signer)
+- [Layer Composition Guide](/guides/layers) — Composing `ProviderLayer` and `WalletLayer`
+- [Provider Service](/services/provider) — JSON-RPC free functions
+- [Signer Service](/services/signer) — Browser and local signers

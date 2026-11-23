@@ -7,8 +7,6 @@ description: Estimate gas and set EIP-1559 transaction fees
 **Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
 </Info>
 
-# Gas Estimation and EIP-1559 Fees
-
 This guide covers estimating gas for transactions and setting appropriate EIP-1559 fees using Voltaire's provider and FeeMarket primitives.
 
 ## EIP-1559 Fee Model
@@ -28,7 +26,7 @@ The actual fee paid is: `min(maxFeePerGas, baseFee + maxPriorityFeePerGas)`.
 Fetch current network fee data using provider methods:
 
 ```typescript
-import { HttpProvider } from '@voltaire/provider';
+import { HttpProvider } from '@tevm/voltaire/provider';
 
 const provider = HttpProvider({ url: 'https://eth.llamarpc.com' });
 
@@ -87,7 +85,7 @@ Add a 20% buffer to gas estimates to account for state changes between estimatio
 Voltaire provides a branded `GasEstimate` type for type-safe gas handling:
 
 ```typescript
-import * as GasEstimate from '@voltaire/primitives/GasEstimate';
+import * as GasEstimate from '@tevm/voltaire';
 
 // Create from RPC result
 const estimate = GasEstimate.from('0xc350'); // 50000
@@ -105,7 +103,7 @@ const gasLimit = GasEstimate.toGasLimit(estimate);
 Use the FeeMarket primitive to calculate effective fees:
 
 ```typescript
-import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+import * as FeeMarket from '@tevm/voltaire/FeeMarket';
 
 // Get current network state
 const block = await provider.request({
@@ -167,7 +165,7 @@ const fees = await getFeeParams('standard');
 Use `FeeMarket.BaseFee` to calculate what the next block's base fee will be:
 
 ```typescript
-import * as FeeMarket from '@voltaire/primitives/FeeMarket';
+import * as FeeMarket from '@tevm/voltaire/FeeMarket';
 
 const block = await provider.request({
   method: 'eth_getBlockByNumber',
@@ -290,7 +288,7 @@ const blobCost = BigInt(blobBaseFee) * BLOB_GAS_PER_BLOB * blobCount;
 For contract interactions, use the Contract module's built-in estimation:
 
 ```typescript
-import { Contract } from '@voltaire/contract';
+import { Contract } from '@tevm/voltaire/contract';
 
 const usdc = Contract({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',

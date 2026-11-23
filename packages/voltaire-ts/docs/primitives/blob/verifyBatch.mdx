@@ -17,7 +17,7 @@ description: Batch verify multiple blob proofs (more efficient)
 Batch verification is significantly faster than individual verification:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 const blobs = [blob1, blob2, blob3, blob4, blob5, blob6];
 const commitments = blobs.map(b => b.toCommitment());
@@ -44,7 +44,7 @@ console.log(allValid1 === allValid2); // true
 If batch verification fails, find which blob is invalid:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 const blobs = [blob1, blob2, blob3];
 const commitments = [c1, c2, c3];
@@ -72,7 +72,7 @@ if (!allValid) {
 ## Array Length Validation
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 const blobs = [blob1, blob2];
 const commitments = [c1, c2, c3]; // Wrong length
@@ -88,7 +88,7 @@ try {
 ## Empty Arrays
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // Empty arrays (valid - vacuous truth)
 const result = Blob.verifyBatch([], [], []);
@@ -98,7 +98,7 @@ console.log(result); // true
 ## Use in Validators
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 class BlobTransactionValidator {
   validate(tx: BlobTransaction): boolean {

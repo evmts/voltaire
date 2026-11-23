@@ -1,13 +1,16 @@
 ---
 title: Access List
-description: EIP-2930 access list operations
+description: EIP-2930 access list structs and intrinsic gas cost calculation.
 ---
 
-Work with EIP-2930 access lists for gas optimization.
+An EIP-2930 access list pre-warms contract addresses and storage slots prior to EVM execution. `voltaire.h` defines `PrimitivesAccessListEntry` and computes the intrinsic gas surcharge for an entry array.
 
-## Types
+## Type and Constants
 
 ```c
+#define ACCESS_LIST_ADDRESS_COST     2400
+#define ACCESS_LIST_STORAGE_KEY_COST 1900
+
 typedef struct {
     PrimitivesAddress address;
     const PrimitivesHash* storage_keys_ptr;
@@ -15,18 +18,9 @@ typedef struct {
 } PrimitivesAccessListEntry;
 ```
 
-## Constants
+## Function
 
-```c
-#define ACCESS_LIST_ADDRESS_COST 2400      // per address
-#define ACCESS_LIST_STORAGE_KEY_COST 1900  // per storage key
-```
-
-## Functions
-
-### primitives_access_list_gas_cost
-
-Calculate total gas cost for access list.
+### `primitives_access_list_gas_cost`
 
 ```c
 int primitives_access_list_gas_cost(
@@ -36,29 +30,34 @@ int primitives_access_list_gas_cost(
 );
 ```
 
+Sums `2400` gas per entry plus `1900` gas per storage key across `entries[0..entries_len]` and writes the total to `*out_cost`. Returns `PRIMITIVES_SUCCESS` (`0`).
+
 ## Example
 
 ```c
+#include "voltaire.h"
+
+#include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
 
-int main() {
-    // Create storage keys
+int main(void) {
     PrimitivesHash keys[2];
-    memset(&keys[0], 0x01, 32);
-    memset(&keys[1], 0x02, 32);
+    memset(keys[0].bytes, 0x01, 32);
+    memset(keys[1].bytes, 0x02, 32);
 
-    // Create access list entry
     PrimitivesAccessListEntry entry;
-    primitives_address_from_hex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", &entry.address);
+    if (primitives_address_from_hex(
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            &entry.address) != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
     entry.storage_keys_ptr = keys;
     entry.storage_keys_len = 2;
 
-    // Calculate gas cost
-    uint64_t gas;
+    uint64_t gas = 0;
     primitives_access_list_gas_cost(&entry, 1, &gas);
-
-    printf("Access list gas: %llu\n", gas);
-    // = 2400 (address) + 2 * 1900 (storage keys) = 6200
+    printf("Access list gas: %" PRIu64 "\n", gas); /* 2400 + 2 * 1900 = 6200 */
 
     return 0;
 }

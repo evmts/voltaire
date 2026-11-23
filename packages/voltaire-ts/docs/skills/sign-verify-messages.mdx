@@ -14,9 +14,9 @@ Sign arbitrary messages with private keys and verify signatures to authenticate 
 EIP-191 defines a standard format for signed data that prevents signed messages from being valid transactions. The format prepends `\x19Ethereum Signed Message:\n{length}` to your message before hashing.
 
 ```typescript
-import { Keccak256Hash } from '@voltaire/primitives/crypto/Keccak256';
-import { Secp256k1 } from '@voltaire/primitives/crypto/Secp256k1';
-import { Hash as SignedDataHash } from '@voltaire/primitives/SignedData';
+import { Keccak256Hash } from '@tevm/voltaire/Keccak256';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Hash as SignedDataHash } from '@tevm/voltaire';
 
 // Create the hash function with keccak256 dependency
 const hashPersonalMessage = SignedDataHash({ keccak256: Keccak256Hash.hash });
@@ -37,13 +37,13 @@ const signature = Secp256k1.sign(messageHash, privateKey);
 
 The EIP-191 personal message format:
 
-```
+```text
 "\x19Ethereum Signed Message:\n" + message.length + message
 ```
 
 For example, signing "Hello" produces:
 
-```
+```text
 keccak256("\x19Ethereum Signed Message:\n5Hello")
 ```
 
@@ -53,7 +53,7 @@ This prefix ensures:
 3. Cross-application signature reuse is prevented
 
 ```typescript
-import { PERSONAL_MESSAGE_PREFIX } from '@voltaire/primitives/SignedData';
+import { PERSONAL_MESSAGE_PREFIX } from '@tevm/voltaire';
 
 // The prefix is: "\x19Ethereum Signed Message:\n"
 console.log(PERSONAL_MESSAGE_PREFIX);
@@ -74,10 +74,10 @@ const hash = Keccak256Hash.hash(data);
 Verify that a signature was created by a specific address:
 
 ```typescript
-import { Keccak256Hash } from '@voltaire/primitives/crypto/Keccak256';
-import { Secp256k1 } from '@voltaire/primitives/crypto/Secp256k1';
-import { Verify as SignedDataVerify } from '@voltaire/primitives/SignedData';
-import { FromPublicKey } from '@voltaire/primitives/Address';
+import { Keccak256Hash } from '@tevm/voltaire/Keccak256';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Verify as SignedDataVerify } from '@tevm/voltaire';
+import { FromPublicKey } from '@tevm/voltaire/Address';
 
 // Create verification function with dependencies
 const fromPublicKey = FromPublicKey({ keccak256: Keccak256Hash.hash });
@@ -105,10 +105,10 @@ const isValid = verify(message, signature, expectedAddress);
 Recover the signer's address from a signature without knowing it beforehand:
 
 ```typescript
-import { Keccak256Hash } from '@voltaire/primitives/crypto/Keccak256';
-import { Secp256k1 } from '@voltaire/primitives/crypto/Secp256k1';
-import { Hash as SignedDataHash } from '@voltaire/primitives/SignedData';
-import { FromPublicKey } from '@voltaire/primitives/Address';
+import { Keccak256Hash } from '@tevm/voltaire/Keccak256';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Hash as SignedDataHash } from '@tevm/voltaire';
+import { FromPublicKey } from '@tevm/voltaire/Address';
 
 // Set up dependencies
 const hashPersonalMessage = SignedDataHash({ keccak256: Keccak256Hash.hash });
@@ -137,11 +137,11 @@ const recoveredAddress = fromPublicKey(publicKey);
 Full sign-and-verify flow:
 
 ```typescript
-import { Keccak256Hash } from '@voltaire/primitives/crypto/Keccak256';
-import { Secp256k1 } from '@voltaire/primitives/crypto/Secp256k1';
-import { Hash as SignedDataHash, Verify as SignedDataVerify } from '@voltaire/primitives/SignedData';
-import { FromPublicKey } from '@voltaire/primitives/Address';
-import { Hex } from '@voltaire/primitives/Hex';
+import { Keccak256Hash } from '@tevm/voltaire/Keccak256';
+import { Secp256k1 } from '@tevm/voltaire/Secp256k1';
+import { Hash as SignedDataHash, Verify as SignedDataVerify } from '@tevm/voltaire';
+import { FromPublicKey } from '@tevm/voltaire/Address';
+import { Hex } from '@tevm/voltaire/Hex';
 
 // Initialize dependencies
 const hashPersonalMessage = SignedDataHash({ keccak256: Keccak256Hash.hash });
@@ -197,7 +197,7 @@ import {
   VERSION_STRUCTURED_DATA,     // 0x01
   VERSION_DATA_WITH_VALIDATOR, // 0x00
   EIP191_PREFIX,               // 0x19
-} from '@voltaire/primitives/SignedData';
+} from '@tevm/voltaire';
 ```
 
 ## Security Considerations

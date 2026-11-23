@@ -37,7 +37,7 @@ export type Uint8Type = number & { readonly [brand]: "Uint8" };
 ## Constants
 
 ```typescript
-import * as Uint8 from '@voltaire/primitives/Uint8';
+import { Uint8 } from '@tevm/voltaire';
 
 Uint8.MIN;    // 0
 Uint8.MAX;    // 255
@@ -272,7 +272,7 @@ All operations throw on invalid inputs:
 ## Example
 
 ```typescript
-import * as Uint8 from '@voltaire/primitives/Uint8';
+import { Uint8 } from '@tevm/voltaire';
 
 // RGB color manipulation
 const red = Uint8(255);

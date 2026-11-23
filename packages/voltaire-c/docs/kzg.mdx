@@ -1,67 +1,62 @@
 ---
 title: KZG Commitments
-description: EIP-4844 KZG polynomial commitments
+description: EIP-4844 KZG polynomial commitments, evaluation proofs, and pairing verification over BLS12-381.
 ---
 
-KZG (Kate-Zaverucha-Goldberg) commitments for blob verification.
+KZG (Kate-Zaverucha-Goldberg) functions compute and verify EIP-4844 polynomial commitments and proofs over 128 KiB blobs using the embedded Ethereum KZG ceremony trusted setup. **Available in native builds only** (not available in WASM).
 
-## Constants
-
-```c
-#define KZG_BLOB_SIZE 131072        // 128 KB
-#define KZG_COMMITMENT_SIZE 48      // G1 point
-#define KZG_PROOF_SIZE 48           // G1 point
-```
-
-## Initialization
-
-### kzg_load_trusted_setup
-
-Load embedded trusted setup. Must call before any KZG operations.
+## Constants and Error Codes
 
 ```c
-int kzg_load_trusted_setup(void);
+#define KZG_BLOB_SIZE       131072 /* 4096 field elements * 32 bytes */
+#define KZG_COMMITMENT_SIZE 48     /* compressed BLS12-381 G1 point */
+#define KZG_PROOF_SIZE      48     /* compressed BLS12-381 G1 point */
 ```
 
-### kzg_free_trusted_setup
+| Error macro | Value | Condition |
+|-------------|-------|-----------|
+| `PRIMITIVES_ERROR_KZG_NOT_LOADED` | `-20` | Trusted setup not initialized or failed to load/free |
+| `PRIMITIVES_ERROR_KZG_INVALID_BLOB` | `-21` | Invalid blob (e.g., field element `>= BLS_MODULUS`) or commitment failed |
+| `PRIMITIVES_ERROR_KZG_INVALID_PROOF` | `-22` | Malformed proof, commitment, or field element during verification |
 
-Free trusted setup resources.
+## Lifecycle and Verification Flow
 
-```c
-int kzg_free_trusted_setup(void);
+```mermaid
+flowchart LR
+    Init["kzg_load_trusted_setup()"] --> Commit["kzg_blob_to_commitment\nblob[131072] -> commitment[48]"]
+    Commit --> Prove["kzg_compute_blob_proof\nblob + commitment -> proof[48]"]
+    Prove --> Verify["kzg_verify_blob_proof\nreturns 1 valid / 0 invalid / -22 error"]
+    Verify --> Free["kzg_free_trusted_setup()"]
 ```
+
+Call `kzg_load_trusted_setup()` once before any KZG call and `kzg_free_trusted_setup()` at shutdown.
 
 ## Functions
 
-### kzg_blob_to_commitment
+### Trusted Setup Lifecycle
 
-Compute KZG commitment for blob.
+```c
+int kzg_load_trusted_setup(void);
+int kzg_free_trusted_setup(void);
+```
+
+Return `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_KZG_NOT_LOADED` (`-20`).
+
+### Commitments and Proofs
 
 ```c
 int kzg_blob_to_commitment(
     const unsigned char blob[131072],
     unsigned char out_commitment[48]
 );
-```
 
-### kzg_compute_proof
-
-Compute KZG proof at evaluation point.
-
-```c
 int kzg_compute_proof(
     const unsigned char blob[131072],
-    const unsigned char z[32],         // evaluation point
+    const unsigned char z[32],    /* BLS12-381 scalar evaluation point */
     unsigned char out_proof[48],
-    unsigned char out_y[32]            // evaluation result
+    unsigned char out_y[32]       /* p(z) evaluation result */
 );
-```
 
-### kzg_compute_blob_proof
-
-Compute blob KZG proof.
-
-```c
 int kzg_compute_blob_proof(
     const unsigned char blob[131072],
     const unsigned char commitment[48],
@@ -69,9 +64,9 @@ int kzg_compute_blob_proof(
 );
 ```
 
-### kzg_verify_proof
+Each 32-byte chunk of `blob` must represent a canonical BLS12-381 scalar field element (`< BLS_MODULUS`, guaranteed when byte 0 of every 32-byte field element is `0x00`). Return `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_KZG_INVALID_BLOB` (`-21`).
 
-Verify KZG proof.
+### Verification
 
 ```c
 int kzg_verify_proof(
@@ -80,15 +75,7 @@ int kzg_verify_proof(
     const unsigned char y[32],
     const unsigned char proof[48]
 );
-```
 
-**Returns:** 1 if valid, 0 if invalid, negative on error.
-
-### kzg_verify_blob_proof
-
-Verify blob KZG proof.
-
-```c
 int kzg_verify_blob_proof(
     const unsigned char blob[131072],
     const unsigned char commitment[48],
@@ -96,51 +83,42 @@ int kzg_verify_blob_proof(
 );
 ```
 
-## Error Codes
-
-| Code | Description |
-|------|-------------|
-| -20 | KZG_NOT_LOADED - Trusted setup not loaded |
-| -21 | KZG_INVALID_BLOB - Invalid blob data |
-| -22 | KZG_INVALID_PROOF - Invalid proof |
+**Returns:** `1` if valid, `0` if invalid, or `PRIMITIVES_ERROR_KZG_INVALID_PROOF` (`-22`) on malformed input.
 
 ## Example
 
 ```c
+#include "voltaire.h"
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int main() {
-    // Load trusted setup
-    if (kzg_load_trusted_setup() != 0) {
-        printf("Failed to load trusted setup\n");
+int main(void) {
+    if (kzg_load_trusted_setup() != PRIMITIVES_SUCCESS) {
+        fprintf(stderr, "failed to load KZG trusted setup\n");
         return 1;
     }
 
-    // Create blob from data
-    unsigned char blob[131072] = {0};
-    memcpy(blob + 8, "test data", 9);
-    *((uint64_t*)blob) = 9;  // length prefix
+    /* Allocate 128 KiB blob on heap; keep high byte of each 32-byte field element < 0x73 */
+    unsigned char* blob = calloc(1, KZG_BLOB_SIZE);
+    if (!blob) return 1;
+    memcpy(blob + 1, "test data", 9);
 
-    // Compute commitment
-    unsigned char commitment[48];
-    kzg_blob_to_commitment(blob, commitment);
+    unsigned char commitment[KZG_COMMITMENT_SIZE];
+    unsigned char proof[KZG_PROOF_SIZE];
 
-    // Compute proof
-    unsigned char proof[48];
-    kzg_compute_blob_proof(blob, commitment, proof);
+    int rc = kzg_blob_to_commitment(blob, commitment);
+    if (rc == PRIMITIVES_SUCCESS) {
+        rc = kzg_compute_blob_proof(blob, commitment, proof);
+    }
+    if (rc == PRIMITIVES_SUCCESS) {
+        int valid = kzg_verify_blob_proof(blob, commitment, proof);
+        printf("KZG blob proof valid: %d\n", valid); /* 1 */
+    }
 
-    // Verify
-    int valid = kzg_verify_blob_proof(blob, commitment, proof);
-    printf("Proof valid: %d\n", valid);
-
-    // Cleanup
+    free(blob);
     kzg_free_trusted_setup();
-
-    return 0;
+    return rc == PRIMITIVES_SUCCESS ? 0 : 1;
 }
 ```
-
-## Note
-
-KZG operations are not available in WASM builds. The trusted setup is embedded in native builds.

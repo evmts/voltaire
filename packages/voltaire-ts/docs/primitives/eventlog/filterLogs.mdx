@@ -17,7 +17,7 @@ description: Filter array of logs by complete filter criteria
 ### ERC-20 Transfer Filtering
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const userAddress = Address('0xa1b2c3d4...');
@@ -60,7 +60,7 @@ console.log(`Outgoing: ${outgoing.length} transfers`);
 ### Multi-Token Monitoring
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 
@@ -95,7 +95,7 @@ console.log(`Tokens with activity: ${byToken.size}`);
 ### Multiple Event Types
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const APPROVAL_SIG = Hash('0x8c5be1e5...');
@@ -133,7 +133,7 @@ console.log(`Swaps: ${swaps.length}`);
 ### Block Range Analysis
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 
@@ -162,7 +162,7 @@ for (let from = startBlock; from < endBlock; from += chunkSize) {
 ### Specific Block Query
 
 ```typescript
-import { EventLog, Hash } from 'tevm';
+import { EventLog, Hash } from '@tevm/voltaire';
 
 const blockHash = Hash('0xabc...');
 
@@ -177,7 +177,7 @@ console.log(`Block contains ${blockLogs.length} logs`);
 ### Progressive Filtering
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const APPROVAL_SIG = Hash('0x8c5be1e5...');
@@ -205,7 +205,7 @@ console.log(`Stage 3: ${recentLogs.length} logs`);
 ### Combining with Sorting
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 const filtered = EventLog.filterLogs(allLogs, {
   address: [usdc, dai, weth],
@@ -229,7 +229,7 @@ for (const log of sorted) {
 Empty filter returns all logs:
 
 ```typescript
-import { EventLog } from 'tevm';
+import { EventLog } from '@tevm/voltaire';
 
 // No filtering (returns all)
 const all = EventLog.filterLogs(allLogs, {});
@@ -266,7 +266,7 @@ const step3 = step2.filter(log => log.blockNumber >= 18000000n);
 Returns new array (doesn't modify input):
 
 ```typescript
-import { EventLog } from 'tevm';
+import { EventLog } from '@tevm/voltaire';
 
 const original = [log1, log2, log3];
 const filtered = EventLog.filterLogs(original, { address: usdcAddress });

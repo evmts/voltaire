@@ -1,244 +1,195 @@
 ---
 title: Skills
-description: Copyable reference implementations for common Ethereum patterns
+description: Copyable reference implementations for providers, contracts, signers, frameworks, and DeFi protocols built on Voltaire primitives.
 ---
 
-Skills are copyable reference implementations you can use as-is or customize for your needs. Unlike traditional libraries, Skills live in your codebase—visible, debuggable, and fully customizable.
+Skills are copyable TypeScript modules built on Voltaire primitives. Copy a Skill into your repository, read every line, and modify it directly instead of working around an opaque dependency.
 
-<Tip>
-New to Skills? Read the [Skills Philosophy](/concepts/skills) to understand why we use copyable implementations instead of library abstractions.
-</Tip>
+```mermaid
+flowchart LR
+  subgraph Primitives["@tevm/voltaire Primitives"]
+    A["Address / Hex / Hash"]
+    B["Abi / Rlp / Transaction"]
+    C["Keccak256 / Secp256k1 / EIP712"]
+    D["HttpProvider / EventStream"]
+  end
+
+  subgraph Skills["Your Codebase (Copied Skills)"]
+    S1["Providers (ethers / viem / fallback)"]
+    S2["Contracts & Wallets (Contract / Signer / ERC-4337)"]
+    S3["Protocols & Frameworks (Uniswap V4 / Aave / React Query)"]
+  end
+
+  A --> S1
+  B --> S2
+  C --> S2
+  D --> S1
+  S1 --> S2
+  S2 --> S3
+```
+
+## Choosing a Skill
+
+| Need | Skill | Primitives Used |
+| --- | --- | --- |
+| Migrate from ethers v6 | [ethers-provider](/skills/ethers-provider), [ethers-contract](/skills/ethers-contract), [ethers-signer](/skills/ethers-signer) | `Address`, `Abi`, `Hex`, `Transaction`, `Secp256k1`, `HttpProvider` |
+| Migrate from viem | [viem-publicclient](/skills/viem-publicclient), [viem-walletclient](/skills/viem-walletclient), [viem-contract](/skills/viem-contract) | `Address`, `Abi`, `Hex`, `HttpProvider`, `EIP712` |
+| Browser wallet (`window.ethereum`) | [eip1193-provider](/skills/eip1193-provider) | `provider` (`EIP1193Provider`), `Hex` |
+| Resilient RPC transport | [fallback-provider](/skills/fallback-provider), [batched-provider](/skills/batched-provider), [websocket-provider](/skills/websocket-provider) | `HttpProvider`, `WebSocketProvider`, `utils` |
+| Typed contract calls and logs | [Contract Pattern](/contract), [multicall](/skills/multicall), [event-indexer](/skills/event-indexer) | `Abi`, `Address`, `Hex`, `EventStream`, `BlockStream` |
+| Keys, nonces, and signatures | [wallet-generation](/skills/wallet-generation), [nonce-manager](/skills/nonce-manager), [permit](/skills/permit), [siwe-authentication](/skills/siwe-authentication) | `Bip39`, `HDWallet`, `Secp256k1`, `EIP712`, `Siwe` |
+| Frontend state management | [react-query](/skills/react-query), [vue](/skills/vue), [effect-ts](/skills/effect-ts) | `provider`, `Abi`, `Address` |
+| DeFi and L2 protocols | [uniswap-v4](/skills/uniswap-v4), [aave-v3](/skills/aave-v3), [safe](/skills/safe), [op-stack](/skills/op-stack), [arbitrum](/skills/arbitrum) | `Abi`, `Address`, `Transaction`, `EIP712` |
 
 ## Provider Skills
 
-Drop-in replacements for ethers and viem provider abstractions.
+Drop-in replacements for ethers, viem, and transport-level middleware.
 
 <CardGroup cols={2}>
   <Card title="ethers-provider" icon="cube" href="/skills/ethers-provider">
-    ethers v6 compatible JsonRpcProvider
+    ethers v6 compatible `JsonRpcProvider`
   </Card>
   <Card title="viem-publicclient" icon="cube" href="/skills/viem-publicclient">
-    viem compatible PublicClient for read operations
+    viem compatible `PublicClient` for read operations
   </Card>
   <Card title="viem-walletclient" icon="cube" href="/skills/viem-walletclient">
-    viem compatible WalletClient for signing
+    viem compatible `WalletClient` for signing
   </Card>
   <Card title="viem-testclient" icon="cube" href="/skills/viem-testclient">
-    viem compatible TestClient for local testing
+    viem compatible `TestClient` for local testing
   </Card>
   <Card title="batched-provider" icon="layer-group" href="/skills/batched-provider">
-    Batch multiple JSON-RPC requests
+    JSON-RPC request batching over a single HTTP call
   </Card>
   <Card title="eip1193-provider" icon="window" href="/skills/eip1193-provider">
-    Browser wallet connection (window.ethereum)
+    Browser wallet wrapper (`window.ethereum`)
   </Card>
   <Card title="websocket-provider" icon="plug" href="/skills/websocket-provider">
-    Real-time subscriptions
+    Real-time pub/sub subscriptions over WebSocket
   </Card>
   <Card title="fallback-provider" icon="rotate" href="/skills/fallback-provider">
-    Automatic RPC failover
+    Multi-endpoint RPC failover and circuit breaking
   </Card>
 </CardGroup>
 
 ## Contract Skills
 
-Typed contract interaction patterns.
+Typed ABI encoding, decoding, and contract call wrappers.
 
 <CardGroup cols={2}>
   <Card title="ethers-contract" icon="file-contract" href="/skills/ethers-contract">
-    ethers v6 compatible Contract wrapper
+    ethers v6 compatible `Contract` wrapper
   </Card>
   <Card title="viem-contract" icon="file-contract" href="/skills/viem-contract">
-    viem compatible contract interactions
+    viem compatible `getContract` pattern
   </Card>
   <Card title="ethers-interface" icon="brackets-curly" href="/skills/ethers-interface">
-    ethers v6 compatible Interface for ABI encoding
+    ethers v6 compatible `Interface` for ABI encoding
   </Card>
 </CardGroup>
 
 ## Wallet Skills
 
-Key management and signing patterns.
+Key derivation, transaction signing, nonce tracking, and account abstraction.
 
 <CardGroup cols={2}>
   <Card title="ethers-signer" icon="key" href="/skills/ethers-signer">
-    ethers v6 compatible Signer
+    ethers v6 compatible `Signer`
   </Card>
   <Card title="ethers-hdwallet" icon="wallet" href="/skills/ethers-hdwallet">
-    HD wallet derivation (BIP-32/39/44)
+    BIP-32/39/44 hierarchical deterministic derivation
   </Card>
   <Card title="viem-account" icon="user" href="/skills/viem-account">
-    viem compatible Account abstraction
+    viem compatible `Account` abstraction
   </Card>
   <Card title="nonce-manager" icon="list-ol" href="/skills/nonce-manager">
-    Transaction nonce tracking
+    Concurrent transaction nonce management
   </Card>
   <Card title="erc4337" icon="shield" href="/skills/erc4337">
-    Account Abstraction (UserOperations)
+    ERC-4337 Account Abstraction (`UserOperation`)
   </Card>
 </CardGroup>
 
 ## Framework Skills
 
-Frontend framework integrations without heavy abstractions.
+Direct integrations with frontend and functional state libraries.
 
 <CardGroup cols={2}>
   <Card title="react-query" icon="react" href="/skills/react-query">
-    TanStack Query integration (wagmi alternative)
+    TanStack Query hooks without wagmi overhead
   </Card>
   <Card title="vue" icon="vuejs" href="/skills/vue">
-    Vue 3 composables
+    Vue 3 reactive composables
   </Card>
   <Card title="effect-ts" icon="sparkles" href="/skills/effect-ts">
-    Type-safe pipelines with Effect.ts
+    Typed error channels and services with Effect.ts
   </Card>
 </CardGroup>
 
 ## Utility Skills
 
-Common patterns for Ethereum development.
+Reusable Ethereum application patterns.
 
 <CardGroup cols={2}>
   <Card title="multicall" icon="layer-group" href="/skills/multicall">
-    Batch multiple contract calls
+    Batch contract reads via Multicall3
   </Card>
   <Card title="permit" icon="stamp" href="/skills/permit">
-    Gasless approvals (ERC-2612/Permit2)
+    ERC-2612 and Permit2 off-chain approvals
   </Card>
   <Card title="event-indexer" icon="database" href="/skills/event-indexer">
-    Index and query historical events
+    Historical backfill and live event indexing
   </Card>
 </CardGroup>
 
 ## Task Skills
 
-Step-by-step patterns for specific tasks.
+Focused recipes for single operations.
 
 <CardGroup cols={2}>
   <Card title="Wallet Generation" icon="wallet" href="/skills/wallet-generation">
-    Generate mnemonics, derive HD wallets
+    Generate mnemonics and derive BIP-44 keys
   </Card>
   <Card title="Send ETH & Tokens" icon="paper-plane" href="/skills/send-eth-tokens">
-    Build and send transfers
+    Construct, sign, and broadcast value and ERC-20 transfers
   </Card>
   <Card title="Contract Interaction" icon="file-contract" href="/skills/contract-interaction">
-    Read state, write transactions
+    Read state and send contract transactions
   </Card>
   <Card title="Sign & Verify Messages" icon="signature" href="/skills/sign-verify-messages">
-    Personal sign and verification
+    EIP-191 personal sign and address recovery
   </Card>
   <Card title="Event Listening" icon="bell" href="/skills/event-listening">
-    Watch and filter events
+    Filter and stream contract logs
   </Card>
   <Card title="EIP-712 Typed Data" icon="file-signature" href="/skills/eip712-typed-data">
-    Structured data signing
+    Structured data hashing and signing
   </Card>
   <Card title="SIWE Authentication" icon="user-check" href="/skills/siwe-authentication">
-    Sign-In with Ethereum
+    Sign-In with Ethereum message parsing and verification
   </Card>
   <Card title="Gas Estimation" icon="gas-pump" href="/skills/gas-estimation">
-    EIP-1559 fee estimation
+    EIP-1559 fee calculation and buffers
   </Card>
   <Card title="ENS Resolution" icon="globe" href="/skills/ens-resolution">
-    Resolve ENS names
+    Forward and reverse ENS lookups
   </Card>
   <Card title="Transaction Simulation" icon="play" href="/skills/transaction-simulation">
-    Simulate with eth_call
+    Dry-run state transitions via `eth_call`
   </Card>
 </CardGroup>
 
-## Protocol Skills
+## Protocol, Tooling, and L2 Skills
 
-Interact with popular DeFi protocols, NFT marketplaces, and social platforms.
-
-<CardGroup cols={2}>
-  <Card title="Uniswap V4" icon="arrows-rotate" href="/skills/uniswap-v4">
-    Swaps, pools, and hooks
-  </Card>
-  <Card title="Aave V3" icon="piggy-bank" href="/skills/aave-v3">
-    Lending, borrowing, flash loans
-  </Card>
-  <Card title="Curve" icon="chart-line" href="/skills/curve">
-    Stablecoin swaps
-  </Card>
-  <Card title="Lido" icon="water" href="/skills/lido">
-    Liquid staking (stETH)
-  </Card>
-  <Card title="EigenLayer" icon="layer-group" href="/skills/eigenlayer">
-    Restaking
-  </Card>
-  <Card title="Pendle" icon="clock" href="/skills/pendle">
-    Yield tokenization
-  </Card>
-  <Card title="Polymarket" icon="chart-pie" href="/skills/polymarket">
-    Prediction markets
-  </Card>
-  <Card title="Safe" icon="shield" href="/skills/safe">
-    Multisig wallets
-  </Card>
-  <Card title="ENS" icon="at" href="/skills/ens">
-    Name registration & management
-  </Card>
-  <Card title="Chainlink" icon="link" href="/skills/chainlink">
-    Oracles, VRF, CCIP
-  </Card>
-  <Card title="LayerZero" icon="bridge" href="/skills/layerzero">
-    Cross-chain messaging
-  </Card>
-  <Card title="Seaport" icon="store" href="/skills/seaport">
-    NFT marketplace (OpenSea)
-  </Card>
-  <Card title="Farcaster" icon="users" href="/skills/farcaster">
-    Social protocol
-  </Card>
-</CardGroup>
-
-## Development Tools
-
-Integrate with Solidity development frameworks.
-
-<CardGroup cols={2}>
-  <Card title="Foundry" icon="hammer" href="/skills/foundry">
-    Forge, Anvil, Cast integration (contributors wanted)
-  </Card>
-  <Card title="Hardhat" icon="helmet-safety" href="/skills/hardhat">
-    Hardhat Network, tasks, plugins (contributors wanted)
-  </Card>
-</CardGroup>
-
-## L2 Skills
-
-Build on Layer 2 networks with native bridging and chain-specific features.
-
-<CardGroup cols={2}>
-  <Card title="Arbitrum" icon="a" href="/skills/arbitrum">
-    Arbitrum One & Nova
-  </Card>
-  <Card title="OP Stack" icon="o" href="/skills/op-stack">
-    Optimism, Base, Zora
-  </Card>
-  <Card title="Tempo" icon="bolt" href="/skills/tempo">
-    High-performance chain
-  </Card>
-</CardGroup>
+| Category | Skills |
+| --- | --- |
+| **DeFi & Markets** | [Uniswap V4](/skills/uniswap-v4), [Aave V3](/skills/aave-v3), [Curve](/skills/curve), [Lido](/skills/lido), [EigenLayer](/skills/eigenlayer), [Pendle](/skills/pendle), [Polymarket](/skills/polymarket) |
+| **Infrastructure & Identity** | [Safe](/skills/safe), [ENS](/skills/ens), [Chainlink](/skills/chainlink), [LayerZero](/skills/layerzero), [Seaport](/skills/seaport), [Farcaster](/skills/farcaster) |
+| **L2 Networks** | [Arbitrum](/skills/arbitrum), [OP Stack](/skills/op-stack), [Tempo](/skills/tempo) |
+| **Solidity Tooling** | [Foundry](/skills/foundry), [Hardhat](/skills/hardhat) |
 
 ## Using Skills
 
-### Copy into your project
-
-Each Skill page has copyable code. Add it to your project and customize as needed.
-
-### Use the MCP Server
-
-The [Voltaire MCP Server](/model-context-protocol) helps AI assistants generate custom Skills tailored to your contracts.
-
-## Learn More
-
-<CardGroup cols={2}>
-  <Card title="Skills Philosophy" icon="lightbulb" href="/concepts/skills">
-    Why Skills instead of libraries
-  </Card>
-  <Card title="MCP Server" icon="robot" href="/model-context-protocol">
-    AI-assisted Skill generation
-  </Card>
-</CardGroup>
+1. **Copy directly**: Open any Skill page, copy the implementation file into your project (for example `src/eth/Contract.ts`), and adapt error handling, retries, or caching.
+2. **Generate with MCP**: Connect the [Voltaire MCP Server](/model-context-protocol) so your coding agent composes custom Skills tailored to your ABIs and providers.
+3. **Read the design rationale**: See [Skills Philosophy](/concepts/skills) for why Voltaire exports primitives while leaving higher-level wrappers in user space.

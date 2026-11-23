@@ -41,11 +41,11 @@ function from(
 **Throws:**
 - `Error('Invalid input for Rlp.from')` - Unsupported input type
 
-Source: [from.js:15-26](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/from.js#L15-L26)
+Source: [from.js:15-26](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/from.js#L15-L26)
 </TabItem>
 <TabItem label="Class API">
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // From Uint8Array (becomes bytes data)
 const bytes = Rlp(new Uint8Array([1, 2, 3]))
@@ -91,7 +91,7 @@ The `from` method normalizes various input types into RLP data structures:
 **Note:** Arrays are not recursively converted:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Array items remain as-is (not converted to RLP data)
 const list = Rlp([
@@ -112,7 +112,7 @@ const decoded = Rlp.decode(encoded)
 
 **Normalizing Input:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function processRlpData(input: Uint8Array | BrandedRlp | BrandedRlp[]) {
   // Normalize to RLP data
@@ -129,7 +129,7 @@ function processRlpData(input: Uint8Array | BrandedRlp | BrandedRlp[]) {
 
 **Building Structures:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Build transaction structure
 const nonce = Rlp(new Uint8Array([0x00]))
@@ -160,11 +160,11 @@ function getEncodedLength(
 **Throws:**
 - `Error('UnexpectedInput')` - Invalid encodable data type
 
-Source: [getEncodedLength.js:18-54](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/getEncodedLength.js#L18-L54)
+Source: [getEncodedLength.js:18-54](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/getEncodedLength.js#L18-L54)
 </TabItem>
 <TabItem label="Class API">
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Single byte < 0x80
 const single = new Uint8Array([0x7f])
@@ -245,7 +245,7 @@ return 1 + lengthBytes + totalLength
 Measuring without encoding saves allocation and copying:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Inefficient: encode just to check size
 const encoded = Rlp.encode(data)
@@ -259,7 +259,7 @@ const size = Rlp.getEncodedLength(data)
 
 **Pre-sizing Buffers:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Calculate total size for multiple items
 const items = [data1, data2, data3]
@@ -274,7 +274,7 @@ const buffer = new Uint8Array(totalSize)
 
 **Size Validation:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Check if data will fit in block
 const MAX_BLOCK_SIZE = 1000000
@@ -287,7 +287,7 @@ if (size > MAX_BLOCK_SIZE) {
 
 **Choosing Encoding Strategy:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Use different strategies based on size
 const size = Rlp.getEncodedLength(data)
@@ -319,11 +319,11 @@ type BytesData = BrandedRlp & { type: "bytes" }
 **Returns:**
 - `BytesData[]` - Array of all bytes data in depth-first order
 
-Source: [flatten.js:26-45](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/flatten.js#L26-L45)
+Source: [flatten.js:26-45](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/flatten.js#L26-L45)
 </TabItem>
 <TabItem label="Class API">
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Flatten bytes data (returns as single-item array)
 const bytes = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
@@ -406,7 +406,7 @@ function flatten(data) {
 
 **Extract Transaction Fields:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Decode transaction
 const txBytes = new Uint8Array([...])
@@ -423,7 +423,7 @@ console.log('Nonce:', nonce.value)
 
 **Count Total Bytes:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function countTotalBytes(data: BrandedRlp): number {
   const flattened = Rlp.flatten(data)
@@ -437,7 +437,7 @@ console.log(`Total bytes: ${total}`)
 
 **Validate Structure:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function validateAllBytes(data: BrandedRlp, minLength: number) {
   const flattened = Rlp.flatten(data)
@@ -452,7 +452,7 @@ function validateAllBytes(data: BrandedRlp, minLength: number) {
 
 **Map Over Bytes:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function hashAllBytes(data: BrandedRlp): Uint8Array[] {
   const flattened = Rlp.flatten(data)
@@ -477,11 +477,11 @@ function equals(data: BrandedRlp, other: BrandedRlp): boolean
 **Returns:**
 - `boolean` - True if structures are deeply equal
 
-Source: [equals.js:15-47](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/equals.js#L15-L47)
+Source: [equals.js:15-47](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/equals.js#L15-L47)
 </TabItem>
 <TabItem label="Class API">
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Compare bytes data
 const a = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
@@ -583,7 +583,7 @@ function equals(data, other) {
 
 **Deduplication:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function deduplicate(items: BrandedRlp[]): BrandedRlp[] {
   const unique: BrandedRlp[] = []
@@ -601,7 +601,7 @@ function deduplicate(items: BrandedRlp[]): BrandedRlp[] {
 
 **Testing:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Test round-trip encoding
 const original = {
@@ -619,7 +619,7 @@ console.log(Rlp.equals(original, decoded.data))  // true
 
 **Caching:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const cache = new Map<string, Uint8Array>()
 
@@ -641,7 +641,7 @@ function encodeWithCache(data: BrandedRlp): Uint8Array {
 
 **Assertions:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function assertRlpEquals(
   actual: BrandedRlp,
@@ -664,7 +664,7 @@ Combine utilities for powerful operations:
 
 **Measure Flattened Size:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function getTotalBytesSize(data: BrandedRlp): number {
   const flattened = Rlp.flatten(data)
@@ -674,7 +674,7 @@ function getTotalBytesSize(data: BrandedRlp): number {
 
 **Compare After Normalization:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function normalizeAndCompare(a: unknown, b: unknown): boolean {
   const dataA = Rlp(a)
@@ -685,7 +685,7 @@ function normalizeAndCompare(a: unknown, b: unknown): boolean {
 
 **Validate Then Flatten:**
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 function extractAndValidate(data: BrandedRlp): Uint8Array[] {
   // Validate structure

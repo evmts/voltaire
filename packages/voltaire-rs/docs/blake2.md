@@ -1,70 +1,42 @@
 # BLAKE2
 
-BLAKE2 hash functions optimized for modern processors.
+RFC 7693 BLAKE2b and BLAKE2s hash functions in `voltaire::crypto` with variable output lengths and both one-shot and streaming interfaces.
 
-## Overview
+## Variants
 
-- **BLAKE2b** - Optimized for 64-bit platforms, up to 64-byte output
-- **BLAKE2s** - Optimized for 32-bit platforms, up to 32-byte output
+| Algorithm | Word Size | Output Range | One-shot Function | Streaming Type |
+|-----------|-----------|--------------|-------------------|----------------|
+| BLAKE2b | 64-bit | `1`..`64` bytes | `blake2b(data: &[u8], output_len: usize) -> Vec<u8>` | `Blake2b` |
+| BLAKE2s | 32-bit | `1`..`32` bytes | `blake2s(data: &[u8], output_len: usize) -> Vec<u8>` | `Blake2s` |
 
-Both are faster than MD5/SHA-1 while being as secure as SHA-3.
-
-## BLAKE2b
-
-```rust
-use voltaire::crypto::{blake2b, Blake2b};
-
-// One-shot hashing (32-byte output)
-let hash = blake2b(b"hello", 32);
-
-// Full 64-byte output
-let hash = blake2b(b"hello", 64);
-
-// Streaming
-let mut hasher = Blake2b::new(32);
-hasher.update(b"hello");
-hasher.update(b" world");
-let hash = hasher.finalize();
-```
-
-## BLAKE2s
+## Usage
 
 ```rust
-use voltaire::crypto::{blake2s, Blake2s};
+use voltaire::crypto::{blake2b, blake2s, Blake2b, Blake2s};
 
-// One-shot hashing (32-byte output)
-let hash = blake2s(b"hello", 32);
+// One-shot BLAKE2b (1..=64 bytes)
+let digest_32: Vec<u8> = blake2b(b"hello", 32);
+let digest_64: Vec<u8> = blake2b(b"hello", 64);
+assert_eq!(digest_32.len(), 32);
+assert_eq!(digest_64.len(), 64);
 
-// Smaller output (16 bytes)
-let hash = blake2s(b"hello", 16);
+// Streaming BLAKE2b
+let mut b = Blake2b::new(32);
+b.update(b"hello");
+b.update(b" world");
+assert_eq!(b.finalize(), blake2b(b"hello world", 32));
 
-// Streaming
-let mut hasher = Blake2s::new(32);
-hasher.update(b"hello");
-hasher.update(b" world");
-let hash = hasher.finalize();
+// One-shot and streaming BLAKE2s (1..=32 bytes)
+let s_16: Vec<u8> = blake2s(b"hello", 16);
+assert_eq!(s_16.len(), 16);
+
+let mut s = Blake2s::new(32);
+s.update(b"hello");
+s.update(b" world");
+assert_eq!(s.finalize(), blake2s(b"hello world", 32));
 ```
 
-## Variable Output Length
+## Notes
 
-Both functions support variable output length:
-
-```rust
-use voltaire::crypto::{blake2b, blake2s};
-
-// BLAKE2b: 1-64 bytes
-let hash_16 = blake2b(b"data", 16);
-let hash_32 = blake2b(b"data", 32);
-let hash_64 = blake2b(b"data", 64);
-
-// BLAKE2s: 1-32 bytes
-let hash_16 = blake2s(b"data", 16);
-let hash_32 = blake2s(b"data", 32);
-```
-
-## Use Cases
-
-- **Content addressing** - Fast content-based identifiers
-- **Merkle trees** - Efficient proof construction
-- **Checksums** - Fast integrity verification
-- **Key derivation** - Variable-length output
+- Passing `output_len` outside `1..=64` (BLAKE2b) or `1..=32` (BLAKE2s) is clamped or rejected by the implementation; always pass a valid digest length in range.
+- Both implementations are pure Rust and work in `no_std` (with `alloc`).

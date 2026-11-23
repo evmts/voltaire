@@ -1,322 +1,175 @@
 ---
 title: Events
-description: Subscribe to provider events using EventEmitter pattern
+description: EIP-1193 lifecycle events and WebSocketProvider pub/sub subscriptions for blocks, logs, and pending transactions.
 ---
 
-# Events
+Voltaire providers expose the standard EIP-1193 event emitter (`on` and `removeListener`) for connection and wallet state changes. `WebSocketProvider` additionally provides `eth_subscribe` streams for live blockchain data.
 
-EIP-1193 providers emit events for account changes, chain changes, and connection status using the standard EventEmitter pattern.
+```mermaid
+flowchart LR
+  subgraph Lifecycle["EIP-1193 Lifecycle Events (on / removeListener)"]
+    E1["connect ({ chainId })"]
+    E2["disconnect (RpcError)"]
+    E3["chainChanged (chainId)"]
+    E4["accountsChanged (accounts[])"]
+    E5["message ({ type, data })"]
+  end
 
-## Overview
-
-Providers emit four standard events:
-
-```typescript
-// Subscribe to account changes
-provider.on('accountsChanged', (accounts) => {
-  console.log('Active accounts:', accounts);
-});
-
-// Subscribe to chain changes
-provider.on('chainChanged', (chainId) => {
-  console.log('Chain ID:', chainId);
-});
-
-// Subscribe to connection
-provider.on('connect', (connectInfo) => {
-  console.log('Connected to chain:', connectInfo.chainId);
-});
-
-// Subscribe to disconnection
-provider.on('disconnect', (error) => {
-  console.log('Disconnected:', error);
-});
+  subgraph PubSub["WebSocketProvider Subscriptions (eth_subscribe)"]
+    S1["events.newHeads()"]
+    S2["events.logs(filter?)"]
+    S3["events.newPendingTransactions()"]
+    S4["events.syncing()"]
+  end
 ```
 
-## Available Events
+## EIP-1193 Lifecycle Events
 
-### accountsChanged
+| Event | Payload Type | Emitted When |
+| --- | --- | --- |
+| `connect` | `{ chainId: string }` | Provider connects to a chain (hex chain ID, e.g. `'0x1'`) |
+| `disconnect` | `RpcError` (`{ code, message, data? }`) | Provider loses connection to the RPC endpoint |
+| `chainChanged` | `string` | Active chain changes (hex chain ID) |
+| `accountsChanged` | `string[]` | Authorized accounts change (empty array on wallet disconnect) |
+| `message` | `{ type: string; data: unknown }` | Provider delivers subscription payloads (`type: 'eth_subscription'`) or custom messages |
 
-Emitted when the active accounts change (e.g., user switches accounts in wallet).
+<Note>
+`HttpProvider` is stateless and implements `on` and `removeListener` strictly for EIP-1193 interface compatibility; it does not emit lifecycle events. Use `WebSocketProvider` for stateful connections or `EventStream` / `BlockStream` for HTTP polling.
+</Note>
 
-**Event Data:** `string[]` - Array of addresses
+### Registering and Removing Listeners
+
+Always store the listener reference so `removeListener` can detach the exact function:
 
 ```typescript
-provider.on('accountsChanged', (accounts: string[]) => {
-  if (accounts.length === 0) {
-    console.log('No accounts available');
-  } else {
-    console.log('Active account:', accounts[0]);
+import type { ProviderConnectInfo, RpcError } from '@tevm/voltaire/provider';
+
+const onAccounts = (accounts: string[]) => {
+  console.log('Active account:', accounts[0] ?? 'disconnected');
+};
+
+const onChain = (chainId: string) => {
+  console.log('Chain ID:', Number.parseInt(chainId, 16));
+};
+
+const onConnect = (info: ProviderConnectInfo) => {
+  console.log('Connected:', info.chainId);
+};
+
+const onDisconnect = (error: RpcError) => {
+  console.error('Disconnected:', error.code, error.message);
+};
+
+provider
+  .on('accountsChanged', onAccounts)
+  .on('chainChanged', onChain)
+  .on('connect', onConnect)
+  .on('disconnect', onDisconnect);
+
+// Detach when tearing down
+provider
+  .removeListener('accountsChanged', onAccounts)
+  .removeListener('chainChanged', onChain)
+  .removeListener('connect', onConnect)
+  .removeListener('disconnect', onDisconnect);
+```
+
+### One-Time Listener Pattern
+
+`Provider` and `TypedProvider` define `on` and `removeListener` (matching EIP-1193). Implement one-shot listeners by removing the handler inside itself:
+
+```typescript
+function onceConnect(provider: { on: Function; removeListener: Function }): Promise<string> {
+  return new Promise((resolve) => {
+    const handler = (info: { chainId: string }) => {
+      provider.removeListener('connect', handler);
+      resolve(info.chainId);
+    };
+    provider.on('connect', handler);
+  });
+}
+```
+
+## WebSocket Pub/Sub Subscriptions
+
+`WebSocketProvider` exposes native `eth_subscribe` feeds via `provider.events` as `AsyncGenerator` iterables. Breaking out of `for await` triggers `eth_unsubscribe` automatically.
+
+```typescript
+import { WebSocketProvider } from '@tevm/voltaire/provider';
+
+const ws = new WebSocketProvider({
+  url: 'wss://eth.llamarpc.com',
+  reconnect: true,
+  reconnectDelay: 5000,
+});
+
+await ws.connect();
+
+// Stream new block headers
+for await (const header of ws.events.newHeads()) {
+  console.log('New block:', header);
+}
+```
+
+### Filtered Log Subscriptions
+
+```typescript
+for await (const log of ws.events.logs({
+  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
+})) {
+  console.log('USDC Transfer log:', log);
+}
+```
+
+### Listening to Raw `eth_subscription` Messages
+
+When consuming an external EIP-1193 provider (such as a browser wallet or custom WebSocket wrapper), subscription notifications arrive on the `message` event:
+
+```typescript
+provider.on('message', (msg) => {
+  if (msg.type === 'eth_subscription') {
+    const payload = msg.data as { subscription: string; result: unknown };
+    console.log(payload.subscription, payload.result);
   }
 });
 ```
 
-**Use cases:**
-- Update UI when user switches wallets
-- Re-fetch user-specific data
-- Prompt user to reconnect
-
-### chainChanged
-
-Emitted when the chain changes (e.g., user switches from mainnet to testnet).
-
-**Event Data:** `string` - Chain ID (hex-encoded)
-
-```typescript
-provider.on('chainChanged', (chainId: string) => {
-  const chainIdNum = parseInt(chainId, 16);
-  console.log('Chain ID:', chainIdNum);
-
-  // Reload app to avoid stale state
-  window.location.reload();
-});
-```
-
-**Use cases:**
-- Reload application to avoid stale state
-- Update network-specific configurations
-- Display appropriate chain indicator
-
-<Warning>
-When chain changes, app state may be invalid. Most apps should reload: `window.location.reload()`.
-</Warning>
-
-### connect
-
-Emitted when provider becomes connected to a chain.
-
-**Event Data:** `{chainId: string}` - Connection info
-
-```typescript
-provider.on('connect', (connectInfo: { chainId: string }) => {
-  const chainId = parseInt(connectInfo.chainId, 16);
-  console.log('Connected to chain:', chainId);
-
-  // Initialize app with chain-specific data
-  initializeApp(chainId);
-});
-```
-
-**Use cases:**
-- Initialize app after connection established
-- Fetch initial blockchain data
-- Enable blockchain-dependent features
-
-### disconnect
-
-Emitted when provider disconnects from all chains.
-
-**Event Data:** `{code: number, message: string}` - Error info
-
-```typescript
-provider.on('disconnect', (error: { code: number; message: string }) => {
-  console.log('Disconnected:', error.message);
-
-  // Clean up and show reconnection UI
-  showReconnectDialog();
-});
-```
-
-**Use cases:**
-- Clean up subscriptions and listeners
-- Show reconnection UI
-- Save user state before disconnect
-
-## Event Management
-
-### Adding Listeners
-
-Use `on()` or `addEventListener()`:
-
-```typescript
-const handler = (accounts) => {
-  console.log('Accounts:', accounts);
-};
-
-// Both work
-provider.on('accountsChanged', handler);
-provider.addEventListener('accountsChanged', handler);
-```
-
-### Removing Listeners
-
-Use `removeListener()` or `removeEventListener()`:
-
-```typescript
-const handler = (accounts) => {
-  console.log('Accounts:', accounts);
-};
-
-provider.on('accountsChanged', handler);
-
-// Later, remove listener
-provider.removeListener('accountsChanged', handler);
-// or
-provider.removeEventListener('accountsChanged', handler);
-```
-
-<Warning>
-Always use the same function reference when removing listeners. Arrow functions created inline can't be removed.
-</Warning>
-
-### One-Time Listeners
-
-Use `once()` for single-use handlers:
-
-```typescript
-provider.once('connect', (connectInfo) => {
-  console.log('Initial connection:', connectInfo.chainId);
-  // Handler automatically removed after firing
-});
-```
-
-## Usage Patterns
-
-### React Hook
+## React Cleanup Pattern
 
 ```typescript
 import { useEffect, useState } from 'react';
+import type { EIP1193Provider } from '@tevm/voltaire/provider';
 
-function useAccounts(provider) {
-  const [accounts, setAccounts] = useState<string[]>([]);
+export function useChainId(provider: EIP1193Provider): number | null {
+  const [chainId, setChainId] = useState<number | null>(null);
 
   useEffect(() => {
-    const handler = (newAccounts: string[]) => {
-      setAccounts(newAccounts);
-    };
+    let active = true;
 
-    provider.on('accountsChanged', handler);
+    provider
+      .request({ method: 'eth_chainId', params: [] })
+      .then((hex) => {
+        if (active) setChainId(Number.parseInt(hex as string, 16));
+      })
+      .catch(() => {});
 
-    // Cleanup
+    const onChainChanged = (hex: string) => setChainId(Number.parseInt(hex, 16));
+    provider.on('chainChanged', onChainChanged);
+
     return () => {
-      provider.removeListener('accountsChanged', handler);
+      active = false;
+      provider.removeListener('chainChanged', onChainChanged);
     };
   }, [provider]);
 
-  return accounts;
+  return chainId;
 }
 ```
-
-### Chain Change Handler
-
-```typescript
-function setupChainHandler(provider, allowedChains: number[]) {
-  provider.on('chainChanged', (chainId: string) => {
-    const chainIdNum = parseInt(chainId, 16);
-
-    if (!allowedChains.includes(chainIdNum)) {
-      alert(`Please switch to supported chain`);
-      return;
-    }
-
-    // Chain is valid, reload
-    window.location.reload();
-  });
-}
-```
-
-### Connection Monitor
-
-```typescript
-class ConnectionMonitor {
-  private isConnected = false;
-
-  constructor(private provider: any) {
-    this.setupListeners();
-  }
-
-  private setupListeners() {
-    this.provider.on('connect', (info: { chainId: string }) => {
-      this.isConnected = true;
-      console.log('Connected to chain:', info.chainId);
-    });
-
-    this.provider.on('disconnect', (error: any) => {
-      this.isConnected = false;
-      console.log('Disconnected:', error.message);
-    });
-  }
-
-  async waitForConnection(): Promise<string> {
-    if (this.isConnected) {
-      const chainId = await this.provider.request({
-        method: 'eth_chainId'
-      });
-      return chainId;
-    }
-
-    return new Promise((resolve) => {
-      this.provider.once('connect', (info: { chainId: string }) => {
-        resolve(info.chainId);
-      });
-    });
-  }
-}
-```
-
-### Account Switcher
-
-```typescript
-function createAccountSwitcher(provider) {
-  let currentAccount: string | null = null;
-
-  provider.on('accountsChanged', async (accounts: string[]) => {
-    const newAccount = accounts[0] || null;
-
-    if (newAccount !== currentAccount) {
-      const oldAccount = currentAccount;
-      currentAccount = newAccount;
-
-      console.log(`Account changed from ${oldAccount} to ${newAccount}`);
-
-      // Re-fetch account-specific data
-      if (newAccount) {
-        await loadAccountData(newAccount);
-      }
-    }
-  });
-
-  return {
-    getCurrentAccount: () => currentAccount
-  };
-}
-```
-
-## Best Practices
-
-1. **Always remove listeners** when component unmounts or is no longer needed
-2. **Use same function reference** for add/remove to work correctly
-3. **Reload on chainChanged** to avoid stale state issues
-4. **Handle empty accounts array** - user may disconnect wallet
-5. **Test disconnection scenarios** - network issues, manual disconnects
-
-## Error Handling
-
-Events themselves don't throw errors, but you can wrap handlers:
-
-```typescript
-provider.on('accountsChanged', (accounts) => {
-  try {
-    updateAccountState(accounts);
-  } catch (error) {
-    console.error('Failed to handle account change:', error);
-  }
-});
-```
-
-## Key Differences from Custom Event Systems
-
-| Feature | EIP-1193 Events | Custom Events |
-|---------|-----------------|---------------|
-| Events | accountsChanged, chainChanged, connect, disconnect | Varies by library |
-| Pattern | Standard EventEmitter | Library-specific |
-| Compatibility | All EIP-1193 providers | Provider-specific |
-| Use case | Wallet/chain changes | Blockchain data (blocks, logs) |
-
-For blockchain data subscriptions (blocks, logs, transactions), use JSON-RPC subscription methods like `eth_subscribe`.
 
 ## Related
 
-- [Getting Started](/jsonrpc-provider/getting-started) - Installation and setup
-- [Method API](/jsonrpc-provider/method-api) - Making JSON-RPC requests
-- [Error Handling](/jsonrpc-provider/error-handling) - Handling errors
+- [Getting Started](/jsonrpc-provider/getting-started) — Configuring `WebSocketProvider`
+- [Contract Events](/contract/events) — HTTP-compatible `EventStream` with dynamic chunking
+- [EIP-6963 Discovery](/jsonrpc-provider/eip6963) — Discovering browser wallet providers
+- [WebSocket Provider Skill](/skills/websocket-provider) — Copyable custom WebSocket wrapper

@@ -23,7 +23,7 @@ WithdrawalIndex represents the global withdrawal counter in the beacon chain. Th
 Create WithdrawalIndex from number, bigint, or string.
 
 ```zig
-import { WithdrawalIndex } from '@tevm/primitives';
+import { WithdrawalIndex } from '@tevm/voltaire';
 
 const idx1 = WithdrawalIndex.from(1000000n);
 const idx2 = WithdrawalIndex.from(1000000);
@@ -63,7 +63,7 @@ WithdrawalIndex.equals(a, b); // true
 ### Track withdrawal history
 
 ```zig
-import { WithdrawalIndex, ValidatorIndex } from '@tevm/primitives';
+import { WithdrawalIndex, ValidatorIndex } from '@tevm/voltaire';
 
 interface WithdrawalRecord {
   index: WithdrawalIndex;
@@ -83,7 +83,7 @@ const withdrawal: WithdrawalRecord = {
 ### Query withdrawal range
 
 ```zig
-import { WithdrawalIndex } from '@tevm/primitives';
+import { WithdrawalIndex } from '@tevm/voltaire';
 
 const startIndex = WithdrawalIndex.from(1000000n);
 const endIndex = WithdrawalIndex.from(1001000n);

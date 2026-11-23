@@ -1,149 +1,125 @@
 ---
 title: Read Methods
-description: Execute view and pure function calls on smart contracts
+description: Execute view and pure contract calls via eth_call using the Contract pattern.
 ---
 
-# Read Methods
+`contract.read.<fn>(...args, options?)` executes `view` and `pure` functions via `eth_call`. Calls run against node state without creating a transaction or spending gas.
 
-The `read` interface executes view and pure functions via `eth_call`. These calls don't modify state and don't require gas.
-
-<Note>
-This uses the [Contract pattern](/contract) - a copyable implementation you add to your codebase.
-</Note>
+```mermaid
+sequenceDiagram
+  participant App
+  participant Contract
+  participant Provider
+  App->>Contract: read.balanceOf(account, options?)
+  Contract->>Contract: abi.encode("balanceOf", [account])
+  Contract->>Provider: eth_call([{ to, data, from? }, blockParam])
+  Provider-->>Contract: 0x0000...03e8
+  Contract->>Contract: abi.decode("balanceOf", Hex.toBytes(result))
+  Contract-->>App: 1000n
+```
 
 ## Basic Usage
 
 ```typescript
-import { Contract } from './Contract.js';  // Your local copy
+import { Contract } from './Contract.js';
 
 const usdc = Contract({
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
   abi: erc20Abi,
-  provider
+  provider,
 });
 
-// Call balanceOf
-const balance = await usdc.read.balanceOf('0x742d35...');
-console.log(`Balance: ${balance}`);
+const balance = await usdc.read.balanceOf('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
 
-// Call multiple read functions
 const [name, symbol, decimals, totalSupply] = await Promise.all([
   usdc.read.name(),
   usdc.read.symbol(),
   usdc.read.decimals(),
-  usdc.read.totalSupply()
+  usdc.read.totalSupply(),
 ]);
 ```
 
-## How It Works
+## Direct Primitive Equivalent
 
-When you call a read method:
-
-1. **Encode** - Arguments are ABI-encoded with the function selector
-2. **Call** - `eth_call` is sent to the provider
-3. **Decode** - Return data is ABI-decoded to JavaScript types
+Without the `Contract` wrapper, a read call combines `Abi`, `Hex`, and `provider.request`:
 
 ```typescript
-// What happens under the hood:
-const balance = await usdc.read.balanceOf('0x742d35...');
+import { Abi } from '@tevm/voltaire/Abi';
+import { Hex } from '@tevm/voltaire/Hex';
 
-// Equivalent to:
-const calldata = usdc.abi.encode('balanceOf', ['0x742d35...']);
-const result = await provider.request({
+const abi = Abi(erc20Abi);
+const calldata = abi.encode('balanceOf', ['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0']);
+
+const raw = await provider.request({
   method: 'eth_call',
-  params: [{ to: usdc.address, data: calldata }, 'latest']
+  params: [
+    { to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', data: Hex.fromBytes(calldata) },
+    'latest',
+  ],
 });
-const decoded = usdc.abi.decode('balanceOf', result);
+
+const [balance] = abi.decode('balanceOf', Hex.toBytes(raw as `0x${string}`));
 ```
 
-## Return Values
+## Return Value Unwrapping
 
-Read methods return decoded values directly:
+| ABI Outputs | Returned Shape | Example |
+| --- | --- | --- |
+| 1 output (`uint256`) | Unwrapped value | `const balance = await usdc.read.balanceOf(addr)` |
+| 2+ outputs (`uint112, uint112, uint32`) | Tuple array | `const [r0, r1, ts] = await pair.read.getReserves()` |
+| Struct output | Decoded tuple/object | `const order = await exchange.read.getOrder(id)` |
 
-```typescript
-// Single return value - returns the value
-const balance: bigint = await usdc.read.balanceOf('0x...');
+## Block Target and Caller Override
 
-// Multiple return values - returns array
-const [reserve0, reserve1] = await pair.read.getReserves();
-
-// Named return values - returns object
-const { maker, taker, expiry } = await exchange.read.getOrder(orderId);
-```
-
-## Block Parameter
-
-By default, reads execute against the `latest` block. Override this with options:
+Pass an optional trailing `ReadCallOptions` object after the function arguments to target historical state or override `msg.sender`:
 
 ```typescript
-// Read at specific block
-const balance = await usdc.read.balanceOf('0x...', {
-  blockTag: 12345678n
+// Specific block height (requires archive node for old blocks)
+const pastBalance = await usdc.read.balanceOf(account, {
+  blockTag: 18_000_000n,
 });
 
-// Read at block hash
-const balance = await usdc.read.balanceOf('0x...', {
-  blockHash: '0xabc...'
+// Specific block hash (EIP-1898)
+const hashBalance = await usdc.read.balanceOf(account, {
+  blockHash: '0xabc123...0000',
 });
 
-// Read pending state
-const balance = await usdc.read.balanceOf('0x...', {
-  blockTag: 'pending'
+// Pending state
+const pendingBalance = await usdc.read.balanceOf(account, {
+  blockTag: 'pending',
+});
+
+// Override msg.sender for access-controlled view calls
+const allowed = await vault.read.canWithdraw(account, {
+  from: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
 });
 ```
 
 ## Error Handling
 
-Read calls can fail for several reasons:
+`read` throws `ContractFunctionNotFoundError` if the function is missing from the ABI or is not `view`/`pure`. RPC and revert errors are wrapped in `ContractReadError` with the underlying error preserved on `error.cause`.
 
 ```typescript
-import { ContractReadError } from './errors.js';  // Your local copy
+import { ContractFunctionNotFoundError, ContractReadError } from './Contract.js';
 
 try {
-  const balance = await usdc.read.balanceOf('0x...');
+  const balance = await usdc.read.balanceOf(account);
 } catch (error) {
-  if (error instanceof ContractReadError) {
-    console.error('Read failed:', error.message);
-    console.error('Cause:', error.cause);
+  if (error instanceof ContractFunctionNotFoundError) {
+    console.error('ABI mismatch:', error.message);
+  } else if (error instanceof ContractReadError) {
+    console.error('eth_call failed:', error.message, error.cause);
   }
 }
 ```
 
-Common failures:
-- **Reverts** - Contract reverted (e.g., require failed)
-- **Invalid address** - Contract doesn't exist at address
-- **Network errors** - Provider connectivity issues
-
-## Calling From Address
-
-Some contracts check `msg.sender` even in view functions. Specify a `from` address:
-
-```typescript
-// Call as specific address
-const allowed = await vault.read.canWithdraw('0x...', {
-  from: '0x742d35...'
-});
-```
-
 ## Batching Reads
 
-For efficiency, batch multiple reads:
-
-```typescript
-// Parallel reads
-const [balance1, balance2, balance3] = await Promise.all([
-  usdc.read.balanceOf(address1),
-  usdc.read.balanceOf(address2),
-  usdc.read.balanceOf(address3)
-]);
-```
-
-<Tip>
-For many reads, consider using a multicall contract to batch them into a single RPC call.
-</Tip>
+Use `Promise.all` for a handful of independent reads, or use the [Multicall Skill](/skills/multicall) to collapse dozens of calls into a single `eth_call` at one atomic block height.
 
 ## Related
 
-- [Contract Overview](/contract) - Contract module introduction
-- [Write Methods](/contract/write) - Sending transactions
-- [Abi](/primitives/abi) - Manual ABI encoding/decoding
+- [Contract Pattern](/contract) — Full copyable implementation
+- [Write Methods](/contract/write) — State-changing transactions
+- [Gas Estimation](/contract/gas-estimation) — Simulating writes
+- [Abi](/primitives/abi) — Low-level encoding and decoding

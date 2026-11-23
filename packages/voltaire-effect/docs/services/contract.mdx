@@ -1,170 +1,134 @@
 ---
 title: Contract Factory
-description: Type-safe contract interaction with Effect.ts
+description: Type-safe read, write, simulate, and event queries inferred from const ABIs.
 ---
 
-`Contract()` is a **factory function** that returns a type-safe contract instance. It is **not** a `Context.Tag` service—instead it depends on `ProviderService` (and optionally `SignerService` for writes).
+`Contract(address, abi)` is an Effect factory that returns a typed contract instance bound to a single address. It is not a `Context.Tag` service; its methods require `ProviderService` for reads/simulations/events and `SignerService` for state-changing writes.
 
 <Tip>
-For applications with multiple contracts, use [makeContractRegistry](/services/contract-registry) to define all your contracts once and access them as a named map.
+When an application interacts with multiple contracts, define them once in [Contract Registry](/services/contract-registry) instead of constructing instances per call site.
 </Tip>
 
 ## Quick Start
 
 ```typescript
-import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 import { Effect, Layer } from 'effect'
+import { Contract, Provider, HttpTransport } from 'voltaire-effect'
 
 const erc20Abi = [
-  { type: 'function', name: 'balanceOf', stateMutability: 'view',
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
     inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: 'balance', type: 'uint256' }] },
-  { type: 'function', name: 'transfer', stateMutability: 'nonpayable',
-    inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }],
-    outputs: [{ name: 'success', type: 'bool' }] },
+    outputs: [{ name: 'balance', type: 'uint256' }]
+  },
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: [{ name: 'success', type: 'bool' }]
+  }
 ] as const
 
-// Compose layers first
 const ProviderLayer = Provider.pipe(
   Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
 
 const program = Effect.gen(function* () {
-  // Contract() is a factory that yields a contract instance
   const dai = yield* Contract(daiAddress, erc20Abi)
-  const balance = yield* dai.read.balanceOf(userAddress)
-  return balance
+  return yield* dai.read.balanceOf(userAddress)
 }).pipe(Effect.provide(ProviderLayer))
 ```
 
-## Read
+## Instance Methods
 
-View/pure functions via `eth_call`. No wallet required.
+| Namespace | RPC / Execution | Required Service | Error Tag |
+| --- | --- | --- | --- |
+| `contract.read.<fn>(...args)` | `eth_call` (`view` / `pure`) | `ProviderService` | `ContractCallError` |
+| `contract.simulate.<fn>(...args)` | `eth_call` dry-run for writes | `ProviderService` | `ContractCallError` |
+| `contract.write.<fn>(...args)` | Sign + broadcast transaction | `SignerService` | `ContractWriteError` |
+| `contract.getEvents(name, filter?)` | `eth_getLogs` + ABI decode | `ProviderService` | `ContractEventError` |
+
+Declare ABIs with `as const` so TypeScript infers exact method names, parameter tuples, and return types:
 
 ```typescript
-const balance = yield* contract.read.balanceOf(userAddress)
+contract.read.balanceOf(userAddress)      // Compiles -> Effect<bigint, ContractCallError, ProviderService>
+contract.read.balanceOf(123n)             // Compile error: invalid arg type
+contract.write.transfer(recipient, 1000n) // Compiles -> Effect<HashType, ContractWriteError, SignerService>
+contract.write.balanceOf(userAddress)     // Compile error: balanceOf is view
 ```
 
-## Write
-
-State-changing functions. Requires `SignerService`.
+## Querying Events & Per-Request Overrides
 
 ```typescript
-const txHash = yield* contract.write.transfer(recipientAddress, 1000n)
-```
+import { Schedule } from 'effect'
+import { withTimeout, withRetrySchedule, withoutCache } from 'voltaire-effect'
 
-## Simulate
-
-Test writes without sending.
-
-```typescript
-const success = yield* contract.simulate.transfer(recipientAddress, 1000n)
-```
-
-## Events
-
-```typescript
-const transfers = yield* contract.getEvents('Transfer', {
-  fromBlock: 18000000n,
+const transfers = yield* token.getEvents('Transfer', {
+  fromBlock: 18_000_000n,
   toBlock: 'latest',
   args: { from: userAddress }
 })
-```
 
-## Type Safety
-
-Types inferred from ABI:
-
-```typescript
-contract.read.balanceOf(address)     // ✅ takes address
-contract.read.balanceOf(123n)        // ❌ type error
-contract.write.transfer(to, amount)  // ✅ write method
-contract.write.balanceOf(address)    // ❌ balanceOf is view
-```
-
-## Request Configuration
-
-Use Effect-native helpers for per-request timeout and retry:
-
-```typescript
-import { withTimeout, withRetrySchedule, withoutCache, withTracing } from 'voltaire-effect'
-import { Schedule } from 'effect'
-
-// Read with custom timeout
-const balance = yield* token.read.balanceOf(user).pipe(
-  withTimeout("5 seconds")
+const freshBalance = yield* token.read.balanceOf(user).pipe(
+  withTimeout('5 seconds'),
+  withoutCache
 )
 
-// Write with retry on transient errors
 const txHash = yield* token.write.transfer(recipient, 100n).pipe(
   withRetrySchedule(
-    Schedule.exponential("500 millis").pipe(
+    Schedule.exponential('500 millis').pipe(
       Schedule.jittered,
       Schedule.compose(Schedule.recurs(3))
     )
   )
 )
-
-// Bypass cache for fresh data
-const freshBalance = yield* token.read.balanceOf(user).pipe(withoutCache)
-
-// Enable tracing for debugging
-const debugBalance = yield* token.read.balanceOf(user).pipe(withTracing())
 ```
 
-## Error Handling
+## Full Read -> Simulate -> Write Workflow
 
 ```typescript
-import { ContractCallError, ContractWriteError } from 'voltaire-effect'
-
-program.pipe(
-  Effect.catchTag('ContractCallError', (e) => Effect.succeed({ error: e.message })),
-  Effect.catchTag('ContractWriteError', (e) => Effect.succeed({ error: e.message }))
-)
-```
-
-## Full Example
-
-Complete workflow with writes:
-
-```typescript
-import { Effect } from 'effect'
-import { Contract, Signer, LocalAccount, Provider, HttpTransport } from 'voltaire-effect'
+import { Effect, Layer } from 'effect'
+import { Contract, Signer, Provider, HttpTransport } from 'voltaire-effect'
 import { Secp256k1Live, KeccakLive } from 'voltaire-effect/crypto'
 import { Hex } from '@tevm/voltaire'
 
 const privateKey = Hex.fromHex('0xac0974bec...')
-
-// Compose layers first
-const CryptoLayer = Layer.mergeAll(Secp256k1Live, KeccakLive)
-const TransportLayer = HttpTransport('https://eth.llamarpc.com')
-const DepsLayer = Layer.mergeAll(CryptoLayer, TransportLayer)
-const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(Layer.provide(DepsLayer))
+const BaseDeps = Layer.mergeAll(
+  Secp256k1Live,
+  KeccakLive,
+  HttpTransport('https://eth.llamarpc.com')
+)
+const SignerLayer = Signer.fromPrivateKey(privateKey, Provider).pipe(
+  Layer.provide(BaseDeps)
+)
 
 const program = Effect.gen(function* () {
   const token = yield* Contract(tokenAddress, erc20Abi)
-
-  // Read before
   const balanceBefore = yield* token.read.balanceOf(recipient)
 
-  // Simulate
-  const success = yield* token.simulate.transfer(recipient, 100n)
-  if (!success) return yield* Effect.fail(new Error('Transfer would fail'))
+  const ok = yield* token.simulate.transfer(recipient, 100n)
+  if (!ok) return yield* Effect.fail(new Error('Transfer simulation returned false'))
 
-  // Write
   const txHash = yield* token.write.transfer(recipient, 100n)
-
   return { txHash, balanceBefore }
-}).pipe(Effect.provide(SignerLayer))
+}).pipe(
+  Effect.catchTags({
+    ContractCallError: (e) => Effect.fail(e),
+    ContractWriteError: (e) => Effect.fail(e)
+  }),
+  Effect.provide(SignerLayer)
+)
 ```
 
 ## See Also
 
-- [Contract Registry](/services/contract-registry) — Pre-configured contracts as a named map
-- [Explorer Contracts](/services/explorer-contracts) — Create contracts from address when ABI is unknown
-- [Contract Interactions Example](/examples/contract-interactions) — Complete examples
-- [Provider Service](/services/provider) — `readContract` and `multicall`
-- [Signer Service](/services/signer) — Transaction signing for writes
-- [ERC Standards](/standards) — ERC-20, ERC-721, ERC-1155 utilities
-- [Event Streaming](/examples/event-streaming) — Real-time event watching
-- [Voltaire ABI](https://voltaire.tevm.sh/primitives/abi) — ABI encoding/decoding
+- [Contract Registry](/services/contract-registry) — Typed named map of application contracts
+- [Block Explorer API](/services/block-explorer-api) — Fetch verified ABIs from Sourcify, Etherscan, or Blockscout
+- [Provider Service](/services/provider) — Standalone `readContract`, `multicall`, and `simulateContract`
+- [ERC Standards](/standards) — Standard ERC-20, ERC-721, ERC-1155 helpers

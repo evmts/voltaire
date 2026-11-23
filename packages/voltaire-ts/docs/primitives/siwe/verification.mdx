@@ -347,10 +347,10 @@ function Verify({
 **Example:**
 
 ```typescript
-import { Verify } from 'tevm/Siwe'
-import { hash as keccak256 } from 'tevm/crypto/Keccak256'
-import { recoverPublicKey as secp256k1RecoverPublicKey } from 'tevm/crypto/Secp256k1'
-import { FromPublicKey } from 'tevm/Address'
+import { Verify } from '@tevm/voltaire/Siwe'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
+import { recoverPublicKey as secp256k1RecoverPublicKey } from '@tevm/voltaire/Secp256k1'
+import { FromPublicKey } from '@tevm/voltaire/Address'
 
 const addressFromPublicKey = FromPublicKey({ keccak256 })
 const verify = Verify({ keccak256, secp256k1RecoverPublicKey, addressFromPublicKey })
@@ -375,10 +375,10 @@ Same dependencies as `Verify`.
 **Example:**
 
 ```typescript
-import { VerifyMessage } from 'tevm/Siwe'
-import { hash as keccak256 } from 'tevm/crypto/Keccak256'
-import { recoverPublicKey as secp256k1RecoverPublicKey } from 'tevm/crypto/Secp256k1'
-import { FromPublicKey } from 'tevm/Address'
+import { VerifyMessage } from '@tevm/voltaire/Siwe'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
+import { recoverPublicKey as secp256k1RecoverPublicKey } from '@tevm/voltaire/Secp256k1'
+import { FromPublicKey } from '@tevm/voltaire/Address'
 
 const addressFromPublicKey = FromPublicKey({ keccak256 })
 const verifyMessage = VerifyMessage({ keccak256, secp256k1RecoverPublicKey, addressFromPublicKey })
@@ -400,8 +400,8 @@ function GetMessageHash({
 **Example:**
 
 ```typescript
-import { GetMessageHash } from 'tevm/Siwe'
-import { hash as keccak256 } from 'tevm/crypto/Keccak256'
+import { GetMessageHash } from '@tevm/voltaire/Siwe'
+import { hash as keccak256 } from '@tevm/voltaire/Keccak256'
 
 const getMessageHash = GetMessageHash({ keccak256 })
 const hash = getMessageHash(message)

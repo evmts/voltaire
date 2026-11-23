@@ -1,235 +1,182 @@
 ---
-title: secp256k1
-description: ECDSA signatures on the secp256k1 curve
+title: secp256k1 & Signatures
+description: ECDSA signing, verification, public key and address recovery, EIP-2 low-s normalization, and key generation on secp256k1.
 ---
 
-Ethereum's primary signature curve for transaction signing and address derivation.
+`voltaire.h` exposes two complementary secp256k1 function families: `primitives_secp256k1_*` / `primitives_signature_*` (returning `PRIMITIVES_SUCCESS` or negative error codes) and `secp256k1*` (compact signing/verification exports with `0`/`1` return values).
 
-## Types
+## Type and Byte Layouts
 
 ```c
 typedef struct {
-    unsigned char r[32];
-    unsigned char s[32];
-    unsigned char v;
+    unsigned char r[32]; /* big-endian signature scalar r */
+    unsigned char s[32]; /* big-endian signature scalar s */
+    unsigned char v;     /* recovery id (0/1 or 27/28) */
 } PrimitivesSignature;
 ```
 
-## Functions
+| Object | Size (bytes) | Format |
+|--------|--------------|--------|
+| Private key | `32` | Big-endian scalar in `[1, n - 1]` |
+| Uncompressed public key | `64` | `x (32B) \|\| y (32B)` (no `0x04` prefix) |
+| Compressed public key | `33` | `0x02` (even `y`) or `0x03` (odd `y`) `\|\| x (32B)` |
+| Compact signature | `64` or `65` | `r (32B) \|\| s (32B)` plus optional `v (1B)` |
 
-### primitives_secp256k1_recover_pubkey
+```mermaid
+flowchart LR
+    Priv["private_key[32]"] -->|"primitives_secp256k1_pubkey_from_private"| Pub["pubkey[64]\n(x || y)"]
+    Pub -->|"primitives_compress_public_key"| Comp["compressed[33]\n(0x02/0x03 || x)"]
+    Priv -->|"secp256k1Sign"| Sig["sig[64] + recid"]
+    Hash["msg_hash[32]"] -->|"secp256k1Sign"| Sig
+    Sig -->|"primitives_secp256k1_recover_address"| Addr["PrimitivesAddress\n(20 bytes)"]
+```
 
-Recover uncompressed public key from signature.
+## Return Conventions
+
+<Warning>
+Check return values carefully across the two families:
+- `primitives_secp256k1_*`, `primitives_signature_parse`, `primitives_generate_private_key`, `primitives_compress_public_key`: `PRIMITIVES_SUCCESS` (`0`) on success, negative error code on failure.
+- `secp256k1Sign`, `secp256k1Recover`, `secp256k1DerivePublicKey`: `0` on success, `1` on error.
+- `secp256k1Verify`: **`1` if valid, `0` if invalid.**
+- `primitives_signature_serialize`: `64` or `65` (bytes written).
+</Warning>
+
+## Recovery and Key Derivation (`primitives_secp256k1_*`)
 
 ```c
 int primitives_secp256k1_recover_pubkey(
     const unsigned char message_hash[32],
     const unsigned char r[32],
     const unsigned char s[32],
-    unsigned char v,                    // 0-1 or 27-28
-    unsigned char out_pubkey[64]        // x || y
+    unsigned char v,              /* 0-1 or 27-28 */
+    unsigned char out_pubkey[64]  /* x || y */
 );
-```
 
-**Returns:** `PRIMITIVES_SUCCESS` or `PRIMITIVES_ERROR_INVALID_SIGNATURE`
-
-### primitives_secp256k1_recover_address
-
-Recover Ethereum address from signature.
-
-```c
 int primitives_secp256k1_recover_address(
     const unsigned char message_hash[32],
     const unsigned char r[32],
     const unsigned char s[32],
-    unsigned char v,
+    unsigned char v,              /* 0-1 or 27-28 */
     PrimitivesAddress* out_address
 );
-```
 
-### primitives_secp256k1_pubkey_from_private
-
-Derive public key from private key.
-
-```c
 int primitives_secp256k1_pubkey_from_private(
     const unsigned char private_key[32],
-    unsigned char out_pubkey[64]
+    unsigned char out_pubkey[64]  /* x || y */
 );
-```
 
-### primitives_secp256k1_validate_signature
-
-Check if signature components are valid (non-zero, within curve order).
-
-```c
 bool primitives_secp256k1_validate_signature(
     const unsigned char r[32],
     const unsigned char s[32]
 );
 ```
 
-### secp256k1Sign
+- `recover_pubkey` and `recover_address` return `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_INVALID_SIGNATURE` (`-6`).
+- `pubkey_from_private` returns `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_INVALID_INPUT` (`-5`) when the scalar is `0` or `>= n`.
+- `validate_signature` returns `true` if `1 <= r < n` and `1 <= s <= n/2` (canonical low-`s`).
 
-Sign a message hash with a private key.
+## Signing and Verification (`secp256k1*`)
 
 ```c
 int secp256k1Sign(
-    const unsigned char* msgHash_ptr,    // 32 bytes
-    const unsigned char* privKey_ptr,    // 32 bytes
-    unsigned char* sig_ptr,              // 64 bytes output (r || s)
-    unsigned char* recid_ptr             // 1 byte recovery id
+    const unsigned char* msgHash_ptr, /* 32 bytes */
+    const unsigned char* privKey_ptr, /* 32 bytes */
+    unsigned char* sig_ptr,           /* 64 bytes output (r || s, low-s normalized) */
+    unsigned char* recid_ptr          /* 1 byte recovery id (0 or 1) */
 );
-```
 
-**Returns:** 0 on success, 1 on error.
-
-### secp256k1Verify
-
-Verify a signature against a public key.
-
-```c
 int secp256k1Verify(
-    const unsigned char* msgHash_ptr,    // 32 bytes
-    const unsigned char* sig_ptr,        // 64 bytes (r || s)
-    const unsigned char* pubKey_ptr      // 64 bytes (x || y)
+    const unsigned char* msgHash_ptr, /* 32 bytes */
+    const unsigned char* sig_ptr,     /* 64 bytes (r || s) */
+    const unsigned char* pubKey_ptr   /* 64 bytes (x || y) */
 );
-```
 
-**Returns:** 1 if valid, 0 if invalid.
-
-### secp256k1Recover
-
-Recover public key from signature.
-
-```c
 int secp256k1Recover(
-    const unsigned char* msgHash_ptr,    // 32 bytes
-    const unsigned char* sig_ptr,        // 64 bytes (r || s)
-    unsigned char recid,                 // 0 or 1
-    unsigned char* pubKey_ptr            // 64 bytes output
+    const unsigned char* msgHash_ptr, /* 32 bytes */
+    const unsigned char* sig_ptr,     /* 64 bytes (r || s) */
+    unsigned char recid,              /* 0 or 1 */
+    unsigned char* pubKey_ptr         /* 64 bytes output (x || y) */
 );
-```
 
-### secp256k1DerivePublicKey
-
-Derive public key from private key.
-
-```c
 int secp256k1DerivePublicKey(
-    const unsigned char* privKey_ptr,    // 32 bytes
-    unsigned char* pubKey_ptr            // 64 bytes output
+    const unsigned char* privKey_ptr, /* 32 bytes */
+    unsigned char* pubKey_ptr         /* 64 bytes output (x || y) */
 );
 ```
 
-## Signature Utilities
+`secp256k1Sign` automatically normalizes `s` to low-`s` (EIP-2) and adjusts `*recid_ptr` accordingly.
 
-### primitives_signature_normalize
-
-Normalize signature to low-s form (EIP-2).
+## Signature Utilities and Key Generation
 
 ```c
-bool primitives_signature_normalize(
-    unsigned char r[32],
-    unsigned char s[32]
-);
-```
+bool primitives_signature_normalize(unsigned char r[32], unsigned char s[32]);
+bool primitives_signature_is_canonical(const unsigned char r[32], const unsigned char s[32]);
 
-**Returns:** `true` if normalization was performed.
-
-### primitives_signature_is_canonical
-
-Check if signature is in canonical (low-s) form.
-
-```c
-bool primitives_signature_is_canonical(
-    const unsigned char r[32],
-    const unsigned char s[32]
-);
-```
-
-### primitives_signature_parse
-
-Parse signature from compact format.
-
-```c
 int primitives_signature_parse(
-    const unsigned char* sig_data,       // 64 or 65 bytes
+    const unsigned char* sig_data, /* 64 or 65 bytes */
     size_t sig_len,
     unsigned char out_r[32],
     unsigned char out_s[32],
-    unsigned char* out_v
+    unsigned char* out_v           /* set to 0 when sig_len == 64 */
 );
-```
 
-### primitives_signature_serialize
-
-Serialize signature to compact format.
-
-```c
 int primitives_signature_serialize(
     const unsigned char r[32],
     const unsigned char s[32],
     unsigned char v,
-    bool include_v,                      // true for 65 bytes, false for 64
+    bool include_v,                /* true -> 65 bytes, false -> 64 bytes */
     unsigned char* out_buf
 );
-```
 
-**Returns:** 64 or 65 (bytes written).
-
-## Wallet Generation
-
-### primitives_generate_private_key
-
-Generate cryptographically secure private key.
-
-```c
 int primitives_generate_private_key(unsigned char out_private_key[32]);
-```
 
-### primitives_compress_public_key
-
-Compress 64-byte public key to 33 bytes.
-
-```c
 int primitives_compress_public_key(
     const unsigned char uncompressed[64],
     unsigned char out_compressed[33]
 );
 ```
 
+- `primitives_signature_normalize` replaces `s` in place with `n - s` if `s > n / 2` and returns `true` when modified. Remember to flip `v` parity (`0 <-> 1` or `27 <-> 28`) if normalization occurred.
+- `primitives_signature_parse` returns `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_INVALID_LENGTH` (`-2`).
+- `primitives_generate_private_key` draws 32 bytes from OS cryptographic randomness (`std.crypto.random`) and rejects `0` or `>= n`.
+
 ## Example
 
 ```c
+#include "voltaire.h"
+
 #include <stdio.h>
 #include <string.h>
 
-int main() {
-    // Generate private key
+int main(void) {
     unsigned char privkey[32];
-    primitives_generate_private_key(privkey);
+    if (primitives_generate_private_key(privkey) != PRIMITIVES_SUCCESS) return 1;
 
-    // Derive public key
     unsigned char pubkey[64];
-    secp256k1DerivePublicKey(privkey, pubkey);
+    if (primitives_secp256k1_pubkey_from_private(privkey, pubkey) != PRIMITIVES_SUCCESS) return 1;
 
-    // Hash a message
-    PrimitivesHash hash;
-    primitives_eip191_hash_message((unsigned char*)"hello", 5, &hash);
+    static const unsigned char msg[] = "hello";
+    PrimitivesHash digest;
+    if (primitives_eip191_hash_message(msg, sizeof(msg) - 1, &digest) != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
 
-    // Sign
     unsigned char sig[64];
-    unsigned char recid;
-    secp256k1Sign(hash.bytes, privkey, sig, &recid);
+    unsigned char recid = 0;
+    if (secp256k1Sign(digest.bytes, privkey, sig, &recid) != 0) return 1;
 
-    // Verify
-    int valid = secp256k1Verify(hash.bytes, sig, pubkey);
-    printf("Signature valid: %d\n", valid);
+    int valid = secp256k1Verify(digest.bytes, sig, pubkey);
+    printf("Verified: %d\n", valid); /* 1 */
 
-    // Recover address
-    PrimitivesAddress addr;
-    primitives_secp256k1_recover_address(hash.bytes, sig, sig + 32, recid, &addr);
+    PrimitivesAddress signer;
+    if (primitives_secp256k1_recover_address(
+            digest.bytes, sig, sig + 32, recid, &signer) != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
+
+    unsigned char hex[42];
+    primitives_address_to_checksum_hex(&signer, hex);
+    printf("Signer:   %.42s\n", (const char*)hex);
 
     return 0;
 }

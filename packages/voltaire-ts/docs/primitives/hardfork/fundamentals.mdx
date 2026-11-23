@@ -11,7 +11,7 @@ description: Learn Ethereum hardfork protocol upgrades and version management
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Hardfork API](/primitives/hardfork/index).
 </Info>
-Ethereum hardforks are backwards-incompatible protocol upgrades that introduce new features, fix bugs, and improve performance across the network. This guide teaches hardfork fundamentals using Tevm.
+Ethereum hardforks are backwards-incompatible protocol upgrades that introduce new features, fix bugs, and improve performance across the network. This guide teaches hardfork fundamentals using Voltaire.
 
 ## What Are Hardforks?
 
@@ -37,7 +37,7 @@ Hardforks enable protocol evolution without fragmenting the network:
 <Tabs>
 <Tab title="Chronological">
 ```typescript
-import { Hardfork } from 'tevm';
+import { Hardfork } from '@tevm/voltaire';
 
 // Early era (2015-2017)
 Hardfork.FRONTIER          // July 2015 - Genesis block
@@ -61,7 +61,7 @@ console.log(Hardfork.compare(Hardfork.LONDON, Hardfork.CANCUN)); // -1 (London i
 </Tab>
 <Tab title="Feature View">
 ```typescript
-import { Hardfork } from 'tevm';
+import { Hardfork } from '@tevm/voltaire';
 
 // Gas optimizations
 Hardfork.BERLIN   // EIP-2929: SLOAD/CALL access list pricing
@@ -93,7 +93,7 @@ console.log(Hardfork.hasEIP4844(fork));  // true - blobs available
 Hardforks activate at predetermined block numbers (pre-Merge) or timestamps (post-Merge):
 
 ```typescript
-import { Hardfork } from 'tevm';
+import { Hardfork } from '@tevm/voltaire';
 
 // Block-based activation (pre-Merge)
 const berlinBlock = 12244000;   // Mainnet Berlin activation
@@ -104,7 +104,7 @@ const shanghaiTimestamp = 1681338455;  // April 13, 2023
 const cancunTimestamp = 1710338135;    // March 13, 2024
 
 // Version comparison for feature gating
-import { InvalidFormatError } from 'tevm/errors'
+import { InvalidFormatError } from '@tevm/voltaire/errors'
 
 function getGasCostMultiplier(hardfork: string, blockNumber: number): number {
   const fork = Hardfork(hardfork);
@@ -133,8 +133,8 @@ console.log(getGasCostMultiplier("berlin", 13000000));   // 2600
 Use version comparison to gate features based on hardfork:
 
 ```typescript
-import { Hardfork } from 'tevm';
-import { InvalidFormatError, ValidationError } from 'tevm/errors'
+import { Hardfork } from '@tevm/voltaire';
+import { InvalidFormatError, ValidationError } from '@tevm/voltaire/errors'
 
 function validateTransaction(tx: any, networkHardfork: string) {
   const fork = Hardfork(networkHardfork);
@@ -202,8 +202,8 @@ try {
 Compare feature availability across hardforks:
 
 ```typescript
-import { Hardfork } from 'tevm';
-import { InvalidFormatError } from 'tevm/errors'
+import { Hardfork } from '@tevm/voltaire';
+import { InvalidFormatError } from '@tevm/voltaire/errors'
 
 function compareFeatures(forkA: string, forkB: string) {
   const a = Hardfork(forkA);
@@ -259,8 +259,8 @@ Common features tied to specific hardforks:
 ### EIP-1559 Base Fee (London)
 
 ```typescript
-import { Hardfork } from 'tevm';
-import { InvalidFormatError, ValidationError } from 'tevm/errors'
+import { Hardfork } from '@tevm/voltaire';
+import { InvalidFormatError, ValidationError } from '@tevm/voltaire/errors'
 
 function calculateMaxFee(hardfork: string, baseFee: bigint, priorityFee: bigint): bigint {
   const fork = Hardfork(hardfork);
@@ -292,8 +292,8 @@ console.log(calculateMaxFee("cancun", 15n, 3n));   // 18n
 ### EIP-3855 PUSH0 Opcode (Shanghai)
 
 ```typescript
-import { Hardfork } from 'tevm';
-import { InvalidFormatError } from 'tevm/errors'
+import { Hardfork } from '@tevm/voltaire';
+import { InvalidFormatError } from '@tevm/voltaire/errors'
 
 function supportsOptimizedBytecode(hardfork: string): boolean {
   const fork = Hardfork(hardfork);
@@ -317,8 +317,8 @@ console.log(supportsOptimizedBytecode("cancun"));   // true
 ### EIP-4844 Blob Transactions (Cancun)
 
 ```typescript
-import { Hardfork } from 'tevm';
-import { InvalidFormatError } from 'tevm/errors'
+import { Hardfork } from '@tevm/voltaire';
+import { InvalidFormatError } from '@tevm/voltaire/errors'
 
 function supportsBlobTransactions(hardfork: string): boolean {
   const fork = Hardfork(hardfork);
@@ -341,8 +341,8 @@ console.log(supportsBlobTransactions("cancun"));   // true
 ### EIP-1153 Transient Storage (Cancun)
 
 ```typescript
-import { Hardfork } from 'tevm';
-import { InvalidFormatError } from 'tevm/errors'
+import { Hardfork } from '@tevm/voltaire';
+import { InvalidFormatError } from '@tevm/voltaire/errors'
 
 function supportsTransientStorage(hardfork: string): boolean {
   const fork = Hardfork(hardfork);

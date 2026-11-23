@@ -1,128 +1,87 @@
-# Authorization
+# Authorization (EIP-7702)
 
-EIP-7702 authorization types for EOA code delegation.
+EIP-7702 EOA code delegation types (`Authorization`, `SignedAuthorization`, `AuthorizationList`) in `voltaire::primitives`.
 
-## Authorization
+## Lifecycle
 
-Unsigned authorization tuple specifying code delegation.
+```mermaid
+flowchart LR
+    Unsigned["Authorization\n{ chain_id, address, nonce }"] -->|"signing_hash()"| Digest["Hash\nkeccak256(0x05 || rlp(...))"]
+    Digest -->|"external secp256k1 sign"| Signed["SignedAuthorization\n{ auth, y_parity, r, s }"]
+    Signed -->|"validate()"| Valid["Checks non-zero target,\ny_parity in 0..=1, low-s"]
+    Signed -->|"recover_signer() [native]"| Authority["Address (EOA signer)"]
+    Signed --> List["AuthorizationList\n(max MAX_AUTHORIZATIONS = 100)"]
+```
+
+## `Authorization`
+
+Unsigned delegation tuple. `chain_id == 0` authorizes delegation on any chain.
 
 ```rust
 use voltaire::primitives::{Authorization, Address};
 
-// Chain-specific authorization
-let auth = Authorization::new(
-    1,                              // chain_id
-    "0xdead...".parse()?,          // contract address
-    0,                              // nonce
-);
+let delegate: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
 
-// Valid on any chain (chain_id = 0)
-let auth = Authorization::for_any_chain("0xdead...".parse()?, 0);
+let mainnet_only = Authorization::for_chain(1, delegate, 0);
+assert!(mainnet_only.is_chain_specific());
+assert!(mainnet_only.is_valid_for_chain(1));
+assert!(!mainnet_only.is_valid_for_chain(10));
 
-// Query
-assert!(auth.is_chain_specific());
-assert!(auth.is_valid_for_chain(1));
+let cross_chain = Authorization::for_any_chain(delegate, 0);
+assert!(!cross_chain.is_chain_specific());
+assert!(cross_chain.is_valid_for_chain(42161));
+
+mainnet_only.validate()?; // rejects zero address
+let digest = mainnet_only.signing_hash();
+let _ = digest;
 # Ok::<(), voltaire::Error>(())
 ```
 
-## SignedAuthorization
+## `SignedAuthorization`
 
-Authorization with ECDSA signature.
+Binds an `Authorization` to `(y_parity, r, s)`:
 
 ```rust
-use voltaire::primitives::{SignedAuthorization, Authorization, Address};
+use voltaire::primitives::{Authorization, SignedAuthorization, Address};
 
-let auth = Authorization::new(1, "0xdead...".parse()?, 0);
+let delegate: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
+let auth = Authorization::new(1, delegate, 0);
 
-// From components
-let signed = SignedAuthorization::new(
-    auth,
-    0,              // y_parity (0 or 1)
-    [1u8; 32],      // r
-    [1u8; 32],      // s
-);
+let signed = SignedAuthorization::new(auth, 0, [1u8; 32], [1u8; 32]);
+signed.validate()?; // checks non-zero target, y_parity <= 1, non-zero r/s, low-s (EIP-2)
 
-// From 65-byte signature
-let sig = [0u8; 65];
-let signed = SignedAuthorization::from_parts(auth, &sig);
-
-// Query
 assert_eq!(signed.chain_id(), 1);
 assert_eq!(signed.recovery_id(), 0);
-assert_eq!(signed.v(), 27);           // Legacy v value
+assert_eq!(signed.v(), 27);
+let raw_sig: [u8; 65] = signed.signature_bytes(); // r || s || y_parity
+let from_sig = SignedAuthorization::from_parts(auth, &raw_sig);
+assert_eq!(from_sig, signed);
 
-// Get signature bytes (r || s || y_parity)
-let bytes = signed.signature_bytes();
+// Signer recovery requires the `native` feature
+#[cfg(feature = "native")]
+{
+    let signer = signed.recover_signer()?;
+    assert!(signed.verify_signer(&signer)?);
+}
 # Ok::<(), voltaire::Error>(())
 ```
 
-## AuthorizationList
+## `AuthorizationList`
 
-Collection of signed authorizations for EIP-7702 transactions.
+Collection of `SignedAuthorization` items bounded by `MAX_AUTHORIZATIONS` (`100`). Gas cost is computed at `25_000` gas per authorization (`PER_EMPTY_ACCOUNT_COST`).
 
 ```rust
-use voltaire::primitives::{AuthorizationList, SignedAuthorization, Authorization, Address};
+use voltaire::primitives::{Authorization, SignedAuthorization, AuthorizationList, Address};
 
-let auth = Authorization::new(1, "0xdead...".parse()?, 0);
-let signed = SignedAuthorization::new(auth, 0, [1u8; 32], [1u8; 32]);
+let delegate: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
+let signed = SignedAuthorization::new(Authorization::new(1, delegate, 0), 0, [1u8; 32], [1u8; 32]);
 
 let mut list = AuthorizationList::empty();
 list.push(signed);
+list.validate()?;
 
-// Query
-assert!(!list.is_empty());
-assert!(list.targets_address(&"0xdead...".parse()?));
-
-// Filter by chain
-let mainnet: Vec<_> = list.filter_for_chain(1).collect();
-
-// Gas cost (25000 per authorization)
+assert!(list.targets_address(&delegate));
+assert_eq!(list.filter_for_chain(1).count(), 1);
 assert_eq!(list.gas_cost(), 25_000);
-# Ok::<(), voltaire::Error>(())
-```
-
-## Validation
-
-```rust
-use voltaire::primitives::{SignedAuthorization, Authorization, Address};
-
-let auth = Authorization::new(1, "0xdead...".parse()?, 0);
-let signed = SignedAuthorization::new(auth, 0, [1u8; 32], [1u8; 32]);
-
-// Validates:
-// - address is non-zero
-// - y_parity is 0 or 1
-// - r and s are non-zero
-// - s is in lower half of curve order (EIP-2)
-signed.validate()?;
-# Ok::<(), voltaire::Error>(())
-```
-
-## Signer Recovery (native feature)
-
-```rust,ignore
-use voltaire::primitives::{SignedAuthorization, Authorization, Address};
-
-let signed = /* ... */;
-
-// Recover signer from signature
-let signer = signed.recover_signer()?;
-
-// Verify against expected signer
-assert!(signed.verify_signer(&expected_address)?);
-```
-
-## Gas Calculation
-
-Per EIP-7702: 25,000 gas per authorization.
-
-```rust
-use voltaire::primitives::{AuthorizationList, SignedAuthorization, Authorization, Address};
-
-let auth = Authorization::new(1, "0xdead...".parse()?, 0);
-let signed = SignedAuthorization::new(auth, 0, [1u8; 32], [1u8; 32]);
-
-let list = AuthorizationList::new(vec![signed, signed]);
-assert_eq!(list.gas_cost(), 50_000);
 # Ok::<(), voltaire::Error>(())
 ```

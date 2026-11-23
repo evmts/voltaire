@@ -1,395 +1,148 @@
 ---
-title: Zig Patterns
-description: Zig 0.15.1 style guide, memory management, and testing patterns
+title: Zig 0.15 Patterns
+description: Allocator ownership rules, Zig 0.15 unmanaged ArrayList API, comptime validation, error unions, and testing conventions in Voltaire.
 ---
 
-# Zig Patterns
+Voltaire targets Zig `0.15.1`+ (tested on `0.15.2`). This guide documents the idioms enforced across `packages/voltaire-zig/src/`.
 
-Voltaire uses Zig 0.15.1 for performance-critical implementations. This guide covers style, memory management, and common patterns.
+## Allocator Ownership Matrix
 
-## Style Guide
-
-### Variable Naming
-
-Single-word variables when meaning is clear:
-
-```zig
-// ✅ Good
-var n: usize = 0;
-var top: u256 = stack.peek();
-var result: [32]u8 = undefined;
-
-// ❌ Avoid
-var numberOfIterations: usize = 0;
-var topOfStack: u256 = stack.peek();
-var hashResult: [32]u8 = undefined;
+```mermaid
+flowchart TD
+    Fn["Function Return Type"] --> Fixed{"Fixed-size value?\nAddress, Hash, [42]u8, [66]u8, u256"}
+    Fixed -->|"Yes"| NoAlloc["No Allocator param\nReturn by value on stack"]
+    Fixed -->|"No"| Temp{"Only needs scratch space?\n(e.g. calculateCreateAddress, merkleRoot)"}
+    Temp -->|"Yes"| FreeInternal["Takes Allocator\nFrees scratch with defer before return"]
+    Temp -->|"No"| CallerOwns["Takes Allocator as first param\nCaller frees returned slice or calls .deinit(allocator)"]
 ```
 
-Use descriptive names when ambiguity exists:
+### Fixed-Size Stack Returns First
+
+Prefer stack-allocated fixed arrays whenever the output length is statically known:
 
 ```zig
-// ✅ Descriptive when needed
-var input_len: usize = input.len;
-var output_ptr: [*]u8 = output.ptr;
+// Stack-allocated [42]u8 — no allocator, cannot fail with OutOfMemory
+const hex: [42]u8 = primitives.Address.toChecksummed(addr);
+
+// Stack-allocated [4]u8 -> [10]u8 round-trip
+const sel: [4]u8 = try primitives.Hex.hexToBytesFixed(4, "0xa9059cbb");
+const sel_hex: [10]u8 = primitives.Hex.bytesToHexFixed(4, sel);
 ```
 
-### Function Structure
+### `defer` and `errdefer` Hygiene
 
-Prefer long imperative function bodies over small abstractions:
+Every function that allocates intermediate buffers frees them with `defer`. Buffers that will be returned to the caller use `errdefer` so early errors never leak:
 
 ```zig
-// ✅ Good - inline logic, clear flow
-pub fn fromHex(hex_str: []const u8) !Address {
-    if (hex_str.len < 2) return error.InvalidHex;
+pub fn hexToBytes(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
+    if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x")) return error.InvalidHexFormat;
+    const digits = hex[2..];
+    if (digits.len % 2 != 0) return error.OddLengthHex;
 
-    const start: usize = if (hex_str[0] == '0' and hex_str[1] == 'x') 2 else 0;
-    const hex = hex_str[start..];
+    const bytes = try allocator.alloc(u8, digits.len / 2);
+    errdefer allocator.free(bytes); // Freed only if parsing fails below
 
-    if (hex.len != 40) return error.InvalidLength;
-
-    var bytes: [20]u8 = undefined;
-    var i: usize = 0;
-    while (i < 20) : (i += 1) {
-        const high = try hexDigitToInt(hex[i * 2]);
-        const low = try hexDigitToInt(hex[i * 2 + 1]);
-        bytes[i] = (high << 4) | low;
-    }
-
-    return Address{ .bytes = bytes };
-}
-
-// ❌ Avoid - unnecessary abstraction
-pub fn fromHex(hex_str: []const u8) !Address {
-    const clean = try stripPrefix(hex_str);
-    try validateLength(clean);
-    return try decodeHex(clean);
+    // ... decode nibbles into bytes ...
+    return bytes; // Ownership transfers to caller
 }
 ```
 
-### Only Abstract When Reused
+### Zero-Heap Stack Arenas (`FixedBufferAllocator`)
+
+When calling an allocator-parameterized API (such as `Rlp.encode` or `Address.calculateCreateAddress`) on bounded inputs in a hot loop, supply a stack-backed `FixedBufferAllocator`:
 
 ```zig
-// ✅ Reused utility - worth abstracting
-fn hexDigitToInt(c: u8) !u4 {
-    return switch (c) {
-        '0'...'9' => @intCast(c - '0'),
-        'a'...'f' => @intCast(c - 'a' + 10),
-        'A'...'F' => @intCast(c - 'A' + 10),
-        else => error.InvalidHexDigit,
-    };
-}
+var buf: [256]u8 = undefined;
+var fba = std.heap.FixedBufferAllocator.init(&buf);
+const contract = try primitives.Address.calculateCreateAddress(fba.allocator(), deployer, nonce);
 ```
 
-## Memory Management
+## Zig 0.15 Unmanaged `ArrayList`
 
-### Allocator Convention
-
-Functions that allocate take an explicit allocator:
+Zig 0.15 defaults `std.ArrayList(T)` to the unmanaged representation. Initialize with `.{}` (or `std.ArrayList(T){}`) and pass `allocator` to every mutating call and `deinit`:
 
 ```zig
-pub fn toHex(allocator: Allocator, address: Address) ![]u8 {
-    const result = try allocator.alloc(u8, 42);
-    errdefer allocator.free(result);
-
-    result[0] = '0';
-    result[1] = 'x';
-    // ... fill hex digits ...
-
-    return result;  // Caller owns this memory
-}
-```
-
-### Memory Ownership
-
-**Return to caller, caller frees:**
-
-```zig
-// Function allocates, returns owned memory
-pub fn encode(allocator: Allocator, value: anytype) ![]u8 {
-    const result = try allocator.alloc(u8, calcSize(value));
-    // ... encode ...
-    return result;
-}
-
-// Caller is responsible for freeing
-const encoded = try encode(allocator, value);
-defer allocator.free(encoded);
-```
-
-### defer and errdefer
-
-Always clean up with defer/errdefer:
-
-```zig
-pub fn process(allocator: Allocator, input: []const u8) ![]u8 {
-    const temp = try allocator.alloc(u8, 1024);
-    defer allocator.free(temp);  // Always free temp
-
-    const result = try allocator.alloc(u8, 256);
-    errdefer allocator.free(result);  // Free on error only
-
-    // ... processing ...
-
-    return result;  // Caller owns result
-}
-```
-
-## ArrayList (0.15.1 API)
-
-<Warning>
-Zig 0.15.1 uses unmanaged ArrayList. This is different from older versions.
-</Warning>
-
-```zig
-// ✅ Correct 0.15.1 API
+// Zig 0.15 API
 var list = std.ArrayList(u8){};
 defer list.deinit(allocator);
 
-try list.append(allocator, 42);
-try list.appendSlice(allocator, "hello");
-const slice = list.items;
-
-// ❌ Wrong - old API patterns
-var list = std.ArrayList(u8).init(allocator);  // No init()
-defer list.deinit();                             // deinit takes allocator
-list.append(42);                                 // append takes allocator
+try list.append(allocator, 0x60);
+try list.appendSlice(allocator, &[_]u8{ 0x80, 0x60, 0x40, 0x52 });
+const owned = try list.toOwnedSlice(allocator);
+defer allocator.free(owned);
 ```
 
-### ArrayList Operations
+<Note>
+Legacy `std.ArrayList(u8).init(allocator)` is removed in Zig 0.15. If a managed list is required for interoperability, use `std.array_list.AlignedManaged(u8, null).init(allocator)`, though new code should prefer unmanaged `std.ArrayList(T){}`.
+</Note>
+
+## Comptime Validation
+
+Push static Ethereum literals to compile time so malformed hex fails the build rather than crashing at runtime:
 
 ```zig
-var list = std.ArrayList(u8){};
-defer list.deinit(allocator);
+const primitives = @import("primitives");
+const crypto = @import("crypto");
 
-// Append operations
-try list.append(allocator, item);
-try list.appendSlice(allocator, slice);
-try list.appendNTimes(allocator, value, count);
-
-// Access
-const item = list.items[0];
-const len = list.items.len;
-
-// Capacity
-try list.ensureTotalCapacity(allocator, min_capacity);
-list.clearRetainingCapacity();
+const WETH_MAINNET = comptime primitives.Address.addressFromHex(
+    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+);
+const EMPTY_HASH = comptime crypto.Hash.fromHexComptime(
+    "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+);
 ```
 
-## Struct Pattern
+## Error Unions & Explicit Handling
 
-### Simple Data Struct
+Never discard errors with `catch unreachable` on untrusted external input (hex strings, RLP wire bytes, ABI calldata, signatures). Define narrow error sets per module (`HexError`, `RlpError`, `AbiError`, `TransactionError`, `PrecompileError`) and propagate with `try`.
 
 ```zig
-pub const Address = struct {
-    bytes: [20]u8,
-
-    pub fn fromHex(hex_str: []const u8) !Address {
-        // ...
-    }
-
-    pub fn toHex(self: Address) [42]u8 {
-        var result: [42]u8 = undefined;
-        result[0] = '0';
-        result[1] = 'x';
-        // ...
-        return result;
-    }
-
-    pub fn equals(self: Address, other: Address) bool {
-        return std.mem.eql(u8, &self.bytes, &other.bytes);
-    }
-};
+pub fn parseRecipient(raw: []const u8) !primitives.Address {
+    const addr = try primitives.Address.fromHex(raw);
+    if (primitives.Address.isZero(addr)) return error.ZeroRecipient;
+    return addr;
+}
 ```
 
-### Using @This()
+## Constant-Time & Secret Scrubbing
+
+Cryptographic comparisons and secret-key paths follow two strict rules:
+1. Use `crypto.constant_time` helpers (`constantTimeEqU256`, `constantTimeLtU256`, `constantTimeSelectU256`) for signature scalar range checks and verification comparisons.
+2. Scrub private key buffers before leaving scope using `defer crypto.Crypto.secureZeroMemory(&private_key);` (uses volatile stores so LLVM cannot elide the zeroing).
+
+## Testing & Fuzzing
+
+### Leak-Checked Unit Tests
+
+Always use `std.testing.allocator` in `test` blocks. Any missing `free` or `deinit` fails `zig build test` automatically:
 
 ```zig
-pub const Hash = struct {
-    const Self = @This();
-    bytes: [32]u8,
+test "rlp round-trip frees all allocations" {
+    const allocator = std.testing.allocator;
+    const Rlp = @import("primitives").Rlp;
 
-    pub fn from(data: []const u8) Self {
-        return Self{ .bytes = Keccak256.hash(data) };
-    }
-};
-```
+    const encoded = try Rlp.encode(allocator, "voltaire");
+    defer allocator.free(encoded);
 
-## Error Handling
+    const decoded = try Rlp.decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
 
-### Error Sets
-
-```zig
-pub const AddressError = error{
-    InvalidHex,
-    InvalidLength,
-    InvalidChecksum,
-};
-
-pub fn fromHex(hex: []const u8) AddressError!Address {
-    // ...
+    try std.testing.expectEqualStrings("voltaire", decoded.data.String);
 }
 ```
 
-### Error Union Returns
+### Fuzz Tests
 
-```zig
-// Can fail
-pub fn fromHex(hex: []const u8) !Address { ... }
-
-// Cannot fail - no error union
-pub fn toHex(address: Address) [42]u8 { ... }
-
-// Nullable - no error, but might not exist
-pub fn tryParse(input: []const u8) ?Address { ... }
-```
-
-## Testing
-
-### Inline Tests
-
-Tests live in the same file as implementation:
-
-```zig
-// address.zig
-
-pub const Address = struct {
-    bytes: [20]u8,
-
-    pub fn fromHex(hex: []const u8) !Address {
-        // implementation
-    }
-};
-
-test "Address.fromHex valid lowercase" {
-    const addr = try Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-    try std.testing.expectEqual(@as(u8, 0x74), addr.bytes[0]);
-}
-
-test "Address.fromHex rejects invalid length" {
-    const result = Address.fromHex("0x123");
-    try std.testing.expectError(error.InvalidLength, result);
-}
-
-test "Address.fromHex rejects invalid characters" {
-    const result = Address.fromHex("0xgggggggggggggggggggggggggggggggggggggggg");
-    try std.testing.expectError(error.InvalidHexDigit, result);
-}
-```
-
-### Testing Utilities
-
-```zig
-const testing = std.testing;
-
-test "equality" {
-    try testing.expectEqual(expected, actual);
-}
-
-test "slices" {
-    try testing.expectEqualSlices(u8, expected, actual);
-}
-
-test "errors" {
-    try testing.expectError(error.InvalidInput, result);
-}
-
-test "debug output" {
-    // Enable debug logging for this test
-    testing.log_level = .debug;
-    std.log.debug("value: {}", .{value});
-}
-```
-
-### Running Tests
+Parsers and cryptographic decoders ship colocated `*.fuzz.zig` harnesses (`Address/address.fuzz.zig`, `Hex/hex.fuzz.zig`, `Abi/Abi.fuzz.zig`, `trie.fuzz.zig`, `secp256k1.fuzz.zig`, `precompiles/*.fuzz.zig`). Run fuzzing with:
 
 ```bash
-# All tests
-zig build test
-
-# Filter by name
-zig build -Dtest-filter=Address
-
-# With debug output
-zig build test 2>&1 | head -100
+zig build test --fuzz
 ```
 
-## Constant Time Operations
+### Benchmarks
 
-<Warning>
-Security-critical code must be constant-time.
-</Warning>
+Performance-sensitive modules colocate `*.bench.zig` files powered by `zbench`. Run benchmarks with:
 
-```zig
-// ✅ Constant time comparison
-pub fn secureEquals(a: []const u8, b: []const u8) bool {
-    if (a.len != b.len) return false;
-
-    var result: u8 = 0;
-    for (a, b) |x, y| {
-        result |= x ^ y;
-    }
-    return result == 0;
-}
-
-// ❌ Timing leak - early return
-pub fn insecureEquals(a: []const u8, b: []const u8) bool {
-    for (a, b) |x, y| {
-        if (x != y) return false;  // Leaks info via timing
-    }
-    return true;
-}
-```
-
-## Comptime
-
-Use comptime for zero-cost abstractions:
-
-```zig
-pub fn hexToBytes(comptime len: usize, hex: []const u8) ![len]u8 {
-    if (hex.len != len * 2) return error.InvalidLength;
-
-    var result: [len]u8 = undefined;
-    // ... decode ...
-    return result;
-}
-
-// Usage - len known at compile time
-const addr_bytes = try hexToBytes(20, hex_str);
-const hash_bytes = try hexToBytes(32, hex_str);
-```
-
-## Common Mistakes
-
-<Warning>
-Avoid these patterns:
-</Warning>
-
-```zig
-// ❌ Allocating when not needed
-pub fn toHex(allocator: Allocator, addr: Address) ![]u8 {
-    // Use fixed-size array instead - no allocation needed
-}
-
-// ✅ Fixed-size return
-pub fn toHex(addr: Address) [42]u8 {
-    var result: [42]u8 = undefined;
-    // ...
-    return result;
-}
-
-// ❌ Forgetting errdefer
-const buffer = try allocator.alloc(u8, size);
-const result = try process(buffer);  // If this fails, buffer leaks!
-
-// ✅ With errdefer
-const buffer = try allocator.alloc(u8, size);
-errdefer allocator.free(buffer);
-const result = try process(buffer);
-
-// ❌ Using old ArrayList API
-var list = std.ArrayList(u8).init(allocator);
-
-// ✅ 0.15.1 unmanaged API
-var list = std.ArrayList(u8){};
-defer list.deinit(allocator);
+```bash
+zig build bench
 ```

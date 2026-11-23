@@ -1,382 +1,129 @@
 ---
 title: WASM
-description: WebAssembly compilation, build modes, and browser integration
+description: WebAssembly build modes, linear memory protocol, @tevm/voltaire/wasm usage, and bundler setup.
 ---
 
-# WASM
+Voltaire compiles its Zig core (and portable Rust crypto kernels) to WebAssembly so browsers, Node.js, and edge runtimes can invoke native-grade implementations without Bun FFI.
 
-Voltaire compiles to WebAssembly for browser and non-Bun JavaScript runtimes.
+```mermaid
+sequenceDiagram
+  participant JS as TypeScript Caller
+  participant Loader as wasm-loader (loader.ts)
+  participant Mem as WASM Linear Memory
+  participant Zig as Zig c_api.zig (.wasm)
 
-<Tip>
-Runtime support: In <strong>Node.js</strong>, use the regular TypeScript API or <strong>WASM</strong>. Native FFI is currently <strong>Bun-only</strong>.
-</Tip>
+  JS->>Loader: Keccak256.hash(bytes)
+  Loader->>Mem: alloc(inputLen) + alloc(32)
+  Loader->>Mem: copy input Uint8Array
+  Loader->>Zig: primitives_keccak256(inPtr, len, outPtr)
+  Zig->>Mem: write 32-byte digest at outPtr
+  Loader->>JS: copy 32 bytes to new Uint8Array
+  Loader->>Mem: free(inPtr), free(outPtr)
+```
+
+## Using WASM in Applications
+
+Import the WASM entrypoint (`@tevm/voltaire/wasm`) or a module-specific WASM subpath (`@tevm/voltaire/Keccak256/wasm`):
+
+```typescript
+import { Address, Keccak256, Secp256k1 } from '@tevm/voltaire/wasm';
+
+const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const digest = Keccak256.hash(new TextEncoder().encode('hello'));
+```
+
+`@tevm/voltaire/wasm` satisfies the same `VoltaireAPI` contract as `@tevm/voltaire` and `@tevm/voltaire/native`. Crypto modules with WASM acceleration (`Keccak256`, `SHA256`, `Blake2`, `Ripemd160`, `Secp256k1`, `Ed25519`, `P256`, `X25519`, `BN254`, `EIP712`) expose their raw WASM namespace on `._wasm` alongside the standard synchronous API.
+
+<Note>
+`HDWallet` uses native FFI bindings (`libwally-core`) and is not bundled in `@tevm/voltaire/wasm`. Import `HDWallet` from `@tevm/voltaire/HDWallet` or `@tevm/voltaire/native`. `KZG` and `Bls12381` fall back to their JS/native implementations because KZG trusted setup tables are large for browser WASM payloads.
+</Note>
 
 ## Build Modes
 
-### ReleaseSmall (Default)
+Build WASM artifacts from the repository root with `zig build`:
 
-Size-optimized for production bundles:
+| Command | Optimize Mode | Output Artifact | Target Use |
+| --- | --- | --- | --- |
+| `zig build build-ts-wasm` | `ReleaseSmall` | `wasm/primitives.wasm` | Production browser bundles |
+| `zig build build-ts-wasm-fast` | `ReleaseFast` | `wasm/primitives-fast.wasm` | Throughput-critical Node/worker workloads |
 
-```bash
-zig build build-ts-wasm
-```
+Additional standalone WASM modules built under `wasm/`:
 
-- Output: `wasm/primitives.wasm` (~385KB)
-- Optimized for bundle size
-- Suitable for browser deployment
+- `wasm/state-manager.wasm` — Forked/local EVM state manager for `ForkProvider({ useWasm: true })`
+- `wasm/blockchain.wasm` — Block storage backend for `ForkProvider({ useWasm: true })`
+- `wasm/crypto/*.wasm` — Individual crypto modules for size-sensitive builds
 
-### ReleaseFast
+## WASM Loader Architecture
 
-Performance-optimized for benchmarking:
+The internal WASM loader lives at `packages/voltaire-ts/src/wasm-loader/loader.ts` (typed by `loader.d.ts` and `types.ts`):
 
-```bash
-zig build build-ts-wasm-fast
-```
+1. Loads the `.wasm` binary from a filesystem path, `URL`, or `ArrayBuffer` (supporting both Node.js `fs` and browser `fetch` / `WebAssembly.instantiateStreaming`).
+2. Manages a bump/free memory interface over WASM linear memory so JavaScript `Uint8Array` slices are copied safely across the boundary and freed in `finally` blocks.
+3. Translates integer C ABI error codes (`0` = success, negative = typed error) into Voltaire error classes.
 
-- Output: `wasm/primitives-fast.wasm` (~500KB)
-- Maximum performance
-- Use for performance-critical applications
+### Rust Portable Feature for WASM
 
-### Individual Crypto Modules
-
-Tree-shakeable individual modules:
-
-```bash
-zig build crypto-wasm
-```
-
-Output in `wasm/crypto/`:
-- `keccak256.wasm` (~50KB)
-- `secp256k1.wasm` (~80KB)
-- `blake2.wasm` (~40KB)
-- `ripemd160.wasm` (~30KB)
-- `bn254.wasm` (~100KB)
-
-## WASM Loader
-
-The loader handles instantiation, memory management, and error translation.
-
-### Location
-
-```
-src/wasm-loader/
-├── loader.ts           # Main loader
-├── memory.ts           # Memory management
-├── errors.ts           # Error translation
-└── types.ts            # TypeScript types
-```
-
-### Usage
-
-```typescript
-import { loadWasm, getWasm } from "@voltaire/wasm-loader";
-
-// Initialize (async, once at startup)
-await loadWasm();
-
-// Get WASM instance (sync, after initialization)
-const wasm = getWasm();
-
-// Use WASM functions
-const hash = wasm.keccak256(data);
-```
-
-### Automatic Loading
-
-Most functions auto-load WASM on first use:
-
-```typescript
-import * as Keccak256 from "@voltaire/crypto/Keccak256";
-
-// First call loads WASM automatically
-const hash = await Keccak256.hash("hello");
-
-// Subsequent calls are sync
-const hash2 = Keccak256.hash("world");
-```
-
-## Memory Management
-
-### How It Works
-
-1. TypeScript passes data to WASM memory
-2. WASM processes in its linear memory
-3. Results copied back to JavaScript
-
-```typescript
-// Internal flow (simplified)
-function wasmHash(data: Uint8Array): Uint8Array {
-  // Allocate WASM memory
-  const inputPtr = wasm.alloc(data.length);
-  const outputPtr = wasm.alloc(32);
-
-  // Copy input to WASM
-  new Uint8Array(wasm.memory.buffer, inputPtr, data.length).set(data);
-
-  // Call WASM function
-  wasm.keccak256(inputPtr, data.length, outputPtr);
-
-  // Copy result from WASM
-  const result = new Uint8Array(32);
-  result.set(new Uint8Array(wasm.memory.buffer, outputPtr, 32));
-
-  // Free WASM memory
-  wasm.free(inputPtr);
-  wasm.free(outputPtr);
-
-  return result;
-}
-```
-
-### Memory Limits
-
-Default WASM memory: 256 pages (16MB)
-
-For large operations, memory grows automatically:
-
-```typescript
-// Handles large blobs transparently
-const bigData = new Uint8Array(10_000_000);
-const hash = Keccak256.hash(bigData);  // Memory grows as needed
-```
-
-## Platform Detection
-
-The library automatically selects the best implementation:
-
-```typescript
-// Internal detection
-function getImplementation() {
-  if (typeof Bun !== "undefined") {
-    return "native";  // Bun FFI
-  }
-  if (typeof window !== "undefined" || typeof self !== "undefined") {
-    return "wasm";    // Browser
-  }
-  if (typeof process !== "undefined") {
-    return "wasm";    // Node.js
-  }
-  return "wasm";      // Fallback
-}
-```
-
-### Forcing WASM
-
-```typescript
-import * as Keccak256 from "@voltaire/crypto/Keccak256/wasm";
-
-// Always uses WASM, even in Bun
-const hash = Keccak256.hash("hello");
-```
-
-## Limitations
-
-### KZG Not Supported
-
-KZG operations require the trusted setup and are too large for WASM:
-
-```typescript
-import * as Kzg from "@voltaire/crypto/Kzg";
-
-// In WASM environment
-try {
-  const commitment = Kzg.blobToCommitment(blob);
-} catch (e) {
-  // Error: KZG not supported in WASM
-}
-```
-
-<Tip>
-For KZG in browsers, use a server-side proxy or the c-kzg-4844 JS library.
-</Tip>
-
-### No Assembly Optimization
-
-WASM can't use platform-specific assembly. Rust crypto uses `portable` feature:
+Because `wasm32` targets cannot link x86_64/aarch64 assembly (`keccak-asm`), `Cargo.toml` switches to pure-Rust portable kernels when compiling `crypto_wrappers` for WASM:
 
 ```toml
-# Cargo.toml
 [features]
-default = ["asm"]        # Native: keccak-asm
-portable = ["tiny-keccak"]  # WASM: pure Rust
+default = ["asm"]
+asm = ["keccak-asm"]         # Native targets
+portable = ["tiny-keccak"]   # WASM targets
 ```
 
-Performance difference:
-- Native (asm): ~500ns per Keccak256
-- WASM: ~2μs per Keccak256
+## Bundler Configuration
 
-## Browser Integration
-
-### Bundler Setup
-
-#### Vite
-
+<Tabs>
+  <Tab title="Vite">
 ```typescript
 // vite.config.ts
-export default {
+import { defineConfig } from 'vite';
+
+export default defineConfig({
   optimizeDeps: {
-    exclude: ["@voltaire/primitives"]
+    exclude: ['@tevm/voltaire'],
   },
   build: {
-    target: "esnext"
-  }
-};
+    target: 'esnext',
+  },
+});
 ```
-
-#### Webpack
-
+  </Tab>
+  <Tab title="Webpack 5">
 ```javascript
 // webpack.config.js
 module.exports = {
   experiments: {
-    asyncWebAssembly: true
+    asyncWebAssembly: true,
   },
   module: {
     rules: [
       {
         test: /\.wasm$/,
-        type: "webassembly/async"
-      }
-    ]
-  }
+        type: 'webassembly/async',
+      },
+    ],
+  },
 };
 ```
+  </Tab>
+</Tabs>
 
-### CDN Usage
+## Testing WASM Parity
 
-```html
-<script type="module">
-  import { loadWasm } from "https://esm.sh/@voltaire/primitives";
-  import * as Address from "https://esm.sh/@voltaire/primitives/Address";
-
-  await loadWasm();
-
-  const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
-  console.log(Address.toChecksummed(addr));
-</script>
-```
-
-## Testing WASM
-
-### Separate Test Files
-
-```typescript
-// Keccak256.wasm.test.ts
-import { describe, it, expect, beforeAll } from "vitest";
-import { loadWasm } from "../wasm-loader/loader.js";
-import * as Keccak256 from "./Keccak256.wasm.js";
-
-describe("Keccak256 WASM", () => {
-  beforeAll(async () => {
-    await loadWasm();
-  });
-
-  it("hashes correctly", () => {
-    const result = Keccak256.hash("hello");
-    expect(result.length).toBe(32);
-  });
-});
-```
-
-### Running WASM Tests
+Run WASM tests through Zig or Vitest to verify byte-for-byte parity between WASM and JS/native outputs:
 
 ```bash
-# All WASM tests
-bun run test:wasm
+# Via Zig build step
+zig build test-ts-wasm
 
-# Specific module
-bun run test:wasm -- Keccak256
+# Directly via Vitest in packages/voltaire-ts
+pnpm --filter @tevm/voltaire test:run -- wasm
 ```
 
-### Cross-Validation
+## Related
 
-```typescript
-describe("WASM matches native", () => {
-  it("produces identical results", () => {
-    const data = "test data";
-
-    const wasmResult = Keccak256Wasm.hash(data);
-    const nativeResult = Keccak256Native.hash(data);
-
-    expect(wasmResult).toEqual(nativeResult);
-  });
-});
-```
-
-## Bundle Size Analysis
-
-```bash
-# Analyze bundle sizes
-bun run size
-```
-
-Output in `BUNDLE-SIZES.md`:
-
-```
-| Module | Size | Gzipped |
-|--------|------|---------|
-| primitives.wasm | 385KB | 120KB |
-| crypto/keccak256.wasm | 50KB | 18KB |
-| crypto/secp256k1.wasm | 80KB | 28KB |
-```
-
-## Performance Comparison
-
-```bash
-# Compare WASM modes
-bun run scripts/compare-wasm-modes.ts
-```
-
-Typical results:
-
-| Operation | ReleaseSmall | ReleaseFast | Native |
-|-----------|--------------|-------------|--------|
-| Keccak256 | 2.1μs | 1.8μs | 0.5μs |
-| secp256k1 sign | 150μs | 120μs | 50μs |
-| Address checksum | 1.5μs | 1.2μs | 0.3μs |
-
-## Troubleshooting
-
-### WASM Not Loading
-
-```typescript
-// Check if WASM is available
-import { isWasmLoaded, loadWasm } from "@voltaire/wasm-loader";
-
-if (!isWasmLoaded()) {
-  try {
-    await loadWasm();
-  } catch (e) {
-    console.error("WASM failed to load:", e);
-    // Fallback to JS implementation
-  }
-}
-```
-
-### Memory Errors
-
-```typescript
-// For very large operations
-import { setMemoryLimit } from "@voltaire/wasm-loader";
-
-// Increase to 64MB (4096 pages)
-setMemoryLimit(4096);
-
-// Now process large data
-const hugeBlob = new Uint8Array(50_000_000);
-const hash = Keccak256.hash(hugeBlob);
-```
-
-### Build Issues
-
-```bash
-# Verify WASI support
-zig targets | grep wasm32-wasi
-
-# Clean rebuild
-zig build clean
-zig build build-ts-wasm
-
-# Check output
-ls -la wasm/
-```
+- [Build System](/dev/build-system) — Zig WASM targets and optimization flags
+- [Multi-Language Integration](/dev/multi-language) — How `c_api.zig` powers both WASM and native FFI
+- [Testing](/dev/testing) — Cross-validating JS, WASM, and native outputs

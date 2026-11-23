@@ -7,8 +7,6 @@ description: "JSON-RPC batch request provider for improved performance"
 **Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
 </Info>
 
-# Batched Provider
-
 The batched provider accumulates multiple JSON-RPC requests and sends them as a single HTTP request, reducing network round-trips and improving performance.
 
 ## What is JSON-RPC Batching?
@@ -34,7 +32,7 @@ Instead of N round-trips, you make 1. This significantly reduces latency, especi
 ## Quick Start
 
 ```typescript
-import { createBatchedProvider } from '@voltaire/batched-provider';
+import { createBatchedProvider } from './batched-provider.js';
 
 // Create provider with HTTP endpoint
 const provider = createBatchedProvider('https://eth.llamarpc.com');
@@ -74,7 +72,7 @@ const provider = createBatchedProvider({
 Wrap any EIP-1193 provider (MetaMask, WalletConnect, etc.):
 
 ```typescript
-import { wrapProvider } from '@voltaire/batched-provider';
+import { wrapProvider } from './batched-provider.js';
 
 // Wrap injected provider
 const batched = wrapProvider(window.ethereum, { wait: 10 });
@@ -90,7 +88,7 @@ Wrapping non-HTTP providers doesn't provide true batching. Requests are executed
 ## Performance Benefits
 
 ### Without Batching
-```
+```text
 Request 1 -----> [50ms RTT] <----- Response 1
 Request 2 -----> [50ms RTT] <----- Response 2
 Request 3 -----> [50ms RTT] <----- Response 3
@@ -98,7 +96,7 @@ Total: 150ms
 ```
 
 ### With Batching
-```
+```text
 [Req1, Req2, Req3] -----> [50ms RTT] <----- [Resp1, Resp2, Resp3]
 Total: 50ms
 ```
@@ -166,7 +164,7 @@ import {
   BatchTimeoutError,
   HttpError,
   MissingResponseError
-} from '@voltaire/batched-provider';
+} from './batched-provider.js';
 
 try {
   await provider.request({ method: 'eth_call', params: [...] });

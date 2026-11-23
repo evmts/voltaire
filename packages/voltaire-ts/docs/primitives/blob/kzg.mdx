@@ -58,7 +58,7 @@ const MODULUS =
 ### Computing Commitments
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
 
@@ -96,7 +96,7 @@ function computeKZGCommitment(blob: Uint8Array): Uint8Array {
 ### Generating Proofs
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
 const commitment = Kzg.Commitment(blob);
@@ -158,7 +158,7 @@ loadTrustedSetup(setupData);
 ### Proof Verification
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 // Create blob and proof
 const blob = Blob.fromData(data);
@@ -190,7 +190,7 @@ Where:
 More efficient for multiple blobs:
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blobs = [blob1, blob2, blob3];
 const commitments = blobs.map(b => Kzg.Commitment(b));
@@ -208,7 +208,7 @@ console.log(allValid); // true
 Cannot find two different blobs with same commitment:
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob1 = Blob.fromData(data1);
 const blob2 = Blob.fromData(data2); // Different data
@@ -233,7 +233,7 @@ Commitment doesn't directly reveal blob contents, but:
 - Use versioned hash (SHA256) for additional hiding
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
 const commitment = Kzg.Commitment(blob);
@@ -252,7 +252,7 @@ console.log(`Versioned hash: ${versionedHash.length} bytes`);
 Valid proofs always verify:
 
 ```typescript
-import { Kzg, Blob } from 'tevm';
+import { Kzg, Blob } from '@tevm/voltaire';
 
 const blob = Blob.fromData(data);
 const commitment = Kzg.Commitment(blob);
@@ -289,10 +289,10 @@ invalidElement.fill(0xff); // Large value
 
 ### Automatic Validation
 
-Tevm's `fromData()` ensures valid field elements:
+Voltaire's `fromData()` ensures valid field elements:
 
 ```typescript
-import { Blob } from 'tevm';
+import { Blob } from '@tevm/voltaire';
 
 // Automatic field element validation
 const blob = Blob.fromData(data);
@@ -306,7 +306,7 @@ console.log(isValid); // true
 
 ### c-kzg-4844 Library
 
-Tevm uses [c-kzg-4844](https://github.com/ethereum/c-kzg-4844):
+Voltaire uses [c-kzg-4844](https://github.com/ethereum/c-kzg-4844):
 
 ```typescript
 // Native bindings to C library
@@ -356,7 +356,7 @@ Approximate timing (single-threaded):
 ### Optimization
 
 ```typescript
-import { Kzg } from 'tevm';
+import { Kzg } from '@tevm/voltaire';
 
 // Individual verification (slower)
 console.time('individual');

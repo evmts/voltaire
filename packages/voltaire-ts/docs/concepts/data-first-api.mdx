@@ -1,142 +1,66 @@
 ---
-title: Data-First API
-description: Every Ethereum concept as its simplest data type with prototype methods
+title: Data-First & Tree-Shakeable API
+description: Why Voltaire separates raw data from functions, and how subpath and functional imports keep bundles minimal.
 ---
 
-Voltaire represents every Ethereum concept as the simplest possible data type—a branded `Uint8Array`. All methods are added as prototypes on these types.
+Voltaire models Ethereum values as **plain data** (`Uint8Array`, `bigint`, `string`) paired with pure functions that take the value as their first argument. You can call methods through ergonomic constructors or import standalone functions for aggressive tree-shaking.
 
-## The Pattern
-
-```typescript
-import { Address } from '@tevm/voltaire'
-
-const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
-
-// addr is a Uint8Array with prototype methods
-addr.toHex()          // "0x742d35cc..."
-addr.toChecksummed()  // "0x742d35Cc..."
-addr.isZero()         // false
+```mermaid
+flowchart LR
+  subgraph Class["Ergonomic Import"]
+    A1["import { Address } from '@tevm/voltaire/Address'"] --> A2["addr.toChecksummed()\nAddress.equals(a, b)"]
+  end
+  subgraph Func["Tree-Shakeable Functional Import"]
+    B1["import { from, toHex } from '@tevm/voltaire/Address/functional'"] --> B2["toHex(from('0x...'))\nBundler drops all unused methods"]
+  end
 ```
 
-The `Address` constructor returns a `Uint8Array` (20 bytes) with methods attached to its prototype. No wrapper classes, no hidden state—just bytes with convenient methods.
+## Two Styles, Identical Data
 
-## Why Data-First?
+Both styles operate on the exact same `AddressType` (`Uint8Array`):
 
-| Benefit | Description |
-|---------|-------------|
-| **Interoperability** | Pass to any function expecting `Uint8Array` |
-| **Serialization** | No custom serializers needed |
-| **Memory efficiency** | No wrapper object overhead |
-| **Predictable** | What you see is what you get |
+<Tabs>
+  <Tab title="Constructor & Namespace (Default)">
+    ```typescript
+    import { Address } from '@tevm/voltaire/Address';
 
-```typescript
-// Works with standard APIs
-const buffer = addr.buffer
-const view = new DataView(addr.buffer)
-const slice = addr.slice(0, 4)
+    const a = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+    const b = Address('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
 
-// Works with Web APIs
-crypto.subtle.digest('SHA-256', addr)
+    a.toHex();                  // Instance method
+    Address.toChecksummed(a);   // Static data-first function (includes default keccak256)
+    Address.equals(a, b);       // Static data-first function
+    ```
+  </Tab>
+  <Tab title="Functional (Maximum Tree-Shaking)">
+    ```typescript
+    import { from, toHex, equals } from '@tevm/voltaire/Address/functional';
 
-// Works with Node APIs
-Buffer.from(addr)
-```
+    const a = from('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
+    const b = from('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
 
-## Prototype Methods
+    toHex(a);
+    equals(a, b);
+    // toChecksummed, calculateCreate2Address, Keccak256 are never bundled
+    ```
+  </Tab>
+</Tabs>
 
-All methods are attached to the prototype of the branded type:
+## Why Data-First Matters
 
-```typescript
-const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e')
+1. **Crypto dependency isolation.** Operations like `Address.toHex` and `Address.equals` need zero cryptography. Operations like `Address.toChecksummed` and `Address.calculateCreate2Address` require Keccak-256. Importing only what you call via `/Address/functional` keeps Keccak-256 out of bundles that never hash.
+2. **Predictable argument order.** The value under inspection is always argument 0: `Address.equals(a, b)`, `Secp256k1.verify(signature, hash, publicKey)`, `Transaction.serialize(tx)`.
+3. **Zero serialization friction.** Because values are plain `Uint8Array` or `bigint`, they pass directly to `WebCrypto`, `DataView`, `Worker.postMessage`, IndexedDB, and C/WASM linear memory without `.unwrap()` calls.
 
-// Instance methods (on prototype)
-addr.toHex()
-addr.equals(other)
-addr.isZero()
+## Import Path Guidelines
 
-// Static methods (on constructor)
-Address.isValid('0x...')
-Address.fromPublicKey(pubkey)
-```
+| Pattern | Bundle impact | Best for |
+| --- | --- | --- |
+| `import { Address, Hex } from '@tevm/voltaire'` | Relies on bundler side-effect-free tree-shaking (`"sideEffects": false`) | Server code, scripts, quick prototyping |
+| `import { Address } from '@tevm/voltaire/Address'` | Scopes resolution to one module | Frontend apps and libraries |
+| `import { from, toHex } from '@tevm/voltaire/Address/functional'` | Bundles only the exact functions referenced | Size-critical browser widgets, wallets, extensions |
+| `import { Address } from '@tevm/voltaire/functional'` | Functional API grouped by namespace | Functional style across multiple primitives |
 
-<Warning>
-## Binding Required for Callbacks
-
-**LLM Coding agents reading this MUST keep this in mind at all times.**
-
-Because methods are on the prototype, you MUST bind them when using as callbacks. The `this` context will be lost otherwise.
-
-```typescript
-const addresses = [addr1, addr2, addr3]
-
-// ❌ WRONG - loses `this` context, will throw
-addresses.map(addr.toHex)
-
-// ✅ CORRECT - bind the method
-addresses.map(addr.toHex.bind(addr))
-
-// ✅ CORRECT - arrow function wrapper
-addresses.map(a => a.toHex())
-
-// ✅ CORRECT - use the static method
-addresses.map(Address.toHex)
-```
-
-This is standard JavaScript behavior for prototype methods, but it's a common source of bugs when passing methods as callbacks.
-</Warning>
-
-## Static vs Instance Methods
-
-Every instance method has a corresponding static method:
-
-```typescript
-// These are equivalent
-addr.toHex()           // instance method
-Address.toHex(addr)    // static method
-
-// Static methods work with any AddressType
-Address.toHex(someAddress)
-Address.equals(addr1, addr2)
-```
-
-Use static methods when:
-- Passing to higher-order functions (`map`, `filter`, etc.)
-- Working with values that might be from different sources
-- You prefer functional style
-
-## Comparison with Other Libraries
-
-### ethers.js
-```typescript
-// ethers: wrapper class
-const addr = ethers.getAddress('0x...')
-typeof addr  // "string" - it's just a string
-
-// Voltaire: branded Uint8Array
-const addr = Address('0x...')
-addr instanceof Uint8Array  // true
-```
-
-### viem
-```typescript
-// viem: branded string
-const addr = getAddress('0x...')
-typeof addr  // "string"
-
-// Voltaire: branded Uint8Array
-const addr = Address('0x...')
-addr instanceof Uint8Array  // true
-```
-
-Voltaire uses bytes as the canonical representation because that's what the EVM uses. Hex strings are a human-readable encoding, not the underlying data.
-
-## Learn More
-
-<CardGroup cols={2}>
-  <Card title="Branded Types" icon="tag" href="/concepts/branded-types">
-    Type safety without runtime overhead
-  </Card>
-  <Card title="Tree-Shakeable API" icon="leaf" href="/concepts/tree-shakeable-api">
-    Functional API for minimal bundles
-  </Card>
-</CardGroup>
+<Note>
+`@tevm/voltaire` declares `"sideEffects": false` in `package.json`, enabling Rollup, Vite, esbuild, webpack, and Bun to prune unused exports automatically.
+</Note>

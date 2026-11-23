@@ -17,7 +17,7 @@ description: Primary constructor for event logs
 ### From RPC Response
 
 ```typescript
-import { EventLog, Address, Hash, Hex } from 'tevm';
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
 
 // Transform eth_getLogs response
 const rpcLog = {
@@ -51,7 +51,7 @@ const log = EventLog({
 ### Minimal Log (Testing)
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 // Minimal log with required fields only
 const testLog = EventLog({
@@ -67,7 +67,7 @@ console.log(testLog.removed); // undefined (defaults to false)
 ### Complete Log with Metadata
 
 ```typescript
-import { EventLog, Address, Hash, Hex } from 'tevm';
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
 
 const log = EventLog({
   address: Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
@@ -89,7 +89,7 @@ const log = EventLog({
 ### Anonymous Event
 
 ```typescript
-import { EventLog, Address, Hash } from 'tevm';
+import { EventLog, Address, Hash } from '@tevm/voltaire';
 
 // Anonymous event with 4 indexed parameters (no signature in topic0)
 const anonymousLog = EventLog({

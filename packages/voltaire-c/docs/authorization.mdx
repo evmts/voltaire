@@ -1,11 +1,11 @@
 ---
 title: Authorization
-description: EIP-7702 authorization operations
+description: EIP-7702 EOA code-delegation authorization hashing, validation, signer recovery, and gas calculation.
 ---
 
-Work with EIP-7702 authorizations for account abstraction.
+An EIP-7702 authorization delegates an EOA's execution code to a contract address for a specific chain ID (or `0` for cross-chain) and nonce. `PrimitivesAuthorization` holds the delegation fields and ECDSA signature components.
 
-## Types
+## Type
 
 ```c
 typedef struct {
@@ -18,23 +18,19 @@ typedef struct {
 } PrimitivesAuthorization;
 ```
 
-## Functions
+## Signing and Recovery Flow
 
-### primitives_authorization_validate
-
-Validate authorization structure.
-
-```c
-int primitives_authorization_validate(
-    const PrimitivesAuthorization* auth
-);
+```mermaid
+flowchart LR
+    Tuple["chain_id, address, nonce"] -->|"primitives_authorization_signing_hash"| Digest["PrimitivesHash\nkeccak256(0x05 || rlp(...))"]
+    Digest -->|"secp256k1Sign"| Auth["PrimitivesAuthorization\n(r, s, v)"]
+    Auth -->|"primitives_authorization_validate"| Valid["PRIMITIVES_SUCCESS (0)"]
+    Auth -->|"primitives_authorization_authority"| Signer["PrimitivesAddress\n(EOA authority)"]
 ```
 
-**Returns:** `PRIMITIVES_SUCCESS` or `PRIMITIVES_ERROR_AUTHORIZATION_INVALID`
+## Functions
 
-### primitives_authorization_signing_hash
-
-Calculate signing hash for authorization.
+### `primitives_authorization_signing_hash`
 
 ```c
 int primitives_authorization_signing_hash(
@@ -45,9 +41,17 @@ int primitives_authorization_signing_hash(
 );
 ```
 
-### primitives_authorization_authority
+Computes the EIP-7702 signing digest `keccak256(0x05 || rlp([chain_id, address, nonce]))`. Returns `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_INVALID_INPUT` (`-5`).
 
-Recover signer address from authorization.
+### `primitives_authorization_validate`
+
+```c
+int primitives_authorization_validate(const PrimitivesAuthorization* auth);
+```
+
+Validates the authorization fields and signature invariants (including canonical low-`s` and non-zero target address). Returns `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_AUTHORIZATION_INVALID` (`-11`).
+
+### `primitives_authorization_authority`
 
 ```c
 int primitives_authorization_authority(
@@ -56,66 +60,69 @@ int primitives_authorization_authority(
 );
 ```
 
-### primitives_authorization_gas_cost
+Recovers the authorizing EOA address from `auth`. Returns `PRIMITIVES_SUCCESS` (`0`) or `PRIMITIVES_ERROR_INVALID_SIGNATURE` (`-6`).
 
-Calculate gas cost for authorization list.
+### `primitives_authorization_gas_cost`
 
 ```c
-uint64_t primitives_authorization_gas_cost(
-    size_t count,
-    size_t empty_accounts
-);
+uint64_t primitives_authorization_gas_cost(size_t count, size_t empty_accounts);
 ```
+
+Computes the intrinsic EIP-7702 gas cost for `count` authorization tuples of which `empty_accounts` target empty accounts (`PER_AUTH_BASE_COST * count + PER_EMPTY_ACCOUNT_COST * empty_accounts`).
 
 ## Example
 
 ```c
+#include "voltaire.h"
+
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
-int main() {
-    // Create authorization
-    PrimitivesAuthorization auth;
-    auth.chain_id = 1;  // mainnet
+int main(void) {
+    PrimitivesAuthorization auth = {0};
+    auth.chain_id = 1;
     auth.nonce = 0;
 
-    primitives_address_from_hex(
-        "0x1234567890123456789012345678901234567890",
-        &auth.address
-    );
+    if (primitives_address_from_hex(
+            "0x1234567890123456789012345678901234567890",
+            &auth.address) != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
 
-    // Get signing hash
     PrimitivesHash hash;
-    primitives_authorization_signing_hash(
-        auth.chain_id,
-        &auth.address,
-        auth.nonce,
-        &hash
-    );
+    if (primitives_authorization_signing_hash(
+            auth.chain_id, &auth.address, auth.nonce, &hash) != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
 
-    // Sign the hash (with your private key)
-    unsigned char privkey[32] = {...};
+    unsigned char privkey[32];
+    primitives_generate_private_key(privkey);
+
     unsigned char sig[64];
-    unsigned char recid;
-    secp256k1Sign(hash.bytes, privkey, sig, &recid);
+    unsigned char recid = 0;
+    if (secp256k1Sign(hash.bytes, privkey, sig, &recid) != 0) {
+        return 1;
+    }
 
-    // Fill in signature
     memcpy(auth.r, sig, 32);
     memcpy(auth.s, sig + 32, 32);
     auth.v = recid;
 
-    // Validate
-    int result = primitives_authorization_validate(&auth);
-    printf("Valid: %d\n", result == 0);
+    if (primitives_authorization_validate(&auth) != PRIMITIVES_SUCCESS) {
+        fprintf(stderr, "invalid authorization\n");
+        return 1;
+    }
 
-    // Recover authority
     PrimitivesAddress authority;
-    primitives_authorization_authority(&auth, &authority);
+    if (primitives_authorization_authority(&auth, &authority) != PRIMITIVES_SUCCESS) {
+        return 1;
+    }
 
-    // Print authority address
     unsigned char hex[42];
     primitives_address_to_checksum_hex(&authority, hex);
-    printf("Authority: %s\n", hex);
+    printf("Authority: %.42s\n", (const char*)hex);
+    printf("Gas cost:  %" PRIu64 "\n", primitives_authorization_gas_cost(1, 0));
 
     return 0;
 }

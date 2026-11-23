@@ -3,8 +3,6 @@ title: GasCosts
 description: Gas cost constants for EVM operations
 ---
 
-# GasCosts
-
 Constants for gas costs of EVM operations, based on Yellow Paper Appendix G and various EIPs.
 
 ## Constants
@@ -12,7 +10,7 @@ Constants for gas costs of EVM operations, based on Yellow Paper Appendix G and 
 ### Transaction Costs
 
 ```zig
-import { GAS_COSTS } from '@tevm/primitives';
+import { GAS_COSTS } from '@tevm/voltaire';
 
 GAS_COSTS.TRANSACTION      // 21000n - Base transaction cost
 GAS_COSTS.CREATE           // 32000n - Contract creation
@@ -92,7 +90,7 @@ GAS_COSTS.HIGH             // 10n - JUMPI
 ## Block Limits
 
 ```zig
-import { BLOCK_GAS_LIMITS } from '@tevm/primitives';
+import { BLOCK_GAS_LIMITS } from '@tevm/voltaire';
 
 BLOCK_GAS_LIMITS.MAINNET   // 30_000_000n - Typical mainnet
 BLOCK_GAS_LIMITS.MINIMUM   // 5000n - EIP-1559 minimum
@@ -101,7 +99,7 @@ BLOCK_GAS_LIMITS.MINIMUM   // 5000n - EIP-1559 minimum
 ## Transaction Type Costs
 
 ```zig
-import { TRANSACTION_COSTS } from '@tevm/primitives';
+import { TRANSACTION_COSTS } from '@tevm/voltaire';
 
 TRANSACTION_COSTS.SIMPLE_TRANSFER  // 21000n
 TRANSACTION_COSTS.ERC20_TRANSFER   // 65000n
@@ -114,7 +112,7 @@ TRANSACTION_COSTS.CONTRACT_DEPLOY  // 32000n (base)
 ### Calculate Calldata Cost
 
 ```zig
-import { GAS_COSTS } from '@tevm/primitives';
+import { GAS_COSTS } from '@tevm/voltaire';
 
 function calculateCalldataCost(data: Uint8Array): bigint {
   let cost = 0n;
@@ -134,7 +132,7 @@ const cost = calculateCalldataCost(calldata);
 ### Calculate LOG Cost
 
 ```zig
-import { GAS_COSTS } from '@tevm/primitives';
+import { GAS_COSTS } from '@tevm/voltaire';
 
 function calculateLogCost(topics: number, dataBytes: number): bigint {
   const baseCost = GAS_COSTS.LOG;
@@ -151,7 +149,7 @@ const cost = calculateLogCost(3, 64);
 ### Estimate Transaction Base Cost
 
 ```zig
-import { GAS_COSTS, TRANSACTION_COSTS } from '@tevm/primitives';
+import { GAS_COSTS, TRANSACTION_COSTS } from '@tevm/voltaire';
 
 function estimateTransactionCost(
   calldata: Uint8Array,
@@ -178,7 +176,7 @@ function estimateTransactionCost(
 ### Compare Storage Operations
 
 ```zig
-import { GAS_COSTS } from '@tevm/primitives';
+import { GAS_COSTS } from '@tevm/voltaire';
 
 const operations = {
   'Set (0 → X)': GAS_COSTS.SSTORE_SET,

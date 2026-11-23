@@ -11,8 +11,6 @@ description: Bilinear pairing on BLS12-381, optimal ate pairing algorithm, and M
 **Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
-# Pairing Operations
-
 The pairing operation is the mathematical foundation that makes BLS signatures possible. It's a bilinear map that enables signature aggregation and efficient batch verification.
 
 ## Pairing Definition
@@ -73,7 +71,7 @@ where p = field modulus, r = curve order
 ### Single Pairing
 
 ```typescript
-import { bls12_381 } from '@tevm/voltaire/crypto';
+import { bls12_381 } from '@tevm/voltaire';
 
 async function computePairing(
   g1Point: Uint8Array,  // 128 bytes

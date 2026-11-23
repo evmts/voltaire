@@ -1,72 +1,58 @@
 ---
 title: Comparison
-description: Voltaire request builders vs raw JSON-RPC and other libraries
+description: Technical comparison of Voltaire providers and request builders against raw EIP-1193, ethers.js, and viem.
 ---
 
-# Comparison
+Voltaire separates wire-level primitives (`@tevm/voltaire/provider`, `@tevm/voltaire/jsonrpc`) from higher-level client abstractions (provided as copyable [Skills](/skills)). This page compares tradeoffs across raw EIP-1193, ethers.js v6, viem, and Voltaire.
 
-How Voltaire's request builders compare to other Ethereum libraries.
+## Feature Matrix
 
-## vs Raw EIP-1193
+| Dimension | Raw EIP-1193 | ethers.js v6 | viem | Voltaire |
+| --- | --- | --- | --- | --- |
+| Primary abstraction | `provider.request({ method, params })` | `JsonRpcProvider` class with named methods | `createPublicClient` + action functions | `TypedProvider<TSchema>` + `Rpc.*` builders + Skills |
+| Primitive representation | Plain strings | Custom classes / strings | Hex strings + `bigint` | Branded `Uint8Array` / `string` (zero wrapper allocation) |
+| Compile-time RPC typing | None | Fixed method signatures | Full schema-driven typing | Full `RpcSchema` / `VoltaireRpcSchema` typing |
+| Tree-shaking | N/A | Partial (class-based) | Full (action functions) | Full (module subpaths + `sideEffects: false`) |
+| Built-in local EVM / fork | None | None | Anvil via external process | `InMemoryProvider`, `ForkProvider`, `fromEvm` |
+| Native / WASM crypto | None | JS only | JS (`@noble/*`) | JS, WASM (`@tevm/voltaire/wasm`), and Zig FFI (`@tevm/voltaire/native`) |
+| Multi-language parity | N/A | TypeScript only | TypeScript only | TypeScript, Effect, Zig, Rust, Go, Python, Swift, C |
+| Customization model | Manual | Subclassing | Custom transports / actions | Copyable [Skills](/skills) in your codebase |
 
-| Feature | Raw EIP-1193 | Voltaire Request Builders |
-|---------|--------------|----------------------|
-| Method calls | `request({ method, params })` | Request builder + `request()` |
-| Parameters | Plain strings/objects | Branded primitive types |
-| Type safety | None (manual typing) | Full compile-time checking |
-| Errors | Throws exceptions | Throws exceptions |
-| Autocompletion | No | Yes |
+## Code Comparison
 
-### Example Comparison
+### Raw EIP-1193 vs Voltaire Request Builders
 
 ```typescript
-// Raw EIP-1193 - no type safety
-const balance = await provider.request({
+// Raw EIP-1193: untyped method name and parameter array
+const rawBalance = await provider.request({
   method: 'eth_getBalance',
-  params: ['0x...', 'latest']  // Typos not caught!
+  params: ['0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0', 'latest'],
 });
 
-// Voltaire - fully typed
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import * as Address from '@tevm/voltaire/Address';
+// Voltaire: validated Address primitive + typed request builder
+import { Address } from '@tevm/voltaire/Address';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
 
-const balance = await provider.request(
-  Rpc.Eth.GetBalanceRequest(Address('0x...'), 'latest')
-);
+const account = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0');
+const balance = await provider.request(Rpc.Eth.GetBalanceRequest(account, 'latest'));
 ```
 
-## vs ethers.js
+### Migrating from ethers.js or viem
 
-| Feature | ethers.js | Voltaire |
-|---------|-----------|------|
-| Method style | Abstracted (`getBalance`) | Direct JSON-RPC (`eth_getBalance`) |
-| Types | Runtime classes | Branded primitives (zero overhead) |
-| Type safety | Good | Excellent (branded types) |
-| Tree-shaking | Limited | Full |
+If an existing codebase already uses ethers v6 or viem conventions, adopt Voltaire primitives incrementally with drop-in Skills instead of rewriting call sites:
 
-Voltaire provides lower-level JSON-RPC access with maximum type safety and tree-shaking.
+- **ethers.js v6**: [ethers-provider](/skills/ethers-provider), [ethers-contract](/skills/ethers-contract), [ethers-signer](/skills/ethers-signer), [ethers-interface](/skills/ethers-interface)
+- **viem**: [viem-publicclient](/skills/viem-publicclient), [viem-walletclient](/skills/viem-walletclient), [viem-contract](/skills/viem-contract), [viem-account](/skills/viem-account)
 
-## vs viem
+## When to Choose Voltaire
 
-| Feature | viem | Voltaire |
-|---------|------|------|
-| API style | Actions | Request builders |
-| Type system | Narrow types | Branded primitives |
-| Tree-shaking | ✅ Yes | ✅ Yes |
-| WASM | ❌ No | ✅ Yes (optional) |
-| Multi-language | ❌ No | ✅ Yes (TS/Zig/Rust/C) |
-
-Both provide excellent type safety. Voltaire adds multi-language support and optional WASM acceleration.
-
-## When to Use Voltaire
-
-- **Type safety** - Branded primitives catch errors at compile time
-- **Tree-shaking** - Import only what you need
-- **Multi-language** - Building for TypeScript + Zig/Rust/C
-- **WASM acceleration** - Performance-critical crypto operations
-- **Direct JSON-RPC** - Work directly with JSON-RPC spec
+- You want direct JSON-RPC control without hidden retries, silent multicalls, or opaque nonce caching.
+- You need strict nominal typing so `Address`, `Hash`, `Hex`, and `Bytes32` cannot be swapped at compile time.
+- You need deterministic local EVM execution (`InMemoryProvider`, `ForkProvider`) or optional Zig/WASM acceleration for hashing, secp256k1, BLS12-381, BN254, and KZG.
+- You share Ethereum primitives across TypeScript and systems languages (Zig, Rust, Go, Python, Swift, C).
 
 ## Related
 
-- [Getting Started](/jsonrpc-provider/getting-started) - Installation and setup
-- [Method API](/jsonrpc-provider/method-api) - Request builders
+- [Getting Started](/jsonrpc-provider/getting-started) — Setting up Voltaire providers
+- [Type System](/jsonrpc-provider/type-system) — `RpcSchema` and `TypedProvider`
+- [Skills](/skills) — Copyable ethers and viem compatibility layers

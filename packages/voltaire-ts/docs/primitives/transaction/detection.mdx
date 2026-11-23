@@ -36,7 +36,7 @@ function detectType(data: Uint8Array): Type
 ### Usage
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 // Detect Legacy transaction (starts with RLP list marker 0xc0-0xff)
 const legacyData = new Uint8Array([0xf8, 0x6c, ...])
@@ -51,7 +51,7 @@ const eip4844Data = new Uint8Array([0x03, 0xf9, ...])
 detectType(eip4844Data)  // Type.EIP4844 (0x03)
 
 // Error on empty data
-import { InvalidFormatError, InvalidTransactionTypeError } from 'tevm/errors'
+import { InvalidFormatError, InvalidTransactionTypeError } from '@tevm/voltaire/errors'
 
 try {
   detectType(new Uint8Array())
@@ -73,7 +73,7 @@ try {
 }
 ```
 
-Source: [detectType.ts:6-31](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/detectType.ts#L6-L31)
+Source: [detectType.ts:6-31](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Transaction/detectType.ts#L6-L31)
 
 ## Detection Logic
 
@@ -119,7 +119,7 @@ switch (firstByte) {
 ### From Network Data
 
 ```typescript
-import { detectType, deserialize } from 'tevm/Transaction'
+import { detectType, deserialize } from '@tevm/voltaire/Transaction'
 
 // Receive transaction from network
 const txData = new Uint8Array([...])
@@ -135,7 +135,7 @@ const tx = deserialize(txData)
 ### From Transaction Pool
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 function categorizeTx(data: Uint8Array) {
   const type = detectType(data)
@@ -156,7 +156,7 @@ function categorizeTx(data: Uint8Array) {
 ### Batch Detection
 
 ```typescript
-import { detectType, Type } from 'tevm/Transaction'
+import { detectType, Type } from '@tevm/voltaire/Transaction'
 
 function analyzeBlock(transactions: Uint8Array[]) {
   const counts = {

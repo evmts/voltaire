@@ -11,8 +11,6 @@ description: G1 group operations on BLS12-381 - addition, scalar multiplication,
 **Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
-# G1 Operations
-
 G1 is the base field elliptic curve group used for BLS signatures. Points are 48 bytes compressed or 96 bytes uncompressed.
 
 ## G1 Curve Equation
@@ -50,7 +48,7 @@ MSB flags:
 Add two G1 points using EIP-2537 format:
 
 ```typescript
-import { bls12_381 } from '@tevm/voltaire/crypto';
+import { bls12_381 } from '@tevm/voltaire';
 
 const p1 = new Uint8Array(128); // First G1 point
 const p2 = new Uint8Array(128); // Second G1 point

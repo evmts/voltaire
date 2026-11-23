@@ -1,423 +1,119 @@
 ---
-title: Elliptic Curve Comparison
-description: secp256k1 vs P-256 - choosing the right curve for your application
+title: Cryptographic Algorithm Comparison
+description: Selection flowchart and technical comparison of elliptic curves, hash functions, pairings, and AEAD ciphers in Voltaire.
 ---
 
-# Elliptic Curve Comparison: secp256k1 vs P-256
+Voltaire implements Ethereum's execution-layer, consensus-layer, and wallet cryptography behind data-first namespaces over `Uint8Array`. Select an algorithm by protocol requirement first, then by hardware and security constraints.
 
-Comprehensive comparison of the two ECDSA curves supported by Voltaire.
+## Algorithm Selection
 
-## Overview Table
+```mermaid
+flowchart TD
+    Start["Cryptographic Task"] --> Q1{"Operation Type"}
+    Q1 -->|"Digest / ID"| H1{"Ethereum native?"}
+    H1 -->|"Yes"| Keccak["Keccak256 (32 B)"]
+    H1 -->|"Bitcoin / TLS / KZG"| Sha["SHA256 (32 B)"]
+    H1 -->|"Fast variable-length"| Blake["Blake2b (1-64 B)"]
+    H1 -->|"Legacy BTC hash160"| Ripe["Ripemd160 (20 B)"]
 
-| Feature | Secp256k1 | P-256 (secp256r1) |
-|---------|-----------|-------------------|
-| **Full Name** | secp256k1 | NIST P-256 / secp256r1 / prime256v1 |
-| **Standardization** | SECG SEC 2 | NIST FIPS 186-4, SECG SEC 2 |
-| **Security Level** | 128-bit | 128-bit |
-| **Curve Equation** | y² = x³ + 7 | y² = x³ - 3x + b |
-| **Field Prime (p)** | 2²⁵⁶ - 2³² - 977 | 2²⁵⁶ - 2²²⁴ + 2¹⁹² + 2⁹⁶ - 1 |
-| **Ethereum Core** | ✅ Required | ❌ Not used (L2 only) |
-| **Bitcoin** | ✅ Yes | ❌ No |
-| **WebAuthn/FIDO2** | ❌ Not supported | ✅ Default curve |
-| **iOS Secure Enclave** | ❌ Not supported | ✅ Only supported curve |
-| **Android Keystore** | ❌ Limited | ✅ Full support |
-| **TLS 1.3** | ❌ Rare | ✅ Default |
-| **Hardware Wallets** | ✅ Universal | ⚠️ Some (YubiKey, TPM) |
-| **Recovery ID** | ✅ Yes (v parameter) | ❌ No (not needed) |
-| **Signature Size** | 65 bytes (r,s,v) | 64 bytes (r,s) |
+    Q1 -->|"Signature"| S1{"Target System"}
+    S1 -->|"Ethereum EOA / ecrecover"| Secp["Secp256k1 (65 B r,s,v)"]
+    S1 -->|"WebAuthn / Secure Enclave"| P256["P256 / secp256r1 (64 B)"]
+    S1 -->|"Aggregate / Beacon Chain"| Bls["Bls12381 (48 B G1 sig)"]
+    S1 -->|"SSH / Solana / EdDSA"| Ed["Ed25519 (64 B)"]
 
-## When to Use Each Curve
+    Q1 -->|"Key Exchange"| K1{"Protocol"}
+    K1 -->|"TLS 1.3 / Noise / Signal"| X25519["X25519 (32 B secret)"]
+    K1 -->|"NIST / WebAuthn"| P256ECDH["P256.ecdh (32 B secret)"]
+    K1 -->|"Ethereum ECIES"| SecpECDH["Secp256k1.ecdh (32 B secret)"]
 
-### Use Secp256k1 When:
+    Q1 -->|"Pairing / ZK"| Z1{"Curve"}
+    Z1 -->|"Groth16 / EVM 0x06-0x08"| BN["BN254 (~100-bit)"]
+    Z1 -->|"EIP-2537 / EIP-4844 KZG"| BLSZ["Bls12381 / KZG (128-bit)"]
 
-✅ **Ethereum transactions** - Required for EOA (Externally Owned Account)
-✅ **Bitcoin compatibility** - Cross-chain applications
-✅ **ecRecover** - On-chain signature verification (EVM precompile)
-✅ **Traditional crypto wallets** - Ledger, Trezor, MetaMask
-✅ **Public key recovery needed** - Derive address from signature without storing pubkey
-
-### Use P-256 When:
-
-✅ **WebAuthn/Passkeys** - Passwordless authentication (Face ID, Touch ID, Windows Hello)
-✅ **iOS Secure Enclave** - Hardware-backed keys on Apple devices
-✅ **Enterprise PKI** - Government and corporate compliance (FIPS)
-✅ **Smart cards** - PIV, CAC, YubiKey
-✅ **Account abstraction** - Smart contract wallets with hardware authentication (RIP-7212)
-✅ **TLS/HTTPS** - Modern web security
-
-## Technical Differences
-
-### Curve Equations
-
-**Secp256k1:**
-```
-y² = x³ + 7 (mod p)
-
-Coefficients: a = 0, b = 7
+    Q1 -->|"Symmetric AEAD"| A1{"AES-NI / WebCrypto?"}
+    A1 -->|"Yes / FIPS"| Aes["AesGcm (WebCrypto)"]
+    A1 -->|"No / Software-only"| Cha["ChaCha20Poly1305 (RFC 8439)"]
 ```
 
-Simple Weierstrass form with b = 7. The a = 0 coefficient provides computational efficiency.
+## Elliptic Curve Signatures: Secp256k1 vs P-256 vs Ed25519 vs BLS12-381
 
-**P-256:**
-```
-y² = x³ - 3x + b (mod p)
+| Property | Secp256k1 | P-256 (secp256r1) | Ed25519 | BLS12-381 |
+|----------|-----------|-------------------|---------|-----------|
+| Import | `@tevm/voltaire/Secp256k1` | `@tevm/voltaire/P256` | `@tevm/voltaire/Ed25519` | `@tevm/voltaire/Bls12381` |
+| Standard | SEC 2 | NIST FIPS 186-4 | RFC 8032 | IETF BLS / EIP-2537 |
+| Curve equation | `y^2 = x^3 + 7` | `y^2 = x^3 - 3x + b` | `-x^2 + y^2 = 1 + d*x^2*y^2` | `y^2 = x^3 + 4` (G1) |
+| Security level | 128-bit | 128-bit | 128-bit | 128-bit |
+| Private key | 32 bytes | 32 bytes | 32 bytes | 32 bytes (scalar in Fr) |
+| Public key | 64 bytes (uncompressed) | 64 bytes (uncompressed) | 32 bytes (compressed) | 96 bytes (compressed G2) |
+| Signature | `{ r, s, v }` (65 bytes) | `{ r, s }` (64 bytes) | 64 bytes | 48 bytes (compressed G1) |
+| Key recovery | Yes (`v = 27 \| 28`) | No | No | No |
+| Aggregation | No | No | No | Native (G1 addition) |
+| ECDH support | Yes (`Secp256k1.ecdh`) | Yes (`P256.ecdh`) | Use `X25519` | No |
+| EVM precompile | `0x01` (`ECRECOVER`, 3,000 gas) | L2 RIP-7212 / EIP-7951 | None | `0x0b`-`0x13` (Prague) |
+| Hardware support | Ledger, Trezor | Secure Enclave, WebAuthn, TPM | Hardware security keys | Validator HSMs |
 
-Coefficients: a = -3, b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
-```
+### Field Primes and Curve Orders
 
-Standard Weierstrass form with a = -3, providing different performance characteristics.
+| Curve | Field Prime `p` | Subgroup Order `n` |
+|-------|-----------------|--------------------|
+| Secp256k1 | `0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F` | `0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141` |
+| P-256 | `0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF` | `0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551` |
+| Ed25519 | `2^255 - 19` | `2^252 + 27742317777372353535851937790883648493` |
+| BLS12-381 | 381-bit prime `p` | 255-bit prime `r` |
 
-### Field Primes
+### Secp256k1 vs P-256 Usage
 
-**Secp256k1:**
-```
-p = 2²⁵⁶ - 2³² - 977
-  = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
-```
-
-- **Form:** Pseudo-Mersenne prime (near 2²⁵⁶)
-- **Optimization:** Fast modular reduction (subtract small constant)
-
-**P-256:**
-```
-p = 2²⁵⁶ - 2²²⁴ + 2¹⁹² + 2⁹⁶ - 1
-  = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
-```
-
-- **Form:** NIST prime (specific structure)
-- **Optimization:** Specialized reduction algorithm
-
-### Curve Orders
-
-**Secp256k1:**
-```
-n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-```
-
-**P-256:**
-```
-n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
-```
-
-Both approximately 2²⁵⁶, providing 128-bit security.
-
-## Performance Comparison
-
-### TypeScript (@noble/curves)
-
-Measured on MacBook Pro M1, Node.js v20:
-
-| Operation | Secp256k1 | P-256 | Winner |
-|-----------|-----------|-------|--------|
-| **Public key derivation** | 0.50ms | 0.55ms | Secp256k1 (10% faster) |
-| **Signing** | 1.25ms | 1.30ms | Secp256k1 (4% faster) |
-| **Verification** | 2.50ms | 2.60ms | Secp256k1 (4% faster) |
-| **ECDH** | N/A | 1.20ms | P-256 only |
-
-**Conclusion:** Similar performance, secp256k1 slightly faster due to simpler curve equation (a = 0).
-
-### Native (C libraries)
-
-| Operation | libsecp256k1 | OpenSSL P-256 | Winner |
-|-----------|--------------|---------------|--------|
-| **Signing** | 0.50ms | 0.60ms | Secp256k1 (20% faster) |
-| **Verification** | 1.00ms | 1.10ms | Secp256k1 (10% faster) |
-
-### Hardware Acceleration
-
-| Platform | Secp256k1 | P-256 |
-|----------|-----------|-------|
-| **Intel CPU** | ❌ No acceleration | ❌ No acceleration |
-| **ARM Crypto Extensions** | ❌ No | ❌ No |
-| **iOS Secure Enclave** | ❌ Not supported | ✅ Hardware-accelerated |
-| **Android Keystore** | ❌ Limited | ✅ Hardware-accelerated |
-| **TPM 2.0** | ❌ Rare | ✅ Standard |
-| **YubiKey** | ❌ No | ✅ Yes |
-
-**Winner:** P-256 for hardware support, secp256k1 for software performance.
-
-## Security Comparison
-
-### Trust Model
-
-**Secp256k1:**
-- **Origin:** SECG (Standards for Efficient Cryptography Group)
-- **Selection:** Parameters verifiably random ("nothing up my sleeve")
-- **Transparency:** Clear justification for all constants
-- **Community trust:** High (Bitcoin, Ethereum adoption)
-
-**P-256:**
-- **Origin:** NIST (National Institute of Standards and Technology)
-- **Selection:** Generated using SHA-1 hash of seed value
-- **Transparency:** Some skepticism about NIST curve selection process
-- **Government trust:** Required for US federal systems (FIPS)
-
-**Controversy:** Some cryptographers prefer non-NIST curves (like Curve25519) due to transparency concerns, but no known backdoors in P-256.
-
-### Known Vulnerabilities
-
-**Both curves:**
-- ✅ No known mathematical weaknesses
-- ✅ No known backdoors
-- ✅ No feasible discrete log attacks
-- ✅ Side-channel resistance (if implemented correctly)
-
-**Implementation risks:**
-- ⚠️ Nonce reuse leaks private key (both)
-- ⚠️ Timing attacks possible (both, if not constant-time)
-- ⚠️ Invalid curve attacks (both, must validate points)
-
-### Audit Status
-
-**Secp256k1:**
-- `libsecp256k1` - Multiple audits, Bitcoin Core
-- `@noble/curves` - Security audited, production-ready
-- Widely used: Bitcoin, Ethereum, thousands of projects
-
-**P-256:**
-- OpenSSL - Extensively audited, ubiquitous
-- `@noble/curves` - Same library as secp256k1 (audited)
-- Widely used: TLS, WebAuthn, enterprise PKI
-
-**Winner:** Tie - both have well-audited implementations.
-
-## Ecosystem Support
-
-### Blockchain
-
-| Blockchain | Secp256k1 | P-256 |
-|------------|-----------|-------|
-| **Ethereum mainnet** | ✅ Required | ❌ No (RIP-7212 pending) |
-| **Bitcoin** | ✅ Required | ❌ No |
-| **Polygon** | ✅ Yes | ⚠️ Precompile proposed |
-| **StarkNet** | ✅ Yes | ⚠️ Optional (AA) |
-| **zkSync** | ✅ Yes | ⚠️ Account abstraction |
-| **Optimism** | ✅ Yes | ⚠️ Roadmap |
-
-### Web/Mobile
-
-| Platform | Secp256k1 | P-256 |
-|----------|-----------|-------|
-| **Browser WebCrypto** | ❌ Not standard | ✅ Yes |
-| **WebAuthn** | ❌ Not supported | ✅ Default |
-| **iOS Keychain** | ❌ No | ✅ Yes |
-| **Android Keystore** | ❌ Limited | ✅ Full support |
-| **Windows Hello** | ❌ No | ✅ Yes |
-
-### Libraries
-
-| Library | Secp256k1 | P-256 |
-|---------|-----------|-------|
-| **@noble/curves** | ✅ Yes | ✅ Yes |
-| **ethers.js** | ✅ Yes | ❌ No |
-| **viem** | ✅ Yes | ❌ No |
-| **Web3.js** | ✅ Yes | ❌ No |
-| **OpenSSL** | ✅ Yes | ✅ Yes |
-| **BouncyCastle** | ✅ Yes | ✅ Yes |
-
-## Use Case Examples
-
-### Ethereum Transaction Signing (Secp256k1)
+Ethereum externally owned accounts (EOAs), transaction signatures, EIP-712 typed data, and the `0x01` `ECRECOVER` precompile require **secp256k1**. Smart contract wallets using Face ID, Touch ID, Windows Hello, or FIPS-validated HSMs require **P-256**.
 
 ```typescript
-import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
-import * as Transaction from '@tevm/voltaire/Transaction';
+import { Address, Hash, P256, Secp256k1, SHA256 } from '@tevm/voltaire';
 
-// Sign transaction with secp256k1 (required)
-const tx = {
-  to: '0x...',
-  value: 1000000000000000000n,
-  // ...
-};
+// Ethereum EOA signing (secp256k1)
+const ethHash = Hash.keccak256String('Authorize transfer');
+const ethPriv = Secp256k1.randomPrivateKey();
+const ethSig = Secp256k1.sign(ethHash, ethPriv);
+const ethPub = Secp256k1.recoverPublicKey(ethSig, ethHash);
+const signer = Address.fromPublicKey(ethPub);
 
-const txHash = Transaction.hash(tx);
-const signature = Secp256k1.sign(txHash, privateKey);
-
-// Recover sender address (ecRecover)
-const publicKey = Secp256k1.recoverPublicKey(signature, txHash);
-const senderAddress = Address.fromPublicKey(publicKey);
+// WebAuthn / passkey signing (P-256)
+const p256Hash = SHA256.hashString('Authorize transfer');
+const p256Priv = P256.randomPrivateKey();
+const p256Pub = P256.derivePublicKey(p256Priv);
+const p256Sig = P256.sign(p256Hash, p256Priv);
+const valid = P256.verify(p256Sig, p256Hash, p256Pub);
 ```
 
-**Why secp256k1?** Ethereum requires it. No alternative.
+## Hash Functions
 
-### WebAuthn Authentication (P-256)
+| Algorithm | Import | Digest Size | Construction | Primary Use |
+|-----------|--------|-------------|--------------|-------------|
+| Keccak-256 | `@tevm/voltaire/Keccak256` | 32 bytes | Sponge (`0x01` pad, pre-NIST) | Ethereum addresses, selectors, topics, MPT |
+| SHA-256 | `@tevm/voltaire/SHA256` | 32 bytes | Merkle-Damgard (FIPS 180-4) | EVM `0x02`, EIP-4844 versioned hashes, Bitcoin |
+| BLAKE2b | `@tevm/voltaire/Blake2` | 1-64 bytes | HAIFA / ChaCha-based (RFC 7693) | EVM `0x09` (`BLAKE2F`), Zcash, high-speed hashing |
+| RIPEMD-160 | `@tevm/voltaire/Ripemd160` | 20 bytes | Merkle-Damgard (ISO/IEC 10118-3) | EVM `0x03`, Bitcoin `HASH160` |
 
-```typescript
-import * as P256 from '@tevm/voltaire/P256';
-import { Bytes32 } from '@tevm/voltaire/Bytes32';
+## Pairing-Friendly Curves
 
-// User authenticates with Face ID/Touch ID
-const credential = await navigator.credentials.create({
-  publicKey: {
-    challenge: Bytes32('0x0000000000000000000000000000000000000000000000000000000000000001'),
-    rp: { name: 'My DApp' },
-    user: { id: userId, name: 'alice@example.com', displayName: 'Alice' },
-    pubKeyCredParams: [{ alg: -7, type: 'public-key' }], // ES256 (P-256)
-    authenticatorSelection: { userVerification: 'required' },
-  },
-});
+| Property | BN254 (alt_bn128) | BLS12-381 |
+|----------|-------------------|-----------|
+| Import | `@tevm/voltaire/BN254` | `@tevm/voltaire/Bls12381` |
+| Effective security | ~100-bit (post-TNFS) | 128-bit |
+| G1 uncompressed (EVM) | 64 bytes | 128 bytes |
+| G2 uncompressed (EVM) | 128 bytes | 256 bytes |
+| EVM precompiles | `0x06`, `0x07`, `0x08` (Byzantium) | `0x0b`-`0x13` (Prague) |
+| Primary use | Groth16 / PLONK verification | Consensus BLS signatures, EIP-4844 KZG |
 
-// Extract P-256 public key from credential
-const publicKey = extractP256Key(credential);
+## Symmetric Encryption
 
-// Verify WebAuthn signature
-const isValid = P256.verify(signature, messageHash, publicKey);
-```
-
-**Why P-256?** WebAuthn only supports P-256 (and EdDSA). Secure Enclave requires P-256.
-
-### Account Abstraction (Both)
-
-**Traditional EOA (secp256k1):**
-```solidity
-// Validate signature with ecrecover
-address signer = ecrecover(messageHash, v, r, s);
-require(signer == owner, "Invalid signature");
-```
-
-**Smart Wallet with Passkey (P-256, requires RIP-7212):**
-```solidity
-// Validate P-256 signature (proposed precompile at 0x100)
-bool valid = verifyP256(messageHash, r, s, publicKey.x, publicKey.y);
-require(valid, "Invalid passkey signature");
-```
-
-**Why both?** Legacy EOAs use secp256k1, modern smart wallets can use P-256 for UX.
-
-## Migration Considerations
-
-### From Secp256k1 to P-256
-
-**Challenges:**
-- ❌ Different curves (not compatible)
-- ❌ Requires smart contract wallet (EOAs are secp256k1 only)
-- ❌ Limited L1 support (RIP-7212 not yet deployed)
-
-**Opportunities:**
-- ✅ Hardware wallet support (YubiKey, Secure Enclave)
-- ✅ Passwordless authentication (WebAuthn)
-- ✅ Enterprise compliance (FIPS)
-
-### Hybrid Approach
-
-**Account abstraction with multiple signers:**
-```solidity
-contract MultiSigWallet {
-  address public secp256k1Owner;  // Traditional
-  P256PublicKey public p256Owner;  // Passkey
-
-  function execute(bytes calldata data, bytes calldata signature, SignatureType sigType)
-    external
-  {
-    if (sigType == SignatureType.Secp256k1) {
-      // Validate secp256k1 (ecrecover)
-      require(validateSecp256k1(data, signature, secp256k1Owner));
-    } else if (sigType == SignatureType.P256) {
-      // Validate P-256 (RIP-7212 precompile)
-      require(validateP256(data, signature, p256Owner));
-    }
-
-    // Execute transaction
-    (bool success, ) = target.call(data);
-    require(success);
-  }
-}
-```
-
-**Benefits:**
-- Secp256k1 for compatibility
-- P-256 for UX (Face ID, Touch ID)
-- Graceful degradation
-
-## Recommendations
-
-### For Ethereum DApps
-
-**Transaction signing:**
-- ✅ Use secp256k1 (required for EOAs)
-- ⚠️ Consider P-256 for smart contract wallets (future)
-
-**Off-chain authentication:**
-- ✅ secp256k1 for wallet compatibility (EIP-191, EIP-712)
-- ✅ P-256 for WebAuthn/passkeys (better UX)
-
-### For Enterprise Applications
-
-**Government/regulated:**
-- ✅ Use P-256 (FIPS compliance required)
-- ❌ Avoid secp256k1 (not FIPS-approved)
-
-**Public blockchain:**
-- ✅ Use secp256k1 (universal support)
-
-### For Mobile/Web Apps
-
-**iOS app:**
-- ✅ Use P-256 (Secure Enclave)
-- ⚠️ secp256k1 for Ethereum compatibility
-
-**Web app:**
-- ✅ Use P-256 (WebAuthn, WebCrypto API)
-- ✅ secp256k1 for Web3 wallet integration
-
-**Progressive approach:**
-1. Secp256k1 for blockchain operations
-2. P-256 for user authentication
-3. Bridge the two via smart contract wallet
-
-## Future Outlook
-
-### RIP-7212: P-256 Precompile
-
-**Status:** Proposed for Ethereum L1
-**Precompile address:** 0x100
-**Impact:**
-- ✅ On-chain P-256 verification (3000 gas)
-- ✅ Enables passkey-based smart wallets
-- ✅ Hardware wallet integration (YubiKey)
-
-**Timeline:** Likely inclusion in future hard fork
-
-### Account Abstraction (EIP-4337)
-
-**Trend:** Move toward smart contract wallets
-**Implication:**
-- Signature scheme flexibility
-- Support for multiple curves (secp256k1 + P-256)
-- Hardware-based authentication
-
-### Post-Quantum Cryptography
-
-**Both curves vulnerable to quantum computers:**
-- Shor's algorithm breaks ECDLP
-- Estimated 10-20 years until threat
-
-**Future migration:**
-- NIST post-quantum standards (CRYSTALS, etc.)
-- Hybrid classical + post-quantum schemes
-
-## Conclusion
-
-| Criterion | Winner |
-|-----------|--------|
-| **Ethereum compatibility** | Secp256k1 |
-| **Hardware wallet support** | P-256 |
-| **Software performance** | Secp256k1 (slight) |
-| **Hardware acceleration** | P-256 |
-| **Standardization** | P-256 (NIST/FIPS) |
-| **Ecosystem maturity** | Tie (both widely used) |
-| **Security** | Tie (both 128-bit secure) |
-| **Future-proofing** | P-256 (broader adoption) |
-
-**Recommendation:**
-- **Ethereum-native apps:** Secp256k1 (required)
-- **Modern web/mobile:** P-256 (better UX)
-- **Enterprise:** P-256 (compliance)
-- **Hybrid/AA:** Both (best of both worlds)
+For authenticated encryption choices between AES-GCM and ChaCha20-Poly1305, see [Symmetric Encryption Comparison](/crypto/symmetric-encryption-comparison).
 
 ## Related
 
-- [Secp256k1](/crypto/secp256k1) - Ethereum's ECDSA curve
-- [P256](/crypto/p256) - NIST P-256 curve
-- [Account Abstraction](https://eips.ethereum.org/EIPS/eip-4337) - EIP-4337
-- [RIP-7212](https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md) - P-256 precompile
+- [Keccak256](/crypto/keccak256)
+- [Secp256k1](/crypto/secp256k1)
+- [P256](/crypto/p256)
+- [Ed25519](/crypto/ed25519)
+- [BLS12-381](/crypto/bls12-381)
+- [BN254](/crypto/bn254)
+- [EVM Precompiles](/evm/precompiles)

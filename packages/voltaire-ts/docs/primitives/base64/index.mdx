@@ -1,212 +1,66 @@
 ---
-title: Overview
-description: Standard and URL-safe base64 encoding/decoding built on Web APIs
+title: Base64
+description: Branded RFC 4648 standard and URL-safe Base64 encoding, decoding, validation, and size calculation.
 ---
 
-<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/base64.ts">
-  Run Base64 examples in the interactive playground
-</Card>
+`Base64` provides branded RFC 4648 standard (`+`, `/`, `=`) and URL-safe (`-`, `_`, unpadded) Base64 strings (`BrandedBase64`, `BrandedBase64Url`) with UTF-8 string and `Uint8Array` conversions.
 
+```mermaid
+flowchart LR
+  Bytes["Uint8Array"] <-->|"encode / decode"| Std["BrandedBase64 (+, /, =)"]
+  Bytes <-->|"encodeUrlSafe / decodeUrlSafe"| Url["BrandedBase64Url (-, _)"]
+  Str["UTF-8 string"] <-->|"encodeString / decodeToString"| Std
+  Std <-->|"toBase64Url / toBase64"| Url
+```
 
-<Tip>
-New to Base64? Start with [Fundamentals](/primitives/base64/fundamentals) for guided examples and encoding patterns.
-</Tip>
-
-## Type Definition
-
-Namespace providing standard (RFC 4648) and URL-safe base64 encoding/decoding. Built on Web APIs (`btoa`/`atob`) for maximum performance and compatibility. Zero-overhead design with tree-shakeable function exports.
+## Quick Start
 
 ```typescript
-export type Base64String = string;
-export type Base64UrlString = string;
+import { Base64 } from '@tevm/voltaire';
+
+const encoded = Base64.encode(new Uint8Array([0xde, 0xad, 0xbe, 0xef]));
+// "3q2+7w=="
+
+const decoded = Base64.decode(encoded);
+// Uint8Array([0xde, 0xad, 0xbe, 0xef])
+
+const urlSafe = Base64.encodeUrlSafe(decoded);
+// "3q2-7w"
+
+const text = Base64.encodeString('voltaire');
+Base64.decodeToString(text); // "voltaire"
 ```
 
-### Web API Integration
+Import from `@tevm/voltaire` or `@tevm/voltaire/Base64`.
 
-JavaScript builtins available on all `Uint8Array` instances:
+## Standard vs URL-Safe Alphabets
 
-- `setFromBase64()` - Populate from base64 string
-- `toBase64()` - Encode to base64 string
+| Variant | Index 62 | Index 63 | Padding | Branded Type |
+| --- | --- | --- | --- | --- |
+| Standard (RFC 4648 §4) | `+` | `/` | `=` to 4-char multiple | `BrandedBase64` |
+| URL-Safe (RFC 4648 §5) | `-` | `_` | Omitted | `BrandedBase64Url` |
 
-[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)
+## API Reference
 
-<Note>
-`toBase64()` and `setFromBase64()` are available as of 2025 (Node.js 22+, Chrome 131+). Use Tevm's `Base64.encode()` for broader compatibility.
-</Note>
+| Category | Standard | URL-Safe | Description |
+| --- | --- | --- | --- |
+| Construct & Validate | `from(s)` | `fromUrlSafe(s)` | Validate and brand string |
+| Encode bytes | `encode(bytes)` | `encodeUrlSafe(bytes)` | Encode `Uint8Array` |
+| Encode UTF-8 | `encodeString(str)` | `encodeStringUrlSafe(str)` | Encode UTF-8 text |
+| Decode to bytes | `decode(b64)` | `decodeUrlSafe(b64u)` | Decode to `Uint8Array` |
+| Decode to UTF-8 | `decodeToString(b64)` | `decodeUrlSafeToString(b64u)` | Decode to UTF-8 string |
+| Convert branded | `toBytes(b64)`, `toString(b64)` | `toBytesUrlSafe(b64u)`, `toStringUrlSafe(b64u)` | Extract bytes or text |
+| Alphabet conversion | `toBase64(b64u)` | `toBase64Url(b64)` | Convert between standard and URL-safe |
+| Validation | `isValid(s)` | `isValidUrlSafe(s)` | Boolean format validation |
+| Size math | `calcEncodedSize(byteLen)` | `calcDecodedSize(encodedLen)` | Exact buffer length calculation |
 
-## Quick Reference
+## Size Formula
 
-<Tabs>
-
-</Tabs>
-
-### Effect Schema
-
-```ts
-import { Base64Schema, Base64UrlSchema } from '@tevm/voltaire/Base64/effect'
-
-const bytes = new TextEncoder().encode('Hello')
-const b64 = Base64Schema.from(bytes)
-b64.toString() // 'SGVsbG8='
-
-const b64url = Base64UrlSchema.from(bytes)
-b64url.toString() // 'SGVsbG8'
-```
-
-## API Methods
-
-### Encoding
-
-- [`encode(data)`](./encoding#encode) - Encode bytes to standard base64
-- [`encodeString(str)`](./encoding#encodestring) - Encode UTF-8 string to base64
-- [`encodeUrlSafe(data)`](./encoding#encodeurlsafe) - Encode bytes to URL-safe base64
-- [`encodeStringUrlSafe(str)`](./encoding#encodestringurl) - Encode string to URL-safe base64
-- [`calcEncodedSize(length)`](./utilities#calcencodedsize) - Calculate encoded size
-
-### Decoding
-
-- [`decode(encoded)`](./decoding#decode) - Decode standard base64 to bytes
-- [`decodeToString(encoded)`](./decoding#decodetostring) - Decode base64 to UTF-8 string
-- [`decodeUrlSafe(encoded)`](./decoding#decodeurlsafe) - Decode URL-safe base64 to bytes
-- [`decodeUrlSafeToString(encoded)`](./decoding#decodeurlsafetostring) - Decode URL-safe base64 to string
-- [`calcDecodedSize(length)`](./utilities#calcdecodedsize) - Calculate decoded size
-
-### Validation
-
-- [`isValid(str)`](./validation#isvalid) - Validate standard base64 format
-- [`isValidUrlSafe(str)`](./validation#isvalidurlsafe) - Validate URL-safe base64 format
-
-### BrandedBase64
-
-Tree-shakeable functional API for minimal bundle size.
-
-[View BrandedBase64 →](./branded-base64)
-
-## Types
-
-<Tabs>
-<Tab title="Base64String">
-
-```typescript
-export type Base64String = string;
-```
-
-Base64-encoded string using standard alphabet: A-Z, a-z, 0-9, +, /. Includes padding with `=` characters.
-
-</Tab>
-<Tab title="Base64UrlString">
-
-```typescript
-export type Base64UrlString = string;
-```
-
-URL-safe base64-encoded string using alphabet: A-Z, a-z, 0-9, -, _. No padding characters.
-
-</Tab>
-</Tabs>
-
-## Usage Patterns
-
-### Encoding Binary Data
-
-```typescript
-const bytes = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
-const b64 = Base64.encode(bytes);
-console.log(b64); // "SGVsbG8="
-
-// Decode back to bytes
-const decoded = Base64.decode(b64);
-console.log(decoded); // Uint8Array([72, 101, 108, 108, 111])
-```
-
-### Encoding Strings
-
-```typescript
-// UTF-8 string encoding
-const message = "Hello, 世界!";
-const encoded = Base64.encodeString(message);
-const decoded = Base64.decodeToString(encoded);
-console.log(decoded === message); // true
-```
-
-### URL-Safe Encoding
-
-```typescript
-// For URLs, filenames, tokens
-const data = new Uint8Array([255, 254, 253]);
-
-// Standard encoding (with +, /, =)
-const standard = Base64.encode(data);
-// URL-safe encoding (with -, _, no padding)
-const urlSafe = Base64.encodeUrlSafe(data);
-
-// URL-safe can be used in query parameters
-const url = `https://api.example.com?token=${urlSafe}`;
-```
-
-### Safe Decoding with Validation
-
-```typescript
-function safeDecodeBase64(input: string): Uint8Array | null {
-  if (!Base64.isValid(input)) {
-    return null;
-  }
-  try {
-    return Base64.decode(input);
-  } catch {
-    return null;
-  }
-}
-```
-
-### Pre-allocating Buffers
-
-```typescript
-// Calculate buffer size before encoding
-const dataSize = 1024;
-const bufferSize = Base64.calcEncodedSize(dataSize);
-console.log(bufferSize); // 1368 bytes needed
-
-// Calculate decoded size
-const encodedLength = 1368;
-const decodedSize = Base64.calcDecodedSize(encodedLength);
-console.log(decodedSize); // 1024 bytes maximum
-```
-
-## Tree-Shaking
-
-Import only what you need for optimal bundle size:
-
-```typescript
-// Import specific functions (tree-shakeable)
-import { encode, decode, isValid } from 'tevm/BrandedBase64';
-
-const data = new Uint8Array([72, 101, 108, 108, 111]);
-const encoded = encode(data);
-const decoded = decode(encoded);
-const valid = isValid(encoded);
-
-// Only these 3 functions included in bundle
-```
+- Encoded standard length: `4 * Math.ceil(byteLen / 3)`.
+- Every 3 input bytes map to 4 Base64 characters (33% expansion).
 
 ## Related
 
-### Core Documentation
-
-- [Fundamentals](/primitives/base64/fundamentals) - Learn encoding algorithm and patterns
-- [Encoding](/primitives/base64/encoding) - Encoding methods and variants
-- [Decoding](/primitives/base64/decoding) - Decoding methods and error handling
-- [Validation](/primitives/base64/validation) - Format validation patterns
-
-### Related Primitives
-
-- [Hex](/primitives/hex) - Hex string encoding and decoding
-- [Keccak256](/crypto/keccak256) - Keccak256 hashing for data integrity
-- [Uint](/primitives/uint) - Unsigned integer utilities
-
-## Specification
-
-- [RFC 4648](https://tools.ietf.org/html/rfc4648) - Base64 encoding specification
-  - Section 4: Standard base64 encoding
-  - Section 5: URL-safe base64 encoding
-- [MDN Web APIs](https://developer.mozilla.org/en-US/docs/Web/API/atob) - Browser base64 APIs
+- [Hex](/primitives/hex) — Hexadecimal string encoding
+- [Bytes](/primitives/bytes) — Raw byte arrays
+- [Address](/primitives/address) — Includes `Address.fromBase64`

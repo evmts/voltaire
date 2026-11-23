@@ -17,7 +17,7 @@ description: Get event signature hash (topic0)
 **Non-anonymous events:** Topic0 is the keccak256 hash of the event signature:
 
 ```typescript
-import { Hash } from 'tevm';
+import { Hash } from '@tevm/voltaire';
 
 // Transfer(address,address,uint256)
 const transferSig = Hash(
@@ -39,7 +39,7 @@ event AnonymousTransfer(
 ```
 
 ```typescript
-import { EventLog } from 'tevm';
+import { EventLog } from '@tevm/voltaire';
 
 const anonymousLog = EventLog({
   address: contractAddress,
@@ -60,7 +60,7 @@ const topic0 = anonymousLog.getTopic0();
 ### Identifying Event Type
 
 ```typescript
-import { EventLog, Hash } from 'tevm';
+import { EventLog, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 const APPROVAL_SIG = Hash('0x8c5be1e5...');
@@ -81,7 +81,7 @@ console.log(`Event type: ${eventType}`);
 ### Filtering by Signature
 
 ```typescript
-import { EventLog, Hash } from 'tevm';
+import { EventLog, Hash } from '@tevm/voltaire';
 
 const TRANSFER_SIG = Hash('0xddf252ad...');
 
@@ -97,7 +97,7 @@ console.log(`Found ${transferLogs.length} Transfer events`);
 ### Validating Event Structure
 
 ```typescript
-import { EventLog, Hash } from 'tevm';
+import { EventLog, Hash } from '@tevm/voltaire';
 
 function validateTransferLog(log: EventLog): boolean {
   const sig = log.getTopic0();
@@ -123,7 +123,7 @@ function validateTransferLog(log: EventLog): boolean {
 ### Computing Event Signature
 
 ```typescript
-import { Hash } from 'tevm';
+import { Hash } from '@tevm/voltaire';
 
 function eventSignature(declaration: string): Hash {
   const bytes = new TextEncoder().encode(declaration);
@@ -143,7 +143,7 @@ console.log('Approval:', Hash.toHex(APPROVAL));
 If topics array is empty, `getTopic0()` returns `undefined`:
 
 ```typescript
-import { EventLog, Address } from 'tevm';
+import { EventLog, Address } from '@tevm/voltaire';
 
 const emptyLog = EventLog({
   address: Address.zero(),

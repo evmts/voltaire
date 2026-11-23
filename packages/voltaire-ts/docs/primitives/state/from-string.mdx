@@ -40,7 +40,7 @@ Deserializes string format to `BrandedStorageKey`. Inverse of `toString()`.
 ### Various Formats
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // With 0x prefix
 const key1 = State.StorageKey(
@@ -64,7 +64,7 @@ console.log(key3.slot); // 123456789012345678901234567890n
 ### Round-Trip Conversion
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Original key
 const originalKey = State.StorageKey(contractAddr, 42n);
@@ -84,7 +84,7 @@ console.log(parsedKey.slot === 42n); // true
 ### Load from JSON
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 import * as fs from 'fs/promises';
 
 // Load storage from JSON
@@ -115,7 +115,7 @@ console.log(storage.size); // 2
 ### Database Retrieval
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 class StorageDatabase {
   async get(keyStr: string): Promise<bigint | null> {
@@ -141,7 +141,7 @@ class StorageDatabase {
 ### URL Query Parameters
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Parse storage key from URL
 function getStorageFromUrl(url: URL): BrandedStorageKey {
@@ -160,7 +160,7 @@ console.log(key.slot); // 0n
 ### Error Handling
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 try {
   // Invalid format: missing colon
@@ -194,7 +194,7 @@ try {
 ### Batch Parsing
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Parse multiple storage keys
 function parseStorageKeys(keyStrings: string[]): BrandedStorageKey[] {
@@ -217,7 +217,7 @@ console.log(keys[2].slot); // 2n
 ### API Response Parsing
 
 ```typescript
-import * as State from 'tevm/State';
+import * as State from '@tevm/voltaire/State';
 
 // Parse storage keys from API response
 interface StorageResponse {

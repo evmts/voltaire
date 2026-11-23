@@ -19,9 +19,9 @@ Calculate Ethereum transaction costs and convert between Wei, Gwei, Ether, and U
 <Tabs>
 <Tab title="Low Gas Price (20 Gwei)">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 const gasPrice = Gwei(20n)      // 20 Gwei
 const gasUsed = 21_000n              // Standard transfer
@@ -44,9 +44,9 @@ console.log(`Cost: ${costEther} ETH`)  // 0 ETH (truncates)
 
 <Tab title="Standard Gas Price (50 Gwei)">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 const gasPrice = Gwei(50n)      // 50 Gwei
 const gasUsed = 21_000n              // Standard transfer
@@ -67,9 +67,9 @@ console.log(`Cost: 0.00105 ETH`)       // ~0.00105 ETH
 
 <Tab title="High Gas Price (200 Gwei)">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 const gasPrice = Gwei(200n)     // 200 Gwei (urgent)
 const gasUsed = 21_000n              // Standard transfer
@@ -94,9 +94,9 @@ console.log(`Cost: 0.0042 ETH`)        // ~0.0042 ETH
 ### Token Transfer (ERC-20) - 65,000 gas
 
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 function calculateTokenTransferCost(gasPriceGwei: Gwei.Type): {
   wei: bigint
@@ -132,9 +132,9 @@ console.log('Fast:', fast)         // 13,000,000 Gwei = 0.013 ETH
 ### Uniswap Swap - 150,000 gas
 
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 function calculateSwapCost(gasPriceGwei: Gwei.Type): {
   wei: bigint
@@ -182,9 +182,9 @@ totalCost = (50 + 2) Gwei × 21,000 = 52 Gwei × 21,000 = 1,092,000 Gwei
 
 <Tab title="Implementation">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 interface EIP1559Cost {
   minCost: { wei: bigint; gwei: bigint; ether: number }
@@ -252,9 +252,9 @@ Convert gas costs to USD for budget planning:
 <Tabs>
 <Tab title="Basic Conversion">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 function gasCostUSD(
   gasPriceGwei: Gwei.Type,
@@ -283,9 +283,9 @@ console.log(`Cost: $${costUsd.toFixed(2)} USD`)  // $2.10 USD
 
 <Tab title="Detailed Breakdown">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 interface TransactionCost {
   wei: bigint
@@ -333,9 +333,9 @@ scenarios.forEach(({ price, desc }) => {
 
 <Tab title="Price Sensitivity">
 ```typescript
-import * as Gwei from 'tevm/Gwei'
-import * as Wei from 'tevm/Wei'
-import * as Uint from 'tevm/Uint'
+import { Gwei } from '@tevm/voltaire/Denomination'
+import { Wei } from '@tevm/voltaire/Denomination'
+import * as Uint from '@tevm/voltaire/Uint'
 
 function costMatrix(
   gasPrices: bigint[],
@@ -376,7 +376,7 @@ console.table(Array(costs.entries()).map(([key, value]) => ({
 ### Safe Gas Estimates
 
 ```typescript
-import * as Gwei from 'tevm/Gwei'
+import { Gwei } from '@tevm/voltaire/Denomination'
 
 // Get current gas recommendations
 function getGasRecommendation(baseFeeGwei: number): {

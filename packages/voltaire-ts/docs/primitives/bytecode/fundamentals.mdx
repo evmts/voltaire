@@ -11,7 +11,7 @@ description: Learn EVM bytecode structure, parsing, and analysis
 <Info>
 **Conceptual Guide** - For API reference and method documentation, see [Bytecode API](/primitives/bytecode/index).
 </Info>
-EVM bytecode is the low-level machine code that smart contracts compile to and execute on the Ethereum Virtual Machine. This guide teaches bytecode fundamentals using Tevm.
+EVM bytecode is the low-level machine code that smart contracts compile to and execute on the Ethereum Virtual Machine. This guide teaches bytecode fundamentals using Voltaire.
 
 ## Structure
 
@@ -26,7 +26,7 @@ The main challenge: **PUSH1-PUSH32 opcodes (0x60-0x7f) are followed by 1-32 byte
 <Tabs>
 <Tab title="TypeScript (Correct)">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 // Bytecode: PUSH1 0x5b (0x5b is data, not JUMPDEST opcode)
 const code = Bytecode("0x605b");
@@ -35,7 +35,7 @@ const instructions = code.parseInstructions();
 console.log(instructions);
 // [{ opcode: 0x60, position: 0, pushData: Uint8Array([0x5b]) }]
 
-// Tevm correctly identifies 0x5b as data, not JUMPDEST
+// Voltaire correctly identifies 0x5b as data, not JUMPDEST
 ```
 </Tab>
 
@@ -63,7 +63,7 @@ Use [`analyze()`](/primitives/bytecode/analyze) for complete bytecode analysis:
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 const code = Bytecode("0x6001600201");
 
@@ -99,7 +99,7 @@ JUMPDEST (0x5b) markers indicate valid jump targets. The EVM validates that JUMP
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 const code = Bytecode("0x5b6001565b60025600"); // Two JUMPDESTs
 
@@ -123,7 +123,7 @@ Use [`formatInstructions()`](/primitives/bytecode/formatInstructions) to disasse
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 const code = Bytecode("0x6001600201");
 
@@ -146,7 +146,7 @@ Here's bytecode that adds 5 + 3 and returns the result:
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 // Deployment + runtime bytecode
 const code = Bytecode("0x6005600301600052602060006000f3");
@@ -199,7 +199,7 @@ Use [`parseInstructions()`](/primitives/bytecode/parseInstructions) for detailed
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 const code = Bytecode("0x6005600301");
 
@@ -229,7 +229,7 @@ Solidity compilers append metadata (typically 50-100 bytes) containing compiler 
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 const deployedCode = Bytecode("0x608060..."); // Full deployed bytecode
 
@@ -256,7 +256,7 @@ Deployment bytecode includes initialization code that runs once. Extract just th
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 const deploymentCode = Bytecode("0x608060...");
 
@@ -289,7 +289,7 @@ The EVM has ~140 single-byte [opcodes](/primitives/opcode) organized by category
 PUSH1-PUSH32 (0x60-0x7f) embed 1-32 bytes of immediate data:
 
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 // PUSH20 for Ethereum address (20 bytes)
 const addressCode = Bytecode("0x73742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
@@ -312,7 +312,7 @@ Use [`validate()`](/primitives/bytecode/validate) to check bytecode structure:
 <Tabs>
 <Tab title="TypeScript">
 ```typescript
-import { Bytecode } from 'tevm';
+import { Bytecode } from '@tevm/voltaire';
 
 const code = Bytecode("0x6001600201");
 
@@ -332,7 +332,7 @@ if (validation.valid) {
 - **[evm.codes](https://www.evm.codes/)** - Interactive EVM opcode reference with gas costs
 - **[wolflo/evm-opcodes](https://github.com/wolflo/evm-opcodes)** - Comprehensive opcode reference
 - **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal EVM specification (Appendix H)
-- **[Opcode Reference](/primitives/opcode)** - Tevm's opcode documentation
+- **[Opcode Reference](/primitives/opcode)** - Voltaire's opcode documentation
 
 ## Next Steps
 

@@ -1,247 +1,91 @@
 ---
-title: Overview
-description: EVM bytecode analysis and manipulation
+title: Bytecode
+description: Branded EVM bytecode Uint8Array with instruction disassembly, JUMPDEST validation, CFG basic-block/stack/gas analysis, CBOR metadata stripping, and ABI extraction.
 ---
 
-<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/bytecode.ts">
-  Run Bytecode examples in the interactive playground
-</Card>
+`Bytecode` (`BrandedBytecode`) is a branded `Uint8Array` holding EVM deployment (`initCode`) or runtime bytecode, equipped with instruction scanning, `JUMPDEST` analysis, basic-block decomposition, static stack/gas analysis, Solidity CBOR metadata stripping, and selector-based ABI extraction.
 
+```mermaid
+flowchart LR
+  Raw["Hex | Uint8Array"] --> BC["Bytecode (Uint8Array)"]
+  BC --> Scan["parseInstructions() / scan() / prettyPrint()"]
+  BC --> JD["analyzeJumpDestinations() / isValidJumpDest()"]
+  BC --> CFG["analyzeBlocks() / analyzeStack() / analyzeGas()"]
+  BC --> Meta["hasMetadata() / stripMetadata() / extractRuntime() / toAbi()"]
+```
 
-<Tip>
-New to bytecode? Start with [Fundamentals](/primitives/bytecode/fundamentals) for guided examples and concepts.
-</Tip>
-
-## Type Definition
-
-[Branded](/getting-started/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) with utils for analyzing, validating, and iterating over EVM bytecode.
+## Quick Start
 
 ```typescript
-import type { brand } from 'tevm/brand';
+import { Bytecode } from '@tevm/voltaire';
 
-export type BrandedBytecode = Uint8Array & { readonly [brand]: "Bytecode" };
+const code = Bytecode('0x608060405260043610601f575b00');
+
+code.size();                     // 14 bytes
+code.validate();                 // true (no truncated PUSH immediates)
+code.analyzeJumpDestinations();  // Set { 12 }
+code.isValidJumpDest(12);        // true (0x5b at byte 12 is not inside PUSH data)
+code.prettyPrint();              // human-readable annotated disassembly
+
+// Static analysis
+const blocks = code.analyzeBlocks();
+const gas = code.analyzeGas();
+const stack = code.analyzeStack();
+
+// Strip trailing Solidity CBOR metadata before comparing contract code
+const clean = code.stripMetadata();
+const codeHash = code.hash();    // 32-byte keccak256
 ```
 
-### Native Uint8Array Methods
+Import from `@tevm/voltaire` or `@tevm/voltaire/Bytecode`.
 
-JavaScript builtins available on all `Uint8Array` instances:
+## API Reference
 
-- `setFromBase64()` - Populate from base64 string
-- `setFromHex()` - Populate from hex string
-- `toBase64()` - Encode to base64 string
-- `toHex()` - Encode to hex string
+### Construction, Formatting & Hashing
 
-[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)
+| Method | Signature | Description |
+| --- | --- | --- |
+| `Bytecode` / `from` | `(value: string \| Uint8Array) => BrandedBytecode` | Wrap raw bytes or `0x` hex |
+| `Bytecode.fromHex` | `(hex: string) => BrandedBytecode` | Parse hex bytecode |
+| `Bytecode.toHex` | `(code: BrandedBytecode, prefix?: boolean) => string` | Encode to hex (`prefix` defaults to `true`) |
+| `Bytecode.size` | `(code: BrandedBytecode) => number` | Byte length |
+| `Bytecode.equals` | `(a: BrandedBytecode, b: BrandedBytecode) => boolean` | Byte-wise equality |
+| `Bytecode.hash` | `(code: BrandedBytecode) => HashType` | Keccak-256 `EXTCODEHASH` digest (tree-shakeable factory: `Hash`) |
 
-<Note>
-`toHex()` and `setFromHex()` are available as of 2025 (Node.js 22+, Chrome 131+). Use Tevm's `Hex.toHex()` for broader compatibility.
-</Note>
+### Instruction Parsing & Disassembly
 
-## Quick Reference
+| Method | Signature | Description |
+| --- | --- | --- |
+| `parseInstructions` | `(code) => Instruction[]` | Decode into `{ opcode, position, pushData? }` list |
+| `scan` | `(code, options?) => Generator<ScannedOp>` | Lazy streaming iterator with optional gas and stack effects |
+| `formatInstruction` / `formatInstructions` | Format individual or all instructions as mnemonics |
+| `prettyPrint` | `(code, options?) => string` | Multi-line formatted disassembly with PCs and jump targets |
+| `getNextPc` | `(code, currentPc) => number` | Advance PC past opcode and `PUSH1`–`PUSH32` immediate bytes |
+| `isPush` / `getPushSize` / `isTerminator` | Inspect single opcode bytes |
 
+### Analysis & Metadata
 
-<Tabs>
+| Method | Signature | Description |
+| --- | --- | --- |
+| `validate` | `(code) => boolean` | Verify no `PUSH` instruction runs past end of bytecode |
+| `analyze` | `(code) => Analysis` | Combined instructions, jump destinations, and validity |
+| `analyzeJumpDestinations` | `(code) => ReadonlySet<number>` | Valid `JUMPDEST` (`0x5b`) offsets excluding `PUSH` immediates |
+| `isValidJumpDest` | `(code, offset) => boolean` | Check whether `offset` is a legal dynamic jump target |
+| `analyzeBlocks` / `getBlock` | Partition bytecode into basic blocks terminated by `JUMP`/`JUMPI`/`STOP`/`RETURN`/`REVERT`/`INVALID`/`SELFDESTRUCT` |
+| `analyzeStack` | `(code, options?) => StackAnalysis` | Static stack depth, underflow, and overflow (> 1024) checks |
+| `analyzeGas` | `(code, options?) => GasAnalysis` | Static gas cost breakdown per block and instruction |
+| `detectFusions` | `(code) => Fusion[]` | Detect common peephole fusion sequences (e.g., `PUSH`+`JUMP`) |
+| `hasMetadata` / `stripMetadata` | Detect and remove Solidity CBOR-encoded trailing metadata |
+| `extractRuntime` | `(code, offset) => BrandedBytecode` | Slice runtime bytecode out of creation `initCode` |
+| `toAbi` | `(code) => BrandedAbi` | Extract function selectors and ABI skeleton from bytecode |
 
-</Tabs>
+## Edge Cases
 
-### Effect Schema
-
-```ts
-import { BytecodeSchema } from '@tevm/voltaire/Bytecode/effect'
-
-const code = BytecodeSchema.fromHex('0x6001')
-code.toHex() // '0x6001'
-```
-
-## API Methods
-
-### Constructors
-
-- [`from(value)`](./from) - Universal constructor from any input
-- [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
-- [`fromUint8Array(bytes)`](./fromUint8Array) - Create from Uint8Array
-
-### Iteration
-
-- [`scan(bytecode, options?)`](./scan) - Iterator for lazy bytecode traversal with fusion detection
-
-### Analysis
-
-- [`analyze(bytecode)`](./analyze) - Complete analysis (validation + jump destinations + instructions)
-- [`analyzeBlocks(bytecode, options?)`](./analyze-blocks) - Split into basic blocks with control flow metadata
-- [`analyzeGas(bytecode, options?)`](./analyze-gas) - Estimate gas costs with instruction/block breakdown
-- [`analyzeStack(bytecode, options?)`](./analyze-stack) - Validate stack depth constraints and track effects
-- [`analyzeJumpDestinations(bytecode)`](./analyzeJumpDestinations) - Find all JUMPDEST positions
-- [`parseInstructions(bytecode)`](./parseInstructions) - Parse all instructions with PUSH data
-- [`isValidJumpDest(bytecode, offset)`](./isValidJumpDest) - Check if position is valid jump target
-- [`detectFusions(bytecode)`](./detect-fusions) - Identify multi-instruction optimization patterns
-
-### Validation
-
-- [`validate(bytecode)`](./validate) - Validate bytecode structure
-
-### Metadata
-
-- [`hasMetadata(bytecode)`](./hasMetadata) - Check for compiler metadata
-- [`stripMetadata(bytecode)`](./stripMetadata) - Remove metadata from bytecode
-
-### Formatting
-
-- [`formatInstructions(bytecode)`](./formatInstructions) - Disassemble to string array
-- [`prettyPrint(bytecode, options?)`](./pretty-print) - Annotated disassembly with colors and metadata
-
-### Conversions
-
-- [`toHex(bytecode)`](./toHex) - Convert to hex string with 0x prefix
-- [`toAbi(bytecode)`](./toAbi) - Extract ABI from bytecode using reverse engineering
-
-### Utilities
-
-- [`size(bytecode)`](./size) - Get byte length
-- [`equals(a, b)`](./equals) - Compare bytecode equality
-- [`hash(bytecode)`](./hash) - Compute keccak256 hash
-- [`extractRuntime(bytecode)`](./extractRuntime) - Extract runtime code from deployment bytecode
-- [`getBlock(bytecode, pc)`](./getBlock) - Get basic block containing a program counter
-- [`getNextPc(bytecode, currentPc)`](./getNextPc) - Get next program counter after instruction
-
-### Reference
-
-- [Instruction Types](./instruction-types) - Complete OpcodeData union reference (40+ types)
-- [Synthetic Opcodes](./synthetic-opcodes) - Extended opcode set for fusion patterns
-
-## Types
-
-<Tabs>
-<Tab title="BrandedBytecode">
-
-```typescript
-import type { brand } from 'tevm/brand';
-
-export type BrandedBytecode = Uint8Array & {
-  readonly [brand]: "Bytecode";
-};
-```
-
-Main branded type. Runtime is `Uint8Array`, TypeScript enforces type safety with symbol branding.
-
-</Tab>
-<Tab title="BytecodeLike">
-
-```typescript
-type BytecodeLike =
-  | Uint8Array
-  | BrandedBytecode
-  | Bytecode
-  | Hex
-  | string;
-```
-
-Union type accepting any input that can be coerced to bytecode. Accepted by `Bytecode.from()`.
-
-See [from](./from) for details.
-
-</Tab>
-<Tab title="Analysis Types">
-
-```typescript
-export type Opcode = number;
-
-export type Instruction = {
-  readonly opcode: Opcode;
-  readonly position: number;
-  readonly pushData?: Uint8Array;
-};
-
-export type Analysis = {
-  readonly valid: boolean;
-  readonly jumpDestinations: ReadonlySet<number>;
-  readonly instructions: readonly Instruction[];
-};
-```
-
-Types for bytecode analysis results. See [analyze](./analyze).
-
-</Tab>
-</Tabs>
-
-## Usage Patterns
-
-### Analyzing Contract Bytecode
-
-```typescript
-const bytecode = await provider.getCode("0x...");
-const code = Bytecode(bytecode);
-
-const analysis = code.analyze();
-console.log(`Valid: ${analysis.valid}`);
-console.log(`Jump destinations: ${analysis.jumpDestinations.size}`);
-console.log(`Instructions: ${analysis.instructions.length}`);
-
-const isValidTarget = code.isValidJumpDest(100);
-```
-
-### Comparing Bytecode
-
-```typescript
-const deployed = Bytecode(await provider.getCode(address));
-const expected = Bytecode(compiledBytecode);
-
-if (deployed.equals(expected)) {
-  console.log("Contract verified");
-} else {
-  console.log(`Hash deployed: ${deployed.hash()}`);
-  console.log(`Hash expected: ${expected.hash()}`);
-}
-```
-
-### Extracting Runtime Code
-
-```typescript
-const deploymentCode = Bytecode("0x608060...");
-const runtimeCode = deploymentCode.extractRuntime();
-const cleanCode = runtimeCode.stripMetadata();
-```
-
-## Tree-Shaking
-
-Import only what you need for optimal bundle size:
-
-```typescript
-// Import specific functions (tree-shakeable)
-import { fromHex, analyze, formatInstructions } from 'tevm/BrandedBytecode';
-
-const code = fromHex("0x6001");
-const analysis = analyze(code);
-const disassembly = formatInstructions(code);
-
-// Only these 3 functions included in bundle
-```
+- A `0x5b` byte inside a `PUSH1`–`PUSH32` immediate payload is **not** a valid `JUMPDEST`. Always use `analyzeJumpDestinations` or `isValidJumpDest` rather than scanning raw bytes for `0x5b`.
+- Solidity appends a 2-byte big-endian length suffix for CBOR metadata (`a26469706673...`); `stripMetadata` validates that suffix before slicing.
 
 ## Related
 
-- [Bytecode (Effect)](https://voltaire-effect.tevm.sh/primitives/bytecode) - Effect.ts integration with Schema validation
-
-### Core Documentation
-
-- [Fundamentals](/primitives/bytecode/fundamentals) - Learn bytecode structure and parsing
-- [Instruction Types](/primitives/bytecode/instruction-types) - Complete OpcodeData union reference
-
-### Advanced Features
-
-- [Pretty Print](/primitives/bytecode/pretty-print) - Annotated disassembly with visualization
-- [Analyze Blocks](/primitives/bytecode/analyze-blocks) - Basic block analysis and CFG
-- [Detect Fusions](/primitives/bytecode/detect-fusions) - Multi-instruction pattern detection
-- [Synthetic Opcodes](/primitives/bytecode/synthetic-opcodes) - Extended opcode set
-
-### Related Primitives
-
-- [Opcode](/primitives/opcode) - EVM instruction definitions and gas costs
-- [Keccak256](/crypto/keccak256) - Keccak256 hashing for bytecode verification
-- [Hex](/primitives/hex) - Hex string encoding and decoding
-
-## Specification
-
-- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal EVM specification
-- [EVM Opcodes](https://www.evm.codes/) - Interactive opcode reference
-- [wolflo/evm-opcodes](https://github.com/wolflo/evm-opcodes) - Gas costs and opcode details
-- [Solidity Metadata](https://docs.soliditylang.org/en/latest/metadata.html) - Contract metadata format
+- [Opcode](/primitives/opcode) — Individual EVM opcode constants, stack effects, and gas metadata
+- [GasConstants](/primitives/gasconstants) — Fork-aware gas schedule
+- [ABI](/primitives/abi) — Contract interface extracted by `toAbi`

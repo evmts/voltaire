@@ -8,7 +8,7 @@ description: "Transaction receipt with execution details"
 Receipt is a branded type containing the results and metadata from executing a transaction on Ethereum. Receipts include gas usage, logs, status, and contract addresses.
 
 ```zig
-import * as Receipt from '@tevm/primitives/Receipt'
+import * as Receipt from '@tevm/voltaire/Receipt'
 
 const receipt = Receipt.from({
   transactionHash,
@@ -58,13 +58,13 @@ type ReceiptType = {
 Create receipt from fields.
 
 ```zig
-import * as Receipt from '@tevm/primitives/Receipt'
-import * as TransactionHash from '@tevm/primitives/TransactionHash'
-import * as TransactionIndex from '@tevm/primitives/TransactionIndex'
-import * as BlockHash from '@tevm/primitives/BlockHash'
-import * as BlockNumber from '@tevm/primitives/BlockNumber'
-import * as TransactionStatus from '@tevm/primitives/TransactionStatus'
-import * as Address from '@tevm/primitives/Address'
+import * as Receipt from '@tevm/voltaire/Receipt'
+import * as TransactionHash from '@tevm/voltaire/TransactionHash'
+import * as TransactionIndex from '@tevm/voltaire/TransactionIndex'
+import * as BlockHash from '@tevm/voltaire/BlockHash'
+import * as BlockNumber from '@tevm/voltaire/BlockNumber'
+import * as TransactionStatus from '@tevm/voltaire/TransactionStatus'
+import * as Address from '@tevm/voltaire/Address'
 
 const receipt = Receipt.from({
   transactionHash: TransactionHash.fromHex('0x1234...'),
@@ -148,7 +148,7 @@ if (creationReceipt.contractAddress) {
 ### Processing Logs
 
 ```zig
-import * as EventLog from '@tevm/primitives/EventLog'
+import * as EventLog from '@tevm/voltaire/EventLog'
 
 for (const log of receipt.logs) {
   console.log('Event from:', log.address.toHex())
@@ -169,7 +169,7 @@ console.log('Cost (wei):', totalCost)
 ### Status Checking
 
 ```zig
-import * as TransactionStatus from '@tevm/primitives/TransactionStatus'
+import * as TransactionStatus from '@tevm/voltaire/TransactionStatus'
 
 if (TransactionStatus.isSuccess(receipt.status)) {
   console.log('Transaction succeeded')
@@ -192,7 +192,7 @@ if (receipt.type === 'eip4844' && receipt.blobGasUsed) {
 **TransactionReceiptType** - Alias for `ReceiptType`.
 
 ```zig
-import type { TransactionReceiptType } from '@tevm/primitives/Receipt'
+import type { TransactionReceiptType } from '@tevm/voltaire/Receipt'
 ```
 
 ## Errors

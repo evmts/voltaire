@@ -8,7 +8,7 @@ description: "32-byte block identifier"
 BlockHash is a branded `Uint8Array` type representing a 32-byte block identifier in Ethereum. Every block has a unique hash computed from its header.
 
 ```zig
-import * as BlockHash from '@tevm/primitives/BlockHash'
+import * as BlockHash from '@tevm/voltaire/BlockHash'
 
 const hash = BlockHash.fromHex(
   '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'

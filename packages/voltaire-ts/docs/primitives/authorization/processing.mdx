@@ -37,7 +37,7 @@ Authorization.process.call(auth: Authorization.Item): Authorization.DelegationDe
 ### Usage
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const auth: Authorization.Item = {
   chainId: 1n,
@@ -103,7 +103,7 @@ Authorization.processAll.call(authList: Authorization.Item[]): Authorization.Del
 ### Usage
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const authList: Authorization.Item[] = [auth1, auth2, auth3];
 
@@ -151,7 +151,7 @@ export function processAll(authList: BrandedAuthorization[]): DelegationDesignat
 Process with error handling:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface ProcessResult {
   auth: Authorization.Item;
@@ -184,7 +184,7 @@ if (result.delegation) {
 Process all, collecting both successes and failures:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function processAllSafe(authList: Authorization.Item[]): {
   delegations: Authorization.DelegationDesignation[];
@@ -221,7 +221,7 @@ console.log(`Failures: ${result.failures.length}`);
 Validate before processing for better error messages:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function processWithValidation(auth: Authorization.Item): Authorization.DelegationDesignation {
   // Step 1: Type check
@@ -250,7 +250,7 @@ function processWithValidation(auth: Authorization.Item): Authorization.Delegati
 Remove duplicate authorizations before processing:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function deduplicateAuths(authList: Authorization.Item[]): Authorization.Item[] {
   const seen = new Set<string>();
@@ -278,7 +278,7 @@ const delegations = Authorization.processAll.call(deduplicated);
 Group delegations by authority:
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 function groupByAuthority(
   authList: Authorization.Item[]
@@ -358,7 +358,7 @@ interface EIP7702Transaction {
 Calculate gas before processing:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function processWithGasCheck(
   authList: Authorization.Item[],
@@ -387,7 +387,7 @@ async function processWithGasCheck(
 Cache processed delegations:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class DelegationCache {
   private cache = new Map<string, Authorization.DelegationDesignation>();
@@ -429,7 +429,7 @@ const delegations = cache.processAll(authList);
 Create processing pipeline:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface Pipeline {
   filter?: (auth: Authorization.Item) => boolean;
@@ -483,7 +483,7 @@ const delegations = processPipeline(authList, {
 Verify all authorities are expected:
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 function processWithAuthorityCheck(
   authList: Authorization.Item[],
@@ -556,7 +556,7 @@ const delegations = processWithAuthorityCheck(authList, allowedAuthorities);
 ### Test Processing
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 // Create signed auth
 const auth = Authorization.sign.call(unsigned, privateKey);
@@ -572,7 +572,7 @@ expect(delegation.delegatedAddress).toEqual(unsigned.address);
 ### Test Batch Processing
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const authList = [auth1, auth2, auth3];
 const delegations = Authorization.processAll.call(authList);

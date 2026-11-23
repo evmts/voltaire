@@ -1,120 +1,93 @@
 # voltaire-rs
 
-Idiomatic Rust bindings for [Voltaire](https://github.com/roninjin10/voltaire) Ethereum primitives.
+Rust bindings for [Voltaire](https://github.com/evmts/voltaire) Ethereum primitives and cryptography.
 
-## Features
+`voltaire` provides stack-allocated, zero-copy newtypes (`Address([u8; 20])`, `Hash([u8; 32])`, `U256([u8; 32])`), pure-Rust hashing and serialization (`Keccak256`, `SHA-256`, `RIPEMD-160`, `BLAKE2`, `HMAC`, `P256`, `RLP`, `ABI`, `EIP-712`, `Transaction`, `Bytecode`, `Blob`), and an optional `native` feature that links against Voltaire's Zig C FFI library (`libprimitives`) for secp256k1 recovery and hardware-accelerated primitives.
 
-- **Type-safe primitives**: `Address`, `Hash`, `U256` with proper Rust semantics
-- **Cryptography**: Keccak-256, SHA-256, RIPEMD-160, secp256k1 ECDSA
-- **Zero-copy where possible**: Newtypes with `Deref` for direct byte access
-- **`no_std` compatible**: Core functionality works without std (use `default-features = false`)
+## Architecture
+
+```mermaid
+flowchart TB
+    App["Rust Crate\n(std or no_std + alloc)"] --> Prim["voltaire::primitives\nAddress, Hash, U256, Hex, RLP, ABI,\nTransaction, AccessList, Authorization, Bytecode, Blob"]
+    App --> Crypto["voltaire::crypto\nKeccak256, SHA-256, RIPEMD-160, BLAKE2,\nHMAC, EIP-191, EIP-712, Secp256k1, P256, Bls12381"]
+    Prim -.->|"feature = native"| FFI["voltaire::ffi\n(libprimitives C ABI)"]
+    Crypto -.->|"feature = native"| FFI
+```
 
 ## Installation
+
+Add `voltaire` to `Cargo.toml` (MSRV: Rust `1.70`, edition `2021`):
 
 ```toml
 [dependencies]
 voltaire = "0.1"
 
-# For native FFI (faster, requires Voltaire library):
+# Optional: link native Zig libprimitives for secp256k1 recovery and FFI acceleration
 # voltaire = { version = "0.1", features = ["native"] }
+
+# Optional: no_std (requires alloc)
+# voltaire = { version = "0.1", default-features = false }
 ```
+
+## Feature Flags
+
+| Feature | Default | Effect |
+|---------|---------|--------|
+| `std` | Yes | Enables standard library integration (`std::error::Error`, etc.); omit for `no_std` + `alloc` |
+| `getrandom` | Yes | Enables OS randomness (`Hex::random`, `P256::generate_keypair`, `Bls12381::generate_keypair`) |
+| `native` | No | Links `libprimitives` via C FFI; required for `Secp256k1::recover_pubkey`, `Secp256k1::recover_address`, `Secp256k1::pubkey_from_private`, and `Address::create_address` |
 
 ## Quick Start
 
 ```rust
 use voltaire::prelude::*;
 
-// Parse address
-let addr: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
-println!("Checksum: {}", addr);
+fn main() -> Result<()> {
+    // Parse and checksum a 20-byte Ethereum address
+    let addr: Address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse()?;
+    assert!(!addr.is_zero());
+    assert_eq!(addr.to_checksum(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 
-// Compute hash
-let hash = keccak256(b"hello");
-println!("Keccak256: {}", hash);
+    // One-shot and streaming Keccak-256
+    let digest = keccak256(b"hello");
+    println!("Keccak-256: {}", digest);
 
-// Work with U256
-let value = U256::from(1_000_000_000_000_000_000u64); // 1 ETH in wei
-println!("Value: {}", value);
-```
+    // Big-endian 256-bit unsigned integer with checked arithmetic
+    let one_eth = U256::from(1_000_000_000_000_000_000u64);
+    let two_eth = one_eth.checked_add(one_eth).expect("no overflow");
+    println!("2 ETH in hex: {}", two_eth);
 
-## Modules
+    // Hex utilities
+    let bytes = Hex::decode("0xdeadbeef")?;
+    assert_eq!(Hex::encode(&bytes), "0xdeadbeef");
 
-### primitives
-
-Core Ethereum types:
-
-```rust
-use voltaire::primitives::{Address, Hash, U256, Hex};
-
-// Address (20 bytes)
-let addr = Address::from_hex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")?;
-assert!(!addr.is_zero());
-assert_eq!(addr.to_checksum(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
-
-// Hash (32 bytes)
-let hash = Hash::from_hex("0x...")?;
-assert!(hash.ct_eq(&other_hash)); // constant-time comparison
-
-// U256 (256-bit integer)
-let a = U256::from(100u64);
-let b = U256::from(200u64);
-let sum = a.checked_add(b).unwrap();
-
-// Hex utilities
-let bytes = Hex::decode("0xdeadbeef")?;
-let hex = Hex::encode(&bytes);
-```
-
-### crypto
-
-Cryptographic operations:
-
-```rust
-use voltaire::crypto::{keccak256, sha256, ripemd160, hash_message};
-use voltaire::crypto::{Secp256k1, Signature, RecoveryId};
-
-// Hashing
-let hash = keccak256(b"hello");
-let sha = sha256(b"hello");
-let ripe = ripemd160(b"hello");
-
-// EIP-191 personal message
-let msg_hash = hash_message(b"Hello, World!");
-
-// ECDSA (requires "native" feature)
-#[cfg(feature = "native")]
-{
-    let sig = Signature::new(r, s);
-    let recovery_id = RecoveryId::new(0)?;
-    let pubkey = Secp256k1::recover_pubkey(&msg_hash.0, &sig, recovery_id)?;
-    let addr = Secp256k1::recover_address(&msg_hash.0, &sig, recovery_id)?;
+    Ok(())
 }
 ```
 
-### Streaming Hasher
+## Crate Layout
 
-```rust
-use voltaire::crypto::Keccak256;
+Top-level re-exports: `Error`, `Result`, `Address`, `Hash`, `U256`, `Hex`, `abi`, `rlp`, `keccak256`, and `prelude`.
 
-let mut hasher = Keccak256::new();
-hasher.update(b"hello");
-hasher.update(b" world");
-let hash = hasher.finalize();
-```
+- `voltaire::primitives`: `Address`, `Hash`, `U256`, `Hex`, `AccessList`, `AccessListEntry`, `Authorization`, `SignedAuthorization`, `AuthorizationList`, `Transaction`, `TransactionType`, `LegacyTransaction`, `Eip2930Transaction`, `Eip1559Transaction`, `Eip4844Transaction`, `Eip7702Transaction`, plus submodules `abi`, `rlp`, `bytecode`, `blob`.
+- `voltaire::crypto`: `keccak256`, `Keccak256`, `sha256`, `ripemd160`, `blake2b`, `blake2s`, `Blake2b`, `Blake2s`, `hmac_sha256`, `hmac_sha512`, `HmacSha256`, `HmacSha512`, `hash_message` (EIP-191), `Secp256k1`, `Signature`, `RecoveryId`, `CompactSignature`, `RsvSignature`, `P256`, `Bls12381`, and submodules `eip712`, `bls12_381`.
+- `voltaire::error`: `#[non_exhaustive] pub enum Error` and `pub type Result<T> = core::result::Result<T, Error>`.
 
-## Feature Flags
+## Documentation
 
-| Feature | Description |
-|---------|-------------|
-| `std` (default) | Standard library support |
-| `native` | Link against native Voltaire FFI library for faster operations |
+- [Primitives](docs/primitives.md) — `Address`, `Hash`, `U256`, `Hex`, `bytecode`, `blob`
+- [ABI Encoding/Decoding](docs/abi.md) — selectors, event topics, parameter & calldata codecs
+- [RLP](docs/rlp.md) — canonical RLP encoding, decoding, and streaming
+- [Transactions](docs/transaction.md) — Legacy, EIP-2930, EIP-1559, EIP-4844, EIP-7702
+- [Access Lists](docs/access-list.md) — EIP-2930 entries and gas costs
+- [Authorizations](docs/authorization.md) — EIP-7702 code delegation tuples
+- [Cryptography](docs/crypto.md) — Keccak-256, SHA-256, RIPEMD-160, EIP-191, secp256k1, P-256, BLS12-381
+- [Signatures](docs/signatures.md) — `Signature`, `CompactSignature`, `RsvSignature`, EIP-2 normalization
+- [EIP-712](docs/eip712.md) — typed structured data hashing
+- [BLAKE2](docs/blake2.md) — BLAKE2b and BLAKE2s one-shot and streaming
+- [HMAC](docs/hmac.md) — HMAC-SHA256 and HMAC-SHA512
 
-## no_std Usage
-
-```toml
-[dependencies]
-voltaire = { version = "0.1", default-features = false }
-```
+Source repository: `https://github.com/evmts/voltaire/tree/main/packages/voltaire-rs`.
 
 ## License
 

@@ -3,8 +3,6 @@ title: "Uncle"
 description: "Uncle (Ommer) block header representation for pre-merge Ethereum"
 ---
 
-# Uncle
-
 A structured type representing an uncle (ommer) block header. Uncle blocks are valid blocks that were mined but not included in the main chain. They were relevant in Ethereum's proof-of-work era.
 
 <Note>
@@ -49,7 +47,7 @@ export type UncleType = {
 Create an uncle block from its component fields:
 
 ```typescript
-import * as Uncle from '@voltaire/primitives/Uncle';
+import { Uncle } from '@tevm/voltaire';
 
 const uncle = Uncle.from({
   parentHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -169,7 +167,7 @@ Uncle blocks helped secure proof-of-work Ethereum by:
 ## Example: Analyze Uncle Rate
 
 ```typescript
-import * as Uncle from '@voltaire/primitives/Uncle';
+import { Uncle } from '@tevm/voltaire';
 
 interface BlockWithUncles {
   number: bigint;

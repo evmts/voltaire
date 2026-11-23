@@ -1,242 +1,116 @@
 ---
 title: Contract Registry
-description: Pre-configured contract instances as a named map
+description: Define addressed contracts and reusable ABI factories once as an injectable Effect service.
 ---
 
-The Contract Registry service provides a way to define your application's contracts once and access them throughout your codebase as a typed, named map.
+`makeContractRegistry(config)` turns a declarative map of contract definitions into an Effect `Service` tag and a `Layer` requiring `ProviderService`. Entries with an `address` become ready-to-use `ContractInstance` values; entries without an `address` become `ContractFactory` values with `.at(address)`.
+
+```mermaid
+flowchart BT
+  T["HttpTransport(rpcUrl)"] --> P["Provider\n(ProviderService)"]
+  P --> R["Contracts.layer\n(Contracts.Service)"]
+  R --> App["Effect.gen -> const { USDC, ERC20 } = yield* Contracts.Service"]
+```
 
 ## Quick Start
 
 ```typescript
 import { Effect, Layer } from 'effect'
-import {
-  makeContractRegistry,
-  Provider,
-  HttpTransport
-} from 'voltaire-effect'
+import { makeContractRegistry, Provider, HttpTransport } from 'voltaire-effect'
 
 const erc20Abi = [
   {
     type: 'function',
     name: 'balanceOf',
+    stateMutability: 'view',
     inputs: [{ type: 'address', name: 'account' }],
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view'
+    outputs: [{ type: 'uint256' }]
   },
   {
     type: 'function',
     name: 'transfer',
-    inputs: [{ type: 'address', name: 'to' }, { type: 'uint256', name: 'amount' }],
-    outputs: [{ type: 'bool' }],
-    stateMutability: 'nonpayable'
+    stateMutability: 'nonpayable',
+    inputs: [
+      { type: 'address', name: 'to' },
+      { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool' }]
   }
 ] as const
 
-// Define your contracts
-const Contracts = makeContractRegistry({
-  USDC: {
-    abi: erc20Abi,
-    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-  },
-  WETH: {
-    abi: erc20Abi,
-    address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
-  }
+export const Contracts = makeContractRegistry({
+  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' }
 })
 
-// Compose layers first
-const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
+)
 const AppLayer = Contracts.layer.pipe(Layer.provide(ProviderLayer))
 
-// Use in your program
 const program = Effect.gen(function* () {
-  const contracts = yield* Contracts.Service
-
-  const usdcBalance = yield* contracts.USDC.read.balanceOf(userAddress)
-  const wethBalance = yield* contracts.WETH.read.balanceOf(userAddress)
-
+  const { USDC, WETH } = yield* Contracts.Service
+  const usdcBalance = yield* USDC.read.balanceOf(userAddress)
+  const wethBalance = yield* WETH.read.balanceOf(userAddress)
   return { usdcBalance, wethBalance }
 }).pipe(Effect.provide(AppLayer))
 ```
 
-## Two Modes: Addressed vs Factory
+## Addressed Mode, Factory Mode, and Mixed Mode
 
-Contracts can be defined with or without an address:
+| Definition | Resolved Type in `Contracts.Service` | Usage |
+| --- | --- | --- |
+| `{ abi, address }` | `ContractInstance<TAbi>` | Call `USDC.read.*` / `USDC.write.*` directly |
+| `{ abi }` (no `address`) | `ContractFactory<TAbi>` | Bind dynamically via `const token = yield* ERC20.at(addr)` |
 
-### With Address (Addressed Mode)
-
-When you provide an `address`, you get a fully instantiated `ContractInstance` ready to use:
-
-```typescript
-const Contracts = makeContractRegistry({
-  USDC: {
-    abi: erc20Abi,
-    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-  }
-})
-
-const program = Effect.gen(function* () {
-  const { USDC } = yield* Contracts.Service
-
-  // USDC is a ContractInstance - ready to use
-  const balance = yield* USDC.read.balanceOf(account)
-  const txHash = yield* USDC.write.transfer(recipient, amount)
-})
-```
-
-### Without Address (Factory Mode)
-
-When you omit the `address`, you get a `ContractFactory` with an `at()` method:
+Mix fixed protocol addresses and dynamic factories in a single registry:
 
 ```typescript
 const Contracts = makeContractRegistry({
-  ERC20: { abi: erc20Abi }  // No address
-})
-
-const program = Effect.gen(function* () {
-  const { ERC20 } = yield* Contracts.Service
-
-  // ERC20 is a ContractFactory - use .at() to create instances
-  const usdc = yield* ERC20.at('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
-  const weth = yield* ERC20.at('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
-
-  const usdcBalance = yield* usdc.read.balanceOf(account)
-  const wethBalance = yield* weth.read.balanceOf(account)
-})
-```
-
-### Mixed Mode
-
-You can mix both patterns:
-
-```typescript
-const Contracts = makeContractRegistry({
-  // Known addresses - ready to use
+  // Fixed instances
   USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
   WETH: { abi: wethAbi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-
-  // Generic ABIs - factory pattern
+  // Dynamic factories
   ERC20: { abi: erc20Abi },
   ERC721: { abi: erc721Abi }
 })
 
 const program = Effect.gen(function* () {
-  const contracts = yield* Contracts.Service
+  const { USDC, ERC721 } = yield* Contracts.Service
 
-  // Use addressed contracts directly
-  const usdcBalance = yield* contracts.USDC.read.balanceOf(account)
-
-  // Use factories for dynamic addresses
-  const nft = yield* contracts.ERC721.at(nftAddress)
+  const usdcBalance = yield* USDC.read.balanceOf(account)
+  const nft = yield* ERC721.at(nftAddress)
   const owner = yield* nft.read.ownerOf(tokenId)
+
+  return { usdcBalance, owner }
 })
 ```
 
-## Contract Instance Methods
-
-Addressed contracts (and factory-created instances) have these methods:
+## `ContractInstance<TAbi>` Interface
 
 ```typescript
 interface ContractInstance<TAbi> {
-  address: AddressType
-  abi: TAbi
-
-  // Read-only methods (view/pure functions)
-  read: {
-    [functionName]: (...args) => Effect<Result, ContractCallError, ProviderService>
+  readonly address: AddressType
+  readonly abi: TAbi
+  readonly read: {
+    [fn: string]: (...args: any[]) => Effect.Effect<any, ContractCallError, ProviderService>
   }
-
-  // State-changing methods
-  write: {
-    [functionName]: (...args, options?) => Effect<HashType, ContractWriteError, SignerService>
+  readonly write: {
+    [fn: string]: (...args: any[]) => Effect.Effect<HashType, ContractWriteError, SignerService>
   }
-
-  // Simulate writes without sending
-  simulate: {
-    [functionName]: (...args) => Effect<Result, ContractCallError, ProviderService>
+  readonly simulate: {
+    [fn: string]: (...args: any[]) => Effect.Effect<any, ContractCallError, ProviderService>
   }
-
-  // Query events
-  getEvents: (eventName, filter?) => Effect<DecodedEvent[], ContractEventError, ProviderService>
+  readonly getEvents: (
+    eventName: string,
+    filter?: EventFilter
+  ) => Effect.Effect<DecodedEvent[], ContractEventError, ProviderService>
 }
 ```
 
-## Type Safety
+## Chain-Specific Registries
 
-The registry is fully typed based on your ABIs:
-
-```typescript
-const Contracts = makeContractRegistry({
-  Token: {
-    abi: [
-      { type: 'function', name: 'balanceOf', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }
-    ] as const,
-    address: '0x...'
-  }
-})
-
-const program = Effect.gen(function* () {
-  const { Token } = yield* Contracts.Service
-
-  // TypeScript knows balanceOf exists and its types
-  const balance = yield* Token.read.balanceOf(account)  // bigint
-
-  // TypeScript error: totalSupply doesn't exist
-  // const supply = yield* Token.read.totalSupply()
-})
-```
-
-## Type Inference
-
-Types are preserved automatically — `yield* Contracts.Service` returns a fully typed map matching your registry config. No type helpers needed.
-
-## Layer Composition
-
-The registry layer requires `ProviderService`:
-
-```typescript
-import * as Layer from 'effect/Layer'
-
-// Contracts.layer depends on Provider
-const Contracts = makeContractRegistry({ ... })
-
-// Compose with Provider
-const ProviderLayer = Provider.pipe(Layer.provide(HttpTransport('https://eth.llamarpc.com')))
-const AppLayer = Contracts.layer.pipe(Layer.provide(ProviderLayer))
-
-// Use in program
-const result = await Effect.runPromise(
-  program.pipe(Effect.provide(AppLayer))
-)
-```
-
-## Best Practices
-
-### 1. Define Contracts in a Central Module
-
-```typescript
-// contracts.ts
-export const Contracts = makeContractRegistry({
-  USDC: { abi: erc20Abi, address: USDC_ADDRESS },
-  WETH: { abi: wethAbi, address: WETH_ADDRESS },
-  UniswapRouter: { abi: routerAbi, address: ROUTER_ADDRESS },
-  ERC20: { abi: erc20Abi }  // Generic factory
-})
-```
-
-### 2. Use Factories for User-Provided Addresses
-
-```typescript
-const program = Effect.gen(function* () {
-  const { ERC20 } = yield* Contracts.Service
-
-  // User provides token address at runtime
-  const token = yield* ERC20.at(userProvidedAddress)
-  const balance = yield* token.read.balanceOf(account)
-})
-```
-
-### 3. Chain-Specific Registries
+Swap deployment addresses per network by selecting the registry layer at startup:
 
 ```typescript
 const mainnetContracts = makeContractRegistry({
@@ -247,14 +121,14 @@ const arbitrumContracts = makeContractRegistry({
   USDC: { abi: erc20Abi, address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' }
 })
 
-// Use the appropriate layer based on chain
-const ContractsLayer = isMainnet ? mainnetContracts.layer : arbitrumContracts.layer
+const ContractsLayer = isMainnet
+  ? mainnetContracts.layer
+  : arbitrumContracts.layer
 ```
 
 ## See Also
 
-- [Contract Factory](/services/contract) - Low-level Contract() factory function
-- [Explorer Contracts](/services/explorer-contracts) - Create contracts from address when ABI is unknown
-- [Block Explorer API](/services/block-explorer-api) - ABI resolution from Sourcify/Etherscan/Blockscout
-- [Provider Service](/services/provider) - Required for all contract operations
-- [Signer Service](/services/signer) - Required for write operations
+- [Tutorial: Escaping try/catch Roulette](/tutorials/typed-errors-and-layers) — End-to-end registry + `TestTransport` walkthrough
+- [Contract Factory](/services/contract) — One-off `Contract(address, abi)` usage
+- [Block Explorer API](/services/block-explorer-api) — Fetch verified ABIs from Sourcify, Etherscan, or Blockscout
+- [Provider Service](/services/provider) — Underlying RPC layer

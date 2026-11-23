@@ -12,9 +12,9 @@ description: Get 4-byte function selector from function ABI item
 The function selector is the first 4 bytes of the keccak256 hash of the canonical function signature:
 
 ```typescript
-import { Keccak256 } from 'tevm'
+import { Keccak256 } from '@tevm/voltaire'
 // biome-ignore lint/suspicious/noShadowRestrictedNames: Function is the ABI namespace
-import * as Function from 'tevm/Abi/function'
+import { Function } from '@tevm/voltaire/Abi'
 
 // Get canonical signature
 const signature = Function.getSignature(transferFn)
@@ -34,7 +34,7 @@ const selector = hash.slice(0, 10)  // "0x" + 8 hex chars = 4 bytes
 ### Basic Usage
 
 ```typescript
-import { Function } from 'tevm'
+import { Function } from '@tevm/voltaire'
 
 const balanceOfFn = new Function({
   type: "function",
@@ -50,7 +50,7 @@ console.log(selector)  // "0x70a08231"
 ### Matching Selectors
 
 ```typescript
-import { Function } from 'tevm'
+import { Function } from '@tevm/voltaire'
 
 const fn1 = new Function({
   type: "function",
@@ -77,7 +77,7 @@ console.log(fn1.getSelector() === fn2.getSelector())  // true
 ### Detecting Function from Calldata
 
 ```typescript
-import { Function } from 'tevm'
+import { Function } from '@tevm/voltaire'
 
 const transferFn = new Function({
   type: "function",
@@ -110,7 +110,7 @@ if (calldataSelector === transferFn.getSelector()) {
 ### Building Function Registry
 
 ```typescript
-import { Function } from 'tevm'
+import { Function } from '@tevm/voltaire'
 
 const functions = [
   new Function({
@@ -150,7 +150,7 @@ console.log(fn?.name)  // "transfer"
 ## Error Handling
 
 ```typescript
-import { Function } from 'tevm'
+import { Function } from '@tevm/voltaire'
 
 try {
   const fn = new Function({

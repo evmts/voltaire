@@ -3,13 +3,11 @@ title: Verification
 description: ECDSA signature verification with secp256k1 public keys
 ---
 
-
 ## Examples
 
 - [Verify Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/verify-signature.ts) - Verify signature with public key
 - [Validate Signature](https://github.com/evmts/voltaire/blob/main/playground/src/examples/crypto/secp256k1/validate-signature.ts) - Signature format validation
 
-# Secp256k1 Verification
 
 Verify ECDSA signatures against public keys to authenticate messages. Signature verification is the cornerstone of Ethereum's security model - every transaction must pass verification before execution.
 
@@ -196,7 +194,7 @@ Secp256k1 public keys can be represented in multiple formats:
 - Contains both x and y coordinates
 
 **Uncompressed without prefix (64 bytes):** `x || y`
-- Tevm's internal format (no prefix)
+- Voltaire's internal format (no prefix)
 - Used by our verification API
 
 **Compressed (33 bytes):** `0x02 || x` or `0x03 || x`

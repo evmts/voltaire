@@ -18,73 +18,86 @@
     "og:image": "/logo-light.png",
     "twitter:card": "summary_large_image"
   },
+  "redirects": [
+    {
+      "source": "/services/transport",
+      "destination": "/services/provider"
+    },
+    {
+      "source": "/services/explorer-contracts",
+      "destination": "/services/block-explorer-api"
+    }
+  ],
   "navigation": {
-    "anchors": [
+    "tabs": [
       {
-        "anchor": "Documentation",
-        "icon": "book-open",
+        "tab": "Learn",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Overview & Quickstart",
             "icon": "rocket",
             "pages": [
               "index",
               "why",
               "getting-started",
-              "concepts/effect-primer",
-              "layers",
-              "cheatsheet",
-              "api-reference",
-              "recipes",
-              "testing",
-              "troubleshooting",
-              "comparisons",
-              "changelog"
+              "layers"
+            ]
+          },
+          {
+            "group": "Tutorials",
+            "icon": "graduation-cap",
+            "pages": [
+              "tutorials/index",
+              "tutorials/typed-errors-and-layers",
+              "tutorials/resilient-event-indexer"
             ]
           },
           {
             "group": "Concepts",
             "icon": "lightbulb",
             "pages": [
+              "concepts/effect-primer",
               "concepts/branded-types",
               "concepts/data-first-api",
               "concepts/error-handling",
               "concepts/dependency-injection"
             ]
-          },
-          {
-            "group": "Guides",
-            "icon": "book",
-            "pages": [
-              "guides/layers",
-              "guides/react-integration",
-              "guides/provider-fallback",
-              "guides/hd-wallet",
-              "guides/security",
-              "guides/debugging",
-              "guides/migrating-from-viem",
-              "guides/migrating-from-ethers"
-            ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Services & Streams",
+        "groups": [
           {
             "group": "Core Services",
             "icon": "server",
             "pages": [
               "services/provider",
-              "services/ens",
               "services/signer",
               "services/account",
-              "services/contract"
+              "services/contract",
+              "services/contract-registry",
+              "services/ens"
+            ]
+          },
+          {
+            "group": "Data Streams",
+            "icon": "wave-pulse",
+            "pages": [
+              "event-stream",
+              "services/block-stream",
+              "transaction",
+              "services/transaction-stream",
+              "block",
+              "blockchain",
+              "stream"
             ]
           },
           {
             "group": "Advanced Services",
             "icon": "gears",
             "pages": [
-              "services/contract-registry",
               "services/block-explorer-api",
-              "services/block-stream",
-              "services/transaction-stream",
               "services/cache",
               "services/rpc-batch",
               "services/rate-limiter",
@@ -107,50 +120,19 @@
               "services/formatter",
               "services/transaction-serializer"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Primitives & Crypto",
+        "groups": [
           {
-            "group": "Data Streams",
-            "icon": "wave-pulse",
-            "pages": [
-              "stream",
-              "event-stream",
-              "block",
-              "transaction",
-              "blockchain"
-            ]
-          },
-          {
-            "group": "JSON-RPC Reference",
-            "icon": "book",
-            "pages": [
-              "jsonrpc",
-              "jsonrpc-schemas"
-            ]
-          },
-          {
-            "group": "Examples",
-            "icon": "code",
-            "pages": [
-              "examples/index",
-              "examples/wallet-creation",
-              "examples/read-blockchain",
-              "examples/send-transactions",
-              "examples/contract-interactions",
-              "examples/event-streaming",
-              "examples/block-streaming",
-              "examples/uniswap-indexer",
-              "examples/multicall",
-              "examples/layer-presets",
-              "examples/error-handling",
-              "examples/schema-validation",
-              "examples/testing"
-            ]
-          },
-          {
-            "group": "ERC Standards",
+            "group": "Standards & JSON-RPC",
             "icon": "file-contract",
             "pages": [
-              "standards"
+              "standards",
+              "jsonrpc",
+              "jsonrpc-schemas"
             ]
           },
           {
@@ -454,27 +436,78 @@
             ]
           }
         ]
-      }
-    ],
-    "global": {
-        "anchors": [
+      },
+      {
+        "tab": "Reference & Guides",
+        "groups": [
           {
-            "anchor": "GitHub",
-            "href": "https://github.com/evmts/voltaire",
-            "icon": "github"
+            "group": "Reference",
+            "icon": "book-open",
+            "pages": [
+              "api-reference",
+              "cheatsheet",
+              "recipes",
+              "testing",
+              "troubleshooting",
+              "comparisons",
+              "changelog"
+            ]
           },
           {
-            "anchor": "Voltaire Docs",
-            "href": "https://voltaire.tevm.sh",
-            "icon": "arrow-up-right-from-square"
+            "group": "How-To Guides",
+            "icon": "book",
+            "pages": [
+              "guides/layers",
+              "guides/provider-fallback",
+              "guides/react-integration",
+              "guides/hd-wallet",
+              "guides/security",
+              "guides/debugging",
+              "guides/migrating-from-viem",
+              "guides/migrating-from-ethers"
+            ]
           },
           {
-            "anchor": "Effect Docs",
-            "href": "https://effect.website/docs/getting-started/introduction/",
-            "icon": "arrow-up-right-from-square"
+            "group": "Examples",
+            "icon": "code",
+            "pages": [
+              "examples/index",
+              "examples/wallet-creation",
+              "examples/read-blockchain",
+              "examples/send-transactions",
+              "examples/contract-interactions",
+              "examples/event-streaming",
+              "examples/block-streaming",
+              "examples/uniswap-indexer",
+              "examples/multicall",
+              "examples/layer-presets",
+              "examples/error-handling",
+              "examples/schema-validation",
+              "examples/testing"
+            ]
           }
         ]
       }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/evmts/voltaire",
+          "icon": "github"
+        },
+        {
+          "anchor": "Voltaire Docs",
+          "href": "https://voltaire.tevm.sh",
+          "icon": "arrow-up-right-from-square"
+        },
+        {
+          "anchor": "Effect Docs",
+          "href": "https://effect.website/docs/getting-started/introduction/",
+          "icon": "arrow-up-right-from-square"
+        }
+      ]
+    }
   },
   "logo": {
     "light": "/logo-light.png",

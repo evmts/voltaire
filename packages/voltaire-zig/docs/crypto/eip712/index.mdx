@@ -74,7 +74,7 @@ const isValid = EIP712.verifyTypedData(signature, typedData, address);
 
 ## API Styles
 
-Tevm provides two ways to use EIP-712:
+Voltaire provides two ways to use EIP-712:
 
 ### Standard API (Recommended)
 
@@ -338,7 +338,7 @@ const domain = {
 
 ## Implementations
 
-Tevm provides three implementation strategies for EIP-712:
+Voltaire provides three implementation strategies for EIP-712:
 
 ### Native Zig (49KB)
 High-performance implementation with minimal bundle impact:
@@ -596,7 +596,7 @@ require(nonce == nonces[signer]++, "Invalid nonce");
 
 ## Common Vulnerabilities
 
-**Signature Malleability**: EIP-712 uses low-s canonicalization. Tevm enforces this automatically.
+**Signature Malleability**: EIP-712 uses low-s canonicalization. Voltaire enforces this automatically.
 
 **Replay Attacks**: Without domain separator + nonce, signatures replayed on forks/other contracts. Always include both.
 

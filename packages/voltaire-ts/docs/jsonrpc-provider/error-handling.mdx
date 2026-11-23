@@ -1,197 +1,161 @@
 ---
 title: Error Handling
-description: JSON-RPC error codes, response structure, and retry strategies
+description: ProviderRpcError, JSON-RPC 2.0, EIP-1193, and EIP-1474 error codes and retry classification.
 ---
 
-Provider requests throw errors following the [JSON-RPC 2.0](https://www.jsonrpc.org/specification#error_object) and [EIP-1474](https://eips.ethereum.org/EIPS/eip-1474) specifications.
+Voltaire providers reject `request()` promises with errors matching the EIP-1193 / JSON-RPC 2.0 shape `{ code: number, message: string, data?: unknown }`. `@tevm/voltaire/provider` exports `ProviderRpcError`, `EIP1193ErrorCode`, `JsonRpcErrorCode`, and `ProviderRpcErrorCode`.
 
-## Error Structure
+Source: [ProviderRpcError.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/provider/events/ProviderRpcError.ts), [types.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/provider/types.ts).
 
-```typescript
-interface JsonRpcErrorType {
-  code: number;
-  message: string;
-  data?: unknown;
-}
+```mermaid
+flowchart TD
+  ERR["Caught Error from provider.request()"]
+  ERR --> C1{"code === 4001\nUserRejectedRequest?"}
+  C1 -->|Yes| STOP1["Abort cleanly\n(never retry)"]
+  C1 -->|No| C2{"code === 3 or -32000\nExecution reverted?"}
+  C2 -->|Yes| DEC["Decode error.data\n(Abi.Error / 0x08c379a0)"]
+  C2 -->|No| C3{"code === -32601 / -32602\nMethod or params invalid?"}
+  C3 -->|Yes| STOP2["Fail fast\n(bug in request)"]
+  C3 -->|No| C4{"code === -32005 / -32603\nRate limit / transient?"}
+  C4 -->|Yes| RETRY["Retry with backoff\nor failover endpoint"]
 ```
 
-## Standard JSON-RPC 2.0 Error Codes
-
-Defined by [JSON-RPC 2.0 specification](https://www.jsonrpc.org/specification#error_object):
-
-| Code | Constant | Description |
-|------|----------|-------------|
-| `-32700` | `PARSE_ERROR` | Invalid JSON received by server |
-| `-32600` | `INVALID_REQUEST` | JSON is not a valid request object |
-| `-32601` | `METHOD_NOT_FOUND` | Method does not exist or is not available |
-| `-32602` | `INVALID_PARAMS` | Invalid method parameter(s) |
-| `-32603` | `INTERNAL_ERROR` | Internal JSON-RPC error |
-
-## Ethereum-Specific Error Codes (EIP-1474)
-
-Defined by [EIP-1474](https://eips.ethereum.org/EIPS/eip-1474) in the `-32000` to `-32099` range:
-
-| Code | Constant | Description |
-|------|----------|-------------|
-| `-32000` | `INVALID_INPUT` | Missing or invalid parameters (commonly "execution reverted") |
-| `-32001` | `RESOURCE_NOT_FOUND` | Requested resource not found (block, transaction, etc.) |
-| `-32002` | `RESOURCE_UNAVAILABLE` | Requested resource not available (node syncing, data not ready) |
-| `-32003` | `TRANSACTION_REJECTED` | Transaction creation failed |
-| `-32004` | `METHOD_NOT_SUPPORTED` | Method exists but is not implemented |
-| `-32005` | `LIMIT_EXCEEDED` | Request exceeds defined limit |
-| `-32006` | `JSON_RPC_VERSION_NOT_SUPPORTED` | JSON-RPC protocol version not supported |
-
-## Using Error Codes
+## Error Class and Constants
 
 ```typescript
 import {
-  JsonRpcError,
-  INVALID_INPUT,
-  RESOURCE_NOT_FOUND,
-  TRANSACTION_REJECTED,
-} from '@tevm/voltaire/JsonRpcError';
+  EIP1193ErrorCode,
+  JsonRpcErrorCode,
+  ProviderRpcError,
+  type RpcError,
+} from '@tevm/voltaire/provider';
 
-// Create error with code and message
-const error = JsonRpcError.from(INVALID_INPUT, 'execution reverted');
-
-// Create error with additional data (e.g., revert reason)
-const revertError = JsonRpcError.from(
-  INVALID_INPUT,
-  'execution reverted',
-  '0x08c379a0...' // ABI-encoded revert reason
+const err = new ProviderRpcError(
+  EIP1193ErrorCode.UserRejectedRequest,
+  'User rejected signature',
+  { method: 'personal_sign' },
 );
 
-// Check error code
-if (response.error?.code === INVALID_INPUT) {
-  console.log('Contract execution failed');
+console.log(err.name);    // 'ProviderRpcError'
+console.log(err.code);    // 4001
+console.log(err.message); // 'User rejected signature'
+console.log(err.data);    // { method: 'personal_sign' }
+```
+
+<Note>
+`HttpProvider` throws plain `RpcError` objects (`{ code, message, data? }`) directly from JSON-RPC responses and HTTP failures rather than `instanceof ProviderRpcError`. Always check error properties with a type guard (`isRpcError`) instead of relying solely on `instanceof`.
+</Note>
+
+```typescript
+import type { RpcError } from '@tevm/voltaire/provider';
+
+export function isRpcError(error: unknown): error is RpcError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as { code: unknown }).code === 'number' &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  );
 }
 ```
 
-## Execution Reverted Errors
+## Error Code Reference
 
-The `-32000` (`INVALID_INPUT`) error code is most commonly used for contract execution failures:
+### JSON-RPC 2.0 Codes (`JsonRpcErrorCode`)
+
+| Code | Exported Constant | Meaning | Retryable |
+| --- | --- | --- | --- |
+| `-32700` | `JsonRpcErrorCode.ParseError` | Malformed JSON sent to server | No |
+| `-32600` | `JsonRpcErrorCode.InvalidRequest` | Request object fails schema | No |
+| `-32601` | `JsonRpcErrorCode.MethodNotFound` | Node does not support method | No |
+| `-32602` | `JsonRpcErrorCode.InvalidParams` | Wrong parameter types or count | No |
+| `-32603` | `JsonRpcErrorCode.InternalError` | Node internal failure, HTTP non-2xx, or timeout | Conditional |
+
+### EIP-1193 Wallet & Provider Codes (`EIP1193ErrorCode`)
+
+| Code | Exported Constant | Meaning | Retryable |
+| --- | --- | --- | --- |
+| `4001` | `EIP1193ErrorCode.UserRejectedRequest` | User declined in wallet UI | No |
+| `4100` | `EIP1193ErrorCode.Unauthorized` | Account/method not authorized | No |
+| `4200` | `EIP1193ErrorCode.UnsupportedMethod` | Provider does not implement method | No |
+| `4900` | `EIP1193ErrorCode.Disconnected` | Disconnected from all chains | Yes (after reconnect) |
+| `4901` | `EIP1193ErrorCode.ChainDisconnected` | Disconnected from requested chain | Yes (after switch) |
+
+### EIP-1474 Ethereum Execution Codes
+
+| Code | Meaning | Typical Cause |
+| --- | --- | --- |
+| `3` | Execution reverted | Contract `revert` / `require` (revert bytes in `error.data`) |
+| `-32000` | Invalid input / execution error | Execution revert, insufficient funds, nonce too low, or bad gas |
+| `-32001` | Resource not found | Missing block, header, or transaction |
+| `-32002` | Resource unavailable | Node still syncing or pruned state |
+| `-32003` | Transaction rejected | Mempool rejected transaction |
+| `-32004` | Method not supported | Recognized but disabled RPC |
+| `-32005` | Limit exceeded | Rate limit or block-range cap exceeded |
+
+## Handling Contract Reverts
+
+Contract reverts surface with `code === 3` or `code === -32000`, often carrying ABI-encoded revert bytes in `error.data` (for example `0x08c379a0...` for `Error(string)` or a 4-byte custom error selector):
 
 ```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import { INVALID_INPUT } from '@tevm/voltaire/JsonRpcError';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
 
 try {
-  const result = await provider.request(
-    Rpc.Eth.CallRequest({
-      to: contractAddress,
-      data: encodedCall
-    })
+  await provider.request(
+    Rpc.Eth.CallRequest({ to: contractAddress, data: calldata }, 'latest'),
   );
-} catch (error) {
-  if (error.code === INVALID_INPUT) {
-    // Contract reverted - data may contain revert reason
-    console.error('Execution reverted:', error.data);
-  }
-}
-
-## Error Handling Patterns
-
-### Checking for Specific Errors
-
-```typescript
-import * as Rpc from '@tevm/voltaire/jsonrpc';
-import {
-  INVALID_INPUT,
-  METHOD_NOT_FOUND,
-  RESOURCE_NOT_FOUND,
-} from '@tevm/voltaire/JsonRpcError';
-
-try {
-  const block = await provider.request(
-    Rpc.Eth.GetBlockByHashRequest(blockHash, false)
-  );
-} catch (error) {
-  switch (error.code) {
-    case INVALID_INPUT:
-      console.error('Invalid block hash format');
-      break;
-    case RESOURCE_NOT_FOUND:
-      console.error('Block not found');
-      break;
-    case METHOD_NOT_FOUND:
-      console.error('Method not supported by this provider');
-      break;
-    default:
-      console.error('Unexpected error:', error.message);
+} catch (err) {
+  if (isRpcError(err) && (err.code === 3 || err.code === -32000)) {
+    console.error('Contract reverted:', err.message, 'data:', err.data);
+  } else {
+    throw err;
   }
 }
 ```
 
-## Retry Strategies
+## Retry Classification with `retryWithBackoff`
 
-### Smart Retry with Error Code Filtering
-
-Only retry on transient errors (not permanent failures):
+Combine `isRpcError` with `retryWithBackoff` from `@tevm/voltaire/utils` so permanent errors fail immediately while rate limits (`-32005`) and transient server failures (`-32603`, `-32002`) back off exponentially:
 
 ```typescript
-import {
-  METHOD_NOT_FOUND,
-  INVALID_PARAMS,
-} from '@tevm/voltaire/JsonRpcError';
+import { EIP1193ErrorCode, JsonRpcErrorCode } from '@tevm/voltaire/provider';
+import { retryWithBackoff } from '@tevm/voltaire/utils';
 
-async function fetchWithRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3
-): Promise<T> {
-  const NON_RETRYABLE_ERRORS = new Set([
-    METHOD_NOT_FOUND,    // Method will never exist
-    INVALID_PARAMS,      // Parameters are wrong
-  ]);
+const NON_RETRYABLE = new Set<number>([
+  JsonRpcErrorCode.ParseError,
+  JsonRpcErrorCode.InvalidRequest,
+  JsonRpcErrorCode.MethodNotFound,
+  JsonRpcErrorCode.InvalidParams,
+  EIP1193ErrorCode.UserRejectedRequest,
+  EIP1193ErrorCode.Unauthorized,
+  EIP1193ErrorCode.UnsupportedMethod,
+  3, // Execution reverted
+]);
 
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      // Don't retry if error is non-retryable or last attempt
-      if (NON_RETRYABLE_ERRORS.has(error.code) || i === maxRetries - 1) {
-        throw error;
+export function requestWithRetry<T>(fn: () => Promise<T>): Promise<T> {
+  return retryWithBackoff(fn, {
+    maxRetries: 4,
+    initialDelay: 500,
+    factor: 2,
+    maxDelay: 10_000,
+    jitter: true,
+    shouldRetry: (error) => {
+      if (!isRpcError(error)) return true; // Network / fetch errors
+      if (NON_RETRYABLE.has(error.code)) return false;
+      if (error.code === -32000 && error.message.toLowerCase().includes('revert')) {
+        return false;
       }
-
-      // Exponential backoff: 1s, 2s, 4s
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
-    }
-  }
-
-  throw new Error('Max retries exceeded');
+      return true;
+    },
+  });
 }
 ```
-
-### Rate Limit Handling
-
-```typescript
-import { LIMIT_EXCEEDED } from '@tevm/voltaire/JsonRpcError';
-
-async function callWithRateLimit<T>(
-  fn: () => Promise<T>
-): Promise<T> {
-  while (true) {
-    try {
-      return await fn();
-    } catch (error) {
-      // If rate limited, wait and retry
-      if (error.code === LIMIT_EXCEEDED) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        continue;
-      }
-      throw error;
-    }
-  }
-}
-```
-
-## Complete Error Reference
-
-See `@tevm/voltaire/JsonRpcError` for:
-- All error code constants
-- `JsonRpcError.from()` constructor
-- `ERROR_MESSAGES` lookup table
 
 ## Related
 
-- [Method API](/jsonrpc-provider/method-api) - Method calls and responses
-- [Performance](/jsonrpc-provider/performance) - Optimization strategies
+- [Retry Utilities](/utils/retry) — `retryWithBackoff` options and jitter behavior
+- [Provider Fallback Guide](/guides/provider-fallback) — Failing over across multiple RPC endpoints
+- [Rate Limiting Guide](/guides/rate-limiting) — Preventing `-32005` throttling client-side
+- [JSON-RPC Error Primitive](/jsonrpc/json-rpc-error) — `JsonRpcError` reference

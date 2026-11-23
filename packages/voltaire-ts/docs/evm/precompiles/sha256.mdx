@@ -48,7 +48,7 @@ Total output length: 32 bytes (256 bits)
 
 ```typescript
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
-import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import { Hardfork } from '@tevm/voltaire/Hardfork';
 
 // Hash some data
 const input = new TextEncoder().encode("Hello, Ethereum!");
@@ -96,7 +96,7 @@ if (result.success) {
 
 ```typescript
 import * as Hex from '@tevm/voltaire/Hex';
-import { Bytes32 } from '@tevm/voltaire/primitives/Bytes32';
+import { Bytes32 } from '@tevm/voltaire';
 
 // Test 1: Empty input
 const input1 = new Uint8Array(0);

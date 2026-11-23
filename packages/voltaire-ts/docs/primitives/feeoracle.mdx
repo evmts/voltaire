@@ -8,7 +8,7 @@ description: "Gas price estimation and EIP-1559 fee data for Ethereum transactio
 FeeOracle provides real-time gas price estimation for Ethereum transactions. It fetches current network fee data, estimates EIP-1559 fees with configurable priority levels, and supports watching for fee updates.
 
 ```typescript
-import { FeeOracle } from '@voltaire/FeeOracle'
+import { FeeOracle } from '@tevm/voltaire'
 
 const oracle = FeeOracle({ provider })
 
@@ -190,7 +190,7 @@ interface FeeOracleOptions {
 ### Transaction with Dynamic Fees
 
 ```typescript
-import { FeeOracle } from '@voltaire/FeeOracle'
+import { FeeOracle } from '@tevm/voltaire'
 
 const oracle = FeeOracle({ provider })
 const fees = await oracle.estimateEip1559Fees({ priority: 'high' })
@@ -208,7 +208,7 @@ const hash = await wallet.sendTransaction(tx)
 ### Fee Display UI
 
 ```typescript
-import { FeeOracle } from '@voltaire/FeeOracle'
+import { FeeOracle } from '@tevm/voltaire'
 
 const oracle = FeeOracle({ provider })
 

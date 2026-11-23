@@ -11,8 +11,6 @@ description: Security considerations, side-channel attacks, and best practices f
 **This page is a placeholder.** All examples on this page are currently AI-generated and are not correct. This documentation will be completed in the future with accurate, tested examples.
 </Warning>
 
-# Secp256k1 Security
-
 Security considerations, attack vectors, and best practices for elliptic curve cryptography with secp256k1.
 
 ## Critical Warnings
@@ -96,8 +94,8 @@ const key = keccak256(stringToBytes(password)); // ❌ WEAK
 **Use BIP32/BIP39 for backups:**
 
 ```typescript
-import * as Bip39 from '@tevm/voltaire/crypto/Bip39';
-import * as HDWallet from '@tevm/voltaire/crypto/HDWallet';
+import * as Bip39 from '@tevm/voltaire/Bip39';
+import * as HDWallet from '@tevm/voltaire/HDWallet';
 
 // Generate mnemonic (12-24 words)
 const mnemonic = Bip39.generateMnemonic(256); // 24 words

@@ -3,9 +3,7 @@ title: Getting Started
 description: Install and make your first JSON-RPC requests with type-safe providers
 ---
 
-# Getting Started
-
-Install Tevm and start making JSON-RPC requests to Ethereum nodes.
+Install Voltaire and start making JSON-RPC requests to Ethereum nodes.
 
 <Warning>
 Zig currently does not ship an EIP-1193 Provider implementation. The JSON-RPC provider in Voltaire is TypeScript-first. In Zig, construct JSON-RPC requests with `std.json` and post them with your HTTP client of choice, using `primitives.AbiEncoding` to build calldata when needed.
@@ -15,8 +13,6 @@ The code samples on this page remain TypeScript-oriented for now; a Zig provider
 
 ## Installation
 
-# TypeScript: npm install @tevm/voltaire
-# Zig: add Voltaire to build.zig.zon and use std.http + std.json for requests
 ```
 
 ## Creating a Provider

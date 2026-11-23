@@ -1,100 +1,63 @@
 ---
 title: Bytes32
-description: Fixed 32-byte array type for hashes, storage keys, and arbitrary data
+description: Pure-Go fixed 32-byte array type with hex, JSON, and text marshaling and constant-time equality.
 ---
 
-# Bytes32
+Package `github.com/voltaire-labs/voltaire-go/primitives/bytes32` defines `Bytes32`, a pure-Go fixed 32-byte array for hashes, storage slots, and 256-bit fixed values.
 
-The `bytes32` package provides a type-safe 32-byte array implementation commonly used
-for hashes, storage keys, and other fixed-size data in Ethereum.
-
-## Type Definition
+## Type and Constants
 
 ```go
-type Bytes32 [32]byte
+const Size = 32
+
+type Bytes32 [Size]byte
+
+var Zero Bytes32
 ```
 
-## Creating Bytes32
+## API Reference
 
-### FromHex
+| Symbol | Signature | Behavior |
+|--------|-----------|----------|
+| `FromHex` | `(s string) (Bytes32, error)` | Parses 64 hex chars (optional `0x` prefix) |
+| `FromBytes` | `(data []byte) (Bytes32, error)` | Copies exactly 32 bytes; errors otherwise |
+| `MustFromHex` | `(s string) Bytes32` | Calls `FromHex`, panics on error |
+| `Hex` / `String` | `() string` | Lowercase `"0x"` + 64 hex chars |
+| `Bytes` | `() []byte` | Returns 32-byte slice |
+| `IsZero` | `() bool` | True if all 32 bytes are `0x00` |
+| `Equal` | `(other Bytes32) bool` | Constant-time equality |
+| `Compare` | `(other Bytes32) int` | Lexicographical comparison (`-1`, `0`, `1`) |
+| `MarshalText` / `UnmarshalText` | `encoding.TextMarshaler` / `TextUnmarshaler` | Lowercase `0x`-prefixed hex |
+| `MarshalJSON` / `UnmarshalJSON` | `json.Marshaler` / `json.Unmarshaler` | JSON string containing `Hex()` |
 
-Parse from a hex string:
-
-```go
-b, err := bytes32.FromHex("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")
-if err != nil {
-    // Handle error
-}
-```
-
-### FromBytes
-
-Create from a 32-byte slice:
-
-```go
-data := make([]byte, 32)
-b, err := bytes32.FromBytes(data)
-```
-
-### MustFromHex
-
-Parse with panic on error (for constants):
+## Example
 
 ```go
-var MyKey = bytes32.MustFromHex("0x0000000000000000000000000000000000000000000000000000000000000001")
-```
+package main
 
-## Methods
+import (
+    "encoding/json"
+    "fmt"
+    "log"
 
-### Hex / String
+    "github.com/voltaire-labs/voltaire-go/primitives/bytes32"
+)
 
-```go
-b.Hex()    // "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-b.String() // same as Hex()
-```
-
-### Bytes
-
-```go
-slice := b.Bytes() // []byte
-```
-
-### IsZero / Equal / Compare
-
-```go
-if b.IsZero() {
-    // All bytes are zero
-}
-
-if b.Equal(other) {
-    // Bytes are equal
-}
-
-cmp := b.Compare(other) // -1, 0, or 1
-```
-
-## Constants
-
-```go
-var Zero Bytes32 // all zeros
-```
-
-## JSON Marshaling
-
-Bytes32 marshals to lowercase hex strings with 0x prefix:
-
-```go
 type StorageSlot struct {
     Key   bytes32.Bytes32 `json:"key"`
     Value bytes32.Bytes32 `json:"value"`
 }
 
-slot := StorageSlot{Key: key, Value: value}
-data, _ := json.Marshal(slot)
-// {"key":"0x0000...0001","value":"0x0000...0000"}
+func main() {
+    key, err := bytes32.FromHex("0x0000000000000000000000000000000000000000000000000000000000000001")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    raw, err := json.Marshal(StorageSlot{Key: key, Value: bytes32.Zero})
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(string(raw))
+}
 ```
-
-## Errors
-
-- `ErrInvalidHex` - Invalid hex characters
-- `ErrInvalidLength` - Not exactly 32 bytes (64 hex chars)

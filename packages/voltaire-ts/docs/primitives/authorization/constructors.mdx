@@ -26,7 +26,7 @@ Authorization.isItem(value: unknown): value is Authorization.Item
 
 **Example:**
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const data: unknown = getAuthFromAPI();
 
@@ -75,7 +75,7 @@ Authorization.isUnsigned(value: unknown): value is Authorization.Unsigned
 
 **Example:**
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const data: unknown = getUserAuth();
 
@@ -110,7 +110,7 @@ export function isUnsigned(value: unknown): value is Unsigned {
 ### Manual Construction
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 const unsigned: Authorization.Unsigned = {
   chainId: 1n,
@@ -127,7 +127,7 @@ if (Authorization.isUnsigned(unsigned)) {
 ### From Account State
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 async function createUnsignedAuth(
   eoa: Address,
@@ -154,7 +154,7 @@ const unsigned = await createUnsignedAuth(
 ### Batch Creation
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 function createAuthBatch(
   delegations: Array<{ to: Address; nonce: bigint }>,
@@ -182,7 +182,7 @@ const allValid = batch.every(Authorization.isUnsigned);
 See [Signing](./signing) for details on signing unsigned authorizations.
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 // Create unsigned
 const unsigned: Authorization.Unsigned = {
@@ -207,7 +207,7 @@ if (Authorization.isItem(auth)) {
 ### Safe Type Narrowing
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function processAuth(data: unknown): void {
   if (!Authorization.isItem(data)) {
@@ -224,7 +224,7 @@ function processAuth(data: unknown): void {
 ### Union Type Handling
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 type AuthData = Authorization.Item | Authorization.Unsigned;
 
@@ -243,7 +243,7 @@ function formatAuth(auth: AuthData): string {
 ### Validation Pipeline
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface ValidatedAuth {
   auth: Authorization.Item;
@@ -271,7 +271,7 @@ function validateAndProcess(data: unknown): ValidatedAuth {
 ### API Response Handler
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface ApiResponse {
   authorizations: unknown[];
@@ -300,7 +300,7 @@ function parseAuthResponse(response: ApiResponse): Authorization.Item[] {
 ### Factory Pattern
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 class AuthorizationFactory {
   constructor(
@@ -349,7 +349,7 @@ const auth = factory.createSigned(contractAddress, 0n);
 ### Builder Pattern
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 class AuthorizationBuilder {
   private chainId?: bigint;
@@ -407,7 +407,7 @@ const auth = new AuthorizationBuilder()
 ### Safe Constructor
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 function safeCreateUnsigned(
   chainId: unknown,
@@ -439,7 +439,7 @@ function safeCreateUnsigned(
 ### Array Validator
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function validateAuthArray(data: unknown[]): Authorization.Item[] {
   const valid: Authorization.Item[] = [];

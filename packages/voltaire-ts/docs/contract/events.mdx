@@ -1,259 +1,161 @@
 ---
 title: Events
-description: Stream contract events with EventStream
+description: Stream historical and real-time decoded contract logs with EventStream from @tevm/voltaire/contract.
 ---
 
-# Events
+`EventStream` (exported from `@tevm/voltaire/contract`) streams decoded Ethereum event logs with adaptive block-range chunking, exponential backoff retries, deduplication, and `AbortSignal` cancellation.
 
-The `events` interface provides EventStream instances for robust event streaming with dynamic chunking, retry logic, and block context metadata.
-
-<Note>
-This uses the [Contract pattern](/contract) - a copyable implementation you add to your codebase. EventStream itself is a library primitive.
-</Note>
-
-## Basic Usage
-
-```typescript
-import { Contract } from './Contract.js';  // Your local copy
-
-const usdc = Contract({
-  address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  abi: erc20Abi,
-  provider
-});
-
-// Get EventStream for Transfer events
-const stream = usdc.events.Transfer({});
-
-// Backfill historical events
-for await (const { log, metadata } of stream.backfill({
-  fromBlock: 18000000n,
-  toBlock: 19000000n
-})) {
-  console.log(`Chain head ${metadata.chainHead}: ${log.args.value}`);
-}
-
-// Watch for new events
-for await (const { log } of stream.watch()) {
-  console.log('New transfer:', log.args);
-}
+```mermaid
+flowchart LR
+  ES["EventStream({ provider, address, event, filter })"]
+  ES --> BF["backfill({ fromBlock, toBlock })"]
+  ES --> WT["watch({ fromBlock?, pollingInterval? })"]
+  BF --> CHUNK["Adaptive Chunking\n(default 100 blocks,\n-50% on range error,\n+25% after 5 successes)"]
+  CHUNK --> LOGS["eth_getLogs + Retry"]
+  WT --> POLL["Poll eth_blockNumber\n+ eth_getLogs"]
+  LOGS --> DEC["Event.decodeLog + Dedup"]
+  POLL --> DEC
+  DEC --> YIELD["yield { log, metadata }"]
 ```
 
-## Filtering Events
+## Standalone Usage
 
-Filter by indexed parameters when creating the stream:
-
-```typescript
-// Transfers from specific address
-const stream = usdc.events.Transfer({ from: '0x742d35...' });
-
-// Transfers to specific address
-const stream = usdc.events.Transfer({ to: '0x742d35...' });
-
-// Transfers between specific addresses
-const stream = usdc.events.Transfer({
-  from: '0xsender...',
-  to: '0xreceiver...'
-});
-```
-
-## Backfill Historical Events
-
-Use `backfill()` to fetch events from a specific block range:
+Use `EventStream` directly from `@tevm/voltaire/contract` without needing the `Contract` wrapper:
 
 ```typescript
-const stream = usdc.events.Transfer({});
+import { EventStream } from '@tevm/voltaire/contract';
+import { HttpProvider } from '@tevm/voltaire/provider';
 
-for await (const { log, metadata } of stream.backfill({
-  fromBlock: 18000000n,
-  toBlock: 18001000n
-})) {
-  console.log(`Found transfer at block ${log.blockNumber}`);
-}
-// Loop ends after processing historical events
-```
+const provider = new HttpProvider('https://eth.llamarpc.com');
 
-### Dynamic Chunking
-
-EventStream automatically handles large block ranges by chunking requests:
-
-- Starts with 100 blocks per request
-- Reduces chunk size by 50% on "block range too large" errors
-- Increases chunk size by 25% after 5 consecutive successes
-- Never goes below 10 blocks minimum
-
-```typescript
-// Handle million-block range efficiently
-for await (const { log } of stream.backfill({
-  fromBlock: 0n,
-  toBlock: 19000000n,
-  chunkSize: 200,       // Initial chunk size (default: 100)
-  minChunkSize: 50      // Minimum after reduction (default: 10)
-})) {
-  processEvent(log);
-}
-```
-
-## Watch for New Events
-
-Use `watch()` to poll for new events:
-
-```typescript
-const stream = usdc.events.Transfer({});
-
-for await (const { log, metadata } of stream.watch({
-  pollingInterval: 1000  // Poll every second (default)
-})) {
-  console.log('New transfer:', log.eventName);
-}
-```
-
-### Watch from Specific Block
-
-```typescript
-for await (const { log } of stream.watch({
-  fromBlock: 19000000n  // Start watching from this block
-})) {
-  console.log(log);
-}
-```
-
-## Cancellation with AbortSignal
-
-Use AbortSignal to cleanly stop streaming:
-
-```typescript
-const controller = new AbortController();
-
-// Stop after 10 seconds
-setTimeout(() => controller.abort(), 10000);
-
-try {
-  for await (const { log } of stream.watch({
-    signal: controller.signal
-  })) {
-    console.log(log);
-  }
-} catch (error) {
-  if (error instanceof EventStreamAbortedError) {
-    console.log('Stream stopped');
-  }
-}
-```
-
-## Backfill Then Watch
-
-Combine backfill and watch for complete event history:
-
-```typescript
-const stream = usdc.events.Transfer({});
-
-// First: get historical events
-for await (const { log } of stream.backfill({
-  fromBlock: 0n,
-  toBlock: currentBlock
-})) {
-  processEvent(log);
-}
-
-// Then: watch for new events
-for await (const { log } of stream.watch({
-  fromBlock: currentBlock
-})) {
-  processEvent(log);
-}
-```
-
-## EventStreamResult Structure
-
-Each yielded result contains the log and metadata:
-
-```typescript
-type EventStreamResult = {
-  log: {
-    eventName: string;
-    args: {
-      from: AddressType;
-      to: AddressType;
-      value: bigint;
-    };
-    blockNumber: BlockNumberType;
-    blockHash: HashType;
-    transactionHash: TransactionHashType;
-    logIndex: number;
-  };
-  metadata: {
-    chainHead: bigint;      // Current chain head block number
-    fromBlock: bigint;      // Chunk start block
-    toBlock: bigint;        // Chunk end block
-  };
-};
-```
-
-## Standalone EventStream
-
-EventStream is a library primitive you can use directly:
-
-```typescript
-import { EventStream } from './EventStream.js';
+const transferEvent = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false },
+  ],
+} as const;
 
 const stream = EventStream({
   provider,
   address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  event: {
-    type: 'event',
-    name: 'Transfer',
-    inputs: [
-      { type: 'address', name: 'from', indexed: true },
-      { type: 'address', name: 'to', indexed: true },
-      { type: 'uint256', name: 'value', indexed: false }
-    ]
-  },
-  filter: { from: userAddress }
+  event: transferEvent,
+  filter: { from: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0' },
 });
-```
 
-## Retry Configuration
-
-Configure retry behavior for transient errors:
-
-```typescript
-for await (const { log } of stream.backfill({
-  fromBlock: 0n,
-  toBlock: 1000000n,
-  retry: {
-    maxRetries: 5,         // Max retry attempts (default: 3)
-    initialDelay: 1000,    // Initial delay ms (default: 1000)
-    maxDelay: 30000        // Max delay ms (default: 30000)
-  }
+for await (const { log, metadata } of stream.backfill({
+  fromBlock: 19_000_000n,
+  toBlock: 19_001_000n,
 })) {
-  processEvent(log);
+  console.log(log.blockNumber, log.args.to, log.args.value, 'head:', metadata.chainHead);
 }
 ```
 
-## Error Handling
+When using the copyable [Contract Pattern](/contract), `usdc.events.Transfer(filter)` constructs the same `EventStream` instance from the ABI.
+
+## Backfill Historical Events
+
+`backfill(options)` fetches `[fromBlock, toBlock]` inclusively in adaptive chunks:
+
+- Starts at `chunkSize` (default `100` blocks).
+- Halves the chunk size when the RPC returns a "block range too large" or response-size error, down to `minChunkSize` (default `10`).
+- Increases the chunk size by 25% after 5 consecutive successful chunks.
+- Retries transient errors with exponential backoff (`retry.maxRetries` default `3`, `initialDelay` default `1000` ms, `maxDelay` default `30000` ms).
 
 ```typescript
-import { BlockRangeTooLargeError, EventStreamAbortedError } from './EventStream.js';
+for await (const { log, metadata } of stream.backfill({
+  fromBlock: 18_000_000n,
+  toBlock: 19_000_000n,
+  chunkSize: 500,
+  minChunkSize: 25,
+  retry: {
+    maxRetries: 5,
+    initialDelay: 1000,
+    maxDelay: 30_000,
+  },
+})) {
+  console.log(`Range ${metadata.fromBlock}-${metadata.toBlock}:`, log.args);
+}
+```
+
+## Watch Live Events
+
+`watch(options?)` polls for new blocks and yields matching logs as blocks advance. Deduplication keys logs by `${blockNumber}:${logIndex}`.
+
+```typescript
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 30_000);
+
+for await (const { log, metadata } of stream.watch({
+  pollingInterval: 2000,
+  signal: controller.signal,
+})) {
+  console.log(`Block ${log.blockNumber} (head ${metadata.chainHead}):`, log.args);
+}
+```
+
+### Backfill Then Watch
+
+Chain `backfill()` into `watch()` starting at `lastBlock + 1n` for gapless indexing:
+
+```typescript
+const headHex = (await provider.request({ method: 'eth_blockNumber', params: [] })) as string;
+const head = BigInt(headHex);
+
+for await (const { log } of stream.backfill({ fromBlock: head - 1000n, toBlock: head })) {
+  processTransfer(log);
+}
+
+for await (const { log } of stream.watch({ fromBlock: head + 1n, signal: controller.signal })) {
+  processTransfer(log);
+}
+```
+
+## Yielded Result Shape
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `log.eventName` | `TEvent['name']` | ABI event name |
+| `log.args` | `ParametersToObject<TEvent['inputs']>` | Decoded indexed and non-indexed arguments |
+| `log.blockNumber` | `BlockNumberType` | Block height of the log |
+| `log.blockHash` | `HashType` | 32-byte block hash |
+| `log.transactionHash` | `TransactionHashType` | 32-byte transaction hash |
+| `log.logIndex` | `number` | Log index within the block |
+| `metadata.chainHead` | `bigint` | Latest chain head observed during the fetch |
+| `metadata.fromBlock` | `bigint` | Start block of the chunk |
+| `metadata.toBlock` | `bigint` | End block of the chunk |
+
+## Error Handling
+
+Import error classes from `@tevm/voltaire/contract`:
+
+```typescript
+import {
+  BlockRangeTooLargeError,
+  EventStream,
+  EventStreamAbortedError,
+  StreamAbortedError,
+} from '@tevm/voltaire/contract';
 
 try {
-  for await (const { log } of stream.backfill({ fromBlock: 0n, toBlock: 1000000n })) {
-    console.log(log);
+  for await (const { log } of stream.backfill({ fromBlock: 0n, toBlock: 1_000_000n, signal })) {
+    processTransfer(log);
   }
 } catch (error) {
-  if (error instanceof EventStreamAbortedError) {
-    console.log('Stream was cancelled');
+  if (error instanceof EventStreamAbortedError || error instanceof StreamAbortedError) {
+    console.log('Stream cancelled');
   } else if (error instanceof BlockRangeTooLargeError) {
-    console.log('Block range exceeded limit');
+    console.error('Node rejected even minChunkSize');
   } else {
-    console.error('Unexpected error:', error);
+    throw error;
   }
 }
 ```
 
 ## Related
 
-- [Contract Overview](/contract) - Contract module introduction
-- [Read Methods](/contract/read) - Calling view functions
-- [Write Methods](/contract/write) - Sending transactions
-- [BlockStream](/primitives/block-stream) - Stream blocks with reorg support
+- [Contract Pattern](/contract) — Integrating `EventStream` under `contract.events`
+- [Event Indexer Skill](/skills/event-indexer) — Persistent cursor and reorg handling
+- [BlockStream Indexer Example](/examples/indexing/blockstream-indexer) — Streaming full blocks with reorg detection

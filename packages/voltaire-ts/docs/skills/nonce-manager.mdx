@@ -7,8 +7,6 @@ description: "Manage transaction nonces to prevent gaps and race conditions"
 **Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
 </Info>
 
-# Nonce Manager
-
 When sending multiple Ethereum transactions, each requires a unique sequential nonce. Concurrent submissions cause collisions. Failed transactions create gaps. The NonceManager solves this.
 
 ## The Problem
@@ -30,7 +28,7 @@ const [tx1, tx2, tx3] = await Promise.all([
 ## Quick Start
 
 ```ts
-import { createNonceManager, jsonRpc } from '@voltaire/examples/nonce-manager';
+import { createNonceManager, jsonRpc } from './nonce-manager.js';
 
 // Create manager
 const manager = createNonceManager({ source: jsonRpc() });
@@ -63,7 +61,7 @@ This allows concurrent callers to get unique nonces without blocking.
 
 ### State Management
 
-```
+```text
 deltaMap     = { "0xabc.1": 2 }    // Pending tx count
 nonceMap     = { "0xabc.1": 5 }    // Last confirmed nonce
 promiseMap   = { "0xabc.1": P }    // Cached chain fetch
@@ -143,7 +141,7 @@ console.log(manager.getDelta({ address, chainId })); // 3
 ## Concurrent Transactions Pattern
 
 ```ts
-import { createNonceManager, jsonRpc } from '@voltaire/examples/nonce-manager';
+import { createNonceManager, jsonRpc } from './nonce-manager.js';
 
 const manager = createNonceManager({ source: jsonRpc() });
 
@@ -176,7 +174,7 @@ async function sendBatchedTransactions(
 Like ethers NonceManager, wrap a signer for automatic nonce management:
 
 ```ts
-import { wrapSigner } from '@voltaire/examples/nonce-manager';
+import { wrapSigner } from './nonce-manager.js';
 
 // Wrap your signer
 const managed = wrapSigner(wallet, { chainId: 1 });
@@ -253,7 +251,7 @@ await manager.consume({ address, chainId: 137, provider: polygon });
 ## Testing with In-Memory Source
 
 ```ts
-import { createNonceManager, inMemory } from '@voltaire/examples/nonce-manager';
+import { createNonceManager, inMemory } from './nonce-manager.js';
 
 const source = inMemory();
 source.setNonce('0x123...', 1, 10); // Set initial nonce

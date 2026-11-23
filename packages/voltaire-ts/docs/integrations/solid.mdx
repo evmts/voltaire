@@ -1,37 +1,59 @@
 ---
 title: Solid
-description: Using Tevm with SolidJS and SolidStart
+description: Use @tevm/voltaire with SolidJS resources, signals, context, and SolidStart server functions.
 ---
 
-Tevm integrates with SolidJS using signals and resources for reactive data fetching.
+`@tevm/voltaire/provider` and `@tevm/voltaire/jsonrpc` integrate cleanly with SolidJS `createResource`, signals, and SolidStart `'use server'` functions.
 
 ## Installation
 
 ```bash
-bun add @tevm/voltaire
+npm install @tevm/voltaire
 ```
 
-## Basic Resource Pattern
-
-Use `createResource` for async data:
+## Provider Context
 
 ```tsx
-// components/Balance.tsx
-import { createResource, Show } from 'solid-js'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+// src/context/ethereum.tsx
+import { HttpProvider } from '@tevm/voltaire/provider';
+import { createContext, useContext, type ParentComponent } from 'solid-js';
 
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+const EthereumContext = createContext<HttpProvider>();
 
-async function fetchBalance(address: string) {
-  const addr = Address.from(address)
-  const balance = await provider.eth.getBalance({ address: addr })
-  return Wei.toEther(balance)
+export const EthereumProvider: ParentComponent<{ url: string }> = (props) => {
+  const provider = new HttpProvider(props.url);
+  return <EthereumContext.Provider value={provider}>{props.children}</EthereumContext.Provider>;
+};
+
+export function useProvider(): HttpProvider {
+  const provider = useContext(EthereumContext);
+  if (!provider) throw new Error('useProvider must be used inside EthereumProvider');
+  return provider;
 }
+```
 
-function Balance(props: { address: string }) {
-  const [balance, { refetch }] = createResource(() => props.address, fetchBalance)
+## Fetching Data with `createResource`
+
+```tsx
+// src/components/Balance.tsx
+import { Address } from '@tevm/voltaire/Address';
+import { Wei } from '@tevm/voltaire/Denomination';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { createResource, Show } from 'solid-js';
+import { useProvider } from '../context/ethereum';
+
+export function Balance(props: { address: string }) {
+  const provider = useProvider();
+
+  const [balance, { refetch }] = createResource(
+    () => (Address.isValid(props.address) ? props.address : undefined),
+    async (address) => {
+      const hex = (await provider.request(
+        Rpc.Eth.GetBalanceRequest(Address.from(address), 'latest'),
+      )) as string;
+      return Wei.toEther(Wei.from(BigInt(hex)));
+    },
+  );
 
   return (
     <Show when={!balance.loading} fallback={<p>Loading...</p>}>
@@ -40,47 +62,46 @@ function Balance(props: { address: string }) {
         <button onClick={refetch}>Refresh</button>
       </Show>
     </Show>
-  )
+  );
 }
 ```
 
-## SolidStart Server Functions
-
-Fetch data server-side:
+## SolidStart Server Function
 
 ```tsx
-// routes/address/[address].tsx
-import { createAsync, type RouteDefinition } from '@solidjs/router'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+// src/routes/address/[address].tsx
+import { createAsync, type RouteDefinition } from '@solidjs/router';
+import { Address } from '@tevm/voltaire/Address';
+import { Wei } from '@tevm/voltaire/Denomination';
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { HttpProvider } from '@tevm/voltaire/provider';
+import { Show } from 'solid-js';
 
 async function getAddressData(address: string) {
-  'use server'
-  const addr = Address.from(address)
+  'use server';
+  const provider = new HttpProvider(process.env.RPC_URL ?? 'https://eth.llamarpc.com');
+  const addr = Address.from(address);
 
-  const [balance, nonce, code] = await Promise.all([
-    provider.eth.getBalance({ address: addr }),
-    provider.eth.getTransactionCount({ address: addr }),
-    provider.eth.getCode({ address: addr }),
-  ])
+  const [balanceHex, nonceHex, code] = (await Promise.all([
+    provider.request(Rpc.Eth.GetBalanceRequest(addr, 'latest')),
+    provider.request(Rpc.Eth.GetTransactionCountRequest(addr, 'latest')),
+    provider.request(Rpc.Eth.GetCodeRequest(addr, 'latest')),
+  ])) as [string, string, string];
 
   return {
     address,
-    balance: Wei.toEther(balance),
-    nonce: Number(nonce),
-    isContract: code.length > 2,
-  }
+    balance: Wei.toEther(Wei.from(BigInt(balanceHex))),
+    nonce: Number(BigInt(nonceHex)),
+    isContract: code !== '0x',
+  };
 }
 
 export const route: RouteDefinition = {
-  load: ({ params }) => getAddressData(params.address),
-}
+  preload: ({ params }) => getAddressData(params.address),
+};
 
 export default function AddressPage(props: { params: { address: string } }) {
-  const data = createAsync(() => getAddressData(props.params.address))
+  const data = createAsync(() => getAddressData(props.params.address));
 
   return (
     <Show when={data()}>
@@ -93,267 +114,35 @@ export default function AddressPage(props: { params: { address: string } }) {
         </div>
       )}
     </Show>
-  )
+  );
 }
 ```
 
-## Signals for Reactive State
-
-Create reactive Ethereum state:
+## Block Head Polling
 
 ```tsx
-import { createSignal, createEffect } from 'solid-js'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
+import { Rpc } from '@tevm/voltaire/jsonrpc';
+import { createSignal, onCleanup } from 'solid-js';
+import { useProvider } from '../context/ethereum';
 
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
+export function useLatestBlock() {
+  const provider = useProvider();
+  const [blockNumber, setBlockNumber] = createSignal<bigint | null>(null);
 
-function AddressInput() {
-  const [address, setAddress] = createSignal('')
-  const [balance, setBalance] = createSignal<string | null>(null)
-  const [loading, setLoading] = createSignal(false)
+  const poll = async () => {
+    const hex = (await provider.request(Rpc.Eth.BlockNumberRequest())) as string;
+    setBlockNumber(BigInt(hex));
+  };
 
-  createEffect(async () => {
-    const addr = address()
-    if (addr.length !== 42) return
+  void poll();
+  const timer = setInterval(() => void poll(), 12_000);
+  onCleanup(() => clearInterval(timer));
 
-    setLoading(true)
-    try {
-      const parsedAddr = Address.from(addr)
-      const result = await provider.eth.getBalance({ address: parsedAddr })
-      setBalance(Wei.toEther(result))
-    } finally {
-      setLoading(false)
-    }
-  })
-
-  return (
-    <div>
-      <input
-        value={address()}
-        onInput={(e) => setAddress(e.currentTarget.value)}
-        placeholder="Enter address"
-      />
-      <Show when={loading()}>
-        <p>Loading...</p>
-      </Show>
-      <Show when={balance()}>
-        <p>Balance: {balance()} ETH</p>
-      </Show>
-    </div>
-  )
+  return blockNumber;
 }
 ```
 
-## Polling with createEffect
+## Related
 
-Poll for block updates:
-
-```tsx
-import { createSignal, onCleanup } from 'solid-js'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function useLatestBlock() {
-  const [blockNumber, setBlockNumber] = createSignal<bigint | null>(null)
-
-  const fetchBlock = async () => {
-    setBlockNumber(await provider.eth.getBlockNumber())
-  }
-
-  fetchBlock()
-  const interval = setInterval(fetchBlock, 12000)
-  onCleanup(() => clearInterval(interval))
-
-  return blockNumber
-}
-
-function BlockDisplay() {
-  const blockNumber = useLatestBlock()
-
-  return <p>Latest Block: {blockNumber()?.toString() ?? 'Loading...'}</p>
-}
-```
-
-## Multiple Resources
-
-Fetch multiple addresses:
-
-```tsx
-import { createResource, For, Show } from 'solid-js'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-async function fetchBalances(addresses: string[]) {
-  return Promise.all(
-    addresses.map(async (addr) => {
-      const parsedAddr = Address.from(addr)
-      const balance = await provider.eth.getBalance({ address: parsedAddr })
-      return { address: addr, balance: Wei.toEther(balance) }
-    })
-  )
-}
-
-function MultiBalance(props: { addresses: string[] }) {
-  const [balances] = createResource(() => props.addresses, fetchBalances)
-
-  return (
-    <Show when={!balances.loading} fallback={<p>Loading...</p>}>
-      <For each={balances()}>
-        {(item) => (
-          <p>{item.address}: {item.balance} ETH</p>
-        )}
-      </For>
-    </Show>
-  )
-}
-```
-
-## Context for Provider
-
-Share provider across components:
-
-```tsx
-// context/ethereum.tsx
-import { createContext, useContext, type ParentComponent } from 'solid-js'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-type Provider = ReturnType<typeof createJsonRpcProvider>
-
-const EthereumContext = createContext<Provider>()
-
-export const EthereumProvider: ParentComponent<{ url: string }> = (props) => {
-  const provider = createJsonRpcProvider(props.url)
-  return (
-    <EthereumContext.Provider value={provider}>
-      {props.children}
-    </EthereumContext.Provider>
-  )
-}
-
-export function useProvider() {
-  const provider = useContext(EthereumContext)
-  if (!provider) throw new Error('useProvider must be used within EthereumProvider')
-  return provider
-}
-```
-
-```tsx
-// App.tsx
-import { EthereumProvider } from './context/ethereum'
-
-function App() {
-  return (
-    <EthereumProvider url="https://eth.llamarpc.com">
-      <YourApp />
-    </EthereumProvider>
-  )
-}
-```
-
-## Store Pattern
-
-Use Solid stores for complex state:
-
-```tsx
-import { createStore } from 'solid-js/store'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function createEthereumStore() {
-  const [state, setState] = createStore({
-    balances: {} as Record<string, string>,
-    blockNumber: null as bigint | null,
-    loading: false,
-  })
-
-  const actions = {
-    async fetchBalance(address: string) {
-      setState('loading', true)
-      try {
-        const addr = Address.from(address)
-        const balance = await provider.eth.getBalance({ address: addr })
-        setState('balances', address, Wei.toEther(balance))
-      } finally {
-        setState('loading', false)
-      }
-    },
-
-    async fetchBlockNumber() {
-      setState('blockNumber', await provider.eth.getBlockNumber())
-    },
-  }
-
-  return { state, ...actions }
-}
-
-// Usage
-const store = createEthereumStore()
-store.fetchBalance('0x...')
-```
-
-## Suspense Integration
-
-Use with Solid's Suspense:
-
-```tsx
-import { Suspense, createResource } from 'solid-js'
-import { Address } from '@tevm/voltaire/Address'
-import { Wei } from '@tevm/voltaire/Denomination'
-import { createJsonRpcProvider } from '@tevm/voltaire/jsonrpc'
-
-const provider = createJsonRpcProvider('https://eth.llamarpc.com')
-
-function Balance(props: { address: string }) {
-  const [balance] = createResource(async () => {
-    const addr = Address.from(props.address)
-    const result = await provider.eth.getBalance({ address: addr })
-    return Wei.toEther(result)
-  })
-
-  return <p>Balance: {balance()} ETH</p>
-}
-
-function App() {
-  return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <Balance address="0x..." />
-    </Suspense>
-  )
-}
-```
-
-## Error Boundaries
-
-Handle errors gracefully:
-
-```tsx
-import { ErrorBoundary, createResource, Show } from 'solid-js'
-
-function BalanceWithError(props: { address: string }) {
-  const [balance] = createResource(async () => {
-    // Fetch logic that may throw
-  })
-
-  return (
-    <ErrorBoundary fallback={(err) => <p>Error: {err.message}</p>}>
-      <Show when={balance()}>
-        <p>Balance: {balance()} ETH</p>
-      </Show>
-    </ErrorBoundary>
-  )
-}
-```
-
-## Next Steps
-
-- [JSONRPCProvider](/jsonrpc-provider) - Full provider documentation
-- [Address](/primitives/address) - Address primitive reference
+- [JSON-RPC Provider](/jsonrpc-provider) — HTTP and WebSocket providers
+- [Address](/primitives/address) — Validation and checksumming

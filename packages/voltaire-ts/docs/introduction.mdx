@@ -1,51 +1,54 @@
 ---
 title: What is Voltaire?
-description: Modern general-purpose Ethereum library for TypeScript, Zig, C, and Swift
+description: Type-safe Ethereum primitives, cryptography, and EVM execution for TypeScript, Zig, C, Rust, Go, Python, and Swift.
 ---
 
-Voltaire is a modern general-purpose Ethereum library for TypeScript, Zig, C, and Swift. Type-safe primitives, WASM-accelerated performance, and designed for AI-assisted development.
+Voltaire is a general-purpose Ethereum library for TypeScript, Zig, C, Rust, Go, Python, and Swift. It gives you type-safe primitives, WASM and native-accelerated cryptography, and an API designed to mirror the Ethereum specification.
+
+```mermaid
+flowchart LR
+  Z["Zig Core\n(Primitives, Crypto, EVM)"] --> W["WASM\n(@tevm/voltaire/wasm)"]
+  Z --> N["C-ABI / Native FFI\n(Bun, C, Rust, Go, Python, Swift)"]
+  TS["Pure TypeScript\n(@tevm/voltaire)"] --> API["Identical Branded API"]
+  W --> API
+  N --> API
+  API --> S["Copyable Skills\n(Providers, Contracts, Hooks)"]
+  API --> E["voltaire-effect\n(Effect.ts Services & Streams)"]
+```
 
 <Tip>
-**Need providers, signers, or contract interactions?** Check out [voltaire-effect](https://github.com/evmts/voltaire/tree/main/voltaire-effect) — an Effect.ts integration with typed errors, composable operations, and production-ready contract interactions built on top of Voltaire primitives.
+**Need providers, signers, or contract registries out of the box?** Use [voltaire-effect](https://github.com/evmts/voltaire/tree/main/packages/voltaire-effect) — an Effect.ts integration with typed errors, composable layers, and event streams built on Voltaire primitives.
 </Tip>
 
-## Simple, Intuitive API
+## Simple, Spec-Aligned API
 
-Voltaire's API mirrors Ethereum specifications:
+Every primitive validates at construction and carries a compile-time brand on top of a standard `Uint8Array` or `bigint`:
 
 ```typescript
-import { Address, Wei, Gwei, Ether } from '@tevm/voltaire';
+import { Address, Bytes32, Wei } from '@tevm/voltaire';
 import { Hex } from '@tevm/voltaire/Hex';
-import { Bytes32 } from '@tevm/voltaire/Bytes32';
 import { Rlp } from '@tevm/voltaire/Rlp';
 import { Abi } from '@tevm/voltaire/Abi';
 import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
-// Addresses - branded Uint8Array with type safety
+// Addresses — branded 20-byte Uint8Array
 const addr = Address('0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e');
-console.log(addr.toHex());        // "0x742d35cc..."
-console.log(addr.toChecksummed()); // "0x742d35Cc..."
+addr.toHex();                  // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+Address.toChecksummed(addr);   // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 
-// Denominations - type-safe ETH value handling
-const value = Wei(1000000000000000000n);
-console.log(Wei.toEther(value));  // "1"
-console.log(Wei.toGwei(value));   // "1000000000"
+// Denominations — Wei, Gwei, and Ether cannot be mixed at compile time
+const value = Wei(1_000_000_000_000_000_000n);
+Wei.toEther(value);   // 1n (EtherType)
+Wei.toGwei(value);    // 1_000_000_000n (GweiType)
 
-// Type safety prevents denomination confusion
-// ❌ This won't compile - Wei and Gwei are incompatible types
-// const confusion: WeiType = someGweiValue; // Type Error!
-
-// Fixed-size bytes
-const hash = Bytes32('0x' + '12'.repeat(32));
-console.log(hash.toHex());
-
-// Keccak256 hashing
-const messageHash = Keccak256('hello');
+// Fixed-size bytes and Keccak-256
+const slot = Bytes32('0x' + '12'.repeat(32));
+const digest = Keccak256.hashString('hello');
 const selector = Keccak256.selector('transfer(address,uint256)');
 // Uint8Array(4) [0xa9, 0x05, 0x9c, 0xbb]
 
 // RLP encoding
-const encoded = Rlp.encode([addr, Hex.fromNumber(42n)]);
+const encoded = Rlp.encode([addr, Hex.toBytes(Hex.fromNumber(42n))]);
 const decoded = Rlp.decode(encoded);
 
 // ABI encoding
@@ -54,32 +57,50 @@ const transferAbi = {
   name: 'transfer',
   inputs: [
     { type: 'address', name: 'to' },
-    { type: 'uint256', name: 'amount' }
+    { type: 'uint256', name: 'amount' },
   ],
   outputs: [{ type: 'bool' }],
-  stateMutability: 'nonpayable'
+  stateMutability: 'nonpayable',
 } as const;
 
 const calldata = Abi.Function.encodeParams(transferAbi, [
   '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-  1000000000000000000n
+  1_000_000_000_000_000_000n,
 ]);
 ```
 
 ## What's Included
 
-<Card title="Highly Customizable JSON-RPC Provider" icon="network-wired" href="/jsonrpc-provider" horizontal />
-<Card title="Type-Safe and Feature-Full Ethereum Primitives" icon="cube" href="/primitives/abi" horizontal />
-<Card title="High Performance Cryptography" icon="lock" href="/crypto/comparison" horizontal />
-<Card title="Advanced Bytecode and EVM Capabilities" icon="bolt" href="/evm" horizontal />
-<Card title="ENS (Ethereum Name Service)" icon="globe" href="/primitives/ens" horizontal />
-<Card title="Sign-in with Ethereum" icon="user-shield" href="/primitives/siwe" horizontal />
+<CardGroup cols={2}>
+  <Card title="Primitives" icon="cubes" href="/primitives/address">
+    Branded types for Address, Hash, Hex, ABI, RLP, Transaction, Bytecode, Blob, ENS, and SIWE.
+  </Card>
+  <Card title="Cryptography" icon="lock" href="/crypto/comparison">
+    Keccak-256, secp256k1, EIP-712, BLS12-381, BN254, KZG, P-256, Ed25519, HD wallets, and AEAD ciphers.
+  </Card>
+  <Card title="EVM & Precompiles" icon="microchip" href="/evm">
+    Frame execution, opcode handlers, bytecode analysis, and Ethereum precompiles.
+  </Card>
+  <Card title="JSON-RPC & Skills" icon="wand-magic-sparkles" href="/skills/index">
+    Typed EIP-1193 request builders plus copyable Skills for providers, contracts, wallets, and protocols.
+  </Card>
+</CardGroup>
 
-## What's Unique?
+## What's Unique
 
-- **[Branded Types](/getting-started/branded-types)** - Runtime-validated TypeScript types. Prevents passing hex strings where addresses are expected, address casing errors, and type confusion.
-- **[High-Performance](/getting-started/wasm)** - Optimized implementations balancing performance and bundle size. For example, Keccak256 is both faster and smaller than pure JavaScript alternatives.
-- **[LLM-Optimized](/getting-started/llm-optimized)** - API mirrors the Ethereum specification. Lots of time has been put into polishing the [MCP server](/model-context-protocol) and [llms.txt](/llms.txt) along with the docs themselves.
-- **[Multiplatform](/getting-started/multiplatform)** - Works everywhere: TypeScript in Node.js, browsers, serverless, and any language with C-FFI support. Consistent API across TypeScript, Zig, and C-FFI environments.
-  <Tip>Native FFI is currently supported on <strong>Bun</strong>. In <strong>Node.js</strong>, use the regular TypeScript API or WASM.</Tip>
-- **[Skills](/concepts/skills)** - Higher-level abstractions as copyable implementations, not rigid library exports. Like shadcn/ui for Ethereum—copy a provider, contract wrapper, or React integration into your codebase and customize it for your needs.
+- **[Branded types](/concepts/branded-types)** — Runtime-validated TypeScript types with zero wrapper overhead. The compiler rejects swapping an `Address` for a `Hash` or mixing `Wei` with `Gwei`.
+- **[Swappable runtimes](/concepts/runtimes-and-wasm)** — Pure TypeScript, WebAssembly, and Bun Native FFI share one API. Switch backends by changing a single import path.
+- **[AI-native docs & MCP](/concepts/ai-and-mcp)** — Every primitive mirrors the Ethereum spec, paired with a hosted [MCP server](/concepts/ai-and-mcp) and `/llms.txt`.
+- **[Multiplatform core](/concepts/multiplatform)** — One Zig implementation compiles to WASM and exports a stable C ABI consumed by TypeScript, Rust, Go, Python, and Swift.
+- **[Skills](/concepts/skills)** — Higher-level abstractions (providers, contract wrappers, React hooks) ship as copyable source you own and customize — shadcn/ui for Ethereum.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/getting-started">
+    Install `@tevm/voltaire` and run your first script in 5 minutes.
+  </Card>
+  <Card title="Hands-On Tutorials" icon="graduation-cap" href="/tutorials">
+    Build real Ethereum workflows step by step with visual diagrams.
+  </Card>
+</CardGroup>

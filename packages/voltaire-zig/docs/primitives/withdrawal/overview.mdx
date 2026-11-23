@@ -34,7 +34,7 @@ type Withdrawal = {
 Create Withdrawal from components.
 
 ```zig
-import { Withdrawal } from '@tevm/primitives';
+import { Withdrawal } from '@tevm/voltaire';
 
 const withdrawal = Withdrawal.from({
   index: 1000000n,
@@ -59,7 +59,7 @@ Withdrawal.equals(a, b); // true if all fields match
 ### Process validator exit
 
 ```zig
-import { Withdrawal, ValidatorIndex, WithdrawalIndex } from '@tevm/primitives';
+import { Withdrawal, ValidatorIndex, WithdrawalIndex } from '@tevm/voltaire';
 
 interface ValidatorExit {
   validator: ValidatorIndex;
@@ -94,7 +94,7 @@ const withdrawal = createExitWithdrawal(
 ### Track partial withdrawals
 
 ```zig
-import { Withdrawal } from '@tevm/primitives';
+import { Withdrawal } from '@tevm/voltaire';
 
 interface PartialWithdrawal {
   withdrawal: Withdrawal;
@@ -117,7 +117,7 @@ function identifyPartialWithdrawals(
 ### Convert amounts
 
 ```zig
-import { Withdrawal } from '@tevm/primitives';
+import { Withdrawal } from '@tevm/voltaire';
 
 function gweiToWei(gwei: bigint): bigint {
   return gwei * 1_000_000_000n;
@@ -141,7 +141,7 @@ const amountWei = gweiToWei(withdrawal.amount); // 32000000000000000000n
 ### Build withdrawal tree
 
 ```zig
-import { Withdrawal } from '@tevm/primitives';
+import { Withdrawal } from '@tevm/voltaire';
 
 interface WithdrawalBlock {
   blockNumber: bigint;

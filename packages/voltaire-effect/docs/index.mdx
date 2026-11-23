@@ -1,49 +1,58 @@
 ---
 title: voltaire-effect
-description: Effect.ts integration for Voltaire Ethereum primitives
+description: Effect integration for Voltaire Ethereum primitives, typed RPC services, contracts, signers, and streams.
 ---
 
-The production grade robust abstraction layer for blockchain application development for the institutional era of ethereum
+`voltaire-effect` wraps [Voltaire](https://voltaire.tevm.sh) Ethereum primitives, cryptographic operations, JSON-RPC providers, signers, contracts, and event streams in [Effect](https://effect.website). Every operation returns an `Effect<A, E, R>`: typed return values, tagged error unions, and explicit service dependencies resolved via Layers.
 
-[Effect.ts](https://effect.website) integration for [Voltaire](https://voltaire.tevm.sh) Ethereum primitives. Type-safe contract interactions with composable, error-handled operations.
+```mermaid
+flowchart LR
+  Input["Untrusted Input\n(hex, JSON, RPC)"] --> Schema["Effect Schema\n(Address.Hex, Uint.Uint256)"]
+  Schema --> Branded["Voltaire Branded Uint8Array\n(AddressType, HashType)"]
+  Branded --> Ops["Free Functions & Services\n(Provider, Signer, Contract, Streams)"]
+  Ops --> Layers["Composed Layers\n(HttpTransport, CryptoLive, TestTransport)"]
+```
+
+## Explicit Control vs Implicit Defaults
+
+Compare reading two ERC-20 balances with explicit retry, timeout, and dependency wiring:
 
 <Tabs>
   <Tab title="voltaire-effect">
 ```typescript
 import { Effect, Layer } from 'effect'
-import { makeContractRegistry, HttpProvider } from 'voltaire-effect'
+import { makeContractRegistry, Provider, HttpTransport } from 'voltaire-effect'
 
 const Contracts = makeContractRegistry({
-USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
-WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
+  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' }
 })
 
-// Compose layers first
-const AppLayer = Contracts.layer.pipe(
-Layer.provide(HttpProvider('https://eth.llamarpc.com'))
+const ProviderLayer = Provider.pipe(
+  Layer.provide(HttpTransport('https://eth.llamarpc.com'))
 )
+const AppLayer = Contracts.layer.pipe(Layer.provide(ProviderLayer))
 
 const program = Effect.gen(function* () {
-const { USDC, WETH } = yield* Contracts.Service
-const usdcBalance = yield* USDC.read.balanceOf(userAddress)
-const wethBalance = yield* WETH.read.balanceOf(userAddress)
-return { usdcBalance, wethBalance }
+  const { USDC, WETH } = yield* Contracts.Service
+  const usdcBalance = yield* USDC.read.balanceOf(userAddress)
+  const wethBalance = yield* WETH.read.balanceOf(userAddress)
+  return { usdcBalance, wethBalance }
 }).pipe(
-Effect.retry({ times: 3 }), // explicit retry policy
-Effect.timeout('10 seconds'), // explicit timeout
-Effect.provide(AppLayer) // single provide
+  Effect.retry({ times: 3 }),
+  Effect.timeout('10 seconds'),
+  Effect.provide(AppLayer)
 )
 
 const { usdcBalance, wethBalance } = await Effect.runPromise(program)
-
-````
+```
   </Tab>
   <Tab title="viem">
 ```typescript
 import { createPublicClient, http } from 'viem'
 
 const client = createPublicClient({
-  transport: http('https://eth.llamarpc.com', { retryCount: 3 }) // hidden default
+  transport: http('https://eth.llamarpc.com', { retryCount: 3 })
 })
 
 const balance = await client.readContract({
@@ -52,14 +61,15 @@ const balance = await client.readContract({
   functionName: 'balanceOf',
   args: [userAddress]
 })
-````
+```
 
-viem implicitly retries 3 times via transport config. voltaire-effect makes retry, timeout, and error handling explicit and composable.
-
+viem retries 3 times implicitly inside transport configuration and throws untyped exceptions on failure. `voltaire-effect` exposes retries, timeouts, and error tags in the program's type signature.
   </Tab>
 </Tabs>
 
-### Type Safety: Branded Primitives
+## Branded Primitives
+
+`AddressType` and `BytecodeType` are distinct branded `Uint8Array` types at compile time. Passing bytecode where an address is expected fails typechecking instead of failing on-chain.
 
 <Tabs>
   <Tab title="voltaire">
@@ -70,12 +80,9 @@ import * as Bytecode from '@tevm/voltaire/Bytecode'
 const address = Address.from('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
 const bytecode = Bytecode.from('0x608060405234801561001057600080fd5b50')
 
-await client.readContract({
-address: bytecode, // Type error: Bytecode is not assignable to Address
-...
-})
-
-````
+// Compile-time error: BytecodeType is not assignable to AddressType
+readContract({ address: bytecode, abi: erc20Abi, functionName: 'balanceOf', args: [address] })
+```
   </Tab>
   <Tab title="viem">
 ```typescript
@@ -84,23 +91,20 @@ import { type Address, type Hex } from 'viem'
 const address: Address = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 const bytecode: Hex = '0x608060405234801561001057600080fd5b50'
 
-// Compiles fine - runtime bug waiting to happen
+// Compiles without error: both Address and Hex resolve to `0x${string}`
 await client.readContract({
-  address: bytecode,  // oops, passed bytecode as address!
+  address: bytecode,
   abi: erc20Abi,
   functionName: 'balanceOf',
   args: [address]
 })
-````
-
-viem's `Address` and `Hex` are both `0x${string}` - TypeScript can't catch when you mix them up.
-
+```
   </Tab>
 </Tabs>
 
-### Performance: encodeFunctionData
+## WASM-Backed ABI Encoding & Keccak-256
 
-Both encode the same calldata, but Voltaire's WASM-optimized keccak256 (used for function selectors) is ~9x faster:
+Selector hashing uses Voltaire's Zig-compiled WASM Keccak-256 while surfacing encoding failures as typed errors:
 
 <Tabs>
   <Tab title="voltaire-effect">
@@ -109,67 +113,48 @@ import { Effect } from 'effect'
 import { encodeFunctionData } from 'voltaire-effect/primitives/Abi'
 
 const calldata = await Effect.runPromise(
-encodeFunctionData(erc20Abi, 'transfer', [recipient, amount])
+  encodeFunctionData(erc20Abi, 'transfer', [recipient, amount])
 )
 // Effect<Hex, AbiItemNotFoundError | AbiEncodingError>
-// Errors in type signature, not hidden exceptions
-
-````
+```
   </Tab>
   <Tab title="voltaire">
 ```typescript
 import * as Abi from '@tevm/voltaire/Abi'
 
 const calldata = Abi.encodeFunction(erc20Abi, 'transfer', [recipient, amount])
-````
-
+```
   </Tab>
   <Tab title="viem">
 ```typescript
 import { encodeFunctionData } from 'viem'
 
+// Throws an untyped exception if the function name or arguments are invalid
 const calldata = encodeFunctionData({
-abi: erc20Abi,
-functionName: 'transfer',
-args: [recipient, amount]
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: [recipient, amount]
 })
-// Throws on error - must wrap in try/catch
-
-````
+```
   </Tab>
 </Tabs>
 
-| Operation | viem | voltaire | Speedup |
-|-----------|------|----------|---------|
-| keccak256 (32B) | 3.22 µs | 349 ns | **9.2x** |
-| keccak256 (256B) | 6.23 µs | 571 ns | **10.9x** |
-| keccak256 (1KB) | 24.4 µs | 1.87 µs | **13x** |
+| Operation | viem (`@noble/hashes`) | Voltaire (WASM Zig) | Speedup |
+| --- | --- | --- | --- |
+| `keccak256` (32 B) | 3.22 us | 349 ns | 9.2x |
+| `keccak256` (256 B) | 6.23 us | 571 ns | 10.9x |
+| `keccak256` (1 KB) | 24.4 us | 1.87 us | 13.0x |
 
 <Note>
-Benchmarks on Apple M3 Max, bun 1.3.4. Voltaire uses WASM-compiled Zig keccak256 vs viem's pure JavaScript @noble/hashes.
+Measured on Apple M3 Max, Bun 1.3.4.
 </Note>
-
-<CardGroup cols={2}>
-  <Card title="Getting Started" icon="rocket" href="/getting-started">
-    Install and run your first program in 2 minutes
-  </Card>
-  <Card title="Effect Primer" icon="graduation-cap" href="/concepts/effect-primer">
-    5-minute Effect.ts crash course for Ethereum devs
-  </Card>
-  <Card title="Examples" icon="code" href="/examples/index">
-    Copy-paste patterns for common tasks
-  </Card>
-  <Card title="Cheatsheet" icon="bolt" href="/cheatsheet">
-    Quick reference for schemas, services, and layers
-  </Card>
-</CardGroup>
 
 ## Install
 
 <CodeGroup>
 ```bash pnpm
 pnpm add voltaire-effect @tevm/voltaire effect
-````
+```
 
 ```bash npm
 npm install voltaire-effect @tevm/voltaire effect
@@ -178,83 +163,66 @@ npm install voltaire-effect @tevm/voltaire effect
 ```bash bun
 bun add voltaire-effect @tevm/voltaire effect
 ```
-
 </CodeGroup>
 
-<Info>Requires **Effect 3.x**, **Voltaire 0.x**, and **TypeScript 5.4+**.</Info>
-
-## Key Features
+## Core Guarantees
 
 <Accordion title="Typed Errors" icon="shield-check">
-Errors appear in the type signature, not as invisible exceptions. Use `catchTag` for type-safe handling:
+Recoverable failures carry a `_tag` discriminant and appear in the `E` type parameter:
 
 ```typescript
-S.decode(Address.Hex)(input).pipe(
-  Effect.catchTag("ParseError", (e) => Effect.succeed(fallback)),
-);
-// Effect<AddressType, ParseError, never>
-```
+import { Effect } from 'effect'
+import * as S from 'effect/Schema'
+import * as Address from 'voltaire-effect/primitives/Address'
+import * as A from '@tevm/voltaire/Address'
 
+const parsed = S.decode(Address.Hex)(input).pipe(
+  Effect.catchTag('ParseError', () => Effect.succeed(A.zero()))
+)
+// Effect<AddressType, never, never>
+```
 </Accordion>
 
-<Accordion title="Testable Services" icon="flask">
-Swap production layers for test layers without changing business logic:
+<Accordion title="Swappable Layers" icon="flask">
+Business logic depends on service tags, never concrete clients. Swap live layers for test layers at the entry point:
 
 ```typescript
 // Production
-await Effect.runPromise(program.pipe(Effect.provide(MainLayer)));
+await Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
 
-// Test - same code, different wiring
-await Effect.runPromise(program.pipe(Effect.provide(TestLayer)));
+// Unit test: deterministic, zero network
+await Effect.runPromise(program.pipe(Effect.provide(TestLayer)))
 ```
-
 </Accordion>
 
-<Accordion title="Composable Operations" icon="puzzle-piece">
-Built-in retry, timeout, and fallback. No external libraries needed:
+<Accordion title="Composable Resilience" icon="puzzle-piece">
+Retries, timeouts, and fallbacks compose directly on any Effect value:
 
 ```typescript
-getBlockNumber().pipe(
-  Effect.retry(Schedule.exponential("100 millis").pipe(Schedule.recurs(5))),
-  Effect.timeout(Duration.seconds(10)),
-  Effect.orElse(() => getBlockNumber()), // with different provider layer
-);
-```
+import { Effect, Schedule, Duration } from 'effect'
+import { getBlockNumber } from 'voltaire-effect'
 
+const blockNumber = getBlockNumber().pipe(
+  Effect.retry(Schedule.exponential('100 millis').pipe(Schedule.recurs(5))),
+  Effect.timeout(Duration.seconds(10)),
+  Effect.orElse(() => getBlockNumber().pipe(Effect.provide(FallbackLayer)))
+)
+```
 </Accordion>
 
-## Ecosystem
+## Start Here
 
-<CardGroup cols={3}>
-  <Card
-    title="Voltaire"
-    icon="arrow-up-right-from-square"
-    href="https://voltaire.tevm.sh"
-  >
-    Core Ethereum primitives and crypto
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/getting-started">
+    Install packages and run your first typed RPC call.
   </Card>
-  <Card
-    title="Effect"
-    icon="arrow-up-right-from-square"
-    href="https://effect.website/docs/getting-started/introduction/"
-  >
-    Typed errors, services, and composition
+  <Card title="Tutorials" icon="graduation-cap" href="/tutorials/index">
+    Hands-on walkthroughs for typed errors, layers, and resilient event indexing.
   </Card>
-  <Card title="GitHub" icon="github" href="https://github.com/evmts/voltaire">
-    Source code and issues
+  <Card title="Effect Primer" icon="book-open" href="/concepts/effect-primer">
+    Concise introduction to `Effect<A, E, R>`, Schema, and Layers.
+  </Card>
+  <Card title="Cheatsheet" icon="bolt" href="/cheatsheet">
+    Copy-paste reference for schemas, services, layers, and tests.
   </Card>
 </CardGroup>
-
-## Next Steps
-
-<Steps>
-  <Step title="Install">
-    Add `voltaire-effect`, `@tevm/voltaire`, and `effect` to your project.
-  </Step>
-  <Step title="Learn Effect">
-    Read the [Effect Primer](/concepts/effect-primer) for a 5-minute intro.
-  </Step>
-  <Step title="Build">
-    Follow [Getting Started](/getting-started) to fetch your first block.
-  </Step>
-</Steps>

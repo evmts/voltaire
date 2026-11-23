@@ -99,12 +99,12 @@ type Encodable =
 **Throws:**
 - `Error('UnexpectedInput')` - Invalid encodable data type
 
-Source: [encode.js:38-59](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encode.js#L38-L59)
+Source: [encode.js:38-59](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/encode.js#L38-L59)
 
 ### Usage
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Encode bytes
 const bytes = new Uint8Array([1, 2, 3])
@@ -176,12 +176,12 @@ function encodeBytes(bytes: Uint8Array): Uint8Array
 **Returns:**
 - `Uint8Array` - RLP-encoded bytes
 
-Source: [encodeBytes.js:32-53](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeBytes.js#L32-L53)
+Source: [encodeBytes.js:32-53](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/encodeBytes.js#L32-L53)
 
 ### Usage
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Single byte < 0x80 (no prefix)
 const single = new Uint8Array([0x7f])
@@ -301,12 +301,12 @@ type Encodable =
 **Returns:**
 - `Uint8Array` - RLP-encoded list
 
-Source: [encodeList.js:33-63](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeList.js#L33-L63)
+Source: [encodeList.js:33-63](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Rlp/BrandedRlp/encodeList.js#L33-L63)
 
 ### Usage
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Empty list
 const empty = []
@@ -430,7 +430,7 @@ function encodeList(items) {
 Ethereum transactions use RLP encoding for signing and broadcasting:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Legacy transaction: [nonce, gasPrice, gas, to, value, data, v, r, s]
 const txData = [
@@ -454,7 +454,7 @@ const encoded = Rlp.encodeList(txData)
 Block headers are RLP-encoded lists:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Simplified block header
 const header = [
@@ -481,7 +481,7 @@ const encoded = Rlp.encodeList(header)
 RLP handles arbitrary nesting:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Deeply nested structure
 const nested = [
@@ -516,7 +516,7 @@ const encoded = Rlp.encode(matrix)
 For better performance when encoding many items, pre-calculate total size:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Calculate size without encoding
 const items = [
@@ -536,7 +536,7 @@ const encoded = Rlp.encode(items)
 Use specific encoders when type is known for better performance:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 // Generic encoder with type dispatch
 const bytesEncoded = Rlp.encodeBytes(new Uint8Array([1, 2, 3]))
@@ -548,7 +548,7 @@ const listEncoded = Rlp.encodeList([bytes1, bytes2])
 Cache encoded results when encoding the same data multiple times:
 
 ```typescript
-import { Rlp } from 'tevm'
+import { Rlp } from '@tevm/voltaire'
 
 const data = new Uint8Array([1, 2, 3])
 const encoded = Rlp.encode(data)

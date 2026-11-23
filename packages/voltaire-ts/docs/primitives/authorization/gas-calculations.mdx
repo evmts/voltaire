@@ -50,7 +50,7 @@ Authorization.calculateGasCost.call(
 ### Usage
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const authList: Authorization.Item[] = [auth1, auth2, auth3];
 const emptyAccountCount = 2;
@@ -110,7 +110,7 @@ Authorization.getGasCost.call(
 ### Usage
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 const auth: Authorization.Item = {...};
 
@@ -138,7 +138,7 @@ An account is considered empty if:
 ### Checking if Account is Empty
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function isAccountEmpty(address: Address): Promise<boolean> {
   const balance = await getBalance(address);
@@ -156,7 +156,7 @@ const gas = Authorization.getGasCost.call(auth, isEmpty);
 ### Counting Empty Accounts
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function countEmptyAccounts(
   authList: Authorization.Item[]
@@ -183,7 +183,7 @@ const gas = Authorization.calculateGasCost.call(authList, emptyCount);
 Estimate gas before sending transaction:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function estimateAuthGas(
   authList: Authorization.Item[]
@@ -210,7 +210,7 @@ console.log(`Estimated gas: ${gasEstimate}`);
 Check if within gas limit:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function validateGasLimit(
   authList: Authorization.Item[],
@@ -234,7 +234,7 @@ await validateGasLimit(authList, 100000n);
 Calculate cost for each authorization:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface AuthGasCost {
   auth: Authorization.Item;
@@ -290,7 +290,7 @@ const cheaperAuth = {
 Larger batches have better gas efficiency per authorization:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 function calculateEfficiency(
   authCount: number,
@@ -317,7 +317,7 @@ calculateEfficiency(10, 5);  // 25,000 gas/auth (better due to batching)
 Remove duplicate delegations to save gas:
 
 ```typescript
-import { Authorization, Address } from 'tevm';
+import { Authorization, Address } from '@tevm/voltaire';
 
 function deduplicateByAddress(
   authList: Authorization.Item[]
@@ -372,7 +372,7 @@ console.log(`Saved ${savedGas} gas by removing ${savedAuths} duplicates`);
 Adjust authorization list based on gas price:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 async function optimizeAuthList(
   authList: Authorization.Item[],
@@ -406,7 +406,7 @@ const optimized = await optimizeAuthList(authList, 100000n);
 Allocate gas budget across authorization types:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 interface GasBudget {
   empty: bigint;
@@ -441,7 +441,7 @@ console.log(`Can include up to ${max.maxNonEmpty} non-empty or ${max.maxEmpty} e
 Track gas usage during processing:
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 class GasMonitor {
   private totalGas = 0n;
@@ -490,7 +490,7 @@ console.log(monitor.getStats());
 ### Test Gas Calculations
 
 ```typescript
-import { Authorization } from 'tevm';
+import { Authorization } from '@tevm/voltaire';
 
 // Empty list
 expect(Authorization.calculateGasCost.call([], 0)).toBe(0n);

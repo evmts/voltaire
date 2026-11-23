@@ -1,135 +1,67 @@
 ---
-title: "Ens"
-description: "Ethereum Name Service (ENS) normalization, encoding, and validation"
+title: ENS
+description: ENSIP-15 Unicode normalization, beautification, labelhash, and recursive EIP-137 namehash for Ethereum Name Service domains.
 ---
 
-<Card title="Try it Live" icon="play" href="https://playground.tevm.sh?example=primitives/ens.ts">
-  Run ENS examples in the interactive playground
-</Card>
+`Ens` implements Ethereum Name Service (ENS) name handling: ENSIP-15 normalization and homograph protection (backed by `@adraffy/ens-normalize`), display beautification, `labelhash`, and recursive EIP-137 `namehash`.
 
-# ENS (Ethereum Name Service)
+```mermaid
+flowchart LR
+  Raw["Raw Name (e.g. Vitalik.ETH)"] -->|"Ens.normalize() [ENSIP-15]"| Norm["Normalized EnsType (vitalik.eth)"]
+  Norm -->|"split labels right-to-left"| Labels["['eth', 'vitalik']"]
+  Labels -->|"node = keccak256(node || keccak256(label))"| Node["32-byte Namehash"]
+```
 
-ENSIP-15 compliant ENS name normalization with WASM acceleration. Prevents homograph attacks, validates names, and ensures consistent canonical representation.
+## EIP-137 Namehash Algorithm
 
-<Tip>
-New to ENS? Start with [Fundamentals](/primitives/ens/fundamentals) to learn name structure, normalization, and resolution.
-</Tip>
+Starting from the 32-byte zero hash `node = 0x00...00`:
+- For an empty name `""`, return `0x00...00`.
+- Normalize the name per ENSIP-15, split on `.`, and fold from right to left:
 
-## Overview
-
-Tevm provides complete ENS support:
-
-- **Normalization** - ENSIP-15 compliant name normalization and beautification
-- **Validation** - Character set, script mixing, and confusable detection
-- **Security** - Homograph attack prevention and security best practices
-- **Performance** - 5-6x faster normalization via WebAssembly
-- **Standards** - Full ENSIP-1, 10, and 15 compliance
+$$\text{namehash}(l_1 . l_2 \dots l_k) = \text{keccak256}\bigl(\text{namehash}(l_2 \dots l_k) \mathbin{\|} \text{keccak256}(\text{utf8}(l_1))\bigr)$$
 
 ## Quick Start
 
-<Tabs>
-
-<Tab title="Functional API">
 ```typescript
-import {
-  normalize,
-  beautify,
-  is,
-  from,
-  toString
-} from 'tevm/Ens';
+import { Ens, Hex } from '@tevm/voltaire';
 
-// Normalize ENS name
-const normalized = normalize("Nick.ETH");
-// Returns: "nick.eth"
+const normalized = Ens.normalize('Vitalik.ETH'); // "vitalik.eth"
+const pretty = Ens.beautify('vitalik.eth');      // Display form preserving emoji presentation
 
-// Beautify (preserve emoji)
-const beautified = beautify("💩.eth");
+const ethLabel = Ens.labelhash('eth');
+// 0x4f5b812789fc606be1b3b16908db13fc7a9adf7ca72641f84d75b47069d3d7f0
 
-// Type guard
-if (is(value)) {
-  // value is BrandedEns
-}
+const node = Ens.namehash('vitalik.eth');
+Hex.fromBytes(node);
+// "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
 
-// Convert to/from string
-const branded = from("vitalik.eth");
-const plain = toString(branded);
-```
-</Tab>
-</Tabs>
-
-### Effect Schema
-
-```ts
-import { EnsSchema } from '@tevm/voltaire/Ens/effect'
-
-const ens = EnsSchema.from('vitalik.eth')
-ens.namehash() // Uint8Array(32)
-ens.normalize().toString() // 'vitalik.eth'
+Ens.isValid('alice.eth'); // true
 ```
 
-## Core Functions
+Import from `@tevm/voltaire` or `@tevm/voltaire/Ens`.
 
-### normalize(name)
-```typescript
-normalize(name: string): string
-```
+## API Reference
 
-Normalize ENS name to canonical form (lowercase, ENSIP-15 compliant).
+| Function | Signature | Description |
+| --- | --- | --- |
+| `Ens.from` | `(name: string) => EnsType` | Brand an ENS name string |
+| `Ens.normalize` | `(name: string \| EnsType) => EnsType` | ENSIP-15 Unicode normalization; throws on disallowed or confusable characters |
+| `Ens.beautify` | `(name: string \| EnsType) => EnsType` | Produce canonical display form (e.g., emoji variation selectors) |
+| `Ens.namehash` | `(name: string \| EnsType) => Uint8Array` | Compute 32-byte EIP-137 recursive namehash |
+| `Ens.labelhash` | `(label: string \| EnsType) => Uint8Array` | Compute 32-byte `keccak256(utf8(label))` for a single label |
+| `Ens.validate` | `(name: string) => void` | Throw if `name` fails ENSIP-15 normalization |
+| `Ens.isValid` | `(name: string) => boolean` | Return `true` if `name` is valid per ENSIP-15 |
+| `Ens.is` | `(value: unknown) => value is EnsType` | Runtime type guard |
+| `Ens.toString` | `(name: EnsType) => string` | Convert branded `EnsType` to plain string |
 
-### beautify(name)
-```typescript
-beautify(name: string): string
-```
+Tree-shakeable factories: `Namehash({ keccak256 })` and `Labelhash({ keccak256 })`.
 
-Beautify ENS name (preserve emoji and mixed case where appropriate).
+## Security Notes
 
-### from(name)
-```typescript
-from(name: string): BrandedEns
-```
+Always pass untrusted user input through `Ens.normalize` before computing `namehash` or displaying domains. Zero-width characters, mixed scripts, and disallowed Unicode code points throw during normalization rather than silently hashing to a different lookalike node.
 
-Create branded ENS from string (auto-normalizes).
+## Related
 
-### toString(ens)
-```typescript
-toString(ens: BrandedEns): string
-```
-
-Convert branded ENS to string.
-
-### is(value)
-```typescript
-is(value: unknown): value is BrandedEns
-```
-
-Type guard for branded ENS.
-
-## Types
-
-```typescript
-import type { brand } from 'tevm/brand';
-
-type BrandedEns = string & { readonly [brand]: "Ens" }
-```
-
-## Security
-
-<Warning>
-Always normalize ENS names before use to prevent homograph attacks. Names like "аpple.eth" (with Cyrillic 'а') can appear identical to "apple.eth" but resolve to different addresses.
-</Warning>
-
-## Related Projects
-
-Voltaire's ENS implementation uses [z-ens-normalize](https://github.com/evmts/z-ens-normalize), a Zig implementation of ENSIP-15 maintained by the evmts organization. It passes 100% of ENSIP-15 validation tests and Unicode normalization tests.
-
-For full ENS resolution (name → address), see [@ensdomains/ensjs](https://github.com/ensdomains/ensjs) or use Voltaire's primitives with your provider.
-
-## See Also
-
-- [Ens (Effect)](https://voltaire-effect.tevm.sh/primitives/ens) - Effect.ts integration with Schema validation
-- [Normalization](/primitives/ens/normalization) - ENSIP-15 details
-- [Validation](/primitives/ens/validation) - Name validation rules
-- [Security](/primitives/ens/security) - Homograph attack prevention
-- [ENSIP Standards](/primitives/ens/ensip-standards) - ENS improvement proposals
-- [z-ens-normalize](https://github.com/evmts/z-ens-normalize) - Zig ENSIP-15 implementation
+- [Hash](/primitives/hash) — 32-byte Keccak-256 digests
+- [Address](/primitives/address) — Resolved 20-byte account addresses
+- [SIWE](/primitives/siwe) — Authentication messages binding Ethereum accounts

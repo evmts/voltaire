@@ -11,8 +11,6 @@ description: G2 group operations on BLS12-381 over Fp2 extension field - public 
 **Future Plans:** This page is planned and under active development. Examples are placeholders and will be replaced with accurate, tested content.
 </Warning>
 
-# G2 Operations
-
 G2 is the extension field elliptic curve group used for BLS public keys. Points are 96 bytes compressed or 192 bytes uncompressed.
 
 ## G2 Curve Equation
@@ -49,7 +47,7 @@ Each coordinate is Fp2 element: a + bi where a, b ∈ Fp
 ### Point Addition
 
 ```typescript
-import { bls12_381 } from '@tevm/voltaire/crypto';
+import { bls12_381 } from '@tevm/voltaire';
 
 const p1 = new Uint8Array(256);
 const p2 = new Uint8Array(256);

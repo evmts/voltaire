@@ -7,15 +7,13 @@ description: Subscribe to and query contract events
 **Skill** — Copyable reference implementation. Use as-is or customize. See [Skills Philosophy](/concepts/skills).
 </Info>
 
-# Event Listening
-
 This guide covers subscribing to live contract events and querying historical event logs using Voltaire's Contract and EventStream APIs.
 
 ## Prerequisites
 
 ```typescript
-import { Contract, EventStream } from '@voltaire/contract';
-import type { TypedProvider } from '@voltaire/provider';
+import { Contract, EventStream } from '@tevm/voltaire/contract';
+import type { TypedProvider } from '@tevm/voltaire/provider';
 import * as S from 'effect/Schema';
 import * as AbiSchema from 'voltaire-effect/primitives/Abi';
 
@@ -83,7 +81,7 @@ for await (const { log } of stream.watch({
 ### Stop Watching with AbortSignal
 
 ```typescript
-import { EventStreamAbortedError } from '@voltaire/contract';
+import { EventStreamAbortedError } from '@tevm/voltaire/contract';
 
 const controller = new AbortController();
 
@@ -229,7 +227,7 @@ for await (const { log, metadata } of stream.backfill({
 Create an EventStream without a Contract for more control:
 
 ```typescript
-import { EventStream } from '@voltaire/contract';
+import { EventStream } from '@tevm/voltaire/contract';
 
 const transferEvent = {
   type: 'event' as const,
@@ -280,7 +278,7 @@ for await (const { log } of stream.backfill({
 import {
   BlockRangeTooLargeError,
   EventStreamAbortedError
-} from '@voltaire/contract';
+} from '@tevm/voltaire/contract';
 
 try {
   for await (const { log } of stream.backfill({
@@ -305,8 +303,8 @@ try {
 For maximum control, use the provider's `eth_getLogs` method directly:
 
 ```typescript
-import * as Hex from '@voltaire/primitives/Hex';
-import { Keccak256 } from '@voltaire/crypto/Keccak256';
+import * as Hex from '@tevm/voltaire/Hex';
+import { Keccak256 } from '@tevm/voltaire/Keccak256';
 
 // Compute event signature hash
 const transferSig = 'Transfer(address,address,uint256)';
