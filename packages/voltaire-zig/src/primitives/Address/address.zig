@@ -111,6 +111,16 @@ pub fn toChecksummed(address: Address) [42]u8 {
     return addressToChecksumHex(address);
 }
 
+/// Use EIP-1191 for RSK Mainnet (30) and Testnet (31), and EIP-55 for other chains.
+pub fn toChecksummedWithChainId(address: Address, chain_id: u64) [42]u8 {
+    const prefix: []const u8 = switch (chain_id) {
+        30 => "30" ++ "0x",
+        31 => "31" ++ "0x",
+        else => "",
+    };
+    return checksumHex(address, prefix);
+}
+
 pub fn toLowercase(address: Address) [42]u8 {
     return addressToHex(address);
 }
@@ -291,42 +301,22 @@ pub fn addressToHex(address: Address) [42]u8 {
 }
 
 pub fn addressToChecksumHex(address: Address) [42]u8 {
-    var result: [42]u8 = undefined;
-    result[0] = '0';
-    result[1] = 'x';
+    return checksumHex(address, "");
+}
 
-    // 1) Lowercase hex string of address (no prefix)
-    var lower_hex: [40]u8 = undefined;
-    const lower_alphabet = "0123456789abcdef";
-    for (address.bytes, 0..) |b, i| {
-        lower_hex[i * 2] = lower_alphabet[b >> 4];
-        lower_hex[i * 2 + 1] = lower_alphabet[b & 0x0F];
+fn checksumHex(address: Address, prefix: []const u8) [42]u8 {
+    var result = addressToHex(address);
+    var keccak = Keccak256.init(.{});
+    keccak.update(prefix);
+    keccak.update(result[2..]);
+    var hash: [32]u8 = undefined;
+    keccak.final(&hash);
+
+    for (result[2..], 0..) |*digit, i| {
+        const byte = hash[i / 2];
+        const nibble = if (i % 2 == 0) byte >> 4 else byte & 0x0f;
+        if (nibble >= 8) digit.* = std.ascii.toUpper(digit.*);
     }
-
-    // 2) keccak256 of the lowercase hex string, then hex-encode the hash
-    var hash_bytes: [32]u8 = undefined;
-    Keccak256.hash(&lower_hex, &hash_bytes, .{});
-    const hash_hex = std.fmt.bytesToHex(&hash_bytes, .lower);
-
-    // 3) For each nibble, if hash nibble >= 8 and char is alpha, uppercase
-    var out_no_prefix: [40]u8 = lower_hex; // start as lowercase
-    for (lower_hex, 0..) |ch, idx| {
-        if (ch >= 'a' and ch <= 'f') {
-            const hv = hash_hex[idx];
-            // hv is an ASCII hex char; convert to its numeric value
-            const hv_nibble: u8 = switch (hv) {
-                '0'...'9' => hv - '0',
-                'a'...'f' => hv - 'a' + 10,
-                'A'...'F' => hv - 'A' + 10,
-                else => 0,
-            };
-            if (hv_nibble >= 8) {
-                out_no_prefix[idx] = ch - 32; // to uppercase
-            }
-        }
-    }
-
-    @memcpy(result[2..], &out_no_prefix);
     return result;
 }
 
@@ -1229,6 +1219,17 @@ test "Address - toChecksummed function" {
 
     const zero_checksum = toChecksummed(zero());
     try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_checksum);
+}
+
+test "Address - EIP-1191 chain checksums" {
+    // The same address on Ethereum, RSK Mainnet, and RSK Testnet.
+    const eth = "0x27b1fdb04752bbc536007a920d24acb045561c26";
+    const addr = try fromHex(eth);
+    try std.testing.expectEqualStrings("0x27b1FdB04752BBc536007A920D24ACB045561c26", &addr.toChecksummedWithChainId(30));
+    try std.testing.expectEqualStrings("0x27B1FdB04752BbC536007a920D24acB045561C26", &addr.toChecksummedWithChainId(31));
+    try std.testing.expectEqualStrings(eth, &addr.toChecksummedWithChainId(1));
+    try std.testing.expectEqualStrings(eth, &addr.toChecksummedWithChainId(1337));
+    try std.testing.expectEqualStrings(eth, &addr.toChecksummed());
 }
 
 test "Address - sortAddresses" {
