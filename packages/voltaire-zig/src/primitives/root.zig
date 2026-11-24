@@ -48,6 +48,7 @@
 //! ### State & Storage
 //! - **State**: Account state and storage key definitions
 //! - **GasConstants**: EVM gas cost constants
+//! - **FeeOracle**: execution and blob fee estimates from recent blocks
 //! - **FeeMarket**: EIP-1559 fee market calculations
 //!
 //! ## Usage Examples
@@ -194,6 +195,7 @@ pub const MaxPriorityFeePerGas = @import("MaxPriorityFeePerGas/MaxPriorityFeePer
 pub const EffectiveGasPrice = @import("EffectiveGasPrice/EffectiveGasPrice.zig").EffectiveGasPrice;
 pub const ExecutionPayloadHeader = @import("ExecutionPayloadHeader/ExecutionPayloadHeader.zig");
 pub const GasPrice = @import("GasPrice/GasPrice.zig").GasPrice;
+pub const FeeOracle = @import("FeeOracle/fee_oracle.zig");
 pub const FeeMarket = @import("FeeMarket/fee_market.zig");
 
 // Denominations
@@ -365,6 +367,7 @@ test {
     _ = @import("Opcode/opcode_synthetic.zig");
     _ = @import("Hardfork/hardfork.zig");
     _ = @import("Hardfork/Eips.zig");
+    _ = FeeOracle;
     _ = @import("FeeMarket/fee_market.zig");
     _ = @import("BlockHeader/BlockHeader.zig");
     _ = @import("Blob/blob.zig");
