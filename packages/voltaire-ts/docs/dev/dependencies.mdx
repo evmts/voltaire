@@ -137,18 +137,19 @@ Runtime support: Native FFI is currently <strong>Bun-only</strong>. In <strong>N
 | Package | Purpose |
 |---------|---------|
 | `@adraffy/ens-normalize` | ENS name normalization (JS fallback) |
+| `@noble/ciphers` | ChaCha20-Poly1305 and keystore ciphers |
+| `@noble/curves` | Elliptic curves (secp256k1, P-256, Ed25519, X25519, BLS12-381, BN254) |
+| `@noble/hashes` | SHA-256, RIPEMD-160, HMAC, BLAKE2, keystore KDFs |
 | `@scure/bip32` | HD wallet derivation (TypeScript) |
 | `@scure/bip39` | Mnemonic generation (TypeScript) |
-| `@shazow/whatsabi` | ABI detection from bytecode |
-| `c-kzg` | KZG bindings (Node.js) |
+| `@tevm/chains` | Chain metadata |
+| `ox` | Base64, RLP, SIWE, event log, and EIP-712 helpers |
 
 ### Development Dependencies
 
 | Package | Purpose |
 |---------|---------|
 | `@biomejs/biome` | Code formatting and linting |
-| `@noble/curves` | Reference crypto (testing) |
-| `@noble/hashes` | Reference hashes (testing) |
 | `@noble/secp256k1` | Reference secp256k1 (testing) |
 | `@types/bun` | Bun type definitions |
 | `@types/node` | Node.js type definitions |
@@ -181,7 +182,7 @@ Runtime support: Native FFI is currently <strong>Bun-only</strong>. In <strong>N
 ```text
 ┌─────────────────────────────────────────────────────┐
 │                   TypeScript                         │
-│  @noble/*, @scure/*, whatsabi, abitype, effect      │
+│  @noble/*, @scure/*, ox, @tevm/chains, abitype      │
 └─────────────────────┬───────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────┐

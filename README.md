@@ -144,7 +144,7 @@ Machine-readable indexes: [`voltaire.tevm.sh/llms.txt`](https://voltaire.tevm.sh
 
 ## Dependencies
 
-- **TypeScript:** `@noble/ciphers`, `@scure/bip32`, `@scure/bip39`, `@adraffy/ens-normalize`, `@shazow/whatsabi`, `@tevm/chains`, `abitype` (peer), `effect` (optional)
+- **TypeScript:** `@noble/curves`, `@noble/hashes`, `@noble/ciphers`, `@scure/bip32`, `@scure/bip39`, `@adraffy/ens-normalize`, `ox`, `@tevm/chains`, `abitype` (optional peer)
 - **Native / WASM:** `blst`, `c-kzg-4844`, `ark-bn254`, `ark-bls12-381`
 
 ## Links

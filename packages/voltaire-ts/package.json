@@ -659,6 +659,7 @@
 	"devDependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.1.76",
 		"@biomejs/biome": "^2.6.8",
+		"@noble/secp256k1": "^3.2.0",
 		"@playwright/test": "^1.57.0",
 		"@size-limit/file": "^12.0.0",
 		"@size-limit/preset-small-lib": "^12.0.0",
@@ -709,10 +710,8 @@
 		"@noble/ciphers": "^2.4.0",
 		"@noble/curves": "^2.4.0",
 		"@noble/hashes": "^2.4.0",
-		"@noble/secp256k1": "^3.2.0",
 		"@scure/bip32": "^2.4.0",
 		"@scure/bip39": "^2.4.0",
-		"@shazow/whatsabi": "^0.30.0",
 		"@tevm/chains": "^0.0.1",
 		"ox": "^0.11.1"
 	}
