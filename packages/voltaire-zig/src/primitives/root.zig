@@ -156,6 +156,7 @@ pub const Hex = @import("Hex/Hex.zig");
 pub const Rlp = @import("Rlp/Rlp.zig");
 pub const Abi = @import("Abi/Abi.zig");
 pub const AbiEncoding = @import("Abi/abi_encoding.zig");
+pub const Contract = @import("Contract/Contract.zig");
 pub const Base64 = @import("base64.zig");
 pub const Ssz = @import("Ssz/root.zig");
 
@@ -373,4 +374,70 @@ test {
     _ = @import("Ssz/container.zig");
     _ = @import("Ssz/merkle.zig");
     _ = @import("Ssz/variableTypes.zig");
+}
+
+test "Contract deployment appends ABI constructor arguments to initcode" {
+    const allocator = std.testing.allocator;
+    const initcode = [_]u8{ 0x60, 0x00, 0x60, 0x00 };
+    const args = [_]AbiEncoding.AbiValue{.{ .string = "abc" }};
+    var tx = try Contract.createDeployTransaction(allocator, &initcode, &.{.string}, &args, 7);
+    defer tx.deinit(allocator);
+
+    const offset = [_]u8{0} ** 31 ++ [_]u8{32};
+    const length = [_]u8{0} ** 31 ++ [_]u8{3};
+    const contents = "abc".* ++ [_]u8{0} ** 29;
+    try std.testing.expectEqualSlices(u8, &(initcode ++ offset ++ length ++ contents), tx.data);
+    try std.testing.expectEqual(@as(?Contract.Address, null), tx.to);
+    try std.testing.expectEqual(@as(u256, 7), tx.value);
+    try std.testing.expectError(error.InvalidData, Contract.encodeDeployData(allocator, &initcode, &.{.uint256}, &args));
+    try std.testing.expectError(error.InvalidData, Contract.encodeDeployData(allocator, &initcode, &.{}, &args));
+
+    const no_args = try Contract.encodeDeployData(allocator, &initcode, &.{}, &.{});
+    defer allocator.free(no_args);
+    try std.testing.expectEqualSlices(u8, &initcode, no_args);
+}
+
+test "Contract interaction encodes calls and decodes results, logs and reverts" {
+    const allocator = std.testing.allocator;
+    const parsed_type = try Contract.parseAbiType("uint");
+    try std.testing.expectEqual(Contract.AbiType.uint256, parsed_type);
+
+    const function: Contract.FunctionDefinition = .{
+        .name = "set",
+        .inputs = &.{parsed_type},
+        .outputs = &.{.bool},
+        .state_mutability = .nonpayable,
+    };
+    const args = [_]Contract.AbiValue{.{ .uint256 = 42 }};
+    const call = try Contract.encodeFunctionCall(allocator, function, &args);
+    defer allocator.free(call);
+    const word = [_]u8{0} ** 31 ++ [_]u8{42};
+    try std.testing.expectEqualSlices(u8, &.{ 0x60, 0xfe, 0x47, 0xb1 }, call[0..4]);
+    try std.testing.expectEqualSlices(u8, &word, call[4..]);
+
+    const true_word = [_]u8{0} ** 31 ++ [_]u8{1};
+    const result = try Contract.decodeFunctionResult(allocator, &true_word, function.outputs);
+    defer Contract.freeAbiValues(allocator, result);
+    try std.testing.expect(result[0].bool);
+
+    const event: Contract.EventDefinition = .{
+        .name = "Set",
+        .inputs = &.{.{ .type_name = "uint256", .indexed = true }},
+    };
+    const topics = try Contract.encodeEventTopics(allocator, event, &args);
+    defer allocator.free(topics);
+    defer for (topics) |topic| allocator.free(topic);
+    const event_topic = try Contract.computeEventTopic(allocator, event);
+    try std.testing.expectEqualSlices(u8, &event_topic, topics[0]);
+    const log = try Contract.decodeEventLog(allocator, event, &.{}, topics);
+    defer Contract.freeAbiValues(allocator, log);
+    try std.testing.expectEqual(@as(u256, 42), log[0].uint256);
+
+    const definition: Contract.ErrorDefinition = .{ .name = "Rejected", .inputs = &.{.uint256} };
+    const revert_data = try definition.encode_data(allocator, &args);
+    defer allocator.free(revert_data);
+    const decoded = try Contract.decodeError(allocator, definition, revert_data);
+    defer Contract.freeAbiValues(allocator, decoded);
+    try std.testing.expectEqual(@as(u256, 42), decoded[0].uint256);
+    try std.testing.expectError(error.InvalidSelector, Contract.decodeError(allocator, definition, call));
 }
