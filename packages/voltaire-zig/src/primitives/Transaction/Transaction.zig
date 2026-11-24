@@ -207,6 +207,9 @@ pub const Eip7702Transaction = struct {
     s: [32]u8,
 };
 
+/// Fluent builder with automatic type detection. See TransactionBuilder.zig.
+pub const TransactionBuilder = @import("TransactionBuilder.zig").TransactionBuilder;
+
 pub const AccessListItem = struct {
     address: Address,
     storage_keys: []const [32]u8,

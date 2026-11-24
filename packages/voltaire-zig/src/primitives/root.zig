@@ -217,6 +217,7 @@ pub const Proxy = @import("Proxy/erc1167.zig");
 
 // Transaction types
 pub const Transaction = @import("Transaction/Transaction.zig");
+pub const TransactionBuilder = @import("Transaction/TransactionBuilder.zig");
 pub const AccessList = @import("AccessList/access_list.zig");
 pub const Authorization = @import("Authorization/authorization.zig");
 pub const Blob = @import("Blob/blob.zig");
