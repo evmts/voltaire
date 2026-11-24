@@ -254,3 +254,8 @@ tevm-monorepo/
 
 # Playwright MCP (testing artifacts)
 .playwright-mcp/
+
+# Smithers build cache and run state
+.smithers/cache/
+.smithers/reports/
+.flows/

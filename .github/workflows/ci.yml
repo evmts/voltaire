@@ -131,6 +131,11 @@ jobs:
           version: 0.15.2
       - name: Check formatting
         run: zig fmt --check build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples
+      # .smithers/FACTORY.ts projects these; //.smithers:factory-check proves
+      # they match it locally. CI only needs them to parse.
+      - name: Factory projections are valid JSON
+        run: |
+          node -e 'for (const f of [".smithers/factory.json", ".smithers/home.json"]) JSON.parse(require("fs").readFileSync(f, "utf8")); console.log("factory projections valid")'
 
   typescript:
     runs-on: ubuntu-latest

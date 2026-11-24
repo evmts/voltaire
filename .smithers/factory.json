@@ -18,7 +18,27 @@
       ],
       "model": "repository/research",
       "modelInvocable": true,
-      "flows": []
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "args"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": [],
+      "budget": {
+        "tokens": 32000,
+        "milliseconds": 300000
+      }
     },
     {
       "id": "issue/poc",
@@ -37,7 +57,27 @@
       ],
       "model": "coding/poc",
       "modelInvocable": false,
-      "flows": []
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "args"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": [],
+      "budget": {
+        "tokens": 32000,
+        "milliseconds": 300000
+      }
     },
     {
       "id": "pr-triage",
@@ -52,7 +92,27 @@
       ],
       "model": "repository/research",
       "modelInvocable": true,
-      "flows": []
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "args"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": [],
+      "budget": {
+        "tokens": 32000,
+        "milliseconds": 300000
+      }
     },
     {
       "id": "checks/review",
@@ -66,6 +126,22 @@
       ],
       "model": null,
       "modelInvocable": true,
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "args"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
       "flows": []
     }
   ],

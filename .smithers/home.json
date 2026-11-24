@@ -143,27 +143,27 @@
           "title": "Packages",
           "cards": [
             {
-              "label": "TypeScript",
               "title": "@tevm/voltaire",
               "text": "Ethereum primitives, ABI, RLP, transactions, and cryptography for TS, WASM, and Native-Bun.",
+              "label": "TypeScript",
               "url": "https://www.npmjs.com/package/@tevm/voltaire"
             },
             {
-              "label": "Effect.ts",
               "title": "voltaire-effect",
               "text": "Typed errors, dependency injection, contract registries, and composable RPC operations.",
+              "label": "Effect.ts",
               "url": "https://voltaire-effect.tevm.sh"
             },
             {
-              "label": "Zig",
               "title": "voltaire-zig",
               "text": "Core primitives, Keccak, secp256k1, BLS12-381, BN254, KZG, and EVM precompiles.",
+              "label": "Zig",
               "url": "https://smithers.sh/evmts/voltaire/tree/main/packages/voltaire-zig"
             },
             {
-              "label": "Rust · C · Go · Py · Swift",
               "title": "Multi-language bindings",
               "text": "Shared FFI and native bindings across Rust, C, Go, Python, and Swift.",
+              "label": "Rust · C · Go · Py · Swift",
               "url": "https://smithers.sh/evmts/voltaire/tree/main/packages"
             }
           ],
