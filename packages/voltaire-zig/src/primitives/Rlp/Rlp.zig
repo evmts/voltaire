@@ -422,7 +422,11 @@ fn _decode(allocator: Allocator, input: []const u8, depth: u32) !Decoded {
         var remaining = input[1 .. 1 + length];
         while (remaining.len > 0) {
             const decoded = try _decode(allocator, remaining, depth + 1);
-            try items.append(allocator, decoded.data);
+            items.append(allocator, decoded.data) catch |err| {
+                // Not yet owned by `items`: free it or it leaks on OOM
+                decoded.data.deinit(allocator);
+                return err;
+            };
             remaining = decoded.remainder;
         }
 
@@ -471,7 +475,11 @@ fn _decode(allocator: Allocator, input: []const u8, depth: u32) !Decoded {
         var remaining = input[1 + length_of_length .. 1 + length_of_length + total_length];
         while (remaining.len > 0) {
             const decoded = try _decode(allocator, remaining, depth + 1);
-            try items.append(allocator, decoded.data);
+            items.append(allocator, decoded.data) catch |err| {
+                // Not yet owned by `items`: free it or it leaks on OOM
+                decoded.data.deinit(allocator);
+                return err;
+            };
             remaining = decoded.remainder;
         }
 

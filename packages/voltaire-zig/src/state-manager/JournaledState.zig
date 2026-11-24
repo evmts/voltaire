@@ -143,10 +143,17 @@ pub const JournaledState = struct {
         try self.contract_cache.put(address, code);
     }
 
-    /// Checkpoint all caches
+    /// Checkpoint all caches.
+    ///
+    /// Atomic: if a later cache fails to checkpoint (OOM), the checkpoints
+    /// already pushed on the earlier caches are popped, so all three caches
+    /// keep the same checkpoint depth. `commit` drops the just-pushed
+    /// snapshot and leaves live state untouched.
     pub fn checkpoint(self: *JournaledState) !void {
         try self.account_cache.checkpoint();
+        errdefer self.account_cache.commit();
         try self.storage_cache.checkpoint();
+        errdefer self.storage_cache.commit();
         try self.contract_cache.checkpoint();
     }
 
@@ -339,4 +346,65 @@ test "JournaledState - nested checkpoints" {
     state.revert();
     value = try state.getStorage(addr, 1);
     try std.testing.expectEqual(@as(u256, 100), value);
+}
+
+test "JournaledState - checkpoint is atomic under OOM" {
+    const addr1 = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr2 = Address{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 };
+    const code = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
+
+    // Fail every allocation index in turn so each of the three cache
+    // checkpoints (and each allocation inside them) is exercised.
+    var saw_failure = false;
+    var saw_success = false;
+    var fail_index: usize = 0;
+    while (fail_index < 64) : (fail_index += 1) {
+        var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{});
+        const allocator = failing.allocator();
+
+        var state = try JournaledState.init(allocator, null);
+        defer state.deinit();
+
+        try state.putAccount(addr1, .{
+            .nonce = 5,
+            .balance = 1000,
+            .code_hash = primitives.Hash.ZERO,
+            .storage_root = primitives.Hash.ZERO,
+        });
+        try state.putAccount(addr2, StateCache.AccountState.init());
+        try state.putStorage(addr1, 1, 100);
+        try state.putStorage(addr2, 2, 200);
+        try state.putCode(addr1, &code);
+        try state.putCode(addr2, &code);
+        try state.checkpoint();
+
+        const depth = state.account_cache.checkpoints.items.len;
+        try std.testing.expectEqual(@as(usize, 1), depth);
+
+        failing.fail_index = failing.alloc_index + fail_index;
+        if (state.checkpoint()) |_| {
+            saw_success = true;
+            try std.testing.expectEqual(depth + 1, state.account_cache.checkpoints.items.len);
+            try std.testing.expectEqual(depth + 1, state.storage_cache.checkpoints.items.len);
+            try std.testing.expectEqual(depth + 1, state.contract_cache.checkpoints.items.len);
+        } else |err| {
+            saw_failure = true;
+            try std.testing.expectEqual(error.OutOfMemory, err);
+            // Depths stay synchronized at the pre-call depth
+            try std.testing.expectEqual(depth, state.account_cache.checkpoints.items.len);
+            try std.testing.expectEqual(depth, state.storage_cache.checkpoints.items.len);
+            try std.testing.expectEqual(depth, state.contract_cache.checkpoints.items.len);
+        }
+        failing.fail_index = std.math.maxInt(usize);
+
+        // Live state is untouched either way
+        try std.testing.expectEqual(@as(u64, 5), (try state.getAccount(addr1)).nonce);
+        try std.testing.expectEqual(@as(u256, 100), try state.getStorage(addr1, 1));
+        try std.testing.expectEqual(@as(u256, 200), try state.getStorage(addr2, 2));
+        try std.testing.expectEqualSlices(u8, &code, try state.getCode(addr1));
+
+        // deinit under std.testing.allocator proves zero leaks
+    }
+    try std.testing.expect(saw_failure);
+    try std.testing.expect(saw_success);
 }

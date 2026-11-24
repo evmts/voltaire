@@ -120,6 +120,7 @@ pub const AccountCache = struct {
     pub fn checkpoint(self: *AccountCache) !void {
         // Clone current cache state
         var snapshot = std.AutoHashMap(Address, AccountState).init(self.allocator);
+        errdefer snapshot.deinit();
         var it = self.cache.iterator();
         while (it.next()) |entry| {
             try snapshot.put(entry.key_ptr.*, entry.value_ptr.*);
@@ -218,9 +219,15 @@ pub const StorageCache = struct {
     pub fn checkpoint(self: *StorageCache) !void {
         // Clone current cache state (deep copy including nested maps)
         var snapshot = std.AutoHashMap(Address, std.AutoHashMap(u256, u256)).init(self.allocator);
+        errdefer {
+            var snap_it = snapshot.valueIterator();
+            while (snap_it.next()) |slots| slots.deinit();
+            snapshot.deinit();
+        }
         var it = self.cache.iterator();
         while (it.next()) |entry| {
             var slots_clone = std.AutoHashMap(u256, u256).init(self.allocator);
+            errdefer slots_clone.deinit();
             var slots_it = entry.value_ptr.iterator();
             while (slots_it.next()) |slot_entry| {
                 try slots_clone.put(slot_entry.key_ptr.*, slot_entry.value_ptr.*);
@@ -339,9 +346,15 @@ pub const ContractCache = struct {
     pub fn checkpoint(self: *ContractCache) !void {
         // Clone current cache state (with owned copies of code)
         var snapshot = std.AutoHashMap(Address, []const u8).init(self.allocator);
+        errdefer {
+            var snap_it = snapshot.valueIterator();
+            while (snap_it.next()) |code| self.allocator.free(code.*);
+            snapshot.deinit();
+        }
         var it = self.cache.iterator();
         while (it.next()) |entry| {
             const code_copy = try self.allocator.dupe(u8, entry.value_ptr.*);
+            errdefer self.allocator.free(code_copy);
             try snapshot.put(entry.key_ptr.*, code_copy);
         }
         try self.checkpoints.append(self.allocator, snapshot);

@@ -37,12 +37,23 @@ const JournaledState = @import("JournaledState.zig");
 const StateCache = @import("StateCache.zig");
 const ForkBackend = @import("ForkBackend.zig");
 
+/// A live named snapshot: its ID and the checkpoint depth recorded just
+/// before its checkpoint was pushed. The snapshot's own checkpoint sits at
+/// index `depth` of the checkpoint stack, so the snapshot is live only while
+/// the checkpoint depth is greater than `depth`.
+const Snapshot = struct {
+    id: u64,
+    depth: usize,
+};
+
 /// Main state manager with snapshot support
 pub const StateManager = struct {
     allocator: std.mem.Allocator,
     journaled_state: JournaledState.JournaledState,
     snapshot_counter: u64,
-    snapshots: std.AutoHashMap(u64, usize), // snapshot_id → checkpoint depth
+    /// Live snapshots, oldest first. Both `id` and `depth` strictly increase
+    /// toward the top, mirroring the checkpoint stack.
+    snapshots: std.ArrayList(Snapshot),
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -52,13 +63,13 @@ pub const StateManager = struct {
             .allocator = allocator,
             .journaled_state = try JournaledState.JournaledState.init(allocator, fork_backend),
             .snapshot_counter = 0,
-            .snapshots = std.AutoHashMap(u64, usize).init(allocator),
+            .snapshots = .{},
         };
     }
 
     pub fn deinit(self: *StateManager) void {
         self.journaled_state.deinit();
-        self.snapshots.deinit();
+        self.snapshots.deinit(self.allocator);
     }
 
     // State accessors
@@ -115,53 +126,75 @@ pub const StateManager = struct {
         try self.journaled_state.checkpoint();
     }
 
+    /// Pop the top checkpoint and restore its state. A snapshot whose
+    /// checkpoint is popped here is consumed and can no longer be reverted to.
     pub fn revert(self: *StateManager) void {
         self.journaled_state.revert();
+        self.dropConsumedSnapshots();
     }
 
+    /// Pop the top checkpoint and keep current state. A snapshot whose
+    /// checkpoint is popped here is consumed and can no longer be reverted to.
     pub fn commit(self: *StateManager) void {
         self.journaled_state.commit();
+        self.dropConsumedSnapshots();
     }
 
     // Snapshot operations
+
+    /// Push a checkpoint and return an ID that `revertToSnapshot` accepts.
+    ///
+    /// Atomic: on `error.OutOfMemory` the state, the checkpoint depth, and
+    /// the next snapshot ID are unchanged.
     pub fn snapshot(self: *StateManager) !u64 {
-        const snapshot_id = self.snapshot_counter;
-        self.snapshot_counter += 1;
+        // Reserve the bookkeeping slot first so nothing can fail after the
+        // checkpoint is pushed. `JournaledState.checkpoint` is itself atomic.
+        try self.snapshots.ensureUnusedCapacity(self.allocator, 1);
 
-        // Store checkpoint depth BEFORE creating checkpoint
         const depth = self.getCheckpointDepth();
-        try self.snapshots.put(snapshot_id, depth);
-
-        // Create checkpoint after storing depth
         try self.journaled_state.checkpoint();
+
+        const snapshot_id = self.snapshot_counter;
+        self.snapshots.appendAssumeCapacity(.{ .id = snapshot_id, .depth = depth });
+        self.snapshot_counter += 1;
 
         return snapshot_id;
     }
 
+    /// Restore the state captured by `snapshot_id`, then discard that
+    /// snapshot and every newer one.
+    ///
+    /// Returns `error.InvalidSnapshot`, leaving state untouched, if the ID
+    /// is unknown, was already reverted to, or had its checkpoint popped by
+    /// a raw `revert()`/`commit()`. Allocates nothing.
     pub fn revertToSnapshot(self: *StateManager, snapshot_id: u64) !void {
-        const target_depth = self.snapshots.get(snapshot_id) orelse return error.InvalidSnapshot;
-        const current_depth = self.getCheckpointDepth();
+        var index = self.snapshots.items.len;
+        while (index > 0) {
+            index -= 1;
+            if (self.snapshots.items[index].id == snapshot_id) break;
+        } else return error.InvalidSnapshot;
+
+        const target_depth = self.snapshots.items[index].depth;
+
+        // `dropConsumedSnapshots` keeps every live snapshot's checkpoint on
+        // the stack; fail closed if that ever stops holding.
+        if (self.getCheckpointDepth() <= target_depth) return error.InvalidSnapshot;
 
         // Revert until we reach target depth
-        var i: usize = 0;
-        while (i < (current_depth - target_depth)) : (i += 1) {
+        while (self.getCheckpointDepth() > target_depth) {
             self.journaled_state.revert();
         }
 
         // Remove this snapshot and all newer ones
-        var it = self.snapshots.iterator();
-        var to_remove = std.ArrayList(u64){};
-        defer to_remove.deinit(self.allocator);
+        self.snapshots.shrinkRetainingCapacity(index);
+    }
 
-        while (it.next()) |entry| {
-            if (entry.key_ptr.* >= snapshot_id) {
-                try to_remove.append(self.allocator, entry.key_ptr.*);
-            }
-        }
-
-        for (to_remove.items) |id| {
-            _ = self.snapshots.remove(id);
-        }
+    /// Drop every snapshot whose checkpoint is no longer on the stack.
+    fn dropConsumedSnapshots(self: *StateManager) void {
+        const depth = self.getCheckpointDepth();
+        var len = self.snapshots.items.len;
+        while (len > 0 and self.snapshots.items[len - 1].depth >= depth) len -= 1;
+        self.snapshots.shrinkRetainingCapacity(len);
     }
 
     fn getCheckpointDepth(self: *StateManager) usize {
@@ -347,4 +380,149 @@ test "StateManager - snapshot clears newer snapshots" {
     // snap2 should no longer be valid
     const result = manager.revertToSnapshot(snap2);
     try std.testing.expectError(error.InvalidSnapshot, result);
+}
+
+test "StateManager - revertToSnapshot rejects snapshot unwound by raw revert" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    try manager.setBalance(addr, 1000);
+
+    // Outer checkpoint, then a snapshot recorded at depth 1
+    try manager.checkpoint();
+    const snap = try manager.snapshot();
+    try manager.setBalance(addr, 2000);
+
+    // Raw reverts unwind past the snapshot: depth 2 -> 0 < target depth 1
+    manager.revert();
+    manager.revert();
+
+    try std.testing.expectError(error.InvalidSnapshot, manager.revertToSnapshot(snap));
+    try std.testing.expectEqual(@as(u256, 1000), try manager.getBalance(addr));
+}
+
+test "StateManager - revertToSnapshot rejects snapshot consumed by raw commit" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    try manager.setBalance(addr, 1000);
+
+    const snap = try manager.snapshot();
+    try manager.setBalance(addr, 2000);
+
+    // Raw commit pops the snapshot's checkpoint: nothing is left to revert to
+    manager.commit();
+
+    try std.testing.expectError(error.InvalidSnapshot, manager.revertToSnapshot(snap));
+    try std.testing.expectEqual(@as(u256, 2000), try manager.getBalance(addr));
+    try std.testing.expectEqual(@as(usize, 0), manager.getCheckpointDepth());
+}
+
+test "StateManager - consumed snapshot stays invalid after the depth is reused" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    try manager.setBalance(addr, 1000);
+
+    const snap = try manager.snapshot();
+    try manager.setBalance(addr, 2000);
+    manager.commit();
+
+    // An unrelated checkpoint now occupies the consumed snapshot's depth
+    try manager.checkpoint();
+    try manager.setBalance(addr, 3000);
+
+    try std.testing.expectError(error.InvalidSnapshot, manager.revertToSnapshot(snap));
+    try std.testing.expectEqual(@as(u256, 3000), try manager.getBalance(addr));
+    try std.testing.expectEqual(@as(usize, 1), manager.getCheckpointDepth());
+
+    // A snapshot consumed by a raw revert is invalid as well
+    const snap2 = try manager.snapshot();
+    manager.revert();
+    try manager.checkpoint();
+    try std.testing.expectError(error.InvalidSnapshot, manager.revertToSnapshot(snap2));
+}
+
+test "StateManager - raw commit of an inner checkpoint keeps the outer snapshot" {
+    const allocator = std.testing.allocator;
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    try manager.setBalance(addr, 1000);
+
+    const snap = try manager.snapshot();
+    try manager.checkpoint();
+    try manager.setBalance(addr, 2000);
+    manager.commit();
+
+    try manager.revertToSnapshot(snap);
+    try std.testing.expectEqual(@as(u256, 1000), try manager.getBalance(addr));
+    try std.testing.expectEqual(@as(usize, 0), manager.getCheckpointDepth());
+
+    // A snapshot is single-use
+    try std.testing.expectError(error.InvalidSnapshot, manager.revertToSnapshot(snap));
+}
+
+test "StateManager - snapshot is atomic under OOM" {
+    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{});
+    const allocator = failing.allocator();
+
+    var manager = try StateManager.init(allocator, null);
+    defer manager.deinit();
+
+    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    try manager.setBalance(addr, 1000);
+    try manager.setStorage(addr, 42, 9999);
+    try manager.setCode(addr, &[_]u8{ 0x60, 0x60 });
+
+    // Fail each allocation inside snapshot() in turn until one succeeds
+    var fail_index: usize = 0;
+    var failures: usize = 0;
+    const snap = while (true) {
+        const depth = manager.getCheckpointDepth();
+        const counter = manager.snapshot_counter;
+        const live = manager.snapshots.items.len;
+        const capacity = manager.snapshots.capacity;
+
+        failing.fail_index = failing.alloc_index + fail_index;
+        const result = manager.snapshot();
+        failing.fail_index = std.math.maxInt(usize);
+
+        const id = result catch |err| {
+            try std.testing.expectEqual(error.OutOfMemory, err);
+            try std.testing.expectEqual(depth, manager.getCheckpointDepth());
+            try std.testing.expectEqual(depth, manager.journaled_state.storage_cache.checkpoints.items.len);
+            try std.testing.expectEqual(depth, manager.journaled_state.contract_cache.checkpoints.items.len);
+            try std.testing.expectEqual(counter, manager.snapshot_counter);
+            try std.testing.expectEqual(live, manager.snapshots.items.len);
+            try std.testing.expectEqual(@as(u256, 1000), try manager.getBalance(addr));
+            try std.testing.expectEqual(@as(u256, 9999), try manager.getStorage(addr, 42));
+            failures += 1;
+            // The bookkeeping reservation survives a failed attempt, so the
+            // next attempt makes one allocation fewer before the checkpoint:
+            // the same index then targets the next checkpoint allocation.
+            if (manager.snapshots.capacity == capacity) fail_index += 1;
+            continue;
+        };
+        break id;
+    };
+
+    // At least the bookkeeping reservation and one cache clone were failed
+    try std.testing.expect(failures >= 2);
+    try std.testing.expectEqual(@as(u64, 0), snap);
+    try std.testing.expectEqual(@as(usize, 1), manager.getCheckpointDepth());
+    try std.testing.expectEqual(@as(u64, 1), manager.snapshot_counter);
+
+    // The snapshot that finally succeeded is fully usable
+    try manager.setBalance(addr, 2000);
+    try manager.revertToSnapshot(snap);
+    try std.testing.expectEqual(@as(u256, 1000), try manager.getBalance(addr));
+    try std.testing.expectEqual(@as(usize, 0), manager.getCheckpointDepth());
 }

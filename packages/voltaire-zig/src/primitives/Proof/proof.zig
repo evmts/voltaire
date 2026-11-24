@@ -309,20 +309,50 @@ pub const MPTError = error{
     UnexpectedNodeType,
 };
 
+/// Length of the canonical RLP encoding of decoded data.
+fn rlpEncodedLen(data: Rlp.Data) usize {
+    const payload = switch (data) {
+        .String => |s| blk: {
+            if (s.len == 1 and s[0] < 0x80) return 1;
+            break :blk s.len;
+        },
+        .List => |items| blk: {
+            var n: usize = 0;
+            for (items) |item| n += rlpEncodedLen(item);
+            break :blk n;
+        },
+    };
+    if (payload < 56) return 1 + payload;
+    var len_bytes: usize = 0;
+    var rest = payload;
+    while (rest > 0) : (rest >>= 8) len_bytes += 1;
+    return 1 + len_bytes + payload;
+}
+
 /// Verify a Merkle-Patricia Trie proof.
 ///
 /// This is the core MPT verification algorithm used by EIP-1186 proofs.
 /// It walks through RLP-encoded proof nodes, verifying each one matches
 /// the expected hash and following the key path from root to leaf.
 ///
+/// Child references follow Yellow Paper Appendix D: a child whose RLP
+/// encoding is 32 bytes or longer is referenced by its keccak256 hash and
+/// supplied as the next `proof_nodes` entry; a shorter child is embedded
+/// inline as an RLP list inside its parent and is never a separate entry.
+///
+/// Every entry in `proof_nodes` must be consumed: a proof with trailing
+/// nodes is rejected.
+///
 /// Parameters:
 /// - allocator: For temporary allocations
 /// - expected_root: The root hash to verify against
 /// - key: The key being proven (NOT hashed - caller must hash if needed)
-/// - expected_value: The expected value at the leaf (RLP-encoded)
+/// - expected_value: The expected value at the leaf (RLP-encoded); empty
+///   to verify an exclusion proof
 /// - proof_nodes: Array of RLP-encoded MPT nodes
 ///
-/// Returns true if the proof is valid.
+/// Returns true if the proof is valid, false if it is malformed or does not
+/// prove the claim. Returns `error.OutOfMemory` on allocation failure.
 pub fn verifyMPTProof(
     allocator: std.mem.Allocator,
     expected_root: *const Hash.Hash,
@@ -346,125 +376,133 @@ pub fn verifyMPTProof(
     const nibbles = try Trie.keyToNibbles(allocator, key);
     defer allocator.free(nibbles);
 
-    var current_hash: Hash.Hash = expected_root.*;
+    var expected_hash: Hash.Hash = expected_root.*;
     var nibble_idx: usize = 0;
+    var proof_index: usize = 0;
 
-    for (proof_nodes) |node_data| {
+    hashed: while (proof_index < proof_nodes.len) {
+        const node_data = proof_nodes[proof_index];
+        proof_index += 1;
+
+        // Every terminal exit requires all proof nodes to be consumed;
+        // trailing nodes would be unverified and are rejected.
+        const terminal = proof_index == proof_nodes.len;
+
         // Verify node hash matches expected
         var node_hash: Hash.Hash = undefined;
         crypto.Keccak256.hash(node_data, &node_hash, .{});
 
-        if (!std.mem.eql(u8, &current_hash, &node_hash)) {
+        if (!std.mem.eql(u8, &expected_hash, &node_hash)) {
             return false;
         }
 
         // Decode RLP node
-        const decoded = Rlp.decode(allocator, node_data, false) catch return false;
+        const decoded = Rlp.decode(allocator, node_data, false) catch |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            else => return false,
+        };
         defer decoded.data.deinit(allocator);
 
-        switch (decoded.data) {
-            .List => |items| {
-                if (items.len == 2) {
-                    // Extension or Leaf node
-                    const path_data = switch (items[0]) {
+        // Walk the hashed node, then any nodes embedded inline beneath it.
+        // Bounded: each step descends one level into the decoded RLP.
+        var node = decoded.data;
+        while (true) {
+            const items = switch (node) {
+                .List => |list| list,
+                // Only the empty trie (root = keccak256(0x80)) is a string
+                .String => |s| return s.len == 0 and expected_value.len == 0 and terminal,
+            };
+
+            var child: Rlp.Data = undefined;
+
+            if (items.len == 2) {
+                // Extension or Leaf node
+                const path_data = switch (items[0]) {
+                    .String => |s| s,
+                    .List => return false,
+                };
+
+                // Decode path prefix
+                const path_result = Trie.decodePath(allocator, path_data) catch |err| switch (err) {
+                    error.OutOfMemory => return error.OutOfMemory,
+                    else => return false,
+                };
+                defer allocator.free(path_result.nibbles);
+
+                if (path_result.is_leaf) {
+                    // Leaf node - value must be a byte string
+                    const leaf_value = switch (items[1]) {
                         .String => |s| s,
-                        else => return false,
+                        .List => return false,
                     };
 
-                    // Decode path prefix
-                    const path_result = Trie.decodePath(allocator, path_data) catch return false;
-                    defer allocator.free(path_result.nibbles);
-
-                    if (path_result.is_leaf) {
-                        // Leaf node - verify path matches and value matches
-                        if (nibble_idx + path_result.nibbles.len != nibbles.len) {
-                            return false;
-                        }
-
-                        // Check path matches
-                        if (!std.mem.eql(u8, path_result.nibbles, nibbles[nibble_idx..])) {
-                            return false;
-                        }
-
-                        // Get value
-                        const leaf_value = switch (items[1]) {
-                            .String => |s| s,
-                            else => return false,
-                        };
-
-                        // For storage proofs, value is RLP-encoded
-                        return std.mem.eql(u8, leaf_value, expected_value);
-                    } else {
-                        // Extension node - follow path and update expected hash
-                        if (nibble_idx + path_result.nibbles.len > nibbles.len) {
-                            return false;
-                        }
-
-                        // Check path matches
-                        if (!std.mem.eql(u8, path_result.nibbles, nibbles[nibble_idx .. nibble_idx + path_result.nibbles.len])) {
-                            return false;
-                        }
-
-                        nibble_idx += path_result.nibbles.len;
-
-                        // Get next hash
-                        const next_hash = switch (items[1]) {
-                            .String => |s| s,
-                            else => return false,
-                        };
-
-                        if (next_hash.len != Hash.SIZE) {
-                            return false;
-                        }
-
-                        @memcpy(&current_hash, next_hash);
-                    }
-                } else if (items.len == 17) {
-                    // Branch node - 16 children + value
-                    if (nibble_idx >= nibbles.len) {
-                        // We're at end of path, check branch value
-                        const branch_value = switch (items[16]) {
-                            .String => |s| s,
-                            else => return false,
-                        };
-
-                        return std.mem.eql(u8, branch_value, expected_value);
+                    // Verified leaf whose suffix differs from the remaining
+                    // key (different nibbles or length): the key is absent.
+                    // Valid only as an exclusion proof.
+                    if (!std.mem.eql(u8, path_result.nibbles, nibbles[nibble_idx..])) {
+                        return expected_value.len == 0 and terminal;
                     }
 
-                    // Follow the nibble path
-                    const nibble = nibbles[nibble_idx];
-                    nibble_idx += 1;
-
-                    const child = items[nibble];
-                    const child_hash = switch (child) {
-                        .String => |s| s,
-                        else => return false,
-                    };
-
-                    if (child_hash.len == 0) {
-                        // Empty child - key doesn't exist
-                        return expected_value.len == 0;
-                    }
-
-                    if (child_hash.len == Hash.SIZE) {
-                        @memcpy(&current_hash, child_hash);
-                    } else {
-                        // Embedded node - hash it
-                        crypto.Keccak256.hash(child_hash, &current_hash, .{});
-                    }
-                } else {
-                    return false;
+                    // For storage proofs, value is RLP-encoded
+                    return std.mem.eql(u8, leaf_value, expected_value) and terminal;
                 }
-            },
-            .String => {
-                // Single string node - this is the value itself
-                const value = decoded.data.String;
-                return std.mem.eql(u8, value, expected_value);
-            },
+
+                // Extension node. Verified extension whose prefix diverges
+                // from the remaining key (or outruns it): the key is absent.
+                // Valid only as an exclusion proof.
+                if (nibble_idx + path_result.nibbles.len > nibbles.len or
+                    !std.mem.eql(u8, path_result.nibbles, nibbles[nibble_idx .. nibble_idx + path_result.nibbles.len]))
+                {
+                    return expected_value.len == 0 and terminal;
+                }
+
+                nibble_idx += path_result.nibbles.len;
+                child = items[1];
+
+                // An extension always has a child
+                if (child == .String and child.String.len == 0) return false;
+            } else if (items.len == 17) {
+                // Branch node - 16 children + value
+                if (nibble_idx >= nibbles.len) {
+                    // We're at end of path, check branch value
+                    const branch_value = switch (items[16]) {
+                        .String => |s| s,
+                        .List => return false,
+                    };
+
+                    return std.mem.eql(u8, branch_value, expected_value) and terminal;
+                }
+
+                // Follow the nibble path
+                child = items[nibbles[nibble_idx]];
+                nibble_idx += 1;
+
+                // Empty child - key doesn't exist
+                if (child == .String and child.String.len == 0) {
+                    return expected_value.len == 0 and terminal;
+                }
+            } else {
+                return false;
+            }
+
+            switch (child) {
+                .String => |child_hash| {
+                    // Hash reference: the child is the next proof node
+                    if (child_hash.len != Hash.SIZE) return false;
+                    @memcpy(&expected_hash, child_hash);
+                    continue :hashed;
+                },
+                .List => {
+                    // Embedded child: only encodings shorter than 32 bytes
+                    // are inlined; it consumes no proof node.
+                    if (rlpEncodedLen(child) >= Hash.SIZE) return false;
+                    node = child;
+                },
+            }
         }
     }
 
-    // If we've consumed all proof nodes but haven't verified the value, fail
+    // Proof ended while a hash-referenced child was still expected
     return false;
 }
 
@@ -1046,4 +1084,337 @@ test "verifyMPTProof - branch node navigation" {
 
     // This should succeed because empty key points to branch value
     try std.testing.expect(result);
+}
+
+test "verifyMPTProof - single-leaf storage trie exclusion proof" {
+    const allocator = std.testing.allocator;
+
+    // Storage trie holding exactly one slot: root = keccak(leaf).
+    // Leaf path = all 64 nibbles of keccak256(slot 0), value = RLP(0x2a).
+    const stored_slot = [_]u8{0x00} ** 32;
+    var stored_path: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&stored_slot, &stored_path, .{});
+
+    // RLP([0x20 ++ path(32), 0x2a]) = 0xe3 | 0xa1 0x20 path | 0x2a
+    var leaf_node: [36]u8 = undefined;
+    leaf_node[0] = 0xe3;
+    leaf_node[1] = 0xa1;
+    leaf_node[2] = 0x20;
+    @memcpy(leaf_node[3..35], &stored_path);
+    leaf_node[35] = 0x2a;
+
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&leaf_node, &root, .{});
+
+    const proof_nodes = [_][]const u8{&leaf_node};
+
+    // Inclusion of the stored slot still verifies
+    try std.testing.expect(try verifyStorageSlotProof(allocator, &root, &stored_slot, &[_]u8{0x2a}, &proof_nodes));
+
+    // Exclusion of a different slot verifies with the same single leaf
+    const other_slot = [_]u8{0x00} ** 31 ++ [_]u8{0x01};
+    try std.testing.expect(try verifyStorageSlotProof(allocator, &root, &other_slot, "", &proof_nodes));
+
+    // The other slot cannot be proven to hold the leaf's value
+    try std.testing.expect(!try verifyStorageSlotProof(allocator, &root, &other_slot, &[_]u8{0x2a}, &proof_nodes));
+
+    // The stored slot cannot be proven absent
+    try std.testing.expect(!try verifyStorageSlotProof(allocator, &root, &stored_slot, "", &proof_nodes));
+
+    // Tampered leaf (hash mismatch) fails closed for the exclusion claim
+    var tampered = leaf_node;
+    tampered[10] ^= 0x01;
+    const tampered_nodes = [_][]const u8{&tampered};
+    try std.testing.expect(!try verifyStorageSlotProof(allocator, &root, &other_slot, "", &tampered_nodes));
+
+    // Divergent leaf followed by an extra node is rejected (strict consumption)
+    const trailing_nodes = [_][]const u8{ &leaf_node, &leaf_node };
+    try std.testing.expect(!try verifyStorageSlotProof(allocator, &root, &other_slot, "", &trailing_nodes));
+}
+
+test "verifyMPTProof - leaf suffix length mismatch proves exclusion only" {
+    const allocator = std.testing.allocator;
+
+    // Leaf with single-nibble path [5], value 0xAB: RLP([0x35, 0xAB])
+    const leaf_node = [_]u8{ 0xc3, 0x35, 0x81, 0xAB };
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&leaf_node, &root, .{});
+
+    const proof_nodes = [_][]const u8{&leaf_node};
+
+    // Key 0x50 -> nibbles [5, 0]; longer than the leaf suffix
+    const key = [_]u8{0x50};
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &key, "", &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAB}, &proof_nodes));
+
+    // Empty key -> remaining path shorter than the leaf suffix
+    try std.testing.expect(try verifyMPTProof(allocator, &root, "", "", &proof_nodes));
+}
+
+test "verifyMPTProof - divergent extension exclusion proof" {
+    const allocator = std.testing.allocator;
+
+    // Extension with even path [1, 2] -> child hash:
+    // RLP([0x00 0x12, child(32)]) = 0xe4 | 0x82 0x00 0x12 | 0xa0 child
+    const child = [_]u8{0x77} ** 32;
+    var ext_node: [37]u8 = undefined;
+    ext_node[0] = 0xe4;
+    ext_node[1] = 0x82;
+    ext_node[2] = 0x00;
+    ext_node[3] = 0x12;
+    ext_node[4] = 0xa0;
+    @memcpy(ext_node[5..37], &child);
+
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&ext_node, &root, .{});
+
+    const proof_nodes = [_][]const u8{&ext_node};
+
+    // Key 0x13 -> nibbles [1, 3] diverges from extension prefix [1, 2]
+    const divergent_key = [_]u8{0x13};
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &divergent_key, "", &proof_nodes));
+
+    // Divergence never proves a non-empty value
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &divergent_key, &[_]u8{0x01}, &proof_nodes));
+
+    // Key 0x12 follows the extension; the proof is truncated, not an exclusion
+    const matching_key = [_]u8{0x12};
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &matching_key, "", &proof_nodes));
+
+    // Wrong root fails closed
+    const wrong_root = [_]u8{0xff} ** 32;
+    try std.testing.expect(!try verifyMPTProof(allocator, &wrong_root, &divergent_key, "", &proof_nodes));
+
+    // Tampered extension (hash mismatch) fails closed
+    var tampered = ext_node;
+    tampered[3] = 0x14;
+    const tampered_nodes = [_][]const u8{&tampered};
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &divergent_key, "", &tampered_nodes));
+
+    // Divergent extension that is not the terminal proof node is rejected
+    const trailing_nodes = [_][]const u8{ &ext_node, &ext_node };
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &divergent_key, "", &trailing_nodes));
+}
+
+test "verifyMPTProof - tampered hash and wrong value inclusion proofs fail" {
+    const allocator = std.testing.allocator;
+
+    const leaf_node = [_]u8{ 0xc6, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&leaf_node, &root, .{});
+
+    const key = [_]u8{0x01};
+    const value = [_]u8{ 0x12, 0x34 };
+    const proof_nodes = [_][]const u8{&leaf_node};
+
+    // Baseline inclusion verifies
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &key, &value, &proof_nodes));
+
+    // Wrong value
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{ 0x12, 0x35 }, &proof_nodes));
+
+    // Claiming absence of a present key
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, "", &proof_nodes));
+
+    // Leaf rewritten to carry the claimed value no longer hashes to the root
+    const forged_leaf = [_]u8{ 0xc6, 0x82, 0x20, 0x01, 0x82, 0x12, 0x35 };
+    const forged_nodes = [_][]const u8{&forged_leaf};
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{ 0x12, 0x35 }, &forged_nodes));
+
+    // Tampered root
+    var bad_root = root;
+    bad_root[0] ^= 0x01;
+    try std.testing.expect(!try verifyMPTProof(allocator, &bad_root, &key, &value, &proof_nodes));
+}
+
+// Branch with an embedded leaf at slot 5 and empty slots elsewhere.
+// Leaf = RLP([0x31, 0xAB]): odd leaf path [1], value 0xAB (4 bytes, < 32).
+// Branch payload = 5 * 0x80 | leaf(4) | 10 * 0x80 | value 0x80 = 20 bytes.
+const embedded_leaf_branch = [_]u8{0xd4} ++ [_]u8{0x80} ** 5 ++ [_]u8{ 0xc3, 0x31, 0x81, 0xAB } ++ [_]u8{0x80} ** 11;
+
+test "verifyMPTProof - embedded leaf inside branch node" {
+    const allocator = std.testing.allocator;
+
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&embedded_leaf_branch, &root, .{});
+    const proof_nodes = [_][]const u8{&embedded_leaf_branch};
+
+    // Inclusion: key 0x51 -> nibbles [5, 1] -> slot 5, embedded leaf path [1]
+    const key = [_]u8{0x51};
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAB}, &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAC}, &proof_nodes));
+
+    // A present key cannot be proven absent
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, "", &proof_nodes));
+
+    // Exclusion: key 0x52 -> nibbles [5, 2] diverges from embedded leaf path [1]
+    const absent_key = [_]u8{0x52};
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &absent_key, "", &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &absent_key, &[_]u8{0xAB}, &proof_nodes));
+
+    // The embedded leaf is never a separate proof node
+    const leaf = [_]u8{ 0xc3, 0x31, 0x81, 0xAB };
+    const split_nodes = [_][]const u8{ &embedded_leaf_branch, &leaf };
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAB}, &split_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &absent_key, "", &split_nodes));
+}
+
+test "verifyMPTProof - embedded leaf inside extension node" {
+    const allocator = std.testing.allocator;
+
+    // Extension path [1, 2] (0x00 0x12) -> embedded leaf RLP([0x20 0x51, 0xAB])
+    // with even leaf path [5, 1]. Payload = 3 + 6 = 9 bytes.
+    const ext_node = [_]u8{ 0xc9, 0x82, 0x00, 0x12, 0xc5, 0x82, 0x20, 0x51, 0x81, 0xAB };
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&ext_node, &root, .{});
+    const proof_nodes = [_][]const u8{&ext_node};
+
+    // Inclusion: key 0x1251 -> nibbles [1, 2, 5, 1]
+    const key = [_]u8{ 0x12, 0x51 };
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAB}, &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAC}, &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, "", &proof_nodes));
+
+    // Exclusion below the extension: nibbles [1, 2, 5, 2] diverge at the leaf
+    const absent_key = [_]u8{ 0x12, 0x52 };
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &absent_key, "", &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &absent_key, &[_]u8{0xAB}, &proof_nodes));
+
+    // Trailing unverified node rejected
+    const trailing_nodes = [_][]const u8{ &ext_node, &ext_node };
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAB}, &trailing_nodes));
+}
+
+test "verifyMPTProof - extension with embedded branch with embedded leaf" {
+    const allocator = std.testing.allocator;
+
+    // Extension path [1, 2] -> embedded branch (21 bytes) -> embedded leaf.
+    // Payload = 3 + 21 = 24 bytes.
+    const ext_node = [_]u8{ 0xd8, 0x82, 0x00, 0x12 } ++ embedded_leaf_branch;
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&ext_node, &root, .{});
+    const proof_nodes = [_][]const u8{&ext_node};
+
+    // Inclusion: nibbles [1, 2] extension, [5] branch slot, [1] leaf path
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &[_]u8{ 0x12, 0x51 }, &[_]u8{0xAB}, &proof_nodes));
+
+    // Exclusion at the embedded leaf, at an empty branch slot, at the extension
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &[_]u8{ 0x12, 0x52 }, "", &proof_nodes));
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &[_]u8{ 0x12, 0x61 }, "", &proof_nodes));
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &[_]u8{ 0x13, 0x51 }, "", &proof_nodes));
+
+    // No exclusion claim holds for the present key
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &[_]u8{ 0x12, 0x51 }, "", &proof_nodes));
+}
+
+test "verifyMPTProof - trailing proof node rejected on inclusion and empty-branch exclusion" {
+    const allocator = std.testing.allocator;
+
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&embedded_leaf_branch, &root, .{});
+    const proof_nodes = [_][]const u8{&embedded_leaf_branch};
+    const trailing_nodes = [_][]const u8{ &embedded_leaf_branch, &embedded_leaf_branch };
+
+    // Inclusion through the embedded leaf
+    const key = [_]u8{0x51};
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAB}, &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{0xAB}, &trailing_nodes));
+
+    // Empty-branch-slot exclusion: key 0x61 -> slot 6 is empty
+    const empty_slot_key = [_]u8{0x61};
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &empty_slot_key, "", &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &empty_slot_key, &[_]u8{0xAB}, &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &empty_slot_key, "", &trailing_nodes));
+
+    // Divergent embedded leaf exclusion
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &[_]u8{0x52}, "", &trailing_nodes));
+
+    // Hashed leaf inclusion: RLP([0x20 0x01, 0x1234])
+    const leaf_node = [_]u8{ 0xc6, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
+    var leaf_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&leaf_node, &leaf_root, .{});
+    const leaf_trailing = [_][]const u8{ &leaf_node, &leaf_node };
+    try std.testing.expect(!try verifyMPTProof(allocator, &leaf_root, &[_]u8{0x01}, &[_]u8{ 0x12, 0x34 }, &leaf_trailing));
+
+    // Branch value inclusion: 16 empty children, value 0xABCD
+    const value_branch = [_]u8{0xd3} ++ [_]u8{0x80} ** 16 ++ [_]u8{ 0x82, 0xAB, 0xCD };
+    var value_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&value_branch, &value_root, .{});
+    const value_trailing = [_][]const u8{ &value_branch, &value_branch };
+    try std.testing.expect(!try verifyMPTProof(allocator, &value_root, "", &[_]u8{ 0xAB, 0xCD }, &value_trailing));
+}
+
+test "verifyMPTProof - branch child string of invalid length rejected" {
+    const allocator = std.testing.allocator;
+
+    // Slot 5 holds the 1-byte string 0x05: neither empty, a hash, nor a node
+    const branch = [_]u8{0xd1} ++ [_]u8{0x80} ** 5 ++ [_]u8{0x05} ++ [_]u8{0x80} ** 11;
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&branch, &root, .{});
+    const proof_nodes = [_][]const u8{&branch};
+
+    const key = [_]u8{0x51};
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, "", &proof_nodes));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &[_]u8{0x05}, &proof_nodes));
+}
+
+test "verifyMPTProof - hash-referenced child consumes the next proof node" {
+    const allocator = std.testing.allocator;
+
+    // Leaf of 35 bytes (>= 32, so hash-referenced): odd path [1], 32-byte value
+    const value = [_]u8{0xEE} ** 32;
+    const leaf = [_]u8{ 0xe2, 0x31, 0xa0 } ++ value;
+
+    // Branch: slot 5 = keccak256(leaf). Payload = 5 + 33 + 11 = 49 bytes.
+    var branch = [_]u8{0xf1} ++ [_]u8{0x80} ** 5 ++ [_]u8{0xa0} ++ [_]u8{0x00} ** 32 ++ [_]u8{0x80} ** 11;
+    crypto.Keccak256.hash(&leaf, branch[7..39], .{});
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&branch, &root, .{});
+
+    const key = [_]u8{0x51};
+    const proof_nodes = [_][]const u8{ &branch, &leaf };
+    try std.testing.expect(try verifyMPTProof(allocator, &root, &key, &value, &proof_nodes));
+
+    // Truncated proof proves nothing
+    const truncated = [_][]const u8{&branch};
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, &value, &truncated));
+    try std.testing.expect(!try verifyMPTProof(allocator, &root, &key, "", &truncated));
+
+    // A node of 32+ bytes inlined instead of hash-referenced is non-canonical
+    // Payload = 5 + 35 + 11 = 51 bytes.
+    const inlined = [_]u8{0xf3} ++ [_]u8{0x80} ** 5 ++ leaf ++ [_]u8{0x80} ** 11;
+    var inlined_root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&inlined, &inlined_root, .{});
+    const inlined_nodes = [_][]const u8{&inlined};
+    try std.testing.expect(!try verifyMPTProof(allocator, &inlined_root, &key, &value, &inlined_nodes));
+}
+
+fn expectMPTProofVerifies(
+    allocator: std.mem.Allocator,
+    root: *const Hash.Hash,
+    key: []const u8,
+    value: []const u8,
+    proof_nodes: []const []const u8,
+) !void {
+    try std.testing.expect(try verifyMPTProof(allocator, root, key, value, proof_nodes));
+}
+
+test "verifyMPTProof - propagates OutOfMemory at every allocation" {
+    // Extension -> embedded branch -> embedded leaf exercises key nibbles,
+    // RLP decoding, and path decoding. A swallowed OutOfMemory (reported as
+    // `false`) or a leak fails checkAllAllocationFailures.
+    const ext_node = [_]u8{ 0xd8, 0x82, 0x00, 0x12 } ++ embedded_leaf_branch;
+    var root: Hash.Hash = undefined;
+    crypto.Keccak256.hash(&ext_node, &root, .{});
+
+    const root_ptr: *const Hash.Hash = &root;
+    const key: []const u8 = &[_]u8{ 0x12, 0x51 };
+    const value: []const u8 = &[_]u8{0xAB};
+    const proof_nodes: []const []const u8 = &[_][]const u8{&ext_node};
+
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        expectMPTProofVerifies,
+        .{ root_ptr, key, value, proof_nodes },
+    );
 }

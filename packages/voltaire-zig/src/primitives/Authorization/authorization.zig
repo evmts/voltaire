@@ -27,7 +27,10 @@ pub const AuthorizationError = error{
 
 // Authorization structure
 pub const Authorization = struct {
-    chain_id: u64,
+    /// EIP-7702 chain_id is a uint256 on the wire. 0 is the wildcard.
+    /// RLP: 0 encodes as the empty string (0x80), non-zero as minimal
+    /// big-endian bytes (up to 32).
+    chain_id: u256,
     address: Address,
     nonce: u64,
     v: u64,
@@ -118,7 +121,7 @@ pub const Authorization = struct {
 // Create a signed authorization
 pub fn createAuthorization(
     allocator: Allocator,
-    chain_id: u64,
+    chain_id: u256,
     addr: Address,
     nonce: u64,
     private_key: crypto.PrivateKey,
@@ -844,7 +847,7 @@ pub fn isItem(auth: *const Authorization) bool {
 }
 
 /// Check if authorization is unsigned (missing signature)
-pub fn isUnsigned(chain_id: u64, addr: Address, nonce: u64) bool {
+pub fn isUnsigned(chain_id: u256, addr: Address, nonce: u64) bool {
     // Every (chain_id, address, nonce) triple is a valid unsigned authorization:
     // chain_id = 0 is the EIP-7702 wildcard and the zero address clears delegation.
     _ = chain_id;
@@ -1030,4 +1033,131 @@ test "format() produces human-readable string" {
     try testing.expect(std.mem.indexOf(u8, formatted, "nonce=42") != null);
     try testing.expect(std.mem.indexOf(u8, formatted, "v=0") != null);
     try testing.expect(std.mem.indexOf(u8, formatted, "0x1111...1111") != null);
+}
+
+// Expected canonical RLP of a u256 chain_id, built independently of rlp.encode.
+fn expectedChainIdRlp(buf: *[33]u8, chain_id: u256) []const u8 {
+    var be: [32]u8 = undefined;
+    std.mem.writeInt(u256, &be, chain_id, .big);
+    const minimal = trimLeadingZeros(&be);
+    if (minimal.len == 0) {
+        buf[0] = 0x80;
+        return buf[0..1];
+    }
+    if (minimal.len == 1 and minimal[0] < 0x80) {
+        buf[0] = minimal[0];
+        return buf[0..1];
+    }
+    buf[0] = 0x80 + @as(u8, @intCast(minimal.len));
+    @memcpy(buf[1 .. 1 + minimal.len], minimal);
+    return buf[0 .. 1 + minimal.len];
+}
+
+const u256_chain_ids = [_]u256{ 0, 1, @as(u256, 1) << 64, std.math.maxInt(u256) };
+
+test "signingHash() encodes u256 chain_id canonically (0, 1, 2^64, max)" {
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
+
+    var hashes: [u256_chain_ids.len]Hash = undefined;
+    for (u256_chain_ids, 0..) |chain_id, i| {
+        const auth = Authorization{
+            .chain_id = chain_id,
+            .address = addr,
+            .nonce = 7,
+            .v = 0,
+            .r = [_]u8{0} ** 32,
+            .s = [_]u8{0} ** 32,
+        };
+
+        // keccak256(0x05 || rlp([chain_id, address, nonce]))
+        var chain_buf: [33]u8 = undefined;
+        const chain_rlp = expectedChainIdRlp(&chain_buf, chain_id);
+        var preimage: [2 + 33 + 21 + 1]u8 = undefined;
+        const payload_len = chain_rlp.len + 21 + 1;
+        preimage[0] = 0x05;
+        preimage[1] = 0xc0 + @as(u8, @intCast(payload_len));
+        @memcpy(preimage[2 .. 2 + chain_rlp.len], chain_rlp);
+        preimage[2 + chain_rlp.len] = 0x94;
+        @memcpy(preimage[3 + chain_rlp.len .. 23 + chain_rlp.len], &addr.bytes);
+        preimage[23 + chain_rlp.len] = 0x07;
+
+        hashes[i] = try auth.signingHash();
+        try testing.expectEqual(hash.keccak256(preimage[0 .. 2 + payload_len]), hashes[i]);
+    }
+
+    // All four chain ids sign distinct hashes; 2^64 must not truncate to 0
+    for (hashes, 0..) |a, i| {
+        for (hashes[i + 1 ..]) |b| {
+            try testing.expect(!std.mem.eql(u8, &a, &b));
+        }
+    }
+}
+
+test "encodeAuthorizationList encodes u256 chain_id canonically (0, 1, 2^64, max)" {
+    const allocator = testing.allocator;
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
+
+    for (u256_chain_ids) |chain_id| {
+        const auth = Authorization{
+            .chain_id = chain_id,
+            .address = addr,
+            .nonce = 0,
+            .v = 1,
+            .r = [_]u8{0x12} ** 32,
+            .s = [_]u8{0x34} ** 32,
+        };
+
+        const encoded = try encodeAuthorizationList(allocator, &[_]Authorization{auth});
+        defer allocator.free(encoded);
+
+        var chain_buf: [33]u8 = undefined;
+        const chain_rlp = expectedChainIdRlp(&chain_buf, chain_id);
+
+        // inner payload: chain_id + address(21) + nonce(1) + y_parity(1) + r(33) + s(33)
+        const inner_len = chain_rlp.len + 21 + 1 + 1 + 33 + 33;
+        try testing.expectEqual(inner_len + 4, encoded.len);
+        try testing.expectEqual(@as(u8, 0xf8), encoded[0]);
+        try testing.expectEqual(@as(u8, @intCast(inner_len + 2)), encoded[1]);
+        try testing.expectEqual(@as(u8, 0xf8), encoded[2]);
+        try testing.expectEqual(@as(u8, @intCast(inner_len)), encoded[3]);
+        try testing.expectEqualSlices(u8, chain_rlp, encoded[4 .. 4 + chain_rlp.len]);
+        try testing.expectEqual(@as(u8, 0x94), encoded[4 + chain_rlp.len]);
+    }
+}
+
+test "u256 chain_id signs, validates, recovers, compares and formats (0, 1, 2^64, max)" {
+    const allocator = testing.allocator;
+    const key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const signer = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(key));
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
+
+    const decimals = [_][]const u8{
+        "chain=0,",
+        "chain=1,",
+        "chain=18446744073709551616,",
+        "chain=115792089237316195423570985008687907853269984665640564039457584007913129639935,",
+    };
+
+    var prev: ?Authorization = null;
+    for (u256_chain_ids, decimals) |chain_id, decimal| {
+        const auth = try createAuthorization(allocator, chain_id, addr, 3, key);
+        try testing.expectEqual(chain_id, auth.chain_id);
+        try auth.validate();
+        try testing.expectEqual(signer, try auth.authority());
+        try testing.expect(isUnsigned(chain_id, addr, 3));
+
+        // Signature is bound to the full 256-bit chain_id
+        var other = auth;
+        other.chain_id = chain_id ^ (@as(u256, 1) << 200);
+        try testing.expect(!equalsAuth(&auth, &other));
+        const recovered = other.authority() catch Address.ZERO;
+        try testing.expect(!recovered.equals(signer));
+
+        if (prev) |p| try testing.expect(!equalsAuth(&auth, &p));
+        prev = auth;
+
+        const formatted = try format(allocator, &auth);
+        defer allocator.free(formatted);
+        try testing.expect(std.mem.indexOf(u8, formatted, decimal) != null);
+    }
 }
