@@ -1,6 +1,6 @@
 {
   "name": "@tevm/zig",
-  "version": "0.2.28",
+  "version": "0.3.0",
   "private": false,
   "description": "Zig core for Voltaire - Ethereum primitives, cryptography, and precompiles",
   "keywords": [
