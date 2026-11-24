@@ -184,6 +184,7 @@ pub const Int16 = @import("Int16/int16.zig");
 pub const Int32 = @import("Int32/int32.zig");
 pub const Int64 = @import("Int64/int64.zig");
 pub const Int128 = @import("Int128/int128.zig");
+pub const Int256 = @import("Int256/int256.zig");
 
 // EIP-1559 Fee Types
 pub const BaseFeePerGas = @import("BaseFeePerGas/BaseFeePerGas.zig").BaseFeePerGas;
