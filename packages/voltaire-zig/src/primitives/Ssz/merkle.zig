@@ -112,6 +112,245 @@ pub fn hashTreeRootBasic(comptime T: type, value: T) [32]u8 {
     return result;
 }
 
+/// Binary Merkle tree over 32-byte leaves, matching the TypeScript
+/// `MerkleTree` primitive: Keccak256(left ++ right) node hashing, odd
+/// levels padded to the next power of two by repeating the last leaf.
+pub const MerkleTree = struct {
+    root: [32]u8,
+    depth: usize,
+    /// Owned copy of the input leaves.
+    leaves: [][32]u8,
+
+    pub const Error = error{ EmptyTree, LeafIndexOutOfBounds, InvalidProofLength };
+
+    /// Proof that `leaf` sits at `leaf_index` in a tree of `tree_depth`.
+    pub const Proof = struct {
+        leaf: [32]u8,
+        /// Owned sibling hashes, leaf level first.
+        siblings: [][32]u8,
+        leaf_index: usize,
+        tree_depth: usize,
+
+        pub fn deinit(self: Proof, allocator: std.mem.Allocator) void {
+            allocator.free(self.siblings);
+        }
+    };
+
+    fn keccakPair(left: [32]u8, right: [32]u8) [32]u8 {
+        var h = std.crypto.hash.sha3.Keccak256.init(.{});
+        h.update(&left);
+        h.update(&right);
+        var out: [32]u8 = undefined;
+        h.final(&out);
+        return out;
+    }
+
+    fn treeDepth(n: usize) usize {
+        if (n <= 1) return 0;
+        return std.math.log2_int_ceil(usize, n);
+    }
+
+    /// Builds the padded bottom level. Caller owns returned slice.
+    fn paddedLevel(allocator: std.mem.Allocator, leaves: []const [32]u8, depth: usize) ![][32]u8 {
+        const target = @as(usize, 1) << @intCast(depth);
+        const level = try allocator.alloc([32]u8, target);
+        @memcpy(level[0..leaves.len], leaves);
+        for (leaves.len..target) |i| level[i] = leaves[leaves.len - 1];
+        return level;
+    }
+
+    /// Hashes `level` in place into its parent level; returns the parent slice.
+    fn reduce(level: [][32]u8) [][32]u8 {
+        const n = level.len / 2;
+        for (0..n) |i| level[i] = keccakPair(level[2 * i], level[2 * i + 1]);
+        return level[0..n];
+    }
+
+    /// Creates a tree from leaf hashes. Caller owns result; call `deinit`.
+    pub fn from(allocator: std.mem.Allocator, leaves: []const [32]u8) !MerkleTree {
+        if (leaves.len == 0) return Error.EmptyTree;
+        const owned = try allocator.dupe([32]u8, leaves);
+        errdefer allocator.free(owned);
+
+        const depth = treeDepth(leaves.len);
+        const level = try paddedLevel(allocator, leaves, depth);
+        defer allocator.free(level);
+
+        var cur = level;
+        while (cur.len > 1) cur = reduce(cur);
+
+        return .{ .root = cur[0], .depth = depth, .leaves = owned };
+    }
+
+    pub fn deinit(self: MerkleTree, allocator: std.mem.Allocator) void {
+        allocator.free(self.leaves);
+    }
+
+    pub fn getRoot(self: MerkleTree) [32]u8 {
+        return self.root;
+    }
+
+    pub fn getLeaves(self: MerkleTree) []const [32]u8 {
+        return self.leaves;
+    }
+
+    /// Generates an inclusion proof for the leaf at `leaf_index`.
+    /// Caller owns result; call `Proof.deinit`.
+    pub fn getProof(self: MerkleTree, allocator: std.mem.Allocator, leaf_index: usize) !Proof {
+        return proofFromLeaves(allocator, self.leaves, leaf_index);
+    }
+
+    /// Generates an inclusion proof directly from leaves (TS `getProof`).
+    pub fn proofFromLeaves(allocator: std.mem.Allocator, leaves: []const [32]u8, leaf_index: usize) !Proof {
+        if (leaves.len == 0) return Error.EmptyTree;
+        if (leaf_index >= leaves.len) return Error.LeafIndexOutOfBounds;
+
+        const depth = treeDepth(leaves.len);
+        const siblings = try allocator.alloc([32]u8, depth);
+        errdefer allocator.free(siblings);
+
+        const level = try paddedLevel(allocator, leaves, depth);
+        defer allocator.free(level);
+
+        var cur = level;
+        var index = leaf_index;
+        var d: usize = 0;
+        while (cur.len > 1) : (d += 1) {
+            siblings[d] = cur[index ^ 1];
+            cur = reduce(cur);
+            index /= 2;
+        }
+
+        return .{ .leaf = leaves[leaf_index], .siblings = siblings, .leaf_index = leaf_index, .tree_depth = depth };
+    }
+
+    /// Verifies `proof` against `expected_root`.
+    /// Returns `error.InvalidProofLength` if siblings.len != tree_depth.
+    pub fn verify(proof: Proof, expected_root: [32]u8) Error!bool {
+        if (proof.siblings.len != proof.tree_depth) return Error.InvalidProofLength;
+
+        var cur = proof.leaf;
+        var index = proof.leaf_index;
+        for (proof.siblings) |sibling| {
+            cur = if (index % 2 == 0) keccakPair(cur, sibling) else keccakPair(sibling, cur);
+            index /= 2;
+        }
+        return std.mem.eql(u8, &cur, &expected_root);
+    }
+};
+
+test "MerkleTree from empty errors" {
+    try std.testing.expectError(MerkleTree.Error.EmptyTree, MerkleTree.from(std.testing.allocator, &.{}));
+}
+
+test "MerkleTree single leaf root is leaf" {
+    const allocator = std.testing.allocator;
+    const a = [_]u8{0x11} ** 32;
+    const tree = try MerkleTree.from(allocator, &.{a});
+    defer tree.deinit(allocator);
+    try std.testing.expectEqual(a, tree.getRoot());
+    try std.testing.expectEqual(@as(usize, 0), tree.depth);
+
+    const proof = try tree.getProof(allocator, 0);
+    defer proof.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 0), proof.siblings.len);
+    try std.testing.expect(try MerkleTree.verify(proof, a));
+}
+
+test "MerkleTree keccak256 known vector" {
+    // keccak256(0x00 ** 64)
+    const allocator = std.testing.allocator;
+    const z = [_]u8{0} ** 32;
+    const tree = try MerkleTree.from(allocator, &.{ z, z });
+    defer tree.deinit(allocator);
+    var expected: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&expected, "ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5");
+    try std.testing.expectEqual(expected, tree.getRoot());
+}
+
+test "MerkleTree odd leaves pad with last leaf" {
+    const allocator = std.testing.allocator;
+    const a = [_]u8{1} ** 32;
+    const b = [_]u8{2} ** 32;
+    const c = [_]u8{3} ** 32;
+    const tree = try MerkleTree.from(allocator, &.{ a, b, c });
+    defer tree.deinit(allocator);
+
+    const expected = MerkleTree.keccakPair(MerkleTree.keccakPair(a, b), MerkleTree.keccakPair(c, c));
+    try std.testing.expectEqual(expected, tree.getRoot());
+    try std.testing.expectEqual(@as(usize, 2), tree.depth);
+    try std.testing.expectEqual(@as(usize, 3), tree.getLeaves().len);
+    try std.testing.expectEqual(c, tree.getLeaves()[2]);
+}
+
+test "MerkleTree proofs verify for every leaf" {
+    const allocator = std.testing.allocator;
+    var leaves: [5][32]u8 = undefined;
+    for (&leaves, 0..) |*l, i| l.* = [_]u8{@intCast(i + 1)} ** 32;
+    const tree = try MerkleTree.from(allocator, &leaves);
+    defer tree.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 3), tree.depth);
+
+    for (0..leaves.len) |i| {
+        const proof = try tree.getProof(allocator, i);
+        defer proof.deinit(allocator);
+        try std.testing.expectEqual(@as(usize, 3), proof.siblings.len);
+        try std.testing.expectEqual(leaves[i], proof.leaf);
+        try std.testing.expect(try MerkleTree.verify(proof, tree.getRoot()));
+    }
+}
+
+test "MerkleTree proof sibling order" {
+    const allocator = std.testing.allocator;
+    const a = [_]u8{1} ** 32;
+    const b = [_]u8{2} ** 32;
+    const c = [_]u8{3} ** 32;
+    const d = [_]u8{4} ** 32;
+    const proof = try MerkleTree.proofFromLeaves(allocator, &.{ a, b, c, d }, 2);
+    defer proof.deinit(allocator);
+    try std.testing.expectEqual(d, proof.siblings[0]);
+    try std.testing.expectEqual(MerkleTree.keccakPair(a, b), proof.siblings[1]);
+}
+
+test "MerkleTree verify rejects tampered proof" {
+    const allocator = std.testing.allocator;
+    const leaves = [_][32]u8{ [_]u8{1} ** 32, [_]u8{2} ** 32, [_]u8{3} ** 32, [_]u8{4} ** 32 };
+    const tree = try MerkleTree.from(allocator, &leaves);
+    defer tree.deinit(allocator);
+
+    var proof = try tree.getProof(allocator, 1);
+    defer proof.deinit(allocator);
+
+    const good_leaf = proof.leaf;
+    proof.leaf[0] ^= 0xff;
+    try std.testing.expect(!try MerkleTree.verify(proof, tree.getRoot()));
+    proof.leaf = good_leaf;
+
+    proof.leaf_index = 0;
+    try std.testing.expect(!try MerkleTree.verify(proof, tree.getRoot()));
+    proof.leaf_index = 1;
+
+    try std.testing.expect(!try MerkleTree.verify(proof, [_]u8{0} ** 32));
+}
+
+test "MerkleTree verify rejects wrong proof length" {
+    const allocator = std.testing.allocator;
+    const leaves = [_][32]u8{ [_]u8{1} ** 32, [_]u8{2} ** 32 };
+    const tree = try MerkleTree.from(allocator, &leaves);
+    defer tree.deinit(allocator);
+    var proof = try tree.getProof(allocator, 0);
+    defer proof.deinit(allocator);
+    proof.tree_depth = 2;
+    try std.testing.expectError(MerkleTree.Error.InvalidProofLength, MerkleTree.verify(proof, tree.getRoot()));
+}
+
+test "MerkleTree getProof out of bounds" {
+    const allocator = std.testing.allocator;
+    const leaves = [_][32]u8{ [_]u8{1} ** 32, [_]u8{2} ** 32 };
+    try std.testing.expectError(MerkleTree.Error.LeafIndexOutOfBounds, MerkleTree.proofFromLeaves(allocator, &leaves, 2));
+    try std.testing.expectError(MerkleTree.Error.EmptyTree, MerkleTree.proofFromLeaves(allocator, &.{}, 0));
+}
+
 test "chunkify single chunk" {
     const allocator = std.testing.allocator;
     const data = [_]u8{1} ** 16; // Half chunk

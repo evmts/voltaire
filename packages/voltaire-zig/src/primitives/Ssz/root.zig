@@ -40,6 +40,7 @@ pub const fixedSize = container.fixedSize;
 
 pub const hashTreeRoot = merkle.hashTreeRoot;
 pub const hashTreeRootBasic = merkle.hashTreeRootBasic;
+pub const MerkleTree = merkle.MerkleTree;
 
 test {
     _ = basicTypes;
