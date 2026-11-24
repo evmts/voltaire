@@ -13,6 +13,9 @@
 //! - **RIPEMD160**: Used in Bitcoin-compatible operations
 //! - **Blake2b**: High-performance alternative hash function
 //!
+//! ### Message Authentication
+//! - **HMAC**: SHA-256, SHA-512, Keccak-256, and generic streaming support
+//!
 //! ### Digital Signatures
 //! - **ECDSA**: Elliptic Curve Digital Signature Algorithm
 //! - **secp256k1**: Bitcoin/Ethereum curve for signatures
@@ -86,6 +89,17 @@ pub const Blake2 = blake2_module.Blake2;
 const ripemd160_module = @import("ripemd160.zig");
 pub const Ripemd160 = ripemd160_module.Ripemd160;
 
+const hmac = @import("std").crypto.auth.hmac;
+
+/// Construct a streaming HMAC type for a Zig standard-library compatible hash.
+pub const Hmac = hmac.Hmac;
+/// Write a SHA-256 authentication tag to the 32-byte output using (out, message, key).
+pub const hmacSha256 = hmac.sha2.HmacSha256.create;
+/// Write a SHA-512 authentication tag to the 64-byte output using (out, message, key).
+pub const hmacSha512 = hmac.sha2.HmacSha512.create;
+/// Write a Keccak-256 authentication tag to the 32-byte output using (out, message, key).
+pub const hmacKeccak256 = Hmac(Keccak256).create;
+
 // Ethereum standards
 pub const Eip712 = @import("eip712.zig");
 
@@ -141,3 +155,7 @@ pub const bip39 = @import("bip39.zig");
 
 // Export Keccak256 from std.crypto for primitives modules
 pub const Keccak256 = @import("std").crypto.hash.sha3.Keccak256;
+
+test "public HMAC matches known tags" {
+    try @import("hmac_test.zig").checkKnownTags(@This());
+}
