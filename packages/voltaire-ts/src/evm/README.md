@@ -387,7 +387,7 @@ All handlers have comprehensive test coverage:
 bun run test -- evm
 
 # Zig tests
-zig build test -Dtest-filter=evm
+zig build test
 ```
 
 Test files colocated with handlers:

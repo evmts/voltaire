@@ -85,11 +85,8 @@ done
 
 ### Zig
 ```bash
-# Run individual example
-zig build && zig run examples/crypto/sha256/basic-usage.zig
-
-# Or use build system (if configured)
-zig build example-sha256-basic
+# No build.zig step runs this example yet, and plain `zig run` cannot
+# resolve its @import("crypto") module
 ```
 
 ## Key Concepts Demonstrated

@@ -451,17 +451,13 @@ if (result.error_code !== 0) {
 cargo build --release
 # Output: target/release/libcrypto_wrappers.a
 
-# 2. C libraries built by Zig
-zig build deps
-# Output: zig-out/lib/libblst.a, libc_kzg.a
-
-# 3. Main Zig build links everything
+# 2. Main Zig build compiles the C libraries and links everything
 zig build
-# Output: native libs, WASM
+# Output: zig-out/lib/libblst.a, libc_kzg.a, native libs, WASM
 
-# 4. TypeScript bundles
-bun run build:dist
-# Output: dist/
+# 3. TypeScript bundles
+pnpm --filter @tevm/voltaire build:dist
+# Output: packages/voltaire-ts/dist/
 ```
 
 ### Dependency Graph

@@ -202,7 +202,7 @@ pub fn example() !void {
 ## Testing
 
 \`\`\`bash
-zig build test -Dtest-filter={modulename}
+zig build test
 \`\`\`
 
 Test coverage includes:

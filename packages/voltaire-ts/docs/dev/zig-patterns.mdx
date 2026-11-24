@@ -301,11 +301,8 @@ test "debug output" {
 ### Running Tests
 
 ```bash
-# All tests
+# All tests (build.zig has no test filter)
 zig build test
-
-# Filter by name
-zig build -Dtest-filter=Address
 
 # With debug output
 zig build test 2>&1 | head -100

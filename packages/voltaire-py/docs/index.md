@@ -16,7 +16,7 @@ flowchart LR
 
 ```bash
 # 1. Build the native library from the Voltaire repo root
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 
 # 2. Point ctypes at the library (optional if built in-tree)
 export VOLTAIRE_LIB_PATH="$PWD/zig-out/native/libprimitives_ts_native.dylib" # .so on Linux

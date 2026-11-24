@@ -80,5 +80,5 @@ Create in `src/primitives/` with appropriate structure.
 
 ## Verification
 ```bash
-bun run test -- BrandedPrivateKey BrandedPublicKey BrandedChainId BrandedNonce
+pnpm --filter @tevm/voltaire test:run BrandedPrivateKey BrandedPublicKey BrandedChainId BrandedNonce
 ```

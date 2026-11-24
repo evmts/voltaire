@@ -46,13 +46,8 @@ src/primitives/Address/Address.bench.ts    # TS benchmarks (mitata)
 ### Zig Tests
 
 ```bash
-# All Zig tests
+# All Zig tests (build.zig has no test filter)
 zig build test
-
-# Filter by name
-zig build -Dtest-filter=Address
-zig build -Dtest-filter=keccak
-zig build -Dtest-filter="fromHex"
 
 # With debug output
 zig build test 2>&1 | head -100
@@ -62,21 +57,19 @@ zig build test 2>&1 | head -100
 
 ```bash
 # Watch mode (development)
-bun run test
+pnpm --filter @tevm/voltaire test
 
 # Single run
-bun run test:run
+pnpm --filter @tevm/voltaire test:run
 
-# Filter tests
-bun run test -- address
-bun run test -- "Address.fromHex"
+# Filter tests by path
+pnpm --filter @tevm/voltaire test:run src/primitives/Address
 
 # Coverage report
-bun run test:coverage
+pnpm --filter @tevm/voltaire test:coverage
 
-# Specific test suites
-bun run test:native      # Native FFI
-bun run test:wasm        # WASM
+# WASM tests
+pnpm --filter @tevm/voltaire test:wasm
 ```
 
 ## TDD Workflow
@@ -91,7 +84,7 @@ bun run test:wasm        # WASM
 
 ```bash
 # Keep this running in a terminal
-while true; do zig build && zig build test && bun run test:run; sleep 2; done
+while true; do zig build && zig build test && pnpm --filter @tevm/voltaire test:run; sleep 2; done
 ```
 
 ### Bug Fixing
@@ -274,11 +267,8 @@ describe("checksum test vectors", () => {
 ### Generating Coverage
 
 ```bash
-# TypeScript coverage
-bun run test:coverage
-
-# View report
-open coverage/index.html
+# TypeScript coverage (text summary; JSON in packages/voltaire-ts/coverage/)
+pnpm --filter @tevm/voltaire test:coverage
 ```
 
 ### Coverage Goals
@@ -319,17 +309,14 @@ test "fuzz: fromHex roundtrip" {
 
 ```bash
 # Enable fuzzing
-zig build test -Dfuzz=true
+zig build test --fuzz
 ```
 
 ## Security Testing
 
 ```bash
-# Run security-focused tests
-zig build test-security
-
-# Constant-time verification
-zig build test -Dtest-filter=secure
+# Run security-focused TS tests (files matching "security")
+pnpm --filter @tevm/voltaire test:run security
 ```
 
 ### What Security Tests Cover
@@ -383,8 +370,8 @@ await run();
 # Zig benchmarks
 zig build bench -Dwith-benches=true
 
-# TypeScript benchmarks
-bun run bench
+# TypeScript benchmarks (colocated mitata *.bench.ts files)
+cd packages/voltaire-ts && bun run src/crypto/keccak256.bench.ts
 ```
 
 ## Common Mistakes

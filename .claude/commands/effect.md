@@ -88,7 +88,7 @@ Follow strict TDD + DDD:
 # Add Effect Schema tabs where appropriate (constructors, conversions, validation)
 
 # 3. Verify docs build
-bun run docs:build
+cd packages/voltaire-ts/docs && npx mint broken-links
 ```
 
 **Doc patterns** (see Address as reference):
@@ -408,7 +408,7 @@ Fix any type errors. Common issues:
 ### 6. Verify Docs Build
 
 ```bash
-bun run docs:build
+cd packages/voltaire-ts/docs && npx mint broken-links
 ```
 
 Ensure no MDX syntax errors or broken links.
@@ -782,7 +782,7 @@ For each primitive:
 ```bash
 # 1. Documentation First
 # Edit index.mdx and sub-pages, add Effect tabs
-bun run docs:build  # Verify docs build
+cd packages/voltaire-ts/docs && npx mint broken-links  # Verify docs build
 
 # 2. Tests First
 # Write comprehensive effect.test.ts
@@ -796,7 +796,7 @@ bun test:run src/primitives/{Name}/effect.test.ts  # Should pass
 bun typecheck  # Fix any type errors
 
 # 5. Final Verification
-bun run docs:build  # Docs still build
+cd packages/voltaire-ts/docs && npx mint broken-links  # Docs still build
 bun test:run  # All tests pass
 ```
 

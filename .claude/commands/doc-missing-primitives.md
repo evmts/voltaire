@@ -61,6 +61,6 @@ Start with most important: Abi, AccessList, Authorization, Blob.
 
 ## Verification
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 # Check localhost:4321/primitives/{name}
 ```

@@ -68,5 +68,5 @@ Add to respective primitive namespaces.
 
 ## Verification
 ```bash
-bun run test -- batch
+pnpm --filter @tevm/voltaire test:run batch
 ```

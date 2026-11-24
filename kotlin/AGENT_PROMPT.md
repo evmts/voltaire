@@ -56,7 +56,7 @@ src/primitives/Address/
 
 ```bash
 # Build native library first
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 
 # Build Kotlin
 cd kotlin && ./gradlew build

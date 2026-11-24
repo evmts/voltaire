@@ -17,8 +17,7 @@ Fundamental hex operations:
 # TypeScript
 bun examples/primitives/hex/basic-usage.ts
 
-# Zig
-zig build run-example -- primitives/hex/basic-usage.zig
+# Zig: no build.zig step runs this example yet
 ```
 
 ### 2. Hex Manipulation (`hex-manipulation.ts` / `hex-manipulation.zig`)
@@ -36,8 +35,7 @@ Advanced hex manipulation:
 # TypeScript
 bun examples/primitives/hex/hex-manipulation.ts
 
-# Zig
-zig build run-example -- primitives/hex/hex-manipulation.zig
+# Zig: no build.zig step runs this example yet
 ```
 
 ### 3. Random and Utilities (`random-and-utilities.ts` / `random-and-utilities.zig`)
@@ -55,8 +53,7 @@ Utility functions and random generation:
 # TypeScript
 bun examples/primitives/hex/random-and-utilities.ts
 
-# Zig
-zig build run-example -- primitives/hex/random-and-utilities.zig
+# Zig: no build.zig step runs this example yet
 ```
 
 ### 4. Ethereum Use Cases (`ethereum-use-cases.ts` / `ethereum-use-cases.zig`)
@@ -76,8 +73,7 @@ Real-world Ethereum development patterns:
 # TypeScript
 bun examples/primitives/hex/ethereum-use-cases.ts
 
-# Zig
-zig build run-example -- primitives/hex/ethereum-use-cases.zig
+# Zig: no build.zig step runs this example yet
 ```
 
 ### 5. String Encoding (`string-encoding.ts` / `string-encoding.zig`)
@@ -98,8 +94,7 @@ UTF-8 string encoding and decoding:
 # TypeScript
 bun examples/primitives/hex/string-encoding.ts
 
-# Zig
-zig build run-example -- primitives/hex/string-encoding.zig
+# Zig: no build.zig step runs this example yet
 ```
 
 ### 6. Type Safety (`type-safety.ts` / `type-safety.zig`)
@@ -120,8 +115,7 @@ Compile-time type safety with `Sized<N>`:
 # TypeScript
 bun examples/primitives/hex/type-safety.ts
 
-# Zig
-zig build run-example -- primitives/hex/type-safety.zig
+# Zig: no build.zig step runs this example yet
 ```
 
 ## Key Concepts

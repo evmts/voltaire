@@ -12,7 +12,6 @@
         "fs:read:**",
         "proc:spawn:rg *",
         "proc:spawn:zig build test*",
-        "proc:spawn:zig build -Dtest-filter=*",
         "proc:spawn:pnpm test*",
         "proc:spawn:pnpm typecheck*"
       ],

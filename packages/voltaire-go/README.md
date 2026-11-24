@@ -2,13 +2,13 @@
 
 Go bindings for [Voltaire](https://github.com/evmts/voltaire/tree/main/packages/voltaire-go) Ethereum primitives and cryptography.
 
-Module path (`go.mod`): `github.com/voltaire-labs/voltaire-go` (Go `1.22+`). Core primitives and Keccak/SHA-256 hashing call Voltaire's Zig-compiled native library (`libprimitives_ts_native`) through CGO (`internal/ffi`); RLP, Signatures, Bytes/Bytes32, BLAKE2b, and RIPEMD-160 are pure Go.
+Module path (`go.mod`): `github.com/evmts/voltaire/packages/voltaire-go` (Go `1.22+`). Core primitives and Keccak/SHA-256 hashing call Voltaire's Zig-compiled native library (`libprimitives_ts_native`) through CGO (`internal/ffi`); RLP, Signatures, Bytes/Bytes32, BLAKE2b, and RIPEMD-160 are pure Go.
 
 ## CGO Architecture
 
 ```mermaid
 flowchart LR
-    GoApp["Go Application\n(github.com/voltaire-labs/voltaire-go)"] --> CGO["CGO-Backed Packages\naddress, hash, hex, u256,\nprivatekey, publickey,\nkeccak256, sha256"]
+    GoApp["Go Application\n(github.com/evmts/voltaire/packages/voltaire-go)"] --> CGO["CGO-Backed Packages\naddress, hash, hex, u256,\nprivatekey, publickey,\nkeccak256, sha256"]
     GoApp --> Pure["Pure-Go Packages\nbytes, bytes32, rlp,\nsignature, blake2, ripemd160"]
     CGO --> FFI["internal/ffi\n(CGO + primitives.h)"]
     FFI --> Zig["libprimitives_ts_native\n(zig-out/native)"]
@@ -17,31 +17,34 @@ flowchart LR
 ## Requirements
 
 - Go `1.22+` with `CGO_ENABLED=1` for CGO-backed packages
-- Zig `0.15+` to build `libprimitives_ts_native`
+- Zig `0.15.1+` and the libwally-core submodule (`git submodule update --init packages/voltaire-zig/lib/libwally-core`) to build `libprimitives_ts_native`
 
 ## Building and Installing
 
 Build the native library from the Voltaire repository root (`https://github.com/evmts/voltaire`):
 
 ```bash
-zig build build-ts-native
+# -> zig-out/native/libprimitives_ts_native.{dylib,so}
+zig build build-ts-native -Dwith-c-api=true
 ```
 
-Then build or test `packages/voltaire-go`:
+Then build or test `packages/voltaire-go`. The Zig steps rebuild the native library and pass its path to CGO:
 
 ```bash
+zig build build-go -Dwith-c-api=true   # go build ./...
+zig build test-go -Dwith-c-api=true    # go test -v ./...
+
+# Or, once the native library exists:
 cd packages/voltaire-go
-make build       # builds native library + CGO_ENABLED=1 go build ./...
-make test        # builds native library + runs go test with library path set
-make test-quick  # runs go test without rebuilding native library
+make test-quick  # runs go test with DYLD_LIBRARY_PATH/LD_LIBRARY_PATH set
 ```
 
 Import packages via the module path declared in `go.mod`:
 
 ```go
 import (
-    "github.com/voltaire-labs/voltaire-go/primitives/address"
-    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/address"
+    "github.com/evmts/voltaire/packages/voltaire-go/crypto/keccak256"
 )
 ```
 
@@ -54,8 +57,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
-    "github.com/voltaire-labs/voltaire-go/primitives/address"
+    "github.com/evmts/voltaire/packages/voltaire-go/crypto/keccak256"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/address"
 )
 
 func main() {
@@ -76,7 +79,7 @@ func main() {
 |---------|---------|---------|
 | `primitives/address` | CGO | 20-byte `Address`, EIP-55 checksum, JSON/Text marshaling |
 | `primitives/bytes` | Pure Go | Safe `Slice`, `Concat`, `PadLeft`/`PadRight`, `TrimLeft`/`TrimRight`, constant-time `Equal` |
-| `primitives/bytes32` | Pure Go | Fixed `[32]byte` with hex/JSON/Text codecs and constant-time equality |
+| `primitives/bytes32` | Pure Go | Fixed `[32]byte` with hex/JSON/Text codecs, `Equal`, and `Compare` |
 | `primitives/hash` | CGO | 32-byte `Hash` with constant-time equality and JSON/Text marshaling |
 | `primitives/hex` | CGO | `Encode`, `Decode`, `MustDecode`, `HasPrefix`, `TrimPrefix`, `AddPrefix` |
 | `primitives/privatekey` | CGO + `dcrd/secp256k1` | 32-byte secp256k1 private key, key generation, `Sign`, `SignMessage`, `Address` |

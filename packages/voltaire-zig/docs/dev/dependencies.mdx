@@ -201,10 +201,7 @@ From `package.json`.
 
 ```bash
 # Node.js dependencies
-bun install
-
-# Zig dependencies (automatic via build)
-zig build deps
+pnpm install
 
 # Git submodules (libwally-core)
 git submodule update --init --recursive
@@ -230,7 +227,7 @@ zig build
 
 ### Node.js
 ```bash
-bun update
+pnpm -r update
 ```
 
 ---
@@ -261,5 +258,5 @@ bun update
 ### Fetched by Cargo
 - arkworks, keccak-asm, tiny-keccak
 
-### Fetched by bun/npm
+### Fetched by pnpm
 - All Node.js packages

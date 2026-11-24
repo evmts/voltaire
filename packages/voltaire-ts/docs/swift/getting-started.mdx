@@ -16,7 +16,7 @@ Use Voltaire's Swift wrappers to access Ethereum primitives from iOS and macOS.
 From the repository root:
 
 ```bash
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 cd swift
 swift build
 swift test

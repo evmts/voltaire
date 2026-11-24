@@ -3,7 +3,7 @@ title: Voltaire C API
 description: C99 FFI bindings for Ethereum primitives, cryptography, EVM bytecode analysis, and forkable state exported from Zig.
 ---
 
-Voltaire exports a C99-compatible ABI directly from Zig via `voltaire.h` and `libprimitives`. Callers link against a single native archive or shared library with zero C wrapper code and zero runtime allocator assumptions for primitive operations.
+Voltaire exports a C99-compatible ABI directly from Zig via `voltaire.h` and `libprimitives_c`. Callers link against a single shared library with zero C wrapper code and zero runtime allocator assumptions for primitive operations.
 
 ## Architecture and Memory Model
 
@@ -28,17 +28,20 @@ flowchart LR
 Build the library from the Voltaire repository root:
 
 ```bash
-# Native static and dynamic library (zig-out/lib/libprimitives.*)
-zig build build-ts-native
+# The C API links libwally-core, a git submodule
+git submodule update --init packages/voltaire-zig/lib/libwally-core
 
-# WebAssembly reactor module (zig-out/bin/primitives.wasm)
+# Native static and dynamic library (zig-out/lib/libprimitives_c.*)
+zig build -Dwith-c-api=true
+
+# WebAssembly reactor module (wasm/primitives.wasm)
 zig build build-ts-wasm
 ```
 
 Link against `voltaire.h`:
 
 ```bash
-cc -std=c99 -Ipackages/voltaire-c/include main.c -Lzig-out/lib -lprimitives -o main
+cc -std=c99 -Ipackages/voltaire-c/include main.c -Lzig-out/lib -lprimitives_c -Wl,-rpath,"$PWD/zig-out/lib" -o main
 ```
 
 ## Quick Start

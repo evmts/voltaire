@@ -72,8 +72,9 @@ Native bindings compile Zig plus audited Rust/C crypto dependencies (`blst`, `c-
 ```bash
 git clone https://github.com/evmts/voltaire.git
 cd voltaire
-zig build                # Builds native library and Zig targets
-zig build build-ts-native # Builds shared library for FFI bindings
+git submodule update --init --recursive     # libwally-core, needed by -Dwith-c-api=true
+zig build                                   # Builds Zig modules, C libraries, and Rust crypto_wrappers
+zig build build-ts-native -Dwith-c-api=true # Builds shared library for FFI bindings
 ```
 
 Requires **Zig 0.15.1+** and **Rust / Cargo**.

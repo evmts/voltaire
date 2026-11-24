@@ -7,13 +7,13 @@ description: Common build and runtime issues
 
 - Cause: The native Zig library isn’t on the runtime search path.
 - Fix (macOS):
-  - Build once: `zig build build-ts-native`
+  - Build once: `zig build build-ts-native -Dwith-c-api=true`
   - Copy the `.dylib` into the app bundle’s `Frameworks` folder (see Xcode Integration), or add `../zig-out/native` to Runpath Search Paths while developing.
 
 ## Undefined symbols for architecture … (linker)
 
 - Cause: The native library wasn’t built before Swift compiled/linked.
-- Fix: Run `zig build build-ts-native` from the repo root, then rebuild your Swift target.
+- Fix: Run `zig build build-ts-native -Dwith-c-api=true` from the repo root, then rebuild your Swift target.
 
 ## Invalid hex / invalid length (runtime)
 

@@ -85,7 +85,7 @@ const signature = Secp256k1.sign(message, privateKey)
 ```
 
 <Warning>
-Runtime support: Native FFI is <strong>Bun-only</strong>. In <strong>Node.js</strong>, use the JS or WASM entrypoint. Ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native`).
+Runtime support: Native FFI is <strong>Bun-only</strong>. In <strong>Node.js</strong>, use the JS or WASM entrypoint. Ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native -Dwith-c-api=true`).
 </Warning>
 
 

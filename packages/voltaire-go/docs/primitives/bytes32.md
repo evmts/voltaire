@@ -3,7 +3,7 @@ title: Bytes32
 description: Pure-Go fixed 32-byte array type with hex, JSON, and text marshaling and constant-time equality.
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/primitives/bytes32` defines `Bytes32`, a pure-Go fixed 32-byte array for hashes, storage slots, and 256-bit fixed values.
+Package `github.com/evmts/voltaire/packages/voltaire-go/primitives/bytes32` defines `Bytes32`, a pure-Go fixed 32-byte array for hashes, storage slots, and 256-bit fixed values.
 
 ## Type and Constants
 
@@ -40,7 +40,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/voltaire-labs/voltaire-go/primitives/bytes32"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/bytes32"
 )
 
 type StorageSlot struct {

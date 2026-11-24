@@ -48,14 +48,15 @@ flowchart LR
 ```
 
 <Steps>
-<Step title="Build libprimitives">
+<Step title="Build libprimitives_c">
 From the Voltaire repository root, compile the native C ABI library:
 
 ```bash
-zig build build-ts-native
+git submodule update --init packages/voltaire-zig/lib/libwally-core
+zig build -Dwith-c-api=true
 ```
 
-Confirm `zig-out/lib/libprimitives.a` (or `.dylib`/`.so`) exists.
+Confirm `zig-out/lib/libprimitives_c.dylib` (or `.so`) exists.
 </Step>
 
 <Step title="Generate a key and sign an EIP-191 message">
@@ -184,7 +185,7 @@ Encode `transfer(address,uint256)` using the recovered address and inspect the 4
 <Step title="Compile and run">
 ```bash
 cc -std=c99 -Wall -Wextra -Ipackages/voltaire-c/include signer_demo.c \
-   -Lzig-out/lib -lprimitives -o signer_demo
+   -Lzig-out/lib -lprimitives_c -Wl,-rpath,"$PWD/zig-out/lib" -o signer_demo
 ./signer_demo
 ```
 

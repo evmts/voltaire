@@ -3,7 +3,7 @@ title: RIPEMD-160
 description: Pure-Go RIPEMD-160 hashing and Bitcoin Hash160 (RIPEMD160(SHA256(x))).
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/crypto/ripemd160` provides pure-Go 20-byte RIPEMD-160 hashing (Ethereum precompile `0x03`) and Bitcoin `Hash160` (`RIPEMD160(SHA256(data))`), backed by `golang.org/x/crypto/ripemd160` and `crypto/sha256`.
+Package `github.com/evmts/voltaire/packages/voltaire-go/crypto/ripemd160` provides pure-Go 20-byte RIPEMD-160 hashing (Ethereum precompile `0x03`) and Bitcoin `Hash160` (`RIPEMD160(SHA256(data))`), backed by `golang.org/x/crypto/ripemd160` and `crypto/sha256`.
 
 ## Constants and Functions
 
@@ -28,7 +28,7 @@ package main
 import (
     "fmt"
 
-    "github.com/voltaire-labs/voltaire-go/crypto/ripemd160"
+    "github.com/evmts/voltaire/packages/voltaire-go/crypto/ripemd160"
 )
 
 func main() {

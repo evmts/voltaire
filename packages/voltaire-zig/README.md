@@ -28,13 +28,13 @@ flowchart LR
 
 ## Exported Zig Modules
 
-`build.zig` exports seven modules from the repository root (`build.zig.zon` package `.primitives`, `minimum_zig_version = "0.15.1"`):
+`build.zig` exports seven modules (plus `*_wasm` variants for WASM builds) from the repository root (`build.zig.zon` package `.primitives`, `minimum_zig_version = "0.15.1"`):
 
 | Module | Root Source | Contents |
 | :--- | :--- | :--- |
 | `primitives` | `packages/voltaire-zig/src/primitives/root.zig` | `Address`, `Hash`, `Bytes32`, `Hex`, `Rlp`, `AbiEncoding`, `Transaction`, `Bytecode`, `Opcode`, `Hardfork`, `Trie`, `Ssz`, `Uint`, `Denomination`, EIP-4844/7702 types |
 | `crypto` | `packages/voltaire-zig/src/crypto/root.zig` | `Keccak256`, `Hash`, `HashUtils`, `Keccak256_Accel`, `keccak_asm`, `Crypto`, `secp256k1`, `bls12_381`, `bn254`, `bn254_arkworks`, `c_kzg`, `ModExp`, `Blake2`, `Ripemd160`, `Eip712`, `bip39`, `p256`, `ed25519`, `aes_gcm` |
-| `precompiles` | `packages/voltaire-zig/src/evm/precompiles/root.zig` | Hardfork-gated EVM precompiles `0x01`–`0x13` (Frontier through Prague) and `0x0100` (`P256VERIFY`, Osaka) |
+| `precompiles` | `packages/voltaire-zig/src/evm/precompiles/root.zig` | Hardfork-gated EVM precompiles `0x01`–`0x11` (Frontier through Prague) and `0x0100` (`P256VERIFY`, Osaka) |
 | `state-manager` | `packages/voltaire-zig/src/state-manager/root.zig` | Account, storage, snapshot/revert, and fork state backend |
 | `blockchain` | `packages/voltaire-zig/src/blockchain/root.zig` | Block store, canonical chain tracking, and reorg handling |
 | `jsonrpc` | `packages/voltaire-zig/src/jsonrpc/root.zig` | Self-contained Ethereum JSON-RPC request/response types |
@@ -108,7 +108,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     // Compile-time validated 20-byte address (zero runtime cost)
-    const deployer = comptime Address.addressFromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+    const deployer = comptime Address.addressFromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e".*);
     const checksum = Address.toChecksummed(deployer); // [42]u8 on stack
 
     // Stack-only Keccak-256 digest (32 bytes)
@@ -162,20 +162,21 @@ zig build example-bls
 # Build WASM reactor binaries (ReleaseSmall -> wasm/primitives.wasm, etc.)
 zig build build-ts-wasm
 
-# Build C API static/shared libraries and primitives.h (requires libwally-core)
+# Build C API static/shared libraries and primitives.h
+# (requires the libwally-core submodule: git submodule update --init packages/voltaire-zig/lib/libwally-core)
 zig build -Dwith-c-api=true
 
 # Regenerate C header from src/c_api.zig
 zig build generate-header
 
 # Run zBench benchmarks
-zig build bench
+zig build bench -Dwith-benches=true
 ```
 
 ## Allocator & Safety Invariants
 
-1. **Zero-allocation fixed types**: `Address` (`[20]u8`), `Hash` (`[32]u8`), `Selector` (`[4]u8`), `Address.toHex`/`toChecksummed` (`[42]u8`), `crypto.Hash.toHex` (`[66]u8`), `Hex.hexToBytesFixed`, `Hex.bytesToHexFixed`, and `Address.getCreate2Address` operate entirely on the stack.
-2. **Explicit ownership**: Any function returning a slice (`[]u8`, `[]AbiValue`, `Rlp.Decoded`) takes `std.mem.Allocator` as its first parameter and transfers ownership to the caller.
+1. **Zero-allocation fixed types**: `Address` (`struct { bytes: [20]u8 }`), `Hash` (`[32]u8`), `Selector` (`[4]u8`), `Address.toHex`/`toChecksummed` (`[42]u8`), `crypto.Hash.toHex` (`[66]u8`), `Hex.hexToBytesFixed`, `Hex.bytesToHexFixed`, and `Address.getCreate2Address` operate entirely on the stack.
+2. **Explicit ownership**: Any function returning a slice (`[]u8`, `[]AbiValue`, `Rlp.Decoded`) takes an explicit `std.mem.Allocator` and transfers ownership to the caller.
 3. **Zig 0.15 unmanaged collections**: Internal code uses unmanaged `std.ArrayList(T){}` and passes `allocator` to `append`/`deinit`/`toOwnedSlice`.
 4. **Audit boundaries**: Functions prefixed with `unaudited_` in `crypto.Crypto` and `crypto.secp256k1` are custom recovery/signing implementations that have not undergone an independent security audit. Production systems requiring audited native curves should use `blst` (BLS12-381), `c-kzg-4844` (KZG), `bn254_arkworks` (BN254), or `libsecp256k1`.
 

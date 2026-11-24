@@ -68,92 +68,85 @@ Never make time or work estimates of how long work will take it is not useful co
 
 Ethereum primitives + crypto. Multi-language: TS + Zig + Rust + C.
 
-**Modules**: primitives/ (Address, Hex, Uint, Hash, RLP, ABI, Transaction, Log), crypto/ (Keccak, secp256k1, BLS12-381, BN254, KZG, SHA256, RIPEMD160, Blake2), precompiles/ (EVM precompile impls), docs/ (Mintlify MDX docs), wasm-loader/ (WASM infra)
+**Packages**: `packages/voltaire-zig` (Zig core + C ABI, package `@tevm/zig`), `packages/voltaire-ts` (`@tevm/voltaire`), `packages/voltaire-effect` (`voltaire-effect`, VibeLang + Effect 4), `packages/voltaire-{c,rs,go,py,swift}` (bindings), `apps/playground`.
+
+**Modules** (`packages/voltaire-zig/src/`, mirrored by name in `packages/voltaire-ts/src/`): primitives/ (Address, Hex, Uint, Hash, RLP, ABI, Transaction, Log), crypto/ (Keccak, secp256k1, BLS12-381, BN254, KZG, SHA256, RIPEMD160, Blake2), precompiles/ (EVM precompile impls), evm/, state-manager/, blockchain/, jsonrpc/. TS-only: wasm-loader/ (WASM infra), native-loader/ (Bun FFI / Node-API).
+
+**Docs**: Mintlify sites in `packages/voltaire-ts/docs`, `packages/voltaire-effect/docs`, `packages/voltaire-c/docs`.
 
 **Imports**: ✅ `@import("primitives")` `@import("crypto")` `@import("precompiles")` ❌ `@import("../primitives/address.zig")`
-
-**Colocated**: address.ts + address.zig in same folder
 
 ## Build
 
 ### Zig Commands
 
+Run from the repo root. `zig build -l` lists every step.
+
 ```bash
 # Core
-zig build                     # Full build (Zig + TS typecheck + C libs)
-zig build test                # All Zig tests (primitives + crypto + precompiles)
-zig build -Dtest-filter=[p]   # Filter tests
+zig build                     # Zig libraries (default install step)
+zig build test                # All Zig tests (primitives + crypto + precompiles + state-manager + blockchain)
 zig build -Doptimize=ReleaseFast # Release build
-
-# Combined Zig + TS build
-zig build build-with-ts       # Build Zig + TypeScript distribution
+# No test-filter option exists in build.zig; run the full suite.
 
 # Multi-target
-zig build build-ts-native     # Native FFI (.dylib/.so) - ReleaseFast
+zig build build-ts-native -Dwith-c-api=true  # Native FFI (.dylib/.so) - ReleaseFast; needs libwally-core submodule
 zig build build-ts-wasm       # WASM - ReleaseSmall (size-optimized)
 zig build build-ts-wasm-fast  # WASM - ReleaseFast (perf-optimized)
 zig build crypto-wasm         # Individual crypto WASM (tree-shaking)
+zig build -Dwith-c-api=true   # Also build libprimitives_c (zig-out/lib) for C/Rust
 
-# Quality
-zig build format              # Format Zig + TS
-zig build format-check        # Check formatting
-zig build lint                # Lint TS (auto-fix)
-zig build lint-check          # Check linting
-zig build check               # Quick validation (format + lint + typecheck)
-zig build ci                  # Complete CI pipeline
-
-# Testing variants
-zig build test-ts             # All TS tests (vitest)
-zig build test-ts-native      # Native FFI tests
-zig build test-ts-wasm        # WASM tests
-zig build test-integration    # Integration tests
-zig build test-security       # Security tests
+# Formatting (CI runs this with --check)
+zig fmt build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples
 
 # Benchmarks
-zig build bench -Dwith-benches=true              # zbench Zig benchmarks
-zig build bench-ts                               # TS comparison benchmarks
-zig build -Dwith-benches=true -Dfilter=[p]      # Filter benchmarks
+zig build bench -Dwith-benches=true                  # zbench Zig benchmarks
+zig build bench -Dwith-benches=true -Dfilter=[p]     # Filter zbench benchmarks
+cd packages/voltaire-ts && bun run src/crypto/keccak256.bench.ts  # One colocated mitata *.bench.ts suite
 
-# Examples (examples/ dir)
+# Examples (packages/voltaire-zig/examples)
 zig build example-keccak256
 zig build example-address
 zig build example-secp256k1
 
+# Bindings
+zig build test-go -Dwith-c-api=true   # Go tests
+zig build test-c-api -Dwith-c-api=true # C API tests
+
 # Utils
-zig build clean               # Clean artifacts (keep node_modules)
-zig build clean-all           # Deep clean + node_modules
-zig build deps                # Install/update all deps
-zig build generate-header     # Generate C header from c_api.zig
+zig build clean               # Clean zig-out, .zig-cache, target (keep node_modules)
+zig build generate-header     # Regenerate packages/voltaire-zig/src/primitives.h from c_api.zig
 ```
+
+Broken `zig build` TS wrappers (they call root `bun run` scripts that don't exist, or recurse): `format`, `format-check`, `lint-check`, `lint-deps`, `lint-pkg`, `check`, `ci`, `pre-commit`, `build-ts`, `build-ts-full`, `test-ts-native`, `test-ts-wasm`, `test-integration`, `test-security`. Use the pnpm scripts below.
 
 ### Package Scripts
 
+Root scripts fan out with `pnpm -r`; target one package with `--filter`.
+
 ```bash
 # Build
-pnpm build                    # Full (Zig + dist + types)
-pnpm build:zig                # zig build
-pnpm build:wasm               # Both WASM modes
-pnpm build:dist               # TS bundling (tsup)
+pnpm --filter @tevm/voltaire build       # tsup dist/ + types/
+pnpm --filter @tevm/zig build:wasm       # Build all WASM + stage in packages/voltaire-zig/wasm
+pnpm --filter voltaire-effect build      # VibeLang compile to dist/
 
 # Test
-pnpm test                     # Vitest watch
-pnpm test:run                 # Vitest single run
-pnpm test:coverage            # Coverage report
-pnpm test:native              # Native FFI tests
-pnpm test:wasm                # WASM tests
+pnpm --filter @tevm/voltaire test        # Vitest watch
+pnpm --filter @tevm/voltaire test:run    # Vitest single run
+pnpm --filter @tevm/voltaire test:coverage # Coverage report
+pnpm --filter @tevm/voltaire test:wasm   # WASM tests
+pnpm --filter voltaire-effect test:run   # voltaire-effect tests
+pnpm test:run                            # Every package
 
 # Docs
-pnpm docs:dev                 # Mintlify dev (localhost:3000)
-pnpm mint:dev                 # Alternative (cd docs && mint dev)
-pnpm mint:install             # Install/update Mintlify CLI
+cd packages/voltaire-ts/docs && npx mint dev   # Mintlify dev (localhost:3000)
 
 # Quality
-pnpm format                   # biome format
-pnpm lint                     # biome lint
-
-# Analysis
-pnpm bench                    # Benchmarks + BENCHMARKING.md
-pnpm size                     # Bundle size analysis
+pnpm --filter @tevm/voltaire format      # biome format
+pnpm --filter @tevm/voltaire lint        # biome check --write
+pnpm -r run lint:check                   # CI lint check
+pnpm -r run format:check                 # CI format check
+pnpm typecheck                           # Every package (tsc / vibelang --noEmit)
 ```
 
 ## TypeScript
@@ -261,9 +254,9 @@ try list.append(allocator, item);
 ### Module Structure
 
 ```
-src/primitives/root.zig       # Module entry
-src/crypto/root.zig           # Module entry
-src/evm/precompiles/root.zig  # Module entry
+packages/voltaire-zig/src/primitives/root.zig   # Module entry
+packages/voltaire-zig/src/crypto/root.zig       # Module entry
+packages/voltaire-zig/src/evm/precompiles/root.zig  # Module entry
 ```
 
 ## Testing
@@ -278,17 +271,16 @@ src/evm/precompiles/root.zig  # Module entry
 
 ```bash
 # Zig
-zig build test                    # All Zig tests
-zig build -Dtest-filter=address   # Filter
+zig build test                    # All Zig tests (no filter option)
 
 # TypeScript
-pnpm test:run                     # All TS tests
-pnpm test -- address              # Filter
-pnpm test:coverage                # Coverage
+pnpm test:run                                                # All TS packages
+pnpm --filter @tevm/voltaire test:run src/primitives/Address # Filter by path
+pnpm --filter @tevm/voltaire test:coverage                   # Coverage
 
 # Benchmarks
-zig build bench                   # zbench
-pnpm bench                        # mitata + generate BENCHMARKING.md
+zig build bench -Dwith-benches=true       # zbench
+cd packages/voltaire-ts && bun run src/<path>.bench.ts   # mitata
 ```
 
 ### Pattern
@@ -299,27 +291,21 @@ Self-contained, fix failures immediately, evidence-based debug. **No output = pa
 
 ### Mintlify Site
 
-- **Location**: `docs/`
-- **Config**: `docs/mint.json` (schema-based navigation)
+- **Location**: `packages/voltaire-ts/docs/` (also `packages/voltaire-effect/docs/`, `packages/voltaire-c/docs/`)
+- **Config**: `docs.json` (Mintlify v4 navigation)
 - **Format**: MDX (Markdown + JSX) with YAML frontmatter
-- **Structure**: Organized by section (getting-started, concepts, primitives, crypto, precompiles)
-  - Getting Started: 2 pages
-  - Concepts: 2 pages (branded-types, data-first)
-  - Primitives: 23 modules with comprehensive docs
-  - Cryptography: 17 modules with comprehensive docs
-  - Precompiles: 21 EVM precompile implementations
+- **Guidelines**: `packages/voltaire-ts/docs/CLAUDE.md`
+- **Tests**: `docs/docs-index.test.ts`, `docs/docs-samples.test.ts` (run by `pnpm --filter @tevm/voltaire test:run`)
 
 ### Commands
 
 ```bash
-pnpm docs:dev         # Dev server (localhost:3000)
-pnpm mint:dev         # Alternative (cd docs && mint dev)
-pnpm mint:install     # Install/update Mintlify CLI
+cd packages/voltaire-ts/docs && npx mint dev   # Dev server (localhost:3000)
 ```
 
 ### Auto-generated
 
-- C header: `src/primitives.h` (from c_api.zig)
+- C header: `packages/voltaire-zig/src/primitives.h` (from c_api.zig)
 - Regenerate: `zig build generate-header`
 
 ## WASM
@@ -335,10 +321,11 @@ pnpm mint:install     # Install/update Mintlify CLI
 zig build build-ts-wasm       # ReleaseSmall
 zig build build-ts-wasm-fast  # ReleaseFast
 zig build crypto-wasm         # Individual modules (tree-shaking)
-pnpm test:wasm                # WASM-specific tests
+pnpm --filter @tevm/zig build:wasm       # All of the above + stage in packages/voltaire-zig/wasm
+pnpm --filter @tevm/voltaire test:wasm   # WASM-specific tests
 ```
 
-### Output
+### Output (repo root)
 
 - `wasm/primitives.wasm` - Main (ReleaseSmall)
 - `wasm/primitives-fast.wasm` - Fast (ReleaseFast)
@@ -347,18 +334,18 @@ pnpm test:wasm                # WASM-specific tests
 ### Notes
 
 - Target: wasm32-wasi (requires libc for C libs)
-- KZG stubbed in WASM (not supported)
+- HD wallet (libwally-core) calls are stubs that fail in WASM; state-manager and blockchain C APIs are native-only
 - Rust crypto uses portable feature (tiny-keccak) for WASM
-- Loader: `src/wasm-loader/` (instantiation, memory, errors)
+- Loader: `packages/voltaire-ts/src/wasm-loader/` (instantiation, memory, errors)
 
 ## Dependencies
 
-### C Libraries (lib/)
+### C Libraries (packages/voltaire-zig/lib/)
 
 - **blst** - BLS12-381 signatures
 - **c-kzg-4844** - KZG commitments (EIP-4844)
-- **libwally-core** - Wallet utils (git submodule)
-- Built automatically by `zig build`
+- **libwally-core** - Wallet utils (git submodule; only built with `-Dwith-c-api=true`)
+- blst and c-kzg-4844 are built automatically by `zig build`
 
 ### Rust (Cargo.toml → libcrypto_wrappers.a)
 
@@ -380,28 +367,27 @@ pnpm test:wasm                # WASM-specific tests
 - **biome** - Format/lint
 - **mitata** - JS benchmarks
 - **@noble/curves, @noble/hashes** - Reference crypto
-- **whatsabi** - ABI detection and contract analysis
 - **ox** - Ethereum utilities
 
 ### Install
 
 ```bash
-pnpm install                       # Node deps
-zig build                          # Zig deps + build C/Rust libs
-git submodule update --init        # Git submodules
+git submodule update --init --recursive  # Git submodules (libwally-core, execution-apis, skills)
+pnpm install                             # Node deps
+zig build                                # Zig deps + build C/Rust libs
 ```
 
 ## Scripts
 
 `scripts/` directory automation:
 
-- `run-benchmarks.ts` - Generate BENCHMARKING.md
-- `measure-bundle-sizes.ts` - Generate BUNDLE-SIZES.md
-- `generate-comparisons.ts` - Compare vs ethers/viem/noble
-- `generate_c_header.zig` - Auto-generate C API header
-- `compare-wasm-modes.ts` - ReleaseSmall vs ReleaseFast
+- `run-benchmarks.ts` - Generate BENCHMARKS.md (bun; broken: reads a `comparisons/` dir that no longer exists)
+- `measure-bundle-sizes.ts` - Generate BUNDLE-SIZES.md (bun)
+- `generate-comparisons.ts` - Compare vs ethers/viem/noble (node)
+- `compare-wasm-modes.ts` - ReleaseSmall vs ReleaseFast (bun)
+- `packages/voltaire-zig/scripts/generate_c_header.zig` - C API header (`zig build generate-header`)
 
-Run: `pnpm dlx tsx scripts/<name>.ts`
+Run with the runtime in each script's shebang, e.g. `bun scripts/run-benchmarks.ts`.
 
 ## Crypto Security
 
@@ -411,7 +397,7 @@ Run: `pnpm dlx tsx scripts/<name>.ts`
 
 ## Refs
 
-Zig: https://ziglang.org/documentation/0.15.1/ | Yellow Paper | EIPs
+Zig: https://ziglang.org/documentation/0.15.2/ | Yellow Paper | EIPs
 
 ## Collab
 

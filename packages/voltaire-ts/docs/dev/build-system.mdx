@@ -37,12 +37,11 @@ zig build -Dwith-benches=true      # Include zbench benchmark executables
 
 | Step | Command | Output |
 | --- | --- | --- |
-| Native FFI library | `zig build build-ts-native` | `zig-out/native/libprimitives_ts_native.{dylib,so,dll}` (`ReleaseFast`) |
+| Native FFI library | `zig build build-ts-native -Dwith-c-api=true` | `zig-out/native/libprimitives_ts_native.{dylib,so,dll}` (`ReleaseFast`) |
 | Size-optimized WASM | `zig build build-ts-wasm` | `wasm/primitives.wasm` (`ReleaseSmall`) |
 | Speed-optimized WASM | `zig build build-ts-wasm-fast` | `wasm/primitives-fast.wasm` (`ReleaseFast`) |
-| Compile TS package via Zig | `zig build build-ts` | `packages/voltaire-ts/{dist,types}` |
-| Full TS + Native + WASM | `zig build build-ts-full` | TS bundle + native FFI + WASM |
-| Zig + TS distribution | `zig build build-with-ts` | Combined Zig + TS build |
+| TS package | `pnpm --filter @tevm/voltaire build` | `packages/voltaire-ts/{dist,types}` |
+| Stage WASM into `@tevm/zig` | `pnpm --filter @tevm/zig build:wasm` | `packages/voltaire-zig/wasm/` |
 
 ### Code Generation & Examples
 
@@ -60,16 +59,19 @@ zig build -Dwith-benches=true      # Include zbench benchmark executables
 zig build test               # All Zig tests (primitives, crypto, precompiles, state-manager, blockchain)
 zig build test-state-manager # State-manager unit tests
 zig build test-c-api -Dwith-c-api=true
-zig build test-go            # Go CGo tests (requires zig build first)
-zig build test-ts            # TypeScript tests
-zig build test-ts-native     # Bun native FFI tests
-zig build test-ts-wasm       # WASM tests
-zig build test-integration   # Cross-module integration tests
-zig build test-security      # Security test suite
-zig build test-all           # Zig + TypeScript + Go
-zig build format             # Format Zig + TypeScript
-zig build format-check       # Verify formatting without modifying files
-zig build lint               # Run Biome lint auto-fix
+zig build test-go -Dwith-c-api=true # Go CGo tests
+zig build test-ts            # Every workspace test:run (pnpm -r test:run)
+zig build test-all           # Same as test-ts; runs no Zig or Go tests
+zig build lint               # Every workspace lint (pnpm -r lint)
+```
+
+`build.zig` has no test filter option. Its `format`, `format-check`, `check`, `ci`, and `pre-commit` steps are broken (`zig build format` and root `pnpm format` recurse forever), so format and check with the tools directly:
+
+```bash
+zig fmt build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples  # Format Zig (add --check to verify only)
+pnpm --filter @tevm/voltaire format         # Format TS (format:check to verify only)
+pnpm --filter voltaire-effect format        # Format voltaire-effect
+pnpm -r run lint:check                      # Check lint without fixing
 ```
 
 ## pnpm Workspace Scripts
@@ -81,7 +83,6 @@ Root `package.json` runs across all workspace packages; package-scoped commands 
 pnpm build          # pnpm -r build
 pnpm build:zig      # zig build
 pnpm test:run       # pnpm -r test:run
-pnpm format         # zig build format && pnpm -r format
 pnpm lint           # pnpm -r lint
 pnpm typecheck      # pnpm -r typecheck
 pnpm clean          # Remove zig-out/, .zig-cache/, target/, and package dist/types
@@ -103,11 +104,11 @@ pnpm --filter voltaire-effect test:run      # vitest run
 Zig cross-compiles native and WASM targets out of the box (Rust targets require the corresponding `rustup target add` toolchain):
 
 ```bash
-zig build build-ts-native -Dtarget=aarch64-macos
-zig build build-ts-native -Dtarget=x86_64-macos
-zig build build-ts-native -Dtarget=aarch64-linux-gnu
-zig build build-ts-native -Dtarget=x86_64-linux-gnu
-zig build build-ts-native -Dtarget=x86_64-windows-gnu
+zig build build-ts-native -Dwith-c-api=true -Dtarget=aarch64-macos
+zig build build-ts-native -Dwith-c-api=true -Dtarget=x86_64-macos
+zig build build-ts-native -Dwith-c-api=true -Dtarget=aarch64-linux-gnu
+zig build build-ts-native -Dwith-c-api=true -Dtarget=x86_64-linux-gnu
+zig build build-ts-native -Dwith-c-api=true -Dtarget=x86_64-windows-gnu
 zig build build-ts-wasm   -Dtarget=wasm32-wasi
 ```
 

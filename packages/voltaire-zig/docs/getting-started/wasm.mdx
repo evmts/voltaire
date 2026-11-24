@@ -85,7 +85,7 @@ const hash2 = native.Keccak256.hashSync(data)
 ```
 
 <Warning>
-Runtime support: Native FFI is <strong>Bun-only</strong> right now. In <strong>Node.js</strong>, use the regular TypeScript API or the WASM modules. Also ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native`).
+Runtime support: Native FFI is <strong>Bun-only</strong> right now. In <strong>Node.js</strong>, use the regular TypeScript API or the WASM modules. Also ensure the compiled `.dylib`/`.so`/`.dll` is available (run `zig build build-ts-native -Dwith-c-api=true`).
 </Warning>
 
 Best for:

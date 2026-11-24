@@ -112,14 +112,11 @@ module.exports = {
 
 ## Testing WASM Parity
 
-Run WASM tests through Zig or Vitest to verify byte-for-byte parity between WASM and JS/native outputs:
+Run the WASM tests with Vitest to verify byte-for-byte parity between WASM and JS/native outputs:
 
 ```bash
-# Via Zig build step
-zig build test-ts-wasm
-
-# Directly via Vitest in packages/voltaire-ts
-pnpm --filter @tevm/voltaire test:run -- wasm
+# Vitest run of test files matching "wasm" in packages/voltaire-ts
+pnpm --filter @tevm/voltaire test:wasm
 ```
 
 ## Related

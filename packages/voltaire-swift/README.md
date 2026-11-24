@@ -6,7 +6,7 @@ Swift bindings for Voltaire Ethereum primitives.
 
 - macOS 12+ / iOS 15+
 - Swift 5.9+
-- Zig 0.15+ (to build the native library)
+- Zig 0.15.1+ and the libwally-core submodule (`git submodule update --init packages/voltaire-zig/lib/libwally-core`) to build the native library
 
 ## Building
 
@@ -19,7 +19,7 @@ zig build build-ts-native -Dwith-c-api=true
 Then build the Swift package:
 
 ```bash
-cd swift
+cd packages/voltaire-swift
 swift build
 ```
 
@@ -65,9 +65,9 @@ let compact = normalized.serialize(includeV: false)
 
 // Recover public key and address from a message hash
 let msg = Keccak256.hash("hello")
-let pub = try normalized.recoverPublicKey(messageHash: msg)
-let address = try normalized.recoverAddress(messageHash: msg)
-print(pub.uncompressed.count, address.hex)
+let recoveredPub = try normalized.recoverPublicKey(messageHash: msg)
+let recoveredAddress = try normalized.recoverAddress(messageHash: msg)
+print(recoveredPub.uncompressed.count, recoveredAddress.hex)
 ```
 
 ## Available Types
@@ -131,21 +131,20 @@ print(pub.uncompressed.count, address.hex)
 
 ## Architecture
 
-Swift files are colocated with their Zig/TypeScript counterparts:
+Swift files are colocated with their TypeScript counterparts and symlinked into `Sources/Voltaire/`:
 
 ```
-src/primitives/Address/
-├── Address.zig      # Zig implementation
-├── Address.ts       # TypeScript implementation
-└── Address.swift    # Swift wrapper (symlinked to swift/Sources/Voltaire/)
+packages/voltaire-ts/src/primitives/Address/
+├── index.ts         # TypeScript implementation
+└── Address.swift    # Swift wrapper (symlinked to packages/voltaire-swift/Sources/Voltaire/)
 ```
 
-The Swift package links against `libprimitives_ts_native.dylib` built by Zig.
+The Zig implementation lives in `packages/voltaire-zig/src/primitives/Address/address.zig`. The Swift package links against `zig-out/native/libprimitives_ts_native.dylib` built by Zig.
 
 ## Testing
 
 ```bash
-cd swift
+cd packages/voltaire-swift
 swift test
 ```
 

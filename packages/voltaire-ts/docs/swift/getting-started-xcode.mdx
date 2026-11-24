@@ -10,7 +10,7 @@ Integrate the Swift package in an Xcode project for macOS or iOS.
 From the repo root, build the native Zig library the Swift package links against:
 
 ```bash
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 ```
 
 This installs `libprimitives_ts_native` under `zig-out/native`.

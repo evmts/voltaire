@@ -72,5 +72,5 @@ Add to `src/primitives/Opcode/` namespace.
 
 ## Verification
 ```bash
-bun run test -- Opcode
+pnpm --filter @tevm/voltaire test:run Opcode
 ```

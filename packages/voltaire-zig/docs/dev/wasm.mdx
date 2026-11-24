@@ -41,10 +41,11 @@ zig build crypto-wasm
 
 Output in `wasm/crypto/`:
 - `keccak256.wasm` (~50KB)
-- `secp256k1.wasm` (~80KB)
 - `blake2.wasm` (~40KB)
 - `ripemd160.wasm` (~30KB)
-- `bn254.wasm` (~100KB)
+- `address.wasm`
+
+secp256k1 and BN254 are not built as standalone modules yet.
 
 ## WASM Loader
 
@@ -276,10 +277,10 @@ describe("Keccak256 WASM", () => {
 
 ```bash
 # All WASM tests
-bun run test:wasm
+pnpm --filter @tevm/voltaire test:wasm
 
 # Specific module
-bun run test:wasm -- Keccak256
+pnpm --filter @tevm/voltaire test:run src/crypto/keccak256.wasm
 ```
 
 ### Cross-Validation
@@ -300,8 +301,8 @@ describe("WASM matches native", () => {
 ## Bundle Size Analysis
 
 ```bash
-# Analyze bundle sizes
-bun run size
+# Analyze bundle sizes (from the repo root)
+bun run scripts/measure-bundle-sizes.ts
 ```
 
 Output in `BUNDLE-SIZES.md`:

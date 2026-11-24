@@ -59,5 +59,5 @@ Add to `src/primitives/Rlp/` namespace.
 
 ## Verification
 ```bash
-bun run test -- Rlp
+pnpm --filter @tevm/voltaire test:run Rlp
 ```

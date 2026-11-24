@@ -7,10 +7,10 @@ Advent-of-Code style evaluation suite testing Claude's ability to use the Voltai
 ### 1. Install Dependencies
 
 ```bash
-bun install
+pnpm install
 ```
 
-This will install `@anthropic-ai/claude-agent-sdk` and other required dependencies.
+`@anthropic-ai/claude-agent-sdk` is a devDependency of `@tevm/voltaire` (`packages/voltaire-ts`).
 
 ### 2. Configure Environment
 
@@ -35,6 +35,8 @@ MCP_SERVER_URL=http://localhost:8787/mcp
 - Or run a local node
 
 ### 3. Run Tests
+
+> **Not runnable as written.** No `package.json` defines `test:mcp`, and `vitest.mcp.config.ts` loads a root `vitest.setup.ts` that does not exist. The commands below are the intended interface once that script is restored.
 
 ```bash
 # Run all MCP evals

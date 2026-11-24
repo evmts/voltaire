@@ -1,6 +1,6 @@
 # Fuzz Testing
 
-Run fuzz tests using Zig's built-in fuzzer (Linux-only, requires Docker on macOS).
+Run fuzz tests using Zig's built-in fuzzer (Linux-only; on macOS use a Linux VM or container).
 
 ## Overview
 
@@ -8,7 +8,7 @@ Zig has integrated fuzz testing since 0.14.0 (merged July 2024). Uses LibFuzzer 
 
 **Platform Requirements:**
 - **Linux**: Native support
-- **macOS**: Not supported (InvalidElfMagic error - assumes ELF format, needs MachO glue code). Use Docker.
+- **macOS**: Not supported (InvalidElfMagic error - assumes ELF format, needs MachO glue code). Use a Linux VM or container.
 - **Windows**: Not documented
 
 ## Quick Start
@@ -16,28 +16,15 @@ Zig has integrated fuzz testing since 0.14.0 (merged July 2024). Uses LibFuzzer 
 ### Basic Usage (Linux)
 
 ```bash
-zig build test --fuzz              # Run indefinitely
-zig build test --fuzz=300s         # Run for 5 minutes
-zig build test --fuzz --debug-rt   # Debug mode (compiler_rt + libfuzzer)
-zig build test --fuzz --port=8080  # Custom port for web UI
+zig build test --fuzz                         # Run indefinitely
+timeout 300 zig build test --fuzz             # Stop after 5 minutes (Zig 0.15 --fuzz takes no duration)
+zig build test --fuzz --debug-rt              # Debug mode (compiler_rt + libfuzzer)
+zig build test --fuzz --webui=127.0.0.1:8080  # Fixed web UI address (default: [::1], random port)
 ```
 
-### Docker Usage (macOS/Cross-platform)
+### macOS
 
-```bash
-# Run fuzzing in Linux container
-docker run --rm -it -v $(pwd):/workspace -w /workspace \
-  ziglang/zig:0.15.1 \
-  zig build test --fuzz=300s
-
-# With web interface (map port)
-docker run --rm -it -v $(pwd):/workspace -w /workspace \
-  -p 6971:6971 \
-  ziglang/zig:0.15.1 \
-  zig build test --fuzz --port=6971
-```
-
-Access web UI: http://localhost:6971
+There is no official `ziglang/zig` Docker image. Run the Linux commands above inside a Linux VM or container that has Zig 0.15.2, Rust stable, and the repo submodules checked out. Map the web UI port (for example `-p 6971:6971` with `--webui=0.0.0.0:6971`) to open http://localhost:6971 on the host.
 
 ## Writing Fuzz Tests
 
@@ -190,7 +177,7 @@ test "fuzz with seeds" {
 
 ## Web Interface
 
-When `--fuzz` is passed, build runner starts HTTP server on port 6971 (configurable with `--port`).
+When `--fuzz` is passed, the build runner starts an HTTP server on `[::1]` with a random port and prints the URL (set the address with `--webui=<ip>:<port>`).
 
 ### Features
 
@@ -202,13 +189,12 @@ When `--fuzz` is passed, build runner starts HTTP server on port 6971 (configura
 ### Access
 
 ```bash
-# Default port
+# Default address ([::1], random port; the URL is printed at startup)
 zig build test --fuzz
-# Visit: http://localhost:6971
 
-# Custom port
-zig build test --fuzz --port=8080
-# Visit: http://localhost:8080
+# Fixed address
+zig build test --fuzz --webui=127.0.0.1:8080
+# Visit: http://127.0.0.1:8080
 ```
 
 ## Compiler Flags
@@ -224,8 +210,7 @@ zig build test --fuzz --port=8080
 
 ```bash
 --debug-rt              # Debug mode for compiler_rt and libfuzzer
---port <port>           # Web interface port (default: 6971)
--Dtest-filter=<name>    # Run only matching fuzz tests
+--webui=<ip>:<port>     # Web interface address (default: [::1], random port)
 ```
 
 ## build.zig Integration
@@ -276,16 +261,9 @@ pub fn build(b: *std.Build) void {
     const is_linux = target_info == .linux;
 
     if (!is_linux) {
-        // Provide Docker command for non-Linux
-        const docker_cmd = b.addSystemCommand(&[_][]const u8{
-            "docker", "run", "--rm", "-it",
-            "-v", "$(pwd):/workspace",
-            "-w", "/workspace",
-            "-p", "6971:6971",
-            "ziglang/zig:0.15.1",
-            "zig", "build", "test", "--fuzz=300s",
-        });
-        fuzz_step.dependOn(&docker_cmd.step);
+        // Zig fuzzing needs Linux; there is no official ziglang/zig Docker image
+        const fail = b.addFail("Fuzzing needs Linux: run `zig build test --fuzz` in a Linux VM or container");
+        fuzz_step.dependOn(&fail.step);
     } else {
         fuzz_step.dependOn(test_step);
     }
@@ -458,10 +436,10 @@ test "fuzz memory limited" {
 
 **Problem**: Fuzzer hangs on certain inputs.
 
-**Solution**: Set timeout with `--fuzz=<duration>` or use `AFL_HANG_TMOUT`.
+**Solution**: Bound the run with `timeout` (Zig 0.15 `--fuzz` takes no duration) or use `AFL_HANG_TMOUT`.
 
 ```bash
-zig build test --fuzz=60s  # Exit after 60 seconds
+timeout 60 zig build test --fuzz  # Exit after 60 seconds
 ```
 
 ### 4. False Positives
@@ -505,7 +483,7 @@ jobs:
           version: 0.15.1
 
       - name: Run Fuzz Tests (5 minutes each)
-        run: zig build test --fuzz=300s
+        run: timeout 300 zig build test --fuzz || test $? -eq 124
 
       - name: Upload Crash Corpus
         if: failure()
@@ -518,13 +496,15 @@ jobs:
 ### Docker CI
 
 ```dockerfile
-FROM ziglang/zig:0.15.1
+# There is no official ziglang/zig image: start from a Linux base and install
+# Zig 0.15.2 (https://ziglang.org/download/) and Rust stable (https://rustup.rs)
+FROM debian:bookworm-slim
 
 WORKDIR /workspace
 COPY . .
 
 # Run fuzzing for 10 minutes
-RUN zig build test --fuzz=600s
+RUN timeout 600 zig build test --fuzz || test $? -eq 124
 
 # Preserve corpus
 RUN cp -r .zig-cache/f /corpus-output

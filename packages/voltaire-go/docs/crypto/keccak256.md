@@ -3,7 +3,7 @@ title: Keccak-256
 description: CGO-backed Keccak-256 hashing returning typed 32-byte hash.Hash digests.
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/crypto/keccak256` computes Ethereum's pre-NIST Keccak-256 (`0x01` domain padding, distinct from SHA3-256) via Voltaire's native Zig C ABI (`internal/ffi`) and returns `hash.Hash`.
+Package `github.com/evmts/voltaire/packages/voltaire-go/crypto/keccak256` computes Ethereum's pre-NIST Keccak-256 (`0x01` domain padding, distinct from SHA3-256) via Voltaire's native Zig C ABI (`internal/ffi`) and returns `hash.Hash`.
 
 ## Functions
 
@@ -21,7 +21,7 @@ package main
 import (
     "fmt"
 
-    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
+    "github.com/evmts/voltaire/packages/voltaire-go/crypto/keccak256"
 )
 
 func main() {

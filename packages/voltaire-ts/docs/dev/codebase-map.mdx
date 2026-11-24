@@ -98,7 +98,7 @@ packages/voltaire-effect/
 | Output Directory | Produced By | Contents |
 | --- | --- | --- |
 | `zig-out/lib/` | `zig build` | `libblst.a`, `libc_kzg.a`, `libcrypto_wrappers.a` |
-| `zig-out/native/` | `zig build build-ts-native` | `libprimitives_ts_native.{dylib,so,dll}` |
+| `zig-out/native/` | `zig build build-ts-native -Dwith-c-api=true` | `libprimitives_ts_native.{dylib,so,dll}` |
 | `wasm/` | `zig build build-ts-wasm`, `build-ts-wasm-fast` | `primitives.wasm`, `primitives-fast.wasm`, `state-manager.wasm`, `blockchain.wasm`, `crypto/*.wasm` |
 | `packages/voltaire-ts/dist/` | `pnpm --filter @tevm/voltaire build:dist` | ESM (`.js`) and CJS (`.cjs`) bundles |
 | `packages/voltaire-ts/types/` | `pnpm --filter @tevm/voltaire build:types` | `.d.ts` declaration trees |

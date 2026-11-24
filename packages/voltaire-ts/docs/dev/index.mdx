@@ -35,7 +35,7 @@ zig build test
 pnpm test:run
 
 # Run docs locally (Mintlify)
-cd packages/voltaire-ts/docs && pnpm dlx mintlify dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 ## Workspace Packages
@@ -65,12 +65,13 @@ cd packages/voltaire-ts/docs && pnpm dlx mintlify dev
 | --- | --- |
 | Full Zig + C + Rust build | `zig build` |
 | Run all Zig unit tests | `zig build test` |
-| Filter Zig tests | `zig build test -Dtest-filter=Address` |
+| Filter TS tests by path | `pnpm --filter @tevm/voltaire test:run src/primitives/Address` |
 | Build TS package (`dist/` + `types/`) | `pnpm --filter @tevm/voltaire build` |
 | Run TS test suite | `pnpm --filter @tevm/voltaire test:run` |
-| Build native FFI dylib (Bun / Swift) | `zig build build-ts-native` |
+| Build native FFI dylib (Bun / Swift) | `zig build build-ts-native -Dwith-c-api=true` |
 | Build WASM (`ReleaseSmall` / `ReleaseFast`) | `zig build build-ts-wasm` / `zig build build-ts-wasm-fast` |
-| Format and lint workspace | `pnpm format && pnpm lint` |
+| Format Zig | `zig fmt build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples` |
+| Format and lint TS | `pnpm --filter @tevm/voltaire format && pnpm lint` |
 | Typecheck workspace | `pnpm typecheck` |
 
 ## Developer Guides

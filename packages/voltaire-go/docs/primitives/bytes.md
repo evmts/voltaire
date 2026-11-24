@@ -3,7 +3,7 @@ title: Bytes
 description: Pure-Go byte slice utilities for concatenation, bounds-checked slicing, padding, trimming, and constant-time comparison.
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/primitives/bytes` provides pure-Go byte slice helpers that do not mutate caller inputs and use constant-time comparison for equality.
+Package `github.com/evmts/voltaire/packages/voltaire-go/primitives/bytes` provides pure-Go byte slice helpers that do not mutate caller inputs and use constant-time comparison for equality.
 
 ## Functions
 
@@ -30,7 +30,7 @@ package main
 import (
     "fmt"
 
-    "github.com/voltaire-labs/voltaire-go/primitives/bytes"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/bytes"
 )
 
 func main() {

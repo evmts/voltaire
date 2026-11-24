@@ -3,14 +3,12 @@ title: Signature
 description: ECDSA signatures for Ethereum (secp256k1)
 ---
 
-# Signature
-
 The `signature` package provides ECDSA signature handling for Ethereum, supporting secp256k1 signatures with proper V value encoding.
 
 ## Installation
 
 ```go
-import "github.com/voltaire-labs/voltaire-go/primitives/signature"
+import "github.com/evmts/voltaire/packages/voltaire-go/primitives/signature"
 ```
 
 ## Type Definition
@@ -189,7 +187,7 @@ package main
 
 import (
     "fmt"
-    "github.com/voltaire-labs/voltaire-go/primitives/signature"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/signature"
 )
 
 func main() {
@@ -217,8 +215,7 @@ func main() {
 
 ```go
 var (
-    ErrInvalidLength    // signature not 64 or 65 bytes
-    ErrInvalidHex       // invalid hex encoding
-    ErrInvalidSignature // invalid signature format
+    ErrInvalidLength // FromBytes input is not 65 bytes, or FromHex input is not 130 hex chars
+    ErrInvalidHex    // FromHex input is not valid hex
 )
 ```

@@ -1,6 +1,6 @@
 # voltaire-c
 
-C99 header and FFI bindings for Voltaire Ethereum primitives, cryptography, state management, and blockchain caches exported directly from Zig (`libprimitives`).
+C99 header and FFI bindings for Voltaire Ethereum primitives, cryptography, state management, and blockchain caches exported directly from Zig (`libprimitives_c`).
 
 `voltaire.h` declares fixed-size value types (`PrimitivesAddress`, `PrimitivesHash`, `PrimitivesU256`, `PrimitivesSignature`, `PrimitivesAuthorization`), caller-owned buffer functions, and opaque handles (`StateManagerHandle`, `BlockchainHandle`, `ForkBackendHandle`, `ForkBlockCacheHandle`). No runtime wrapper or garbage collector sits between C and the compiled Zig code.
 
@@ -8,7 +8,7 @@ C99 header and FFI bindings for Voltaire Ethereum primitives, cryptography, stat
 
 ```mermaid
 flowchart LR
-    C["C Caller\n(stack / heap buffers)"] -->|"const ptr + len"| FFI["libprimitives C ABI\n(voltaire.h)"]
+    C["C Caller\n(stack / heap buffers)"] -->|"const ptr + len"| FFI["libprimitives_c C ABI\n(voltaire.h)"]
     FFI -->|"writes into caller buffer"| C
     FFI -->|"returns opaque handle"| Handle["Zig Heap Object\n(StateManager / Blockchain / HDKey)"]
     C -->|"explicit *_destroy / hdwallet_free"| Handle
@@ -25,21 +25,26 @@ Three ownership rules govern the API:
 Build the native library from the repository root (`https://github.com/evmts/voltaire`):
 
 ```bash
-# Native static/shared library -> zig-out/lib/libprimitives.{a,dylib,so}
-zig build build-ts-native
+# The C API links libwally-core, a git submodule
+git submodule update --init packages/voltaire-zig/lib/libwally-core
 
-# WebAssembly reactor module -> zig-out/bin/primitives.wasm
+# Native static/shared library -> zig-out/lib/libprimitives_c.{a,dylib,so}
+zig build -Dwith-c-api=true
+
+# WebAssembly reactor module -> wasm/primitives.wasm
 zig build build-ts-wasm
 ```
 
-Compile and link a C program against `packages/voltaire-c/include/voltaire.h`:
+Compile and link a C program against `packages/voltaire-c/include/voltaire.h`. Link the shared library: the static archive does not bundle blst, c-kzg-4844, libwally-core, or crypto_wrappers.
 
 ```bash
 cc -std=c99 -Ipackages/voltaire-c/include your_program.c \
-   -Lzig-out/lib -lprimitives -o your_program
+   -Lzig-out/lib -lprimitives_c -Wl,-rpath,"$PWD/zig-out/lib" -o your_program
 ```
 
-State Manager, Blockchain, KZG, and HD Wallet functions are exported in native builds only; WASM builds exclude them.
+`zig build test-c-api -Dwith-c-api=true` builds and runs the smoke test against this header.
+
+State Manager and Blockchain functions are exported in native builds only. WASM builds export the HD Wallet functions as stubs that always fail, because libwally-core is not built for WASM.
 
 ## Minimal Example
 
@@ -110,7 +115,7 @@ Complete reference documentation lives in `docs/`:
 - **EVM**: `bytecode`, `blob`
 - **Advanced**: `statemanager`, `blockchain`
 
-Header source: `packages/voltaire-c/include/voltaire.h`. Smoke test: `packages/voltaire-c/tests/c_api_test.c`.
+Header source: `packages/voltaire-c/include/voltaire.h` (maintained by hand). `zig build generate-header` regenerates the full `packages/voltaire-zig/src/primitives.h` from `packages/voltaire-zig/src/c_api.zig`; `zig build -Dwith-c-api=true` installs it as `zig-out/include/primitives.h`. Smoke test: `packages/voltaire-c/tests/c_api_test.c`.
 
 ## License
 

@@ -25,7 +25,6 @@ Secp256k1 is the elliptic curve used by Ethereum for digital signatures. These e
 **Run:**
 ```bash
 bun run examples/crypto/secp256k1/basic-signing.ts
-zig build && ./zig-out/bin/basic-signing
 ```
 
 ### 2. Address Recovery (`address-recovery.ts` / `address-recovery.zig`)
@@ -45,7 +44,6 @@ zig build && ./zig-out/bin/basic-signing
 **Run:**
 ```bash
 bun run examples/crypto/secp256k1/address-recovery.ts
-zig build && ./zig-out/bin/address-recovery
 ```
 
 ### 3. Personal Message Signing (`personal-sign.ts` / `personal-sign.zig`)
@@ -65,7 +63,6 @@ zig build && ./zig-out/bin/address-recovery
 **Run:**
 ```bash
 bun run examples/crypto/secp256k1/personal-sign.ts
-zig build && ./zig-out/bin/personal-sign
 ```
 
 ### 4. Key Derivation (`key-derivation.ts` / `key-derivation.zig`)
@@ -87,7 +84,6 @@ zig build && ./zig-out/bin/personal-sign
 **Run:**
 ```bash
 bun run examples/crypto/secp256k1/key-derivation.ts
-zig build && ./zig-out/bin/key-derivation
 ```
 
 ### 5. Transaction Signing (`transaction-signing.ts` / `transaction-signing.zig`)
@@ -109,7 +105,6 @@ zig build && ./zig-out/bin/key-derivation
 **Run:**
 ```bash
 bun run examples/crypto/secp256k1/transaction-signing.ts
-zig build && ./zig-out/bin/transaction-signing
 ```
 
 ### 6. Signature Validation (`signature-validation.ts` / `signature-validation.zig`)
@@ -131,7 +126,6 @@ zig build && ./zig-out/bin/transaction-signing
 **Run:**
 ```bash
 bun run examples/crypto/secp256k1/signature-validation.ts
-zig build && ./zig-out/bin/signature-validation
 ```
 
 ## Security Considerations

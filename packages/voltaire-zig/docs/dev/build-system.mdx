@@ -1,18 +1,18 @@
 ---
 title: Build System
-description: Zig build commands, bun scripts, and build outputs
+description: Zig build commands, pnpm scripts, and build outputs
 ---
 
-Voltaire uses Zig's build system as the primary build tool, with Bun scripts for TypeScript-specific tasks.
+Voltaire uses Zig's build system as the primary build tool, with pnpm scripts for TypeScript-specific tasks.
 
 ## Quick Reference
 
 ```bash
 # Essential commands
-zig build                    # Full build (Zig + TS typecheck + C libs)
+zig build                    # Default build (Zig modules + C libs + Rust crypto_wrappers)
 zig build test               # All Zig tests
-bun run test:run             # All TS tests
-zig build check              # Quick validation (format + lint + typecheck)
+pnpm test:run                # All TS tests
+pnpm typecheck               # Typecheck all packages
 ```
 
 ## Zig Build Commands
@@ -20,7 +20,7 @@ zig build check              # Quick validation (format + lint + typecheck)
 ### Core Builds
 
 ```bash
-# Full build - Zig, TypeScript, C libraries
+# Default build - Zig modules, C libraries, Rust crypto_wrappers
 zig build
 
 # Specific optimizations
@@ -33,27 +33,20 @@ zig build -Doptimize=ReleaseSafe    # Safety checks enabled
 ### Testing
 
 ```bash
-# All Zig tests (primitives + crypto + precompiles)
+# All Zig tests (primitives + crypto + precompiles); build.zig has no test filter
 zig build test
 
-# Filter tests by name
-zig build -Dtest-filter=address
-zig build -Dtest-filter=keccak
-zig build -Dtest-filter="Address.fromHex"
-
-# TypeScript tests via Zig
-zig build test-ts              # All TS tests
-zig build test-ts-native       # Native FFI tests only
-zig build test-ts-wasm         # WASM tests only
-zig build test-integration     # Integration tests
-zig build test-security        # Security tests
+# TypeScript tests
+zig build test-ts                                              # Every workspace test:run (pnpm -r test:run)
+pnpm --filter @tevm/voltaire test:run src/primitives/Address   # Filter by path
+pnpm --filter @tevm/voltaire test:wasm                         # WASM tests only
 ```
 
 ### TypeScript Targets
 
 ```bash
 # Native FFI library (.dylib/.so)
-zig build build-ts-native      # ReleaseFast optimization
+zig build build-ts-native -Dwith-c-api=true      # ReleaseFast optimization
 
 # WASM builds
 zig build build-ts-wasm        # ReleaseSmall (size-optimized)
@@ -64,17 +57,16 @@ zig build crypto-wasm          # Individual crypto modules (tree-shaking)
 ### Quality Checks
 
 ```bash
-# Formatting
-zig build format               # Format Zig + TS (auto-fix)
-zig build format-check         # Check formatting (no changes)
+# Formatting (zig build format recurses forever; call the formatters directly)
+zig fmt build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples  # Zig (add --check to verify only)
+pnpm --filter @tevm/voltaire format    # TS (format:check to verify only)
 
 # Linting
 zig build lint                 # Lint TS (auto-fix)
-zig build lint-check           # Check linting (no changes)
+pnpm -r run lint:check         # Check linting (no changes)
 
-# All checks
-zig build check                # format + lint + typecheck
-zig build ci                   # Complete CI pipeline
+# Typecheck
+pnpm typecheck                 # All packages
 ```
 
 ### Benchmarks
@@ -84,10 +76,10 @@ zig build ci                   # Complete CI pipeline
 zig build bench -Dwith-benches=true
 
 # Filter benchmarks
-zig build -Dwith-benches=true -Dfilter=keccak
+zig build bench -Dwith-benches=true -Dfilter=keccak
 
-# TypeScript benchmarks
-zig build bench-ts
+# TypeScript benchmarks (colocated mitata *.bench.ts files)
+cd packages/voltaire-ts && bun run src/crypto/keccak256.bench.ts
 ```
 
 ### Examples
@@ -110,58 +102,55 @@ zig build example-eip7702
 ```bash
 # Clean build artifacts
 zig build clean                # Keep node_modules
-zig build clean-all            # Remove everything including node_modules
+zig build clean-all            # Root pnpm clean (also removes package dist/ and types/)
 
 # Dependencies
-zig build deps                 # Install/update all dependencies
+pnpm install                   # JS dependencies (Zig and Cargo deps are fetched by zig build)
 
 # Code generation
 zig build generate-header      # Generate C header from c_api.zig
 ```
 
-## Bun/NPM Scripts
+## pnpm Scripts
 
 ### Building
 
 ```bash
-bun run build                  # Full build (Zig + dist + types)
-bun run build:zig              # Just zig build
-bun run build:wasm             # Both WASM modes
-bun run build:dist             # TS bundling (tsup)
-bun run build:types            # Type generation
+pnpm build                                 # Every package (zig build + dist + types)
+pnpm build:zig                             # Just zig build
+pnpm --filter @tevm/zig build:wasm         # Both WASM modes + crypto modules, staged in packages/voltaire-zig/wasm
+pnpm --filter @tevm/voltaire build:dist    # TS bundling (tsup)
+pnpm --filter @tevm/voltaire build:types   # Type generation
 ```
 
 ### Testing
 
 ```bash
-bun run test                   # Vitest watch mode
-bun run test:run               # Vitest single run
-bun run test:coverage          # With coverage report
-bun run test:native            # Native FFI tests
-bun run test:wasm              # WASM tests
+pnpm --filter @tevm/voltaire test           # Vitest watch mode
+pnpm --filter @tevm/voltaire test:run       # Vitest single run
+pnpm --filter @tevm/voltaire test:coverage  # With coverage report
+pnpm --filter @tevm/voltaire test:wasm      # WASM tests
 ```
 
 ### Development
 
 ```bash
-bun run docs:dev               # Mintlify dev server (localhost:3000)
-bun run mint:dev               # Alternative: cd docs && mint dev
-bun run mint:install           # Install/update Mintlify CLI
+cd packages/voltaire-ts/docs && npx mint dev   # Mintlify dev server (localhost:3000)
 ```
 
 ### Quality
 
 ```bash
-bun run format                 # biome format
-bun run lint                   # biome lint
-bun run typecheck              # tsc --noEmit
+pnpm --filter @tevm/voltaire format    # biome format
+pnpm lint                              # pnpm -r lint (biome check --write in @tevm/voltaire)
+pnpm typecheck                         # pnpm -r typecheck
 ```
 
 ### Analysis
 
 ```bash
-bun run bench                  # Run benchmarks + generate BENCHMARKING.md
-bun run size                   # Bundle size analysis
+cd packages/voltaire-ts && bun run src/crypto/keccak256.bench.ts   # Run one TS benchmark file
+bun run scripts/measure-bundle-sizes.ts                            # Bundle size analysis (from the repo root)
 ```
 
 ## Build Outputs
@@ -191,10 +180,9 @@ wasm/                          # WASM loader + modules
 ├── primitives.wasm
 └── crypto/                    # Individual tree-shakeable modules
     ├── keccak256.wasm
-    ├── secp256k1.wasm
     ├── blake2.wasm
     ├── ripemd160.wasm
-    └── bn254.wasm
+    └── address.wasm
 
 native/                        # Platform-specific bindings
 ├── darwin-arm64/
@@ -209,8 +197,7 @@ native/                        # Platform-specific bindings
 | File | Command | Description |
 |------|---------|-------------|
 | `src/primitives.h` | `zig build generate-header` | C API header |
-| `BENCHMARKING.md` | `bun run bench` | Performance results |
-| `BUNDLE-SIZES.md` | `bun run size` | Size analysis |
+| `BUNDLE-SIZES.md` | `bun run scripts/measure-bundle-sizes.ts` | Size analysis |
 
 ## Build Configuration
 
@@ -246,15 +233,17 @@ portable = ["tiny-keccak"]     # WASM: pure Rust
 
 ### package.json Scripts
 
+Root `package.json` (excerpt):
+
 ```json
 {
   "scripts": {
-    "build": "zig build && bun run build:dist",
+    "build": "pnpm -r build",
     "build:zig": "zig build",
-    "build:dist": "tsup",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "docs:dev": "cd docs && mint dev"
+    "test": "pnpm -r test",
+    "test:run": "pnpm -r test:run",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
   }
 }
 ```
@@ -284,8 +273,8 @@ zig build -Dtarget=wasm32-wasi
 # Ensure submodules are initialized
 git submodule update --init --recursive
 
-# Rebuild C dependencies
-zig build deps
+# Rebuild (zig build compiles the C dependencies)
+zig build
 ```
 
 **WASM build fails:**
@@ -297,14 +286,7 @@ zig targets | grep wasm32-wasi
 zig build build-ts-wasm -Dtarget=wasm32-wasi
 ```
 
-**Test filter not working:**
-```bash
-# Use quotes for patterns with spaces
-zig build -Dtest-filter="Address.fromHex"
-
-# Check available test names
-zig build test 2>&1 | grep "test"
-```
+**No Zig test filter:** `build.zig` has no test filter option, so `zig build -Dtest-filter=...` fails with "invalid option". Run `zig build test`, or filter TS tests by path with `pnpm --filter @tevm/voltaire test:run src/primitives/Address`.
 
 ### Debug Build
 
@@ -318,16 +300,15 @@ zig build test 2>&1 | head -200
 
 ## CI Pipeline
 
-The `zig build ci` command runs:
+`zig build ci` is broken (it calls root scripts that do not exist). `.github/workflows/ci.yml` runs:
 
-1. Format check
-2. Lint check
-3. TypeScript typecheck
-4. All Zig tests
-5. All TypeScript tests
-6. Build verification
+1. `zig build` and `zig build test` per optimize mode
+2. Zig examples and the `wasm32-wasi` build
+3. `zig fmt --check build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples`
+4. `pnpm --filter @tevm/zig build:wasm`, then TypeScript typecheck, `pnpm -r run lint:check`, `pnpm -r run format:check`
+5. TS build, `pnpm --filter @tevm/voltaire lint:package`, and `pnpm --filter @tevm/voltaire test:coverage`
 
 ```bash
-# Run locally before pushing
-zig build ci
+# Run the TypeScript checks locally before pushing
+pnpm --filter @tevm/voltaire typecheck && pnpm -r run lint:check && pnpm -r run format:check && pnpm --filter @tevm/voltaire test:run
 ```

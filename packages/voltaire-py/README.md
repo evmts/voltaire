@@ -25,7 +25,9 @@ Library search order in `voltaire._ffi`:
 Build the native library from the Voltaire repository root (`https://github.com/evmts/voltaire`):
 
 ```bash
-zig build build-ts-native
+# Requires the libwally-core submodule:
+# git submodule update --init packages/voltaire-zig/lib/libwally-core
+zig build build-ts-native -Dwith-c-api=true
 export VOLTAIRE_LIB_PATH="$PWD/zig-out/native/libprimitives_ts_native.dylib" # .so on Linux
 
 cd packages/voltaire-py

@@ -22,7 +22,7 @@ zig build build-ts-wasm-fast      # ReleaseFast - ~240KB WASM, faster execution
 For native FFI, the difference is even more significant since native code benefits from aggressive LLVM optimizations:
 
 ```bash
-zig build build-ts-native         # ReleaseFast by default
+zig build build-ts-native -Dwith-c-api=true         # ReleaseFast by default
 ```
 
 ### Granular Tree-Shaking
@@ -60,7 +60,7 @@ zig build -Dtarget=riscv64-linux          # RISC-V Linux
 zig build -Dtarget=mips-linux-gnueabi     # MIPS embedded
 
 # Build all supported native platforms
-zig build build-native-all
+zig build build-native-all -Dwith-c-api=true
 ```
 
 Pre-built distributions only ship macOS (arm64/x64), Linux (arm64/x64), and Windows (x64). Building from source lets you target:
@@ -75,7 +75,7 @@ Pre-built distributions only ship macOS (arm64/x64), Linux (arm64/x64), and Wind
 Building from source means you control every byte of code that executes:
 
 ```bash
-git clone https://github.com/voltaire-org/voltaire.git
+git clone https://github.com/evmts/voltaire.git
 cd voltaire
 git submodule update --init --recursive   # Fetch all vendored deps
 zig build                                  # Build everything from source
@@ -111,7 +111,7 @@ Building from source with vendored dependencies eliminates npm as an attack vect
 
 ```bash
 # Clone with all submodules pinned to specific commits
-git clone --recurse-submodules https://github.com/voltaire-org/voltaire.git
+git clone --recurse-submodules https://github.com/evmts/voltaire.git
 
 # Verify git history and commit signatures
 git log --show-signature
@@ -136,7 +136,8 @@ zig version          # 0.15.x (https://ziglang.org/download/)
 cargo --version      # Rust 1.70+ (for crypto wrappers)
 
 # Optional
-bun --version        # For TypeScript tests/builds
+node --version       # Node 22 for TypeScript tests/builds
+pnpm --version       # pnpm 10 for the JS workspace
 go version           # For Go bindings
 ```
 
@@ -144,11 +145,10 @@ go version           # For Go bindings
 
 ```bash
 # Clone repository
-git clone --recurse-submodules https://github.com/voltaire-org/voltaire.git
+git clone --recurse-submodules https://github.com/evmts/voltaire.git
 cd voltaire
 
-# Install dependencies and build
-zig build deps       # Fetch all dependencies
+# Build (fetches Zig and Cargo dependencies)
 zig build           # Full build (Zig + C + Rust libraries)
 
 # Run tests
@@ -172,26 +172,27 @@ zig build test      # All Zig tests
 |---------|-------------|--------|
 | `zig build build-ts-wasm` | WASM (ReleaseSmall) | `wasm/primitives.wasm` |
 | `zig build build-ts-wasm-fast` | WASM (ReleaseFast) | `wasm/primitives-fast.wasm` |
-| `zig build build-ts-native` | Native FFI | `native/libprimitives_ts_native.*` |
+| `zig build build-ts-native -Dwith-c-api=true` | Native FFI | `zig-out/native/libprimitives_ts_native.*` |
 | `zig build crypto-wasm` | Individual crypto modules | `wasm/crypto/*.wasm` |
 
 ### Cross-Platform Builds
 
+These steps exist only with `-Dwith-c-api=true`.
+
 | Command | Description |
 |---------|-------------|
-| `zig build build-native-all` | All supported platforms |
-| `zig build build-native-darwin-arm64` | macOS Apple Silicon |
-| `zig build build-native-linux-x64` | Linux x64 |
-| `zig build build-native-win32-x64` | Windows x64 |
+| `zig build build-native-all -Dwith-c-api=true` | All supported platforms |
+| `zig build build-native-darwin-arm64 -Dwith-c-api=true` | macOS Apple Silicon |
+| `zig build build-native-linux-x64 -Dwith-c-api=true` | Linux x64 |
+| `zig build build-native-win32-x64 -Dwith-c-api=true` | Windows x64 |
 
 ### Testing
 
 | Command | Description |
 |---------|-------------|
-| `zig build test` | All Zig tests |
-| `zig build test -Dtest-filter=keccak` | Filter tests |
-| `zig build test-ts` | TypeScript tests |
-| `zig build test-all` | Zig + TypeScript + Go |
+| `zig build test` | All Zig tests (`build.zig` has no test filter) |
+| `zig build test-ts` | TypeScript tests (`pnpm -r test:run`) |
+| `pnpm --filter @tevm/voltaire test:run src/primitives/Address` | TypeScript tests filtered by path |
 
 ## WASM Build Modes
 

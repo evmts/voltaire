@@ -25,7 +25,7 @@ Address.toChecksummed(recipient); // "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 
 // Compile-time unit safety (Wei ≠ Gwei ≠ Ether)
 const amount = Wei(1_000_000_000_000_000_000n);
-Wei.toEther(amount); // 1n
+Wei.toEther(amount); // "1" (decimal string)
 
 // Selectors and ABI encoding
 const selector = Hex.fromBytes(Keccak256.selector("transfer(address,uint256)")); // "0xa9059cbb"

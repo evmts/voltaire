@@ -246,7 +246,7 @@
 
   For Zig methods:
   1. Write inline test in .zig file
-  2. Run `zig build test -Dtest-filter=methodname`
+  2. Run `zig build test` (build.zig has no test filter)
   3. Verify RED
   4. Implement in .zig
   5. Verify GREEN
@@ -542,7 +542,6 @@
   - All precompiles: 100% test coverage
   - bun run vitest --run shows all tests passing
   - zig build test shows all tests passing
-  - zig build ci passes completely
   - No regressions in previously passing tests
   - Documentation matches implementation
   - Cross-module integration tests pass
@@ -578,7 +577,6 @@
     - Screenshot or copy of bun run vitest --run final
   output
     - Screenshot or copy of zig build test final output
-    - Confirmation that zig build ci passes
 
   ---
   📚 Reference Resources
@@ -625,20 +623,13 @@
   # Zig tests
   zig build test                                 # All
   Zig tests
-  zig build test -Dtest-filter=keccak256        # Filter
-  by name
-  zig build -Dtest-filter=pattern                #
-  Pattern match
-
-  # Full CI
-  zig build ci                                   #
-  Complete pipeline
+  # build.zig has no test filter option
 
   # Benchmarks
-  bun run bench                                  # All
+  zig build bench -Dwith-benches=true            # Zig
   benchmarks
-  zig build bench                                # Zig
-  benchmarks
+  cd packages/voltaire-ts && bun run src/crypto/keccak256.bench.ts  # TS
+  (mitata) benchmark
   ---
   🚀 Getting Started (First 30 Minutes)
 
@@ -757,8 +748,6 @@
   $ zig build test
   # Exit code: 0 ✅
 
-  $ zig build ci
-  # All stages passed ✅
 
   Issues Encountered
 

@@ -3,7 +3,7 @@ title: PrivateKey
 description: 32-byte secp256k1 private key generation, public key and Ethereum address derivation, and ECDSA signing.
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/primitives/privatekey` defines `PrivateKey` (`[32]byte`), using `github.com/decred/dcrd/dcrec/secp256k1/v4` for secp256k1 point arithmetic/signing and Voltaire's CGO FFI (`internal/ffi`) for Keccak-256 address derivation and hex formatting.
+Package `github.com/evmts/voltaire/packages/voltaire-go/primitives/privatekey` defines `PrivateKey` (`[32]byte`), using `github.com/decred/dcrd/dcrec/secp256k1/v4` for secp256k1 point arithmetic/signing and Voltaire's CGO FFI (`internal/ffi`) for Keccak-256 address derivation and hex formatting.
 
 ## Derivation Pipeline
 
@@ -51,8 +51,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
-    "github.com/voltaire-labs/voltaire-go/primitives/privatekey"
+    "github.com/evmts/voltaire/packages/voltaire-go/crypto/keccak256"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/privatekey"
 )
 
 func main() {

@@ -284,7 +284,7 @@ Benchmarks (Zig 0.15.1, ReleaseFast):
 
 Run trie tests:
 ```bash
-zig build test -Dtest-filter=trie
+zig build test   # build.zig has no test filter; runs every Zig suite
 ```
 
 ## Implementation

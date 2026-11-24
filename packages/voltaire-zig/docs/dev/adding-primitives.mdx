@@ -479,14 +479,14 @@ Add to `docs/docs.json`:
 ## Step 11: Run Tests
 
 ```bash
-# Zig tests
-zig build test -Dtest-filter=Frame
+# Zig tests (build.zig has no test filter)
+zig build test
 
 # TypeScript tests
-bun run test -- Frame
+pnpm --filter @tevm/voltaire test:run src/primitives/Frame
 
 # Full build
-zig build && bun run test:run
+zig build && pnpm --filter @tevm/voltaire test:run
 ```
 
 ## Checklist
@@ -501,4 +501,4 @@ Before submitting:
 - [ ] Registered in `root.zig`
 - [ ] Documentation in `docs/primitives/frame/`
 - [ ] Navigation updated in `docs.json`
-- [ ] All tests passing: `zig build test && bun run test:run`
+- [ ] All tests passing: `zig build test && pnpm --filter @tevm/voltaire test:run`

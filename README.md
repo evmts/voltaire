@@ -9,7 +9,7 @@
       <img src="https://img.shields.io/npm/v/@tevm/voltaire.svg" alt="npm version" />
     </a>
     <a href="https://github.com/evmts/voltaire">
-      <img src="https://img.shields.io/badge/zig-0.15.1+-orange.svg" alt="Zig 0.15.1+" />
+      <img src="https://img.shields.io/badge/zig-0.15.x-orange.svg" alt="Zig 0.15.x" />
     </a>
     <a href="https://github.com/evmts/voltaire/actions/workflows/ci.yml">
       <img src="https://img.shields.io/github/actions/workflow/status/evmts/voltaire/ci.yml?label=CI" alt="CI status" />
@@ -72,7 +72,7 @@ Address.toChecksummed(to); // "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 
 // Compile-time denomination safety (Wei ≠ Gwei ≠ Ether)
 const amount = Wei(1_000_000_000_000_000_000n);
-Wei.toEther(amount); // 1n
+Wei.toEther(amount); // "1"
 
 // Selectors and ABI encoding
 const selector = Keccak256.selector('transfer(address,uint256)');
@@ -105,11 +105,13 @@ For providers, signers, contract registries, explicit retries/timeouts, and reor
 
 ```typescript
 import { Effect, Layer } from 'effect';
-import { makeContractRegistry, HttpProvider } from 'voltaire-effect';
+import { ERC20_ABI, HttpProvider, makeContractRegistry } from 'voltaire-effect';
+
+const userAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
 
 const Contracts = makeContractRegistry({
-  USDC: { abi: erc20Abi, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
-  WETH: { abi: erc20Abi, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
+  USDC: { abi: ERC20_ABI, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  WETH: { abi: ERC20_ABI, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
 });
 
 const AppLayer = Contracts.layer.pipe(

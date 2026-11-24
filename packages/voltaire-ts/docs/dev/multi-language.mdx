@@ -83,8 +83,7 @@ cd packages/voltaire-swift && swift build && swift test
 Uses CGo against `primitives.h` and the Zig-built static/dynamic library:
 
 ```bash
-zig build
-zig build test-go
+zig build test-go -Dwith-c-api=true
 ```
 
 ## Cross-Language Error Mapping

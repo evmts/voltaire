@@ -25,7 +25,7 @@ Systematically isolate the exact line of code causing a crash through methodical
 ## Required Information from User
 
 Ask the user to provide:
-1. **Test command**: The exact command that reproduces the crash (e.g., `zig build test-opcodes -Dtest-filter='ADD opcode'`)
+1. **Test command**: The exact command that reproduces the crash (e.g., `zig build test`; build.zig has no test filter)
 2. **File path**: The file suspected to contain the crash (or use $ARGUMENTS if provided)
 3. **Function name** (optional): Specific function to start with if known
 4. **Crash symptoms**: What happens (segfault, panic, hang, etc.)

@@ -2,7 +2,7 @@
 
 Rust bindings for [Voltaire](https://github.com/evmts/voltaire) Ethereum primitives and cryptography.
 
-`voltaire` provides stack-allocated, zero-copy newtypes (`Address([u8; 20])`, `Hash([u8; 32])`, `U256([u8; 32])`), pure-Rust hashing and serialization (`Keccak256`, `SHA-256`, `RIPEMD-160`, `BLAKE2`, `HMAC`, `P256`, `RLP`, `ABI`, `EIP-712`, `Transaction`, `Bytecode`, `Blob`), and an optional `native` feature that links against Voltaire's Zig C FFI library (`libprimitives`) for secp256k1 recovery and hardware-accelerated primitives.
+`voltaire` provides stack-allocated, zero-copy newtypes (`Address([u8; 20])`, `Hash([u8; 32])`, `U256([u8; 32])`), pure-Rust hashing and serialization (`Keccak256`, `SHA-256`, `RIPEMD-160`, `BLAKE2`, `HMAC`, `P256`, `RLP`, `ABI`, `EIP-712`, `Transaction`, `Bytecode`, `Blob`), and an optional `native` feature that links against Voltaire's Zig C FFI library (`libprimitives_c`) for secp256k1 recovery and hardware-accelerated primitives.
 
 ## Architecture
 
@@ -10,7 +10,7 @@ Rust bindings for [Voltaire](https://github.com/evmts/voltaire) Ethereum primiti
 flowchart TB
     App["Rust Crate\n(std or no_std + alloc)"] --> Prim["voltaire::primitives\nAddress, Hash, U256, Hex, RLP, ABI,\nTransaction, AccessList, Authorization, Bytecode, Blob"]
     App --> Crypto["voltaire::crypto\nKeccak256, SHA-256, RIPEMD-160, BLAKE2,\nHMAC, EIP-191, EIP-712, Secp256k1, P256, Bls12381"]
-    Prim -.->|"feature = native"| FFI["voltaire::ffi\n(libprimitives C ABI)"]
+    Prim -.->|"feature = native"| FFI["ffi (private module)\n(libprimitives_c C ABI)"]
     Crypto -.->|"feature = native"| FFI
 ```
 
@@ -22,7 +22,7 @@ Add `voltaire` to `Cargo.toml` (MSRV: Rust `1.70`, edition `2021`):
 [dependencies]
 voltaire = "0.1"
 
-# Optional: link native Zig libprimitives for secp256k1 recovery and FFI acceleration
+# Optional: link native Zig libprimitives_c for secp256k1 recovery and FFI acceleration
 # voltaire = { version = "0.1", features = ["native"] }
 
 # Optional: no_std (requires alloc)
@@ -33,9 +33,16 @@ voltaire = "0.1"
 
 | Feature | Default | Effect |
 |---------|---------|--------|
-| `std` | Yes | Enables standard library integration (`std::error::Error`, etc.); omit for `no_std` + `alloc` |
-| `getrandom` | Yes | Enables OS randomness (`Hex::random`, `P256::generate_keypair`, `Bls12381::generate_keypair`) |
-| `native` | No | Links `libprimitives` via C FFI; required for `Secp256k1::recover_pubkey`, `Secp256k1::recover_address`, `Secp256k1::pubkey_from_private`, and `Address::create_address` |
+| `std` | Yes | Enables standard library integration (`std::error::Error`, `P256::generate_keypair`, etc.); omit for `no_std` + `alloc` |
+| `getrandom` | Yes | Enables OS randomness for `Hex::random` |
+| `native` | No | Links the shared `libprimitives_c` via C FFI; required for `Secp256k1::recover_pubkey`, `Secp256k1::recover_address`, `Secp256k1::pubkey_from_private`, and `Address::create_address` |
+
+The `native` feature needs the shared library. Build it from the repository root. `build.rs` reads `VOLTAIRE_LIB_DIR` (default `../../zig-out/lib` relative to this crate) and embeds it as an rpath:
+
+```bash
+zig build -Dwith-c-api=true
+VOLTAIRE_LIB_DIR="$PWD/zig-out/lib" cargo test --manifest-path packages/voltaire-rs/Cargo.toml --features native
+```
 
 ## Quick Start
 

@@ -88,7 +88,7 @@ export const home = S.Factory.Home({
           type: "code",
           title: "Set up",
           language: "sh",
-          code: "pnpm install\nzig build && zig build test\npnpm test:run"
+          code: "git submodule update --init --recursive\npnpm install\nzig build && zig build test\npnpm test:run"
         },
         {
           type: "cards",
@@ -173,7 +173,7 @@ export const home = S.Factory.Home({
           type: "code",
           file: "balances.ts",
           language: "ts",
-          code: "import { Effect } from \"effect\";\nimport {\n  makeContractRegistry,\n  Provider,\n  HttpTransport,\n} from \"voltaire-effect\";\n\nconst Contracts = makeContractRegistry({\n  USDC: {\n    abi: erc20Abi,\n    address: \"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\",\n  },\n  WETH: {\n    abi: erc20Abi,\n    address: \"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\",\n  },\n});\n\nconst program = Effect.gen(function* () {\n  const { USDC, WETH } = yield* Contracts.Service;\n  const usdcBalance = yield* USDC.read.balanceOf(userAddress);\n  const wethBalance = yield* WETH.read.balanceOf(userAddress);\n  return { usdcBalance, wethBalance };\n}).pipe(\n  Effect.retry({ times: 3 }),\n  Effect.timeout(\"10 seconds\"),\n  Effect.provide(Contracts.layer),\n  Effect.provide(Provider),\n  Effect.provide(HttpTransport(\"https://eth.llamarpc.com\"))\n);"
+          code: "import { Effect, Layer } from \"effect\";\nimport {\n  ERC20_ABI,\n  HttpProvider,\n  makeContractRegistry,\n} from \"voltaire-effect\";\n\nconst userAddress = \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\";\n\nconst Contracts = makeContractRegistry({\n  USDC: {\n    abi: ERC20_ABI,\n    address: \"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\",\n  },\n  WETH: {\n    abi: ERC20_ABI,\n    address: \"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\",\n  },\n});\n\nconst AppLayer = Contracts.layer.pipe(\n  Layer.provide(HttpProvider(\"https://eth.llamarpc.com\"))\n);\n\nconst program = Effect.gen(function* () {\n  const { USDC, WETH } = yield* Contracts.Service;\n  const usdcBalance = yield* USDC.read.balanceOf(userAddress);\n  const wethBalance = yield* WETH.read.balanceOf(userAddress);\n  return { usdcBalance, wethBalance };\n}).pipe(\n  Effect.retry({ times: 3 }),\n  Effect.timeout(\"10 seconds\"),\n  Effect.provide(AppLayer)\n);"
         },
         {
           type: "stats",

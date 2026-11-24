@@ -50,5 +50,5 @@ Add to `src/primitives/Transaction/` namespace.
 
 ## Verification
 ```bash
-bun run test -- Transaction
+pnpm --filter @tevm/voltaire test:run Transaction
 ```

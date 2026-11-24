@@ -122,6 +122,6 @@ Run `zig build generate-header` to regenerate `packages/voltaire-zig/src/primiti
 | `zig build -Dwith-c-api=true` | Builds static & shared `libprimitives_c`, generates/installs `include/primitives.h` (requires `libwally-core`) |
 | `zig build -Dwith-c-api=true test-c-api` | Compiles and runs C API tests against `libprimitives_c` |
 | `zig build crypto-wasm` | Builds individual per-algorithm WASM modules for tree-shaking |
-| `zig build bench` | Runs zBench microbenchmarks (add `-Dwith-benches=true` to install benchmark binaries) |
+| `zig build bench -Dwith-benches=true` | Runs zBench microbenchmarks (the `bench` step exists only with `-Dwith-benches=true`) |
 
 Sources: `build.zig`, `build.zig.zon`, `packages/voltaire-zig/src/c_api.zig`

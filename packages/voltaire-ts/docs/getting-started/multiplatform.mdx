@@ -110,6 +110,7 @@ Build the C library:
 ```bash
 git clone https://github.com/evmts/voltaire.git
 cd voltaire
+git submodule update --init --recursive  # libwally-core, required by -Dwith-c-api=true
 zig build -Dwith-c-api=true
 ```
 

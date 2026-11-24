@@ -3,7 +3,7 @@ title: voltaire-go
 description: Go bindings for Voltaire Ethereum primitives and cryptography via CGO and pure Go packages.
 ---
 
-`voltaire-go` (`module github.com/voltaire-labs/voltaire-go`, Go `1.22+`) wraps Voltaire's Zig-compiled native library (`libprimitives_ts_native`) through CGO while implementing RLP, signatures, byte utilities, BLAKE2b, and RIPEMD-160 in pure Go.
+`voltaire-go` (`module github.com/evmts/voltaire/packages/voltaire-go`, Go `1.22+`) wraps Voltaire's Zig-compiled native library (`libprimitives_ts_native`) through CGO while implementing RLP, signatures, byte utilities, BLAKE2b, and RIPEMD-160 in pure Go.
 
 ## Architecture
 
@@ -21,14 +21,14 @@ flowchart LR
 Build the native Zig library from the Voltaire repository root (`https://github.com/evmts/voltaire`):
 
 ```bash
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 ```
 
 Ensure `CGO_ENABLED=1` and that `zig-out/native` is on `DYLD_LIBRARY_PATH` (macOS) or `LD_LIBRARY_PATH` (Linux):
 
 ```bash
 cd packages/voltaire-go
-make test
+make test-quick   # make test rebuilds without -Dwith-c-api=true and fails
 ```
 
 ## Quick Start
@@ -40,8 +40,8 @@ import (
     "fmt"
     "log"
 
-    "github.com/voltaire-labs/voltaire-go/crypto/keccak256"
-    "github.com/voltaire-labs/voltaire-go/primitives/address"
+    "github.com/evmts/voltaire/packages/voltaire-go/crypto/keccak256"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/address"
 )
 
 func main() {
@@ -59,6 +59,6 @@ func main() {
 
 ## Module Map
 
-- **Primitives**: [Address](primitives/address.md) · [Bytes](primitives/bytes.md) · [Bytes32](primitives/bytes32.md) · [PrivateKey](primitives/privatekey.md) · [PublicKey](primitives/publickey.md) · `primitives/hash` · `primitives/hex` · `primitives/rlp` · `primitives/signature` · `primitives/u256`
+- **Primitives**: [Address](primitives/address.md) · [Bytes](primitives/bytes.md) · [Bytes32](primitives/bytes32.md) · [PrivateKey](primitives/privatekey.md) · [PublicKey](primitives/publickey.md) · `primitives/hash` · `primitives/hex` · `primitives/rlp` · [Signature](primitives/signature.md) · `primitives/u256`
 - **Cryptography**: [Keccak-256](crypto/keccak256.md) · [BLAKE2b](crypto/blake2.md) · [RIPEMD-160](crypto/ripemd160.md) · `crypto/sha256`
 - **Dependencies** (`go.mod`): `github.com/decred/dcrd/dcrec/secp256k1/v4`, `golang.org/x/crypto`

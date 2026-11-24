@@ -80,7 +80,7 @@ This downloads the browser that Playwright uses to render pages.
 Start the Mintlify dev server:
 
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 Server typically runs at `http://localhost:3002` (or 3000 if available).
@@ -147,7 +147,7 @@ Restart Claude Desktop to load the MCP server.
 <Step title="Start Local Docs Server">
 
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 Server runs at `http://localhost:3000`.
@@ -194,7 +194,7 @@ Alternatively, use VS Code settings or the "+ Add MCP Server" button in VS Code.
 <Step title="Start Local Docs Server">
 
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 </Step>
@@ -253,7 +253,7 @@ opencode mcp info playwright
 <Step title="Start Local Docs Server">
 
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 </Step>
@@ -337,7 +337,7 @@ Typical workflow for reviewing documentation changes:
 <Step title="Start docs server">
 
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 Server runs at `http://localhost:3000`.
@@ -399,7 +399,7 @@ lsof -i :3000
 **Restart the dev server:**
 ```bash
 # Stop existing server (Ctrl+C)
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 **Check browser manually:**

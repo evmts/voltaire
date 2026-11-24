@@ -61,14 +61,16 @@ const result = await Effect.runPromise(program)
 - `voltaire-effect/primitives` — Effect 4 Schemas & constructors (`Address`, `Hex`, `Hash`, `Uint`, `Unit`, `Signature`, `Abi`, `Transaction`, `Siwe`)
 - `voltaire-effect/crypto` — `CryptoLive` & individual crypto services (`Keccak`, `Secp256k1`, `Sha256`, `Blake2`, `Ripemd160`, `Hmac`, `P256`, `Ed25519`, `AesGcm`, `Eip712`, `Bip39`, `HdWallet`, `Signing` / ERC-6492)
 - `voltaire-effect/transport` — `Transport`, `HttpTransport`, `HttpTransportFetch`, `BatchTransport`, `FallbackTransport`, `RateLimitedTransport`, `CustomTransport`, `TestTransport`, `Context.Reference` config overrides
-- `voltaire-effect/provider` — Schema-decoded JSON-RPC actions, `HttpProvider`, `FallbackProvider`, `TestProvider`, `Chain` configs (`mainnet`, `sepolia`, `hoodi`, `optimism`, `arbitrum`, `base`, `polygon`), `Multicall3`, `Ens`
+- `voltaire-effect/provider` — Schema-decoded JSON-RPC actions, `HttpProvider`, `FallbackProvider`, `TestProvider`, `Chain` configs (`mainnet`, `sepolia`, `hoodi`, `optimism`, `arbitrum`, `base`, `polygon`), Multicall3 (`multicall`, `aggregate3`, `MULTICALL3_ADDRESS`), `Ens`
 - `voltaire-effect/signer` — `Account` (`LocalAccount`, `MnemonicAccount`, `JsonRpcAccount`), `NonceManager`, `Signer` (`SignerFromPrivateKey`, `SignerFromMnemonic`, EIP-7702)
 - `voltaire-effect/contract` — Type-safe `Contract` factory & `makeContractRegistry`
-- `voltaire-effect/standards` — `ERC20`, `ERC721`, `ERC1155`, `ERC165` ABIs & helpers
+- `voltaire-effect/standards` — `ERC20_ABI`, `ERC721_ABI`, `ERC1155_ABI`, `ERC165_ABI`, `INTERFACE_IDS` & helpers (`erc20BalanceOf`, `erc20Transfer`, `erc721OwnerOf`, `supportsInterface`)
 - `voltaire-effect/streams` — `watchBlocks`, `backfillLogs`, `watchLogs`, `watchTransactionStatus`
 - `voltaire-effect/services` — Unified services & layers barrel
 
 ## Scripts
+
+Run from `packages/voltaire-effect` (or use `pnpm --filter voltaire-effect <script>` from the repository root):
 
 ```sh
 pnpm run typecheck   # vibelang --noEmit

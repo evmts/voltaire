@@ -3,7 +3,7 @@ title: Address
 description: 20-byte Ethereum Address type with EIP-55 checksum formatting, validation, and JSON/Text marshaling.
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/primitives/address` defines `Address`, a 20-byte fixed array backed by Voltaire's CGO FFI (`internal/ffi`).
+Package `github.com/evmts/voltaire/packages/voltaire-go/primitives/address` defines `Address`, a 20-byte fixed array backed by Voltaire's CGO FFI (`internal/ffi`).
 
 ## Type and Constants
 
@@ -52,7 +52,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/voltaire-labs/voltaire-go/primitives/address"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/address"
 )
 
 type Transfer struct {

@@ -7,20 +7,17 @@ This directory contains comprehensive examples demonstrating the usage of Ethere
 ### Running Zig Examples
 
 ```bash
-# Build the project first
-zig build
-
-# Run examples directly with zig
-zig build run -- examples/address.zig
-zig build run -- examples/hex.zig
-zig build run -- examples/transaction.zig
+# Run examples from the repository root (one build.zig step per example)
+zig build example-address
+zig build example-hex
+zig build example-transaction
 ```
 
 ### Running TypeScript Examples
 
 ```bash
 # Install dependencies
-bun install
+pnpm install
 
 # Run TypeScript examples
 bun run examples/eip191-eip712-usage.ts
@@ -35,10 +32,10 @@ bun run examples/typescript/03-transactions.ts
 
 ```bash
 # Build native Zig library once from repo root
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 
 # Run the Swift examples
-cd examples/swift-examples
+cd packages/voltaire-zig/examples/swift-examples
 swift run
 ```
 
@@ -62,7 +59,7 @@ Demonstrates Ethereum address handling:
 - Deriving addresses from public keys
 
 ```bash
-zig build run -- examples/address.zig
+zig build example-address
 ```
 
 #### `hex.zig` - Hex Encoding/Decoding
@@ -73,7 +70,7 @@ Shows hex utility functions:
 - Converting between hex and uint256
 
 ```bash
-zig build run -- examples/hex.zig
+zig build example-hex
 ```
 
 #### `rlp.zig` - RLP Encoding/Decoding
@@ -84,7 +81,7 @@ Covers Recursive Length Prefix encoding:
 - Handling complex nested structures
 
 ```bash
-zig build run -- examples/rlp.zig
+zig build example-rlp
 ```
 
 ### ABI Encoding
@@ -97,7 +94,7 @@ Basic ABI functionality:
 - Event topic encoding
 
 ```bash
-zig build run -- examples/abi.zig
+zig build example-abi
 ```
 
 #### `abi_workflow.zig` - Complete ABI Workflow
@@ -108,7 +105,7 @@ End-to-end ABI example:
 - Error handling and validation
 
 ```bash
-zig build run -- examples/abi_workflow.zig
+zig build example-abi-workflow
 ```
 
 ### Cryptography
@@ -121,7 +118,7 @@ Keccak-256 hash function usage:
 - EIP-191 personal message hashing
 
 ```bash
-zig build run -- examples/keccak256.zig
+zig build example-keccak256
 ```
 
 #### `hashing/event-topics.zig` - Event Topics
@@ -130,7 +127,7 @@ Compute event topics for common patterns like ERC-20 `Transfer`:
 - Topic1/2 by left-padding indexed addresses to 32 bytes
 
 ```bash
-zig build run -- examples/hashing/event-topics.zig
+# No build.zig step runs this example yet
 ```
 
 #### `secp256k1.zig` - secp256k1 Signatures
@@ -142,7 +139,7 @@ ECDSA signature operations:
 - Key serialization
 
 ```bash
-zig build run -- examples/secp256k1.zig
+zig build example-secp256k1
 ```
 
 #### `eip712.zig` - EIP-712 Typed Data Signing
@@ -154,7 +151,7 @@ Structured data signing (EIP-712):
 - Real-world permit example
 
 ```bash
-zig build run -- examples/eip712.zig
+zig build example-eip712
 ```
 
 #### `signature_recovery.zig` - ECRECOVER Signature Recovery
@@ -166,7 +163,7 @@ Advanced signature recovery:
 - Address recovery from message hashes
 
 ```bash
-zig build run -- examples/signature_recovery.zig
+zig build example-signature-recovery
 ```
 
 ### Transactions
@@ -180,7 +177,7 @@ Transaction creation and encoding:
 - Access lists (EIP-2930)
 
 ```bash
-zig build run -- examples/transaction.zig
+zig build example-transaction
 ```
 
 #### `eip4844_blob_transaction.zig` - Blob Transactions (EIP-4844)
@@ -192,7 +189,7 @@ Blob transaction support for data availability:
 - Full EIP-4844 workflow
 
 ```bash
-zig build run -- examples/eip4844_blob_transaction.zig
+zig build example-eip4844
 ```
 
 #### `eip7702_authorization.zig` - Authorization Lists (EIP-7702)
@@ -204,7 +201,7 @@ Account abstraction authorization:
 - Nonce management
 
 ```bash
-zig build run -- examples/eip7702_authorization.zig
+zig build example-eip7702
 ```
 
 ### Advanced Cryptography
@@ -218,7 +215,7 @@ BLS12-381 elliptic curve operations:
 - Signature aggregation concepts
 
 ```bash
-zig build run -- examples/bls_operations.zig
+zig build example-bls
 ```
 
 ## TypeScript Examples
@@ -328,8 +325,8 @@ The `typescript/` subdirectory contains a structured learning path. See [typescr
 # Build everything
 zig build
 
-# Build with examples (if configured)
-zig build examples
+# Run one example (zig build -l lists every example-* step)
+zig build example-address
 
 # Test examples (if tests exist)
 zig build test
@@ -356,7 +353,7 @@ We welcome new examples! When contributing:
 4. **Add to this README** - Document your example in the appropriate section
 5. **Follow conventions** - Match the style of existing examples
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for full guidelines.
+See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for full guidelines.
 
 ## Example Template
 
@@ -396,20 +393,20 @@ zig build
 ```
 
 ### "Undefined symbols" errors
-Link required C artifacts in your build configuration. See [ZIG_API.md](../docs/ZIG_API.md#using-as-a-dependency).
+Link required C artifacts in your build configuration. See [Installation](../README.md#installation) in the voltaire-zig README.
 
 ### "Module not found" in TypeScript
 Install dependencies:
 ```bash
-bun install
+pnpm install
 ```
 
 ## Related Documentation
 
-- [README.md](../README.md) - Main project documentation
-- [ZIG_API.md](../docs/ZIG_API.md) - Complete Zig API reference
-- [TYPESCRIPT_API.md](../docs/TYPESCRIPT_API.md) - TypeScript API documentation
-- [CONTRIBUTING.md](../CONTRIBUTING.md) - Contribution guidelines
+- [README.md](../../../README.md) - Main project documentation
+- [voltaire-zig README](../README.md) - Zig modules, installation, and build commands
+- [@tevm/voltaire README](../../voltaire-ts/README.md) - TypeScript API
+- [CONTRIBUTING.md](../../../CONTRIBUTING.md) - Contribution guidelines
 
 ## Questions?
 

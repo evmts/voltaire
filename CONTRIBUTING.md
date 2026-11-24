@@ -60,7 +60,7 @@ If your contribution is large, please open a discussion to chat about the change
 ## Before You Start
 
 1. **Read `CLAUDE.md`** - Critical development guidelines
-2. **Understand the architecture** - Read `README.md` and see `docs/`
+2. **Understand the architecture** - Read `README.md` and each package's `README.md` under `packages/`
 3. **Check existing issues** - Your change may already be discussed
 4. **Run tests** - Ensure everything works before making changes
 
@@ -68,20 +68,22 @@ If your contribution is large, please open a discussion to chat about the change
 
 Install the following dependencies:
 
-- **Zig 0.15.1** - https://ziglang.org/download/
-- **Rust** (latest stable) - https://rustup.rs/
-- **Node.js** (LTS) - https://nodejs.org/
-- **Bun** (latest) - https://bun.sh/
+- **Zig 0.15.x** (CI uses 0.15.2; `build.zig.zon` requires at least 0.15.1) - https://ziglang.org/download/ - newer Zig releases do not build Voltaire yet; see [docs/MIGRATION_ZIG_017.md](./docs/MIGRATION_ZIG_017.md)
+- **Rust** (stable) - https://rustup.rs/ - `zig build` compiles the Rust crypto wrappers through Cargo. Add the WASM target for WASM builds: `rustup target add wasm32-unknown-unknown`
+- **Node.js 22** (CI version; `@tevm/voltaire` supports Node 18+ at runtime) - https://nodejs.org/
+- **pnpm 10** (pinned in the root `package.json` `packageManager` field; `corepack enable` picks it up) - https://pnpm.io/
+- **Bun** (optional) - https://bun.sh/ - needed for the Bun FFI backend, the TypeScript benchmark scripts, and the `zig build` TypeScript wrapper steps
+- **Go 1.22+**, **Python**, **Swift** (optional) - only for the matching `packages/voltaire-*` bindings
 
 ## Development Workflow
 
 ### 1. Setup
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/evmts/voltaire.git
 cd voltaire
-git submodule update --init --recursive
-bun install
+git submodule update --init --recursive   # libwally-core, execution-apis, skills (skills uses an SSH URL)
+pnpm install
 zig build
 zig build test
 ```
@@ -97,23 +99,24 @@ zig build test
 ### 3. Test Thoroughly
 
 ```bash
-# Run all Zig tests
+# All Zig tests (primitives, crypto, precompiles, state-manager, blockchain).
+# build.zig has no test-filter option; run the full suite.
 zig build test
 
-# Run specific test filter
-zig build -Dtest-filter=address
+# @tevm/voltaire tests (vitest), optionally filtered by path
+pnpm --filter @tevm/voltaire test:run
+pnpm --filter @tevm/voltaire test:run src/primitives/Address
 
-# Run all TypeScript tests (from repo root)
-bun run test
+# @tevm/voltaire tests with coverage, and the WASM tests
+pnpm --filter @tevm/voltaire test:coverage
+pnpm --filter @tevm/voltaire test:wasm
 
-# Run TypeScript tests with coverage
-bun run test:coverage
+# voltaire-effect tests
+pnpm --filter voltaire-effect test:run
 
-# Optional umbrella step (if configured)
-zig build test-all
-
-# Quick validation
-zig build check  # Format + lint + typecheck
+# Every TypeScript package at once
+pnpm test:run
+pnpm typecheck
 ```
 
 **CRITICAL**: ALL tests must pass before submitting (both Zig and TypeScript if applicable).
@@ -209,70 +212,58 @@ This library provides TypeScript bindings for JavaScript environments. When cont
 
 ### Pure TypeScript vs FFI
 
-The TypeScript layer has two types of implementations:
+`@tevm/voltaire` lives in `packages/voltaire-ts` and has three backends:
 
-1. **Pure TypeScript** (`src/primitives/`, `ts/src/primitives/`)
+1. **Pure TypeScript** (`packages/voltaire-ts/src/primitives/`, `src/crypto/`) - the default `@tevm/voltaire` entrypoint
    - No native dependencies
    - Works in any JavaScript environment
    - Examples: ABI encoding, numeric conversions, bytecode analysis
 
-2. **FFI Wrappers** (`src/crypto/`)
-   - Uses Bun FFI to call native Zig library
-   - Requires compiled native library
-   - Examples: Keccak-256, EIP-191
+2. **WASM** (`src/wasm/`, `src/wasm-loader/`) - the `@tevm/voltaire/wasm` entrypoint, backed by the Zig build's `.wasm` output
+
+3. **Native FFI** (`src/native/`, `src/native-loader/`) - the `@tevm/voltaire/native` entrypoint
+   - Calls the Zig C ABI through Bun FFI (`bun-ffi.ts`) or a Node-API loader (`node-api.ts`)
+   - Requires the compiled native library (`zig build build-ts-native -Dwith-c-api=true`)
+   - Example: `src/crypto/Keccak256/Keccak256.native.ts`
 
 ### TypeScript Development Workflow
 
 ```bash
-# Build Zig library first (required for FFI modules)
-zig build
+# From the repo root (no cd needed)
+pnpm install
 
-# Install TypeScript dependencies
-cd src
-bun install
+# Build the native library (required for FFI modules)
+zig build build-ts-native -Dwith-c-api=true
 
-# Run TypeScript tests
-bun test
+# Build and stage WASM (required for WASM tests)
+pnpm --filter @tevm/zig build:wasm
 
-# Run specific test file
-bun test crypto/keccak.test.ts
+# Run tests, a single file, and typecheck
+pnpm --filter @tevm/voltaire test:run
+pnpm --filter @tevm/voltaire test:run src/crypto/Keccak256/hashString.test.ts
+pnpm --filter @tevm/voltaire typecheck
 ```
 
 ### Adding New FFI Bindings
 
-To add a new FFI wrapper for a Zig crypto function:
+To expose a Zig function to the native TypeScript entrypoint:
 
-1. **Add C API binding** in `src/c_api.zig`:
+1. **Add the C ABI export** in `packages/voltaire-zig/src/c_api.zig`, following the existing `primitives_*` functions (they return a `c_int` error code and write results through output pointers):
    ```zig
-   export fn primitives_my_function(input: [*]const u8, len: usize, output: [*]u8) callconv(.C) void {
-       const data = input[0..len];
-       const result = crypto.myFunction(data);
-       @memcpy(output, &result);
+   export fn primitives_my_function(data: [*]const u8, data_len: usize, out: *PrimitivesHash) c_int {
+       const input = data[0..data_len];
+       out.bytes = crypto.myFunction(input);
+       return PRIMITIVES_SUCCESS;
    }
    ```
 
-2. **Create TypeScript wrapper** in `src/crypto/my-function.ts`:
-   ```typescript
-   import { getCApiPath } from './utils';
-   import { dlopen, FFIType } from 'bun:ffi';
+2. **Regenerate the C header**: `zig build generate-header` rewrites `packages/voltaire-zig/src/primitives.h`.
 
-   const lib = dlopen(getCApiPath(), {
-     primitives_my_function: {
-       args: [FFIType.ptr, FFIType.u64, FFIType.ptr],
-       returns: FFIType.void
-     }
-   });
+3. **Declare the symbol** in `packages/voltaire-ts/src/native-loader/bun-ffi.ts` (`bunFfiSymbols`) and in the `NativeModule` interface in `src/native-loader/node-api.ts`.
 
-   export function myFunction(data: Uint8Array): Uint8Array {
-     const output = new Uint8Array(32);
-     lib.symbols.primitives_my_function(data, data.length, output);
-     return output;
-   }
-   ```
+4. **Write the wrapper** next to the pure-TS implementation, e.g. `src/crypto/MyFunction/MyFunction.native.ts`, using `loadNative`, `allocateOutput`, and `checkError` from `src/native-loader/index.js` (see `Keccak256.native.ts`), and export it from `src/native/index.ts`.
 
-3. **Add tests** in `src/crypto/my-function.test.ts` using known test vectors
-
-4. **Update documentation** in [TYPESCRIPT_API.md](./docs/TYPESCRIPT_API.md) and [README.md](./README.md)
+5. **Add tests** with known test vectors, and update the docs page under `packages/voltaire-ts/docs/`.
 
 ### TypeScript Code Standards
 
@@ -287,62 +278,75 @@ To add a new FFI wrapper for a Zig crypto function:
 
 ```typescript
 // ✅ CORRECT - Use known test vectors
-import { describe, test, expect } from 'bun:test';
+import { describe, expect, it } from 'vitest';
+import { Keccak256 } from './crypto/Keccak256/index.js';
+import { Hex } from './index.js';
 
-describe('keccak256', () => {
-  test('matches NIST test vector', () => {
-    const input = 'abc';
-    const expected = new Uint8Array([/* known hash */]);
-    const result = keccak256(input);
-    expect(result).toEqual(expected);
+describe('Keccak256.hashString', () => {
+  it('matches the known keccak256("abc") vector', () => {
+    expect(Hex.fromBytes(Keccak256.hashString('abc'))).toBe(
+      '0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45',
+    );
   });
 });
 
 // ❌ WRONG - No test vectors
-test('keccak256 works', () => {
-  const result = keccak256('hello');
+it('keccak256 works', () => {
+  const result = Keccak256.hashString('hello');
   expect(result.length).toBe(32);  // Too weak!
 });
 ```
 
 ## Common Commands
 
+Run everything from the repo root. `zig build -l` lists every Zig step. `build-ts-native`, `example-c`, `test-c-api`, `test-go`, and `build-go` only exist with `-Dwith-c-api=true`, which needs the libwally-core submodule.
+
 ### Building
 
 ```bash
-zig build                    # Full build (Zig + TS typecheck + C libs)
-zig build build-ts-native    # Native FFI (.dylib/.so) - ReleaseFast
-zig build build-ts-wasm      # WASM - ReleaseSmall (size-optimized)
-zig build build-ts-full      # Complete TypeScript build (TS + native + WASM)
-zig build crypto-wasm        # Individual crypto WASM modules (tree-shaking)
+zig build                                  # Zig libraries (default install step)
+zig build -Doptimize=ReleaseFast           # Release build
+zig build build-ts-native -Dwith-c-api=true  # Native FFI library for @tevm/voltaire/native (ReleaseFast)
+zig build build-ts-wasm                    # WASM - ReleaseSmall (size-optimized)
+zig build build-ts-wasm-fast               # WASM - ReleaseFast (perf-optimized)
+zig build crypto-wasm                      # Individual crypto WASM modules (tree-shaking)
+zig build -Dwith-c-api=true                # Also build libprimitives_c (static + shared) for C and Rust consumers
+pnpm --filter @tevm/zig build:wasm         # Build all WASM and stage it in packages/voltaire-zig/wasm
+pnpm --filter @tevm/voltaire build         # @tevm/voltaire dist/ + types/
+pnpm --filter voltaire-effect build        # voltaire-effect dist/ (VibeLang compiler)
 ```
 
 ### Testing
 
 ```bash
-zig build test               # All Zig tests
-zig build test-ts            # All TypeScript tests
-zig build test-all           # All tests (Zig + TypeScript + Go)
-zig build test-integration   # Integration tests
-zig build test-security      # Security tests
+zig build test                                         # All Zig tests
+pnpm --filter @tevm/voltaire test:run                  # @tevm/voltaire tests (vitest)
+pnpm --filter @tevm/voltaire test:wasm                 # WASM tests
+pnpm --filter voltaire-effect test:run                 # voltaire-effect tests
+cargo test --manifest-path packages/voltaire-rs/Cargo.toml   # Rust crate
+zig build test-go -Dwith-c-api=true                    # Go bindings
 ```
 
 ### Quality
 
 ```bash
-zig build format             # Format Zig + TypeScript
-zig build format-check       # Check formatting
-zig build lint               # Lint TypeScript (auto-fix)
-zig build lint-check         # Check linting
-zig build check              # Quick validation (format + lint + typecheck)
-zig build ci                 # Complete CI pipeline
+zig fmt build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples  # Format Zig
+pnpm --filter @tevm/voltaire format       # Format @tevm/voltaire (biome)
+pnpm --filter voltaire-effect format       # Format voltaire-effect (VibeLang)
+pnpm -r run format:check                   # Check formatting (CI)
+pnpm -r run lint:check                     # Check linting (CI)
+pnpm --filter @tevm/voltaire lint          # Lint @tevm/voltaire with auto-fix
+pnpm typecheck                             # Typecheck every TypeScript package
+pnpm --filter @tevm/voltaire lint:package  # Validate package.json (publint)
 ```
+
+Use the pnpm commands above, not the `zig build` TypeScript wrappers. `zig build format-check`, `lint-check`, `lint-deps`, `lint-pkg`, `check`, `ci`, `test-ts-native`, `test-ts-wasm`, `test-integration`, `test-security`, `build-ts`, and `build-ts-full` call root `bun run` scripts that do not exist. `zig build format`, `pre-commit`, root `pnpm format`, and `pnpm -r format` loop, because `@tevm/zig`'s `format` script calls `zig build format` again.
 
 ### Benchmarks
 
 ```bash
-zig build bench              # zbench Zig benchmarks
-bun run bench                # TS comparison benchmarks + generate BENCHMARKING.md
+zig build bench -Dwith-benches=true        # zbench Zig benchmarks (*.bench.zig)
+cd packages/voltaire-ts && bun run src/crypto/keccak256.bench.ts   # One colocated mitata *.bench.ts suite
 ```
 
 ### Examples
@@ -356,86 +360,52 @@ zig build example-eip712
 zig build example-transaction
 ```
 
+`zig build -l` lists the rest (`example-hex`, `example-rlp`, `example-eip4844`, `example-eip7702`, `example-abi-workflow`, `example-signature-recovery`, `example-bls`).
+
 ### Documentation
 
+The `@tevm/voltaire` docs are a Mintlify site in `packages/voltaire-ts/docs` (`docs.json`); `voltaire-effect` and `voltaire-c` have their own in `packages/*/docs`.
+
 ```bash
-bun run docs:dev             # Mintlify dev (localhost:3000)
+cd packages/voltaire-ts/docs && npx mint dev   # Mintlify dev server (localhost:3000)
 ```
 
 ### Cleaning
 
 ```bash
-zig build clean              # Clean artifacts (keep node_modules)
-zig build clean-all          # Deep clean + node_modules
+zig build clean              # Remove zig-out, .zig-cache, and target (keeps node_modules)
+pnpm clean                   # Same, plus each package's clean script (dist/, types/, .vibe)
 ```
 
 ## Fuzz Testing
 
-Fuzz tests use Zig's built-in fuzzer (requires Linux). **On macOS, use Docker.**
+Fuzz tests use Zig's built-in fuzzer, which only runs on Linux (it assumes ELF binaries). On macOS, run it inside a Linux VM or container that has Zig 0.15.2, Rust stable, and the submodules checked out. There is no official `ziglang/zig` Docker image.
 
 ### Running Fuzz Tests
 
-#### macOS (Docker Required)
-
 ```bash
-# Run fuzzing for 5 minutes
-docker run --rm -it -v $(pwd):/workspace -w /workspace \
-  ziglang/zig:0.15.1 \
-  zig build test --fuzz=300s
-
-# With web UI
-docker run --rm -it -v $(pwd):/workspace -w /workspace \
-  -p 6971:6971 \
-  ziglang/zig:0.15.1 \
-  zig build test --fuzz --port=6971
+zig build test --fuzz                                # Run until interrupted (prints the web UI URL)
+timeout 300 zig build test --fuzz                    # Stop after 5 minutes
+zig build test --fuzz --webui=127.0.0.1:6971         # Live coverage web UI at http://127.0.0.1:6971
 ```
 
-Visit http://localhost:6971 for live coverage visualization.
-
-#### Linux (Native)
-
-```bash
-zig build test --fuzz=300s       # Run for 5 minutes
-zig build test --fuzz            # Run indefinitely
-```
+Zig 0.15 has no `--fuzz=<duration>` or `--port` flag; `zig build -h` lists the supported ones.
 
 ### Fuzz Test Organization
 
 Fuzz tests are colocated with implementations using `.fuzz.zig` extension:
 
 ```
-src/primitives/Address/address.fuzz.zig
-src/crypto/hash.fuzz.zig
-src/precompiles/ecrecover.fuzz.zig
+packages/voltaire-zig/src/crypto/hash.fuzz.zig
+packages/voltaire-zig/src/crypto/secp256k1.fuzz.zig
+packages/voltaire-zig/src/precompiles/modexp.fuzz.zig
 ```
 
 See `.claude/commands/fuzz.md` for comprehensive fuzzing documentation.
 
 ## MCP Evaluation Tests
 
-Voltaire includes an Advent-of-Code style evaluation suite that tests Claude's ability to use the Voltaire MCP server for solving Ethereum challenges.
-
-### Running MCP Evals
-
-```bash
-# Set up RPC endpoint
-export ETHEREUM_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY"
-
-# Run all MCP evaluation tests
-bun run test:mcp
-
-# Run specific test
-bun run test:mcp -t "CryptoPunk"
-```
-
-### Example Challenges
-
-- Find block hash where first CryptoPunk minted
-- Calculate total ETH burned via EIP-1559 in block range
-- Verify secp256k1 signatures using Voltaire primitives
-- Query NFT ownership at specific blocks
-
-See [tests/mcp-evals/README.md](./tests/mcp-evals/README.md) for detailed documentation.
+`tests/mcp-evals` holds an Advent-of-Code style suite that tests Claude's ability to use the Voltaire MCP server for solving Ethereum challenges. No package script runs it today, and `vitest.mcp.config.ts` points at a root `vitest.setup.ts` that does not exist. See [tests/mcp-evals/README.md](./tests/mcp-evals/README.md) for the challenges.
 
 ## Areas Looking for Contributors
 

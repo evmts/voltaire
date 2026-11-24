@@ -148,7 +148,7 @@ Steps 1 to 4 keep 0.15.2 green. Step 5 onward requires 0.17.1.
 
 - [ ] 1. After the open maintenance branches land, run the codemod, make the 11 manual rewrites, run `zig build format`, and confirm `zig build test` and `zig build generate-header` pass on 0.15.2. Commit alone.
 - [ ] 2. Change the four `.field = .{}` list initializers to `.empty` and the two `void{}` to `{}`. `zig build test` on 0.15.2.
-- [ ] 3. Replace the four `@cImport` sites with `b.addTranslateC` modules. `zig build test`, `zig build build-ts-wasm`, and `zig build build-ts-native` on 0.15.2.
+- [ ] 3. Replace the four `@cImport` sites with `b.addTranslateC` modules. `zig build test`, `zig build build-ts-wasm`, and `zig build build-ts-native -Dwith-c-api=true` on 0.15.2.
 - [ ] 4. Delete or port the 28 `*.fuzz.zig` files and the examples that call `fmtSliceHexLower`, `getStdOut`, or `formatIntBuf`. Add `zig build` steps that compile every example so dead code cannot return.
 - [ ] 5. Release `z-ens-normalize` and `libwally-core` with 0.17 build scripts. Bump `zbench` and `clap`. Update `build.zig.zon` hashes with `zig fetch --save`.
 - [ ] 6. Switch to 0.17.1. Apply the five configure-time edits in the build system table. Confirm `zig build --help` lists every step.

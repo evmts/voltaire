@@ -2,6 +2,8 @@
 
 Verified 2026-11-22 against `packages/voltaire-ts` (`@tevm/voltaire`) and `packages/voltaire-effect`, using the registry and the real tool binaries.
 
+> **Status 2026-11-24.** Two blockers below are gone. voltaire-effect moved to Effect 4.1.1, `@effect/vitest` 4.1.1, and vitest 5.0.5 (VibeLang rewrite), so its rows and the `EFFECT_V4_MIGRATION.md` reference are history. `ci.yml` now runs Node 22; `build-native.yml` and `deploy-playground.yml` still pin Node 20. `@tevm/voltaire` is still on TypeScript 5.9, vitest 4.0.16, and tsup 8.5; Biome is at 2.6.8.
+
 ## Summary
 
 Both packages now typecheck with zero errors under TypeScript 7.0.2, but the TS 7 swap is blocked by tools that need the TypeScript JS API (tsup dts, typedoc). tsup 9 builds both packages today. vitest 5 and tsup 9 are blocked by CI running Node 20.

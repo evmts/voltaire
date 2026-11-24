@@ -116,7 +116,7 @@ Used for visual interest and brand consistency:
 
 Use semantic colors sparingly to avoid clashing with warm brand palette.
 
-### Color Variables (mint.json)
+### Color Variables (docs.json)
 
 ```json
 {
@@ -152,8 +152,7 @@ Use semantic colors sparingly to avoid clashing with warm brand palette.
 - **MCP Integration**: `docs/mcp.mdx` (Model Context Protocol integration)
 
 **Configuration**:
-- **Navigation**: `docs/mint.json` (site-wide navigation, theme, colors, settings)
-  - Alternative: `docs/docs.json` (modern format, may be symlink to mint.json)
+- **Navigation**: `packages/voltaire-ts/docs/docs.json` (site-wide navigation, theme, colors, settings; there is no mint.json)
   - Contains full navigation structure for all 316+ pages
 
 **Concepts** (foundational patterns):
@@ -231,7 +230,7 @@ src/                           # Source code (no docs)
   - Tabs, groups, and pages unified in single hierarchy
   - More flexible than legacy mint.json format
 - **mint.json** - Legacy name (deprecated but still supported for backwards compatibility)
-  - Voltaire uses docs.json (mint.json is symlink/alias)
+  - Voltaire uses docs.json only (no mint.json)
   - New projects should use docs.json
 
 ---
@@ -1615,7 +1614,7 @@ Uses [keccak256](/crypto/keccak256) for hashing.
 
 ### Inline Doc Comments
 
-Zig uses `///` for doc comments (extracted by `zig build docs`):
+Zig uses `///` for doc comments:
 
 ```zig
 /// Analyze bytecode for jump destinations and instructions
@@ -1999,12 +1998,10 @@ Mintlify is AI-native with several built-in AI capabilities:
 ### Local Development
 
 ```bash
-# Install Mintlify CLI
-npm i -g mintlify
+# Mintlify CLI (`mint`) is a devDependency of @tevm/voltaire; run pnpm install first
 
 # Development server (hot reload)
-mintlify dev                  # Run from docs/ directory
-bun run docs:dev              # Or via package.json script
+cd packages/voltaire-ts/docs && npx mint dev
 
 # Preview on localhost:3000
 # Hot reload automatically updates on file changes
@@ -2057,19 +2054,15 @@ Configure in `docs.json`:
 ## COMMANDS
 
 ```bash
-# Development (Mintlify)
-mintlify dev                  # Start Mintlify dev server (from docs/ dir)
-bun run docs:dev              # Or via package.json script
-
-# Installation
-npm i -g mintlify             # Global CLI install
-bun add -D mintlify           # Or as dev dependency
+# Development (Mintlify; the CLI is a devDependency of @tevm/voltaire)
+cd packages/voltaire-ts/docs && npx mint dev          # Start Mintlify dev server
+cd packages/voltaire-ts/docs && npx mint broken-links # Check internal links
 
 # Note: Mintlify is hosted - no build/preview commands needed
 # Deployment happens automatically via GitHub/GitLab integration
 
 # Verification
-zig build check               # Validate code and types (project-specific)
+pnpm typecheck                # Validate types (project-specific)
 ```
 
 ---
@@ -2182,8 +2175,8 @@ The user will specify documentation changes. You should:
 3. **Follow patterns** - Match style and structure of existing docs
 4. **Update comprehensively** - Don't just update one file - update all related files
 5. **Verify links** - Ensure all internal links work (absolute paths, no trailing slashes)
-6. **Update navigation** - Update `docs.json` (or `mint.json`) if adding new pages
-7. **Test locally** - Run `bun run docs:dev` to preview changes
+6. **Update navigation** - Update `packages/voltaire-ts/docs/docs.json` if adding new pages
+7. **Test locally** - Run `cd packages/voltaire-ts/docs && npx mint dev` to preview changes
 8. **Check AI optimization** - Ensure content is scannable by both humans and LLMs
 
 **Remember - 2025 Standards**:

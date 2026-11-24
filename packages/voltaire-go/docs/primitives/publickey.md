@@ -3,7 +3,7 @@ title: PublicKey
 description: secp256k1 PublicKey supporting 33-byte compressed, 64-byte raw, and 65-byte prefixed formats plus Ethereum address derivation.
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/primitives/publickey` stores a secp256k1 point internally as 65 uncompressed bytes (`0x04 || X || Y`) and accepts 33-byte compressed, 64-byte raw, or 65-byte prefixed inputs.
+Package `github.com/evmts/voltaire/packages/voltaire-go/primitives/publickey` stores a secp256k1 point internally as 65 uncompressed bytes (`0x04 || X || Y`) and accepts 33-byte compressed, 64-byte raw, or 65-byte prefixed inputs.
 
 ## Supported Encodings
 
@@ -41,7 +41,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/voltaire-labs/voltaire-go/primitives/publickey"
+    "github.com/evmts/voltaire/packages/voltaire-go/primitives/publickey"
 )
 
 func main() {

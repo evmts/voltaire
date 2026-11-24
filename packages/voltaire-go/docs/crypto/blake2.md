@@ -3,7 +3,7 @@ title: BLAKE2b
 description: Pure-Go BLAKE2b-256 and BLAKE2b-512 one-shot and streaming hashing backed by golang.org/x/crypto/blake2b.
 ---
 
-Package `github.com/voltaire-labs/voltaire-go/crypto/blake2` provides pure-Go BLAKE2b-256 and BLAKE2b-512 hashing (no CGO required) backed by `golang.org/x/crypto/blake2b`.
+Package `github.com/evmts/voltaire/packages/voltaire-go/crypto/blake2` provides pure-Go BLAKE2b-256 and BLAKE2b-512 hashing (no CGO required) backed by `golang.org/x/crypto/blake2b`.
 
 ## Functions
 
@@ -25,7 +25,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/voltaire-labs/voltaire-go/crypto/blake2"
+    "github.com/evmts/voltaire/packages/voltaire-go/crypto/blake2"
 )
 
 func main() {

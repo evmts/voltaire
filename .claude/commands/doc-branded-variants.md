@@ -45,5 +45,5 @@ BrandedGwei._toWei.call(gwei); // Must be branded type
 
 ## Verification
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```

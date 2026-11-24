@@ -49,7 +49,7 @@ import { Keccak256Wasm } from '@tevm/voltaire/wasm';  // WASM-accelerated Keccak
 | `HDWallet` (`@scure/bip32` / `libwally-core`) | Supported (`@tevm/voltaire/HDWallet`) | Not available in WASM | Supported |
 
 <Warning>
-Native FFI (`@tevm/voltaire/native`) uses `bun:ffi` and requires the compiled native shared library (`zig build build-ts-native` when building from source). On Node.js and browsers, use `@tevm/voltaire` or `@tevm/voltaire/wasm`.
+Native FFI (`@tevm/voltaire/native`) uses `bun:ffi` and requires the compiled native shared library (`zig build build-ts-native -Dwith-c-api=true` when building from source). On Node.js and browsers, use `@tevm/voltaire` or `@tevm/voltaire/wasm`.
 </Warning>
 
 ## WASM Build Modes

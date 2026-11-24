@@ -74,5 +74,5 @@ Add to `src/primitives/Chain/` namespace.
 
 ## Verification
 ```bash
-bun run test -- Chain
+pnpm --filter @tevm/voltaire test:run Chain
 ```

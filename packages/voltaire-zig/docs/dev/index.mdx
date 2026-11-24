@@ -10,18 +10,18 @@ Everything you need to understand and contribute to Voltaire.
 ```bash
 # Clone and install
 git clone https://github.com/evmts/voltaire
-cd tevm
-bun install
-git submodule update --init
+cd voltaire
+pnpm install
+git submodule update --init --recursive
 
 # Build everything
 zig build
 
 # Run all tests
-zig build test && bun run test:run
+zig build test && pnpm test:run
 
 # Start docs dev server
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 ## Documentation Structure
@@ -37,7 +37,7 @@ bun run docs:dev
     Style guide, memory management, inline tests
   </Card>
   <Card title="Build System" icon="hammer" href="/dev/build-system">
-    zig build commands, bun scripts, outputs
+    zig build commands, pnpm scripts, outputs
   </Card>
   <Card title="Testing" icon="flask-vial" href="/dev/testing">
     Test organization, commands, TDD workflow
@@ -116,14 +116,13 @@ src/primitives/Address/
 ```bash
 # Core workflow
 zig build                    # Full build
-zig build test               # All Zig tests
-bun run test:run             # All TS tests
-zig build check              # Quick validation
+zig build test               # All Zig tests (no test filter option)
+pnpm test:run                # All TS tests
+pnpm typecheck               # Typecheck all packages
 
 # Development
-zig build -Dtest-filter=addr # Filter tests
-bun run test -- address      # Filter TS tests
-bun run docs:dev             # Docs at localhost:3000
+pnpm --filter @tevm/voltaire test:run src/primitives/Address  # Filter TS tests by path
+cd packages/voltaire-ts/docs && npx mint dev                 # Docs at localhost:3000
 ```
 
 ## Getting Help

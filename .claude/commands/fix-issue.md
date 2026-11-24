@@ -280,7 +280,7 @@ bun run test:run
 ### Step 3.5: Run Full Validation Suite
 ```bash
 zig build               # Full build
-zig build check         # Format + lint + typecheck
+pnpm typecheck          # Typecheck all packages
 bun run test:run        # All TS tests
 ```
 

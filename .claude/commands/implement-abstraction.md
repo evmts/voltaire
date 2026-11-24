@@ -620,7 +620,7 @@ No type errors allowed.
 
 ### Verify Docs Build
 ```bash
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 # Navigate to /playbooks/[abstraction] and verify renders
 ```
 </verification>

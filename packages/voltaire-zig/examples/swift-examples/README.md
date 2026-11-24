@@ -12,13 +12,13 @@ Runnable Swift examples that use Voltaire’s Swift API.
 
 ```bash
 # Build the Zig native library that the Swift package links against
-zig build build-ts-native
+zig build build-ts-native -Dwith-c-api=true
 ```
 
 ## Run Examples
 
 ```bash
-cd examples/swift-examples
+cd packages/voltaire-zig/examples/swift-examples
 swift run
 ```
 
@@ -32,7 +32,7 @@ You should see output demonstrating:
 ## Notes
 
 - The examples depend on the local Swift package in `../../swift`, which links to the Zig-produced `libprimitives_ts_native` in `zig-out/native`.
-- If the dynamic library cannot be found at runtime, ensure you ran `zig build build-ts-native` from the repository root, and re-run `swift run`.
+- If the dynamic library cannot be found at runtime, ensure you ran `zig build build-ts-native -Dwith-c-api=true` from the repository root, and re-run `swift run`.
 
 ## Next Steps
 

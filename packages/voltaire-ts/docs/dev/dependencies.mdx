@@ -205,10 +205,7 @@ Runtime support: Native FFI is currently <strong>Bun-only</strong>. In <strong>N
 
 ```bash
 # Node.js dependencies
-bun install
-
-# Zig dependencies (automatic via build)
-zig build deps
+pnpm install
 
 # Git submodules (libwally-core)
 git submodule update --init --recursive
@@ -234,7 +231,7 @@ zig build
 
 ### Node.js
 ```bash
-bun update
+pnpm -r update
 ```
 
 ---

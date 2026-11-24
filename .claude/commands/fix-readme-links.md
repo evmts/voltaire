@@ -38,5 +38,5 @@ Should reference actual docs:
 Check all links resolve:
 ```bash
 # Manual verification or use link checker
-bun run docs:build
+cd packages/voltaire-ts/docs && npx mint broken-links
 ```

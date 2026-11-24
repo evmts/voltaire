@@ -26,7 +26,7 @@ Each example should be:
    - Links to source file
    - Searchable in docs
 
-3. **Sidebar Navigation** (`docs/mint.json`)
+3. **Sidebar Navigation** (`packages/voltaire-ts/docs/docs.json`)
    - Manually add to navigation array
    - Nested under "Examples" group
    - Organized by category (Getting Started, Addresses, etc.)
@@ -51,13 +51,13 @@ vim examples/hashing/keccak256-string.ts
 bun run examples/hashing/keccak256-string.ts
 
 # 3. Generate MDX
-bun run examples:generate
+bun run scripts/generate-example-docs.ts
 
-# 4. Add to docs/mint.json navigation
+# 4. Add to packages/voltaire-ts/docs/docs.json navigation
 # (Manual step - add to Examples group)
 
 # 5. Verify in docs
-bun run docs:dev
+cd packages/voltaire-ts/docs && npx mint dev
 ```
 
 ---
