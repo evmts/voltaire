@@ -34,6 +34,7 @@ export * as Hex from "./primitives/Hex/index.js";
 export * as Opcode from "./primitives/Opcode/index.js";
 export * as Rlp from "./primitives/Rlp/index.js";
 export * as Signature from "./primitives/Signature/index.js";
+export * as SignatureErc8010 from "./primitives/SignatureErc8010/index.js";
 export * as Siwe from "./primitives/Siwe/index.js";
 export * as State from "./primitives/State/index.js";
 export * as Transaction from "./primitives/Transaction/index.js";

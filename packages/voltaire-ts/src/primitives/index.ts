@@ -176,6 +176,7 @@ export * as Selector from "./Selector/index.js";
 export * as BrandedSignature from "./Signature/index.js";
 export { Signature } from "./Signature/index.js";
 export { isSignature } from "./Signature/isSignature.js";
+export * as SignatureErc8010 from "./SignatureErc8010/index.js";
 export * as SignedData from "./SignedData/index.js";
 export * as BrandedSiwe from "./Siwe/index.js";
 // Standards

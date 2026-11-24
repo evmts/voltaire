@@ -133,6 +133,7 @@ const pureJsEntries = [
 	"src/primitives/Opcode/index.ts",
 	"src/primitives/Rlp/index.ts",
 	"src/primitives/Signature/index.ts",
+	"src/primitives/SignatureErc8010/index.ts",
 	"src/primitives/PrivateKey/index.ts",
 	"src/primitives/PublicKey/index.ts",
 	"src/primitives/Siwe/index.ts",

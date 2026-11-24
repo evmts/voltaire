@@ -209,6 +209,11 @@
 			"import": "./dist/primitives/Signature/index.js",
 			"require": "./dist/primitives/Signature/index.cjs"
 		},
+		"./SignatureErc8010": {
+			"types": "./types/primitives/SignatureErc8010/index.d.ts",
+			"import": "./dist/primitives/SignatureErc8010/index.js",
+			"require": "./dist/primitives/SignatureErc8010/index.cjs"
+		},
 		"./Siwe": {
 			"types": "./types/primitives/Siwe/index.d.ts",
 			"import": "./dist/primitives/Siwe/index.js",
@@ -507,6 +512,9 @@
 			],
 			"Signature": [
 				"./types/primitives/Signature/index.d.ts"
+			],
+			"SignatureErc8010": [
+				"./types/primitives/SignatureErc8010/index.d.ts"
 			],
 			"Siwe": [
 				"./types/primitives/Siwe/index.d.ts"
