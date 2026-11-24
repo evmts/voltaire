@@ -7,23 +7,44 @@
  * @module provider/HttpProvider
  */
 
+import { JsonRpcErrorCode } from "../jsonrpc/types.js";
 import type { Provider } from "./Provider.js";
-import type {
-	ProviderEvent,
-	ProviderEventListener,
-	ProviderEventMap,
-	RequestArguments,
-	RpcError,
+import {
+	type ProviderEvent,
+	type ProviderEventListener,
+	type ProviderEventMap,
+	ProviderRpcErrorCode,
+	type RequestArguments,
+	type RpcError,
 } from "./types.js";
 
-/**
- * JSON-RPC response structure
- */
-interface JsonRpcResponse {
-	jsonrpc: string;
-	id: number;
-	result?: unknown;
-	error?: RpcError;
+function isRpcError(error: unknown): error is RpcError {
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		typeof error.code === "number" &&
+		Number.isInteger(error.code) &&
+		"message" in error &&
+		typeof error.message === "string"
+	);
+}
+
+function httpErrorCode(status: number): number {
+	switch (status) {
+		case 401:
+		case 403:
+			return ProviderRpcErrorCode.Unauthorized;
+		case 429:
+			return JsonRpcErrorCode.LIMIT_EXCEEDED;
+		case 408:
+		case 502:
+		case 503:
+		case 504:
+			return JsonRpcErrorCode.RESOURCE_UNAVAILABLE;
+		default:
+			return JsonRpcErrorCode.INTERNAL_ERROR;
+	}
 }
 
 /**
@@ -108,40 +129,43 @@ export class HttpProvider implements Provider {
 				signal: controller.signal,
 			});
 
-			if (!response.ok) {
-				const error: RpcError = {
-					code: -32603,
-					message: `HTTP ${response.status}: ${response.statusText}`,
-				};
-				throw error;
+			const responseBody = await response.text();
+			let json: { result?: unknown; error?: unknown } | null = null;
+			try {
+				json = JSON.parse(responseBody);
+			} catch {
+				if (response.ok) {
+					throw {
+						code: JsonRpcErrorCode.PARSE_ERROR,
+						message: "Invalid JSON in RPC response",
+					} satisfies RpcError;
+				}
 			}
 
-			const json = (await response.json()) as JsonRpcResponse;
-			if (json.error) {
+			if (isRpcError(json?.error)) {
 				throw json.error;
 			}
-			return json.result;
+			if (!response.ok) {
+				throw {
+					code: httpErrorCode(response.status),
+					message: response.statusText
+						? `HTTP ${response.status}: ${response.statusText}`
+						: `HTTP ${response.status}`,
+					data: { status: response.status, body: responseBody },
+				} satisfies RpcError;
+			}
+			return json?.result;
+		} catch (error) {
+			if (controller.signal.aborted) {
+				throw {
+					code: JsonRpcErrorCode.RESOURCE_UNAVAILABLE,
+					message: `Request timeout after ${timeout}ms`,
+				} satisfies RpcError;
+			}
+			throw error;
 		} finally {
 			clearTimeout(timeoutId);
 		}
-	}
-
-	/**
-	 * Handle request error and determine if retry is needed
-	 * Returns true if should retry, throws if error is final
-	 */
-	private handleRequestError(error: Error, timeout: number): boolean {
-		if (error.name === "AbortError") {
-			const timeoutError: RpcError = {
-				code: -32603,
-				message: `Request timeout after ${timeout}ms`,
-			};
-			throw timeoutError;
-		}
-		if ("code" in error && "message" in error) {
-			throw error;
-		}
-		return true;
 	}
 
 	/**
@@ -158,18 +182,17 @@ export class HttpProvider implements Provider {
 			params: paramsValue,
 		});
 
-		let lastError: Error | null = null;
+		let lastError: unknown;
 
 		for (let attempt = 0; attempt <= this.defaultRetry; attempt++) {
 			try {
 				return await this.executeRequest(body, this.defaultTimeout);
 			} catch (error) {
-				lastError = error as Error;
-				const shouldRetry = this.handleRequestError(
-					lastError,
-					this.defaultTimeout,
-				);
-				if (shouldRetry && attempt < this.defaultRetry) {
+				if (isRpcError(error)) {
+					throw error;
+				}
+				lastError = error;
+				if (attempt < this.defaultRetry) {
 					await new Promise((resolve) =>
 						setTimeout(resolve, this.defaultRetryDelay),
 					);
@@ -178,8 +201,9 @@ export class HttpProvider implements Provider {
 		}
 
 		const networkError: RpcError = {
-			code: -32603,
-			message: lastError?.message ?? "Request failed",
+			code: ProviderRpcErrorCode.Disconnected,
+			message:
+				lastError instanceof Error ? lastError.message : "Request failed",
 		};
 		throw networkError;
 	}
