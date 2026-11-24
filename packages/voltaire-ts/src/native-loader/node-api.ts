@@ -3,6 +3,8 @@
  * Uses Node.js native addon loading for compatibility
  */
 
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { getNativeLibPath } from "./platform.js";
 import { getNativeErrorMessage } from "./types.js";
 
@@ -253,6 +255,8 @@ export interface NativeModule {
 	): number;
 }
 
+const nodeRequire = createRequire(import.meta.url);
+
 let nativeModule: NativeModule | null = null;
 
 /**
@@ -272,11 +276,10 @@ export function loadNodeNative(): NativeModule {
 
 	for (const libPath of pathsToTry) {
 		try {
-			// Use dynamic require to load native .node addon
-			// Note: Native Node.js addons (.node files) must be loaded with require(),
-			// not import(). This is a Node.js limitation, not an ESM compatibility issue.
-			// eslint-disable-next-line @typescript-eslint/no-var-requires
-			nativeModule = require(libPath) as NativeModule;
+			// Native addons (.node files) load only through require(). This file is
+			// an ES module, so build require from import.meta.url. Relative paths
+			// name local build output, so resolve them against the working directory.
+			nativeModule = nodeRequire(resolve(libPath)) as NativeModule;
 
 			return nativeModule;
 		} catch (error) {
