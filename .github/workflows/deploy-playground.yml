@@ -11,6 +11,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      # Secrets are unavailable in step `if:` expressions; expose the token as
+      # env so the deploy step can skip when the repository has no Vercel setup.
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +36,12 @@ jobs:
       - name: Build playground
         run: pnpm --filter @tevm/playground run build
 
+      - name: Skip deploy (VERCEL_TOKEN not set)
+        if: env.VERCEL_TOKEN == ''
+        run: echo "::notice title=Deploy skipped::VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID repository secrets are not set; the playground built but was not deployed."
+
       - name: Deploy to Vercel
+        if: env.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}

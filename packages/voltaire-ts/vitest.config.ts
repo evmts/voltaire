@@ -53,15 +53,24 @@ export default defineConfig({
 		coverage: {
 			reportOnFailure: true,
 			include: ["src/**/*.ts"],
-			exclude: ["src/**/*.test.ts", "src/**/*.test-d.ts", "src/**/*.spec.ts"],
+			// Benchmarks are not library source; counting them as uncovered
+			// functions drags the global thresholds below their floor.
+			exclude: [
+				"src/**/*.test.ts",
+				"src/**/*.test-d.ts",
+				"src/**/*.spec.ts",
+				"src/**/*.bench.ts",
+			],
 			provider: "v8",
 			reporter: ["text", "json-summary", "json"],
 			thresholds: {
 				autoUpdate: true,
-				lines: 18.57,
-				functions: 21.0,
-				branches: 26.86,
-				statements: 18.44,
+				// Floors sit ~1 point under the totals measured on 2026-11-24
+				// (lines 65.38, functions 60.64, branches 51.67, statements 64.69).
+				lines: 64,
+				functions: 59,
+				branches: 50,
+				statements: 63,
 			},
 		},
 	},
